@@ -46,6 +46,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -363,5 +364,81 @@ internal class ProfilingDataWriterTest {
         assertThat(actualMetadataEvents.none { it.type == RumMetadataEvent.Type.ERROR }).isTrue()
         assertThat(actualMetadataEvents.none { it.type == RumMetadataEvent.Type.LONG_TASK }).isTrue()
         verifyNoMoreInteractions(mockEventBatchWriter)
+    }
+
+    @Test
+    fun `M delete result file W write {feature not initialized}`(
+        @Forgery fakeResult: PerfettoResult,
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockSdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)) doReturn null
+        val file = File(tmp, "fake_profile.perfetto-stack-sample")
+        file.writeBytes(forge.aString().toByteArray())
+
+        // When
+        testedDataWriterTest.write(
+            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
+            vitalEvents = emptyList(),
+            anrEvents = emptyList(),
+            longTasks = emptyList()
+        )
+
+        // Then
+        assertThat(file.exists()).isFalse()
+        verifyNoInteractions(mockEventBatchWriter)
+    }
+
+    @Test
+    fun `M delete result file W write {events present}`(
+        @Forgery fakeResult: PerfettoResult,
+        @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
+        forge: Forge
+    ) {
+        // Given
+        val file = File(tmp, "fake_profile.perfetto-stack-sample")
+        file.writeBytes(forge.aString().toByteArray())
+        val rumContext = fakeVitals.first().rumContext
+        val alignedVitals = fakeVitals.map {
+            it.copy(
+                rumContext = it.rumContext.copy(
+                    applicationId = rumContext.applicationId,
+                    sessionId = rumContext.sessionId
+                )
+            )
+        }
+
+        // When
+        testedDataWriterTest.write(
+            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
+            vitalEvents = alignedVitals,
+            anrEvents = emptyList(),
+            longTasks = emptyList()
+        )
+
+        // Then
+        assertThat(file.exists()).isFalse()
+    }
+
+    @Test
+    fun `M delete result file W write {no rum events}`(
+        @Forgery fakeResult: PerfettoResult,
+        forge: Forge
+    ) {
+        // Given — file exists but there are no events, so buildRawBatchEvent returns null
+        val file = File(tmp, "fake_profile.perfetto-stack-sample")
+        file.writeBytes(forge.aString().toByteArray())
+
+        // When
+        testedDataWriterTest.write(
+            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
+            vitalEvents = emptyList(),
+            anrEvents = emptyList(),
+            longTasks = emptyList()
+        )
+
+        // Then
+        assertThat(file.exists()).isFalse()
+        verifyNoInteractions(mockEventBatchWriter)
     }
 }
