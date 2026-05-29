@@ -565,7 +565,6 @@ internal class ProfilingFeatureTest {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
         whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
-        whenever(mockSdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)) doReturn mockProfilingFeatureScope
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
         testedFeature.dataWriter = mockDataWriter
@@ -587,6 +586,17 @@ internal class ProfilingFeatureTest {
             anrEvents = emptyList(),
             vitalEvents = emptyList()
         )
+        val logCaptor = argumentCaptor<() -> String>()
+        verify(mockInternalLogger, atLeastOnce()).log(
+            eq(InternalLogger.Level.DEBUG),
+            eq(InternalLogger.Target.USER),
+            logCaptor.capture(),
+            isNull(),
+            eq(false),
+            isNull()
+        )
+        assertThat(logCaptor.allValues.map { it.invoke() })
+            .contains("Continuous profiling result not uploaded: no pending RUM events.")
     }
 
     @Test

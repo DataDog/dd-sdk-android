@@ -311,7 +311,7 @@ internal class ProfilingFeature(
         private const val LOG_LAUNCH_PROFILING_STOPPED_AT_TTID =
             "Launch profiling stopped at TTID."
         private const val LOG_CONTINUOUS_PROFILING_DROPPED_NO_RUM_EVENTS =
-            "Continuous profiling result dropped: no pending RUM events."
+            "Continuous profiling result not uploaded: no pending RUM events."
         private const val LOG_CONTINUOUS_PROFILING_WRITTEN =
             "Continuous profiling result written: %d long task(s), %d ANR event(s)."
     }
