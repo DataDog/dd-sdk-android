@@ -46,6 +46,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -233,28 +234,37 @@ internal class ProfilingDataWriterTest {
             assertThat(vital).hasDurationNs(fakeVital.durationNs)
         }
         verifyNoMoreInteractions(mockEventBatchWriter)
+        assertThat(file.exists()).isFalse()
     }
 
     @Test
-    fun `M skip writing W write {can't read perfetto File}`(
+    fun `M skip writing and log warn on delete W write {perfetto file not found}`(
         @Forgery fakeResult: PerfettoResult,
         @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
         @Forgery fakeLongTasks: List<ProfilerEvent.RumLongTaskEvent>,
         @Forgery fakeAnrs: List<ProfilerEvent.RumAnrEvent>
     ) {
-        // Given
-        // Don't create the tmp file so it can't be found
+        // Given — file path exists in TempDir but file is never created
+        val nonExistentFile = File(tmp, "nonexistent.perfetto-stack-sample")
 
         // When
         testedDataWriterTest.write(
-            profilingResult = fakeResult,
+            profilingResult = fakeResult.copy(resultFilePath = nonExistentFile.absolutePath),
             vitalEvents = fakeVitals,
             anrEvents = fakeAnrs,
             longTasks = fakeLongTasks
         )
 
         // Then
-        verifyNoMoreInteractions(mockInternalLogger, mockEventBatchWriter)
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.WARN),
+            eq(InternalLogger.Target.MAINTAINER),
+            any<() -> String>(),
+            isNull(),
+            eq(false),
+            isNull()
+        )
+        verifyNoMoreInteractions(mockEventBatchWriter)
     }
 
     @Test
@@ -277,6 +287,7 @@ internal class ProfilingDataWriterTest {
         )
 
         // Then
+        assertThat(file.exists()).isFalse()
         verifyNoMoreInteractions(mockInternalLogger, mockEventBatchWriter)
     }
 
@@ -298,6 +309,7 @@ internal class ProfilingDataWriterTest {
         )
 
         // Then
+        assertThat(file.exists()).isFalse()
         verifyNoMoreInteractions(mockInternalLogger, mockEventBatchWriter)
     }
 
@@ -362,6 +374,63 @@ internal class ProfilingDataWriterTest {
         }
         assertThat(actualMetadataEvents.none { it.type == RumMetadataEvent.Type.ERROR }).isTrue()
         assertThat(actualMetadataEvents.none { it.type == RumMetadataEvent.Type.LONG_TASK }).isTrue()
+        assertThat(file.exists()).isFalse()
         verifyNoMoreInteractions(mockEventBatchWriter)
     }
+
+    @Test
+    fun `M delete result file W write {feature not initialized}`(
+        @Forgery fakeResult: PerfettoResult,
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockSdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)) doReturn null
+        val file = File(tmp, "fake_profile.perfetto-stack-sample")
+        file.writeBytes(forge.aString().toByteArray())
+
+        // When
+        testedDataWriterTest.write(
+            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
+            vitalEvents = emptyList(),
+            anrEvents = emptyList(),
+            longTasks = emptyList()
+        )
+
+        // Then
+        assertThat(file.exists()).isFalse()
+        verifyNoInteractions(mockEventBatchWriter)
+    }
+
+    @Test
+    fun `M delete result file W write {events present}`(
+        @Forgery fakeResult: PerfettoResult,
+        @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
+        forge: Forge
+    ) {
+        // Given
+        val file = File(tmp, "fake_profile.perfetto-stack-sample")
+        file.writeBytes(forge.aString().toByteArray())
+        val rumContext = fakeVitals.first().rumContext
+        val alignedVitals = fakeVitals.map {
+            it.copy(
+                rumContext = it.rumContext.copy(
+                    applicationId = rumContext.applicationId,
+                    sessionId = rumContext.sessionId
+                )
+            )
+        }
+
+        // When
+        testedDataWriterTest.write(
+            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
+            vitalEvents = alignedVitals,
+            anrEvents = emptyList(),
+            longTasks = emptyList()
+        )
+
+        // Then
+        assertThat(file.exists()).isFalse()
+        verify(mockEventBatchWriter).write(any(), isNull(), eq(EventType.DEFAULT))
+    }
+
 }

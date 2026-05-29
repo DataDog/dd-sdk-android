@@ -237,7 +237,6 @@ internal class ProfilingFeature(
         }
     }
 
-    @Suppress("ReturnCount")
     private fun tryWriteProfilingEvent() {
         val result = perfettoResult ?: return
         when (result.startReason) {
@@ -261,23 +260,23 @@ internal class ProfilingFeature(
                 val scheduler = continuousProfilingScheduler ?: return
                 scheduler.onActiveWindowEnded()
                 val (longTasks, anrEvents, vitalEvents) = pendingRumEvents.drain()
-                if (longTasks.isEmpty() && anrEvents.isEmpty() && vitalEvents.isEmpty()) {
-                    logToUser(LOG_CONTINUOUS_PROFILING_DROPPED_NO_RUM_EVENTS)
-                    return
-                }
                 dataWriter.write(
                     profilingResult = result,
                     longTasks = longTasks,
                     anrEvents = anrEvents,
                     vitalEvents = vitalEvents
                 )
-                logToUser(
-                    LOG_CONTINUOUS_PROFILING_WRITTEN.format(
-                        Locale.US,
-                        longTasks.size,
-                        anrEvents.size
+                if (longTasks.isEmpty() && anrEvents.isEmpty() && vitalEvents.isEmpty()) {
+                    logToUser(LOG_CONTINUOUS_PROFILING_NOT_UPLOADED_NO_RUM_EVENTS)
+                } else {
+                    logToUser(
+                        LOG_CONTINUOUS_PROFILING_WRITTEN.format(
+                            Locale.US,
+                            longTasks.size,
+                            anrEvents.size
+                        )
                     )
-                )
+                }
             }
 
             else -> {
@@ -311,8 +310,8 @@ internal class ProfilingFeature(
             "Profiling feature received an event of unsupported type=%s."
         private const val LOG_LAUNCH_PROFILING_STOPPED_AT_TTID =
             "Launch profiling stopped at TTID."
-        private const val LOG_CONTINUOUS_PROFILING_DROPPED_NO_RUM_EVENTS =
-            "Continuous profiling result dropped: no pending RUM events."
+        private const val LOG_CONTINUOUS_PROFILING_NOT_UPLOADED_NO_RUM_EVENTS =
+            "Continuous profiling result not uploaded: no pending RUM events."
         private const val LOG_CONTINUOUS_PROFILING_WRITTEN =
             "Continuous profiling result written: %d long task(s), %d ANR event(s)."
     }
