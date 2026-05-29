@@ -234,6 +234,7 @@ internal class ProfilingDataWriterTest {
             assertThat(vital).hasDurationNs(fakeVital.durationNs)
         }
         verifyNoMoreInteractions(mockEventBatchWriter)
+        assertThat(file.exists()).isFalse()
     }
 
     @Test
@@ -243,19 +244,27 @@ internal class ProfilingDataWriterTest {
         @Forgery fakeLongTasks: List<ProfilerEvent.RumLongTaskEvent>,
         @Forgery fakeAnrs: List<ProfilerEvent.RumAnrEvent>
     ) {
-        // Given
-        // Don't create the tmp file so it can't be found
+        // Given — file path exists in TempDir but file is never created
+        val nonExistentFile = File(tmp, "nonexistent.perfetto-stack-sample")
 
         // When
         testedDataWriterTest.write(
-            profilingResult = fakeResult,
+            profilingResult = fakeResult.copy(resultFilePath = nonExistentFile.absolutePath),
             vitalEvents = fakeVitals,
             anrEvents = fakeAnrs,
             longTasks = fakeLongTasks
         )
 
         // Then
-        verifyNoMoreInteractions(mockInternalLogger, mockEventBatchWriter)
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.WARN),
+            eq(InternalLogger.Target.MAINTAINER),
+            any<() -> String>(),
+            isNull(),
+            eq(false),
+            isNull()
+        )
+        verifyNoMoreInteractions(mockEventBatchWriter)
     }
 
     @Test
@@ -278,6 +287,7 @@ internal class ProfilingDataWriterTest {
         )
 
         // Then
+        assertThat(file.exists()).isFalse()
         verifyNoMoreInteractions(mockInternalLogger, mockEventBatchWriter)
     }
 
@@ -299,6 +309,7 @@ internal class ProfilingDataWriterTest {
         )
 
         // Then
+        assertThat(file.exists()).isFalse()
         verifyNoMoreInteractions(mockInternalLogger, mockEventBatchWriter)
     }
 
@@ -418,6 +429,7 @@ internal class ProfilingDataWriterTest {
 
         // Then
         assertThat(file.exists()).isFalse()
+        verify(mockEventBatchWriter).write(any(), isNull(), eq(EventType.DEFAULT))
     }
 
     @Test

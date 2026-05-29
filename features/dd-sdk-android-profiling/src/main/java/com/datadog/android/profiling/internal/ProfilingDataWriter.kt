@@ -59,12 +59,19 @@ internal class ProfilingDataWriter(
     private fun safeDelete(path: String) {
         try {
             @Suppress("UnsafeThirdPartyFunctionCall")
-            File(path).delete()
+            val deleted = File(path).delete()
+            if (!deleted) {
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.MAINTAINER,
+                    { LOG_FILE_DELETE_FAILED.format(path) }
+                )
+            }
         } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
-                { LOG_FILE_DELETE_FAILED },
+                { LOG_FILE_DELETE_FAILED.format(path) },
                 t
             )
         }
@@ -221,7 +228,7 @@ internal class ProfilingDataWriter(
     }
 
     companion object {
-        private const val LOG_FILE_DELETE_FAILED = "Failed to delete Perfetto trace file."
+        private const val LOG_FILE_DELETE_FAILED = "Failed to delete Perfetto trace file: %s"
         private const val TAG_KEY_SERVICE = "service"
         private const val TAG_KEY_VERSION = "version"
         private const val TAG_KEY_BUILD_ID = "build_id"
