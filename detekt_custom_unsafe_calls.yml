@@ -41,7 +41,7 @@ datadog:
       - "android.view.Choreographer.getInstance():java.lang.IllegalStateException"
       - "android.view.Choreographer.postFrameCallback():java.lang.IllegalArgumentException"
       - "android.view.MotionEvent.obtain(android.view.MotionEvent):java.lang.IllegalArgumentException"
-      - "android.view.View.getLocationInWindow(kotlin.IntArray):java.lang.IllegalArgumentException"
+      - "android.view.View.getGlobalVisibleRect(android.graphics.Rect?):java.lang.NullPointerException"
       - "android.view.ViewPropertyAnimator.setDuration(kotlin.Long):java.lang.IllegalArgumentException"
       - "android.view.ViewTreeObserver.removeOnDrawListener(android.view.ViewTreeObserver.OnDrawListener?):java.lang.IllegalStateException"
       - "android.view.ViewTreeObserver.addOnDrawListener(android.view.ViewTreeObserver.OnDrawListener?):java.lang.IllegalStateException"
