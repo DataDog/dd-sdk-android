@@ -241,8 +241,7 @@ internal class RumFeature(
                 configuration.interactionPredicate,
                 composeActionTrackingStrategy = configuration.composeActionTrackingStrategy,
                 buildSdkVersionProvider,
-                sdkCore.internalLogger,
-                heatmapIdentifierRegistry
+                sdkCore.internalLogger
             )
         } else {
             NoOpUserActionTrackingStrategy()
@@ -867,16 +866,14 @@ internal class RumFeature(
             interactionPredicate: InteractionPredicate,
             composeActionTrackingStrategy: ActionTrackingStrategy,
             buildSdkVersionProvider: BuildSdkVersionProvider,
-            internalLogger: InternalLogger,
-            heatmapIdentifierRegistry: HeatmapIdentifierRegistry
+            internalLogger: InternalLogger
         ): UserActionTrackingStrategy {
             val gesturesTracker =
                 provideGestureTracker(
                     customProviders = touchTargetExtraAttributesProviders,
                     interactionPredicate = interactionPredicate,
                     composeActionTrackingStrategy = composeActionTrackingStrategy,
-                    internalLogger = internalLogger,
-                    heatmapIdentifierRegistry = heatmapIdentifierRegistry
+                    internalLogger = internalLogger
                 )
             return if (buildSdkVersionProvider.isAtLeastQ) {
                 UserActionTrackingStrategyApi29(gesturesTracker)
@@ -889,8 +886,7 @@ internal class RumFeature(
             customProviders: Array<ViewAttributesProvider>,
             interactionPredicate: InteractionPredicate,
             composeActionTrackingStrategy: ActionTrackingStrategy,
-            internalLogger: InternalLogger,
-            heatmapIdentifierRegistry: HeatmapIdentifierRegistry
+            internalLogger: InternalLogger
         ): DatadogGesturesTracker {
             val defaultProviders = arrayOf(JetpackViewAttributesProvider())
             val providers = customProviders + defaultProviders
@@ -898,8 +894,7 @@ internal class RumFeature(
                 providers,
                 interactionPredicate,
                 composeActionsTrackingStrategy = composeActionTrackingStrategy,
-                internalLogger = internalLogger,
-                heatmapIdentifierRegistry = heatmapIdentifierRegistry
+                internalLogger = internalLogger
             )
         }
 

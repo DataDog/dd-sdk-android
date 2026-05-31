@@ -7,7 +7,7 @@
 package com.datadog.android.rum.internal.domain.scope
 
 internal data class HeatmapActionData(
-    val targetIdentity: String,
+    val viewKey: Long,
     val positionX: Long,
     val positionY: Long,
     val targetWidth: Long?,

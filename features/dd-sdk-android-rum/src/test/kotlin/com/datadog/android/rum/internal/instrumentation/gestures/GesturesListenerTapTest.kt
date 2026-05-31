@@ -11,19 +11,15 @@ import android.content.res.Resources
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewParent
 import android.view.Window
 import androidx.compose.ui.platform.ComposeView
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.feature.Feature
-import com.datadog.android.internal.heatmaps.HeatmapIdentifier
 import com.datadog.android.internal.heatmaps.heatmapViewKey
 import com.datadog.android.internal.utils.toHexString
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.HeatmapActionData
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesListenerScrollSwipeTest.ScrollableListView
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -73,8 +69,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -144,8 +139,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -185,8 +179,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -231,8 +224,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -276,8 +268,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -314,8 +305,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -343,8 +333,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -392,8 +381,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
             internalLogger = mockInternalLogger,
-            composeActionTrackingStrategy = mockComposeActionTrackingStrategy,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            composeActionTrackingStrategy = mockComposeActionTrackingStrategy
         )
 
         // When
@@ -426,8 +414,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(mockDecorView, expectedResourceName)
@@ -469,8 +456,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -510,8 +496,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -533,8 +518,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             rumMonitor.mockSdkCore,
             WeakReference<Window>(null),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -587,8 +571,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             WeakReference(mockWindow),
             providers,
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
         // When
         testedListener.onSingleTapUp(mockEvent)
@@ -658,8 +641,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             WeakReference(mockWindow),
             providers,
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
         // When
         testedListener.onSingleTapUp(mockEvent)
@@ -716,8 +698,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             WeakReference(mockWindow),
             interactionPredicate = mockInteractionPredicate,
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -774,8 +755,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             WeakReference(mockWindow),
             interactionPredicate = mockInteractionPredicate,
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -844,25 +824,12 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         }
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(validTarget, expectedResourceName)
-        val fakeScreenName = forge.anAlphabeticalString()
-        val fakeViewIdentity = forge.anAlphabeticalString()
-        val fakeParent: ViewParent = mock()
-        whenever(validTarget.parent).thenReturn(fakeParent)
-        whenever(rumMonitor.mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME))
-            .thenReturn(mapOf(RumContext.VIEW_URL to fakeScreenName))
-        whenever(
-            mockHeatmapIdentifierRegistry.getHeatmapIdentifier(
-                heatmapViewKey(validTarget),
-                fakeScreenName
-            )
-        ).thenReturn(HeatmapIdentifier(fakeViewIdentity))
 
         testedListener = GesturesListener(
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -881,7 +848,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             any()
         )
         val capturedHeatmap = heatmapCaptor.firstValue
-        assertThat(capturedHeatmap.targetIdentity).isEqualTo(fakeViewIdentity)
+        assertThat(capturedHeatmap.viewKey).isEqualTo(heatmapViewKey(validTarget))
         assertThat(capturedHeatmap.positionX).isEqualTo(expectedXInTarget)
         assertThat(capturedHeatmap.positionY).isEqualTo(expectedYInTarget)
         assertThat(capturedHeatmap.targetWidth).isEqualTo(expectedTargetWidth)
@@ -920,113 +887,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
-        )
-
-        // When
-        testedListener.onSingleTapUp(mockEvent)
-
-        // Then
-        val attributesCaptor = argumentCaptor<Map<String, Any?>>()
-        verify(rumMonitor.mockInstance as AdvancedRumMonitor).addActionWithHeatmap(
-            eq(RumActionType.TAP),
-            eq(""),
-            isNull(),
-            attributesCaptor.capture()
-        )
-        assertThat(attributesCaptor.firstValue[RumAttributes.ACTION_TARGET_CLASS_NAME])
-            .isEqualTo(validTarget.javaClass.canonicalName)
-    }
-
-    @Test
-    fun `M not include heatmap attributes W tap { screen name not available }`(
-        forge: Forge
-    ) {
-        // Given
-        val mockEvent: MotionEvent = forge.getForgery()
-        val targetId = forge.anInt()
-        val validTarget: View = mockView(
-            id = targetId,
-            forEvent = mockEvent,
-            hitTest = true,
-            forge = forge,
-            clickable = true
-        )
-        mockDecorView = mockDecorView<ViewGroup>(
-            id = forge.anInt(),
-            forEvent = mockEvent,
-            hitTest = false,
-            forge = forge
-        ) {
-            whenever(it.childCount).thenReturn(1)
-            whenever(it.getChildAt(0)).thenReturn(validTarget)
-        }
-        val expectedResourceName = forge.anAlphabeticalString()
-        mockResourcesForTarget(validTarget, expectedResourceName)
-        whenever(rumMonitor.mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME))
-            .thenReturn(emptyMap())
-
-        testedListener = GesturesListener(
-            rumMonitor.mockSdkCore,
-            WeakReference(mockWindow),
-            contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
-        )
-
-        // When
-        testedListener.onSingleTapUp(mockEvent)
-
-        // Then
-        val attributesCaptor = argumentCaptor<Map<String, Any?>>()
-        verify(rumMonitor.mockInstance as AdvancedRumMonitor).addActionWithHeatmap(
-            eq(RumActionType.TAP),
-            eq(""),
-            isNull(),
-            attributesCaptor.capture()
-        )
-        assertThat(attributesCaptor.firstValue[RumAttributes.ACTION_TARGET_CLASS_NAME])
-            .isEqualTo(validTarget.javaClass.canonicalName)
-    }
-
-    @Test
-    fun `M not include heatmap attributes W tap { view not in heatmap registry }`(
-        forge: Forge
-    ) {
-        // Given
-        val mockEvent: MotionEvent = forge.getForgery()
-        val targetId = forge.anInt()
-        val validTarget: View = mockView(
-            id = targetId,
-            forEvent = mockEvent,
-            hitTest = true,
-            forge = forge,
-            clickable = true
-        )
-        mockDecorView = mockDecorView<ViewGroup>(
-            id = forge.anInt(),
-            forEvent = mockEvent,
-            hitTest = false,
-            forge = forge
-        ) {
-            whenever(it.childCount).thenReturn(1)
-            whenever(it.getChildAt(0)).thenReturn(validTarget)
-        }
-        val expectedResourceName = forge.anAlphabeticalString()
-        mockResourcesForTarget(validTarget, expectedResourceName)
-        val fakeScreenName = forge.anAlphabeticalString()
-        whenever(rumMonitor.mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME))
-            .thenReturn(mapOf(RumContext.VIEW_URL to fakeScreenName))
-        whenever(mockHeatmapIdentifierRegistry.getHeatmapIdentifier(any(), any()))
-            .thenReturn(null)
-
-        testedListener = GesturesListener(
-            rumMonitor.mockSdkCore,
-            WeakReference(mockWindow),
-            contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -1079,8 +940,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             contextRef = WeakReference(mockAppContext),
             androidActionTrackingStrategy = mockAndroidActionTrackingStrategy,
             composeActionTrackingStrategy = mockComposeActionTrackingStrategy,
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -1141,8 +1001,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             contextRef = WeakReference(mockAppContext),
             internalLogger = mockInternalLogger,
             androidActionTrackingStrategy = mockAndroidActionTrackingStrategy,
-            composeActionTrackingStrategy = mockComposeActionTrackingStrategy,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            composeActionTrackingStrategy = mockComposeActionTrackingStrategy
         )
 
         whenever(
@@ -1203,8 +1062,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When

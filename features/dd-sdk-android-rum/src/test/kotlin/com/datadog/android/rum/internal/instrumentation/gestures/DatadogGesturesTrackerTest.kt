@@ -11,7 +11,6 @@ import android.view.View
 import android.view.Window
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -66,9 +65,6 @@ internal class DatadogGesturesTrackerTest : ObjectTest<DatadogGesturesTracker>()
     @Mock
     lateinit var mockSdkCore: FeatureSdkCore
 
-    @Mock
-    lateinit var mockHeatmapIdentifierRegistry: HeatmapIdentifierRegistry
-
     @BeforeEach
     fun `set up`() {
         testedTracker =
@@ -76,8 +72,7 @@ internal class DatadogGesturesTrackerTest : ObjectTest<DatadogGesturesTracker>()
                 emptyArray(),
                 mockInteractionPredicate,
                 mockActionTrackingStrategy,
-                mockInternalLogger,
-                mockHeatmapIdentifierRegistry
+                mockInternalLogger
             )
         whenever(mockActivity.window).thenReturn(mockWindow)
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
@@ -88,8 +83,7 @@ internal class DatadogGesturesTrackerTest : ObjectTest<DatadogGesturesTracker>()
             forge.aList { StubViewAttributesProvider(anAlphabeticalString()) }.toTypedArray(),
             NoOpInteractionPredicate(),
             NoOpActionTrackingStrategy(),
-            mockInternalLogger,
-            mockHeatmapIdentifierRegistry
+            mockInternalLogger
         )
     }
 
@@ -104,8 +98,7 @@ internal class DatadogGesturesTrackerTest : ObjectTest<DatadogGesturesTracker>()
             }.toTypedArray(),
             NoOpInteractionPredicate(),
             NoOpActionTrackingStrategy(),
-            mockInternalLogger,
-            mockHeatmapIdentifierRegistry
+            mockInternalLogger
         )
     }
 
@@ -120,8 +113,7 @@ internal class DatadogGesturesTrackerTest : ObjectTest<DatadogGesturesTracker>()
             }.toTypedArray(),
             StubInteractionPredicate(),
             mockActionTrackingStrategy,
-            mockInternalLogger,
-            mockHeatmapIdentifierRegistry
+            mockInternalLogger
         )
     }
 

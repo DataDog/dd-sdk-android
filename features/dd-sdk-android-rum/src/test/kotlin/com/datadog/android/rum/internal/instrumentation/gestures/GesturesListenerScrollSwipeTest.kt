@@ -112,8 +112,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -184,8 +183,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -255,8 +253,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -339,8 +336,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -413,8 +409,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -470,8 +465,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -524,8 +518,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -588,8 +581,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
             internalLogger = mockInternalLogger,
-            composeActionTrackingStrategy = mockComposeActionTrackingStrategy,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            composeActionTrackingStrategy = mockComposeActionTrackingStrategy
         )
 
         // When
@@ -663,8 +655,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -742,8 +733,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -803,8 +793,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             WeakReference(mockWindow),
             interactionPredicate = mockInteractionPredicate,
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -867,8 +856,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             WeakReference(mockWindow),
             interactionPredicate = mockInteractionPredicate,
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -931,8 +919,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             WeakReference(mockWindow),
             interactionPredicate = mockInteractionPredicate,
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -1009,8 +996,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -1070,8 +1056,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
         testedListener.onUp(startDownEvent)
         testedListener.onDown(endUpEvent)
@@ -1116,8 +1101,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             contextRef = WeakReference(mockAppContext),
             androidActionTrackingStrategy = mockAndroidActionTrackingStrategy,
             composeActionTrackingStrategy = mockComposeActionTrackingStrategy,
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When
@@ -1194,8 +1178,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             contextRef = WeakReference(mockAppContext),
             internalLogger = mockInternalLogger,
             androidActionTrackingStrategy = mockAndroidActionTrackingStrategy,
-            composeActionTrackingStrategy = mockComposeActionTrackingStrategy,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            composeActionTrackingStrategy = mockComposeActionTrackingStrategy
         )
         stubStopMotionEvent(endUpEvent, startDownEvent, expectedDirection)
         whenever(
@@ -1267,8 +1250,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger,
-            heatmapIdentifierRegistry = mockHeatmapIdentifierRegistry
+            internalLogger = mockInternalLogger
         )
 
         // When

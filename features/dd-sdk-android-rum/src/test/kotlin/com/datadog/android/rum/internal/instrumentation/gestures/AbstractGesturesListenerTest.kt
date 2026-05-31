@@ -15,7 +15,6 @@ import android.view.View
 import android.view.Window
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -65,9 +64,6 @@ internal abstract class AbstractGesturesListenerTest {
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
-
-    @Mock
-    lateinit var mockHeatmapIdentifierRegistry: HeatmapIdentifierRegistry
 
     // region Tests
 

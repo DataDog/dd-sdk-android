@@ -14,7 +14,7 @@ internal class HeatmapActionDataForgeryFactory : ForgeryFactory<HeatmapActionDat
 
     override fun getForgery(forge: Forge): HeatmapActionData {
         return HeatmapActionData(
-            targetIdentity = forge.anAlphabeticalString(),
+            viewKey = forge.aLong(),
             positionX = forge.aLong(),
             positionY = forge.aLong(),
             targetWidth = forge.aNullable { aPositiveLong() },
