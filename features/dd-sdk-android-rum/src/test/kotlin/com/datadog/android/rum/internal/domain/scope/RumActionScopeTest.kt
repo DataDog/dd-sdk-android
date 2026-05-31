@@ -10,8 +10,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.feature.EventWriteScope
-import com.datadog.android.api.feature.Feature
-import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
@@ -24,7 +22,6 @@ import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.FeaturesContextResolver
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
@@ -3175,12 +3172,7 @@ internal class RumActionScopeTest {
         @LongForgery fakePosY: Long
     ) {
         // Given
-        val mockRumFeatureScope: FeatureScope = mock()
-        val mockRumFeature: RumFeature = mock()
         val mockHeatmapRegistry: HeatmapIdentifierRegistry = mock()
-        whenever(rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
-        whenever(mockRumFeatureScope.unwrap<RumFeature>()) doReturn mockRumFeature
-        whenever(mockRumFeature.heatmapIdentifierRegistry) doReturn mockHeatmapRegistry
         whenever(mockHeatmapRegistry.getHeatmapIdentifier(fakeViewKey, fakeParentContext.viewUrl.orEmpty()))
             .thenReturn(HeatmapIdentifier(fakeViewIdentity))
 
@@ -3206,7 +3198,8 @@ internal class RumActionScopeTest {
                 positionY = fakePosY,
                 targetWidth = fakeWidth,
                 targetHeight = fakeHeight
-            )
+            ),
+            heatmapIdentifierRegistry = mockHeatmapRegistry
         )
 
         // When
@@ -3238,12 +3231,7 @@ internal class RumActionScopeTest {
         @LongForgery fakePosY: Long
     ) {
         // Given
-        val mockRumFeatureScope: FeatureScope = mock()
-        val mockRumFeature: RumFeature = mock()
         val mockHeatmapRegistry: HeatmapIdentifierRegistry = mock()
-        whenever(rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
-        whenever(mockRumFeatureScope.unwrap<RumFeature>()) doReturn mockRumFeature
-        whenever(mockRumFeature.heatmapIdentifierRegistry) doReturn mockHeatmapRegistry
         whenever(mockHeatmapRegistry.getHeatmapIdentifier(any(), any())).thenReturn(null)
 
         testedScope = RumActionScope(
@@ -3268,7 +3256,56 @@ internal class RumActionScopeTest {
                 positionY = fakePosY,
                 targetWidth = fakeWidth,
                 targetHeight = fakeHeight
-            )
+            ),
+            heatmapIdentifierRegistry = mockHeatmapRegistry
+        )
+
+        // When
+        testedScope.handleEvent(
+            mockEvent(TEST_INACTIVITY_MS + 1),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue.dd.action).isNull()
+        }
+    }
+
+    @Test
+    fun `M omit dd action W sendAction() {registry is null}`(
+        @LongForgery fakeViewKey: Long,
+        @LongForgery fakePosX: Long,
+        @LongForgery fakePosY: Long
+    ) {
+        // Given — heatmapData is set but no registry is provided
+        testedScope = RumActionScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            waitForStop = false,
+            eventTime = fakeEventTime,
+            initialType = fakeType,
+            initialName = fakeName,
+            initialAttributes = fakeAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            inactivityThresholdMs = TEST_INACTIVITY_MS,
+            maxDurationMs = TEST_MAX_DURATION_MS,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = true,
+            sampleRate = fakeSampleRate,
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector,
+            heatmapData = HeatmapActionData(
+                viewKey = fakeViewKey,
+                positionX = fakePosX,
+                positionY = fakePosY,
+                targetWidth = null,
+                targetHeight = null
+            ),
+            heatmapIdentifierRegistry = null
         )
 
         // When

@@ -9,13 +9,12 @@ package com.datadog.android.rum.internal.domain.scope
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
-import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
@@ -47,7 +46,8 @@ internal class RumActionScope(
     internal val sampleRate: Float,
     private val rumSessionTypeOverride: RumSessionType?,
     private val insightsCollector: InsightsCollector,
-    private val heatmapData: HeatmapActionData? = null
+    internal val heatmapData: HeatmapActionData? = null,
+    private val heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null
 ) : RumScope {
 
     private val inactivityThresholdNs = TimeUnit.MILLISECONDS.toNanos(inactivityThresholdMs)
@@ -357,23 +357,7 @@ internal class RumActionScope(
                         sessionPrecondition = rumContext.sessionStartReason.toActionSessionPrecondition()
                     ),
                     configuration = ActionEvent.Configuration(sessionSampleRate = sampleRate),
-                    action = heatmapData?.let { data ->
-                        val identity = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
-                            ?.unwrap<RumFeature>()
-                            ?.heatmapIdentifierRegistry
-                            ?.getHeatmapIdentifier(data.viewKey, rumContext.viewUrl.orEmpty())
-                            ?.rawValue
-                        identity?.let { permanentId ->
-                            ActionEvent.DdAction(
-                                position = ActionEvent.Position(x = data.positionX, y = data.positionY),
-                                target = ActionEvent.DdActionTarget(
-                                    permanentId = permanentId,
-                                    width = data.targetWidth,
-                                    height = data.targetHeight
-                                )
-                            )
-                        }
-                    }
+                    action = heatmapData?.let { resolveHeatmapAction(it, rumContext.viewUrl.orEmpty()) }
                 ),
                 connectivity = networkInfo.toActionConnectivity(),
                 service = datadogContext.service,
@@ -398,6 +382,20 @@ internal class RumActionScope(
         sent = true
     }
 
+    private fun resolveHeatmapAction(data: HeatmapActionData, viewUrl: String): ActionEvent.DdAction? {
+        val permanentId = heatmapIdentifierRegistry
+            ?.getHeatmapIdentifier(data.viewKey, viewUrl)
+            ?.rawValue ?: return null
+        return ActionEvent.DdAction(
+            position = ActionEvent.Position(x = data.positionX, y = data.positionY),
+            target = ActionEvent.DdActionTarget(
+                permanentId = permanentId,
+                width = data.targetWidth,
+                height = data.targetHeight
+            )
+        )
+    }
+
     // endregion
 
     companion object {
@@ -414,7 +412,8 @@ internal class RumActionScope(
             trackFrustrations: Boolean,
             sampleRate: Float,
             rumSessionTypeOverride: RumSessionType?,
-            insightsCollector: InsightsCollector
+            insightsCollector: InsightsCollector,
+            heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null
         ): RumScope {
             return RumActionScope(
                 parentScope = parentScope,
@@ -430,7 +429,8 @@ internal class RumActionScope(
                 sampleRate = sampleRate,
                 rumSessionTypeOverride = rumSessionTypeOverride,
                 insightsCollector = insightsCollector,
-                heatmapData = event.heatmapData
+                heatmapData = event.heatmapData,
+                heatmapIdentifierRegistry = heatmapIdentifierRegistry
             )
         }
     }

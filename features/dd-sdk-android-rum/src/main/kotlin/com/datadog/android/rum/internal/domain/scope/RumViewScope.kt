@@ -18,6 +18,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.internal.attributes.LocalAttribute
 import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
+import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
@@ -89,7 +90,8 @@ internal open class RumViewScope(
     private val accessibilitySnapshotManager: AccessibilitySnapshotManager,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
-    private val insightsCollector: InsightsCollector
+    private val insightsCollector: InsightsCollector,
+    private val heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null
 ) : RumScope {
 
     internal val url = key.url.replace('.', '/')
@@ -472,7 +474,8 @@ internal open class RumViewScope(
             accessibilitySnapshotManager = accessibilitySnapshotManager,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
-            insightsCollector = insightsCollector
+            insightsCollector = insightsCollector,
+            heatmapIdentifierRegistry = heatmapIdentifierRegistry
         )
     }
 
@@ -608,7 +611,8 @@ internal open class RumViewScope(
                     trackFrustrations = trackFrustrations,
                     sampleRate = sampleRate,
                     rumSessionTypeOverride = rumSessionTypeOverride,
-                    insightsCollector = insightsCollector
+                    insightsCollector = insightsCollector,
+                    heatmapIdentifierRegistry = heatmapIdentifierRegistry
                 )
                 pendingActionCount++
                 customActionScope.handleEvent(RumRawEvent.SendCustomActionNow(), datadogContext, writeScope, writer)
@@ -632,7 +636,8 @@ internal open class RumViewScope(
             trackFrustrations = trackFrustrations,
             sampleRate = sampleRate,
             rumSessionTypeOverride = rumSessionTypeOverride,
-            insightsCollector = insightsCollector
+            insightsCollector = insightsCollector,
+            heatmapIdentifierRegistry = heatmapIdentifierRegistry
         )
         pendingActionCount++
     }
@@ -1676,7 +1681,8 @@ internal open class RumViewScope(
             accessibilitySnapshotManager: AccessibilitySnapshotManager,
             batteryInfoProvider: InfoProvider<BatteryInfo>,
             displayInfoProvider: InfoProvider<DisplayInfo>,
-            insightsCollector: InsightsCollector
+            insightsCollector: InsightsCollector,
+            heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null
         ): RumViewScope {
             val networkSettledMetricResolver = NetworkSettledMetricResolver(
                 networkSettledResourceIdentifier,
@@ -1713,7 +1719,8 @@ internal open class RumViewScope(
                 accessibilitySnapshotManager = accessibilitySnapshotManager,
                 batteryInfoProvider = batteryInfoProvider,
                 displayInfoProvider = displayInfoProvider,
-                insightsCollector = insightsCollector
+                insightsCollector = insightsCollector,
+                heatmapIdentifierRegistry = heatmapIdentifierRegistry
             )
         }
 

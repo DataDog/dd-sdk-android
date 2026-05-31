@@ -78,9 +78,9 @@ internal class HeatmapViewKeyTest {
         // We wire fakeViewA's parent to fakeParentB and fakeViewB's parent to fakeParentA,
         // so the two keys use the same pair of identity hashes but in opposite roles.
         //
-        // Note: the assertion relies on the four mock objects having distinct identity hashes.
-        // Two mocks could theoretically collide (probability < 1/2^32 per run), which would make
-        // the assertion trivially true but for the wrong reason. This is considered acceptable.
+        // Note: the two keys are equal if and only if 31*H(viewA) + H(parentB) == 31*H(viewB) + H(parentA),
+        // i.e. when the identity hashes satisfy a specific linear equation. This holds with
+        // probability ~1/2^32 per run, which is considered acceptable.
         val fakeViewA: View = mock()
         val fakeViewB: View = mock()
         val fakeParentA: ViewParent = mock()

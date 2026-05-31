@@ -18,6 +18,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
@@ -2889,6 +2890,33 @@ internal class RumViewScopeTest {
         assertThat(actionScope.actionAttributes).containsAllEntriesOf(attributes)
         assertThat(actionScope.parentScope).isSameAs(testedScope)
         assertThat(actionScope.sampleRate).isCloseTo(fakeSampleRate, Assertions.offset(0.001f))
+    }
+
+    @Test
+    fun `M pass heatmapData through W handleEvent(StartAction) {heatmapData set}`(
+        @Forgery type: RumActionType,
+        @StringForgery name: String,
+        @BoolForgery waitForStop: Boolean,
+        @Forgery fakeHeatmapData: HeatmapActionData,
+        forge: Forge
+    ) {
+        // Given
+        val mockHeatmapRegistry: HeatmapIdentifierRegistry = mock()
+        testedScope = newRumViewScope(heatmapIdentifierRegistry = mockHeatmapRegistry)
+        val fakeStartActionEvent = RumRawEvent.StartAction(
+            type = type,
+            name = name,
+            waitForStop = waitForStop,
+            heatmapData = fakeHeatmapData,
+            attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        )
+
+        // When
+        testedScope.handleEvent(fakeStartActionEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        val actionScope = testedScope.activeActionScope as RumActionScope
+        assertThat(actionScope.heatmapData).isEqualTo(fakeHeatmapData)
     }
 
     @ParameterizedTest
@@ -9461,7 +9489,8 @@ internal class RumViewScopeTest {
             mockInteractionToNextViewMetricResolver,
         networkSettledMetricResolver: NetworkSettledMetricResolver = mockNetworkSettledMetricResolver,
         viewEndedMetricDispatcher: ViewMetricDispatcher = mockViewEndedMetricDispatcher,
-        slowFramesMetricListener: SlowFramesListener = mockSlowFramesListener
+        slowFramesMetricListener: SlowFramesListener = mockSlowFramesListener,
+        heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null
     ) = RumViewScope(
         parentScope = parentScope,
         sdkCore = sdkCore,
@@ -9486,7 +9515,8 @@ internal class RumViewScopeTest {
         accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
         batteryInfoProvider = mockBatteryInfoProvider,
         displayInfoProvider = mockDisplayInfoProvider,
-        insightsCollector = mockInsightsCollector
+        insightsCollector = mockInsightsCollector,
+        heatmapIdentifierRegistry = heatmapIdentifierRegistry
     )
 
     data class RumRawEventData(val event: RumRawEvent, val viewKey: RumScopeKey)

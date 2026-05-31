@@ -29,6 +29,10 @@ internal class HeatmapIdentifierStore : HeatmapIdentifierRegistry {
     private var snapshotScreenName: String? = null
     private val identifiers: MutableMap<Long, HeatmapIdentifier> = mutableMapOf()
 
+    // Contract: both `screenName` (write side) and `currentScreenName` (read side) must be the
+    // raw `rumContext.viewUrl` string without any normalization (no trailing slashes, no encoding).
+    // A mismatch — e.g. from different formatting — silently returns null on every lookup.
+
     override fun setHeatmapIdentifiers(identifiers: Map<Long, HeatmapIdentifier>, screenName: String) {
         lock.write {
             this.snapshotScreenName = screenName
