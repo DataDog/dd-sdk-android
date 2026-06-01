@@ -6,6 +6,7 @@ datadog:
       - "android.app.Activity.getSystemService(kotlin.String)"
       - "android.app.Activity.hashCode()"
       - "android.app.ActivityManager.getHistoricalProcessStartReasons(kotlin.Int)"
+      - "android.app.Application.getProcessName()"
       - "android.app.Application.registerActivityLifecycleCallbacks(android.app.Application.ActivityLifecycleCallbacks?)"
       - "android.app.Application.unregisterActivityLifecycleCallbacks(android.app.Application.ActivityLifecycleCallbacks?)"
       - "android.app.FragmentManager.FragmentLifecycleCallbacks.onFragmentActivityCreated(android.app.FragmentManager?, android.app.Fragment?, android.os.Bundle?)"
