@@ -78,6 +78,10 @@ include(":sample:vendor-lib")
 include(":sample:benchmark")
 include(":sample:automotive")
 
+// BENCHMARKS
+include(":benchmarks:macro")
+include(":benchmarks:micro")
+
 // TOOLCHAIN
 include(":tools:detekt")
 include(":tools:unit")

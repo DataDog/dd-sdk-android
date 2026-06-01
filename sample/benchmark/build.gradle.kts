@@ -79,6 +79,13 @@ android {
                 signingConfig = signingConfigs.findByName("debug")
             }
         }
+
+        create("benchmark") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+            isDebuggable = false
+        }
     }
 }
 
@@ -123,6 +130,7 @@ dependencies {
     implementation(project(":integrations:dd-sdk-android-glide"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))
     implementation(project(":tools:benchmark"))
+    implementation(libs.androidXProfileInstaller)
 
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)

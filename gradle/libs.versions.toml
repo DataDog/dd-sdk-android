@@ -101,6 +101,12 @@ openFeature = "0.6.2"
 ktor = "2.3.13"
 ktorServer = "3.0.0-rc-1"
 
+# Benchmarks
+androidXBenchmarkMacro = "1.4.1"
+androidXBenchmarkMicro = "1.3.4"
+androidXProfileInstaller = "1.4.1"
+androidXUiAutomator = "2.3.0"
+
 # Otel
 jctools = "3.3.0"
 openTelemetry = "1.40.0"
@@ -278,6 +284,12 @@ ktorContentNegotiation = { module = "io.ktor:ktor-client-content-negotiation", v
 ktorSerializationKotlinxJson = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 ktorClientMock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 
+# Benchmarks
+androidXBenchmarkMacroJunit4 = { module = "androidx.benchmark:benchmark-macro-junit4", version.ref = "androidXBenchmarkMacro" }
+androidXBenchmarkJunit4 = { module = "androidx.benchmark:benchmark-junit4", version.ref = "androidXBenchmarkMicro" }
+androidXProfileInstaller = { module = "androidx.profileinstaller:profileinstaller", version.ref = "androidXProfileInstaller" }
+androidXUiAutomator = { module = "androidx.test.uiautomator:uiautomator", version.ref = "androidXUiAutomator" }
+
 # Otel
 jctools = { module = "org.jctools:jctools-core", version.ref = "jctools" }
 openTelemetryApi = { module = "io.opentelemetry:opentelemetry-api", version.ref = "openTelemetry" }
@@ -389,3 +401,4 @@ sqlDelightGradlePlugin = { id = "com.squareup.sqldelight", version.ref = "sqlDel
 binaryCompatibilityGradlePlugin = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibility" }
 kotlinxSerializationPlugin = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 koverPlugin = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+androidXBenchmarkPlugin = { id = "androidx.benchmark", version.ref = "androidXBenchmarkMicro" }
