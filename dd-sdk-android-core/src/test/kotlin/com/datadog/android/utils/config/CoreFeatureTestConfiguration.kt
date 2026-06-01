@@ -30,7 +30,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.io.File
-import java.lang.ref.WeakReference
 import java.nio.file.Files
 import java.util.Locale
 import java.util.UUID
@@ -59,7 +58,6 @@ internal class CoreFeatureTestConfiguration<T : Context>(
     lateinit var mockPersistenceExecutor: FlushableExecutorService
     lateinit var mockContextExecutorService: ThreadPoolExecutor
     lateinit var mockKronosClock: KronosClock
-    lateinit var mockContextRef: WeakReference<Context?>
     lateinit var mockFirstPartyHostHeaderTypeResolver: DefaultFirstPartyHostHeaderTypeResolver
 
     lateinit var mockTimeProvider: TimeProvider
@@ -111,8 +109,6 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         }
 
         mockKronosClock = mock()
-        // Mockito cannot mock WeakReference by some reason
-        mockContextRef = WeakReference(appContext.mockInstance)
         mockFirstPartyHostHeaderTypeResolver = mock()
 
         mockTimeProvider = mock()
@@ -147,7 +143,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         whenever(mockInstance.uploadExecutorService) doReturn mockUploadExecutor
         whenever(mockInstance.callFactory) doReturn callFactory
         whenever(mockInstance.kronosClock) doReturn mockKronosClock
-        whenever(mockInstance.contextRef) doReturn mockContextRef
+        whenever(mockInstance.appContext) doReturn appContext.mockInstance
         whenever(mockInstance.firstPartyHostHeaderTypeResolver) doReturn mockFirstPartyHostHeaderTypeResolver
 
         whenever(mockInstance.timeProvider) doReturn mockTimeProvider
