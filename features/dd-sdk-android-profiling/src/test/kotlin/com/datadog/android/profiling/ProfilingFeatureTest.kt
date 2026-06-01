@@ -97,9 +97,6 @@ internal class ProfilingFeatureTest {
     private lateinit var mockProfiler: Profiler
 
     @Mock
-    private lateinit var mockProfilingFeatureScope: FeatureScope
-
-    @Mock
     private lateinit var mockRumFeatureScope: FeatureScope
 
     @Mock
@@ -559,22 +556,20 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
-    fun `M skip writing W continuous profiling result received {no RUM events}`(
+    fun `M write with empty events W continuous profiling result received {no RUM events}`(
         @Forgery fakePerfettoResult: PerfettoResult
     ) {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        testedFeature.dataWriter = mockDataWriter
         whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
-        whenever(mockSdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)) doReturn mockProfilingFeatureScope
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
         verify(mockProfiler).registerProfilingCallback(
             eq(mockContext),
             eq(fakeInstanceName),
             callbackCaptor.capture()
         )
-        testedFeature.onReceive(fakeTTID)
 
         // When
         callbackCaptor.firstValue.onSuccess(
@@ -582,7 +577,23 @@ internal class ProfilingFeatureTest {
         )
 
         // Then
-        verifyNoInteractions(mockDataWriter)
+        verify(mockDataWriter).write(
+            profilingResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.CONTINUOUS),
+            longTasks = emptyList(),
+            anrEvents = emptyList(),
+            vitalEvents = emptyList()
+        )
+        val logCaptor = argumentCaptor<() -> String>()
+        verify(mockInternalLogger, atLeastOnce()).log(
+            eq(InternalLogger.Level.DEBUG),
+            eq(InternalLogger.Target.USER),
+            logCaptor.capture(),
+            isNull(),
+            eq(false),
+            isNull()
+        )
+        assertThat(logCaptor.allValues.map { it.invoke() })
+            .contains("Continuous profiling result not uploaded: no pending RUM events.")
     }
 
     @Test

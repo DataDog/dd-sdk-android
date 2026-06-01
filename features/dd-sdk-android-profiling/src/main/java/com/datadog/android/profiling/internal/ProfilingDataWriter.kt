@@ -6,6 +6,7 @@
 
 package com.datadog.android.profiling.internal
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -32,32 +33,31 @@ internal class ProfilingDataWriter(
         anrEvents: List<ProfilerEvent.RumAnrEvent>,
         vitalEvents: List<ProfilerEvent.RumVitalEvent>
     ) {
-        writeWithContext { context ->
-            buildRawBatchEvent(
-                context = context,
-                profilingResult = profilingResult,
-                longTaskEvents = longTasks,
-                anrEvents = anrEvents,
-                vitalEvents = vitalEvents
-            )
+        val feature = sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)
+        if (feature == null) {
+            safeDelete(profilingResult.resultFilePath)
+            return
         }
-    }
-
-    private fun writeWithContext(rawBatchEventBuilder: (DatadogContext) -> RawBatchEvent?) {
-        sdkCore.getFeature(Feature.Companion.PROFILING_FEATURE_NAME)
-            ?.withWriteContext { context, writeScope ->
-                writeScope { writer ->
-                    rawBatchEventBuilder(context)?.let {
-                        synchronized(this) {
-                            writer.write(
-                                event = it,
-                                batchMetadata = null,
-                                eventType = EventType.DEFAULT
-                            )
-                        }
+        feature.withWriteContext { context, writeScope ->
+            writeScope { writer ->
+                synchronized(this) {
+                    buildRawBatchEvent(
+                        context = context,
+                        profilingResult = profilingResult,
+                        longTaskEvents = longTasks,
+                        anrEvents = anrEvents,
+                        vitalEvents = vitalEvents
+                    )?.let {
+                        writer.write(
+                            event = it,
+                            batchMetadata = null,
+                            eventType = EventType.DEFAULT
+                        )
                     }
+                    safeDelete(profilingResult.resultFilePath)
                 }
             }
+        }
     }
 
     private fun buildRawBatchEvent(
@@ -210,7 +210,29 @@ internal class ProfilingDataWriter(
         return File(profilingPath).readBytesSafe(internalLogger = sdkCore.internalLogger)
     }
 
+    private fun safeDelete(path: String) {
+        try {
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            val deleted = File(path).delete()
+            if (!deleted) {
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.MAINTAINER,
+                    { LOG_FILE_DELETE_FAILED.format(path) }
+                )
+            }
+        } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                { LOG_FILE_DELETE_FAILED.format(path) },
+                t
+            )
+        }
+    }
+
     companion object {
+        private const val LOG_FILE_DELETE_FAILED = "Failed to delete Perfetto trace file: %s"
         private const val TAG_KEY_SERVICE = "service"
         private const val TAG_KEY_VERSION = "version"
         private const val TAG_KEY_BUILD_ID = "build_id"
