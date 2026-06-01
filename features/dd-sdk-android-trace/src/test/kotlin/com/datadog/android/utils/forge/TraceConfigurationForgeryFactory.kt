@@ -16,7 +16,8 @@ class TraceConfigurationForgeryFactory : ForgeryFactory<TraceConfiguration> {
         return TraceConfiguration(
             customEndpointUrl = forge.aNullable { aStringMatching("https://[a-z]+\\.com") },
             eventMapper = mock(),
-            networkInfoEnabled = forge.aBool()
+            networkInfoEnabled = forge.aBool(),
+            statsComputationEnabled = forge.aBool()
         )
     }
 }
