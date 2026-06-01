@@ -13,10 +13,13 @@ import android.view.ViewGroup
 import android.view.Window
 import androidx.core.view.isVisible
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.internal.heatmaps.heatmapViewKey
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.internal.domain.scope.HeatmapActionData
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -27,10 +30,11 @@ import java.lang.ref.Reference
 import java.lang.ref.WeakReference
 import java.util.LinkedList
 import kotlin.math.abs
+import kotlin.math.roundToLong
 
 @Suppress("TooManyFunctions")
 internal class GesturesListener(
-    private val sdkCore: SdkCore,
+    private val sdkCore: FeatureSdkCore,
     private val windowReference: WeakReference<Window>,
     private val attributesProviders: Array<ViewAttributesProvider> = emptyArray(),
     private val interactionPredicate: InteractionPredicate = NoOpInteractionPredicate(),
@@ -45,6 +49,8 @@ internal class GesturesListener(
     private var scrollTargetReference: ViewTarget? = null
     private var onTouchDownXPos = 0f
     private var onTouchDownYPos = 0f
+
+    private val tapLocationBuffer = IntArray(2)
 
     // region GesturesListener
 
@@ -226,7 +232,7 @@ internal class GesturesListener(
                 onUpEvent.y
             )
             downTarget?.takeIf { it == upTarget }?.let { target ->
-                sendTapEventWithTarget(target)
+                sendTapEventWithTarget(target, onUpEvent.x, onUpEvent.y)
             }
         }
     }
@@ -257,29 +263,44 @@ internal class GesturesListener(
     private fun handleTapUp(decorView: View?, e: MotionEvent) {
         if (decorView != null) {
             findTarget(decorView, e.x, e.y)?.let { target ->
-                sendTapEventWithTarget(target)
+                sendTapEventWithTarget(target, e.x, e.y)
             }
         }
     }
 
-    private fun sendTapEventWithTarget(target: ViewTarget) {
+    private fun sendTapEventWithTarget(target: ViewTarget, touchX: Float, touchY: Float) {
         val attributes = mutableMapOf<String, Any?>()
+        var heatmapData: HeatmapActionData? = null
         target.viewRef.get()?.let { view ->
-            val targetId: String = contextRef.get().resourceIdName(view.id)
-            attributes[RumAttributes.ACTION_TARGET_CLASS_NAME] = view.targetClassName()
-            attributes[RumAttributes.ACTION_TARGET_RESOURCE_ID] = targetId
-            attributesProviders.forEach {
-                it.extractAttributes(view, attributes)
+            addViewAttributes(view, attributes)
+
+            if (view.isAttachedToWindow) {
+                @Suppress("UnsafeThirdPartyFunctionCall") // tapLocationBuffer is non-null with exactly 2 elements
+                view.getLocationInWindow(tapLocationBuffer)
+                // Read density fresh per tap: it can change at runtime on foldables or when
+                // the user adjusts display size, so caching it as a field would be incorrect.
+                val density = view.resources.displayMetrics.density
+
+                heatmapData = HeatmapActionData(
+                    viewKey = heatmapViewKey(view),
+                    positionX = ((touchX - tapLocationBuffer[0]) / density).roundToLong(),
+                    positionY = ((touchY - tapLocationBuffer[1]) / density).roundToLong(),
+                    targetWidth = (view.width / density).roundToLong(),
+                    targetHeight = (view.height / density).roundToLong()
+                )
             }
         }
         target.node?.let {
             attributes.putAll(it.customAttributes)
         }
-        GlobalRumMonitor.get(sdkCore).addAction(
+        val rumMonitor = GlobalRumMonitor.get(sdkCore)
+        val targetName = resolveViewTargetName(interactionPredicate, target)
+        (rumMonitor as? AdvancedRumMonitor)?.addActionWithHeatmap(
             RumActionType.TAP,
-            resolveViewTargetName(interactionPredicate, target),
+            targetName,
+            heatmapData,
             attributes
-        )
+        ) ?: rumMonitor.addAction(RumActionType.TAP, targetName, attributes)
     }
 
     private fun resolveAttributes(
@@ -288,12 +309,7 @@ internal class GesturesListener(
     ): MutableMap<String, Any?> {
         val attributes = mutableMapOf<String, Any?>()
         scrollTarget.viewRef.get()?.let { view ->
-            val targetId: String = contextRef.get().resourceIdName(view.id)
-            attributes[RumAttributes.ACTION_TARGET_CLASS_NAME] = view.targetClassName()
-            attributes[RumAttributes.ACTION_TARGET_RESOURCE_ID] = targetId
-            attributesProviders.forEach {
-                it.extractAttributes(view, attributes)
-            }
+            addViewAttributes(view, attributes)
         }
         scrollTarget.node?.let {
             attributes.putAll(it.customAttributes)
@@ -303,6 +319,15 @@ internal class GesturesListener(
             attributes[RumAttributes.ACTION_GESTURE_DIRECTION] = gestureDirection
         }
         return attributes
+    }
+
+    private fun addViewAttributes(view: View, attributes: MutableMap<String, Any?>) {
+        val targetId: String = contextRef.get().resourceIdName(view.id)
+        attributes[RumAttributes.ACTION_TARGET_CLASS_NAME] = view.targetClassName()
+        attributes[RumAttributes.ACTION_TARGET_RESOURCE_ID] = targetId
+        attributesProviders.forEach {
+            it.extractAttributes(view, attributes)
+        }
     }
 
     private fun resolveGestureDirection(endEvent: MotionEvent): String {

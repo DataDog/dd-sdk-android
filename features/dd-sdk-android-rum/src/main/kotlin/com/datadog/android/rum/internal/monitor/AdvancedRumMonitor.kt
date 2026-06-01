@@ -9,10 +9,12 @@ package com.datadog.android.rum.internal.monitor
 import android.app.Activity
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.internal.debug.RumDebugListener
+import com.datadog.android.rum.internal.domain.scope.HeatmapActionData
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.tools.annotation.NoOpImplementation
@@ -27,6 +29,13 @@ internal interface AdvancedRumMonitor : RumMonitor, AdvancedNetworkRumMonitor {
     fun resetSession()
 
     fun start()
+
+    fun addActionWithHeatmap(
+        type: RumActionType,
+        name: String,
+        heatmapData: HeatmapActionData?,
+        attributes: Map<String, Any?>
+    )
 
     fun sendWebViewEvent()
 

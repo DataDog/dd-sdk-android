@@ -42,13 +42,18 @@ internal fun Forge.stopViewEvent(): RumRawEvent.StopView {
     )
 }
 
-internal fun Forge.startActionEvent(continuous: Boolean? = null, eventTime: Time = Time()): RumRawEvent.StartAction {
+internal fun Forge.startActionEvent(
+    continuous: Boolean? = null,
+    eventTime: Time = Time(),
+    heatmapData: HeatmapActionData? = null
+): RumRawEvent.StartAction {
     return RumRawEvent.StartAction(
         type = aValueFrom(RumActionType::class.java),
         name = anAlphabeticalString(),
         waitForStop = continuous ?: aBool(),
-        attributes = exhaustiveAttributes(),
-        eventTime = eventTime
+        heatmapData = heatmapData,
+        eventTime = eventTime,
+        attributes = exhaustiveAttributes()
     )
 }
 

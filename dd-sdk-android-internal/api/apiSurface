@@ -69,6 +69,10 @@ interface com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
   fun getHeatmapIdentifier(Long, String): HeatmapIdentifier?
   companion object 
     fun create(): HeatmapIdentifierRegistry
+interface com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistryProvider
+  val heatmapIdentifierRegistry: HeatmapIdentifierRegistry
+fun heatmapViewKey(android.view.View): Long
+fun android.view.View.isValidTapTarget(): Boolean
 class com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor : android.app.Application.ActivityLifecycleCallbacks
   constructor(Callback)
   val activitiesResumedCounter: java.util.concurrent.atomic.AtomicInteger

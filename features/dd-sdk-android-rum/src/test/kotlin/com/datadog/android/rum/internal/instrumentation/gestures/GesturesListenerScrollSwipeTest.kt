@@ -17,6 +17,7 @@ import androidx.core.view.ScrollingView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.Node
@@ -26,6 +27,7 @@ import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -36,6 +38,8 @@ import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
@@ -416,8 +420,17 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener.onUp(endUpEvent)
 
         // Then
-        verify(rumMonitor.mockInstance)
-            .addAction(RumActionType.TAP, "", expectedStartAttributes)
+        val attributesCaptor = argumentCaptor<Map<String, Any?>>()
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor).addActionWithHeatmap(
+            eq(RumActionType.TAP),
+            eq(""),
+            anyOrNull(),
+            attributesCaptor.capture()
+        )
+        assertThat(attributesCaptor.firstValue[RumAttributes.ACTION_TARGET_CLASS_NAME])
+            .isEqualTo(expectedStartAttributes[RumAttributes.ACTION_TARGET_CLASS_NAME])
+        assertThat(attributesCaptor.firstValue[RumAttributes.ACTION_TARGET_RESOURCE_ID])
+            .isEqualTo(expectedStartAttributes[RumAttributes.ACTION_TARGET_RESOURCE_ID])
         verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
@@ -1202,6 +1215,60 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
                 eq(expectedStopAttributes)
             )
         }
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
+    }
+
+    @Test
+    fun `M send scroll actions W onScroll() { registry returns null }`(
+        forge: Forge
+    ) {
+        // Given
+        val startDownEvent: MotionEvent = forge.getForgery()
+        val scrollEvent: MotionEvent = forge.getForgery()
+        val endUpEvent: MotionEvent = forge.getForgery()
+        val expectedDirection = GesturesListener.SCROLL_DIRECTION_DOWN
+        stubStopMotionEvent(endUpEvent, startDownEvent, expectedDirection)
+
+        val scrollingTarget: ScrollableView = mockView(
+            id = forge.anInt(),
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        )
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(scrollingTarget)
+        }
+        val expectedResourceName = forge.anAlphabeticalString()
+        mockResourcesForTarget(scrollingTarget, expectedResourceName)
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
+        )
+
+        // When
+        testedListener.onDown(startDownEvent)
+        testedListener.onScroll(startDownEvent, scrollEvent, forge.aFloat(), forge.aFloat())
+        testedListener.onUp(endUpEvent)
+
+        // Then — scroll uses the public startAction API, not addActionWithHeatmap.
+        verify(rumMonitor.mockInstance).startAction(
+            eq(RumActionType.SCROLL),
+            any(),
+            any()
+        )
+        verify(rumMonitor.mockInstance).stopAction(
+            eq(RumActionType.SCROLL),
+            any(),
+            any()
+        )
         verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 

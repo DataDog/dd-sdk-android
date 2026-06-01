@@ -11,6 +11,7 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
@@ -28,7 +29,7 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class RumActionScope(
     override val parentScope: RumScope,
     private val sdkCore: InternalSdkCore,
@@ -44,7 +45,9 @@ internal class RumActionScope(
     private val trackFrustrations: Boolean,
     internal val sampleRate: Float,
     private val rumSessionTypeOverride: RumSessionType?,
-    private val insightsCollector: InsightsCollector
+    private val insightsCollector: InsightsCollector,
+    internal val heatmapData: HeatmapActionData? = null,
+    private val heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null
 ) : RumScope {
 
     private val inactivityThresholdNs = TimeUnit.MILLISECONDS.toNanos(inactivityThresholdMs)
@@ -71,7 +74,7 @@ internal class RumActionScope(
     private var sent = false
     internal var stopped = false
 
-    // endregion
+    // region RumScope
 
     @WorkerThread
     override fun handleEvent(
@@ -276,7 +279,6 @@ internal class RumActionScope(
                 datadogContext,
                 rumContext.viewId.orEmpty()
             )
-
             insightsCollector.onAction()
             ActionEvent(
                 date = eventTimestamp,
@@ -354,7 +356,8 @@ internal class RumActionScope(
                     session = ActionEvent.DdSession(
                         sessionPrecondition = rumContext.sessionStartReason.toActionSessionPrecondition()
                     ),
-                    configuration = ActionEvent.Configuration(sessionSampleRate = sampleRate)
+                    configuration = ActionEvent.Configuration(sessionSampleRate = sampleRate),
+                    action = heatmapData?.let { resolveHeatmapAction(it, rumContext.viewUrl.orEmpty()) }
                 ),
                 connectivity = networkInfo.toActionConnectivity(),
                 service = datadogContext.service,
@@ -379,6 +382,20 @@ internal class RumActionScope(
         sent = true
     }
 
+    private fun resolveHeatmapAction(data: HeatmapActionData, viewUrl: String): ActionEvent.DdAction? {
+        val permanentId = heatmapIdentifierRegistry
+            ?.getHeatmapIdentifier(data.viewKey, viewUrl)
+            ?.rawValue ?: return null
+        return ActionEvent.DdAction(
+            position = ActionEvent.Position(x = data.positionX, y = data.positionY),
+            target = ActionEvent.DdActionTarget(
+                permanentId = permanentId,
+                width = data.targetWidth,
+                height = data.targetHeight
+            )
+        )
+    }
+
     // endregion
 
     companion object {
@@ -395,7 +412,8 @@ internal class RumActionScope(
             trackFrustrations: Boolean,
             sampleRate: Float,
             rumSessionTypeOverride: RumSessionType?,
-            insightsCollector: InsightsCollector
+            insightsCollector: InsightsCollector,
+            heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null
         ): RumScope {
             return RumActionScope(
                 parentScope = parentScope,
@@ -410,7 +428,9 @@ internal class RumActionScope(
                 trackFrustrations = trackFrustrations,
                 sampleRate = sampleRate,
                 rumSessionTypeOverride = rumSessionTypeOverride,
-                insightsCollector = insightsCollector
+                insightsCollector = insightsCollector,
+                heatmapData = event.heatmapData,
+                heatmapIdentifierRegistry = heatmapIdentifierRegistry
             )
         }
     }
