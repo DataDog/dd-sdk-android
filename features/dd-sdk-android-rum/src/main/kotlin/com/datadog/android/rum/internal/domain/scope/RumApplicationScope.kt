@@ -57,7 +57,7 @@ internal class RumApplicationScope(
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
     private val insightsCollector: InsightsCollector,
-    private val heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null
+    private val heatmapIdentifierRegistry: HeatmapIdentifierRegistry?
 ) : RumScope, RumViewChangedListener {
 
     override val parentScope: RumScope? = null

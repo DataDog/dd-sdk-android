@@ -62,7 +62,7 @@ internal class RumSessionScope(
     rumSessionTypeOverride: RumSessionType?,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
     insightsCollector: InsightsCollector,
-    heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null
+    heatmapIdentifierRegistry: HeatmapIdentifierRegistry?
 ) : RumScope {
 
     internal var sessionId = RumContext.NULL_UUID

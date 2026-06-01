@@ -62,7 +62,7 @@ internal class RumViewManagerScope(
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
     private val insightsCollector: InsightsCollector,
-    private val heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null
+    private val heatmapIdentifierRegistry: HeatmapIdentifierRegistry?
 ) : RumScope {
 
     private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver =

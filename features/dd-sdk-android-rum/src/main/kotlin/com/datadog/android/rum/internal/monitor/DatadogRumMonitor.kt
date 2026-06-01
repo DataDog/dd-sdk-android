@@ -108,7 +108,7 @@ internal class DatadogRumMonitor(
     displayInfoProvider: InfoProvider<DisplayInfo>,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
     insightsCollector: InsightsCollector,
-    heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null
+    heatmapIdentifierRegistry: HeatmapIdentifierRegistry?
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope = RumApplicationScope(

@@ -301,7 +301,8 @@ internal class DatadogRumMonitorTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            heatmapIdentifierRegistry = null
         )
         testedMonitor.rootScope = mockApplicationScope
     }
@@ -333,7 +334,8 @@ internal class DatadogRumMonitorTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            heatmapIdentifierRegistry = null
         )
 
         // When
@@ -408,7 +410,8 @@ internal class DatadogRumMonitorTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            heatmapIdentifierRegistry = null
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -451,7 +454,8 @@ internal class DatadogRumMonitorTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            heatmapIdentifierRegistry = null
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -2069,7 +2073,8 @@ internal class DatadogRumMonitorTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            heatmapIdentifierRegistry = null
         )
 
         // When
@@ -2109,7 +2114,8 @@ internal class DatadogRumMonitorTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            heatmapIdentifierRegistry = null
         )
 
         // When
@@ -2150,7 +2156,8 @@ internal class DatadogRumMonitorTest {
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionTypeOverride = null,
             rumSessionScopeStartupManagerFactory = mock(),
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            heatmapIdentifierRegistry = null
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 
@@ -2386,7 +2393,8 @@ internal class DatadogRumMonitorTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            heatmapIdentifierRegistry = null
         )
         testedMonitor.startView(key, name, attributes)
         // When

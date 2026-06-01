@@ -91,7 +91,7 @@ internal open class RumViewScope(
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
     private val insightsCollector: InsightsCollector,
-    private val heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null
+    private val heatmapIdentifierRegistry: HeatmapIdentifierRegistry?
 ) : RumScope {
 
     internal val url = key.url.replace('.', '/')
@@ -1682,7 +1682,7 @@ internal open class RumViewScope(
             batteryInfoProvider: InfoProvider<BatteryInfo>,
             displayInfoProvider: InfoProvider<DisplayInfo>,
             insightsCollector: InsightsCollector,
-            heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null
+            heatmapIdentifierRegistry: HeatmapIdentifierRegistry?
         ): RumViewScope {
             val networkSettledMetricResolver = NetworkSettledMetricResolver(
                 networkSettledResourceIdentifier,
