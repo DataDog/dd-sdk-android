@@ -33,7 +33,7 @@ stages:
 benchmark:macro:
   tags: [ "macos:sonoma", "specific:true" ]
   stage: benchmark
-  timeout: 1h
+  timeout: 2h
   when: manual
   variables:
     ANDROID_API: "36"
@@ -45,7 +45,14 @@ benchmark:macro:
     - set +e
     - exit_code=0
     - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
-    - GRADLE_OPTS="-Xmx3072m" ./gradlew :benchmarks:macro:connectedBenchmarkAndroidTest --stacktrace --no-daemon --no-build-cache || exit_code=$?
+    - mkdir -p benchmark-results
+    - |
+      for run in 1 2 3 4 5; do
+        echo "=== Benchmark run $run/5 ==="
+        GRADLE_OPTS="-Xmx3072m" ./gradlew :benchmarks:macro:connectedBenchmarkAndroidTest --stacktrace --no-daemon --no-build-cache || exit_code=$?
+        cp -r benchmarks/macro/build/outputs/ benchmark-results/run-$run/
+        if [[ "$exit_code" -ne 0 ]]; then break; fi
+      done
     - $ANDROID_HOME/platform-tools/adb emu kill
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
     - exit 0
@@ -53,7 +60,7 @@ benchmark:macro:
     when: always
     expire_in: 1 week
     paths:
-      - benchmarks/macro/build/outputs/
+      - benchmark-results/
 
 benchmark:micro:
   tags: [ "macos:sonoma", "specific:true" ]

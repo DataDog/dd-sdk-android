@@ -25,6 +25,14 @@ import com.datadog.android.rum.RumAttributes.ACTION_TARGET_ROLE
 import com.datadog.android.rum.RumAttributes.ACTION_TARGET_SELECTED
 import java.lang.reflect.Method
 
+/**
+ * When set to `true`, forces the slow `Class.getMethods()` scan path instead of the
+ * cached `Class.getMethod()` lookup. This reproduces the RUM-15813 regression for
+ * benchmark validation. Must be `false` in production.
+ */
+@Suppress("TopLevelPropertyNaming")
+internal var useSlowReflection = false
+
 internal class LayoutNodeUtils {
 
     private val methodResolver = MethodResolver()
@@ -101,13 +109,16 @@ internal class LayoutNodeUtils {
         }
     }
 
-    fun getLayoutNodeBoundsInWindow(node: LayoutNode): Rect? = when (methodResolver.state) {
-        MethodResolver.State.UNKNOWN -> {
-            getLayoutNodeBoundsInWindowInternal(node) ?: getLayoutNodeBoundsInWindowReflection(node)
+    fun getLayoutNodeBoundsInWindow(node: LayoutNode): Rect? {
+        if (useSlowReflection) return getLayoutNodeBoundsInWindowReflection(node)
+        return when (methodResolver.state) {
+            MethodResolver.State.UNKNOWN -> {
+                getLayoutNodeBoundsInWindowInternal(node)
+                    ?: getLayoutNodeBoundsInWindowReflection(node)
+            }
+            MethodResolver.State.MANGLING_FAILED -> getLayoutNodeBoundsInWindowReflection(node)
+            MethodResolver.State.REFLECTION_FAILED -> getLayoutNodeBoundsInWindowInternal(node)
         }
-
-        MethodResolver.State.MANGLING_FAILED -> getLayoutNodeBoundsInWindowReflection(node)
-        MethodResolver.State.REFLECTION_FAILED -> getLayoutNodeBoundsInWindowInternal(node)
     }
 
     internal fun getLayoutNodeBoundsInWindowInternal(node: LayoutNode): Rect? = runSafe(
@@ -127,6 +138,11 @@ internal class LayoutNodeUtils {
 
     @Suppress("UnsafeThirdPartyFunctionCall") // runSafe in the caller swallows any Throwable
     private fun Any.invokeWithReflection(prefix: String): Any? {
+        if (useSlowReflection) {
+            return javaClass.methods
+                .firstOrNull { it.name == prefix || it.name.startsWith("$prefix$") }
+                ?.invoke(this)
+        }
         if (methodResolver.state == MethodResolver.State.REFLECTION_FAILED) return null
         return methodResolver
             .findMethod(javaClass, prefix)
