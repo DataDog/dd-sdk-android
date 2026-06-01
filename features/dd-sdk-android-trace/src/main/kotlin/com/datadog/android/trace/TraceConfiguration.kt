@@ -16,7 +16,8 @@ data class TraceConfiguration internal constructor(
     internal val customEndpointUrl: String?,
     internal val eventMapper: SpanEventMapper,
     internal val networkInfoEnabled: Boolean,
-    internal val statsComputationEnabled: Boolean
+    internal val statsComputationEnabled: Boolean,
+    internal val customStatsEndpointUrl: String?
 ) {
 
     /**
@@ -27,6 +28,7 @@ data class TraceConfiguration internal constructor(
         private var spanEventMapper: SpanEventMapper = NoOpSpanEventMapper()
         private var networkInfoEnabled: Boolean = true
         private var statsComputationEnabled: Boolean = false
+        private var customStatsEndpointUrl: String? = null
 
         /**
          * Let the Tracing feature target a custom server.
@@ -72,6 +74,15 @@ data class TraceConfiguration internal constructor(
         }
 
         /**
+         * Let the Tracing client-side stats feature target a custom server.
+         * The provided url should be the full endpoint url, e.g.: https://example.com/stats/upload
+         */
+        fun useCustomStatsEndpoint(endpoint: String): Builder {
+            customStatsEndpointUrl = endpoint
+            return this
+        }
+
+        /**
          * Builds a [TraceConfiguration] based on the current state of this Builder.
          */
         fun build(): TraceConfiguration {
@@ -79,7 +90,8 @@ data class TraceConfiguration internal constructor(
                 customEndpointUrl = customEndpointUrl,
                 eventMapper = spanEventMapper,
                 networkInfoEnabled = networkInfoEnabled,
-                statsComputationEnabled = statsComputationEnabled
+                statsComputationEnabled = statsComputationEnabled,
+                customStatsEndpointUrl = customStatsEndpointUrl
             )
         }
     }

@@ -385,6 +385,7 @@ public abstract interface class com/datadog/android/api/feature/Feature {
 	public static final field RUM_FEATURE_NAME Ljava/lang/String;
 	public static final field SESSION_REPLAY_FEATURE_NAME Ljava/lang/String;
 	public static final field SESSION_REPLAY_RESOURCES_FEATURE_NAME Ljava/lang/String;
+	public static final field TRACING_CLIENT_STATS_FEATURE_NAME Ljava/lang/String;
 	public static final field TRACING_FEATURE_NAME Ljava/lang/String;
 	public abstract fun getName ()Ljava/lang/String;
 	public abstract fun onInitialize (Landroid/content/Context;)V
@@ -400,6 +401,7 @@ public final class com/datadog/android/api/feature/Feature$Companion {
 	public static final field RUM_FEATURE_NAME Ljava/lang/String;
 	public static final field SESSION_REPLAY_FEATURE_NAME Ljava/lang/String;
 	public static final field SESSION_REPLAY_RESOURCES_FEATURE_NAME Ljava/lang/String;
+	public static final field TRACING_CLIENT_STATS_FEATURE_NAME Ljava/lang/String;
 	public static final field TRACING_FEATURE_NAME Ljava/lang/String;
 }
 

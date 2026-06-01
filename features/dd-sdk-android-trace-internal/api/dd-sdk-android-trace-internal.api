@@ -2686,6 +2686,7 @@ public class com/datadog/trace/core/CoreTracer$CoreTracerBuilder {
 	public fun injectBaggageAsTags (Z)Lcom/datadog/trace/core/CoreTracer$CoreTracerBuilder;
 	public fun injector (Lcom/datadog/trace/core/propagation/HttpCodec$Injector;)Lcom/datadog/trace/core/CoreTracer$CoreTracerBuilder;
 	public fun localRootSpanTags (Ljava/util/Map;)Lcom/datadog/trace/core/CoreTracer$CoreTracerBuilder;
+	public fun metricsAggregator (Lcom/datadog/trace/common/metrics/MetricsAggregator;)Lcom/datadog/trace/core/CoreTracer$CoreTracerBuilder;
 	public fun partialFlushMinSpans (I)Lcom/datadog/trace/core/CoreTracer$CoreTracerBuilder;
 	public fun sampler (Lcom/datadog/trace/common/sampling/Sampler;)Lcom/datadog/trace/core/CoreTracer$CoreTracerBuilder;
 	public fun scopeManager (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScopeManager;)Lcom/datadog/trace/core/CoreTracer$CoreTracerBuilder;
