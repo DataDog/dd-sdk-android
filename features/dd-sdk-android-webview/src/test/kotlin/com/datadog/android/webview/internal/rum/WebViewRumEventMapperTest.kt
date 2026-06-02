@@ -417,6 +417,91 @@ internal class WebViewRumEventMapperTest {
         assertThat(usr).usingRecursiveComparison().isEqualTo(expectedUsr)
     }
 
+    @Test
+    fun `M overwrite rule_psr W mapEvent() { trace sample rate configured, event has rule_psr }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeResourceEvent = forge.getForgery<ResourceEvent>()
+        val fakeRumJsonObject = fakeResourceEvent.toJson().asJsonObject
+        val fakeBrowserRulePsr = forge.aFloat(min = 0f, max = 1f)
+        val fakeSampleRate = forge.aFloat(min = 0f, max = 100f)
+        fakeRumJsonObject.getAsJsonObject(WebViewRumEventMapper.DD_KEY_NAME)
+            .addProperty(WebViewRumEventMapper.RULE_PSR_KEY_NAME, fakeBrowserRulePsr)
+        whenever(mockNativeRumViewsCache.resolveLastParentIdForBrowserEvent(fakeResourceEvent.date))
+            .thenReturn(fakeResolvedNativeViewId)
+
+        // When
+        val mappedEvent = testedWebViewRumEventMapper.mapEvent(
+            fakeRumJsonObject,
+            fakeRumContext,
+            fakeServerTimeOffset,
+            true,
+            fakeAnonymousId,
+            fakeSampleRate
+        )
+
+        // Then
+        val dd = mappedEvent.getAsJsonObject(WebViewRumEventMapper.DD_KEY_NAME)
+        assertThat(dd).hasField(WebViewRumEventMapper.RULE_PSR_KEY_NAME, fakeSampleRate / 100f)
+    }
+
+    @Test
+    fun `M not add rule_psr W mapEvent() { trace sample rate configured, event has no rule_psr }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeResourceEvent = forge.getForgery<ResourceEvent>()
+        val fakeRumJsonObject = fakeResourceEvent.toJson().asJsonObject
+        val fakeSampleRate = forge.aFloat(min = 0f, max = 100f)
+        fakeRumJsonObject.getAsJsonObject(WebViewRumEventMapper.DD_KEY_NAME)
+            .remove(WebViewRumEventMapper.RULE_PSR_KEY_NAME)
+        whenever(mockNativeRumViewsCache.resolveLastParentIdForBrowserEvent(fakeResourceEvent.date))
+            .thenReturn(fakeResolvedNativeViewId)
+
+        // When
+        val mappedEvent = testedWebViewRumEventMapper.mapEvent(
+            fakeRumJsonObject,
+            fakeRumContext,
+            fakeServerTimeOffset,
+            true,
+            fakeAnonymousId,
+            fakeSampleRate
+        )
+
+        // Then
+        val dd = mappedEvent.getAsJsonObject(WebViewRumEventMapper.DD_KEY_NAME)
+        assertThat(dd).doesNotHaveField(WebViewRumEventMapper.RULE_PSR_KEY_NAME)
+    }
+
+    @Test
+    fun `M not modify rule_psr W mapEvent() { no trace sample rate configured }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeResourceEvent = forge.getForgery<ResourceEvent>()
+        val fakeRumJsonObject = fakeResourceEvent.toJson().asJsonObject
+        val originalRulePsr = forge.aFloat(min = 0f, max = 1f)
+        fakeRumJsonObject.getAsJsonObject(WebViewRumEventMapper.DD_KEY_NAME)
+            .addProperty(WebViewRumEventMapper.RULE_PSR_KEY_NAME, originalRulePsr)
+        whenever(mockNativeRumViewsCache.resolveLastParentIdForBrowserEvent(fakeResourceEvent.date))
+            .thenReturn(fakeResolvedNativeViewId)
+
+        // When
+        val mappedEvent = testedWebViewRumEventMapper.mapEvent(
+            fakeRumJsonObject,
+            fakeRumContext,
+            fakeServerTimeOffset,
+            true,
+            fakeAnonymousId,
+            traceSampleRate = null
+        )
+
+        // Then
+        val dd = mappedEvent.getAsJsonObject(WebViewRumEventMapper.DD_KEY_NAME)
+        assertThat(dd).hasField(WebViewRumEventMapper.RULE_PSR_KEY_NAME, originalRulePsr)
+    }
+
     private fun assertMappedEvent(
         expectedEvent: JsonObject,
         expectedDate: Long,
