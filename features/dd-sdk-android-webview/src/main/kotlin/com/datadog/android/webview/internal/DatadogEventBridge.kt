@@ -88,16 +88,12 @@ internal class DatadogEventBridge(
         val rumContext = sdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME, useContextThread = false)
         val tracingContext = sdkCore.getFeatureContext(Feature.TRACING_FEATURE_NAME, useContextThread = false)
 
-        val sessionId = rumContext[SESSION_ID_KEY] as? String
-        val sessionState = rumContext[SESSION_STATE_KEY] as? String
+        val sessionId = (rumContext[SESSION_ID_KEY] as? String)
+            ?.takeIf { rumContext[SESSION_STATE_KEY] == TRACKED_STATE }
         val sessionSampleRate = (rumContext[SESSION_SAMPLE_RATE_KEY] as? Number)?.toFloat()
         val traceSampleRate = (tracingContext[TRACE_SAMPLE_RATE_KEY] as? Number)?.toFloat()
 
-        if (sessionId == null ||
-            sessionState != TRACKED_STATE ||
-            sessionSampleRate == null ||
-            traceSampleRate == null
-        ) {
+        if (sessionId == null || sessionSampleRate == null || traceSampleRate == null) {
             return NULL_STRING
         }
 
