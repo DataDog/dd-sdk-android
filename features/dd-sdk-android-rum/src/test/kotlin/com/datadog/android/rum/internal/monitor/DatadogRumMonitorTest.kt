@@ -3068,6 +3068,31 @@ internal class DatadogRumMonitorTest {
 
     @OptIn(ExperimentalRumApi::class)
     @Test
+    fun `M warn but still emit W startOperation { operation name contains emoji }`() {
+        // Like the non-ASCII case above, an emoji must fail the `[\w.@$-]*`
+        // regex. This additionally pins surrogate-pair / multi-byte handling
+        // (mirrors iOS PR #2864 / Browser PR #4525, spec test VAL-09).
+        val invalidName = "login🔐"
+        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
+
+        assertMethodCallProducesValidEvent<RumRawEvent.StartOperation>(
+            whenCalled = {
+                testedMonitor.startOperation(invalidName, null, OperationOptions.Empty, attributes)
+            },
+            then = { event ->
+                assertThat(event.name).isEqualTo(invalidName)
+            }
+        )
+
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            OPERATION_ERROR_INVALID_NAME_CHARACTERS.format(Locale.US, invalidName)
+        )
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
     fun `M accept name W startOperation { name only uses schema-allowed characters }`() {
         val validNames = listOf(
             "login",
@@ -3115,22 +3140,32 @@ internal class DatadogRumMonitorTest {
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M log user message W startOperation { operation key is blank }`(
+    fun `M warn but still emit W startOperation { operation key is blank }`(
         @StringForgery name: String,
         @StringForgery(StringForgeryType.WHITESPACE) operationKey: String
     ) {
-        // When
-        testedMonitor.startOperation(name, operationKey, OperationOptions.Empty, fakeAttributes)
+        // operationKey is optional, so a blank / whitespace-only value is
+        // malformed but must NOT drop the event (v1.10 cross-SDK contract).
+        // The developer is warned and the event is still emitted.
+        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
-        // Then
+        // When / Then — the event is still produced
+        assertMethodCallProducesValidEvent<RumRawEvent.StartOperation>(
+            whenCalled = {
+                testedMonitor.startOperation(name, operationKey, OperationOptions.Empty, attributes)
+            },
+            then = { event ->
+                assertThat(event.name).isEqualTo(name)
+                assertThat(event.operationKey).isEqualTo(operationKey)
+            }
+        )
+
+        // And — the developer is warned
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             OPERATION_ERROR_INVALID_OPERATION_KEY.format(Locale.US, operationKey)
         )
-
-        verifyNoInteractions(mockApplicationScope)
-        verifyNoMoreInteractions(mockInternalLogger)
     }
 
     @OptIn(ExperimentalRumApi::class)
@@ -3154,22 +3189,32 @@ internal class DatadogRumMonitorTest {
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M log user message W succeedOperation { operation key is blank }`(
+    fun `M warn but still emit W succeedOperation { operation key is blank }`(
         @StringForgery name: String,
         @StringForgery(StringForgeryType.WHITESPACE) operationKey: String
     ) {
-        // When
-        testedMonitor.succeedOperation(name, operationKey, fakeAttributes)
+        // operationKey is optional, so a blank / whitespace-only value is
+        // malformed but must NOT drop the event (v1.10 cross-SDK contract).
+        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
-        // Then
+        // When / Then — the event is still produced
+        assertMethodCallProducesValidEvent<RumRawEvent.StopOperation>(
+            whenCalled = {
+                testedMonitor.succeedOperation(name, operationKey, attributes)
+            },
+            then = { event ->
+                assertThat(event.name).isEqualTo(name)
+                assertThat(event.operationKey).isEqualTo(operationKey)
+                assertThat(event.failureReason).isNull()
+            }
+        )
+
+        // And — the developer is warned
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             OPERATION_ERROR_INVALID_OPERATION_KEY.format(Locale.US, operationKey)
         )
-
-        verifyNoInteractions(mockApplicationScope)
-        verifyNoMoreInteractions(mockInternalLogger)
     }
 
     @OptIn(ExperimentalRumApi::class)
@@ -3196,25 +3241,34 @@ internal class DatadogRumMonitorTest {
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M log user message W failOperation { operation key is blank }`(
+    fun `M warn but still emit W failOperation { operation key is blank }`(
         @StringForgery name: String,
         @StringForgery(StringForgeryType.WHITESPACE) operationKey: String,
         forge: Forge
     ) {
+        // operationKey is optional, so a blank / whitespace-only value is
+        // malformed but must NOT drop the event (v1.10 cross-SDK contract).
         val failureReason = forge.aValueFrom(FailureReason::class.java)
+        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
-        // When
-        testedMonitor.failOperation(name, operationKey, failureReason, fakeAttributes)
+        // When / Then — the event is still produced
+        assertMethodCallProducesValidEvent<RumRawEvent.StopOperation>(
+            whenCalled = {
+                testedMonitor.failOperation(name, operationKey, failureReason, attributes)
+            },
+            then = { event ->
+                assertThat(event.name).isEqualTo(name)
+                assertThat(event.operationKey).isEqualTo(operationKey)
+                assertThat(event.failureReason).isEqualTo(failureReason)
+            }
+        )
 
-        // Then
+        // And — the developer is warned
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             OPERATION_ERROR_INVALID_OPERATION_KEY.format(Locale.US, operationKey)
         )
-
-        verifyNoInteractions(mockApplicationScope)
-        verifyNoMoreInteractions(mockInternalLogger)
     }
 
     private inline fun <reified T : RumRawEvent> assertMethodCallProducesValidEvent(
