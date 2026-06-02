@@ -826,13 +826,15 @@ internal class DatadogRumMonitor(
             }
         }
 
-        val operationKeyIsBlank = operationKey?.isBlank() == true
-        if (operationKeyIsBlank) {
+        // operationKey is optional: a blank value is malformed, but we warn
+        // and still emit on purpose — dropping the event would lose a
+        // diagnostic data point for good. (Blank `name` above stays a drop.)
+        if (operationKey?.isBlank() == true) {
             sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN) {
                 OPERATION_ERROR_INVALID_OPERATION_KEY.format(Locale.US, operationKey)
             }
         }
-        return !operationKeyIsBlank
+        return true
     }
 
     // endregion
@@ -1023,7 +1025,8 @@ internal class DatadogRumMonitor(
                 "will still be sent and may be rejected by the backend."
 
         internal const val OPERATION_ERROR_INVALID_OPERATION_KEY =
-            "Operation key cannot be an empty or blank string but was \"%s\". Vital event won't be sent."
+            "Operation key cannot be an empty or blank string but was \"%s\". " +
+                "The vital event will still be sent."
 
         /**
          * Mirrors the backend's server-side `vital.name` validation regex
