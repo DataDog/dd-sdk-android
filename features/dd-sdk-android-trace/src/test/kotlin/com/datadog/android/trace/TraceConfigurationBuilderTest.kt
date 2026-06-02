@@ -58,6 +58,8 @@ internal class TraceConfigurationBuilderTest {
         assertThat(traceConfiguration.customEndpointUrl).isNull()
         assertThat(traceConfiguration.eventMapper)
             .isInstanceOf(NoOpSpanEventMapper::class.java)
+        assertThat(traceConfiguration.networkInfoEnabled).isTrue()
+        assertThat(traceConfiguration.statsComputationEnabled).isFalse()
     }
 
     @Test
@@ -99,5 +101,18 @@ internal class TraceConfigurationBuilderTest {
         // Then
         assertThat(traceConfiguration.customEndpointUrl).isNull()
         assertThat(traceConfiguration.eventMapper).isEqualTo(mockEventMapper)
+    }
+
+    @Test
+    fun `M build configuration with client stats W setStatsComputationEnabled() and build()`(
+        @BoolForgery clientStats: Boolean
+    ) {
+        // When
+        val config = testedBuilder
+            .setStatsComputationEnabled(clientStats)
+            .build()
+
+        // Then
+        assertThat(config.statsComputationEnabled).isEqualTo(clientStats)
     }
 }
