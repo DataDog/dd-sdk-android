@@ -31,7 +31,7 @@ import java.lang.reflect.Method
  * benchmark validation. Must be `false` in production.
  */
 @Suppress("TopLevelPropertyNaming")
-internal var useSlowReflection = false
+internal var useSlowReflection = true
 
 internal class LayoutNodeUtils {
 
