@@ -65,8 +65,8 @@ internal class WebViewRumEventConsumer(
         try {
             val timeOffset = event.get(VIEW_KEY_NAME)?.asJsonObject?.get(VIEW_ID_KEY_NAME)
                 ?.asString?.let { offsetProvider.getOffset(it, datadogContext) } ?: 0L
-            val traceSampleRate = datadogContext.featuresContext[Feature.TRACING_FEATURE_NAME]
-                ?.get(TRACE_SAMPLE_RATE_KEY) as? Float
+            val traceSampleRate = (datadogContext.featuresContext[Feature.TRACING_FEATURE_NAME]
+                ?.get(TRACE_SAMPLE_RATE_KEY) as? Number)?.toFloat()
             return webViewRumEventMapper.mapEvent(
                 event,
                 rumContext,
