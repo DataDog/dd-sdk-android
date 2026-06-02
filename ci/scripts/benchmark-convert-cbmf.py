@@ -22,6 +22,7 @@ Reference:
 
 import argparse
 import json
+import math
 import sys
 from typing import Optional
 
@@ -45,9 +46,23 @@ METRIC_MAP: dict[str, tuple[str, str]] = {
 }
 
 
+SAMPLED_PERCENTILES = [50, 90, 95, 99]
+
+
 def map_metric(jetpack_name: str) -> Optional[tuple[str, str]]:
     """Return (cbmf_metric_name, uom) for a Jetpack metric, or None if unmapped."""
     return METRIC_MAP.get(jetpack_name)
+
+
+def _percentile(sorted_values: list[float], p: int) -> float:
+    """Compute the p-th percentile using linear interpolation (same as numpy default)."""
+    n = len(sorted_values)
+    k = (p / 100) * (n - 1)
+    f = math.floor(k)
+    c = math.ceil(k)
+    if f == c:
+        return sorted_values[int(k)]
+    return sorted_values[f] * (c - k) + sorted_values[c] * (k - f)
 
 
 # ---------------------------------------------------------------------------
@@ -96,8 +111,10 @@ def convert_metrics(benchmark: dict) -> list[dict]:
 def convert_sampled_metrics(benchmark: dict) -> list[dict]:
     """Convert the 'sampledMetrics' section of a Jetpack benchmark to CBMF benchmarks.
 
-    Each sampled metric has per-iteration arrays of samples (e.g. per-frame timings
-    within each iteration). Each iteration's sample array becomes one CBMF run.
+    Each sampled metric (e.g. frameDurationCpuMs) has per-iteration arrays of
+    samples. Instead of passing raw arrays, we compute percentiles (P50, P90,
+    P95, P99) per iteration and emit one CBMF benchmark per percentile. This
+    produces better-behaved distributions for bp-analyzer comparison.
     """
     name = benchmark.get("name", "unknown")
     class_name = benchmark.get("className", "unknown")
@@ -111,23 +128,28 @@ def convert_sampled_metrics(benchmark: dict) -> list[dict]:
         cbmf_name, uom = mapping
         runs_data = metric_data.get("runs", [])
 
-        runs = {}
-        for i, samples in enumerate(runs_data):
-            runs[f"run{i}"] = {
-                cbmf_name: {
-                    "uom": uom,
-                    "values": samples,
+        for p in SAMPLED_PERCENTILES:
+            runs = {}
+            for i, samples in enumerate(runs_data):
+                if not samples:
+                    continue
+                sorted_samples = sorted(samples)
+                value = _percentile(sorted_samples, p)
+                runs[f"run{i}"] = {
+                    cbmf_name: {
+                        "uom": uom,
+                        "values": [value],
+                    }
                 }
-            }
 
-        if runs:
-            cbmf_benchmarks.append({
-                "parameters": {
-                    "scenario": f"{name}:{metric_name}",
-                    "className": class_name,
-                },
-                "runs": runs,
-            })
+            if runs:
+                cbmf_benchmarks.append({
+                    "parameters": {
+                        "scenario": f"{name}:{metric_name}:P{p}",
+                        "className": class_name,
+                    },
+                    "runs": runs,
+                })
 
     return cbmf_benchmarks
 

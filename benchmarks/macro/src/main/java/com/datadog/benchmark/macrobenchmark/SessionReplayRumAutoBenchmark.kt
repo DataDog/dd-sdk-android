@@ -51,16 +51,14 @@ class SessionReplayRumAutoBenchmark {
         repeat(INTERACTION_CYCLES) {
             device.scrollContent(Direction.DOWN)
             device.scrollContent(Direction.DOWN)
-            device.scrollContent(Direction.UP)
-
-            device.clickByText("Episodes")
-
             device.scrollContent(Direction.DOWN)
             device.scrollContent(Direction.UP)
-
-            device.clickByText("Locations")
-
-            device.clickByText("Characters")
+            device.scrollContent(Direction.UP)
+            device.scrollContent(Direction.DOWN)
+            device.scrollContent(Direction.DOWN)
+            device.scrollContent(Direction.UP)
+            device.scrollContent(Direction.UP)
+            device.scrollContent(Direction.UP)
         }
     }
 
@@ -95,6 +93,6 @@ class SessionReplayRumAutoBenchmark {
         private const val SCENARIO_RUM_AUTO = "rum_auto"
         private const val RUN_INSTRUMENTED = "instrumented"
         private const val TIMEOUT_MS = 15_000L
-        private const val INTERACTION_CYCLES = 3
+        private const val INTERACTION_CYCLES = 1
     }
 }
