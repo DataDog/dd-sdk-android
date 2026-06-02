@@ -264,4 +264,107 @@ internal class DatadogEventBridgeTest {
         // Then
         assertThat(result).isEqualTo("null")
     }
+
+    @Test
+    fun `M update decision W getIsTraceSampled() { session rolls over to a different decision }`() {
+        // Given
+        // First session: UUID hashes to ~50.68%, sampled at combined rate 60% (100% * 60%)
+        val sessionId1 = "c5b3c4ab-fa4a-4de9-8199-a522131ec48a"
+        // Second session: same UUID but with trace rate lowered to 40% — no longer sampled
+        val sessionId2 = sessionId1
+
+        whenever(mockSdkCore.getFeatureContext(eq(Feature.TRACING_FEATURE_NAME), eq(false)))
+            .thenReturn(mapOf("okhttp_interceptor_sample_rate" to 60f))
+
+        // First call: sampled at combined rate 60%
+        whenever(mockSdkCore.getFeatureContext(eq(Feature.RUM_FEATURE_NAME), eq(false)))
+            .thenReturn(
+                mapOf(
+                    "session_id" to sessionId1,
+                    "session_state" to "TRACKED",
+                    "session_sample_rate" to 100f
+                )
+            )
+        val result1 = testedDatadogEventBridge.getIsTraceSampled()
+
+        // When: new session with lower session sample rate, combined rate = 50% * 60% = 30%
+        whenever(mockSdkCore.getFeatureContext(eq(Feature.RUM_FEATURE_NAME), eq(false)))
+            .thenReturn(
+                mapOf(
+                    "session_id" to sessionId2,
+                    "session_state" to "TRACKED",
+                    "session_sample_rate" to 50f
+                )
+            )
+        val result2 = testedDatadogEventBridge.getIsTraceSampled()
+
+        // Then: first sampled (combined 60%), second not sampled (combined 30%, UUID hashes at ~50.68%)
+        assertThat(result1).isEqualTo("true")
+        assertThat(result2).isEqualTo("false")
+    }
+
+    @Test
+    fun `M return null W getIsTraceSampled() { session stops after being tracked }`() {
+        // Given: active tracked session
+        val sessionId = "c5b3c4ab-fa4a-4de9-8199-a522131ec48a"
+        whenever(mockSdkCore.getFeatureContext(eq(Feature.TRACING_FEATURE_NAME), eq(false)))
+            .thenReturn(mapOf("okhttp_interceptor_sample_rate" to 100f))
+        whenever(mockSdkCore.getFeatureContext(eq(Feature.RUM_FEATURE_NAME), eq(false)))
+            .thenReturn(
+                mapOf(
+                    "session_id" to sessionId,
+                    "session_state" to "TRACKED",
+                    "session_sample_rate" to 100f
+                )
+            )
+
+        val resultBeforeStop = testedDatadogEventBridge.getIsTraceSampled()
+
+        // When: session stops
+        whenever(mockSdkCore.getFeatureContext(eq(Feature.RUM_FEATURE_NAME), eq(false)))
+            .thenReturn(
+                mapOf(
+                    "session_id" to sessionId,
+                    "session_state" to "NOT_TRACKED"
+                )
+            )
+
+        val resultAfterStop = testedDatadogEventBridge.getIsTraceSampled()
+
+        // Then
+        assertThat(resultBeforeStop).isEqualTo("true")
+        assertThat(resultAfterStop).isEqualTo("null")
+    }
+
+    @Test
+    fun `M return null then decision W getIsTraceSampled() { new session starts after stop }`() {
+        // Given: no active session
+        whenever(mockSdkCore.getFeatureContext(eq(Feature.RUM_FEATURE_NAME), eq(false)))
+            .thenReturn(
+                mapOf(
+                    "session_id" to "old-session-id",
+                    "session_state" to "NOT_TRACKED"
+                )
+            )
+        whenever(mockSdkCore.getFeatureContext(eq(Feature.TRACING_FEATURE_NAME), eq(false)))
+            .thenReturn(mapOf("okhttp_interceptor_sample_rate" to 100f))
+
+        val resultNoSession = testedDatadogEventBridge.getIsTraceSampled()
+
+        // When: new session starts
+        whenever(mockSdkCore.getFeatureContext(eq(Feature.RUM_FEATURE_NAME), eq(false)))
+            .thenReturn(
+                mapOf(
+                    "session_id" to "c5b3c4ab-fa4a-4de9-8199-a522131ec48a",
+                    "session_state" to "TRACKED",
+                    "session_sample_rate" to 100f
+                )
+            )
+
+        val resultNewSession = testedDatadogEventBridge.getIsTraceSampled()
+
+        // Then
+        assertThat(resultNoSession).isEqualTo("null")
+        assertThat(resultNewSession).isEqualTo("true")
+    }
 }
