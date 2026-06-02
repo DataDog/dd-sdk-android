@@ -33,6 +33,8 @@ datadog:
       - "android.graphics.Paint.measureText(kotlin.String?):java.lang.IllegalArgumentException,java.lang.IndexOutOfBoundsException"
       - "android.net.ConnectivityManager.registerDefaultNetworkCallback(android.net.ConnectivityManager.NetworkCallback):java.lang.IllegalArgumentException,java.lang.SecurityException"
       - "android.net.ConnectivityManager.unregisterNetworkCallback(android.net.ConnectivityManager.NetworkCallback):java.lang.SecurityException"
+      - "android.os.BaseBundle.get(kotlin.String?):android.os.BadParcelableException,java.lang.LinkageError"
+      - "android.os.BaseBundle.keySet():android.os.BadParcelableException,java.lang.LinkageError"
       - "android.os.BatteryManager.getIntProperty(kotlin.Int):java.lang.RuntimeException"
       - "android.provider.Settings.System.getInt(android.content.ContentResolver?, kotlin.String?):android.provider.Settings.SettingNotFoundException"
       - "android.text.SpannableStringBuilder.setSpan(kotlin.Any?, kotlin.Int, kotlin.Int, kotlin.Int):java.lang.RuntimeException"
