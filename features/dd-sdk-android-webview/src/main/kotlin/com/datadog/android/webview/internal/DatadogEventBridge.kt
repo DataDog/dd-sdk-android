@@ -86,16 +86,20 @@ internal class DatadogEventBridge(
     @JavascriptInterface
     fun getIsTraceSampled(): String {
         val rumContext = sdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME, useContextThread = false)
-        val sessionId = rumContext[SESSION_ID_KEY] as? String ?: return NULL_STRING
-        val sessionState = rumContext[SESSION_STATE_KEY] as? String
-        if (sessionState != TRACKED_STATE) return NULL_STRING
-
-        val sessionSampleRate = (rumContext[SESSION_SAMPLE_RATE_KEY] as? Number)?.toFloat()
-            ?: return NULL_STRING
-
         val tracingContext = sdkCore.getFeatureContext(Feature.TRACING_FEATURE_NAME, useContextThread = false)
+
+        val sessionId = rumContext[SESSION_ID_KEY] as? String
+        val sessionState = rumContext[SESSION_STATE_KEY] as? String
+        val sessionSampleRate = (rumContext[SESSION_SAMPLE_RATE_KEY] as? Number)?.toFloat()
         val traceSampleRate = (tracingContext[TRACE_SAMPLE_RATE_KEY] as? Number)?.toFloat()
-            ?: return NULL_STRING
+
+        if (sessionId == null ||
+            sessionState != TRACKED_STATE ||
+            sessionSampleRate == null ||
+            traceSampleRate == null
+        ) {
+            return NULL_STRING
+        }
 
         val combinedRate = DeterministicSampling.combinedSampleRate(sessionSampleRate, traceSampleRate)
         val sampler = DeterministicSampler<String>(
