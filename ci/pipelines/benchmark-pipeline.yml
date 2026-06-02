@@ -48,12 +48,20 @@ benchmark:macro:
     - GRADLE_OPTS="-Xmx3072m" ./gradlew :benchmarks:macro:connectedBenchmarkAndroidTest --stacktrace --no-daemon --no-build-cache || exit_code=$?
     - $ANDROID_HOME/platform-tools/adb emu kill
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
+    # S3 upload and baseline download run on the macOS runner for simplicity —
+    # the runner already has AWS credentials via vault login -method=aws.
+    # If macOS runner costs become a concern or we add more post-processing steps,
+    # consider moving these to a separate amd64 job consuming GitLab CI artifacts.
+    - bash ci/scripts/benchmark-s3-upload.sh || echo "Warning: S3 upload failed, continuing."
+    - bash ci/scripts/benchmark-s3-download-baseline.sh || echo "Warning: baseline download failed, continuing."
     - exit 0
   artifacts:
     when: always
     expire_in: 1 week
     paths:
       - benchmarks/macro/build/outputs/
+      - macrobenchmark-candidate.cbmf.json
+      - macrobenchmark-baseline.cbmf.json
 
 benchmark:micro:
   tags: [ "macos:sonoma", "specific:true" ]
