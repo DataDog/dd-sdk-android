@@ -21,6 +21,11 @@
         "unexpected-exception"
       ],
       "readOnly": true
+    },
+    "quota_reason": {
+      "type": "string",
+      "description": "The reason profiling was denied by the quota API for this session. Present only when the quota API returned a denied decision.",
+      "readOnly": true
     }
   }
 }

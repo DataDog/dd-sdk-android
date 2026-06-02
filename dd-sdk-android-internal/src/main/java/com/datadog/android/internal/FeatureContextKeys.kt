@@ -29,4 +29,11 @@ object FeatureContextKeys {
      * own sampling.
      */
     const val RUM_SESSION_SAMPLE_RATE: String = "session_sample_rate"
+
+    /**
+     * Reason profiling was denied by the quota API for the current RUM session.
+     * Written by the profiling feature; read by RUM to include in event attributes.
+     * Absent when profiling is allowed or no quota check has been performed.
+     */
+    const val PROFILING_QUOTA_REASON: String = "profiling_quota_reason"
 }
