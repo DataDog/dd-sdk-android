@@ -12,6 +12,7 @@ import android.util.Log
 import android.webkit.WebView
 import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.Datadog
+import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.okhttp.DatadogInterceptor
 import com.datadog.android.rum.Rum
 import com.datadog.android.sdk.integration.RuntimeConfig
@@ -43,7 +44,7 @@ internal class WebViewBridgePlaygroundActivity : AppCompatActivity() {
         // okhttp_interceptor_sample_rate, which getIsTraceSampled() reads.
         Trace.enable(RuntimeConfig.tracesConfigBuilder().build(), sdkCore)
         DatadogInterceptor.Builder(listOf("localhost"))
-            .setTraceSampleRate(100f)
+            .setTraceSampleRate(DeterministicSampler.SAMPLE_ALL_RATE)
             .build()
 
         webView = WebView(this).also { wv ->

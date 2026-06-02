@@ -78,7 +78,10 @@ internal class WebViewBridgeTest {
         }
 
         @Suppress("UNCHECKED_CAST")
-        fail<Unit>("Expected getIsTraceSampled() to return '$expectedResult' but got '$lastActual' after ${timeoutMs}ms")
+        fail<Unit>(
+            "Expected getIsTraceSampled() to return '$expectedResult' " +
+                "but got '$lastActual' after ${timeoutMs}ms"
+        )
     }
 
     companion object {
