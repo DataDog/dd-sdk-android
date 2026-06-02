@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.tracking
 
+import android.os.BadParcelableException
 import android.os.Bundle
 
 internal const val ARGUMENT_TAG = "view.arguments"
@@ -16,14 +17,24 @@ internal const val ARGUMENT_TAG = "view.arguments"
 fun Bundle?.convertToRumViewAttributes(): Map<String, Any?> {
     if (this == null) return emptyMap()
 
-    val attributes = mutableMapOf<String, Any?>()
+    return try {
+        val attributes = mutableMapOf<String, Any?>()
 
-    keySet().forEach {
-        // TODO RUM-503 Bundle#get is deprecated, but there is no replacement for it.
-        // Issue is opened in the Google Issue Tracker.
-        @Suppress("DEPRECATION")
-        attributes["$ARGUMENT_TAG.$it"] = get(it)
+        // Either keySet() and get(), depending on API version, can throw:
+        //   BadParcelableException — IOException/ClassNotFoundException wrapped by Parcel
+        //   LinkageError (e.g. NoClassDefFoundError) — not caught and wrapped
+
+        keySet().forEach {
+            // TODO RUM-503 Bundle#get is deprecated, but there is no replacement for it.
+            // Issue is opened in the Google Issue Tracker.
+            @Suppress("DEPRECATION")
+            attributes["$ARGUMENT_TAG.$it"] = get(it)
+        }
+
+        attributes
+    } catch (_: BadParcelableException) {
+        emptyMap()
+    } catch (_: LinkageError) {
+        emptyMap()
     }
-
-    return attributes
 }
