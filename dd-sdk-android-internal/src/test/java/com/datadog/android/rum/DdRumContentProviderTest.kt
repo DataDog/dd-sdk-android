@@ -9,13 +9,8 @@ package com.datadog.android.rum
 import android.app.ActivityManager
 import android.content.ContentProvider
 import android.content.ContentValues
-import android.content.Context
 import android.net.Uri
-import android.os.Process
 import com.datadog.android.internal.forge.Configurator
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.setFieldValue
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -23,23 +18,20 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mock
+import org.mockito.Mockito
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.whenever
+import org.mockito.kotlin.any
 import org.mockito.quality.Strictness
 import java.net.URI
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -47,37 +39,9 @@ class DdRumContentProviderTest {
 
     lateinit var testedProvider: ContentProvider
 
-    @Mock
-    lateinit var mockContext: Context
-
-    @Mock
-    lateinit var mockActivityManager: ActivityManager
-
-    lateinit var fakeCurrentProcessInfo: ActivityManager.RunningAppProcessInfo
-    lateinit var fakeOtherProcessInfo: ActivityManager.RunningAppProcessInfo
-
     @BeforeEach
-    fun `set up`(forge: Forge) {
-        fakeCurrentProcessInfo = ActivityManager.RunningAppProcessInfo().apply {
-            this.processName = forge.anAlphabeticalString()
-            this.pid = Process.myPid()
-            this.importance = forge.anInt()
-        }
-        fakeOtherProcessInfo = ActivityManager.RunningAppProcessInfo().apply {
-            this.processName = forge.anAlphabeticalString()
-            this.pid = Process.myPid() + forge.aSmallInt()
-            this.importance = forge.anInt()
-        }
-
-        whenever(mockContext.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
-            mockActivityManager
-        )
-        whenever(mockActivityManager.runningAppProcesses).thenReturn(
-            listOf(fakeCurrentProcessInfo, fakeOtherProcessInfo)
-        )
-
+    fun `set up`() {
         testedProvider = DdRumContentProvider()
-        testedProvider.setFieldValue("mContext", mockContext)
     }
 
     @AfterEach
@@ -89,60 +53,121 @@ class DdRumContentProviderTest {
 
     @Test
     fun `M detect process importance W onCreate()`(
-        @IntForgery processImportance: Int
+        @IntForgery fakeImportance: Int
     ) {
         // Given
-        fakeCurrentProcessInfo.importance = processImportance
+        Mockito.mockStatic(ActivityManager::class.java).use { mock ->
+            mock.`when`<Unit> { ActivityManager.getMyMemoryState(any()) }
+                .thenAnswer { invocation ->
+                    invocation
+                        .getArgument<ActivityManager.RunningAppProcessInfo>(0)
+                        .importance = fakeImportance
+                    Unit
+                }
 
-        // When
-        testedProvider.onCreate()
+            // When
+            val response = testedProvider.onCreate()
 
-        // Then
-        assertThat(DdRumContentProvider.processImportance).isEqualTo(processImportance)
+            // Then
+            assertThat(DdRumContentProvider.processImportance).isEqualTo(fakeImportance)
+            assertThat(response).isTrue
+        }
+    }
+
+    @Test
+    fun `M detect process importance W onCreate() { exception is thrown }`() {
+        // Given
+        Mockito.mockStatic(ActivityManager::class.java).use { mock ->
+            mock.`when`<Unit> { ActivityManager.getMyMemoryState(any()) }
+                .thenThrow(RuntimeException())
+
+            // When
+            val response = testedProvider.onCreate()
+
+            // Then
+            assertThat(DdRumContentProvider.processImportance)
+                // normally it is IMPORTANCE_FOREGROUND, but on JVM the real constructor is not called, so it will be 0
+                .isEqualTo(0)
+            assertThat(response).isTrue
+        }
     }
 
     @Test
     fun `M detect process importance once W onCreate() twice`(
-        @IntForgery processImportance1: Int,
-        @IntForgery processImportance2: Int
+        @IntForgery(min = 0, max = 10) fakeImportance1: Int,
+        @IntForgery(min = 10, max = 100) fakeImportance2: Int
     ) {
         // Given
-        assumeTrue(processImportance1 != processImportance2)
+        Mockito.mockStatic(ActivityManager::class.java).use { mock ->
+            var callCount = 0
+            mock.`when`<Unit> { ActivityManager.getMyMemoryState(any()) }
+                .thenAnswer { invocation ->
+                    callCount++
+                    invocation.getArgument<ActivityManager.RunningAppProcessInfo>(0)
+                        .importance = if (callCount == 1) fakeImportance1 else fakeImportance2
+                    Unit
+                }
 
-        // When
-        fakeCurrentProcessInfo.importance = processImportance1
-        testedProvider.onCreate()
-        fakeCurrentProcessInfo.importance = processImportance2
-        testedProvider.onCreate()
+            // When
+            val response1 = testedProvider.onCreate()
+            val response2 = testedProvider.onCreate()
 
-        // Then
-        assertThat(DdRumContentProvider.processImportance).isEqualTo(processImportance1)
+            // Then
+            assertThat(DdRumContentProvider.processImportance).isEqualTo(fakeImportance1)
+            assertThat(response1).isTrue
+            assertThat(response2).isTrue
+        }
+    }
+
+    // endregion
+
+    // region processImportance lazy fallback
+
+    @Test
+    fun `M read process importance from ActivityManager W processImportance {onCreate not yet called}`(
+        @IntForgery fakeImportance: Int
+    ) {
+        // Given
+        Mockito.mockStatic(ActivityManager::class.java).use { mock ->
+            mock.`when`<Unit> { ActivityManager.getMyMemoryState(any()) }
+                .thenAnswer { invocation ->
+                    invocation.getArgument<ActivityManager.RunningAppProcessInfo>(0)
+                        .importance = fakeImportance
+                    Unit
+                }
+
+            // When
+            val result = DdRumContentProvider.processImportance
+
+            // Then
+            assertThat(result).isEqualTo(fakeImportance)
+        }
     }
 
     @Test
-    fun `M detect default process importance W onCreate() {no context}`() {
+    fun `M cache process importance W processImportance {accessed twice before onCreate}`(
+        @IntForgery(min = 0, max = 10) fakeImportance1: Int,
+        @IntForgery(min = 10, max = 100) fakeImportance2: Int
+    ) {
         // Given
-        testedProvider.setFieldValue("mContext", null as Context?)
+        Mockito.mockStatic(ActivityManager::class.java).use { mock ->
+            var callCount = 0
+            mock.`when`<Unit> { ActivityManager.getMyMemoryState(any()) }
+                .thenAnswer { invocation ->
+                    callCount++
+                    invocation.getArgument<ActivityManager.RunningAppProcessInfo>(0)
+                        .importance = if (callCount == 1) fakeImportance1 else fakeImportance2
+                    Unit
+                }
 
-        // When
-        testedProvider.onCreate()
+            // When
+            val first = DdRumContentProvider.processImportance
+            val second = DdRumContentProvider.processImportance
 
-        // Then
-        assertThat(DdRumContentProvider.processImportance)
-            .isEqualTo(DdRumContentProvider.DEFAULT_IMPORTANCE)
-    }
-
-    @Test
-    fun `M detect default process importance W onCreate() {no activity mgr}`() {
-        // Given
-        whenever(mockContext.getSystemService(Context.ACTIVITY_SERVICE)) doReturn null
-
-        // When
-        testedProvider.onCreate()
-
-        // Then
-        assertThat(DdRumContentProvider.processImportance)
-            .isEqualTo(DdRumContentProvider.DEFAULT_IMPORTANCE)
+            // Then
+            assertThat(first).isEqualTo(fakeImportance1)
+            assertThat(second).isEqualTo(fakeImportance1)
+        }
     }
 
     // endregion

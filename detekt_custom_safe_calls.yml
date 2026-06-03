@@ -5,6 +5,7 @@ datadog:
       - "android.app.Activity.findViewById(kotlin.Int)"
       - "android.app.Activity.getSystemService(kotlin.String)"
       - "android.app.Activity.hashCode()"
+      - "android.app.ActivityManager.RunningAppProcessInfo.constructor()"
       - "android.app.ActivityManager.getHistoricalProcessStartReasons(kotlin.Int)"
       - "android.app.Application.getProcessName()"
       - "android.app.Application.registerActivityLifecycleCallbacks(android.app.Application.ActivityLifecycleCallbacks?)"
