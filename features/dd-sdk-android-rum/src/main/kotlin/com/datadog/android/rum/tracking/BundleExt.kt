@@ -20,7 +20,7 @@ fun Bundle?.convertToRumViewAttributes(): Map<String, Any?> {
     return try {
         val attributes = mutableMapOf<String, Any?>()
 
-        // Either keySet() and get(), depending on API version, can throw:
+        // Either keySet() or get(), depending on API version, can throw:
         //   BadParcelableException — IOException/ClassNotFoundException wrapped by Parcel
         //   LinkageError (e.g. NoClassDefFoundError) — not caught and wrapped
 
