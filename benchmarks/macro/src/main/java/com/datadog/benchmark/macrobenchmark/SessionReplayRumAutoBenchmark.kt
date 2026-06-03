@@ -8,6 +8,8 @@ package com.datadog.benchmark.macrobenchmark
 
 import android.content.ComponentName
 import android.content.Intent
+import android.os.Environment
+import android.util.Log
 import androidx.benchmark.macro.CompilationMode
 import androidx.benchmark.macro.FrameTimingMetric
 import androidx.benchmark.macro.StartupMode
@@ -18,15 +20,47 @@ import androidx.test.uiautomator.Direction
 import androidx.test.uiautomator.StaleObjectException
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
+import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 class SessionReplayRumAutoBenchmark {
 
     @get:Rule
     val benchmarkRule = MacrobenchmarkRule()
+
+    @After
+    fun reportBenchmarkResults() {
+        val searchDirs = listOf(
+            File(Environment.getExternalStorageDirectory(), "Download"),
+            File(
+                Environment.getExternalStorageDirectory(),
+                "Android/media/com.datadog.benchmark.macrobenchmark"
+            )
+        )
+        val jsonFiles = searchDirs.flatMap { dir ->
+            dir.walkTopDown()
+                .filter { it.isFile && it.name.endsWith("benchmarkData.json") }
+                .toList()
+        }
+        if (jsonFiles.isEmpty()) {
+            val listing = searchDirs.joinToString("; ") { dir ->
+                val files = dir.listFiles()?.joinToString(", ") { it.name } ?: "empty"
+                "${dir.absolutePath}: [$files]"
+            }
+            Log.w(LOG_TAG, "BENCHMARK_RESULT_NOT_FOUND: $listing")
+        }
+        jsonFiles.forEach { file ->
+            val content = file.readText()
+            Log.i(LOG_TAG, "BENCHMARK_RESULT_FILE: ${file.absolutePath}")
+            content.chunked(3000).forEachIndexed { idx, chunk ->
+                Log.i(LOG_TAG, "BENCHMARK_RESULT_JSON[$idx]: $chunk")
+            }
+        }
+    }
 
     @Test
     fun frameTimingWithSessionReplay() = benchmarkRule.measureRepeated(
@@ -85,6 +119,7 @@ class SessionReplayRumAutoBenchmark {
     }
 
     companion object {
+        private const val LOG_TAG = "BenchmarkOutput"
         private const val TARGET_PACKAGE = "com.datadog.sample.benchmark"
         private const val LAUNCH_ACTIVITY =
             "com.datadog.benchmark.sample.activities.LaunchActivity"

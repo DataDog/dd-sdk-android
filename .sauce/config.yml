@@ -1,0 +1,34 @@
+apiVersion: v1alpha
+kind: espresso
+showConsoleLog: true
+
+defaults:
+  timeout: 30m
+
+sauce:
+  region: eu-central-1
+  concurrency: 1
+
+espresso:
+  app: ./sample/benchmark/build/outputs/apk/benchmark/benchmark-benchmark.apk
+  testApp: ./benchmarks/macro/build/outputs/apk/benchmark/macro-benchmark.apk
+
+artifacts:
+  download:
+    when: always
+    match:
+      - "*"
+    directory: ./artifacts/
+
+suites:
+  - name: "SR Compose Macrobenchmark"
+    devices:
+      - name: ".*"
+    testOptions:
+      class:
+        - com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark
+      additionalTestOutputDir: "/sdcard/Download"
+      no-isolated-storage: "true"
+    appSettings:
+      instrumentation:
+        vitals: true
