@@ -34,7 +34,6 @@ benchmark:macro:
   tags: [ "macos:sonoma", "specific:true" ]
   stage: benchmark
   timeout: 1h
-  when: manual
   variables:
     ANDROID_API: "36"
     ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
@@ -44,7 +43,7 @@ benchmark:macro:
     - !reference [.snippets, setup-macos-ami-runner]
     - set +e
     - exit_code=0
-    - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
+    - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -gpu host -verbose -qemu -machine virt &
     - GRADLE_OPTS="-Xmx3072m" ./gradlew :benchmarks:macro:connectedBenchmarkAndroidTest --stacktrace --no-daemon --no-build-cache || exit_code=$?
     - $ANDROID_HOME/platform-tools/adb emu kill
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
@@ -69,7 +68,7 @@ benchmark:micro:
     - !reference [.snippets, setup-macos-ami-runner]
     - set +e
     - exit_code=0
-    - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
+    - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -gpu host -verbose -qemu -machine virt &
     - GRADLE_OPTS="-Xmx3072m" ./gradlew :benchmarks:micro:connectedReleaseAndroidTest --stacktrace --no-daemon --no-build-cache || exit_code=$?
     - $ANDROID_HOME/platform-tools/adb emu kill
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
