@@ -26,6 +26,7 @@ fi
 echo "Converting ${BENCHMARK_JSON} to CBMF..."
 python3 ci/benchmarks/convert-cbmf.py \
   --input "$BENCHMARK_JSON" \
+  --variant candidate \
   --output macrobenchmark-candidate.cbmf.json
 
 echo "Uploading to ${S3_BASE}..."

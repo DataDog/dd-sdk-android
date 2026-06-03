@@ -31,6 +31,7 @@ androidXMetrics = "1.0.0-beta03"
 androidXMultidex = "2.0.1"
 androidXNavigation = "2.7.7"
 androidXRecyclerView = "1.3.2"
+androidXTracing = "1.2.0"
 androidXWorkManager = "2.8.1" # Next version will bring coroutines
 googleAccompanist = "0.20.2"
 googleMaterial = "1.3.0"
@@ -160,6 +161,7 @@ androidXNavigationFragment = { module = "androidx.navigation:navigation-fragment
 androidXNavigationRuntime = { module = "androidx.navigation:navigation-runtime", version.ref = "androidXNavigation" }
 androidXNavigationUIKtx = { module = "androidx.navigation:navigation-ui-ktx", version.ref = "androidXNavigation" }
 androidXRecyclerView = { module = "androidx.recyclerview:recyclerview", version.ref = "androidXRecyclerView" }
+androidXTracing = { module = "androidx.tracing:tracing-ktx", version.ref = "androidXTracing" }
 androidXWorkManager = { module = "androidx.work:work-runtime", version.ref = "androidXWorkManager" }
 androidXLifecycleCompose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidXLifecycle" }
 androidXLifecycleLiveDataKtx = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "androidXLifecycle" }

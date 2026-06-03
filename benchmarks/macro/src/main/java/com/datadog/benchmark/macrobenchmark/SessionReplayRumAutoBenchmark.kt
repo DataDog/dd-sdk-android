@@ -11,8 +11,11 @@ import android.content.Intent
 import android.os.Environment
 import android.util.Log
 import androidx.benchmark.macro.CompilationMode
+import androidx.benchmark.macro.ExperimentalMetricApi
 import androidx.benchmark.macro.FrameTimingMetric
+import androidx.benchmark.macro.MemoryUsageMetric
 import androidx.benchmark.macro.StartupMode
+import androidx.benchmark.macro.TraceSectionMetric
 import androidx.benchmark.macro.junit4.MacrobenchmarkRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.uiautomator.By
@@ -62,13 +65,22 @@ class SessionReplayRumAutoBenchmark {
         }
     }
 
+    @OptIn(ExperimentalMetricApi::class)
     @Test
     fun frameTimingWithSessionReplay() = benchmarkRule.measureRepeated(
         packageName = TARGET_PACKAGE,
-        metrics = listOf(FrameTimingMetric()),
+        metrics = listOf(
+            FrameTimingMetric(),
+            MemoryUsageMetric(MemoryUsageMetric.Mode.Max),
+            TraceSectionMetric(
+                sectionName = "DD-upload-rum",
+                mode = TraceSectionMetric.Mode.Sum,
+                targetPackageOnly = true
+            )
+        ),
         compilationMode = CompilationMode.Full(),
         startupMode = StartupMode.COLD,
-        iterations = 10,
+        iterations = 1,
         setupBlock = {
             pressHome()
         }
