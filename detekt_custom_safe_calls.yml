@@ -1190,6 +1190,8 @@ datadog:
       - "kotlin.Short.toUShort()"
       - "kotlin.ULong.toLong()"
       - "kotlin.String.lowercase()"
+      - "kotlin.String.removePrefix(kotlin.CharSequence)"
+      - "kotlin.String.removeSuffix(kotlin.CharSequence)"
       - "kotlin.String.takeIf(kotlin.Function1)"
       - "kotlin.String.toBigIntegerOrNull()"
       - "kotlin.String.toBoolean()"
