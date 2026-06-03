@@ -1,0 +1,37 @@
+{
+  "schema_version": "v1",
+  "benchmarks": [
+    {
+      "parameters": {
+        "scenario": "startup:timeToInitialDisplayMs",
+        "className": "com.datadog.benchmark.macrobenchmark.StartupBenchmark"
+      },
+      "runs": {
+        "run0": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              357.31575
+            ]
+          }
+        },
+        "run1": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              250.543083
+            ]
+          }
+        },
+        "run2": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              235.227126
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
