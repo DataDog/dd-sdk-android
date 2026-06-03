@@ -24,7 +24,7 @@ if [ -z "$BENCHMARK_JSON" ]; then
 fi
 
 echo "Converting ${BENCHMARK_JSON} to CBMF..."
-python3 ci/scripts/benchmark-convert-cbmf.py \
+python3 ci/benchmarks/convert-cbmf.py \
   --input "$BENCHMARK_JSON" \
   --output macrobenchmark-candidate.cbmf.json
 
