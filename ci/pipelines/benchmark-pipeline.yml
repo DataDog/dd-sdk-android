@@ -1,5 +1,6 @@
 stages:
   - benchmark
+  - report
 
 .snippets:
   source-secrets-macos:
@@ -62,6 +63,22 @@ benchmark:macro:
       - benchmarks/macro/build/outputs/
       - macrobenchmark-candidate.cbmf.json
       - macrobenchmark-baseline.cbmf.json
+
+benchmark:analyze:
+  stage: report
+  tags: ["arch:amd64"]
+  image: registry.ddbuild.io/images/benchmarking-platform-tools-ubuntu:latest
+  allow_failure: true
+  needs:
+    - job: benchmark:macro
+      artifacts: true
+  script:
+    - bash ci/scripts/benchmark-analyze.sh || echo "Warning: analysis failed, continuing."
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - benchmark-comparison.md
 
 benchmark:micro:
   tags: [ "macos:sonoma", "specific:true" ]
