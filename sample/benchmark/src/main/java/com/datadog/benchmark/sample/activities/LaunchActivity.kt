@@ -41,8 +41,7 @@ internal class LaunchActivity : AppCompatActivity() {
 
         application.benchmarkAppComponent.inject(this)
 
-//        val config = BenchmarkConfig.resolveSyntheticsBundle(intent.extras)
-        val config = BenchmarkConfig(run = SyntheticsRun.Instrumented, scenario = SyntheticsScenario.RumAuto)
+        val config = BenchmarkConfig.resolveSyntheticsBundle(intent.extras)
         benchmarkConfigHolder.config = config
 
         /**
