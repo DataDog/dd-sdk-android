@@ -4,7 +4,8 @@
     {
       "parameters": {
         "scenario": "frameTimingWithSessionReplay:frameCount",
-        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark"
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark",
+        "version": "baseline"
       },
       "runs": {
         "run0": {
@@ -92,7 +93,8 @@
     {
       "parameters": {
         "scenario": "frameTimingWithSessionReplay:frameDurationCpuMs:P50",
-        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark"
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark",
+        "version": "baseline"
       },
       "runs": {
         "run0": {
@@ -180,7 +182,8 @@
     {
       "parameters": {
         "scenario": "frameTimingWithSessionReplay:frameDurationCpuMs:P90",
-        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark"
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark",
+        "version": "baseline"
       },
       "runs": {
         "run0": {
@@ -268,7 +271,8 @@
     {
       "parameters": {
         "scenario": "frameTimingWithSessionReplay:frameDurationCpuMs:P95",
-        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark"
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark",
+        "version": "baseline"
       },
       "runs": {
         "run0": {
@@ -356,7 +360,8 @@
     {
       "parameters": {
         "scenario": "frameTimingWithSessionReplay:frameDurationCpuMs:P99",
-        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark"
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark",
+        "version": "baseline"
       },
       "runs": {
         "run0": {
@@ -444,7 +449,8 @@
     {
       "parameters": {
         "scenario": "frameTimingWithSessionReplay:frameOverrunMs:P50",
-        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark"
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark",
+        "version": "baseline"
       },
       "runs": {
         "run0": {
@@ -532,7 +538,8 @@
     {
       "parameters": {
         "scenario": "frameTimingWithSessionReplay:frameOverrunMs:P90",
-        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark"
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark",
+        "version": "baseline"
       },
       "runs": {
         "run0": {
@@ -620,7 +627,8 @@
     {
       "parameters": {
         "scenario": "frameTimingWithSessionReplay:frameOverrunMs:P95",
-        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark"
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark",
+        "version": "baseline"
       },
       "runs": {
         "run0": {
@@ -708,7 +716,8 @@
     {
       "parameters": {
         "scenario": "frameTimingWithSessionReplay:frameOverrunMs:P99",
-        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark"
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark",
+        "version": "baseline"
       },
       "runs": {
         "run0": {

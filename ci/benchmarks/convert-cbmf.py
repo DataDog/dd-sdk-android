@@ -69,7 +69,7 @@ def _percentile(sorted_values: list[float], p: int) -> float:
 # Conversion logic
 # ---------------------------------------------------------------------------
 
-def convert_metrics(benchmark: dict) -> list[dict]:
+def convert_metrics(benchmark: dict, version: Optional[str] = None) -> list[dict]:
     """Convert the 'metrics' section of a Jetpack benchmark to CBMF benchmarks.
 
     Each Jetpack metric (e.g. frameDurationCpuMs) with its per-iteration scalar
@@ -97,18 +97,21 @@ def convert_metrics(benchmark: dict) -> list[dict]:
             }
 
         if runs:
+            parameters = {
+                "scenario": f"{name}:{metric_name}",
+                "className": class_name,
+            }
+            if version:
+                parameters["version"] = version
             cbmf_benchmarks.append({
-                "parameters": {
-                    "scenario": f"{name}:{metric_name}",
-                    "className": class_name,
-                },
+                "parameters": parameters,
                 "runs": runs,
             })
 
     return cbmf_benchmarks
 
 
-def convert_sampled_metrics(benchmark: dict) -> list[dict]:
+def convert_sampled_metrics(benchmark: dict, version: Optional[str] = None) -> list[dict]:
     """Convert the 'sampledMetrics' section of a Jetpack benchmark to CBMF benchmarks.
 
     Each sampled metric (e.g. frameDurationCpuMs) has per-iteration arrays of
@@ -143,24 +146,32 @@ def convert_sampled_metrics(benchmark: dict) -> list[dict]:
                 }
 
             if runs:
+                parameters = {
+                    "scenario": f"{name}:{metric_name}:P{p}",
+                    "className": class_name,
+                }
+                if version:
+                    parameters["version"] = version
                 cbmf_benchmarks.append({
-                    "parameters": {
-                        "scenario": f"{name}:{metric_name}:P{p}",
-                        "className": class_name,
-                    },
+                    "parameters": parameters,
                     "runs": runs,
                 })
 
     return cbmf_benchmarks
 
 
-def convert(jetpack_json: dict) -> dict:
-    """Convert a full Jetpack Benchmark JSON to CBMF v1."""
+def convert(jetpack_json: dict, version: Optional[str] = None) -> dict:
+    """Convert a full Jetpack Benchmark JSON to CBMF v1.
+
+    Args:
+        version: Version tag added to each benchmark's parameters to distinguish
+                 baseline from candidate in bp-analyzer pairwise comparison.
+    """
     cbmf_benchmarks = []
 
     for benchmark in jetpack_json.get("benchmarks", []):
-        cbmf_benchmarks.extend(convert_metrics(benchmark))
-        cbmf_benchmarks.extend(convert_sampled_metrics(benchmark))
+        cbmf_benchmarks.extend(convert_metrics(benchmark, version=version))
+        cbmf_benchmarks.extend(convert_sampled_metrics(benchmark, version=version))
 
     return {
         "schema_version": "v1",
@@ -184,12 +195,16 @@ def main():
         "--output", default=None,
         help="Path to write the CBMF JSON output. Prints to stdout if omitted."
     )
+    parser.add_argument(
+        "--version", required=True,
+        help="Version tag added to each benchmark's parameters to distinguish baseline from candidate (e.g. 'baseline', 'candidate')."
+    )
     args = parser.parse_args()
 
     with open(args.input, encoding="utf-8") as f:
         jetpack_data = json.load(f)
 
-    cbmf = convert(jetpack_data)
+    cbmf = convert(jetpack_data, version=args.version)
 
     if not cbmf["benchmarks"]:
         print("Warning: no benchmarks were converted. Check that the input file "

@@ -17,6 +17,8 @@ export MD_REPORT_ONLY_CHANGES=1
 bp-analyzer compare pairwise \
   --format=md \
   --outpath=benchmark-comparison.md \
+  --baseline='{"version": "baseline"}' \
+  --candidate='{"version": "candidate"}' \
   macrobenchmark-baseline.cbmf.json \
   macrobenchmark-candidate.cbmf.json
 
