@@ -161,24 +161,13 @@ def convert_sampled_metrics(benchmark: dict) -> list[dict]:
     return cbmf_benchmarks
 
 
-def convert(jetpack_json: dict, variant: Optional[str] = None) -> dict:
-    """Convert a full Jetpack Benchmark JSON to CBMF v1.
-
-    If ``variant`` is provided, it is added as a parameter to every benchmark.
-    bp-analyzer's pairwise comparison pairs benchmarks by ``scenario`` and uses a
-    distinguishing parameter (selected via --baseline/--candidate) to tell the two
-    sides apart, so a baseline and a candidate run must carry different ``variant``
-    values to be comparable.
-    """
+def convert(jetpack_json: dict) -> dict:
+    """Convert a full Jetpack Benchmark JSON to CBMF v1."""
     cbmf_benchmarks = []
 
     for benchmark in jetpack_json.get("benchmarks", []):
         cbmf_benchmarks.extend(convert_metrics(benchmark))
         cbmf_benchmarks.extend(convert_sampled_metrics(benchmark))
-
-    if variant:
-        for benchmark in cbmf_benchmarks:
-            benchmark["parameters"]["variant"] = variant
 
     return {
         "schema_version": "v1",
@@ -202,18 +191,12 @@ def main():
         "--output", default=None,
         help="Path to write the CBMF JSON output. Prints to stdout if omitted."
     )
-    parser.add_argument(
-        "--variant", default=None,
-        help="Optional 'variant' parameter value added to every benchmark (e.g. "
-             "'baseline' or 'candidate'). Required for bp-analyzer pairwise "
-             "comparison to distinguish the two sides."
-    )
     args = parser.parse_args()
 
     with open(args.input, encoding="utf-8") as f:
         jetpack_data = json.load(f)
 
-    cbmf = convert(jetpack_data, variant=args.variant)
+    cbmf = convert(jetpack_data)
 
     if not cbmf["benchmarks"]:
         print("Warning: no benchmarks were converted. Check that the input file "
