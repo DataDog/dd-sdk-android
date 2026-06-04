@@ -39,6 +39,7 @@ METRIC_MAP: dict[str, tuple[str, str]] = {
     "timeNs": ("execution_time", "ns"),
     # Count metrics
     "frameCount": ("iterations", "iterations"),
+    "allocationCount": ("allocations", "allocations"),
     # Memory metrics
     "memoryHeapSizeMaxKb": ("rss", "KB"),
     "memoryRssAnonMaxKb": ("rss", "KB"),
