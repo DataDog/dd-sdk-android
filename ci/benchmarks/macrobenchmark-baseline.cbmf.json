@@ -3,15 +3,103 @@
   "benchmarks": [
     {
       "parameters": {
-        "scenario": "startup:timeToInitialDisplayMs",
-        "className": "com.datadog.benchmark.macrobenchmark.StartupBenchmark"
+        "scenario": "frameTimingWithSessionReplay:frameCount",
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark"
+      },
+      "runs": {
+        "run0": {
+          "iterations": {
+            "uom": "iterations",
+            "values": [
+              306.0
+            ]
+          }
+        },
+        "run1": {
+          "iterations": {
+            "uom": "iterations",
+            "values": [
+              335.0
+            ]
+          }
+        },
+        "run2": {
+          "iterations": {
+            "uom": "iterations",
+            "values": [
+              294.0
+            ]
+          }
+        },
+        "run3": {
+          "iterations": {
+            "uom": "iterations",
+            "values": [
+              318.0
+            ]
+          }
+        },
+        "run4": {
+          "iterations": {
+            "uom": "iterations",
+            "values": [
+              303.0
+            ]
+          }
+        },
+        "run5": {
+          "iterations": {
+            "uom": "iterations",
+            "values": [
+              343.0
+            ]
+          }
+        },
+        "run6": {
+          "iterations": {
+            "uom": "iterations",
+            "values": [
+              307.0
+            ]
+          }
+        },
+        "run7": {
+          "iterations": {
+            "uom": "iterations",
+            "values": [
+              317.0
+            ]
+          }
+        },
+        "run8": {
+          "iterations": {
+            "uom": "iterations",
+            "values": [
+              339.0
+            ]
+          }
+        },
+        "run9": {
+          "iterations": {
+            "uom": "iterations",
+            "values": [
+              319.0
+            ]
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "scenario": "frameTimingWithSessionReplay:frameDurationCpuMs:P50",
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark"
       },
       "runs": {
         "run0": {
           "execution_time": {
             "uom": "ms",
             "values": [
-              357.31575
+              14.2012715
             ]
           }
         },
@@ -19,7 +107,7 @@
           "execution_time": {
             "uom": "ms",
             "values": [
-              250.543083
+              6.2265
             ]
           }
         },
@@ -27,7 +115,679 @@
           "execution_time": {
             "uom": "ms",
             "values": [
-              235.227126
+              5.673604
+            ]
+          }
+        },
+        "run3": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              5.796542
+            ]
+          }
+        },
+        "run4": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              9.052917
+            ]
+          }
+        },
+        "run5": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              16.657125
+            ]
+          }
+        },
+        "run6": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              7.169459
+            ]
+          }
+        },
+        "run7": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              7.602792
+            ]
+          }
+        },
+        "run8": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              7.432333
+            ]
+          }
+        },
+        "run9": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              9.113292
+            ]
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "scenario": "frameTimingWithSessionReplay:frameDurationCpuMs:P90",
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark"
+      },
+      "runs": {
+        "run0": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              24.7889375
+            ]
+          }
+        },
+        "run1": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              28.634166
+            ]
+          }
+        },
+        "run2": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              22.556145599999994
+            ]
+          }
+        },
+        "run3": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              21.1705955
+            ]
+          }
+        },
+        "run4": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              24.363658400000002
+            ]
+          }
+        },
+        "run5": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              28.9688586
+            ]
+          }
+        },
+        "run6": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              24.5272498
+            ]
+          }
+        },
+        "run7": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              26.520325400000026
+            ]
+          }
+        },
+        "run8": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              23.5417086
+            ]
+          }
+        },
+        "run9": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              25.272141599999998
+            ]
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "scenario": "frameTimingWithSessionReplay:frameDurationCpuMs:P95",
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark"
+      },
+      "runs": {
+        "run0": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              29.838573
+            ]
+          }
+        },
+        "run1": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              33.752974900000005
+            ]
+          }
+        },
+        "run2": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              26.08189374999997
+            ]
+          }
+        },
+        "run3": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              25.33833564999999
+            ]
+          }
+        },
+        "run4": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              29.619345499999994
+            ]
+          }
+        },
+        "run5": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              34.3725378
+            ]
+          }
+        },
+        "run6": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              27.6534787
+            ]
+          }
+        },
+        "run7": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              31.7547084
+            ]
+          }
+        },
+        "run8": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              29.36557509999999
+            ]
+          }
+        },
+        "run9": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              28.926670799999982
+            ]
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "scenario": "frameTimingWithSessionReplay:frameDurationCpuMs:P99",
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark"
+      },
+      "runs": {
+        "run0": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              45.03416285
+            ]
+          }
+        },
+        "run1": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              43.70507584000004
+            ]
+          }
+        },
+        "run2": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              35.80323155999998
+            ]
+          }
+        },
+        "run3": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              40.69658499999999
+            ]
+          }
+        },
+        "run4": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              38.67593334000003
+            ]
+          }
+        },
+        "run5": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              47.79434327999999
+            ]
+          }
+        },
+        "run6": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              37.642420539999996
+            ]
+          }
+        },
+        "run7": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              39.85172999999995
+            ]
+          }
+        },
+        "run8": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              42.05858000000001
+            ]
+          }
+        },
+        "run9": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              41.03260261999996
+            ]
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "scenario": "frameTimingWithSessionReplay:frameOverrunMs:P50",
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark"
+      },
+      "runs": {
+        "run0": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              4.1378900000000005
+            ]
+          }
+        },
+        "run1": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -1.596433
+            ]
+          }
+        },
+        "run2": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -5.7304655
+            ]
+          }
+        },
+        "run3": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -4.79313
+            ]
+          }
+        },
+        "run4": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              2.919493
+            ]
+          }
+        },
+        "run5": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              4.824469
+            ]
+          }
+        },
+        "run6": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              0.103929
+            ]
+          }
+        },
+        "run7": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              3.298379
+            ]
+          }
+        },
+        "run8": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              2.811506
+            ]
+          }
+        },
+        "run9": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              4.174146
+            ]
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "scenario": "frameTimingWithSessionReplay:frameOverrunMs:P90",
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark"
+      },
+      "runs": {
+        "run0": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              18.956758
+            ]
+          }
+        },
+        "run1": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              19.653995600000002
+            ]
+          }
+        },
+        "run2": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              9.7924841
+            ]
+          }
+        },
+        "run3": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              10.903104400000007
+            ]
+          }
+        },
+        "run4": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              14.039750000000002
+            ]
+          }
+        },
+        "run5": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              21.3229042
+            ]
+          }
+        },
+        "run6": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              12.701813400000004
+            ]
+          }
+        },
+        "run7": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              16.52330900000002
+            ]
+          }
+        },
+        "run8": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              15.792692399999993
+            ]
+          }
+        },
+        "run9": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              15.071762399999997
+            ]
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "scenario": "frameTimingWithSessionReplay:frameOverrunMs:P95",
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark"
+      },
+      "runs": {
+        "run0": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              26.126797
+            ]
+          }
+        },
+        "run1": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              24.014956300000005
+            ]
+          }
+        },
+        "run2": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              15.900927949999978
+            ]
+          }
+        },
+        "run3": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              19.578625549999998
+            ]
+          }
+        },
+        "run4": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              20.815712799999986
+            ]
+          }
+        },
+        "run5": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              24.315273299999994
+            ]
+          }
+        },
+        "run6": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              20.596940899999993
+            ]
+          }
+        },
+        "run7": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              22.7061344
+            ]
+          }
+        },
+        "run8": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              21.385032599999988
+            ]
+          }
+        },
+        "run9": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              22.629623599999974
+            ]
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "scenario": "frameTimingWithSessionReplay:frameOverrunMs:P99",
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark"
+      },
+      "runs": {
+        "run0": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              45.08088244999996
+            ]
+          }
+        },
+        "run1": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              44.72574002000016
+            ]
+          }
+        },
+        "run2": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              26.515699959999964
+            ]
+          }
+        },
+        "run3": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              33.63653223999991
+            ]
+          }
+        },
+        "run4": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              29.116961600000014
+            ]
+          }
+        },
+        "run5": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              40.069534099999984
+            ]
+          }
+        },
+        "run6": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              30.031257540000002
+            ]
+          }
+        },
+        "run7": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              37.01508643999991
+            ]
+          }
+        },
+        "run8": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              37.880263240000005
+            ]
+          }
+        },
+        "run9": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              40.08060363999992
             ]
           }
         }
