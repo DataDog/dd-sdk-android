@@ -68,7 +68,7 @@ class SessionReplayRumAutoBenchmark {
         metrics = listOf(FrameTimingMetric()),
         compilationMode = CompilationMode.Full(),
         startupMode = StartupMode.COLD,
-        iterations = 10,
+        iterations = 3,
         setupBlock = {
             pressHome()
         }
