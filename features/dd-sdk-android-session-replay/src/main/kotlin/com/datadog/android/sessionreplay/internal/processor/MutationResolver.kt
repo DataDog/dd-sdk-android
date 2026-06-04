@@ -345,12 +345,6 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
         return mutation
     }
 
-    /**
-     * Applies the appropriate mutation for a wireframe whose content has changed but whose
-     * position in the list has not. If [permanentId][MobileSegment.Wireframe.permanentId]
-     * changed, [WireframeUpdateMutation][MobileSegment.WireframeUpdateMutation] has no field
-     * to carry it, so the wireframe is replaced via remove + add instead.
-     */
     private fun recordChangedWireframeMutations(
         oldElement: MobileSegment.Wireframe,
         newElement: MobileSegment.Wireframe,

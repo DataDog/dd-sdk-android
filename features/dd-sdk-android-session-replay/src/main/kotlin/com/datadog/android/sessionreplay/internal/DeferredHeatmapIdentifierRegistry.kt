@@ -22,8 +22,9 @@ internal class DeferredHeatmapIdentifierRegistry(
     private val sdkCore: FeatureSdkCore
 ) : HeatmapIdentifierRegistry {
 
-    @Volatile private var resolved: Resolved? = null
+    private var resolved: Resolved? = null
 
+    @Synchronized
     private fun getDelegate(): HeatmapIdentifierRegistry? {
         if (resolved == null) {
             val rumFeatureScope = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)

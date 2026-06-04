@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.heatmaps.isValidTapTarget
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
@@ -88,7 +89,7 @@ internal class SnapshotProducer(
                 return null
             }
 
-            val identity = heatmapContext?.resolveIdentity(view, nodePath, typeIndex)
+            val identity = resolveHeatmapIdentity(view, nodePath, typeIndex, nextTraversalStrategy, heatmapContext)
             val viewPath = identity?.viewPath ?: nodePath
             val heatmapIdentifier = identity?.identifier
 
@@ -132,6 +133,26 @@ internal class SnapshotProducer(
                 parents = parents,
                 heatmapIdentifier = heatmapIdentifier
             )
+        }
+    }
+
+    @UiThread
+    private fun resolveHeatmapIdentity(
+        view: View,
+        nodePath: List<String>,
+        typeIndex: Int,
+        nextTraversalStrategy: TraversalStrategy,
+        heatmapContext: HeatmapIdentifierResolver.TraversalContext?
+    ): HeatmapIdentifierResolver.HeatmapIdentity? {
+        return heatmapContext?.let { ctx ->
+            val pathNeededForChildren = view is ViewGroup &&
+                view.childCount > 0 &&
+                nextTraversalStrategy == TraversalStrategy.TRAVERSE_ALL_CHILDREN
+            if (pathNeededForChildren || view.isValidTapTarget()) {
+                ctx.resolveIdentity(view, nodePath, typeIndex)
+            } else {
+                null
+            }
         }
     }
 

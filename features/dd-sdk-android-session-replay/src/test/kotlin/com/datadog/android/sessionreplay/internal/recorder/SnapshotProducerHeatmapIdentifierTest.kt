@@ -491,6 +491,34 @@ internal class SnapshotProducerHeatmapIdentifierTest {
     }
 
     @Test
+    fun `M skip getResourceName W produce() { non-tap-target leaf view }`(
+        forge: Forge,
+        @StringForgery fakeViewUrl: String
+    ) {
+        val mockResources: Resources = mock()
+        val fakeRoot = forge.aMockView<View>().also {
+            whenever(it.id).thenReturn(forge.anInt(min = 1, max = Int.MAX_VALUE))
+            whenever(it.resources).thenReturn(mockResources)
+            whenever(it.isClickable).thenReturn(false)
+            whenever(it.visibility).thenReturn(View.VISIBLE)
+        }
+        whenever(mockTreeViewTraversal.traverse(any(), any(), any())).thenReturn(
+            TreeViewTraversal.TraversedTreeView(fakeViewWireframes, TraversalStrategy.STOP_AND_RETURN_NODE)
+        )
+
+        testedSnapshotProducer.produce(
+            rootView = fakeRoot,
+            systemInformation = fakeSystemInformation,
+            textAndInputPrivacy = fakeTextAndInputPrivacy,
+            imagePrivacy = fakeImagePrivacy,
+            recordedDataQueueRefs = mockRecordedDataQueueRefs,
+            activeRumViewUrl = fakeViewUrl
+        )
+
+        verify(mockResources, never()).getResourceName(any())
+    }
+
+    @Test
     fun `M skip identifier W produce() { clickable but INVISIBLE view }`(
         forge: Forge,
         @StringForgery fakeViewUrl: String
@@ -702,6 +730,75 @@ internal class SnapshotProducerHeatmapIdentifierTest {
         assertThat(secondIds[heatmapViewKey(mockChild1)]).isNotEqualTo(firstIds[heatmapViewKey(mockChild1)])
         assertThat(secondIds[heatmapViewKey(mockChild0)]).isEqualTo(firstIds[heatmapViewKey(mockChild1)])
         assertThat(secondIds[heatmapViewKey(mockChild1)]).isEqualTo(firstIds[heatmapViewKey(mockChild0)])
+    }
+
+    @Test
+    fun `M recompute and update registry W produce() { non-tap-target ancestor moves to different sibling position }`(
+        forge: Forge,
+        @StringForgery fakeViewUrl: String
+    ) {
+        val sharedContainerName = "com.example.app:id/${forge.anAlphabeticalString()}"
+        val mockButtonA = forge.aMockViewWithResourceId(
+            viewId = forge.anInt(min = 1, max = Int.MAX_VALUE),
+            resourceName = "com.example.app:id/${forge.anAlphabeticalString()}_a"
+        )
+        val mockButtonB = forge.aMockViewWithResourceId(
+            viewId = forge.anInt(min = 1, max = Int.MAX_VALUE),
+            resourceName = "com.example.app:id/${forge.anAlphabeticalString()}_b"
+        )
+        val mockContainerA = forge.aMockViewGroupWithResourceId(
+            viewId = forge.anInt(min = 1, max = Int.MAX_VALUE),
+            resourceName = sharedContainerName,
+            children = listOf(mockButtonA),
+            isClickable = false
+        )
+        val mockContainerB = forge.aMockViewGroupWithResourceId(
+            viewId = forge.anInt(min = 1, max = Int.MAX_VALUE),
+            resourceName = sharedContainerName,
+            children = listOf(mockButtonB),
+            isClickable = false
+        )
+        val mockRoot = forge.aMockViewGroupWithResourceId(
+            viewId = forge.anInt(min = 1, max = Int.MAX_VALUE),
+            resourceName = "com.example.app:id/${forge.anAlphabeticalString()}",
+            children = listOf(mockContainerA, mockContainerB),
+            isClickable = false
+        )
+        whenever(mockTreeViewTraversal.traverse(any(), any(), any())).thenReturn(
+            TreeViewTraversal.TraversedTreeView(fakeViewWireframes, TraversalStrategy.TRAVERSE_ALL_CHILDREN)
+        )
+
+        testedSnapshotProducer.produce(
+            rootView = mockRoot,
+            systemInformation = fakeSystemInformation,
+            textAndInputPrivacy = fakeTextAndInputPrivacy,
+            imagePrivacy = fakeImagePrivacy,
+            recordedDataQueueRefs = mockRecordedDataQueueRefs,
+            activeRumViewUrl = fakeViewUrl
+        )
+
+        whenever(mockRoot.getChildAt(0)).thenReturn(mockContainerB)
+        whenever(mockRoot.getChildAt(1)).thenReturn(mockContainerA)
+
+        testedSnapshotProducer.produce(
+            rootView = mockRoot,
+            systemInformation = fakeSystemInformation,
+            textAndInputPrivacy = fakeTextAndInputPrivacy,
+            imagePrivacy = fakeImagePrivacy,
+            recordedDataQueueRefs = mockRecordedDataQueueRefs,
+            activeRumViewUrl = fakeViewUrl
+        )
+
+        val captor = argumentCaptor<Map<Long, HeatmapIdentifier>>()
+        verify(mockHeatmapIdentifierRegistry, times(2)).setHeatmapIdentifiers(
+            captor.capture(),
+            eq(fakeViewUrl)
+        )
+        val firstIds = captor.firstValue
+        val secondIds = captor.allValues[1]
+
+        assertThat(secondIds[heatmapViewKey(mockButtonA)]).isNotEqualTo(firstIds[heatmapViewKey(mockButtonA)])
+        assertThat(secondIds[heatmapViewKey(mockButtonB)]).isNotEqualTo(firstIds[heatmapViewKey(mockButtonB)])
     }
 
     // endregion

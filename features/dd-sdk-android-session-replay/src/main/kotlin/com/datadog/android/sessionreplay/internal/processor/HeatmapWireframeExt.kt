@@ -18,10 +18,6 @@ internal fun MobileSegment.Wireframe.permanentId(): String? {
     }
 }
 
-/**
- * Returns a copy of this wireframe with [permanentId] set — the stable identifier used to
- * correlate Session Replay wireframes with RUM action events for heatmap rendering.
- */
 internal fun MobileSegment.Wireframe.copyWithPermanentId(
     permanentId: String?
 ): MobileSegment.Wireframe {

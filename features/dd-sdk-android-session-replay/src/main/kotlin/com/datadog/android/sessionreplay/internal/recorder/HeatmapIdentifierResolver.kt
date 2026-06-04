@@ -44,10 +44,9 @@ internal class HeatmapIdentifierResolver(
         val pathComponent = pathComponentFor(view, typeIndex)
         val cachedEntry = lastPublishedEntries[identityHash]
             ?.takeIf { context.viewUrl == lastPublishedScreenName }
-            // Validate that the cached path's own component matches the freshly computed one.
-            // Guards against stale entries when a view changes sibling position without being
-            // detached (e.g. notifyItemMoved with an in-place animator).
-            ?.takeIf { it.viewPath.lastOrNull() == pathComponent }
+            // Guards against stale entries when a view or any ancestor shifts among same-type
+            // siblings without being detached (e.g. notifyItemMoved with an in-place animator).
+            ?.takeIf { it.viewPath == nodePath + pathComponent }
         val viewPath: List<String>
         val identifier: HeatmapIdentifier?
         if (cachedEntry != null) {
