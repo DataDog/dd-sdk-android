@@ -26,6 +26,8 @@ import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
+import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
+import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.recorder.SystemInformation
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -43,6 +45,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
@@ -141,11 +144,12 @@ internal class WindowsOnDrawListenerTest {
         fakeMockedDecorViews.forEachIndexed { index, decorView ->
             whenever(
                 mockSnapshotProducer.produce(
-                    eq(decorView),
-                    eq(fakeSystemInformation),
-                    eq(fakeTextAndInputPrivacy),
-                    eq(fakeImagePrivacy),
-                    any()
+                    rootView = eq(decorView),
+                    systemInformation = eq(fakeSystemInformation),
+                    textAndInputPrivacy = eq(fakeTextAndInputPrivacy),
+                    imagePrivacy = eq(fakeImagePrivacy),
+                    recordedDataQueueRefs = any(),
+                    activeRumViewUrl = anyOrNull()
                 )
             )
                 .thenReturn(fakeWindowsSnapshots[index])
@@ -212,7 +216,8 @@ internal class WindowsOnDrawListenerTest {
             systemInformation = any(),
             textAndInputPrivacy = eq(fakeTextAndInputPrivacy),
             imagePrivacy = eq(fakeImagePrivacy),
-            recordedDataQueueRefs = argCaptor.capture()
+            recordedDataQueueRefs = argCaptor.capture(),
+            activeRumViewUrl = anyOrNull()
         )
         assertThat(argCaptor.firstValue.recordedDataQueueItem).isEqualTo(fakeSnapshotQueueItem)
         verify(mockRecordedDataQueueHandler).tryToConsumeItems()
@@ -304,7 +309,16 @@ internal class WindowsOnDrawListenerTest {
                 "Capture Record"
             )
         ).thenReturn(mockPerformanceMetric)
-        whenever(mockSnapshotProducer.produce(any(), any(), any(), any(), any())).thenReturn(null)
+        whenever(
+            mockSnapshotProducer.produce(
+                rootView = any(),
+                systemInformation = any(),
+                textAndInputPrivacy = any(),
+                imagePrivacy = any(),
+                recordedDataQueueRefs = any(),
+                activeRumViewUrl = anyOrNull()
+            )
+        ).thenReturn(null)
         whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
             .thenReturn(fakeSnapshotQueueItem)
         fakeSnapshotQueueItem.pendingJobs.set(0)
@@ -317,6 +331,45 @@ internal class WindowsOnDrawListenerTest {
             verify(mockPerformanceMetric).stopAndSend(capture())
             assertThat(firstValue).isFalse()
         }
+    }
+
+    @Test
+    fun `M pass viewUrl from RumContextProvider W onDraw()`(
+        @fr.xgouchet.elmyr.annotation.StringForgery fakeViewUrl: String
+    ) {
+        val mockRumContextProvider: RumContextProvider = mock {
+            whenever(it.getRumContext()).thenReturn(
+                SessionReplayRumContext(viewUrl = fakeViewUrl)
+            )
+        }
+        val listenerWithProvider = WindowsOnDrawListener(
+            zOrderedDecorViews = fakeMockedDecorViews,
+            recordedDataQueueHandler = mockRecordedDataQueueHandler,
+            snapshotProducer = mockSnapshotProducer,
+            textAndInputPrivacy = fakeTextAndInputPrivacy,
+            imagePrivacy = fakeImagePrivacy,
+            debouncer = mockDebouncer,
+            miscUtils = mockMiscUtils,
+            sdkCore = mockSdkCore,
+            methodCallSamplingRate = fakeMethodCallSamplingRate,
+            dynamicOptimizationEnabled = fakeDynamicOptimizationEnabled,
+            touchPrivacyManager = mockTouchPrivacyManager,
+            rumContextProvider = mockRumContextProvider
+        )
+        whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
+            .thenReturn(fakeSnapshotQueueItem)
+        fakeSnapshotQueueItem.pendingJobs.set(0)
+
+        listenerWithProvider.onDraw()
+
+        verify(mockSnapshotProducer, times(fakeMockedDecorViews.size)).produce(
+            rootView = any(),
+            systemInformation = any(),
+            textAndInputPrivacy = eq(fakeTextAndInputPrivacy),
+            imagePrivacy = eq(fakeImagePrivacy),
+            recordedDataQueueRefs = any(),
+            activeRumViewUrl = eq(fakeViewUrl)
+        )
     }
 
     // region Internal

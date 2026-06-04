@@ -297,6 +297,109 @@ internal class MutationResolverTest {
 
     // endregion
 
+    // region permanentId changed mutations
+
+    @Test
+    fun `M emit remove and add W resolveMutations { permanentId changed }`(forge: Forge) {
+        val fakePermanentId = forge.anAlphabeticalString()
+        val fakeOldWireframe = forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>()
+            .copy(permanentId = fakePermanentId)
+        val fakeNewWireframe = fakeOldWireframe.copy(permanentId = fakePermanentId + "_new")
+
+        val mutations = testedMutationResolver.resolveMutations(
+            listOf(fakeOldWireframe),
+            listOf(fakeNewWireframe)
+        )
+
+        assertThat(mutations?.updates).isNullOrEmpty()
+        assertThat(mutations?.removes)
+            .isEqualTo(listOf(MobileSegment.Remove(fakeOldWireframe.id)))
+        assertThat(mutations?.adds)
+            .isEqualTo(listOf(MobileSegment.Add(previousId = null, wireframe = fakeNewWireframe)))
+    }
+
+    @Test
+    fun `M emit remove and add W resolveMutations { permanentId changed alongside other fields }`(
+        forge: Forge
+    ) {
+        val fakePermanentId = forge.anAlphabeticalString()
+        val fakeOldWireframe = forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>()
+            .copy(permanentId = fakePermanentId)
+        val fakeNewWireframe = fakeOldWireframe.copy(
+            permanentId = fakePermanentId + "_new",
+            x = fakeOldWireframe.x + 1
+        )
+
+        val mutations = testedMutationResolver.resolveMutations(
+            listOf(fakeOldWireframe),
+            listOf(fakeNewWireframe)
+        )
+
+        assertThat(mutations?.updates).isNullOrEmpty()
+        assertThat(mutations?.removes)
+            .isEqualTo(listOf(MobileSegment.Remove(fakeOldWireframe.id)))
+        assertThat(mutations?.adds)
+            .isEqualTo(listOf(MobileSegment.Add(previousId = null, wireframe = fakeNewWireframe)))
+    }
+
+    @Test
+    fun `M emit remove and add W resolveMutations { permanentId null to non-null }`(forge: Forge) {
+        val fakeOldWireframe = forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>()
+            .copy(permanentId = null)
+        val fakeNewWireframe = fakeOldWireframe.copy(permanentId = forge.anAlphabeticalString())
+
+        val mutations = testedMutationResolver.resolveMutations(
+            listOf(fakeOldWireframe),
+            listOf(fakeNewWireframe)
+        )
+
+        assertThat(mutations?.updates).isNullOrEmpty()
+        assertThat(mutations?.removes)
+            .isEqualTo(listOf(MobileSegment.Remove(fakeOldWireframe.id)))
+        assertThat(mutations?.adds)
+            .isEqualTo(listOf(MobileSegment.Add(previousId = null, wireframe = fakeNewWireframe)))
+    }
+
+    @Test
+    fun `M emit remove and add W resolveMutations { permanentId non-null to null }`(forge: Forge) {
+        val fakeOldWireframe = forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>()
+            .copy(permanentId = forge.anAlphabeticalString())
+        val fakeNewWireframe = fakeOldWireframe.copy(permanentId = null)
+
+        val mutations = testedMutationResolver.resolveMutations(
+            listOf(fakeOldWireframe),
+            listOf(fakeNewWireframe)
+        )
+
+        assertThat(mutations?.updates).isNullOrEmpty()
+        assertThat(mutations?.removes)
+            .isEqualTo(listOf(MobileSegment.Remove(fakeOldWireframe.id)))
+        assertThat(mutations?.adds)
+            .isEqualTo(listOf(MobileSegment.Add(previousId = null, wireframe = fakeNewWireframe)))
+    }
+
+    @Test
+    fun `M use predecessor id as previousId W resolveMutations { permanentId changed at index 1 }`(forge: Forge) {
+        val fakePermanentId = forge.anAlphabeticalString()
+        val fakeWireframe0 = forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>()
+        val fakeOldWireframe1 = forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>()
+            .copy(permanentId = fakePermanentId)
+        val fakeNewWireframe1 = fakeOldWireframe1.copy(permanentId = fakePermanentId + "_new")
+
+        val mutations = testedMutationResolver.resolveMutations(
+            listOf(fakeWireframe0, fakeOldWireframe1),
+            listOf(fakeWireframe0, fakeNewWireframe1)
+        )
+
+        assertThat(mutations?.updates).isNullOrEmpty()
+        assertThat(mutations?.removes)
+            .isEqualTo(listOf(MobileSegment.Remove(fakeOldWireframe1.id)))
+        assertThat(mutations?.adds)
+            .isEqualTo(listOf(MobileSegment.Add(previousId = fakeWireframe0.id, wireframe = fakeNewWireframe1)))
+    }
+
+    // endregion
+
     // region order changed mutations
 
     @Test

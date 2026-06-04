@@ -23,6 +23,8 @@ data class HeatmapIdentifier(val rawValue: String) {
 
         private const val SEPARATOR = "/"
 
+        private const val SCREEN_NAMESPACE_VIEW_PREFIX = "view:"
+
         /**
          * Creates a [HeatmapIdentifier] for the given UI element by hashing its canonical path,
          * or null if hashing fails.
@@ -30,6 +32,8 @@ data class HeatmapIdentifier(val rawValue: String) {
          * @param elementPath the path segments from the root view down to this element,
          *   where each segment identifies a view in the hierarchy (e.g. its resource entry name).
          * @param screenName the current RUM view URL, used to scope identifiers to a screen.
+         *   The `view:` namespace prefix is applied internally — callers pass the raw URL
+         *   (e.g. `https://example.com/home`), not the prefixed form.
          * @param appPackageName the application package name (e.g. `com.example.app`),
          *   used to globally namespace identifiers across apps.
          * @param onHashingFailure invoked with the caught exception if hashing fails.
@@ -52,7 +56,7 @@ data class HeatmapIdentifier(val rawValue: String) {
         ): String = buildString {
             append(escape(appPackageName))
             append(SEPARATOR)
-            append(escape(screenName))
+            append(escape(SCREEN_NAMESPACE_VIEW_PREFIX + screenName))
             for (segment in elementPath) {
                 append(SEPARATOR)
                 append(escape(segment))

@@ -167,19 +167,13 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
                     val removalOffset = removalOffsets[indexInOld]
                     val newElement = newSnapshot[index]
                     val oldElement = oldSnapshot[indexInOld]
+                    val previousId = if (index > 0) newSnapshot[index - 1].id() else null
                     if ((indexInOld - removalOffset + runningOffset) != index) {
                         // Old element was moved to another position:
-                        val previousId = if (index > 0) newSnapshot[index - 1].id() else null
                         removes.add(MobileSegment.Remove(newSnapshot[index].id()))
                         adds.add(MobileSegment.Add(previousId = previousId, newSnapshot[index]))
                     } else if (newElement != oldElement) {
-                        // Existing element is on the right position, but its data is different
-                        resolveUpdateMutation(
-                            prevWireframe = oldElement,
-                            currentWireframe = newElement
-                        )?.let {
-                            updates.add(it)
-                        }
+                        recordChangedWireframeMutations(oldElement, newElement, previousId, adds, removes, updates)
                     } // else - element was not moved and not changed, so: skip
                 }
 
@@ -349,6 +343,32 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
             )
         }
         return mutation
+    }
+
+    /**
+     * Applies the appropriate mutation for a wireframe whose content has changed but whose
+     * position in the list has not. If [permanentId][MobileSegment.Wireframe.permanentId]
+     * changed, [WireframeUpdateMutation][MobileSegment.WireframeUpdateMutation] has no field
+     * to carry it, so the wireframe is replaced via remove + add instead.
+     */
+    private fun recordChangedWireframeMutations(
+        oldElement: MobileSegment.Wireframe,
+        newElement: MobileSegment.Wireframe,
+        previousId: Long?,
+        adds: LinkedList<MobileSegment.Add>,
+        removes: LinkedList<MobileSegment.Remove>,
+        updates: LinkedList<MobileSegment.WireframeUpdateMutation>
+    ) {
+        if (newElement.permanentId() != oldElement.permanentId()) {
+            // WireframeUpdateMutation has no permanentId field, so a changed permanentId
+            // cannot be expressed as an in-place update. Fall back to remove+add to deliver
+            // the full wireframe with the new identifier.
+            removes.add(MobileSegment.Remove(newElement.id()))
+            adds.add(MobileSegment.Add(previousId = previousId, newElement))
+        } else {
+            resolveUpdateMutation(prevWireframe = oldElement, currentWireframe = newElement)
+                ?.let { updates.add(it) }
+        }
     }
 
     private fun resolveUpdateMutation(

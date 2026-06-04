@@ -56,10 +56,6 @@ internal class HeatmapIdentifierTest {
 
     @Test
     fun `M not collide W create {literal percent-encoded slash vs actual slash}`() {
-        // Given
-        // A literal "%2F" in the element path must produce a different identifier than
-        // an actual "/" in the element path, otherwise two distinct views would collide.
-
         // When
         val identifierWithLiteralEncoding = HeatmapIdentifier.create(
             elementPath = listOf("a%2Fb"),
@@ -79,10 +75,27 @@ internal class HeatmapIdentifierTest {
     }
 
     @Test
-    fun `M not collide W create {slash in screen name vs path separator}`() {
-        // Given
-        // A "/" in the screen name must not produce the same identifier as a path boundary.
+    fun `M scope identifier to view namespace W create {raw screen name is prefixed with view colon}`() {
+        // When
+        val identifierForRawScreenName = HeatmapIdentifier.create(
+            elementPath = listOf("btn"),
+            screenName = "MyScreen",
+            appPackageName = "com.example.app"
+        )
+        val identifierForPrePrefixedScreenName = HeatmapIdentifier.create(
+            elementPath = listOf("btn"),
+            screenName = "view:MyScreen",
+            appPackageName = "com.example.app"
+        )
 
+        // Then
+        assertThat(identifierForRawScreenName).isNotNull
+        assertThat(identifierForPrePrefixedScreenName).isNotNull
+        assertThat(identifierForRawScreenName).isNotEqualTo(identifierForPrePrefixedScreenName)
+    }
+
+    @Test
+    fun `M not collide W create {slash in screen name vs path separator}`() {
         // When
         val identifierWithSlashInScreenName = HeatmapIdentifier.create(
             elementPath = listOf("c"),

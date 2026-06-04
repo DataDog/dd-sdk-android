@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.processor
 
+import com.datadog.android.internal.heatmaps.HeatmapIdentifier
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -151,7 +152,9 @@ internal class NodeFlattenerTest {
                 forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>()
                     .copy(width = width, height = height, x = x, y = y)
             }.toMutableList()
-        val fakeSnapshot = generateFlattenNodeFromList(expectedList)
+        // Own copy so the concurrent thread mutates a different list — in production
+        // wireframes are always immutable.
+        val fakeSnapshot = generateFlattenNodeFromList(ArrayList(expectedList))
 
         // When
         val thread = Thread {
@@ -167,6 +170,87 @@ internal class NodeFlattenerTest {
             thread.join()
         }
     }
+
+    // region permanentId / heatmap identifier copy
+
+    @Test
+    fun `M stamp permanentId on every wireframe W flattenNode() { heatmapIdentifier set }`(forge: Forge) {
+        val fakeIdentifier = HeatmapIdentifier(forge.anAlphabeticalString())
+        val fakeWireframes = listOf<MobileSegment.Wireframe>(
+            forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>().copy(permanentId = null),
+            forge.getForgery<MobileSegment.Wireframe.TextWireframe>().copy(permanentId = null),
+            forge.getForgery<MobileSegment.Wireframe.ImageWireframe>().copy(permanentId = null),
+            forge.getForgery<MobileSegment.Wireframe.PlaceholderWireframe>().copy(permanentId = null),
+            forge.getForgery<MobileSegment.Wireframe.WebviewWireframe>().copy(permanentId = null)
+        )
+        val fakeNode = Node(
+            wireframes = fakeWireframes,
+            children = emptyList(),
+            parents = emptyList(),
+            heatmapIdentifier = fakeIdentifier
+        )
+
+        val flattened = testedNodeFlattener.flattenNode(fakeNode)
+
+        assertThat(flattened).hasSize(fakeWireframes.size)
+        assertThat(flattened.map { it.permanentId() }).allMatch { it == fakeIdentifier.rawValue }
+    }
+
+    @Test
+    fun `M leave permanentId untouched W flattenNode() { heatmapIdentifier null }`(forge: Forge) {
+        // copyWithPermanentId(null) would overwrite — the null guard must be in place.
+        val originalPermanentId = forge.anAlphabeticalString()
+        val fakeShape = forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>()
+            .copy(permanentId = originalPermanentId)
+        val fakeNode = Node(
+            wireframes = listOf(fakeShape),
+            children = emptyList(),
+            parents = emptyList(),
+            heatmapIdentifier = null
+        )
+
+        val flattened = testedNodeFlattener.flattenNode(fakeNode)
+
+        assertThat(flattened).hasSize(1)
+        assertThat(flattened[0].permanentId()).isEqualTo(originalPermanentId)
+    }
+
+    @Test
+    fun `M stamp per-node permanentId W flattenNode() { multi-node tree with mixed identifiers }`(
+        forge: Forge
+    ) {
+        val rootIdentifier = HeatmapIdentifier(forge.anAlphabeticalString())
+        val childIdentifier = HeatmapIdentifier(forge.anAlphabeticalString())
+        val rootWireframe = forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>()
+            .copy(permanentId = null)
+        val taggedChildWireframe = forge.getForgery<MobileSegment.Wireframe.TextWireframe>()
+            .copy(permanentId = null)
+        val untaggedChildWireframe = forge.getForgery<MobileSegment.Wireframe.ImageWireframe>()
+            .copy(permanentId = null)
+        val root = Node(
+            wireframes = listOf(rootWireframe),
+            heatmapIdentifier = rootIdentifier,
+            children = listOf(
+                Node(
+                    wireframes = listOf(taggedChildWireframe),
+                    heatmapIdentifier = childIdentifier
+                ),
+                Node(
+                    wireframes = listOf(untaggedChildWireframe),
+                    heatmapIdentifier = null
+                )
+            )
+        )
+
+        val flattened = testedNodeFlattener.flattenNode(root)
+
+        assertThat(flattened).hasSize(3)
+        assertThat(flattened[0].permanentId()).isEqualTo(rootIdentifier.rawValue)
+        assertThat(flattened[1].permanentId()).isEqualTo(childIdentifier.rawValue)
+        assertThat(flattened[2].permanentId()).isNull()
+    }
+
+    // endregion
 
     // endregion
 

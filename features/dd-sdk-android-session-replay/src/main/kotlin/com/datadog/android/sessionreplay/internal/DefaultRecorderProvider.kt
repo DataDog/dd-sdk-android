@@ -91,7 +91,8 @@ internal class DefaultRecorderProvider(
             customDrawableMappers = customDrawableMappers,
             sdkCore = sdkCore,
             dynamicOptimizationEnabled = dynamicOptimizationEnabled,
-            internalCallback = internalCallback
+            internalCallback = internalCallback,
+            heatmapIdentifierRegistry = DeferredHeatmapIdentifierRegistry(sdkCore)
         )
     }
 
