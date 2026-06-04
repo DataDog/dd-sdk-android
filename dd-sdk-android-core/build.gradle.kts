@@ -157,7 +157,7 @@ dependencies {
     // via testFixtures; exclude it since benchmarks don't need it.
     configurations.configureEach {
         if (name.contains("AndroidTest", ignoreCase = true)) {
-            exclude(group = "dd-sdk-android-3.tools", module = "unit")
+            exclude(group = "${rootProject.name}.tools", module = "unit")
         }
     }
 
