@@ -58,6 +58,14 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.Lock
 
 /**
+ * When set to `true`, forces the slow map-copy code path in [DatadogCore.updateFeatureContext]
+ * and [DatadogCore.getFeatureContext]. This reproduces the pre-RUM-13023 regression for
+ * benchmark validation. Must be `false` in production.
+ */
+@Suppress("TopLevelPropertyNaming")
+internal var useSlowMapCopy = false
+
+/**
  * Internal implementation of the [SdkCore] interface.
  * @param context the application's Android [Context]
  * @param instanceId the unique identifier for this instance
@@ -233,9 +241,19 @@ internal class DatadogCore(
             val feature = features[featureName] ?: return@runnable
             feature.featureContextLock.writeLock().safeTryWithLock(1, TimeUnit.SECONDS) {
                 val currentContext = feature.featureContext
-                updateCallback(currentContext)
-                featureContextUpdateReceivers.forEach {
-                    it.onContextUpdate(featureName, currentContext)
+                if (useSlowMapCopy) {
+                    val slowCopy = currentContext.toMap().toMutableMap()
+                    updateCallback(slowCopy)
+                    featureContextUpdateReceivers.forEach {
+                        it.onContextUpdate(featureName, slowCopy.toMap())
+                    }
+                    currentContext.clear()
+                    currentContext.putAll(slowCopy)
+                } else {
+                    updateCallback(currentContext)
+                    featureContextUpdateReceivers.forEach {
+                        it.onContextUpdate(featureName, currentContext)
+                    }
                 }
             }
         }
@@ -260,7 +278,11 @@ internal class DatadogCore(
                 // changes which can be made later by another thread.
                 // Use HashMap instead of .toMutableMap() for faster init
                 @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-                HashMap(feature.featureContext)
+                if (useSlowMapCopy) {
+                    feature.featureContext.toMap().toMap()
+                } else {
+                    HashMap(feature.featureContext)
+                }
             }.orEmpty()
         }
         return if (useContextThread) {

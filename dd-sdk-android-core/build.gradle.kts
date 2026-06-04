@@ -52,6 +52,8 @@ fun isLogEnabledInRelease(): String {
 
 android {
     defaultConfig {
+        testInstrumentationRunner = "androidx.benchmark.junit4.AndroidBenchmarkRunner"
+        testInstrumentationRunnerArguments["androidx.benchmark.suppressErrors"] = "EMULATOR"
         buildFeatures {
             buildConfig = true
         }
@@ -97,6 +99,17 @@ android {
     testFixtures {
         enable = true
     }
+
+    testBuildType = "release"
+
+    packaging {
+        resources {
+            excludes.add("META-INF/LICENSE.md")
+            excludes.add("META-INF/LICENSE-notice.md")
+            excludes.add("META-INF/verification.properties")
+            excludes.add("META-INF/com/android/build/gradle/aar-metadata.properties")
+        }
+    }
 }
 
 dependencies {
@@ -133,6 +146,20 @@ dependencies {
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     unmock(libs.robolectric)
+
+    // Benchmarks (androidTest)
+    androidTestImplementation(libs.androidXBenchmarkJunit4)
+    androidTestImplementation(libs.androidXTestRunner)
+    androidTestImplementation(libs.androidXTestJUnitExt)
+    androidTestImplementation(libs.jUnit4)
+
+    // tools:unit uses MethodHandle.invoke (requires API 26) and leaks into androidTest
+    // via testFixtures; exclude it since benchmarks don't need it.
+    configurations.configureEach {
+        if (name.contains("AndroidTest", ignoreCase = true)) {
+            exclude(group = "dd-sdk-android-3.tools", module = "unit")
+        }
+    }
 
     // Test Fixtures
     testFixturesImplementation(libs.kotlin)
