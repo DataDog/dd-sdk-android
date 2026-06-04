@@ -73,14 +73,19 @@ class SessionReplayRumAutoBenchmark {
             FrameTimingMetric(),
             MemoryUsageMetric(MemoryUsageMetric.Mode.Max),
             TraceSectionMetric(
-                sectionName = "DD-upload-rum",
+                sectionName = "SnapshotProducer",
                 mode = TraceSectionMetric.Mode.Sum,
+                targetPackageOnly = true
+            ),
+            TraceSectionMetric(
+                sectionName = "SnapshotProducer",
+                mode = TraceSectionMetric.Mode.Average,
                 targetPackageOnly = true
             )
         ),
         compilationMode = CompilationMode.Full(),
         startupMode = StartupMode.COLD,
-        iterations = 1,
+        iterations = 3,
         setupBlock = {
             pressHome()
         }

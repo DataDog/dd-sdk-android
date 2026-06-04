@@ -6,7 +6,6 @@
 
 package com.datadog.android.internal.profiler
 
-import androidx.tracing.trace
 import com.datadog.android.internal.time.TimeProvider
 
 internal class DDExecutionTimer(
@@ -20,17 +19,11 @@ internal class DDExecutionTimer(
             return action()
         }
 
-        // Emit an androidx.tracing section so Jetpack Macrobenchmark's TraceSectionMetric can
-        // attribute timing to a specific SDK feature (e.g. "DD-upload-rum"). The section is a
-        // no-op overhead-wise when atrace is not enabled on the device.
-        return trace("$TRACE_SECTION_PREFIX$track") {
-            val requestStartTime = timeProvider.getDeviceElapsedTimeNanos()
-            val result = action()
-            val latencyInSeconds =
-                (timeProvider.getDeviceElapsedTimeNanos() - requestStartTime) / NANOSECONDS_IN_A_SECOND
-            responseLatencyReport(latencyInSeconds, track)
-            result
-        }
+        val requestStartTime = timeProvider.getDeviceElapsedTimeNanos()
+        val result = action()
+        val latencyInSeconds = (timeProvider.getDeviceElapsedTimeNanos() - requestStartTime) / NANOSECONDS_IN_A_SECOND
+        responseLatencyReport(latencyInSeconds, track)
+        return result
     }
 
     private fun responseLatencyReport(latencySeconds: Double, track: String) {
@@ -46,7 +39,6 @@ internal class DDExecutionTimer(
     }
 
     private companion object {
-        private const val TRACE_SECTION_PREFIX = "DD-upload-"
         private const val TRACK_NAME = "track"
         private const val METER_NAME = "dd-sdk-android"
         private const val BENCHMARK_RESPONSE_LATENCY = "android.benchmark.response_latency"

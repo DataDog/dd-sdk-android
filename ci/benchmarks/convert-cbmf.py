@@ -44,8 +44,11 @@ METRIC_MAP: dict[str, tuple[str, str]] = {
     "memoryRssAnonMaxKb": ("rss", "KB"),
     "memoryRssFileMaxKb": ("rss", "KB"),
     # Trace section metrics (TraceSectionMetric). The key is "<sectionName><Mode>Ms",
-    # e.g. "DD-upload-rum" with Mode.Sum -> "DD-upload-rumSumMs".
-    "DD-upload-rumSumMs": ("execution_time", "ms"),
+    # e.g. the Session Replay "SnapshotProducer" span with Mode.Sum -> "SnapshotProducerSumMs"
+    # (total SR recording time per iteration) and Mode.Average -> "SnapshotProducerAverageMs"
+    # (mean cost of a single snapshot capture, independent of frame count).
+    "SnapshotProducerSumMs": ("execution_time", "ms"),
+    "SnapshotProducerAverageMs": ("execution_time", "ms"),
 }
 
 

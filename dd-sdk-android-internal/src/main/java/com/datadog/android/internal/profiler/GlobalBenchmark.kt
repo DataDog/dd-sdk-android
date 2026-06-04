@@ -41,6 +41,15 @@ object GlobalBenchmark {
     }
 
     /**
+     * Returns `true` if a real (non No-Op) [BenchmarkProfiler] has been registered, i.e. the app is
+     * currently running under benchmark instrumentation. Used to gate benchmark-only side effects
+     * (such as emitting trace sections) so they add no overhead in production.
+     */
+    internal fun isProfilerRegistered(): Boolean {
+        return benchmarkProfiler !is NoOpBenchmarkProfiler
+    }
+
+    /**
      * Returns the [BenchmarkSdkUploads] registered.
      */
     fun getBenchmarkSdkUploads(): BenchmarkSdkUploads {
