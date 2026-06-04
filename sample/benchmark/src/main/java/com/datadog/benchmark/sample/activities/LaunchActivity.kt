@@ -20,6 +20,7 @@ import com.datadog.benchmark.sample.activities.scenarios.SessionReplayComposeSce
 import com.datadog.benchmark.sample.activities.scenarios.SessionReplayScenarioActivity
 import com.datadog.benchmark.sample.benchmarkAppComponent
 import com.datadog.benchmark.sample.config.BenchmarkConfig
+import com.datadog.benchmark.sample.config.SyntheticsRun
 import com.datadog.benchmark.sample.config.SyntheticsScenario
 import okhttp3.OkHttpClient
 import javax.inject.Inject

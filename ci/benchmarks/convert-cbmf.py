@@ -39,10 +39,17 @@ METRIC_MAP: dict[str, tuple[str, str]] = {
     "timeNs": ("execution_time", "ns"),
     # Count metrics
     "frameCount": ("iterations", "iterations"),
+    "allocationCount": ("allocations", "allocations"),
     # Memory metrics
     "memoryHeapSizeMaxKb": ("rss", "KB"),
     "memoryRssAnonMaxKb": ("rss", "KB"),
     "memoryRssFileMaxKb": ("rss", "KB"),
+    # Trace section metrics (TraceSectionMetric). The key is "<sectionName><Mode>Ms",
+    # e.g. the Session Replay "SnapshotProducer" span with Mode.Sum -> "SnapshotProducerSumMs"
+    # (total SR recording time per iteration) and Mode.Average -> "SnapshotProducerAverageMs"
+    # (mean cost of a single snapshot capture, independent of frame count).
+    "SnapshotProducerSumMs": ("execution_time", "ms"),
+    "SnapshotProducerAverageMs": ("execution_time", "ms"),
 }
 
 

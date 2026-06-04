@@ -46,9 +46,19 @@ android {
             Paths.get(rootDir.path, "consumer-rules.pro").toString(),
             "consumer-rules.pro"
         )
+        testInstrumentationRunner = "androidx.benchmark.junit4.AndroidBenchmarkRunner"
+        testInstrumentationRunnerArguments["androidx.benchmark.suppressErrors"] = "EMULATOR"
     }
 
     namespace = "com.datadog.android.rum"
+
+    testBuildType = "release"
+
+    packaging {
+        resources {
+            excludes += "META-INF/com/datadoghq/**/verification.properties"
+        }
+    }
 
     testFixtures {
         enable = true
@@ -90,6 +100,20 @@ dependencies {
     testImplementation(testFixtures(project(":dd-sdk-android-internal")))
     testImplementation(testFixtures(project(":features:dd-sdk-android-trace")))
     unmock(libs.robolectric)
+
+    // Benchmarks (androidTest)
+    androidTestImplementation(libs.androidXBenchmarkJunit4)
+    androidTestImplementation(libs.androidXTestRunner)
+    androidTestImplementation(libs.androidXTestJUnitExt)
+    androidTestImplementation(libs.jUnit4)
+
+    // tools:unit uses MethodHandle.invoke (requires API 26) and leaks into androidTest
+    // via testFixtures; exclude it since benchmarks don't need it.
+    configurations.configureEach {
+        if (name.contains("AndroidTest", ignoreCase = true)) {
+            exclude(group = "${rootProject.name}.tools", module = "unit")
+        }
+    }
 
     // Test Fixtures
     testFixturesImplementation(testFixtures(project(":dd-sdk-android-core")))

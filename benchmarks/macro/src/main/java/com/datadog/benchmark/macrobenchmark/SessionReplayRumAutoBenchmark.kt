@@ -11,8 +11,14 @@ import android.content.Intent
 import android.os.Environment
 import android.util.Log
 import androidx.benchmark.macro.CompilationMode
+import androidx.benchmark.macro.ExperimentalMetricApi
 import androidx.benchmark.macro.FrameTimingMetric
+import androidx.benchmark.macro.MemoryUsageMetric
+import androidx.benchmark.macro.PowerCategory
+import androidx.benchmark.macro.PowerCategoryDisplayLevel
+import androidx.benchmark.macro.PowerMetric
 import androidx.benchmark.macro.StartupMode
+import androidx.benchmark.macro.TraceSectionMetric
 import androidx.benchmark.macro.junit4.MacrobenchmarkRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.uiautomator.By
@@ -62,13 +68,37 @@ class SessionReplayRumAutoBenchmark {
         }
     }
 
+    @OptIn(ExperimentalMetricApi::class)
     @Test
     fun frameTimingWithSessionReplay() = benchmarkRule.measureRepeated(
         packageName = TARGET_PACKAGE,
-        metrics = listOf(FrameTimingMetric()),
+        metrics = listOf(
+            FrameTimingMetric(),
+            MemoryUsageMetric(MemoryUsageMetric.Mode.Max),
+            TraceSectionMetric(
+                sectionName = "SnapshotProducer",
+                mode = TraceSectionMetric.Mode.Sum,
+                targetPackageOnly = true
+            ),
+            TraceSectionMetric(
+                sectionName = "SnapshotProducer",
+                mode = TraceSectionMetric.Mode.Average,
+                targetPackageOnly = true
+            ),
+            PowerMetric(
+                type = PowerMetric.Energy(
+                    categories = mapOf(
+                        PowerCategory.CPU to PowerCategoryDisplayLevel.BREAKDOWN,
+                        PowerCategory.DISPLAY to PowerCategoryDisplayLevel.TOTAL,
+                        PowerCategory.GPU to PowerCategoryDisplayLevel.TOTAL,
+                        PowerCategory.MEMORY to PowerCategoryDisplayLevel.TOTAL
+                    )
+                )
+            )
+        ),
         compilationMode = CompilationMode.Full(),
         startupMode = StartupMode.COLD,
-        iterations = 10,
+        iterations = 3,
         setupBlock = {
             pressHome()
         }

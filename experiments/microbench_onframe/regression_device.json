@@ -1,0 +1,119 @@
+{
+    "context": {
+        "build": {
+            "brand": "samsung",
+            "device": "dm1q",
+            "fingerprint": "samsung/dm1qxxx/dm1q:16/BP2A.250605.031.A3/S911BXXS8EZA1:user/release-keys",
+            "id": "BP2A.250605.031.A3",
+            "model": "SM-S911B",
+            "type": "user",
+            "version": {
+                "codename": "REL",
+                "sdk": 36
+            }
+        },
+        "cpuCoreCount": 8,
+        "cpuLocked": false,
+        "cpuMaxFreqHz": 3360000000,
+        "memTotalBytes": 7417593856,
+        "sustainedPerformanceModeEnabled": false,
+        "artMainlineVersion": 361501120,
+        "osCodenameAbbreviated": "B",
+        "compilationMode": "verify"
+    },
+    "benchmarks": [
+        {
+            "name": "onFrame",
+            "params": {},
+            "className": "com.datadog.android.rum.internal.vitals.FrameStatesAggregatorBenchmark",
+            "totalRunTimeNs": 6160448331,
+            "metrics": {
+                "timeNs": {
+                    "minimum": 27.327976287976288,
+                    "maximum": 33.19902655902656,
+                    "median": 29.046660426660427,
+                    "runs": [
+                        28.986452946452946,
+                        29.245154245154247,
+                        29.165367965367967,
+                        28.993848913848915,
+                        30.644929604929604,
+                        30.145080145080144,
+                        29.70064194064194,
+                        28.506995826995826,
+                        29.507348387348387,
+                        28.32182832182832,
+                        29.462173862173863,
+                        30.1792862992863,
+                        28.567611247611246,
+                        27.39159627159627,
+                        28.744897624897625,
+                        28.99108459108459,
+                        28.60774696774697,
+                        28.882453882453884,
+                        28.63845871845872,
+                        28.736852696852697,
+                        28.197028197028196,
+                        28.585972465972468,
+                        28.422822822822823,
+                        30.3204992004992,
+                        30.073416793416794,
+                        29.063804063804064,
+                        29.212085332085334,
+                        27.327976287976288,
+                        28.724098124098123,
+                        28.7413221013221,
+                        29.5209984009984,
+                        29.467616707616706,
+                        33.19902655902656,
+                        29.283748683748684,
+                        29.833160953160952,
+                        29.720385320385322,
+                        29.096303576303576,
+                        28.60725868725869,
+                        30.524843804843805,
+                        29.02951678951679,
+                        28.516340236340238,
+                        27.802396162396164,
+                        28.177771537771537,
+                        29.347042627042626,
+                        28.641547521547523,
+                        29.276029796029796,
+                        28.664785304785305,
+                        30.322449202449203,
+                        29.16853476853477,
+                        29.35833547833548
+                    ]
+                },
+                "allocationCount": {
+                    "minimum": 1.0,
+                    "maximum": 1.00000468000468,
+                    "median": 1.0,
+                    "runs": [
+                        1.00000468000468,
+                        1.0,
+                        1.00000156000156,
+                        1.0,
+                        1.0
+                    ]
+                }
+            },
+            "sampledMetrics": {},
+            "warmupIterations": 32235314,
+            "repeatIterations": 641025,
+            "thermalThrottleSleepSeconds": 0,
+            "profilerOutputs": [
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace",
+                    "filename": "FrameStatesAggregatorBenchmark_onFrame_2026-06-04-11-24-44.perfetto-trace"
+                },
+                {
+                    "type": "MethodTrace",
+                    "label": "Method Trace",
+                    "filename": "FrameStatesAggregatorBenchmark_onFrame-methodTracing-2026-06-04-11-24-43.trace"
+                }
+            ]
+        }
+    ]
+}

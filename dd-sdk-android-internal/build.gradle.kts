@@ -60,6 +60,7 @@ android {
 dependencies {
     implementation(libs.kotlin)
     implementation(libs.androidXAnnotation)
+    implementation(libs.androidXTracing)
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))

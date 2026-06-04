@@ -1,0 +1,119 @@
+{
+    "context": {
+        "build": {
+            "brand": "google",
+            "device": "emu64a",
+            "fingerprint": "google/sdk_gphone64_arm64/emu64a:16/BP22.250221.010/13193326:user/release-keys",
+            "id": "BP22.250221.010",
+            "model": "sdk_gphone64_arm64",
+            "type": "user",
+            "version": {
+                "codename": "REL",
+                "sdk": 36
+            }
+        },
+        "cpuCoreCount": 4,
+        "cpuLocked": false,
+        "cpuMaxFreqHz": 2000,
+        "memTotalBytes": 2070470656,
+        "sustainedPerformanceModeEnabled": false,
+        "artMainlineVersion": 360111000,
+        "osCodenameAbbreviated": "B",
+        "compilationMode": "verify"
+    },
+    "benchmarks": [
+        {
+            "name": "EMULATOR_updateFeatureContext",
+            "params": {},
+            "className": "com.datadog.android.core.internal.UpdateFeatureContextBenchmark",
+            "totalRunTimeNs": 14523135590,
+            "metrics": {
+                "timeNs": {
+                    "minimum": 100.54296875,
+                    "maximum": 105.2419275,
+                    "median": 102.645365,
+                    "runs": [
+                        103.28307375,
+                        103.4161975,
+                        102.815625,
+                        101.90953125,
+                        101.19729125,
+                        102.64026,
+                        102.64578125,
+                        102.64494875,
+                        102.3014575,
+                        100.54296875,
+                        102.50927,
+                        101.18130125,
+                        104.23427,
+                        102.00093875,
+                        102.58645875,
+                        101.8910425,
+                        101.2068225,
+                        101.59135375,
+                        101.105,
+                        101.95489625,
+                        103.92791625,
+                        105.0933325,
+                        103.28088625,
+                        103.89817625,
+                        103.04177125,
+                        102.5175,
+                        101.3303125,
+                        102.55302125,
+                        105.2419275,
+                        102.92,
+                        102.97875,
+                        104.3610425,
+                        103.755105,
+                        103.6574475,
+                        103.1778125,
+                        102.53349,
+                        102.766615,
+                        102.34177125,
+                        103.06796875,
+                        103.96599,
+                        102.459115,
+                        103.23036375,
+                        100.8763025,
+                        103.0603125,
+                        102.95984375,
+                        102.43359375,
+                        101.32510375,
+                        102.79,
+                        102.34302125,
+                        102.8265625
+                    ]
+                },
+                "allocationCount": {
+                    "minimum": 3.00003625,
+                    "maximum": 3.00012875,
+                    "median": 3.00007625,
+                    "runs": [
+                        3.00009875,
+                        3.00012875,
+                        3.00007625,
+                        3.00006875,
+                        3.00003625
+                    ]
+                }
+            },
+            "sampledMetrics": {},
+            "warmupIterations": 59264672,
+            "repeatIterations": 800000,
+            "thermalThrottleSleepSeconds": 0,
+            "profilerOutputs": [
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace",
+                    "filename": "UpdateFeatureContextBenchmark_updateFeatureContext_2026-06-04-14-05-29.perfetto-trace"
+                },
+                {
+                    "type": "MethodTrace",
+                    "label": "Method Trace",
+                    "filename": "UpdateFeatureContextBenchmark_updateFeatureContext-methodTracing-2026-06-04-14-05-28.trace"
+                }
+            ]
+        }
+    ]
+}
