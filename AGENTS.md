@@ -112,46 +112,6 @@ Filename matches the flavor: `config/us1.json`, `config/staging.json`, etc. Get 
 
 Some modules generate Kotlin data classes from JSON schemas at build time (e.g. `features/dd-sdk-android-rum/src/main/json/`). The generated Kotlin files land in `build/generated/json2kotlin/` — **do not edit them directly**. Edit the JSON schemas instead and rebuild.
 
-# Benchmarks & bp-analyzer
-
-## Converting benchmark results to CBMF
-
-Jetpack Benchmark JSON (both macro and micro) can be converted to CBMF format for bp-analyzer:
-
-```bash
-python3 ci/benchmarks/convert-cbmf.py --input <benchmarkData.json> --variant <label> --output <out.cbmf.json>
-```
-
-To compare two runs, convert each with a different `--variant`, merge with `jq`, then run bp-analyzer:
-
-```bash
-jq -s '{schema_version:"v1", benchmarks: ([.[].benchmarks]|add)}' baseline.cbmf.json candidate.cbmf.json > merged.json
-```
-
-## bp-analyzer reports
-
-**Markdown** reports work with the standalone `bp-analyzer` binary:
-
-```bash
-bp-analyzer compare pairwise merged.json \
-  --baseline='{"variant":"no_regression"}' \
-  --candidate='{"variant":"with_regression"}' \
-  --outpath report.md --format md
-```
-
-**HTML** reports require the poetry-based CLI inside `benchmarking-platform-tools` because
-the standalone binary is missing the Jupyter notebook template that papermill needs:
-
-```bash
-cd ~/projects/benchmarking-platform-tools/bp-analyzer/cli
-poetry run bp-analyzer compare pairwise /absolute/path/to/merged.json \
-  --baseline='{"variant":"no_regression"}' \
-  --candidate='{"variant":"with_regression"}' \
-  --outpath /absolute/path/to/report.html --format html
-```
-
-Note: `--baseline` and `--candidate` filters must be JSON objects (not `key=value` strings).
-
 # Commits
 
 - Default branch for PRs: **`develop`**
