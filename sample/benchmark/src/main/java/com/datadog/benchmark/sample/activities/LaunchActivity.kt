@@ -20,6 +20,7 @@ import com.datadog.benchmark.sample.activities.scenarios.SessionReplayComposeSce
 import com.datadog.benchmark.sample.activities.scenarios.SessionReplayScenarioActivity
 import com.datadog.benchmark.sample.benchmarkAppComponent
 import com.datadog.benchmark.sample.config.BenchmarkConfig
+import com.datadog.benchmark.sample.config.SyntheticsRun
 import com.datadog.benchmark.sample.config.SyntheticsScenario
 import okhttp3.OkHttpClient
 import javax.inject.Inject
@@ -40,7 +41,8 @@ internal class LaunchActivity : AppCompatActivity() {
 
         application.benchmarkAppComponent.inject(this)
 
-        val config = BenchmarkConfig.resolveSyntheticsBundle(intent.extras)
+//        val config = BenchmarkConfig.resolveSyntheticsBundle(intent.extras)
+        val config = BenchmarkConfig(run = SyntheticsRun.Instrumented, scenario = SyntheticsScenario.RumAuto)
         benchmarkConfigHolder.config = config
 
         /**
