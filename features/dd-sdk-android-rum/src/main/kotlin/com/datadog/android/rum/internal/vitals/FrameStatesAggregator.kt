@@ -30,6 +30,14 @@ import java.lang.ref.WeakReference
 import java.util.WeakHashMap
 
 /**
+ * When set to `true`, forces the slow `forEach {}` iteration path (which allocates an
+ * [Iterator] per call) instead of the allocation-free indexed loop. This reproduces the
+ * RUM-8785 regression for benchmark validation. Must be `false` in production.
+ */
+@Suppress("TopLevelPropertyNaming")
+internal var useForEachIteration = false
+
+/**
  * Utility class listening to frame rate information.
  */
 internal class FrameStatesAggregator(
@@ -155,10 +163,12 @@ internal class FrameStatesAggregator(
     // region JankStats.OnFrameListener
 
     override fun onFrame(volatileFrameData: FrameData) {
-        // This method is called pretty often and forEach{} gonna create iterator instance each time.
-        // To reduce gc pressure we use for-loop iteration here:
-        for (i in frameStateListeners.indices) {
-            frameStateListeners[i].onFrame(volatileFrameData)
+        if (useForEachIteration) {
+            frameStateListeners.forEach { it.onFrame(volatileFrameData) }
+        } else {
+            for (i in frameStateListeners.indices) {
+                frameStateListeners[i].onFrame(volatileFrameData)
+            }
         }
     }
 
@@ -289,15 +299,13 @@ internal class FrameStatesAggregator(
             frameMetrics: FrameMetrics,
             dropCountSinceLastInvocation: Int
         ) {
-            // This method is called pretty often and forEach{} gonna create iterator instance each time.
-            // To reduce gc pressure we use for-loop iteration here:
-            for (i in frameStateListeners.indices) {
-                frameStateListeners[i].onFrameMetricsData(
-                    frameMetricsData.update(
-                        frameMetrics,
-                        dropCountSinceLastInvocation
-                    )
-                )
+            val data = frameMetricsData.update(frameMetrics, dropCountSinceLastInvocation)
+            if (useForEachIteration) {
+                frameStateListeners.forEach { it.onFrameMetricsData(data) }
+            } else {
+                for (i in frameStateListeners.indices) {
+                    frameStateListeners[i].onFrameMetricsData(data)
+                }
             }
         }
     }
