@@ -19,7 +19,9 @@ bp-analyzer compare pairwise \
   --outpath=benchmark-comparison.md \
   --baseline='{"version": "baseline"}' \
   --candidate='{"version": "candidate"}' \
-  macrobenchmark-baseline.cbmf.json \
-  macrobenchmark-candidate.cbmf.json
+  baseline-dd-sdk-android.converted.json \
+  candidate-dd-sdk-android.converted.json
 
 echo "Comparison report saved to benchmark-comparison.md"
+
+bash ci/benchmarks/bp-upload.sh || echo "Warning: BP upload failed, continuing."

@@ -27,10 +27,17 @@ echo "Converting ${BENCHMARK_JSON} to CBMF..."
 python3 ci/benchmarks/convert-cbmf.py \
   --input "$BENCHMARK_JSON" \
   --version candidate \
-  --output macrobenchmark-candidate.cbmf.json
+  --commit-sha "$CI_COMMIT_SHORT_SHA" \
+  --pipeline-id "$CI_PIPELINE_ID" \
+  --branch "$CI_COMMIT_REF_NAME" \
+  --commit-date "$(git log -1 --format=%ct)" \
+  --job-id "$CI_JOB_ID" \
+  --job-date "$(date +%s)" \
+  --cpu-model "$(sysctl -n machdep.cpu.brand_string 2>/dev/null || echo 'Apple M1')" \
+  --output candidate-dd-sdk-android.converted.json
 
 echo "Uploading to ${S3_BASE}..."
-aws s3 cp "$BENCHMARK_JSON"                  "${S3_BASE}/macrobenchmark-raw.json"
-aws s3 cp macrobenchmark-candidate.cbmf.json "${S3_BASE}/macrobenchmark-candidate.cbmf.json"
+aws s3 cp "$BENCHMARK_JSON"                         "${S3_BASE}/macrobenchmark-raw.json"
+aws s3 cp candidate-dd-sdk-android.converted.json   "${S3_BASE}/candidate-dd-sdk-android.converted.json"
 
 echo "Upload complete: ${S3_BASE}"

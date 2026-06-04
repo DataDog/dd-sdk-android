@@ -61,8 +61,8 @@ benchmark:macro:
     expire_in: 1 week
     paths:
       - benchmarks/macro/build/outputs/
-      - macrobenchmark-candidate.cbmf.json
-      - macrobenchmark-baseline.cbmf.json
+      - candidate-dd-sdk-android.converted.json
+      - baseline-dd-sdk-android.converted.json
 
 benchmark:analyze:
   stage: report

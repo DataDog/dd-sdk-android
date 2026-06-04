@@ -16,9 +16,9 @@
 
 set -euo pipefail
 
-S3_LATEST="s3://relenv-benchmarking-data/dd-sdk-android/_latest/macrobenchmark-baseline.cbmf.json"
+S3_LATEST="s3://relenv-benchmarking-data/dd-sdk-android/_latest/baseline-dd-sdk-android.converted.json"
 FALLBACK="ci/benchmarks/macrobenchmark-baseline.cbmf.json"
-OUTPUT="macrobenchmark-baseline.cbmf.json"
+OUTPUT="baseline-dd-sdk-android.converted.json"
 
 if aws s3 cp "$S3_LATEST" "$OUTPUT" 2>/dev/null; then
   echo "Baseline downloaded from S3: ${S3_LATEST}"
