@@ -1,0 +1,119 @@
+{
+    "context": {
+        "build": {
+            "brand": "google",
+            "device": "emu64a",
+            "fingerprint": "google/sdk_gphone64_arm64/emu64a:16/BP22.250221.010/13193326:user/release-keys",
+            "id": "BP22.250221.010",
+            "model": "sdk_gphone64_arm64",
+            "type": "user",
+            "version": {
+                "codename": "REL",
+                "sdk": 36
+            }
+        },
+        "cpuCoreCount": 4,
+        "cpuLocked": false,
+        "cpuMaxFreqHz": 2000,
+        "memTotalBytes": 2070470656,
+        "sustainedPerformanceModeEnabled": false,
+        "artMainlineVersion": 360111000,
+        "osCodenameAbbreviated": "B",
+        "compilationMode": "verify"
+    },
+    "benchmarks": [
+        {
+            "name": "EMULATOR_onFrame",
+            "params": {},
+            "className": "com.datadog.android.rum.internal.vitals.FrameStatesAggregatorBenchmark",
+            "totalRunTimeNs": 18391519717,
+            "metrics": {
+                "timeNs": {
+                    "minimum": 5.715625,
+                    "maximum": 5.972292,
+                    "median": 5.830042000000001,
+                    "runs": [
+                        5.833458,
+                        5.917416,
+                        5.867459,
+                        5.816583,
+                        5.772958,
+                        5.794375,
+                        5.772917,
+                        5.773459,
+                        5.747125,
+                        5.83375,
+                        5.715625,
+                        5.827792,
+                        5.749458,
+                        5.7255,
+                        5.809416,
+                        5.76225,
+                        5.7745,
+                        5.75625,
+                        5.795334,
+                        5.74575,
+                        5.744542,
+                        5.829625,
+                        5.879666,
+                        5.830459,
+                        5.826209,
+                        5.857958,
+                        5.906916,
+                        5.950291,
+                        5.819584,
+                        5.92375,
+                        5.972292,
+                        5.853167,
+                        5.907667,
+                        5.807541,
+                        5.849333,
+                        5.728167,
+                        5.87775,
+                        5.873583,
+                        5.861708,
+                        5.837791,
+                        5.860666,
+                        5.881875,
+                        5.879959,
+                        5.757084,
+                        5.854708,
+                        5.80325,
+                        5.791792,
+                        5.8565,
+                        5.848291,
+                        5.876875
+                    ]
+                },
+                "allocationCount": {
+                    "minimum": 0.0,
+                    "maximum": 0.0,
+                    "median": 0.0,
+                    "runs": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                }
+            },
+            "sampledMetrics": {},
+            "warmupIterations": 359435482,
+            "repeatIterations": 1000000,
+            "thermalThrottleSleepSeconds": 0,
+            "profilerOutputs": [
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace",
+                    "filename": "FrameStatesAggregatorBenchmark_onFrame_2026-06-04-11-23-20.perfetto-trace"
+                },
+                {
+                    "type": "MethodTrace",
+                    "label": "Method Trace",
+                    "filename": "FrameStatesAggregatorBenchmark_onFrame-methodTracing-2026-06-04-11-23-20.trace"
+                }
+            ]
+        }
+    ]
+}

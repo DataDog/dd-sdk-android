@@ -10,12 +10,14 @@ import androidx.benchmark.junit4.BenchmarkRule
 import androidx.benchmark.junit4.measureRepeated
 import androidx.metrics.performance.FrameData
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.core.metrics.TelemetryMetricType
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.internal.domain.FrameMetricsData
 import org.junit.After
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -27,8 +29,14 @@ import org.junit.runner.RunWith
  * an [Iterator] on every call; the indexed `for` loop avoids this. With 2-3 delegates
  * this per-frame allocation was a measurable source of GC pressure.
  *
- * The [useForEachIteration] toggle switches between the two code paths so both can
- * be measured against the real [FrameStatesAggregator] instance.
+ * The [useForEachIteration] toggle is read from the instrumentation argument
+ * `useForEachIteration` (default `false`), so baseline and regression runs
+ * can be compared without recompilation:
+ *
+ * ```
+ * -Pandroid.testInstrumentationRunnerArguments.useForEachIteration=false  # baseline
+ * -Pandroid.testInstrumentationRunnerArguments.useForEachIteration=true   # regression
+ * ```
  */
 @RunWith(AndroidJUnit4::class)
 class FrameStatesAggregatorBenchmark {
@@ -53,30 +61,19 @@ class FrameStatesAggregatorBenchmark {
         states = emptyList()
     )
 
+    @Before
+    fun setUp() {
+        val args = InstrumentationRegistry.getArguments()
+        useForEachIteration = args.getString("useForEachIteration", "false").toBoolean()
+    }
+
     @After
     fun tearDown() {
         useForEachIteration = false
     }
 
-    /**
-     * Optimised path (no iterator allocation). This is what production code uses.
-     */
     @Test
-    fun onFrame_indexedLoop() {
-        useForEachIteration = false
-        val aggregator = FrameStatesAggregator(listeners, NoOpLogger)
-        benchmarkRule.measureRepeated {
-            aggregator.onFrame(frameData)
-        }
-    }
-
-    /**
-     * Regressed path: `forEach` creates an [Iterator] on every invocation.
-     * At 60-120 fps this causes measurable GC pressure.
-     */
-    @Test
-    fun onFrame_forEachLoop() {
-        useForEachIteration = true
+    fun onFrame() {
         val aggregator = FrameStatesAggregator(listeners, NoOpLogger)
         benchmarkRule.measureRepeated {
             aggregator.onFrame(frameData)
