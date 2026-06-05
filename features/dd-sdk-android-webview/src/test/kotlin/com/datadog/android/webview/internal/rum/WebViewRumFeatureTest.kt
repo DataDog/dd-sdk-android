@@ -113,7 +113,32 @@ internal class WebViewRumFeatureTest {
     }
 
     @Test
-    fun `M do nothing W onContextUpdate { no RUM feature }`(@StringForgery fakeFeatureName: String) {
+    fun `M cache rum context W onContextUpdate { RUM }`() {
+        // Given
+        val fakeContext = mapOf<String, Any?>("session_id" to "fake-id")
+
+        // When
+        testedFeature.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
+
+        // Then
+        assertThat(testedFeature.cachedRumContext).isSameAs(fakeContext)
+    }
+
+    @Test
+    fun `M cache tracing context W onContextUpdate { TRACING }`() {
+        // Given
+        val fakeContext = mapOf<String, Any?>("okhttp_interceptor_sample_rate" to 50f)
+
+        // When
+        testedFeature.onContextUpdate(Feature.TRACING_FEATURE_NAME, fakeContext)
+
+        // Then
+        assertThat(testedFeature.cachedTracingContext).isSameAs(fakeContext)
+        verifyNoInteractions(mockNativeRumViewsCache)
+    }
+
+    @Test
+    fun `M do nothing W onContextUpdate { unknown feature }`(@StringForgery fakeFeatureName: String) {
         // Given
         val fakeContext = mock<Map<String, Any?>>()
 
@@ -122,5 +147,21 @@ internal class WebViewRumFeatureTest {
 
         // Then
         verifyNoInteractions(mockNativeRumViewsCache)
+        assertThat(testedFeature.cachedRumContext).isEmpty()
+        assertThat(testedFeature.cachedTracingContext).isEmpty()
+    }
+
+    @Test
+    fun `M clear cached contexts W onStop()`() {
+        // Given
+        testedFeature.onContextUpdate(Feature.RUM_FEATURE_NAME, mapOf("session_id" to "fake-id"))
+        testedFeature.onContextUpdate(Feature.TRACING_FEATURE_NAME, mapOf("okhttp_interceptor_sample_rate" to 50f))
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        assertThat(testedFeature.cachedRumContext).isEmpty()
+        assertThat(testedFeature.cachedTracingContext).isEmpty()
     }
 }
