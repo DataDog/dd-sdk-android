@@ -76,7 +76,7 @@ def _percentile(sorted_values: list[float], p: int) -> float:
 # Conversion logic
 # ---------------------------------------------------------------------------
 
-def convert_metrics(benchmark: dict) -> list[dict]:
+def convert_metrics(benchmark: dict, version: Optional[str] = None, extra: Optional[dict] = None) -> list[dict]:
     """Convert the 'metrics' section of a Jetpack benchmark to CBMF benchmarks.
 
     Each Jetpack metric (e.g. frameDurationCpuMs) with its per-iteration scalar
@@ -104,18 +104,23 @@ def convert_metrics(benchmark: dict) -> list[dict]:
             }
 
         if runs:
+            parameters = {
+                "scenario": f"{name}:{metric_name}",
+                "className": class_name,
+            }
+            if version:
+                parameters["version"] = version
+            if extra:
+                parameters.update(extra)
             cbmf_benchmarks.append({
-                "parameters": {
-                    "scenario": f"{name}:{metric_name}",
-                    "className": class_name,
-                },
+                "parameters": parameters,
                 "runs": runs,
             })
 
     return cbmf_benchmarks
 
 
-def convert_sampled_metrics(benchmark: dict) -> list[dict]:
+def convert_sampled_metrics(benchmark: dict, version: Optional[str] = None, extra: Optional[dict] = None) -> list[dict]:
     """Convert the 'sampledMetrics' section of a Jetpack benchmark to CBMF benchmarks.
 
     Each sampled metric (e.g. frameDurationCpuMs) has per-iteration arrays of
@@ -150,24 +155,66 @@ def convert_sampled_metrics(benchmark: dict) -> list[dict]:
                 }
 
             if runs:
+                parameters = {
+                    "scenario": f"{name}:{metric_name}:P{p}",
+                    "className": class_name,
+                }
+                if version:
+                    parameters["version"] = version
+                if extra:
+                    parameters.update(extra)
                 cbmf_benchmarks.append({
-                    "parameters": {
-                        "scenario": f"{name}:{metric_name}:P{p}",
-                        "className": class_name,
-                    },
+                    "parameters": parameters,
                     "runs": runs,
                 })
 
     return cbmf_benchmarks
 
 
-def convert(jetpack_json: dict) -> dict:
-    """Convert a full Jetpack Benchmark JSON to CBMF v1."""
+def convert(
+    jetpack_json: dict,
+    version: Optional[str] = None,
+    commit_sha: Optional[str] = None,
+    pipeline_id: Optional[str] = None,
+    branch: Optional[str] = None,
+    commit_date: Optional[str] = None,
+    job_id: Optional[str] = None,
+    job_date: Optional[str] = None,
+    cpu_model: Optional[str] = None,
+) -> dict:
+    """Convert a full Jetpack Benchmark JSON to CBMF v1.
+
+    Args:
+        version: Version tag to distinguish baseline from candidate.
+        commit_sha: Git commit SHA embedded in parameters for BP UI traceability.
+        pipeline_id: CI pipeline ID embedded in parameters for BP UI traceability.
+        branch: Git branch name embedded in parameters for BP UI traceability.
+        commit_date: Unix timestamp of the git commit (git log -1 --format=%ct).
+        job_id: CI job ID (e.g. $CI_JOB_ID).
+        job_date: Unix timestamp of when the CI job ran (date +%s).
+        cpu_model: CPU model of the runner machine.
+    """
+    extra = {}
+    if commit_sha:
+        extra["git_commit_sha"] = commit_sha
+    if pipeline_id:
+        extra["ci_pipeline_id"] = pipeline_id
+    if branch:
+        extra["git_branch"] = branch
+    if commit_date:
+        extra["git_commit_date"] = commit_date
+    if job_id:
+        extra["ci_job_id"] = job_id
+    if job_date:
+        extra["ci_job_date"] = job_date
+    if cpu_model:
+        extra["cpu_model"] = cpu_model
+
     cbmf_benchmarks = []
 
     for benchmark in jetpack_json.get("benchmarks", []):
-        cbmf_benchmarks.extend(convert_metrics(benchmark))
-        cbmf_benchmarks.extend(convert_sampled_metrics(benchmark))
+        cbmf_benchmarks.extend(convert_metrics(benchmark, version=version, extra=extra))
+        cbmf_benchmarks.extend(convert_sampled_metrics(benchmark, version=version, extra=extra))
 
     return {
         "schema_version": "v1",
@@ -191,12 +238,54 @@ def main():
         "--output", default=None,
         help="Path to write the CBMF JSON output. Prints to stdout if omitted."
     )
+    parser.add_argument(
+        "--version", required=True,
+        help="Version tag added to each benchmark's parameters to distinguish baseline from candidate (e.g. 'baseline', 'candidate')."
+    )
+    parser.add_argument(
+        "--commit-sha", default=None,
+        help="Git commit SHA to embed in parameters for BP UI traceability (e.g. $CI_COMMIT_SHORT_SHA)."
+    )
+    parser.add_argument(
+        "--pipeline-id", default=None,
+        help="CI pipeline ID to embed in parameters for BP UI traceability (e.g. $CI_PIPELINE_ID)."
+    )
+    parser.add_argument(
+        "--branch", default=None,
+        help="Git branch name to embed in parameters for BP UI traceability (e.g. $CI_COMMIT_REF_NAME)."
+    )
+    parser.add_argument(
+        "--commit-date", default=None,
+        help="Unix timestamp of the git commit (e.g. $(git log -1 --format=%%ct))."
+    )
+    parser.add_argument(
+        "--job-id", default=None,
+        help="CI job ID (e.g. $CI_JOB_ID)."
+    )
+    parser.add_argument(
+        "--job-date", default=None,
+        help="Unix timestamp of when the CI job ran (e.g. $(date +%%s))."
+    )
+    parser.add_argument(
+        "--cpu-model", default=None,
+        help="CPU model of the runner machine (e.g. $(sysctl -n machdep.cpu.brand_string))."
+    )
     args = parser.parse_args()
 
     with open(args.input, encoding="utf-8") as f:
         jetpack_data = json.load(f)
 
-    cbmf = convert(jetpack_data)
+    cbmf = convert(
+        jetpack_data,
+        version=args.version,
+        commit_sha=args.commit_sha,
+        pipeline_id=args.pipeline_id,
+        branch=args.branch,
+        commit_date=args.commit_date,
+        job_id=args.job_id,
+        job_date=args.job_date,
+        cpu_model=args.cpu_model,
+    )
 
     if not cbmf["benchmarks"]:
         print("Warning: no benchmarks were converted. Check that the input file "
