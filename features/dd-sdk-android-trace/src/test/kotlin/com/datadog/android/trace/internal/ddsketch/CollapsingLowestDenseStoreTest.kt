@@ -7,6 +7,7 @@
 package com.datadog.android.trace.internal.ddsketch
 
 import com.datadog.android.utils.forge.Configurator
+import com.datadoghq.sketch.ddsketch.store.StoreProtoBinding
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -16,13 +17,8 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.quality.Strictness
+import com.datadoghq.sketch.ddsketch.store.CollapsingLowestDenseStore as RefCollapsingLowestDenseStore
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -209,67 +205,53 @@ internal class CollapsingLowestDenseStoreTest {
     }
 
     @Test
-    fun `M is no-op W writeTo() {empty store}`() {
+    fun `M produce identical bytes to reference proto encoding W writeTo() {empty store}`() {
         // Given
-        val mockSerializer = mock<DDSketchSerializer>()
+        val ourStore = newStore()
+        val refStore = RefCollapsingLowestDenseStore(1_000)
+        val serializer = DDSketchSerializer(0)
 
         // When
-        newStore().writeTo(mockSerializer)
+        ourStore.writeTo(serializer)
+        val ourBytes = serializer.toByteArray()
+        val refBytes = StoreProtoBinding.toProto(refStore).toByteArray()
 
         // Then
-        verifyNoInteractions(mockSerializer)
+        assertThat(ourBytes).isEqualTo(refBytes)
     }
 
     @Test
-    fun `M call writeCompactArray on field 2 and writeSignedInt32 on field 3 W writeTo()`(
-        @IntForgery(min = -100, max = 100) fakeIndex: Int
-    ) {
-        // Given
-        val store = newStore { add(fakeIndex) }
-        val mockSerializer = mock<DDSketchSerializer>()
-
-        // When
-        store.writeTo(mockSerializer)
-
-        // Then
-        verify(mockSerializer).writeCompactArray(eq(2), any(), any<Int>(), any<Int>())
-        verify(mockSerializer).writeSignedInt32(3, fakeIndex)
-    }
-
-    @Test
-    fun `M pass bin count as length to writeCompactArray W writeTo()`(
+    fun `M produce identical bytes to reference proto encoding W writeTo() {single index per bin}`(
         @IntForgery(min = 1, max = 50) fakeBinCount: Int
     ) {
-        // Given
-        val store = newStore { for (i in 0 until fakeBinCount) add(i) }
-        val mockSerializer = mock<DDSketchSerializer>()
+        // Given: fakeBinCount distinct adjacent indices, one count each
+        val ourStore = newStore { for (i in 0 until fakeBinCount) add(i) }
+        val refStore = RefCollapsingLowestDenseStore(1_000).also { for (i in 0 until fakeBinCount) it.add(i) }
+        val serializer = DDSketchSerializer(ourStore.serializedSize())
 
         // When
-        store.writeTo(mockSerializer)
+        ourStore.writeTo(serializer)
+        val ourBytes = serializer.toByteArray()
+        val refBytes = StoreProtoBinding.toProto(refStore).toByteArray()
 
         // Then
-        verify(mockSerializer).writeCompactArray(eq(2), any(), any<Int>(), eq(fakeBinCount))
+        assertThat(ourBytes).isEqualTo(refBytes)
     }
 
     @Test
-    fun `M pass accumulated counts to writeCompactArray W writeTo()`() {
+    fun `M produce identical bytes to reference proto encoding W writeTo() {accumulated counts}`() {
         // Given: index 0 added twice, index 1 added once → counts = [2.0, 1.0]
-        val store = newStore { add(0); add(0); add(1) }
-        val mockSerializer = mock<DDSketchSerializer>()
-        val arrayCaptor = argumentCaptor<DoubleArray>()
-        val fromCaptor = argumentCaptor<Int>()
-        val lengthCaptor = argumentCaptor<Int>()
+        val ourStore = newStore { add(0); add(0); add(1) }
+        val refStore = RefCollapsingLowestDenseStore(1_000).also { it.add(0); it.add(0); it.add(1) }
+        val serializer = DDSketchSerializer(ourStore.serializedSize())
 
         // When
-        store.writeTo(mockSerializer)
+        ourStore.writeTo(serializer)
+        val ourBytes = serializer.toByteArray()
+        val refBytes = StoreProtoBinding.toProto(refStore).toByteArray()
 
         // Then
-        verify(
-            mockSerializer
-        ).writeCompactArray(eq(2), arrayCaptor.capture(), fromCaptor.capture(), lengthCaptor.capture())
-        val from = fromCaptor.firstValue
-        val length = lengthCaptor.firstValue
-        assertThat(arrayCaptor.firstValue.slice(from until from + length)).containsExactly(2.0, 1.0)
+        assertThat(ourBytes).isEqualTo(refBytes)
     }
 
     // endregion

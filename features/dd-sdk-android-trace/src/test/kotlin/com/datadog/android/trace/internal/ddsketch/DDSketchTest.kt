@@ -18,11 +18,10 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.inOrder
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import kotlin.math.exp
+import com.datadoghq.sketch.ddsketch.DDSketchProtoBinding as DDSketchLibProtoBinding
+import com.datadoghq.sketch.ddsketch.DDSketches as DDSketchesLib
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -37,7 +36,7 @@ internal class DDSketchTest {
     @Test
     fun `M be empty W isEmpty() {no values added}`() {
         // When / Then
-        assertThat(DDSketch(RELATIVE_ACCURACY, MAX_BINS).isEmpty()).isTrue()
+        assertThat(DDSketch(RELATIVE_ACCURACY, MAX_BINS)).isEmpty()
     }
 
     @Test
@@ -68,7 +67,7 @@ internal class DDSketchTest {
 
         // Then: zeros go to zeroCount, not a store — total count still accumulates
         assertThat(sketch.getCount()).isEqualTo(fakeCount.toDouble())
-        assertThat(sketch.isEmpty()).isFalse()
+        assertThat(sketch).isNotEmpty()
     }
 
     @Test
@@ -82,7 +81,7 @@ internal class DDSketchTest {
         sketch.add(fakeValue)
 
         // Then
-        assertThat(sketch.isEmpty()).isFalse()
+        assertThat(sketch).isNotEmpty()
     }
 
     @Test
@@ -111,7 +110,7 @@ internal class DDSketchTest {
         }
 
         // Then
-        assertThat(sketch.isEmpty()).isFalse()
+        assertThat(sketch).isNotEmpty()
         assertThat(sketch.getCount()).isEqualTo(10_000.0)
     }
 
@@ -169,30 +168,91 @@ internal class DDSketchTest {
     }
 
     @Test
-    fun `M write headers and delegates in order W writeTo()`() {
+    fun `M produce identical bytes to reference proto encoding W serialize() {positive values}`(
+        @DoubleForgery(min = 1.0, max = 1000.0) fakeValue: Double,
+        @IntForgery(min = 1, max = 50) fakeCount: Int
+    ) {
         // Given
-        val mockMapping = mock<LogarithmicMapping>()
-        val mockPositiveStore = mock<CollapsingLowestDenseStore>()
-        val mockNegativeStore = mock<CollapsingLowestDenseStore>()
-        val mockSerializer = mock<DDSketchSerializer>()
-        whenever(mockMapping.serializedSize()).thenReturn(9)
-        whenever(mockPositiveStore.serializedSize()).thenReturn(10)
-        whenever(mockNegativeStore.serializedSize()).thenReturn(10)
-        val sketch = DDSketch(mockMapping, mockNegativeStore, mockPositiveStore)
+        val ourSketch = DDSketch(RELATIVE_ACCURACY, MAX_BINS)
+        val refSketch = DDSketchesLib.logarithmicCollapsingLowestDense(RELATIVE_ACCURACY, MAX_BINS)
+        repeat(fakeCount) {
+            ourSketch.add(fakeValue)
+            refSketch.accept(fakeValue)
+        }
 
         // When
-        sketch.writeTo(mockSerializer)
+        val ourBytes = ourSketch.serialize()
+        val refBytes = DDSketchLibProtoBinding.toProto(refSketch).toByteArray()
 
-        // Then: headers written before each delegate, fields 1=mapping, 2=positive, 3=negative, 4=zeroCount
-        inOrder(mockSerializer, mockMapping, mockPositiveStore, mockNegativeStore) {
-            verify(mockSerializer).writeHeader(1, 9)
-            verify(mockMapping).writeTo(mockSerializer)
-            verify(mockSerializer).writeHeader(2, 10)
-            verify(mockPositiveStore).writeTo(mockSerializer)
-            verify(mockSerializer).writeHeader(3, 10)
-            verify(mockNegativeStore).writeTo(mockSerializer)
-            verify(mockSerializer).writeDouble(4, 0.0)
+        // Then
+        assertThat(ourBytes).isEqualTo(refBytes)
+    }
+
+    @Test
+    fun `M produce identical bytes to reference proto encoding W serialize() {negative values}`(
+        @DoubleForgery(min = 1.0, max = 1000.0) fakeValue: Double,
+        @IntForgery(min = 1, max = 50) fakeCount: Int
+    ) {
+        // Given
+        val ourSketch = DDSketch(RELATIVE_ACCURACY, MAX_BINS)
+        val refSketch = DDSketchesLib.logarithmicCollapsingLowestDense(RELATIVE_ACCURACY, MAX_BINS)
+        repeat(fakeCount) {
+            ourSketch.add(-fakeValue)
+            refSketch.accept(-fakeValue)
         }
+
+        // When
+        val ourBytes = ourSketch.serialize()
+        val refBytes = DDSketchLibProtoBinding.toProto(refSketch).toByteArray()
+
+        // Then
+        assertThat(ourBytes).isEqualTo(refBytes)
+    }
+
+    @Test
+    fun `M produce identical bytes to reference proto encoding W serialize() {zero values}`(
+        @IntForgery(min = 1, max = 50) fakeCount: Int
+    ) {
+        // Given
+        val ourSketch = DDSketch(RELATIVE_ACCURACY, MAX_BINS)
+        val refSketch = DDSketchesLib.logarithmicCollapsingLowestDense(RELATIVE_ACCURACY, MAX_BINS)
+        repeat(fakeCount) {
+            ourSketch.add(0.0)
+            refSketch.accept(0.0)
+        }
+
+        // When
+        val ourBytes = ourSketch.serialize()
+        val refBytes = DDSketchLibProtoBinding.toProto(refSketch).toByteArray()
+
+        // Then
+        assertThat(ourBytes).isEqualTo(refBytes)
+    }
+
+    @Test
+    fun `M produce identical bytes to reference proto encoding W serialize() {mixed values}`(
+        @DoubleForgery(min = 1.0, max = 1000.0) fakePositive: Double,
+        @DoubleForgery(min = 1.0, max = 1000.0) fakeNegative: Double,
+        @IntForgery(min = 1, max = 20) fakeCount: Int
+    ) {
+        // Given
+        val ourSketch = DDSketch(RELATIVE_ACCURACY, MAX_BINS)
+        val refSketch = DDSketchesLib.logarithmicCollapsingLowestDense(RELATIVE_ACCURACY, MAX_BINS)
+        repeat(fakeCount) {
+            ourSketch.add(fakePositive)
+            ourSketch.add(-fakeNegative)
+            ourSketch.add(0.0)
+            refSketch.accept(fakePositive)
+            refSketch.accept(-fakeNegative)
+            refSketch.accept(0.0)
+        }
+
+        // When
+        val ourBytes = ourSketch.serialize()
+        val refBytes = DDSketchLibProtoBinding.toProto(refSketch).toByteArray()
+
+        // Then
+        assertThat(ourBytes).isEqualTo(refBytes)
     }
 
     // endregion

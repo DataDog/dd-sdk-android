@@ -40,8 +40,10 @@ internal class DDSketchSerializer(size: Int) {
     }
 
     fun writeSignedInt32(fieldIndex: Int, value: Int) {
-        writeTag(fieldIndex, VARINT)
-        writeVarInt(zigZag(value))
+        if (value != 0) {
+            writeTag(fieldIndex, VARINT)
+            writeVarInt(zigZag(value))
+        }
     }
 
     internal fun writeTag(fieldIndex: Int, wireType: Int) {
@@ -89,7 +91,7 @@ internal class DDSketchSerializer(size: Int) {
         }
 
         fun signedIntFieldSize(fieldIndex: Int, value: Int): Int {
-            return tagSize(fieldIndex, VARINT) + varIntLength(zigZag(value)) + 1
+            return if (value == 0) 0 else tagSize(fieldIndex, VARINT) + varIntLength(zigZag(value)) + 1
         }
 
         fun doubleFieldSize(fieldIndex: Int, value: Double): Int {

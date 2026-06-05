@@ -1096,6 +1096,7 @@ datadog:
       - "kotlin.collections.MutableCollection.sum()"
       - "kotlin.collections.List.sortedByDescending(kotlin.Function1)"
       - "kotlin.emptyArray()"
+      - "kotlin.ranges.IntProgression.asSequence()"
       - "kotlin.sequences.Sequence.groupBy(kotlin.Function1)"
       - "kotlin.sequences.Sequence.filter(kotlin.Function1)"
       - "kotlin.sequences.Sequence.firstOrNull()"
@@ -1108,6 +1109,12 @@ datadog:
       - "kotlin.sequences.Sequence.mapNotNull(kotlin.Function1)"
       - "kotlin.sequences.Sequence.reduceOrNull(kotlin.Function2)"
       - "kotlin.sequences.Sequence.sortedBy(kotlin.Function1)"
+      - "kotlin.sequences.Sequence.iterator()"
+      - "kotlin.sequences.SequenceScope.yield(kotlin.Pair)"
+      - "kotlin.sequences.SequenceScope.yieldAll(kotlin.sequences.Sequence)"
+      - "kotlin.sequences.SequenceScope.yieldAll(kotlin.collections.Iterable)"
+      - "kotlin.sequences.SequenceScope.yieldAll(kotlin.collections.Iterator)"
+      - "kotlin.sequences.sequence(kotlin.coroutines.SuspendFunction1)"
       - "kotlin.sequences.emptySequence()"
       # endregion
       # region Kotlin Primitives

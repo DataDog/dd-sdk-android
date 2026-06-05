@@ -7,6 +7,7 @@
 package com.datadog.android.trace.internal.ddsketch
 
 import com.datadog.android.utils.forge.Configurator
+import com.datadoghq.sketch.ddsketch.mapping.IndexMappingProtoBinding
 import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -18,11 +19,9 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.quality.Strictness
 import kotlin.math.sqrt
+import com.datadoghq.sketch.ddsketch.mapping.LogarithmicMapping as RefLogarithmicMapping
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -198,20 +197,21 @@ internal class LogarithmicMappingTest {
     }
 
     @Test
-    fun `M write gamma to field 1 W writeTo()`(
+    fun `M produce identical bytes to reference proto encoding W writeTo()`(
         @DoubleForgery(min = 0.001, max = 0.1) fakeRelativeAccuracy: Double
     ) {
         // Given
-        val mapping = LogarithmicMapping(fakeRelativeAccuracy)
-        val mockSerializer = mock<DDSketchSerializer>()
-        val expectedGamma = (1 + fakeRelativeAccuracy) / (1 - fakeRelativeAccuracy)
+        val ourMapping = LogarithmicMapping(fakeRelativeAccuracy)
+        val refMapping = RefLogarithmicMapping(fakeRelativeAccuracy)
+        val serializer = DDSketchSerializer(ourMapping.serializedSize())
 
         // When
-        mapping.writeTo(mockSerializer)
+        ourMapping.writeTo(serializer)
+        val ourBytes = serializer.toByteArray()
+        val refBytes = IndexMappingProtoBinding.toProto(refMapping).toByteArray()
 
         // Then
-        verify(mockSerializer).writeDouble(1, expectedGamma)
-        verifyNoMoreInteractions(mockSerializer)
+        assertThat(ourBytes).isEqualTo(refBytes)
     }
 
     // endregion

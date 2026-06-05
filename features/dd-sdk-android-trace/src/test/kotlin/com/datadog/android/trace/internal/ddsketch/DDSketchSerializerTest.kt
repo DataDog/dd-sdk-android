@@ -7,6 +7,8 @@
 package com.datadog.android.trace.internal.ddsketch
 
 import com.datadog.android.utils.forge.Configurator
+import com.google.protobuf.CodedOutputStream
+import com.google.protobuf.WireFormat
 import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -19,8 +21,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
+import java.io.ByteArrayOutputStream
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -43,15 +44,23 @@ internal class DDSketchSerializerTest {
     fun `M return 0 W doubleFieldSize() {value is 0}`(
         @IntForgery(min = 1, max = 15) fakeField: Int
     ) {
-        assertThat(DDSketchSerializer.doubleFieldSize(fakeField, 0.0)).isEqualTo(0)
+        // Given / When
+        val result = DDSketchSerializer.doubleFieldSize(fakeField, 0.0)
+
+        // Then: proto3 default value is omitted from the wire
+        assertThat(result).isEqualTo(0)
     }
 
     @Test
-    fun `M return 9 W doubleFieldSize() {non-zero value, single-byte tag field}`(
+    fun `M match CodedOutputStream W doubleFieldSize() {non-zero value}`(
+        @IntForgery(min = 1, max = 15) fakeField: Int,
         @DoubleForgery(min = 0.001, max = 1000.0) fakeValue: Double
     ) {
-        // tag (1 byte for field 1) + 8 bytes for the double
-        assertThat(DDSketchSerializer.doubleFieldSize(1, fakeValue)).isEqualTo(9)
+        // Given / When
+        val result = DDSketchSerializer.doubleFieldSize(fakeField, fakeValue)
+
+        // Then
+        assertThat(result).isEqualTo(CodedOutputStream.computeDoubleSize(fakeField, fakeValue))
     }
 
     // endregion
@@ -59,11 +68,26 @@ internal class DDSketchSerializerTest {
     // region signedIntFieldSize
 
     @Test
-    fun `M return 2 W signedIntFieldSize() {small value}`(
-        @IntForgery(min = -62, max = 62) fakeValue: Int
+    fun `M return 0 W signedIntFieldSize() {value is 0}`(
+        @IntForgery(min = 1, max = 15) fakeField: Int
     ) {
-        // tag (1 byte) + zigzag varint (1 byte for values where zigzag fits in 7 bits)
-        assertThat(DDSketchSerializer.signedIntFieldSize(1, fakeValue)).isEqualTo(2)
+        // Given / When
+        val result = DDSketchSerializer.signedIntFieldSize(fakeField, 0)
+
+        // Then: proto3 default value is omitted from the wire
+        assertThat(result).isEqualTo(0)
+    }
+
+    @Test
+    fun `M match CodedOutputStream W signedIntFieldSize() {non-zero value}`(
+        @IntForgery(min = 1, max = 15) fakeField: Int,
+        @IntForgery(min = 1, max = 10000) fakeValue: Int
+    ) {
+        // Given / When / Then
+        assertThat(DDSketchSerializer.signedIntFieldSize(fakeField, fakeValue))
+            .isEqualTo(CodedOutputStream.computeSInt32Size(fakeField, fakeValue))
+        assertThat(DDSketchSerializer.signedIntFieldSize(fakeField, -fakeValue))
+            .isEqualTo(CodedOutputStream.computeSInt32Size(fakeField, -fakeValue))
     }
 
     // endregion
@@ -71,17 +95,29 @@ internal class DDSketchSerializerTest {
     // region sizeOfCompactDoubleArray
 
     @Test
-    fun `M return 10 W sizeOfCompactDoubleArray() {1 element, field 2}`() {
-        // tag(1) + varint(8)(1) + 8 bytes = 10
-        assertThat(DDSketchSerializer.sizeOfCompactDoubleArray(2, 1)).isEqualTo(10)
+    fun `M match CodedOutputStream W sizeOfCompactDoubleArray() {1 element}`(
+        @IntForgery(min = 1, max = 15) fakeField: Int
+    ) {
+        // Given
+        val refSize = packedDoubleFieldBytes(fakeField, doubleArrayOf(1.0)).size
+
+        // When
+        val result = DDSketchSerializer.sizeOfCompactDoubleArray(fakeField, 1)
+
+        // Then
+        assertThat(result).isEqualTo(refSize)
     }
 
     @Test
     fun `M scale with element count W sizeOfCompactDoubleArray()`(
+        @IntForgery(min = 1, max = 15) fakeField: Int,
         @IntForgery(min = 1, max = 100) fakeCount: Int
     ) {
-        val size1 = DDSketchSerializer.sizeOfCompactDoubleArray(1, fakeCount)
-        val size2 = DDSketchSerializer.sizeOfCompactDoubleArray(1, fakeCount + 1)
+        // Given / When
+        val size1 = DDSketchSerializer.sizeOfCompactDoubleArray(fakeField, fakeCount)
+        val size2 = DDSketchSerializer.sizeOfCompactDoubleArray(fakeField, fakeCount + 1)
+
+        // Then
         assertThat(size2 - size1).isEqualTo(8)
     }
 
@@ -91,25 +127,39 @@ internal class DDSketchSerializerTest {
 
     @Test
     fun `M return 1 W embeddedSize() {size 0}`() {
-        // Just the length varint byte, no payload
-        assertThat(DDSketchSerializer.embeddedSize(0)).isEqualTo(1)
+        // Given / When
+        val result = DDSketchSerializer.embeddedSize(0)
+
+        // Then: just the length varint byte, no payload
+        assertThat(result).isEqualTo(1)
     }
 
     @Test
     fun `M return size plus 1 W embeddedSize() {small payload}`(
         @IntForgery(min = 1, max = 127) fakeSize: Int
     ) {
-        // 1 byte for length varint + fakeSize payload bytes
-        assertThat(DDSketchSerializer.embeddedSize(fakeSize)).isEqualTo(fakeSize + 1)
+        // Given / When
+        val result = DDSketchSerializer.embeddedSize(fakeSize)
+
+        // Then: 1 byte for length varint + fakeSize payload bytes
+        assertThat(result).isEqualTo(fakeSize + 1)
     }
 
     @Test
     fun `M return tag plus embedded W embeddedFieldSize()`(
+        @IntForgery(min = 1, max = 15) fakeField: Int,
         @IntForgery(min = 1, max = 127) fakeSize: Int
     ) {
-        // tag (1 byte for field 1) + embeddedSize(fakeSize)
-        assertThat(DDSketchSerializer.embeddedFieldSize(1, fakeSize))
-            .isEqualTo(1 + DDSketchSerializer.embeddedSize(fakeSize))
+        // Given / When
+        val result = DDSketchSerializer.embeddedFieldSize(fakeField, fakeSize)
+
+        // Then
+        assertThat(result)
+            .isEqualTo(
+                CodedOutputStream.computeTagSize(fakeField) +
+                    CodedOutputStream.computeUInt32SizeNoTag(fakeSize) +
+                    fakeSize
+            )
     }
 
     // endregion
@@ -117,37 +167,29 @@ internal class DDSketchSerializerTest {
     // region writeDouble
 
     @Test
-    fun `M write nothing W writeDouble() {value is 0}`() {
-        // When
-        testedSerializer.writeDouble(1, 0.0)
+    fun `M write nothing W writeDouble() {value is 0}`(
+        @IntForgery(min = 1, max = 15) fakeField: Int
+    ) {
+        // Given / When
+        testedSerializer.writeDouble(fakeField, 0.0)
 
         // Then
         assertThat(testedSerializer.toByteArray()).isEmpty()
     }
 
     @Test
-    fun `M write FIXED_64 tag then LE double W writeDouble() {non-zero value}`() {
-        // When
-        testedSerializer.writeDouble(1, 1.0)
-
-        // Then: tag = 0x09 (field=1, wire=FIXED_64), then 1.0 as LE double
-        val bytes = testedSerializer.toByteArray()
-        assertThat(bytes[0]).isEqualTo(0x09.toByte())
-        val value = ByteBuffer.wrap(bytes, 1, 8).order(ByteOrder.LITTLE_ENDIAN).double
-        assertThat(value).isEqualTo(1.0)
-    }
-
-    @Test
-    fun `M round-trip value W writeDouble()`(
+    fun `M produce identical bytes to CodedOutputStream W writeDouble() {non-zero value}`(
+        @IntForgery(min = 1, max = 15) fakeField: Int,
         @DoubleForgery(min = 0.001, max = 1e10) fakeValue: Double
     ) {
-        // When
-        testedSerializer.writeDouble(1, fakeValue)
+        // Given
+        val refBytes = protoBytes { it.writeDouble(fakeField, fakeValue) }
 
-        // Then: skip the 1-byte tag, read the double
-        val bytes = testedSerializer.toByteArray()
-        val parsed = ByteBuffer.wrap(bytes, 1, 8).order(ByteOrder.LITTLE_ENDIAN).double
-        assertThat(parsed).isEqualTo(fakeValue)
+        // When
+        testedSerializer.writeDouble(fakeField, fakeValue)
+
+        // Then
+        assertThat(testedSerializer.toByteArray()).isEqualTo(refBytes)
     }
 
     // endregion
@@ -155,63 +197,44 @@ internal class DDSketchSerializerTest {
     // region writeSignedInt32
 
     @Test
-    fun `M write VARINT tag then zigzag 0 W writeSignedInt32() {value 0}`() {
-        // When
-        testedSerializer.writeSignedInt32(1, 0)
+    fun `M write nothing W writeSignedInt32() {value 0}`(
+        @IntForgery(min = 1, max = 15) fakeField: Int
+    ) {
+        // Given / When
+        testedSerializer.writeSignedInt32(fakeField, 0)
 
-        // Then: tag = 0x08 (field=1, wire=VARINT), zigzag(0) = 0x00
-        val bytes = testedSerializer.toByteArray()
-        assertThat(bytes[0]).isEqualTo(0x08.toByte())
-        assertThat(bytes[1]).isEqualTo(0x00.toByte())
+        // Then
+        assertThat(testedSerializer.toByteArray()).isEmpty()
     }
 
     @Test
-    fun `M write zigzag-encoded positive int W writeSignedInt32() {value 1}`() {
-        // When
-        testedSerializer.writeSignedInt32(1, 1)
+    fun `M produce identical bytes to CodedOutputStream W writeSignedInt32() {positive value}`(
+        @IntForgery(min = 1, max = 15) fakeField: Int,
+        @IntForgery(min = 1, max = 10000) fakeValue: Int
+    ) {
+        // Given
+        val refBytes = protoBytes { it.writeSInt32(fakeField, fakeValue) }
 
-        // Then: zigzag(1) = 2 = 0x02
-        val bytes = testedSerializer.toByteArray()
-        assertThat(bytes[0]).isEqualTo(0x08.toByte())
-        assertThat(bytes[1]).isEqualTo(0x02.toByte())
+        // When
+        testedSerializer.writeSignedInt32(fakeField, fakeValue)
+
+        // Then
+        assertThat(testedSerializer.toByteArray()).isEqualTo(refBytes)
     }
 
     @Test
-    fun `M write zigzag-encoded negative int W writeSignedInt32() {value -1}`() {
+    fun `M produce identical bytes to CodedOutputStream W writeSignedInt32() {negative value}`(
+        @IntForgery(min = 1, max = 15) fakeField: Int,
+        @IntForgery(min = -10000, max = -1) fakeValue: Int
+    ) {
+        // Given
+        val refBytes = protoBytes { it.writeSInt32(fakeField, fakeValue) }
+
         // When
-        testedSerializer.writeSignedInt32(1, -1)
+        testedSerializer.writeSignedInt32(fakeField, fakeValue)
 
-        // Then: zigzag(-1) = 1 = 0x01
-        val bytes = testedSerializer.toByteArray()
-        assertThat(bytes[0]).isEqualTo(0x08.toByte())
-        assertThat(bytes[1]).isEqualTo(0x01.toByte())
-    }
-
-    // endregion
-
-    // region writeHeader
-
-    @Test
-    fun `M write LENGTH_DELIMITED tag then length varint W writeHeader()`() {
-        // When
-        testedSerializer.writeHeader(1, 8)
-
-        // Then: tag = 0x0A (field=1, wire=LENGTH_DELIMITED), varint(8) = 0x08
-        val bytes = testedSerializer.toByteArray()
-        assertThat(bytes[0]).isEqualTo(0x0A.toByte())
-        assertThat(bytes[1]).isEqualTo(0x08.toByte())
-    }
-
-    @Test
-    fun `M write multi-byte varint W writeHeader() {length requires 2 varint bytes}`() {
-        // When: varint(128) encodes as 0x80 0x01 (continuation bit set on first byte)
-        testedSerializer.writeHeader(1, 128)
-
-        // Then: tag = 0x0A, then 128 as 2-byte varint
-        val bytes = testedSerializer.toByteArray()
-        assertThat(bytes[0]).isEqualTo(0x0A.toByte())
-        assertThat(bytes[1]).isEqualTo(0x80.toByte()) // low 7 bits of 128 with continuation bit
-        assertThat(bytes[2]).isEqualTo(0x01.toByte()) // remaining bits
+        // Then
+        assertThat(testedSerializer.toByteArray()).isEqualTo(refBytes)
     }
 
     // endregion
@@ -219,52 +242,67 @@ internal class DDSketchSerializerTest {
     // region writeCompactArray
 
     @Test
-    fun `M write LENGTH_DELIMITED tag, byte count, then LE doubles W writeCompactArray() {single element}`() {
+    fun `M produce identical bytes to CodedOutputStream W writeCompactArray() {single element}`(
+        @IntForgery(min = 1, max = 15) fakeField: Int
+    ) {
         // Given
-        val array = doubleArrayOf(0.0, 1.0, 0.0)
+        val values = doubleArrayOf(1.0)
+        val refBytes = packedDoubleFieldBytes(fakeField, values)
 
         // When
-        testedSerializer.writeCompactArray(2, array, 1, 1)
+        testedSerializer.writeCompactArray(fakeField, values, 0, 1)
 
-        // Then: tag=0x12, varint(8)=0x08, then 1.0 as LE double
-        val bytes = testedSerializer.toByteArray()
-        assertThat(bytes[0]).isEqualTo(0x12.toByte())
-        assertThat(bytes[1]).isEqualTo(0x08.toByte())
-        val value = ByteBuffer.wrap(bytes, 2, 8).order(ByteOrder.LITTLE_ENDIAN).double
-        assertThat(value).isEqualTo(1.0)
+        // Then
+        assertThat(testedSerializer.toByteArray()).isEqualTo(refBytes)
     }
 
     @Test
-    fun `M write one double per element W writeCompactArray() {multiple elements}`() {
+    fun `M produce identical bytes to CodedOutputStream W writeCompactArray() {multiple elements}`(
+        @IntForgery(min = 1, max = 15) fakeField: Int
+    ) {
         // Given
-        val array = doubleArrayOf(2.0, 3.0, 5.0)
+        val values = doubleArrayOf(2.0, 3.0, 5.0)
+        val refBytes = packedDoubleFieldBytes(fakeField, values)
 
         // When
-        testedSerializer.writeCompactArray(1, array, 0, 3)
+        testedSerializer.writeCompactArray(fakeField, values, 0, 3)
 
-        // Then: tag=0x0A, varint(24)=0x18, then three LE doubles
-        val bytes = testedSerializer.toByteArray()
-        assertThat(bytes[0]).isEqualTo(0x0A.toByte())
-        assertThat(bytes[1]).isEqualTo(0x18.toByte())
-        val buf = ByteBuffer.wrap(bytes, 2, 24).order(ByteOrder.LITTLE_ENDIAN)
-        assertThat(buf.double).isEqualTo(2.0)
-        assertThat(buf.double).isEqualTo(3.0)
-        assertThat(buf.double).isEqualTo(5.0)
+        // Then
+        assertThat(testedSerializer.toByteArray()).isEqualTo(refBytes)
     }
 
     @Test
-    fun `M respect from offset W writeCompactArray()`() {
-        // Given: array has 3 elements but we only serialize index 1..2
-        val array = doubleArrayOf(99.0, 2.0, 3.0)
+    fun `M respect from offset W writeCompactArray()`(
+        @IntForgery(min = 1, max = 15) fakeField: Int
+    ) {
+        // Given
+        val refBytes = packedDoubleFieldBytes(fakeField, doubleArrayOf(2.0, 3.0))
 
-        // When
-        testedSerializer.writeCompactArray(1, array, 1, 2)
+        // When: index 0 (99.0) should be skipped; only indices 1 and 2 are written
+        testedSerializer.writeCompactArray(fakeField, doubleArrayOf(99.0, 2.0, 3.0), 1, 2)
 
-        // Then: only 2.0 and 3.0 are serialized, not 99.0
-        val bytes = testedSerializer.toByteArray()
-        val buf = ByteBuffer.wrap(bytes, 2, 16).order(ByteOrder.LITTLE_ENDIAN)
-        assertThat(buf.double).isEqualTo(2.0)
-        assertThat(buf.double).isEqualTo(3.0)
+        // Then
+        assertThat(testedSerializer.toByteArray()).isEqualTo(refBytes)
+    }
+
+    // endregion
+
+    // region Helpers
+
+    private fun protoBytes(write: (CodedOutputStream) -> Unit): ByteArray {
+        val baos = ByteArrayOutputStream()
+        val cos = CodedOutputStream.newInstance(baos)
+        write(cos)
+        cos.flush()
+        return baos.toByteArray()
+    }
+
+    private fun packedDoubleFieldBytes(field: Int, values: DoubleArray): ByteArray {
+        return protoBytes { cos ->
+            cos.writeTag(field, WireFormat.WIRETYPE_LENGTH_DELIMITED)
+            cos.writeUInt32NoTag(values.size * 8)
+            values.forEach { cos.writeDoubleNoTag(it) }
+        }
     }
 
     // endregion

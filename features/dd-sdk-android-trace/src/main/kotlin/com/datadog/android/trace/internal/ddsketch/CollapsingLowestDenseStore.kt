@@ -175,6 +175,21 @@ internal class CollapsingLowestDenseStore(private val maxNumBins: Int) {
         }
     }
 
+    fun bins(ascending: Boolean): Sequence<Pair<Int, Double>> {
+        if (isEmpty) {
+            return emptySequence()
+        }
+
+        val indices = if (ascending) {
+            (minIndex..maxIndex)
+        } else {
+            (maxIndex downTo minIndex)
+        }
+        return indices.asSequence()
+            .filter { counts[it - offset] != 0.0 }
+            .map { it to counts[it - offset] }
+    }
+
     fun serializedSize(): Int {
         return if (isEmpty) {
             0

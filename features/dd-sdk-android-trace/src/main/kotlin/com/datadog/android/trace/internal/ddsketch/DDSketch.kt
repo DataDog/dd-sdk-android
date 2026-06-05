@@ -27,7 +27,7 @@ internal class DDSketch(
     private val indexMapping: LogarithmicMapping,
     private val negativeValueStore: CollapsingLowestDenseStore,
     private val positiveValueStore: CollapsingLowestDenseStore
-) {
+) : Iterable<Pair<Int, Double>> {
     private var zeroCount = 0.0
 
     constructor(relativeAccuracy: Double, maxNumBins: Int) : this(
@@ -94,6 +94,16 @@ internal class DDSketch(
         val serializer = DDSketchSerializer(serializedSize())
         writeTo(serializer)
         return serializer.toByteArray()
+    }
+
+    override fun iterator(): Iterator<Pair<Int, Double>> {
+        return sequence {
+            yieldAll(negativeValueStore.bins(ascending = true).map { (index, count) -> -index to count })
+            if (zeroCount > 0.0) {
+                yield(0 to zeroCount)
+            }
+            yieldAll(positiveValueStore.bins(ascending = false))
+        }.iterator()
     }
 
     companion object {
