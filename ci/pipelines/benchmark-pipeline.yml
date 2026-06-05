@@ -54,15 +54,13 @@ benchmark:macro:
     # If macOS runner costs become a concern or we add more post-processing steps,
     # consider moving these to a separate amd64 job consuming GitLab CI artifacts.
     - 'bash ci/benchmarks/s3-upload.sh || echo "Warning: S3 upload failed, continuing."'
-    - 'bash ci/benchmarks/s3-download-baseline.sh || echo "Warning: baseline download failed, continuing."'
     - exit 0
   artifacts:
     when: always
     expire_in: 1 week
     paths:
       - benchmarks/macro/build/outputs/
-      - candidate-dd-sdk-android.converted.json
-      - baseline-dd-sdk-android.converted.json
+      - macrobenchmark-raw.json
 
 benchmark:analyze:
   stage: report

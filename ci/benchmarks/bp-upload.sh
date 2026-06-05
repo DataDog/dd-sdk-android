@@ -30,7 +30,7 @@ for file in "${converted_files[@]}"; do
   status=$(curl --retry 3 --retry-all-errors --retry-max-time 300 \
     -s -w "%{http_code}" --output /dev/stderr \
     --form file=@"$file" \
-    "https://benchmarking-service.us1.prod.dog/benchmarks/upload/${CI_PROJECT_NAME}")
+    "https://benchmarking-service.us1.prod.dog/benchmarks/upload/${CI_PROJECT_NAME}?baseline_commit_sha=${BASELINE_CI_COMMIT_SHORT_SHA:-}&baseline_ci_pipeline_id=${BASELINE_CI_PIPELINE_ID:-}")
 
   if [ "$status" -ne 200 ]; then
     echo "Warning: BP upload failed with status $status, continuing." >&2
