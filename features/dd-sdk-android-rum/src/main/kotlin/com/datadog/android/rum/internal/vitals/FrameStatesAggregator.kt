@@ -35,7 +35,7 @@ import java.util.WeakHashMap
  * RUM-8785 regression for benchmark validation. Must be `false` in production.
  */
 @Suppress("TopLevelPropertyNaming")
-internal var useForEachIteration = false
+internal var useForEachIteration = true
 
 /**
  * Utility class listening to frame rate information.
