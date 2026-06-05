@@ -98,8 +98,8 @@ benchmark:micro:
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
     - >-
       bash ci/benchmarks/merge-json.sh -o microbenchmark-raw.json
-      --glob '*/build/outputs/connected_android_test_additional_output/**/*benchmarkData.json'
-      --glob '*/*/build/outputs/connected_android_test_additional_output/**/*benchmarkData.json'
+      --find '*/build/outputs/connected_android_test_additional_output/*benchmarkData.json'
+      --find '*/*/build/outputs/connected_android_test_additional_output/*benchmarkData.json'
       || echo "Warning: micro JSON merge failed."
     - exit 0
   artifacts:

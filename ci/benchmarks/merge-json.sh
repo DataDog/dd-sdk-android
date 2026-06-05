@@ -9,7 +9,7 @@
 #
 # Usage:
 #   bash ci/benchmarks/merge-json.sh -o output.json input1.json input2.json ...
-#   bash ci/benchmarks/merge-json.sh -o output.json --glob 'path/**/*benchmarkData.json'
+#   bash ci/benchmarks/merge-json.sh -o output.json --find '*/build/outputs/*benchmarkData.json'
 
 set -euo pipefail
 
@@ -22,10 +22,10 @@ while [[ $# -gt 0 ]]; do
       OUTPUT="$2"
       shift 2
       ;;
-    --glob)
-      shopt -s nullglob globstar
-      INPUTS+=($(eval echo "$2"))
-      shopt -u nullglob globstar
+    --find)
+      while IFS= read -r -d '' file; do
+        INPUTS+=("$file")
+      done < <(find . -path "$2" -print0 2>/dev/null)
       shift 2
       ;;
     *)
