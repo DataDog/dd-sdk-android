@@ -71,8 +71,8 @@ benchmark:micro:
     - exit_code=0
     - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -gpu host -verbose -qemu -machine virt &
     - GRADLE_OPTS="-Xmx3072m" ./gradlew :benchmarks:micro:connectedReleaseAndroidTest --stacktrace --no-daemon --no-build-cache || exit_code=$?
-    - GRADLE_OPTS="-Xmx3072m" ./gradlew :dd-sdk-android-core:connectedReleaseAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.datadog.android.core.internal.UpdateFeatureContextBenchmark --stacktrace --no-daemon --no-build-cache || exit_code=$?
-    - GRADLE_OPTS="-Xmx3072m" ./gradlew :features:dd-sdk-android-rum:connectedReleaseAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.datadog.android.rum.internal.vitals.FrameStatesAggregatorBenchmark --stacktrace --no-daemon --no-build-cache || exit_code=$?
+    - GRADLE_OPTS="-Xmx3072m" ./gradlew :dd-sdk-android-core:connectedReleaseAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.datadog.android.core.internal.UpdateFeatureContextBenchmark -Pandroid.testInstrumentationRunnerArguments.useSlowMapCopy=true --stacktrace --no-daemon --no-build-cache || exit_code=$?
+    - GRADLE_OPTS="-Xmx3072m" ./gradlew :features:dd-sdk-android-rum:connectedReleaseAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.datadog.android.rum.internal.vitals.FrameStatesAggregatorBenchmark -Pandroid.testInstrumentationRunnerArguments.useForEachIteration=true --stacktrace --no-daemon --no-build-cache || exit_code=$?
     - $ANDROID_HOME/platform-tools/adb emu kill
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
     - exit 0
