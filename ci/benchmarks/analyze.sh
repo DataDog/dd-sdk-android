@@ -82,3 +82,8 @@ echo "Comparison report saved to benchmark-comparison.md"
 # 4. Upload to Benchmarking Platform UI
 # ---------------------------------------------------------------------------
 bash ci/benchmarks/bp-upload.sh || echo "Warning: BP upload failed, continuing."
+
+# ---------------------------------------------------------------------------
+# 5. Post PR comment
+# ---------------------------------------------------------------------------
+bash ci/benchmarks/post-pr-comment.sh || echo "Warning: PR comment failed, continuing."
