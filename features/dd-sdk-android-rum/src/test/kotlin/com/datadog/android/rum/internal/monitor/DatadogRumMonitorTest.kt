@@ -2245,16 +2245,10 @@ internal class DatadogRumMonitorTest {
         testedMonitor.reportNetworkingLibraryType(fakeLibraryType)
 
         // Then
-        argumentCaptor<RumRawEvent.TelemetryEventWrapper> {
-            verify(mockTelemetryEventHandler).handleEvent(
-                capture(),
-                eq(mockWriter)
-            )
-            val event = lastValue.event
-            assertThat(event).isInstanceOf(InternalTelemetryEvent.ApiUsage.NetworkInstrumentation::class.java)
-            assertThat((event as InternalTelemetryEvent.ApiUsage.NetworkInstrumentation).type)
-                .isEqualTo(fakeLibraryType)
-        }
+        mockSdkCore.internalLogger.verifyApiUsage(
+            apiUsage = InternalTelemetryEvent.ApiUsage.NetworkInstrumentation(fakeLibraryType),
+            samplingRate = 15f
+        )
     }
 
     @Test
@@ -2266,18 +2260,11 @@ internal class DatadogRumMonitorTest {
         testedMonitor.reportNetworkingLibraryType(fakeLibraryType)
 
         // Then
-        argumentCaptor<RumRawEvent.TelemetryEventWrapper> {
-            verify(mockTelemetryEventHandler, times(2)).handleEvent(
-                capture(),
-                eq(mockWriter)
-            )
-            allValues.forEach { wrapper ->
-                val event = wrapper.event
-                assertThat(event).isInstanceOf(InternalTelemetryEvent.ApiUsage.NetworkInstrumentation::class.java)
-                assertThat((event as InternalTelemetryEvent.ApiUsage.NetworkInstrumentation).type)
-                    .isEqualTo(fakeLibraryType)
-            }
-        }
+        mockSdkCore.internalLogger.verifyApiUsage(
+            apiUsage = InternalTelemetryEvent.ApiUsage.NetworkInstrumentation(fakeLibraryType),
+            samplingRate = 15f,
+            verificationMode = times(2)
+        )
     }
 
     @Test
