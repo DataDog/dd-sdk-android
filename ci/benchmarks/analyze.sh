@@ -7,8 +7,8 @@
 # Merge macro + micro benchmark raw JSONs, upload to S3, convert to CBMF,
 # run bp-analyzer pairwise comparison, and upload to Benchmarking Platform UI.
 #
-# Expects artifacts from benchmark:macro (macrobenchmark-raw.json) and/or
-# benchmark:micro (microbenchmark-raw.json). At least one must be present.
+# Expects artifacts from both benchmark:macro (macrobenchmark-raw.json) and
+# benchmark:micro (microbenchmark-raw.json).
 #
 # NOTE: PR comment posting is not implemented yet — will be added in a future iteration.
 
@@ -16,6 +16,19 @@ set -euo pipefail
 
 S3_LATEST_BASE="s3://relenv-benchmarking-data/dd-sdk-android/_latest"
 COMMITTED_BASELINE="ci/benchmarks/macrobenchmark-baseline.cbmf.json"
+
+# ---------------------------------------------------------------------------
+# 0. Verify both macro and micro artifacts are present
+# ---------------------------------------------------------------------------
+MISSING=()
+[ ! -f macrobenchmark-raw.json ] && MISSING+=(macrobenchmark-raw.json)
+[ ! -f microbenchmark-raw.json ] && MISSING+=(microbenchmark-raw.json)
+
+if [ ${#MISSING[@]} -ne 0 ]; then
+  echo "Error: missing required artifacts: ${MISSING[*]}" >&2
+  echo "Both benchmark:macro and benchmark:micro must succeed before analysis." >&2
+  exit 1
+fi
 
 # ---------------------------------------------------------------------------
 # 1. Merge raw JSONs and upload to S3
