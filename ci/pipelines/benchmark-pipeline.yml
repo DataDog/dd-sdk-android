@@ -35,6 +35,7 @@ benchmark:macro:
   tags: [ "macos:sonoma", "specific:true" ]
   stage: benchmark
   timeout: 1h
+  when: manual
   variables:
     ANDROID_API: "36"
     ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
@@ -77,6 +78,7 @@ benchmark:micro:
   tags: [ "macos:sonoma", "specific:true" ]
   stage: benchmark
   timeout: 1h
+  when: manual
   variables:
     ANDROID_API: "36"
     ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
