@@ -1,0 +1,119 @@
+{
+    "context": {
+        "build": {
+            "brand": "google",
+            "device": "emu64a",
+            "fingerprint": "google/sdk_gphone64_arm64/emu64a:16/BE2A.250530.026.F3/13894323:userdebug/dev-keys",
+            "id": "BE2A.250530.026.F3",
+            "model": "sdk_gphone64_arm64",
+            "type": "userdebug",
+            "version": {
+                "codename": "REL",
+                "sdk": 36
+            }
+        },
+        "cpuCoreCount": 4,
+        "cpuLocked": false,
+        "cpuMaxFreqHz": 2000,
+        "memTotalBytes": 2592632832,
+        "sustainedPerformanceModeEnabled": false,
+        "artMainlineVersion": 360527520,
+        "osCodenameAbbreviated": "B",
+        "compilationMode": "verify"
+    },
+    "benchmarks": [
+        {
+            "name": "EMULATOR_updateFeatureContext",
+            "params": {},
+            "className": "com.datadog.android.core.internal.UpdateFeatureContextBenchmark",
+            "totalRunTimeNs": 15592519591,
+            "metrics": {
+                "timeNs": {
+                    "minimum": 191.9032321135514,
+                    "maximum": 201.48302407185156,
+                    "median": 194.39723963067502,
+                    "runs": [
+                        195.14855367130576,
+                        194.83308615988136,
+                        192.34999968799985,
+                        194.03618577736918,
+                        194.45062597630047,
+                        194.30164590479004,
+                        192.9768579088918,
+                        193.78927301885105,
+                        194.47940071011234,
+                        194.2914206198819,
+                        193.76405300674546,
+                        194.7915734999553,
+                        196.84063448350454,
+                        192.85621993098556,
+                        196.205454178618,
+                        194.4218533224896,
+                        194.58305339986563,
+                        191.9032321135514,
+                        194.97894622989418,
+                        193.75469300225265,
+                        194.32045327381758,
+                        195.94579933398367,
+                        201.48302407185156,
+                        200.55906890835308,
+                        194.32634799664703,
+                        193.0096200046176,
+                        194.04832050319385,
+                        195.28392845628565,
+                        194.8274535171777,
+                        192.37755762122765,
+                        193.68293296780783,
+                        195.45561381869464,
+                        194.0029931214367,
+                        194.16315319831352,
+                        194.56121338938243,
+                        192.6959724940668,
+                        194.38250594360287,
+                        194.8659335356481,
+                        192.60228508909685,
+                        196.00378144181508,
+                        194.8360335212961,
+                        196.32514159606797,
+                        195.67089392202908,
+                        196.28891421867883,
+                        196.30927950845415,
+                        194.34099328367677,
+                        193.10295796941983,
+                        193.67158032235855,
+                        194.4119733177472,
+                        192.45599237887635
+                    ]
+                },
+                "allocationCount": {
+                    "minimum": 3.000041600019968,
+                    "maximum": 3.0000499200239616,
+                    "median": 3.000047840022963,
+                    "runs": [
+                        3.0000499200239616,
+                        3.000041600019968,
+                        3.0000436800209664,
+                        3.0000499200239616,
+                        3.000047840022963
+                    ]
+                }
+            },
+            "sampledMetrics": {},
+            "warmupIterations": 34728620,
+            "repeatIterations": 480769,
+            "thermalThrottleSleepSeconds": 0,
+            "profilerOutputs": [
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace",
+                    "filename": "UpdateFeatureContextBenchmark_updateFeatureContext_2026-06-05-10-16-54.perfetto-trace"
+                },
+                {
+                    "type": "MethodTrace",
+                    "label": "Method Trace",
+                    "filename": "UpdateFeatureContextBenchmark_updateFeatureContext-methodTracing-2026-06-05-10-16-54.trace"
+                }
+            ]
+        }
+    ]
+}

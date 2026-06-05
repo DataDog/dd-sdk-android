@@ -14,9 +14,6 @@ import androidx.benchmark.macro.CompilationMode
 import androidx.benchmark.macro.ExperimentalMetricApi
 import androidx.benchmark.macro.FrameTimingMetric
 import androidx.benchmark.macro.MemoryUsageMetric
-import androidx.benchmark.macro.PowerCategory
-import androidx.benchmark.macro.PowerCategoryDisplayLevel
-import androidx.benchmark.macro.PowerMetric
 import androidx.benchmark.macro.StartupMode
 import androidx.benchmark.macro.TraceSectionMetric
 import androidx.benchmark.macro.junit4.MacrobenchmarkRule
@@ -84,21 +81,11 @@ class SessionReplayRumAutoBenchmark {
                 sectionName = "SnapshotProducer",
                 mode = TraceSectionMetric.Mode.Average,
                 targetPackageOnly = true
-            ),
-            PowerMetric(
-                type = PowerMetric.Energy(
-                    categories = mapOf(
-                        PowerCategory.CPU to PowerCategoryDisplayLevel.BREAKDOWN,
-                        PowerCategory.DISPLAY to PowerCategoryDisplayLevel.TOTAL,
-                        PowerCategory.GPU to PowerCategoryDisplayLevel.TOTAL,
-                        PowerCategory.MEMORY to PowerCategoryDisplayLevel.TOTAL
-                    )
-                )
             )
         ),
         compilationMode = CompilationMode.Full(),
         startupMode = StartupMode.COLD,
-        iterations = 10,
+        iterations = 1,
         setupBlock = {
             pressHome()
         }
