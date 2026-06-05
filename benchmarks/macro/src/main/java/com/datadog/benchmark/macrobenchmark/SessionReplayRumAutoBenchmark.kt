@@ -41,21 +41,21 @@ class SessionReplayRumAutoBenchmark {
         packageName = TARGET_PACKAGE,
         metrics = listOf(
             FrameTimingMetric(),
-            MemoryUsageMetric(MemoryUsageMetric.Mode.Max),
-            TraceSectionMetric(
-                sectionName = "SnapshotProducer",
-                mode = TraceSectionMetric.Mode.Sum,
-                targetPackageOnly = true
-            ),
-            TraceSectionMetric(
-                sectionName = "SnapshotProducer",
-                mode = TraceSectionMetric.Mode.Average,
-                targetPackageOnly = true
-            )
+//            MemoryUsageMetric(MemoryUsageMetric.Mode.Max),
+//            TraceSectionMetric(
+//                sectionName = "SnapshotProducer",
+//                mode = TraceSectionMetric.Mode.Sum,
+//                targetPackageOnly = true
+//            ),
+//            TraceSectionMetric(
+//                sectionName = "SnapshotProducer",
+//                mode = TraceSectionMetric.Mode.Average,
+//                targetPackageOnly = true
+//            )
         ),
         compilationMode = CompilationMode.Full(),
         startupMode = StartupMode.COLD,
-        iterations = 3,
+        iterations = 1,
         setupBlock = {
             pressHome()
         }
