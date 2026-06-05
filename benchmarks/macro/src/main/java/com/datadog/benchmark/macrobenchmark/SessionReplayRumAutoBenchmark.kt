@@ -35,36 +35,6 @@ class SessionReplayRumAutoBenchmark {
     @get:Rule
     val benchmarkRule = MacrobenchmarkRule()
 
-    @After
-    fun reportBenchmarkResults() {
-        val searchDirs = listOf(
-            File(Environment.getExternalStorageDirectory(), "Download"),
-            File(
-                Environment.getExternalStorageDirectory(),
-                "Android/media/com.datadog.benchmark.macrobenchmark"
-            )
-        )
-        val jsonFiles = searchDirs.flatMap { dir ->
-            dir.walkTopDown()
-                .filter { it.isFile && it.name.endsWith("benchmarkData.json") }
-                .toList()
-        }
-        if (jsonFiles.isEmpty()) {
-            val listing = searchDirs.joinToString("; ") { dir ->
-                val files = dir.listFiles()?.joinToString(", ") { it.name } ?: "empty"
-                "${dir.absolutePath}: [$files]"
-            }
-            Log.w(LOG_TAG, "BENCHMARK_RESULT_NOT_FOUND: $listing")
-        }
-        jsonFiles.forEach { file ->
-            val content = file.readText()
-            Log.i(LOG_TAG, "BENCHMARK_RESULT_FILE: ${file.absolutePath}")
-            content.chunked(3000).forEachIndexed { idx, chunk ->
-                Log.i(LOG_TAG, "BENCHMARK_RESULT_JSON[$idx]: $chunk")
-            }
-        }
-    }
-
     @OptIn(ExperimentalMetricApi::class)
     @Test
     fun frameTimingWithSessionReplay() = benchmarkRule.measureRepeated(
