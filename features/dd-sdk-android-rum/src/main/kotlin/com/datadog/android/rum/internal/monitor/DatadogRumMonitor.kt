@@ -639,9 +639,7 @@ internal class DatadogRumMonitor(
     }
 
     override fun reportNetworkingLibraryType(type: InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType) {
-        handleEvent(
-            RumRawEvent.TelemetryEventWrapper(InternalTelemetryEvent.ApiUsage.NetworkInstrumentation(type))
-        )
+        sdkCore.internalLogger.logApiUsage { InternalTelemetryEvent.ApiUsage.NetworkInstrumentation(type) }
     }
 
     override fun notifyResourceHeadersTrackingConfigured(
