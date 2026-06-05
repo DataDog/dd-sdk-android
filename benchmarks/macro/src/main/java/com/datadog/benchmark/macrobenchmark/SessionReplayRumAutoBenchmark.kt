@@ -14,9 +14,6 @@ import androidx.benchmark.macro.CompilationMode
 import androidx.benchmark.macro.ExperimentalMetricApi
 import androidx.benchmark.macro.FrameTimingMetric
 import androidx.benchmark.macro.MemoryUsageMetric
-import androidx.benchmark.macro.PowerCategory
-import androidx.benchmark.macro.PowerCategoryDisplayLevel
-import androidx.benchmark.macro.PowerMetric
 import androidx.benchmark.macro.StartupMode
 import androidx.benchmark.macro.TraceSectionMetric
 import androidx.benchmark.macro.junit4.MacrobenchmarkRule
@@ -38,36 +35,6 @@ class SessionReplayRumAutoBenchmark {
     @get:Rule
     val benchmarkRule = MacrobenchmarkRule()
 
-    @After
-    fun reportBenchmarkResults() {
-        val searchDirs = listOf(
-            File(Environment.getExternalStorageDirectory(), "Download"),
-            File(
-                Environment.getExternalStorageDirectory(),
-                "Android/media/com.datadog.benchmark.macrobenchmark"
-            )
-        )
-        val jsonFiles = searchDirs.flatMap { dir ->
-            dir.walkTopDown()
-                .filter { it.isFile && it.name.endsWith("benchmarkData.json") }
-                .toList()
-        }
-        if (jsonFiles.isEmpty()) {
-            val listing = searchDirs.joinToString("; ") { dir ->
-                val files = dir.listFiles()?.joinToString(", ") { it.name } ?: "empty"
-                "${dir.absolutePath}: [$files]"
-            }
-            Log.w(LOG_TAG, "BENCHMARK_RESULT_NOT_FOUND: $listing")
-        }
-        jsonFiles.forEach { file ->
-            val content = file.readText()
-            Log.i(LOG_TAG, "BENCHMARK_RESULT_FILE: ${file.absolutePath}")
-            content.chunked(3000).forEachIndexed { idx, chunk ->
-                Log.i(LOG_TAG, "BENCHMARK_RESULT_JSON[$idx]: $chunk")
-            }
-        }
-    }
-
     @OptIn(ExperimentalMetricApi::class)
     @Test
     fun frameTimingWithSessionReplay() = benchmarkRule.measureRepeated(
@@ -75,30 +42,20 @@ class SessionReplayRumAutoBenchmark {
         metrics = listOf(
             FrameTimingMetric(),
             MemoryUsageMetric(MemoryUsageMetric.Mode.Max),
-            TraceSectionMetric(
-                sectionName = "SnapshotProducer",
-                mode = TraceSectionMetric.Mode.Sum,
-                targetPackageOnly = true
-            ),
-            TraceSectionMetric(
-                sectionName = "SnapshotProducer",
-                mode = TraceSectionMetric.Mode.Average,
-                targetPackageOnly = true
-            ),
-            PowerMetric(
-                type = PowerMetric.Energy(
-                    categories = mapOf(
-                        PowerCategory.CPU to PowerCategoryDisplayLevel.BREAKDOWN,
-                        PowerCategory.DISPLAY to PowerCategoryDisplayLevel.TOTAL,
-                        PowerCategory.GPU to PowerCategoryDisplayLevel.TOTAL,
-                        PowerCategory.MEMORY to PowerCategoryDisplayLevel.TOTAL
-                    )
-                )
-            )
+//            TraceSectionMetric(
+//                sectionName = "SnapshotProducer",
+//                mode = TraceSectionMetric.Mode.Sum,
+//                targetPackageOnly = true
+//            ),
+//            TraceSectionMetric(
+//                sectionName = "SnapshotProducer",
+//                mode = TraceSectionMetric.Mode.Average,
+//                targetPackageOnly = true
+//            )
         ),
         compilationMode = CompilationMode.Full(),
         startupMode = StartupMode.COLD,
-        iterations = 3,
+        iterations = 1,
         setupBlock = {
             pressHome()
         }

@@ -1,0 +1,119 @@
+{
+    "context": {
+        "build": {
+            "brand": "google",
+            "device": "emu64a",
+            "fingerprint": "google/sdk_gphone64_arm64/emu64a:16/BE2A.250530.026.F3/13894323:userdebug/dev-keys",
+            "id": "BE2A.250530.026.F3",
+            "model": "sdk_gphone64_arm64",
+            "type": "userdebug",
+            "version": {
+                "codename": "REL",
+                "sdk": 36
+            }
+        },
+        "cpuCoreCount": 4,
+        "cpuLocked": false,
+        "cpuMaxFreqHz": 2000,
+        "memTotalBytes": 2592632832,
+        "sustainedPerformanceModeEnabled": false,
+        "artMainlineVersion": 360527520,
+        "osCodenameAbbreviated": "B",
+        "compilationMode": "verify"
+    },
+    "benchmarks": [
+        {
+            "name": "EMULATOR_onFrame",
+            "params": {},
+            "className": "com.datadog.android.rum.internal.vitals.FrameStatesAggregatorBenchmark",
+            "totalRunTimeNs": 1275954209,
+            "metrics": {
+                "timeNs": {
+                    "minimum": 10.786334,
+                    "maximum": 11.124667,
+                    "median": 11.0002505,
+                    "runs": [
+                        10.9335,
+                        11.012,
+                        11.032584,
+                        11.0375,
+                        11.004291,
+                        11.119875,
+                        10.900709,
+                        11.010667,
+                        11.00625,
+                        10.999417,
+                        10.979542,
+                        11.105334,
+                        11.04225,
+                        11.014041,
+                        11.025167,
+                        11.018375,
+                        11.0815,
+                        10.829625,
+                        11.063708,
+                        10.9385,
+                        10.805959,
+                        10.946292,
+                        10.849042,
+                        10.842583,
+                        10.846542,
+                        10.786334,
+                        10.793208,
+                        10.871833,
+                        10.814959,
+                        10.81375,
+                        10.893167,
+                        10.92175,
+                        10.821625,
+                        10.87525,
+                        11.046667,
+                        11.051333,
+                        11.071125,
+                        11.110417,
+                        11.084417,
+                        11.124667,
+                        11.030917,
+                        10.814917,
+                        10.914333,
+                        10.891917,
+                        11.000084,
+                        11.067375,
+                        11.000417,
+                        10.999292,
+                        11.035333,
+                        11.044583
+                    ]
+                },
+                "allocationCount": {
+                    "minimum": 0.0,
+                    "maximum": 0.0,
+                    "median": 0.0,
+                    "runs": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                }
+            },
+            "sampledMetrics": {},
+            "warmupIterations": 5848101,
+            "repeatIterations": 1000000,
+            "thermalThrottleSleepSeconds": 0,
+            "profilerOutputs": [
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace",
+                    "filename": "FrameStatesAggregatorBenchmark_onFrame_2026-06-05-10-18-41.perfetto-trace"
+                },
+                {
+                    "type": "MethodTrace",
+                    "label": "Method Trace",
+                    "filename": "FrameStatesAggregatorBenchmark_onFrame-methodTracing-2026-06-05-10-18-41.trace"
+                }
+            ]
+        }
+    ]
+}

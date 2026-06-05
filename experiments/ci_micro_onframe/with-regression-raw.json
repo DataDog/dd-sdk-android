@@ -1,0 +1,119 @@
+{
+    "context": {
+        "build": {
+            "brand": "google",
+            "device": "emu64a",
+            "fingerprint": "google/sdk_gphone64_arm64/emu64a:16/BE2A.250530.026.F3/13894323:userdebug/dev-keys",
+            "id": "BE2A.250530.026.F3",
+            "model": "sdk_gphone64_arm64",
+            "type": "userdebug",
+            "version": {
+                "codename": "REL",
+                "sdk": 36
+            }
+        },
+        "cpuCoreCount": 4,
+        "cpuLocked": false,
+        "cpuMaxFreqHz": 2000,
+        "memTotalBytes": 2592632832,
+        "sustainedPerformanceModeEnabled": false,
+        "artMainlineVersion": 360527520,
+        "osCodenameAbbreviated": "B",
+        "compilationMode": "verify"
+    },
+    "benchmarks": [
+        {
+            "name": "EMULATOR_onFrame",
+            "params": {},
+            "className": "com.datadog.android.rum.internal.vitals.FrameStatesAggregatorBenchmark",
+            "totalRunTimeNs": 2072917834,
+            "metrics": {
+                "timeNs": {
+                    "minimum": 22.884875,
+                    "maximum": 25.568459,
+                    "median": 24.303103999999998,
+                    "runs": [
+                        25.176042,
+                        24.534333,
+                        24.9255,
+                        24.283042,
+                        25.568459,
+                        25.067459,
+                        24.130709,
+                        24.983834,
+                        24.611209,
+                        24.906625,
+                        24.791125,
+                        24.125084,
+                        25.022292,
+                        24.315875,
+                        24.977834,
+                        24.960042,
+                        24.115875,
+                        24.965667,
+                        23.793,
+                        24.490459,
+                        24.157375,
+                        24.643541,
+                        23.720667,
+                        24.452083,
+                        24.983959,
+                        23.904167,
+                        24.391958,
+                        23.68475,
+                        24.646416,
+                        23.649041,
+                        24.653166,
+                        23.762,
+                        24.593833,
+                        23.639083,
+                        24.612833,
+                        23.533791,
+                        24.461875,
+                        24.290333,
+                        23.6035,
+                        24.404292,
+                        23.415041,
+                        24.11275,
+                        23.701042,
+                        24.236917,
+                        24.172708,
+                        23.483,
+                        23.767417,
+                        23.603083,
+                        22.884875,
+                        23.387166
+                    ]
+                },
+                "allocationCount": {
+                    "minimum": 0.999986,
+                    "maximum": 1.000001,
+                    "median": 0.999995,
+                    "runs": [
+                        0.999995,
+                        1.0,
+                        0.999986,
+                        0.999989,
+                        1.000001
+                    ]
+                }
+            },
+            "sampledMetrics": {},
+            "warmupIterations": 4705052,
+            "repeatIterations": 1000000,
+            "thermalThrottleSleepSeconds": 0,
+            "profilerOutputs": [
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace",
+                    "filename": "FrameStatesAggregatorBenchmark_onFrame_2026-06-05-10-18-44.perfetto-trace"
+                },
+                {
+                    "type": "MethodTrace",
+                    "label": "Method Trace",
+                    "filename": "FrameStatesAggregatorBenchmark_onFrame-methodTracing-2026-06-05-10-18-44.trace"
+                }
+            ]
+        }
+    ]
+}
