@@ -7,12 +7,11 @@
 package com.datadog.android.webview.internal
 
 import android.webkit.JavascriptInterface
-import com.datadog.android.api.feature.Feature
-import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.configuration.HostsSanitizer
 import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.internal.sampling.DeterministicSampling
 import com.datadog.android.internal.sampling.SessionSamplingIdProvider
+import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import com.google.gson.JsonArray
 
 /**
@@ -26,7 +25,7 @@ internal class DatadogEventBridge(
     internal val webViewEventConsumer: WebViewEventConsumer<String>,
     private val allowedHosts: List<String>,
     private val privacyLevel: String,
-    private val sdkCore: FeatureSdkCore
+    private val webViewRumFeature: WebViewRumFeature?
 ) {
 
     // region Bridge
@@ -85,8 +84,8 @@ internal class DatadogEventBridge(
      */
     @JavascriptInterface
     fun getIsTraceSampled(): String {
-        val rumContext = sdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME, useContextThread = false)
-        val tracingContext = sdkCore.getFeatureContext(Feature.TRACING_FEATURE_NAME, useContextThread = false)
+        val rumContext = webViewRumFeature?.cachedRumContext.orEmpty()
+        val tracingContext = webViewRumFeature?.cachedTracingContext.orEmpty()
 
         val sessionId = (rumContext[SESSION_ID_KEY] as? String)
             ?.takeIf { rumContext[SESSION_STATE_KEY] == TRACKED_STATE }
