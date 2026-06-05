@@ -55,7 +55,7 @@ class SessionReplayRumAutoBenchmark {
         ),
         compilationMode = CompilationMode.Full(),
         startupMode = StartupMode.COLD,
-        iterations = 1,
+        iterations = 3,
         setupBlock = {
             pressHome()
         }
