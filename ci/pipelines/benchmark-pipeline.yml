@@ -49,11 +49,8 @@ benchmark:macro:
     - GRADLE_OPTS="-Xmx3072m" ./gradlew :benchmarks:macro:connectedBenchmarkAndroidTest --stacktrace --no-daemon --no-build-cache || exit_code=$?
     - $ANDROID_HOME/platform-tools/adb emu kill
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
-    # S3 upload and baseline download run on the macOS runner for simplicity —
-    # the runner already has AWS credentials via vault login -method=aws.
-    # If macOS runner costs become a concern or we add more post-processing steps,
-    # consider moving these to a separate amd64 job consuming GitLab CI artifacts.
-    - 'bash ci/benchmarks/s3-upload.sh || echo "Warning: S3 upload failed, continuing."'
+    - MACRO_JSON=$(find benchmarks/macro/build/outputs/ -name "*benchmarkData.json" | head -1)
+    - if [ -n "$MACRO_JSON" ]; then cp "$MACRO_JSON" macrobenchmark-raw.json; fi
     - exit 0
   artifacts:
     when: always
@@ -69,6 +66,8 @@ benchmark:analyze:
   allow_failure: true
   needs:
     - job: benchmark:macro
+      artifacts: true
+    - job: benchmark:micro
       artifacts: true
   script:
     - 'bash ci/benchmarks/analyze.sh || echo "Warning: analysis failed, continuing."'
@@ -98,6 +97,11 @@ benchmark:micro:
     - GRADLE_OPTS="-Xmx3072m" ./gradlew :features:dd-sdk-android-rum:connectedReleaseAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.datadog.android.rum.internal.vitals.FrameStatesAggregatorBenchmark --stacktrace --no-daemon --no-build-cache || exit_code=$?
     - $ANDROID_HOME/platform-tools/adb emu kill
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
+    - >-
+      bash ci/benchmarks/merge-json.sh -o microbenchmark-raw.json
+      --glob '*/build/outputs/connected_android_test_additional_output/**/*benchmarkData.json'
+      --glob '*/*/build/outputs/connected_android_test_additional_output/**/*benchmarkData.json'
+      || echo "Warning: micro JSON merge failed."
     - exit 0
   artifacts:
     when: always
@@ -106,3 +110,4 @@ benchmark:micro:
       - benchmarks/micro/build/outputs/connected_android_test_additional_output/**/*.json
       - dd-sdk-android-core/build/outputs/connected_android_test_additional_output/**/*.json
       - features/dd-sdk-android-rum/build/outputs/connected_android_test_additional_output/**/*.json
+      - microbenchmark-raw.json

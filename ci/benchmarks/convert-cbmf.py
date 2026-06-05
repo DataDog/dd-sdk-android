@@ -9,8 +9,11 @@ Convert Jetpack Macrobenchmark / Microbenchmark JSON output to CBMF v1
 (Common Benchmark Measurements Format) for bp-analyzer.
 
 Usage:
-    python3 benchmark-convert-cbmf.py --input <benchmarkData.json> --output <candidate.converted.json>
-    python3 benchmark-convert-cbmf.py --input <benchmarkData.json>  # prints to stdout
+    python3 convert-cbmf.py --input macro.json micro.json --output <candidate.converted.json>
+    python3 convert-cbmf.py --input macro.json  # single file, prints to stdout
+
+Accepts one or more Jetpack Benchmark JSON files. When multiple files are
+provided their 'benchmarks' arrays are merged before conversion.
 
 Input:  Jetpack Benchmark JSON produced by connectedBenchmarkAndroidTest / connectedReleaseAndroidTest.
 Output: CBMF v1 JSON consumable by bp-analyzer (compare, analyze).
@@ -231,8 +234,8 @@ def main():
         description="Convert Jetpack Benchmark JSON to CBMF v1 for bp-analyzer."
     )
     parser.add_argument(
-        "--input", required=True,
-        help="Path to the Jetpack Benchmark JSON file (benchmarkData.json)."
+        "--input", required=True, nargs="+",
+        help="One or more Jetpack Benchmark JSON files. Multiple files are merged before conversion."
     )
     parser.add_argument(
         "--output", default=None,
@@ -272,8 +275,15 @@ def main():
     )
     args = parser.parse_args()
 
-    with open(args.input, encoding="utf-8") as f:
-        jetpack_data = json.load(f)
+    merged_benchmarks: list[dict] = []
+    for input_path in args.input:
+        with open(input_path, encoding="utf-8") as f:
+            data = json.load(f)
+        merged_benchmarks.extend(data.get("benchmarks", []))
+        print(f"Loaded {len(data.get('benchmarks', []))} benchmark(s) from {input_path}",
+              file=sys.stderr)
+
+    jetpack_data = {"benchmarks": merged_benchmarks}
 
     cbmf = convert(
         jetpack_data,
