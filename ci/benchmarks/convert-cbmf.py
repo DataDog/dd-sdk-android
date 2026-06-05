@@ -30,14 +30,11 @@ from typing import Optional
 # Metric mapping — Jetpack metric name → (cbmf_metric_name, unit_of_measurement)
 # ---------------------------------------------------------------------------
 
-METRIC_MAP: dict[str, tuple[str, str]] = {
-    # Timing metrics
+# Scalar metric mapping — Jetpack metric name → (cbmf_metric_name, uom)
+SCALAR_METRIC_MAP: dict[str, tuple[str, str]] = {
     "timeToInitialDisplayMs": ("execution_time", "ms"),
     "timeToFullDisplayMs": ("execution_time", "ms"),
-    "frameDurationCpuMs": ("execution_time", "ms"),
-    "frameOverrunMs": ("execution_time", "ms"),
     "timeNs": ("execution_time", "ns"),
-    # Count metrics
     "frameCount": ("iterations", "iterations"),
     "allocationCount": ("allocations", "allocations"),
     # Memory metrics
@@ -52,13 +49,14 @@ METRIC_MAP: dict[str, tuple[str, str]] = {
     "SnapshotProducerAverageMs": ("execution_time", "ms"),
 }
 
-
-SAMPLED_PERCENTILES = [50, 90, 95, 99]
-
-
-def map_metric(jetpack_name: str) -> Optional[tuple[str, str]]:
-    """Return (cbmf_metric_name, uom) for a Jetpack metric, or None if unmapped."""
-    return METRIC_MAP.get(jetpack_name)
+# Sampled metrics → use execution_time_pXX per scenario named after the metric.
+# Produces one CBMF benchmark per sampled Jetpack metric (e.g.
+# "frameTimingWithSessionReplay:frameDurationCpuMs"), so the BP UI shows 3 rows
+# (frameDurationCpuMs, frameOverrunMs, frameCount) instead of 9.
+# Each row has execution_time_p50/p95/p99 as its metrics.
+# TODO: open a PR to benchmarking-platform-tools to add proper metric names
+#       (e.g. agg_frame_duration_cpu_pXX) once the sprint is over.
+SAMPLED_PERCENTILES = [50, 95, 99]
 
 
 def _percentile(sorted_values: list[float], p: int) -> float:
@@ -77,96 +75,61 @@ def _percentile(sorted_values: list[float], p: int) -> float:
 # ---------------------------------------------------------------------------
 
 def convert_metrics(benchmark: dict, version: Optional[str] = None, extra: Optional[dict] = None) -> list[dict]:
-    """Convert the 'metrics' section of a Jetpack benchmark to CBMF benchmarks.
-
-    Each Jetpack metric (e.g. frameDurationCpuMs) with its per-iteration scalar
-    runs becomes a separate CBMF benchmark entry.
-    """
+    """Convert scalar metrics — one CBMF benchmark entry per Jetpack metric."""
     name = benchmark.get("name", "unknown")
     class_name = benchmark.get("className", "unknown")
     cbmf_benchmarks = []
 
     for metric_name, metric_data in benchmark.get("metrics", {}).items():
-        mapping = map_metric(metric_name)
+        mapping = SCALAR_METRIC_MAP.get(metric_name)
         if mapping is None:
             continue
-
         cbmf_name, uom = mapping
         runs_data = metric_data.get("runs", [])
 
         runs = {}
         for i, value in enumerate(runs_data):
-            runs[f"run{i}"] = {
-                cbmf_name: {
-                    "uom": uom,
-                    "values": [value],
-                }
-            }
+            runs[f"run{i}"] = {cbmf_name: {"uom": uom, "values": [value]}}
 
         if runs:
-            parameters = {
-                "scenario": f"{name}:{metric_name}",
-                "className": class_name,
-            }
+            parameters = {"scenario": f"{name}:{metric_name}", "className": class_name}
             if version:
                 parameters["version"] = version
             if extra:
                 parameters.update(extra)
-            cbmf_benchmarks.append({
-                "parameters": parameters,
-                "runs": runs,
-            })
+            cbmf_benchmarks.append({"parameters": parameters, "runs": runs})
 
     return cbmf_benchmarks
 
 
 def convert_sampled_metrics(benchmark: dict, version: Optional[str] = None, extra: Optional[dict] = None) -> list[dict]:
-    """Convert the 'sampledMetrics' section of a Jetpack benchmark to CBMF benchmarks.
-
-    Each sampled metric (e.g. frameDurationCpuMs) has per-iteration arrays of
-    samples. Instead of passing raw arrays, we compute percentiles (P50, P90,
-    P95, P99) per iteration and emit one CBMF benchmark per percentile. This
-    produces better-behaved distributions for bp-analyzer comparison.
-    """
+    """Convert sampled metrics — one CBMF benchmark per metric with execution_time_pXX."""
     name = benchmark.get("name", "unknown")
     class_name = benchmark.get("className", "unknown")
     cbmf_benchmarks = []
 
     for metric_name, metric_data in benchmark.get("sampledMetrics", {}).items():
-        mapping = map_metric(metric_name)
-        if mapping is None:
+        runs_data = metric_data.get("runs", [])
+        if not runs_data:
             continue
 
-        cbmf_name, uom = mapping
-        runs_data = metric_data.get("runs", [])
+        runs = {}
+        for i, samples in enumerate(runs_data):
+            if not samples:
+                continue
+            sorted_samples = sorted(samples)
+            runs[f"run{i}"] = {
+                f"execution_time_p{p}": {"uom": "ms", "values": [_percentile(sorted_samples, p)]}
+                for p in SAMPLED_PERCENTILES
+            }
 
-        for p in SAMPLED_PERCENTILES:
-            runs = {}
-            for i, samples in enumerate(runs_data):
-                if not samples:
-                    continue
-                sorted_samples = sorted(samples)
-                value = _percentile(sorted_samples, p)
-                runs[f"run{i}"] = {
-                    cbmf_name: {
-                        "uom": uom,
-                        "values": [value],
-                    }
-                }
-
-            if runs:
-                parameters = {
-                    "scenario": f"{name}:{metric_name}:P{p}",
-                    "className": class_name,
-                }
-                if version:
-                    parameters["version"] = version
-                if extra:
-                    parameters.update(extra)
-                cbmf_benchmarks.append({
-                    "parameters": parameters,
-                    "runs": runs,
-                })
+        if runs:
+            parameters = {"scenario": f"{name}:{metric_name}", "className": class_name}
+            if version:
+                parameters["version"] = version
+            if extra:
+                parameters.update(extra)
+            cbmf_benchmarks.append({"parameters": parameters, "runs": runs})
 
     return cbmf_benchmarks
 
