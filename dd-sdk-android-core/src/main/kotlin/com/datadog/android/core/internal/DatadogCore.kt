@@ -63,7 +63,7 @@ import java.util.concurrent.locks.Lock
  * benchmark validation. Must be `false` in production.
  */
 @Suppress("TopLevelPropertyNaming")
-internal var useSlowMapCopy = false
+internal var useSlowMapCopy = true
 
 /**
  * Internal implementation of the [SdkCore] interface.
