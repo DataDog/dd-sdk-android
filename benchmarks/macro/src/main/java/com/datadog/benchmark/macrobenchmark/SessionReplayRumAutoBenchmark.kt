@@ -41,7 +41,7 @@ class SessionReplayRumAutoBenchmark {
         packageName = TARGET_PACKAGE,
         metrics = listOf(
             FrameTimingMetric(),
-//            MemoryUsageMetric(MemoryUsageMetric.Mode.Max),
+            MemoryUsageMetric(MemoryUsageMetric.Mode.Max),
 //            TraceSectionMetric(
 //                sectionName = "SnapshotProducer",
 //                mode = TraceSectionMetric.Mode.Sum,
