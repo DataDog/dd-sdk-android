@@ -60,7 +60,7 @@ benchmark:macro:
     when: always
     expire_in: 1 week
     paths:
-      - benchmarks/macro/build/outputs/
+      - benchmarks/macro/build/outputs/connected_android_test_additional_output/**/*.json
       - macrobenchmark-candidate.cbmf.json
       - macrobenchmark-baseline.cbmf.json
 
@@ -96,6 +96,8 @@ benchmark:micro:
     - exit_code=0
     - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -gpu host -verbose -qemu -machine virt &
     - GRADLE_OPTS="-Xmx3072m" ./gradlew :benchmarks:micro:connectedReleaseAndroidTest --stacktrace --no-daemon --no-build-cache || exit_code=$?
+    - GRADLE_OPTS="-Xmx3072m" ./gradlew :dd-sdk-android-core:connectedReleaseAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.datadog.android.core.internal.UpdateFeatureContextBenchmark --stacktrace --no-daemon --no-build-cache || exit_code=$?
+    - GRADLE_OPTS="-Xmx3072m" ./gradlew :features:dd-sdk-android-rum:connectedReleaseAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.datadog.android.rum.internal.vitals.FrameStatesAggregatorBenchmark --stacktrace --no-daemon --no-build-cache || exit_code=$?
     - $ANDROID_HOME/platform-tools/adb emu kill
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
     - exit 0
@@ -103,4 +105,6 @@ benchmark:micro:
     when: always
     expire_in: 1 week
     paths:
-      - benchmarks/micro/build/outputs/
+      - benchmarks/micro/build/outputs/connected_android_test_additional_output/**/*.json
+      - dd-sdk-android-core/build/outputs/connected_android_test_additional_output/**/*.json
+      - features/dd-sdk-android-rum/build/outputs/connected_android_test_additional_output/**/*.json
