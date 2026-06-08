@@ -1,4 +1,4 @@
-# UpdateFeatureContext Microbenchmark (CI Emulator)
+# UpdateFeatureContext Microbenchmark (Local Emulator)
 
 ## What
 
@@ -7,7 +7,7 @@ Measures the performance of `UpdateFeatureContextBenchmark` from `dd-sdk-android
 The **regression toggle** (`useSlowMapCopy=true`) forces a slow `HashMap` copy implementation instead of the optimized path, introducing ~184 extra allocations and ~30x slower execution per iteration.
 
 - **Device**: Android emulator (API 36, arm64-v8a, `sdk_gphone64_arm64`)
-- **Host**: macOS Sonoma, Apple Silicon (CI runner: `macos:sonoma`)
+- **Host**: macOS, Apple Silicon (local machine)
 - **Iterations**: 50 (execution_time), 5 (allocationCount)
 - **Metrics**: `timeNs` (execution time per iteration), `allocationCount` (heap allocations per iteration)
 - **Compilation mode**: `verify` (no AOT)
@@ -34,4 +34,4 @@ The **regression toggle** (`useSlowMapCopy=true`) forces a slow `HashMap` copy i
 
 ## Conclusion
 
-The CI emulator **reliably detects the allocation regression** (+6133%, from 3 to 187 allocations). The timing regression (+2908%) is visible in the raw data but bp-analyzer classified it as "unstable" rather than "worse" — the regression is still unambiguous from the confidence intervals. For this benchmark, allocationCount is the more reliable indicator on CI emulators.
+The local emulator **reliably detects the allocation regression** (+6133%, from 3 to 187 allocations). The timing regression (+2908%) is visible in the raw data but bp-analyzer classified it as "unstable" rather than "worse" — the regression is still unambiguous from the confidence intervals. For this benchmark, allocationCount is the more reliable indicator on emulators.

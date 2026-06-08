@@ -1,0 +1,2501 @@
+{
+  "schema_version": "v1",
+  "benchmarks": [
+    {
+      "parameters": {
+        "scenario": "frameTimingWithSessionReplay:frameCount",
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark",
+        "version": "baseline",
+        "git_commit_sha": "979d9fb2",
+        "git_branch": "develop",
+        "cpu_model": "redfin"
+      },
+      "runs": {
+        "run0": {
+          "iterations": {
+            "uom": "iterations",
+            "values": [
+              3.0
+            ]
+          }
+        },
+        "run1": {
+          "iterations": {
+            "uom": "iterations",
+            "values": [
+              438.0
+            ]
+          }
+        },
+        "run2": {
+          "iterations": {
+            "uom": "iterations",
+            "values": [
+              433.0
+            ]
+          }
+        },
+        "run3": {
+          "iterations": {
+            "uom": "iterations",
+            "values": [
+              435.0
+            ]
+          }
+        },
+        "run4": {
+          "iterations": {
+            "uom": "iterations",
+            "values": [
+              433.0
+            ]
+          }
+        },
+        "run5": {
+          "iterations": {
+            "uom": "iterations",
+            "values": [
+              431.0
+            ]
+          }
+        },
+        "run6": {
+          "iterations": {
+            "uom": "iterations",
+            "values": [
+              431.0
+            ]
+          }
+        },
+        "run7": {
+          "iterations": {
+            "uom": "iterations",
+            "values": [
+              431.0
+            ]
+          }
+        },
+        "run8": {
+          "iterations": {
+            "uom": "iterations",
+            "values": [
+              432.0
+            ]
+          }
+        },
+        "run9": {
+          "iterations": {
+            "uom": "iterations",
+            "values": [
+              458.0
+            ]
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "scenario": "frameTimingWithSessionReplay:memoryHeapSizeMaxKb",
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark",
+        "version": "baseline",
+        "git_commit_sha": "979d9fb2",
+        "git_branch": "develop",
+        "cpu_model": "redfin"
+      },
+      "runs": {
+        "run0": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              12569.0
+            ]
+          }
+        },
+        "run1": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              29194.0
+            ]
+          }
+        },
+        "run2": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              29168.0
+            ]
+          }
+        },
+        "run3": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              28854.0
+            ]
+          }
+        },
+        "run4": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              29167.0
+            ]
+          }
+        },
+        "run5": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              28977.0
+            ]
+          }
+        },
+        "run6": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              28843.0
+            ]
+          }
+        },
+        "run7": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              29129.0
+            ]
+          }
+        },
+        "run8": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              29132.0
+            ]
+          }
+        },
+        "run9": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              28850.0
+            ]
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "scenario": "frameTimingWithSessionReplay:memoryRssAnonMaxKb",
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark",
+        "version": "baseline",
+        "git_commit_sha": "979d9fb2",
+        "git_branch": "develop",
+        "cpu_model": "redfin"
+      },
+      "runs": {
+        "run0": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              67088.0
+            ]
+          }
+        },
+        "run1": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              86032.0
+            ]
+          }
+        },
+        "run2": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              85556.0
+            ]
+          }
+        },
+        "run3": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              85656.0
+            ]
+          }
+        },
+        "run4": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              86020.0
+            ]
+          }
+        },
+        "run5": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              85604.0
+            ]
+          }
+        },
+        "run6": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              86032.0
+            ]
+          }
+        },
+        "run7": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              86252.0
+            ]
+          }
+        },
+        "run8": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              85540.0
+            ]
+          }
+        },
+        "run9": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              86044.0
+            ]
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "scenario": "frameTimingWithSessionReplay:memoryRssFileMaxKb",
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark",
+        "version": "baseline",
+        "git_commit_sha": "979d9fb2",
+        "git_branch": "develop",
+        "cpu_model": "redfin"
+      },
+      "runs": {
+        "run0": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              113192.0
+            ]
+          }
+        },
+        "run1": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              118588.0
+            ]
+          }
+        },
+        "run2": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              119400.0
+            ]
+          }
+        },
+        "run3": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              118892.0
+            ]
+          }
+        },
+        "run4": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              119164.0
+            ]
+          }
+        },
+        "run5": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              118700.0
+            ]
+          }
+        },
+        "run6": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              118624.0
+            ]
+          }
+        },
+        "run7": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              119900.0
+            ]
+          }
+        },
+        "run8": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              118128.0
+            ]
+          }
+        },
+        "run9": {
+          "rss": {
+            "uom": "KB",
+            "values": [
+              118272.0
+            ]
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "scenario": "frameTimingWithSessionReplay:frameDurationCpuMs:P50",
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark",
+        "version": "baseline",
+        "git_commit_sha": "979d9fb2",
+        "git_branch": "develop",
+        "cpu_model": "redfin"
+      },
+      "runs": {
+        "run0": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              32.64417
+            ]
+          }
+        },
+        "run1": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              5.131303
+            ]
+          }
+        },
+        "run2": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              4.829376
+            ]
+          }
+        },
+        "run3": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              4.99323
+            ]
+          }
+        },
+        "run4": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              5.038073
+            ]
+          }
+        },
+        "run5": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              4.970209
+            ]
+          }
+        },
+        "run6": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              4.924896
+            ]
+          }
+        },
+        "run7": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              5.128959
+            ]
+          }
+        },
+        "run8": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              5.138308
+            ]
+          }
+        },
+        "run9": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              5.3392455
+            ]
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "scenario": "frameTimingWithSessionReplay:frameDurationCpuMs:P90",
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark",
+        "version": "baseline",
+        "git_commit_sha": "979d9fb2",
+        "git_branch": "develop",
+        "cpu_model": "redfin"
+      },
+      "runs": {
+        "run0": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              80.77846600000001
+            ]
+          }
+        },
+        "run1": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              9.920397600000001
+            ]
+          }
+        },
+        "run2": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              10.044220000000001
+            ]
+          }
+        },
+        "run3": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              10.090188600000001
+            ]
+          }
+        },
+        "run4": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              10.257281800000001
+            ]
+          }
+        },
+        "run5": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              10.149063
+            ]
+          }
+        },
+        "run6": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              9.806043
+            ]
+          }
+        },
+        "run7": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              9.736876
+            ]
+          }
+        },
+        "run8": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              9.981703900000001
+            ]
+          }
+        },
+        "run9": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              10.7269229
+            ]
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "scenario": "frameTimingWithSessionReplay:frameDurationCpuMs:P95",
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark",
+        "version": "baseline",
+        "git_commit_sha": "979d9fb2",
+        "git_branch": "develop",
+        "cpu_model": "redfin"
+      },
+      "runs": {
+        "run0": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              86.795253
+            ]
+          }
+        },
+        "run1": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              10.718920299999999
+            ]
+          }
+        },
+        "run2": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              10.958116
+            ]
+          }
+        },
+        "run3": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              11.022250999999997
+            ]
+          }
+        },
+        "run4": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              11.527667999999998
+            ]
+          }
+        },
+        "run5": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              10.8509905
+            ]
+          }
+        },
+        "run6": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              10.5779435
+            ]
+          }
+        },
+        "run7": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              10.3473445
+            ]
+          }
+        },
+        "run8": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              10.9199226
+            ]
+          }
+        },
+        "run9": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              16.70616065
+            ]
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "scenario": "frameTimingWithSessionReplay:frameDurationCpuMs:P99",
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark",
+        "version": "baseline",
+        "git_commit_sha": "979d9fb2",
+        "git_branch": "develop",
+        "cpu_model": "redfin"
+      },
+      "runs": {
+        "run0": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              91.60868260000001
+            ]
+          }
+        },
+        "run1": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              14.254926470000001
+            ]
+          }
+        },
+        "run2": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              14.77836456
+            ]
+          }
+        },
+        "run3": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              14.003927019999967
+            ]
+          }
+        },
+        "run4": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              16.429949480000026
+            ]
+          }
+        },
+        "run5": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              15.526751099999979
+            ]
+          }
+        },
+        "run6": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              14.7190488
+            ]
+          }
+        },
+        "run7": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              13.957808699999998
+            ]
+          }
+        },
+        "run8": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              26.304474199999994
+            ]
+          }
+        },
+        "run9": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              39.48367230000004
+            ]
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "scenario": "frameTimingWithSessionReplay:frameOverrunMs:P50",
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark",
+        "version": "baseline",
+        "git_commit_sha": "979d9fb2",
+        "git_branch": "develop",
+        "cpu_model": "redfin"
+      },
+      "runs": {
+        "run0": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              101.062342
+            ]
+          }
+        },
+        "run1": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -10.9351655
+            ]
+          }
+        },
+        "run2": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -11.291884
+            ]
+          }
+        },
+        "run3": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -11.015077
+            ]
+          }
+        },
+        "run4": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -10.987851
+            ]
+          }
+        },
+        "run5": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -10.887287
+            ]
+          }
+        },
+        "run6": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -11.26551
+            ]
+          }
+        },
+        "run7": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -10.854785
+            ]
+          }
+        },
+        "run8": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -10.934649
+            ]
+          }
+        },
+        "run9": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -10.823718
+            ]
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "scenario": "frameTimingWithSessionReplay:frameOverrunMs:P90",
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark",
+        "version": "baseline",
+        "git_commit_sha": "979d9fb2",
+        "git_branch": "develop",
+        "cpu_model": "redfin"
+      },
+      "runs": {
+        "run0": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              107.7212764
+            ]
+          }
+        },
+        "run1": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -7.0257246
+            ]
+          }
+        },
+        "run2": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -7.0795708
+            ]
+          }
+        },
+        "run3": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -6.727623599999999
+            ]
+          }
+        },
+        "run4": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -6.7005608
+            ]
+          }
+        },
+        "run5": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -6.72625
+            ]
+          }
+        },
+        "run6": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -7.210721
+            ]
+          }
+        },
+        "run7": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -7.153642
+            ]
+          }
+        },
+        "run8": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -6.842296399999999
+            ]
+          }
+        },
+        "run9": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -6.087789999999997
+            ]
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "scenario": "frameTimingWithSessionReplay:frameOverrunMs:P95",
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark",
+        "version": "baseline",
+        "git_commit_sha": "979d9fb2",
+        "git_branch": "develop",
+        "cpu_model": "redfin"
+      },
+      "runs": {
+        "run0": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              108.5536432
+            ]
+          }
+        },
+        "run1": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -6.126037150000001
+            ]
+          }
+        },
+        "run2": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -5.9809862
+            ]
+          }
+        },
+        "run3": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -5.995653500000001
+            ]
+          }
+        },
+        "run4": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -5.740055800000002
+            ]
+          }
+        },
+        "run5": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -5.9286460000000005
+            ]
+          }
+        },
+        "run6": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -6.354794
+            ]
+          }
+        },
+        "run7": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -6.2663395
+            ]
+          }
+        },
+        "run8": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              -5.730622150000002
+            ]
+          }
+        },
+        "run9": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              2.1788504499999997
+            ]
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "scenario": "frameTimingWithSessionReplay:frameOverrunMs:P99",
+        "className": "com.datadog.benchmark.macrobenchmark.SessionReplayRumAutoBenchmark",
+        "version": "baseline",
+        "git_commit_sha": "979d9fb2",
+        "git_branch": "develop",
+        "cpu_model": "redfin"
+      },
+      "runs": {
+        "run0": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              109.21953664
+            ]
+          }
+        },
+        "run1": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              15.603606719999899
+            ]
+          }
+        },
+        "run2": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              16.731730720000186
+            ]
+          }
+        },
+        "run3": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              14.759397179999166
+            ]
+          }
+        },
+        "run4": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              8.48079764000011
+            ]
+          }
+        },
+        "run5": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              14.953785999999718
+            ]
+          }
+        },
+        "run6": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              10.131007799999807
+            ]
+          }
+        },
+        "run7": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              20.145531499999635
+            ]
+          }
+        },
+        "run8": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              19.896817119999973
+            ]
+          }
+        },
+        "run9": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              33.67236785000009
+            ]
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "scenario": "listSort:timeNs",
+        "className": "com.datadog.benchmark.microbenchmark.ExampleBenchmark",
+        "version": "baseline",
+        "git_commit_sha": "979d9fb2",
+        "git_branch": "develop",
+        "cpu_model": "redfin"
+      },
+      "runs": {
+        "run0": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              32911.87761919222
+            ]
+          }
+        },
+        "run1": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              32961.54114788946
+            ]
+          }
+        },
+        "run2": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              32886.00212572123
+            ]
+          }
+        },
+        "run3": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              32217.44366838749
+            ]
+          }
+        },
+        "run4": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              32851.80716671728
+            ]
+          }
+        },
+        "run5": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              33210.61737017917
+            ]
+          }
+        },
+        "run6": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              33098.368660795626
+            ]
+          }
+        },
+        "run7": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              37850.08351047677
+            ]
+          }
+        },
+        "run8": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              38210.36471302764
+            ]
+          }
+        },
+        "run9": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              36663.111448527176
+            ]
+          }
+        },
+        "run10": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              36722.91314910416
+            ]
+          }
+        },
+        "run11": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              36058.97327664743
+            ]
+          }
+        },
+        "run12": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              36416.48679016095
+            ]
+          }
+        },
+        "run13": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              36305.13938657759
+            ]
+          }
+        },
+        "run14": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              36296.187367142426
+            ]
+          }
+        },
+        "run15": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              35172.68660795627
+            ]
+          }
+        },
+        "run16": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              36026.73975098694
+            ]
+          }
+        },
+        "run17": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              35232.251138779226
+            ]
+          }
+        },
+        "run18": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              37095.0567871242
+            ]
+          }
+        },
+        "run19": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              36099.811418159734
+            ]
+          }
+        },
+        "run20": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              34218.168235651385
+            ]
+          }
+        },
+        "run21": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              33803.00394776799
+            ]
+          }
+        },
+        "run22": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              36975.95991497115
+            ]
+          }
+        },
+        "run23": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              35390.747039174006
+            ]
+          }
+        },
+        "run24": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              36292.05952019435
+            ]
+          }
+        },
+        "run25": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              34883.753112663224
+            ]
+          }
+        },
+        "run26": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              34396.13422411175
+            ]
+          }
+        },
+        "run27": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              34769.00516246584
+            ]
+          }
+        },
+        "run28": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              36800.429395687825
+            ]
+          }
+        },
+        "run29": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              34410.33707865168
+            ]
+          }
+        },
+        "run30": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              34965.38141512299
+            ]
+          }
+        },
+        "run31": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              36240.13422411175
+            ]
+          }
+        },
+        "run32": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              35108.867597935016
+            ]
+          }
+        },
+        "run33": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              33383.58548436077
+            ]
+          }
+        },
+        "run34": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              36355.29304585484
+            ]
+          }
+        },
+        "run35": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              33608.85788035226
+            ]
+          }
+        },
+        "run36": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              32445.87944123899
+            ]
+          }
+        },
+        "run37": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              36058.75189796538
+            ]
+          }
+        },
+        "run38": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              33719.49347099909
+            ]
+          }
+        },
+        "run39": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              37226.712420285454
+            ]
+          }
+        },
+        "run40": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              35433.87853021561
+            ]
+          }
+        },
+        "run41": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              34850.6334649256
+            ]
+          }
+        },
+        "run42": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              34131.63680534467
+            ]
+          }
+        },
+        "run43": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              35412.49468569693
+            ]
+          }
+        },
+        "run44": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              36864.106286061346
+            ]
+          }
+        },
+        "run45": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              36414.051017309444
+            ]
+          }
+        },
+        "run46": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              34952.253871849374
+            ]
+          }
+        },
+        "run47": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              34781.32614637109
+            ]
+          }
+        },
+        "run48": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              35330.02793805041
+            ]
+          }
+        },
+        "run49": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              35926.85909505011
+            ]
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "scenario": "listSort:allocationCount",
+        "className": "com.datadog.benchmark.microbenchmark.ExampleBenchmark",
+        "version": "baseline",
+        "git_commit_sha": "979d9fb2",
+        "git_branch": "develop",
+        "cpu_model": "redfin"
+      },
+      "runs": {
+        "run0": {
+          "allocations": {
+            "uom": "allocations",
+            "values": [
+              881.0006073489219
+            ]
+          }
+        },
+        "run1": {
+          "allocations": {
+            "uom": "allocations",
+            "values": [
+              881.0018220467658
+            ]
+          }
+        },
+        "run2": {
+          "allocations": {
+            "uom": "allocations",
+            "values": [
+              881.0006073489219
+            ]
+          }
+        },
+        "run3": {
+          "allocations": {
+            "uom": "allocations",
+            "values": [
+              881.000303674461
+            ]
+          }
+        },
+        "run4": {
+          "allocations": {
+            "uom": "allocations",
+            "values": [
+              880.9993926510781
+            ]
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "scenario": "updateFeatureContext:timeNs",
+        "className": "com.datadog.android.core.internal.UpdateFeatureContextBenchmark",
+        "version": "baseline",
+        "git_commit_sha": "979d9fb2",
+        "git_branch": "develop",
+        "cpu_model": "redfin"
+      },
+      "runs": {
+        "run0": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              563.15847387424
+            ]
+          }
+        },
+        "run1": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              501.743462698698
+            ]
+          }
+        },
+        "run2": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              498.2006283311712
+            ]
+          }
+        },
+        "run3": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              495.95868957001517
+            ]
+          }
+        },
+        "run4": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              724.4353772331547
+            ]
+          }
+        },
+        "run5": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              379.35058378530454
+            ]
+          }
+        },
+        "run6": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              363.906875693587
+            ]
+          }
+        },
+        "run7": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              500.13566951656014
+            ]
+          }
+        },
+        "run8": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              362.42690570343393
+            ]
+          }
+        },
+        "run9": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              362.14767345535256
+            ]
+          }
+        },
+        "run10": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              360.6082777161256
+            ]
+          }
+        },
+        "run11": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              560.2441113490364
+            ]
+          }
+        },
+        "run12": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              370.6726113255912
+            ]
+          }
+        },
+        "run13": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              371.411791369043
+            ]
+          }
+        },
+        "run14": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              374.3269666609356
+            ]
+          }
+        },
+        "run15": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              588.834226855687
+            ]
+          }
+        },
+        "run16": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              377.5783460197877
+            ]
+          }
+        },
+        "run17": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              370.92903921599276
+            ]
+          }
+        },
+        "run18": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              372.20875599806186
+            ]
+          }
+        },
+        "run19": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              363.4436612013317
+            ]
+          }
+        },
+        "run20": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              682.5938511073946
+            ]
+          }
+        },
+        "run21": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              375.61074727645007
+            ]
+          }
+        },
+        "run22": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              372.5441472983323
+            ]
+          }
+        },
+        "run23": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              461.4299379483893
+            ]
+          }
+        },
+        "run24": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              475.4498351021429
+            ]
+          }
+        },
+        "run25": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              408.7677988089842
+            ]
+          }
+        },
+        "run26": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              403.9851357476672
+            ]
+          }
+        },
+        "run27": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              508.7859766485878
+            ]
+          }
+        },
+        "run28": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              480.2968005126682
+            ]
+          }
+        },
+        "run29": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              403.8654714828303
+            ]
+          }
+        },
+        "run30": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              407.7542631175855
+            ]
+          }
+        },
+        "run31": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              578.659997811782
+            ]
+          }
+        },
+        "run32": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              459.74155582300443
+            ]
+          }
+        },
+        "run33": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              406.0724143859704
+            ]
+          }
+        },
+        "run34": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              406.7733318745213
+            ]
+          }
+        },
+        "run35": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              399.27655949608464
+            ]
+          }
+        },
+        "run36": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              581.4082745900998
+            ]
+          }
+        },
+        "run37": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              404.6681411088013
+            ]
+          }
+        },
+        "run38": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              371.2196658278498
+            ]
+          }
+        },
+        "run39": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              394.74544772503475
+            ]
+          }
+        },
+        "run40": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              557.577220650526
+            ]
+          }
+        },
+        "run41": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              398.98512011753854
+            ]
+          }
+        },
+        "run42": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              400.45207021053784
+            ]
+          }
+        },
+        "run43": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              366.0405601838103
+            ]
+          }
+        },
+        "run44": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              552.3956610762907
+            ]
+          }
+        },
+        "run45": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              526.8127197986839
+            ]
+          }
+        },
+        "run46": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              364.31227434001784
+            ]
+          }
+        },
+        "run47": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              366.835086512762
+            ]
+          }
+        },
+        "run48": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              550.1455790181153
+            ]
+          }
+        },
+        "run49": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              406.2621016270964
+            ]
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "scenario": "updateFeatureContext:allocationCount",
+        "className": "com.datadog.android.core.internal.UpdateFeatureContextBenchmark",
+        "version": "baseline",
+        "git_commit_sha": "979d9fb2",
+        "git_branch": "develop",
+        "cpu_model": "redfin"
+      },
+      "runs": {
+        "run0": {
+          "allocations": {
+            "uom": "allocations",
+            "values": [
+              3.0
+            ]
+          }
+        },
+        "run1": {
+          "allocations": {
+            "uom": "allocations",
+            "values": [
+              3.0
+            ]
+          }
+        },
+        "run2": {
+          "allocations": {
+            "uom": "allocations",
+            "values": [
+              3.000046890385908
+            ]
+          }
+        },
+        "run3": {
+          "allocations": {
+            "uom": "allocations",
+            "values": [
+              3.0
+            ]
+          }
+        },
+        "run4": {
+          "allocations": {
+            "uom": "allocations",
+            "values": [
+              3.0
+            ]
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "scenario": "onFrame:timeNs",
+        "className": "com.datadog.android.rum.internal.vitals.FrameStatesAggregatorBenchmark",
+        "version": "baseline",
+        "git_commit_sha": "979d9fb2",
+        "git_branch": "develop",
+        "cpu_model": "redfin"
+      },
+      "runs": {
+        "run0": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              30.029333205146425
+            ]
+          }
+        },
+        "run1": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.90926665942132
+            ]
+          }
+        },
+        "run2": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.917973615790398
+            ]
+          }
+        },
+        "run3": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.961297307238937
+            ]
+          }
+        },
+        "run4": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.943009772858375
+            ]
+          }
+        },
+        "run5": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.93201426218681
+            ]
+          }
+        },
+        "run6": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.92189237315766
+            ]
+          }
+        },
+        "run7": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.952479580661613
+            ]
+          }
+        },
+        "run8": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.901101014069905
+            ]
+          }
+        },
+        "run9": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.90240726652566
+            ]
+          }
+        },
+        "run10": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.969026141769145
+            ]
+          }
+        },
+        "run11": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.919062507837516
+            ]
+          }
+        },
+        "run12": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.94137747978966
+            ]
+          }
+        },
+        "run13": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.900338162635745
+            ]
+          }
+        },
+        "run14": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.946383039200114
+            ]
+          }
+        },
+        "run15": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.911659713920262
+            ]
+          }
+        },
+        "run16": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.909047209008754
+            ]
+          }
+        },
+        "run17": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.95433132414289
+            ]
+          }
+        },
+        "run18": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.89391558056129
+            ]
+          }
+        },
+        "run19": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.940834078768066
+            ]
+          }
+        },
+        "run20": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.942683732245417
+            ]
+          }
+        },
+        "run21": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.972292817910496
+            ]
+          }
+        },
+        "run22": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.90665415450981
+            ]
+          }
+        },
+        "run23": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.914709029652975
+            ]
+          }
+        },
+        "run24": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.935389618532483
+            ]
+          }
+        },
+        "run25": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.92091425131879
+            ]
+          }
+        },
+        "run26": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.965978916040363
+            ]
+          }
+        },
+        "run27": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.909157979217
+            ]
+          }
+        },
+        "run28": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.946165678791477
+            ]
+          }
+        },
+        "run29": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.95781327068895
+            ]
+          }
+        },
+        "run30": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.92374202663501
+            ]
+          }
+        },
+        "run31": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.911224993102987
+            ]
+          }
+        },
+        "run32": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.888255849921
+            ]
+          }
+        },
+        "run33": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.910246871264118
+            ]
+          }
+        },
+        "run34": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.984375130625246
+            ]
+          }
+        },
+        "run35": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.950303886571305
+            ]
+          }
+        },
+        "run36": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.95759591028031
+            ]
+          }
+        },
+        "run37": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.90665206450588
+            ]
+          }
+        },
+        "run38": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.946056998587157
+            ]
+          }
+        },
+        "run39": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.928314955232114
+            ]
+          }
+        },
+        "run40": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.942249011428142
+            ]
+          }
+        },
+        "run41": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.90393296939398
+            ]
+          }
+        },
+        "run42": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.917212854360166
+            ]
+          }
+        },
+        "run43": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.87366971249906
+            ]
+          }
+        },
+        "run44": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.910572911877075
+            ]
+          }
+        },
+        "run45": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.90741491594004
+            ]
+          }
+        },
+        "run46": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.922544454383573
+            ]
+          }
+        },
+        "run47": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              30.085717331148583
+            ]
+          }
+        },
+        "run48": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.928532315640755
+            ]
+          }
+        },
+        "run49": {
+          "execution_time": {
+            "uom": "ns",
+            "values": [
+              29.994497019654396
+            ]
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "scenario": "onFrame:allocationCount",
+        "className": "com.datadog.android.rum.internal.vitals.FrameStatesAggregatorBenchmark",
+        "version": "baseline",
+        "git_commit_sha": "979d9fb2",
+        "git_branch": "develop",
+        "cpu_model": "redfin"
+      },
+      "runs": {
+        "run0": {
+          "allocations": {
+            "uom": "allocations",
+            "values": [
+              0.0
+            ]
+          }
+        },
+        "run1": {
+          "allocations": {
+            "uom": "allocations",
+            "values": [
+              0.0
+            ]
+          }
+        },
+        "run2": {
+          "allocations": {
+            "uom": "allocations",
+            "values": [
+              0.0
+            ]
+          }
+        },
+        "run3": {
+          "allocations": {
+            "uom": "allocations",
+            "values": [
+              0.0
+            ]
+          }
+        },
+        "run4": {
+          "allocations": {
+            "uom": "allocations",
+            "values": [
+              0.0
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

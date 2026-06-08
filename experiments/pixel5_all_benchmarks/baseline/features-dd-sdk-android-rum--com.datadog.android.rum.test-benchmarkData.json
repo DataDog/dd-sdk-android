@@ -1,0 +1,119 @@
+{
+    "context": {
+        "build": {
+            "brand": "google",
+            "device": "redfin",
+            "fingerprint": "google/redfin/redfin:13/TQ3A.230605.011/10161073:user/release-keys",
+            "id": "TQ3A.230605.011",
+            "model": "Pixel 5",
+            "type": "user",
+            "version": {
+                "codename": "REL",
+                "sdk": 33
+            }
+        },
+        "cpuCoreCount": 8,
+        "cpuLocked": true,
+        "cpuMaxFreqHz": 2400000000,
+        "memTotalBytes": 7823982592,
+        "sustainedPerformanceModeEnabled": false,
+        "artMainlineVersion": 361501120,
+        "osCodenameAbbreviated": "T",
+        "compilationMode": "verify"
+    },
+    "benchmarks": [
+        {
+            "name": "onFrame",
+            "params": {},
+            "className": "com.datadog.android.rum.internal.vitals.FrameStatesAggregatorBenchmark",
+            "totalRunTimeNs": 1569857292,
+            "metrics": {
+                "timeNs": {
+                    "minimum": 29.87366971249906,
+                    "maximum": 30.085717331148583,
+                    "median": 29.92602849093356,
+                    "runs": [
+                        30.029333205146425,
+                        29.90926665942132,
+                        29.917973615790398,
+                        29.961297307238937,
+                        29.943009772858375,
+                        29.93201426218681,
+                        29.92189237315766,
+                        29.952479580661613,
+                        29.901101014069905,
+                        29.90240726652566,
+                        29.969026141769145,
+                        29.919062507837516,
+                        29.94137747978966,
+                        29.900338162635745,
+                        29.946383039200114,
+                        29.911659713920262,
+                        29.909047209008754,
+                        29.95433132414289,
+                        29.89391558056129,
+                        29.940834078768066,
+                        29.942683732245417,
+                        29.972292817910496,
+                        29.90665415450981,
+                        29.914709029652975,
+                        29.935389618532483,
+                        29.92091425131879,
+                        29.965978916040363,
+                        29.909157979217,
+                        29.946165678791477,
+                        29.95781327068895,
+                        29.92374202663501,
+                        29.911224993102987,
+                        29.888255849921,
+                        29.910246871264118,
+                        29.984375130625246,
+                        29.950303886571305,
+                        29.95759591028031,
+                        29.90665206450588,
+                        29.946056998587157,
+                        29.928314955232114,
+                        29.942249011428142,
+                        29.90393296939398,
+                        29.917212854360166,
+                        29.87366971249906,
+                        29.910572911877075,
+                        29.90741491594004,
+                        29.922544454383573,
+                        30.085717331148583,
+                        29.928532315640755,
+                        29.994497019654396
+                    ]
+                },
+                "allocationCount": {
+                    "minimum": 0.0,
+                    "maximum": 0.0,
+                    "median": 0.0,
+                    "runs": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                }
+            },
+            "sampledMetrics": {},
+            "warmupIterations": 981657,
+            "repeatIterations": 478468,
+            "thermalThrottleSleepSeconds": 0,
+            "profilerOutputs": [
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace",
+                    "filename": "FrameStatesAggregatorBenchmark_onFrame_2026-06-07-16-27-10.perfetto-trace"
+                },
+                {
+                    "type": "MethodTrace",
+                    "label": "Method Trace",
+                    "filename": "FrameStatesAggregatorBenchmark_onFrame-methodTracing-2026-06-07-16-27-10.trace"
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,376 @@
+{
+  "benchmarks": [
+    {
+      "name": "EMULATOR_updateFeatureContext",
+      "params": {},
+      "className": "com.datadog.android.core.internal.UpdateFeatureContextBenchmark",
+      "totalRunTimeNs": 14376079215,
+      "metrics": {
+        "timeNs": {
+          "minimum": 244.1040625,
+          "maximum": 687.79573,
+          "median": 353.74369875,
+          "runs": [
+            290.513335,
+            294.7501025,
+            357.4345825,
+            415.2028125,
+            491.3098975,
+            405.738125,
+            371.1752075,
+            398.6958325,
+            487.0168775,
+            405.1528125,
+            378.4615625,
+            338.649895,
+            359.12021,
+            343.0232275,
+            298.458855,
+            291.7447925,
+            399.7283325,
+            346.65771,
+            318.4540625,
+            321.315105,
+            351.996355,
+            392.95573,
+            311.86146,
+            321.700625,
+            359.1407275,
+            452.77198,
+            300.4385425,
+            331.6110425,
+            499.8878125,
+            284.25323,
+            515.8121875,
+            329.3928125,
+            316.795835,
+            355.4910425,
+            373.4372925,
+            311.88375,
+            368.4740625,
+            687.79573,
+            457.409375,
+            391.8984375,
+            388.217605,
+            395.0727075,
+            408.733645,
+            285.143125,
+            256.370625,
+            261.5928125,
+            244.1040625,
+            248.8709375,
+            248.6332275,
+            252.33854
+          ]
+        },
+        "allocationCount": {
+          "minimum": 3.000035,
+          "maximum": 3.0000525,
+          "median": 3.0000375,
+          "runs": [
+            3.000035,
+            3.0000525,
+            3.0000375,
+            3.0000475,
+            3.000035
+          ]
+        }
+      },
+      "sampledMetrics": {},
+      "warmupIterations": 8652776,
+      "repeatIterations": 400000,
+      "thermalThrottleSleepSeconds": 0,
+      "profilerOutputs": [
+        {
+          "type": "PerfettoTrace",
+          "label": "Trace",
+          "filename": "UpdateFeatureContextBenchmark_updateFeatureContext_2026-06-05-15-35-24.perfetto-trace"
+        },
+        {
+          "type": "MethodTrace",
+          "label": "Method Trace",
+          "filename": "UpdateFeatureContextBenchmark_updateFeatureContext-methodTracing-2026-06-05-15-35-23.trace"
+        }
+      ]
+    },
+    {
+      "name": "EMULATOR_onFrame",
+      "params": {},
+      "className": "com.datadog.android.rum.internal.vitals.FrameStatesAggregatorBenchmark",
+      "totalRunTimeNs": 1376514750,
+      "metrics": {
+        "timeNs": {
+          "minimum": 10.990291,
+          "maximum": 11.171583,
+          "median": 11.032729499999999,
+          "runs": [
+            11.034792,
+            11.094042,
+            11.0645,
+            11.0275,
+            11.021417,
+            11.0325,
+            11.006583,
+            11.005417,
+            11.078292,
+            11.032542,
+            11.052417,
+            11.053084,
+            11.061417,
+            11.036833,
+            11.031708,
+            11.021583,
+            11.00575,
+            11.0465,
+            11.043084,
+            11.023792,
+            11.032917,
+            11.02375,
+            11.038834,
+            11.043375,
+            11.005291,
+            11.067875,
+            11.05625,
+            11.112292,
+            11.141667,
+            11.013959,
+            11.032917,
+            11.000458,
+            11.010208,
+            11.028125,
+            10.9955,
+            11.078542,
+            11.056584,
+            11.029208,
+            11.064292,
+            11.005166,
+            10.990291,
+            11.043333,
+            11.024167,
+            10.999709,
+            11.082833,
+            11.023125,
+            11.06675,
+            11.032375,
+            11.171583,
+            11.027916
+          ]
+        },
+        "allocationCount": {
+          "minimum": 0.0,
+          "maximum": 0.0,
+          "median": 0.0,
+          "runs": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "sampledMetrics": {},
+      "warmupIterations": 5778350,
+      "repeatIterations": 1000000,
+      "thermalThrottleSleepSeconds": 0,
+      "profilerOutputs": [
+        {
+          "type": "PerfettoTrace",
+          "label": "Trace",
+          "filename": "FrameStatesAggregatorBenchmark_onFrame_2026-06-05-15-37-33.perfetto-trace"
+        },
+        {
+          "type": "MethodTrace",
+          "label": "Method Trace",
+          "filename": "FrameStatesAggregatorBenchmark_onFrame-methodTracing-2026-06-05-15-37-32.trace"
+        }
+      ]
+    },
+    {
+      "name": "EMULATOR_updateFeatureContext",
+      "params": {},
+      "className": "com.datadog.android.core.internal.UpdateFeatureContextBenchmark",
+      "totalRunTimeNs": 14376079215,
+      "metrics": {
+        "timeNs": {
+          "minimum": 244.1040625,
+          "maximum": 687.79573,
+          "median": 353.74369875,
+          "runs": [
+            290.513335,
+            294.7501025,
+            357.4345825,
+            415.2028125,
+            491.3098975,
+            405.738125,
+            371.1752075,
+            398.6958325,
+            487.0168775,
+            405.1528125,
+            378.4615625,
+            338.649895,
+            359.12021,
+            343.0232275,
+            298.458855,
+            291.7447925,
+            399.7283325,
+            346.65771,
+            318.4540625,
+            321.315105,
+            351.996355,
+            392.95573,
+            311.86146,
+            321.700625,
+            359.1407275,
+            452.77198,
+            300.4385425,
+            331.6110425,
+            499.8878125,
+            284.25323,
+            515.8121875,
+            329.3928125,
+            316.795835,
+            355.4910425,
+            373.4372925,
+            311.88375,
+            368.4740625,
+            687.79573,
+            457.409375,
+            391.8984375,
+            388.217605,
+            395.0727075,
+            408.733645,
+            285.143125,
+            256.370625,
+            261.5928125,
+            244.1040625,
+            248.8709375,
+            248.6332275,
+            252.33854
+          ]
+        },
+        "allocationCount": {
+          "minimum": 3.000035,
+          "maximum": 3.0000525,
+          "median": 3.0000375,
+          "runs": [
+            3.000035,
+            3.0000525,
+            3.0000375,
+            3.0000475,
+            3.000035
+          ]
+        }
+      },
+      "sampledMetrics": {},
+      "warmupIterations": 8652776,
+      "repeatIterations": 400000,
+      "thermalThrottleSleepSeconds": 0,
+      "profilerOutputs": [
+        {
+          "type": "PerfettoTrace",
+          "label": "Trace",
+          "filename": "UpdateFeatureContextBenchmark_updateFeatureContext_2026-06-05-15-35-24.perfetto-trace"
+        },
+        {
+          "type": "MethodTrace",
+          "label": "Method Trace",
+          "filename": "UpdateFeatureContextBenchmark_updateFeatureContext-methodTracing-2026-06-05-15-35-23.trace"
+        }
+      ]
+    },
+    {
+      "name": "EMULATOR_onFrame",
+      "params": {},
+      "className": "com.datadog.android.rum.internal.vitals.FrameStatesAggregatorBenchmark",
+      "totalRunTimeNs": 1376514750,
+      "metrics": {
+        "timeNs": {
+          "minimum": 10.990291,
+          "maximum": 11.171583,
+          "median": 11.032729499999999,
+          "runs": [
+            11.034792,
+            11.094042,
+            11.0645,
+            11.0275,
+            11.021417,
+            11.0325,
+            11.006583,
+            11.005417,
+            11.078292,
+            11.032542,
+            11.052417,
+            11.053084,
+            11.061417,
+            11.036833,
+            11.031708,
+            11.021583,
+            11.00575,
+            11.0465,
+            11.043084,
+            11.023792,
+            11.032917,
+            11.02375,
+            11.038834,
+            11.043375,
+            11.005291,
+            11.067875,
+            11.05625,
+            11.112292,
+            11.141667,
+            11.013959,
+            11.032917,
+            11.000458,
+            11.010208,
+            11.028125,
+            10.9955,
+            11.078542,
+            11.056584,
+            11.029208,
+            11.064292,
+            11.005166,
+            10.990291,
+            11.043333,
+            11.024167,
+            10.999709,
+            11.082833,
+            11.023125,
+            11.06675,
+            11.032375,
+            11.171583,
+            11.027916
+          ]
+        },
+        "allocationCount": {
+          "minimum": 0.0,
+          "maximum": 0.0,
+          "median": 0.0,
+          "runs": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "sampledMetrics": {},
+      "warmupIterations": 5778350,
+      "repeatIterations": 1000000,
+      "thermalThrottleSleepSeconds": 0,
+      "profilerOutputs": [
+        {
+          "type": "PerfettoTrace",
+          "label": "Trace",
+          "filename": "FrameStatesAggregatorBenchmark_onFrame_2026-06-05-15-37-33.perfetto-trace"
+        },
+        {
+          "type": "MethodTrace",
+          "label": "Method Trace",
+          "filename": "FrameStatesAggregatorBenchmark_onFrame-methodTracing-2026-06-05-15-37-32.trace"
+        }
+      ]
+    }
+  ]
+}

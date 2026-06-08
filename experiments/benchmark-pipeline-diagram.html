@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: white; }
+</style>
+</head>
+<body>
+<pre class="mermaid">
+flowchart LR
+    BENCH["Jetpack\nMacro + Micro\nBenchmarks"] --> CONVERT["Convert\nto CBMF"]
+    CONVERT -->|candidate| BP["bp-analyzer"]
+    CONVERT --> S3[("S3")]
+    S3 -->|"baseline\n(from develop)"| BP
+    BP --> UI["Benchmarking\nPlatform UI"]
+    BP --> COMMENT["PR Comment"]
+
+    style BENCH fill:#e8f4fd,stroke:#2196F3
+    style CONVERT fill:#e0e0e0,stroke:#757575
+    style S3 fill:#fff9c4,stroke:#FFC107
+    style BP fill:#fff3e0,stroke:#FF9800
+    style UI fill:#e1bee7,stroke:#9C27B0
+    style COMMENT fill:#c8e6c9,stroke:#43A047
+</pre>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme:'default'});</script>
+</body>
+</html>
