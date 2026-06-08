@@ -307,6 +307,14 @@ internal class DatadogLateCrashReporter(
                 ioe
             )
             return emptyList()
+        } catch (iae: IllegalArgumentException) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                { OPEN_ANR_TRACE_ERROR },
+                iae
+            )
+            return emptyList()
         }
         if (traceInputStream == null) {
             sdkCore.internalLogger.log(
