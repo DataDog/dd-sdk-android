@@ -88,6 +88,7 @@ import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
 import com.datadog.android.rum.internal.vitals.CPUVitalReader
+import com.datadog.android.rum.internal.vitals.CpuStatReader
 import com.datadog.android.rum.internal.vitals.FPSVitalListener
 import com.datadog.android.rum.internal.vitals.FrameStateListener
 import com.datadog.android.rum.internal.vitals.FrameStatesAggregator
@@ -581,7 +582,7 @@ internal class RumFeature(
 
         cpuVitalMonitor = AggregatingVitalMonitor()
         initializeVitalMonitor(
-            CPUVitalReader(internalLogger = sdkCore.internalLogger),
+            CPUVitalReader(CpuStatReader(internalLogger = sdkCore.internalLogger)),
             cpuVitalMonitor,
             frequency.periodInMs
         )
