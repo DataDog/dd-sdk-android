@@ -16,6 +16,7 @@ import com.datadog.android.rum.internal.toTimeseriesMemorySessionType
 import com.datadog.android.rum.model.TimeseriesMemoryEvent
 import com.google.gson.JsonObject
 import java.util.UUID
+import kotlin.math.pow
 
 internal class MemoryEventSerializer(
     private val sessionId: String,
@@ -23,7 +24,8 @@ internal class MemoryEventSerializer(
     private val sessionType: RumSessionType,
     private val totalRamBytes: Long,
     private val timeProvider: TimeProvider,
-    private val useDeltaCompression: Boolean = false
+    private val useDeltaCompression: Boolean = false,
+    private val precision: Int = DeltaCompression.PRECISION
 ) : JsonSerializer<Double> {
 
     override fun serialize(dataPoints: List<DataPoint<Double>>): JsonObject? {
@@ -75,18 +77,19 @@ internal class MemoryEventSerializer(
     private fun encodeDelta(data: List<TimeseriesMemoryEvent.Data>): JsonObject? {
         if (data.size <= 1) return null
 
+        val scale = 10.0.pow(precision.toDouble()).toLong()
         val ts = data.mapToDeltaCompressed { it.timestamp }
 
         val memoryMaxArray = data.mapToDeltaCompressed {
-            roundToLongSafely(it.dataPoint.memoryMax.toDouble())
+            roundToLongSafely(it.dataPoint.memoryMax.toDouble(), scale = scale)
         }
 
         val memoryPercentArray = data.mapToDeltaCompressed {
-            roundToLongSafely(it.dataPoint.memoryPercent.toDouble())
+            roundToLongSafely(it.dataPoint.memoryPercent.toDouble(), scale = scale)
         }
 
         return JsonObject().apply {
-            addProperty("precision", DeltaCompression.PRECISION)
+            addProperty("precision", precision)
             addProperty("resolution", RESOLUTION_NS)
             add("ts", ts)
             add("memory_max", memoryMaxArray)
