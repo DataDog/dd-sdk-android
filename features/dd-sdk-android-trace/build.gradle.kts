@@ -69,6 +69,8 @@ dependencies {
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.systemStubsJupiter)
     testImplementation(libs.msgPackCore)
+    testImplementation(libs.sketchesJava)
+    testImplementation(libs.protobufJava)
     testImplementation(project(":tools:unit")) {
         attributes {
             attribute(

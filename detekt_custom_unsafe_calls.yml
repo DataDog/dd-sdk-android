@@ -59,11 +59,11 @@ datadog:
       - "androidx.work.WorkManager.enqueueUniqueWork(kotlin.String, androidx.work.ExistingWorkPolicy, androidx.work.OneTimeWorkRequest):java.util.concurrent.RejectedExecutionException,java.lang.NullPointerException"
       - "androidx.work.Data.Builder.build():java.lang.IllegalStateException"
       # endregion
-      # region Apollo Kotlin
       # region Cronet
       - "org.chromium.net.CronetEngine.Builder.addPublicKeyPins(kotlin.String?, kotlin.collections.MutableSet?, kotlin.Boolean, java.util.Date?):java.lang.NullPointerException,java.lang.IllegalArgumentException"
       - "org.chromium.net.CronetEngine.openConnection(java.net.URL?):java.io.IOException"
       # endregion
+      # region Apollo Kotlin
       - "com.apollographql.apollo.api.Operation.variablesJson(com.apollographql.apollo.api.CustomScalarAdapters):java.io.IOException"
       # endregion
       # region Java File
@@ -188,6 +188,9 @@ datadog:
       - "kotlin.ByteArray.get(kotlin.Int):java.lang.IndexOutOfBoundsException"
       - "kotlin.Char.digitToInt():kotlin:IllegalArgumentException"
       - "kotlin.Double.roundToLong():java.lang.IllegalArgumentException"
+      - "kotlin.DoubleArray.copyOf(kotlin.Int):java.lang.NegativeArraySizeException"
+      - "kotlin.DoubleArray.copyInto(kotlin.DoubleArray, kotlin.Int, kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException"
+      - "kotlin.DoubleArray.fill(kotlin.Double, kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException,java.lang.IllegalArgumentException"
       - "kotlin.String.format(kotlin.Array):java.util.IllegalFormatException"
       - "kotlin.String.get(kotlin.Int):java.lang.IndexOutOfBoundsException"
       - "kotlin.String.substring(kotlin.Int):java.lang.IndexOutOfBoundsException"
@@ -197,10 +200,6 @@ datadog:
       - "kotlin.String.toLong():java.lang.NumberFormatException"
       - "kotlin.collections.MutableSet.first():java.util.NoSuchElementException"
       - "kotlin.String.format(kotlin.Array):java.util.IllegalFormatException"
-      - "kotlin.ByteArray.copyOf(kotlin.Int):java.lang.NegativeArraySizeException"
-      - "kotlin.ByteArray.copyOfRange(kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException,java.lang.IllegalArgumentException"
-      - "kotlin.ByteArray.get(kotlin.Int):java.lang.IndexOutOfBoundsException"
-      - "kotlin.Double.roundToLong():java.lang.IllegalArgumentException"
       # endregion
       # region Kotlin Collections
       - "kotlin.Array.first(kotlin.Function1):java.util.NoSuchElementException"

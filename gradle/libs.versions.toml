@@ -58,6 +58,8 @@ leakCanary = "2.14"
 mockitoKotlin = "5.1.0"
 mockitoAndroid = "5.12.0"
 msgPackCore = "0.9.12"
+protobufJava = "4.35.0"
+sketchesJava = "0.8.3"
 kover = "0.7.6"
 kspTesting = "1.5.0"
 
@@ -208,6 +210,8 @@ leakCanaryInstrumentation = { module = "com.squareup.leakcanary:leakcanary-andro
 mockitoAndroid = { module = "org.mockito:mockito-android", version.ref = "mockitoAndroid" }
 mockitoKotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockitoKotlin" }
 msgPackCore = { module = "org.msgpack:msgpack-core", version.ref = "msgPackCore" }
+protobufJava = { module = "com.google.protobuf:protobuf-java", version.ref = "protobufJava" }
+sketchesJava = { module = "com.datadoghq:sketches-java", version.ref = "sketchesJava" }
 kotlinReflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 kspTesting = { module = "com.github.tschuchortdev:kotlin-compile-testing-ksp", version.ref = "kspTesting" }
 androidLintTests = { module = "com.android.tools.lint:lint-tests", version.ref = "androidLint" }
