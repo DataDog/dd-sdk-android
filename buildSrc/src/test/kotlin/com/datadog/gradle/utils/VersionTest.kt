@@ -117,10 +117,28 @@ class VersionTest {
     @Test
     fun addSuffixForSnapshot() {
         // When
-        val name = Version(4, 11, 5, Version.Type.Snapshot).name
+        val name = Version(4, 11, 5, Version.Type.Snapshot()).name
 
         // Then
         val expected = "4.11.5-SNAPSHOT"
         assertThat(name).isEqualTo(expected)
+    }
+
+    @Test
+    fun `M return labeled snapshot suffix W Snapshot with label`() {
+        // When
+        val name = Version(1, 2, 3, Version.Type.Snapshot("dogfooding")).name
+
+        // Then
+        assertThat(name).isEqualTo("1.2.3-dogfooding-SNAPSHOT")
+    }
+
+    @Test
+    fun `M return plain snapshot suffix W Snapshot with empty label`() {
+        // When
+        val name = Version(1, 2, 3, Version.Type.Snapshot("")).name
+
+        // Then
+        assertThat(name).isEqualTo("1.2.3-SNAPSHOT")
     }
 }
