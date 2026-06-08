@@ -307,4 +307,4 @@ class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProv
     var processImportance: Int
     var createTimeNs: Long
 annotation com.datadog.tools.annotation.NoOpImplementation
-  constructor(Boolean = false)
+  constructor(Boolean = false, String = "")
