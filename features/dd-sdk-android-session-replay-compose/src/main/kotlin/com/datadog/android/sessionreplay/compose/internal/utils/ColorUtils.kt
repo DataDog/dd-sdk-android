@@ -11,15 +11,13 @@ import com.datadog.android.api.InternalLogger
 import java.util.Locale
 import kotlin.math.pow
 
-internal class ColorUtils(
-    private val logger: InternalLogger = InternalLogger.UNBOUND
-) {
-    internal fun parseColorSafe(color: String): Int? {
+internal class ColorUtils {
+    internal fun parseColorSafe(color: String, internalLogger: InternalLogger): Int? {
         return try {
             @Suppress("UnsafeThirdPartyFunctionCall") // handling IllegalArgumentException
             Color.parseColor(color)
         } catch (e: IllegalArgumentException) {
-            logger.log(
+            internalLogger.log(
                 target = InternalLogger.Target.MAINTAINER,
                 level = InternalLogger.Level.WARN,
                 messageBuilder = { COLOR_PARSE_ERROR.format(Locale.US, color) },
@@ -31,8 +29,8 @@ internal class ColorUtils(
 
     // Luma formula: L=0.2126×R+0.7152×G+0.0722×B
     @Suppress("MagicNumber")
-    internal fun isDarkColor(hexColor: String): Boolean {
-        return parseColorSafe(hexColor)?.let {
+    internal fun isDarkColor(hexColor: String, internalLogger: InternalLogger): Boolean {
+        return parseColorSafe(hexColor, internalLogger)?.let {
             val red = Color.red(it) / 255.0
             val green = Color.green(it) / 255.0
             val blue = Color.blue(it) / 255.0

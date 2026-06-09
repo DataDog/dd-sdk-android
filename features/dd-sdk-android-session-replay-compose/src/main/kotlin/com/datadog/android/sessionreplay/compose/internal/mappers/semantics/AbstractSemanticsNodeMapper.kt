@@ -21,7 +21,7 @@ import kotlin.math.roundToInt
 
 internal abstract class AbstractSemanticsNodeMapper(
     private val colorStringFormatter: ColorStringFormatter,
-    private val semanticsUtils: SemanticsUtils = SemanticsUtils()
+    protected val semanticsUtils: SemanticsUtils = SemanticsUtils()
 ) : SemanticsNodeMapper {
 
     protected val defaultTextStyle = MobileSegment.TextStyle(
