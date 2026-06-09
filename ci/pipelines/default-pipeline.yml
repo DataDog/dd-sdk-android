@@ -92,10 +92,10 @@ stages:
       - cache/notifications/
     policy: pull
 
-# Skip job on the timeseries dogfooding branch — that branch only runs the manual snapshot publish.
+# Skip all standard jobs on the dogfooding branch — only the manual snapshot publish runs there.
 .except-dogfooding-branch:
   except:
-    - bplasovska/feature/timeseries-dogfooding
+    - dogfooding
 
 # CI IMAGE
 
@@ -578,10 +578,10 @@ publish:release-all:
     paths:
       - "**/verification-metadata.xml"
 
-publish:snapshot-timeseries:
+publish:snapshot-dogfooding:
   tags: [ "arch:amd64" ]
   only:
-    - bplasovska/feature/timeseries-dogfooding
+    - dogfooding
   when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
