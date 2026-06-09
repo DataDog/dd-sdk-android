@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal
 
 import android.app.ActivityManager
+import android.app.Application
 import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
@@ -69,7 +70,6 @@ import com.datadog.android.core.internal.user.DatadogUserInfoProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
 import com.datadog.android.core.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.core.internal.utils.executeSafe
-import com.datadog.android.core.internal.utils.unboundInternalLogger
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.internal.system.BuildSdkVersionProvider
@@ -95,7 +95,6 @@ import okhttp3.Request
 import okhttp3.TlsVersion
 import java.io.File
 import java.io.FileNotFoundException
-import java.lang.ref.WeakReference
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
@@ -149,7 +148,7 @@ internal class CoreFeature(
     }
 
     internal val initialized = AtomicBoolean(false)
-    internal var contextRef: WeakReference<Context?> = WeakReference(null)
+    internal var appContext: Context? = null
 
     internal var firstPartyHostHeaderTypeResolver =
         DefaultFirstPartyHostHeaderTypeResolver(emptyMap())
@@ -255,11 +254,12 @@ internal class CoreFeature(
         if (initialized.get()) {
             return
         }
+        this.appContext = appContext
         readConfigurationSettings(configuration.coreConfig)
         readApplicationInformation(appContext, configuration)
         resolveProcessInfo(appContext)
         setupExecutors()
-        persistenceExecutorService.executeSafe("NTP Sync initialization", unboundInternalLogger) {
+        persistenceExecutorService.executeSafe("NTP Sync initialization", internalLogger) {
             // Kronos performs I/O operation on startup, it needs to run in background
             initializeClockSync(appContext)
         }
@@ -290,11 +290,10 @@ internal class CoreFeature(
 
     fun stop() {
         if (initialized.get()) {
-            contextRef.get()?.let {
+            appContext?.let {
                 networkInfoProvider.unregister(it)
                 systemInfoProvider.unregister(it)
             }
-            contextRef.clear()
 
             trackingConsentProvider.unregisterAllCallbacks()
 
@@ -318,6 +317,7 @@ internal class CoreFeature(
             initialized.set(false)
             ndkCrashHandler = NoOpNdkCrashHandler()
             trackingConsentProvider = NoOpConsentProvider()
+            appContext = null
         }
     }
 
@@ -524,8 +524,6 @@ internal class CoreFeature(
         envName = configuration.env
         variant = configuration.variant
         appBuildId = readBuildId(appContext)
-
-        contextRef = WeakReference(appContext)
     }
 
     private fun getPackageInfo(appContext: Context): PackageInfo? {
@@ -693,15 +691,19 @@ internal class CoreFeature(
     }
 
     private fun resolveProcessInfo(appContext: Context) {
-        val currentProcessId = Process.myPid()
-        val manager = appContext.getSystemServiceAs<ActivityManager>(Context.ACTIVITY_SERVICE)
-        val currentProcess = manager?.runningAppProcesses?.firstOrNull {
-            it.pid == currentProcessId
+        val processName = if (buildSdkVersionProvider.isAtLeastP) {
+            Application.getProcessName()
+        } else {
+            val currentProcessId = Process.myPid()
+            appContext.getSystemServiceAs<ActivityManager>(Context.ACTIVITY_SERVICE)
+                ?.runningAppProcesses
+                ?.firstOrNull { it.pid == currentProcessId }
+                ?.processName
         }
-        isMainProcess = if (currentProcess == null) {
+        isMainProcess = if (processName == null) {
             true
         } else {
-            appContext.packageName == currentProcess.processName
+            appContext.packageName == processName
         }
         if (!isMainProcess) {
             internalLogger.log(
