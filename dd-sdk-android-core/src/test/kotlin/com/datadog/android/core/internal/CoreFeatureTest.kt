@@ -71,6 +71,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
+import org.mockito.Mockito
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -161,6 +162,7 @@ internal class CoreFeatureTest {
         whenever(mockPersistenceExecutorService.execute(any())) doAnswer {
             it.getArgument<Runnable>(0).run()
         }
+        whenever(mockBuildSdkVersionProvider.isAtLeastP) doReturn true
         fakeConfig = fakeConfig.copy(version = fakeVersion)
     }
 
@@ -334,7 +336,7 @@ internal class CoreFeatureTest {
         assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
         assertThat(testedFeature.envName).isEqualTo(fakeConfig.env)
         assertThat(testedFeature.variant).isEqualTo(fakeConfig.variant)
-        assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
+        assertThat(testedFeature.appContext).isEqualTo(appContext.mockInstance)
         assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.coreConfig.batchSize)
         assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.coreConfig.uploadFrequency)
     }
@@ -359,7 +361,7 @@ internal class CoreFeatureTest {
         assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
         assertThat(testedFeature.envName).isEqualTo(fakeConfig.env)
         assertThat(testedFeature.variant).isEqualTo(fakeConfig.variant)
-        assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
+        assertThat(testedFeature.appContext).isEqualTo(appContext.mockInstance)
         assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.coreConfig.batchSize)
         assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.coreConfig.uploadFrequency)
     }
@@ -381,7 +383,7 @@ internal class CoreFeatureTest {
         assertThat(testedFeature.serviceName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.envName).isEqualTo(fakeConfig.env)
         assertThat(testedFeature.variant).isEqualTo(fakeConfig.variant)
-        assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
+        assertThat(testedFeature.appContext).isEqualTo(appContext.mockInstance)
         assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.coreConfig.batchSize)
         assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.coreConfig.uploadFrequency)
     }
@@ -403,7 +405,7 @@ internal class CoreFeatureTest {
         assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
         assertThat(testedFeature.envName).isEqualTo(fakeConfig.env)
         assertThat(testedFeature.variant).isEqualTo(fakeConfig.variant)
-        assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
+        assertThat(testedFeature.appContext).isEqualTo(appContext.mockInstance)
         assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.coreConfig.batchSize)
         assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.coreConfig.uploadFrequency)
     }
@@ -430,7 +432,7 @@ internal class CoreFeatureTest {
         assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
         assertThat(testedFeature.envName).isEqualTo(fakeConfig.env)
         assertThat(testedFeature.variant).isEqualTo(fakeConfig.variant)
-        assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
+        assertThat(testedFeature.appContext).isEqualTo(appContext.mockInstance)
         assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.coreConfig.batchSize)
         assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.coreConfig.uploadFrequency)
     }
@@ -459,7 +461,7 @@ internal class CoreFeatureTest {
         assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
         assertThat(testedFeature.envName).isEqualTo(fakeConfig.env)
         assertThat(testedFeature.variant).isEqualTo(fakeConfig.variant)
-        assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
+        assertThat(testedFeature.appContext).isEqualTo(appContext.mockInstance)
         assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.coreConfig.batchSize)
         assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.coreConfig.uploadFrequency)
     }
@@ -494,7 +496,7 @@ internal class CoreFeatureTest {
         assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
         assertThat(testedFeature.envName).isEqualTo(fakeConfig.env)
         assertThat(testedFeature.variant).isEqualTo(fakeConfig.variant)
-        assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
+        assertThat(testedFeature.appContext).isEqualTo(appContext.mockInstance)
         assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.coreConfig.batchSize)
         assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.coreConfig.uploadFrequency)
     }
@@ -760,16 +762,68 @@ internal class CoreFeatureTest {
         assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
         assertThat(testedFeature.envName).isEqualTo(fakeConfig.env)
         assertThat(testedFeature.variant).isEqualTo(fakeConfig.variant)
-        assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
+        assertThat(testedFeature.appContext).isEqualTo(appContext.mockInstance)
         assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.coreConfig.batchSize)
         assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.coreConfig.uploadFrequency)
     }
 
     @Test
-    fun `M detect current process W initialize() {main process}`(
+    fun `M detect current process W initialize() {main process}`() {
+        // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastP) doReturn true
+        Mockito.mockStatic(Application::class.java).use { mockedApplication ->
+            mockedApplication.`when`<String> {
+                Application.getProcessName()
+            } doReturn (appContext.fakePackageName)
+
+            // When
+            testedFeature.initialize(
+                appContext.mockInstance,
+                fakeSdkInstanceId,
+                fakeConfig,
+                fakeConsent
+            )
+
+            // Then
+            assertThat(testedFeature.isMainProcess).isTrue()
+        }
+    }
+
+    @Test
+    fun `M detect current process W initialize() {secondary process}`(
+        @StringForgery fakeOtherProcessName: String
+    ) {
+        // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastP) doReturn true
+        Mockito.mockStatic(Application::class.java).use { mockedApplication ->
+            mockedApplication.`when`<String> {
+                Application.getProcessName()
+            } doReturn (fakeOtherProcessName)
+
+            // When
+            testedFeature.initialize(
+                appContext.mockInstance,
+                fakeSdkInstanceId,
+                fakeConfig,
+                fakeConsent
+            )
+
+            // Then
+            assertThat(testedFeature.isMainProcess).isFalse()
+            mockInternalLogger.verifyLog(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                CoreFeature.SDK_INITIALIZED_IN_SECONDARY_PROCESS_WARNING_MESSAGE
+            )
+        }
+    }
+
+    @Test
+    fun `M detect current process W initialize() {pre API 28, main process}`(
         @StringForgery otherProcessName: String
     ) {
         // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastP) doReturn false
         val mockActivityManager = mock<ActivityManager>()
         whenever(appContext.mockInstance.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
             mockActivityManager
@@ -798,10 +852,11 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `M detect current process W initialize() {secondary process}`(
+    fun `M detect current process W initialize() {pre API 28, secondary process}`(
         @StringForgery otherProcessName: String
     ) {
         // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastP) doReturn false
         val mockActivityManager = mock<ActivityManager>()
         whenever(appContext.mockInstance.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
             mockActivityManager
@@ -832,10 +887,11 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `M detect current process W initialize() {unknown process}`(
+    fun `M detect current process W initialize() {pre API 28, unknown process}`(
         @StringForgery otherProcessName: String
     ) {
         // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastP) doReturn false
         val mockActivityManager = mock<ActivityManager>()
         whenever(appContext.mockInstance.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
             mockActivityManager
@@ -887,50 +943,39 @@ internal class CoreFeatureTest {
 
     @Test
     fun `M initialize the NdkCrashHandler data W initialize() {main process}`(
-        @TempDir tempDir: File,
-        @StringForgery otherProcessName: String
+        @TempDir tempDir: File
     ) {
         // Given
-        val mockActivityManager = mock<ActivityManager>()
-        whenever(appContext.mockInstance.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
-            mockActivityManager
-        )
-        val myProcess = forgeAppProcessInfo(
-            Process.myPid(),
-            appContext.fakePackageName
-        )
-        val otherProcess = forgeAppProcessInfo(
-            Process.myPid() + 1,
-            otherProcessName
-        )
-        whenever(mockActivityManager.runningAppProcesses)
-            .thenReturn(listOf(myProcess, otherProcess))
+        whenever(mockBuildSdkVersionProvider.isAtLeastP).thenReturn(true)
         whenever(appContext.mockInstance.cacheDir) doReturn tempDir
+        Mockito.mockStatic(Application::class.java).use { mockedApplication ->
+            mockedApplication.`when`<String> {
+                Application.getProcessName()
+            } doReturn appContext.fakePackageName
 
-        // When
-        testedFeature.initialize(
-            appContext.mockInstance,
-            fakeSdkInstanceId,
-            fakeConfig,
-            fakeConsent
-        )
+            // When
+            testedFeature.initialize(
+                appContext.mockInstance,
+                fakeSdkInstanceId,
+                fakeConfig,
+                fakeConsent
+            )
 
-        // Then
-        assertThat(testedFeature.ndkCrashHandler)
-            .isInstanceOfSatisfying(DatadogNdkCrashHandler::class.java) {
-                assertThat(it.ndkCrashDataDirectory.parentFile).isEqualTo(
-                    File(
-                        tempDir,
-                        CoreFeature.DATADOG_STORAGE_DIR_NAME.format(Locale.US, fakeSdkInstanceId)
-                    )
+            // Then
+            val ndkCrashHandler = testedFeature.ndkCrashHandler
+            check(ndkCrashHandler is DatadogNdkCrashHandler)
+            assertThat(ndkCrashHandler.ndkCrashDataDirectory.parentFile).isEqualTo(
+                File(
+                    tempDir,
+                    CoreFeature.DATADOG_STORAGE_DIR_NAME.format(Locale.US, fakeSdkInstanceId)
                 )
-            }
+            )
+        }
     }
 
     @Test
     fun `M initialize the NdkCrashHandler data W initialize() {source type override}`(
-        @TempDir tempDir: File,
-        @StringForgery otherProcessName: String
+        @TempDir tempDir: File
     ) {
         // Given
         fakeConfig = fakeConfig.copy(
@@ -938,60 +983,50 @@ internal class CoreFeatureTest {
                 put(Datadog.DD_NATIVE_SOURCE_TYPE, "ndk+il2cpp")
             }
         )
-        val mockActivityManager = mock<ActivityManager>()
-        whenever(appContext.mockInstance.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
-            mockActivityManager
-        )
-        val myProcess = forgeAppProcessInfo(
-            Process.myPid(),
-            appContext.fakePackageName
-        )
-        val otherProcess = forgeAppProcessInfo(
-            Process.myPid() + 1,
-            otherProcessName
-        )
-        whenever(mockActivityManager.runningAppProcesses)
-            .thenReturn(listOf(myProcess, otherProcess))
+        whenever(mockBuildSdkVersionProvider.isAtLeastP).thenReturn(true)
         whenever(appContext.mockInstance.cacheDir) doReturn tempDir
+        Mockito.mockStatic(Application::class.java).use { mockedApplication ->
+            mockedApplication.`when`<String> {
+                Application.getProcessName()
+            } doReturn appContext.fakePackageName
 
-        // When
-        testedFeature.initialize(
-            appContext.mockInstance,
-            fakeSdkInstanceId,
-            fakeConfig,
-            fakeConsent
-        )
+            // When
+            testedFeature.initialize(
+                appContext.mockInstance,
+                fakeSdkInstanceId,
+                fakeConfig,
+                fakeConsent
+            )
 
-        // Then
-        assertThat(testedFeature.ndkCrashHandler)
-            .isInstanceOfSatisfying(DatadogNdkCrashHandler::class.java) {
-                assertThat(it.nativeCrashSourceType).isEqualTo("ndk+il2cpp")
-            }
+            // Then
+            val ndkCrashHandler = testedFeature.ndkCrashHandler
+            check(ndkCrashHandler is DatadogNdkCrashHandler)
+            assertThat(ndkCrashHandler.nativeCrashSourceType).isEqualTo("ndk+il2cpp")
+        }
     }
 
     @Test
     fun `M not initialize the NdkCrashHandler data W initialize() {not main process}`(
-        @StringForgery otherProcessName: String
+        @StringForgery fakeOtherProcessName: String
     ) {
         // Given
-        val mockActivityManager = mock<ActivityManager>()
-        whenever(appContext.mockInstance.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
-            mockActivityManager
-        )
-        val myProcess = forgeAppProcessInfo(Process.myPid(), otherProcessName)
-        whenever(mockActivityManager.runningAppProcesses)
-            .thenReturn(listOf(myProcess))
+        whenever(mockBuildSdkVersionProvider.isAtLeastP).thenReturn(true)
+        Mockito.mockStatic(Application::class.java).use { mockedApplication ->
+            mockedApplication.`when`<String> {
+                Application.getProcessName()
+            } doReturn fakeOtherProcessName
 
-        // When
-        testedFeature.initialize(
-            appContext.mockInstance,
-            fakeSdkInstanceId,
-            fakeConfig,
-            fakeConsent
-        )
+            // When
+            testedFeature.initialize(
+                appContext.mockInstance,
+                fakeSdkInstanceId,
+                fakeConfig,
+                fakeConsent
+            )
 
-        // Then
-        assertThat(testedFeature.ndkCrashHandler).isInstanceOf(NoOpNdkCrashHandler::class.java)
+            // Then
+            assertThat(testedFeature.ndkCrashHandler).isInstanceOf(NoOpNdkCrashHandler::class.java)
+        }
     }
 
     @Test
@@ -1314,7 +1349,7 @@ internal class CoreFeatureTest {
         assertThat(testedFeature.serviceName).isEqualTo("")
         assertThat(testedFeature.envName).isEqualTo("")
         assertThat(testedFeature.variant).isEqualTo("")
-        assertThat(testedFeature.contextRef.get()).isNull()
+        assertThat(testedFeature.appContext).isNull()
     }
 
     @Test

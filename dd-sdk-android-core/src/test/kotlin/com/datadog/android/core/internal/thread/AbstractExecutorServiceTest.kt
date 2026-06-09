@@ -27,7 +27,6 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.quality.Strictness
 import java.util.concurrent.CancellationException
@@ -52,6 +51,9 @@ internal abstract class AbstractExecutorServiceTest<T : ExecutorService> {
     @Mock
     lateinit var mockOnItemDropped: (Any) -> Unit
 
+    @Mock
+    lateinit var mockTimeProvider: TimeProvider
+
     @IntForgery(8, 128)
     var fakeBackPressureCapacity: Int = 0
 
@@ -68,7 +70,7 @@ internal abstract class AbstractExecutorServiceTest<T : ExecutorService> {
             mockOnItemDropped,
             fakeBackPressureMitigation
         )
-        testedExecutor = createTestedExecutorService(forge, fakeBackpressureStrategy, mock())
+        testedExecutor = createTestedExecutorService(forge, fakeBackpressureStrategy, mockTimeProvider)
     }
 
     @AfterEach
