@@ -305,10 +305,11 @@ class com.datadog.android.rum.resource.RumResourceInputStream : java.io.InputStr
 interface com.datadog.android.rum.startup.AppStartupActivityPredicate
   fun shouldTrackStartup(android.app.Activity): Boolean
 class com.datadog.android.rum.timeseries.TimeseriesConfiguration
-  constructor(Int = DEFAULT_BUFFER_SIZE, Long = DEFAULT_INTERVAL_MS, Boolean = false)
-  val bufferSize: Int
-  val intervalMs: Long
-  val collectInBackground: Boolean
+  class Builder
+    fun setBufferSize(Int): Builder
+    fun setIntervalMs(Long): Builder
+    fun setCollectInBackground(Boolean): Builder
+    fun build(): TimeseriesConfiguration
   companion object 
     const val DEFAULT_BUFFER_SIZE: Int
     const val DEFAULT_INTERVAL_MS: Long

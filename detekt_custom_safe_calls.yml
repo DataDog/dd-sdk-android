@@ -548,7 +548,6 @@ datadog:
       - "java.util.concurrent.ExecutorService.shutdown()"
       - "java.util.concurrent.ExecutorService.shutdownNow()"
       - "java.util.concurrent.Executors.newSingleThreadExecutor()"
-      - "java.util.concurrent.Executors.newSingleThreadScheduledExecutor(java.util.concurrent.ThreadFactory?)"
       - "java.util.concurrent.LinkedBlockingDeque.constructor()"
       - "java.util.concurrent.LinkedBlockingQueue.constructor()"
       - "java.util.concurrent.LinkedBlockingQueue.toArray()"

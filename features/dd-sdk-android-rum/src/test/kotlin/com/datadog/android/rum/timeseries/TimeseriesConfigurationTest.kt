@@ -14,9 +14,9 @@ import org.junit.jupiter.api.Test
 internal class TimeseriesConfigurationTest {
 
     @Test
-    fun `M use defaults W constructed with no args`() {
+    fun `M use defaults W built with no args`() {
         // When
-        val config = TimeseriesConfiguration()
+        val config = TimeseriesConfiguration.Builder().build()
 
         // Then
         assertThat(config.bufferSize).isEqualTo(TimeseriesConfiguration.DEFAULT_BUFFER_SIZE)
@@ -24,10 +24,10 @@ internal class TimeseriesConfigurationTest {
     }
 
     @Test
-    fun `M use default bufferSize W constructed with non-positive bufferSize`() {
+    fun `M use default bufferSize W setBufferSize with non-positive value`() {
         // When
-        val configZero = TimeseriesConfiguration(bufferSize = 0)
-        val configNegative = TimeseriesConfiguration(bufferSize = -1)
+        val configZero = TimeseriesConfiguration.Builder().setBufferSize(0).build()
+        val configNegative = TimeseriesConfiguration.Builder().setBufferSize(-1).build()
 
         // Then
         assertThat(configZero.bufferSize).isEqualTo(TimeseriesConfiguration.DEFAULT_BUFFER_SIZE)
@@ -35,10 +35,12 @@ internal class TimeseriesConfigurationTest {
     }
 
     @Test
-    fun `M use default intervalMs W constructed with intervalMs below minimum`() {
+    fun `M use default intervalMs W setIntervalMs below minimum`() {
         // When
-        val configBelowMin = TimeseriesConfiguration(intervalMs = TimeseriesConfiguration.MIN_INTERVAL_MS - 1)
-        val configZero = TimeseriesConfiguration(intervalMs = 0L)
+        val configBelowMin = TimeseriesConfiguration.Builder()
+            .setIntervalMs(TimeseriesConfiguration.MIN_INTERVAL_MS - 1)
+            .build()
+        val configZero = TimeseriesConfiguration.Builder().setIntervalMs(0L).build()
 
         // Then
         assertThat(configBelowMin.intervalMs).isEqualTo(TimeseriesConfiguration.DEFAULT_INTERVAL_MS)
@@ -46,13 +48,16 @@ internal class TimeseriesConfigurationTest {
     }
 
     @Test
-    fun `M store provided values W constructed with valid args`() {
+    fun `M store provided values W built with valid args`() {
         // Given
         val fakeBufferSize = 10
         val fakeIntervalMs = 500L
 
         // When
-        val config = TimeseriesConfiguration(bufferSize = fakeBufferSize, intervalMs = fakeIntervalMs)
+        val config = TimeseriesConfiguration.Builder()
+            .setBufferSize(fakeBufferSize)
+            .setIntervalMs(fakeIntervalMs)
+            .build()
 
         // Then
         assertThat(config.bufferSize).isEqualTo(fakeBufferSize)
@@ -60,18 +65,18 @@ internal class TimeseriesConfigurationTest {
     }
 
     @Test
-    fun `M default collectInBackground to false W constructed with no args`() {
+    fun `M default collectInBackground to false W built with no args`() {
         // When
-        val config = TimeseriesConfiguration()
+        val config = TimeseriesConfiguration.Builder().build()
 
         // Then
         assertThat(config.collectInBackground).isFalse()
     }
 
     @Test
-    fun `M store collectInBackground W constructed with collectInBackground = true`() {
+    fun `M store collectInBackground W setCollectInBackground true`() {
         // When
-        val config = TimeseriesConfiguration(collectInBackground = true)
+        val config = TimeseriesConfiguration.Builder().setCollectInBackground(true).build()
 
         // Then
         assertThat(config.collectInBackground).isTrue()

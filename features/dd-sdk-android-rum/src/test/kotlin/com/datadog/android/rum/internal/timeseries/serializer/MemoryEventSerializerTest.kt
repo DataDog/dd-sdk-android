@@ -21,6 +21,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
@@ -129,14 +130,15 @@ internal class MemoryEventSerializerTest {
         )
 
         // When
-        val json = testedSerializer().serialize(samples) ?: error(NON_NULL_JSON_ERROR)
+        val result = testedSerializer().serialize(samples)
 
         // Then
+        val json = checkNotNull(result)
         val timeseries = json.getAsJsonObject(KEY_TIMESERIES)
         assertThat(timeseries.get(KEY_SCHEMA).asString).isEqualTo(VALUE_SCHEMA_OBJECT)
         assertThat(timeseries.get(KEY_START).asLong).isEqualTo(fakeTs)
         assertThat(timeseries.get(KEY_END).asLong).isEqualTo(fakeTs + 1L)
-        UUID.fromString(timeseries.get(KEY_ID).asString)
+        assertDoesNotThrow { UUID.fromString(timeseries.get(KEY_ID).asString) }
 
         val parsed = TimeseriesMemoryEvent.fromJsonObject(json)
         assertThat(parsed.timeseries.data).hasSize(2)
@@ -152,11 +154,11 @@ internal class MemoryEventSerializerTest {
         @LongForgery(min = 1L) fakeTs: Long
     ) {
         // When
-        val json = testedSerializer(sessionType = RumSessionType.SYNTHETICS)
+        val result = testedSerializer(sessionType = RumSessionType.SYNTHETICS)
             .serialize(listOf(DataPoint(fakeTs, fakeMemory), DataPoint(fakeTs + 1L, fakeMemory)))
-            ?: error(NON_NULL_JSON_ERROR)
 
         // Then
+        val json = checkNotNull(result)
         assertThat(json.getAsJsonObject(KEY_SESSION).get(KEY_TYPE).asString).isEqualTo(VALUE_TYPE_SYNTHETICS)
     }
 
@@ -179,9 +181,10 @@ internal class MemoryEventSerializerTest {
         )
 
         // When
-        val json = testedSerializer(useDeltaCompression = true).serialize(samples) ?: error(NON_NULL_JSON_ERROR)
+        val result = testedSerializer(useDeltaCompression = true).serialize(samples)
 
         // Then
+        val json = checkNotNull(result)
         val timeseries = json.getAsJsonObject(KEY_TIMESERIES)
         assertThat(timeseries.get(KEY_SCHEMA).asString).isEqualTo(VALUE_SCHEMA_DELTA_OBJECT)
         val data = timeseries.get(KEY_DATA).asJsonObject
@@ -214,11 +217,11 @@ internal class MemoryEventSerializerTest {
         @LongForgery(min = 1L) fakeTs: Long
     ) {
         // When
-        val json = testedSerializer(useDeltaCompression = true)
+        val result = testedSerializer(useDeltaCompression = true)
             .serialize(listOf(DataPoint(fakeTs, fakeMemory)))
-            ?: error(NON_NULL_JSON_ERROR)
 
         // Then
+        val json = checkNotNull(result)
         val timeseries = json.getAsJsonObject(KEY_TIMESERIES)
         assertThat(timeseries.get(KEY_SCHEMA).asString).isEqualTo(VALUE_SCHEMA_OBJECT)
         assertThat(timeseries.get(KEY_DATA).isJsonArray).isTrue()
@@ -248,7 +251,5 @@ internal class MemoryEventSerializerTest {
         private const val VALUE_SCHEMA_DELTA_OBJECT: String = "delta-object"
         private const val VALUE_TYPE_SYNTHETICS: String = "synthetics"
         private const val VALUE_RESOLUTION_NS: String = "ns"
-
-        private const val NON_NULL_JSON_ERROR: String = "expected non-null json"
     }
 }
