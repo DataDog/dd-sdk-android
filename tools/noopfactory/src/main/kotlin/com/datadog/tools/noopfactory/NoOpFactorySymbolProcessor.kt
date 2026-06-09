@@ -54,6 +54,7 @@ import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
 import java.io.IOException
 import java.io.OutputStreamWriter
+import java.nio.file.FileAlreadyExistsException
 
 /**
  * A [SymbolProcessor] generating a no-op implementation of interfaces annotated with
@@ -67,6 +68,7 @@ class NoOpFactorySymbolProcessor(
 
     private var invoked = false
     private var requireOptInAnnotations: Set<KSType> = emptySet()
+    private val generatedNames = mutableMapOf<String, KSClassDeclaration>()
 
     /** @inheritdoc */
     override fun process(resolver: Resolver): List<KSAnnotated> {
@@ -113,14 +115,16 @@ class NoOpFactorySymbolProcessor(
     @OptIn(KspExperimental::class)
     private fun generateNoOpImplementation(interfaceDeclaration: KSClassDeclaration) {
         logger.logging("Generating NoOp for ${interfaceDeclaration.simpleName.getShortName()}")
+        val annotation = interfaceDeclaration.getAnnotationsByType(NoOpImplementation::class).firstOrNull()
+            ?: return
+        val publicNoOpImplementation = safeAnnotationArg(false) { annotation.publicNoOpImplementation }
+        val customName = safeAnnotationArg("") { annotation.customName }
 
-        val publicNoOpImplementation = interfaceDeclaration.getAnnotationsByType(NoOpImplementation::class)
-            .any { it.publicNoOpImplementation }
-        val declarationSourceFile = interfaceDeclaration.containingFile
         val packageName = interfaceDeclaration.packageName.asString()
-        val typeSpec = generateTypeSpec(interfaceDeclaration, publicNoOpImplementation)
+        val className = resolveNoOpClassName(interfaceDeclaration, customName, packageName) ?: return
 
-        val className = typeSpec.name.orEmpty()
+        val declarationSourceFile = interfaceDeclaration.containingFile
+        val typeSpec = generateTypeSpec(interfaceDeclaration, publicNoOpImplementation, className)
         val fileSpec = FileSpec.builder(packageName, className)
             .addAnnotation(
                 AnnotationSpec.builder(Suppress::class)
@@ -139,36 +143,103 @@ class NoOpFactorySymbolProcessor(
             .addType(typeSpec)
             .indent("    ")
             .build()
-
         val dependencies = if (declarationSourceFile == null) {
             Dependencies.ALL_FILES
         } else {
             Dependencies(false, declarationSourceFile)
         }
+        writeNoOpFile(interfaceDeclaration, fileSpec, dependencies, className, customName)
+    }
 
-        try {
-            val outputStream = codeGenerator.createNewFile(
-                dependencies,
-                fileSpec.packageName,
-                fileSpec.name
+    private fun resolveNoOpClassName(
+        interfaceDeclaration: KSClassDeclaration,
+        customName: String,
+        packageName: String
+    ): String? {
+        val isCustomName = customName.isNotEmpty()
+
+        if (isCustomName && !customName.matches(VALID_KOTLIN_IDENTIFIER)) {
+            logger.error(
+                "customName \"$customName\" for '${interfaceDeclaration.qualifiedName?.asString()}' " +
+                    "is not a valid Kotlin class name. Use only letters, digits, and underscores, " +
+                    "starting with a letter or underscore."
             )
+            return null
+        }
+
+        val className = customName.ifEmpty { interfaceDeclaration.defaultNoOpName() }
+        val qualifiedGeneratedName = "$packageName.$className"
+        val existing = generatedNames[qualifiedGeneratedName]
+
+        return if (existing != null) {
+            reportNameCollision(interfaceDeclaration, existing, className, isCustomName)
+            null
+        } else {
+            generatedNames[qualifiedGeneratedName] = interfaceDeclaration
+            className
+        }
+    }
+
+    private fun reportNameCollision(
+        interfaceDeclaration: KSClassDeclaration,
+        existing: KSClassDeclaration,
+        className: String,
+        isCustomName: Boolean
+    ) {
+        if (isCustomName) {
+            logger.error(
+                "customName \"$className\" for '${interfaceDeclaration.qualifiedName?.asString()}' " +
+                    "conflicts with the NoOp already generated for '${existing.qualifiedName?.asString()}'. " +
+                    "Choose a different customName."
+            )
+        } else {
+            logger.error(
+                "NoOp name collision: both '${existing.qualifiedName?.asString()}' and " +
+                    "'${interfaceDeclaration.qualifiedName?.asString()}' would generate '$className'. " +
+                    "Use @NoOpImplementation(customName = \"...\") on one of them to resolve the conflict."
+            )
+        }
+    }
+
+    @Suppress("SwallowedException")
+    private fun writeNoOpFile(
+        interfaceDeclaration: KSClassDeclaration,
+        fileSpec: FileSpec,
+        dependencies: Dependencies,
+        className: String,
+        customName: String
+    ) {
+        val isCustomName = customName.isNotEmpty()
+        val qualifiedGeneratedName = "${fileSpec.packageName}.$className"
+        try {
+            val outputStream = codeGenerator.createNewFile(dependencies, fileSpec.packageName, fileSpec.name)
             val writer = OutputStreamWriter(outputStream, Charsets.UTF_8)
             fileSpec.writeTo(writer)
             try {
                 writer.flush()
                 writer.close()
             } catch (e: IOException) {
-                logger.warn(
-                    "Error flushing writer for file ${fileSpec.packageName}.${fileSpec.name}: " +
-                        "${e.message}."
+                logger.warn("Error flushing writer for file ${fileSpec.packageName}.${fileSpec.name}: ${e.message}.")
+            }
+            logger.logging("✔ Wrote $className")
+        } catch (e: FileAlreadyExistsException) {
+            val fqn = interfaceDeclaration.qualifiedName?.asString()
+            if (isCustomName) {
+                logger.error(
+                    "customName \"$className\" for '$fqn' conflicts with an existing file " +
+                        "'$qualifiedGeneratedName'. Choose a different customName or rename the existing file."
+                )
+            } else {
+                logger.error(
+                    "Cannot generate '$qualifiedGeneratedName': file already exists. " +
+                        "If you created this file manually, rename it or use " +
+                        "@NoOpImplementation(customName = \"...\") on '$fqn'."
                 )
             }
         } catch (e: IOException) {
             logger.error("Error writing file ${fileSpec.packageName}.${fileSpec.name}")
             logger.exception(e)
         }
-
-        logger.logging("✔ Wrote NoOp${interfaceDeclaration.simpleName.getShortName()}")
     }
 
     /**
@@ -176,11 +247,10 @@ class NoOpFactorySymbolProcessor(
      */
     private fun generateTypeSpec(
         declaration: KSClassDeclaration,
-        publicNoOpImplementation: Boolean
+        publicNoOpImplementation: Boolean,
+        className: String
     ): TypeSpec {
-        val noOpName = declaration.noOpName()
-
-        val typeSpecBuilder = TypeSpec.classBuilder(noOpName)
+        val typeSpecBuilder = TypeSpec.classBuilder(className)
             .addModifiers(if (publicNoOpImplementation) KModifier.PUBLIC else KModifier.INTERNAL)
 
         generateSuperTypeDeclaration(typeSpecBuilder, declaration)
@@ -657,16 +727,6 @@ class NoOpFactorySymbolProcessor(
         )
     }
 
-    private fun KSClassDeclaration.noOpName(): String {
-        val names = mutableListOf(simpleName.asString())
-        var enclosing = parentDeclaration as? KSClassDeclaration
-        while (enclosing != null) {
-            names.add(0, enclosing.simpleName.asString())
-            enclosing = enclosing.parentDeclaration as? KSClassDeclaration
-        }
-        return "NoOp${names.joinToString("")}"
-    }
-
     private fun KSClassDeclaration.hasRestrictedVisibility(): Boolean {
         var current: KSClassDeclaration? = this
         while (current != null) {
@@ -683,5 +743,6 @@ class NoOpFactorySymbolProcessor(
     companion object {
         private val ignoredFunctions = arrayOf("equals(other:kotlin.Any?)", "hashCode()", "toString()")
         private const val KOTLIN_COLLECTIONS_PACKAGE = "kotlin.collections"
+        private val VALID_KOTLIN_IDENTIFIER = Regex("^[A-Za-z_][A-Za-z0-9_]*$")
     }
 }

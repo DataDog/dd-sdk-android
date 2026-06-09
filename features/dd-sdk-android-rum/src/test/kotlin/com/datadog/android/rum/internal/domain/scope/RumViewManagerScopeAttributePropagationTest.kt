@@ -15,11 +15,13 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.configuration.RumViewEventWriteConfig
+import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
@@ -72,7 +74,10 @@ internal class RumViewManagerScopeAttributePropagationTest {
     lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
 
     @Mock
-    lateinit var mockAccessibilitySnapshotManager: AccessibilitySnapshotManager
+    lateinit var mockAccessibilityInfoProvider: InfoProvider<AccessibilityInfo>
+
+    @Mock
+    lateinit var mockViewEventMapper: ViewEventMapper
 
     @Mock
     lateinit var mockBatteryInfoProvider: InfoProvider<BatteryInfo>
@@ -172,11 +177,13 @@ internal class RumViewManagerScopeAttributePropagationTest {
             initialResourceIdentifier = mockInitialResourceIdentifier,
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
-            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            accessibilityInfoProvider = mockAccessibilityInfoProvider,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionTypeOverride = fakeRumSessionType,
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            viewEventMapper = mockViewEventMapper,
+            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart
         )
     }
 

@@ -110,6 +110,7 @@ object Rum {
 
     // region private
 
+    @Suppress("LongMethod")
     private fun createMonitor(sdkCore: InternalSdkCore, rumFeature: RumFeature): DatadogRumMonitor {
         val sessionEndedMetricDispatcher = SessionEndedMetricDispatcher(
             internalLogger = sdkCore.internalLogger,
@@ -158,7 +159,7 @@ object Rum {
             lastInteractionIdentifier = rumFeature.lastInteractionIdentifier,
             slowFramesListener = rumFeature.slowFramesListener,
             rumSessionTypeOverride = rumFeature.configuration.rumSessionTypeOverride,
-            accessibilitySnapshotManager = rumFeature.accessibilitySnapshotManager,
+            accessibilityInfoProvider = rumFeature.accessibilityReader,
             batteryInfoProvider = rumFeature.batteryInfoProvider,
             displayInfoProvider = rumFeature.displayInfoProvider,
             rumSessionScopeStartupManagerFactory = {
@@ -169,7 +170,9 @@ object Rum {
                 )
             },
             insightsCollector = rumFeature.insightsCollector,
-            timeseriesFactory = rumFeature.timeseriesFactory
+            timeseriesFactory = rumFeature.timeseriesFactory,
+            viewEventMapper = rumFeature.configuration.viewEventMapper,
+            rumViewEventWriteConfig = rumFeature.configuration.rumViewEventWriteConfig
         )
     }
 

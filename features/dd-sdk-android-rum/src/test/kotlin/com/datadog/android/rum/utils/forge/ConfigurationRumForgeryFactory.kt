@@ -8,6 +8,7 @@ package com.datadog.android.rum.utils.forge
 
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.configuration.RumViewEventWriteConfig
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.metric.interactiontonextview.NoOpLastInteractionIdentifier
@@ -76,6 +77,7 @@ internal class ConfigurationRumForgeryFactory : ForgeryFactory<RumFeature.Config
         disableJankStats = false,
         insightsCollector = mock(),
         appStartupActivityPredicate = mock(),
-        timeseriesConfiguration = forge.aNullable { TimeseriesConfiguration() }
+        timeseriesConfiguration = forge.aNullable { TimeseriesConfiguration() },
+        rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart
     )
 }

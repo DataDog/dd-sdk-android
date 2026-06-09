@@ -10,9 +10,13 @@ package com.datadog.tools.annotation
  * Adding this annotation on an interface will generate a No-Op implementation class.
  * @property publicNoOpImplementation if true, the NoOp implementation will be made public,
  * otherwise it will be marked as Internal (default: false)
+ * @property customName if non-empty, overrides the auto-generated class name (must be a valid
+ * Kotlin simple identifier). Use this to resolve name collisions when two interfaces would
+ * otherwise produce the same NoOp class name.
  */
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.BINARY)
 annotation class NoOpImplementation(
-    val publicNoOpImplementation: Boolean = false
+    val publicNoOpImplementation: Boolean = false,
+    val customName: String = ""
 )

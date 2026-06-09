@@ -42,6 +42,8 @@ import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum._RumInternalProxy
+import com.datadog.android.rum.configuration.RumViewEventWriteConfig
+import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.CombinedRumSessionListener
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
@@ -49,7 +51,7 @@ import com.datadog.android.rum.internal.debug.RumDebugListener
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.asTime
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
@@ -102,12 +104,14 @@ internal class DatadogRumMonitor(
     lastInteractionIdentifier: LastInteractionIdentifier?,
     slowFramesListener: SlowFramesListener?,
     rumSessionTypeOverride: RumSessionType?,
-    accessibilitySnapshotManager: AccessibilitySnapshotManager,
+    accessibilityInfoProvider: InfoProvider<AccessibilityInfo>,
     batteryInfoProvider: InfoProvider<BatteryInfo>,
     displayInfoProvider: InfoProvider<DisplayInfo>,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
     insightsCollector: InsightsCollector,
-    timeseriesFactory: Timeseries.Factory
+    timeseriesFactory: Timeseries.Factory,
+    private val viewEventMapper: ViewEventMapper,
+    rumViewEventWriteConfig: RumViewEventWriteConfig
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope = RumApplicationScope(
@@ -126,12 +130,14 @@ internal class DatadogRumMonitor(
         lastInteractionIdentifier = lastInteractionIdentifier,
         slowFramesListener = slowFramesListener,
         rumSessionTypeOverride = rumSessionTypeOverride,
-        accessibilitySnapshotManager = accessibilitySnapshotManager,
+        accessibilityInfoProvider = accessibilityInfoProvider,
         batteryInfoProvider = batteryInfoProvider,
         displayInfoProvider = displayInfoProvider,
         rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
         insightsCollector = insightsCollector,
-        timeseriesFactory = timeseriesFactory
+        timeseriesFactory = timeseriesFactory,
+        viewEventMapper = viewEventMapper,
+        rumViewEventWriteConfig = rumViewEventWriteConfig
     )
 
     internal var debugListener: RumDebugListener? = null
@@ -618,9 +624,7 @@ internal class DatadogRumMonitor(
     }
 
     override fun reportNetworkingLibraryType(type: InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType) {
-        handleEvent(
-            RumRawEvent.TelemetryEventWrapper(InternalTelemetryEvent.ApiUsage.NetworkInstrumentation(type))
-        )
+        sdkCore.internalLogger.logApiUsage { InternalTelemetryEvent.ApiUsage.NetworkInstrumentation(type) }
     }
 
     override fun notifyResourceHeadersTrackingConfigured(
@@ -776,22 +780,36 @@ internal class DatadogRumMonitor(
         sdkCore.internalLogger.reportOperationApiUsage(ActionType.FAIL)
     }
 
-    private fun operationArgumentsValid(name: String, operationKey: String?) = when {
-        name.isBlank() -> {
+    private fun operationArgumentsValid(name: String, operationKey: String?): Boolean {
+        // Blank / empty names are rejected: the backend rejects them with
+        // its own non-empty precondition before evaluating the character-set
+        // regex, so drop client-side to match.
+        if (name.isBlank()) {
             sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN) {
                 OPERATION_ERROR_INVALID_NAME.format(Locale.US, name)
             }
-            false
+            return false
         }
 
-        operationKey?.isBlank() == true -> {
+        // Names that fail the backend's `[\w.@$-]*` character-set regex
+        // trigger a warning but the event is still emitted — the backend is
+        // the source of truth, so client-side drop would force a customer
+        // SDK bump if the rule is ever relaxed.
+        if (!name.matches(VALID_OPERATION_NAME_REGEX)) {
+            sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN) {
+                OPERATION_ERROR_INVALID_NAME_CHARACTERS.format(Locale.US, name)
+            }
+        }
+
+        // operationKey is optional: a blank value is malformed, but we warn
+        // and still emit on purpose — dropping the event would lose a
+        // diagnostic data point for good. (Blank `name` above stays a drop.)
+        if (operationKey?.isBlank() == true) {
             sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN) {
                 OPERATION_ERROR_INVALID_OPERATION_KEY.format(Locale.US, operationKey)
             }
-            false
         }
-
-        else -> true
+        return true
     }
 
     // endregion
@@ -876,8 +894,6 @@ internal class DatadogRumMonitor(
                         val future = executorService.submitSafe(
                             "Rum event handling",
                             sdkCore.internalLogger,
-                            // TODO RUM-16125 Callable will get wrapped in another class, so we won't get it
-                            //  as-is when trying to make queue dump
                             NamedCallable("${event::class.simpleName}") {
                                 synchronized(rootScope) {
                                     handleEventWithMethodCallPerf(event, datadogContext, writeScope)
@@ -996,8 +1012,28 @@ internal class DatadogRumMonitor(
         internal const val OPERATION_ERROR_INVALID_NAME =
             "Operation name cannot be an empty or blank string but was \"%s\". Vital event won't be sent."
 
+        internal const val OPERATION_ERROR_INVALID_NAME_CHARACTERS =
+            "Operation name \"%s\" does not match the backend-accepted " +
+                "pattern [\\w.@$-]* (letters, digits, _ . @ $ -). The vital event " +
+                "will still be sent and may be rejected by the backend."
+
         internal const val OPERATION_ERROR_INVALID_OPERATION_KEY =
-            "Operation key cannot be an empty or blank string but was \"%s\". Vital event won't be sent."
+            "Operation key cannot be an empty or blank string but was \"%s\". " +
+                "The vital event will still be sent."
+
+        /**
+         * Mirrors the backend's server-side `vital.name` validation regex
+         * `[\w.@$-]*`. Names that do not match generate a developer warning
+         * but the event is still emitted — the backend is the single source
+         * of truth, so client-side drop would force a customer SDK bump if
+         * the policy is ever relaxed. `operationKey` is a separate parameter
+         * with its own validation.
+         *
+         * `\w` in `java.util.regex.Pattern` is ASCII-only (`[A-Za-z0-9_]`)
+         * unless `UNICODE_CHARACTER_CLASS` is set, which is what the backend
+         * regex assumes.
+         */
+        internal val VALID_OPERATION_NAME_REGEX = Regex("^[\\w.@$-]*$")
 
         private fun InternalLogger.reportOperationApiUsage(actionType: ActionType) = logApiUsage {
             InternalTelemetryEvent.ApiUsage.AddOperationStepVital(actionType)

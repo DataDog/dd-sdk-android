@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.instrumentation.gestures
 
 import android.content.Context
+import android.graphics.Rect
 import android.view.View
 import android.widget.AbsListView
 import android.widget.ScrollView
@@ -23,7 +24,7 @@ import java.lang.ref.WeakReference
  */
 internal class AndroidActionTrackingStrategy : ActionTrackingStrategy {
 
-    private val coordinatesContainer = IntArray(2)
+    private val visibleRect = Rect()
 
     override fun register(sdkCore: SdkCore, context: Context) {
         // sdkCore & context are not needed in this strategy, no-op
@@ -34,7 +35,7 @@ internal class AndroidActionTrackingStrategy : ActionTrackingStrategy {
     }
 
     override fun findTargetForTap(view: View, x: Float, y: Float): ViewTarget? {
-        return if (hitTest(view, x, y, coordinatesContainer) && isValidTapTarget(view)) {
+        return if (hitTest(view, x, y, visibleRect) && isValidTapTarget(view)) {
             ViewTarget(viewRef = WeakReference(view))
         } else {
             null
@@ -42,7 +43,7 @@ internal class AndroidActionTrackingStrategy : ActionTrackingStrategy {
     }
 
     override fun findTargetForScroll(view: View, x: Float, y: Float): ViewTarget? {
-        return if (hitTest(view, x, y, coordinatesContainer) && isValidScrollableTarget(view)) {
+        return if (hitTest(view, x, y, visibleRect) && isValidScrollableTarget(view)) {
             ViewTarget(viewRef = WeakReference(view))
         } else {
             null
@@ -60,16 +61,17 @@ internal class AndroidActionTrackingStrategy : ActionTrackingStrategy {
         view: View,
         x: Float,
         y: Float,
-        container: IntArray
+        outRect: Rect
     ): Boolean {
-        @Suppress("UnsafeThirdPartyFunctionCall") // container always have the correct size
-        view.getLocationInWindow(container)
-        val vx = container[0]
-        val vy = container[1]
-        val w = view.width
-        val h = view.height
-
-        return !(x < vx || x > vx + w || y < vy || y > vy + h)
+        // Use getGlobalVisibleRect to get the view's bounds intersected with all ancestor
+        // clip rects. This ensures views that are scrolled out of their parent's visible
+        // area (e.g. a child inside a NestedScrollView/RecyclerView that extends behind a
+        // BottomNavigationView) are NOT considered as hit targets in the clipped region.
+        @Suppress("UnsafeThirdPartyFunctionCall") // outRect is never null
+        val isVisible = view.getGlobalVisibleRect(outRect)
+        if (!isVisible) return false
+        return x >= outRect.left && x <= outRect.right &&
+            y >= outRect.top && y <= outRect.bottom
     }
 
     private fun isValidScrollableTarget(view: View): Boolean {

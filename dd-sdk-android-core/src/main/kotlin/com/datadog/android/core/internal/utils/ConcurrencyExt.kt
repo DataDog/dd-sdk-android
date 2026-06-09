@@ -43,7 +43,6 @@ fun Executor.executeSafe(
     runnable: Runnable
 ) {
     try {
-        // TODO RUM-16125 This approach doesn't work for `submit` calls
         // not the cleanest approach, but the least invasive considering code changes scope
         val wrappedRunnable = if (isWithNamedExecutionUnits && runnable !is NamedRunnable) {
             NamedRunnable(operationName, runnable)

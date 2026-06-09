@@ -12,9 +12,9 @@ import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.core.internal.utils.use
 import java.io.File
-import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
+import java.io.RandomAccessFile
 import java.nio.ByteBuffer
 import java.util.Locale
 import kotlin.math.max
@@ -90,16 +90,23 @@ internal class PlainBatchFileReaderWriter(
     // region Internal
 
     @Throws(IOException::class)
-    @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
+    @Suppress("UnsafeThirdPartyFunctionCall", "NestedBlockDepth") // Called within a try/catch block
     private fun lockFileAndWriteData(
         file: File,
         append: Boolean,
         data: RawBatchEvent
     ) {
-        FileOutputStream(file, append).use { outputStream ->
-            outputStream.channel.lock().use {
-                val meta = data.metadata
+        RandomAccessFile(file, "rw").use { raf ->
+            val channel = raf.channel
+            channel.lock().use {
+                // Snapshot the pre-write length so a failed write can be rolled back
+                // to the last good record boundary (TLV records would otherwise become
+                // misaligned and corrupt every subsequent append).
+                val rollbackLength = if (append) channel.size() else 0L
+                channel.truncate(rollbackLength)
+                channel.position(rollbackLength)
 
+                val meta = data.metadata
                 val metaBlockSize = TYPE_SIZE_BYTES + LENGTH_SIZE_BYTES + meta.size
                 val dataBlockSize = TYPE_SIZE_BYTES + LENGTH_SIZE_BYTES + data.data.size
 
@@ -109,8 +116,28 @@ internal class PlainBatchFileReaderWriter(
                     .allocate(metaBlockSize + dataBlockSize)
                     .putAsTlv(BlockType.META, meta)
                     .putAsTlv(BlockType.EVENT, data.data)
+                buffer.flip()
 
-                outputStream.write(buffer.array())
+                try {
+                    while (buffer.hasRemaining()) {
+                        channel.write(buffer)
+                    }
+                } catch (e: IOException) {
+                    // Truncating to a smaller size frees blocks rather than allocating,
+                    // so it succeeds even when the failure was ENOSPC.
+                    try {
+                        channel.truncate(rollbackLength)
+                    } catch (fallbackException: IOException) {
+                        internalLogger.log(
+                            level = InternalLogger.Level.ERROR,
+                            target = InternalLogger.Target.USER,
+                            messageBuilder = { ERROR_WRITE_FALLBACK.format(Locale.US, file.path) },
+                            throwable = fallbackException
+                        )
+                    }
+                    @Suppress("ThrowingInternalException") // we are just propagating existing one
+                    throw e
+                }
             }
         }
     }
@@ -265,6 +292,7 @@ internal class PlainBatchFileReaderWriter(
         internal const val HEADER_SIZE_BYTES: Int = TYPE_SIZE_BYTES + LENGTH_SIZE_BYTES
 
         internal const val ERROR_WRITE = "Unable to write data to file: %s"
+        internal const val ERROR_WRITE_FALLBACK = "Unable to restore file after failed write: %s"
         internal const val ERROR_READ = "Unable to read data from file: %s"
 
         internal const val WARNING_NOT_ALL_DATA_READ =

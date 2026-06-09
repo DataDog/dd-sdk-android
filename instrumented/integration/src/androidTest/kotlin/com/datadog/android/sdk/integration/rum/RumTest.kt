@@ -39,9 +39,11 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
         expectedEvents: List<ExpectedEvent>
     ) {
         val sentViewEvents = LinkedList<JsonObject>()
+        val sentViewUpdateEvents = LinkedList<JsonObject>()
         val sentActionEvents = LinkedList<JsonObject>()
         val sentResourceEvents = LinkedList<JsonObject>()
         val sentLaunchEvents = LinkedList<JsonObject>()
+        val sentLaunchUpdateEvents = LinkedList<JsonObject>()
         val sentVitalAppLaunchEvents = LinkedList<JsonObject>()
         handledRequests
             .filter { it.url?.isRumUrl() ?: false }
@@ -57,8 +59,12 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
                         .forEach {
                             if (it.isEventRelatedToApplicationLaunch) {
                                 sentLaunchEvents += it
+                            } else if (it.isViewUpdateEventRelatedToApplicationLaunch) {
+                                sentLaunchUpdateEvents += it
                             } else if (it.isViewEvent) {
                                 sentViewEvents += it
+                            } else if (it.isViewUpdateEvent) {
+                                sentViewUpdateEvents += it
                             } else if (it.isActionEvent) {
                                 sentActionEvents += it
                             } else if (it.isResourceEvent) {
@@ -73,7 +79,9 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
             event is ExpectedApplicationLaunchViewEvent
         }
         val expectedLaunchEvents = expectedEvents.filter(launchEventPredicate)
+        val expectedLaunchUpdateEvents = expectedEvents.filterIsInstance<ExpectedApplicationLaunchViewUpdateEvent>()
         val expectedViewEvents = expectedEvents.filterIsInstance<ExpectedViewEvent>()
+        val expectedViewUpdateEvents = expectedEvents.filterIsInstance<ExpectedViewUpdateEvent>()
         val expectedActionEvents = expectedEvents.filterIsInstance<ExpectedGestureEvent>()
         val expectedResourceEvents = expectedEvents.filterIsInstance<ExpectedResourceEvent>()
         val expectedVitalAppLaunchEvents = expectedEvents.filterIsInstance<ExpectedVitalAppLaunchEvent>()
@@ -82,10 +90,18 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
                 .reduceViewEvents()
                 .verifyEventMatches(expectedLaunchEvents)
         }
+        if (expectedLaunchUpdateEvents.isNotEmpty()) {
+            sentLaunchUpdateEvents.verifyEventMatches(expectedLaunchUpdateEvents)
+        }
         if (expectedViewEvents.isNotEmpty()) {
             sentViewEvents
                 .reduceViewEvents()
                 .verifyViewEventsMatches(expectedViewEvents)
+        }
+        if (expectedViewUpdateEvents.isNotEmpty()) {
+            sentViewUpdateEvents
+                .reduceViewUpdateEvents()
+                .verifyViewUpdateEventsMatches(expectedViewUpdateEvents)
         }
         if (expectedActionEvents.isNotEmpty()) {
             sentActionEvents.verifyEventMatches(expectedActionEvents)
@@ -115,11 +131,20 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
     }
 
     private val JsonObject.isEventRelatedToApplicationLaunch
-        get() = has("view") &&
-            getAsJsonObject("view")["name"].asString == "ApplicationLaunch"
+        get() = get("type")?.asString == "view" &&
+            has("view") &&
+            getAsJsonObject("view")["name"]?.asString == "ApplicationLaunch"
+
+    private val JsonObject.isViewUpdateEventRelatedToApplicationLaunch
+        get() = get("type")?.asString == "view_update" &&
+            has("view") &&
+            getAsJsonObject("view")["name"]?.asString == "ApplicationLaunch"
 
     private val JsonObject.isViewEvent
         get() = get("type")?.asString == "view"
+
+    private val JsonObject.isViewUpdateEvent
+        get() = get("type")?.asString == "view_update"
 
     private val JsonObject.isActionEvent
         get() = get("type")?.asString == "action"
@@ -155,6 +180,27 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
 
         return filter {
             if (it.isViewEvent) {
+                maxDocVersionByViewId[it.viewId] == it.documentVersion
+            } else {
+                true
+            }
+        }
+    }
+
+    private fun List<JsonObject>.reduceViewUpdateEvents(): List<JsonObject> {
+        val maxDocVersionByViewId = mutableMapOf<String, Long>()
+
+        forEach {
+            if (it.isViewUpdateEvent) {
+                val viewId = it.viewId
+                val documentVersion = it.documentVersion
+                maxDocVersionByViewId[viewId] =
+                    max(maxDocVersionByViewId.getOrDefault(viewId, Long.MIN_VALUE), documentVersion)
+            }
+        }
+
+        return filter {
+            if (it.isViewUpdateEvent) {
                 maxDocVersionByViewId[it.viewId] == it.documentVersion
             } else {
                 true

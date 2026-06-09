@@ -15,6 +15,7 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.ViewUpdateEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
 import com.datadog.android.rum.utils.forge.Configurator
@@ -41,11 +42,13 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
 
@@ -312,6 +315,89 @@ internal class RumEventSerializerTest {
             }
             .hasField("_dd") {
                 hasField("format_version", 2L)
+            }
+
+        event.usr?.let { usr ->
+            assertThat(jsonObject).hasField("usr") {
+                hasNullableField("id", usr.id)
+                hasNullableField("name", usr.name)
+                hasNullableField("email", usr.email)
+                containsAttributes(usr.additionalProperties)
+            }
+        }
+        event.account?.let { account ->
+            assertThat(jsonObject).hasField("account") {
+                hasNullableField("id", account.id)
+                hasNullableField("name", account.name)
+                containsAttributes(account.additionalProperties)
+            }
+        }
+        event.connectivity?.let { connectivity ->
+            assertThat(jsonObject).hasField("connectivity") {
+                hasNullableField("status", connectivity.status.name.lowercase(Locale.US))
+                hasNullableField(
+                    "interfaces",
+                    connectivity.interfaces?.map { it.name.lowercase(Locale.US) }
+                )
+                connectivity.cellular?.let { cellular ->
+                    hasField("cellular") {
+                        hasNullableField("technology", cellular.technology)
+                        hasNullableField("carrier_name", cellular.carrierName)
+                    }
+                }
+            }
+        }
+        event.device?.let { device ->
+            assertThat(jsonObject).hasField("device") {
+                hasNullableField("name", device.name)
+                hasNullableField("model", device.model)
+                hasNullableField("brand", device.brand)
+                hasNullableField("type", device.type?.name?.lowercase(Locale.US))
+                hasNullableField("architecture", device.architecture)
+                hasNullableField("locale", device.locale)
+                hasNullableField("locales", device.locales)
+                hasNullableField("time_zone", device.timeZone)
+                hasNullableField("battery_level", device.batteryLevel)
+                hasNullableField("power_saving_mode", device.powerSavingMode)
+                hasNullableField("brightness_level", device.brightnessLevel)
+            }
+        }
+        event.os?.let { os ->
+            assertThat(jsonObject).hasField("os") {
+                hasNullableField("name", os.name)
+                hasNullableField("version", os.version)
+                hasNullableField("version_major", os.versionMajor)
+                hasNullableField("build", os.build)
+            }
+        }
+        event.context?.additionalProperties?.let {
+            assertThat(jsonObject).hasField("context") {
+                containsAttributes(it)
+            }
+        }
+    }
+
+    @RepeatedTest(8)
+    fun `M serialize RUM event W serialize() with ViewUpdateEvent`(@Forgery event: ViewUpdateEvent) {
+        val serialized = testedSerializer.serialize(event)
+
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        assertThat(jsonObject)
+            .hasField("type", "view_update")
+            .hasField("date", event.date)
+            .hasField("application") {
+                hasField("id", event.application.id)
+            }
+            .hasField("session") {
+                hasField("id", event.session.id)
+                hasField("type", event.session.type.name.lowercase(Locale.US))
+            }
+            .hasField("view") {
+                hasField("id", event.view.id)
+                hasField("url", event.view.url)
+            }
+            .hasField("_dd") {
+                hasField("document_version", event.dd.documentVersion)
             }
 
         event.usr?.let { usr ->
@@ -1302,6 +1388,82 @@ internal class RumEventSerializerTest {
     }
 
     @Test
+    fun `M use the attributes group verbose name W validateAttributes { ViewUpdateEvent }`(
+        @Forgery fakeEvent: ViewUpdateEvent
+    ) {
+        // GIVEN
+        val mockedDataConstrains: DataConstraints = mock()
+        testedSerializer = RumEventSerializer(mockInternalLogger, mockedDataConstrains)
+
+        // WHEN
+        testedSerializer.serialize(fakeEvent)
+
+        // THEN
+        fakeEvent.usr?.let {
+            verify(mockedDataConstrains).validateAttributes(
+                it.additionalProperties,
+                RumEventSerializer.USER_ATTRIBUTE_PREFIX,
+                RumEventSerializer.USER_EXTRA_GROUP_VERBOSE_NAME,
+                RumEventSerializer.ignoredAttributes
+            )
+        }
+        fakeEvent.account?.let {
+            verify(mockedDataConstrains).validateAttributes(
+                it.additionalProperties,
+                RumEventSerializer.ACCOUNT_ATTRIBUTE_PREFIX,
+                RumEventSerializer.ACCOUNT_EXTRA_GROUP_VERBOSE_NAME,
+                RumEventSerializer.ignoredAttributes
+            )
+        }
+    }
+
+    @Test
+    fun `M validate custom timings W serialize() with ViewEvent { customTimings present }`(
+        @Forgery fakeEvent: ViewEvent,
+        forge: Forge
+    ) {
+        // Given
+        val fakeTimings = forge.aMap { anAlphabeticalString() to aLong() }.toMutableMap()
+        val eventWithTimings = fakeEvent.copy(
+            view = fakeEvent.view.copy(
+                customTimings = ViewEvent.CustomTimings(additionalProperties = fakeTimings)
+            )
+        )
+        val mockedDataConstraints: DataConstraints = mock()
+        whenever(mockedDataConstraints.validateTimings(fakeTimings)) doReturn fakeTimings
+        testedSerializer = RumEventSerializer(mockInternalLogger, mockedDataConstraints)
+
+        // When
+        testedSerializer.serialize(eventWithTimings)
+
+        // Then
+        verify(mockedDataConstraints).validateTimings(fakeTimings)
+    }
+
+    @Test
+    fun `M validate custom timings W serialize() with ViewUpdateEvent { customTimings present }`(
+        @Forgery fakeEvent: ViewUpdateEvent,
+        forge: Forge
+    ) {
+        // Given
+        val fakeTimings = forge.aMap { anAlphabeticalString() to aPositiveLong() }.toMutableMap()
+        val eventWithTimings = fakeEvent.copy(
+            view = fakeEvent.view.copy(
+                customTimings = ViewUpdateEvent.CustomTimings(additionalProperties = fakeTimings)
+            )
+        )
+        val mockedDataConstraints: DataConstraints = mock()
+        whenever(mockedDataConstraints.validateTimings(fakeTimings)) doReturn fakeTimings
+        testedSerializer = RumEventSerializer(mockInternalLogger, mockedDataConstraints)
+
+        // When
+        testedSerializer.serialize(eventWithTimings)
+
+        // Then
+        verify(mockedDataConstraints).validateTimings(fakeTimings)
+    }
+
+    @Test
     fun `M use the attributes group verbose name W validateAttributes { ActionEvent }`(
         @Forgery fakeEvent: ActionEvent
     ) {
@@ -1890,6 +2052,113 @@ internal class RumEventSerializerTest {
     }
 
     @Test
+    fun `M drop non-serializable attributes W serialize() with ViewUpdateEvent { bad usr#additionalProperties }`(
+        @Forgery event: ViewUpdateEvent,
+        forge: Forge
+    ) {
+        // Given
+        val faultyKey = forge.anAlphabeticalString()
+        val faultyObject = object {
+            override fun toString(): String {
+                throw forge.anException()
+            }
+        }
+        val faultyEvent = event.copy(
+            usr = event.usr?.copy(
+                additionalProperties = event.usr?.additionalProperties
+                    ?.toMutableMap()
+                    ?.apply { put(faultyKey, faultyObject) }
+                    .orEmpty()
+                    .toMutableMap()
+            )
+        )
+
+        // When
+        val serialized = testedSerializer.serialize(faultyEvent)
+
+        // Then
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        event.usr?.let { usr ->
+            assertThat(jsonObject).hasField("usr") {
+                hasNullableField("id", usr.id)
+                hasNullableField("name", usr.name)
+                hasNullableField("email", usr.email)
+                containsAttributes(usr.additionalProperties)
+            }
+        }
+    }
+
+    @Test
+    fun `M drop non-serializable attributes W serialize() with ViewUpdateEvent { bad account#additionalProperties }`(
+        @Forgery event: ViewUpdateEvent,
+        forge: Forge
+    ) {
+        // Given
+        val faultyKey = forge.anAlphabeticalString()
+        val faultyObject = object {
+            override fun toString(): String {
+                throw forge.anException()
+            }
+        }
+        val faultyEvent = event.copy(
+            account = event.account?.copy(
+                additionalProperties = event.account?.additionalProperties
+                    ?.toMutableMap()
+                    ?.apply { put(faultyKey, faultyObject) }
+                    .orEmpty()
+                    .toMutableMap()
+            )
+        )
+
+        // When
+        val serialized = testedSerializer.serialize(faultyEvent)
+
+        // Then
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        event.account?.let { account ->
+            assertThat(jsonObject).hasField("account") {
+                hasNullableField("id", account.id)
+                hasNullableField("name", account.name)
+                containsAttributes(account.additionalProperties)
+            }
+        }
+    }
+
+    @Test
+    fun `M drop non-serializable attributes W serialize() with ViewUpdateEvent { bad context#additionalProperties }`(
+        @Forgery event: ViewUpdateEvent,
+        forge: Forge
+    ) {
+        // Given
+        val faultyKey = forge.anAlphabeticalString()
+        val faultyObject = object {
+            override fun toString(): String {
+                throw forge.anException()
+            }
+        }
+        val faultyEvent = event.copy(
+            context = event.context?.copy(
+                additionalProperties = event.context?.additionalProperties
+                    ?.toMutableMap()
+                    ?.apply { put(faultyKey, faultyObject) }
+                    .orEmpty()
+                    .toMutableMap()
+            )
+        )
+
+        // When
+        val serialized = testedSerializer.serialize(faultyEvent)
+
+        // Then
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        event.context?.additionalProperties?.let {
+            assertThat(jsonObject).hasField("context") {
+                containsAttributes(it)
+            }
+        }
+    }
+
+    @Test
     fun `M drop non-serializable attributes W serialize() with ErrorEvent { bad usr#additionalProperties }`(
         @Forgery event: ErrorEvent,
         forge: Forge
@@ -2180,7 +2449,7 @@ internal class RumEventSerializerTest {
         attributes: MutableMap<String, Any?> = mutableMapOf(),
         userAttributes: MutableMap<String, Any?> = mutableMapOf()
     ): Any {
-        return when (this.anInt(min = 0, max = 6)) {
+        return when (this.anInt(min = 0, max = 7)) {
             1 -> this.getForgery(ViewEvent::class.java).let {
                 it.copy(
                     context = ViewEvent.Context(additionalProperties = attributes),
@@ -2188,21 +2457,28 @@ internal class RumEventSerializerTest {
                 )
             }
 
-            2 -> this.getForgery(ActionEvent::class.java).let {
+            2 -> this.getForgery(ViewUpdateEvent::class.java).let {
+                it.copy(
+                    context = ViewUpdateEvent.FeatureFlags(additionalProperties = attributes),
+                    usr = (it.usr ?: ViewUpdateEvent.Usr()).copy(additionalProperties = userAttributes)
+                )
+            }
+
+            3 -> this.getForgery(ActionEvent::class.java).let {
                 it.copy(
                     context = ActionEvent.Context(additionalProperties = attributes),
                     usr = (it.usr ?: ActionEvent.Usr()).copy(additionalProperties = userAttributes)
                 )
             }
 
-            3 -> this.getForgery(ErrorEvent::class.java).let {
+            4 -> this.getForgery(ErrorEvent::class.java).let {
                 it.copy(
                     context = ErrorEvent.Context(additionalProperties = attributes),
                     usr = (it.usr ?: ErrorEvent.Usr()).copy(additionalProperties = userAttributes)
                 )
             }
 
-            4 -> this.getForgery(ResourceEvent::class.java).let {
+            5 -> this.getForgery(ResourceEvent::class.java).let {
                 it.copy(
                     context = ResourceEvent.Context(additionalProperties = attributes),
                     usr = (it.usr ?: ResourceEvent.Usr())
@@ -2210,7 +2486,7 @@ internal class RumEventSerializerTest {
                 )
             }
 
-            5 -> this.getForgery(VitalOperationStepEvent::class.java).let {
+            6 -> this.getForgery(VitalOperationStepEvent::class.java).let {
                 it.copy(
                     context = VitalOperationStepEvent.Context(additionalProperties = attributes),
                     usr = (it.usr ?: VitalOperationStepEvent.Usr())

@@ -9,7 +9,10 @@ package com.datadog.android.core.internal.thread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.configuration.BackPressureStrategy
 import com.datadog.android.core.thread.FlushableExecutorService
+import com.datadog.android.internal.thread.NamedExecutionUnit
 import com.datadog.android.internal.time.TimeProvider
+import java.util.concurrent.Callable
+import java.util.concurrent.RunnableFuture
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -31,6 +34,25 @@ internal class BackPressureExecutorService(
 ),
     FlushableExecutorService {
 
+    // region ThreadPoolExecutor
+
+    override fun <T> newTaskFor(callable: Callable<T>): RunnableFuture<T> {
+        val name = (callable as? NamedExecutionUnit)?.name
+        return if (name != null) NamedFutureTask(name, callable) else super.newTaskFor(callable)
+    }
+
+    override fun <T> newTaskFor(runnable: Runnable, value: T): RunnableFuture<T> {
+        val name = (runnable as? NamedExecutionUnit)?.name
+        return if (name != null) NamedFutureTask(name, runnable, value) else super.newTaskFor(runnable, value)
+    }
+
+    override fun afterExecute(r: Runnable?, t: Throwable?) {
+        super.afterExecute(r, t)
+        loggingAfterExecute(r, t, logger)
+    }
+
+    // endregion
+
     // region FlushableExecutorService
 
     @Suppress("TooGenericExceptionCaught")
@@ -46,15 +68,6 @@ internal class BackPressureExecutorService(
         } catch (e: ClassCastException) {
             onDrainException(e)
         }
-    }
-
-    // endregion
-
-    // region ThreadPoolExecutor
-
-    override fun afterExecute(r: Runnable?, t: Throwable?) {
-        super.afterExecute(r, t)
-        loggingAfterExecute(r, t, logger)
     }
 
     // endregion

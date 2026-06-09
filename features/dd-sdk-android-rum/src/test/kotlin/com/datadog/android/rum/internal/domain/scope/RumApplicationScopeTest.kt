@@ -21,8 +21,10 @@ import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.configuration.RumViewEventWriteConfig
+import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.domain.InfoProvider
-import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
@@ -82,7 +84,7 @@ internal class RumApplicationScopeTest {
     lateinit var mockEvent: RumRawEvent
 
     @Mock
-    lateinit var mockAccessibilitySnapshotManager: AccessibilitySnapshotManager
+    lateinit var mockAccessibilityInfoProvider: InfoProvider<AccessibilityInfo>
 
     @Mock
     lateinit var mockWriter: DataWriter<Any>
@@ -179,7 +181,9 @@ internal class RumApplicationScopeTest {
         whenever(
             mockSlowFramesListener.resolveReport(any(), any(), any())
         ) doReturn viewUIPerformanceReport.snapshot()
-        whenever(mockAccessibilitySnapshotManager.getIfChanged()) doReturn mock()
+        whenever(mockAccessibilityInfoProvider.getState()) doReturn mock()
+        whenever(mockBatteryInfoProvider.getState()) doReturn BatteryInfo()
+        whenever(mockDisplayInfoProvider.getState()) doReturn DisplayInfo()
 
         fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
 
@@ -203,12 +207,14 @@ internal class RumApplicationScopeTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            accessibilityInfoProvider = mockAccessibilityInfoProvider,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
-            timeseriesFactory = mockTimeseriesFactory
+            timeseriesFactory = mockTimeseriesFactory,
+            viewEventMapper = mock<ViewEventMapper>(),
+            rumViewEventWriteConfig = RumViewEventWriteConfig.AlwaysFullView
         )
     }
 
