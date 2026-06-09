@@ -11,14 +11,14 @@ package com.datadog.android.trace.internal.domain.metrics
  * Field names and order match ClientStatsPayload.EncodeMsg in stats_gen.go.
  */
 internal data class ClientStatsPayload(
-    private val hostname: String,
-    private val env: String,
-    private val version: String,
-    private val service: String,
-    private val tracerVersion: String,
-    private val runtimeID: String,
-    private val sequenceNumber: Long,
-    private val stats: List<ClientStatsBucket>
+    internal val hostname: String,
+    internal val env: String,
+    internal val version: String,
+    internal val service: String,
+    internal val tracerVersion: String,
+    internal val runtimeID: String,
+    internal val sequenceNumber: Long,
+    internal val stats: List<ClientStatsBucket>
 ) {
     fun toMsgPackPayload(): ByteArray {
         val encoder = MsgPackEncoder()
@@ -75,9 +75,9 @@ internal data class ClientStatsPayload(
  * Field names and order match ClientStatsBucket.EncodeMsg in stats_gen.go.
  */
 internal data class ClientStatsBucket(
-    private val start: Long,
-    private val duration: Long,
-    private val stats: List<ClientGroupedStats>
+    internal val start: Long,
+    internal val duration: Long,
+    internal val stats: List<ClientGroupedStats>
 ) {
 
     fun toMsgPackPayload(encoder: MsgPackEncoder) {
@@ -108,21 +108,22 @@ internal data class ClientStatsBucket(
  */
 @Suppress("LongParameterList")
 internal class ClientGroupedStats(
-    private val service: String,
-    private val name: String,
-    private val resource: String,
-    private val httpStatusCode: Int,
-    private val type: String,
-    private val spanKind: String,
-    private val isTraceRoot: Trilean,
-    private val hits: Long,
-    private val errors: Long,
-    private val duration: Long,
-    private val topLevelHits: Long,
-    private val okSummary: ByteArray,
-    private val errorSummary: ByteArray,
-    private val peerTags: List<String>,
-    private val serviceSource: String
+    internal val service: String,
+    internal val name: String,
+    internal val resource: String,
+    internal val httpStatusCode: Int,
+    internal val type: String,
+    internal val spanKind: String,
+    internal val isTraceRoot: Trilean,
+    internal val hits: Long,
+    internal val errors: Long,
+    internal val duration: Long,
+    internal val topLevelHits: Long,
+    internal val okSummary: ByteArray,
+    internal val errorSummary: ByteArray,
+    internal val isSynthetic: Boolean,
+    internal val peerTags: List<String>,
+    internal val serviceSource: String
 ) {
 
     fun toMsgPackPayload(encoder: MsgPackEncoder) {
@@ -159,7 +160,7 @@ internal class ClientGroupedStats(
         encoder.writeBinary(errorSummary)
 
         encoder.writeRawString(SYNTHETICS_FIELD)
-        encoder.writeBoolean(false)
+        encoder.writeBoolean(isSynthetic)
 
         encoder.writeRawString(TOP_LEVEL_HITS_FIELD)
         encoder.writeLong(topLevelHits)

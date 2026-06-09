@@ -2576,6 +2576,7 @@ public abstract interface class com/datadog/trace/core/CoreSpan {
 	public abstract fun getError ()I
 	public abstract fun getHttpStatusCode ()S
 	public abstract fun getLocalRootSpan ()Lcom/datadog/trace/core/CoreSpan;
+	public abstract fun getLongRunningVersion ()I
 	public abstract fun getOperationName ()Ljava/lang/CharSequence;
 	public abstract fun getOrigin ()Ljava/lang/CharSequence;
 	public abstract fun getParentId ()J
@@ -2731,6 +2732,7 @@ public class com/datadog/trace/core/DDSpan : com/datadog/trace/api/profiling/Tra
 	public synthetic fun getLocalRootSpan ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;
 	public synthetic fun getLocalRootSpan ()Lcom/datadog/trace/core/CoreSpan;
 	public fun getLocalRootSpan ()Lcom/datadog/trace/core/DDSpan;
+	public fun getLongRunningVersion ()I
 	public fun getOperationName ()Ljava/lang/CharSequence;
 	public fun getOrigin ()Ljava/lang/CharSequence;
 	public fun getParentId ()J
