@@ -82,7 +82,7 @@ internal class DatadogFlagsClient(
      *
      * If the flag cannot be found, is not a boolean, or an error occurs, the default value is returned.
      *
-     * @param flagKey The name of the flag to query. Cannot be null.
+     * @param flagKey The key of the flag to query. Cannot be null.
      * @param defaultValue The value to return if the flag cannot be found or resolved for any reason. Cannot be null.
      * @return The boolean value of the flag, or the default value if the flag cannot be resolved for any reason.
      */
@@ -94,7 +94,7 @@ internal class DatadogFlagsClient(
      *
      * If the flag cannot be found, is not a string, or an error occurs, the default value is returned.
      *
-     * @param flagKey The name of the flag to query. Cannot be null.
+     * @param flagKey The key of the flag to query. Cannot be null.
      * @param defaultValue The value to return if the flag cannot be found or resolved for any reason. Cannot be null.
      * @return The string value of the flag, or the default value if the flag cannot be resolved for any reason.
      */
@@ -105,7 +105,7 @@ internal class DatadogFlagsClient(
      *
      * If the flag cannot be found, is not an integer, or an error occurs, the default value is returned.
      *
-     * @param flagKey The name of the flag to query. Cannot be null.
+     * @param flagKey The key of the flag to query. Cannot be null.
      * @param defaultValue The value to return if the flag cannot be found or resolved for any reason. Cannot be null.
      * @return The integer value of the flag, or the default value if the flag cannot be resolved for any reason.
      */
@@ -116,7 +116,7 @@ internal class DatadogFlagsClient(
      *
      * If the flag cannot be found, is not a double, or an error occurs, the default value is returned.
      *
-     * @param flagKey The name of the flag to query. Cannot be null.
+     * @param flagKey The key of the flag to query. Cannot be null.
      * @param defaultValue The value to return if the flag cannot be found or resolved for any reason. Cannot be null.
      * @return The double value of the flag, or the default value if the flag cannot be resolved for any reason.
      */
@@ -127,7 +127,7 @@ internal class DatadogFlagsClient(
      *
      * If the flag cannot be found or an error occurs, the default value is returned.
      *
-     * @param flagKey The name of the flag to query. Cannot be null.
+     * @param flagKey The key of the flag to query. Cannot be null.
      * @param defaultValue The value to return if the flag cannot be found or resolved for any reason. Cannot be null.
      * @return The JSON object value of the flag, or the default value if the flag cannot be resolved for any reason.
      */
@@ -142,7 +142,7 @@ internal class DatadogFlagsClient(
      *
      * If the flag cannot be found or an error occurs, the default value is returned.
      *
-     * @param flagKey The name of the flag to query. Cannot be null.
+     * @param flagKey The key of the flag to query. Cannot be null.
      * @param defaultValue The map to return if the flag cannot be found or resolved.
      * @return The map value of the flag, or the default value if unavailable.
      */
@@ -155,7 +155,7 @@ internal class DatadogFlagsClient(
      * Resolves a flag value with detailed resolution information.
      *
      * @param T The type of the flag value (Boolean, String, Int, Double, or JSONObject).
-     * @param flagKey The name of the flag to query.
+     * @param flagKey The key of the flag to query.
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
      * @return [ResolutionDetails] with either the parsed value and metadata, or an error.
      */
@@ -190,7 +190,7 @@ internal class DatadogFlagsClient(
      * of resolving a flag internally and then processing it through the tracking layer.
      *
      * @param T The type of the flag value
-     * @param flagKey The name of the flag to query
+     * @param flagKey The key of the flag to query
      * @param defaultValue The default value to return if resolution fails
      * @return The resolved value or the default value
      */
@@ -199,7 +199,7 @@ internal class DatadogFlagsClient(
 
     private fun writeExposureEvent(name: String, data: UnparsedFlag, context: EvaluationContext) {
         exposureProcessor.processEvent(
-            flagName = name,
+            flagKey = name,
             context = context,
             data = data
         )

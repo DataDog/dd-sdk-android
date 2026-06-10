@@ -37,7 +37,7 @@ internal class PrecomputeMapperTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @StringForgery
-    lateinit var fakeFlagName: String
+    lateinit var fakeFlagKey: String
 
     @StringForgery
     lateinit var fakeAllocationKey: String
@@ -72,7 +72,7 @@ internal class PrecomputeMapperTest {
         val fakeStringValue = "test-value"
         val json = buildValidJson(
             mapOf(
-                fakeFlagName to buildFlagJson(
+                fakeFlagKey to buildFlagJson(
                     variationType = VariationType.STRING.value,
                     variationValue = fakeStringValue
                 )
@@ -84,7 +84,7 @@ internal class PrecomputeMapperTest {
 
         // Then
         assertThat(result).hasSize(1)
-        val flag = result[fakeFlagName]
+        val flag = result[fakeFlagKey]
         checkNotNull(flag)
         assertThat(flag.variationType).isEqualTo(VariationType.STRING.value)
         assertThat(flag.variationValue).isEqualTo(fakeStringValue)
@@ -101,7 +101,7 @@ internal class PrecomputeMapperTest {
         // Given
         val json = buildValidJson(
             mapOf(
-                fakeFlagName to buildFlagJson(
+                fakeFlagKey to buildFlagJson(
                     variationType = VariationType.BOOLEAN.value,
                     variationValue = true
                 )
@@ -113,7 +113,7 @@ internal class PrecomputeMapperTest {
 
         // Then
         assertThat(result).hasSize(1)
-        val flag = result[fakeFlagName]
+        val flag = result[fakeFlagKey]
         checkNotNull(flag)
         assertThat(flag.variationType).isEqualTo(VariationType.BOOLEAN.value)
         assertThat(flag.variationValue).isEqualTo("true")
@@ -125,7 +125,7 @@ internal class PrecomputeMapperTest {
         // Given
         val json = buildValidJson(
             mapOf(
-                fakeFlagName to buildFlagJson(
+                fakeFlagKey to buildFlagJson(
                     variationType = VariationType.BOOLEAN.value,
                     variationValue = false
                 )
@@ -137,7 +137,7 @@ internal class PrecomputeMapperTest {
 
         // Then
         assertThat(result).hasSize(1)
-        val flag = result[fakeFlagName]
+        val flag = result[fakeFlagKey]
         checkNotNull(flag)
         assertThat(flag.variationType).isEqualTo(VariationType.BOOLEAN.value)
         assertThat(flag.variationValue).isEqualTo("false")
@@ -149,7 +149,7 @@ internal class PrecomputeMapperTest {
         // Given
         val json = buildValidJson(
             mapOf(
-                fakeFlagName to buildFlagJson(
+                fakeFlagKey to buildFlagJson(
                     variationType = VariationType.INTEGER.value,
                     variationValue = fakeIntValue
                 )
@@ -161,7 +161,7 @@ internal class PrecomputeMapperTest {
 
         // Then
         assertThat(result).hasSize(1)
-        val flag = result[fakeFlagName]
+        val flag = result[fakeFlagKey]
         checkNotNull(flag)
         assertThat(flag.variationType).isEqualTo(VariationType.INTEGER.value)
         assertThat(flag.variationValue).isEqualTo(fakeIntValue.toString())
@@ -173,7 +173,7 @@ internal class PrecomputeMapperTest {
         // Given
         val json = buildValidJson(
             mapOf(
-                fakeFlagName to buildFlagJson(
+                fakeFlagKey to buildFlagJson(
                     variationType = VariationType.NUMBER.value,
                     variationValue = fakeDoubleValue
                 )
@@ -185,7 +185,7 @@ internal class PrecomputeMapperTest {
 
         // Then
         assertThat(result).hasSize(1)
-        val flag = result[fakeFlagName]
+        val flag = result[fakeFlagKey]
         checkNotNull(flag)
         assertThat(flag.variationType).isEqualTo(VariationType.NUMBER.value)
         assertThat(flag.variationValue).isEqualTo(fakeDoubleValue.toString())
@@ -201,7 +201,7 @@ internal class PrecomputeMapperTest {
         }
         val json = buildValidJson(
             mapOf(
-                fakeFlagName to buildFlagJson(
+                fakeFlagKey to buildFlagJson(
                     variationType = VariationType.OBJECT.value,
                     variationValue = jsonValue
                 )
@@ -213,7 +213,7 @@ internal class PrecomputeMapperTest {
 
         // Then
         assertThat(result).hasSize(1)
-        val flag = result[fakeFlagName]
+        val flag = result[fakeFlagKey]
         checkNotNull(flag)
         assertThat(flag.variationType).isEqualTo(VariationType.OBJECT.value)
         assertThat(flag.variationValue).isEqualTo(jsonValue.toString())
@@ -229,7 +229,7 @@ internal class PrecomputeMapperTest {
         }
         val json = buildValidJsonWithExtraLogging(
             mapOf(
-                fakeFlagName to buildFlagJsonWithExtraLogging(
+                fakeFlagKey to buildFlagJsonWithExtraLogging(
                     variationType = VariationType.STRING.value,
                     variationValue = "test-value",
                     extraLogging = extraLogging
@@ -242,7 +242,7 @@ internal class PrecomputeMapperTest {
 
         // Then
         assertThat(result).hasSize(1)
-        val flag = result[fakeFlagName]
+        val flag = result[fakeFlagKey]
         checkNotNull(flag)
         assertThat(flag.extraLogging.toString()).isEqualTo(extraLogging.toString())
         verifyNoInteractions(mockInternalLogger)
@@ -251,21 +251,21 @@ internal class PrecomputeMapperTest {
     @Test
     fun `M parse multiple flags W map() { valid JSON with multiple flags }`(forge: Forge) {
         // Given
-        val flagName1 = forge.anAlphabeticalString()
-        val flagName2 = forge.anAlphabeticalString()
-        val flagName3 = forge.anAlphabeticalString()
+        val flagKey1 = forge.anAlphabeticalString()
+        val flagKey2 = forge.anAlphabeticalString()
+        val flagKey3 = forge.anAlphabeticalString()
 
         val json = buildValidJson(
             mapOf(
-                flagName1 to buildFlagJson(
+                flagKey1 to buildFlagJson(
                     variationType = VariationType.STRING.value,
                     variationValue = "value1"
                 ),
-                flagName2 to buildFlagJson(
+                flagKey2 to buildFlagJson(
                     variationType = VariationType.BOOLEAN.value,
                     variationValue = true
                 ),
-                flagName3 to buildFlagJson(
+                flagKey3 to buildFlagJson(
                     variationType = VariationType.INTEGER.value,
                     variationValue = 42
                 )
@@ -277,16 +277,16 @@ internal class PrecomputeMapperTest {
 
         // Then
         assertThat(result).hasSize(3)
-        assertThat(result).containsKeys(flagName1, flagName2, flagName3)
+        assertThat(result).containsKeys(flagKey1, flagKey2, flagKey3)
 
-        assertThat(result[flagName1]!!.variationType).isEqualTo(VariationType.STRING.value)
-        assertThat(result[flagName1]!!.variationValue).isEqualTo("value1")
+        assertThat(result[flagKey1]!!.variationType).isEqualTo(VariationType.STRING.value)
+        assertThat(result[flagKey1]!!.variationValue).isEqualTo("value1")
 
-        assertThat(result[flagName2]!!.variationType).isEqualTo(VariationType.BOOLEAN.value)
-        assertThat(result[flagName2]!!.variationValue).isEqualTo("true")
+        assertThat(result[flagKey2]!!.variationType).isEqualTo(VariationType.BOOLEAN.value)
+        assertThat(result[flagKey2]!!.variationValue).isEqualTo("true")
 
-        assertThat(result[flagName3]!!.variationType).isEqualTo(VariationType.INTEGER.value)
-        assertThat(result[flagName3]!!.variationValue).isEqualTo("42")
+        assertThat(result[flagKey3]!!.variationType).isEqualTo(VariationType.INTEGER.value)
+        assertThat(result[flagKey3]!!.variationValue).isEqualTo("42")
 
         verifyNoInteractions(mockInternalLogger)
     }
@@ -414,7 +414,7 @@ internal class PrecomputeMapperTest {
         val jsonWithIncompleteFlag = JSONObject().data {
             attributes {
                 flags {
-                    flag(fakeFlagName) {
+                    flag(fakeFlagKey) {
                         put("variationType", VariationType.STRING)
                         // Missing other required fields
                     }
@@ -469,7 +469,7 @@ internal class PrecomputeMapperTest {
         val json = JSONObject().data {
             attributes {
                 flags {
-                    flag(fakeFlagName) {
+                    flag(fakeFlagKey) {
                         put("variationType", VariationType.STRING.value)
                         put("variationValue", JSONObject.NULL)
                         put("doLog", fakeDoLog)
@@ -487,7 +487,7 @@ internal class PrecomputeMapperTest {
 
         // Then
         assertThat(result).hasSize(1)
-        val flag = result[fakeFlagName]
+        val flag = result[fakeFlagKey]
         checkNotNull(flag)
         assertThat(flag.variationValue).isEqualTo("null")
         verifyNoInteractions(mockInternalLogger)
