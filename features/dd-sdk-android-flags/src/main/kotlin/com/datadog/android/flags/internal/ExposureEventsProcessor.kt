@@ -42,6 +42,7 @@ internal class ExposureEventsProcessor(private val writer: RecordWriter, private
         val shouldWrite = synchronized(exposuresSentCache) {
             val lastSentValue = exposuresSentCache[cacheKey]
             if (lastSentValue != cacheValue) {
+                @Suppress("UnsafeThirdPartyFunctionCall") // safe - non-null key and value
                 exposuresSentCache.put(cacheKey, cacheValue)
                 true
             } else {
