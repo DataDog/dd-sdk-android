@@ -17,17 +17,14 @@ import android.telephony.TelephonyManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.core.internal.receiver.ThreadSafeReceiver
-import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.utils.getSystemServiceAs
-import java.util.concurrent.ExecutorService
 import android.net.NetworkInfo as AndroidNetworkInfo
 
 @Suppress("DEPRECATION")
 @SuppressLint("InlinedApi")
 internal class BroadcastReceiverNetworkInfoProvider(
     private val internalLogger: InternalLogger,
-    private val executorService: ExecutorService,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) : ThreadSafeReceiver(),
     NetworkInfoProvider {
@@ -38,12 +35,6 @@ internal class BroadcastReceiverNetworkInfoProvider(
     // region BroadcastReceiver
 
     override fun onReceive(context: Context, intent: Intent?) {
-        executorService.executeSafe(HANDLE_INTENT_OPERATION_NAME, internalLogger) {
-            handleIntent(context)
-        }
-    }
-
-    private fun handleIntent(context: Context) {
         val connectivityMgr = context.getSystemServiceAs<ConnectivityManager>(Context.CONNECTIVITY_SERVICE)
         val activeNetworkInfo = connectivityMgr?.activeNetworkInfo
 
@@ -57,7 +48,7 @@ internal class BroadcastReceiverNetworkInfoProvider(
     override fun register(context: Context) {
         val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
         registerReceiver(context, filter)
-        handleIntent(context)
+        onReceive(context, null)
     }
 
     override fun unregister(context: Context) {
@@ -148,8 +139,6 @@ internal class BroadcastReceiverNetworkInfoProvider(
     // endregion
 
     companion object {
-
-        private const val HANDLE_INTENT_OPERATION_NAME = "BroadcastReceiverNetworkInfoProvider.handleIntent"
 
         const val NETWORK_TYPE_LTE_CA = 19 // @Hide TelephonyManager.NETWORK_TYPE_LTE_CA,
 
