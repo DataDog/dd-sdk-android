@@ -47,6 +47,7 @@ data class com.datadog.android.sessionreplay.SessionReplayConfiguration
     fun setTextAndInputPrivacy(TextAndInputPrivacy): Builder
     fun setDynamicOptimizationEnabled(Boolean): Builder
     fun setSystemRequirements(SystemRequirementsConfiguration): Builder
+    fun setHeatmapsEnabled(Boolean): Builder
     fun build(): SessionReplayConfiguration
 interface com.datadog.android.sessionreplay.SessionReplayInternalCallback
   fun getCurrentActivity(): android.app.Activity?
