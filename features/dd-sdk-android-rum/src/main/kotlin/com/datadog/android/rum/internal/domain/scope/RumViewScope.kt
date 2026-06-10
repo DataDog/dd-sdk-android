@@ -597,8 +597,11 @@ internal open class RumViewScope(
         if (stopped) return
 
         if (event.type == RumActionType.CUSTOM && !event.waitForStop) {
-            // Custom actions are discrete events and must be written immediately, without waiting
-            // for an inactivity timeout. This also holds when another action is ongoing.
+            // Discrete custom actions (added via addAction(), i.e. waitForStop == false) are
+            // self-contained events: they must be written immediately, without waiting for an
+            // inactivity timeout or a subsequent event. This also holds when another action is
+            // ongoing. Continuous custom actions (startAction(), waitForStop == true) are not
+            // handled here: they stay open until stopAction() is called.
             val customActionScope = RumActionScope.fromEvent(
                 parentScope = this,
                 sdkCore = sdkCore,
