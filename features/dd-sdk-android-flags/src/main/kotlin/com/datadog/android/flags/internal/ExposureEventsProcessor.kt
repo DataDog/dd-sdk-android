@@ -18,7 +18,7 @@ internal class ExposureEventsProcessor(private val writer: RecordWriter, private
 
     private data class CacheKey(
         val targetingKey: String,
-        val flagName: String
+        val flagKey: String
     )
 
     private data class CacheValue(
@@ -29,10 +29,10 @@ internal class ExposureEventsProcessor(private val writer: RecordWriter, private
     @Suppress("UnsafeThirdPartyFunctionCall") // maxSize > 0
     private val exposuresSentCache = LruCache<CacheKey, CacheValue>(MAX_CACHE_ENTRIES)
 
-    override fun processEvent(flagName: String, context: EvaluationContext, data: UnparsedFlag) {
+    override fun processEvent(flagKey: String, context: EvaluationContext, data: UnparsedFlag) {
         val cacheKey = CacheKey(
             targetingKey = context.targetingKey,
-            flagName = flagName
+            flagKey = flagKey
         )
         val cacheValue = CacheValue(
             allocationKey = data.allocationKey,
@@ -51,17 +51,17 @@ internal class ExposureEventsProcessor(private val writer: RecordWriter, private
         }
 
         if (shouldWrite) {
-            val event = buildExposureEvent(flagName, context, data)
+            val event = buildExposureEvent(flagKey, context, data)
             writeExposureEvent(event)
         }
     }
 
-    private fun buildExposureEvent(flagName: String, context: EvaluationContext, data: UnparsedFlag): ExposureEvent {
+    private fun buildExposureEvent(flagKey: String, context: EvaluationContext, data: UnparsedFlag): ExposureEvent {
         val now = timeProvider.getDeviceTimestampMillis()
         return ExposureEvent(
             timestamp = now,
             allocation = ExposureEvent.Identifier(data.allocationKey),
-            flag = ExposureEvent.Identifier(flagName),
+            flag = ExposureEvent.Identifier(flagKey),
             variant = ExposureEvent.Identifier(data.variationKey),
             subject = ExposureEvent.Subject(
                 id = context.targetingKey,

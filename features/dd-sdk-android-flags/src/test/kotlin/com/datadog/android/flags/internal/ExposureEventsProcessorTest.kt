@@ -47,7 +47,7 @@ internal class ExposureEventsProcessorTest {
     var fakeTimestamp = 0L
 
     @StringForgery
-    lateinit var fakeFlagName: String
+    lateinit var fakeFlagKey: String
 
     @StringForgery
     lateinit var fakeTargetingKey: String
@@ -86,14 +86,14 @@ internal class ExposureEventsProcessorTest {
 
         // When
         whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeTimestamp
-        testedProcessor.processEvent(fakeFlagName, fakeContext, fakeFlag)
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, fakeFlag)
 
         // Then
         val eventCaptor = argumentCaptor<ExposureEvent>()
         verify(mockRecordWriter).write(eventCaptor.capture())
 
         val capturedEvent = eventCaptor.firstValue
-        assertThat(capturedEvent.flag.key).isEqualTo(fakeFlagName)
+        assertThat(capturedEvent.flag.key).isEqualTo(fakeFlagKey)
         assertThat(capturedEvent.allocation.key).isEqualTo(fakeAllocationKey)
         assertThat(capturedEvent.variant.key).isEqualTo(fakeVariationKey)
         assertThat(capturedEvent.subject.id).isEqualTo(fakeTargetingKey)
@@ -111,8 +111,8 @@ internal class ExposureEventsProcessorTest {
         )
 
         // When
-        testedProcessor.processEvent(fakeFlagName, fakeContext, fakeFlag)
-        testedProcessor.processEvent(fakeFlagName, fakeContext, fakeFlag) // Duplicate
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, fakeFlag)
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, fakeFlag) // Duplicate
 
         // Then
         verify(mockRecordWriter).write(any())
@@ -132,9 +132,9 @@ internal class ExposureEventsProcessorTest {
         )
 
         // When
-        testedProcessor.processEvent(fakeFlagName, fakeContext, flagA)
-        testedProcessor.processEvent(fakeFlagName, fakeContext, flagB)
-        testedProcessor.processEvent(fakeFlagName, fakeContext, flagA)
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, flagA)
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, flagB)
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, flagA)
 
         // Then
         val eventCaptor = argumentCaptor<ExposureEvent>()
@@ -152,17 +152,17 @@ internal class ExposureEventsProcessorTest {
     }
 
     @Test
-    fun `M process different exposures W processEvent() { different flag names }`(forge: Forge) {
+    fun `M process different exposures W processEvent() { different flag keys }`(forge: Forge) {
         // Given
         val fakeContext = EvaluationContext(
             targetingKey = fakeTargetingKey,
             attributes = mapOf("user_id" to forge.anAlphabeticalString())
         )
-        val anotherFlagName = forge.anAlphabeticalString()
+        val anotherFlagKey = forge.anAlphabeticalString()
 
         // When
-        testedProcessor.processEvent(fakeFlagName, fakeContext, fakeFlag)
-        testedProcessor.processEvent(anotherFlagName, fakeContext, fakeFlag)
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, fakeFlag)
+        testedProcessor.processEvent(anotherFlagKey, fakeContext, fakeFlag)
 
         // Then
         verify(mockRecordWriter, times(2)).write(any())
@@ -174,7 +174,7 @@ internal class ExposureEventsProcessorTest {
         val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
 
         // When
-        testedProcessor.processEvent(fakeFlagName, fakeContext, fakeFlag)
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, fakeFlag)
 
         // Then
         val eventCaptor = argumentCaptor<ExposureEvent>()
@@ -199,7 +199,7 @@ internal class ExposureEventsProcessorTest {
         )
 
         // When
-        testedProcessor.processEvent(fakeFlagName, fakeContext, fakeFlag)
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, fakeFlag)
 
         // Then
         val eventCaptor = argumentCaptor<ExposureEvent>()
@@ -213,9 +213,9 @@ internal class ExposureEventsProcessorTest {
     }
 
     @Test
-    fun `M handle empty strings in parameters W processEvent() { empty flag name and keys }`() {
+    fun `M handle empty strings in parameters W processEvent() { empty flag key and keys }`() {
         // Given
-        val emptyFlagName = ""
+        val emptyFlagKey = ""
         val contextWithEmptyTargeting = EvaluationContext(
             targetingKey = "",
             attributes = mapOf("attr" to "value")
@@ -226,7 +226,7 @@ internal class ExposureEventsProcessorTest {
         )
 
         // When
-        testedProcessor.processEvent(emptyFlagName, contextWithEmptyTargeting, flagWithEmptyKeys)
+        testedProcessor.processEvent(emptyFlagKey, contextWithEmptyTargeting, flagWithEmptyKeys)
 
         // Then
         val eventCaptor = argumentCaptor<ExposureEvent>()
@@ -252,8 +252,8 @@ internal class ExposureEventsProcessorTest {
         )
 
         // When
-        testedProcessor.processEvent(fakeFlagName, context1, fakeFlag)
-        testedProcessor.processEvent(fakeFlagName, context2, fakeFlag)
+        testedProcessor.processEvent(fakeFlagKey, context1, fakeFlag)
+        testedProcessor.processEvent(fakeFlagKey, context2, fakeFlag)
 
         // Then
         verify(mockRecordWriter).write(any())
@@ -278,8 +278,8 @@ internal class ExposureEventsProcessorTest {
             .thenReturn(fakeTimestamp2)
 
         // When
-        testedProcessor.processEvent(fakeFlagName, fakeContext1, fakeFlag)
-        testedProcessor.processEvent(fakeFlagName, fakeContext2, fakeFlag)
+        testedProcessor.processEvent(fakeFlagKey, fakeContext1, fakeFlag)
+        testedProcessor.processEvent(fakeFlagKey, fakeContext2, fakeFlag)
 
         // Then
         val eventCaptor = argumentCaptor<ExposureEvent>()
@@ -298,12 +298,12 @@ internal class ExposureEventsProcessorTest {
     fun `M prevent cache collision W processEvent() { components with separator characters }`(forge: Forge) {
         // Given
         val targetingKey1 = "user|123"
-        val flagName1 = "feature"
+        val flagKey1 = "feature"
         val allocationKey1 = "allocation"
         val variationKey1 = "variation"
 
         val targetingKey2 = "user"
-        val flagName2 = "123|feature"
+        val flagKey2 = "123|feature"
         val allocationKey2 = "allocation"
         val variationKey2 = "variation"
 
@@ -331,8 +331,8 @@ internal class ExposureEventsProcessorTest {
         )
 
         // When
-        testedProcessor.processEvent(flagName1, context1, flag1)
-        testedProcessor.processEvent(flagName2, context2, flag2)
+        testedProcessor.processEvent(flagKey1, context1, flag1)
+        testedProcessor.processEvent(flagKey2, context2, flag2)
 
         // Then
         verify(mockRecordWriter, times(2)).write(any())
@@ -428,7 +428,7 @@ internal class ExposureEventsProcessorTest {
         testedProcessor.processEvent("flag1", context1, flag1) // New
         testedProcessor.processEvent("flag1", context1, flag1) // Duplicate
         testedProcessor.processEvent("flag1", context2, flag1) // Different context
-        testedProcessor.processEvent("flag2", context1, flag1) // Different flag name
+        testedProcessor.processEvent("flag2", context1, flag1) // Different flag key
         testedProcessor.processEvent("flag1", context1, flag2) // Different flag data
         testedProcessor.processEvent("flag1", context1, flag1) // Assignment changed back
 
@@ -455,7 +455,7 @@ internal class ExposureEventsProcessorTest {
         val threads = (1..threadCount).map {
             Thread {
                 repeat(executionsPerThread) {
-                    testedProcessor.processEvent(fakeFlagName, context, flag)
+                    testedProcessor.processEvent(fakeFlagKey, context, flag)
                 }
             }
         }
@@ -517,7 +517,7 @@ internal class ExposureEventsProcessorTest {
         val processingThreads = (1..processingThreadCount).map {
             Thread {
                 repeat(executionsPerThread) {
-                    testedProcessor.processEvent(fakeFlagName, context, flag)
+                    testedProcessor.processEvent(fakeFlagKey, context, flag)
                 }
             }
         }
