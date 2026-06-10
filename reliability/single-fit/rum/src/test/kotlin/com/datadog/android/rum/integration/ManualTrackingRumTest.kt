@@ -280,9 +280,7 @@ class ManualTrackingRumTest {
         // Each CUSTOM action must be written immediately. In particular the last action
         // must not be lost just because no further event triggers an inactivity timeout.
         rumMonitor.addAction(RumActionType.CUSTOM, actionName1)
-        stubSdkCore.advanceTimeBy(1000)
         rumMonitor.addAction(RumActionType.CUSTOM, actionName2)
-        stubSdkCore.advanceTimeBy(1000)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
