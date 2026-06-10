@@ -92,7 +92,7 @@ internal class DefaultRecorderProvider(
             sdkCore = sdkCore,
             dynamicOptimizationEnabled = dynamicOptimizationEnabled,
             internalCallback = internalCallback,
-            heatmapIdentifierRegistry = DeferredHeatmapIdentifierRegistry(sdkCore)
+            heatmapIdentifierRegistry = LazyHeatmapIdentifierRegistry(sdkCore)
         )
     }
 

@@ -26,6 +26,8 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -127,6 +129,25 @@ internal class HeatmapIdentifierResolverTest {
 
         assertThat(component).startsWith(LOCAL_KEY_CLASS_PREFIX)
         assertThat(component).endsWith("#0")
+    }
+
+    @Test
+    fun `M call getResourceName only once W pathComponentFor() { same viewId called multiple times }`(
+        forge: Forge
+    ) {
+        val fakeFullyQualifiedName = "com.example.app:id/${forge.anAlphabeticalString()}"
+        val viewId = forge.anInt(min = 1, max = Int.MAX_VALUE)
+        val mockResources: Resources = mock {
+            whenever(it.getResourceName(viewId)).thenReturn(fakeFullyQualifiedName)
+        }
+        val mockView: View = mock {
+            whenever(it.id).thenReturn(viewId)
+            whenever(it.resources).thenReturn(mockResources)
+        }
+
+        repeat(5) { typeIndex -> testedResolver.pathComponentFor(mockView, typeIndex) }
+
+        verify(mockResources, times(1)).getResourceName(viewId)
     }
 
     // endregion

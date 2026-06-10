@@ -19,7 +19,7 @@ import com.datadog.android.internal.heatmaps.heatmapViewKey
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.DeferredHeatmapIdentifierRegistry
+import com.datadog.android.sessionreplay.internal.LazyHeatmapIdentifierRegistry
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -95,8 +95,8 @@ internal class HeatmapIdentifierContractTest {
     @BeforeEach
     fun `set up`() {
         realRegistry = HeatmapIdentifierRegistry.create()
-        val rumFeatureScope = stubRumFeatureWithRegistry(realRegistry)
         whenever(mockSdkCore.internalLogger).thenReturn(mockInternalLogger)
+        val rumFeatureScope = stubRumFeatureWithRegistry(realRegistry)
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)).thenReturn(rumFeatureScope)
         whenever(mockTreeViewTraversal.traverse(any(), any(), any())).thenReturn(
             TreeViewTraversal.TraversedTreeView(fakeViewWireframes, TraversalStrategy.TRAVERSE_ALL_CHILDREN)
@@ -109,7 +109,7 @@ internal class HeatmapIdentifierContractTest {
             internalLogger = mockInternalLogger,
             heatmapResolver = HeatmapIdentifierResolver(
                 appPackageName = fakeAppPackageName,
-                registry = DeferredHeatmapIdentifierRegistry(mockSdkCore),
+                registry = LazyHeatmapIdentifierRegistry(mockSdkCore),
                 internalLogger = mockInternalLogger
             )
         )
@@ -208,6 +208,63 @@ internal class HeatmapIdentifierContractTest {
 
         assertThat(firstIdentifier).isNotNull()
         assertThat(secondIdentifier).isEqualTo(firstIdentifier)
+    }
+
+    @Test
+    fun `M return identifier W { SR initialised before RUM, first snapshot fires after RUM registers }`(
+        forge: Forge,
+        @StringForgery fakeViewUrl: String
+    ) {
+        // This test documents the SR-before-RUM initialisation order that occurs in the sample
+        // app (and many real apps): SessionReplay.enable() is called before Rum.enable() in
+        // Application.onCreate(). LazyHeatmapIdentifierRegistry is therefore created while
+        // getFeature(RUM) returns null. By the time the first snapshot fires (after
+        // Application.onCreate() completes and the first vsync draws the UI), RUM is registered.
+        //
+        // Without LazyHeatmapIdentifierRegistry the registry would be permanently null and
+        // no permanentId would ever appear on wireframes.
+
+        // LazyHeatmapIdentifierRegistry created — RUM not yet registered at this moment
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)).thenReturn(null)
+        val localRegistry = HeatmapIdentifierRegistry.create()
+        val localProducer = SnapshotProducer(
+            imageWireframeHelper = mockImageWireframeHelper,
+            treeViewTraversal = mockTreeViewTraversal,
+            optionSelectorDetector = mockOptionSelectorDetector,
+            touchPrivacyManager = mockTouchPrivacyManager,
+            internalLogger = mockInternalLogger,
+            heatmapResolver = HeatmapIdentifierResolver(
+                appPackageName = fakeAppPackageName,
+                registry = LazyHeatmapIdentifierRegistry(mockSdkCore),
+                internalLogger = mockInternalLogger
+            )
+        )
+
+        // RUM registers (the next line in Application.onCreate())
+        val rumFeatureScope = stubRumFeatureWithRegistry(localRegistry)
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)).thenReturn(rumFeatureScope)
+
+        val mockButton = forge.aMockTappableViewWithResourceId(
+            viewId = forge.anInt(min = 1, max = Int.MAX_VALUE),
+            resourceName = "com.example.app:id/${forge.anAlphabeticalString()}"
+        )
+        val mockRoot = forge.aMockNonTappableViewGroupWithResourceId(
+            viewId = forge.anInt(min = 1, max = Int.MAX_VALUE),
+            resourceName = "com.example.app:id/${forge.anAlphabeticalString()}",
+            children = listOf(mockButton)
+        )
+
+        // First snapshot fires — both SR and RUM are now up, lazy registry resolves successfully
+        localProducer.produce(
+            rootView = mockRoot,
+            systemInformation = fakeSystemInformation,
+            textAndInputPrivacy = fakeTextAndInputPrivacy,
+            imagePrivacy = fakeImagePrivacy,
+            recordedDataQueueRefs = mockRecordedDataQueueRefs,
+            activeRumViewUrl = fakeViewUrl
+        )
+
+        assertThat(localRegistry.getHeatmapIdentifier(heatmapViewKey(mockButton), fakeViewUrl)).isNotNull()
     }
 
     // region helpers

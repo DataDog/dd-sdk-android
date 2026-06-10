@@ -949,6 +949,7 @@ datadog:
       - "kotlin.collections.MutableList.toTypedArray()"
       - "kotlin.collections.MutableList.withIndex()"
       - "kotlin.collections.MutableList.firstOrNull()"
+      - "kotlin.collections.MutableMap.any(kotlin.Function1)"
       - "kotlin.collections.MutableMap.asSequence()"
       - "kotlin.collections.MutableMap.clear()"
       - "kotlin.collections.MutableMap.containsKey(android.view.Window)"

@@ -131,9 +131,13 @@ internal class WindowsOnDrawListenerTest {
     @FloatForgery
     var fakeMethodCallSamplingRate: Float = 0f
 
+    @Mock
+    lateinit var mockRumContextProvider: RumContextProvider
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         whenever(mockSdkCore.internalLogger).thenReturn(mockInternalLogger)
+        whenever(mockRumContextProvider.getRumContext()).thenReturn(SessionReplayRumContext())
         whenever(mockMiscUtils.resolveSystemInformation(mockContext))
             .thenReturn(fakeSystemInformation)
         fakeMockedDecorViews = forge.aMockedDecorViewList().onEach {
@@ -182,7 +186,8 @@ internal class WindowsOnDrawListenerTest {
             sdkCore = mockSdkCore,
             methodCallSamplingRate = fakeMethodCallSamplingRate,
             dynamicOptimizationEnabled = fakeDynamicOptimizationEnabled,
-            touchPrivacyManager = mockTouchPrivacyManager
+            touchPrivacyManager = mockTouchPrivacyManager,
+            rumContextProvider = mockRumContextProvider
         )
     }
 
@@ -237,7 +242,8 @@ internal class WindowsOnDrawListenerTest {
             sdkCore = mockSdkCore,
             methodCallSamplingRate = fakeMethodCallSamplingRate,
             dynamicOptimizationEnabled = fakeDynamicOptimizationEnabled,
-            touchPrivacyManager = mockTouchPrivacyManager
+            touchPrivacyManager = mockTouchPrivacyManager,
+            rumContextProvider = mockRumContextProvider
         )
         testedListener.onDraw()
 

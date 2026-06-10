@@ -25,6 +25,7 @@ internal class HeatmapIdentifierResolver(
 
     private var lastPublishedScreenName: String? = null
     private val lastPublishedEntries: MutableMap<Long, CachedHeatmapEntry> = mutableMapOf()
+    private val resourceNameCache: HashMap<Int, String> = HashMap()
 
     @UiThread
     fun beginTraversal(viewUrl: String): TraversalContext = TraversalContext(viewUrl)
@@ -71,21 +72,30 @@ internal class HeatmapIdentifierResolver(
     internal fun pathComponentFor(view: View, typeIndex: Int): String {
         val viewId = view.id
         if (viewId != View.NO_ID) {
-            try {
-                @Suppress("UnsafeThirdPartyFunctionCall") // can throw Resources.NotFoundException
-                val name = view.resources?.getResourceName(viewId)
-                if (!name.isNullOrEmpty()) {
-                    return "$name#$typeIndex"
-                }
-            } catch (_: Resources.NotFoundException) {
+            val name = resourceNameCache[viewId] ?: resolveAndCacheResourceName(viewId, view.resources)
+            if (!name.isNullOrEmpty()) {
+                return "$name#$typeIndex"
             }
         }
         return "$LOCAL_KEY_CLASS_PREFIX${view.javaClass.name}#$typeIndex"
     }
 
+    private fun resolveAndCacheResourceName(viewId: Int, resources: Resources?): String? {
+        val resolved = resources?.let {
+            try {
+                @Suppress("UnsafeThirdPartyFunctionCall") // can throw Resources.NotFoundException
+                it.getResourceName(viewId)
+            } catch (_: Resources.NotFoundException) {
+                null
+            }
+        }
+        if (resolved != null) resourceNameCache[viewId] = resolved
+        return resolved
+    }
+
     @VisibleForTesting
     internal fun computeChildTypeIndices(parent: ViewGroup): IntArray {
-        val typeCounts = HashMap<Class<*>, Int>()
+        val typeCounts = mutableMapOf<Class<*>, Int>()
         val result = IntArray(parent.childCount)
         for (i in 0 until parent.childCount) {
             val child = parent.getChildAt(i) ?: continue
@@ -103,7 +113,6 @@ internal class HeatmapIdentifierResolver(
             lastPublishedScreenName = null
             lastPublishedEntries.clear()
         } else {
-            @Suppress("UnsafeThirdPartyFunctionCall")
             val anyIdentifierChangedOrNew = context.entries.any { (k, v) ->
                 lastPublishedEntries[k]?.identifier != v.identifier
             }
