@@ -59,6 +59,7 @@ import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.thread.BackPressureExecutorService
 import com.datadog.android.core.internal.thread.BackPressuredBlockingQueue
+import com.datadog.android.core.internal.thread.BroadcastReceiverThread
 import com.datadog.android.core.internal.thread.DatadogThreadFactory
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.thread.ScheduledExecutorServiceFactory
@@ -201,6 +202,7 @@ internal class CoreFeature(
     internal lateinit var uploadExecutorService: ScheduledThreadPoolExecutor
     internal lateinit var persistenceExecutorService: FlushableExecutorService
     internal lateinit var contextExecutorService: ThreadPoolExecutor
+    internal lateinit var broadcastReceiverThread: BroadcastReceiverThread
     internal lateinit var backpressureStrategy: BackPressureStrategy
 
     internal var localDataEncryption: Encryption? = null
@@ -591,7 +593,8 @@ internal class CoreFeature(
 
         // System Info Provider
         systemInfoProvider = BroadcastReceiverSystemInfoProvider(
-            internalLogger = internalLogger
+            internalLogger = internalLogger,
+            handler = broadcastReceiverThread.handler
         )
         systemInfoProvider.register(appContext)
 
@@ -614,6 +617,7 @@ internal class CoreFeature(
         } else {
             BroadcastReceiverNetworkInfoProvider(
                 internalLogger = internalLogger,
+                handler = broadcastReceiverThread.handler,
                 buildSdkVersionProvider = buildSdkVersionProvider
             )
         }
@@ -686,6 +690,7 @@ internal class CoreFeature(
             contextQueue,
             DatadogThreadFactory("context")
         )
+        broadcastReceiverThread = BroadcastReceiverThread()
     }
 
     private fun resolveProcessInfo(appContext: Context) {
@@ -716,6 +721,7 @@ internal class CoreFeature(
         uploadExecutorService.shutdownNow()
         contextExecutorService.shutdownNow()
         persistenceExecutorService.shutdownNow()
+        broadcastReceiverThread.shutdown()
 
         try {
             uploadExecutorService.awaitTermination(1, TimeUnit.SECONDS)

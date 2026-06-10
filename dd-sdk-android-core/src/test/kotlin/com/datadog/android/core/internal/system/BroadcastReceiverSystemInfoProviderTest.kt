@@ -9,6 +9,7 @@ package com.datadog.android.core.internal.system
 import android.content.Context
 import android.content.Intent
 import android.os.BatteryManager
+import android.os.Handler
 import android.os.PowerManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.utils.assertj.SystemInfoAssert.Companion.assertThat
@@ -32,10 +33,12 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.same
 import org.mockito.kotlin.verify
@@ -68,6 +71,9 @@ internal class BroadcastReceiverSystemInfoProviderTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Mock
+    lateinit var mockHandler: Handler
+
     @IntForgery
     var fakePluggedStatus: Int = 0
 
@@ -76,7 +82,8 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         whenever(mockContext.getSystemService(Context.POWER_SERVICE)) doReturn mockPowerMgr
 
         testedProvider = BroadcastReceiverSystemInfoProvider(
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            handler = mockHandler
         )
     }
 
@@ -147,7 +154,7 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         whenever(mockPowerMgr.isPowerSaveMode) doReturn powerSaveMode
         whenever(powerSaveModeIntent.action) doReturn PowerManager.ACTION_POWER_SAVE_MODE_CHANGED
         doReturn(batteryIntent, powerSaveModeIntent)
-            .whenever(mockContext).registerReceiver(same(testedProvider), any())
+            .whenever(mockContext).registerReceiver(same(testedProvider), any(), isNull(), eq(mockHandler))
 
         // When
         testedProvider.register(mockContext)
@@ -472,6 +479,20 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         assertDoesNotThrow {
             testedProvider.onReceive(mockContext, intent)
         }
+    }
+
+    @Test
+    fun `M pass handler to registerReceiver W register()`() {
+        // When
+        testedProvider.register(mockContext)
+
+        // Then
+        verify(mockContext, atLeastOnce()).registerReceiver(
+            eq(testedProvider),
+            any(),
+            isNull(),
+            eq(mockHandler)
+        )
     }
 
     // endregion
