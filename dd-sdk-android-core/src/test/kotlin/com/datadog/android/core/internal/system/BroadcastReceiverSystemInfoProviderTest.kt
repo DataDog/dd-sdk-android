@@ -43,7 +43,6 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 
@@ -69,22 +68,15 @@ internal class BroadcastReceiverSystemInfoProviderTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
-    @Mock
-    lateinit var mockExecutorService: ExecutorService
-
     @IntForgery
     var fakePluggedStatus: Int = 0
 
     @BeforeEach
     fun `set up`() {
         whenever(mockContext.getSystemService(Context.POWER_SERVICE)) doReturn mockPowerMgr
-        whenever(mockExecutorService.execute(any())) doAnswer {
-            it.getArgument<Runnable>(0).run()
-        }
 
         testedProvider = BroadcastReceiverSystemInfoProvider(
-            internalLogger = mockInternalLogger,
-            executorService = mockExecutorService
+            internalLogger = mockInternalLogger
         )
     }
 
@@ -480,18 +472,6 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         assertDoesNotThrow {
             testedProvider.onReceive(mockContext, intent)
         }
-    }
-
-    @Test
-    fun `M dispatch onReceive through executor W onReceive()`() {
-        // Given
-        val intent: Intent = mock()
-
-        // When
-        testedProvider.onReceive(mockContext, intent)
-
-        // Then
-        verify(mockExecutorService).execute(any())
     }
 
     // endregion

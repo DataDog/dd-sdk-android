@@ -591,8 +591,7 @@ internal class CoreFeature(
 
         // System Info Provider
         systemInfoProvider = BroadcastReceiverSystemInfoProvider(
-            internalLogger = internalLogger,
-            executorService = contextExecutorService
+            internalLogger = internalLogger
         )
         systemInfoProvider.register(appContext)
 
@@ -615,7 +614,6 @@ internal class CoreFeature(
         } else {
             BroadcastReceiverNetworkInfoProvider(
                 internalLogger = internalLogger,
-                executorService = contextExecutorService,
                 buildSdkVersionProvider = buildSdkVersionProvider
             )
         }

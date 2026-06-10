@@ -29,15 +29,12 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.stream.Stream
 import android.net.NetworkInfo as AndroidNetworkInfo
@@ -71,9 +68,6 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
-    @Mock
-    lateinit var mockExecutorService: ExecutorService
-
     @BeforeEach
     fun `set up`() {
         whenever(mockContext.getSystemService(Context.CONNECTIVITY_SERVICE))
@@ -81,13 +75,9 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         whenever(mockContext.getSystemService(Context.TELEPHONY_SERVICE))
             .doReturn(mockTelephonyManager)
         whenever(mockConnectivityManager.activeNetworkInfo) doReturn mockNetworkInfo
-        whenever(mockExecutorService.execute(any())) doAnswer {
-            it.getArgument<Runnable>(0).run()
-        }
 
         testedProvider = BroadcastReceiverNetworkInfoProvider(
-            internalLogger = mockInternalLogger,
-            executorService = mockExecutorService
+            internalLogger = mockInternalLogger
         )
     }
 
@@ -360,15 +350,6 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasCarrierName(null)
             .hasCarrierId(null)
             .hasCellularTechnology(null)
-    }
-
-    @Test
-    fun `M dispatch onReceive through executor W onReceive()`() {
-        // When
-        testedProvider.onReceive(mockContext, mockIntent)
-
-        // Then
-        verify(mockExecutorService).execute(any())
     }
 
     // region Internal
