@@ -119,6 +119,39 @@ internal class ExposureEventsProcessorTest {
     }
 
     @Test
+    fun `M process exposure again W processEvent() { assignment cycles back }`() {
+        // Given
+        val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
+        val flagA = fakeFlag.copy(
+            allocationKey = "allocation-a",
+            variationKey = "variation-a"
+        )
+        val flagB = fakeFlag.copy(
+            allocationKey = "allocation-b",
+            variationKey = "variation-b"
+        )
+
+        // When
+        testedProcessor.processEvent(fakeFlagName, fakeContext, flagA)
+        testedProcessor.processEvent(fakeFlagName, fakeContext, flagB)
+        testedProcessor.processEvent(fakeFlagName, fakeContext, flagA)
+
+        // Then
+        val eventCaptor = argumentCaptor<ExposureEvent>()
+        verify(mockRecordWriter, times(3)).write(eventCaptor.capture())
+        assertThat(eventCaptor.allValues.map { it.allocation.key }).containsExactly(
+            "allocation-a",
+            "allocation-b",
+            "allocation-a"
+        )
+        assertThat(eventCaptor.allValues.map { it.variant.key }).containsExactly(
+            "variation-a",
+            "variation-b",
+            "variation-a"
+        )
+    }
+
+    @Test
     fun `M process different exposures W processEvent() { different flag names }`(forge: Forge) {
         // Given
         val fakeContext = EvaluationContext(
@@ -397,10 +430,10 @@ internal class ExposureEventsProcessorTest {
         testedProcessor.processEvent("flag1", context2, flag1) // Different context
         testedProcessor.processEvent("flag2", context1, flag1) // Different flag name
         testedProcessor.processEvent("flag1", context1, flag2) // Different flag data
-        testedProcessor.processEvent("flag1", context1, flag1) // Duplicate again
+        testedProcessor.processEvent("flag1", context1, flag1) // Assignment changed back
 
         // Then
-        verify(mockRecordWriter, times(4)).write(any())
+        verify(mockRecordWriter, times(5)).write(any())
     }
 
     // endregion
