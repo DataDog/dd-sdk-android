@@ -678,7 +678,7 @@ internal class DatadogFlagsClientTest {
 
         // Verify exposure tracked
         verify(mockProcessor).processEvent(
-            flagName = eq(fakeFlagKey),
+            flagKey = eq(fakeFlagKey),
             context = eq(fakeContext),
             data = eq(fakeFlag)
         )
@@ -1099,7 +1099,7 @@ internal class DatadogFlagsClientTest {
         assertThat(result.value).isEqualTo(fakeFlagValue)
         // Verify exposure tracked for successful resolution
         verify(mockProcessor).processEvent(
-            flagName = eq(fakeFlagKey),
+            flagKey = eq(fakeFlagKey),
             context = eq(fakeContext),
             data = eq(fakeFlag)
         )
@@ -1304,7 +1304,7 @@ internal class DatadogFlagsClientTest {
         assertThat(result).isEqualTo(fakeFlagValue)
         // Verify that processor was called to write exposure event to backend
         verify(mockProcessor).processEvent(
-            flagName = eq(fakeFlagKey),
+            flagKey = eq(fakeFlagKey),
             context = eq(fakeEvaluationContext),
             data = eq(fakeFlag)
         )
@@ -1697,7 +1697,7 @@ internal class DatadogFlagsClientTest {
 
         // Then
         verify(mockProcessor).processEvent(
-            flagName = fakeFlagKey,
+            flagKey = fakeFlagKey,
             context = fakeContext,
             data = fakeFlag
         )
@@ -1727,7 +1727,7 @@ internal class DatadogFlagsClientTest {
 
         // Then
         verify(mockProcessor).processEvent(
-            flagName = fakeFlagKey,
+            flagKey = fakeFlagKey,
             context = fakeContext,
             data = fakeFlag
         )
@@ -1757,7 +1757,7 @@ internal class DatadogFlagsClientTest {
 
         // Then
         verify(mockProcessor).processEvent(
-            flagName = fakeFlagKey,
+            flagKey = fakeFlagKey,
             context = fakeContext,
             data = fakeFlag
         )
@@ -1787,7 +1787,7 @@ internal class DatadogFlagsClientTest {
 
         // Then
         verify(mockProcessor).processEvent(
-            flagName = fakeFlagKey,
+            flagKey = fakeFlagKey,
             context = fakeContext,
             data = fakeFlag
         )
@@ -1819,7 +1819,7 @@ internal class DatadogFlagsClientTest {
 
         // Then
         verify(mockProcessor).processEvent(
-            flagName = fakeFlagKey,
+            flagKey = fakeFlagKey,
             context = fakeContext,
             data = fakeFlag
         )
@@ -1929,7 +1929,7 @@ internal class DatadogFlagsClientTest {
 
         // Then
         verify(mockProcessor).processEvent(
-            flagName = fakeFlagKey,
+            flagKey = fakeFlagKey,
             context = fakeContext,
             data = fakeFlag
         )
