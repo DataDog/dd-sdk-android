@@ -1413,6 +1413,12 @@ datadog:
       - "org.json.JSONObject.toJsonObject()"
       # endregion
       # region OpenFeature
+      - "dev.openfeature.kotlin.sdk.Builder.build()"
+      - "dev.openfeature.kotlin.sdk.Builder.constructor()"
+      - "dev.openfeature.kotlin.sdk.Builder.putBoolean(kotlin.String, kotlin.Boolean)"
+      - "dev.openfeature.kotlin.sdk.Builder.putDouble(kotlin.String, kotlin.Double)"
+      - "dev.openfeature.kotlin.sdk.Builder.putInt(kotlin.String, kotlin.Int)"
+      - "dev.openfeature.kotlin.sdk.Builder.putString(kotlin.String, kotlin.String)"
       - "dev.openfeature.kotlin.sdk.EvaluationContext.asMap()"
       - "dev.openfeature.kotlin.sdk.EvaluationContext.getTargetingKey()"
       - "dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents.ProviderError.constructor(dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError)"
