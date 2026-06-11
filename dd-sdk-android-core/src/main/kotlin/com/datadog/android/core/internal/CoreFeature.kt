@@ -12,6 +12,7 @@ import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Handler
 import android.os.Process
 import androidx.annotation.RequiresApi
 import androidx.annotation.WorkerThread
@@ -591,15 +592,17 @@ internal class CoreFeature(
         // Tracking Consent Provider
         trackingConsentProvider = TrackingConsentProvider(consent)
 
+        val broadcastReceiverHandler = Handler(broadcastReceiverThread.looper)
+
         // System Info Provider
         systemInfoProvider = BroadcastReceiverSystemInfoProvider(
             internalLogger = internalLogger,
-            handler = broadcastReceiverThread.handler
+            handler = broadcastReceiverHandler
         )
         systemInfoProvider.register(appContext)
 
         // Network Info Provider
-        setupNetworkInfoProviders(appContext)
+        setupNetworkInfoProviders(appContext, broadcastReceiverHandler)
 
         // User Info Provider
         userInfoProvider = DatadogUserInfoProvider()
@@ -608,7 +611,7 @@ internal class CoreFeature(
         accountInfoProvider = DatadogAccountInfoProvider(internalLogger)
     }
 
-    private fun setupNetworkInfoProviders(appContext: Context) {
+    private fun setupNetworkInfoProviders(appContext: Context, broadcastReceiverHandler: Handler) {
         networkInfoProvider = if (buildSdkVersionProvider.isAtLeastN) {
             CallbackNetworkInfoProvider(
                 internalLogger = internalLogger,
@@ -617,7 +620,7 @@ internal class CoreFeature(
         } else {
             BroadcastReceiverNetworkInfoProvider(
                 internalLogger = internalLogger,
-                handler = broadcastReceiverThread.handler,
+                handler = broadcastReceiverHandler,
                 buildSdkVersionProvider = buildSdkVersionProvider
             )
         }
@@ -691,6 +694,8 @@ internal class CoreFeature(
             DatadogThreadFactory("context")
         )
         broadcastReceiverThread = BroadcastReceiverThread()
+        @Suppress("UnsafeThirdPartyFunctionCall") // constructed once; start() is called exactly once here
+        broadcastReceiverThread.start()
     }
 
     private fun resolveProcessInfo(appContext: Context) {
@@ -721,7 +726,7 @@ internal class CoreFeature(
         uploadExecutorService.shutdownNow()
         contextExecutorService.shutdownNow()
         persistenceExecutorService.shutdownNow()
-        broadcastReceiverThread.shutdown()
+        broadcastReceiverThread.quitSafely()
 
         try {
             uploadExecutorService.awaitTermination(1, TimeUnit.SECONDS)

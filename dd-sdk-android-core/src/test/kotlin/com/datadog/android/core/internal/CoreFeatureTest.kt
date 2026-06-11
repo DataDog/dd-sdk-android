@@ -1601,14 +1601,14 @@ internal class CoreFeatureTest {
         )
         val mockBroadcastReceiverThread = mock<BroadcastReceiverThread>()
         // Shut down the real thread before swapping in the mock to avoid leaking a HandlerThread
-        testedFeature.broadcastReceiverThread.shutdown()
+        testedFeature.broadcastReceiverThread.quitSafely()
         testedFeature.broadcastReceiverThread = mockBroadcastReceiverThread
 
         // When
         testedFeature.stop()
 
         // Then
-        verify(mockBroadcastReceiverThread).shutdown()
+        verify(mockBroadcastReceiverThread).quitSafely()
     }
 
     // endregion
