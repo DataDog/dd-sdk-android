@@ -395,8 +395,22 @@ internal class DatadogFlagsClient(
             reason = parseReason(precomputedFlag.reason),
             errorCode = null,
             errorMessage = null,
-            flagMetadata = extractMetadata(precomputedFlag.extraLogging)
+            flagMetadata = buildMetadata(precomputedFlag)
         )
+
+    private fun buildMetadata(precomputedFlag: PrecomputedFlag): Map<String, Any> {
+        val metadata = mutableMapOf<String, Any>()
+        if (precomputedFlag.allocationKey.isNotBlank()) {
+            metadata["allocationKey"] = precomputedFlag.allocationKey
+        }
+        precomputedFlag.extraLogging.keys().forEach { key ->
+            val value = precomputedFlag.extraLogging.opt(key)
+            when (value) {
+                is String, is Number, is Boolean -> metadata[key] = value
+            }
+        }
+        return metadata
+    }
 
     private fun <T : Any> createErrorResolution(
         flagKey: String,

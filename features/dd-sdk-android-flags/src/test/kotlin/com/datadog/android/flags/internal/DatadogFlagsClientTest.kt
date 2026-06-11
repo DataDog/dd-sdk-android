@@ -803,6 +803,7 @@ internal class DatadogFlagsClientTest {
         val fakeDefaultValue = forge.aBool()
         val fakeFlagValue = !fakeDefaultValue
         val fakeVariationKey = forge.anAlphabeticalString()
+        val fakeAllocationKey = forge.anAlphabeticalString()
         val fakeReason = forge.anElementFrom("STATIC", "TARGETING_MATCH", "RULE_MATCH", "DEFAULT")
         val fakeExtraLogging = JSONObject().apply {
             put("version", forge.anAlphabeticalString())
@@ -813,7 +814,8 @@ internal class DatadogFlagsClientTest {
             variationValue = fakeFlagValue.toString(),
             variationKey = fakeVariationKey,
             reason = fakeReason,
-            extraLogging = fakeExtraLogging
+            extraLogging = fakeExtraLogging,
+            allocationKey = fakeAllocationKey
         )
         val fakeContext = EvaluationContext(
             targetingKey = forge.anAlphabeticalString(),
@@ -832,6 +834,7 @@ internal class DatadogFlagsClientTest {
         assertThat(result.errorMessage).isNull()
         assertThat(result.flagMetadata).isNotNull
         assertThat(result.flagMetadata).containsKeys("version", "environment")
+        assertThat(result.flagMetadata["allocationKey"]).isEqualTo(fakeAllocationKey)
     }
 
     @Test
