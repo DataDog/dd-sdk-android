@@ -20,7 +20,8 @@ import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.anr.AnrTriggerRegistrar
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companion.APP_LAUNCH_PROFILING_MAX_DURATION_MS
-import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companion.PROFILING_SAMPLING_RATE
+import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companion.PROFILING_SAMPLING_RATE_APP_LAUNCH
+import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companion.PROFILING_SAMPLING_RATE_CONTINUOUS
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -237,7 +238,7 @@ class PerfettoProfilerTest {
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
-                "sampling_frequency" to PROFILING_SAMPLING_RATE
+                "sampling_frequency" to PROFILING_SAMPLING_RATE_APP_LAUNCH
             )
         )
         verify(mockInternalLogger)
@@ -299,7 +300,7 @@ class PerfettoProfilerTest {
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
-                "sampling_frequency" to PROFILING_SAMPLING_RATE
+                "sampling_frequency" to PROFILING_SAMPLING_RATE_APP_LAUNCH
             )
         )
         verify(mockInternalLogger)
@@ -362,7 +363,7 @@ class PerfettoProfilerTest {
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
-                "sampling_frequency" to PROFILING_SAMPLING_RATE
+                "sampling_frequency" to PROFILING_SAMPLING_RATE_APP_LAUNCH
             )
         )
         verify(mockInternalLogger)
@@ -766,7 +767,7 @@ class PerfettoProfilerTest {
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
-                "sampling_frequency" to PROFILING_SAMPLING_RATE
+                "sampling_frequency" to PROFILING_SAMPLING_RATE_APP_LAUNCH
             )
         )
         verify(mockInternalLogger)
@@ -811,6 +812,11 @@ class PerfettoProfilerTest {
         callbackCaptor.firstValue.accept(mockResult)
 
         val messageCaptor = argumentCaptor<() -> String>()
+        val expectedSamplingRate = if (startReason == ProfilingStartReason.APPLICATION_LAUNCH) {
+            PROFILING_SAMPLING_RATE_APP_LAUNCH
+        } else {
+            PROFILING_SAMPLING_RATE_CONTINUOUS
+        }
         val expectedProps = mapOf(
             "metric_type" to "profiling session",
             "profiling_session" to mapOf(
@@ -825,7 +831,7 @@ class PerfettoProfilerTest {
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
-                "sampling_frequency" to PROFILING_SAMPLING_RATE
+                "sampling_frequency" to expectedSamplingRate
             )
         )
         verify(mockInternalLogger)
@@ -892,7 +898,7 @@ class PerfettoProfilerTest {
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
-                "sampling_frequency" to PROFILING_SAMPLING_RATE
+                "sampling_frequency" to PROFILING_SAMPLING_RATE_APP_LAUNCH
             )
         )
         verify(mockInternalLogger)
@@ -985,7 +991,7 @@ class PerfettoProfilerTest {
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
-                "sampling_frequency" to PROFILING_SAMPLING_RATE
+                "sampling_frequency" to PROFILING_SAMPLING_RATE_CONTINUOUS
             )
         )
         verify(mockInternalLogger).logMetric(
