@@ -965,6 +965,7 @@ datadog:
       - "kotlin.collections.MutableMap.get(kotlin.String)"
       - "kotlin.collections.MutableMap.get(kotlin.String?)"
       - "kotlin.collections.MutableMap.getOrElse(java.lang.Class, kotlin.Function0)"
+      - "kotlin.collections.MutableMap.getOrPut(com.datadog.android.trace.internal.domain.metrics.StatsConcentrator.AggregationKey, kotlin.Function0)"
       - "kotlin.collections.MutableMap.getOrPut(java.lang.Class, kotlin.Function0)"
       - "kotlin.collections.MutableMap.getOrPut(kotlin.Long, kotlin.Function0)"
       - "kotlin.collections.MutableMap.getOrPut(kotlin.String, kotlin.Function0)"

@@ -111,7 +111,6 @@ internal class StatsConcentrator(
     private fun aggregate(s: SpanSnapshot) {
         val bucketKey = alignTimestamp(bucketSizeNs, s.startTime + s.durationNs).coerceAtLeast(oldestTs)
         val key = buildAggregationKey(s)
-        @Suppress("UnsafeThirdPartyFunctionCall") // getOrPut can't throw
         buckets.getOrPut(bucketKey) { mutableMapOf() }.getOrPut(key) { GroupedStats() }.add(s)
     }
 
