@@ -8,6 +8,8 @@ package com.datadog.android.profiling
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.content.pm.PackageInfo
+import android.content.pm.PackageManager
 import android.os.ProfilingManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
@@ -20,6 +22,7 @@ import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.rum.RumSessionConstants
 import com.datadog.android.internal.sampling.SessionSamplingIdProvider
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.Profiler
 import com.datadog.android.profiling.internal.ProfilerCallback
@@ -29,6 +32,7 @@ import com.datadog.android.profiling.internal.ProfilingStartReason
 import com.datadog.android.profiling.internal.ProfilingStorage
 import com.datadog.android.profiling.internal.ProfilingWriter
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
+import com.datadog.android.profiling.internal.time.MutableTimeProvider
 import com.datadog.android.profiling.utils.config.MainLooperTestConfiguration
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -36,6 +40,7 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -46,6 +51,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
+import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -54,6 +60,7 @@ import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -111,6 +118,15 @@ internal class ProfilingFeatureTest {
     @Mock
     private lateinit var mockEditor: SharedPreferences.Editor
 
+    @Mock
+    private lateinit var mockMutableTimeProvider: MutableTimeProvider
+
+    @Mock
+    private lateinit var mockTimeProvider: TimeProvider
+
+    @Mock
+    private lateinit var mockPackageManager: PackageManager
+
     @Forgery
     private lateinit var fakeConfiguration: ProfilingConfiguration
 
@@ -129,6 +145,9 @@ internal class ProfilingFeatureTest {
     @StringForgery
     private lateinit var fakeInstanceName: String
 
+    @LongForgery(min = 1L)
+    private var fakeProfilingPackageVersionCode: Long = 0L
+
     private val fakeAllSampledConfiguration = ProfilingConfiguration(
         customEndpointUrl = null,
         applicationLaunchSampleRate = 100f,
@@ -138,8 +157,20 @@ internal class ProfilingFeatureTest {
     @BeforeEach
     fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.timeProvider) doReturn mockTimeProvider
+        whenever(mockContext.packageManager) doReturn mockPackageManager
+        val mockPackageInfo = mock<PackageInfo> {
+            on { longVersionCode } doReturn fakeProfilingPackageVersionCode
+        }
+        whenever(
+            mockPackageManager.getPackageInfo(
+                "com.google.android.profiling",
+                PackageManager.MATCH_APEX
+            )
+        ) doReturn mockPackageInfo
         whenever(mockSdkCore.name) doReturn fakeInstanceName
         whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mockProfilingExecutor
+        whenever(mockProfiler.timeProvider) doReturn mockMutableTimeProvider
         whenever(mockProfiler.scheduledExecutorService) doReturn mockSchedulerExecutor
         whenever(mockContext.getSystemService(ProfilingManager::class.java)) doReturn (mockService)
         whenever(mockContext.getSharedPreferences(any(), any())) doReturn mockSharedPreferences
@@ -185,6 +216,16 @@ internal class ProfilingFeatureTest {
 
         // Then
         assertThat(testedFeature.requestFactory).isInstanceOf(ProfilingRequestFactory::class.java)
+    }
+
+    @Test
+    fun `M bind profiler to the SDK core W initialize()`() {
+        // When
+        testedFeature.onInitialize(mockContext)
+
+        // Then
+        verify(mockProfiler).internalLogger = mockInternalLogger
+        verify(mockProfiler.timeProvider).delegate = mockTimeProvider
     }
 
     @Test

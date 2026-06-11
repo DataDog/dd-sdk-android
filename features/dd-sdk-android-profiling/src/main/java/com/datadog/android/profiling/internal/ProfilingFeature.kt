@@ -27,6 +27,7 @@ import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.ProfilingConfiguration
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
+import com.datadog.android.profiling.internal.utils.getProfilingModuleLongVersionCode
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -78,6 +79,10 @@ internal class ProfilingFeature(
         this.appContext = appContext
         profiler.apply {
             this.internalLogger = sdkCore.internalLogger
+            this.timeProvider.delegate = sdkCore.timeProvider
+            setProfilingPackageVersionCode(
+                appContext.packageManager.getProfilingModuleLongVersionCode(sdkCore.internalLogger)
+            )
             registerProfilingCallback(appContext, sdkCore.name, this@ProfilingFeature)
         }
         setMinimumSampleRate(appContext, configuration.applicationLaunchSampleRate)

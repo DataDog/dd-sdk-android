@@ -8,9 +8,12 @@ package com.datadog.android.profiling.internal
 
 import android.content.Context
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.profiling.internal.time.MutableTimeProvider
 import java.util.concurrent.ScheduledExecutorService
 
 internal interface Profiler {
+
+    val timeProvider: MutableTimeProvider
 
     var internalLogger: InternalLogger?
 
@@ -38,4 +41,6 @@ internal interface Profiler {
      * so the launch window merges into the first continuous cycle.
      */
     fun setExtendLaunchSession(extend: Boolean)
+
+    fun setProfilingPackageVersionCode(versionCode: Long)
 }

@@ -19,6 +19,7 @@ import com.datadog.android.profiling.internal.ProfilingFeature
 import com.datadog.android.profiling.internal.ProfilingStartReason
 import com.datadog.android.profiling.internal.ProfilingStorage
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
+import com.datadog.android.profiling.internal.time.MutableTimeProvider
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -107,7 +108,7 @@ object Profiling {
     private fun initializeProfiler() {
         if (!isProfilerInitialized.getAndSet(true)) {
             profiler = PerfettoProfiler(
-                timeProvider = DefaultTimeProvider(),
+                timeProvider = MutableTimeProvider.create(DefaultTimeProvider()),
                 scheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
             )
         }
