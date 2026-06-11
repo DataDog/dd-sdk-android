@@ -400,14 +400,17 @@ internal class DatadogFlagsClient(
 
     private fun buildMetadata(precomputedFlag: PrecomputedFlag): Map<String, Any> {
         val metadata = mutableMapOf<String, Any>()
-        if (precomputedFlag.allocationKey.isNotBlank()) {
-            metadata["allocationKey"] = precomputedFlag.allocationKey
-        }
         precomputedFlag.extraLogging.keys().forEach { key ->
+            // "allocationKey" is always sourced from the typed field below; skip it here
+            // so the typed field can never be silently clobbered by extraLogging.
+            if (key == "allocationKey") return@forEach
             val value = precomputedFlag.extraLogging.opt(key)
             when (value) {
                 is String, is Number, is Boolean -> metadata[key] = value
             }
+        }
+        if (precomputedFlag.allocationKey.isNotBlank()) {
+            metadata["allocationKey"] = precomputedFlag.allocationKey
         }
         return metadata
     }
