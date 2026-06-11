@@ -12,6 +12,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import java.lang.ref.WeakReference
@@ -46,6 +47,7 @@ object SessionReplay {
         sessionReplayConfiguration.systemRequirementsConfiguration
             .runIfRequirementsMet(featureSdkCore.internalLogger) {
                 val touchPrivacyManager = TouchPrivacyManager(sessionReplayConfiguration.touchPrivacy)
+                val effectiveSampleRate = resolveSampleRate(featureSdkCore, sessionReplayConfiguration)
                 val sessionReplayFeature = SessionReplayFeature(
                     sdkCore = featureSdkCore,
                     customEndpointUrl = sessionReplayConfiguration.customEndpointUrl,
@@ -57,7 +59,7 @@ object SessionReplay {
                     customMappers = sessionReplayConfiguration.customMappers,
                     customOptionSelectorDetectors = sessionReplayConfiguration.customOptionSelectorDetectors,
                     customDrawableMappers = sessionReplayConfiguration.customDrawableMappers,
-                    sampleRate = sessionReplayConfiguration.sampleRate,
+                    sampleRate = effectiveSampleRate,
                     startRecordingImmediately = sessionReplayConfiguration.startRecordingImmediately,
                     dynamicOptimizationEnabled = sessionReplayConfiguration.dynamicOptimizationEnabled,
                     internalCallback = sessionReplayConfiguration.internalCallback
@@ -102,6 +104,18 @@ object SessionReplay {
             }
 
         sessionReplayFeature?.manuallyStopRecording()
+    }
+
+    private fun resolveSampleRate(
+        sdkCore: FeatureSdkCore,
+        configuration: SessionReplayConfiguration
+    ): Float {
+        val remoteSampleRate = (sdkCore as? InternalSdkCore)
+            ?.remoteConfiguration
+            ?.rum
+            ?.sessionReplaySampleRate
+            ?.toFloat()
+        return remoteSampleRate ?: configuration.sampleRate
     }
 
     private fun isAlreadyRegistered() =

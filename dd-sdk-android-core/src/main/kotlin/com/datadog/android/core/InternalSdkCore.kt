@@ -13,6 +13,7 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.remote.config.model.RemoteConfigState
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.privacy.TrackingConsent
 import com.google.gson.JsonObject
@@ -41,6 +42,12 @@ interface InternalSdkCore : FeatureSdkCore {
      */
     @InternalApi
     val rootStorageDir: File?
+
+    /**
+     * The last successfully fetched and cached remote configuration, or `null` if none is available.
+     */
+    @InternalApi
+    val remoteConfiguration: RemoteConfigState?
 
     /**
      * Shows if core is running in developer mode (some settings are overwritten to simplify

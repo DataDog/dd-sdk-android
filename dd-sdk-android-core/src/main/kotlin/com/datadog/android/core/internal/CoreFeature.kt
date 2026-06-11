@@ -88,6 +88,7 @@ import com.datadog.android.security.Encryption
 import com.google.gson.JsonObject
 import com.lyft.kronos.AndroidClockFactory
 import com.lyft.kronos.KronosClock
+import okhttp3.Cache
 import okhttp3.Call
 import okhttp3.CipherSuite
 import okhttp3.ConnectionSpec
@@ -140,6 +141,12 @@ internal class CoreFeature(
             .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
             .connectionSpecs(listOf(connectionSpec))
             .dns(RotatingDnsResolver(timeProvider = timeProvider)) // NPE cannot happen here
+            .apply {
+                if (this@CoreFeature::storageDir.isInitialized) {
+                    @Suppress("UnsafeThirdPartyFunctionCall")
+                    cache(Cache(File(storageDir, HTTP_CACHE_DIR_NAME), HTTP_CACHE_MAX_SIZE_BYTES))
+                }
+            }
             .build()
     }
 
@@ -199,6 +206,9 @@ internal class CoreFeature(
     @Volatile
     internal var appBuildId: String? = null
     internal var customUploadSchedulerStrategy: UploadSchedulerStrategy? = null
+
+    @Volatile
+    internal var remoteConfigurationId: String? = null
 
     internal lateinit var uploadExecutorService: ScheduledThreadPoolExecutor
     internal lateinit var persistenceExecutorService: FlushableExecutorService
@@ -583,6 +593,7 @@ internal class CoreFeature(
         site = configuration.site
         backpressureStrategy = configuration.backpressureStrategy
         customUploadSchedulerStrategy = configuration.uploadSchedulerStrategy
+        remoteConfigurationId = configuration.remoteConfigurationId
     }
 
     private fun setupInfoProviders(
@@ -802,6 +813,8 @@ internal class CoreFeature(
 
         internal const val LAST_RUM_VIEW_EVENT_FILE_NAME = "last_view_event"
         internal const val LAST_FATAL_ANR_SENT_FILE_NAME = "last_fatal_anr_sent"
+        internal const val HTTP_CACHE_DIR_NAME = "http-cache"
+        internal const val HTTP_CACHE_MAX_SIZE_BYTES = 4L * 1024 * 1024
 
         // should be the same as in dd-sdk-android-gradle-plugin
         internal const val BUILD_ID_FILE_NAME = "datadog.buildId"

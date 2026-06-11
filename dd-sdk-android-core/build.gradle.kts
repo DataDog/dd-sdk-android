@@ -164,6 +164,8 @@ unMock {
     keepStartingWith("org.json")
 }
 
+apply(from = "generate_rc_models.gradle.kts")
+
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 androidLibraryConfig()
 junitConfig()

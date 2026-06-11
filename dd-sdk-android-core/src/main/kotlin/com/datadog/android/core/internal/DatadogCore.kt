@@ -31,6 +31,9 @@ import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.logger.SdkInternalLogger
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.time.DefaultAppStartTimeProvider
+import com.datadog.android.core.remote.config.RemoteConfigNetworkServiceImpl
+import com.datadog.android.core.remote.config.RemoteConfigService
+import com.datadog.android.core.remote.config.model.RemoteConfigState
 import com.datadog.android.core.internal.time.composeTimeInfo
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.getSafe
@@ -91,6 +94,8 @@ internal class DatadogCore(
         get() = coreFeature.initialized.get()
 
     private var processLifecycleMonitor: ProcessLifecycleMonitor? = null
+
+    internal var remoteConfigService: RemoteConfigService? = null
 
     @Suppress("UnsafeThirdPartyFunctionCall") // the argument is always empty
     internal val featureContextUpdateReceivers: MutableSet<FeatureContextUpdateReceiver> =
@@ -371,6 +376,9 @@ internal class DatadogCore(
     override val rootStorageDir: File
         get() = coreFeature.storageDir
 
+    override val remoteConfiguration: RemoteConfigState?
+        get() = remoteConfigService?.getCurrentConfig()
+
     @get:WorkerThread
     override val lastViewEvent: JsonObject?
         get() = coreFeature.lastViewEvent
@@ -478,10 +486,27 @@ internal class DatadogCore(
             initializeCrashReportFeature()
         }
 
+        setupRemoteConfiguration()
+
         setupLifecycleMonitorCallback(appContext)
 
         setupShutdownHook()
         sendCoreConfigurationTelemetryEvent(configuration)
+    }
+
+    private fun setupRemoteConfiguration() {
+        val remoteConfigurationId = coreFeature.remoteConfigurationId ?: return
+        val callFactory = coreFeature.createOkHttpCallFactory { }
+        remoteConfigService = RemoteConfigService.create(
+            remoteConfigurationId = remoteConfigurationId,
+            remoteConfigurationEndpoint = coreFeature.site.remoteConfigurationEndpoint,
+            networkService = RemoteConfigNetworkServiceImpl(callFactory),
+            storageDir = coreFeature.storageDir,
+            executor = coreFeature.uploadExecutorService,
+            internalLogger = internalLogger
+        ).apply {
+            syncWithRemote()
+        }
     }
 
     private fun initializeCrashReportFeature() {
@@ -531,7 +556,8 @@ internal class DatadogCore(
                 ProcessLifecycleCallback(
                     appContext,
                     name,
-                    internalLogger
+                    internalLogger,
+                    onForeground = { remoteConfigService?.syncWithRemote() }
                 )
             ).apply {
                 appContext.registerActivityLifecycleCallbacks(this)

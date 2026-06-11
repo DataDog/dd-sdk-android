@@ -525,6 +525,35 @@ public final class com/datadog/android/internal/utils/ByteArrayExtKt {
 	public static final fun toHexString ([B)Ljava/lang/String;
 }
 
+public abstract interface class com/datadog/android/internal/utils/DDCoreResult {
+}
+
+public final class com/datadog/android/internal/utils/DDCoreResult$Error : com/datadog/android/internal/utils/DDCoreResult {
+	public fun <init> (Ljava/lang/Object;)V
+	public final fun component1 ()Ljava/lang/Object;
+	public final fun copy (Ljava/lang/Object;)Lcom/datadog/android/internal/utils/DDCoreResult$Error;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/utils/DDCoreResult$Error;Ljava/lang/Object;ILjava/lang/Object;)Lcom/datadog/android/internal/utils/DDCoreResult$Error;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getError ()Ljava/lang/Object;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/utils/DDCoreResult$Result : com/datadog/android/internal/utils/DDCoreResult {
+	public fun <init> (Ljava/lang/Object;)V
+	public final fun component1 ()Ljava/lang/Object;
+	public final fun copy (Ljava/lang/Object;)Lcom/datadog/android/internal/utils/DDCoreResult$Result;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/utils/DDCoreResult$Result;Ljava/lang/Object;ILjava/lang/Object;)Lcom/datadog/android/internal/utils/DDCoreResult$Result;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getResult ()Ljava/lang/Object;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/utils/DDCoreResultKt {
+	public static final fun optionalResult (Lcom/datadog/android/internal/utils/DDCoreResult;)Ljava/lang/Object;
+}
+
 public abstract interface class com/datadog/android/internal/utils/DDCoreSubscription {
 	public static final field Companion Lcom/datadog/android/internal/utils/DDCoreSubscription$Companion;
 	public abstract fun addListener (Ljava/lang/Object;)V

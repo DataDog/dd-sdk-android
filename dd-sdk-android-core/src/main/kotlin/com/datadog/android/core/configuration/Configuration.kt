@@ -44,7 +44,8 @@ internal constructor(
         val batchProcessingLevel: BatchProcessingLevel,
         val persistenceStrategyFactory: PersistenceStrategy.Factory?,
         val backpressureStrategy: BackPressureStrategy,
-        val uploadSchedulerStrategy: UploadSchedulerStrategy?
+        val uploadSchedulerStrategy: UploadSchedulerStrategy?,
+        val remoteConfigurationId: String?
     )
 
     // region Builder
@@ -275,6 +276,17 @@ internal constructor(
         }
 
         /**
+         * Sets the remote configuration identifier used to fetch SDK settings from the Datadog CDN.
+         *
+         * @param remoteConfigurationId the opaque identifier assigned during application onboarding
+         * in the Datadog UI.
+         */
+        fun setRemoteConfigurationId(remoteConfigurationId: String): Builder {
+            coreConfig = coreConfig.copy(remoteConfigurationId = remoteConfigurationId)
+            return this
+        }
+
+        /**
          * Sets the version name that will be used for all events sent to Datadog.
          * If not provided, the SDK will use the version from the application's package info.
          *
@@ -324,7 +336,8 @@ internal constructor(
             batchProcessingLevel = BatchProcessingLevel.MEDIUM,
             persistenceStrategyFactory = null,
             backpressureStrategy = DEFAULT_BACKPRESSURE_STRATEGY,
-            uploadSchedulerStrategy = null
+            uploadSchedulerStrategy = null,
+            remoteConfigurationId = null
         )
 
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network requests"

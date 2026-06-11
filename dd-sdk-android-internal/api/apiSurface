@@ -248,6 +248,12 @@ abstract class com.datadog.android.internal.time.BaseTimeProvider : TimeProvider
   override fun getDeviceElapsedRealtimeMillis(): Long
 fun ByteArray.toHexString(): String
 fun <T> android.content.Context.getSystemServiceAs(String): T?
+sealed interface com.datadog.android.internal.utils.DDCoreResult<TResult: Any, TError: Any>
+  data class Result<TResult: Any> : DDCoreResult<TResult, Nothing>
+    constructor(TResult)
+  data class Error<TError: Any> : DDCoreResult<Nothing, TError>
+    constructor(TError)
+fun <TResult: Any, TError: Any> DDCoreResult<TResult, TError>.optionalResult(): TResult?
 interface com.datadog.android.internal.utils.DDCoreSubscription<T: Any>
   fun addListener(T)
   fun removeListener(T)

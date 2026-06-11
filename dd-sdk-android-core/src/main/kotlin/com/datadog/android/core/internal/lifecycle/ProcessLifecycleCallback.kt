@@ -18,12 +18,14 @@ import java.lang.ref.WeakReference
 internal class ProcessLifecycleCallback(
     appContext: Context,
     internal val instanceName: String,
-    private val internalLogger: InternalLogger
+    private val internalLogger: InternalLogger,
+    private val onForeground: () -> Unit = {}
 ) : ProcessLifecycleMonitor.Callback {
 
     internal val contextWeakRef: Reference<Context> = WeakReference(appContext)
 
     override fun onStarted() {
+        onForeground()
         contextWeakRef.get()?.let {
             if (WorkManager.isInitialized()) {
                 cancelUploadWorker(it, instanceName, internalLogger)

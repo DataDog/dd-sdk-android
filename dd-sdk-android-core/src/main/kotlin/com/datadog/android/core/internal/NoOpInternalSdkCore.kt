@@ -17,6 +17,7 @@ import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.logger.SdkInternalLogger
+import com.datadog.android.core.remote.config.model.RemoteConfigState
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.internal.time.DefaultTimeProvider
@@ -72,6 +73,8 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
     override val trackingConsent: TrackingConsent
         get() = TrackingConsent.NOT_GRANTED
     override val rootStorageDir: File?
+        get() = null
+    override val remoteConfiguration: RemoteConfigState?
         get() = null
     override val isDeveloperModeEnabled: Boolean
         get() = false

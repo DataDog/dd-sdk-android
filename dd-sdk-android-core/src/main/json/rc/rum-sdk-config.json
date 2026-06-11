@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "rum-sdk-config.json",
+  "title": "RemoteConfigState",
+  "type": "object",
+  "description": "RUM SDK Remote Configuration properties",
+  "properties": {
+    "rum": {
+      "type": "object",
+      "description": "RUM feature Remote Configuration properties",
+      "properties": {
+        "applicationId": {
+          "type": "string",
+          "description": "UUID of the application"
+        },
+        "sessionReplaySampleRate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "The percentage of sessions with Session Replay pricing tracked"
+        }
+      },
+      "required": [
+        "applicationId"
+      ]
+    }
+  }
+}

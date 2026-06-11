@@ -230,6 +230,7 @@ interface com.datadog.android.core.InternalSdkCore : com.datadog.android.api.fea
   val networkInfo: com.datadog.android.api.context.NetworkInfo
   val trackingConsent: com.datadog.android.privacy.TrackingConsent
   val rootStorageDir: java.io.File?
+  val remoteConfiguration: com.datadog.android.core.remote.config.model.RemoteConfigState?
   val isDeveloperModeEnabled: Boolean
   val firstPartyHostResolver: com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
   val lastViewEvent: com.google.gson.JsonObject?
@@ -282,6 +283,7 @@ data class com.datadog.android.core.configuration.Configuration
     fun setCrashReportsEnabled(Boolean): Builder
     fun setBackpressureStrategy(BackPressureStrategy): Builder
     fun setUploadSchedulerStrategy(UploadSchedulerStrategy?): Builder
+    fun setRemoteConfigurationId(String): Builder
     fun setVersion(String): Builder
   companion object 
 class com.datadog.android.core.configuration.HostsSanitizer
@@ -479,3 +481,15 @@ enum com.datadog.android.trace.TracingHeaderType
   - B3
   - B3MULTI
   - TRACECONTEXT
+data class com.datadog.android.core.remote.config.model.RemoteConfigState
+  constructor(Rum? = null)
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): RemoteConfigState
+    fun fromJsonObject(com.google.gson.JsonObject): RemoteConfigState
+  data class Rum
+    constructor(kotlin.String, kotlin.Number? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Rum
+      fun fromJsonObject(com.google.gson.JsonObject): Rum
