@@ -151,7 +151,7 @@ internal class ConvertersTest {
         val result = resolution.toProviderEvaluation()
 
         // Then
-        assertThat(result.metadata?.getString("allocationKey")).isEqualTo(fakeAllocationKey)
+        assertThat(result.metadata.getString("allocationKey")).isEqualTo(fakeAllocationKey)
     }
 
     // endregion
