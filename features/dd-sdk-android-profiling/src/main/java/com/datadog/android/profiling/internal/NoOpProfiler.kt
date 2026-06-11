@@ -8,6 +8,8 @@ package com.datadog.android.profiling.internal
 
 import android.content.Context
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.time.DefaultTimeProvider
+import com.datadog.android.profiling.internal.time.MutableTimeProvider
 import java.util.concurrent.Callable
 import java.util.concurrent.Future
 import java.util.concurrent.ScheduledExecutorService
@@ -15,6 +17,7 @@ import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
 internal class NoOpProfiler : Profiler {
+    override val timeProvider: MutableTimeProvider = MutableTimeProvider.create(DefaultTimeProvider())
     override var internalLogger: InternalLogger? = null
     override val scheduledExecutorService: ScheduledExecutorService = NoOpScheduledExecutorService()
 
@@ -24,11 +27,9 @@ internal class NoOpProfiler : Profiler {
         additionalAttributes: Map<String, String>,
         sdkInstanceNames: Set<String>,
         durationMs: Int
-    ) {
-    }
+    ) = Unit
 
-    override fun stop(sdkInstanceName: String) {
-    }
+    override fun stop(sdkInstanceName: String) = Unit
 
     override fun isRunning(sdkInstanceName: String): Boolean = false
 
@@ -36,14 +37,13 @@ internal class NoOpProfiler : Profiler {
         appContext: Context,
         sdkInstanceName: String,
         callback: ProfilerCallback
-    ) {
-    }
+    ) = Unit
 
-    override fun unregisterProfilingCallback(appContext: Context, sdkInstanceName: String) {
-    }
+    override fun unregisterProfilingCallback(appContext: Context, sdkInstanceName: String) = Unit
 
-    override fun setExtendLaunchSession(extend: Boolean) {
-    }
+    override fun setExtendLaunchSession(extend: Boolean) = Unit
+
+    override fun setProfilingPackageVersionCode(versionCode: Long) = Unit
 
     class NoOpScheduledExecutorService : ScheduledExecutorService {
         override fun schedule(

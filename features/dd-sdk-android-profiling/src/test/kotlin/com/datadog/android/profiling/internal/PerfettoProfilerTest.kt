@@ -15,6 +15,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.anr.AnrTriggerRegistrar
@@ -23,6 +24,8 @@ import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companio
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companion.PROFILING_SAMPLING_RATE_APP_LAUNCH
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companion.PROFILING_SAMPLING_RATE_CONTINUOUS
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
+import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
+import com.datadog.android.profiling.internal.time.MutableTimeProvider
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -99,6 +102,9 @@ class PerfettoProfilerTest {
 
     private val callbackCaptor = argumentCaptor<Consumer<ProfilingResult>>()
 
+    @LongForgery(min = 1L)
+    private var fakeProfilingPackageLongVersionCode: Long = 0L
+
     @StringForgery
     private lateinit var fakePath: String
 
@@ -118,7 +124,10 @@ class PerfettoProfilerTest {
             timeProvider = stubTimeProvider,
             scheduledExecutorService = mockExecutorService,
             anrTriggerRegistrar = mockAnrRegistrar,
-            buildSdkVersionProvider = mockBuildSdkVersionProvider
+            buildSdkVersionProvider = mockBuildSdkVersionProvider,
+            profilingTelemetry = ProfilingTelemetry().apply {
+                profilingPackageVersionCode = fakeProfilingPackageLongVersionCode
+            }
         )
         testedProfiler.internalLogger = mockInternalLogger
         testedProfiler.registerProfilingCallback(mockContext, fakeInstanceName, mockProfilerCallback)
@@ -232,13 +241,15 @@ class PerfettoProfilerTest {
                 "start_reason" to ProfilingStartReason.APPLICATION_LAUNCH.value,
                 "duration" to fakeDuration,
                 "callback_delay_ms" to 0L,
+                "client_clock_drift_ms" to 0L,
                 "file_size" to 0L,
                 "stopped_reason" to "timeout",
                 "app_start_info" to null
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
-                "sampling_frequency" to PROFILING_SAMPLING_RATE_APP_LAUNCH
+                "sampling_frequency" to PROFILING_SAMPLING_RATE_APP_LAUNCH,
+                "profiling_package_version_code" to fakeProfilingPackageLongVersionCode
             )
         )
         verify(mockInternalLogger)
@@ -293,6 +304,7 @@ class PerfettoProfilerTest {
                 "start_reason" to ProfilingStartReason.APPLICATION_LAUNCH.value,
                 "duration" to fakeDuration,
                 "callback_delay_ms" to 0L,
+                "client_clock_drift_ms" to 0L,
                 "error_message" to fakeErrorMessage,
                 "file_size" to 0L,
                 "stopped_reason" to "error",
@@ -300,7 +312,8 @@ class PerfettoProfilerTest {
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
-                "sampling_frequency" to PROFILING_SAMPLING_RATE_APP_LAUNCH
+                "sampling_frequency" to PROFILING_SAMPLING_RATE_APP_LAUNCH,
+                "profiling_package_version_code" to fakeProfilingPackageLongVersionCode
             )
         )
         verify(mockInternalLogger)
@@ -356,6 +369,7 @@ class PerfettoProfilerTest {
                 "start_reason" to ProfilingStartReason.APPLICATION_LAUNCH.value,
                 "duration" to fakeDuration,
                 "callback_delay_ms" to 0L,
+                "client_clock_drift_ms" to 0L,
                 "error_message" to fakeErrorMessage,
                 "file_size" to 0L,
                 "stopped_reason" to "error",
@@ -363,7 +377,8 @@ class PerfettoProfilerTest {
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
-                "sampling_frequency" to PROFILING_SAMPLING_RATE_APP_LAUNCH
+                "sampling_frequency" to PROFILING_SAMPLING_RATE_APP_LAUNCH,
+                "profiling_package_version_code" to fakeProfilingPackageLongVersionCode
             )
         )
         verify(mockInternalLogger)
@@ -760,6 +775,7 @@ class PerfettoProfilerTest {
                 "start_reason" to ProfilingStartReason.APPLICATION_LAUNCH.value,
                 "duration" to fakeDuration,
                 "callback_delay_ms" to 0L,
+                "client_clock_drift_ms" to 0L,
                 "error_message" to null,
                 "file_size" to 0L,
                 "stopped_reason" to "timeout",
@@ -767,7 +783,8 @@ class PerfettoProfilerTest {
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
-                "sampling_frequency" to PROFILING_SAMPLING_RATE_APP_LAUNCH
+                "sampling_frequency" to PROFILING_SAMPLING_RATE_APP_LAUNCH,
+                "profiling_package_version_code" to fakeProfilingPackageLongVersionCode
             )
         )
         verify(mockInternalLogger)
@@ -824,6 +841,7 @@ class PerfettoProfilerTest {
                 "start_reason" to startReason.value,
                 "duration" to fakeDuration,
                 "callback_delay_ms" to 0L,
+                "client_clock_drift_ms" to 0L,
                 "error_message" to null,
                 "file_size" to 0L,
                 "stopped_reason" to "timeout",
@@ -831,7 +849,8 @@ class PerfettoProfilerTest {
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
-                "sampling_frequency" to expectedSamplingRate
+                "sampling_frequency" to expectedSamplingRate,
+                "profiling_package_version_code" to fakeProfilingPackageLongVersionCode
             )
         )
         verify(mockInternalLogger)
@@ -892,13 +911,15 @@ class PerfettoProfilerTest {
                 "start_reason" to ProfilingStartReason.APPLICATION_LAUNCH.value,
                 "duration" to fakeStopDelta,
                 "callback_delay_ms" to fakeCallbackDelta,
+                "client_clock_drift_ms" to 0L,
                 "file_size" to 0L,
                 "stopped_reason" to "manual",
                 "app_start_info" to null
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
-                "sampling_frequency" to PROFILING_SAMPLING_RATE_APP_LAUNCH
+                "sampling_frequency" to PROFILING_SAMPLING_RATE_APP_LAUNCH,
+                "profiling_package_version_code" to fakeProfilingPackageLongVersionCode
             )
         )
         verify(mockInternalLogger)
@@ -985,13 +1006,15 @@ class PerfettoProfilerTest {
                 "start_reason" to ProfilingStartReason.CONTINUOUS.value,
                 "duration" to fakeDuration2,
                 "callback_delay_ms" to 0L,
+                "client_clock_drift_ms" to 0L,
                 "file_size" to 0L,
                 "stopped_reason" to "timeout",
                 "app_start_info" to null
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
-                "sampling_frequency" to PROFILING_SAMPLING_RATE_CONTINUOUS
+                "sampling_frequency" to PROFILING_SAMPLING_RATE_CONTINUOUS,
+                "profiling_package_version_code" to fakeProfilingPackageLongVersionCode
             )
         )
         verify(mockInternalLogger).logMetric(
@@ -1178,7 +1201,10 @@ class PerfettoProfilerTest {
 
     // endregion
 
-    private class StubTimeProvider : TimeProvider {
+    private class StubTimeProvider : MutableTimeProvider {
+        // not really used
+        override var delegate: TimeProvider = DefaultTimeProvider()
+
         var startTime: Long = 0L
 
         var stopTime: Long = 0L

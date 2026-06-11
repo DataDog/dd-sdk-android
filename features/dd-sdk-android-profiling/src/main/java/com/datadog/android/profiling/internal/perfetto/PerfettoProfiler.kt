@@ -17,7 +17,6 @@ import androidx.core.os.requestProfiling
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.internal.system.BuildSdkVersionProvider
-import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.internal.Profiler
 import com.datadog.android.profiling.internal.ProfilerCallback
 import com.datadog.android.profiling.internal.ProfilingStartReason
@@ -26,9 +25,9 @@ import com.datadog.android.profiling.internal.anr.AnrProfilingTriggerRegistrar
 import com.datadog.android.profiling.internal.anr.AnrTriggerRegistrar
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
+import com.datadog.android.profiling.internal.time.MutableTimeProvider
 import com.datadog.android.profiling.internal.utils.fileSizeSafe
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -51,8 +50,8 @@ import kotlin.random.Random
  */
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 internal class PerfettoProfiler(
-    private val timeProvider: TimeProvider,
-    override val scheduledExecutorService: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(),
+    override val timeProvider: MutableTimeProvider,
+    override val scheduledExecutorService: ScheduledExecutorService,
     internal val profilingTelemetry: ProfilingTelemetry = ProfilingTelemetry(),
     internal val anrTriggerRegistrar: AnrTriggerRegistrar =
         AnrProfilingTriggerRegistrar(timeProvider, scheduledExecutorService, profilingTelemetry),
@@ -139,6 +138,7 @@ internal class PerfettoProfiler(
                     fileSize = fileSizeSafe(result.resultFilePath, internalLogger),
                     durationMs = duration,
                     resultCallbackDelayMs = resultCallbackDelayMs,
+                    clientClockDriftMs = timeProvider.getServerOffsetMillis(),
                     stopReason = resolveStopReason(result.errorCode),
                     bufferSizeKb = BUFFER_SIZE_KB,
                     samplingFrequencyHz = profilingSamplingRateHz
@@ -260,6 +260,10 @@ internal class PerfettoProfiler(
 
     override fun setExtendLaunchSession(extend: Boolean) {
         this.extendLaunchSession = extend
+    }
+
+    override fun setProfilingPackageVersionCode(versionCode: Long) {
+        profilingTelemetry.profilingPackageVersionCode = versionCode
     }
 
     private fun resolveStopReason(errorCode: Int): String {

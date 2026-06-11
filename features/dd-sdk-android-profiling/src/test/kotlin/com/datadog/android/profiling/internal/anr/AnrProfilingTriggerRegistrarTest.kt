@@ -172,6 +172,7 @@ internal class AnrProfilingTriggerRegistrarTest {
                 errorMessage = null,
                 fileSize = 0L,
                 callbackDelayMs = null,
+                clientClockDriftMs = 0L,
                 droppedAsStale = false
             )
         )
@@ -204,6 +205,7 @@ internal class AnrProfilingTriggerRegistrarTest {
                 errorMessage = fakeErrorMessage,
                 fileSize = 0L,
                 callbackDelayMs = null,
+                clientClockDriftMs = 0L,
                 droppedAsStale = false
             )
         )
@@ -421,6 +423,7 @@ internal class AnrProfilingTriggerRegistrarTest {
                 errorMessage = null,
                 fileSize = expectedFileSize,
                 callbackDelayMs = fakeDelayMs,
+                clientClockDriftMs = 0L,
                 droppedAsStale = false
             )
         )
@@ -461,6 +464,7 @@ internal class AnrProfilingTriggerRegistrarTest {
                 errorMessage = null,
                 fileSize = expectedFileSize,
                 callbackDelayMs = fakeDelayMs,
+                clientClockDriftMs = 0L,
                 droppedAsStale = true
             )
         )
