@@ -838,6 +838,31 @@ internal class DatadogFlagsClientTest {
     }
 
     @Test
+    fun `M return ResolutionDetails without allocationKey in metadata W resolve() { blank allocationKey }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.aBool()
+        val fakeFlagValue = !fakeDefaultValue
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.BOOLEAN.value,
+            variationValue = fakeFlagValue.toString(),
+            allocationKey = "",
+            extraLogging = JSONObject()
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        // When
+        val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result.flagMetadata).doesNotContainKey("allocationKey")
+    }
+
+    @Test
     fun `M return ResolutionDetails with STATIC reason W resolve() { flag has STATIC reason }`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
