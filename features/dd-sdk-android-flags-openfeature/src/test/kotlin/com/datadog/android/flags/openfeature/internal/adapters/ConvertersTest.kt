@@ -154,6 +154,25 @@ internal class ConvertersTest {
         assertThat(result.metadata.getString("allocationKey")).isEqualTo(fakeAllocationKey)
     }
 
+    @Test
+    fun `M serialize Long to string W toProviderEvaluation() {flagMetadata contains Long value}`(
+        @BoolForgery fakeValue: Boolean
+    ) {
+        // Given — Builder has no putLong (only putInt/putDouble/putString/putBoolean);
+        // Long values fall through to the else branch and are stored as their toString() representation.
+        val resolution = ResolutionDetails(
+            value = fakeValue,
+            reason = ResolutionReason.TARGETING_MATCH,
+            flagMetadata = mapOf("count" to 42L)
+        )
+
+        // When
+        val result = resolution.toProviderEvaluation()
+
+        // Then — Long stored as string via putString fallback
+        assertThat(result.metadata.getString("count")).isEqualTo("42")
+    }
+
     // endregion
 
     // region toOpenFeatureErrorCode
