@@ -117,6 +117,7 @@ interface com.datadog.android.api.feature.Feature
     const val FLAGS_FEATURE_NAME: String
     const val FLAGS_EVALUATIONS_FEATURE_NAME: String
     const val TRACING_FEATURE_NAME: String
+    const val TRACING_CLIENT_STATS_FEATURE_NAME: String
     const val SESSION_REPLAY_FEATURE_NAME: String
     const val SESSION_REPLAY_RESOURCES_FEATURE_NAME: String
     const val NDK_CRASH_REPORTS_FEATURE_NAME: String

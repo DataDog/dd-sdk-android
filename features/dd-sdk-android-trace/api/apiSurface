@@ -41,6 +41,7 @@ data class com.datadog.android.trace.TraceConfiguration
     fun setEventMapper(com.datadog.android.trace.event.SpanEventMapper): Builder
     fun setNetworkInfoEnabled(Boolean): Builder
     fun setStatsComputationEnabled(Boolean): Builder
+    fun useCustomStatsEndpoint(String): Builder
     fun build(): TraceConfiguration
 enum com.datadog.android.trace.TraceContextInjection
   - ALL
