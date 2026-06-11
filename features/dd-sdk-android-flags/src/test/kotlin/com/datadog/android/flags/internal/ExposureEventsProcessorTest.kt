@@ -32,6 +32,10 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @ForgeConfiguration(ForgeConfigurator::class)
@@ -502,6 +506,48 @@ internal class ExposureEventsProcessorTest {
     }
 
     @Test
+    fun `M keep cache updates ordered with writes W processEvent() { concurrent assignment changes }`() {
+        // Given
+        val blockingRecordWriter = BlockingRecordWriter()
+        testedProcessor = ExposureEventsProcessor(blockingRecordWriter, mockTimeProvider)
+        val context = EvaluationContext(targetingKey = fakeTargetingKey)
+        val flagA = fakeFlag.copy(
+            allocationKey = "allocation-a",
+            variationKey = "variation-a"
+        )
+        val flagB = fakeFlag.copy(
+            allocationKey = "allocation-b",
+            variationKey = "variation-b"
+        )
+
+        // When
+        val threadA = Thread {
+            testedProcessor.processEvent(fakeFlagKey, context, flagA)
+        }
+        threadA.start()
+        assertThat(blockingRecordWriter.awaitFirstWriteStarted()).isTrue()
+
+        val threadB = Thread {
+            testedProcessor.processEvent(fakeFlagKey, context, flagB)
+        }
+        threadB.start()
+        val secondWriteStartedBeforeFirstCompleted = blockingRecordWriter.awaitSecondWriteStarted()
+        blockingRecordWriter.releaseFirstWrite()
+
+        threadA.join(THREAD_JOIN_TIMEOUT_MS)
+        threadB.join(THREAD_JOIN_TIMEOUT_MS)
+
+        // Then
+        assertThat(threadA.isAlive).isFalse()
+        assertThat(threadB.isAlive).isFalse()
+        assertThat(secondWriteStartedBeforeFirstCompleted).isFalse()
+        assertThat(blockingRecordWriter.completedAllocationKeys).containsExactly(
+            "allocation-a",
+            "allocation-b"
+        )
+    }
+
+    @Test
     fun `M handle concurrent cache operations W processEvent and clearExposureCache() { mixed operations }`() {
         // Given
         val context = EvaluationContext(targetingKey = fakeTargetingKey)
@@ -656,4 +702,47 @@ internal class ExposureEventsProcessorTest {
     }
 
     // endregion
+
+    private class BlockingRecordWriter : RecordWriter {
+        val completedAllocationKeys = CopyOnWriteArrayList<String>()
+
+        private val writeCount = AtomicInteger()
+        private val firstWriteStarted = CountDownLatch(1)
+        private val releaseFirstWrite = CountDownLatch(1)
+        private val secondWriteStarted = CountDownLatch(1)
+
+        override fun write(record: ExposureEvent) {
+            when (writeCount.incrementAndGet()) {
+                1 -> {
+                    firstWriteStarted.countDown()
+                    releaseFirstWrite.await(THREAD_JOIN_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+                    completedAllocationKeys.add(record.allocation.key)
+                }
+
+                2 -> {
+                    secondWriteStarted.countDown()
+                    completedAllocationKeys.add(record.allocation.key)
+                }
+
+                else -> completedAllocationKeys.add(record.allocation.key)
+            }
+        }
+
+        fun awaitFirstWriteStarted(): Boolean {
+            return firstWriteStarted.await(THREAD_JOIN_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        }
+
+        fun awaitSecondWriteStarted(): Boolean {
+            return secondWriteStarted.await(CONCURRENT_WRITE_DETECTION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        }
+
+        fun releaseFirstWrite() {
+            releaseFirstWrite.countDown()
+        }
+    }
+
+    companion object {
+        private const val CONCURRENT_WRITE_DETECTION_TIMEOUT_MS = 100L
+        private const val THREAD_JOIN_TIMEOUT_MS = 1_000L
+    }
 }

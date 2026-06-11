@@ -39,20 +39,14 @@ internal class ExposureEventsProcessor(private val writer: RecordWriter, private
             variationKey = data.variationKey
         )
 
-        val shouldWrite = synchronized(exposuresSentCache) {
+        synchronized(exposuresSentCache) {
             val lastSentValue = exposuresSentCache[cacheKey]
             if (lastSentValue != cacheValue) {
+                val event = buildExposureEvent(flagKey, context, data)
+                writeExposureEvent(event)
                 @Suppress("UnsafeThirdPartyFunctionCall") // safe - non-null key and value
                 exposuresSentCache.put(cacheKey, cacheValue)
-                true
-            } else {
-                false
             }
-        }
-
-        if (shouldWrite) {
-            val event = buildExposureEvent(flagKey, context, data)
-            writeExposureEvent(event)
         }
     }
 
