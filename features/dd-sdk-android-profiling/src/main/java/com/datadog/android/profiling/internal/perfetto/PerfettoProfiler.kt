@@ -78,6 +78,9 @@ internal class PerfettoProfiler(
     private var profilingAppStartInfo: String? = null
 
     @Volatile
+    private var profilingSamplingRateHz: Int = PROFILING_SAMPLING_RATE_APP_LAUNCH
+
+    @Volatile
     override var internalLogger: InternalLogger? = null
         set(value) {
             field = value
@@ -138,7 +141,7 @@ internal class PerfettoProfiler(
                     resultCallbackDelayMs = resultCallbackDelayMs,
                     stopReason = resolveStopReason(result.errorCode),
                     bufferSizeKb = BUFFER_SIZE_KB,
-                    samplingFrequencyHz = PROFILING_SAMPLING_RATE
+                    samplingFrequencyHz = profilingSamplingRateHz
                 )
             )
         }
@@ -148,15 +151,25 @@ internal class PerfettoProfiler(
         startReason: ProfilingStartReason,
         durationMs: Int
     ): ProfilingRequest {
+        val samplingRateHz = getSamplingRateHz(startReason)
+        profilingSamplingRateHz = samplingRateHz
         return CancellationSignal().let {
             this.stopSignal = it
             StackSamplingRequestBuilder()
                 .setCancellationSignal(it)
                 .setTag(startReason.value)
-                .setSamplingFrequencyHz(PROFILING_SAMPLING_RATE)
+                .setSamplingFrequencyHz(samplingRateHz)
                 .setBufferSizeKb(BUFFER_SIZE_KB)
                 .setDurationMs(durationMs)
                 .build()
+        }
+    }
+
+    private fun getSamplingRateHz(startReason: ProfilingStartReason): Int {
+        return if (startReason == ProfilingStartReason.APPLICATION_LAUNCH) {
+            PROFILING_SAMPLING_RATE_APP_LAUNCH
+        } else {
+            PROFILING_SAMPLING_RATE_CONTINUOUS
         }
     }
 
@@ -291,9 +304,11 @@ internal class PerfettoProfiler(
         // increased or configurable if needed.
         private const val BUFFER_SIZE_KB = 5120 // 5MB
 
-        // Currently we give 201HZ frequency to balance the sampling accuracy and performance
-        // overhead also to avoid lockstep sampling, it can be updated or configurable if needed.
-        internal const val PROFILING_SAMPLING_RATE = 201 // 201Hz
+        // 201Hz for app launch: higher accuracy to capture startup behavior.
+        internal const val PROFILING_SAMPLING_RATE_APP_LAUNCH = 201
+
+        // 101Hz for continuous profiling: lower overhead for sustained background recording.
+        internal const val PROFILING_SAMPLING_RATE_CONTINUOUS = 101
 
         // Re-exported from ProfilingTelemetry so external callers (e.g. content provider)
         // keep using the same property key when passing app-start info as an additional attribute.
