@@ -68,6 +68,7 @@ public final class com/datadog/android/DatadogSite : java/lang/Enum {
 	public static final field US3 Lcom/datadog/android/DatadogSite;
 	public static final field US5 Lcom/datadog/android/DatadogSite;
 	public final fun getIntakeEndpoint ()Ljava/lang/String;
+	public final fun getRemoteConfigurationEndpoint ()Lokhttp3/HttpUrl;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/DatadogSite;
 	public static fun values ()[Lcom/datadog/android/DatadogSite;
 }

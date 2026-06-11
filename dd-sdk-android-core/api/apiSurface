@@ -26,6 +26,7 @@ enum com.datadog.android.DatadogSite
   - US2_FED
   - STAGING
   val intakeEndpoint: String
+  val remoteConfigurationEndpoint: okhttp3.HttpUrl
 class com.datadog.android._InternalProxy
   class _TelemetryProxy
     fun debug(String)

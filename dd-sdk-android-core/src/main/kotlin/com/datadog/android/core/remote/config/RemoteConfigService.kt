@@ -17,7 +17,6 @@ import com.datadog.android.internal.utils.allowThreadDiskReads
 import com.google.gson.JsonParseException
 import okhttp3.HttpUrl
 import java.io.File
-import java.util.Locale
 import java.util.concurrent.Executor
 
 internal interface RemoteConfigService {
@@ -48,8 +47,8 @@ internal interface RemoteConfigService {
 }
 
 internal class RemoteConfigServiceImpl(
-    private val remoteConfigurationId: String,
-    private val remoteConfigurationEndpoint: HttpUrl,
+    remoteConfigurationId: String,
+    remoteConfigurationEndpoint: HttpUrl,
     private val networkService: RemoteConfigNetworkService,
     storageDir: File,
     private val executor: Executor,
@@ -58,6 +57,11 @@ internal class RemoteConfigServiceImpl(
 ) : RemoteConfigService {
 
     private val configFile: File = File(storageDir, "$remoteConfigurationId.json")
+
+    private val configUrl: HttpUrl = remoteConfigurationEndpoint.newBuilder()
+        .addPathSegment(API_VERSION)
+        .addPathSegment("$remoteConfigurationId.json")
+        .build()
 
     @Volatile
     private var cachedConfig: RemoteConfigState? = null
@@ -80,7 +84,7 @@ internal class RemoteConfigServiceImpl(
 
     @WorkerThread
     private fun fetchAndCache() {
-        when (val result = networkService.fetch(buildUrl())) {
+        when (val result = networkService.fetch(configUrl)) {
             is DDCoreResult.Result -> persist(result.result)
             is DDCoreResult.Error -> logFetchError(result.error)
         }
@@ -88,10 +92,10 @@ internal class RemoteConfigServiceImpl(
 
     private fun logFetchError(error: RemoteConfigError) {
         when (error) {
-            is RemoteConfigError.ServerError -> logSyncError(ERROR_STATUS_CODE.format(Locale.US, error.code))
-            is RemoteConfigError.ClientError -> logSyncError(ERROR_STATUS_CODE.format(Locale.US, error.code))
-            is RemoteConfigError.IOError -> logSyncError(ERROR_FETCH, error.exception)
-            is RemoteConfigError.UnknownError -> logSyncError(ERROR_FETCH, error.exception)
+            is RemoteConfigError.ServerError -> logFailure(code = error.code, throwable = null)
+            is RemoteConfigError.ClientError -> logFailure(code = error.code, throwable = null)
+            is RemoteConfigError.UnknownError -> logFailure(code = null, throwable = error.exception)
+            is RemoteConfigError.IOError -> {}
         }
     }
 
@@ -100,10 +104,14 @@ internal class RemoteConfigServiceImpl(
         val config = try {
             RemoteConfigState.fromJson(rawConfig)
         } catch (e: JsonParseException) {
-            logSyncError(ERROR_PARSE, e)
+            logParseError(e)
             return
         }
-        val written = fileReaderWriter.writeData(configFile, rawConfig.toByteArray(Charsets.UTF_8), false)
+        val written = fileReaderWriter.writeData(
+            file = configFile,
+            data = rawConfig.toByteArray(Charsets.UTF_8),
+            append = false
+        )
         if (written) {
             cachedConfig = config
         }
@@ -121,24 +129,30 @@ internal class RemoteConfigServiceImpl(
         return try {
             RemoteConfigState.fromJson(String(bytes, Charsets.UTF_8))
         } catch (e: JsonParseException) {
-            logSyncError(ERROR_PARSE, e)
+            logParseError(e)
             null
         }
     }
 
-    private fun buildUrl(): HttpUrl {
-        return remoteConfigurationEndpoint.newBuilder()
-            .addPathSegment(API_VERSION)
-            .addPathSegment("$remoteConfigurationId.json")
-            .build()
-    }
-
-    private fun logSyncError(message: String, throwable: Throwable? = null) {
+    private fun logFailure(code: Int?, throwable: Throwable?) {
+        val attributes = buildMap<String, Any?> {
+            code?.let { put(ATTR_RESPONSE_CODE, it) }
+        }
         internalLogger.log(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            { message },
-            throwable
+            { MESSAGE_FETCH_FAILED },
+            throwable = throwable,
+            additionalProperties = attributes
+        )
+    }
+
+    private fun logParseError(throwable: Throwable) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            { MESSAGE_PARSE_FAILED },
+            throwable = throwable
         )
     }
 
@@ -146,8 +160,8 @@ internal class RemoteConfigServiceImpl(
         private const val API_VERSION = "v1"
         private const val SYNC_OPERATION_NAME = "remote config sync"
 
-        internal const val ERROR_FETCH = "Failed to fetch remote configuration."
-        internal const val ERROR_STATUS_CODE = "Failed to fetch remote configuration: HTTP %d."
-        internal const val ERROR_PARSE = "Failed to parse the remote configuration document."
+        internal const val MESSAGE_FETCH_FAILED = "remote_config_fetch_failed"
+        internal const val MESSAGE_PARSE_FAILED = "failed_to_parse_remote_config_json"
+        internal const val ATTR_RESPONSE_CODE = "response_code"
     }
 }

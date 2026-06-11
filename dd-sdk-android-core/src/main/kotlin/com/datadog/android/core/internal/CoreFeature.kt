@@ -141,10 +141,10 @@ internal class CoreFeature(
             .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
             .connectionSpecs(listOf(connectionSpec))
             .dns(RotatingDnsResolver(timeProvider = timeProvider)) // NPE cannot happen here
+            .cache(Cache(File(storageDir, HTTP_CACHE_DIR_NAME), HTTP_CACHE_MAX_SIZE_BYTES))
             .apply {
-                if (this@CoreFeature::storageDir.isInitialized) {
-                    @Suppress("UnsafeThirdPartyFunctionCall")
-                    cache(Cache(File(storageDir, HTTP_CACHE_DIR_NAME), HTTP_CACHE_MAX_SIZE_BYTES))
+                if (BuildConfig.DEBUG) {
+                    addNetworkInterceptor(CurlInterceptor())
                 }
             }
             .build()
@@ -650,10 +650,7 @@ internal class CoreFeature(
             }
 
             // Add debug or production interceptors
-            if (BuildConfig.DEBUG) {
-                @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-                builder.addNetworkInterceptor(CurlInterceptor())
-            } else {
+            if (!BuildConfig.DEBUG) {
                 @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
                 builder.addInterceptor(GzipRequestInterceptor(internalLogger))
             }
