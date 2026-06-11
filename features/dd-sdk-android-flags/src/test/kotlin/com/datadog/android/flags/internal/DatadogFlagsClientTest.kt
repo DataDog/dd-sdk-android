@@ -838,6 +838,36 @@ internal class DatadogFlagsClientTest {
     }
 
     @Test
+    fun `M return ResolutionDetails with typed allocationKey winning W resolve() { extraLogging contains allocationKey }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.aBool()
+        val fakeFlagValue = !fakeDefaultValue
+        val fakeAllocationKey = forge.anAlphabeticalString()
+        val fakeExtraLoggingAllocationKey = forge.anAlphabeticalString()
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.BOOLEAN.value,
+            variationValue = fakeFlagValue.toString(),
+            allocationKey = fakeAllocationKey,
+            extraLogging = JSONObject().apply {
+                put("allocationKey", fakeExtraLoggingAllocationKey)
+            }
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        // When
+        val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
+
+        // Then - typed allocationKey wins over any "allocationKey" entry from extraLogging
+        assertThat(result.flagMetadata["allocationKey"]).isEqualTo(fakeAllocationKey)
+        assertThat(result.flagMetadata["allocationKey"]).isNotEqualTo(fakeExtraLoggingAllocationKey)
+    }
+
+    @Test
     fun `M return ResolutionDetails without allocationKey in metadata W resolve() { blank allocationKey }`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
