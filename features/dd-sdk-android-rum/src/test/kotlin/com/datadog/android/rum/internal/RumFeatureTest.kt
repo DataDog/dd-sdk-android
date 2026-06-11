@@ -26,6 +26,7 @@ import com.datadog.android.event.MapperSerializer
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumSessionType
@@ -1802,6 +1803,7 @@ internal class RumFeatureTest {
 
     // Builds a timeseries collector for the given total device RAM (in bytes), bypassing the
     // ActivityManager read so the skip/collect/log behavior can be exercised deterministically.
+    @OptIn(ExperimentalRumApi::class)
     private fun createTimeseries(totalRamBytes: Long, sessionId: String): Timeseries =
         testedFeature
             .createTimeseriesCollectingFactory(TimeseriesConfiguration.Builder().build(), totalRamBytes)

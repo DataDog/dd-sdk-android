@@ -437,6 +437,7 @@ internal class RumFeature(
             eventMetaSerializer = RumEventMetaSerializer(),
             sdkCore = sdkCore
         )
+    }
 
     internal fun createTimeseriesCollectingFactory(
         configuration: TimeseriesConfiguration,
