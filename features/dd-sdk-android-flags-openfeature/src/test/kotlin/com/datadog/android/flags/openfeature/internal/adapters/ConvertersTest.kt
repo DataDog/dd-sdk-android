@@ -135,6 +135,25 @@ internal class ConvertersTest {
         assertThat(result.reason).isEqualTo("ERROR")
     }
 
+    @Test
+    fun `M surface allocationKey in metadata W toProviderEvaluation() {flagMetadata contains allocationKey}`(
+        @BoolForgery fakeValue: Boolean,
+        @StringForgery fakeAllocationKey: String
+    ) {
+        // Given
+        val resolution = ResolutionDetails(
+            value = fakeValue,
+            reason = ResolutionReason.TARGETING_MATCH,
+            flagMetadata = mapOf("allocationKey" to fakeAllocationKey)
+        )
+
+        // When
+        val result = resolution.toProviderEvaluation()
+
+        // Then
+        assertThat(result.metadata?.getString("allocationKey")).isEqualTo(fakeAllocationKey)
+    }
+
     // endregion
 
     // region toOpenFeatureErrorCode
