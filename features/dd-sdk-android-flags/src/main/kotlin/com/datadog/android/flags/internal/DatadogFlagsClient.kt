@@ -167,6 +167,7 @@ internal class DatadogFlagsClient(
                 trackResolution(resolution)
                 createSuccessResolution(resolution.flag, resolution.value)
             }
+
             is InternalResolution.Error -> {
                 trackErrorResolution(resolution)
                 createErrorResolution(
@@ -321,6 +322,7 @@ internal class DatadogFlagsClient(
                         errorCode = ErrorCode.TYPE_MISMATCH
                         errorMessage = exception.message ?: "Type mismatch"
                     }
+
                     else -> {
                         errorCode = ErrorCode.PARSE_ERROR
                         val typeName = FlagValueConverter.getTypeName(defaultValue::class)
@@ -366,6 +368,7 @@ internal class DatadogFlagsClient(
             trackResolution(resolution)
             resolution.value
         }
+
         is InternalResolution.Error -> {
             // Only log type mismatches as warnings to help developers identify configuration issues.
             // Other errors (FLAG_NOT_FOUND, PARSE_ERROR) are expected in normal operation.
@@ -401,9 +404,6 @@ internal class DatadogFlagsClient(
     private fun buildMetadata(precomputedFlag: PrecomputedFlag): Map<String, Any> {
         val metadata = mutableMapOf<String, Any>()
         precomputedFlag.extraLogging.keys().forEach { key ->
-            // "allocationKey" is always sourced from the typed field below; skip it here
-            // so the typed field can never be silently clobbered by extraLogging.
-            if (key == "allocationKey") return@forEach
             val value = precomputedFlag.extraLogging.opt(key)
             when (value) {
                 is String, is Number, is Boolean -> metadata[key] = value

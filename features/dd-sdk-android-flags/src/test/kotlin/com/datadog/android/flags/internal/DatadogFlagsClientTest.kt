@@ -838,7 +838,7 @@ internal class DatadogFlagsClientTest {
     }
 
     @Test
-    fun `M return ResolutionDetails with typed allocationKey winning W resolve() { extraLogging contains allocationKey }`(forge: Forge) {
+    fun `M typed allocationKey wins W resolve() { extraLogging also contains allocationKey }`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.aBool()
@@ -868,7 +868,7 @@ internal class DatadogFlagsClientTest {
     }
 
     @Test
-    fun `M return ResolutionDetails without allocationKey in metadata W resolve() { blank allocationKey }`(forge: Forge) {
+    fun `M allocationKey excluded from metadata W resolve() { blank allocationKey }`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.aBool()
