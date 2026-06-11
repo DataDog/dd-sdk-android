@@ -14,6 +14,7 @@ import androidx.compose.ui.text.style.TextAlign
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.utils.BackgroundInfo
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
+import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils.Companion.COLOR_UNSPECIFIED
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.GlobalBounds
@@ -108,7 +109,7 @@ internal abstract class AbstractSemanticsNodeMapper(
     }
 
     protected fun convertColor(color: Long): String? {
-        return if (color == UNSPECIFIED_COLOR) {
+        return if (color == COLOR_UNSPECIFIED) {
             null
         } else {
             val c = Color(color shr COMPOSE_COLOR_SHIFT)
@@ -120,8 +121,6 @@ internal abstract class AbstractSemanticsNodeMapper(
     }
 
     companion object {
-        /** As defined in Compose's ColorSpaces. */
-        private const val UNSPECIFIED_COLOR = 16L
         private const val COMPOSE_COLOR_SHIFT = 32
         private const val MAX_ALPHA = 255
         private const val SEMANTICS_ID_BIT_SHIFT = 32
