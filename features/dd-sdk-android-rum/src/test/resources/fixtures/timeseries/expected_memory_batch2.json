@@ -1,0 +1,23 @@
+{
+  "type": "timeseries",
+  "_dd": {"format_version": 2},
+  "application": {"id": "fake-app-id"},
+  "session": {"id": "fake-session-id", "type": "user"},
+  "source": "android",
+  "date": 1700000001000,
+  "timeseries": {
+    "id": "00000000-0000-0000-0000-000000000000",
+    "name": "memory",
+    "schema": "object",
+    "start": 1700000006000000000,
+    "end": 1700000010000000000,
+    "count": 5,
+    "data": [
+      {"timestamp": 1700000006000000000, "data_point": {"memory_max": 31420200, "memory_percent": 3.14202}},
+      {"timestamp": 1700000007000000000, "data_point": {"memory_max": 31510400, "memory_percent": 3.15104}},
+      {"timestamp": 1700000008000000000, "data_point": {"memory_max": 31498700, "memory_percent": 3.14987}},
+      {"timestamp": 1700000009000000000, "data_point": {"memory_max": 31550300, "memory_percent": 3.15503}},
+      {"timestamp": 1700000010000000000, "data_point": {"memory_max": 31600100, "memory_percent": 3.16001}}
+    ]
+  }
+}

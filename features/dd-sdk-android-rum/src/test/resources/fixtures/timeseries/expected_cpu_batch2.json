@@ -1,0 +1,23 @@
+{
+  "type": "timeseries",
+  "_dd": {"format_version": 2},
+  "application": {"id": "fake-app-id"},
+  "session": {"id": "fake-session-id", "type": "user"},
+  "source": "android",
+  "date": 1700000001000,
+  "timeseries": {
+    "id": "00000000-0000-0000-0000-000000000000",
+    "name": "cpu",
+    "schema": "object",
+    "start": 1700000006000000000,
+    "end": 1700000010000000000,
+    "count": 5,
+    "data": [
+      {"timestamp": 1700000006000000000, "data_point": {"cpu_usage": 18.1}},
+      {"timestamp": 1700000007000000000, "data_point": {"cpu_usage": 22.4}},
+      {"timestamp": 1700000008000000000, "data_point": {"cpu_usage": 19.6}},
+      {"timestamp": 1700000009000000000, "data_point": {"cpu_usage": 15.9}},
+      {"timestamp": 1700000010000000000, "data_point": {"cpu_usage": 13.2}}
+    ]
+  }
+}
