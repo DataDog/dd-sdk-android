@@ -880,6 +880,32 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
+    fun `M not stop Profiling W receive TTFD vital event {continuous disabled}`(
+        @Forgery fakeTtfdVital: ProfilerEvent.RumVitalEvent
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(
+            mockSdkCore,
+            ProfilingConfiguration(
+                customEndpointUrl = null,
+                applicationLaunchSampleRate = 100f,
+                continuousSampleRate = 0f
+            ),
+            mockProfiler
+        )
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        testedFeature.onInitialize(mockContext)
+
+        // When
+        testedFeature.onReceive(
+            fakeTtfdVital.copy(type = ProfilerEvent.RumVitalEvent.Type.TTFD)
+        )
+
+        // Then
+        verify(mockProfiler, never()).stop(fakeInstanceName)
+    }
+
+    @Test
     fun `M not write launch event W app-launch profiling result received {only OPERATION vital, no TTID}`(
         @Forgery fakePerfettoResult: PerfettoResult,
         @Forgery fakeOperationVital: ProfilerEvent.RumVitalEvent

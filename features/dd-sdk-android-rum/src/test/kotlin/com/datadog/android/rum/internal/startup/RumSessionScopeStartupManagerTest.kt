@@ -307,6 +307,71 @@ internal class RumSessionScopeStartupManagerTest {
     }
 
     @ParameterizedTest
+    @MethodSource("testScenarios")
+    fun `M notify profiling W onTTFDEvent`(
+        scenario: RumStartupScenario,
+        forge: Forge
+    ) {
+        // Given
+        val info = RumTTIDInfo(
+            scenario = scenario,
+            durationNs = forge.aLong(min = 0, max = 10000)
+        )
+
+        val ttidEvent = RumRawEvent.AppStartTTIDEvent(info = info)
+        val ttfdEvent = forge.createTTFDEvent(scenario.initialTime)
+
+        val mockProfilingFeatureScope = mock<FeatureScope>()
+        whenever(
+            mockSdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)
+        ) doReturn mockProfilingFeatureScope
+
+        // When
+        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario))
+
+        manager.onTTIDEvent(
+            event = ttidEvent,
+            isSessionTracked = true,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+
+        manager.onTTFDEvent(
+            event = ttfdEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+
+        // Then
+        argumentCaptor<VitalAppLaunchEvent> {
+            verify(mockWriter, times(2))
+                .write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+
+            verify(mockProfilingFeatureScope).sendEvent(
+                ProfilerEvent.RumVitalEvent(
+                    rumContext = ProfilingRumContext(
+                        applicationId = rumContext.applicationId,
+                        sessionId = rumContext.sessionId,
+                        viewId = rumContext.viewId,
+                        viewName = rumContext.viewName
+                    ),
+                    id = lastValue.vital.id,
+                    name = lastValue.vital.name,
+                    type = ProfilerEvent.RumVitalEvent.Type.TTFD,
+                    startMs = lastValue.date,
+                    durationNs = ttfdEvent.eventTime.nanoTime - scenario.initialTime.nanoTime
+                )
+            )
+        }
+    }
+
+    @ParameterizedTest
     @MethodSource("testScenariosPairs")
     fun `M write telemetry twice and TTID Vital event once W onTTIDEvent { called 2 times per session }`(
         scenario1: RumStartupScenario,
@@ -837,7 +902,13 @@ internal class RumSessionScopeStartupManagerTest {
             hasVersion(fakeDatadogContext.version)
             hasServiceName(fakeDatadogContext.service)
             hasDDTags(buildDDTagsString(fakeDatadogContext))
-            hasNoProfilingStatus()
+                .apply {
+                    if (fakeDatadogContext.featuresContext.containsKey(Feature.PROFILING_FEATURE_NAME)) {
+                        hasProfilingStatus(VitalAppLaunchEvent.ProfilingStatus.RUNNING)
+                    } else {
+                        hasNoProfilingStatus()
+                    }
+                }
             hasNoProfilingErrorReason()
         }
 

@@ -341,6 +341,7 @@ public final class com/datadog/android/internal/profiling/ProfilerEvent$RumVital
 
 public final class com/datadog/android/internal/profiling/ProfilerEvent$RumVitalEvent$Type : java/lang/Enum {
 	public static final field OPERATION Lcom/datadog/android/internal/profiling/ProfilerEvent$RumVitalEvent$Type;
+	public static final field TTFD Lcom/datadog/android/internal/profiling/ProfilerEvent$RumVitalEvent$Type;
 	public static final field TTID Lcom/datadog/android/internal/profiling/ProfilerEvent$RumVitalEvent$Type;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/profiling/ProfilerEvent$RumVitalEvent$Type;
 	public static fun values ()[Lcom/datadog/android/internal/profiling/ProfilerEvent$RumVitalEvent$Type;
