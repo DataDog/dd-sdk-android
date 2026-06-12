@@ -428,7 +428,7 @@ class SampleApplication : Application() {
             .trackAnonymousUser(true)
             .enableComposeActionTracking()
             .collectAccessibility(true)
-            .setTimeseriesConfiguration(TimeseriesConfiguration.Builder().build())
+            .setTimeseriesConfiguration(TimeseriesConfiguration.DEFAULT)
             .build()
     }
 

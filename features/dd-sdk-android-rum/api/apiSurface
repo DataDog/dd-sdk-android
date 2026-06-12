@@ -309,10 +309,11 @@ class com.datadog.android.rum.timeseries.TimeseriesConfiguration
   class Builder
     fun setBufferSize(Int): Builder
     fun setIntervalMs(Long): Builder
-    fun setCollectInBackground(Boolean): Builder
-    fun setUseDeltaCompression(Boolean): Builder
+    fun collectInBackground(Boolean): Builder
+    fun useDeltaCompression(Boolean): Builder
     fun build(): TimeseriesConfiguration
   companion object 
+    val DEFAULT: TimeseriesConfiguration
 open class com.datadog.android.rum.tracking.AcceptAllActivities : ComponentPredicate<android.app.Activity>
   override fun accept(android.app.Activity): Boolean
   override fun getViewName(android.app.Activity): String?

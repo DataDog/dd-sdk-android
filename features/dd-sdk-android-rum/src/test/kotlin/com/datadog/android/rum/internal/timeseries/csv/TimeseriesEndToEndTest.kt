@@ -29,6 +29,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.math.BigDecimal
+import java.util.UUID
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -106,7 +107,7 @@ internal class TimeseriesEndToEndTest {
         // Each emitted event must carry a non-blank UUID; randomness is not asserted.
         for (event in emitted) {
             val id = event.getAsJsonObject("timeseries").get("id").asString
-            assertThat(java.util.UUID.fromString(id)).isNotNull
+            assertThat(UUID.fromString(id)).isNotNull
         }
     }
 

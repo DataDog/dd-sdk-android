@@ -415,7 +415,7 @@ data class RumConfiguration internal constructor(
          * Enables memory and CPU timeseries collection.
          *
          * When enabled, the SDK samples device memory (RSS) and CPU usage at
-         * [TimeseriesConfiguration.intervalMs] (default 1 s) and emits a batched
+         * [TimeseriesConfiguration.intervalMs] (default 1 second) and emits a batched
          * timeseries event every [TimeseriesConfiguration.bufferSize] samples (default 30).
          * Collection runs on a single background thread named `datadog-timeseries`.
          *
