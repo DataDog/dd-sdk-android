@@ -249,7 +249,7 @@ internal class DatadogFlagsClientTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
-        whenever(mockFlagsRepository.getPrecomputedFlag(fakeFlagKey)) doReturn null
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn null
         whenever(mockFlagsRepository.getEvaluationContext()) doReturn fakeEvaluationContext
 
         // When
@@ -273,8 +273,8 @@ internal class DatadogFlagsClientTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
-        whenever(mockFlagsRepository.getPrecomputedFlag(fakeFlagKey)) doReturn fakeFlag
-        whenever(mockFlagsRepository.getEvaluationContext()) doReturn fakeEvaluationContext
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            (fakeFlag to fakeEvaluationContext)
 
         // When
         val result = testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
@@ -803,6 +803,7 @@ internal class DatadogFlagsClientTest {
         val fakeDefaultValue = forge.aBool()
         val fakeFlagValue = !fakeDefaultValue
         val fakeVariationKey = forge.anAlphabeticalString()
+        val fakeAllocationKey = forge.anAlphabeticalString()
         val fakeReason = forge.anElementFrom("STATIC", "TARGETING_MATCH", "RULE_MATCH", "DEFAULT")
         val fakeExtraLogging = JSONObject().apply {
             put("version", forge.anAlphabeticalString())
@@ -813,7 +814,8 @@ internal class DatadogFlagsClientTest {
             variationValue = fakeFlagValue.toString(),
             variationKey = fakeVariationKey,
             reason = fakeReason,
-            extraLogging = fakeExtraLogging
+            extraLogging = fakeExtraLogging,
+            allocationKey = fakeAllocationKey
         )
         val fakeContext = EvaluationContext(
             targetingKey = forge.anAlphabeticalString(),
@@ -832,6 +834,119 @@ internal class DatadogFlagsClientTest {
         assertThat(result.errorMessage).isNull()
         assertThat(result.flagMetadata).isNotNull
         assertThat(result.flagMetadata).containsKeys("version", "environment")
+        assertThat(result.flagMetadata["allocationKey"]).isEqualTo(fakeAllocationKey)
+    }
+
+    @Test
+    fun `M typed allocationKey wins W resolve() { extraLogging also contains allocationKey }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.aBool()
+        val fakeFlagValue = !fakeDefaultValue
+        val fakeAllocationKey = forge.anAlphabeticalString()
+        val fakeExtraLoggingAllocationKey = forge.anAlphabeticalString()
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.BOOLEAN.value,
+            variationValue = fakeFlagValue.toString(),
+            allocationKey = fakeAllocationKey,
+            extraLogging = JSONObject().apply {
+                put("allocationKey", fakeExtraLoggingAllocationKey)
+            }
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        // When
+        val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
+
+        // Then - typed allocationKey wins over any "allocationKey" entry from extraLogging
+        assertThat(result.flagMetadata["allocationKey"]).isEqualTo(fakeAllocationKey)
+    }
+
+    @Test
+    fun `M allocationKey excluded from metadata W resolve() { empty allocationKey }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.aBool()
+        val fakeFlagValue = !fakeDefaultValue
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.BOOLEAN.value,
+            variationValue = fakeFlagValue.toString(),
+            allocationKey = "",
+            extraLogging = JSONObject()
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        // When
+        val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result.value).isEqualTo(fakeFlagValue)
+        assertThat(result.flagMetadata).doesNotContainKey("allocationKey")
+    }
+
+    @Test
+    fun `M allocationKey excluded from metadata W resolve() { whitespace allocationKey }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.aBool()
+        val fakeFlagValue = !fakeDefaultValue
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.BOOLEAN.value,
+            variationValue = fakeFlagValue.toString(),
+            allocationKey = "   ",
+            extraLogging = JSONObject()
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        // When
+        val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result.value).isEqualTo(fakeFlagValue)
+        assertThat(result.flagMetadata).doesNotContainKey("allocationKey")
+    }
+
+    @Test
+    fun `M null extraLogging value excluded from metadata W resolve() { extraLogging has null value }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.aBool()
+        val fakeFlagValue = !fakeDefaultValue
+        val fakeValidValue = forge.anAlphabeticalString()
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.BOOLEAN.value,
+            variationValue = fakeFlagValue.toString(),
+            extraLogging = JSONObject().apply {
+                put("nullKey", JSONObject.NULL) // JSONObject.NULL is not String/Number/Boolean
+                put("validKey", fakeValidValue)
+            }
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        // When
+        val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
+
+        // Then - JSONObject.NULL is dropped; only primitive values pass through
+        assertThat(result.flagMetadata).doesNotContainKey("nullKey")
+        assertThat(result.flagMetadata["validKey"]).isEqualTo(fakeValidValue)
     }
 
     @Test
@@ -1250,8 +1365,6 @@ internal class DatadogFlagsClientTest {
             attributes = emptyMap()
         )
 
-        whenever(mockFlagsRepository.getPrecomputedFlag(fakeFlagKey)) doReturn fakeFlag
-        whenever(mockFlagsRepository.getEvaluationContext()) doReturn fakeEvaluationContext
         whenever(mockFeatureSdkCore.getFeature(any())) doReturn null
         whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
             (fakeFlag to fakeEvaluationContext)
@@ -1358,9 +1471,6 @@ internal class DatadogFlagsClientTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
-
-        whenever(mockFlagsRepository.getPrecomputedFlag(fakeFlagKey)) doReturn fakeFlag
-        whenever(mockFlagsRepository.getEvaluationContext()) doReturn fakeEvaluationContext
 
         testedClient = DatadogFlagsClient(
             featureSdkCore = mockFeatureSdkCore,
