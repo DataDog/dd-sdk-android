@@ -21,6 +21,7 @@ import android.graphics.drawable.RippleDrawable
 import android.graphics.drawable.ShapeDrawable
 import android.graphics.drawable.StateListDrawable
 import android.graphics.drawable.VectorDrawable
+import android.os.Build
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.utils.ALPHA_SHIFT_ANDROID
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
@@ -98,7 +99,7 @@ internal open class AndroidMDrawableToColorMapper(
      * Resolves the color from a [LayerDrawable].
      * @param drawable the color drawable
      * @param internalLogger the internalLogger to report warnings
-     * @param predicate a predicate to filter which ayers should be taken into account (default: accept all layers)
+     * @param predicate a predicate to filter which layers should be taken into account (default: accept all layers)
      * @return the color to map to or null if not applicable
      */
     protected open fun resolveLayerDrawable(
@@ -228,16 +229,22 @@ internal open class AndroidMDrawableToColorMapper(
             null
         }
 
+        // PorterDuffColorFilter.mColor is blocked (max-target-o) on API 28+ and unused on API 29+
+        // (AndroidQDrawableToColorMapper overrides resolveGradientDrawable). Skip reflection on P+.
         @Suppress("PrivateAPI", "SwallowedException", "TooGenericExceptionCaught")
-        internal val mColorField = try {
-            PorterDuffColorFilter::class.java.getDeclaredField("mColor").apply {
-                this.isAccessible = true
+        internal val mColorField = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+            try {
+                PorterDuffColorFilter::class.java.getDeclaredField("mColor").apply {
+                    this.isAccessible = true
+                }
+            } catch (_: NoSuchFieldException) {
+                null
+            } catch (_: SecurityException) {
+                null
+            } catch (_: NullPointerException) {
+                null
             }
-        } catch (e: NoSuchFieldException) {
-            null
-        } catch (e: SecurityException) {
-            null
-        } catch (e: NullPointerException) {
+        } else {
             null
         }
     }

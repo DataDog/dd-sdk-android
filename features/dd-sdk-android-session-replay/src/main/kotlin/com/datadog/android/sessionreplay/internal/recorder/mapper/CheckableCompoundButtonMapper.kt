@@ -100,19 +100,5 @@ internal abstract class CheckableCompoundButtonMapper<T : CompoundButton>(
             "Failed to get buttonDrawable from the checkable compound button."
         internal const val NULL_BUTTON_DRAWABLE_MSG =
             "ButtonDrawable of the compound button is null"
-
-        // Reflects the field at the initialization of the class instead of reflecting it for every wireframe generation
-        @Suppress("PrivateApi", "SwallowedException", "TooGenericExceptionCaught")
-        internal val mButtonDrawableField = try {
-            CompoundButton::class.java.getDeclaredField("mButtonDrawable").apply {
-                isAccessible = true
-            }
-        } catch (e: NoSuchFieldException) {
-            null
-        } catch (e: SecurityException) {
-            null
-        } catch (e: NullPointerException) {
-            null
-        }
     }
 }
