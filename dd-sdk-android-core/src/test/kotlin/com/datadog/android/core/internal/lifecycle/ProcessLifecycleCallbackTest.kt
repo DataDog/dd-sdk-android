@@ -65,7 +65,12 @@ internal class ProcessLifecycleCallbackTest {
 
     @BeforeEach
     fun `set up`() {
-        testedCallback = ProcessLifecycleCallback(appContext.mockInstance, fakeInstanceName, mockInternalLogger)
+        testedCallback = ProcessLifecycleCallback(
+            appContext.mockInstance,
+            fakeInstanceName,
+            mockInternalLogger,
+            remoteConfigService = null
+        )
     }
 
     @AfterEach

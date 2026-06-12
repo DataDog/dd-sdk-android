@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.remote.config
 
+import android.util.Log
 import androidx.annotation.WorkerThread
 import com.datadog.android.internal.utils.DDCoreResult
 import okhttp3.Call
@@ -43,6 +44,7 @@ internal class RemoteConfigNetworkServiceImpl(
                 .get()
                 .build()
             callFactory.newCall(request).execute().use { response ->
+                Log.w("WAHAHA", response.cacheResponse.toString())
                 when (response.code) {
                     in 500..599 -> DDCoreResult.Error(RemoteConfigError.ServerError(response.code))
                     in 400..499 -> DDCoreResult.Error(RemoteConfigError.ClientError(response.code))

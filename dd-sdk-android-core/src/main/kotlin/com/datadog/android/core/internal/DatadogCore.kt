@@ -557,7 +557,7 @@ internal class DatadogCore(
                     appContext,
                     name,
                     internalLogger,
-                    onForeground = { remoteConfigService?.syncWithRemote() }
+                    remoteConfigService
                 )
             ).apply {
                 appContext.registerActivityLifecycleCallbacks(this)
