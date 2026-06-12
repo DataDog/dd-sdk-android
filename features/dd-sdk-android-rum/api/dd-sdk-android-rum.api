@@ -117,6 +117,7 @@ public final class com/datadog/android/rum/RumConfiguration$Builder {
 	public final fun setSessionSampleRate (F)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setSlowFramesConfiguration (Lcom/datadog/android/rum/configuration/SlowFramesConfiguration;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setTelemetrySampleRate (F)Lcom/datadog/android/rum/RumConfiguration$Builder;
+	public final fun setTimeseriesConfiguration (Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setViewEventMapper (Lcom/datadog/android/rum/event/ViewEventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setVitalEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setVitalEventMapper (Lcom/datadog/android/event/EventMapper;Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
@@ -8639,9 +8640,6 @@ public abstract interface class com/datadog/android/rum/startup/AppStartupActivi
 
 public final class com/datadog/android/rum/timeseries/TimeseriesConfiguration {
 	public static final field Companion Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration$Companion;
-	public static final field DEFAULT_BUFFER_SIZE I
-	public static final field DEFAULT_INTERVAL_MS J
-	public static final field MIN_INTERVAL_MS J
 }
 
 public final class com/datadog/android/rum/timeseries/TimeseriesConfiguration$Builder {
@@ -8650,6 +8648,7 @@ public final class com/datadog/android/rum/timeseries/TimeseriesConfiguration$Bu
 	public final fun setBufferSize (I)Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration$Builder;
 	public final fun setCollectInBackground (Z)Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration$Builder;
 	public final fun setIntervalMs (J)Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration$Builder;
+	public final fun setUseDeltaCompression (Z)Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration$Builder;
 }
 
 public final class com/datadog/android/rum/timeseries/TimeseriesConfiguration$Companion {

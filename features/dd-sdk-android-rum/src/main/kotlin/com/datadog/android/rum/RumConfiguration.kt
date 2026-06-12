@@ -28,6 +28,7 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
 import com.datadog.android.rum.startup.AppStartupActivityPredicate
+import com.datadog.android.rum.timeseries.TimeseriesConfiguration
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -407,6 +408,26 @@ data class RumConfiguration internal constructor(
         @ExperimentalRumApi
         fun setAppStartupActivityPredicate(predicate: AppStartupActivityPredicate): Builder {
             rumConfig = rumConfig.copy(appStartupActivityPredicate = predicate)
+            return this
+        }
+
+        /**
+         * Enables memory and CPU timeseries collection.
+         *
+         * When enabled, the SDK samples device memory (RSS) and CPU usage at
+         * [TimeseriesConfiguration.intervalMs] (default 1 s) and emits a batched
+         * timeseries event every [TimeseriesConfiguration.bufferSize] samples (default 30).
+         * Collection runs on a single background thread named `datadog-timeseries`.
+         *
+         * To disable, pass null.
+         *
+         * @param configuration optional fine-tuning of sampling interval and batch size.
+         */
+        @ExperimentalRumApi
+        fun setTimeseriesConfiguration(
+            configuration: TimeseriesConfiguration?
+        ): Builder {
+            rumConfig = rumConfig.copy(timeseriesConfiguration = configuration)
             return this
         }
 

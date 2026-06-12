@@ -64,6 +64,7 @@ import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
+import com.datadog.android.rum.internal.timeseries.Timeseries
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -105,7 +106,8 @@ internal class DatadogRumMonitor(
     batteryInfoProvider: InfoProvider<BatteryInfo>,
     displayInfoProvider: InfoProvider<DisplayInfo>,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
-    insightsCollector: InsightsCollector
+    insightsCollector: InsightsCollector,
+    timeseriesFactory: Timeseries.Factory
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope = RumApplicationScope(
@@ -128,7 +130,8 @@ internal class DatadogRumMonitor(
         batteryInfoProvider = batteryInfoProvider,
         displayInfoProvider = displayInfoProvider,
         rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
-        insightsCollector = insightsCollector
+        insightsCollector = insightsCollector,
+        timeseriesFactory = timeseriesFactory
     )
 
     internal var debugListener: RumDebugListener? = null
@@ -838,6 +841,28 @@ internal class DatadogRumMonitor(
         executorService.awaitTermination(DRAIN_WAIT_SECONDS, TimeUnit.SECONDS)
         tasks.forEach {
             it.run()
+        }
+    }
+
+    /**
+     * Stops the timeseries collector on the currently active session, if any.
+     *
+     * Must be called from [RumFeature.onStop] **before** [GlobalRumMonitor.unregister], so that
+     * the sampling [java.util.concurrent.ScheduledExecutorService] is shut down while the monitor
+     * is still reachable. Without this call, the executor keeps running after SDK teardown and a
+     * subsequent [com.datadog.android.Datadog.initialize] would create a second
+     * `datadog-timeseries` thread in the same process.
+     *
+     * Must be called **before** [RumFeature.dataWriter] is replaced with a
+     * [com.datadog.android.rum.internal.storage.NoOpDataWriter]. [EventWriter.write] captures the
+     * writer eagerly at call time, so the final flush issued inside [stop] will reach the real
+     * writer only if this ordering is maintained. Note: the flush is best-effort — if the core SDK
+     * de-initializes and shuts down its context executor before the async write task fires, the
+     * write is silently skipped regardless.
+     */
+    internal fun stopActiveTimeseries() {
+        synchronized(rootScope) {
+            rootScope.activeSession?.stopTimeseries()
         }
     }
 
