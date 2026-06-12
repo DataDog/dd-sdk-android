@@ -7,6 +7,7 @@
 package com.datadog.android.webview.internal
 
 import android.webkit.JavascriptInterface
+import com.datadog.android.core.configuration.HostPatternValidator
 import com.datadog.android.core.configuration.HostsSanitizer
 import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.internal.sampling.DeterministicSampling
@@ -24,6 +25,7 @@ import com.google.gson.JsonArray
 internal class DatadogEventBridge(
     internal val webViewEventConsumer: WebViewEventConsumer<String>,
     private val allowedHosts: List<String>,
+    private val allowedHostPatterns: List<String>,
     private val privacyLevel: String,
     private val webViewRumFeature: WebViewRumFeature?
 ) {
@@ -51,6 +53,11 @@ internal class DatadogEventBridge(
         val origins = JsonArray()
         HostsSanitizer()
             .sanitizeHosts(allowedHosts, WEB_VIEW_TRACKING_FEATURE_NAME)
+            .forEach {
+                origins.add(it)
+            }
+        HostPatternValidator()
+            .validate(allowedHostPatterns, WEB_VIEW_TRACKING_FEATURE_NAME)
             .forEach {
                 origins.add(it)
             }

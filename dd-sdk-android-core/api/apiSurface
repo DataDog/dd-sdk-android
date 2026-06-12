@@ -284,6 +284,8 @@ data class com.datadog.android.core.configuration.Configuration
     fun setUploadSchedulerStrategy(UploadSchedulerStrategy?): Builder
     fun setVersion(String): Builder
   companion object 
+class com.datadog.android.core.configuration.HostPatternValidator
+  fun validate(List<String>, String): List<String>
 class com.datadog.android.core.configuration.HostsSanitizer
   fun sanitizeHosts(List<String>, String): List<String>
 enum com.datadog.android.core.configuration.UploadFrequency

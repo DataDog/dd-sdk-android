@@ -1215,6 +1215,7 @@ datadog:
       - "kotlin.Any?.hashCode()"
       - "kotlin.CharSequence.isNullOrEmpty()"
       - "kotlin.String.all(kotlin.Function1)"
+      - "kotlin.String.any(kotlin.Function1)"
       - "kotlin.String.codePoints()"
       - "kotlin.String.constructor()"
       - "kotlin.String.contains(kotlin.Char, kotlin.Boolean)"

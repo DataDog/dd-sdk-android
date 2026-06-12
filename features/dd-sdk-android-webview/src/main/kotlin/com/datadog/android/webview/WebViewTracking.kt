@@ -75,6 +75,78 @@ object WebViewTracking {
         @FloatRange(from = 0.0, to = 100.0) logsSampleRate: Float = 100f,
         sdkCore: SdkCore = Datadog.getInstance()
     ) {
+        enableInternal(
+            webView = webView,
+            allowedHosts = allowedHosts,
+            allowedHostPatterns = emptyList(),
+            logsSampleRate = logsSampleRate,
+            sdkCore = sdkCore
+        )
+    }
+
+    /**
+     * Attach the bridge to track events from the WebView as part of the same session, matching the
+     * web page's URL host against a list of wildcard host patterns.
+     *
+     * This is the pattern-matching counterpart of [enable]. Use it when the hosts you want to track
+     * cannot be enumerated up front (e.g. ephemeral preview URLs or multi-tenant subdomains).
+     *
+     * This method must be called from the Main Thread.
+     * Please note that:
+     * - you need to enable the JavaScript support in the WebView settings for this feature
+     * to be functional:
+     * ```
+     * webView.settings.javaScriptEnabled = true
+     * ```
+     * - by default, navigation will happen outside of your application (in a browser or a different app). To prevent
+     * that and ensure Datadog can track the full WebView user journey, attach a [android.webkit.WebViewClient] to your
+     * WebView, as following:
+     * ```
+     * webView.webViewClient = WebViewClient()
+     * ```
+     * The WebView events will not be tracked unless the web page's URL Host matches one of the
+     * provided patterns.
+     *
+     * Each pattern may contain at most a single `*` wildcard (matching any sequence of characters)
+     * and may only use the characters `a-z`, `0-9`, `.`, `-` and `*`. Patterns are lowercased before
+     * matching. Plain host names (without a wildcard) are accepted too and match exactly or as a
+     * subdomain suffix, exactly like [enable]. Entries containing other characters, or more than one
+     * wildcard, are dropped with a warning.
+     *
+     * @param webView the webView on which to attach the bridge.
+     * @param hostPatterns a list of wildcard host patterns that you want to track when loaded in the
+     * WebView (e.g.: `listOf("*.example.com", "preview-*.shopist.io", "example.net")`).
+     * @param logsSampleRate the sample rate for logs coming from the WebView, in percent. A value of `30` means we'll
+     * send 30% of the logs. If value is `0`, no logs will be sent to Datadog. Default is 100.0 (ie: all logs are sent).
+     * @param sdkCore SDK instance on which to attach the bridge.
+     * [More here](https://developer.android.com/guide/webapps/webview#HandlingNavigation).
+     */
+    @MainThread
+    @JvmOverloads
+    @JvmStatic
+    fun enableWithPatterns(
+        webView: WebView,
+        hostPatterns: List<String>,
+        @FloatRange(from = 0.0, to = 100.0) logsSampleRate: Float = 100f,
+        sdkCore: SdkCore = Datadog.getInstance()
+    ) {
+        enableInternal(
+            webView = webView,
+            allowedHosts = emptyList(),
+            allowedHostPatterns = hostPatterns,
+            logsSampleRate = logsSampleRate,
+            sdkCore = sdkCore
+        )
+    }
+
+    @MainThread
+    private fun enableInternal(
+        webView: WebView,
+        allowedHosts: List<String>,
+        allowedHostPatterns: List<String>,
+        logsSampleRate: Float,
+        sdkCore: SdkCore
+    ) {
         val featureSdkCore = sdkCore as FeatureSdkCore
         if (!webView.settings.javaScriptEnabled) {
             featureSdkCore.internalLogger.log(
@@ -98,7 +170,13 @@ object WebViewTracking {
             .getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
             ?.unwrap<StorageBackedFeature>() as? WebViewRumFeature
         webView.addJavascriptInterface(
-            DatadogEventBridge(webViewEventConsumer, allowedHosts, privacyLevel, webViewRumFeature),
+            DatadogEventBridge(
+                webViewEventConsumer,
+                allowedHosts,
+                allowedHostPatterns,
+                privacyLevel,
+                webViewRumFeature
+            ),
             DATADOG_EVENT_BRIDGE_NAME
         )
         featureSdkCore.internalLogger.logApiUsage {

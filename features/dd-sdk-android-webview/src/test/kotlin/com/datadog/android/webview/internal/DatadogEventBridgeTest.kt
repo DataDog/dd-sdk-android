@@ -49,6 +49,7 @@ internal class DatadogEventBridgeTest {
         testedDatadogEventBridge = DatadogEventBridge(
             mockWebViewEventConsumer,
             emptyList(),
+            emptyList(),
             fakePrivacyLevel,
             mockWebViewRumFeature
         )
@@ -72,7 +73,13 @@ internal class DatadogEventBridgeTest {
     ) {
         // Given
         val expectedHosts = hosts.joinToString(",", prefix = "[", postfix = "]") { "\"$it\"" }
-        testedDatadogEventBridge = DatadogEventBridge(mock(), hosts, fakePrivacyLevel, mockWebViewRumFeature)
+        testedDatadogEventBridge = DatadogEventBridge(
+            mock(),
+            hosts,
+            emptyList(),
+            fakePrivacyLevel,
+            mockWebViewRumFeature
+        )
 
         // When
         val allowedWebViewHosts = testedDatadogEventBridge.getAllowedWebViewHosts()
@@ -93,6 +100,7 @@ internal class DatadogEventBridgeTest {
         testedDatadogEventBridge = DatadogEventBridge(
             mockWebViewEventConsumer,
             hosts,
+            emptyList(),
             fakePrivacyLevel,
             mockWebViewRumFeature
         )
@@ -116,6 +124,7 @@ internal class DatadogEventBridgeTest {
         testedDatadogEventBridge = DatadogEventBridge(
             mockWebViewEventConsumer,
             hosts,
+            emptyList(),
             fakePrivacyLevel,
             mockWebViewRumFeature
         )
@@ -125,6 +134,65 @@ internal class DatadogEventBridgeTest {
 
         // Then
         assertThat(allowedWebViewHosts).isEqualTo(expectedHosts)
+    }
+
+    @Test
+    fun `M return host patterns as-is W getAllowedWebViewHosts() { wildcard patterns }`() {
+        // Given
+        val patterns = listOf("*.example.com", "preview-*.shopist.io", "example.net")
+        val expectedHosts = patterns.joinToString(",", prefix = "[", postfix = "]") { "\"$it\"" }
+        testedDatadogEventBridge = DatadogEventBridge(
+            mockWebViewEventConsumer,
+            emptyList(),
+            patterns,
+            fakePrivacyLevel,
+            mockWebViewRumFeature
+        )
+
+        // When
+        val allowedWebViewHosts = testedDatadogEventBridge.getAllowedWebViewHosts()
+
+        // Then
+        assertThat(allowedWebViewHosts).isEqualTo(expectedHosts)
+    }
+
+    @Test
+    fun `M drop invalid patterns W getAllowedWebViewHosts() { invalid patterns }`() {
+        // Given
+        val patterns = listOf("*.example.com", "*.foo.*.bar", "in valid", "EXAMPLE.NET")
+        testedDatadogEventBridge = DatadogEventBridge(
+            mockWebViewEventConsumer,
+            emptyList(),
+            patterns,
+            fakePrivacyLevel,
+            mockWebViewRumFeature
+        )
+
+        // When
+        val allowedWebViewHosts = testedDatadogEventBridge.getAllowedWebViewHosts()
+
+        // Then
+        assertThat(allowedWebViewHosts).isEqualTo("[\"*.example.com\",\"example.net\"]")
+    }
+
+    @Test
+    fun `M merge sanitized hosts and patterns W getAllowedWebViewHosts() { mixed }`() {
+        // Given
+        val hosts = listOf("example.com")
+        val patterns = listOf("*.shopist.io")
+        testedDatadogEventBridge = DatadogEventBridge(
+            mockWebViewEventConsumer,
+            hosts,
+            patterns,
+            fakePrivacyLevel,
+            mockWebViewRumFeature
+        )
+
+        // When
+        val allowedWebViewHosts = testedDatadogEventBridge.getAllowedWebViewHosts()
+
+        // Then
+        assertThat(allowedWebViewHosts).isEqualTo("[\"example.com\",\"*.shopist.io\"]")
     }
 
     @Test
@@ -196,6 +264,7 @@ internal class DatadogEventBridgeTest {
         // Given
         testedDatadogEventBridge = DatadogEventBridge(
             mockWebViewEventConsumer,
+            emptyList(),
             emptyList(),
             fakePrivacyLevel,
             null

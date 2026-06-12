@@ -352,6 +352,99 @@ internal class WebViewTrackingTest {
     }
 
     @Test
+    fun `M attach the bridge W enableWithPatterns`(@Forgery fakeUrls: List<URL>) {
+        // Given
+        val fakeHostPatterns = fakeUrls.map { it.host }
+        val mockSettings: WebSettings = mock {
+            whenever(it.javaScriptEnabled).thenReturn(true)
+        }
+        val mockWebView: WebView = mock {
+            whenever(it.settings).thenReturn(mockSettings)
+        }
+
+        // When
+        WebViewTracking.enableWithPatterns(mockWebView, fakeHostPatterns, sdkCore = mockCore)
+
+        // Then
+        verify(mockWebView).addJavascriptInterface(
+            argThat { this is DatadogEventBridge },
+            eq(WebViewTracking.DATADOG_EVENT_BRIDGE_NAME)
+        )
+    }
+
+    @Test
+    fun `M pass valid patterns to the bridge W enableWithPatterns`() {
+        // Given
+        val fakeHostPatterns = listOf("*.example.com", "preview-*.shopist.io", "example.net")
+        val mockSettings: WebSettings = mock {
+            whenever(it.javaScriptEnabled).thenReturn(true)
+        }
+        val mockWebView: WebView = mock {
+            whenever(it.settings).thenReturn(mockSettings)
+        }
+
+        // When
+        WebViewTracking.enableWithPatterns(mockWebView, fakeHostPatterns, sdkCore = mockCore)
+
+        // Then
+        argumentCaptor<DatadogEventBridge> {
+            verify(mockWebView).addJavascriptInterface(
+                capture(),
+                eq(WebViewTracking.DATADOG_EVENT_BRIDGE_NAME)
+            )
+            assertThat(firstValue.getAllowedWebViewHosts())
+                .isEqualTo("[\"*.example.com\",\"preview-*.shopist.io\",\"example.net\"]")
+        }
+    }
+
+    @Test
+    fun `M attach the bridge and send a warn log W enableWithPatterns { javascript not enabled }`() {
+        // Given
+        val fakeHostPatterns = listOf("*.example.com")
+        val mockSettings: WebSettings = mock {
+            whenever(it.javaScriptEnabled).thenReturn(false)
+        }
+        val mockWebView: WebView = mock {
+            whenever(it.settings).thenReturn(mockSettings)
+        }
+
+        // When
+        WebViewTracking.enableWithPatterns(mockWebView, fakeHostPatterns, sdkCore = mockCore)
+
+        // Then
+        verify(mockWebView).addJavascriptInterface(
+            argThat { this is DatadogEventBridge },
+            eq(WebViewTracking.DATADOG_EVENT_BRIDGE_NAME)
+        )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            WebViewTracking.JAVA_SCRIPT_NOT_ENABLED_WARNING_MESSAGE
+        )
+    }
+
+    @Test
+    fun `M send telemetry W enableWithPatterns`() {
+        // Given
+        val fakeHostPatterns = listOf("*.example.com")
+        val mockSettings: WebSettings = mock {
+            whenever(it.javaScriptEnabled).thenReturn(true)
+        }
+        val mockWebView: WebView = mock {
+            whenever(it.settings).thenReturn(mockSettings)
+        }
+
+        // When
+        WebViewTracking.enableWithPatterns(mockWebView, fakeHostPatterns, sdkCore = mockCore)
+
+        // Then
+        verify(mockInternalLogger).logApiUsage(
+            any(),
+            argThat { this() is InternalTelemetryEvent.ApiUsage.TrackWebView }
+        )
+    }
+
+    @Test
     fun `M create a default WebEventConsumer W enable()`(
         @Forgery fakeUrls: List<URL>
     ) {
