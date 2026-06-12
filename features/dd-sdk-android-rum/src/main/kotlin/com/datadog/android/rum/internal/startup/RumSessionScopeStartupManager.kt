@@ -250,19 +250,37 @@ internal class RumSessionScopeStartupManagerImpl(
             return
         }
 
-        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
-            rumVitalAppLaunchEventHelper.newVitalAppLaunchEvent(
-                timestampMs = scenario.initialTime.timestamp + sdkCore.time.serverTimeOffsetMs,
-                datadogContext = datadogContext,
-                eventAttributes = emptyMap(),
-                customAttributes = customAttributes,
-                hasReplay = null,
-                rumContext = rumContext,
-                durationNs = durationNs,
-                appLaunchMetric = VitalAppLaunchEvent.AppLaunchMetric.TTFD,
-                scenario = scenario,
-                profilingStatus = null
+        val ttfdEvent = rumVitalAppLaunchEventHelper.newVitalAppLaunchEvent(
+            timestampMs = scenario.initialTime.timestamp + sdkCore.time.serverTimeOffsetMs,
+            datadogContext = datadogContext,
+            eventAttributes = emptyMap(),
+            customAttributes = customAttributes,
+            hasReplay = null,
+            rumContext = rumContext,
+            durationNs = durationNs,
+            appLaunchMetric = VitalAppLaunchEvent.AppLaunchMetric.TTFD,
+            scenario = scenario,
+            profilingStatus = datadogContext.getProfilingStatus()
+        )
+
+        sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
+            ProfilerEvent.RumVitalEvent(
+                rumContext = ProfilingRumContext(
+                    applicationId = rumContext.applicationId,
+                    sessionId = rumContext.sessionId,
+                    viewId = rumContext.viewId,
+                    viewName = rumContext.viewName
+                ),
+                id = ttfdEvent.vital.id,
+                name = ttfdEvent.vital.name,
+                type = ProfilerEvent.RumVitalEvent.Type.TTFD,
+                startMs = ttfdEvent.date,
+                durationNs = durationNs
             )
+        )
+
+        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
+            ttfdEvent
         }.submit()
     }
 

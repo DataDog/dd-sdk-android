@@ -48,7 +48,6 @@ sealed class ProfilerEvent {
 
     /**
      * Sent by the RUM feature to the profiling feature whenever a vital is recorded.
-     * Currently, is sent only for TTID events.
      *
      * @param id The ID of the corresponding RUM vital event.
      * @param name The name of the corresponding vital event.
@@ -73,6 +72,11 @@ sealed class ProfilerEvent {
              * TTID (Time to initial display) type.
              */
             TTID,
+
+            /**
+             * TTFD (Time to full display) type.
+             */
+            TTFD,
 
             /**
              * Operation API type.
