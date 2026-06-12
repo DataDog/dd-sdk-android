@@ -8,7 +8,7 @@ package com.datadog.android.profiling.internal.quota
 
 internal data class QuotaResult(
     val decision: Decision,
-    val reason: String
+    val reason: QuotaReason
 ) {
     internal enum class Decision { ALLOWED, DENIED }
 
@@ -17,12 +17,17 @@ internal data class QuotaResult(
          * Quota check timed out, allow profiling rather than stall app launch waiting for a
          * response.
          */
-        val FAIL_OPEN = QuotaResult(Decision.ALLOWED, "timeout")
+        val FAIL_OPEN = QuotaResult(Decision.ALLOWED, QuotaReason.TIMEOUT)
 
         /***
          * Quota endpoint unreachable or returned an unexpected error, allow profiling to avoid
          * silent data loss.
          */
-        val API_ERROR = QuotaResult(Decision.ALLOWED, "api-error")
+        val API_ERROR = QuotaResult(Decision.ALLOWED, QuotaReason.API_ERROR)
+
+        /***
+         * Quota endpoint denied the session due to quota being exceeded.
+         */
+        val QUOTA_EXCEEDED = QuotaResult(Decision.DENIED, QuotaReason.QUOTA_EXCEEDED)
     }
 }
