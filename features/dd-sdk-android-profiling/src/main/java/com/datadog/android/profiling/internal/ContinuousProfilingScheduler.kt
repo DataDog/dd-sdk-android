@@ -19,6 +19,7 @@ import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.sampling.DeterministicSampling
 import com.datadog.android.internal.sampling.SessionSamplingIdProvider
 import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.profiling.internal.quota.QuotaResult
 import java.util.Locale
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
@@ -66,6 +67,9 @@ internal class ContinuousProfilingScheduler(
 
     @Volatile
     private var remainingCooldownMs: Long = 0L
+
+    @Volatile
+    internal var lastQuotaResult: QuotaResult? = null
 
     private val schedulerExecutor: ScheduledExecutorService = profiler.scheduledExecutorService
 
@@ -230,6 +234,18 @@ internal class ContinuousProfilingScheduler(
     private fun scheduleNextCycle() {
         val activeMs = jitter(CONTINUOUS_WINDOW_DURATION_MS)
         if (currentSessionSampled) {
+            val quota = lastQuotaResult
+            if (quota == null || quota.decision == QuotaResult.Decision.DENIED) {
+                logToUser {
+                    if (quota == null) {
+                        LOG_QUOTA_PENDING
+                    } else {
+                        LOG_QUOTA_DENIED.format(Locale.US, quota.reason.rawValue)
+                    }
+                }
+                scheduleCooldown(activeMs)
+                return
+            }
             onActiveWindowStarted()
             isActive = true
             state = State.ACTIVE
@@ -386,5 +402,9 @@ internal class ContinuousProfilingScheduler(
             "Grace period expired; profiler stopped."
         internal const val LOG_RUM_SESSION_DECISION =
             "RUM session decision: rumSessionSampleRate=%s, currentSessionSampled=%s."
+        internal const val LOG_QUOTA_DENIED =
+            "Continuous profiling skipped: quota denied (reason=%s)."
+        internal const val LOG_QUOTA_PENDING =
+            "Continuous profiling skipped: awaiting quota decision."
     }
 }

@@ -12,6 +12,7 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.ProfilingManager
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.core.InternalSdkCore
@@ -32,6 +33,10 @@ import com.datadog.android.profiling.internal.ProfilingStartReason
 import com.datadog.android.profiling.internal.ProfilingStorage
 import com.datadog.android.profiling.internal.ProfilingWriter
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
+import com.datadog.android.profiling.internal.quota.NoOpQuotaChecker
+import com.datadog.android.profiling.internal.quota.QuotaChecker
+import com.datadog.android.profiling.internal.quota.QuotaReason
+import com.datadog.android.profiling.internal.quota.QuotaResult
 import com.datadog.android.profiling.internal.time.MutableTimeProvider
 import com.datadog.android.profiling.utils.config.MainLooperTestConfiguration
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -44,6 +49,7 @@ import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import okhttp3.Call
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -51,12 +57,12 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
-import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -107,7 +113,16 @@ internal class ProfilingFeatureTest {
     private lateinit var mockRumFeatureScope: FeatureScope
 
     @Mock
+    private lateinit var mockProfilingFeatureScope: FeatureScope
+
+    @Mock
     private lateinit var mockDataWriter: ProfilingWriter
+
+    @Mock
+    private lateinit var mockQuotaChecker: QuotaChecker
+
+    @Mock
+    private lateinit var mockCallFactory: Call.Factory
 
     @Mock
     private lateinit var mockSharedPreferences: SharedPreferences
@@ -148,6 +163,9 @@ internal class ProfilingFeatureTest {
     @LongForgery(min = 1L)
     private var fakeProfilingPackageVersionCode: Long = 0L
 
+    @Forgery
+    private lateinit var fakeDatadogContext: DatadogContext
+
     private val fakeAllSampledConfiguration = ProfilingConfiguration(
         customEndpointUrl = null,
         applicationLaunchSampleRate = 100f,
@@ -171,6 +189,7 @@ internal class ProfilingFeatureTest {
         whenever(mockSdkCore.name) doReturn fakeInstanceName
         whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mockProfilingExecutor
         whenever(mockProfiler.timeProvider) doReturn mockMutableTimeProvider
+        whenever(mockSdkCore.createOkHttpCallFactory(any())) doReturn mockCallFactory
         whenever(mockProfiler.scheduledExecutorService) doReturn mockSchedulerExecutor
         whenever(mockContext.getSystemService(ProfilingManager::class.java)) doReturn (mockService)
         whenever(mockContext.getSharedPreferences(any(), any())) doReturn mockSharedPreferences
@@ -181,6 +200,10 @@ internal class ProfilingFeatureTest {
         whenever(mockEditor.putStringSet(any(), any())) doReturn mockEditor
         whenever(mockEditor.putFloat(any(), any())) doReturn mockEditor
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+        whenever(mockSdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)) doReturn mockProfilingFeatureScope
+        whenever(mockProfilingFeatureScope.withContext(any(), any())) doAnswer {
+            it.getArgument<(DatadogContext) -> Unit>(1).invoke(fakeDatadogContext)
+        }
         testedFeature = ProfilingFeature(mockSdkCore, fakeConfiguration, mockProfiler)
         ProfilingStorage.sharedPreferencesStorage = mockSharedPreferencesStorage
         fakeTTID = fakeTTID.copy(type = ProfilerEvent.RumVitalEvent.Type.TTID)
@@ -249,10 +272,12 @@ internal class ProfilingFeatureTest {
     @Test
     fun `M not set Profiling sample rate W initialize() {smaller sample rate exists}`() {
         // Given
+        // A non-negative existing rate that is <= the configured rate (the configured rate is
+        // forged in 0f..100f, so subtracting would underflow below the "unset" sentinel).
         whenever(
             mockSharedPreferencesStorage
                 .getFloat("dd_profiling_sample_rate", -1f)
-        ) doReturn fakeConfiguration.applicationLaunchSampleRate - 1f
+        ) doReturn fakeConfiguration.applicationLaunchSampleRate / 2f
 
         // When
         testedFeature.onInitialize(mockContext)
@@ -496,6 +521,20 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
+    fun `M reset quota checker W onStop()`() {
+        // Given
+        testedFeature.onInitialize(mockContext)
+        testedFeature.quotaChecker = mockQuotaChecker
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        verify(mockQuotaChecker).reset()
+        assertThat(testedFeature.quotaChecker).isInstanceOf(NoOpQuotaChecker::class.java)
+    }
+
+    @Test
     fun `M start continuous cycle W profiler result received {TTID session unsampled}`() {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
@@ -509,6 +548,7 @@ internal class ProfilingFeatureTest {
         )
 
         testedFeature.dispatchRumSession("session-id", 100f)
+        testedFeature.simulateQuotaAllowed()
 
         testedFeature.onReceive(ProfilerEvent.TTIDNotTracked)
 
@@ -550,6 +590,7 @@ internal class ProfilingFeatureTest {
             callbackCaptor.capture()
         )
         testedFeature.dispatchRumSession(fakeSessionId, 100f)
+        testedFeature.simulateQuotaAllowed()
         testedFeature.onReceive(ProfilerEvent.TTIDNotTracked)
 
         val runnableCaptor = argumentCaptor<Runnable>()
@@ -654,6 +695,7 @@ internal class ProfilingFeatureTest {
         )
         // Open the continuous accumulation window
         testedFeature.dispatchRumSession(fakeSessionId, 100f)
+        testedFeature.simulateQuotaAllowed()
         testedFeature.onReceive(fakeTTID)
         callbackCaptor.firstValue.onSuccess(
             fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)
@@ -695,6 +737,7 @@ internal class ProfilingFeatureTest {
         )
         // Open the continuous accumulation window
         testedFeature.dispatchRumSession(fakeSessionId, 100f)
+        testedFeature.simulateQuotaAllowed()
         testedFeature.onReceive(fakeTTID)
         callbackCaptor.firstValue.onSuccess(
             fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)
@@ -733,6 +776,7 @@ internal class ProfilingFeatureTest {
         )
         // Close launch window
         testedFeature.onReceive(fakeTTID)
+        testedFeature.simulateQuotaAllowed()
         callbackCaptor.firstValue.onSuccess(
             PerfettoResult(
                 start = 0L,
@@ -743,6 +787,7 @@ internal class ProfilingFeatureTest {
         )
         // Open continuous active window
         testedFeature.dispatchRumSession(fakeSessionId, 100f)
+        testedFeature.simulateQuotaAllowed()
         val runnableCaptor = argumentCaptor<Runnable>()
         verify(mockSchedulerExecutor).schedule(runnableCaptor.capture(), any(), any())
         runnableCaptor.firstValue.run()
@@ -810,6 +855,7 @@ internal class ProfilingFeatureTest {
         )
         // Close launch window
         testedFeature.onReceive(fakeTTID)
+        testedFeature.simulateQuotaAllowed()
         callbackCaptor.firstValue.onSuccess(
             PerfettoResult(
                 start = 0L,
@@ -820,6 +866,7 @@ internal class ProfilingFeatureTest {
         )
         // Open continuous active window
         testedFeature.dispatchRumSession(fakeSessionId, 100f)
+        testedFeature.simulateQuotaAllowed()
         val runnableCaptor = argumentCaptor<Runnable>()
         verify(mockSchedulerExecutor).schedule(runnableCaptor.capture(), any(), any())
         runnableCaptor.firstValue.run()
@@ -948,6 +995,7 @@ internal class ProfilingFeatureTest {
         )
         // Close launch window
         testedFeature.onReceive(fakeTTID)
+        testedFeature.simulateQuotaAllowed()
         callbackCaptor.firstValue.onSuccess(
             PerfettoResult(
                 start = 0L,
@@ -958,6 +1006,7 @@ internal class ProfilingFeatureTest {
         )
         // Open window 1
         testedFeature.dispatchRumSession(fakeSessionId, 100f)
+        testedFeature.simulateQuotaAllowed()
         val runnableCaptor = argumentCaptor<Runnable>()
         verify(mockSchedulerExecutor, atLeastOnce()).schedule(
             runnableCaptor.capture(),
@@ -1008,6 +1057,7 @@ internal class ProfilingFeatureTest {
             callbackCaptor.capture()
         )
         testedFeature.dispatchRumSession(fakeSessionId, 100f)
+        testedFeature.simulateQuotaAllowed()
         testedFeature.onReceive(fakeTTID)
         callbackCaptor.firstValue.onSuccess(
             fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)
@@ -1044,6 +1094,7 @@ internal class ProfilingFeatureTest {
         )
         testedFeature.onReceive(fakeRumLongTaskEvent)
         testedFeature.onReceive(fakeTTID)
+        testedFeature.simulateQuotaAllowed()
 
         // When
         callbackCaptor.firstValue.onSuccess(
@@ -1076,6 +1127,7 @@ internal class ProfilingFeatureTest {
         )
         testedFeature.onReceive(fakeRumAnrEvent)
         testedFeature.onReceive(fakeTTID)
+        testedFeature.simulateQuotaAllowed()
 
         // When
         callbackCaptor.firstValue.onSuccess(
@@ -1140,6 +1192,7 @@ internal class ProfilingFeatureTest {
             callbackCaptor.capture()
         )
         testedFeature.onReceive(fakeTTID)
+        testedFeature.simulateQuotaAllowed()
         callbackCaptor.firstValue.onSuccess(
             fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)
         )
@@ -1171,6 +1224,7 @@ internal class ProfilingFeatureTest {
         testedFeature.onReceive(fakeRumLongTaskEvent)
         testedFeature.onReceive(fakeRumAnrEvent)
         testedFeature.onReceive(fakeTTID)
+        testedFeature.simulateQuotaAllowed()
         callbackCaptor.firstValue.onSuccess(
             fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)
         )
@@ -1242,6 +1296,208 @@ internal class ProfilingFeatureTest {
 
         // Then
         verify(mockProfiler).unregisterProfilingCallback(mockContext, fakeInstanceName)
+    }
+
+    @Test
+    fun `M fire quota check W onContextUpdate { new session id }`(forge: Forge) {
+        // Given
+        val fakeNewSessionId = forge.aString()
+        testedFeature.quotaChecker = mockQuotaChecker
+
+        // When
+        testedFeature.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(
+                FeatureContextKeys.RUM_SESSION_ID to fakeNewSessionId,
+                FeatureContextKeys.RUM_SESSION_SAMPLE_RATE to 100f
+            )
+        )
+
+        // Then
+        verify(mockQuotaChecker).checkAsync(eq(fakeNewSessionId), any())
+    }
+
+    @Test
+    fun `M stamp reason and session id W propagateQuotaResult {denied for current session}`(
+        @StringForgery fakeQuotaSessionId: String
+    ) {
+        // Given
+        val fakeProfilingContext = mutableMapOf<String, Any?>()
+        whenever(
+            mockSdkCore.updateFeatureContext(eq(Feature.PROFILING_FEATURE_NAME), any(), any())
+        ) doAnswer {
+            it.getArgument<(MutableMap<String, Any?>) -> Unit>(2).invoke(fakeProfilingContext)
+        }
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dispatchRumSession(fakeQuotaSessionId, 100f)
+
+        // When
+        testedFeature.propagateQuotaResult(QuotaResult.QUOTA_EXCEEDED)
+
+        // Then — the decision is stamped with the current session in context and fed to the scheduler
+        assertThat(fakeProfilingContext[FeatureContextKeys.PROFILING_QUOTA_REASON])
+            .isEqualTo(QuotaResult.QUOTA_EXCEEDED.reason.rawValue)
+        assertThat(fakeProfilingContext[FeatureContextKeys.PROFILING_QUOTA_SESSION_ID])
+            .isEqualTo(fakeQuotaSessionId)
+        assertThat(testedFeature.continuousProfilingScheduler?.lastQuotaResult)
+            .isEqualTo(QuotaResult.QUOTA_EXCEEDED)
+    }
+
+    @Test
+    fun `M clear reason and session id W propagateQuotaResult {allowed for current session}`(
+        @StringForgery fakeQuotaSessionId: String
+    ) {
+        // Given — a stale denial stamp from a previous session is present
+        val fakeProfilingContext = mutableMapOf<String, Any?>(
+            FeatureContextKeys.PROFILING_QUOTA_REASON to "stale-reason",
+            FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to "stale-session"
+        )
+        whenever(
+            mockSdkCore.updateFeatureContext(eq(Feature.PROFILING_FEATURE_NAME), any(), any())
+        ) doAnswer {
+            it.getArgument<(MutableMap<String, Any?>) -> Unit>(2).invoke(fakeProfilingContext)
+        }
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dispatchRumSession(fakeQuotaSessionId, 100f)
+
+        // When
+        testedFeature.propagateQuotaResult(QuotaResult.FAIL_OPEN)
+
+        // Then — both the reason and its session stamp are removed
+        assertThat(fakeProfilingContext).doesNotContainKey(FeatureContextKeys.PROFILING_QUOTA_REASON)
+        assertThat(fakeProfilingContext).doesNotContainKey(FeatureContextKeys.PROFILING_QUOTA_SESSION_ID)
+    }
+
+    @Test
+    fun `M clear scheduler quota result W onContextUpdate {new session}`() {
+        // Given — the current session was denied
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dispatchRumSession(fakeSessionId, 100f)
+        testedFeature.propagateQuotaResult(QuotaResult.QUOTA_EXCEEDED)
+        assertThat(testedFeature.continuousProfilingScheduler?.lastQuotaResult)
+            .isEqualTo(QuotaResult.QUOTA_EXCEEDED)
+
+        // When — a new session rolls over before its own quota check resolves
+        testedFeature.dispatchRumSession("new-$fakeSessionId", 100f)
+
+        // Then — the scheduler's decision is cleared until the new session's check resolves
+        assertThat(testedFeature.continuousProfilingScheduler?.lastQuotaResult).isNull()
+    }
+
+    @Test
+    fun `M not write launch event W app-launch profiling result received {quota denied}`(
+        @Forgery fakePerfettoResult: PerfettoResult
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        val callbackCaptor = argumentCaptor<ProfilerCallback>()
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        verify(mockProfiler).registerProfilingCallback(
+            eq(mockContext),
+            eq(fakeInstanceName),
+            callbackCaptor.capture()
+        )
+        testedFeature.propagateQuotaResult(QuotaResult.QUOTA_EXCEEDED)
+        testedFeature.onReceive(fakeRumLongTaskEvent)
+        testedFeature.onReceive(fakeTTID)
+
+        // When
+        callbackCaptor.firstValue.onSuccess(
+            fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)
+        )
+
+        // Then
+        verify(mockDataWriter, never()).write(
+            profilingResult = any(),
+            longTasks = any(),
+            anrEvents = any(),
+            vitalEvents = any()
+        )
+    }
+
+    @Test
+    fun `M write launch event W app-launch profiling result received {quota allowed}`(
+        @Forgery fakePerfettoResult: PerfettoResult
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        val callbackCaptor = argumentCaptor<ProfilerCallback>()
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        verify(mockProfiler).registerProfilingCallback(
+            eq(mockContext),
+            eq(fakeInstanceName),
+            callbackCaptor.capture()
+        )
+        testedFeature.propagateQuotaResult(QuotaResult(QuotaResult.Decision.ALLOWED, QuotaReason.QUOTA_OK))
+        testedFeature.onReceive(fakeRumLongTaskEvent)
+        testedFeature.onReceive(fakeTTID)
+
+        // When
+        callbackCaptor.firstValue.onSuccess(
+            fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)
+        )
+
+        // Then
+        verify(mockDataWriter).write(
+            profilingResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH),
+            longTasks = listOf(fakeRumLongTaskEvent),
+            anrEvents = emptyList(),
+            vitalEvents = listOf(fakeTTID)
+        )
+    }
+
+    @Test
+    fun `M buffer launch event then write W quota result arrives after app-launch result`(
+        @Forgery fakePerfettoResult: PerfettoResult
+    ) {
+        // Given — no quota decision is ever propagated (e.g. the quota check could not be
+        // scheduled). The launch event must still be written (fail open) rather than stalled.
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        val callbackCaptor = argumentCaptor<ProfilerCallback>()
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        verify(mockProfiler).registerProfilingCallback(
+            eq(mockContext),
+            eq(fakeInstanceName),
+            callbackCaptor.capture()
+        )
+        testedFeature.onReceive(fakeRumLongTaskEvent)
+        testedFeature.onReceive(fakeTTID)
+        callbackCaptor.firstValue.onSuccess(
+            fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)
+        )
+
+        // Then — nothing is written while the quota decision is still pending
+        verify(mockDataWriter, never()).write(
+            profilingResult = any(),
+            longTasks = any(),
+            anrEvents = any(),
+            vitalEvents = any()
+        )
+
+        // When — the quota decision finally lands
+        testedFeature.simulateQuotaAllowed()
+
+        // Then — the buffered launch event is now written
+        verify(mockDataWriter).write(
+            profilingResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH),
+            longTasks = listOf(fakeRumLongTaskEvent),
+            anrEvents = emptyList(),
+            vitalEvents = listOf(fakeTTID)
+        )
+    }
+
+    // Simulates the asynchronous quota decision landing (in production this is driven by the quota
+    // checker's HTTP callback). Launch profiling is held until this arrives, so tests that expect a
+    // launch write or a launch->continuous transition must call this before the APPLICATION_LAUNCH
+    // result is delivered.
+    private fun ProfilingFeature.simulateQuotaAllowed() {
+        propagateQuotaResult(QuotaResult(QuotaResult.Decision.ALLOWED, QuotaReason.QUOTA_OK))
     }
 
     private fun ProfilingFeature.dispatchRumSession(sessionId: String, sampleRate: Float) {

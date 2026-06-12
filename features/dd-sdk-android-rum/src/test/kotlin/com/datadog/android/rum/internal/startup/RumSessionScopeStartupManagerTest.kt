@@ -254,6 +254,311 @@ internal class RumSessionScopeStartupManagerTest {
 
     @ParameterizedTest
     @MethodSource("testScenarios")
+    fun `M not attach quota reason W onTTIDEvent {profiler running and quota reason present}`(
+        scenario: RumStartupScenario,
+        forge: Forge
+    ) {
+        // Given
+        val fakeQuotaReason = forge.anAlphabeticalString()
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        FeatureContextKeys.PROFILER_IS_RUNNING to true,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to rumContext.sessionId
+                    )
+                )
+            }
+        )
+        val info = RumTTIDInfo(
+            scenario = scenario,
+            durationNs = forge.aLong(min = 0, max = 10000)
+        )
+        val event = RumRawEvent.AppStartTTIDEvent(info = info)
+
+        // When
+        manager.onAppStartEvent(mock())
+        manager.onTTIDEvent(
+            event = event,
+            isSessionTracked = true,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+
+        // Then
+        argumentCaptor<VitalAppLaunchEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasProfilingStatus(VitalAppLaunchEvent.ProfilingStatus.RUNNING)
+                .hasNoProfilingQuotaReason()
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("testScenarios")
+    fun `M attach quota reason W onTTIDEvent {profiler stopped by quota}`(
+        scenario: RumStartupScenario,
+        forge: Forge
+    ) {
+        // Given — profiling is not running and the quota API denied the session
+        val fakeQuotaReason = forge.anAlphabeticalString()
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        FeatureContextKeys.PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to rumContext.sessionId
+                    )
+                )
+            }
+        )
+        val info = RumTTIDInfo(
+            scenario = scenario,
+            durationNs = forge.aLong(min = 0, max = 10000)
+        )
+        val event = RumRawEvent.AppStartTTIDEvent(info = info)
+
+        // When
+        manager.onAppStartEvent(mock())
+        manager.onTTIDEvent(
+            event = event,
+            isSessionTracked = true,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+
+        // Then — status is STOPPED and the quota reason is attached
+        argumentCaptor<VitalAppLaunchEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasProfilingStatus(VitalAppLaunchEvent.ProfilingStatus.STOPPED)
+                .hasProfilingQuotaReason(fakeQuotaReason)
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("testScenarios")
+    fun `M ignore stale quota reason W onTTIDEvent {quota reason for other session}`(
+        scenario: RumStartupScenario,
+        forge: Forge
+    ) {
+        // Given — a quota reason stamped with a session other than the current one
+        val fakeQuotaReason = forge.anAlphabeticalString()
+        val fakeOtherSessionId = forge.anHexadecimalString()
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        FeatureContextKeys.PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeOtherSessionId
+                    )
+                )
+            }
+        )
+        val info = RumTTIDInfo(
+            scenario = scenario,
+            durationNs = forge.aLong(min = 0, max = 10000)
+        )
+        val event = RumRawEvent.AppStartTTIDEvent(info = info)
+
+        // When
+        manager.onAppStartEvent(mock())
+        manager.onTTIDEvent(
+            event = event,
+            isSessionTracked = true,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+
+        // Then — the stale reason is ignored: no status and no quota reason
+        argumentCaptor<VitalAppLaunchEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasNoProfilingStatus()
+                .hasNoProfilingQuotaReason()
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("testScenarios")
+    fun `M attach quota reason W onTTFDEvent {profiler stopped by quota}`(
+        scenario: RumStartupScenario,
+        forge: Forge
+    ) {
+        // Given — profiling is not running and the quota API denied the session
+        val fakeQuotaReason = forge.anAlphabeticalString()
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        FeatureContextKeys.PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to rumContext.sessionId
+                    )
+                )
+            }
+        )
+        val ttidEvent = RumRawEvent.AppStartTTIDEvent(
+            info = RumTTIDInfo(scenario = scenario, durationNs = forge.aLong(min = 0, max = 10000))
+        )
+        val ttfdEvent = forge.createTTFDEvent(scenario.initialTime)
+
+        // When
+        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario))
+        manager.onTTIDEvent(
+            event = ttidEvent,
+            isSessionTracked = true,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+        manager.onTTFDEvent(
+            event = ttfdEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+
+        // Then — the TTFD vital carries STOPPED and the denial reason, like TTID
+        argumentCaptor<VitalAppLaunchEvent> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasProfilingStatus(VitalAppLaunchEvent.ProfilingStatus.STOPPED)
+                .hasProfilingQuotaReason(fakeQuotaReason)
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("testScenarios")
+    fun `M not attach quota reason W onTTFDEvent {profiler running and quota reason present}`(
+        scenario: RumStartupScenario,
+        forge: Forge
+    ) {
+        // Given — the profiler is still running but a quota-denied reason is also present
+        val fakeQuotaReason = forge.anAlphabeticalString()
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        FeatureContextKeys.PROFILER_IS_RUNNING to true,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to rumContext.sessionId
+                    )
+                )
+            }
+        )
+        val ttidEvent = RumRawEvent.AppStartTTIDEvent(
+            info = RumTTIDInfo(scenario = scenario, durationNs = forge.aLong(min = 0, max = 10000))
+        )
+        val ttfdEvent = forge.createTTFDEvent(scenario.initialTime)
+
+        // When
+        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario))
+        manager.onTTIDEvent(
+            event = ttidEvent,
+            isSessionTracked = true,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+        manager.onTTFDEvent(
+            event = ttfdEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+
+        // Then — status is RUNNING and no quota reason leaks onto a running profiler
+        argumentCaptor<VitalAppLaunchEvent> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasProfilingStatus(VitalAppLaunchEvent.ProfilingStatus.RUNNING)
+                .hasNoProfilingQuotaReason()
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("testScenarios")
+    fun `M ignore stale quota reason W onTTFDEvent {quota reason for other session}`(
+        scenario: RumStartupScenario,
+        forge: Forge
+    ) {
+        // Given — a quota reason stamped with a session other than the current one
+        val fakeQuotaReason = forge.anAlphabeticalString()
+        val fakeOtherSessionId = forge.anHexadecimalString()
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        FeatureContextKeys.PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeOtherSessionId
+                    )
+                )
+            }
+        )
+        val ttidEvent = RumRawEvent.AppStartTTIDEvent(
+            info = RumTTIDInfo(scenario = scenario, durationNs = forge.aLong(min = 0, max = 10000))
+        )
+        val ttfdEvent = forge.createTTFDEvent(scenario.initialTime)
+
+        // When
+        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario))
+        manager.onTTIDEvent(
+            event = ttidEvent,
+            isSessionTracked = true,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+        manager.onTTFDEvent(
+            event = ttfdEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+
+        // Then — the stale reason is ignored: no status and no quota reason on the TTFD vital
+        argumentCaptor<VitalAppLaunchEvent> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasNoProfilingStatus()
+                .hasNoProfilingQuotaReason()
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("testScenarios")
     fun `M stop profiler W onTTIDEvent`(
         scenario: RumStartupScenario,
         forge: Forge
