@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.unit.dp
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.compose.internal.data.SemanticsWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
@@ -17,7 +18,7 @@ import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 
 internal class SliderSemanticsNodeMapper(
     colorStringFormatter: ColorStringFormatter,
-    private val semanticsUtils: SemanticsUtils = SemanticsUtils()
+    semanticsUtils: SemanticsUtils = SemanticsUtils()
 ) : AbstractSemanticsNodeMapper(
     colorStringFormatter,
     semanticsUtils
@@ -25,7 +26,8 @@ internal class SliderSemanticsNodeMapper(
     override fun map(
         semanticsNode: SemanticsNode,
         parentContext: UiContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): SemanticsWireframe {
         val trackWireframe = resolveTrackWireframe(parentContext, semanticsNode, 0)
         val thumbWireframe = resolveThumbWireframe(parentContext, semanticsNode, 1)

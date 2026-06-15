@@ -46,7 +46,8 @@ internal class ComposeViewMapper(
                 node,
                 density,
                 mappingContext,
-                asyncJobStatusCallback
+                asyncJobStatusCallback,
+                internalLogger
             )
         } ?: emptyList()
     }
