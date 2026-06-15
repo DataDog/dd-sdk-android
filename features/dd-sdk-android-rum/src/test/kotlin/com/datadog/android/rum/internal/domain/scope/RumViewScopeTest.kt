@@ -2865,9 +2865,10 @@ internal class RumViewScopeTest {
 
     // region Action
 
-    @Test
-    fun `M create ActionScope W handleEvent(StartAction)`(
-        @Forgery type: RumActionType,
+    @ParameterizedTest
+    @EnumSource(RumActionType::class, names = ["CUSTOM"], mode = EnumSource.Mode.EXCLUDE)
+    fun `M create ActionScope W handleEvent(StartAction+!CUSTOM)`(
+        type: RumActionType,
         @StringForgery name: String,
         @BoolForgery waitForStop: Boolean,
         forge: Forge
@@ -2896,6 +2897,75 @@ internal class RumViewScopeTest {
         assertThat(actionScope.actionAttributes).containsAllEntriesOf(attributes)
         assertThat(actionScope.parentScope).isSameAs(testedScope)
         assertThat(actionScope.sampleRate).isCloseTo(fakeSampleRate, Assertions.offset(0.001f))
+    }
+
+    @Test
+    fun `M create ActionScope W handleEvent(StartAction+CUSTOM+cont)`(
+        @StringForgery name: String,
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+
+        // When
+        val fakeStartActionEvent =
+            RumRawEvent.StartAction(RumActionType.CUSTOM, name, waitForStop = true, attributes)
+        val result = testedScope.handleEvent(
+            fakeStartActionEvent,
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        verifyNoInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(testedScope.activeActionScope).isInstanceOf(RumActionScope::class.java)
+        val actionScope = testedScope.activeActionScope as RumActionScope
+        assertThat(actionScope.name).isEqualTo(name)
+        assertThat(actionScope.eventTimestamp)
+            .isEqualTo(resolveExpectedTimestamp(fakeStartActionEvent.eventTime.timestamp))
+        assertThat(actionScope.waitForStop).isTrue()
+        assertThat(actionScope.actionAttributes).containsAllEntriesOf(attributes)
+        assertThat(actionScope.parentScope).isSameAs(testedScope)
+        assertThat(actionScope.sampleRate).isCloseTo(fakeSampleRate, Assertions.offset(0.001f))
+    }
+
+    @Test
+    fun `M send action immediately W handleEvent(StartAction+CUSTOM+instant) + no active ActionScope`(
+        @StringForgery name: String,
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.StartAction(RumActionType.CUSTOM, name, false, attributes)
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue)
+                .apply {
+                    hasNonNullId()
+                    hasType(RumActionType.CUSTOM)
+                    hasTargetName(name)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasLongTaskCount(0)
+                    hasView(testedScope.getRumContext())
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasSampleRate(fakeSampleRate)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+
+        assertThat(result).isSameAs(testedScope)
+        assertThat(testedScope.activeActionScope).isNull()
+        assertThat(testedScope.pendingActionCount).isEqualTo(1)
     }
 
     @ParameterizedTest

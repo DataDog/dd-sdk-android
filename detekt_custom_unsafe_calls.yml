@@ -37,6 +37,7 @@ datadog:
       - "android.os.BaseBundle.get(kotlin.String?):android.os.BadParcelableException,java.lang.LinkageError"
       - "android.os.BaseBundle.keySet():android.os.BadParcelableException,java.lang.LinkageError"
       - "android.os.BatteryManager.getIntProperty(kotlin.Int):java.lang.RuntimeException"
+      - "android.os.HandlerThread.start():java.lang.IllegalThreadStateException"
       - "android.provider.Settings.System.getInt(android.content.ContentResolver?, kotlin.String?):android.provider.Settings.SettingNotFoundException"
       - "android.text.SpannableStringBuilder.setSpan(kotlin.Any?, kotlin.Int, kotlin.Int, kotlin.Int):java.lang.RuntimeException"
       - "android.util.Base64.decode(kotlin.String?, kotlin.Int):java.lang.IllegalArgumentException"

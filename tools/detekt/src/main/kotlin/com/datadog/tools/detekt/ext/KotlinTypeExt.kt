@@ -31,7 +31,7 @@ internal fun KotlinType.fqTypeName(
     val arguments = if (getArguments().isNotEmpty()) {
         if (includeTypeArguments) {
             arguments.joinToString(", ", prefix = "<", postfix = ">") {
-                it.type.fqTypeName(treatGenericAsSuper)
+                if (it.isStarProjection) "*" else it.type.fqTypeName(treatGenericAsSuper)
             }
         } else {
             ""

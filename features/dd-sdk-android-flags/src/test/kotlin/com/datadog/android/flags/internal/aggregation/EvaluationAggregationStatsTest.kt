@@ -44,7 +44,7 @@ internal class EvaluationAggregationStatsTest {
     lateinit var fakeAllocationKey: String
 
     @StringForgery
-    lateinit var fakeFlagName: String
+    lateinit var fakeFlagKey: String
 
     @StringForgery
     lateinit var fakeApplicationId: String
@@ -62,7 +62,7 @@ internal class EvaluationAggregationStatsTest {
     fun `set up`() {
         fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
         fakeEvaluationAggregationKey = EvaluationAggregationKey(
-            flagKey = fakeFlagName,
+            flagKey = fakeFlagKey,
             variantKey = fakeVariantKey,
             allocationKey = fakeAllocationKey,
             targetingKey = fakeTargetingKey,
@@ -87,7 +87,7 @@ internal class EvaluationAggregationStatsTest {
 
         // Then
         assertThat(event.timestamp).isEqualTo(fakeFirstTimestamp)
-        assertThat(event.flag.key).isEqualTo(fakeFlagName)
+        assertThat(event.flag.key).isEqualTo(fakeFlagKey)
         assertThat(event.variant?.key).isEqualTo(fakeVariantKey)
         assertThat(event.allocation?.key).isEqualTo(fakeAllocationKey)
         assertThat(event.targetingKey).isEqualTo(fakeTargetingKey)
