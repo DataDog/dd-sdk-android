@@ -116,6 +116,7 @@ apolloRuntime = { module = "com.apollographql.apollo:apollo-runtime", version.re
 kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 versionsGradlePlugin = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "versionsGradlePlugin" }
 dokkaGradlePlugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
+detektGradlePlugin = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
 unmockGradlePlugin = { module = "com.github.bjoernq:unmockplugin", version.ref = "unmock" }
 
 # Annotation processors
