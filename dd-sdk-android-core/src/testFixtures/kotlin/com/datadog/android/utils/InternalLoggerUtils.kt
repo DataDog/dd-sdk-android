@@ -171,10 +171,11 @@ fun InternalLogger.verifyLog(
 
 fun InternalLogger.verifyApiUsage(
     apiUsage: InternalTelemetryEvent.ApiUsage,
-    samplingRate: Float
+    samplingRate: Float,
+    verificationMode: VerificationMode = times(1)
 ) {
     argumentCaptor<() -> InternalTelemetryEvent.ApiUsage> {
-        verify(this@verifyApiUsage).logApiUsage(eq(samplingRate), capture())
+        verify(this@verifyApiUsage, verificationMode).logApiUsage(eq(samplingRate), capture())
         InternalApiUsageEventAssert.assertThat(firstValue()).isEqualTo(apiUsage)
     }
 }

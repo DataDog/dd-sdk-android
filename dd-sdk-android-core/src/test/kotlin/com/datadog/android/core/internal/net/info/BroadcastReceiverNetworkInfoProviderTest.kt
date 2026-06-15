@@ -11,16 +11,19 @@ package com.datadog.android.core.internal.net.info
 import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
+import android.os.Handler
 import android.telephony.TelephonyManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.utils.assertj.NetworkInfoAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
@@ -30,14 +33,16 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.stream.Stream
 import android.net.NetworkInfo as AndroidNetworkInfo
@@ -72,7 +77,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
-    lateinit var mockExecutorService: ExecutorService
+    lateinit var mockHandler: Handler
 
     @BeforeEach
     fun `set up`() {
@@ -81,13 +86,10 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         whenever(mockContext.getSystemService(Context.TELEPHONY_SERVICE))
             .doReturn(mockTelephonyManager)
         whenever(mockConnectivityManager.activeNetworkInfo) doReturn mockNetworkInfo
-        whenever(mockExecutorService.execute(any())) doAnswer {
-            it.getArgument<Runnable>(0).run()
-        }
 
         testedProvider = BroadcastReceiverNetworkInfoProvider(
             internalLogger = mockInternalLogger,
-            executorService = mockExecutorService
+            handler = mockHandler
         )
     }
 
@@ -363,12 +365,34 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
     }
 
     @Test
-    fun `M dispatch onReceive through executor W onReceive()`() {
+    fun `M log error W onReceive { exception during processing }`() {
+        // Given
+        whenever(mockConnectivityManager.activeNetworkInfo) doThrow RuntimeException()
+
+        // When + Then
+        assertDoesNotThrow {
+            testedProvider.onReceive(mockContext, mockIntent)
+        }
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            message = "Error handling network info broadcast intent.",
+            throwableClass = RuntimeException::class.java
+        )
+    }
+
+    @Test
+    fun `M pass handler to registerReceiver W register()`() {
         // When
-        testedProvider.onReceive(mockContext, mockIntent)
+        testedProvider.register(mockContext)
 
         // Then
-        verify(mockExecutorService).execute(any())
+        verify(mockContext, atLeastOnce()).registerReceiver(
+            eq(testedProvider),
+            any(),
+            isNull(),
+            eq(mockHandler)
+        )
     }
 
     // region Internal

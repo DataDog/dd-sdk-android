@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
 import androidx.compose.ui.semantics.SemanticsNode
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
@@ -42,6 +43,9 @@ import org.mockito.quality.Strictness
 internal class ContainerSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() {
 
     private lateinit var testedContainerSemanticsNodeMapper: ContainerSemanticsNodeMapper
+
+    @Mock
+    private lateinit var mockInternalLogger: InternalLogger
 
     @Mock
     private lateinit var mockAsyncJobStatusCallback: AsyncJobStatusCallback
@@ -87,7 +91,8 @@ internal class ContainerSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTes
         val actual = testedContainerSemanticsNodeMapper.map(
             mockSemanticsNode,
             fakeUiContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -123,7 +128,8 @@ internal class ContainerSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTes
         val result = testedContainerSemanticsNodeMapper.map(
             mockSemanticsNode,
             fakeUiContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then

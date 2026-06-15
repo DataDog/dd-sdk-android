@@ -10,6 +10,7 @@ import androidx.compose.ui.semantics.SemanticsConfiguration
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.SemanticsWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
@@ -22,19 +23,20 @@ import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 
 internal class TextFieldSemanticsNodeMapper(
     colorStringFormatter: ColorStringFormatter,
-    private val semanticsUtils: SemanticsUtils = SemanticsUtils()
+    semanticsUtils: SemanticsUtils = SemanticsUtils()
 ) : AbstractSemanticsNodeMapper(colorStringFormatter, semanticsUtils) {
     override fun map(
         semanticsNode: SemanticsNode,
         parentContext: UiContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): SemanticsWireframe {
         var index = 0
         val privacy = semanticsUtils.getTextAndInputPrivacyOverride(semanticsNode)
             ?: parentContext.textAndInputPrivacy
         val shapeWireframe = resolveTextFieldShapeWireframe(parentContext, semanticsNode, index++)
         val editTextWireframe =
-            resolveEditTextWireframe(parentContext, semanticsNode, privacy, index)
+            resolveEditTextWireframe(parentContext, semanticsNode, privacy, index, internalLogger)
         return SemanticsWireframe(
             wireframes = listOfNotNull(shapeWireframe, editTextWireframe),
             uiContext = parentContext.copy(textAndInputPrivacy = privacy)
@@ -73,13 +75,14 @@ internal class TextFieldSemanticsNodeMapper(
         parentContext: UiContext,
         semanticsNode: SemanticsNode,
         textAndInputPrivacy: TextAndInputPrivacy,
-        index: Int
+        index: Int,
+        internalLogger: InternalLogger
     ): MobileSegment.Wireframe? {
         val globalBounds = semanticsUtils.resolveInnerBounds(semanticsNode)
         val editText = resolveEditText(semanticsNode.config)?.let {
             transformCapturedText(it, textAndInputPrivacy, true)
         }
-        val textLayoutInfo = semanticsUtils.resolveTextLayoutInfo(semanticsNode)
+        val textLayoutInfo = semanticsUtils.resolveTextLayoutInfo(semanticsNode, internalLogger)
         val textStyle = textLayoutInfo?.let {
             resolveTextLayoutInfoToTextStyle(parentContext, it)
         } ?: defaultTextStyle
