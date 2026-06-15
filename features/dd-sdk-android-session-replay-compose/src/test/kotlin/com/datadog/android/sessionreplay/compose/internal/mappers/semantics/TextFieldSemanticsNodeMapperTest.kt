@@ -13,6 +13,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.GenericFontFamily
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
@@ -48,6 +49,9 @@ import org.mockito.quality.Strictness
 internal class TextFieldSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() {
 
     private lateinit var testedTextFieldSemanticsNodeMapper: TextFieldSemanticsNodeMapper
+
+    @Mock
+    private lateinit var mockInternalLogger: InternalLogger
 
     @Mock
     private lateinit var mockSemanticsNode: SemanticsNode
@@ -103,7 +107,7 @@ internal class TextFieldSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTes
         whenever(mockSemanticsConfiguration.getOrNull(SemanticsProperties.EditableText)) doReturn AnnotatedString(
             fakeEditText
         )
-        whenever(mockSemanticsUtils.resolveTextLayoutInfo(mockSemanticsNode)) doReturn fakeTextLayoutInfo
+        whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(mockSemanticsNode), any())) doReturn fakeTextLayoutInfo
         whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode)) doReturn innerBounds
         whenever(mockSemanticsUtils.resolveBackgroundColor(mockSemanticsNode)) doReturn fakeBackgroundColor
         whenever(mockSemanticsUtils.resolveBackgroundShape(mockSemanticsNode)) doReturn mockShape
@@ -126,7 +130,8 @@ internal class TextFieldSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTes
         val actual = testedTextFieldSemanticsNodeMapper.map(
             mockSemanticsNode,
             fakeUiContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -185,7 +190,7 @@ internal class TextFieldSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTes
         whenever(mockSemanticsConfiguration.getOrNull(SemanticsProperties.EditableText)) doReturn AnnotatedString(
             fakeEditText
         )
-        whenever(mockSemanticsUtils.resolveTextLayoutInfo(mockSemanticsNode)) doReturn fakeTextLayoutInfo
+        whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(mockSemanticsNode), any())) doReturn fakeTextLayoutInfo
         whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode)) doReturn innerBounds
         whenever(mockSemanticsUtils.resolveBackgroundColor(mockSemanticsNode)) doReturn fakeBackgroundColor
         whenever(mockSemanticsUtils.resolveBackgroundShape(mockSemanticsNode)) doReturn mockShape
@@ -209,7 +214,8 @@ internal class TextFieldSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTes
         val result = testedTextFieldSemanticsNodeMapper.map(
             mockSemanticsNode,
             fakeUiContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then

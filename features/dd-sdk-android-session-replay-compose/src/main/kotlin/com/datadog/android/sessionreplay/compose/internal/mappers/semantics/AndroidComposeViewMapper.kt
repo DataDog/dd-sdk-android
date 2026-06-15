@@ -45,7 +45,8 @@ internal class AndroidComposeViewMapper(
             view.semanticsOwner.unmergedRootSemanticsNode,
             density,
             mappingContext,
-            asyncJobStatusCallback
+            asyncJobStatusCallback,
+            internalLogger
         )
     }
 }

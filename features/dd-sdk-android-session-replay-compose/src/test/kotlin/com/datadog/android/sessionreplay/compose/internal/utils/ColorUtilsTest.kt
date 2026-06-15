@@ -6,12 +6,14 @@
 
 package com.datadog.android.sessionreplay.compose.internal.utils
 
+import com.datadog.android.api.InternalLogger
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -24,6 +26,9 @@ import org.mockito.quality.Strictness
 class ColorUtilsTest {
 
     private val testedColorUtils = ColorUtils()
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
 
     private val lightColors = listOf(
         PURE_WHITE_HEX,
@@ -47,7 +52,7 @@ class ColorUtilsTest {
         val color = forge.anElementFrom(darkColors)
 
         // When
-        val result = testedColorUtils.isDarkColor(color)
+        val result = testedColorUtils.isDarkColor(color, mockInternalLogger)
 
         // Then
         assertThat(result).isTrue()
@@ -59,7 +64,7 @@ class ColorUtilsTest {
         val color = forge.anElementFrom(lightColors)
 
         // When
-        val result = testedColorUtils.isDarkColor(color)
+        val result = testedColorUtils.isDarkColor(color, mockInternalLogger)
 
         // Then
         assertThat(result).isFalse()
