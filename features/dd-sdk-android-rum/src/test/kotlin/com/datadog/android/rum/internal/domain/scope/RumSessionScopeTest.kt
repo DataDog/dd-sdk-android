@@ -1864,7 +1864,7 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        verify(mockTimeseriesFactory).create(any(), any(), expectedSessionType)
+        verify(mockTimeseriesFactory).create(any(), any(), eq(expectedSessionType))
     }
 
     @Test
@@ -1882,7 +1882,7 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        verify(mockTimeseriesFactory).create(any(), any(), RumSessionType.USER)
+        verify(mockTimeseriesFactory).create(any(), any(), eq(RumSessionType.USER))
     }
 
     @Test
@@ -1900,7 +1900,7 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        verify(mockTimeseriesFactory).create(any(), any(), RumSessionType.USER)
+        verify(mockTimeseriesFactory).create(any(), any(), eq(RumSessionType.USER))
     }
 
     @Test
@@ -1918,7 +1918,7 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        verify(mockTimeseriesFactory).create(any(), any(), RumSessionType.USER)
+        verify(mockTimeseriesFactory).create(any(), any(), eq(RumSessionType.USER))
     }
 
     @Test
@@ -1936,7 +1936,7 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        verify(mockTimeseriesFactory).create(any(), any(), RumSessionType.USER)
+        verify(mockTimeseriesFactory).create(any(), any(), eq(RumSessionType.USER))
     }
 
     @Test
@@ -2079,6 +2079,28 @@ internal class RumSessionScopeTest {
 
         // Then — at least the last call carries FOREGROUND
         verify(mockTimeseries, atLeastOnce()).onViewTypeUpdate(RumViewType.FOREGROUND)
+    }
+
+    @Test
+    fun `M pass FOREGROUND W onViewTypeUpdate { first StartView, activeView established by child }`(forge: Forge) {
+        // Given — activeView is null until childScope processes the StartView event
+        val mockViewScope = mock<RumViewScope>()
+        val fakeRumContext = forge.getForgery<RumContext>().copy(viewType = RumViewType.FOREGROUND)
+        whenever(mockViewScope.getRumContext()) doReturn fakeRumContext
+        var childHasHandledEvent = false
+        whenever(mockChildScope.activeView).thenAnswer { if (childHasHandledEvent) mockViewScope else null }
+        whenever(mockChildScope.handleEvent(any(), any(), any(), any())).thenAnswer {
+            childHasHandledEvent = true
+            mockChildScope
+        }
+        whenever(mockTimeseriesFactory.create(any(), any(), any())) doReturn mockTimeseries
+        initializeTestedScope(timeseriesFactory = mockTimeseriesFactory)
+
+        // When — first StartView creates the timeseries and establishes the active view
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then — timeseries receives FOREGROUND (read after child handles the event), not NONE
+        verify(mockTimeseries).onViewTypeUpdate(RumViewType.FOREGROUND)
     }
 
     @Test

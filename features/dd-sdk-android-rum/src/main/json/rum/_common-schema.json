@@ -173,6 +173,20 @@
       },
       "readOnly": true
     },
+    "tab": {
+      "type": "object",
+      "description": "Tab properties",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "UUID of the browser tab",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+          "readOnly": true
+        }
+      },
+      "readOnly": true
+    },
     "connectivity": {
       "type": "object",
       "description": "Device connectivity properties",
@@ -475,6 +489,19 @@
       "type": "object",
       "description": "User provided context",
       "additionalProperties": true
+    },
+    "stream": {
+      "type": "object",
+      "description": "Stream properties",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "UUID of the stream",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+          "readOnly": true
+        }
+      }
     }
   }
 }

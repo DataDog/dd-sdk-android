@@ -82,7 +82,7 @@ internal class MemoryEventSerializer(
         val ts = data.mapToDeltaCompressed { it.timestamp }
 
         val memoryMaxArray = data.mapToDeltaCompressed {
-            roundToLongSafely(it.dataPoint.memoryMax.toDouble(), scale = scale)
+            roundToLongSafely(it.dataPoint.memoryFootprint.toDouble(), scale = scale)
         }
 
         val memoryPercentArray = data.mapToDeltaCompressed {
@@ -93,7 +93,7 @@ internal class MemoryEventSerializer(
             addProperty("precision", precision)
             addProperty("resolution", RESOLUTION_NS)
             add("ts", ts)
-            add("memory_max", memoryMaxArray)
+            add("memory_footprint", memoryMaxArray)
             add("memory_percent", memoryPercentArray)
         }
     }

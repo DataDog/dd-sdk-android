@@ -113,6 +113,9 @@ internal class RumSessionScope(
             null
         }
 
+    private val effectiveRumContext: RumContext
+        get() = activeView?.getRumContext() ?: getRumContext()
+
     enum class State(val asString: String) {
         NOT_TRACKED("NOT_TRACKED"),
         TRACKED("TRACKED"),
@@ -161,8 +164,6 @@ internal class RumSessionScope(
 
         val actualWriter = if (sessionState == State.TRACKED) writer else noOpWriter
 
-        val rumContext = activeView?.getRumContext() ?: getRumContext()
-
         when (event) {
             is RumRawEvent.AppStartTTIDEvent -> {
                 if (sessionState == State.TRACKED) {
@@ -171,7 +172,7 @@ internal class RumSessionScope(
                         datadogContext = datadogContext,
                         writeScope = writeScope,
                         writer = actualWriter,
-                        rumContext = rumContext,
+                        rumContext = effectiveRumContext,
                         customAttributes = getCustomAttributes()
                     )
                 } else {
@@ -193,7 +194,7 @@ internal class RumSessionScope(
                         datadogContext = datadogContext,
                         writeScope = writeScope,
                         writer = actualWriter,
-                        rumContext = rumContext,
+                        rumContext = effectiveRumContext,
                         customAttributes = getCustomAttributes()
                     )
                 }
@@ -205,7 +206,7 @@ internal class RumSessionScope(
             }
         }
 
-        timeseries.onViewTypeUpdate(rumContext.viewType)
+        timeseries.onViewTypeUpdate(effectiveRumContext.viewType)
 
         return if (isSessionComplete()) {
             null

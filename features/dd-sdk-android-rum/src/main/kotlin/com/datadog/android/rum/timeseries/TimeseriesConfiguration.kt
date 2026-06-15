@@ -83,6 +83,7 @@ class TimeseriesConfiguration internal constructor(
 
     companion object {
 
+        /** Default [TimeseriesConfiguration] built from [Builder] defaults. */
         @ExperimentalRumApi
         val DEFAULT: TimeseriesConfiguration = Builder().build()
 

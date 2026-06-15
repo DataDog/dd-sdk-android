@@ -374,13 +374,18 @@
         "_dd": {
           "type": "object",
           "description": "Internal properties",
-          "properties": {
-            "profiling": {
-              "type": "object",
-              "description": "Profiling context",
-              "allOf": [{ "$ref": "./_profiling-internal-context-schema.json" }]
+          "allOf": [
+            { "$ref": "_trace-schema.json" },
+            {
+              "properties": {
+                "profiling": {
+                  "type": "object",
+                  "description": "Profiling context",
+                  "allOf": [{ "$ref": "./_profiling-internal-context-schema.json" }]
+                }
+              }
             }
-          },
+          ],
           "readOnly": true
         }
       }

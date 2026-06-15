@@ -18,6 +18,7 @@ import com.google.gson.JsonPrimitive
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -172,9 +173,21 @@ internal class TimeseriesEndToEndTest {
 
     private fun assertPrimitiveEquals(expected: JsonPrimitive, actual: JsonPrimitive, path: String) {
         when {
-            expected.isString || actual.isString ->
+            expected.isString != actual.isString ->
+                fail(
+                    "JSON type mismatch at $path: expected ${if (expected.isString) "string" else "number/boolean"}," +
+                        " got ${if (actual.isString) "string" else "number/boolean"}" +
+                        " (values: ${expected.asString} vs ${actual.asString})"
+                )
+            expected.isBoolean != actual.isBoolean ->
+                fail(
+                    "JSON type mismatch at $path: expected ${if (expected.isBoolean) "boolean" else "non-boolean"}," +
+                        " got ${if (actual.isBoolean) "boolean" else "non-boolean"}" +
+                        " (values: ${expected.asString} vs ${actual.asString})"
+                )
+            expected.isString ->
                 assertThat(actual.asString).describedAs("String at %s", path).isEqualTo(expected.asString)
-            expected.isBoolean || actual.isBoolean ->
+            expected.isBoolean ->
                 assertThat(actual.asBoolean).describedAs("Boolean at %s", path).isEqualTo(expected.asBoolean)
             else -> assertNumericPrimitivesEqual(expected, actual, path)
         }

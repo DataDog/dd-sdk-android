@@ -307,7 +307,7 @@
                   "additionalProperties": {
                     "type": "string"
                   },
-                  "readOnly": true
+                  "readOnly": false
                 }
               },
               "readOnly": true
@@ -325,106 +325,13 @@
                   "additionalProperties": {
                     "type": "string"
                   },
-                  "readOnly": true
+                  "readOnly": false
                 }
               },
               "readOnly": true
             },
             "graphql": {
-              "type": "object",
-              "description": "GraphQL requests parameters",
-              "properties": {
-                "operationType": {
-                  "type": "string",
-                  "description": "Type of the GraphQL operation",
-                  "enum": ["query", "mutation", "subscription"],
-                  "readOnly": true
-                },
-                "operationName": {
-                  "type": "string",
-                  "description": "Name of the GraphQL operation",
-                  "readOnly": true
-                },
-                "payload": {
-                  "type": "string",
-                  "description": "Content of the GraphQL operation",
-                  "readOnly": false
-                },
-                "variables": {
-                  "type": "string",
-                  "description": "String representation of the operation variables",
-                  "readOnly": false
-                },
-                "error_count": {
-                  "type": "integer",
-                  "description": "Number of GraphQL errors in the response",
-                  "minimum": 0,
-                  "readOnly": true
-                },
-                "errors": {
-                  "type": "array",
-                  "description": "Array of GraphQL errors from the response",
-                  "items": {
-                    "type": "object",
-                    "description": "GraphQL error details",
-                    "required": ["message"],
-                    "properties": {
-                      "message": {
-                        "type": "string",
-                        "description": "Error message",
-                        "readOnly": true
-                      },
-                      "code": {
-                        "type": "string",
-                        "description": "Error code (used by some providers)",
-                        "readOnly": true
-                      },
-                      "locations": {
-                        "type": "array",
-                        "description": "Array of error locations in the GraphQL query",
-                        "items": {
-                          "type": "object",
-                          "description": "Error location",
-                          "required": ["line", "column"],
-                          "properties": {
-                            "line": {
-                              "type": "integer",
-                              "description": "Line number where the error occurred",
-                              "minimum": 1,
-                              "readOnly": true
-                            },
-                            "column": {
-                              "type": "integer",
-                              "description": "Column number where the error occurred",
-                              "minimum": 1,
-                              "readOnly": true
-                            }
-                          },
-                          "readOnly": true
-                        },
-                        "readOnly": true
-                      },
-                      "path": {
-                        "type": "array",
-                        "description": "Path to the field that caused the error",
-                        "items": {
-                          "oneOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "integer"
-                            }
-                          ]
-                        },
-                        "readOnly": true
-                      }
-                    },
-                    "readOnly": true
-                  },
-                  "readOnly": true
-                }
-              },
+              "allOf": [{ "$ref": "_graphql-schema.json" }],
               "readOnly": true
             }
           },
@@ -433,38 +340,18 @@
         "_dd": {
           "type": "object",
           "description": "Internal properties",
-          "properties": {
-            "span_id": {
-              "type": "string",
-              "description": "span identifier in decimal format",
-              "pattern": "^[0-9]+$",
-              "readOnly": true
-            },
-            "parent_span_id": {
-              "type": "string",
-              "description": "parent span identifier in decimal format",
-              "pattern": "^[0-9]+$",
-              "readOnly": true
-            },
-            "trace_id": {
-              "type": "string",
-              "description": "trace identifier, either a 64 bit decimal number or a 128 bit hexadecimal number padded with 0s",
-              "pattern": "^[0-9]{1,20}|[0-9a-fA-F]{32}$",
-              "readOnly": true
-            },
-            "rule_psr": {
-              "type": "number",
-              "description": "trace sample rate in decimal format",
-              "minimum": 0,
-              "maximum": 1,
-              "readOnly": true
-            },
-            "discarded": {
-              "type": "boolean",
-              "description": "Whether the resource should be discarded or indexed",
-              "readOnly": true
+          "allOf": [
+            { "$ref": "_trace-schema.json" },
+            {
+              "properties": {
+                "discarded": {
+                  "type": "boolean",
+                  "description": "Whether the resource should be discarded or indexed",
+                  "readOnly": true
+                }
+              }
             }
-          },
+          ],
           "readOnly": true
         }
       }
