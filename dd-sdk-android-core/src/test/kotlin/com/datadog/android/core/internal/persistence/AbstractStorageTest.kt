@@ -12,6 +12,7 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.api.threads.FakeSameThreadExecutorService
 import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.persistence.PersistenceStrategy

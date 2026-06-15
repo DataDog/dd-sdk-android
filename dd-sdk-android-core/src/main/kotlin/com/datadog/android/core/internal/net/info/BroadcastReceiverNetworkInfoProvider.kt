@@ -13,21 +13,20 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.ConnectivityManager
+import android.os.Handler
 import android.telephony.TelephonyManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.core.internal.receiver.ThreadSafeReceiver
-import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.utils.getSystemServiceAs
-import java.util.concurrent.ExecutorService
 import android.net.NetworkInfo as AndroidNetworkInfo
 
 @Suppress("DEPRECATION")
 @SuppressLint("InlinedApi")
 internal class BroadcastReceiverNetworkInfoProvider(
     private val internalLogger: InternalLogger,
-    private val executorService: ExecutorService,
+    private val handler: Handler,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) : ThreadSafeReceiver(),
     NetworkInfoProvider {
@@ -38,16 +37,19 @@ internal class BroadcastReceiverNetworkInfoProvider(
     // region BroadcastReceiver
 
     override fun onReceive(context: Context, intent: Intent?) {
-        executorService.executeSafe(HANDLE_INTENT_OPERATION_NAME, internalLogger) {
-            handleIntent(context)
+        try {
+            val connectivityMgr = context.getSystemServiceAs<ConnectivityManager>(Context.CONNECTIVITY_SERVICE)
+            val activeNetworkInfo = connectivityMgr?.activeNetworkInfo
+
+            networkInfo = buildNetworkInfo(context, activeNetworkInfo)
+        } catch (@Suppress("TooGenericExceptionCaught") e: RuntimeException) {
+            internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                messageBuilder = { ERROR_HANDLING_BROADCAST_INTENT },
+                throwable = e
+            )
         }
-    }
-
-    private fun handleIntent(context: Context) {
-        val connectivityMgr = context.getSystemServiceAs<ConnectivityManager>(Context.CONNECTIVITY_SERVICE)
-        val activeNetworkInfo = connectivityMgr?.activeNetworkInfo
-
-        networkInfo = buildNetworkInfo(context, activeNetworkInfo)
     }
 
     // endregion
@@ -56,8 +58,8 @@ internal class BroadcastReceiverNetworkInfoProvider(
 
     override fun register(context: Context) {
         val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
-        registerReceiver(context, filter)
-        handleIntent(context)
+        registerReceiver(context, filter, handler)
+        onReceive(context, null)
     }
 
     override fun unregister(context: Context) {
@@ -149,9 +151,9 @@ internal class BroadcastReceiverNetworkInfoProvider(
 
     companion object {
 
-        private const val HANDLE_INTENT_OPERATION_NAME = "BroadcastReceiverNetworkInfoProvider.handleIntent"
-
         const val NETWORK_TYPE_LTE_CA = 19 // @Hide TelephonyManager.NETWORK_TYPE_LTE_CA,
+
+        private const val ERROR_HANDLING_BROADCAST_INTENT = "Error handling network info broadcast intent."
 
         private val knownMobileTypes = setOf(
             ConnectivityManager.TYPE_MOBILE,

@@ -33,6 +33,12 @@ internal class WebViewRumFeature(
 
     internal val initialized = AtomicBoolean(false)
 
+    @Volatile
+    internal var cachedRumContext: Map<String, Any?> = emptyMap()
+
+    @Volatile
+    internal var cachedTracingContext: Map<String, Any?> = emptyMap()
+
     // region Feature
 
     override val name: String = WEB_RUM_FEATURE_NAME
@@ -44,8 +50,12 @@ internal class WebViewRumFeature(
     }
 
     override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
-        if (featureName == Feature.RUM_FEATURE_NAME) {
-            nativeRumViewsCache.addToCache(context)
+        when (featureName) {
+            Feature.RUM_FEATURE_NAME -> {
+                nativeRumViewsCache.addToCache(context)
+                cachedRumContext = context
+            }
+            Feature.TRACING_FEATURE_NAME -> cachedTracingContext = context
         }
     }
 
@@ -56,6 +66,8 @@ internal class WebViewRumFeature(
         sdkCore.removeContextUpdateReceiver(this)
         dataWriter = NoOpDataWriter()
         initialized.set(false)
+        cachedRumContext = emptyMap()
+        cachedTracingContext = emptyMap()
     }
 
     // endregion
