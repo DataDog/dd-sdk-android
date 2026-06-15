@@ -10,11 +10,11 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.graphics.BlendMode
 import android.graphics.BlendModeColorFilter
 import android.graphics.ColorFilter
-import android.graphics.Paint
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.utils.ALPHA_SHIFT_ANDROID
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.MAX_ALPHA_VALUE
 
@@ -28,33 +28,19 @@ internal open class AndroidQDrawableToColorMapper(
 ) : AndroidMDrawableToColorMapper(extensionMappers) {
 
     override fun resolveGradientDrawable(drawable: GradientDrawable, internalLogger: InternalLogger): Int? {
-        @Suppress("SwallowedException")
-        val fillPaint = try {
-            @Suppress("UnsafeThirdPartyFunctionCall")
-            fillPaintField?.get(drawable) as? Paint
-        } catch (e: IllegalArgumentException) {
-            null
-        } catch (e: IllegalAccessException) {
-            null
-        } catch (e: ExceptionInInitializerError) {
-            null
-        }
-
-        if (fillPaint == null) return null
-
-        val colorFilter = fillPaint.colorFilter
-        var fillColor: Int = fillPaint.color
-        val fillAlpha = (fillPaint.alpha * drawable.alpha) / MAX_ALPHA_VALUE
-
-        return if (fillAlpha == 0) {
-            null
+        val resolvedColor = resolveGradientFillColor(drawable) ?: return null
+        val colorAlpha = (resolvedColor ushr ALPHA_SHIFT_ANDROID) and MAX_ALPHA_VALUE
+        val fillAlpha = (colorAlpha * drawable.alpha) / MAX_ALPHA_VALUE
+        val colorFilter = resolveGradientColorFilter(drawable)
+        val fillColor = if (colorFilter != null) {
+            resolveBlendModeColorFilter(resolvedColor, colorFilter, internalLogger)
         } else {
-            if (colorFilter != null) {
-                fillColor = resolveBlendModeColorFilter(fillColor, colorFilter, internalLogger)
-            }
-            mergeColorAndAlpha(fillColor, fillAlpha)
+            resolvedColor
         }
+        return if (fillAlpha == 0) null else mergeColorAndAlpha(fillColor, fillAlpha)
     }
+
+    protected open fun resolveGradientColorFilter(drawable: GradientDrawable): ColorFilter? = drawable.colorFilter
 
     /**
      * This is an oversimplification as the result image would only have some

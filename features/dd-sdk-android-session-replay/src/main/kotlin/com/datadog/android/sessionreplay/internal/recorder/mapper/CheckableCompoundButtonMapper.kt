@@ -96,8 +96,6 @@ internal abstract class CheckableCompoundButtonMapper<T : CompoundButton>(
 
     companion object {
         internal const val DEFAULT_CHECKABLE_HEIGHT_IN_DP = 32L
-        internal const val GET_DRAWABLE_FAIL_MESSAGE =
-            "Failed to get buttonDrawable from the checkable compound button."
         internal const val NULL_BUTTON_DRAWABLE_MSG =
             "ButtonDrawable of the compound button is null"
     }

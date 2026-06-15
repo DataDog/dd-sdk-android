@@ -22,6 +22,7 @@ import android.graphics.drawable.ShapeDrawable
 import android.graphics.drawable.StateListDrawable
 import android.graphics.drawable.VectorDrawable
 import android.os.Build
+import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.utils.ALPHA_SHIFT_ANDROID
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
@@ -32,6 +33,7 @@ import com.datadog.android.sessionreplay.utils.MAX_ALPHA_VALUE
  * Drawable utility object needed in the Session Replay Wireframe Mappers.
  * This class is meant for internal usage so please use it carefully as it might change in time.
  */
+@Suppress("TooManyFunctions")
 internal open class AndroidMDrawableToColorMapper(
     private val extensionMappers: List<DrawableToColorMapper> = emptyList()
 ) : DrawableToColorMapper {
@@ -125,15 +127,32 @@ internal open class AndroidMDrawableToColorMapper(
      * @return the color to map to or null if not applicable
      */
     protected open fun resolveGradientDrawable(drawable: GradientDrawable, internalLogger: InternalLogger): Int? {
-        @Suppress("SwallowedException")
+        return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            resolveGradientDrawableReflection(drawable, internalLogger)
+        } else {
+            resolveGradientDrawableNPlus(drawable)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.N)
+    internal fun resolveGradientDrawableNPlus(drawable: GradientDrawable): Int? {
+        return resolveGradientFillColor(drawable)?.let { resolvedColor ->
+            val colorAlpha = (resolvedColor ushr ALPHA_SHIFT_ANDROID) and MAX_ALPHA_VALUE
+            val fillAlpha = (colorAlpha * drawable.alpha) / MAX_ALPHA_VALUE
+            if (fillAlpha == 0) null else mergeColorAndAlpha(resolvedColor, fillAlpha)
+        }
+    }
+
+    @Suppress("SwallowedException")
+    private fun resolveGradientDrawableReflection(drawable: GradientDrawable, internalLogger: InternalLogger): Int? {
         val fillPaint = try {
             @Suppress("UnsafeThirdPartyFunctionCall") // Can't throw NPE here
             fillPaintField?.get(drawable) as? Paint
-        } catch (e: IllegalArgumentException) {
+        } catch (_: IllegalArgumentException) {
             null
-        } catch (e: IllegalAccessException) {
+        } catch (_: IllegalAccessException) {
             null
-        } catch (e: ExceptionInInitializerError) {
+        } catch (_: ExceptionInInitializerError) {
             null
         }
 
@@ -161,12 +180,13 @@ internal open class AndroidMDrawableToColorMapper(
             fillPaint.color
         }
         val fillAlpha = (fillPaint.alpha * drawable.alpha) / MAX_ALPHA_VALUE
+        return if (fillAlpha == 0) null else mergeColorAndAlpha(filterColor, fillAlpha)
+    }
 
-        return if (fillAlpha == 0) {
-            null
-        } else {
-            mergeColorAndAlpha(filterColor, fillAlpha)
-        }
+    @RequiresApi(Build.VERSION_CODES.N)
+    protected open fun resolveGradientFillColor(drawable: GradientDrawable): Int? {
+        val colorStateList = drawable.color ?: return null
+        return colorStateList.getColorForState(drawable.state, colorStateList.defaultColor)
     }
 
     /**
@@ -215,17 +235,22 @@ internal open class AndroidMDrawableToColorMapper(
     }
 
     companion object {
+        // mFillPaint is @UnsupportedAppUsage — skip reflection on API 24+ where getColor() is public.
         @SuppressLint("DiscouragedPrivateApi")
         @Suppress("PrivateAPI", "SwallowedException", "TooGenericExceptionCaught")
-        internal val fillPaintField = try {
-            GradientDrawable::class.java.getDeclaredField("mFillPaint").apply {
-                this.isAccessible = true
+        internal val fillPaintField = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            try {
+                GradientDrawable::class.java.getDeclaredField("mFillPaint").apply {
+                    this.isAccessible = true
+                }
+            } catch (_: NoSuchFieldException) {
+                null
+            } catch (_: SecurityException) {
+                null
+            } catch (_: NullPointerException) {
+                null
             }
-        } catch (e: NoSuchFieldException) {
-            null
-        } catch (e: SecurityException) {
-            null
-        } catch (e: NullPointerException) {
+        } else {
             null
         }
 
