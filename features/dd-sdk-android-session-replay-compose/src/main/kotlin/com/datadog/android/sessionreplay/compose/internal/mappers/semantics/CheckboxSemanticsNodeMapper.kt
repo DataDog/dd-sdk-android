@@ -27,16 +27,16 @@ import com.datadog.android.sessionreplay.utils.GlobalBounds
 
 internal class CheckboxSemanticsNodeMapper(
     colorStringFormatter: ColorStringFormatter,
-    private val semanticsUtils: SemanticsUtils = SemanticsUtils(),
+    semanticsUtils: SemanticsUtils = SemanticsUtils(),
     private val colorUtils: ColorUtils = ColorUtils(),
-    private val logger: InternalLogger = InternalLogger.UNBOUND,
-    private val pathUtils: PathUtils = PathUtils(logger)
+    private val pathUtils: PathUtils = PathUtils()
 ) : AbstractSemanticsNodeMapper(colorStringFormatter, semanticsUtils) {
 
     override fun map(
         semanticsNode: SemanticsNode,
         parentContext: UiContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): SemanticsWireframe {
         val globalBounds = resolveBounds(semanticsNode)
 
@@ -53,7 +53,8 @@ internal class CheckboxSemanticsNodeMapper(
                 asyncJobStatusCallback = asyncJobStatusCallback,
                 semanticsNode = semanticsNode,
                 globalBounds = globalBounds,
-                currentIndex = 0
+                currentIndex = 0,
+                internalLogger = internalLogger
             )
         }
 
@@ -86,20 +87,22 @@ internal class CheckboxSemanticsNodeMapper(
         asyncJobStatusCallback: AsyncJobStatusCallback,
         semanticsNode: SemanticsNode,
         globalBounds: GlobalBounds,
-        currentIndex: Int
+        currentIndex: Int,
+        internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
         val borderColor = resolveBorderColor(semanticsNode)
         val rawFillColor = semanticsUtils.resolveCheckboxFillColor(semanticsNode)
         val rawCheckmarkColor = semanticsUtils.resolveCheckmarkColor(semanticsNode)
         val fillColorRgba = rawFillColor?.let { convertColor(it) } ?: DEFAULT_COLOR_WHITE
-        val fallbackColor = parentContext.parentContentColor?.takeIf { colorUtils.isDarkColor(it) }?.let {
-            DEFAULT_COLOR_WHITE
-        } ?: DEFAULT_COLOR_BLACK
+        val fallbackColor = parentContext.parentContentColor
+            ?.takeIf { colorUtils.isDarkColor(it, internalLogger) }
+            ?.let { DEFAULT_COLOR_WHITE }
+            ?: DEFAULT_COLOR_BLACK
         val checkmarkColorRgba = rawCheckmarkColor?.let { convertColor(it) }
             ?: fallbackColor
-        val parsedFillColor = colorUtils.parseColorSafe(fillColorRgba)
+        val parsedFillColor = colorUtils.parseColorSafe(fillColorRgba, internalLogger)
         val isChecked = isCheckboxChecked(semanticsNode)
-        val checkmarkColor = resolveCheckmarkColor(isChecked, checkmarkColorRgba, parsedFillColor)
+        val checkmarkColor = resolveCheckmarkColor(isChecked, checkmarkColorRgba, parsedFillColor, internalLogger)
 
         val wireframes = mutableListOf<MobileSegment.Wireframe>()
 
@@ -108,7 +111,7 @@ internal class CheckboxSemanticsNodeMapper(
                 .resolveCheckPath(semanticsNode)
 
             val androidPath = composePath?.let { checkPath ->
-                pathUtils.asAndroidPathSafe(checkPath)
+                pathUtils.asAndroidPathSafe(checkPath, internalLogger)
             }
 
             if (androidPath != null) {
@@ -151,13 +154,19 @@ internal class CheckboxSemanticsNodeMapper(
             semanticsNode = semanticsNode,
             globalBounds = globalBounds,
             backgroundColor = fillColorRgba,
-            borderColor = borderColor
+            borderColor = borderColor,
+            internalLogger = internalLogger
         )
     }
 
-    private fun resolveCheckmarkColor(isChecked: Boolean, checkmarkColorRgba: String, fillColor: Int?): Int? =
+    private fun resolveCheckmarkColor(
+        isChecked: Boolean,
+        checkmarkColorRgba: String,
+        fillColor: Int?,
+        internalLogger: InternalLogger
+    ): Int? =
         if (isChecked) {
-            colorUtils.parseColorSafe(checkmarkColorRgba)
+            colorUtils.parseColorSafe(checkmarkColorRgba, internalLogger)
         } else {
             fillColor
         }
@@ -174,9 +183,10 @@ internal class CheckboxSemanticsNodeMapper(
         semanticsNode: SemanticsNode,
         globalBounds: GlobalBounds,
         backgroundColor: String,
-        borderColor: String
+        borderColor: String,
+        internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
-        val strokeColor = parentContext.parentContentColor?.takeIf { colorUtils.isDarkColor(it) }?.let {
+        val strokeColor = parentContext.parentContentColor?.takeIf { colorUtils.isDarkColor(it, internalLogger) }?.let {
             DEFAULT_COLOR_WHITE
         } ?: DEFAULT_COLOR_BLACK
 

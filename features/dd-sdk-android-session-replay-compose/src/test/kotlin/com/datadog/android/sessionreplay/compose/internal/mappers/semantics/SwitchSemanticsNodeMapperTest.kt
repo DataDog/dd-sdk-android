@@ -11,6 +11,7 @@ import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.state.ToggleableState
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.SwitchSemanticsNodeMapper.Companion.BORDER_WIDTH_DP
@@ -52,6 +53,9 @@ internal class SwitchSemanticsNodeMapperTest {
 
     @Forgery
     lateinit var fakeGlobalBounds: GlobalBounds
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
 
     @Mock
     lateinit var mockColorStringFormatter: ColorStringFormatter
@@ -128,7 +132,8 @@ internal class SwitchSemanticsNodeMapperTest {
         val semanticsWireframe = testedMapper.map(
             semanticsNode = mockSemanticsNode,
             parentContext = mockParentContext,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback,
+            internalLogger = mockInternalLogger
         )
 
         // Then
@@ -184,7 +189,8 @@ internal class SwitchSemanticsNodeMapperTest {
         val semanticsWireframe = testedMapper.map(
             semanticsNode = mockSemanticsNode,
             parentContext = mockParentContext,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback,
+            internalLogger = mockInternalLogger
         )
 
         // Then
@@ -228,7 +234,8 @@ internal class SwitchSemanticsNodeMapperTest {
         val semanticsWireframe = testedMapper.map(
             semanticsNode = mockSemanticsNode,
             parentContext = mockParentContext,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback,
+            internalLogger = mockInternalLogger
         )
 
         // Then

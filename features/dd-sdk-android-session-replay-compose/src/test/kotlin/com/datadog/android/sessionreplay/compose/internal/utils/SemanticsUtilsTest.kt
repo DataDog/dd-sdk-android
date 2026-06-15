@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.compose.internal.data.BitmapInfo
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
@@ -86,6 +87,9 @@ class SemanticsUtilsTest {
 
     @Mock
     private lateinit var mockReflectionUtils: ReflectionUtils
+
+    @Mock
+    private lateinit var mockInternalLogger: InternalLogger
 
     @Mock
     private lateinit var mockView: View
@@ -364,7 +368,7 @@ class SemanticsUtilsTest {
         val testData = setupTextLayoutMocks(forge)
 
         // When
-        val result = requireNotNull(testedSemanticsUtils.resolveTextLayoutInfo(mockSemanticsNode))
+        val result = requireNotNull(testedSemanticsUtils.resolveTextLayoutInfo(mockSemanticsNode, mockInternalLogger))
 
         // Then
         val expected = TextLayoutInfo(
@@ -388,7 +392,7 @@ class SemanticsUtilsTest {
         )
 
         // When
-        val result = requireNotNull(testedSemanticsUtils.resolveTextLayoutInfo(mockSemanticsNode))
+        val result = requireNotNull(testedSemanticsUtils.resolveTextLayoutInfo(mockSemanticsNode, mockInternalLogger))
 
         // Then
         val expected = TextLayoutInfo(
@@ -417,7 +421,7 @@ class SemanticsUtilsTest {
         whenever(mockReflectionUtils.getMultiParagraphCapturedText(mockMultiParagraph)) doReturn fakeCapturedText
 
         // When
-        val result = requireNotNull(testedSemanticsUtils.resolveTextLayoutInfo(mockSemanticsNode))
+        val result = requireNotNull(testedSemanticsUtils.resolveTextLayoutInfo(mockSemanticsNode, mockInternalLogger))
 
         // Then
         val expected = TextLayoutInfo(
@@ -520,7 +524,7 @@ class SemanticsUtilsTest {
         whenever(mockBitmap.copy(any(), any())) doReturn mockCopiedBitmap
 
         // When
-        val result = testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode)
+        val result = testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode, mockInternalLogger)
 
         // Then
         assertThat(result).isEqualTo(
@@ -549,7 +553,7 @@ class SemanticsUtilsTest {
         whenever(mockBitmap.copy(any(), any())) doReturn mockCopiedBitmap
 
         // When
-        val result = testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode)
+        val result = testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode, mockInternalLogger)
 
         // Then
         assertThat(result).isEqualTo(
@@ -576,7 +580,7 @@ class SemanticsUtilsTest {
         whenever(mockBitmap.config) doReturn Bitmap.Config.ALPHA_8
 
         // When
-        val result = testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode)
+        val result = testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode, mockInternalLogger)
 
         // Then
         assertThat(result).isEqualTo(
@@ -605,7 +609,7 @@ class SemanticsUtilsTest {
         whenever(mockBitmap.copy(Bitmap.Config.ARGB_8888, false)) doReturn mockCopiedBitmap
 
         // When
-        val result = testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode)
+        val result = testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode, mockInternalLogger)
 
         // Then
         assertThat(result).isEqualTo(
@@ -629,7 +633,7 @@ class SemanticsUtilsTest {
         whenever(mockBitmap.copy(any(), any())) doReturn null
 
         // When
-        val result = testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode)
+        val result = testedSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode, mockInternalLogger)
 
         // Then
         assertThat(result).isNull()
@@ -650,7 +654,7 @@ class SemanticsUtilsTest {
         }
 
         // When
-        val result = requireNotNull(testedSemanticsUtils.resolveTextLayoutInfo(mockSemanticsNode))
+        val result = requireNotNull(testedSemanticsUtils.resolveTextLayoutInfo(mockSemanticsNode, mockInternalLogger))
 
         // Then
         assertThat(result.textOverflow).isEqualTo(expectedMode)
