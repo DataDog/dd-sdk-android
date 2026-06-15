@@ -9,6 +9,7 @@ package com.datadog.android.profiling.internal.quota
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.threads.FakeSameThreadExecutorService
 import com.datadog.android.profiling.forge.Configurator
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -37,8 +38,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.IOException
-import java.util.concurrent.AbstractExecutorService
-import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -63,14 +62,7 @@ internal class QuotaCheckerTest {
     @StringForgery
     private lateinit var fakeSessionId: String
 
-    private val executor = object : AbstractExecutorService() {
-        override fun execute(command: Runnable) = command.run()
-        override fun shutdown() {}
-        override fun shutdownNow(): MutableList<Runnable> = mutableListOf()
-        override fun isShutdown(): Boolean = false
-        override fun isTerminated(): Boolean = false
-        override fun awaitTermination(timeout: Long, unit: TimeUnit): Boolean = true
-    }
+    private val executor = FakeSameThreadExecutorService()
 
     private val capturedResults = mutableListOf<QuotaResult>()
 
