@@ -18,7 +18,7 @@ internal class ExposureEventsProcessor(private val writer: RecordWriter, private
 
     private data class CacheKey(
         val targetingKey: String,
-        val flagName: String,
+        val flagKey: String,
         val allocationKey: String,
         val variationKey: String
     )
@@ -32,7 +32,7 @@ internal class ExposureEventsProcessor(private val writer: RecordWriter, private
             // Boolean: ~1 byte
             val keySize = OBJECT_OVERHEAD +
                 (STRING_OVERHEAD + key.targetingKey.length * CHAR_SIZE) +
-                (STRING_OVERHEAD + key.flagName.length * CHAR_SIZE) +
+                (STRING_OVERHEAD + key.flagKey.length * CHAR_SIZE) +
                 (STRING_OVERHEAD + key.allocationKey.length * CHAR_SIZE) +
                 (STRING_OVERHEAD + key.variationKey.length * CHAR_SIZE)
             val valueSize = BOOLEAN_SIZE
@@ -40,10 +40,10 @@ internal class ExposureEventsProcessor(private val writer: RecordWriter, private
         }
     }
 
-    override fun processEvent(flagName: String, context: EvaluationContext, data: UnparsedFlag) {
+    override fun processEvent(flagKey: String, context: EvaluationContext, data: UnparsedFlag) {
         val cacheKey = CacheKey(
             targetingKey = context.targetingKey,
-            flagName = flagName,
+            flagKey = flagKey,
             allocationKey = data.allocationKey,
             variationKey = data.variationKey
         )
@@ -61,17 +61,17 @@ internal class ExposureEventsProcessor(private val writer: RecordWriter, private
         }
 
         if (isFirstTime) {
-            val event = buildExposureEvent(flagName, context, data)
+            val event = buildExposureEvent(flagKey, context, data)
             writeExposureEvent(event)
         }
     }
 
-    private fun buildExposureEvent(flagName: String, context: EvaluationContext, data: UnparsedFlag): ExposureEvent {
+    private fun buildExposureEvent(flagKey: String, context: EvaluationContext, data: UnparsedFlag): ExposureEvent {
         val now = timeProvider.getDeviceTimestampMillis()
         return ExposureEvent(
             timestamp = now,
             allocation = ExposureEvent.Identifier(data.allocationKey),
-            flag = ExposureEvent.Identifier(flagName),
+            flag = ExposureEvent.Identifier(flagKey),
             variant = ExposureEvent.Identifier(data.variationKey),
             subject = ExposureEvent.Subject(
                 id = context.targetingKey,

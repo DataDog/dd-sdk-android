@@ -153,7 +153,13 @@ internal class WebViewRumEventConsumerTest {
         }
         whenever(
             mockWebViewRumFeatureScope.withWriteContext(
-                eq(setOf(Feature.RUM_FEATURE_NAME, Feature.SESSION_REPLAY_FEATURE_NAME)),
+                eq(
+                    setOf(
+                        Feature.RUM_FEATURE_NAME,
+                        Feature.SESSION_REPLAY_FEATURE_NAME,
+                        Feature.TRACING_FEATURE_NAME
+                    )
+                ),
                 any()
             )
         ) doAnswer {
@@ -574,6 +580,68 @@ internal class WebViewRumEventConsumerTest {
 
         // Then
         verify(mockDataWriter, never()).write(any(), any(), any())
+    }
+
+    // endregion
+
+    // region Trace Sampling
+
+    @Test
+    fun `M pass trace sample rate to mapper W consume() { tracing context present }`(forge: Forge) {
+        // Given
+        val fakeTraceSampleRate = forge.aFloat(min = 0f, max = 100f)
+        val tracingDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext + (
+                Feature.TRACING_FEATURE_NAME to mapOf(
+                    WebViewRumEventConsumer.TRACE_SAMPLE_RATE_KEY to fakeTraceSampleRate
+                )
+                )
+        )
+        whenever(
+            mockWebViewRumFeatureScope.withWriteContext(
+                eq(
+                    setOf(
+                        Feature.RUM_FEATURE_NAME,
+                        Feature.SESSION_REPLAY_FEATURE_NAME,
+                        Feature.TRACING_FEATURE_NAME
+                    )
+                ),
+                any()
+            )
+        ) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
+            callback.invoke(tracingDatadogContext, mockEventWriteScope)
+        }
+        whenever(
+            mockOffsetProvider.getOffset(any(), eq(tracingDatadogContext))
+        ) doReturn fakeServerTimeOffsetInMillis
+
+        val fakeResourceEvent: ResourceEvent = forge.getForgery()
+        val fakeResourceEventAsJson = fakeResourceEvent.toJson().asJsonObject
+        whenever(
+            mockWebViewRumEventMapper.mapEvent(
+                fakeResourceEventAsJson,
+                fakeRumContext,
+                fakeServerTimeOffsetInMillis,
+                fakeSessionReplayEnabled,
+                tracingDatadogContext.userInfo.anonymousId,
+                fakeTraceSampleRate
+            )
+        ).thenReturn(fakeMappedResourceEvent)
+
+        // When
+        testedConsumer.consume(fakeResourceEventAsJson)
+
+        // Then
+        verify(mockWebViewRumEventMapper).mapEvent(
+            fakeResourceEventAsJson,
+            fakeRumContext,
+            fakeServerTimeOffsetInMillis,
+            fakeSessionReplayEnabled,
+            tracingDatadogContext.userInfo.anonymousId,
+            fakeTraceSampleRate
+        )
+        verify(mockDataWriter).write(mockEventBatchWriter, fakeMappedResourceEvent, EventType.DEFAULT)
     }
 
     // endregion

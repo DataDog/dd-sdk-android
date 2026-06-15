@@ -25,9 +25,7 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.text.TextLayoutInput
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
-import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
@@ -232,7 +230,7 @@ internal class SemanticsUtils(
         }
     }
 
-    internal fun resolveTextLayoutInfo(semanticsNode: SemanticsNode): TextLayoutInfo? {
+    internal fun resolveTextLayoutInfo(semanticsNode: SemanticsNode, internalLogger: InternalLogger): TextLayoutInfo? {
         val textLayoutResults = mutableListOf<TextLayoutResult>()
         semanticsNode.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(
             textLayoutResults
@@ -245,21 +243,22 @@ internal class SemanticsUtils(
                 null
             }
             val modifierColor = resolveModifierColor(semanticsNode)
-            val textOverflow = resolveTextStringSimpleElementOverflow(semanticsNode)
+            val textOverflow = resolveTextStringSimpleElementOverflow(semanticsNode, internalLogger)
             convertTextLayoutInfo(layoutInput, multiParagraphCapturedText, modifierColor, textOverflow)
         }
     }
 
     internal fun resolveSemanticsPainter(
-        semanticsNode: SemanticsNode
+        semanticsNode: SemanticsNode,
+        internalLogger: InternalLogger
     ): BitmapInfo? {
         val (painter, isContextualImage) = resolvePainter(semanticsNode)
         if (painter == null) return null
 
-        val bitmap = resolveBitmapFromPainter(painter)
+        val bitmap = resolveBitmapFromPainter(painter, internalLogger)
 
         bitmap?.let {
-            sendBitmapInfoTelemetry(it, isContextualImage)
+            sendBitmapInfoTelemetry(it, isContextualImage, internalLogger)
         }
 
         val contentScale = reflectionUtils.getContentScale(semanticsNode)
@@ -307,20 +306,20 @@ internal class SemanticsUtils(
         return painter to isContextualImage
     }
 
-    private fun resolveBitmapFromPainter(painter: Painter): Bitmap? {
+    private fun resolveBitmapFromPainter(painter: Painter, internalLogger: InternalLogger): Bitmap? {
         return when (painter) {
             is BitmapPainter -> reflectionUtils.getBitmapInBitmapPainter(painter)
             is VectorPainter -> reflectionUtils.getBitmapInVectorPainter(painter)
             else -> {
-                logUnsupportedPainter(painter)
+                logUnsupportedPainter(painter, internalLogger)
                 null
             }
         }
     }
 
-    private fun sendBitmapInfoTelemetry(bitmap: Bitmap, isContextual: Boolean) {
+    private fun sendBitmapInfoTelemetry(bitmap: Bitmap, isContextual: Boolean, internalLogger: InternalLogger) {
         if (sampler.sample(Unit)) {
-            (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
+            internalLogger.log(
                 level = InternalLogger.Level.INFO,
                 target = InternalLogger.Target.TELEMETRY,
                 messageBuilder = { "Resolved the bitmap from semantics node with id:${bitmap.generationId}" },
@@ -336,9 +335,9 @@ internal class SemanticsUtils(
         }
     }
 
-    private fun logUnsupportedPainter(painter: Painter?) {
+    private fun logUnsupportedPainter(painter: Painter?, internalLogger: InternalLogger) {
         val painterType = painter?.javaClass?.simpleName ?: "null"
-        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
+        internalLogger.log(
             level = InternalLogger.Level.ERROR,
             targets = listOf(
                 InternalLogger.Target.MAINTAINER,
@@ -361,7 +360,10 @@ internal class SemanticsUtils(
         }
     }
 
-    private fun resolveTextStringSimpleElementOverflow(semanticsNode: SemanticsNode): MobileSegment.TruncationMode? {
+    private fun resolveTextStringSimpleElementOverflow(
+        semanticsNode: SemanticsNode,
+        internalLogger: InternalLogger
+    ): MobileSegment.TruncationMode? {
         val modifier = semanticsNode.layoutInfo.getModifierInfo()
             .firstOrNull { reflectionUtils.isTextStringSimpleElement(it.modifier) }
             ?.modifier ?: return null
@@ -369,14 +371,14 @@ internal class SemanticsUtils(
         val overflowValue = reflectionUtils.getTextStringSimpleElementOverflow(modifier)
         return overflowValue?.let { overflow ->
             when (overflow) {
-                is Int -> resolveTextOverflow(overflow)
+                is Int -> resolveTextOverflow(overflow, internalLogger)
                 else -> {
                     // TextOverflow value class may be boxed when accessed via reflection
-                    val overflowInt = extractTextOverflowValue(overflow)
+                    val overflowInt = extractTextOverflowValue(overflow, internalLogger)
                     if (overflowInt != null) {
-                        resolveTextOverflow(overflowInt)
+                        resolveTextOverflow(overflowInt, internalLogger)
                     } else {
-                        logUnknownOverflowType(overflow)
+                        logUnknownOverflowType(overflow, internalLogger)
                         null
                     }
                 }
@@ -384,7 +386,7 @@ internal class SemanticsUtils(
         }
     }
 
-    private fun resolveTextOverflow(overflowMode: Int): MobileSegment.TruncationMode? {
+    private fun resolveTextOverflow(overflowMode: Int, internalLogger: InternalLogger): MobileSegment.TruncationMode? {
         return when (overflowMode) {
             TEXT_OVERFLOW_CLIP -> MobileSegment.TruncationMode.CLIP
             TEXT_OVERFLOW_ELLIPSE -> MobileSegment.TruncationMode.TAIL
@@ -392,13 +394,13 @@ internal class SemanticsUtils(
             TEXT_OVERFLOW_ELLIPSIS_START -> MobileSegment.TruncationMode.HEAD
             TEXT_OVERFLOW_ELLIPSIS_MIDDLE -> MobileSegment.TruncationMode.MIDDLE
             else -> {
-                logUnknownOverflowOrdinal(overflowMode)
+                logUnknownOverflowOrdinal(overflowMode, internalLogger)
                 null
             }
         }
     }
 
-    private fun extractTextOverflowValue(overflowValue: Any): Int? {
+    private fun extractTextOverflowValue(overflowValue: Any, internalLogger: InternalLogger): Int? {
         return try {
             // Suppressed: All exceptions (NoSuchFieldException, SecurityException, NullPointerException)
             // are handled by the catch blocks below
@@ -410,16 +412,16 @@ internal class SemanticsUtils(
             @Suppress("UnsafeThirdPartyFunctionCall")
             valueField.get(overflowValue) as? Int
         } catch (e: ReflectiveOperationException) {
-            logReflectionExtractionFailure(overflowValue, e)
+            logReflectionExtractionFailure(overflowValue, e, internalLogger)
             null
         } catch (@Suppress("TooGenericExceptionCaught") e: RuntimeException) {
-            logReflectionExtractionFailure(overflowValue, e)
+            logReflectionExtractionFailure(overflowValue, e, internalLogger)
             null
         }
     }
 
-    private fun logReflectionExtractionFailure(overflowValue: Any, e: Throwable) {
-        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
+    private fun logReflectionExtractionFailure(overflowValue: Any, e: Throwable, internalLogger: InternalLogger) {
+        internalLogger.log(
             level = InternalLogger.Level.WARN,
             targets = listOf(InternalLogger.Target.MAINTAINER),
             messageBuilder = {
@@ -436,8 +438,8 @@ internal class SemanticsUtils(
         )
     }
 
-    private fun logUnknownOverflowOrdinal(ordinal: Int) {
-        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
+    private fun logUnknownOverflowOrdinal(ordinal: Int, internalLogger: InternalLogger) {
+        internalLogger.log(
             level = InternalLogger.Level.WARN,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             messageBuilder = {
@@ -452,8 +454,8 @@ internal class SemanticsUtils(
         )
     }
 
-    private fun logUnknownOverflowType(overflowValue: Any) {
-        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
+    private fun logUnknownOverflowType(overflowValue: Any, internalLogger: InternalLogger) {
+        internalLogger.log(
             level = InternalLogger.Level.WARN,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             messageBuilder = {

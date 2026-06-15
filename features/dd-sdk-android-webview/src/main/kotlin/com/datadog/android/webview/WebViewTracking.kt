@@ -94,8 +94,11 @@ object WebViewTracking {
             logsSampleRate,
             System.identityHashCode(webView).toString()
         )
+        val webViewRumFeature = featureSdkCore
+            .getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
+            ?.unwrap<StorageBackedFeature>() as? WebViewRumFeature
         webView.addJavascriptInterface(
-            DatadogEventBridge(webViewEventConsumer, allowedHosts, privacyLevel),
+            DatadogEventBridge(webViewEventConsumer, allowedHosts, privacyLevel, webViewRumFeature),
             DATADOG_EVENT_BRIDGE_NAME
         )
         featureSdkCore.internalLogger.logApiUsage {
