@@ -590,6 +590,7 @@ datadog:
       - "java.util.concurrent.atomic.AtomicLong.compareAndSet(kotlin.Long, kotlin.Long)"
       - "java.util.concurrent.atomic.AtomicLong.constructor(kotlin.Long)"
       - "java.util.concurrent.atomic.AtomicLong.get()"
+      - "java.util.concurrent.atomic.AtomicLong.getAndIncrement()"
       - "java.util.concurrent.atomic.AtomicLong.set(kotlin.Long)"
       - "java.util.concurrent.atomic.AtomicReference.compareAndSet(com.datadog.trace.core.CoreTracer?, com.datadog.trace.core.CoreTracer?)"
       - "java.util.concurrent.atomic.AtomicReference.compareAndSet(com.datadog.android.api.SdkCore?, com.datadog.android.api.SdkCore?)"
