@@ -8,9 +8,11 @@
 
     <application>
 
+        <!-- initOrder 1000 is for DdProfilingContentProvider, it can go before -->
         <provider
             android:name="com.datadog.android.rum.DdRumContentProvider"
             android:authorities="${applicationId}.provider.datadog.rum"
+            android:initOrder="999"
             android:exported="false" />
 
     </application>

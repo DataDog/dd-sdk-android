@@ -24,7 +24,8 @@ internal class WebViewRumEventMapper(
         rumContext: RumContext?,
         timeOffset: Long,
         sessionReplayEnabled: Boolean,
-        anonymousId: String?
+        anonymousId: String?,
+        traceSampleRate: Float? = null
     ): JsonObject {
         val containerObject = JsonObject().apply {
             addProperty(SOURCE_KEY_NAME, SOURCE_VALUE)
@@ -48,6 +49,9 @@ internal class WebViewRumEventMapper(
             if (!sessionReplayEnabled) {
                 // RUM-4084 disable webview SR if host app doesn't have SR
                 dd.remove(DD_REPLAY_STATS)
+            }
+            if (traceSampleRate != null && dd.has(RULE_PSR_KEY_NAME)) {
+                dd.addProperty(RULE_PSR_KEY_NAME, traceSampleRate / SAMPLE_ALL_RATE)
             }
         }
 
@@ -90,7 +94,9 @@ internal class WebViewRumEventMapper(
         internal const val CONTAINER_KEY_NAME = "container"
         internal const val SOURCE_KEY_NAME = "source"
         internal const val SOURCE_VALUE = "android"
+        internal const val RULE_PSR_KEY_NAME = "rule_psr"
         internal const val USR_KEY_NAME = "usr"
         internal const val ANONYMOUS_ID_KEY_NAME = "anonymous_id"
+        private const val SAMPLE_ALL_RATE = 100f
     }
 }
