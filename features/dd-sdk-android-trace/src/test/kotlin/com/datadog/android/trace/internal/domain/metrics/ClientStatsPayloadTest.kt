@@ -44,6 +44,7 @@ internal class ClientStatsPayloadTest {
             topLevelHits = 3L,
             okSummary = byteArrayOf(0x61, 0x62),
             errorSummary = byteArrayOf(0x63),
+            isSynthetic = false,
             peerTags = listOf("env:prod", "version:1.0"),
             serviceSource = "inferred"
         )
