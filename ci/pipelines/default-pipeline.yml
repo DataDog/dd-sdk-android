@@ -142,13 +142,15 @@ analysis:detekt-custom:
   image: $CI_IMAGE_DOCKER
   stage: analysis
   timeout: 1h
+  variables:
+    KUBERNETES_MEMORY_LIMIT: "32Gi"
   script:
     - ./gradlew assembleLibrariesRelease --stacktrace
     - ./gradlew unzipAarForDetekt --stacktrace
     - ./gradlew :tools:detekt:jar --stacktrace
     - ./gradlew printDetektClasspath --stacktrace
     - curl -sSLO https://github.com/detekt/detekt/releases/download/v1.23.4/detekt-cli-1.23.4-all.jar
-    - ./gradlew customDetektRules
+    - ./gradlew customDetektRules --parallel --max-workers=4
 
 
 # TODO RUM-1622 cleanup this section
