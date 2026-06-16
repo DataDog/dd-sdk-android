@@ -176,13 +176,10 @@ internal class NodeFlattenerTest {
     @Test
     fun `M stamp permanentId on every wireframe W flattenNode() { heatmapIdentifier set }`(forge: Forge) {
         val fakeIdentifier = HeatmapIdentifier(forge.anAlphabeticalString())
-        val fakeWireframes = listOf<MobileSegment.Wireframe>(
-            forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>().copy(permanentId = null),
-            forge.getForgery<MobileSegment.Wireframe.TextWireframe>().copy(permanentId = null),
-            forge.getForgery<MobileSegment.Wireframe.ImageWireframe>().copy(permanentId = null),
-            forge.getForgery<MobileSegment.Wireframe.PlaceholderWireframe>().copy(permanentId = null),
-            forge.getForgery<MobileSegment.Wireframe.WebviewWireframe>().copy(permanentId = null)
-        )
+        val fakeWireframes = MobileSegment.Wireframe::class.sealedSubclasses.map { subclass ->
+            forge.getForgery(subclass.java)
+                .copyWithPermanentId(null)
+        }
         val fakeNode = Node(
             wireframes = fakeWireframes,
             children = emptyList(),

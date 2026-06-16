@@ -34,6 +34,7 @@ import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -341,7 +342,7 @@ internal class WindowsOnDrawListenerTest {
 
     @Test
     fun `M pass viewUrl from RumContextProvider W onDraw()`(
-        @fr.xgouchet.elmyr.annotation.StringForgery fakeViewUrl: String
+        @StringForgery fakeViewUrl: String
     ) {
         val mockRumContextProvider: RumContextProvider = mock {
             whenever(it.getRumContext()).thenReturn(
