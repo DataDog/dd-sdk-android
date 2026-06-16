@@ -74,7 +74,8 @@ internal class SessionReplayFeature(
         sampleRate: Float,
         startRecordingImmediately: Boolean,
         dynamicOptimizationEnabled: Boolean,
-        internalCallback: SessionReplayInternalCallback
+        internalCallback: SessionReplayInternalCallback,
+        heatmapsEnabled: Boolean
     ) : this(
         sdkCore,
         customEndpointUrl,
@@ -93,7 +94,8 @@ internal class SessionReplayFeature(
             customOptionSelectorDetectors,
             customDrawableMappers,
             dynamicOptimizationEnabled,
-            internalCallback
+            internalCallback,
+            heatmapsEnabled
         )
     )
 

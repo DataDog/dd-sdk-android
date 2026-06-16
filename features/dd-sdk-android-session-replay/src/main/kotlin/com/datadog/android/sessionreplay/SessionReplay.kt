@@ -60,7 +60,8 @@ object SessionReplay {
                     sampleRate = sessionReplayConfiguration.sampleRate,
                     startRecordingImmediately = sessionReplayConfiguration.startRecordingImmediately,
                     dynamicOptimizationEnabled = sessionReplayConfiguration.dynamicOptimizationEnabled,
-                    internalCallback = sessionReplayConfiguration.internalCallback
+                    internalCallback = sessionReplayConfiguration.internalCallback,
+                    heatmapsEnabled = sessionReplayConfiguration.heatmapsEnabled
                 )
 
                 if (isAlreadyRegistered()) {
