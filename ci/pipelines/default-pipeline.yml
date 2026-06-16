@@ -92,12 +92,17 @@ stages:
       - cache/notifications/
     policy: pull
 
+# Skip all standard jobs on the dogfooding branch — only the manual publish runs there.
+.except-dogfooding-branch:
+  except:
+    - dogfooding
+
 # CI IMAGE
 
 ci-image:
   stage: ci-image
   when: manual
-  except: [ tags, schedules ]
+  except: [ tags, schedules, dogfooding ]
   tags: [ "arch:amd64" ]
   image: 486234852809.dkr.ecr.us-east-1.amazonaws.com/docker:24.0.4-jammy
   script:
@@ -106,6 +111,8 @@ ci-image:
 # SECURITY
 
 create_key:
+  extends:
+    - .except-dogfooding-branch
   stage: security
   when: manual
   tags: [ "arch:amd64" ]
@@ -124,6 +131,8 @@ create_key:
 # STATIC ANALYSIS
 
 static-analysis:
+  extends:
+    - .except-dogfooding-branch
   stage: analysis
   variables:
     DETEKT_PUBLIC_API: "true"
@@ -137,6 +146,7 @@ static-analysis:
 analysis:detekt-custom:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags:
     - "arch:amd64"
   image: $CI_IMAGE_DOCKER
@@ -157,6 +167,7 @@ analysis:detekt-custom:
 test:debug:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test
@@ -178,6 +189,7 @@ test:debug:
 test:tools:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test
@@ -188,6 +200,8 @@ test:tools:
     - GRADLE_OPTS="-Xmx3072m" ./gradlew :unitTestTools --stacktrace --no-daemon --build-cache --gradle-user-home cache/
 
 test:kover:
+  extends:
+    - .except-dogfooding-branch
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test
@@ -224,6 +238,7 @@ test:kover:
 test-pyramid:core-it-min-api:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
@@ -239,6 +254,7 @@ test-pyramid:core-it-min-api:
 test-pyramid:core-it-latest-api:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
@@ -254,6 +270,7 @@ test-pyramid:core-it-latest-api:
 test-pyramid:core-it-median-api:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
@@ -269,6 +286,7 @@ test-pyramid:core-it-median-api:
 test-pyramid:single-fit-logs:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -286,6 +304,7 @@ test-pyramid:single-fit-logs:
 test-pyramid:single-fit-rum:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -303,6 +322,7 @@ test-pyramid:single-fit-rum:
 test-pyramid:single-fit-trace:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -320,6 +340,7 @@ test-pyramid:single-fit-trace:
 test-pyramid:single-fit-okhttp:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -339,6 +360,7 @@ test-pyramid:single-fit-okhttp:
 test-pyramid:legacy-integration-instrumented-min-api:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
@@ -354,6 +376,7 @@ test-pyramid:legacy-integration-instrumented-min-api:
 test-pyramid:legacy-integration-instrumented-latest-api:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
@@ -369,6 +392,7 @@ test-pyramid:legacy-integration-instrumented-latest-api:
 test-pyramid:legacy-integration-instrumented-median-api:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
@@ -384,6 +408,7 @@ test-pyramid:legacy-integration-instrumented-median-api:
 test-pyramid:ndk-instrumented-latest-api:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
@@ -399,6 +424,7 @@ test-pyramid:ndk-instrumented-latest-api:
 test-pyramid:detekt-api-coverage:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -419,6 +445,7 @@ test-pyramid:detekt-api-coverage:
 test-pyramid:publish-e2e-synthetics:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -449,6 +476,7 @@ test-pyramid:publish-e2e-synthetics:
 test-pyramid:publish-webview-synthetics:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -479,6 +507,7 @@ test-pyramid:publish-webview-synthetics:
 test-pyramid:publish-staging-synthetics:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -509,6 +538,7 @@ test-pyramid:publish-staging-synthetics:
 test-pyramid:publish-benchmark-synthetics:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -539,6 +569,8 @@ test-pyramid:publish-benchmark-synthetics:
 # PUBLISH ARTIFACTS ON MAVEN
 
 publish:release-all:
+  extends:
+    - .except-dogfooding-branch
   tags: [ "arch:amd64" ]
   only:
     - tags
@@ -555,11 +587,26 @@ publish:release-all:
     paths:
       - "**/verification-metadata.xml"
 
+publish:snapshot-dogfooding:
+  tags: [ "arch:amd64" ]
+  only:
+    - dogfooding
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  when: manual
+  script:
+    - !reference [.snippets, set-publishing-credentials]
+    # SNAPSHOT versions are published directly to the Sonatype SNAPSHOT repository
+    # and do not require staging/closing — only release artifacts need that step.
+    - ./gradlew publishToSonatype --stacktrace --no-daemon
 
 # SLACK NOTIFICATIONS
 
 notify:publish-develop-success:
-  extends: .slack-notifier-base
+  extends:
+    - .slack-notifier-base
+    - .except-dogfooding-branch
   stage: notify
   when: on_success
   only:
@@ -569,7 +616,9 @@ notify:publish-develop-success:
     - postmessage "#mobile-sdk-ops" "$MESSAGE_TEXT"
 
 notify:publish-develop-failure:
-  extends: .slack-notifier-base
+  extends:
+    - .slack-notifier-base
+    - .except-dogfooding-branch
   stage: notify
   when: on_failure
   only:
@@ -580,7 +629,9 @@ notify:publish-develop-failure:
     - postmessage "#mobile-sdk-ops" "$MESSAGE_TEXT"
 
 notify:publish-release-success:
-  extends: .slack-notifier-base
+  extends:
+    - .slack-notifier-base
+    - .except-dogfooding-branch
   stage: notify
   when: on_success
   only:
@@ -591,7 +642,9 @@ notify:publish-release-success:
     - postmessage "#mobile-sdk-ops" "$MESSAGE_TEXT"
 
 notify:publish-release-failure:
-  extends: .slack-notifier-base
+  extends:
+    - .slack-notifier-base
+    - .except-dogfooding-branch
   stage: notify
   when: on_failure
   only:
@@ -602,6 +655,8 @@ notify:publish-release-failure:
     - postmessage "#mobile-sdk-ops" "$MESSAGE_TEXT"
 
 notify:dogfood-app:
+  extends:
+    - .except-dogfooding-branch
   tags: [ "arch:amd64" ]
   only:
     - tags
@@ -617,6 +672,8 @@ notify:dogfood-app:
     - python3 ./ci/scripts/dogfood.py -v $CI_COMMIT_TAG -t app
 
 notify:dogfood-demo:
+  extends:
+    - .except-dogfooding-branch
   tags: [ "arch:amd64" ]
   only:
     - tags
@@ -632,6 +689,8 @@ notify:dogfood-demo:
     - python3 ./ci/scripts/dogfood.py -v $CI_COMMIT_TAG -t demo
 
 notify:dogfood-gradle-plugin:
+  extends:
+    - .except-dogfooding-branch
   tags: [ "arch:amd64" ]
   only:
     - tags
@@ -647,6 +706,8 @@ notify:dogfood-gradle-plugin:
     - python3 ./ci/scripts/dogfood.py -v $CI_COMMIT_TAG -t gradle-plugin
 
 notify:merge-verification-metadata:
+  extends:
+    - .except-dogfooding-branch
   tags: [ "arch:amd64" ]
   only:
     - tags
