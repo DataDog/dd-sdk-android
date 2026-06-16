@@ -145,7 +145,7 @@ analysis:detekt-custom:
   variables:
     KUBERNETES_MEMORY_LIMIT: "32Gi"
   script:
-    - ./gradlew assembleLibrariesRelease --stacktrace
+    - ./gradlew assembleLibrariesRelease --parallel --stacktrace
     - ./gradlew unzipAarForDetekt --stacktrace
     - ./gradlew :tools:detekt:jar --stacktrace
     - ./gradlew printDetektClasspath --stacktrace
