@@ -213,6 +213,26 @@ internal class RecordedDataProcessorTest {
     }
 
     @Test
+    fun `M include permanentId in serialized JSON W processScreenSnapshots { node has heatmapIdentifier }`(
+        forge: Forge,
+        @StringForgery fakePermanentId: String
+    ) {
+        // Given
+        val wireframeWithId = forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>()
+            .copy(permanentId = fakePermanentId)
+        whenever(mockNodeFlattener.flattenNode(any())).thenReturn(listOf(wireframeWithId))
+        val snapshotItem = createSnapshotItem(fakeSnapshot1, usedContext = initialRecordedQueuedItemContext)
+
+        // When
+        testedProcessor.processScreenSnapshots(snapshotItem)
+
+        // Then
+        val captor = argumentCaptor<EnrichedRecord>()
+        verify(mockWriter).write(captor.capture())
+        assertThat(captor.firstValue.toJson()).contains("\"permanentId\":\"$fakePermanentId\"")
+    }
+
+    @Test
     fun `M send FullSnapshot W process { new view }`(forge: Forge) {
         // Given
         val fakeRumContext2 = forge.getForgery<SessionReplayRumContext>()

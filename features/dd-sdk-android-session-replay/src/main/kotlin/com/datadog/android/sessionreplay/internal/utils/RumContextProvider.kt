@@ -6,9 +6,12 @@
 
 package com.datadog.android.sessionreplay.internal.utils
 
+import com.datadog.tools.annotation.NoOpImplementation
+
 /**
  * Provides the [SessionReplayRumContext] into the Session Replay module.
  */
+@NoOpImplementation
 internal interface RumContextProvider {
     /**
      * Returns the current RUM context as [SessionReplayRumContext].
