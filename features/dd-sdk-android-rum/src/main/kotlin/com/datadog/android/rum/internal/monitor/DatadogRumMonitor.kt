@@ -27,6 +27,7 @@ import com.datadog.android.core.internal.utils.getSafe
 import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.heatmaps.CrossPlatformHeatmapActionData
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.AddOperationStepVital.ActionType
@@ -55,11 +56,11 @@ import com.datadog.android.rum.internal.domain.asTime
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
-import com.datadog.android.rum.internal.domain.scope.HeatmapActionData
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScopeKey
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
+import com.datadog.android.rum.internal.heatmaps.NativeHeatmapActionData
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
@@ -86,6 +87,7 @@ import com.datadog.android.rum.featureoperations.FailureReason as DeprecatedFail
 internal class DatadogRumMonitor(
     applicationId: String,
     private val sdkCore: InternalSdkCore,
+    internal val appPackageName: String,
     internal val sessionSampler: Sampler<String>,
     internal val backgroundTrackingEnabled: Boolean,
     internal val trackFrustrations: Boolean,
@@ -110,6 +112,8 @@ internal class DatadogRumMonitor(
     insightsCollector: InsightsCollector,
     heatmapIdentifierRegistry: HeatmapIdentifierRegistry?
 ) : RumMonitor, AdvancedRumMonitor {
+
+    @Volatile private var cachedViewUrl: String? = null
 
     internal var rootScope = RumApplicationScope(
         applicationId = applicationId,
@@ -217,7 +221,7 @@ internal class DatadogRumMonitor(
     override fun addActionWithHeatmap(
         type: RumActionType,
         name: String,
-        heatmapData: HeatmapActionData?,
+        nativeHeatmapActionData: NativeHeatmapActionData?,
         attributes: Map<String, Any?>
     ) {
         val eventTime = getEventTime(attributes)
@@ -226,7 +230,27 @@ internal class DatadogRumMonitor(
                 type = type,
                 name = name,
                 waitForStop = false,
-                heatmapData = heatmapData,
+                nativeHeatmapActionData = nativeHeatmapActionData,
+                eventTime = eventTime,
+                attributes = attributes.toMap()
+            )
+        )
+    }
+
+    override fun addActionWithHeatmapAttributes(
+        type: RumActionType,
+        name: String,
+        crossPlatformHeatmapActionData: CrossPlatformHeatmapActionData,
+        attributes: Map<String, Any?>
+    ) {
+        val eventTime = getEventTime(attributes)
+        handleEvent(
+            RumRawEvent.StartAction(
+                type = type,
+                name = name,
+                waitForStop = false,
+                crossPlatformHeatmapActionData = crossPlatformHeatmapActionData,
+                appPackageName = appPackageName,
                 eventTime = eventTime,
                 attributes = attributes.toMap()
             )
@@ -922,7 +946,9 @@ internal class DatadogRumMonitor(
                                 synchronized(rootScope) {
                                     handleEventWithMethodCallPerf(event, datadogContext, writeScope)
                                     notifyDebugListenerWithState()
-                                    currentRumContext()
+                                    val context = currentRumContext()
+                                    updateCachedViewUrl(context)
+                                    context
                                 }
                             }
                         )
@@ -974,6 +1000,13 @@ internal class DatadogRumMonitor(
                 )
             }
         }
+    }
+
+    override fun getCurrentViewUrl(): String? = cachedViewUrl
+
+    private fun updateCachedViewUrl(context: RumContext?) {
+        val newUrl = context?.viewUrl
+        if (cachedViewUrl != newUrl) cachedViewUrl = newUrl
     }
 
     private fun currentRumContext(): RumContext? {

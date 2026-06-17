@@ -44,6 +44,8 @@ import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.state.SlowFrameRecord
 import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
+import com.datadog.android.rum.internal.heatmaps.HeatmapActionResolver
+import com.datadog.android.rum.internal.heatmaps.NativeHeatmapActionData
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.NoValueReason
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
@@ -2897,7 +2899,7 @@ internal class RumViewScopeTest {
         @Forgery type: RumActionType,
         @StringForgery name: String,
         @BoolForgery waitForStop: Boolean,
-        @Forgery fakeHeatmapData: HeatmapActionData,
+        @Forgery fakeHeatmapData: NativeHeatmapActionData,
         forge: Forge
     ) {
         // Given
@@ -2907,7 +2909,7 @@ internal class RumViewScopeTest {
             type = type,
             name = name,
             waitForStop = waitForStop,
-            heatmapData = fakeHeatmapData,
+            nativeHeatmapActionData = fakeHeatmapData,
             attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         )
 
@@ -2916,7 +2918,7 @@ internal class RumViewScopeTest {
 
         // Then
         val actionScope = testedScope.activeActionScope as RumActionScope
-        assertThat(actionScope.heatmapData).isEqualTo(fakeHeatmapData)
+        assertThat(actionScope.heatmapResolver).isInstanceOf(HeatmapActionResolver.Native::class.java)
     }
 
     @ParameterizedTest

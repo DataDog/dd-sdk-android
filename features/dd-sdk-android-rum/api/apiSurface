@@ -172,6 +172,8 @@ enum com.datadog.android.rum.RumSessionType
   - SYNTHETICS
   - USER
 class com.datadog.android.rum._RumInternalProxy
+  fun addActionWithHeatmap(RumActionType, String, com.datadog.android.heatmaps.CrossPlatformHeatmapActionData, Map<String, Any?>)
+  fun getCurrentViewUrl(): String?
   fun addLongTask(Long, String)
   fun updatePerformanceMetric(RumPerformanceMetric, Double)
   fun updateExternalRefreshRate(Double)

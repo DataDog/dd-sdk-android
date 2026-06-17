@@ -21,6 +21,7 @@ import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.heatmaps.CrossPlatformHeatmapActionData
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.ExperimentalRumApi
@@ -41,7 +42,6 @@ import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapsh
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
-import com.datadog.android.rum.internal.domain.scope.HeatmapActionData
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScopeKey
@@ -49,6 +49,7 @@ import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
+import com.datadog.android.rum.internal.heatmaps.NativeHeatmapActionData
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
@@ -201,6 +202,9 @@ internal class DatadogRumMonitorTest {
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
+    @StringForgery
+    lateinit var fakeApplicationPackageName: String
+
     lateinit var fakeAttributes: Map<String, Any?>
 
     @FloatForgery(min = 0f, max = 100f)
@@ -302,6 +306,7 @@ internal class DatadogRumMonitorTest {
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
+            appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null
         )
         testedMonitor.rootScope = mockApplicationScope
@@ -335,6 +340,7 @@ internal class DatadogRumMonitorTest {
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
+            appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null
         )
 
@@ -411,6 +417,7 @@ internal class DatadogRumMonitorTest {
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
+            appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null
         )
         testedMonitor.start()
@@ -455,6 +462,7 @@ internal class DatadogRumMonitorTest {
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
+            appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null
         )
         testedMonitor.start()
@@ -514,7 +522,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.waitForStop).isFalse
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
             assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
-            assertThat(event.heatmapData).isNull()
+            assertThat(event.nativeHeatmapActionData).isNull()
         }
         verifyNoMoreInteractions(mockWriter)
     }
@@ -523,13 +531,13 @@ internal class DatadogRumMonitorTest {
     fun `M enqueue StartAction with heatmapData set W addActionWithHeatmap() {heatmapData non-null}`(
         @Forgery type: RumActionType,
         @StringForgery name: String,
-        @Forgery fakeHeatmapData: HeatmapActionData
+        @Forgery fakeHeatmapData: NativeHeatmapActionData
     ) {
         // When
         testedMonitor.addActionWithHeatmap(
             type = type,
             name = name,
-            heatmapData = fakeHeatmapData,
+            nativeHeatmapActionData = fakeHeatmapData,
             attributes = fakeAttributes
         )
 
@@ -548,9 +556,152 @@ internal class DatadogRumMonitorTest {
             assertThat(event.waitForStop).isFalse
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
             assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
-            assertThat(event.heatmapData).isEqualTo(fakeHeatmapData)
+            assertThat(event.nativeHeatmapActionData).isEqualTo(fakeHeatmapData)
         }
         verifyNoMoreInteractions(mockWriter)
+    }
+
+    @Test
+    fun `M enqueue StartAction with crossPlatformHeatmapActionData set W addActionWithHeatmapAttributes()`(
+        @Forgery type: RumActionType,
+        @StringForgery name: String,
+        @Forgery fakeHeatmapAttributes: CrossPlatformHeatmapActionData
+    ) {
+        // When
+        testedMonitor.addActionWithHeatmapAttributes(
+            type = type,
+            name = name,
+            crossPlatformHeatmapActionData = fakeHeatmapAttributes,
+            attributes = fakeAttributes
+        )
+
+        // Then
+        argumentCaptor<RumRawEvent> {
+            verify(mockApplicationScope).handleEvent(
+                capture(),
+                same(fakeDatadogContext),
+                same(mockEventWriteScope),
+                same(mockWriter)
+            )
+
+            val event = firstValue as RumRawEvent.StartAction
+            assertThat(event.type).isEqualTo(type)
+            assertThat(event.name).isEqualTo(name)
+            assertThat(event.waitForStop).isFalse
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.nativeHeatmapActionData).isNull()
+            assertThat(event.crossPlatformHeatmapActionData).isEqualTo(fakeHeatmapAttributes)
+            assertThat(event.appPackageName).isEqualTo(fakeApplicationPackageName)
+        }
+        verifyNoMoreInteractions(mockWriter)
+    }
+
+    @Test
+    fun `M return current view URL W getCurrentViewUrl()`(
+        @Forgery fakeRumContext: RumContext,
+        @Forgery type: RumActionType,
+        @StringForgery name: String
+    ) {
+        // Given
+        val fakeContextWithSession = fakeRumContext.copy(
+            sessionId = java.util.UUID.randomUUID().toString(),
+            sessionState = RumSessionScope.State.TRACKED
+        )
+        val mockSessionScope = mock<RumSessionScope>()
+        val mockViewScope = mock<RumViewScope>()
+        whenever(mockApplicationScope.activeSession) doReturn mockSessionScope
+        whenever(mockSessionScope.activeView) doReturn mockViewScope
+        whenever(mockViewScope.getRumContext()) doReturn fakeContextWithSession
+        testedMonitor.startAction(type, name, fakeAttributes)
+
+        // When
+        val result = testedMonitor.getCurrentViewUrl()
+
+        // Then
+        assertThat(result).isEqualTo(fakeContextWithSession.viewUrl)
+    }
+
+    @Test
+    fun `M return null W getCurrentViewUrl() { no active session }`(
+        @Forgery fakeRumContext: RumContext,
+        @Forgery type: RumActionType,
+        @StringForgery name: String
+    ) {
+        // Given
+        val primeContext = fakeRumContext.copy(
+            sessionId = java.util.UUID.randomUUID().toString(),
+            sessionState = RumSessionScope.State.TRACKED
+        )
+        val mockSessionScope = mock<RumSessionScope>()
+        val mockViewScope = mock<RumViewScope>()
+        whenever(mockApplicationScope.activeSession) doReturn mockSessionScope
+        whenever(mockSessionScope.activeView) doReturn mockViewScope
+        whenever(mockViewScope.getRumContext()) doReturn primeContext
+        testedMonitor.startAction(type, name, fakeAttributes)
+        whenever(mockApplicationScope.activeSession) doReturn null
+        testedMonitor.startAction(type, name, fakeAttributes)
+
+        // When
+        val result = testedMonitor.getCurrentViewUrl()
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return null W getCurrentViewUrl() { session exists but has NULL_UUID — not yet sampled in }`(
+        @Forgery fakeRumContext: RumContext,
+        @Forgery type: RumActionType,
+        @StringForgery name: String
+    ) {
+        // Given
+        val primeContext = fakeRumContext.copy(
+            sessionId = java.util.UUID.randomUUID().toString(),
+            sessionState = RumSessionScope.State.TRACKED
+        )
+        val mockSessionScope = mock<RumSessionScope>()
+        val mockViewScope = mock<RumViewScope>()
+        whenever(mockApplicationScope.activeSession) doReturn mockSessionScope
+        whenever(mockSessionScope.activeView) doReturn mockViewScope
+        whenever(mockViewScope.getRumContext()) doReturn primeContext
+        testedMonitor.startAction(type, name, fakeAttributes)
+        whenever(mockSessionScope.activeView) doReturn null
+        whenever(mockSessionScope.getRumContext()) doReturn RumContext(sessionId = RumContext.NULL_UUID)
+        testedMonitor.startAction(type, name, fakeAttributes)
+
+        // When
+        val result = testedMonitor.getCurrentViewUrl()
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return null W getCurrentViewUrl() { view stopped with no new view started }`(
+        @Forgery fakeRumContext: RumContext,
+        @Forgery type: RumActionType,
+        @StringForgery name: String
+    ) {
+        // Given
+        val primeContext = fakeRumContext.copy(
+            sessionId = java.util.UUID.randomUUID().toString(),
+            sessionState = RumSessionScope.State.TRACKED
+        )
+        val mockSessionScope = mock<RumSessionScope>()
+        val mockViewScope = mock<RumViewScope>()
+        whenever(mockApplicationScope.activeSession) doReturn mockSessionScope
+        whenever(mockSessionScope.activeView) doReturn mockViewScope
+        whenever(mockViewScope.getRumContext()) doReturn primeContext
+        testedMonitor.startAction(type, name, fakeAttributes)
+        whenever(mockSessionScope.activeView) doReturn null
+        whenever(mockSessionScope.getRumContext()) doReturn primeContext.copy(viewUrl = null)
+        testedMonitor.startAction(type, name, fakeAttributes)
+
+        // When
+        val result = testedMonitor.getCurrentViewUrl()
+
+        // Then
+        assertThat(result).isNull()
     }
 
     @Test
@@ -2074,6 +2225,7 @@ internal class DatadogRumMonitorTest {
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
+            appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null
         )
 
@@ -2115,6 +2267,7 @@ internal class DatadogRumMonitorTest {
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
+            appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null
         )
 
@@ -2157,6 +2310,7 @@ internal class DatadogRumMonitorTest {
             rumSessionTypeOverride = null,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
+            appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
@@ -2394,6 +2548,7 @@ internal class DatadogRumMonitorTest {
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
+            appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null
         )
         testedMonitor.startView(key, name, attributes)

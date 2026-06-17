@@ -13,5 +13,10 @@ import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
  * to obtain a typed reference via [com.datadog.android.api.feature.FeatureScope.unwrap].
  */
 interface HeatmapIdentifierRegistryProvider {
+    /**
+     * The registry that maps view identity keys to their stable [HeatmapIdentifier]s for this
+     * feature's current screen. Session Replay writes identifiers into this registry during
+     * each traversal; the RUM layer reads from it when a tap action is sent.
+     */
     val heatmapIdentifierRegistry: HeatmapIdentifierRegistry
 }

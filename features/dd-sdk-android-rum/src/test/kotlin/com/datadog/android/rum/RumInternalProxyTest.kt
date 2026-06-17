@@ -7,6 +7,7 @@
 package com.datadog.android.rum
 
 import android.app.Activity
+import com.datadog.android.heatmaps.CrossPlatformHeatmapActionData
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType
 import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -25,7 +26,9 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -35,6 +38,42 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class RumInternalProxyTest {
+
+    @Test
+    fun `M proxy getCurrentViewUrl to RumMonitor W getCurrentViewUrl()`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeViewUrl = forge.aNullable { anAlphabeticalString() }
+        val mockRumMonitor = mock(AdvancedRumMonitor::class.java)
+        whenever(mockRumMonitor.getCurrentViewUrl()) doReturn fakeViewUrl
+        val proxy = _RumInternalProxy(mockRumMonitor)
+
+        // When
+        val result = proxy.getCurrentViewUrl()
+
+        // Then
+        assertThat(result).isEqualTo(fakeViewUrl)
+    }
+
+    @Test
+    fun `M proxy addActionWithHeatmap to RumMonitor W addActionWithHeatmap()`(
+        forge: Forge,
+        @Forgery fakeHeatmapAttributes: CrossPlatformHeatmapActionData,
+        @StringForgery fakeName: String
+    ) {
+        // Given
+        val fakeType = forge.aValueFrom(RumActionType::class.java)
+        val fakeAttributes = forge.aMap { anAlphabeticalString() to anAlphabeticalString() }
+        val mockRumMonitor = mock(AdvancedRumMonitor::class.java)
+        val proxy = _RumInternalProxy(mockRumMonitor)
+
+        // When
+        proxy.addActionWithHeatmap(fakeType, fakeName, fakeHeatmapAttributes, fakeAttributes)
+
+        // Then
+        verify(mockRumMonitor).addActionWithHeatmapAttributes(fakeType, fakeName, fakeHeatmapAttributes, fakeAttributes)
+    }
 
     @Test
     fun `M proxy addLongTask to RumMonitor W addLongTask()`(
