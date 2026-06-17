@@ -22,9 +22,6 @@ import com.datadog.android.sample.SampleApplication
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.ExperimentalTraceApi
 import org.chromium.net.CronetEngine
-import org.chromium.net.CronetException
-import org.chromium.net.UrlRequest
-import org.chromium.net.UrlResponseInfo
 import java.util.concurrent.Executors
 
 internal class CronetImageFragment : Fragment() {
@@ -91,11 +88,7 @@ internal class CronetImageFragment : Fragment() {
                     }
                 }
 
-                override fun onFailed(
-                    request: UrlRequest,
-                    info: UrlResponseInfo?,
-                    error: CronetException
-                ) {
+                override fun onBitmapFailed(error: Exception) {
                     activity?.runOnUiThread {
                         Toast.makeText(
                             requireContext(),
