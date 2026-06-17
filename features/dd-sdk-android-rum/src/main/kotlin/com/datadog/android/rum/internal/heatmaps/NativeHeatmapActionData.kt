@@ -4,9 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.domain.scope
+package com.datadog.android.rum.internal.heatmaps
 
-internal data class HeatmapActionData(
+internal data class NativeHeatmapActionData(
     val viewKey: Long,
     val positionX: Long,
     val positionY: Long,
