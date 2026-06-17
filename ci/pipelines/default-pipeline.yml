@@ -142,8 +142,6 @@ analysis:detekt-custom:
   image: $CI_IMAGE_DOCKER
   stage: analysis
   timeout: 1h
-  variables:
-    KUBERNETES_MEMORY_LIMIT: "32Gi"
   script:
     - ./gradlew assembleLibrariesRelease --parallel --stacktrace
     - ./gradlew unzipAarForDetekt --stacktrace
