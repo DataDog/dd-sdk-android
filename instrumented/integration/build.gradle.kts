@@ -5,6 +5,7 @@
  */
 
 import com.datadog.gradle.config.AndroidConfig
+import com.datadog.gradle.config.depotProxied
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.kotlinConfig
 
@@ -80,7 +81,7 @@ android {
     }
 }
 
-repositories {
+repositories.depotProxied(providers) {
     google()
     mavenLocal()
     mavenCentral()
@@ -90,6 +91,7 @@ dependencies {
     if (project.hasProperty(com.datadog.gradle.Properties.USE_DESUGARING)) {
         coreLibraryDesugaring(libs.androidDesugaringSdk)
     }
+    implementation(project(":features:dd-sdk-android-webview"))
     implementation(project(":features:dd-sdk-android-session-replay"))
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-trace"))
@@ -97,6 +99,7 @@ dependencies {
     implementation(project(":dd-sdk-android-internal"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))
     implementation(project(":integrations:dd-sdk-android-cronet"))
+    implementation(libs.okHttp)
     implementation(libs.cronetPlayServices)
 
     implementation(libs.gson)

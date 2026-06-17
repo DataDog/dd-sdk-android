@@ -35,7 +35,8 @@ internal fun SampleSelectionScreen(
     onFgmClicked: () -> Unit,
     onTabsClicked: () -> Unit,
     onInteropViewClicked: () -> Unit,
-    onNav3Clicked: () -> Unit
+    onNav3Clicked: () -> Unit,
+    onBackgroundClicked: () -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
@@ -85,6 +86,10 @@ internal fun SampleSelectionScreen(
         StyledButton(
             text = "Navigation 3",
             onClick = onNav3Clicked
+        )
+        StyledButton(
+            text = "Backgrounds",
+            onClick = onBackgroundClicked
         )
     }
 }
@@ -137,6 +142,9 @@ internal fun NavGraphBuilder.selectionNavigation(navController: NavHostControlle
             },
             onNav3Clicked = {
                 navController.navigate(SampleScreen.Navigation3.navigationRoute)
+            },
+            onBackgroundClicked = {
+                navController.navigate(SampleScreen.Background.navigationRoute)
             }
         )
     }
@@ -173,6 +181,10 @@ internal fun NavGraphBuilder.selectionNavigation(navController: NavHostControlle
         InteropViewSample()
     }
 
+    composable(SampleScreen.Background.navigationRoute) {
+        BackgroundSample()
+    }
+
     activity(SampleScreen.Legacy.navigationRoute) {
         activityClass = LegacyComposeActivity::class
     }
@@ -197,6 +209,7 @@ internal sealed class SampleScreen(
     object Legacy : SampleScreen("$COMPOSE_ROOT/legacy")
     object InteropView : SampleScreen("$COMPOSE_ROOT/interop_view")
     object Navigation3 : SampleScreen("$COMPOSE_ROOT/nav3")
+    object Background : SampleScreen("$COMPOSE_ROOT/background")
 
     companion object {
         private const val COMPOSE_ROOT = "compose"
@@ -227,6 +240,8 @@ private fun PreviewSampleSelectionScreen() {
         onInteropViewClicked = {
         },
         onNav3Clicked = {
+        },
+        onBackgroundClicked = {
         }
     )
 }

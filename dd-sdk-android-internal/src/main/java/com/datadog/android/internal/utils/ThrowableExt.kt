@@ -14,7 +14,15 @@ import java.io.StringWriter
  */
 fun Throwable.loggableStackTrace(): String {
     val stringWriter = StringWriter()
-    @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-    printStackTrace(PrintWriter(stringWriter))
-    return stringWriter.toString()
+    return try {
+        @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+        printStackTrace(PrintWriter(stringWriter))
+        stringWriter.toString()
+    } catch (@Suppress("TooGenericExceptionCaught") _: Throwable) {
+        // printStackTrace may throw when formatting cause/suppressed exceptions (e.g. a
+        // kotlinx.coroutines bug where toString() on the coroutine context throws).
+        // Return whatever was written before the throw (likely the full main frames),
+        // or fall back to the raw stack array if nothing was written yet.
+        stringWriter.toString().ifBlank { stackTrace.loggableStackTrace() }
+    }
 }

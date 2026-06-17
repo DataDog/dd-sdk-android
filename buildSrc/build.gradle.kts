@@ -14,11 +14,19 @@ plugins {
 
 buildscript {
     repositories {
+        // Magic Mirror Depot proxy (only set in CI via `.gitlab-ci.yml`).
+        listOf("gradlePluginProxy", "mavenRepositoryProxy")
+            .mapNotNull { providers.gradleProperty(it).orNull?.takeIf { url -> url.isNotBlank() } }
+            .forEach { url -> maven { setUrl(url) } }
         mavenCentral()
     }
 }
 
 repositories {
+    // Magic Mirror Depot proxy (only set in CI via `.gitlab-ci.yml`).
+    listOf("gradlePluginProxy", "mavenRepositoryProxy")
+        .mapNotNull { providers.gradleProperty(it).orNull?.takeIf { url -> url.isNotBlank() } }
+        .forEach { url -> maven { setUrl(url) } }
     mavenCentral()
     google()
     maven { setUrl("https://plugins.gradle.org/m2/") }

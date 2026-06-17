@@ -12,6 +12,7 @@ import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.state.ToggleableState
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
@@ -58,6 +59,9 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(SessionReplayComposeForgeConfigurator::class)
 internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() {
     private lateinit var testedMapper: CheckboxSemanticsNodeMapper
+
+    @Mock
+    private lateinit var mockInternalLogger: InternalLogger
 
     @Mock
     private lateinit var mockSemanticsNode: SemanticsNode
@@ -124,7 +128,7 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
             whenever(mockSemanticsNode.config).doReturn(mockConfig)
         }
 
-        whenever(mockPathUtils.asAndroidPathSafe(any()))
+        whenever(mockPathUtils.asAndroidPathSafe(any(), any()))
             .thenReturn(mock())
 
         whenever(mockSemanticsUtils.resolveCheckmarkColor(mockSemanticsNode))
@@ -158,7 +162,8 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
         val semanticsWireframe = testedMapper.map(
             semanticsNode = mockSemanticsNode,
             parentContext = mockUiContext,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback,
+            internalLogger = mockInternalLogger
         )
 
         // Then
@@ -192,7 +197,8 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
         val semanticsWireframe = testedMapper.map(
             semanticsNode = mockSemanticsNode,
             parentContext = mockUiContext,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback,
+            internalLogger = mockInternalLogger
         )
 
         // Then
@@ -226,7 +232,8 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
         val semanticsWireframe = testedMapper.map(
             semanticsNode = mockSemanticsNode,
             parentContext = mockUiContext,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback,
+            internalLogger = mockInternalLogger
         )
 
         // Then
@@ -263,7 +270,8 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
         val semanticsWireframe = testedMapper.map(
             semanticsNode = mockSemanticsNode,
             parentContext = mockUiContext,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback,
+            internalLogger = mockInternalLogger
         )
 
         // Then
@@ -293,7 +301,8 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
         val semanticsWireframe = testedMapper.map(
             semanticsNode = mockSemanticsNode,
             parentContext = mockUiContext,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback,
+            internalLogger = mockInternalLogger
         )
 
         // Then
@@ -319,7 +328,8 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
         val semanticsWireframe = testedMapper.map(
             semanticsNode = mockSemanticsNode,
             parentContext = mockUiContext,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback,
+            internalLogger = mockInternalLogger
         )
 
         // Then
@@ -343,7 +353,8 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
         val semanticsWireframe = testedMapper.map(
             semanticsNode = mockSemanticsNode,
             parentContext = mockUiContext,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback,
+            internalLogger = mockInternalLogger
         )
 
         // Then
@@ -368,10 +379,10 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
         whenever(mockSemanticsUtils.resolveCheckboxFillColor(mockSemanticsNode))
             .thenReturn(fakeFillColor)
 
-        whenever(mockColorUtils.parseColorSafe(fakeFillColorHexString))
+        whenever(mockColorUtils.parseColorSafe(eq(fakeFillColorHexString), any()))
             .thenReturn(fakeFillColor.toInt())
 
-        whenever(mockColorUtils.parseColorSafe(fakeCheckmarkColorHexString))
+        whenever(mockColorUtils.parseColorSafe(eq(fakeCheckmarkColorHexString), any()))
             .thenReturn(fakeCheckmarkColor.toInt())
 
         whenever(
@@ -398,7 +409,8 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
         testedMapper.map(
             semanticsNode = mockSemanticsNode,
             parentContext = mockUiContext,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback,
+            internalLogger = mockInternalLogger
         )
 
         // Then
@@ -443,10 +455,10 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
         whenever(mockSemanticsUtils.resolveCheckboxFillColor(mockSemanticsNode))
             .thenReturn(fakeFillColor)
 
-        whenever(mockColorUtils.parseColorSafe(fakeFillColorHexString))
+        whenever(mockColorUtils.parseColorSafe(eq(fakeFillColorHexString), any()))
             .thenReturn(fakeFillColor.toInt())
 
-        whenever(mockColorUtils.parseColorSafe(fakeCheckmarkColorHexString))
+        whenever(mockColorUtils.parseColorSafe(eq(fakeCheckmarkColorHexString), any()))
             .thenReturn(fakeCheckmarkColor.toInt())
 
         whenever(
@@ -473,7 +485,8 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
         val wireframes = testedMapper.map(
             semanticsNode = mockSemanticsNode,
             parentContext = mockUiContext,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback,
+            internalLogger = mockInternalLogger
         )
 
         // Then
@@ -491,7 +504,8 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
         val checkboxWireframe = testedMapper.map(
             semanticsNode = mockSemanticsNode,
             parentContext = mockUiContext,
-            asyncJobStatusCallback = mockAsyncJobStatusCallback
+            asyncJobStatusCallback = mockAsyncJobStatusCallback,
+            internalLogger = mockInternalLogger
         )
 
         // Then
@@ -512,5 +526,35 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
         )
         assertThat(actualWireframe.shapeStyle?.backgroundColor).isEqualTo(DEFAULT_COLOR_WHITE)
         assertThat(actualWireframe.border?.color).isEqualTo(DEFAULT_COLOR_BLACK)
+    }
+
+    @Test
+    fun `M forward internalLogger to pathUtils W map`() {
+        // Given
+        whenever(mockConfig.getOrNull(SemanticsProperties.ToggleableState))
+            .thenReturn(ToggleableState.On)
+
+        whenever(mockSemanticsUtils.resolveCheckboxFillColor(mockSemanticsNode))
+            .thenReturn(fakeFillColor)
+
+        whenever(mockSemanticsUtils.resolveCheckmarkColor(mockSemanticsNode))
+            .thenReturn(fakeCheckmarkColor)
+
+        whenever(mockSemanticsUtils.resolveCheckPath(mockSemanticsNode))
+            .thenReturn(mockPath)
+
+        whenever(mockColorUtils.parseColorSafe(any(), any()))
+            .thenReturn(fakeFillColor.toInt())
+
+        // When
+        testedMapper.map(
+            semanticsNode = mockSemanticsNode,
+            parentContext = mockUiContext,
+            asyncJobStatusCallback = mockAsyncJobStatusCallback,
+            internalLogger = mockInternalLogger
+        )
+
+        // Then
+        verify(mockPathUtils).asAndroidPathSafe(any(), eq(mockInternalLogger))
     }
 }

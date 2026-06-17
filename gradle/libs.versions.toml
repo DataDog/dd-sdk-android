@@ -61,7 +61,7 @@ kover = "0.7.6"
 kspTesting = "1.5.0"
 
 # Tools
-detekt = "1.23.4"
+detekt = "1.23.8"
 dokka = "2.1.0"
 unmock = "0.9.0"
 robolectric = "4.4_r1-robolectric-r2"
@@ -69,7 +69,7 @@ androidLint = "31.0.2"
 
 versionsGradlePlugin = "0.46.0"
 nexusPublishGradlePlugin = "2.0.0"
-datadogPlugin = "1.23.0"
+datadogPlugin = "1.27.0"
 
 kotlinPoet = "1.14.2"
 kotlinGrammarParser = "41b00c0"
@@ -224,7 +224,7 @@ kotlinPoetKsp = { module = "com.squareup:kotlinpoet-ksp", version.ref = "kotlinP
 kotlinSP = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "kotlinSP" }
 kotlinGrammarParser = { module = "com.github.kotlinx.ast:grammar-kotlin-parser-antlr-kotlin-jvm", version.ref = "kotlinGrammarParser" }
 jsonSchemaValidator = { module = "com.github.everit-org.json-schema:org.everit.json.schema", version.ref = "jsonSchemaValidator" }
-kotlinXmlBuilder = {module="org.redundent:kotlin-xml-builder", version.ref="kotlinXmlBuilder"}
+kotlinXmlBuilder = { module = "org.redundent:kotlin-xml-builder", version.ref = "kotlinXmlBuilder" }
 
 # Integrations
 sqlDelight = { module = "com.squareup.sqldelight:android-driver", version.ref = "sqlDelight" }

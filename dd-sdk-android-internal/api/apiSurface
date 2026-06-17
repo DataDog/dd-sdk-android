@@ -247,6 +247,7 @@ abstract class com.datadog.android.internal.time.BaseTimeProvider : TimeProvider
   override fun getDeviceElapsedTimeNanos(): Long
   override fun getDeviceElapsedRealtimeMillis(): Long
 fun ByteArray.toHexString(): String
+fun <T> android.content.Context.getSystemServiceAs(String): T?
 interface com.datadog.android.internal.utils.DDCoreSubscription<T: Any>
   fun addListener(T)
   fun removeListener(T)
@@ -286,4 +287,4 @@ class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProv
     var processImportance: Int
     var createTimeNs: Long
 annotation com.datadog.tools.annotation.NoOpImplementation
-  constructor(Boolean = false)
+  constructor(Boolean = false, String = "")

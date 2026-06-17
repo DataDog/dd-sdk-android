@@ -7,10 +7,12 @@
 package com.datadog.android.core.internal
 
 import android.app.ActivityManager
+import android.app.Application
 import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Handler
 import android.os.Process
 import androidx.annotation.RequiresApi
 import androidx.annotation.WorkerThread
@@ -58,6 +60,7 @@ import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.thread.BackPressureExecutorService
 import com.datadog.android.core.internal.thread.BackPressuredBlockingQueue
+import com.datadog.android.core.internal.thread.BroadcastReceiverThread
 import com.datadog.android.core.internal.thread.DatadogThreadFactory
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.thread.ScheduledExecutorServiceFactory
@@ -69,13 +72,13 @@ import com.datadog.android.core.internal.user.DatadogUserInfoProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
 import com.datadog.android.core.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.core.internal.utils.executeSafe
-import com.datadog.android.core.internal.utils.unboundInternalLogger
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.internal.utils.allowThreadDiskReads
+import com.datadog.android.internal.utils.getSystemServiceAs
 import com.datadog.android.ndk.internal.DatadogNdkCrashHandler
 import com.datadog.android.ndk.internal.NdkCrashHandler
 import com.datadog.android.ndk.internal.NdkCrashLogDeserializer
@@ -94,7 +97,6 @@ import okhttp3.Request
 import okhttp3.TlsVersion
 import java.io.File
 import java.io.FileNotFoundException
-import java.lang.ref.WeakReference
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
@@ -144,13 +146,11 @@ internal class CoreFeature(
     internal class OkHttpCallFactory(factory: () -> OkHttpClient) : Call.Factory {
         val okhttpClient by lazy(factory)
 
-        override fun newCall(request: Request): Call {
-            return okhttpClient.newCall(request)
-        }
+        override fun newCall(request: Request): Call = okhttpClient.newCall(request)
     }
 
     internal val initialized = AtomicBoolean(false)
-    internal var contextRef: WeakReference<Context?> = WeakReference(null)
+    internal var appContext: Context? = null
 
     internal var firstPartyHostHeaderTypeResolver =
         DefaultFirstPartyHostHeaderTypeResolver(emptyMap())
@@ -203,6 +203,7 @@ internal class CoreFeature(
     internal lateinit var uploadExecutorService: ScheduledThreadPoolExecutor
     internal lateinit var persistenceExecutorService: FlushableExecutorService
     internal lateinit var contextExecutorService: ThreadPoolExecutor
+    internal lateinit var broadcastReceiverThread: BroadcastReceiverThread
     internal lateinit var backpressureStrategy: BackPressureStrategy
 
     internal var localDataEncryption: Encryption? = null
@@ -256,11 +257,12 @@ internal class CoreFeature(
         if (initialized.get()) {
             return
         }
+        this.appContext = appContext
         readConfigurationSettings(configuration.coreConfig)
         readApplicationInformation(appContext, configuration)
         resolveProcessInfo(appContext)
         setupExecutors()
-        persistenceExecutorService.executeSafe("NTP Sync initialization", unboundInternalLogger) {
+        persistenceExecutorService.executeSafe("NTP Sync initialization", internalLogger) {
             // Kronos performs I/O operation on startup, it needs to run in background
             initializeClockSync(appContext)
         }
@@ -291,11 +293,10 @@ internal class CoreFeature(
 
     fun stop() {
         if (initialized.get()) {
-            contextRef.get()?.let {
+            appContext?.let {
                 networkInfoProvider.unregister(it)
                 systemInfoProvider.unregister(it)
             }
-            contextRef.clear()
 
             trackingConsentProvider.unregisterAllCallbacks()
 
@@ -319,6 +320,7 @@ internal class CoreFeature(
             initialized.set(false)
             ndkCrashHandler = NoOpNdkCrashHandler()
             trackingConsentProvider = NoOpConsentProvider()
+            appContext = null
         }
     }
 
@@ -525,8 +527,6 @@ internal class CoreFeature(
         envName = configuration.env
         variant = configuration.variant
         appBuildId = readBuildId(appContext)
-
-        contextRef = WeakReference(appContext)
     }
 
     private fun getPackageInfo(appContext: Context): PackageInfo? {
@@ -592,15 +592,17 @@ internal class CoreFeature(
         // Tracking Consent Provider
         trackingConsentProvider = TrackingConsentProvider(consent)
 
+        val broadcastReceiverHandler = Handler(broadcastReceiverThread.looper)
+
         // System Info Provider
         systemInfoProvider = BroadcastReceiverSystemInfoProvider(
             internalLogger = internalLogger,
-            executorService = contextExecutorService
+            handler = broadcastReceiverHandler
         )
         systemInfoProvider.register(appContext)
 
         // Network Info Provider
-        setupNetworkInfoProviders(appContext)
+        setupNetworkInfoProviders(appContext, broadcastReceiverHandler)
 
         // User Info Provider
         userInfoProvider = DatadogUserInfoProvider()
@@ -609,13 +611,17 @@ internal class CoreFeature(
         accountInfoProvider = DatadogAccountInfoProvider(internalLogger)
     }
 
-    private fun setupNetworkInfoProviders(appContext: Context) {
+    private fun setupNetworkInfoProviders(appContext: Context, broadcastReceiverHandler: Handler) {
         networkInfoProvider = if (buildSdkVersionProvider.isAtLeastN) {
-            CallbackNetworkInfoProvider(internalLogger = internalLogger)
+            CallbackNetworkInfoProvider(
+                internalLogger = internalLogger,
+                buildSdkVersionProvider = buildSdkVersionProvider
+            )
         } else {
             BroadcastReceiverNetworkInfoProvider(
                 internalLogger = internalLogger,
-                executorService = contextExecutorService
+                handler = broadcastReceiverHandler,
+                buildSdkVersionProvider = buildSdkVersionProvider
             )
         }
         networkInfoProvider.register(appContext)
@@ -687,18 +693,25 @@ internal class CoreFeature(
             contextQueue,
             DatadogThreadFactory("context")
         )
+        broadcastReceiverThread = BroadcastReceiverThread()
+        @Suppress("UnsafeThirdPartyFunctionCall") // constructed once; start() is called exactly once here
+        broadcastReceiverThread.start()
     }
 
     private fun resolveProcessInfo(appContext: Context) {
-        val currentProcessId = Process.myPid()
-        val manager = appContext.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
-        val currentProcess = manager?.runningAppProcesses?.firstOrNull {
-            it.pid == currentProcessId
+        val processName = if (buildSdkVersionProvider.isAtLeastP) {
+            Application.getProcessName()
+        } else {
+            val currentProcessId = Process.myPid()
+            appContext.getSystemServiceAs<ActivityManager>(Context.ACTIVITY_SERVICE)
+                ?.runningAppProcesses
+                ?.firstOrNull { it.pid == currentProcessId }
+                ?.processName
         }
-        isMainProcess = if (currentProcess == null) {
+        isMainProcess = if (processName == null) {
             true
         } else {
-            appContext.packageName == currentProcess.processName
+            appContext.packageName == processName
         }
         if (!isMainProcess) {
             internalLogger.log(
@@ -713,6 +726,7 @@ internal class CoreFeature(
         uploadExecutorService.shutdownNow()
         contextExecutorService.shutdownNow()
         persistenceExecutorService.shutdownNow()
+        broadcastReceiverThread.quitSafely()
 
         try {
             uploadExecutorService.awaitTermination(1, TimeUnit.SECONDS)

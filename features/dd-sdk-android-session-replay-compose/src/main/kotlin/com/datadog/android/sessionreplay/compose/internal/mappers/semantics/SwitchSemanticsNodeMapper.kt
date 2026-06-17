@@ -10,6 +10,7 @@ import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.state.ToggleableState
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.SemanticsWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
@@ -30,12 +31,13 @@ internal class SwitchSemanticsNodeMapper(
     override fun map(
         semanticsNode: SemanticsNode,
         parentContext: UiContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): SemanticsWireframe {
         val isSwitchOn = isSwitchOn(semanticsNode)
         val globalBounds = resolveBounds(semanticsNode)
         val isDarkBackground =
-            parentContext.parentContentColor?.let { colorUtils.isDarkColor(it) } ?: false
+            parentContext.parentContentColor?.let { colorUtils.isDarkColor(it, internalLogger) } ?: false
         val switchWireframes = if (isSwitchMasked(parentContext)) {
             listOf(
                 resolveMaskedWireframes(

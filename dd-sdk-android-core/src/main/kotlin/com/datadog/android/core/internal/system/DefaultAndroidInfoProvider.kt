@@ -17,6 +17,7 @@ import android.telephony.TelephonyManager
 import android.view.Display
 import com.datadog.android.api.context.DeviceType
 import com.datadog.android.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.utils.getSystemServiceAs
 import java.util.Locale
 import java.util.TimeZone
 
@@ -119,8 +120,8 @@ internal class DefaultAndroidInfoProvider(
     }
 
     override val numberOfDisplays: Int? by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        val displayManager = appContext.getSystemService(Context.DISPLAY_SERVICE)
-            as? DisplayManager ?: return@lazy null
+        val displayManager = appContext.getSystemServiceAs<DisplayManager>(Context.DISPLAY_SERVICE)
+            ?: return@lazy null
 
         displayManager.displays.count {
             it.state !in setOf(
@@ -173,8 +174,7 @@ internal class DefaultAndroidInfoProvider(
         }
 
         private fun isTv(appContext: Context): Boolean {
-            val uiModeManager =
-                appContext.getSystemService(Context.UI_MODE_SERVICE) as? UiModeManager
+            val uiModeManager = appContext.getSystemServiceAs<UiModeManager>(Context.UI_MODE_SERVICE)
             if (uiModeManager?.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION) {
                 return true
             }
@@ -209,7 +209,7 @@ internal class DefaultAndroidInfoProvider(
             if (model.lowercase(Locale.US).contains("phone")) return true
 
             val telephonyManager =
-                appContext.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
+                appContext.getSystemServiceAs<TelephonyManager>(Context.TELEPHONY_SERVICE)
             return telephonyManager?.phoneType != TelephonyManager.PHONE_TYPE_NONE
         }
     }

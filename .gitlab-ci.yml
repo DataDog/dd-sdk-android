@@ -1,5 +1,5 @@
 variables:
-  CURRENT_CI_IMAGE: "24"
+  CURRENT_CI_IMAGE: "25"
   CI_IMAGE_DOCKER: registry.ddbuild.io/ci/dd-sdk-android:$CURRENT_CI_IMAGE
   GIT_DEPTH: 5
 
@@ -18,6 +18,15 @@ variables:
   ANDROID_SDK_VERSION: "commandlinetools-mac-13114758_latest"
 
   CACHE_FALLBACK_KEY: "develop"
+
+  # Magic Mirror Depot proxy URLs. The depot proxies both Maven Central and the Gradle
+  # Plugin Portal for the Java ecosystem from the same endpoint. Setting these routes
+  # dependency/plugin resolution through Datadog's internal mirror to avoid HTTP 429
+  # rate-limits from upstream registries.
+  # Declared as ORG_GRADLE_PROJECT_* so Gradle reads them as
+  # `providers.gradleProperty("<name>")` and they propagate to triggered child pipelines.
+  ORG_GRADLE_PROJECT_mavenRepositoryProxy: "https://depot-read-api-java.us1.ddbuild.io/magicmirror/magicmirror/@current/"
+  ORG_GRADLE_PROJECT_gradlePluginProxy: "https://depot-read-api-java.us1.ddbuild.io/magicmirror/magicmirror/@current/"
 
 include:
   - local: 'ci/pipelines/default-pipeline.yml'

@@ -26,7 +26,7 @@ internal class ImageWireframeForgeryFactory :
                     cornerRadius = forge.aPositiveLong()
                 )
             },
-            resourceId = forge.aNullable() { aString() },
+            resourceId = forge.aNullable { aString() },
             clip = forge.aNullable {
                 getForgery()
             }
