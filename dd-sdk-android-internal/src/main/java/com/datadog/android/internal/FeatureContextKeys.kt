@@ -36,4 +36,12 @@ object FeatureContextKeys {
      * Absent when profiling is allowed or no quota check has been performed.
      */
     const val PROFILING_QUOTA_REASON: String = "profiling_quota_reason"
+
+    /**
+     * RUM session id the [PROFILING_QUOTA_REASON] decision was made for. Written alongside
+     * the reason by the profiling feature so consumers can detect (and ignore) a decision
+     * that belongs to a previous session — e.g. while the new session's quota check is still
+     * in flight.
+     */
+    const val PROFILING_QUOTA_SESSION_ID: String = "profiling_quota_session_id"
 }

@@ -3,6 +3,7 @@ object com.datadog.android.internal.FeatureContextKeys
   const val RUM_SESSION_ID: String
   const val RUM_SESSION_SAMPLE_RATE: String
   const val PROFILING_QUOTA_REASON: String
+  const val PROFILING_QUOTA_SESSION_ID: String
 interface com.datadog.android.internal.attributes.LocalAttribute
   enum Key
     constructor(String)

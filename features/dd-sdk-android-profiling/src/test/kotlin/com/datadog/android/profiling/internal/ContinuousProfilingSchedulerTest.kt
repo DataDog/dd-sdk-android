@@ -13,6 +13,7 @@ import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.internal.sampling.SessionSamplingIdProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.forge.Configurator
+import com.datadog.android.profiling.internal.quota.QuotaResult
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -30,6 +31,7 @@ import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -115,6 +117,7 @@ internal class ContinuousProfilingSchedulerTest {
             sampleRate = 100f,
             onActiveWindowStarted = { activeWindowStartedCount++ }
         )
+        testedScheduler.lastQuotaResult = QuotaResult.FAIL_OPEN
     }
 
     // region start()
@@ -485,6 +488,95 @@ internal class ContinuousProfilingSchedulerTest {
 
         // Then
         verify(mockProfiler, times(1)).setExtendLaunchSession(true)
+    }
+
+    // endregion
+
+    // region quota gate
+
+    @Test
+    fun `M skip active window and stay in COOLDOWN W scheduleNextCycle {quota denied}`() {
+        // Given
+        testedScheduler.lastQuotaResult = QuotaResult.QUOTA_EXCEEDED
+        testedScheduler.onRumSessionRenewed(sessionId = fakeSessionId, rumSessionSampleRate = 100f)
+        testedScheduler.start(launchProfilingActive = true)
+        val runnableCaptor = argumentCaptor<Runnable>()
+        testedScheduler.onAppLaunchProfilingComplete()
+        verify(mockSchedulerExecutor, atLeastOnce()).schedule(runnableCaptor.capture(), any(), any())
+
+        // When
+        runnableCaptor.firstValue.run()
+
+        // Then
+        verify(mockProfiler, never()).start(any(), any(), any(), any(), any())
+        assertThat(testedScheduler.state).isEqualTo(ContinuousProfilingScheduler.State.COOLDOWN)
+        assertThat(testedScheduler.isActive).isFalse()
+        assertThat(activeWindowStartedCount).isEqualTo(0)
+        val logCaptor = argumentCaptor<() -> String>()
+        verify(mockInternalLogger, atLeastOnce()).log(
+            eq(InternalLogger.Level.DEBUG),
+            eq(InternalLogger.Target.USER),
+            logCaptor.capture(),
+            isNull(),
+            eq(false),
+            isNull()
+        )
+        assertThat(logCaptor.allValues.map { it.invoke() })
+            .anyMatch { it.contains("quota denied") }
+    }
+
+    @Test
+    fun `M skip active window and stay in COOLDOWN W scheduleNextCycle {quota decision not received}`() {
+        // Given — no quota decision has arrived yet for the session
+        testedScheduler.lastQuotaResult = null
+        testedScheduler.onRumSessionRenewed(sessionId = fakeSessionId, rumSessionSampleRate = 100f)
+        testedScheduler.start(launchProfilingActive = true)
+        val runnableCaptor = argumentCaptor<Runnable>()
+        testedScheduler.onAppLaunchProfilingComplete()
+        verify(mockSchedulerExecutor, atLeastOnce()).schedule(runnableCaptor.capture(), any(), any())
+
+        // When
+        runnableCaptor.firstValue.run()
+
+        // Then — the window is skipped until the decision lands
+        verify(mockProfiler, never()).start(any(), any(), any(), any(), any())
+        assertThat(testedScheduler.state).isEqualTo(ContinuousProfilingScheduler.State.COOLDOWN)
+        assertThat(testedScheduler.isActive).isFalse()
+        assertThat(activeWindowStartedCount).isEqualTo(0)
+        val logCaptor = argumentCaptor<() -> String>()
+        verify(mockInternalLogger, atLeastOnce()).log(
+            eq(InternalLogger.Level.DEBUG),
+            eq(InternalLogger.Target.USER),
+            logCaptor.capture(),
+            isNull(),
+            eq(false),
+            isNull()
+        )
+        assertThat(logCaptor.allValues.map { it.invoke() })
+            .anyMatch { it.contains("awaiting quota decision") }
+    }
+
+    @Test
+    fun `M start active window W scheduleNextCycle {quota allowed}`() {
+        // Given
+        testedScheduler.onRumSessionRenewed(sessionId = fakeSessionId, rumSessionSampleRate = 100f)
+        testedScheduler.start(launchProfilingActive = true)
+        val runnableCaptor = argumentCaptor<Runnable>()
+        testedScheduler.onAppLaunchProfilingComplete()
+        verify(mockSchedulerExecutor, atLeastOnce()).schedule(runnableCaptor.capture(), any(), any())
+
+        // When
+        runnableCaptor.firstValue.run()
+
+        // Then
+        verify(mockProfiler).start(
+            appContext = eq(mockApplication),
+            startReason = eq(ProfilingStartReason.CONTINUOUS),
+            additionalAttributes = eq(emptyMap()),
+            sdkInstanceNames = eq(setOf(fakeInstanceName)),
+            durationMs = any()
+        )
+        assertThat(testedScheduler.isActive).isTrue()
     }
 
     // endregion

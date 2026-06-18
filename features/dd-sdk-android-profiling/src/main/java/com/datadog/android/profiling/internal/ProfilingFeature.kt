@@ -27,8 +27,14 @@ import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.ProfilingConfiguration
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
+import com.datadog.android.profiling.internal.quota.NoOpQuotaChecker
+import com.datadog.android.profiling.internal.quota.ProfilingQuotaChecker
+import com.datadog.android.profiling.internal.quota.QuotaChecker
+import com.datadog.android.profiling.internal.quota.QuotaResult
 import com.datadog.android.profiling.internal.utils.getProfilingModuleLongVersionCode
 import java.util.Locale
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 @OptIn(ExperimentalProfilingApi::class)
@@ -55,12 +61,21 @@ internal class ProfilingFeature(
     private val isTtidVitalReceived: AtomicBoolean = AtomicBoolean(false)
     private val isTtidProfileSent: AtomicBoolean = AtomicBoolean(false)
 
+    @Volatile
+    internal var quotaChecker: QuotaChecker = NoOpQuotaChecker()
+
+    @Volatile
+    private var quotaExecutor: ExecutorService? = null
+
     private lateinit var appContext: Context
 
     @Volatile
     internal var continuousProfilingScheduler: ContinuousProfilingScheduler? = null
 
     private var processLifecycleMonitor: ProcessLifecycleMonitor? = null
+
+    @Volatile
+    private var lastQuotaResult: QuotaResult? = null
 
     override val requestFactory: RequestFactory = ProfilingRequestFactory(
         customEndpointUrl = configuration.customEndpointUrl,
@@ -95,6 +110,18 @@ internal class ProfilingFeature(
         }
         dataWriter = createDataWriter(sdkCore)
 
+        val quotaCallFactory = sdkCore.createOkHttpCallFactory {
+            callTimeout(QUOTA_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        }
+        val qExecutor = sdkCore.createSingleThreadExecutorService(QUOTA_EXECUTOR_CONTEXT)
+        quotaExecutor = qExecutor
+        quotaChecker = ProfilingQuotaChecker(
+            callFactory = quotaCallFactory,
+            executor = qExecutor,
+            internalLogger = sdkCore.internalLogger,
+            onResult = ::propagateQuotaResult
+        )
+
         val scheduler = ContinuousProfilingScheduler(
             appContext = appContext,
             profiler = profiler,
@@ -128,6 +155,11 @@ internal class ProfilingFeature(
         }
         sdkCore.removeEventReceiver(name)
         sdkCore.removeContextUpdateReceiver(this)
+        quotaChecker.reset()
+        quotaChecker = NoOpQuotaChecker()
+        quotaExecutor?.shutdownNow()
+        quotaExecutor = null
+        lastQuotaResult = null
         lastSeenRumSessionId = null
         pendingRumEvents.clear()
     }
@@ -224,9 +256,14 @@ internal class ProfilingFeature(
         ) {
             return
         }
+        this.lastQuotaResult = null
+        continuousProfilingScheduler?.lastQuotaResult = null
         val sampleRate = (context[FeatureContextKeys.RUM_SESSION_SAMPLE_RATE] as? Number)?.toFloat()
             ?: DEFAULT_RUM_SESSION_SAMPLE_RATE
         lastSeenRumSessionId = sessionId
+        sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.withContext { datadogContext ->
+            quotaChecker.checkAsync(sessionId, datadogContext)
+        }
         continuousProfilingScheduler?.onRumSessionRenewed(
             sessionId = sessionId,
             rumSessionSampleRate = sampleRate
@@ -242,21 +279,39 @@ internal class ProfilingFeature(
         }
     }
 
+    @Suppress("ReturnCount")
     private fun tryWriteProfilingEvent() {
         val result = perfettoResult ?: return
         when (result.startReason) {
             ProfilingStartReason.APPLICATION_LAUNCH -> {
-                // Wait until the TTID event has been received before proceeding — both the
-                // profiler result and the TTID event are needed.
+                // Wait until both the TTID event and the quota decision have been received before
+                // proceeding — the profiler result, the TTID event and the quota result are all
+                // required. If the quota decision has not arrived yet, hold the buffered result and
+                // return; the quota callback (or the timeout fallback) will re-trigger this write
+                // once it lands. Capture the result once to avoid a re-read race with a concurrent
+                // session renewal resetting it to null.
+                val quotaResult = this.lastQuotaResult ?: return
                 if (isTtidVitalReceived.get() && !isTtidProfileSent.getAndSet(true)) {
                     isLaunchProfilingActive = false
-                    val (longTasks, anrEvents, vitalEvents) = pendingRumEvents.drain()
-                    dataWriter.write(
-                        profilingResult = result,
-                        longTasks = longTasks,
-                        anrEvents = anrEvents,
-                        vitalEvents = vitalEvents
-                    )
+                    if (quotaResult.decision == QuotaResult.Decision.DENIED) {
+                        logToUser(
+                            LOG_LAUNCH_PROFILING_DROPPED_QUOTA_DENIED.format(
+                                Locale.US,
+                                quotaResult.reason.rawValue
+                            )
+                        )
+                        pendingRumEvents.clear()
+                    } else {
+                        val (longTasks, anrEvents, vitalEvents) = pendingRumEvents.drain()
+                        dataWriter.write(
+                            profilingResult = result,
+                            longTasks = longTasks,
+                            anrEvents = anrEvents,
+                            vitalEvents = vitalEvents
+                        )
+                    }
+                    // Clear the consumed result so a later quota callback can't re-trigger a write.
+                    perfettoResult = null
                     continuousProfilingScheduler?.onAppLaunchProfilingComplete()
                 }
             }
@@ -271,6 +326,7 @@ internal class ProfilingFeature(
                     anrEvents = anrEvents,
                     vitalEvents = vitalEvents
                 )
+                perfettoResult = null
                 if (longTasks.isEmpty() && anrEvents.isEmpty() && vitalEvents.isEmpty()) {
                     logToUser(LOG_CONTINUOUS_PROFILING_NOT_UPLOADED_NO_RUM_EVENTS)
                 } else {
@@ -304,6 +360,21 @@ internal class ProfilingFeature(
         return ProfilingDataWriter(sdkCore)
     }
 
+    internal fun propagateQuotaResult(result: QuotaResult) {
+        this.lastQuotaResult = result
+        continuousProfilingScheduler?.lastQuotaResult = result
+        sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
+            if (result.decision == QuotaResult.Decision.DENIED) {
+                context[FeatureContextKeys.PROFILING_QUOTA_REASON] = result.reason.rawValue
+                context[FeatureContextKeys.PROFILING_QUOTA_SESSION_ID] = lastSeenRumSessionId
+            } else {
+                context.remove(FeatureContextKeys.PROFILING_QUOTA_REASON)
+                context.remove(FeatureContextKeys.PROFILING_QUOTA_SESSION_ID)
+            }
+        }
+        tryWriteProfilingEvent()
+    }
+
     private fun isRecordingProfile(): Boolean {
         return isLaunchProfilingActive || continuousProfilingScheduler?.isActive == true
     }
@@ -319,5 +390,9 @@ internal class ProfilingFeature(
             "Continuous profiling result not uploaded: no pending RUM events."
         private const val LOG_CONTINUOUS_PROFILING_WRITTEN =
             "Continuous profiling result written: %d long task(s), %d ANR event(s)."
+        internal const val QUOTA_CHECK_TIMEOUT_MS = 5_000L
+        private const val QUOTA_EXECUTOR_CONTEXT = "dd-profiling-quota"
+        internal const val LOG_LAUNCH_PROFILING_DROPPED_QUOTA_DENIED =
+            "Launch profiling dropped: quota denied (reason=%s)."
     }
 }

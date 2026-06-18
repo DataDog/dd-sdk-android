@@ -5786,6 +5786,73 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `M include quotaReason in LongTaskEvent W handleEvent(AddLongTask) {profiler not running and quota denied}`(
+        @LongForgery(0L, 700_000_000L) durationNs: Long,
+        @StringForgery target: String,
+        @StringForgery fakeQuotaReason: String
+    ) {
+        // Given
+        testedScope.activeActionScope = null
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeParentContext.sessionId
+                    )
+                )
+            }
+        )
+
+        // When
+        testedScope.handleEvent(fakeEvent, datadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<LongTaskEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue.dd.profiling?.quotaReason).isEqualTo(fakeQuotaReason)
+            assertThat(firstValue.dd.profiling?.status).isEqualTo(LongTaskEvent.ProfilingStatus.STOPPED)
+        }
+    }
+
+    @Test
+    fun `M ignore stale quotaReason in LongTaskEvent W handleEvent(AddLongTask) {quota reason for other session}`(
+        @LongForgery(0L, 700_000_000L) durationNs: Long,
+        @StringForgery target: String,
+        @StringForgery fakeQuotaReason: String,
+        @StringForgery fakeOtherSessionId: String
+    ) {
+        // Given — the quota reason is stamped with a different session than the current one
+        testedScope.activeActionScope = null
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeOtherSessionId
+                    )
+                )
+            }
+        )
+
+        // When
+        testedScope.handleEvent(fakeEvent, datadogContext, mockEventWriteScope, mockWriter)
+
+        // Then — the stale reason is ignored and no profiling status is attached
+        argumentCaptor<LongTaskEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue.dd.profiling?.quotaReason).isNull()
+            assertThat(firstValue.dd.profiling?.status).isNull()
+        }
+    }
+
+    @Test
     fun `M send RumLongTaskEvent to profiling W handleEvent(AddLongTask) {profiling feature registered}`(
         @LongForgery(0L, 700_000_000L) durationNs: Long,
         @StringForgery target: String
@@ -5921,6 +5988,97 @@ internal class RumViewScopeTest {
         argumentCaptor<ErrorEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue).hasNoProfiling()
+        }
+    }
+
+    @Test
+    fun `M include quotaReason in ErrorEvent W handleEvent(AddError) {ANR, profiler not running and quota denied}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stacktrace: String,
+        @StringForgery fakeQuotaReason: String,
+        forge: Forge
+    ) {
+        // Given
+        val throwable = ANRException(Thread.currentThread())
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes
+        )
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeParentContext.sessionId
+                    )
+                )
+            }
+        )
+
+        // When
+        testedScope.handleEvent(fakeEvent, datadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ErrorEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue.dd.profiling?.quotaReason).isEqualTo(fakeQuotaReason)
+            assertThat(firstValue.dd.profiling?.status).isEqualTo(ErrorEvent.ProfilingStatus.STOPPED)
+        }
+    }
+
+    @Test
+    fun `M ignore stale quotaReason in ErrorEvent W handleEvent(AddError) {quota reason for other session}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stacktrace: String,
+        @StringForgery fakeQuotaReason: String,
+        @StringForgery fakeOtherSessionId: String,
+        forge: Forge
+    ) {
+        // Given — the quota reason is stamped with a different session than the current one
+        val throwable = ANRException(Thread.currentThread())
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes
+        )
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeOtherSessionId
+                    )
+                )
+            }
+        )
+
+        // When
+        testedScope.handleEvent(fakeEvent, datadogContext, mockEventWriteScope, mockWriter)
+
+        // Then — the stale reason is ignored and no profiling status is attached
+        argumentCaptor<ErrorEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue.dd.profiling?.quotaReason).isNull()
+            assertThat(firstValue.dd.profiling?.status).isNull()
         }
     }
 
