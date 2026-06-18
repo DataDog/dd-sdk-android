@@ -283,20 +283,20 @@ open class AndroidMDrawableToColorMapperTest {
     }
 
     @Test
-    fun `M map GradientDrawable to fill color W resolveGradientDrawableNPlus() {public API path}`(
+    fun `M return null W resolveGradientDrawableNPlus() {public API path, no color filter}`(
         @IntForgery fillColor: Int
     ) {
         // Given
         val baseAlpha = (fillColor.toLong() and 0xFF000000) shr 24
         assumeTrue(baseAlpha != 0L)
         val testableMMapper = TestableMMapper().apply { fakeResolvedColor = fillColor }
-        val gradientDrawable = GradientDrawable()
+        val gradientDrawable = GradientDrawable() // colorFilter is null by default
 
         // When
         val result = testableMMapper.resolveGradientDrawableNPlus(gradientDrawable)
 
         // Then
-        assertThat(result).isEqualTo(fillColor)
+        assertThat(result).isNull()
     }
 
     @Test
