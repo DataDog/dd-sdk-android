@@ -281,4 +281,57 @@ open class AndroidMDrawableToColorMapperTest {
         // Then
         assertThat(result).isEqualTo(drawableColor)
     }
+
+    @Test
+    fun `M map GradientDrawable to fill color W resolveGradientDrawableNPlus() {public API path}`(
+        @IntForgery fillColor: Int
+    ) {
+        // Given
+        val baseAlpha = (fillColor.toLong() and 0xFF000000) shr 24
+        assumeTrue(baseAlpha != 0L)
+        val testableMMapper = TestableMMapper().apply { fakeResolvedColor = fillColor }
+        val gradientDrawable = GradientDrawable()
+
+        // When
+        val result = testableMMapper.resolveGradientDrawableNPlus(gradientDrawable)
+
+        // Then
+        assertThat(result).isEqualTo(fillColor)
+    }
+
+    @Test
+    fun `M return null W resolveGradientDrawableNPlus() {public API path, fully transparent}`(
+        @IntForgery fillColor: Int
+    ) {
+        // Given
+        val testableMMapper = TestableMMapper().apply { fakeResolvedColor = fillColor and 0x00FFFFFF }
+        val gradientDrawable = GradientDrawable()
+
+        // When
+        val result = testableMMapper.resolveGradientDrawableNPlus(gradientDrawable)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return null W resolveGradientDrawableNPlus() {public API path, no fill color}`() {
+        // Given
+        val testableMMapper = TestableMMapper().apply { fakeResolvedColor = null }
+        val gradientDrawable = GradientDrawable()
+
+        // When
+        val result = testableMMapper.resolveGradientDrawableNPlus(gradientDrawable)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    // Seam to test the N+ public API branch: only overrides resolveGradientFillColor so that
+    // resolveGradientDrawableNPlus is the real production code under test.
+    private class TestableMMapper : AndroidMDrawableToColorMapper() {
+        var fakeResolvedColor: Int? = null
+
+        override fun resolveGradientFillColor(drawable: GradientDrawable): Int? = fakeResolvedColor
+    }
 }

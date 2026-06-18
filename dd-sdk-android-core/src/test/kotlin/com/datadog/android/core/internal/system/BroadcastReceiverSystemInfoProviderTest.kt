@@ -9,6 +9,7 @@ package com.datadog.android.core.internal.system
 import android.content.Context
 import android.content.Intent
 import android.os.BatteryManager
+import android.os.Handler
 import android.os.PowerManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.utils.assertj.SystemInfoAssert.Companion.assertThat
@@ -32,10 +33,12 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.same
 import org.mockito.kotlin.verify
@@ -43,7 +46,6 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 
@@ -70,7 +72,7 @@ internal class BroadcastReceiverSystemInfoProviderTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
-    lateinit var mockExecutorService: ExecutorService
+    lateinit var mockHandler: Handler
 
     @IntForgery
     var fakePluggedStatus: Int = 0
@@ -78,13 +80,10 @@ internal class BroadcastReceiverSystemInfoProviderTest {
     @BeforeEach
     fun `set up`() {
         whenever(mockContext.getSystemService(Context.POWER_SERVICE)) doReturn mockPowerMgr
-        whenever(mockExecutorService.execute(any())) doAnswer {
-            it.getArgument<Runnable>(0).run()
-        }
 
         testedProvider = BroadcastReceiverSystemInfoProvider(
             internalLogger = mockInternalLogger,
-            executorService = mockExecutorService
+            handler = mockHandler
         )
     }
 
@@ -155,7 +154,7 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         whenever(mockPowerMgr.isPowerSaveMode) doReturn powerSaveMode
         whenever(powerSaveModeIntent.action) doReturn PowerManager.ACTION_POWER_SAVE_MODE_CHANGED
         doReturn(batteryIntent, powerSaveModeIntent)
-            .whenever(mockContext).registerReceiver(same(testedProvider), any())
+            .whenever(mockContext).registerReceiver(same(testedProvider), any(), isNull(), eq(mockHandler))
 
         // When
         testedProvider.register(mockContext)
@@ -483,15 +482,17 @@ internal class BroadcastReceiverSystemInfoProviderTest {
     }
 
     @Test
-    fun `M dispatch onReceive through executor W onReceive()`() {
-        // Given
-        val intent: Intent = mock()
-
+    fun `M pass handler to registerReceiver W register()`() {
         // When
-        testedProvider.onReceive(mockContext, intent)
+        testedProvider.register(mockContext)
 
         // Then
-        verify(mockExecutorService).execute(any())
+        verify(mockContext, atLeastOnce()).registerReceiver(
+            eq(testedProvider),
+            any(),
+            isNull(),
+            eq(mockHandler)
+        )
     }
 
     // endregion

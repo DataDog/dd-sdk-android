@@ -1317,7 +1317,7 @@ internal class DatadogLateCrashReporterTest {
     }
 
     @Test
-    fun `M not send anything W handleAnrCrash() { cannot open trace information, IOException }`(
+    fun `M not send anything W handleAnrCrash() {cannot open trace information, IOException,IllegalArgumentException }`(
         @LongForgery(min = 1) fakeTimestamp: Long,
         @Forgery viewEvent: ViewEvent,
         forge: Forge
@@ -1341,7 +1341,7 @@ internal class DatadogLateCrashReporterTest {
 
         whenever(mockRumEventDeserializer.deserialize(fakeViewEventJson)) doReturn fakeViewEvent
 
-        val fakeException = IOException()
+        val fakeException = forge.anElementFrom(IOException(), IllegalArgumentException())
         val mockAnrExitInfo = mock<ApplicationExitInfo>().apply {
             whenever(traceInputStream) doThrow fakeException
             whenever(timestamp) doReturn fakeTimestamp

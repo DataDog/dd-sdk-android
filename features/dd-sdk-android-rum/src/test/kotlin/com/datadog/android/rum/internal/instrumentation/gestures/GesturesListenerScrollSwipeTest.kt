@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.instrumentation.gestures
 
+import android.graphics.Rect
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
@@ -471,6 +472,61 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             },
             mode = times(intermediaryEvents.size + 2)
         )
+        verifyNoInteractions(rumMonitor.mockInstance)
+    }
+
+    @Test
+    fun `M ignore clipped scrollable W onScroll {visible rect does not contain scroll coordinate}`(
+        forge: Forge
+    ) {
+        // Given — a scrollable target whose getGlobalVisibleRect is clipped so the scroll
+        // coordinate falls outside the visible portion.
+        val startDownEvent: MotionEvent = forge.getForgery()
+        val listSize = forge.anInt(1, 20)
+        val intermediaryEvents =
+            forge.aList(size = listSize) { forge.getForgery(MotionEvent::class.java) }
+        val distancesX = forge.aList(listSize) { forge.aFloat() }
+        val distancesY = forge.aList(listSize) { forge.aFloat() }
+        val targetId = forge.anInt()
+        val endUpEvent = intermediaryEvents[intermediaryEvents.size - 1]
+        val clippedScrollable: ScrollableListView = mockView(
+            id = targetId,
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        )
+        whenever(clippedScrollable.getGlobalVisibleRect(any())).thenAnswer { invocation ->
+            val rect = invocation.arguments[0] as Rect
+            rect.left = 0
+            rect.top = 0
+            rect.right = 10
+            rect.bottom = 10
+            true
+        }
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(clippedScrollable)
+        }
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
+        )
+
+        // When
+        testedListener.onDown(startDownEvent)
+        intermediaryEvents.forEachIndexed { index, event ->
+            testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
+        }
+        testedListener.onUp(endUpEvent)
+
+        // Then — the clipped scrollable should NOT be selected as scroll target
         verifyNoInteractions(rumMonitor.mockInstance)
     }
 
