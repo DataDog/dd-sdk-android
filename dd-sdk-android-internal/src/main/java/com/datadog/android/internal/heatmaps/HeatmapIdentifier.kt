@@ -26,11 +26,6 @@ data class HeatmapIdentifier(val rawValue: String) {
 
         private const val SCREEN_NAMESPACE_VIEW_PREFIX = "view:"
 
-        private val sha256DigestPerThread = object : ThreadLocal<MessageDigest>() {
-            @Suppress("UnsafeThirdPartyFunctionCall") // SHA-256 is always available on Android
-            override fun initialValue(): MessageDigest = MessageDigest.getInstance("SHA-256")
-        }
-
         /**
          * Creates a [HeatmapIdentifier] for the given UI element by hashing its canonical path,
          * or null if hashing fails.
@@ -57,9 +52,9 @@ data class HeatmapIdentifier(val rawValue: String) {
         ): HeatmapIdentifier? {
             return try {
                 val path = canonicalPath(elementPath, screenName, appPackageName)
-                sha256Hex(path, onHashingFailure)?.let { HeatmapIdentifier(it) }
+                HeatmapIdentifier(sha256Hex(path))
             } catch (e: NoSuchAlgorithmException) {
-                // Thrown by the ThreadLocal initialiser if SHA-256 is unavailable.
+                // Unreachable on Android: SHA-256 is always available.
                 onHashingFailure(e)
                 null
             } catch (e: UnsupportedEncodingException) {
@@ -86,15 +81,10 @@ data class HeatmapIdentifier(val rawValue: String) {
         @Suppress("UnsafeThirdPartyFunctionCall") // UnsupportedEncodingException caught in create()
         private fun escape(input: String): String = URLEncoder.encode(input, "UTF-8")
 
-        private fun sha256Hex(input: String, onHashingFailure: (Throwable) -> Unit): String? {
-            // ThreadLocal.get() is typed as MessageDigest? (Kotlin platform type) — the ?: guard
-            // routes any unexpected null through onHashingFailure rather than throwing an NPE.
-            @Suppress("UnsafeThirdPartyFunctionCall")
-            val digest = sha256DigestPerThread.get() ?: run {
-                onHashingFailure(NoSuchAlgorithmException("SHA-256 MessageDigest unavailable"))
-                return null
-            }
-            // digest(ByteArray) auto-resets on completion, so no explicit reset is needed.
+        @Suppress("UnsafeThirdPartyFunctionCall") // SHA-256 is always available on Android
+        private fun sha256Hex(input: String): String {
+            val digest = MessageDigest.getInstance("SHA-256")
+            // digest(ByteArray): input is non-null, DigestException not thrown on this overload.
             @Suppress("UnsafeThirdPartyFunctionCall")
             return digest.digest(input.toByteArray(Charsets.UTF_8)).toHexString()
         }
