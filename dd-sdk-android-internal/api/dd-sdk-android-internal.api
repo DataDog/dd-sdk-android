@@ -27,10 +27,6 @@ public final class com/datadog/android/heatmaps/HeatmapViewKeyKt {
 	public static final fun heatmapViewKey (Landroid/view/View;)J
 }
 
-public final class com/datadog/android/heatmaps/TapTargetUtilsKt {
-	public static final fun isValidTapTarget (Landroid/view/View;)Z
-}
-
 public abstract interface class com/datadog/android/internal/attributes/LocalAttribute {
 }
 
@@ -672,6 +668,10 @@ public final class com/datadog/android/internal/utils/StringBuilderExtKt {
 public final class com/datadog/android/internal/utils/StringExtKt {
 	public static final fun fromBase64 (Ljava/lang/String;)Ljava/lang/String;
 	public static final fun toBase64 (Ljava/lang/String;)Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/utils/TapTargetUtilsKt {
+	public static final fun isValidTapTarget (Landroid/view/View;)Z
 }
 
 public final class com/datadog/android/internal/utils/ThreadExtKt {

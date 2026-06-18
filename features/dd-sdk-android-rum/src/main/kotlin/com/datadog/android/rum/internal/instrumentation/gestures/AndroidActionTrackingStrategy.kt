@@ -12,7 +12,7 @@ import android.widget.AbsListView
 import android.widget.ScrollView
 import androidx.core.view.ScrollingView
 import com.datadog.android.api.SdkCore
-import com.datadog.android.heatmaps.isValidTapTarget
+import com.datadog.android.internal.utils.isValidTapTarget
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ViewTarget
 import java.lang.ref.WeakReference
