@@ -153,7 +153,7 @@ open class AndroidMDrawableToColorMapperTest {
     }
 
     @Test
-    fun `M map GradientDrawable to fill paint's color W mapDrawableToColor()`(
+    open fun `M map GradientDrawable to fill paint's color W mapDrawableToColor()`(
         @IntForgery drawableColor: Int
     ) {
         // Given
