@@ -8,8 +8,6 @@ package com.datadog.android.sessionreplay.compose.internal.utils
 
 import android.graphics.Bitmap
 import android.view.View
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -25,9 +23,7 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.text.TextLayoutInput
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
-import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
@@ -48,6 +44,7 @@ internal class SemanticsUtils(
     private val reflectionUtils: ReflectionUtils = ReflectionUtils(),
     private val sampler: RateBasedSampler<Unit> = RateBasedSampler(BITMAP_TELEMETRY_SAMPLE_RATE)
 ) {
+    private val backgroundResolver = BackgroundResolver(reflectionUtils, ::resolveInnerBounds)
 
     internal fun findRootSemanticsNode(view: View): SemanticsNode? {
         reflectionUtils.apply {
@@ -61,72 +58,14 @@ internal class SemanticsUtils(
         return null
     }
 
-    private fun resolveOuterBounds(semanticsNode: SemanticsNode): GlobalBounds {
-        var currentBounds = resolveInnerBounds(semanticsNode)
-        semanticsNode.layoutInfo.getModifierInfo().filter {
-            reflectionUtils.isPaddingElement(it.modifier)
-        }.forEach {
-            val top = reflectionUtils.getTopPadding(it.modifier)
-            val start = reflectionUtils.getStartPadding(it.modifier)
-            val end = reflectionUtils.getEndPadding(it.modifier)
-            val bottom = reflectionUtils.getBottomPadding(it.modifier)
-            currentBounds = GlobalBounds(
-                x = currentBounds.x - start.toLong(),
-                y = currentBounds.y - top.toLong(),
-                width = currentBounds.width + (end + start).toLong(),
-                height = currentBounds.height + (bottom + top).toLong()
-            )
-        }
-        return currentBounds
-    }
+    internal fun resolveBackgroundInfo(semanticsNode: SemanticsNode): List<BackgroundInfo> =
+        backgroundResolver.resolveBackgroundInfo(semanticsNode)
 
-    internal fun resolveBackgroundInfo(semanticsNode: SemanticsNode): List<BackgroundInfo> {
-        val backgroundInfoList = mutableListOf<BackgroundInfo>()
-        // CurrentBackgroundInfo is to store bounds, color and shape information in sequence of modifiers.
-        var currentBackgroundInfo = BackgroundInfo()
-        var currentBounds: GlobalBounds = resolveOuterBounds(semanticsNode)
-        // If the currentBounds is already invalid, return with the existing wireframes
-        if (!isGlobalBoundsValid(globalBounds = currentBounds)) {
-            return backgroundInfoList
-        }
-        val density = semanticsNode.layoutInfo.density
-        // Iterate all the modifiers in user calling sequence, when meet:
-        // -> clip(): calculate the corner radius and update `currentBackgroundInfo`
-        // -> padding(): shrink the bounds from the previous bounds and update `currentBackgroundInfo`
-        // -> background(): retrieve the color and use `currentBackgroundInfo` to generate wireframes,
-        //                  then reset `currentBackgroundInfo`.
-        semanticsNode.layoutInfo.getModifierInfo().forEach { modifierInfo ->
-            if (reflectionUtils.isBackgroundElement(modifierInfo.modifier)) {
-                val color = reflectionUtils.getColor(modifierInfo.modifier)
-                currentBackgroundInfo = currentBackgroundInfo.copy(globalBounds = currentBounds, color = color)
-                backgroundInfoList.add(currentBackgroundInfo)
-                currentBackgroundInfo = BackgroundInfo()
-            } else if (reflectionUtils.isPaddingElement(modifierInfo.modifier)) {
-                currentBounds = shrinkInnerBounds(modifierInfo.modifier, currentBounds)
-                currentBackgroundInfo = currentBackgroundInfo.copy(globalBounds = currentBounds)
-            } else if (reflectionUtils.isGraphicsLayerElement(modifierInfo.modifier)) {
-                val cornerRadius =
-                    resolveClipShape(modifierInfo.modifier, currentBounds, density) ?: 0f
-                currentBackgroundInfo = currentBackgroundInfo.copy(cornerRadius = cornerRadius)
-            }
-        }
-        return backgroundInfoList
-    }
+    internal fun resolveBackgroundColor(semanticsNode: SemanticsNode): Long? =
+        backgroundResolver.resolveBackgroundColor(semanticsNode)
 
-    internal fun resolveBackgroundColor(semanticsNode: SemanticsNode): Long? {
-        val backgroundModifierInfo =
-            semanticsNode.layoutInfo.getModifierInfo().firstOrNull { modifierInfo ->
-                reflectionUtils.isBackgroundElement(modifierInfo.modifier)
-            }
-        return backgroundModifierInfo?.let { reflectionUtils.getColor(it.modifier) }
-    }
-
-    internal fun resolveBackgroundShape(semanticsNode: SemanticsNode): Shape? {
-        val backgroundModifier = semanticsNode.layoutInfo.getModifierInfo().firstOrNull {
-            reflectionUtils.isBackgroundElement(it.modifier)
-        }?.modifier
-        return backgroundModifier?.let { reflectionUtils.getShape(it) }
-    }
+    internal fun resolveBackgroundShape(semanticsNode: SemanticsNode): Shape? =
+        backgroundResolver.resolveBackgroundShape(semanticsNode)
 
     internal fun resolveCheckPath(semanticsNode: SemanticsNode): Path? =
         resolveOnDrawInstance(semanticsNode)?.let { onDraw ->
@@ -159,25 +98,8 @@ internal class SemanticsUtils(
             OnDrawFieldType.BORDER_COLOR
         )
 
-    private fun shrinkInnerBounds(
-        modifier: Modifier,
-        currentBounds: GlobalBounds
-    ): GlobalBounds {
-        val top = reflectionUtils.getTopPadding(modifier)
-        val start = reflectionUtils.getStartPadding(modifier)
-        val end = reflectionUtils.getEndPadding(modifier)
-        val bottom = reflectionUtils.getBottomPadding(modifier)
-        return GlobalBounds(
-            x = currentBounds.x + start.toLong(),
-            y = currentBounds.y + top.toLong(),
-            width = currentBounds.width - (end + start).toLong(),
-            height = currentBounds.height - (bottom + top).toLong()
-        )
-    }
-
-    private fun isGlobalBoundsValid(globalBounds: GlobalBounds): Boolean {
-        return (globalBounds.width > 0 && globalBounds.height > 0)
-    }
+    internal fun resolveCornerRadius(shape: Shape, currentBounds: GlobalBounds, density: Density): Float =
+        backgroundResolver.resolveCornerRadius(shape, currentBounds, density)
 
     internal fun resolveInnerBounds(semanticsNode: SemanticsNode): GlobalBounds {
         val offset = semanticsNode.positionInRoot
@@ -203,36 +125,7 @@ internal class SemanticsUtils(
         }
     }
 
-    private fun resolveClipShape(
-        modifier: Modifier,
-        currentBounds: GlobalBounds,
-        density: Density
-    ): Float? {
-        return reflectionUtils.getClipShape(modifier)?.let { shape ->
-            resolveCornerRadius(shape, currentBounds, density)
-        }
-    }
-
-    internal fun resolveCornerRadius(
-        shape: Shape,
-        currentBounds: GlobalBounds,
-        density: Density
-    ): Float {
-        val size = Size(
-            currentBounds.width.toFloat() * density.density,
-            currentBounds.height.toFloat() * density.density
-        )
-        // We only have a single value for corner radius, so we default to using the
-        // top left (i.e.: topStart) corner's value and apply it to all corners
-        // it.topStart.toPx(size, density) / density.density
-        return if (shape is RoundedCornerShape) {
-            shape.topStart.toPx(size, density) / density.density
-        } else {
-            0f
-        }
-    }
-
-    internal fun resolveTextLayoutInfo(semanticsNode: SemanticsNode): TextLayoutInfo? {
+    internal fun resolveTextLayoutInfo(semanticsNode: SemanticsNode, internalLogger: InternalLogger): TextLayoutInfo? {
         val textLayoutResults = mutableListOf<TextLayoutResult>()
         semanticsNode.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(
             textLayoutResults
@@ -245,21 +138,22 @@ internal class SemanticsUtils(
                 null
             }
             val modifierColor = resolveModifierColor(semanticsNode)
-            val textOverflow = resolveTextStringSimpleElementOverflow(semanticsNode)
+            val textOverflow = resolveTextStringSimpleElementOverflow(semanticsNode, internalLogger)
             convertTextLayoutInfo(layoutInput, multiParagraphCapturedText, modifierColor, textOverflow)
         }
     }
 
     internal fun resolveSemanticsPainter(
-        semanticsNode: SemanticsNode
+        semanticsNode: SemanticsNode,
+        internalLogger: InternalLogger
     ): BitmapInfo? {
         val (painter, isContextualImage) = resolvePainter(semanticsNode)
         if (painter == null) return null
 
-        val bitmap = resolveBitmapFromPainter(painter)
+        val bitmap = resolveBitmapFromPainter(painter, internalLogger)
 
         bitmap?.let {
-            sendBitmapInfoTelemetry(it, isContextualImage)
+            sendBitmapInfoTelemetry(it, isContextualImage, internalLogger)
         }
 
         val contentScale = reflectionUtils.getContentScale(semanticsNode)
@@ -307,20 +201,20 @@ internal class SemanticsUtils(
         return painter to isContextualImage
     }
 
-    private fun resolveBitmapFromPainter(painter: Painter): Bitmap? {
+    private fun resolveBitmapFromPainter(painter: Painter, internalLogger: InternalLogger): Bitmap? {
         return when (painter) {
             is BitmapPainter -> reflectionUtils.getBitmapInBitmapPainter(painter)
             is VectorPainter -> reflectionUtils.getBitmapInVectorPainter(painter)
             else -> {
-                logUnsupportedPainter(painter)
+                logUnsupportedPainter(painter, internalLogger)
                 null
             }
         }
     }
 
-    private fun sendBitmapInfoTelemetry(bitmap: Bitmap, isContextual: Boolean) {
+    private fun sendBitmapInfoTelemetry(bitmap: Bitmap, isContextual: Boolean, internalLogger: InternalLogger) {
         if (sampler.sample(Unit)) {
-            (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
+            internalLogger.log(
                 level = InternalLogger.Level.INFO,
                 target = InternalLogger.Target.TELEMETRY,
                 messageBuilder = { "Resolved the bitmap from semantics node with id:${bitmap.generationId}" },
@@ -336,9 +230,9 @@ internal class SemanticsUtils(
         }
     }
 
-    private fun logUnsupportedPainter(painter: Painter?) {
+    private fun logUnsupportedPainter(painter: Painter?, internalLogger: InternalLogger) {
         val painterType = painter?.javaClass?.simpleName ?: "null"
-        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
+        internalLogger.log(
             level = InternalLogger.Level.ERROR,
             targets = listOf(
                 InternalLogger.Target.MAINTAINER,
@@ -361,7 +255,10 @@ internal class SemanticsUtils(
         }
     }
 
-    private fun resolveTextStringSimpleElementOverflow(semanticsNode: SemanticsNode): MobileSegment.TruncationMode? {
+    private fun resolveTextStringSimpleElementOverflow(
+        semanticsNode: SemanticsNode,
+        internalLogger: InternalLogger
+    ): MobileSegment.TruncationMode? {
         val modifier = semanticsNode.layoutInfo.getModifierInfo()
             .firstOrNull { reflectionUtils.isTextStringSimpleElement(it.modifier) }
             ?.modifier ?: return null
@@ -369,14 +266,14 @@ internal class SemanticsUtils(
         val overflowValue = reflectionUtils.getTextStringSimpleElementOverflow(modifier)
         return overflowValue?.let { overflow ->
             when (overflow) {
-                is Int -> resolveTextOverflow(overflow)
+                is Int -> resolveTextOverflow(overflow, internalLogger)
                 else -> {
                     // TextOverflow value class may be boxed when accessed via reflection
-                    val overflowInt = extractTextOverflowValue(overflow)
+                    val overflowInt = extractTextOverflowValue(overflow, internalLogger)
                     if (overflowInt != null) {
-                        resolveTextOverflow(overflowInt)
+                        resolveTextOverflow(overflowInt, internalLogger)
                     } else {
-                        logUnknownOverflowType(overflow)
+                        logUnknownOverflowType(overflow, internalLogger)
                         null
                     }
                 }
@@ -384,7 +281,7 @@ internal class SemanticsUtils(
         }
     }
 
-    private fun resolveTextOverflow(overflowMode: Int): MobileSegment.TruncationMode? {
+    private fun resolveTextOverflow(overflowMode: Int, internalLogger: InternalLogger): MobileSegment.TruncationMode? {
         return when (overflowMode) {
             TEXT_OVERFLOW_CLIP -> MobileSegment.TruncationMode.CLIP
             TEXT_OVERFLOW_ELLIPSE -> MobileSegment.TruncationMode.TAIL
@@ -392,13 +289,13 @@ internal class SemanticsUtils(
             TEXT_OVERFLOW_ELLIPSIS_START -> MobileSegment.TruncationMode.HEAD
             TEXT_OVERFLOW_ELLIPSIS_MIDDLE -> MobileSegment.TruncationMode.MIDDLE
             else -> {
-                logUnknownOverflowOrdinal(overflowMode)
+                logUnknownOverflowOrdinal(overflowMode, internalLogger)
                 null
             }
         }
     }
 
-    private fun extractTextOverflowValue(overflowValue: Any): Int? {
+    private fun extractTextOverflowValue(overflowValue: Any, internalLogger: InternalLogger): Int? {
         return try {
             // Suppressed: All exceptions (NoSuchFieldException, SecurityException, NullPointerException)
             // are handled by the catch blocks below
@@ -410,16 +307,16 @@ internal class SemanticsUtils(
             @Suppress("UnsafeThirdPartyFunctionCall")
             valueField.get(overflowValue) as? Int
         } catch (e: ReflectiveOperationException) {
-            logReflectionExtractionFailure(overflowValue, e)
+            logReflectionExtractionFailure(overflowValue, e, internalLogger)
             null
         } catch (@Suppress("TooGenericExceptionCaught") e: RuntimeException) {
-            logReflectionExtractionFailure(overflowValue, e)
+            logReflectionExtractionFailure(overflowValue, e, internalLogger)
             null
         }
     }
 
-    private fun logReflectionExtractionFailure(overflowValue: Any, e: Throwable) {
-        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
+    private fun logReflectionExtractionFailure(overflowValue: Any, e: Throwable, internalLogger: InternalLogger) {
+        internalLogger.log(
             level = InternalLogger.Level.WARN,
             targets = listOf(InternalLogger.Target.MAINTAINER),
             messageBuilder = {
@@ -436,8 +333,8 @@ internal class SemanticsUtils(
         )
     }
 
-    private fun logUnknownOverflowOrdinal(ordinal: Int) {
-        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
+    private fun logUnknownOverflowOrdinal(ordinal: Int, internalLogger: InternalLogger) {
+        internalLogger.log(
             level = InternalLogger.Level.WARN,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             messageBuilder = {
@@ -452,8 +349,8 @@ internal class SemanticsUtils(
         )
     }
 
-    private fun logUnknownOverflowType(overflowValue: Any) {
-        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
+    private fun logUnknownOverflowType(overflowValue: Any, internalLogger: InternalLogger) {
+        internalLogger.log(
             level = InternalLogger.Level.WARN,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             messageBuilder = {
@@ -558,6 +455,10 @@ internal class SemanticsUtils(
         }
         internal const val DEFAULT_COLOR_BLACK = "#000000FF"
         internal const val DEFAULT_COLOR_WHITE = "#FFFFFFFF"
+
+        /** Raw Long encoding of [androidx.compose.ui.graphics.Color.Unspecified] (color-space id 16). */
+        internal const val COLOR_UNSPECIFIED = 16L
+
         private const val BITMAP_TELEMETRY_SAMPLE_RATE = 1f
 
         private const val COMPONENT_NAME = "SemanticsUtils"

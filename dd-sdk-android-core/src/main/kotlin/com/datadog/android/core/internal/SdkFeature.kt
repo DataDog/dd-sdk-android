@@ -160,7 +160,7 @@ internal class SdkFeature(
             uploader = NoOpDataUploader()
             fileOrchestrator = NoOpFileOrchestrator()
             metricsDispatcher = NoOpMetricsDispatcher()
-            (coreFeature.contextRef.get() as? Application)
+            (coreFeature.appContext as? Application)
                 ?.unregisterActivityLifecycleCallbacks(processLifecycleMonitor)
             processLifecycleMonitor = null
             featureContext.clear()

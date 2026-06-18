@@ -10,6 +10,7 @@ import androidx.annotation.VisibleForTesting
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.SemanticsWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
@@ -23,7 +24,7 @@ import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 
 internal class RadioButtonSemanticsNodeMapper(
     colorStringFormatter: ColorStringFormatter,
-    val semanticsUtils: SemanticsUtils = SemanticsUtils(),
+    semanticsUtils: SemanticsUtils = SemanticsUtils(),
     private val colorUtils: ColorUtils = ColorUtils()
 ) : AbstractSemanticsNodeMapper(
     colorStringFormatter,
@@ -32,13 +33,15 @@ internal class RadioButtonSemanticsNodeMapper(
     override fun map(
         semanticsNode: SemanticsNode,
         parentContext: UiContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): SemanticsWireframe {
         val wireframes = mutableListOf<MobileSegment.Wireframe>()
 
-        val fallbackColor = parentContext.parentContentColor?.takeIf { colorUtils.isDarkColor(it) }?.let {
-            DEFAULT_COLOR_WHITE
-        } ?: DEFAULT_COLOR_BLACK
+        val fallbackColor = parentContext.parentContentColor
+            ?.takeIf { colorUtils.isDarkColor(it, internalLogger) }
+            ?.let { DEFAULT_COLOR_WHITE }
+            ?: DEFAULT_COLOR_BLACK
 
         val radioButtonColor = if (isMasked(parentContext)) {
             DEFAULT_COLOR_GRAY

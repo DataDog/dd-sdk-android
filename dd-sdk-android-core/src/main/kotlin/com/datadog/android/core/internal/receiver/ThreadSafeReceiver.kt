@@ -11,6 +11,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.Handler
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -24,14 +25,15 @@ internal abstract class ThreadSafeReceiver(
     @SuppressLint("WrongConstant", "UnspecifiedRegisterReceiverFlag")
     fun registerReceiver(
         context: Context,
-        filter: IntentFilter
+        filter: IntentFilter,
+        handler: Handler
     ): Intent? {
         val intent = if (buildSdkVersionProvider.isAtLeastTiramisu) {
-            context.registerReceiver(this, filter, Context.RECEIVER_NOT_EXPORTED)
+            context.registerReceiver(this, filter, null, handler, Context.RECEIVER_NOT_EXPORTED)
         } else if (buildSdkVersionProvider.isAtLeastO) {
-            context.registerReceiver(this, filter, RECEIVER_NOT_EXPORTED_COMPAT)
+            context.registerReceiver(this, filter, null, handler, RECEIVER_NOT_EXPORTED_COMPAT)
         } else {
-            context.registerReceiver(this, filter)
+            context.registerReceiver(this, filter, null, handler)
         }
         isRegistered.set(true)
         return intent

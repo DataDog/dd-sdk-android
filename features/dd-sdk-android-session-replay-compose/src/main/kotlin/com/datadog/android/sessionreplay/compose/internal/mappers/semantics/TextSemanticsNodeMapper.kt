@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
 import androidx.compose.ui.semantics.SemanticsNode
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.SemanticsWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
@@ -18,18 +19,19 @@ import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 
 internal open class TextSemanticsNodeMapper(
     colorStringFormatter: ColorStringFormatter,
-    private val semanticsUtils: SemanticsUtils = SemanticsUtils()
+    semanticsUtils: SemanticsUtils = SemanticsUtils()
 ) : AbstractSemanticsNodeMapper(colorStringFormatter, semanticsUtils) {
 
     override fun map(
         semanticsNode: SemanticsNode,
         parentContext: UiContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): SemanticsWireframe {
         val wireframes = mutableListOf<MobileSegment.Wireframe>()
         val textAndInputPrivacy = semanticsUtils.getTextAndInputPrivacyOverride(semanticsNode)
             ?: parentContext.textAndInputPrivacy
-        val textWireframe = resolveTextWireFrame(parentContext, semanticsNode, textAndInputPrivacy)
+        val textWireframe = resolveTextWireFrame(parentContext, semanticsNode, textAndInputPrivacy, internalLogger)
         val backgroundWireframes = resolveModifierWireframes(semanticsNode)
         wireframes.addAll(backgroundWireframes)
         textWireframe?.let {
@@ -44,9 +46,10 @@ internal open class TextSemanticsNodeMapper(
     protected fun resolveTextWireFrame(
         parentContext: UiContext,
         semanticsNode: SemanticsNode,
-        textAndInputPrivacy: TextAndInputPrivacy
+        textAndInputPrivacy: TextAndInputPrivacy,
+        internalLogger: InternalLogger
     ): MobileSegment.Wireframe.TextWireframe? {
-        val textLayoutInfo = semanticsUtils.resolveTextLayoutInfo(semanticsNode)
+        val textLayoutInfo = semanticsUtils.resolveTextLayoutInfo(semanticsNode, internalLogger)
         val capturedText = textLayoutInfo?.text?.let {
             transformCapturedText(it, textAndInputPrivacy)
         }

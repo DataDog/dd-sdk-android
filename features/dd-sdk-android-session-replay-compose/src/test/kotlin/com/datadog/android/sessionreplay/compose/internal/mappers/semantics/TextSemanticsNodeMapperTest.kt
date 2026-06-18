@@ -12,6 +12,7 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.sp
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
@@ -35,7 +36,9 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -48,6 +51,9 @@ import org.mockito.quality.Strictness
 internal class TextSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() {
 
     private lateinit var testedTextSemanticsNodeMapper: StubTextSemanticsNodeMapper
+
+    @Mock
+    private lateinit var mockInternalLogger: InternalLogger
 
     @Mock
     private lateinit var mockTextLayoutInput: TextLayoutInput
@@ -95,7 +101,7 @@ internal class TextSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() {
         // Given
         val mockNode = mockSemanticsNodeWithBound {}
 
-        whenever(mockSemanticsUtils.resolveTextLayoutInfo(mockNode)) doReturn fakeTextLayoutInfo
+        whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(mockNode), any())) doReturn fakeTextLayoutInfo
         whenever(mockSemanticsUtils.resolveInnerBounds(mockNode)) doReturn rectToBounds(
             fakeBounds,
             fakeDensity
@@ -103,7 +109,8 @@ internal class TextSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() {
         val actual = testedTextSemanticsNodeMapper.map(
             mockNode,
             fakeUiContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
         val expectedText = if (fakeUiContext.textAndInputPrivacy == TextAndInputPrivacy.MASK_ALL) {
             StringObfuscator.getStringObfuscator().obfuscate(fakeTextLayoutInfo.text)
@@ -132,7 +139,7 @@ internal class TextSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() {
         // Given
         val mockNode = mockSemanticsNodeWithBound {}
         whenever(mockSemanticsUtils.getTextAndInputPrivacyOverride(mockNode)) doReturn TextAndInputPrivacy.MASK_ALL
-        whenever(mockSemanticsUtils.resolveTextLayoutInfo(mockNode)) doReturn fakeTextLayoutInfo
+        whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(mockNode), any())) doReturn fakeTextLayoutInfo
         whenever(mockSemanticsUtils.resolveInnerBounds(mockNode)) doReturn rectToBounds(
             fakeBounds,
             fakeDensity
@@ -140,7 +147,8 @@ internal class TextSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() {
         val actual = testedTextSemanticsNodeMapper.map(
             mockNode,
             fakeUiContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
         val expectedText = StringObfuscator.getStringObfuscator().obfuscate(fakeTextLayoutInfo.text)
         val expected = MobileSegment.Wireframe.TextWireframe(
@@ -173,7 +181,8 @@ internal class TextSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() {
         val result = testedTextSemanticsNodeMapper.map(
             mockSemanticsNode,
             fakeUiContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then

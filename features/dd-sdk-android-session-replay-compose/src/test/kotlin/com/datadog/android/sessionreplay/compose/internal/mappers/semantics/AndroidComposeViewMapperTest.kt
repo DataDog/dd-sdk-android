@@ -33,7 +33,9 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -110,10 +112,11 @@ class AndroidComposeViewMapperTest {
 
         // Then
         verify(mockRootSemanticsNodeMapper).createComposeWireframes(
-            mockSemanticsNode,
-            fakeMappingContext.systemInformation.screenDensity,
-            fakeMappingContext,
-            mockAsyncJobStatusCallback
+            eq(mockSemanticsNode),
+            eq(fakeMappingContext.systemInformation.screenDensity),
+            eq(fakeMappingContext),
+            eq(mockAsyncJobStatusCallback),
+            any()
         )
     }
 

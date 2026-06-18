@@ -34,6 +34,14 @@ internal class NdkCrashLogDeserializer(
                 e
             )
             null
+        } catch (e: NumberFormatException) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                { DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model) },
+                e
+            )
+            null
         }
     }
 
