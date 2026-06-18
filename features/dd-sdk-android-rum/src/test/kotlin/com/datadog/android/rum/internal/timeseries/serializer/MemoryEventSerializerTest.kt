@@ -143,7 +143,7 @@ internal class MemoryEventSerializerTest {
         val parsed = TimeseriesMemoryEvent.fromJsonObject(json)
         assertThat(parsed.timeseries.data).hasSize(2)
         val first = parsed.timeseries.data.first().dataPoint
-        assertThat(first.memoryMax.toDouble()).isCloseTo(fakeMemory, Offset.offset(MEMORY_OFFSET))
+        assertThat(first.memoryFootprint.toDouble()).isCloseTo(fakeMemory, Offset.offset(MEMORY_OFFSET))
         assertThat(first.memoryPercent.toDouble())
             .isCloseTo(fakeMemory / fakeTotalRamBytes * PERCENT_FACTOR, Offset.offset(MEMORY_OFFSET))
     }
@@ -196,7 +196,7 @@ internal class MemoryEventSerializerTest {
         assertThat(tsArray[1].asLong).isEqualTo(fakeTimestampStep)
         assertThat(tsArray[2].asLong).isEqualTo(fakeTimestampStep)
 
-        val maxArr = data.get(KEY_MEMORY_MAX).asJsonArray
+        val maxArr = data.get(KEY_MEMORY_FOOTPRINT).asJsonArray
         val pctArr = data.get(KEY_MEMORY_PERCENT).asJsonArray
         val scaledMax = listOf(fakeMem1, fakeMem2, fakeMem3).map { (it * fakeScale).roundToLong() }
         val scaledPct = listOf(fakeMem1, fakeMem2, fakeMem3)
@@ -243,7 +243,7 @@ internal class MemoryEventSerializerTest {
         private const val KEY_PRECISION: String = "precision"
         private const val KEY_RESOLUTION: String = "resolution"
         private const val KEY_TS: String = "ts"
-        private const val KEY_MEMORY_MAX: String = "memory_max"
+        private const val KEY_MEMORY_FOOTPRINT: String = "memory_footprint"
         private const val KEY_MEMORY_PERCENT: String = "memory_percent"
 
         // JSON values

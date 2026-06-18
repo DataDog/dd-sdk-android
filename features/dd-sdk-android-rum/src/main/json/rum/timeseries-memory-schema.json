@@ -140,9 +140,9 @@
               "data_point": {
                 "type": "object",
                 "description": "Memory measurements for this sample",
-                "required": ["memory_max", "memory_percent"],
+                "required": ["memory_footprint", "memory_percent"],
                 "properties": {
-                  "memory_max": {
+                  "memory_footprint": {
                     "type": "number",
                     "description": "Physical memory footprint of the process in bytes",
                     "readOnly": true
