@@ -10,6 +10,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.Handler
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -47,6 +48,9 @@ internal class ThreadSafeReceiverTest {
     @Mock
     lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
 
+    @Mock
+    lateinit var mockHandler: Handler
+
     @BeforeEach
     fun `set up`() {
         testedReceiver = TestableThreadSafeReceiver(mockBuildSdkVersionProvider)
@@ -61,12 +65,14 @@ internal class ThreadSafeReceiverTest {
         whenever(mockBuildSdkVersionProvider.isAtLeastO) doReturn true
 
         // When
-        testedReceiver.registerReceiver(mockContext, mockIntentFilter)
+        testedReceiver.registerReceiver(mockContext, mockIntentFilter, mockHandler)
 
         // Then
         verify(mockContext).registerReceiver(
             testedReceiver,
             mockIntentFilter,
+            null,
+            mockHandler,
             ThreadSafeReceiver.RECEIVER_NOT_EXPORTED_COMPAT
         )
         assertThat(this.testedReceiver.isRegistered.get()).isTrue()
@@ -78,12 +84,14 @@ internal class ThreadSafeReceiverTest {
         whenever(mockBuildSdkVersionProvider.isAtLeastTiramisu) doReturn true
 
         // When
-        testedReceiver.registerReceiver(mockContext, mockIntentFilter)
+        testedReceiver.registerReceiver(mockContext, mockIntentFilter, mockHandler)
 
         // Then
         verify(mockContext).registerReceiver(
             testedReceiver,
             mockIntentFilter,
+            null,
+            mockHandler,
             Context.RECEIVER_NOT_EXPORTED
         )
         assertThat(this.testedReceiver.isRegistered.get()).isTrue()
@@ -97,10 +105,10 @@ internal class ThreadSafeReceiverTest {
         whenever(mockBuildSdkVersionProvider.isAtLeastO) doReturn false
 
         // When
-        testedReceiver.registerReceiver(mockContext, mockIntentFilter)
+        testedReceiver.registerReceiver(mockContext, mockIntentFilter, mockHandler)
 
         // Then
-        verify(mockContext).registerReceiver(testedReceiver, mockIntentFilter)
+        verify(mockContext).registerReceiver(testedReceiver, mockIntentFilter, null, mockHandler)
         verifyNoMoreInteractions(mockContext)
         assertThat(this.testedReceiver.isRegistered.get()).isTrue()
     }

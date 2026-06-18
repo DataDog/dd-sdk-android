@@ -251,8 +251,6 @@ class ManualTrackingRumTest {
         // When
         rumMonitor.startView(viewKey, viewName)
         rumMonitor.addAction(RumActionType.CUSTOM, actionName)
-        stubSdkCore.advanceTimeBy(100)
-        // Used to trigger the action event
         rumMonitor.stopView(viewKey)
 
         // Then
@@ -328,6 +326,87 @@ class ManualTrackingRumTest {
                     hasNoOptionalViewFields()
                 }
                 hasNoOptionalFields()
+            }
+    }
+
+    @Test
+    fun `M send view events with actions W startView() + multiple addAction()`(
+        @StringForgery viewKey: String,
+        @StringForgery viewName: String,
+        @StringForgery actionName1: String,
+        @StringForgery actionName2: String
+    ) {
+        // Given
+        val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
+
+        // When
+        rumMonitor.startView(viewKey, viewName)
+        // Each CUSTOM action must be written immediately. In particular the last action
+        // must not be lost just because no further event triggers an inactivity timeout.
+        rumMonitor.addAction(RumActionType.CUSTOM, actionName1)
+        rumMonitor.addAction(RumActionType.CUSTOM, actionName2)
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        assertThat(eventsWritten)
+            .hasSize(5)
+            .hasRumEvent(index = 0) {
+                // Initial view
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasViewName(viewName)
+                hasActionCount(0)
+                hasDocumentVersion(1)
+            }
+            .hasRumEvent(index = 1) {
+                // First custom action
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("action")
+                hasViewUrl(viewKey)
+                hasViewName(viewName)
+                hasActionName(actionName1)
+            }
+            .hasRumEvent(index = 2) {
+                // View updated with first action
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasViewName(viewName)
+                hasActionCount(1)
+                hasDocumentVersion(2)
+            }
+            .hasRumEvent(index = 3) {
+                // Second custom action
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("action")
+                hasViewUrl(viewKey)
+                hasViewName(viewName)
+                hasActionName(actionName2)
+            }
+            .hasRumEvent(index = 4) {
+                // View updated with second action
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasViewName(viewName)
+                hasActionCount(2)
+                hasDocumentVersion(3)
             }
     }
 

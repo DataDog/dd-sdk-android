@@ -27,10 +27,10 @@ internal class PrecomputeMapper(private val internalLogger: InternalLogger) {
 
         val flagsMap = mutableMapOf<String, PrecomputedFlag>()
 
-        val flagNames = flags.keys()
-        while (flagNames.hasNext()) {
-            val flagName = flagNames.next()
-            val flagData = flags.getJSONObject(flagName)
+        val flagKeys = flags.keys()
+        while (flagKeys.hasNext()) {
+            val flagKey = flagKeys.next()
+            val flagData = flags.getJSONObject(flagKey)
 
             val precomputedFlag = PrecomputedFlag(
                 variationType = flagData.getString(JsonKeys.VARIATION_TYPE.value),
@@ -47,7 +47,7 @@ internal class PrecomputeMapper(private val internalLogger: InternalLogger) {
                 reason = flagData.getString(JsonKeys.REASON.value)
             )
 
-            flagsMap[flagName] = precomputedFlag
+            flagsMap[flagKey] = precomputedFlag
         }
 
         flagsMap
