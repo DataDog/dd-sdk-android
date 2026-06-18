@@ -189,6 +189,7 @@ class SampleApplication : Application() {
             Profiling.enable(
                 ProfilingConfiguration.Builder()
                     .setApplicationLaunchSampleRate(100f)
+                    .setContinuousSampleRate(100f)
                     .build()
             )
         }

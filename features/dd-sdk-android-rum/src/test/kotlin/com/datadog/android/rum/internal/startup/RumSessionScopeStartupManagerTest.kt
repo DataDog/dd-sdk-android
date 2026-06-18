@@ -17,8 +17,9 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.internal.profiling.ProfilerStopEvent
-import com.datadog.android.internal.profiling.TTIDRumContext
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.profiling.ProfilerEvent
+import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.VitalAppLaunchEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.VitalAppLaunchPropertiesAssert.Companion.assertThat
@@ -174,7 +175,7 @@ internal class RumSessionScopeStartupManagerTest {
             featuresContext = fakeDatadogContext.featuresContext.let {
                 if (forge.aBool()) {
                     it.toMutableMap().apply {
-                        put(Feature.PROFILING_FEATURE_NAME, mapOf("profiler_is_running" to true))
+                        put(Feature.PROFILING_FEATURE_NAME, mapOf(FeatureContextKeys.PROFILER_IS_RUNNING to true))
                     }
                 } else {
                     it
@@ -232,6 +233,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         manager.onTTIDEvent(
             event = event,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -275,6 +277,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         manager.onTTIDEvent(
             event = event,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -286,15 +289,83 @@ internal class RumSessionScopeStartupManagerTest {
         argumentCaptor<VitalAppLaunchEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             verify(mockProfilingFeatureScope).sendEvent(
-                ProfilerStopEvent.TTID(
-                    TTIDRumContext(
+                ProfilerEvent.RumVitalEvent(
+                    rumContext = ProfilingRumContext(
                         applicationId = rumContext.applicationId,
                         sessionId = rumContext.sessionId,
-                        vitalId = lastValue.vital.id,
-                        vitalName = lastValue.vital.name,
                         viewId = rumContext.viewId,
                         viewName = rumContext.viewName
-                    )
+                    ),
+                    id = lastValue.vital.id,
+                    name = lastValue.vital.name,
+                    type = ProfilerEvent.RumVitalEvent.Type.TTID,
+                    startMs = lastValue.date,
+                    durationNs = info.durationNs
+                )
+            )
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("testScenarios")
+    fun `M notify profiling W onTTFDEvent`(
+        scenario: RumStartupScenario,
+        forge: Forge
+    ) {
+        // Given
+        val info = RumTTIDInfo(
+            scenario = scenario,
+            durationNs = forge.aLong(min = 0, max = 10000)
+        )
+
+        val ttidEvent = RumRawEvent.AppStartTTIDEvent(info = info)
+        val ttfdEvent = forge.createTTFDEvent(scenario.initialTime)
+
+        val mockProfilingFeatureScope = mock<FeatureScope>()
+        whenever(
+            mockSdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)
+        ) doReturn mockProfilingFeatureScope
+
+        // When
+        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario))
+
+        manager.onTTIDEvent(
+            event = ttidEvent,
+            isSessionTracked = true,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+
+        manager.onTTFDEvent(
+            event = ttfdEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+
+        // Then
+        argumentCaptor<VitalAppLaunchEvent> {
+            verify(mockWriter, times(2))
+                .write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+
+            verify(mockProfilingFeatureScope).sendEvent(
+                ProfilerEvent.RumVitalEvent(
+                    rumContext = ProfilingRumContext(
+                        applicationId = rumContext.applicationId,
+                        sessionId = rumContext.sessionId,
+                        viewId = rumContext.viewId,
+                        viewName = rumContext.viewName
+                    ),
+                    id = lastValue.vital.id,
+                    name = lastValue.vital.name,
+                    type = ProfilerEvent.RumVitalEvent.Type.TTFD,
+                    startMs = lastValue.date,
+                    durationNs = ttfdEvent.eventTime.nanoTime - scenario.initialTime.nanoTime
                 )
             )
         }
@@ -331,6 +402,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         manager.onTTIDEvent(
             event = event1,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -342,6 +414,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         manager.onTTIDEvent(
             event = event2,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -382,6 +455,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         manager.onTTIDEvent(
             event = ttidEvent,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -445,6 +519,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         manager.onTTIDEvent(
             event = ttidEvent1,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -465,6 +540,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         manager.onTTIDEvent(
             event = ttidEvent2,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -587,6 +663,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         manager.onTTIDEvent(
             event = ttidEvent,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -634,6 +711,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         manager.onTTIDEvent(
             event = ttidEvent,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -678,6 +756,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         manager.onTTIDEvent(
             event = ttidEvent,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -823,7 +902,13 @@ internal class RumSessionScopeStartupManagerTest {
             hasVersion(fakeDatadogContext.version)
             hasServiceName(fakeDatadogContext.service)
             hasDDTags(buildDDTagsString(fakeDatadogContext))
-            hasNoProfilingStatus()
+                .apply {
+                    if (fakeDatadogContext.featuresContext.containsKey(Feature.PROFILING_FEATURE_NAME)) {
+                        hasProfilingStatus(VitalAppLaunchEvent.ProfilingStatus.RUNNING)
+                    } else {
+                        hasNoProfilingStatus()
+                    }
+                }
             hasNoProfilingErrorReason()
         }
 

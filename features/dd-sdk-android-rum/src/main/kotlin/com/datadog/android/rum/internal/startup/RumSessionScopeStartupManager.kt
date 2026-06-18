@@ -12,8 +12,9 @@ import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.internal.profiling.ProfilerStopEvent
-import com.datadog.android.internal.profiling.TTIDRumContext
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.profiling.ProfilerEvent
+import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumVitalAppLaunchEventHelper
@@ -27,6 +28,7 @@ internal interface RumSessionScopeStartupManager {
 
     fun onTTIDEvent(
         event: RumRawEvent.AppStartTTIDEvent,
+        isSessionTracked: Boolean,
         datadogContext: DatadogContext,
         writeScope: EventWriteScope,
         writer: DataWriter<Any>,
@@ -83,14 +85,22 @@ internal class RumSessionScopeStartupManagerImpl(
         appStartCount++
     }
 
+    @Suppress("LongMethod")
     override fun onTTIDEvent(
         event: RumRawEvent.AppStartTTIDEvent,
+        isSessionTracked: Boolean,
         datadogContext: DatadogContext,
         writeScope: EventWriteScope,
         writer: DataWriter<Any>,
         rumContext: RumContext,
         customAttributes: Map<String, Any?>
     ) {
+        if (!isSessionTracked) {
+            sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
+                ProfilerEvent.TTIDNotTracked
+            )
+            return
+        }
         ttidReportedForScenario = true
 
         rumAppStartupTelemetryReporter.reportTTID(
@@ -118,15 +128,20 @@ internal class RumSessionScopeStartupManagerImpl(
         )
 
         sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
-            ProfilerStopEvent.TTID(
-                rumContext = TTIDRumContext(
+            // startMs is different for different scenarios. For Cold it will be process start, for Warm
+            // it will be Activity.onCreate. But we have application launch profiling working for cold starts only anyway.
+            ProfilerEvent.RumVitalEvent(
+                rumContext = ProfilingRumContext(
                     applicationId = rumContext.applicationId,
                     sessionId = rumContext.sessionId,
                     viewId = rumContext.viewId,
-                    viewName = rumContext.viewName,
-                    vitalId = ttidEvent.vital.id,
-                    vitalName = ttidEvent.vital.name
-                )
+                    viewName = rumContext.viewName
+                ),
+                id = ttidEvent.vital.id,
+                name = ttidEvent.vital.name,
+                type = ProfilerEvent.RumVitalEvent.Type.TTID,
+                startMs = ttidEvent.date,
+                durationNs = event.info.durationNs
             )
         )
 
@@ -235,19 +250,37 @@ internal class RumSessionScopeStartupManagerImpl(
             return
         }
 
-        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
-            rumVitalAppLaunchEventHelper.newVitalAppLaunchEvent(
-                timestampMs = scenario.initialTime.timestamp + sdkCore.time.serverTimeOffsetMs,
-                datadogContext = datadogContext,
-                eventAttributes = emptyMap(),
-                customAttributes = customAttributes,
-                hasReplay = null,
-                rumContext = rumContext,
-                durationNs = durationNs,
-                appLaunchMetric = VitalAppLaunchEvent.AppLaunchMetric.TTFD,
-                scenario = scenario,
-                profilingStatus = null
+        val ttfdEvent = rumVitalAppLaunchEventHelper.newVitalAppLaunchEvent(
+            timestampMs = scenario.initialTime.timestamp + sdkCore.time.serverTimeOffsetMs,
+            datadogContext = datadogContext,
+            eventAttributes = emptyMap(),
+            customAttributes = customAttributes,
+            hasReplay = null,
+            rumContext = rumContext,
+            durationNs = durationNs,
+            appLaunchMetric = VitalAppLaunchEvent.AppLaunchMetric.TTFD,
+            scenario = scenario,
+            profilingStatus = datadogContext.getProfilingStatus()
+        )
+
+        sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
+            ProfilerEvent.RumVitalEvent(
+                rumContext = ProfilingRumContext(
+                    applicationId = rumContext.applicationId,
+                    sessionId = rumContext.sessionId,
+                    viewId = rumContext.viewId,
+                    viewName = rumContext.viewName
+                ),
+                id = ttfdEvent.vital.id,
+                name = ttfdEvent.vital.name,
+                type = ProfilerEvent.RumVitalEvent.Type.TTFD,
+                startMs = ttfdEvent.date,
+                durationNs = durationNs
             )
+        )
+
+        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
+            ttfdEvent
         }.submit()
     }
 
@@ -280,13 +313,11 @@ internal class RumSessionScopeStartupManagerImpl(
 
     private fun DatadogContext.getProfilingStatus(): VitalAppLaunchEvent.ProfilingStatus? {
         val isProfilerRunning = featuresContext[Feature.PROFILING_FEATURE_NAME]
-            ?.get(PROFILER_IS_RUNNING)
+            ?.get(FeatureContextKeys.PROFILER_IS_RUNNING)
         return if (isProfilerRunning == true) VitalAppLaunchEvent.ProfilingStatus.RUNNING else null
     }
 
     companion object {
-        private const val PROFILER_IS_RUNNING = "profiler_is_running"
-
         internal const val REPORT_APP_FULLY_DISPLAYED_CALLED_TOO_EARLY_MESSAGE =
             "RumMonitor.reportAppFullyDisplayed was called before the application launch was detected, ignoring it."
 
