@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.vitals
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.metrics.performance.FrameData
+import com.datadog.android.internal.lint.HotMethod
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.domain.FrameMetricsData
 import java.util.concurrent.TimeUnit
@@ -21,6 +22,7 @@ internal class FPSVitalListener(
     private var frameDeadline = EXPECTED_60_FPS_FRAME_DURATION_NS
     private var displayRefreshRate: Double = SIXTY_FPS
 
+    @HotMethod(message = "invoked on every JankStats frame to compute FPS vital")
     override fun onFrame(volatileFrameData: FrameData) {
         val durationNs = volatileFrameData.frameDurationUiNanos
         if (durationNs > 0.0) {

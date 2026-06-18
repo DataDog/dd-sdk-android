@@ -12,6 +12,7 @@ package com.datadog.android.rum.internal.instrumentation.gestures
 import android.content.Context
 import android.view.MotionEvent
 import androidx.core.view.GestureDetectorCompat
+import com.datadog.android.internal.lint.HotMethod
 
 internal class GesturesDetectorWrapper(
     private val gestureListener: GesturesListener,
@@ -26,6 +27,7 @@ internal class GesturesDetectorWrapper(
         GestureDetectorCompat(context, gestureListener)
     )
 
+    @HotMethod(message = "called on every touch event forwarded from WindowCallbackWrapper")
     fun onTouchEvent(event: MotionEvent) {
         if (defaultGesturesDetector.onTouchEvent(event)) {
             return

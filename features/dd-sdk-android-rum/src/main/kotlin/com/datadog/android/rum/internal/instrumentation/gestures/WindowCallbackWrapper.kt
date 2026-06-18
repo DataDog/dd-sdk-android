@@ -12,6 +12,7 @@ import android.view.MotionEvent
 import android.view.Window
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.internal.lint.HotMethod
 import com.datadog.android.internal.utils.FixedWindowCallback
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
@@ -40,6 +41,7 @@ internal class WindowCallbackWrapper(
 
     // region Window.Callback
 
+    @HotMethod(message = "dispatched on every touch event by the system; avoid allocations inside")
     override fun dispatchTouchEvent(event: MotionEvent?): Boolean {
         if (event != null) {
             // we copy it and delegate it to the gesture detector for analysis
@@ -50,8 +52,8 @@ internal class WindowCallbackWrapper(
             } catch (e: Exception) {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
-                    listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                    { "Error processing MotionEvent" },
+                    ERROR_LOG_TARGETS,
+                    MESSAGE_ERROR_PROCESSING_MOTION_EVENT,
                     e
                 )
             } finally {
@@ -60,8 +62,8 @@ internal class WindowCallbackWrapper(
         } else {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { "Received null MotionEvent" }
+                ERROR_LOG_TARGETS,
+                MESSAGE_NULL_MOTION_EVENT
             )
         }
 
@@ -175,5 +177,15 @@ internal class WindowCallbackWrapper(
         const val BACK_DEFAULT_TARGET_NAME: String = "back"
 
         const val EVENT_CONSUMED: Boolean = true
+
+        // Pre-allocated to avoid listOf() allocation on the touch hot path (error paths only,
+        // but still inside @HotMethod body so the allocation is avoided here).
+        internal val ERROR_LOG_TARGETS = listOf(
+            InternalLogger.Target.MAINTAINER,
+            InternalLogger.Target.TELEMETRY
+        )
+
+        private val MESSAGE_ERROR_PROCESSING_MOTION_EVENT: () -> String = { "Error processing MotionEvent" }
+        private val MESSAGE_NULL_MOTION_EVENT: () -> String = { "Received null MotionEvent" }
     }
 }

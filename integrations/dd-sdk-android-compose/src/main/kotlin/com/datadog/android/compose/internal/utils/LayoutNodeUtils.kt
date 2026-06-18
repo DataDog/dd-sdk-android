@@ -21,6 +21,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.compose.DatadogSemanticsPropertyKey
+import com.datadog.android.internal.lint.HotMethod
 import com.datadog.android.rum.RumAttributes.ACTION_TARGET_ROLE
 import com.datadog.android.rum.RumAttributes.ACTION_TARGET_SELECTED
 import java.lang.reflect.Method
@@ -29,6 +30,10 @@ internal class LayoutNodeUtils {
 
     private val methodResolver = MethodResolver()
 
+    // Pre-allocated and cleared on each resolveLayoutNode call to avoid mutableMapOf() allocation.
+    private val reusableCustomAttributes = mutableMapOf<String, Any?>()
+
+    @HotMethod(message = "called per LayoutNode on every tap/scroll gesture to resolve the interaction target")
     @Suppress("NestedBlockDepth", "CyclomaticComplexMethod")
     fun resolveLayoutNode(node: LayoutNode): TargetNode? {
         return runSafe("resolveLayoutNode") {
@@ -37,7 +42,7 @@ internal class LayoutNodeUtils {
             var datadogTag: String? = null
             var role: Role? = null
             var selected: Boolean? = null
-            val customAttributes = mutableMapOf<String, Any?>()
+            reusableCustomAttributes.clear()
             for (info in node.getModifierInfo()) {
                 val modifier = info.modifier
                 if (modifier is SemanticsModifier) {
@@ -75,18 +80,17 @@ internal class LayoutNodeUtils {
                     }
                 }
             }
-            selected?.let {
-                customAttributes[ACTION_TARGET_SELECTED] = it
-            }
-            role?.let {
-                customAttributes[ACTION_TARGET_ROLE] = it
-            }
+            selected?.let { reusableCustomAttributes[ACTION_TARGET_SELECTED] = it }
+            role?.let { reusableCustomAttributes[ACTION_TARGET_ROLE] = it }
             datadogTag?.let {
+                // TargetNode is a return-value result type; allocation is unavoidable here.
+                // It is only created when a Datadog-tagged node is found (not every traversal).
+                @Suppress("HotMethodIllegalCall")
                 TargetNode(
                     tag = it,
                     isClickable = isClickable,
                     isScrollable = isScrollable,
-                    customAttributes = customAttributes.toMap()
+                    customAttributes = reusableCustomAttributes.toMap()
                 )
             }
         }
@@ -101,6 +105,7 @@ internal class LayoutNodeUtils {
         }
     }
 
+    @HotMethod(message = "called per LayoutNode on every tap/scroll gesture for hit-testing bounds")
     fun getLayoutNodeBoundsInWindow(node: LayoutNode): Rect? = when (methodResolver.state) {
         MethodResolver.State.UNKNOWN -> {
             getLayoutNodeBoundsInWindowInternal(node) ?: getLayoutNodeBoundsInWindowReflection(node)
@@ -133,7 +138,7 @@ internal class LayoutNodeUtils {
             ?.invoke(this)
     }
 
-    private fun <T> runSafe(callSite: String, action: () -> T): T? {
+    private inline fun <T> runSafe(callSite: String, action: () -> T): T? {
         try {
             return action()
         } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {

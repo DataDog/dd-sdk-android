@@ -1,0 +1,201 @@
+build:
+  maxIssues: 0
+
+config:
+  validation: true
+  warningsAsErrors: true
+
+comments:
+  active: true
+  AbsentOrWrongFileLicense:
+    active: true
+    licenseTemplateFile: 'license.template'
+    licenseTemplateIsRegex: false
+    excludes:
+      # Gradle build outputs and generated artifacts.
+      - '**/build/**'
+      # Auto-generated Kotlin model fixtures produced by the buildSrc JSON-to-Kotlin code generator.
+      - '**/buildSrc/src/test/kotlin/com/example/model/**'
+      # Fixture files for the NoOpFactory annotation processor tests, read as text data rather than compiled.
+      - '**/tools/noopfactory/src/test/resources/**'
+      # Vendored test files ported from the upstream dd-trace-java library.
+      - '**/features/dd-sdk-android-trace-internal/src/test/kotlin/com/datadog/trace/**'
+
+complexity:
+  active: false
+
+coroutines:
+  active: false
+
+empty-blocks:
+  active: false
+
+exceptions:
+  active: false
+
+naming:
+  active: false
+
+potential-bugs:
+  active: false
+
+style:
+  active: false
+
+datadog:
+  active: true
+  excludes:
+    - '**/build/**'
+    - '**/test/**'
+    - '**/testDebug/**'
+    - '**/testRelease/**'
+    - '**/androidTest/**'
+    - '**/testFixtures/**'
+    - '**/buildSrc/**'
+    - '**/*.kts'
+    - '**/instrumented/**'
+    - '**/reliability/**'
+    - '**/sample/**'
+    - '**/tools/**'
+  HotMethodIllegalCall:
+    active: true
+    # Lambda literals passed to functions in `allowedInlineFunctions` are inlined by the compiler
+    # and do not allocate — they are excluded from the lambda-allocation check.
+    # Add any project-specific `inline` functions here.
+    allowedInlineFunctions:
+      # Kotlin scope functions
+      - 'let'
+      - 'also'
+      - 'apply'
+      - 'run'
+      - 'with'
+      - 'takeIf'
+      - 'takeUnless'
+      # Standard utilities
+      - 'synchronized'
+      - 'use'
+      - 'repeat'
+      - 'measureNanoTime'
+      - 'measureTimeMillis'
+      # Kotlin stdlib collection operations — ALL are inline, lambdas are not allocated
+      - 'filter'
+      - 'filterNot'
+      - 'filterIsInstance'
+      - 'filterNotNull'
+      - 'map'
+      - 'mapNotNull'
+      - 'mapIndexed'
+      - 'flatMap'
+      - 'flatten'
+      - 'forEach'
+      - 'forEachIndexed'
+      - 'any'
+      - 'all'
+      - 'none'
+      - 'count'
+      - 'find'
+      - 'findLast'
+      - 'first'
+      - 'firstOrNull'
+      - 'last'
+      - 'lastOrNull'
+      - 'single'
+      - 'singleOrNull'
+      - 'reduce'
+      - 'fold'
+      - 'foldIndexed'
+      - 'sumOf'
+      - 'maxByOrNull'
+      - 'minByOrNull'
+      - 'maxOrNull'
+      - 'minOrNull'
+      - 'groupBy'
+      - 'associate'
+      - 'associateBy'
+      - 'partition'
+      - 'sortedBy'
+      - 'sortedWith'
+      - 'sorted'
+      - 'toList'
+      - 'toMutableList'
+      - 'toSet'
+      - 'toMutableSet'
+      - 'toMap'
+      # Builder functions — inline, so the lambda body is inlined (the builder itself still allocates)
+      - 'buildString'
+      - 'buildList'
+      - 'buildSet'
+      - 'buildMap'
+    # Both lists use `ContainerFQN.method` format (or `SimpleClass.method` as a suffix match).
+    # For top-level factory functions the container is the package (e.g. kotlin.collections).
+    # emptyList/emptySet/emptyMap are intentionally excluded — they return cached singletons.
+    forbiddenFactoryFunctions:
+      - 'kotlin.collections.listOf'
+      - 'kotlin.collections.mutableListOf'
+      - 'kotlin.collections.arrayListOf'
+      - 'kotlin.collections.setOf'
+      - 'kotlin.collections.mutableSetOf'
+      - 'kotlin.collections.hashSetOf'
+      - 'kotlin.collections.linkedSetOf'
+      - 'kotlin.collections.mapOf'
+      - 'kotlin.collections.mutableMapOf'
+      - 'kotlin.collections.hashMapOf'
+      - 'kotlin.collections.linkedMapOf'
+      - 'kotlin.collections.buildList'
+      - 'kotlin.collections.buildSet'
+      - 'kotlin.collections.buildMap'
+      - 'kotlin.text.buildString'
+    forbiddenCalls:
+      # Linear search
+      - 'kotlin.collections.List.find'
+      - 'kotlin.collections.List.findLast'
+      - 'kotlin.collections.List.first'
+      - 'kotlin.collections.List.firstOrNull'
+      - 'kotlin.collections.List.last'
+      - 'kotlin.collections.List.lastOrNull'
+      - 'kotlin.collections.List.single'
+      - 'kotlin.collections.List.singleOrNull'
+      - 'kotlin.collections.List.indexOf'
+      - 'kotlin.collections.List.indexOfFirst'
+      - 'kotlin.collections.List.indexOfLast'
+      - 'kotlin.collections.List.lastIndexOf'
+      - 'kotlin.collections.List.any'
+      - 'kotlin.collections.List.all'
+      - 'kotlin.collections.List.none'
+      - 'kotlin.collections.List.count'
+      # Full iteration — allocates an iterator each call
+      - 'kotlin.collections.List.forEach'
+      - 'kotlin.collections.List.forEachIndexed'
+      - 'kotlin.collections.List.reduce'
+      - 'kotlin.collections.List.fold'
+      - 'kotlin.collections.List.foldIndexed'
+      - 'kotlin.collections.List.sumOf'
+      - 'kotlin.collections.List.maxOrNull'
+      - 'kotlin.collections.List.minOrNull'
+      - 'kotlin.collections.List.maxByOrNull'
+      - 'kotlin.collections.List.minByOrNull'
+      # Materialising — allocates a new collection each call
+      - 'kotlin.collections.List.filter'
+      - 'kotlin.collections.List.filterNot'
+      - 'kotlin.collections.List.filterIsInstance'
+      - 'kotlin.collections.List.filterNotNull'
+      - 'kotlin.collections.List.map'
+      - 'kotlin.collections.List.mapNotNull'
+      - 'kotlin.collections.List.mapIndexed'
+      - 'kotlin.collections.List.flatMap'
+      - 'kotlin.collections.List.flatten'
+      - 'kotlin.collections.List.toList'
+      - 'kotlin.collections.List.toMutableList'
+      - 'kotlin.collections.List.toSet'
+      - 'kotlin.collections.List.toMutableSet'
+      - 'kotlin.collections.List.toMap'
+      - 'kotlin.collections.List.groupBy'
+      - 'kotlin.collections.List.associate'
+      - 'kotlin.collections.List.associateBy'
+      - 'kotlin.collections.List.partition'
+      # Sorting — O(N log N)
+      - 'kotlin.collections.List.sorted'
+      - 'kotlin.collections.List.sortedBy'
+      - 'kotlin.collections.List.sortedWith'
+datadog-test-pyramid:
+  active: false

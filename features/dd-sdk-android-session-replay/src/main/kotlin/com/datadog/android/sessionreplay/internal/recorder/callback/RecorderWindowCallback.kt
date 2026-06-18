@@ -12,6 +12,7 @@ import android.view.MotionEvent
 import android.view.Window
 import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.lint.HotMethod
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.internal.utils.FixedWindowCallback
 import com.datadog.android.internal.utils.densityNormalized
@@ -53,14 +54,18 @@ internal class RecorderWindowCallback(
     private var lastPerformedFlushTimeInNs: Long = timeProvider.getDeviceElapsedTimeNanos()
     private var shouldRecordMotion: Boolean = false
 
+    // Pre-allocated and reused across ACTION_DOWN events — safe because dispatchTouchEvent is @MainThread.
+    private val reusableTouchLocation = Point()
+
     // region Window.Callback
 
+    @HotMethod(message = "dispatched on every touch event; session-replay pointer recording runs here")
     @MainThread
     override fun dispatchTouchEvent(event: MotionEvent?): Boolean {
         if (event != null) {
             if (event.action == MotionEvent.ACTION_DOWN) {
-                val touchLocation = Point(event.x.toInt(), event.y.toInt())
-                shouldRecordMotion = touchPrivacyManager.shouldRecordTouch(touchLocation)
+                reusableTouchLocation.set(event.x.toInt(), event.y.toInt())
+                shouldRecordMotion = touchPrivacyManager.shouldRecordTouch(reusableTouchLocation)
             }
 
             if (shouldRecordMotion) {
@@ -77,7 +82,7 @@ internal class RecorderWindowCallback(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
-                { MOTION_EVENT_WAS_NULL_ERROR_MESSAGE },
+                MESSAGE_MOTION_EVENT_WAS_NULL,
                 null
             )
         }
@@ -211,9 +216,10 @@ internal class RecorderWindowCallback(
 
         // every 10 frames we flush the buffer
         internal val FLUSH_BUFFER_THRESHOLD_NS: Long = MOTION_UPDATE_DELAY_THRESHOLD_NS * 10
-        internal const val MOTION_EVENT_WAS_NULL_ERROR_MESSAGE =
-            "RecorderWindowCallback: intercepted null motion event"
         internal const val FAIL_TO_PROCESS_MOTION_EVENT_ERROR_MESSAGE =
             "RecorderWindowCallback: wrapped callback failed to handle the motion event"
+        private val MESSAGE_MOTION_EVENT_WAS_NULL: () -> String = {
+            "RecorderWindowCallback: intercepted null motion event"
+        }
     }
 }

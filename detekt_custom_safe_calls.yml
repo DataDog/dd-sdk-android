@@ -197,6 +197,7 @@ datadog:
       # endregion
       # region Android Graphics
       - "android.graphics.Bitmap.recycle()"
+      - "android.graphics.Point.set(kotlin.Int, kotlin.Int)"
       - "android.graphics.Canvas.drawColor(kotlin.Int)"
       - "android.graphics.Canvas.drawColor(kotlin.Int, android.graphics.PorterDuff.Mode)"
       - "android.graphics.Canvas.drawLine(kotlin.Float, kotlin.Float, kotlin.Float, kotlin.Float, android.graphics.Paint)"

@@ -119,6 +119,7 @@ fun Project.detektCustomConfig() {
         args(
             "--config",
             "${rootDir.absolutePath}/detekt_custom_general.yml," +
+                "${rootDir.absolutePath}/detekt_expensive_methods.yml," +
                 "${rootDir.absolutePath}/detekt_custom_safe_calls.yml," +
                 "${rootDir.absolutePath}/detekt_custom_unsafe_calls.yml"
         )
