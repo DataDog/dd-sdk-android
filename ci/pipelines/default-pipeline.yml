@@ -349,6 +349,9 @@ test-pyramid:legacy-integration-instrumented-min-api:
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
+  needs:
+    - job: "test:debug"
+      artifacts: false
   variables:
     ANDROID_API: "23"
     ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
@@ -364,6 +367,9 @@ test-pyramid:legacy-integration-instrumented-latest-api:
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
+  needs:
+    - job: "test:debug"
+      artifacts: false
   variables:
     ANDROID_API: "36"
     ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
@@ -379,6 +385,9 @@ test-pyramid:legacy-integration-instrumented-median-api:
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
+  needs:
+    - job: "test:debug"
+      artifacts: false
   variables:
     ANDROID_API: "28"
     ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
