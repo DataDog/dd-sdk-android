@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
 import androidx.compose.ui.semantics.SemanticsNode
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.utils.BackgroundInfo
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
@@ -40,6 +41,9 @@ import org.mockito.quality.Strictness
 internal class ButtonSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() {
 
     private lateinit var testedButtonSemanticsNodeMapper: ButtonSemanticsNodeMapper
+
+    @Mock
+    private lateinit var mockInternalLogger: InternalLogger
 
     @Mock
     private lateinit var mockSemanticsNode: SemanticsNode
@@ -97,7 +101,8 @@ internal class ButtonSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest()
         val actual = testedButtonSemanticsNodeMapper.map(
             mockSemanticsNode,
             fakeUiContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then

@@ -10,6 +10,7 @@ import androidx.compose.ui.semantics.SemanticsConfiguration
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.RadioButtonSemanticsNodeMapper.Companion.DEFAULT_COLOR_GRAY
@@ -43,6 +44,9 @@ internal class RadioButtonSemanticsNodeMapperTest : AbstractSemanticsNodeMapperT
 
     private lateinit var testedRadioButtonSemanticsNodeMapper: RadioButtonSemanticsNodeMapper
     private lateinit var mockSemanticsNode: SemanticsNode
+
+    @Mock
+    private lateinit var mockInternalLogger: InternalLogger
 
     @Mock
     private lateinit var mockSemanticsConfig: SemanticsConfiguration
@@ -90,7 +94,8 @@ internal class RadioButtonSemanticsNodeMapperTest : AbstractSemanticsNodeMapperT
         val actual = testedRadioButtonSemanticsNodeMapper.map(
             mockSemanticsNode,
             mockUiContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -121,7 +126,8 @@ internal class RadioButtonSemanticsNodeMapperTest : AbstractSemanticsNodeMapperT
         val actual = testedRadioButtonSemanticsNodeMapper.map(
             mockSemanticsNode,
             mockUiContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
@@ -163,7 +169,8 @@ internal class RadioButtonSemanticsNodeMapperTest : AbstractSemanticsNodeMapperT
         val actual = testedRadioButtonSemanticsNodeMapper.map(
             mockSemanticsNode,
             mockUiContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
