@@ -7,6 +7,9 @@ package com.datadog.android.rum.timeseries
 
 import androidx.annotation.IntRange
 import com.datadog.android.rum.ExperimentalRumApi
+import com.datadog.android.rum.timeseries.TimeseriesConfiguration.Companion.DEFAULT_BUFFER_SIZE
+import com.datadog.android.rum.timeseries.TimeseriesConfiguration.Companion.DEFAULT_INTERVAL_MS
+import com.datadog.android.rum.timeseries.TimeseriesConfiguration.Companion.MIN_INTERVAL_MS
 
 /**
  * Configuration for memory and CPU timeseries collection.
@@ -57,7 +60,7 @@ class TimeseriesConfiguration internal constructor(
          * Sets whether to keep sampling timeseries when the app is in background.
          * Defaults to `false`.
          */
-        fun setCollectInBackground(collectInBackground: Boolean): Builder = apply {
+        fun collectInBackground(collectInBackground: Boolean): Builder = apply {
             this.collectInBackground = collectInBackground
         }
 
@@ -65,7 +68,7 @@ class TimeseriesConfiguration internal constructor(
          * Sets whether to encode each sample as a delta from the previous value instead of an
          * absolute value. Reduces payload size when values change slowly. Defaults to `false`.
          */
-        fun setUseDeltaCompression(useDeltaCompression: Boolean): Builder = apply {
+        fun useDeltaCompression(useDeltaCompression: Boolean): Builder = apply {
             this.useDeltaCompression = useDeltaCompression
         }
 
@@ -79,6 +82,11 @@ class TimeseriesConfiguration internal constructor(
     }
 
     companion object {
+
+        /** Default [TimeseriesConfiguration] built with all default settings. */
+        @ExperimentalRumApi
+        val DEFAULT: TimeseriesConfiguration = Builder().build()
+
         /** Default number of samples to accumulate before emitting a timeseries event. */
         internal const val DEFAULT_BUFFER_SIZE: Int = 30
 

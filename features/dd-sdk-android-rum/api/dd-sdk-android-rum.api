@@ -8645,13 +8645,14 @@ public final class com/datadog/android/rum/timeseries/TimeseriesConfiguration {
 public final class com/datadog/android/rum/timeseries/TimeseriesConfiguration$Builder {
 	public fun <init> ()V
 	public final fun build ()Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration;
+	public final fun collectInBackground (Z)Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration$Builder;
 	public final fun setBufferSize (I)Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration$Builder;
-	public final fun setCollectInBackground (Z)Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration$Builder;
 	public final fun setIntervalMs (J)Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration$Builder;
-	public final fun setUseDeltaCompression (Z)Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration$Builder;
+	public final fun useDeltaCompression (Z)Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration$Builder;
 }
 
 public final class com/datadog/android/rum/timeseries/TimeseriesConfiguration$Companion {
+	public final fun getDEFAULT ()Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration;
 }
 
 public class com/datadog/android/rum/tracking/AcceptAllActivities : com/datadog/android/rum/tracking/ComponentPredicate {

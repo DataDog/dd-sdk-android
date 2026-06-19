@@ -294,7 +294,7 @@ internal class RumFeature(
         configuration.timeseriesConfiguration?.let { configuration ->
             timeseriesFactory = createTimeseriesCollectingFactory(
                 configuration,
-                appContext.readTotalRamBytes(sdkCore.internalLogger)
+                appContext.readTotalRamBytes(sdkCore.internalLogger) ?: 0L
             )
         }
 
@@ -488,7 +488,8 @@ internal class RumFeature(
                     sdkCore.internalLogger.log(
                         InternalLogger.Level.WARN,
                         InternalLogger.Target.USER,
-                        { MEMORY_TIMESERIES_DISABLED_MESSAGE }
+                        { MEMORY_TIMESERIES_DISABLED_MESSAGE },
+                        onlyOnce = true
                     )
                     null
                 }
@@ -941,24 +942,22 @@ internal class RumFeature(
         internal const val FAILED_TO_ENABLE_JANK_STATS_TRACKING_MANUALLY =
             "Manually enabling JankStats tracking threw an exception."
 
-        @Suppress("TooGenericExceptionCaught")
-        internal fun Context.readTotalRamBytes(internalLogger: InternalLogger): Long = try {
+        internal fun Context.readTotalRamBytes(internalLogger: InternalLogger): Long? = try {
             getSystemServiceAs<ActivityManager>(Context.ACTIVITY_SERVICE)
-                // UnsafeThirdPartyFunctionCall: MemoryInfo() and getMemoryInfo() can throw
-                // RuntimeException on broken Android implementations; fall back to 0.
                 ?.run {
+                    // UnsafeThirdPartyFunctionCall: MemoryInfo() and getMemoryInfo() can throw
+                    // RuntimeException on broken Android implementations; fall back to 0.
                     @Suppress("UnsafeThirdPartyFunctionCall")
                     ActivityManager.MemoryInfo().also { getMemoryInfo(it) }.totalMem
                 }
-                ?: 0L
-        } catch (e: RuntimeException) {
+        } catch (@Suppress("TooGenericExceptionCaught") e: RuntimeException) {
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
                 { "Failed to read total RAM via ActivityManager" },
                 e
             )
-            0L
+            null
         }
 
         private fun provideUserTrackingStrategy(
