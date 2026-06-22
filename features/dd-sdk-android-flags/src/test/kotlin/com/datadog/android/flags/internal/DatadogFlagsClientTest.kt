@@ -974,7 +974,8 @@ internal class DatadogFlagsClientTest {
         assertThat(result.errorCode).isEqualTo(ErrorCode.TYPE_MISMATCH)
         assertThat(result.errorMessage).contains("Flag '$fakeFlagKey'")
         assertThat(result.errorMessage).contains("has type 'string' but Boolean was requested")
-        assertThat(result.allocationKey).isEmpty()
+        assertThat(result.allocationKey).isNull()
+        assertThat(result.flagMetadata).isEmpty()
 
         // Verify no exposure tracked for type mismatch
         verifyNoInteractions(mockProcessor)
@@ -997,7 +998,8 @@ internal class DatadogFlagsClientTest {
         assertThat(result.errorCode).isEqualTo(ErrorCode.FLAG_NOT_FOUND)
         assertThat(result.errorMessage).contains("Flag '$fakeFlagKey'")
         assertThat(result.errorMessage).contains("Flag not found")
-        assertThat(result.allocationKey).isEmpty()
+        assertThat(result.allocationKey).isNull()
+        assertThat(result.flagMetadata).isEmpty()
 
         // Verify no exposure tracked when flag not found
         verifyNoInteractions(mockProcessor)
@@ -1020,7 +1022,8 @@ internal class DatadogFlagsClientTest {
         assertThat(result.errorCode).isEqualTo(ErrorCode.PROVIDER_NOT_READY)
         assertThat(result.errorMessage).contains("Flag '$fakeFlagKey'")
         assertThat(result.errorMessage).contains("Provider not ready")
-        assertThat(result.allocationKey).isEmpty()
+        assertThat(result.allocationKey).isNull()
+        assertThat(result.flagMetadata).isEmpty()
 
         // Verify no exposure tracked when provider not ready
         verifyNoInteractions(mockProcessor)
@@ -1054,7 +1057,8 @@ internal class DatadogFlagsClientTest {
         assertThat(result.errorCode).isEqualTo(ErrorCode.PARSE_ERROR)
         assertThat(result.errorMessage).contains("Flag '$fakeFlagKey'")
         assertThat(result.errorMessage).contains("Failed to parse value")
-        assertThat(result.allocationKey).isEmpty()
+        assertThat(result.allocationKey).isNull()
+        assertThat(result.flagMetadata).isEmpty()
 
         // Verify no exposure tracked for parse error
         verifyNoInteractions(mockProcessor)
