@@ -4,13 +4,13 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.persistence
+package com.datadog.android.api.threads
 
 import java.util.concurrent.AbstractExecutorService
 import java.util.concurrent.FutureTask
 import java.util.concurrent.TimeUnit
 
-internal class FakeSameThreadExecutorService : AbstractExecutorService() {
+class FakeSameThreadExecutorService : AbstractExecutorService() {
 
     private var isShutdown = false
 
