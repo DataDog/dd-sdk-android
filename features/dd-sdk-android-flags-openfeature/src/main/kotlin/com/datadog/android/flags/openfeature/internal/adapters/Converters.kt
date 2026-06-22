@@ -41,11 +41,12 @@ internal fun <T : Any> ResolutionDetails<T>.toProviderEvaluation(): ProviderEval
     reason = this.reason?.name,
     errorCode = this.errorCode?.toOpenFeatureErrorCode(),
     errorMessage = this.errorMessage,
-    metadata = this.flagMetadata.toEvaluationMetadata()
+    metadata = flagMetadata.toEvaluationMetadata(allocationKey)
 )
 
-private fun Map<String, Any>.toEvaluationMetadata(): EvaluationMetadata {
+private fun Map<String, Any>.toEvaluationMetadata(allocationKey: String? = null): EvaluationMetadata {
     val builder = Builder()
+    allocationKey?.let { builder.putString("allocationKey", it) }
     forEach { (key, value) ->
         when (value) {
             is String -> builder.putString(key, value)

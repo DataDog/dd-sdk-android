@@ -832,42 +832,12 @@ internal class DatadogFlagsClientTest {
         assertThat(result.reason).isEqualTo(ResolutionReason.valueOf(fakeReason))
         assertThat(result.errorCode).isNull()
         assertThat(result.errorMessage).isNull()
-        assertThat(result.flagMetadata).isNotNull
+        assertThat(result.allocationKey).isEqualTo(fakeAllocationKey)
         assertThat(result.flagMetadata).containsKeys("version", "environment")
-        assertThat(result.flagMetadata["allocationKey"]).isEqualTo(fakeAllocationKey)
     }
 
     @Test
-    fun `M typed allocationKey wins W resolve() { extraLogging also contains allocationKey }`(forge: Forge) {
-        // Given
-        val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeDefaultValue = forge.aBool()
-        val fakeFlagValue = !fakeDefaultValue
-        val fakeAllocationKey = forge.anAlphabeticalString()
-        val fakeExtraLoggingAllocationKey = forge.anAlphabeticalString()
-        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
-            variationType = VariationType.BOOLEAN.value,
-            variationValue = fakeFlagValue.toString(),
-            allocationKey = fakeAllocationKey,
-            extraLogging = JSONObject().apply {
-                put("allocationKey", fakeExtraLoggingAllocationKey)
-            }
-        )
-        val fakeContext = EvaluationContext(
-            targetingKey = forge.anAlphabeticalString(),
-            attributes = emptyMap()
-        )
-        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
-
-        // When
-        val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
-
-        // Then - typed allocationKey wins over any "allocationKey" entry from extraLogging
-        assertThat(result.flagMetadata["allocationKey"]).isEqualTo(fakeAllocationKey)
-    }
-
-    @Test
-    fun `M allocationKey excluded from metadata W resolve() { empty allocationKey }`(forge: Forge) {
+    fun `M allocationKey null W resolve() { empty allocationKey }`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.aBool()
@@ -889,11 +859,11 @@ internal class DatadogFlagsClientTest {
 
         // Then
         assertThat(result.value).isEqualTo(fakeFlagValue)
-        assertThat(result.flagMetadata).doesNotContainKey("allocationKey")
+        assertThat(result.allocationKey).isNull()
     }
 
     @Test
-    fun `M allocationKey excluded from metadata W resolve() { whitespace allocationKey }`(forge: Forge) {
+    fun `M allocationKey null W resolve() { whitespace allocationKey }`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.aBool()
@@ -915,7 +885,7 @@ internal class DatadogFlagsClientTest {
 
         // Then
         assertThat(result.value).isEqualTo(fakeFlagValue)
-        assertThat(result.flagMetadata).doesNotContainKey("allocationKey")
+        assertThat(result.allocationKey).isNull()
     }
 
     @Test
@@ -1004,7 +974,7 @@ internal class DatadogFlagsClientTest {
         assertThat(result.errorCode).isEqualTo(ErrorCode.TYPE_MISMATCH)
         assertThat(result.errorMessage).contains("Flag '$fakeFlagKey'")
         assertThat(result.errorMessage).contains("has type 'string' but Boolean was requested")
-        assertThat(result.flagMetadata).isEmpty()
+        assertThat(result.allocationKey).isEmpty()
 
         // Verify no exposure tracked for type mismatch
         verifyNoInteractions(mockProcessor)
@@ -1027,7 +997,7 @@ internal class DatadogFlagsClientTest {
         assertThat(result.errorCode).isEqualTo(ErrorCode.FLAG_NOT_FOUND)
         assertThat(result.errorMessage).contains("Flag '$fakeFlagKey'")
         assertThat(result.errorMessage).contains("Flag not found")
-        assertThat(result.flagMetadata).isEmpty()
+        assertThat(result.allocationKey).isEmpty()
 
         // Verify no exposure tracked when flag not found
         verifyNoInteractions(mockProcessor)
@@ -1050,7 +1020,7 @@ internal class DatadogFlagsClientTest {
         assertThat(result.errorCode).isEqualTo(ErrorCode.PROVIDER_NOT_READY)
         assertThat(result.errorMessage).contains("Flag '$fakeFlagKey'")
         assertThat(result.errorMessage).contains("Provider not ready")
-        assertThat(result.flagMetadata).isEmpty()
+        assertThat(result.allocationKey).isEmpty()
 
         // Verify no exposure tracked when provider not ready
         verifyNoInteractions(mockProcessor)
@@ -1084,7 +1054,7 @@ internal class DatadogFlagsClientTest {
         assertThat(result.errorCode).isEqualTo(ErrorCode.PARSE_ERROR)
         assertThat(result.errorMessage).contains("Flag '$fakeFlagKey'")
         assertThat(result.errorMessage).contains("Failed to parse value")
-        assertThat(result.flagMetadata).isEmpty()
+        assertThat(result.allocationKey).isEmpty()
 
         // Verify no exposure tracked for parse error
         verifyNoInteractions(mockProcessor)

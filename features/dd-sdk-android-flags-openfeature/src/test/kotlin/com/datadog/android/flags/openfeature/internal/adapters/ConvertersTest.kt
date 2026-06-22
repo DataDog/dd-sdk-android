@@ -135,16 +135,17 @@ internal class ConvertersTest {
         assertThat(result.reason).isEqualTo("ERROR")
     }
 
+
     @Test
-    fun `M surface allocationKey in metadata W toProviderEvaluation() {flagMetadata contains allocationKey}`(
-        @BoolForgery fakeValue: Boolean,
-        @StringForgery fakeAllocationKey: String
+    fun `M surface allocationKey in metadata W toProviderEvaluation() {resolution with allocationKey}`(
+        @StringForgery fakeAllocationKey: String,
+        @BoolForgery fakeValue: Boolean
     ) {
         // Given
         val resolution = ResolutionDetails(
             value = fakeValue,
             reason = ResolutionReason.TARGETING_MATCH,
-            flagMetadata = mapOf("allocationKey" to fakeAllocationKey)
+            allocationKey = fakeAllocationKey
         )
 
         // When
@@ -171,6 +172,24 @@ internal class ConvertersTest {
 
         // Then — Long stored as string via putString fallback
         assertThat(result.metadata.getString("count")).isEqualTo("42")
+    }
+
+    @Test
+    fun `M not surface allocationKey in metadata W toProviderEvaluation() {resolution with null allocationKey}`(
+        @BoolForgery fakeValue: Boolean
+    ) {
+        // Given
+        val resolution = ResolutionDetails(
+            value = fakeValue,
+            reason = ResolutionReason.DEFAULT,
+            allocationKey = null
+        )
+
+        // When
+        val result = resolution.toProviderEvaluation()
+
+        // Then
+        assertThat(result.metadata.getString("allocationKey")).isNull()
     }
 
     // endregion
