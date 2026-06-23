@@ -885,7 +885,8 @@ internal class RumFeatureTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            MEMORY_TIMESERIES_DISABLED_MESSAGE
+            MEMORY_TIMESERIES_DISABLED_MESSAGE,
+            onlyOnce = true
         )
     }
 
@@ -915,9 +916,9 @@ internal class RumFeatureTest {
     }
 
     @Test
+    @OptIn(ExperimentalRumApi::class)
     fun `M initialize vital executor W initialize { frequency = NEVER and timeseries enabled }`() {
         // Given
-        @Suppress("OPT_IN_USAGE")
         fakeConfiguration = fakeConfiguration.copy(
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER,
             slowFramesConfiguration = null,

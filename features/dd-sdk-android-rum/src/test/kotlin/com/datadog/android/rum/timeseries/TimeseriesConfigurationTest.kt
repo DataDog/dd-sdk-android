@@ -76,7 +76,7 @@ internal class TimeseriesConfigurationTest {
     @Test
     fun `M store collectInBackground W setCollectInBackground true`() {
         // When
-        val config = TimeseriesConfiguration.Builder().setCollectInBackground(true).build()
+        val config = TimeseriesConfiguration.Builder().collectInBackground(true).build()
 
         // Then
         assertThat(config.collectInBackground).isTrue()
