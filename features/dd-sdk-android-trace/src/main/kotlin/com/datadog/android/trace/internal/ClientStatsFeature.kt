@@ -35,10 +35,9 @@ internal class ClientStatsFeature(
     override val name = Feature.TRACING_CLIENT_STATS_FEATURE_NAME
 
     override val storageConfiguration = FeatureStorageConfiguration(
-        // 15 MB
-        maxItemSize = 15L * 1024 * 1024,
-        // Batching is handled by the flush/aggregation mechanism, only one ClientStatsPayload per upload
-        maxItemsPerBatch = 1,
+        // 512 KB
+        maxItemSize = 512L * 1024,
+        maxItemsPerBatch = 4000,
         // 15 MB
         maxBatchSize = 15L * 1024 * 1024,
         // 18 hours

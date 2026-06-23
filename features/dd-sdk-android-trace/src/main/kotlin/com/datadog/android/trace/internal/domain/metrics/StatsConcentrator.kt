@@ -19,7 +19,6 @@ import com.datadog.android.trace.model.SpanEvent
 import com.datadog.trace.bootstrap.instrumentation.api.Tags
 import com.datadog.trace.core.DDSpan
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -45,12 +44,6 @@ internal class StatsConcentrator(
     // These fields below are confined to executorService; never access them from another thread.
     private var oldestTs: Long = 0L
     private val buckets = mutableMapOf<Long, MutableMap<AggregationKey, GroupedStats>>()
-
-    // Coalescing flags: at most one flush task lives in the executor queue at any time.
-    // forcePending is set unconditionally so a force flush is never lost even if a scheduled
-    // flush is already queued and will pick it up.
-    private val flushPending = AtomicBoolean(false)
-    private val forcePending = AtomicBoolean(false)
 
     fun record(trace: List<DDSpan>) {
         val metricsFeature = sdkCore.getFeature(Feature.TRACING_CLIENT_STATS_FEATURE_NAME) ?: return
@@ -85,26 +78,14 @@ internal class StatsConcentrator(
     }
 
     /**
-     * Schedules a drain of ready buckets and returns immediately. If a flush is already queued,
-     * this call is a no-op — the queued task will cover the window. A [flushAll] flush is never dropped:
-     * [forcePending] is set before the coalescing check so the already-queued task picks it up.
+     * Schedules a drain of ready buckets and returns immediately.
      * Flushed buckets are written to [statsWriter].
      *
      * @param flushAll When `true`, drains all buckets regardless of age. Used during SDK teardown.
      */
     fun scheduleFlush(flushAll: Boolean) {
-        val now = timeProvider.getDeviceTimestampMillis().milliseconds.inWholeNanoseconds
-        if (flushAll) {
-            forcePending.set(true)
-        }
-
-        if (!flushPending.compareAndSet(false, true)) {
-            return
-        }
-
         executorService.executeSafe("stats-flush", sdkCore.internalLogger) {
-            flushPending.set(false)
-            val buckets = drainBuckets(now, forcePending.getAndSet(false))
+            val buckets = drainBuckets(flushAll)
             if (buckets.isNotEmpty()) {
                 statsWriter.write(buckets)
             }
@@ -117,7 +98,9 @@ internal class StatsConcentrator(
         buckets.getOrPut(bucketKey) { mutableMapOf() }.getOrPut(key) { GroupedStats() }.add(s)
     }
 
-    private fun drainBuckets(now: Long, flushAll: Boolean): List<ClientStatsBucket> {
+    private fun drainBuckets(flushAll: Boolean): List<ClientStatsBucket> {
+        val now = timeProvider.getDeviceTimestampMillis().milliseconds.inWholeNanoseconds
+
         // Determine the current cuff off for which buckets to leave as still in progress
         val cutoff = now - (bufferLen * bucketSizeNs)
 

@@ -46,10 +46,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -635,79 +632,6 @@ internal class StatsConcentratorTest {
 
     // endregion
 
-    // region Flush conflation
-
-    @Test
-    fun `M submit only one flush task W scheduleFlush() { called twice while flush pending }`(forge: Forge) {
-        // Uses a real single-thread executor so tasks actually queue so we can test conflation
-        val realExecutor = Executors.newSingleThreadExecutor()
-        val concentrator = makeConcentrator(realExecutor)
-        try {
-            // Given
-            val (span) = forge.makeEligibleSpan()
-            concentrator.record(listOf(span))
-
-            // When: block the executor, then call scheduleFlush twice
-            val blocker = CountDownLatch(1)
-            realExecutor.submit { blocker.await() }
-            stubNow(farFuture())
-            // First call: CAS false→true succeeds, queues flush task (blocked behind latch).
-            concentrator.scheduleFlush(flushAll = false)
-            // Second call: CAS fails (flushPending already true) → coalesced, no second task queued.
-            concentrator.scheduleFlush(flushAll = false)
-
-            // Unblock the queue and drain all requests
-            blocker.countDown()
-            realExecutor.submit {}.get(FLUSH_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-        } finally {
-            realExecutor.shutdown()
-        }
-
-        // Then: only one flush task ran → write called exactly once with the span's bucket
-        val buckets = captureBuckets()
-        assertThat(buckets).hasSize(1)
-        assertThat(buckets[0].start).isEqualTo(6 * fakeBucketSizeNs)
-        assertThat(buckets[0].stats[0].hits).isEqualTo(1L)
-    }
-
-    @Test
-    fun `M preserve flushAll when coalesced W scheduleFlush() { flushAll=true merged into pending flush }`(
-        forge: Forge
-    ) {
-        // Uses a real single-thread executor so tasks actually queue; same reasoning as above.
-        val realExecutor = Executors.newSingleThreadExecutor()
-        val concentrator = makeConcentrator(realExecutor)
-        try {
-            // Given: span in a very recent bucket that a non-force flush won't drain
-            val recentBucketStart = 50 * fakeBucketSizeNs
-            val (span) = forge.makeEligibleSpan(startTime = recentBucketStart)
-            concentrator.record(listOf(span))
-
-            // When: block the executor, queue a normal flush then a force flush
-            val blocker = CountDownLatch(1)
-            realExecutor.submit { blocker.await() }
-            stubNow(recentBucketStart)
-            // First call: queues flush task that would NOT drain the recent bucket on its own.
-            concentrator.scheduleFlush(flushAll = false)
-            // Second call: coalesced (CAS fails), but sets forcePending=true so the queued task picks it up.
-            concentrator.scheduleFlush(flushAll = true)
-
-            // Unblock the queue and drain all requests
-            blocker.countDown()
-            realExecutor.submit {}.get(FLUSH_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-        } finally {
-            realExecutor.shutdown()
-        }
-
-        // Then: the queued task picked up forcePending=true and flushed the recent bucket anyway
-        val buckets = captureBuckets()
-        assertThat(buckets).hasSize(1)
-        assertThat(buckets[0].start).isEqualTo(51 * fakeBucketSizeNs)
-        assertThat(buckets[0].stats[0].hits).isEqualTo(1L)
-    }
-
-    // endregion
-
     // region alignTimestamp
 
     @Test
@@ -827,17 +751,6 @@ internal class StatsConcentratorTest {
         whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn nowNs / 1_000_000
     }
 
-    private fun makeConcentrator(executor: ExecutorService) = StatsConcentrator(
-        sdkCore = mockSdkCore,
-        ddSpanToSpanEventMapper = mockSpanEventMapper,
-        eventMapper = mockEventMapper,
-        bufferLen = fakeBufferLen,
-        bucketSizeNs = fakeBucketSizeNs,
-        executorService = executor,
-        statsWriter = mockStatsWriter,
-        timeProvider = mockTimeProvider
-    )
-
     private fun captureBuckets(): List<ClientStatsBucket> {
         val captor = argumentCaptor<List<ClientStatsBucket>>()
         verify(mockStatsWriter).write(captor.capture())
@@ -847,8 +760,4 @@ internal class StatsConcentratorTest {
     private fun firstGroup(): ClientGroupedStats = captureBuckets()[0].stats[0]
 
     // endregion
-
-    private companion object {
-        private const val FLUSH_TIMEOUT_MS = 5_000L
-    }
 }

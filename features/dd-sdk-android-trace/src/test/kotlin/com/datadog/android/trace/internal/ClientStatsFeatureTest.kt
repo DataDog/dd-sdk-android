@@ -107,15 +107,15 @@ internal class ClientStatsFeatureTest {
     // region storageConfiguration
 
     @Test
-    fun `M return 15 MB max item size W storageConfiguration()`() {
+    fun `M return 512 KB max item size W storageConfiguration()`() {
         // When + Then
-        assertThat(testedFeature.storageConfiguration.maxItemSize).isEqualTo(15L * 1024 * 1024)
+        assertThat(testedFeature.storageConfiguration.maxItemSize).isEqualTo(512L * 1024)
     }
 
     @Test
-    fun `M return 1 max items per batch W storageConfiguration()`() {
+    fun `M return 4000 max items per batch W storageConfiguration()`() {
         // When + Then
-        assertThat(testedFeature.storageConfiguration.maxItemsPerBatch).isEqualTo(1)
+        assertThat(testedFeature.storageConfiguration.maxItemsPerBatch).isEqualTo(4000)
     }
 
     @Test
