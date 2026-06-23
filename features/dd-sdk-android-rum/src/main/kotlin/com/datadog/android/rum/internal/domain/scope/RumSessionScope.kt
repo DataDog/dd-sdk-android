@@ -234,9 +234,9 @@ internal class RumSessionScope(
 
     private fun startTimeseries() {
         timeseries = timeseriesFactory.create(
-            parentScope.getRumContext().applicationId,
-            sessionId,
-            rumSessionTypeOverride ?: RumSessionType.USER
+            sessionId = sessionId,
+            applicationId = parentScope.getRumContext().applicationId,
+            sessionType = rumSessionTypeOverride ?: RumSessionType.USER
         )
         timeseries.onSessionStart()
     }

@@ -27,11 +27,14 @@ import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.asString
 import com.datadog.android.internal.utils.loggableStackTrace
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.RumFeatureAssert
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
+import com.datadog.android.rum.internal.RumFeature.Companion.MEMORY_TIMESERIES_DISABLED_MESSAGE
 import com.datadog.android.rum.internal.RumFeature.Companion.SLOW_FRAMES_MONITORING_DISABLED_MESSAGE
 import com.datadog.android.rum.internal.RumFeature.Companion.SLOW_FRAMES_MONITORING_ENABLED_MESSAGE
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
@@ -50,6 +53,8 @@ import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.startup.RumAppStartupDetector
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
+import com.datadog.android.rum.internal.timeseries.RumSessionScopeTimeseries
+import com.datadog.android.rum.internal.timeseries.Timeseries
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
@@ -59,6 +64,7 @@ import com.datadog.android.rum.internal.vitals.FrameStateListener
 import com.datadog.android.rum.internal.vitals.FrameStatesAggregator
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalReaderRunnable
+import com.datadog.android.rum.timeseries.TimeseriesConfiguration
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
@@ -720,7 +726,8 @@ internal class RumFeatureTest {
     fun `M not initialize the vital monitors W initialize { frequency = NEVER }`() {
         // Given
         fakeConfiguration = fakeConfiguration.copy(
-            vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER
+            vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER,
+            timeseriesConfiguration = null
         )
         testedFeature = RumFeature(
             mockSdkCore,
@@ -860,6 +867,92 @@ internal class RumFeatureTest {
     }
 
     @Test
+    fun `M flush timeseries before resetting writer W onStop()`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        val mockDatadogMonitor = mock<DatadogRumMonitor>()
+        GlobalRumMonitor.clear()
+        GlobalRumMonitor.registerIfAbsent(mockDatadogMonitor, mockSdkCore)
+
+        var writerAtFlushTime: DataWriter<Any>? = null
+        doAnswer {
+            writerAtFlushTime = testedFeature.dataWriter
+        }.whenever(mockDatadogMonitor).stopActiveTimeseries()
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        assertThat(writerAtFlushTime).isNotNull
+        assertThat(writerAtFlushTime).isNotInstanceOf(NoOpDataWriter::class.java)
+        assertThat(testedFeature.dataWriter).isInstanceOf(NoOpDataWriter::class.java)
+    }
+
+    @Test
+    fun `M log USER message W timeseries create() { total RAM unavailable }`(
+        @StringForgery fakeSessionId: String
+    ) {
+        // When
+        createTimeseries(totalRamBytes = 0L, sessionId = fakeSessionId)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            MEMORY_TIMESERIES_DISABLED_MESSAGE
+        )
+    }
+
+    @Test
+    fun `M not collect memory W timeseries create() { total RAM unavailable }`(
+        @StringForgery fakeSessionId: String
+    ) {
+        // When
+        val timeseries = createTimeseries(totalRamBytes = 0L, sessionId = fakeSessionId)
+
+        // Then: only the CPU pipeline is created; the memory pipeline is skipped.
+        check(timeseries is RumSessionScopeTimeseries)
+        assertThat(timeseries.pipelines).hasSize(1)
+    }
+
+    @Test
+    fun `M collect memory W timeseries create() { total RAM available }`(
+        @StringForgery fakeSessionId: String,
+        @LongForgery(min = 1L) fakeTotalRamBytes: Long
+    ) {
+        // When
+        val timeseries = createTimeseries(totalRamBytes = fakeTotalRamBytes, sessionId = fakeSessionId)
+
+        // Then: both the CPU and memory pipelines are created.
+        check(timeseries is RumSessionScopeTimeseries)
+        assertThat(timeseries.pipelines).hasSize(2)
+    }
+
+    @Test
+    fun `M initialize vital executor W initialize { frequency = NEVER and timeseries enabled }`() {
+        // Given
+        @Suppress("OPT_IN_USAGE")
+        fakeConfiguration = fakeConfiguration.copy(
+            vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER,
+            slowFramesConfiguration = null,
+            timeseriesConfiguration = TimeseriesConfiguration.Builder().build()
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then: timeseries sampling needs a real executor even when vitals are disabled.
+        assertThat(testedFeature.vitalExecutorService)
+            .isNotInstanceOf(NoOpScheduledExecutorService::class.java)
+    }
+
+    @Test
     fun `M remove associated monitor W onStop()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
@@ -907,7 +1000,8 @@ internal class RumFeatureTest {
     fun `M not initialize vital executor W initialize { frequency = NEVER }()`() {
         // Given
         fakeConfiguration = fakeConfiguration.copy(
-            vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER
+            vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER,
+            timeseriesConfiguration = null
         )
         testedFeature = RumFeature(
             mockSdkCore,
@@ -1760,6 +1854,14 @@ internal class RumFeatureTest {
             message
         )
     }
+
+    // Builds a timeseries collector for the given total device RAM (in bytes), bypassing the
+    // ActivityManager read so the skip/collect/log behavior can be exercised deterministically.
+    @OptIn(ExperimentalRumApi::class)
+    private fun createTimeseries(totalRamBytes: Long, sessionId: String): Timeseries =
+        testedFeature
+            .createTimeseriesCollectingFactory(TimeseriesConfiguration.Builder().build(), totalRamBytes)
+            .create(fakeApplicationId.toString(), sessionId, RumSessionType.USER)
 
     private fun Forge.anApplicationExitInfoList(mustInclude: Int? = null): List<ApplicationExitInfo> {
         val appExitInfos = aList {

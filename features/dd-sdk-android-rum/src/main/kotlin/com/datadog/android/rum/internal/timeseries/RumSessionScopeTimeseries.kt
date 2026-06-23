@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicReference
  */
 internal class RumSessionScopeTimeseries(
     private val internalLogger: InternalLogger,
-    private val pipelines: List<Pipeline<*>>,
+    internal val pipelines: List<Pipeline<*>>,
     private val collectInBackground: Boolean,
     internal val scheduledExecutorService: ScheduledExecutorService
 ) : Timeseries {

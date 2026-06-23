@@ -418,6 +418,26 @@ data class RumConfiguration internal constructor(
          * timeseries event every [TimeseriesConfiguration.bufferSize] samples (default 30).
          * Collection runs on a single background thread named `datadog-timeseries`.
          *
+         * To disable, pass null.
+         *
+         * @param configuration optional fine-tuning of sampling interval and batch size.
+         */
+        @ExperimentalRumApi
+        fun setTimeseriesConfiguration(
+            configuration: TimeseriesConfiguration?
+        ): Builder {
+            rumConfig = rumConfig.copy(timeseriesConfiguration = configuration)
+            return this
+        }
+
+        /**
+         * Enables memory and CPU timeseries collection.
+         *
+         * When enabled, the SDK samples device memory (RSS) and CPU usage at
+         * [TimeseriesConfiguration.intervalMs] (default 1 s) and emits a batched
+         * timeseries event every [TimeseriesConfiguration.bufferSize] samples (default 30).
+         * Collection runs on a single background thread named `datadog-timeseries`.
+         *
          * To disable, call [disableTimeseries].
          *
          * @param configuration optional fine-tuning of sampling interval and batch size.

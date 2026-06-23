@@ -103,6 +103,7 @@ import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
 import com.datadog.android.rum.internal.vitals.CPUVitalReader
+import com.datadog.android.rum.internal.vitals.CpuStatReader
 import com.datadog.android.rum.internal.vitals.FPSVitalListener
 import com.datadog.android.rum.internal.vitals.FrameStateListener
 import com.datadog.android.rum.internal.vitals.FrameStatesAggregator
@@ -264,20 +265,27 @@ internal class RumFeature(
         configuration.longTaskTrackingStrategy?.let { longTaskTrackingStrategy = it }
 
         val frequency = configuration.vitalsMonitorUpdateFrequency
-        val slowFrameListenerConfiguration = configuration.slowFramesConfiguration
-        if (frequency != VitalsUpdateFrequency.NEVER || slowFrameListenerConfiguration != null) {
-            initializeVitalExecutorService(frequency)
+        val vitalsUpdatesRequired = frequency != VitalsUpdateFrequency.NEVER
+
+        // The vital executor backs both the CPU/memory vital monitors and timeseries sampling.
+        if (vitalsUpdatesRequired || configuration.timeseriesConfiguration != null) initializeVitalExecutorService()
+
+        if (vitalsUpdatesRequired) {
+            // CPU/memory monitors schedule on the vital executor, so they are only set up when vitals
+            // are enabled - the same condition that creates the executor above.
             initializeCpuVitalMonitor(frequency)
             initializeMemoryVitalMonitor(frequency)
-            if (!configuration.disableJankStats) {
-                initializeFrameStatesAggregator(
-                    application = appContext as? Application,
-                    listeners = listOfNotNull(
-                        initializeSlowFrameListener(slowFrameListenerConfiguration),
-                        initializeFPSVitalMonitor(frequency)
-                    )
-                )
-            }
+        }
+
+        val fpsVitalMonitor = initializeFPSVitalMonitor(frequency)
+        val slowFrameListener = initializeSlowFrameListener(configuration.slowFramesConfiguration)
+        if (fpsVitalMonitor != null || slowFrameListener != null) {
+            // The aggregator feeds two Choreographer-based listeners (no executor needed): the
+            // FPS frame-rate vital - gated on the vitals frequency, hence vitalsUpdatesRequired - and
+            // the slow-frames listener, gated on its own config.
+            (appContext as? Application)?.initializeFrameStatesAggregator(
+                listOfNotNull(slowFrameListener, fpsVitalMonitor)
+            )
         }
 
         if (configuration.trackNonFatalAnrs) {
@@ -288,8 +296,11 @@ internal class RumFeature(
 
         sessionListener = configuration.sessionListener
 
-        configuration.timeseriesConfiguration?.let {
-            timeseriesFactory = createTimeseriesCollectingFactory(it)
+        configuration.timeseriesConfiguration?.let { configuration ->
+            timeseriesFactory = createTimeseriesCollectingFactory(
+                configuration,
+                appContext.readTotalRamBytes(sdkCore.internalLogger)
+            )
         }
 
         initRumAppStartupDetector()
@@ -299,13 +310,13 @@ internal class RumFeature(
         initialized.set(true)
     }
 
-    private fun initializeFrameStatesAggregator(application: Application?, listeners: List<FrameStateListener>) {
+    private fun Application.initializeFrameStatesAggregator(listeners: List<FrameStateListener>) {
         frameStatesAggregator = FrameStatesAggregator(listeners, sdkCore.internalLogger)
-        application?.registerActivityLifecycleCallbacks(frameStatesAggregator)
+        registerActivityLifecycleCallbacks(frameStatesAggregator)
     }
 
     private fun initializeSlowFrameListener(slowFramesConfiguration: SlowFramesConfiguration?): FrameStateListener? {
-        slowFramesListener = if (slowFramesConfiguration != null) {
+        slowFramesListener = if (slowFramesConfiguration != null && !configuration.disableJankStats) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
@@ -431,30 +442,33 @@ internal class RumFeature(
         )
     }
 
-    private fun createTimeseriesCollectingFactory(configuration: TimeseriesConfiguration): Timeseries.Factory {
-        return RumSessionScopeTimeseriesFactory(
-            internalLogger = sdkCore.internalLogger,
-            collectInBackground = configuration.collectInBackground,
-            scheduledExecutorService = configuration.executorFactory(),
-            pipelinesProvider = { applicationId, sessionId, sessionType ->
-                listOf(
-                    Pipeline(
-                        sdkCore = sdkCore,
-                        reader = CpuDatapointReader(
-                            cpuTimeProvider = sdkCore.timeProvider,
-                            intervalMs = configuration.intervalMs,
-                            internalLogger = sdkCore.internalLogger
-                        ),
-                        buffer = Buffer(configuration.bufferSize),
-                        serializer = CpuEventSerializer(
-                            sessionId = sessionId,
-                            applicationId = applicationId,
-                            sessionType = sessionType,
-                            timeProvider = sdkCore.timeProvider,
-                            useDeltaCompression = configuration.useDeltaCompression
-                        ),
-                        dataWriter = dataWriter
+    internal fun createTimeseriesCollectingFactory(
+        configuration: TimeseriesConfiguration,
+        totalRamBytes: Long
+    ): Timeseries.Factory = RumSessionScopeTimeseriesFactory(
+        internalLogger = sdkCore.internalLogger,
+        collectInBackground = configuration.collectInBackground,
+        scheduledExecutorService = vitalExecutorService,
+        pipelinesProvider = { applicationId, sessionId, sessionType ->
+            listOfNotNull(
+                Pipeline(
+                    sdkCore = sdkCore,
+                    reader = CpuDatapointReader(
+                        cpuStatReader = CpuStatReader(internalLogger = sdkCore.internalLogger),
+                        cpuTimeProvider = sdkCore.timeProvider,
+                        intervalMs = configuration.intervalMs
                     ),
+                    buffer = Buffer(configuration.bufferSize),
+                    serializer = CpuEventSerializer(
+                        sessionId = sessionId,
+                        applicationId = applicationId,
+                        sessionType = sessionType,
+                        timeProvider = sdkCore.timeProvider,
+                        useDeltaCompression = configuration.useDeltaCompression
+                    ),
+                    dataWriter = dataWriter
+                ),
+                if (totalRamBytes > 0L) {
                     Pipeline(
                         sdkCore = sdkCore,
                         reader = VitalReaderWrapper(
@@ -467,36 +481,23 @@ internal class RumFeature(
                             sessionId = sessionId,
                             applicationId = applicationId,
                             sessionType = sessionType,
-                            totalRamBytes = readTotalRamBytes(),
+                            totalRamBytes = totalRamBytes,
                             timeProvider = sdkCore.timeProvider,
                             useDeltaCompression = configuration.useDeltaCompression
                         ),
                         dataWriter = dataWriter
                     )
-                )
-            }
-        )
-    }
-
-    @Suppress("TooGenericExceptionCaught")
-    private fun readTotalRamBytes(): Long = try {
-        (appContext.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager)
-            // UnsafeThirdPartyFunctionCall: MemoryInfo() and getMemoryInfo() can throw
-            // RuntimeException on broken Android implementations; fall back to 0.
-            ?.run {
-                @Suppress("UnsafeThirdPartyFunctionCall")
-                ActivityManager.MemoryInfo().also { getMemoryInfo(it) }.totalMem
-            }
-            ?: 0L
-    } catch (e: RuntimeException) {
-        sdkCore.internalLogger.log(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.MAINTAINER,
-            { "Failed to read total RAM via ActivityManager" },
-            e
-        )
-        0L
-    }
+                } else {
+                    sdkCore.internalLogger.log(
+                        InternalLogger.Level.WARN,
+                        InternalLogger.Target.USER,
+                        { MEMORY_TIMESERIES_DISABLED_MESSAGE }
+                    )
+                    null
+                }
+            )
+        }
+    )
 
     // region FeatureEventReceiver
 
@@ -680,10 +681,7 @@ internal class RumFeature(
         longTaskTrackingStrategy.unregister(appContext)
     }
 
-    private fun initializeVitalExecutorService(frequency: VitalsUpdateFrequency) {
-        if (frequency == VitalsUpdateFrequency.NEVER) {
-            return
-        }
+    private fun initializeVitalExecutorService() {
         @Suppress("UnsafeThirdPartyFunctionCall") // pool size can't be <= 0
         vitalExecutorService = sdkCore.createScheduledExecutorService("rum-vital")
     }
@@ -693,7 +691,7 @@ internal class RumFeature(
 
         cpuVitalMonitor = AggregatingVitalMonitor()
         initializeVitalMonitor(
-            CPUVitalReader(internalLogger = sdkCore.internalLogger),
+            CPUVitalReader(CpuStatReader(internalLogger = sdkCore.internalLogger)),
             cpuVitalMonitor,
             frequency.periodInMs
         )
@@ -711,7 +709,7 @@ internal class RumFeature(
     }
 
     private fun initializeFPSVitalMonitor(frequency: VitalsUpdateFrequency): FPSVitalListener? {
-        if (frequency == VitalsUpdateFrequency.NEVER) return null
+        if (frequency == VitalsUpdateFrequency.NEVER || configuration.disableJankStats) return null
 
         frameRateVitalMonitor = AggregatingVitalMonitor()
         return FPSVitalListener(frameRateVitalMonitor)
@@ -956,11 +954,33 @@ internal class RumFeature(
             "Slow frames monitoring enabled."
         internal const val SLOW_FRAMES_MONITORING_DISABLED_MESSAGE =
             "Slow frames monitoring disabled."
+        internal const val MEMORY_TIMESERIES_DISABLED_MESSAGE =
+            "Unable to read total device memory; memory timeseries collection is disabled."
         internal const val RUM_FEATURE_NOT_YET_INITIALIZED =
             "RUM feature is not initialized yet, you need to register it with a" +
                 " SDK instance by calling SdkCore#registerFeature method."
         internal const val FAILED_TO_ENABLE_JANK_STATS_TRACKING_MANUALLY =
             "Manually enabling JankStats tracking threw an exception."
+
+        @Suppress("TooGenericExceptionCaught")
+        internal fun Context.readTotalRamBytes(internalLogger: InternalLogger): Long = try {
+            getSystemServiceAs<ActivityManager>(Context.ACTIVITY_SERVICE)
+                // UnsafeThirdPartyFunctionCall: MemoryInfo() and getMemoryInfo() can throw
+                // RuntimeException on broken Android implementations; fall back to 0.
+                ?.run {
+                    @Suppress("UnsafeThirdPartyFunctionCall")
+                    ActivityManager.MemoryInfo().also { getMemoryInfo(it) }.totalMem
+                }
+                ?: 0L
+        } catch (e: RuntimeException) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                { "Failed to read total RAM via ActivityManager" },
+                e
+            )
+            0L
+        }
 
         private fun provideUserTrackingStrategy(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider>,

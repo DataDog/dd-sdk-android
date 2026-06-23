@@ -16,13 +16,15 @@ import com.datadog.android.rum.internal.toTimeseriesCpuSessionType
 import com.datadog.android.rum.model.TimeseriesCpuEvent
 import com.google.gson.JsonObject
 import java.util.UUID
+import kotlin.math.pow
 
 internal class CpuEventSerializer(
     private val sessionId: String,
     private val applicationId: String,
     private val sessionType: RumSessionType,
     private val timeProvider: TimeProvider,
-    private val useDeltaCompression: Boolean = false
+    private val useDeltaCompression: Boolean = false,
+    private val precision: Int = DeltaCompression.PRECISION
 ) : JsonSerializer<Double> {
 
     override fun serialize(dataPoints: List<DataPoint<Double>>): JsonObject? {
@@ -59,15 +61,15 @@ internal class CpuEventSerializer(
                 end = end,
                 data = data
             )
-        ).toJson() as JsonObject
+        ).toJson() as? JsonObject
 
         // <DOGFOODING ONLY>
-        val timeseriesJson = json.getAsJsonObject("timeseries")
+        val timeseriesJson = json?.getAsJsonObject("timeseries")
         if (deltaEncoded != null) {
-            timeseriesJson.remove("data")
-            timeseriesJson.add("data", deltaEncoded)
+            timeseriesJson?.remove("data")
+            timeseriesJson?.add("data", deltaEncoded)
         }
-        timeseriesJson.addProperty("count", data.size)
+        timeseriesJson?.addProperty("count", data.size)
         // </DOGFOODING ONLY>
         return json
     }
@@ -75,13 +77,14 @@ internal class CpuEventSerializer(
     private fun encodeDelta(data: List<TimeseriesCpuEvent.Data>): JsonObject? {
         if (data.size <= 1) return null
 
+        val scale = 10.0.pow(precision.toDouble()).toLong()
         val ts = data.mapToDeltaCompressed { it.timestamp }
         val cpuUsageArray = data.mapToDeltaCompressed {
-            roundToLongSafely(it.dataPoint.cpuUsage.toDouble(), replaceNaNWith = 0L)
+            roundToLongSafely(it.dataPoint.cpuUsage.toDouble(), scale = scale)
         }
 
         return JsonObject().apply {
-            addProperty("precision", DeltaCompression.PRECISION)
+            addProperty("precision", precision)
             addProperty("resolution", RESOLUTION_NS)
             add("ts", ts)
             add("value", cpuUsageArray)

@@ -730,12 +730,12 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `M store provided configuration W enableTimeseries(config)`() {
+    fun `M store provided configuration W setTimeseriesConfiguration(config)`() {
         // Given
-        val fakeConfig = TimeseriesConfiguration(bufferSize = 10, intervalMs = 500L)
+        val fakeConfig = TimeseriesConfiguration.Builder().setBufferSize(10).setIntervalMs(500L).build()
 
         // When
-        val rumConfiguration = testedBuilder.enableTimeseries(fakeConfig).build()
+        val rumConfiguration = testedBuilder.setTimeseriesConfiguration(fakeConfig).build()
 
         // Then
         assertThat(rumConfiguration.featureConfiguration.timeseriesConfiguration)
@@ -743,21 +743,23 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `M store default configuration W enableTimeseries()`() {
+    fun `M store default configuration W setTimeseriesConfiguration(default)`() {
         // When
-        val rumConfiguration = testedBuilder.enableTimeseries().build()
+        val rumConfiguration = testedBuilder
+            .setTimeseriesConfiguration(TimeseriesConfiguration.Builder().build())
+            .build()
 
         // Then
         assertThat(rumConfiguration.featureConfiguration.timeseriesConfiguration).isNotNull
     }
 
     @Test
-    fun `M nullify configuration W disableTimeseries()`() {
+    fun `M nullify configuration W setTimeseriesConfiguration(null)`() {
         // Given
-        testedBuilder.enableTimeseries()
+        testedBuilder.setTimeseriesConfiguration(TimeseriesConfiguration.Builder().build())
 
         // When
-        val rumConfiguration = testedBuilder.disableTimeseries().build()
+        val rumConfiguration = testedBuilder.setTimeseriesConfiguration(null).build()
 
         // Then
         assertThat(rumConfiguration.featureConfiguration.timeseriesConfiguration).isNull()

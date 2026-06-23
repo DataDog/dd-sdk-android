@@ -8,27 +8,29 @@ package com.datadog.android.rum.internal.timeseries.serializer
 
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.assertj.TimeseriesCpuEventAssert.Companion.assertThat
+import com.datadog.android.rum.assertj.TimeseriesCpuEventAssert.Companion.assertThatDelta
 import com.datadog.android.rum.internal.timeseries.DataPoint
 import com.datadog.android.rum.model.TimeseriesCpuEvent
 import com.datadog.android.rum.utils.forge.Configurator
+import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.annotation.DoubleForgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.whenever
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.mock
 import org.mockito.quality.Strictness
-import java.util.UUID
+import kotlin.math.pow
 import kotlin.math.roundToLong
 
 @Extensions(
@@ -39,8 +41,8 @@ import kotlin.math.roundToLong
 @ForgeConfiguration(Configurator::class)
 internal class CpuEventSerializerTest {
 
-    @Mock
-    lateinit var mockTimeProvider: TimeProvider
+    @LongForgery(min = 1L)
+    var fakeNowMs: Long = 0L
 
     @StringForgery
     lateinit var fakeSessionId: String
@@ -48,26 +50,32 @@ internal class CpuEventSerializerTest {
     @StringForgery
     lateinit var fakeApplicationId: String
 
-    @LongForgery(min = 1L)
-    var fakeNowMs: Long = 0L
+    @IntForgery(min = 2, max = 9)
+    var fakePrecision: Int = 0
 
-    @BeforeEach
-    fun `set up`() {
-        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeNowMs
+    val fakeScale: Long get() = 10.0.pow(fakePrecision.toDouble()).toLong()
+
+    val mockTimeProvider: TimeProvider = mock<TimeProvider> {
+        on { getDeviceTimestampMillis() } doAnswer { fakeNowMs }
     }
+
+    private fun testedSerializer(
+        useDeltaCompression: Boolean = false,
+        sessionType: RumSessionType = RumSessionType.USER,
+        precision: Int = fakePrecision
+    ) = CpuEventSerializer(
+        sessionId = fakeSessionId,
+        applicationId = fakeApplicationId,
+        sessionType = sessionType,
+        timeProvider = mockTimeProvider,
+        useDeltaCompression = useDeltaCompression,
+        precision = precision
+    )
 
     @Test
     fun `M return null W serialize() { empty input }`() {
-        // Given
-        val testedSerializer = CpuEventSerializer(
-            sessionId = fakeSessionId,
-            applicationId = fakeApplicationId,
-            sessionType = RumSessionType.USER,
-            timeProvider = mockTimeProvider
-        )
-
         // When
-        val result = testedSerializer.serialize(emptyList())
+        val result = testedSerializer().serialize(emptyList())
 
         // Then
         assertThat(result).isNull()
@@ -79,30 +87,24 @@ internal class CpuEventSerializerTest {
         @LongForgery(min = 1L) fakeTs: Long
     ) {
         // Given
-        val testedSerializer = CpuEventSerializer(
-            sessionId = fakeSessionId,
-            applicationId = fakeApplicationId,
-            sessionType = RumSessionType.USER,
-            timeProvider = mockTimeProvider,
-            useDeltaCompression = false
+        val samples = listOf(
+            DataPoint(fakeTs, fakeCpuValue),
+            DataPoint(fakeTs + 1L, fakeCpuValue + 0.1)
         )
-        val samples = listOf(DataPoint(fakeTs, fakeCpuValue), DataPoint(fakeTs + 1L, fakeCpuValue + 0.1))
 
         // When
-        val json = testedSerializer.serialize(samples) ?: error(NON_NULL_JSON_ERROR)
+        val json = testedSerializer().serialize(samples).failIfNull()
 
         // Then
-        val timeseries = json.getAsJsonObject(KEY_TIMESERIES)
-        assertThat(timeseries.get(KEY_SCHEMA).asString).isEqualTo(VALUE_SCHEMA_OBJECT)
-        val data = timeseries.get(KEY_DATA).asJsonArray
-        assertThat(data).hasSize(2)
-        assertThat(json.getAsJsonObject(KEY_SESSION).get(KEY_TYPE).asString).isEqualTo(VALUE_TYPE_USER)
-        assertThat(json.getAsJsonObject(KEY_APPLICATION).get(KEY_ID).asString).isEqualTo(fakeApplicationId)
-        assertThat(json.get(KEY_DATE).asLong).isEqualTo(fakeNowMs)
-        assertThat(timeseries.get(KEY_START).asLong).isEqualTo(fakeTs)
-        assertThat(timeseries.get(KEY_END).asLong).isEqualTo(fakeTs + 1L)
-        // id is a valid UUID
-        UUID.fromString(timeseries.get(KEY_ID).asString)
+        assertThat(json)
+            .hasDate(fakeNowMs)
+            .hasValidTimeseriesId()
+            .hasTimeseriesDataCount(2)
+            .hasTimeseriesStart(fakeTs)
+            .hasTimeseriesEnd(fakeTs + 1L)
+            .hasApplicationId(fakeApplicationId)
+            .hasSessionType(TimeseriesCpuEvent.Type.USER)
+            .hasTimeseriesSchema(TimeseriesCpuEvent.Schema.OBJECT)
     }
 
     @Test
@@ -111,21 +113,15 @@ internal class CpuEventSerializerTest {
         @LongForgery(min = 1L) fakeTs: Long
     ) {
         // Given
-        val testedSerializer = CpuEventSerializer(
-            sessionId = fakeSessionId,
-            applicationId = fakeApplicationId,
-            sessionType = RumSessionType.SYNTHETICS,
-            timeProvider = mockTimeProvider
-        )
         val samples = listOf(DataPoint(fakeTs, fakeCpuValue))
 
         // When
-        val json = testedSerializer.serialize(samples) ?: error(NON_NULL_JSON_ERROR)
+        val json = testedSerializer(sessionType = RumSessionType.SYNTHETICS)
+            .serialize(samples)
+            .failIfNull()
 
         // Then
-        assertThat(json.getAsJsonObject(KEY_SESSION).get(KEY_TYPE).asString).isEqualTo(VALUE_TYPE_SYNTHETICS)
-        // 1-sample fallback to OBJECT schema even if delta were on
-        assertThat(json.getAsJsonObject(KEY_TIMESERIES).get(KEY_SCHEMA).asString).isEqualTo(VALUE_SCHEMA_OBJECT)
+        assertThat(json).hasSessionType(TimeseriesCpuEvent.Type.SYNTHETICS)
     }
 
     @Test
@@ -137,17 +133,8 @@ internal class CpuEventSerializerTest {
         @LongForgery(min = 1L, max = 1_000L) fakeTimestampStep: Long
     ) {
         // Given
-        val testedSerializer = CpuEventSerializer(
-            sessionId = fakeSessionId,
-            applicationId = fakeApplicationId,
-            sessionType = RumSessionType.USER,
-            timeProvider = mockTimeProvider,
-            useDeltaCompression = true
-        )
-
         val fakeTs2 = fakeTs1 + fakeTimestampStep
         val fakeTs3 = fakeTs2 + fakeTimestampStep
-
         val samples = listOf(
             DataPoint(fakeTs1, fakeFirstCpu),
             DataPoint(fakeTs2, fakeSecondCpu),
@@ -155,25 +142,20 @@ internal class CpuEventSerializerTest {
         )
 
         // When
-        val json = testedSerializer.serialize(samples) ?: error(NON_NULL_JSON_ERROR)
+        val json = testedSerializer(useDeltaCompression = true)
+            .serialize(samples)
+            .failIfNull()
 
         // Then
-        val timeseries = json.getAsJsonObject(KEY_TIMESERIES)
-        assertThat(timeseries.get(KEY_SCHEMA).asString).isEqualTo(VALUE_SCHEMA_DELTA_SCALAR)
-        val data = timeseries.get(KEY_DATA).asJsonObject
-        assertThat(data.get(KEY_PRECISION).asInt).isEqualTo(EXPECTED_PRECISION)
-        assertThat(data.get(KEY_RESOLUTION).asString).isEqualTo(VALUE_RESOLUTION_NS)
-
-        val tsArray = data.get(KEY_TS).asJsonArray
-        assertThat(tsArray[0].asLong).isEqualTo(fakeTs1)
-        assertThat(tsArray[1].asLong).isEqualTo(fakeTimestampStep)
-        assertThat(tsArray[2].asLong).isEqualTo(fakeTimestampStep)
-
-        val cpuArray = data.get(KEY_VALUE).asJsonArray
-        val scaled = listOf(fakeFirstCpu, fakeSecondCpu, fakeThirdCpu).map { (it * SCALE).roundToLong() }
-        assertThat(cpuArray[0].asLong).isEqualTo(scaled[0])
-        assertThat(cpuArray[1].asLong).isEqualTo(scaled[1] - scaled[0])
-        assertThat(cpuArray[2].asLong).isEqualTo(scaled[2] - scaled[1])
+        val scaled = listOf(fakeFirstCpu, fakeSecondCpu, fakeThirdCpu).map { (it * fakeScale).roundToLong() }
+        assertThatDelta(json)
+            .hasTimeseriesSchema(TimeseriesCpuEvent.Schema.DELTA_SCALAR)
+            .hasDeltaPrecision(fakePrecision)
+            .hasDeltaResolution(RESOLUTION_NS)
+            .hasDeltaTsValues(fakeTs1, fakeTimestampStep, fakeTimestampStep)
+            .hasDeltaValueAt(0, scaled[0])
+            .hasDeltaValueAt(1, scaled[1] - scaled[0])
+            .hasDeltaValueAt(2, scaled[2] - scaled[1])
     }
 
     @Test
@@ -181,24 +163,15 @@ internal class CpuEventSerializerTest {
         @DoubleForgery(min = 0.001, max = 100.0) fakeCpu: Double,
         @LongForgery(min = 1L) fakeTs: Long
     ) {
-        // Given - encodeDelta returns null when data.size <= 1
-        val testedSerializer = CpuEventSerializer(
-            sessionId = fakeSessionId,
-            applicationId = fakeApplicationId,
-            sessionType = RumSessionType.USER,
-            timeProvider = mockTimeProvider,
-            useDeltaCompression = true
-        )
-
         // When
-        val json = testedSerializer.serialize(listOf(DataPoint(fakeTs, fakeCpu)))
-            ?: error(NON_NULL_JSON_ERROR)
+        val json = testedSerializer(useDeltaCompression = true)
+            .serialize(listOf(DataPoint(fakeTs, fakeCpu)))
+            .failIfNull()
 
         // Then
-        val timeseries = json.getAsJsonObject(KEY_TIMESERIES)
-        assertThat(timeseries.get(KEY_SCHEMA).asString).isEqualTo(VALUE_SCHEMA_OBJECT)
-        // data is a JsonArray (object schema), not a JsonObject (delta)
-        assertThat(timeseries.get(KEY_DATA).isJsonArray).isTrue()
+        assertThat(json)
+            .hasTimeseriesSchema(TimeseriesCpuEvent.Schema.OBJECT)
+            .hasTimeseriesDataCount(1)
     }
 
     @Test
@@ -207,53 +180,25 @@ internal class CpuEventSerializerTest {
         @LongForgery(min = 1L) fakeTs: Long
     ) {
         // Given
-        val testedSerializer = CpuEventSerializer(
-            sessionId = fakeSessionId,
-            applicationId = fakeApplicationId,
-            sessionType = RumSessionType.USER,
-            timeProvider = mockTimeProvider
+        val samples = listOf(
+            DataPoint(fakeTs, fakeCpu),
+            DataPoint(fakeTs + 1L, fakeCpu)
         )
 
         // When
-        val json = testedSerializer.serialize(
-            listOf(DataPoint(fakeTs, fakeCpu), DataPoint(fakeTs + 1L, fakeCpu))
-        ) ?: error(NON_NULL_JSON_ERROR)
+        val json = testedSerializer().serialize(samples).failIfNull()
 
         // Then
-        val parsed = TimeseriesCpuEvent.fromJsonObject(json)
-        assertThat(parsed.timeseries.data).hasSize(2)
-        assertThat(parsed.timeseries.data.first().dataPoint.cpuUsage.toDouble())
-            .isCloseTo(fakeCpu, Offset.offset(CPU_OFFSET))
+        assertThat(json)
+            .hasCpuUsage(fakeCpu, Offset.offset(CPU_OFFSET), position = 0)
     }
 
     private companion object {
-        private const val SCALE: Long = 10_000L
-        private const val EXPECTED_PRECISION: Int = 4
         private const val CPU_OFFSET: Double = 0.0001
-
-        // JSON keys
-        private const val KEY_TIMESERIES: String = "timeseries"
-        private const val KEY_SCHEMA: String = "schema"
-        private const val KEY_DATA: String = "data"
-        private const val KEY_SESSION: String = "session"
-        private const val KEY_APPLICATION: String = "application"
-        private const val KEY_TYPE: String = "type"
-        private const val KEY_ID: String = "id"
-        private const val KEY_DATE: String = "date"
-        private const val KEY_START: String = "start"
-        private const val KEY_END: String = "end"
-        private const val KEY_PRECISION: String = "precision"
-        private const val KEY_RESOLUTION: String = "resolution"
-        private const val KEY_TS: String = "ts"
-        private const val KEY_VALUE: String = "value"
-
-        // JSON values
-        private const val VALUE_SCHEMA_OBJECT: String = "object"
-        private const val VALUE_SCHEMA_DELTA_SCALAR: String = "delta-scalar"
-        private const val VALUE_TYPE_USER: String = "user"
-        private const val VALUE_TYPE_SYNTHETICS: String = "synthetics"
-        private const val VALUE_RESOLUTION_NS: String = "ns"
-
+        private const val RESOLUTION_NS: String = "ns"
         private const val NON_NULL_JSON_ERROR: String = "expected non-null json"
+        private fun JsonObject?.failIfNull(): JsonObject {
+            if (this == null) error(NON_NULL_JSON_ERROR) else return this
+        }
     }
 }
