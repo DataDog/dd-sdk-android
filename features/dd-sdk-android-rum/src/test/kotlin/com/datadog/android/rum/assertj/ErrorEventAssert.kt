@@ -701,6 +701,16 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
+    fun hasProfilingClockDrift(expected: Number?): ErrorEventAssert {
+        assertThat(actual.dd.profiling?.clockDrift)
+            .overridingErrorMessage(
+                "Expected RUM event to have profiling clock_drift: $expected" +
+                    " but instead was: ${actual.dd.profiling?.clockDrift}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasNoProfiling(): ErrorEventAssert {
         assertThat(actual.dd.profiling)
             .overridingErrorMessage(

@@ -1690,8 +1690,12 @@ internal open class RumViewScope(
     private fun resolveErrorProfilingStatus(datadogContext: DatadogContext): ErrorEvent.Profiling? {
         val isRunning = datadogContext.isProfilerRunning()
         val quotaReason = datadogContext.resolveProfilingQuotaReason(sessionId)
+        val clockDrift = datadogContext.time.serverTimeOffsetMs
         return when {
-            isRunning -> ErrorEvent.Profiling(status = ErrorEvent.ProfilingStatus.RUNNING)
+            isRunning -> ErrorEvent.Profiling(
+                status = ErrorEvent.ProfilingStatus.RUNNING,
+                clockDrift = clockDrift
+            )
             quotaReason != null -> ErrorEvent.Profiling(
                 status = ErrorEvent.ProfilingStatus.STOPPED,
                 quotaReason = quotaReason
@@ -1703,8 +1707,13 @@ internal open class RumViewScope(
     private fun resolveLongTaskProfilingStatus(datadogContext: DatadogContext): LongTaskEvent.Profiling? {
         val isRunning = datadogContext.isProfilerRunning()
         val quotaReason = datadogContext.resolveProfilingQuotaReason(sessionId)
+        val clockDrift = datadogContext.time.serverTimeOffsetMs
         return when {
-            isRunning -> LongTaskEvent.Profiling(status = LongTaskEvent.ProfilingStatus.RUNNING)
+            isRunning -> LongTaskEvent.Profiling(
+                status = LongTaskEvent.ProfilingStatus.RUNNING,
+                clockDrift = clockDrift
+            )
+
             quotaReason != null -> LongTaskEvent.Profiling(
                 status = LongTaskEvent.ProfilingStatus.STOPPED,
                 quotaReason = quotaReason

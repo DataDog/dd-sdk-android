@@ -26,6 +26,11 @@
       "type": "string",
       "description": "The reason profiling was denied by the quota API for this session. Present only when the quota API returned a denied decision.",
       "readOnly": true
+    },
+    "clock_drift": {
+      "type": "number",
+      "description": "The device clock offset relative to the NTP server time in milliseconds at the time the RUM event was recorded (serverTime - deviceTime). Present only when the profiler is active. Used by the backend to align Perfetto profile timestamps with RUM event timestamps.",
+      "readOnly": true
     }
   }
 }

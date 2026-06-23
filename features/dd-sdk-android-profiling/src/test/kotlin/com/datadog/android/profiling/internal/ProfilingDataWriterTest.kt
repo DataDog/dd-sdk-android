@@ -86,6 +86,12 @@ internal class ProfilingDataWriterTest {
 
     @BeforeEach
     fun `set up`() {
+        // Clamp serverTimeOffsetMs within the accepted threshold so existing tests are not
+        // accidentally rejected by the clock-drift guard. Tests that exercise the reject path
+        // override this value explicitly.
+        fakeDatadogContext = fakeDatadogContext.copy(
+            time = fakeDatadogContext.time.copy(serverTimeOffsetMs = 0L)
+        )
         testedDataWriterTest = ProfilingDataWriter(mockSdkCore)
         whenever(mockEventWriteScope.invoke(any())) doAnswer {
             val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
@@ -431,5 +437,73 @@ internal class ProfilingDataWriterTest {
         // Then
         assertThat(file.exists()).isFalse()
         verify(mockEventBatchWriter).write(any(), isNull(), eq(EventType.DEFAULT))
+    }
+
+    @Test
+    fun `M log drift and write W write {drift over threshold positive}`(
+        @Forgery fakeResult: PerfettoResult,
+        @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
+        forge: Forge
+    ) {
+        // Given
+        val fakeDriftMs = forge.aLong(min = ProfilingDataWriter.MAX_CLOCK_DRIFT_MS + 1, max = Long.MAX_VALUE / 2)
+        fakeDatadogContext = fakeDatadogContext.copy(
+            time = fakeDatadogContext.time.copy(serverTimeOffsetMs = fakeDriftMs)
+        )
+        val file = tmp.resolve(fakeResult.resultFilePath)
+        file.writeBytes(forge.aString().toByteArray())
+
+        // When
+        testedDataWriterTest.write(
+            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
+            vitalEvents = fakeVitals,
+            anrEvents = emptyList(),
+            longTasks = emptyList()
+        )
+
+        // Then
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.INFO),
+            eq(InternalLogger.Target.MAINTAINER),
+            any<() -> String>(),
+            isNull(),
+            eq(false),
+            isNull()
+        )
+        assertThat(file.exists()).isFalse()
+    }
+
+    @Test
+    fun `M log drift and write W write {drift over threshold negative}`(
+        @Forgery fakeResult: PerfettoResult,
+        @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
+        forge: Forge
+    ) {
+        // Given — negative drift beyond -(MAX_CLOCK_DRIFT_MS)
+        val fakeDriftMs = forge.aLong(min = Long.MIN_VALUE / 2, max = -(ProfilingDataWriter.MAX_CLOCK_DRIFT_MS + 1))
+        fakeDatadogContext = fakeDatadogContext.copy(
+            time = fakeDatadogContext.time.copy(serverTimeOffsetMs = fakeDriftMs)
+        )
+        val file = tmp.resolve(fakeResult.resultFilePath)
+        file.writeBytes(forge.aString().toByteArray())
+
+        // When
+        testedDataWriterTest.write(
+            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
+            vitalEvents = fakeVitals,
+            anrEvents = emptyList(),
+            longTasks = emptyList()
+        )
+
+        // Then
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.INFO),
+            eq(InternalLogger.Target.MAINTAINER),
+            any<() -> String>(),
+            isNull(),
+            eq(false),
+            isNull()
+        )
+        assertThat(file.exists()).isFalse()
     }
 }

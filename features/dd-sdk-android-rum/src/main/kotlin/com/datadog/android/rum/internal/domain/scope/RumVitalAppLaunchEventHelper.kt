@@ -84,7 +84,8 @@ internal class RumVitalAppLaunchEventHelper(
                 configuration = VitalAppLaunchEvent.Configuration(sessionSampleRate = sampleRate),
                 profiling = VitalAppLaunchEvent.Profiling(
                     status = profilingStatus,
-                    quotaReason = profilingQuotaReason
+                    quotaReason = profilingQuotaReason,
+                    clockDrift = if (profilingStatus != null) datadogContext.time.serverTimeOffsetMs else null
                 )
             ),
             application = VitalAppLaunchEvent.Application(

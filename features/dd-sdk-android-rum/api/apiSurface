@@ -824,7 +824,7 @@ data class com.datadog.android.rum.model.ErrorEvent
       fun fromJson(kotlin.String): Configuration
       fun fromJsonObject(com.google.gson.JsonObject): Configuration
   data class Profiling
-    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null)
+    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null, kotlin.Number? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Profiling
@@ -1199,7 +1199,7 @@ data class com.datadog.android.rum.model.LongTaskEvent
       fun fromJson(kotlin.String): Configuration
       fun fromJsonObject(com.google.gson.JsonObject): Configuration
   data class Profiling
-    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null)
+    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null, kotlin.Number? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Profiling
@@ -1956,7 +1956,7 @@ data class com.datadog.android.rum.model.ViewEvent
       fun fromJson(kotlin.String): DdCls
       fun fromJsonObject(com.google.gson.JsonObject): DdCls
   data class Profiling
-    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null)
+    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null, kotlin.Number? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Profiling
@@ -2280,7 +2280,7 @@ data class com.datadog.android.rum.model.VitalAppLaunchEvent
       fun fromJson(kotlin.String): Configuration
       fun fromJsonObject(com.google.gson.JsonObject): Configuration
   data class Profiling
-    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null)
+    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null, kotlin.Number? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Profiling
@@ -2533,7 +2533,7 @@ data class com.datadog.android.rum.model.VitalOperationStepEvent
       fun fromJson(kotlin.String): Configuration
       fun fromJsonObject(com.google.gson.JsonObject): Configuration
   data class Profiling
-    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null)
+    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null, kotlin.Number? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Profiling
