@@ -13,30 +13,43 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.ConnectivityManager
+import android.os.Handler
 import android.telephony.TelephonyManager
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.core.internal.receiver.ThreadSafeReceiver
 import com.datadog.android.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.utils.getSystemServiceAs
 import android.net.NetworkInfo as AndroidNetworkInfo
 
 @Suppress("DEPRECATION")
 @SuppressLint("InlinedApi")
 internal class BroadcastReceiverNetworkInfoProvider(
+    private val internalLogger: InternalLogger,
+    private val handler: Handler,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
-) :
-    ThreadSafeReceiver(),
+) : ThreadSafeReceiver(),
     NetworkInfoProvider {
 
+    @Volatile
     private var networkInfo: NetworkInfo = NetworkInfo()
 
     // region BroadcastReceiver
 
     override fun onReceive(context: Context, intent: Intent?) {
-        val connectivityMgr =
-            context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
-        val activeNetworkInfo = connectivityMgr?.activeNetworkInfo
+        try {
+            val connectivityMgr = context.getSystemServiceAs<ConnectivityManager>(Context.CONNECTIVITY_SERVICE)
+            val activeNetworkInfo = connectivityMgr?.activeNetworkInfo
 
-        networkInfo = buildNetworkInfo(context, activeNetworkInfo)
+            networkInfo = buildNetworkInfo(context, activeNetworkInfo)
+        } catch (@Suppress("TooGenericExceptionCaught") e: RuntimeException) {
+            internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                messageBuilder = { ERROR_HANDLING_BROADCAST_INTENT },
+                throwable = e
+            )
+        }
     }
 
     // endregion
@@ -45,9 +58,8 @@ internal class BroadcastReceiverNetworkInfoProvider(
 
     override fun register(context: Context) {
         val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
-        registerReceiver(context, filter).also {
-            onReceive(context, it)
-        }
+        registerReceiver(context, filter, handler)
+        onReceive(context, null)
     }
 
     override fun unregister(context: Context) {
@@ -79,7 +91,11 @@ internal class BroadcastReceiverNetworkInfoProvider(
                 NetworkInfo.Connectivity.NETWORK_ETHERNET
             )
         } else if (activeNetworkInfo.type in knownMobileTypes) {
-            buildMobileNetworkInfo(context, activeNetworkInfo.subtype)
+            val telephonyManager = context.getSystemServiceAs<TelephonyManager>(Context.TELEPHONY_SERVICE)
+            val carrierInfoResolver = telephonyManager?.let {
+                CarrierInfoResolver(it, internalLogger, buildSdkVersionProvider)
+            }
+            buildMobileNetworkInfo(carrierInfoResolver, activeNetworkInfo.subtype)
         } else {
             NetworkInfo(
                 NetworkInfo.Connectivity.NETWORK_OTHER
@@ -87,7 +103,7 @@ internal class BroadcastReceiverNetworkInfoProvider(
         }
     }
 
-    private fun buildMobileNetworkInfo(context: Context, subtype: Int): NetworkInfo {
+    private fun buildMobileNetworkInfo(carrierInfoResolver: CarrierInfoResolver?, subtype: Int): NetworkInfo {
         val connectivity = when (subtype) {
             in known2GSubtypes -> NetworkInfo.Connectivity.NETWORK_2G
             in known3GSubtypes -> NetworkInfo.Connectivity.NETWORK_3G
@@ -97,20 +113,12 @@ internal class BroadcastReceiverNetworkInfoProvider(
         }
         val cellularTechnology = getCellularTechnology(subtype)
 
-        return if (buildSdkVersionProvider.isAtLeastP) {
-            val telephonyMgr =
-                context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
-            val carrierName = telephonyMgr?.simCarrierIdName ?: UNKNOWN_CARRIER_NAME
-            val carrierId = telephonyMgr?.simCarrierId?.toLong()
-            NetworkInfo(
-                connectivity,
-                carrierName.toString(),
-                carrierId,
-                cellularTechnology = cellularTechnology
-            )
-        } else {
-            NetworkInfo(connectivity, cellularTechnology = cellularTechnology)
-        }
+        return NetworkInfo(
+            connectivity,
+            carrierName = carrierInfoResolver?.carrierName,
+            carrierId = carrierInfoResolver?.carrierId,
+            cellularTechnology = cellularTechnology
+        )
     }
 
     private fun getCellularTechnology(subtype: Int): String? {
@@ -144,6 +152,8 @@ internal class BroadcastReceiverNetworkInfoProvider(
     companion object {
 
         const val NETWORK_TYPE_LTE_CA = 19 // @Hide TelephonyManager.NETWORK_TYPE_LTE_CA,
+
+        private const val ERROR_HANDLING_BROADCAST_INTENT = "Error handling network info broadcast intent."
 
         private val knownMobileTypes = setOf(
             ConnectivityManager.TYPE_MOBILE,
@@ -184,7 +194,5 @@ internal class BroadcastReceiverNetworkInfoProvider(
         private val known5GSubtypes = setOf(
             TelephonyManager.NETWORK_TYPE_NR
         )
-
-        private const val UNKNOWN_CARRIER_NAME = "Unknown Carrier Name"
     }
 }

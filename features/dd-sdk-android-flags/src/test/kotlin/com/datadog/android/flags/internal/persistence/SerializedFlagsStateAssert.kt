@@ -27,11 +27,11 @@ internal class SerializedFlagsStateAssert(actual: JSONObject) :
         return this
     }
 
-    fun hasFlag(flagName: String): SerializedFlagsStateAssert {
+    fun hasFlag(flagKey: String): SerializedFlagsStateAssert {
         val flags = actual.getJSONObject("flags")
-        assertThat(flags.has(flagName))
+        assertThat(flags.has(flagKey))
             .overridingErrorMessage(
-                "Expected flags to contain flag named $flagName"
+                "Expected flags to contain flag key $flagKey"
             )
             .isTrue()
         return this

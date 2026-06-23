@@ -7,7 +7,8 @@ CLEANUP=0
 ANALYSIS=0
 COMPILE=0
 TEST=0
-KTLINT_VERSION=0.50.0
+KTLINT_VERSION=1.5.0
+DETEKT_VERSION=1.23.8
 
 export CI=true
 
@@ -48,40 +49,114 @@ done
 # exit on errors
 set -e
 
+# Syncs detekt-common.yml and detekt-public-api.yml from dd-source into config/ at the
+# revision pinned by ci/pipelines/default-pipeline.yml. The dd-source repo is restored
+# to its prior state afterwards so switching branches there can't affect our checks.
+sync_detekt_configs() {
+  local config_dir="config"
+  local pipeline_file="ci/pipelines/default-pipeline.yml"
+  local stamp_file="$config_dir/detekt_dd-source_config.stamp"
+  local detekt_common_config="$config_dir/detekt-common.yml"
+  local detekt_public_api_config="$config_dir/detekt-public-api.yml"
+
+  mkdir -p "$config_dir"
+
+  local version
+  version=$(grep -oE 'gitlab-templates\.ddbuild\.io/mobile/v[0-9]+-[0-9a-f]+/static-analysis\.yml' "$pipeline_file" \
+    | head -1 \
+    | sed -E 's|.*/mobile/(v[0-9]+-[0-9a-f]+)/.*|\1|')
+
+  if [ -z "$version" ]; then
+    echo "  Could not extract dd-source detekt template version from $pipeline_file"
+    exit 1
+  fi
+
+  # Template tag format: vXXXX-${CI_COMMIT_SHA:0:8}
+  local sha="${version##*-}"
+
+  local current=""
+  if [ -f "$stamp_file" ]; then
+    current=$(cat "$stamp_file")
+  fi
+
+  if [ "$current" = "$version" ] && [ -f "$detekt_common_config" ] && [ -f "$detekt_public_api_config" ]; then
+    echo "  Detekt configs already at $version"
+    return 0
+  fi
+
+  echo "  Detekt configs out of date (have '${current:-none}', want '$version'); syncing from dd-source"
+
+  if [ -z "$DD_SOURCE" ]; then
+    echo "  DD_SOURCE not set. Please set it to your local dd-source checkout."
+    echo "  E.g.: export DD_SOURCE=/Volumes/Dev/ci/dd-source"
+    exit 1
+  fi
+  if [ ! -d "$DD_SOURCE/.git" ]; then
+    echo "  DD_SOURCE ($DD_SOURCE) is not a git repository"
+    exit 1
+  fi
+
+  local sdk_dir
+  sdk_dir=$(pwd)
+
+  (
+    cd "$DD_SOURCE"
+
+    orig_ref=$(git symbolic-ref --short -q HEAD || git rev-parse HEAD)
+    stashed=0
+
+    restore_dd_source() {
+      git checkout --quiet "$orig_ref" 2>/dev/null || true
+      if [ "$stashed" = "1" ]; then
+        git stash pop --quiet 2>/dev/null \
+          || echo "  Warning: could not restore stash in $DD_SOURCE; check 'git stash list'"
+      fi
+    }
+    trap restore_dd_source EXIT
+
+    if ! git diff --quiet || ! git diff --cached --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
+      git stash push -u -m "dd-sdk-android-detekt-sync" > /dev/null
+      stashed=1
+    fi
+
+    git fetch --quiet origin main
+    if ! git checkout --quiet "$sha" 2>/dev/null; then
+      echo "  Could not check out $sha in $DD_SOURCE — make sure dd-source main is up to date"
+      exit 1
+    fi
+
+    cp "domains/mobile/config/android/gitlab/detekt/detekt-common.yml" "$sdk_dir/$detekt_common_config"
+    cp "domains/mobile/config/android/gitlab/detekt/detekt-public-api.yml" "$sdk_dir/$detekt_public_api_config"
+  )
+
+  echo "$version" > "$stamp_file"
+  echo "  Detekt configs synced to $version"
+}
+
 if [[ $SETUP == 1 ]]; then
   echo "-- SETUP"
 
-  echo "---- Install KtLint"
-  INSTALL_KTLINT=false
-  if [[ -x "$(command -v ktlint)" ]]; then
-      INSTALLED_KTLINT=$(ktlint --version)
-      echo "  KtLint already installed; version $INSTALLED_KTLINT"
-      if [[ $INSTALLED_KTLINT != "$KTLINT_VERSION" ]]; then
-        echo "  Upgrading to version $KTLINT_VERSION"
-        INSTALL_KTLINT=true
-      fi
-  fi
+  echo "---- Install KtLint $KTLINT_VERSION"
+  TARGET_KTLINT=$(command -v ktlint || echo "/usr/local/bin/ktlint")
+  sudo rm -f "$TARGET_KTLINT"
+  curl -sSLO https://github.com/pinterest/ktlint/releases/download/$KTLINT_VERSION/ktlint
+  chmod a+x ktlint
+  sudo mv ktlint "$TARGET_KTLINT"
+  hash -r
+  echo "  installed at $TARGET_KTLINT"
 
-  if [[ $INSTALL_KTLINT = true ]]; then
-    curl -SLO https://github.com/pinterest/ktlint/releases/download/$KTLINT_VERSION/ktlint && chmod a+x ktlint
-    sudo mv ktlint /usr/local/bin/
-    echo "  KtLint installed; version $(ktlint --version)"
-  fi
-
-  echo "---- Install Detekt"
-  if [[ -x "$(command -v detekt)" ]]; then
-      echo "  Detekt already installed; version $(detekt --version)"
-      read -p "  Would you like to update Detekt? " -n 1 -r
-      echo
-      if [[ $REPLY =~ ^[Yy]$ ]]
-      then
-        brew upgrade detekt
-        echo "  Detekt upgraded; version $(detekt --version)"
-      fi
-  else
-    brew install detekt
-    echo "  Detekt installed; version $(detekt --version)"
-  fi
+  echo "---- Install Detekt $DETEKT_VERSION"
+  TARGET_DETEKT=$(command -v detekt || echo "/usr/local/bin/detekt")
+  sudo rm -f "$TARGET_DETEKT"
+  curl -sSLO https://github.com/detekt/detekt/releases/download/v$DETEKT_VERSION/detekt-cli-$DETEKT_VERSION-all.jar
+  sudo mv detekt-cli-$DETEKT_VERSION-all.jar /usr/local/lib/detekt-cli.jar
+  sudo tee "$TARGET_DETEKT" > /dev/null <<'EOF'
+#!/usr/bin/env bash
+exec java -jar /usr/local/lib/detekt-cli.jar "$@"
+EOF
+  sudo chmod a+x "$TARGET_DETEKT"
+  hash -r
+  echo "  installed at $TARGET_DETEKT"
 fi
 
 if [[ $CLEANUP == 1 ]]; then
@@ -111,21 +186,14 @@ if [[ $ANALYSIS == 1 ]]; then
   fi
 
   echo "---- Detekt"
-  if [ -z "$DD_SOURCE" ]; then
-    echo "Can't run shared Detekt, missing dd_source repository path."
-    echo "Please set the path to your local dd_source repository in the DD_SOURCE environment variable."
-    echo "E.g.: "
-    echo "$ export DD_SOURCE=/Volumes/Dev/ci/dd-source"
-    exit 1
-  else
-    echo "Using Detekt rules from $DD_SOURCE folder"
-  fi
+  echo "------ Sync Detekt configs from dd-source"
+  sync_detekt_configs
 
   echo "------ Detekt common rules"
-  detekt --parallel --config "$DD_SOURCE/domains/mobile/config/android/gitlab/detekt/detekt-common.yml"
+  detekt --parallel --config "config/detekt-common.yml"
 
   echo "------ Detekt public API rules"
-  detekt --parallel --config "$DD_SOURCE/domains/mobile/config/android/gitlab/detekt/detekt-public-api.yml"
+  detekt --parallel --config "config/detekt-public-api.yml"
 
   if [[ $COMPILE == 1 ]]; then
     # Assemble is required to get generated classes type resolution

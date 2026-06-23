@@ -184,7 +184,7 @@ data class SessionReplayConfiguration internal constructor(
 
         /**
          * Sets the text and input recording level for the Session Replay feature.
-         * If not specified then sensitive text will be masked by default.
+         * If not specified then all text will be masked by default.
          * @see TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
          * @see TextAndInputPrivacy.MASK_ALL_INPUTS
          * @see TextAndInputPrivacy.MASK_ALL

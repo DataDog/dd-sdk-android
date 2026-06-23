@@ -17,7 +17,7 @@ internal class FileMover(val internalLogger: InternalLogger) {
     /**
      * Deletes the file or directory (recursively if needed).
      * @param target the target [File] to delete
-     * @return whether the delete was successful
+     * @return whether delete was successful
      */
     @WorkerThread
     fun delete(target: File): Boolean {

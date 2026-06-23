@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.instrumentation.gestures
 
 import android.content.Context
 import android.content.res.Resources
+import android.graphics.Rect
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
@@ -1071,6 +1072,83 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         // Then — graceful degradation: tap is still tracked, just without heatmap data.
         verify(plainMonitor).addAction(eq(RumActionType.TAP), any(), any())
     }
+
+    // region — clipping
+
+    @Test
+    fun `M ignore clipped child W onTap {child visible rect does not contain tap coordinate}`(
+        forge: Forge
+    ) {
+        // Given — a clickable child whose getGlobalVisibleRect is clipped so the tap
+        // coordinate falls outside the visible portion (simulates NestedScrollView clipping
+        // a child behind a BottomNavigationView). Another sibling IS visible at the tap.
+        val mockEvent: MotionEvent = forge.getForgery()
+
+        // This child is clickable but its visible rect is clipped to NOT contain the tap
+        val clippedChild: View = mockView(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true, // layout rect would pass the old hitTest
+            clickable = true,
+            forge = forge
+        )
+        // Override getGlobalVisibleRect to return a rect that does NOT contain the event
+        whenever(clippedChild.getGlobalVisibleRect(any())).thenAnswer { invocation ->
+            val rect = invocation.arguments[0] as Rect
+            // Set the visible rect well above the event coordinate (direct field assignment
+            // because Rect.set() is a no-op in Android unit test stubs)
+            rect.left = 0
+            rect.top = 0
+            rect.right = 10
+            rect.bottom = 10
+            true
+        }
+
+        // This sibling IS visible at the tap coordinate
+        val visibleTarget: View = mockView(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true,
+            clickable = true,
+            forge = forge
+        )
+
+        val container: ViewGroup = mockView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(2)
+            whenever(it.getChildAt(0)).thenReturn(clippedChild)
+            whenever(it.getChildAt(1)).thenReturn(visibleTarget)
+        }
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(container)
+        }
+        val expectedResourceName = forge.anAlphabeticalString()
+        mockResourcesForTarget(visibleTarget, expectedResourceName)
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
+        )
+
+        // When
+        testedListener.onSingleTapUp(mockEvent)
+
+        // Then — the clipped child should NOT be chosen; the visible sibling should win
+        verifyMonitorCalledWithUserAction(visibleTarget, "", expectedResourceName)
+    }
+
+    // endregion
 
     // region Internal
 

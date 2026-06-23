@@ -10,12 +10,14 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
+import android.telephony.TelephonyManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.utils.assertj.NetworkInfoAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -59,7 +61,7 @@ internal class CallbackNetworkInfoProviderTest {
 
     @BeforeEach
     fun `set up`() {
-        // setup the network capabilities to return the unspecified values by default
+        // set up the network capabilities to return the unspecified values by default
         whenever(mockCapabilities.linkUpstreamBandwidthKbps) doReturn 0
         whenever(mockCapabilities.linkDownstreamBandwidthKbps) doReturn 0
         whenever(mockCapabilities.signalStrength) doReturn
@@ -111,10 +113,7 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     @Test
-    fun `connected to wifi (no strength)`(
-        @IntForgery(min = 1) upSpeed: Int,
-        @IntForgery(min = 1) downSpeed: Int
-    ) {
+    fun `connected to wifi (no strength)`(@IntForgery(min = 1) upSpeed: Int, @IntForgery(min = 1) downSpeed: Int) {
         // GIVEN
         whenever(mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) doReturn true
         whenever(mockCapabilities.linkUpstreamBandwidthKbps) doReturn upSpeed
@@ -227,10 +226,7 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     @Test
-    fun `connected to cellular`(
-        @IntForgery(min = 1) upSpeed: Int,
-        @IntForgery(min = 1) downSpeed: Int
-    ) {
+    fun `connected to cellular`(@IntForgery(min = 1) upSpeed: Int, @IntForgery(min = 1) downSpeed: Int) {
         whenever(mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR))
             .doReturn(true)
         whenever(mockCapabilities.linkUpstreamBandwidthKbps) doReturn upSpeed
@@ -248,10 +244,7 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     @Test
-    fun `connected to ethernet`(
-        @IntForgery(min = 1) upSpeed: Int,
-        @IntForgery(min = 1) downSpeed: Int
-    ) {
+    fun `connected to ethernet`(@IntForgery(min = 1) upSpeed: Int, @IntForgery(min = 1) downSpeed: Int) {
         whenever(mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET))
             .doReturn(true)
         whenever(mockCapabilities.linkUpstreamBandwidthKbps) doReturn upSpeed
@@ -269,10 +262,7 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     @Test
-    fun `connected to VPN`(
-        @IntForgery(min = 1) upSpeed: Int,
-        @IntForgery(min = 1) downSpeed: Int
-    ) {
+    fun `connected to VPN`(@IntForgery(min = 1) upSpeed: Int, @IntForgery(min = 1) downSpeed: Int) {
         whenever(mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) doReturn true
         whenever(mockCapabilities.linkUpstreamBandwidthKbps) doReturn upSpeed
         whenever(mockCapabilities.linkDownstreamBandwidthKbps) doReturn downSpeed
@@ -290,10 +280,7 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     @Test
-    fun `connected to LoWPAN`(
-        @IntForgery(min = 1) upSpeed: Int,
-        @IntForgery(min = 1) downSpeed: Int
-    ) {
+    fun `connected to LoWPAN`(@IntForgery(min = 1) upSpeed: Int, @IntForgery(min = 1) downSpeed: Int) {
         whenever(mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_LOWPAN))
             .doReturn(true)
         whenever(mockCapabilities.linkUpstreamBandwidthKbps) doReturn upSpeed
@@ -312,10 +299,7 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     @Test
-    fun `network lost`(
-        @IntForgery(min = 1) upSpeed: Int,
-        @IntForgery(min = 1) downSpeed: Int
-    ) {
+    fun `network lost`(@IntForgery(min = 1) upSpeed: Int, @IntForgery(min = 1) downSpeed: Int) {
         whenever(mockCapabilities.hasTransport(any())) doReturn true
         whenever(mockCapabilities.linkUpstreamBandwidthKbps) doReturn upSpeed
         whenever(mockCapabilities.linkDownstreamBandwidthKbps) doReturn downSpeed
@@ -372,9 +356,7 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     @Test
-    fun `M register callback safely W register() with SecurityException`(
-        @StringForgery message: String
-    ) {
+    fun `M register callback safely W register() with SecurityException`(@StringForgery message: String) {
         // RUMM-852 in some cases the device throws a SecurityException on register
         val context = mock<Context>()
         val manager = mock<ConnectivityManager>()
@@ -402,9 +384,7 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     @Test
-    fun `M warn developers W register() with SecurityException`(
-        @StringForgery message: String
-    ) {
+    fun `M warn developers W register() with SecurityException`(@StringForgery message: String) {
         // RUMM-852 in some cases the device throws a SecurityException on register
         val context = mock<Context>()
         val manager = mock<ConnectivityManager>()
@@ -423,9 +403,7 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     @Test
-    fun `M warn developers W register() with RuntimeException`(
-        @StringForgery message: String
-    ) {
+    fun `M warn developers W register() with RuntimeException`(@StringForgery message: String) {
         // RUMM-918 in some cases the device throws a IllegalArgumentException on register
         // "Too many NetworkRequests filed" This happens when registerDefaultNetworkCallback is
         // called too many times without matching unregisterNetworkCallback
@@ -505,9 +483,7 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     @Test
-    fun `M unregister callback safely W unregister() with SecurityException`(
-        @StringForgery message: String
-    ) {
+    fun `M unregister callback safely W unregister() with SecurityException`(@StringForgery message: String) {
         // RUMM-852 in some cases the device throws a SecurityException on register
         // Since we can't reproduce, let's assume it could happen on unregister too
         val context = mock<Context>()
@@ -522,9 +498,7 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     @Test
-    fun `M warn developers W unregister() with SecurityException`(
-        @StringForgery message: String
-    ) {
+    fun `M warn developers W unregister() with SecurityException`(@StringForgery message: String) {
         // RUMM-852 in some cases the device throws a SecurityException on register
         val context = mock<Context>()
         val manager = mock<ConnectivityManager>()
@@ -557,9 +531,7 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     @Test
-    fun `M warn developers W unregister() with RuntimeException`(
-        @StringForgery message: String
-    ) {
+    fun `M warn developers W unregister() with RuntimeException`(@StringForgery message: String) {
         // RUMM-918 in some cases the device throws a IllegalArgumentException on unregister
         // e.g. when the callback was not registered
         val context = mock<Context>()
@@ -576,5 +548,227 @@ internal class CallbackNetworkInfoProviderTest {
             CallbackNetworkInfoProvider.ERROR_UNREGISTER,
             exception
         )
+    }
+
+    // region carrier on cellular
+
+    @Test
+    fun `M report carrier from simCarrierIdName W onCapabilitiesChanged on cellular API 28+`(
+        @StringForgery carrierName: String,
+        @IntForgery(min = 1) carrierId: Int
+    ) {
+        // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastP) doReturn true
+        val telephonyManager = mock<TelephonyManager> {
+            on { simCarrierIdName } doReturn carrierName
+            on { this.simCarrierId } doReturn carrierId
+        }
+        registerWithTelephony(telephonyManager)
+        whenever(mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR))
+            .doReturn(true)
+
+        // When
+        testedProvider.onCapabilitiesChanged(mockNetwork, mockCapabilities)
+        val networkInfo = testedProvider.getLatestNetworkInfo()
+
+        // Then
+        assertThat(networkInfo)
+            .hasConnectivity(NetworkInfo.Connectivity.NETWORK_CELLULAR)
+            .hasCarrierName(carrierName)
+            .hasCarrierId(carrierId.toLong())
+    }
+
+    @Test
+    fun `M report carrier from networkOperator W onCapabilitiesChanged on cellular API 24-27`(
+        @StringForgery operatorName: String,
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastP) doReturn false
+        val operatorCode = forge.anInt(min = 10_000, max = 999_999).toString()
+        val telephonyManager = mock<TelephonyManager> {
+            on { networkOperatorName } doReturn operatorName
+            on { networkOperator } doReturn operatorCode
+        }
+        registerWithTelephony(telephonyManager)
+        whenever(mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR))
+            .doReturn(true)
+
+        // When
+        testedProvider.onCapabilitiesChanged(mockNetwork, mockCapabilities)
+        val networkInfo = testedProvider.getLatestNetworkInfo()
+
+        // Then
+        assertThat(networkInfo)
+            .hasConnectivity(NetworkInfo.Connectivity.NETWORK_CELLULAR)
+            .hasCarrierName(operatorName)
+            .hasCarrierId(operatorCode.toLong())
+    }
+
+    @Test
+    fun `M leave carrierId null W networkOperator is non-numeric on cellular API 24-27`(
+        @StringForgery operatorName: String,
+        @StringForgery(regex = "[A-Za-z]+") operatorCode: String
+    ) {
+        // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastP) doReturn false
+        val telephonyManager = mock<TelephonyManager> {
+            on { networkOperatorName } doReturn operatorName
+            on { networkOperator } doReturn operatorCode
+        }
+        registerWithTelephony(telephonyManager)
+        whenever(mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR))
+            .doReturn(true)
+
+        // When
+        testedProvider.onCapabilitiesChanged(mockNetwork, mockCapabilities)
+        val networkInfo = testedProvider.getLatestNetworkInfo()
+
+        // Then
+        assertThat(networkInfo)
+            .hasConnectivity(NetworkInfo.Connectivity.NETWORK_CELLULAR)
+            .hasCarrierName(operatorName)
+            .hasCarrierId(null)
+    }
+
+    @Test
+    fun `M leave carrier null W networkOperatorName and networkOperator are empty on cellular`() {
+        // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastP) doReturn false
+        val telephonyManager = mock<TelephonyManager> {
+            on { networkOperatorName } doReturn ""
+            on { networkOperator } doReturn ""
+        }
+        registerWithTelephony(telephonyManager)
+        whenever(mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR))
+            .doReturn(true)
+
+        // When
+        testedProvider.onCapabilitiesChanged(mockNetwork, mockCapabilities)
+        val networkInfo = testedProvider.getLatestNetworkInfo()
+
+        // Then
+        assertThat(networkInfo)
+            .hasConnectivity(NetworkInfo.Connectivity.NETWORK_CELLULAR)
+            .hasCarrierName(null)
+            .hasCarrierId(null)
+    }
+
+    @Test
+    fun `M leave carrier null W onCapabilitiesChanged on wifi even when telephony available`(
+        @StringForgery carrierName: String,
+        @IntForgery(min = 1) carrierId: Int
+    ) {
+        // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastP) doReturn true
+        val telephonyManager = mock<TelephonyManager> {
+            on { simCarrierIdName } doReturn carrierName
+            on { this.simCarrierId } doReturn carrierId
+        }
+        registerWithTelephony(telephonyManager)
+        whenever(mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) doReturn true
+
+        // When
+        testedProvider.onCapabilitiesChanged(mockNetwork, mockCapabilities)
+        val networkInfo = testedProvider.getLatestNetworkInfo()
+
+        // Then
+        assertThat(networkInfo)
+            .hasConnectivity(NetworkInfo.Connectivity.NETWORK_WIFI)
+            .hasCarrierName(null)
+            .hasCarrierId(null)
+    }
+
+    @Test
+    fun `M leave carrier null W onCapabilitiesChanged on cellular but TelephonyManager unavailable`() {
+        // Given - no register() call → telephonyManager is null
+        whenever(mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR))
+            .doReturn(true)
+
+        // When
+        testedProvider.onCapabilitiesChanged(mockNetwork, mockCapabilities)
+        val networkInfo = testedProvider.getLatestNetworkInfo()
+
+        // Then
+        assertThat(networkInfo)
+            .hasConnectivity(NetworkInfo.Connectivity.NETWORK_CELLULAR)
+            .hasCarrierName(null)
+            .hasCarrierId(null)
+    }
+
+    @Test
+    fun `M log error and leave carrierName null W simCarrierIdName throws on cellular API 28+`(
+        @StringForgery message: String,
+        @IntForgery(min = 1) carrierId: Int
+    ) {
+        // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastP) doReturn true
+        val exception = SecurityException(message)
+        val telephonyManager = mock<TelephonyManager> {
+            on { simCarrierIdName } doThrow exception
+            on { this.simCarrierId } doReturn carrierId
+        }
+        registerWithTelephony(telephonyManager)
+        whenever(mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR))
+            .doReturn(true)
+
+        // When
+        testedProvider.onCapabilitiesChanged(mockNetwork, mockCapabilities)
+        val networkInfo = testedProvider.getLatestNetworkInfo()
+
+        // Then
+        assertThat(networkInfo)
+            .hasConnectivity(NetworkInfo.Connectivity.NETWORK_CELLULAR)
+            .hasCarrierName(null)
+            .hasCarrierId(carrierId.toLong())
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            message = CarrierInfoResolver.ERROR_CARRIER_NAME,
+            throwable = exception
+        )
+    }
+
+    @Test
+    fun `M log error and leave carrierId null W simCarrierId throws on cellular API 28+`(
+        @StringForgery message: String,
+        @StringForgery carrierName: String
+    ) {
+        // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastP) doReturn true
+        val exception = SecurityException(message)
+        val telephonyManager = mock<TelephonyManager> {
+            on { simCarrierIdName } doReturn carrierName
+            on { this.simCarrierId } doThrow exception
+        }
+        registerWithTelephony(telephonyManager)
+        whenever(mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR))
+            .doReturn(true)
+
+        // When
+        testedProvider.onCapabilitiesChanged(mockNetwork, mockCapabilities)
+        val networkInfo = testedProvider.getLatestNetworkInfo()
+
+        // Then
+        assertThat(networkInfo)
+            .hasConnectivity(NetworkInfo.Connectivity.NETWORK_CELLULAR)
+            .hasCarrierName(carrierName)
+            .hasCarrierId(null)
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            message = CarrierInfoResolver.ERROR_CARRIER_ID,
+            throwable = exception
+        )
+    }
+
+    // endregion
+
+    private fun registerWithTelephony(telephonyManager: TelephonyManager) {
+        val context = mock<Context>()
+        val manager = mock<ConnectivityManager>()
+        whenever(context.getSystemService(Context.CONNECTIVITY_SERVICE)) doReturn manager
+        whenever(context.getSystemService(Context.TELEPHONY_SERVICE)) doReturn telephonyManager
+        testedProvider.register(context)
     }
 }

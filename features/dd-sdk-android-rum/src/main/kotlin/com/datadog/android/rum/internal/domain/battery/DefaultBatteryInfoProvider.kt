@@ -18,19 +18,21 @@ import android.os.Build
 import android.os.PowerManager
 import android.os.PowerManager.ACTION_POWER_SAVE_MODE_CHANGED
 import androidx.annotation.FloatRange
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.internal.utils.getSystemServiceAs
 import com.datadog.android.rum.internal.domain.InfoProvider
 import java.util.concurrent.atomic.AtomicLong
 
 internal class DefaultBatteryInfoProvider(
     private val applicationContext: Context,
     private val timeProvider: TimeProvider,
-    private val powerManager: PowerManager? =
-        applicationContext.getSystemService(POWER_SERVICE) as? PowerManager,
-    private val batteryManager: BatteryManager? = applicationContext.getSystemService(
+    private val powerManager: PowerManager? = applicationContext.getSystemServiceAs<PowerManager>(POWER_SERVICE),
+    private val batteryManager: BatteryManager? = applicationContext.getSystemServiceAs<BatteryManager>(
         BATTERY_SERVICE
-    ) as? BatteryManager,
-    private val batteryLevelPollInterval: Int = BATTERY_POLL_INTERVAL_MS
+    ),
+    private val batteryLevelPollInterval: Int = BATTERY_POLL_INTERVAL_MS,
+    private val internalLogger: InternalLogger
 ) : InfoProvider<BatteryInfo> {
 
     @Volatile
@@ -101,7 +103,17 @@ internal class DefaultBatteryInfoProvider(
     }
 
     private fun resolveBatteryLevel(): Float? {
-        val batteryLevel = batteryManager?.getIntProperty(BATTERY_PROPERTY_CAPACITY)
+        val batteryLevel = try {
+            batteryManager?.getIntProperty(BATTERY_PROPERTY_CAPACITY)
+        } catch (@Suppress("TooGenericExceptionCaught") re: RuntimeException) {
+            internalLogger.log(
+                target = InternalLogger.Target.MAINTAINER,
+                level = InternalLogger.Level.ERROR,
+                messageBuilder = { "Problem retrieving battery level value" },
+                throwable = re
+            )
+            null
+        }
 
         return batteryLevel?.let {
             // if there was a problem retrieving the capacity

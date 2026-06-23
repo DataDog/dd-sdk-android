@@ -13,10 +13,12 @@ import androidx.compose.animation.core.AnimationState
 import androidx.compose.runtime.Composition
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorProducer
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.VectorPainter
@@ -132,6 +134,28 @@ internal class ReflectionUtils {
     fun getColor(modifier: Modifier): Long? {
         return ComposeReflection.ColorField?.getSafe(modifier) as? Long
     }
+
+    fun getBrush(modifier: Modifier): Brush? {
+        return ComposeReflection.BrushField?.getSafe(modifier) as? Brush
+    }
+
+    fun getAlpha(modifier: Modifier): Float? {
+        return ComposeReflection.AlphaField?.getSafe(modifier) as? Float
+    }
+
+    fun getBrushColors(brush: Brush): List<Color>? = when {
+        brush is SolidColor -> listOf(brush.value)
+        ComposeReflection.LinearGradientClass?.isInstance(brush) == true ->
+            extractColors(ComposeReflection.LinearGradientColorsField?.getSafe(brush))
+        ComposeReflection.RadialGradientClass?.isInstance(brush) == true ->
+            extractColors(ComposeReflection.RadialGradientColorsField?.getSafe(brush))
+        ComposeReflection.SweepGradientClass?.isInstance(brush) == true ->
+            extractColors(ComposeReflection.SweepGradientColorsField?.getSafe(brush))
+        else -> null
+    }
+
+    private fun extractColors(fieldValue: Any?): List<Color> =
+        (fieldValue as? List<*>)?.filterIsInstance<Color>() ?: emptyList()
 
     fun getShape(modifier: Modifier): Shape? {
         return ComposeReflection.ShapeField?.getSafe(modifier) as? Shape

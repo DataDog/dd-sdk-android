@@ -27,10 +27,11 @@ internal class MemoryVitalReader(
         }
 
         val memorySizeKb = statusFile.readLinesSafe(internalLogger = internalLogger)
-            ?.mapNotNull { line ->
-                VM_RSS_REGEX.matchEntire(line)?.groupValues?.getOrNull(1)
-            }
-            ?.firstOrNull()
+            ?.firstOrNull { it.startsWith("VmRSS:") }
+            ?.removePrefix("VmRSS:")
+            ?.trim()
+            ?.removeSuffix("kB")
+            ?.trim()
             ?.toDoubleOrNull()
 
         return if (memorySizeKb == null) {
@@ -46,7 +47,5 @@ internal class MemoryVitalReader(
 
         private const val STATUS_PATH = "/proc/self/status"
         internal val STATUS_FILE = File(STATUS_PATH)
-        private const val VM_RSS_PATTERN = "VmRSS:\\s+(\\d+) kB"
-        private val VM_RSS_REGEX = Regex(VM_RSS_PATTERN)
     }
 }

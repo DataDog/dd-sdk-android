@@ -14,26 +14,37 @@ enum class EndPoint(
     private val traces: String
 ) {
 
+    /** US1 region endpoint (datadoghq.com). */
     US1(
         metrics = "https://api.datadoghq.com/",
         traces = "https://browser-intake-datadoghq.com/"
     ),
+
+    /** US3 region endpoint (us3.datadoghq.com). */
     US3(
         metrics = "https://api.us3.datadoghq.com/",
         traces = "https://browser-intake-us3-datadoghq.com/"
     ),
+
+    /** US5 region endpoint (us5.datadoghq.com). */
     US5(
         metrics = "https://api.us5.datadoghq.com/",
         traces = "https://browser-intake-us5-datadoghq.com/"
     ),
+
+    /** EU1 region endpoint (datadoghq.eu). */
     EU1(
         metrics = "https://api.datadoghq.eu/",
         traces = "https://public-trace-http-intake.logs.datadoghq.eu/"
     ),
+
+    /** AP1 region endpoint (ap1.datadoghq.com). */
     AP1(
         metrics = "https://api.ap1.datadoghq.com/",
         traces = "https://browser-intake-ap1-datadoghq.com/"
     ),
+
+    /** AP2 region endpoint (ap2.datadoghq.com). */
     AP2(
         metrics = "https://api.ap2.datadoghq.com/",
         traces = "https://browser-intake-ap2-datadoghq.com/"

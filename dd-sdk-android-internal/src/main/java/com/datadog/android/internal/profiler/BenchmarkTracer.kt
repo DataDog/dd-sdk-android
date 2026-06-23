@@ -10,7 +10,7 @@ import com.datadog.tools.annotation.NoOpImplementation
 
 /**
  * Interface of benchmark tracer to be implemented to provide [BenchmarkSpan].
- * This should only used by internal benchmarking.
+ * This should only be used by internal benchmarking.
  */
 @NoOpImplementation
 interface BenchmarkTracer {

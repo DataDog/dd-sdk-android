@@ -16,12 +16,33 @@ import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.internal.net.TraceContext
+import com.datadog.android.trace.internal.net.isDroppedPriority
 import com.datadog.trace.api.DDSpanId
 import com.datadog.trace.api.DDTraceId
 import com.datadog.trace.core.propagation.B3HttpCodec
 import com.datadog.trace.core.propagation.DatadogHttpCodec
 import com.datadog.trace.core.propagation.ExtractedContext
 import com.datadog.trace.core.propagation.W3CHttpCodec
+
+/**
+ * For internal usage only.
+ * Represents the origin of a parent context extracted for a network request.
+ *
+ * Distinguishing the source allows callers to apply different policies — e.g. ignoring a dropped
+ * tag-attached parent (explicit developer intent) while always honoring a header-propagated
+ * parent (upstream service intent, required for head-based sampling).
+ */
+@InternalApi
+sealed class ParentContextSource {
+    /** The parent [DatadogSpanContext]. */
+    abstract val context: DatadogSpanContext
+
+    /** Parent context parsed from inbound trace propagation headers (Datadog, W3C, B3). */
+    class FromHeaders(override val context: DatadogSpanContext) : ParentContextSource()
+
+    /** Parent context derived from a request tag ([DatadogSpan] or [TraceContext]). */
+    class FromTag(override val context: DatadogSpanContext) : ParentContextSource()
+}
 
 /**
  * For internal usage only.
@@ -66,14 +87,15 @@ class DatadogPropagationHelper internal constructor() {
     }
 
     /**
-     * Extracts the parent span context from the request.
+     * Extracts the parent span context from the request along with its source.
      * Checks both the request tags and headers for trace context information.
      *
      * @param tracer the tracer to use for context extraction.
      * @param request the HTTP request info to extract context from.
-     * @return the extracted parent context, or null if none found.
+     * @return a [ParentContextSource] indicating whether the parent came from headers or from a
+     *   request tag, or null if no parent context was found.
      */
-    fun extractParentContext(tracer: DatadogTracer, request: HttpRequestInfo): DatadogSpanContext? {
+    fun extractParentContext(tracer: DatadogTracer, request: HttpRequestInfo): ParentContextSource? {
         val tagContext = extractTraceContext(request)
 
         val headerContext: DatadogSpanContext? = tracer.propagate().extract(request) { carrier, classifier ->
@@ -85,10 +107,12 @@ class DatadogPropagationHelper internal constructor() {
             for ((key, value) in headers) classifier(key, value)
         }
 
-        return if (headerContext != null && isExtractedContext(headerContext)) {
-            headerContext
-        } else {
-            tagContext
+        return when {
+            headerContext != null && isExtractedContext(headerContext) ->
+                ParentContextSource.FromHeaders(headerContext)
+            tagContext != null ->
+                ParentContextSource.FromTag(tagContext)
+            else -> null
         }
     }
 
@@ -256,10 +280,20 @@ class DatadogPropagationHelper internal constructor() {
      * Extracts the sampling decision from the request.
      * Checks headers and tags for existing sampling decisions.
      *
+     * Header sampling priority (Datadog / B3 / W3C) is always authoritative when present, since
+     * it represents upstream service intent and must be preserved for head-based sampling.
+     *
      * @param request the HTTP request info to extract sampling decision from.
+     * @param ignoreLocalDroppedParent when true, tag-attached parents (DatadogSpan tag or
+     *   TraceContext tag) that resolve to a DROP sampling priority are treated as having no
+     *   decision (returns null), so the caller can defer to its own sampler. This mirrors the
+     *   parent-context policy applied by buildSpan() on the RUM path.
      * @return true if sampled, false if not sampled, null if no decision found.
      */
-    fun extractSamplingDecision(request: HttpRequestInfo): Boolean? {
+    fun extractSamplingDecision(
+        request: HttpRequestInfo,
+        ignoreLocalDroppedParent: Boolean = false
+    ): Boolean? {
         val datadogSpan = request.tag(DatadogSpan::class.java)
         val headerSamplingPriority = extractSamplingDecisionFromHeader(request)
         val openTelemetrySpanSamplingPriority = request.tag(TraceContext::class.java)?.samplingPriority
@@ -269,12 +303,25 @@ class DatadogPropagationHelper internal constructor() {
 
             datadogSpan != null -> {
                 _TraceInternalProxy.setTracingSamplingPriorityIfNecessary(datadogSpan.context())
-                datadogSpan.context().samplingPriority > 0
+                val priority = datadogSpan.context().samplingPriority
+                if (ignoreLocalDroppedParent && priority.isDroppedPriority()) {
+                    null
+                } else {
+                    priority > 0
+                }
             }
 
             openTelemetrySpanSamplingPriority == PrioritySampling.UNSET -> null
 
-            else -> openTelemetrySpanSamplingPriority?.let { samplingPriority -> samplingPriority > 0 }
+            openTelemetrySpanSamplingPriority != null -> {
+                if (ignoreLocalDroppedParent && openTelemetrySpanSamplingPriority.isDroppedPriority()) {
+                    null
+                } else {
+                    openTelemetrySpanSamplingPriority > 0
+                }
+            }
+
+            else -> null
         }
     }
 

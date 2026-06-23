@@ -35,7 +35,7 @@ import java.util.Locale
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
-@MockitoSettings()
+@MockitoSettings
 @ForgeConfiguration(Configurator::class)
 internal class DatadogDataConstraintsTest {
 

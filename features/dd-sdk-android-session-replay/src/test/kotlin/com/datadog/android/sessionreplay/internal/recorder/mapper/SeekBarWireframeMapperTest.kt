@@ -145,6 +145,28 @@ internal class SeekBarWireframeMapperTest : AbstractWireframeMapperTest<SeekBar,
     }
 
     @Test
+    fun `M return partial wireframes W map {null thumb, Android O+}`() {
+        // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastO) doReturn true
+        withTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
+        prepareMockSeekBar()
+        whenever(mockMappedView.thumb) doReturn null
+
+        // When
+        val wireframes = testedWireframeMapper.map(
+            mockMappedView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(wireframes).hasSize(2)
+        assertThatBoundsAreCloseEnough(wireframes[0], expectedNonActiveTrackWireframe)
+        assertThatBoundsAreCloseEnough(wireframes[1], expectedActiveTrackWireframe)
+    }
+
+    @Test
     fun `M return partial wireframes W map {invalid active track id, Android O+}`() {
         // Given
         whenever(mockBuildSdkVersionProvider.isAtLeastO) doReturn true

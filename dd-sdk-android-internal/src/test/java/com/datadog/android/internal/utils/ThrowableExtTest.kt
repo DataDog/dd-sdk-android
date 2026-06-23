@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
+import java.io.PrintWriter
 import java.lang.RuntimeException
 
 @Extensions(
@@ -68,13 +69,13 @@ internal class ThrowableExtTest {
         }
 
         val offset = topStack.size + 1
-        assertThat(lines.get(offset))
+        assertThat(lines[offset])
             .contains("Caused by")
             .contains(fakeThrowable.message)
         stack.forEachIndexed { i, frame ->
             // When the "Caused by …" stacktrace has common frames with the previous one,
             // those are not displayed and replaced with "… n more"
-            // In this test, there are at least 8 non common frames between the fakeThrowable
+            // In this test, there are at least 8 non-common frames between the fakeThrowable
             // and topThrowable
             if (i < 8) {
                 assertThat(lines[i + offset + 1])
@@ -82,5 +83,42 @@ internal class ThrowableExtTest {
                     .contains(frame.methodName)
             }
         }
+    }
+
+    @Test
+    fun `M return raw stack frames W loggableStackTrace() {printStackTrace throws before writing}`(
+        @StringForgery message: String
+    ) {
+        // Given
+        val throwable = object : Throwable("boom") {
+            override fun printStackTrace(s: PrintWriter) {
+                error(message)
+            }
+        }
+
+        // When
+        val result = throwable.loggableStackTrace()
+
+        // Then
+        assertThat(result).isEqualTo(throwable.stackTrace.loggableStackTrace())
+    }
+
+    @Test
+    fun `M return partial output W loggableStackTrace() {printStackTrace throws after writing}`(
+        @StringForgery fakePartial: String
+    ) {
+        // Given
+        val throwable = object : Throwable("boom") {
+            override fun printStackTrace(s: PrintWriter) {
+                s.print(fakePartial)
+                error("forced failure")
+            }
+        }
+
+        // When
+        val result = throwable.loggableStackTrace()
+
+        // Then
+        assertThat(result).isEqualTo(fakePartial)
     }
 }

@@ -7,6 +7,7 @@
 
 import com.android.build.gradle.LibraryExtension
 import com.datadog.gradle.config.AndroidConfig
+import com.datadog.gradle.config.depotProxied
 import com.datadog.gradle.config.registerSubModuleAggregationTask
 import org.gradle.api.internal.file.UnionFileTree
 import org.gradle.api.internal.tasks.DefaultTaskDependencyFactory
@@ -37,6 +38,11 @@ version = AndroidConfig.VERSION.name
 
 buildscript {
     repositories {
+        // Magic Mirror Depot proxy (only set in CI via `.gitlab-ci.yml`).
+        // Inlined here because `buildscript {}` runs before buildSrc classes are on the classpath.
+        listOf("gradlePluginProxy", "mavenRepositoryProxy")
+            .mapNotNull { providers.gradleProperty(it).orNull?.takeIf { url -> url.isNotBlank() } }
+            .forEach { url -> maven { setUrl(url) } }
         google()
         mavenCentral()
         maven { setUrl(com.datadog.gradle.Dependencies.Repositories.Gradle) }
@@ -48,7 +54,7 @@ buildscript {
 }
 
 allprojects {
-    repositories {
+    repositories.depotProxied(providers) {
         google()
         mavenCentral()
         maven { setUrl(com.datadog.gradle.Dependencies.Repositories.Jitpack) }

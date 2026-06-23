@@ -330,7 +330,7 @@ class RumConfigurationTest {
         val expectedSdkVersion = datadogContext.sdkVersion
         val expectedTags = listOf(
             "retry_count" to fakeExecutionContext.previousResponseCode?.let { fakeExecutionContext.attemptNumber },
-            "last_failure_status" to fakeExecutionContext.previousResponseCode
+            "retry_after" to fakeExecutionContext.previousResponseCode
         )
             .filter { it.second != null }
             .joinToString(",") { it.first + ":" + it.second }
@@ -380,7 +380,7 @@ class RumConfigurationTest {
         val expectedSdkVersion = datadogContext.sdkVersion
         val expectedTags = listOf(
             "retry_count" to fakeExecutionContext.previousResponseCode?.let { fakeExecutionContext.attemptNumber },
-            "last_failure_status" to fakeExecutionContext.previousResponseCode
+            "retry_after" to fakeExecutionContext.previousResponseCode
         )
             .filter { it.second != null }
             .joinToString(",") { it.first + ":" + it.second }

@@ -13,6 +13,7 @@ import androidx.compose.ui.semantics.SemanticsConfiguration
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
 import com.datadog.android.sessionreplay.recorder.MappingContext
@@ -45,6 +46,9 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(SessionReplayComposeForgeConfigurator::class)
 class RootSemanticsNodeMapperTest {
+
+    @Mock
+    private lateinit var mockInternalLogger: InternalLogger
 
     @Mock
     private lateinit var mockContainerSemanticsNodeMapper: ContainerSemanticsNodeMapper
@@ -128,14 +132,16 @@ class RootSemanticsNodeMapperTest {
             mockSemanticsNode,
             fakeMappingContext.systemInformation.screenDensity,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
         verify(mockContainerSemanticsNodeMapper).map(
-            eq(mockSemanticsNode),
-            any(),
-            eq(mockAsyncJobStatusCallback)
+            semanticsNode = eq(mockSemanticsNode),
+            parentContext = any(),
+            asyncJobStatusCallback = eq(mockAsyncJobStatusCallback),
+            internalLogger = eq(mockInternalLogger)
         )
     }
 
@@ -149,14 +155,16 @@ class RootSemanticsNodeMapperTest {
             mockSemanticsNode,
             fakeMappingContext.systemInformation.screenDensity,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
         verify(mockButtonSemanticsNodeMapper).map(
-            eq(mockSemanticsNode),
-            any(),
-            eq(mockAsyncJobStatusCallback)
+            semanticsNode = eq(mockSemanticsNode),
+            parentContext = any(),
+            asyncJobStatusCallback = eq(mockAsyncJobStatusCallback),
+            internalLogger = eq(mockInternalLogger)
         )
     }
 
@@ -170,14 +178,16 @@ class RootSemanticsNodeMapperTest {
             mockSemanticsNode,
             fakeMappingContext.systemInformation.screenDensity,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
         verify(mockRadioButtonSemanticsNodeMapper).map(
-            eq(mockSemanticsNode),
-            any(),
-            eq(mockAsyncJobStatusCallback)
+            semanticsNode = eq(mockSemanticsNode),
+            parentContext = any(),
+            asyncJobStatusCallback = eq(mockAsyncJobStatusCallback),
+            internalLogger = eq(mockInternalLogger)
         )
     }
 
@@ -191,14 +201,16 @@ class RootSemanticsNodeMapperTest {
             mockSemanticsNode,
             fakeMappingContext.systemInformation.screenDensity,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
         verify(mockSwitchSemanticsNodeMapper).map(
-            eq(mockSemanticsNode),
-            any(),
-            eq(mockAsyncJobStatusCallback)
+            semanticsNode = eq(mockSemanticsNode),
+            parentContext = any(),
+            asyncJobStatusCallback = eq(mockAsyncJobStatusCallback),
+            internalLogger = eq(mockInternalLogger)
         )
     }
 
@@ -212,14 +224,16 @@ class RootSemanticsNodeMapperTest {
             mockSemanticsNode,
             fakeMappingContext.systemInformation.screenDensity,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
         verify(mockTabSemanticsNodeMapper).map(
-            eq(mockSemanticsNode),
-            any(),
-            eq(mockAsyncJobStatusCallback)
+            semanticsNode = eq(mockSemanticsNode),
+            parentContext = any(),
+            asyncJobStatusCallback = eq(mockAsyncJobStatusCallback),
+            internalLogger = eq(mockInternalLogger)
         )
     }
 
@@ -233,14 +247,16 @@ class RootSemanticsNodeMapperTest {
             mockSemanticsNode,
             fakeMappingContext.systemInformation.screenDensity,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
         verify(mockImageSemanticsNodeMapper).map(
-            eq(mockSemanticsNode),
-            any(),
-            eq(mockAsyncJobStatusCallback)
+            semanticsNode = eq(mockSemanticsNode),
+            parentContext = any(),
+            asyncJobStatusCallback = eq(mockAsyncJobStatusCallback),
+            internalLogger = eq(mockInternalLogger)
         )
     }
 
@@ -254,14 +270,16 @@ class RootSemanticsNodeMapperTest {
             mockSemanticsNode,
             fakeMappingContext.systemInformation.screenDensity,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
         verify(mockCheckboxSemanticsNodeMapper).map(
-            eq(mockSemanticsNode),
-            any(),
-            eq(mockAsyncJobStatusCallback)
+            semanticsNode = eq(mockSemanticsNode),
+            parentContext = any(),
+            asyncJobStatusCallback = eq(mockAsyncJobStatusCallback),
+            internalLogger = eq(mockInternalLogger)
         )
     }
 
@@ -277,14 +295,16 @@ class RootSemanticsNodeMapperTest {
             mockSemanticsNode,
             fakeMappingContext.systemInformation.screenDensity,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
         verify(mockSliderSemanticsNodeMapper).map(
-            eq(mockSemanticsNode),
-            any(),
-            eq(mockAsyncJobStatusCallback)
+            semanticsNode = eq(mockSemanticsNode),
+            parentContext = any(),
+            asyncJobStatusCallback = eq(mockAsyncJobStatusCallback),
+            internalLogger = eq(mockInternalLogger)
         )
     }
 
@@ -302,14 +322,16 @@ class RootSemanticsNodeMapperTest {
             mockSemanticsNode,
             fakeMappingContext.systemInformation.screenDensity,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then
         verify(mockComposeHiddenMapper).map(
-            eq(mockSemanticsNode),
-            any(),
-            eq(mockAsyncJobStatusCallback)
+            semanticsNode = eq(mockSemanticsNode),
+            parentContext = any(),
+            asyncJobStatusCallback = eq(mockAsyncJobStatusCallback),
+            internalLogger = eq(mockInternalLogger)
         )
     }
 
@@ -326,7 +348,8 @@ class RootSemanticsNodeMapperTest {
                 node,
                 fakeMappingContext.systemInformation.screenDensity,
                 fakeMappingContext,
-                mockAsyncJobStatusCallback
+                mockAsyncJobStatusCallback,
+                mockInternalLogger
             )
 
             // Then
@@ -345,7 +368,8 @@ class RootSemanticsNodeMapperTest {
             mockSemanticsNode,
             fakeMappingContext.systemInformation.screenDensity,
             fakeMappingContext,
-            mockAsyncJobStatusCallback
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
         )
 
         // Then

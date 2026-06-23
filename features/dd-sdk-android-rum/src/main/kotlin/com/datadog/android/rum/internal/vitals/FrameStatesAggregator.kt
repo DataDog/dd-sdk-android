@@ -24,6 +24,7 @@ import androidx.metrics.performance.FrameData
 import androidx.metrics.performance.JankStats
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.utils.getSystemServiceAs
 import com.datadog.android.rum.internal.domain.FrameMetricsData
 import java.lang.ref.WeakReference
 import java.util.WeakHashMap
@@ -36,7 +37,8 @@ internal class FrameStatesAggregator(
     private val internalLogger: InternalLogger,
     private val jankStatsProvider: JankStatsProvider = JankStatsProvider.DEFAULT,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
-) : ActivityLifecycleCallbacks, JankStats.OnFrameListener {
+) : ActivityLifecycleCallbacks,
+    JankStats.OnFrameListener {
 
     internal val activeWindowsListener = WeakHashMap<Window, JankStats>()
 
@@ -208,8 +210,8 @@ internal class FrameStatesAggregator(
         } else if (display == null && buildSdkVersionProvider.version == Build.VERSION_CODES.R) {
             // Fallback - Android 30 allows apps to not run at a fixed 60hz, but didn't yet have
             // Frame Metrics callbacks available
-            val displayManager = activity.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
-            display = displayManager.getDisplay(Display.DEFAULT_DISPLAY)
+            val displayManager = activity.getSystemServiceAs<DisplayManager>(Context.DISPLAY_SERVICE)
+            display = displayManager?.getDisplay(Display.DEFAULT_DISPLAY)
         }
     }
 
