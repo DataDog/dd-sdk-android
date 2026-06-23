@@ -134,7 +134,7 @@ internal class HeatmapIdentifierResolver(
     private fun logHashingFailure(error: Throwable) {
         internalLogger.log(
             InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             { HASHING_FAILURE_MESSAGE },
             error
         )
