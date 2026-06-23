@@ -10,9 +10,9 @@ import android.content.res.Resources
 import android.view.View
 import android.view.ViewGroup
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.heatmaps.heatmapViewKey
 import com.datadog.android.internal.heatmaps.HeatmapIdentifier
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
-import com.datadog.android.internal.heatmaps.heatmapViewKey
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator

@@ -10,9 +10,9 @@ import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.heatmaps.HeatmapIdentifierRegistryProvider
 import com.datadog.android.internal.heatmaps.HeatmapIdentifier
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
-import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistryProvider
 
 /**
  * Session Replay may be initialized before RUM — the SDK does not mandate a registration order.
@@ -27,9 +27,7 @@ internal class LazyHeatmapIdentifierRegistry(
     private val sdkCore: FeatureSdkCore
 ) : HeatmapIdentifierRegistry {
 
-    // null  → not yet resolved
-    // NoOpHeatmapIdentifierRegistry → RUM absent or not a provider (terminal, won't retry)
-    // anything else → the real registry
+    // null = not yet attempted; UNAVAILABLE = permanently failed; anything else = real registry
     private var resolved: HeatmapIdentifierRegistry? = null
 
     private fun delegate(): HeatmapIdentifierRegistry? {
@@ -62,8 +60,8 @@ internal class LazyHeatmapIdentifierRegistry(
     }
 
     companion object {
-        // Sentinel: RUM is registered but doesn't implement HeatmapIdentifierRegistryProvider.
-        // We stop retrying once we know this — it won't change without an SDK restart.
+        // Sentinel for a permanent failure (RUM registered but not a HeatmapIdentifierRegistryProvider).
+        // Won't change without an SDK restart, so we stop retrying once set.
         private val UNAVAILABLE: HeatmapIdentifierRegistry = NoOpHeatmapIdentifierRegistry()
 
         const val RUM_FEATURE_NOT_A_REGISTRY_PROVIDER =

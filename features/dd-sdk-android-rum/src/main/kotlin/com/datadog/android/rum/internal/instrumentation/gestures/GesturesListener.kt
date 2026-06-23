@@ -14,11 +14,11 @@ import android.view.Window
 import androidx.core.view.isVisible
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.internal.heatmaps.heatmapViewKey
+import com.datadog.android.heatmaps.heatmapViewKey
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
-import com.datadog.android.rum.internal.domain.scope.HeatmapActionData
+import com.datadog.android.rum.internal.heatmaps.NativeHeatmapActionData
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
@@ -270,7 +270,7 @@ internal class GesturesListener(
 
     private fun sendTapEventWithTarget(target: ViewTarget, touchX: Float, touchY: Float) {
         val attributes = mutableMapOf<String, Any?>()
-        var heatmapData: HeatmapActionData? = null
+        var nativeHeatmapActionData: NativeHeatmapActionData? = null
         target.viewRef.get()?.let { view ->
             addViewAttributes(view, attributes)
 
@@ -281,7 +281,7 @@ internal class GesturesListener(
                 // the user adjusts display size, so caching it as a field would be incorrect.
                 val density = view.resources.displayMetrics.density
 
-                heatmapData = HeatmapActionData(
+                nativeHeatmapActionData = NativeHeatmapActionData(
                     viewKey = heatmapViewKey(view),
                     positionX = ((touchX - tapLocationBuffer[0]) / density).roundToLong(),
                     positionY = ((touchY - tapLocationBuffer[1]) / density).roundToLong(),
@@ -298,7 +298,7 @@ internal class GesturesListener(
         (rumMonitor as? AdvancedRumMonitor)?.addActionWithHeatmap(
             RumActionType.TAP,
             targetName,
-            heatmapData,
+            nativeHeatmapActionData,
             attributes
         ) ?: rumMonitor.addAction(RumActionType.TAP, targetName, attributes)
     }

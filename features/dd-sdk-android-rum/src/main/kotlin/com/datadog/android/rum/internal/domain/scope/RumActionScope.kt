@@ -17,6 +17,7 @@ import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.heatmaps.HeatmapActionResolver
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.toAction
@@ -46,8 +47,7 @@ internal class RumActionScope(
     internal val sampleRate: Float,
     private val rumSessionTypeOverride: RumSessionType?,
     private val insightsCollector: InsightsCollector,
-    internal val heatmapData: HeatmapActionData? = null,
-    private val heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null
+    internal val heatmapResolver: HeatmapActionResolver? = null
 ) : RumScope {
 
     private val inactivityThresholdNs = TimeUnit.MILLISECONDS.toNanos(inactivityThresholdMs)
@@ -357,7 +357,7 @@ internal class RumActionScope(
                         sessionPrecondition = rumContext.sessionStartReason.toActionSessionPrecondition()
                     ),
                     configuration = ActionEvent.Configuration(sessionSampleRate = sampleRate),
-                    action = heatmapData?.let { resolveHeatmapAction(it, rumContext.viewUrl.orEmpty()) }
+                    action = heatmapResolver?.resolve(rumContext.viewUrl.orEmpty())
                 ),
                 connectivity = networkInfo.toActionConnectivity(),
                 service = datadogContext.service,
@@ -380,20 +380,6 @@ internal class RumActionScope(
             .submit()
 
         sent = true
-    }
-
-    private fun resolveHeatmapAction(data: HeatmapActionData, viewUrl: String): ActionEvent.DdAction? {
-        val permanentId = heatmapIdentifierRegistry
-            ?.getHeatmapIdentifier(data.viewKey, viewUrl)
-            ?.rawValue ?: return null
-        return ActionEvent.DdAction(
-            position = ActionEvent.Position(x = data.positionX, y = data.positionY),
-            target = ActionEvent.DdActionTarget(
-                permanentId = permanentId,
-                width = data.targetWidth,
-                height = data.targetHeight
-            )
-        )
     }
 
     // endregion
@@ -429,8 +415,19 @@ internal class RumActionScope(
                 sampleRate = sampleRate,
                 rumSessionTypeOverride = rumSessionTypeOverride,
                 insightsCollector = insightsCollector,
-                heatmapData = event.heatmapData,
-                heatmapIdentifierRegistry = heatmapIdentifierRegistry
+                heatmapResolver = when {
+                    event.crossPlatformHeatmapActionData != null && event.appPackageName != null ->
+                        HeatmapActionResolver.CrossPlatform(
+                            data = event.crossPlatformHeatmapActionData,
+                            appPackageName = event.appPackageName,
+                            logger = sdkCore.internalLogger
+                        )
+                    event.nativeHeatmapActionData != null -> HeatmapActionResolver.Native(
+                        data = event.nativeHeatmapActionData,
+                        registry = heatmapIdentifierRegistry
+                    )
+                    else -> null
+                }
             )
         }
     }

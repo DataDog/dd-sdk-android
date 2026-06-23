@@ -10,9 +10,9 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.heatmaps.HeatmapIdentifierRegistryProvider
 import com.datadog.android.internal.heatmaps.HeatmapIdentifier
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
-import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistryProvider
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.LazyHeatmapIdentifierRegistry.Companion.RUM_FEATURE_NOT_A_REGISTRY_PROVIDER
 import com.datadog.android.utils.verifyLog

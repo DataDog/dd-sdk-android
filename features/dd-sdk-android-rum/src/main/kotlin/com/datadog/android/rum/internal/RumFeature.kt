@@ -33,9 +33,9 @@ import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
+import com.datadog.android.heatmaps.HeatmapIdentifierRegistryProvider
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
-import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistryProvider
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.thread.isMainThread

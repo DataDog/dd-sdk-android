@@ -14,13 +14,13 @@ import android.view.ViewGroup
 import android.view.Window
 import androidx.compose.ui.platform.ComposeView
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.internal.heatmaps.heatmapViewKey
+import com.datadog.android.heatmaps.heatmapViewKey
 import com.datadog.android.internal.utils.toHexString
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.rum.internal.domain.scope.HeatmapActionData
+import com.datadog.android.rum.internal.heatmaps.NativeHeatmapActionData
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesListenerScrollSwipeTest.ScrollableListView
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
@@ -840,7 +840,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         val expectedYInTarget = ((touchY - targetY) / fakeDensity).roundToLong()
         val expectedTargetWidth = (fakeTargetWidth / fakeDensity).roundToLong()
         val expectedTargetHeight = (fakeTargetHeight / fakeDensity).roundToLong()
-        val heatmapCaptor = argumentCaptor<HeatmapActionData>()
+        val heatmapCaptor = argumentCaptor<NativeHeatmapActionData>()
         verify(rumMonitor.mockInstance as AdvancedRumMonitor).addActionWithHeatmap(
             eq(RumActionType.TAP),
             eq(""),

@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.internal.heatmaps
+package com.datadog.android.heatmaps
 
 import android.view.View
 import android.view.ViewParent

@@ -12,10 +12,10 @@ import android.view.ViewGroup
 import androidx.annotation.UiThread
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.heatmaps.heatmapViewKey
 import com.datadog.android.internal.heatmaps.HeatmapIdentifier
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
-import com.datadog.android.internal.heatmaps.heatmapViewKey
-import com.datadog.android.internal.heatmaps.isValidTapTarget
+import com.datadog.android.internal.utils.isValidTapTarget
 
 internal class HeatmapIdentifierResolver(
     private val appPackageName: String,

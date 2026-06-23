@@ -7,6 +7,7 @@
 package com.datadog.android.internal.heatmaps
 
 import com.datadog.android.internal.utils.toHexString
+import java.io.UnsupportedEncodingException
 import java.net.URLEncoder
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
@@ -29,6 +30,11 @@ data class HeatmapIdentifier(val rawValue: String) {
          * Creates a [HeatmapIdentifier] for the given UI element by hashing its canonical path,
          * or null if hashing fails.
          *
+         * All string parameters must be **raw, unencoded** values — this function applies
+         * percent-encoding internally. Cross-platform SDKs must pass raw strings (e.g. the
+         * literal screen name returned by `getCurrentViewUrl()`, not a pre-encoded version)
+         * so that the identifier is always produced by the same Android encoding logic.
+         *
          * @param elementPath the path segments from the root view down to this element,
          *   where each segment identifies a view in the hierarchy (e.g. its resource entry name).
          * @param screenName the current RUM view URL, used to scope identifiers to a screen.
@@ -37,7 +43,6 @@ data class HeatmapIdentifier(val rawValue: String) {
          * @param appPackageName the application package name (e.g. `com.example.app`),
          *   used to globally namespace identifiers across apps.
          * @param onHashingFailure invoked with the caught exception if hashing fails.
-         *   Callers should forward this to telemetry.
          */
         fun create(
             elementPath: List<String>,
@@ -45,8 +50,18 @@ data class HeatmapIdentifier(val rawValue: String) {
             appPackageName: String,
             onHashingFailure: (Throwable) -> Unit = {}
         ): HeatmapIdentifier? {
-            val path = canonicalPath(elementPath, screenName, appPackageName)
-            return sha256Hex(path, onHashingFailure)?.let { HeatmapIdentifier(it) }
+            return try {
+                val path = canonicalPath(elementPath, screenName, appPackageName)
+                HeatmapIdentifier(sha256Hex(path))
+            } catch (e: NoSuchAlgorithmException) {
+                // Unreachable on Android: SHA-256 is always available.
+                onHashingFailure(e)
+                null
+            } catch (e: UnsupportedEncodingException) {
+                // Thrown by URLEncoder.encode if UTF-8 is unavailable (unreachable on Android).
+                onHashingFailure(e)
+                null
+            }
         }
 
         private fun canonicalPath(
@@ -63,21 +78,15 @@ data class HeatmapIdentifier(val rawValue: String) {
             }
         }
 
-        @Suppress("UnsafeThirdPartyFunctionCall") // UTF-8 is always available on Android; cannot throw
+        @Suppress("UnsafeThirdPartyFunctionCall") // UnsupportedEncodingException caught in create()
         private fun escape(input: String): String = URLEncoder.encode(input, "UTF-8")
 
-        private fun sha256Hex(input: String, onHashingFailure: (Throwable) -> Unit): String? {
-            return try {
-                val digest = MessageDigest.getInstance("SHA-256")
-                // digest(ByteArray) does not throw: the input is non-null (toByteArray always
-                // returns a non-null array) and DigestException is only declared on the
-                // offset/length overload, not this one.
-                @Suppress("UnsafeThirdPartyFunctionCall")
-                digest.digest(input.toByteArray(Charsets.UTF_8)).toHexString()
-            } catch (e: NoSuchAlgorithmException) {
-                onHashingFailure(e)
-                null
-            }
+        @Suppress("UnsafeThirdPartyFunctionCall") // SHA-256 is always available on Android
+        private fun sha256Hex(input: String): String {
+            val digest = MessageDigest.getInstance("SHA-256")
+            // digest(ByteArray): input is non-null, DigestException not thrown on this overload.
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            return digest.digest(input.toByteArray(Charsets.UTF_8)).toHexString()
         }
     }
 }

@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.feature.event.ThreadDump
+import com.datadog.android.heatmaps.CrossPlatformHeatmapActionData
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
@@ -16,6 +17,7 @@ import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
+import com.datadog.android.rum.internal.heatmaps.NativeHeatmapActionData
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.model.ActionEvent
@@ -41,7 +43,9 @@ internal sealed class RumRawEvent {
         val type: RumActionType,
         val name: String,
         val waitForStop: Boolean,
-        val heatmapData: HeatmapActionData? = null,
+        val nativeHeatmapActionData: NativeHeatmapActionData? = null,
+        val crossPlatformHeatmapActionData: CrossPlatformHeatmapActionData? = null,
+        val appPackageName: String? = null,
         override val eventTime: Time = Time(),
         val attributes: Map<String, Any?> = emptyMap()
     ) : RumRawEvent()

@@ -11,6 +11,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.heatmaps.NativeHeatmapActionData
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.operations.FailureReason
 import com.datadog.tools.unit.forge.aThrowable
@@ -45,13 +46,13 @@ internal fun Forge.stopViewEvent(): RumRawEvent.StopView {
 internal fun Forge.startActionEvent(
     continuous: Boolean? = null,
     eventTime: Time = Time(),
-    heatmapData: HeatmapActionData? = null
+    nativeHeatmapActionData: NativeHeatmapActionData? = null
 ): RumRawEvent.StartAction {
     return RumRawEvent.StartAction(
         type = aValueFrom(RumActionType::class.java),
         name = anAlphabeticalString(),
         waitForStop = continuous ?: aBool(),
-        heatmapData = heatmapData,
+        nativeHeatmapActionData = nativeHeatmapActionData,
         eventTime = eventTime,
         attributes = exhaustiveAttributes()
     )
