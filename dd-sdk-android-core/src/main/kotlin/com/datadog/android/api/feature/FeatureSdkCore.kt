@@ -95,7 +95,7 @@ interface FeatureSdkCore : SdkCore {
 
     /**
      * Sets feature context update listener. Once subscribed, current context will be emitted
-     * immdediately if it exists.
+     * immediately if it exists.
      *
      * @param listener Listener to remove.
      */
@@ -117,7 +117,7 @@ interface FeatureSdkCore : SdkCore {
 
     /**
      * Returns a new [ScheduledExecutorService], set up with internal monitoring.
-     * It will use a default of one thread and can spawn at most as many thread as there are CPU cores.
+     * It will use a default of one thread and can spawn at most as many threads as there are CPU cores.
      *
      * @param executorContext Context to be used for logging and naming threads running on this executor.
      */

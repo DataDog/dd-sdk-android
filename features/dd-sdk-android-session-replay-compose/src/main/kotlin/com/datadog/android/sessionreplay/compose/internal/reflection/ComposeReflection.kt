@@ -50,6 +50,16 @@ internal object ComposeReflection {
     val ColorField = BackgroundElementClass?.getDeclaredFieldSafe("color")
     val ShapeField = BackgroundElementClass?.getDeclaredFieldSafe("shape")
 
+    val BrushField = BackgroundElementClass?.getDeclaredFieldSafe("brush", isCritical = false)
+    val AlphaField = BackgroundElementClass?.getDeclaredFieldSafe("alpha", isCritical = false)
+
+    val LinearGradientClass = getClassSafe("androidx.compose.ui.graphics.LinearGradient", isCritical = false)
+    val LinearGradientColorsField = LinearGradientClass?.getDeclaredFieldSafe("colors", isCritical = false)
+    val RadialGradientClass = getClassSafe("androidx.compose.ui.graphics.RadialGradient", isCritical = false)
+    val RadialGradientColorsField = RadialGradientClass?.getDeclaredFieldSafe("colors", isCritical = false)
+    val SweepGradientClass = getClassSafe("androidx.compose.ui.graphics.SweepGradient", isCritical = false)
+    val SweepGradientColorsField = SweepGradientClass?.getDeclaredFieldSafe("colors", isCritical = false)
+
     val DrawBehindElementClass = getClassSafe("androidx.compose.ui.draw.DrawBehindElement")
     val CheckboxKtClass = getClassSafe("androidx.compose.material.CheckboxKt\$CheckboxImpl\$1\$1", false)
     val RadioButtonKtClass = getClassSafe("androidx.compose.material.RadioButtonKt\$RadioButton\$2\$1", false)

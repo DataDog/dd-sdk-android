@@ -123,12 +123,12 @@ internal class FlagsClientTest {
 
     @Test
     fun `M return no-op default W get() + resolveBooleanValue() {no client registered for SDK core}`(
-        @StringForgery fakeFlagName: String,
+        @StringForgery fakeFlagKey: String,
         @BoolForgery fakeFlagDefaultValue: Boolean
     ) {
         // When
         val client = FlagsClient.get(sdkCore = mockSdkCore)
-        val result = client.resolveBooleanValue(fakeFlagName, fakeFlagDefaultValue)
+        val result = client.resolveBooleanValue(fakeFlagKey, fakeFlagDefaultValue)
 
         // Then
         assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)

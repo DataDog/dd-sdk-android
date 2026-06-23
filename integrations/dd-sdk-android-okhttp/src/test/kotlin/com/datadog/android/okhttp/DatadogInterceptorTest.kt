@@ -24,10 +24,10 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.resource.ResourceHeadersExtractor
 import com.datadog.android.rum.resource.ResourceId
-import com.datadog.android.trace.DeterministicTraceSampler
 import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.tracer.DatadogTracer
+import com.datadog.android.trace.internal.net.SessionRebasedSampler
 import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.forge.BaseConfigurator
@@ -225,7 +225,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         assertThat(interceptor.tracedRequestListener)
             .isInstanceOf(NoOpTracedRequestListener::class.java)
         assertThat(interceptor.traceSampler)
-            .isInstanceOf(DeterministicTraceSampler::class.java)
+            .isInstanceOf(SessionRebasedSampler::class.java)
         assertThat(interceptor.traceSampler.getSampleRate()).isEqualTo(
             TracingInterceptor.DEFAULT_TRACE_SAMPLE_RATE
         )
@@ -253,7 +253,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         assertThat(interceptor.tracedRequestListener)
             .isInstanceOf(NoOpTracedRequestListener::class.java)
         assertThat(interceptor.traceSampler)
-            .isInstanceOf(DeterministicTraceSampler::class.java)
+            .isInstanceOf(SessionRebasedSampler::class.java)
         assertThat(interceptor.traceSampler.getSampleRate()).isEqualTo(
             TracingInterceptor.DEFAULT_TRACE_SAMPLE_RATE
         )
@@ -351,7 +351,9 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
-        val mimeType = forge.anElementFrom(DatadogInterceptor.STREAM_CONTENT_TYPES)
+        val mimeType = forge.anElementFrom(
+            HttpSpec.ContentType.values().filter(HttpSpec.ContentType::isStream)
+        )
         fakeMediaType = mimeType.toMediaType()
         stubChain(mockChain, statusCode)
         val expectedStartAttrs = emptyMap<String, Any?>()

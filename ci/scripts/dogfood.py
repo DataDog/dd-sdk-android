@@ -106,14 +106,32 @@ def git_clone_repository(repo_name: str, gh_token: str, temp_dir_path: str) -> T
     return repo, base_name
 
 
-def git_push_changes(repo: Repo, version: str):
+def git_push_changes(repo: Repo, version: str, repo_name: str, branch_name: str, base_sha: str, gh_token: str):
     print("Committing changes")
     repo.git.add(update=True)
     repo.index.commit("Update Datadog SDK to " + version)
 
-    print("Pushing branch")
-    origin = repo.remote(name="origin")
-    repo.git.push("--set-upstream", "--force", origin, repo.head.ref)
+    print("Pushing branch with commit-headless (signed)")
+    target = "DataDog/" + repo_name
+    head_sha = repo.head.commit.hexsha
+    result = subprocess.run(
+        [
+            "commit-headless", "push",
+            "-T", target,
+            "--branch", branch_name,
+            "--head-sha", base_sha,
+            "--create-branch",
+            head_sha,
+        ],
+        cwd=repo.working_dir,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "HEADLESS_TOKEN": gh_token},
+    )
+    if result.returncode != 0:
+        print("commit-headless push failed: " + result.stderr)
+        sys.exit(1)
+    print("Signed commit pushed: " + result.stdout.strip())
 
 
 def update_dependant(version: str, target: str, gh_token: str, dry_run: bool) -> int:
@@ -123,6 +141,7 @@ def update_dependant(version: str, target: str, gh_token: str, dry_run: bool) ->
     repo_name = REPOSITORIES[target]
 
     repo, base_name = git_clone_repository(repo_name, gh_token, temp_dir_path)
+    base_sha = repo.head.commit.hexsha
 
     print("Creating branch " + branch_name)
     repo.git.checkout('HEAD', b=branch_name)
@@ -134,7 +153,7 @@ def update_dependant(version: str, target: str, gh_token: str, dry_run: bool) ->
         return 0
 
     if not dry_run:
-        git_push_changes(repo, version)
+        git_push_changes(repo, version, repo_name, branch_name, base_sha, gh_token)
 
         return github_create_pr(repo_name, branch_name, base_name, version, previous_version, gh_token)
     

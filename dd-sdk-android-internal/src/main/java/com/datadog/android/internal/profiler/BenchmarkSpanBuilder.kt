@@ -9,7 +9,7 @@ package com.datadog.android.internal.profiler
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**
- * Interface of benchmark span builder. This should only used by internal benchmarking.
+ * Interface of benchmark span builder. This should only be used by internal benchmarking.
  */
 @NoOpImplementation
 interface BenchmarkSpanBuilder {

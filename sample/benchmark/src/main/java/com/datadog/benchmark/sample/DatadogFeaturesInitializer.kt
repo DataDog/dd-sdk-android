@@ -48,10 +48,6 @@ internal class DatadogFeaturesInitializer @Inject constructor(
     private var isInitialized = false
 
     fun initialize(config: BenchmarkConfig, intent: Intent) {
-        if (config.run == SyntheticsRun.Baseline) {
-            return
-        }
-
         if (isInitialized) {
             return
         }
@@ -100,11 +96,9 @@ internal class DatadogFeaturesInitializer @Inject constructor(
     }
 
     private fun needToEnableRum(config: BenchmarkConfig): Boolean {
-        return if (isInstrumentedRun(config)) {
-            isSessionReplayScenario(config) || isRumScenario(config)
-        } else {
-            false
-        }
+        // Session Replay requires RUM, so RUM is enabled in both baseline and instrumented for SR
+        // scenarios — this way the diff isolates Session Replay overhead.
+        return isSessionReplayScenario(config) || (isInstrumentedRun(config) && isRumScenario(config))
     }
 
     @OptIn(ExperimentalRumApi::class)

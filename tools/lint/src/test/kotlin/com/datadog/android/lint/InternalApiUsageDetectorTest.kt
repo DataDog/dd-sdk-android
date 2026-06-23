@@ -22,10 +22,10 @@ import org.junit.jupiter.api.extension.Extensions
 )
 internal class InternalApiUsageDetectorTest {
 
-    @StringForgery(regex = "(com|org|fr)\\.[a-z]{1,10}")
+    @StringForgery(regex = "(com|org|fr)\\.[a-z]{1,7}pkg")
     lateinit var nonDatadogPackage: String
 
-    @StringForgery(regex = "com\\.datadog(|\\.[a-z]{1,13})")
+    @StringForgery(regex = "com\\.datadog(|\\.[a-z]{1,10}pkg)")
     lateinit var datadogPackage: String
 
     @Test

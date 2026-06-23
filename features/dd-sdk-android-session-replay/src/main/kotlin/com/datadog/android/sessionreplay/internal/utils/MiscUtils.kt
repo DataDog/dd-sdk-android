@@ -14,6 +14,7 @@ import android.view.WindowManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.utils.densityNormalized
+import com.datadog.android.internal.utils.getSystemServiceAs
 import com.datadog.android.sessionreplay.recorder.SystemInformation
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.GlobalBounds
@@ -103,7 +104,7 @@ internal object MiscUtils {
         screenDensity: Float,
         buildSdkVersionProvider: BuildSdkVersionProvider
     ): GlobalBounds {
-        val windowManager = (context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager)
+        val windowManager = context.getSystemServiceAs<WindowManager>(Context.WINDOW_SERVICE)
             ?: return GlobalBounds(0, 0, 0, 0)
         val screenHeight: Long
         val screenWidth: Long

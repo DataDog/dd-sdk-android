@@ -14,6 +14,7 @@ import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.core.graphics.toRect
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.withinComposeBenchmarkSpan
@@ -36,10 +37,12 @@ internal class RootSemanticsNodeMapper(
     ),
     // Text doesn't have a role in semantics, so it should be a fallback mapper.
     private val textSemanticsNodeMapper: TextSemanticsNodeMapper = TextSemanticsNodeMapper(
-        colorStringFormatter
+        colorStringFormatter,
+        semanticsUtils
     ),
     private val textFieldSemanticsNodeMapper: TextFieldSemanticsNodeMapper = TextFieldSemanticsNodeMapper(
-        colorStringFormatter
+        colorStringFormatter,
+        semanticsUtils
     ),
     private val containerSemanticsNodeMapper: ContainerSemanticsNodeMapper = ContainerSemanticsNodeMapper(
         colorStringFormatter,
@@ -60,7 +63,8 @@ internal class RootSemanticsNodeMapper(
         semanticsNode: SemanticsNode,
         density: Float,
         mappingContext: MappingContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
         val wireframes = mutableListOf<MobileSegment.Wireframe>()
         withinComposeBenchmarkSpan(ROOT_NODE_SPAN_NAME, true) {
@@ -76,7 +80,8 @@ internal class RootSemanticsNodeMapper(
                     imageWireframeHelper = mappingContext.imageWireframeHelper
                 ),
                 asyncJobStatusCallback = asyncJobStatusCallback,
-                mappingContext = mappingContext
+                mappingContext = mappingContext,
+                internalLogger = internalLogger
             )
         }
         return wireframes
@@ -90,7 +95,8 @@ internal class RootSemanticsNodeMapper(
         wireframes: MutableList<MobileSegment.Wireframe>,
         parentUiContext: UiContext,
         asyncJobStatusCallback: AsyncJobStatusCallback,
-        mappingContext: MappingContext
+        mappingContext: MappingContext,
+        internalLogger: InternalLogger
     ) {
         if (semanticsUtils.isNodePositionUnavailable(semanticsNode)) {
             // If we cant get the real position, we skip the node.
@@ -103,7 +109,8 @@ internal class RootSemanticsNodeMapper(
             composeHiddenMapper.map(
                 semanticsNode,
                 parentUiContext,
-                asyncJobStatusCallback
+                asyncJobStatusCallback,
+                internalLogger
             )?.let {
                 wireframes.addAll(it.wireframes)
             }
@@ -131,7 +138,8 @@ internal class RootSemanticsNodeMapper(
             val semanticsWireframe = mapper.map(
                 semanticsNode = semanticsNode,
                 parentContext = parentUiContext,
-                asyncJobStatusCallback = asyncJobStatusCallback
+                asyncJobStatusCallback = asyncJobStatusCallback,
+                internalLogger = internalLogger
             )
             var currentUiContext = parentUiContext
             semanticsWireframe?.let {
@@ -146,7 +154,8 @@ internal class RootSemanticsNodeMapper(
                     wireframes = wireframes,
                     parentUiContext = currentUiContext,
                     asyncJobStatusCallback = asyncJobStatusCallback,
-                    mappingContext = mappingContext
+                    mappingContext = mappingContext,
+                    internalLogger = internalLogger
                 )
             }
         }

@@ -599,6 +599,28 @@ internal open class RumViewScope(
 
         if (stopped) return
 
+        if (event.type == RumActionType.CUSTOM && !event.waitForStop) {
+            // Discrete custom actions (added via addAction(), i.e. waitForStop == false) are
+            // self-contained events: they must be written immediately, without waiting for an
+            // inactivity timeout or a subsequent event. This also holds when another action is
+            // ongoing. Continuous custom actions (startAction(), waitForStop == true) are not
+            // handled here: they stay open until stopAction() is called.
+            val customActionScope = RumActionScope.fromEvent(
+                parentScope = this,
+                sdkCore = sdkCore,
+                event = event,
+                timestampOffset = serverTimeOffsetInMs,
+                featuresContextResolver = featuresContextResolver,
+                trackFrustrations = trackFrustrations,
+                sampleRate = sampleRate,
+                rumSessionTypeOverride = rumSessionTypeOverride,
+                insightsCollector = insightsCollector
+            )
+            pendingActionCount++
+            customActionScope.handleEvent(RumRawEvent.SendCustomActionNow(), datadogContext, writeScope, writer)
+            return
+        }
+
         if (activeActionScope != null) {
             if (event.type == RumActionType.CUSTOM && !event.waitForStop) {
                 // deliver it anyway, even if there is active action ongoing

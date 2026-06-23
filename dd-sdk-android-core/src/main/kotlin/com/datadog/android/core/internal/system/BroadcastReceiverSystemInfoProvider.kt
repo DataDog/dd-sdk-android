@@ -11,16 +11,19 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
+import android.os.Handler
 import android.os.PowerManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.receiver.ThreadSafeReceiver
+import com.datadog.android.internal.utils.getSystemServiceAs
 import kotlin.math.roundToInt
 
 internal class BroadcastReceiverSystemInfoProvider(
-    private val internalLogger: InternalLogger
-) :
-    ThreadSafeReceiver(), SystemInfoProvider {
+    private val internalLogger: InternalLogger,
+    private val handler: Handler
+) : ThreadSafeReceiver(), SystemInfoProvider {
 
+    @Volatile
     private var systemInfo: SystemInfo = SystemInfo()
 
     // region BroadcastReceiver
@@ -82,7 +85,7 @@ internal class BroadcastReceiverSystemInfoProvider(
     private fun registerIntentFilter(context: Context, action: String) {
         val filter = IntentFilter()
         filter.addAction(action)
-        registerReceiver(context, filter)?.let { onReceive(context, it) }
+        registerReceiver(context, filter, handler)?.let { onReceive(context, it) }
     }
 
     private fun handleBatteryIntent(intent: Intent) {
@@ -108,7 +111,7 @@ internal class BroadcastReceiverSystemInfoProvider(
     }
 
     private fun handlePowerSaveIntent(context: Context) {
-        val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+        val powerManager = context.getSystemServiceAs<PowerManager>(Context.POWER_SERVICE)
         val powerSaveMode = powerManager?.isPowerSaveMode ?: false
         systemInfo = systemInfo.copy(
             powerSaveMode = powerSaveMode

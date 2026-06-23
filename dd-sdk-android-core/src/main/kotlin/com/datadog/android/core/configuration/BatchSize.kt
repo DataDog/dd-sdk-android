@@ -8,7 +8,7 @@ package com.datadog.android.core.configuration
 
 /**
  * Defines the policy when batching data together.
- * Smaller batches will means smaller but more network requests,
+ * Smaller batches means smaller but more network requests,
  * whereas larger batches will mean fewer but larger network requests.
  */
 @Suppress("MagicNumber")
@@ -19,7 +19,7 @@ enum class BatchSize(
     /** Prefer small batches. **/
     SMALL(3000L),
 
-    /** Prefer medium sized batches. **/
+    /** Prefer medium-sized batches. **/
     MEDIUM(10000L),
 
     /** Prefer large batches. **/

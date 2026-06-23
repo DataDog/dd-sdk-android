@@ -113,8 +113,9 @@ fun Project.detektCustomConfig() {
 
     tasks.register<JavaExec>("customDetektRules") {
         group = "datadog"
+        maxHeapSize = "2g"
 
-        classpath = files("${rootDir.absolutePath}/detekt-cli-1.23.4-all.jar")
+        classpath = files("${rootDir.absolutePath}/detekt-cli-1.23.8-all.jar")
 
         args(
             "--config",

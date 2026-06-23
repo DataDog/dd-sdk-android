@@ -9,11 +9,10 @@ package com.datadog.android.rum
 import android.app.ActivityManager
 import android.content.ContentProvider
 import android.content.ContentValues
-import android.content.Context
 import android.database.Cursor
 import android.net.Uri
-import android.os.Process
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 
 /**
  * A Content provider used to monitor the Application startup time efficiently.
@@ -21,14 +20,9 @@ import android.util.Log
 class DdRumContentProvider : ContentProvider() {
 
     override fun onCreate(): Boolean {
-        if (processImportance == 0) {
-            val manager = context?.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
-            val currentProcessId = Process.myPid()
-            val currentProcess = manager?.runningAppProcesses?.firstOrNull {
-                it.pid == currentProcessId
-            }
-            processImportance = currentProcess?.importance ?: DEFAULT_IMPORTANCE
-            Log.w("DdRumContentProvider", "processImportance:$processImportance")
+        if (_processImportance == null) {
+            _processImportance = readProcessImportance()
+            Log.w("DdRumContentProvider", "processImportance:$_processImportance")
         }
         return true
     }
@@ -65,14 +59,43 @@ class DdRumContentProvider : ContentProvider() {
     }
 
     companion object {
-        internal const val DEFAULT_IMPORTANCE: Int =
-            ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+        @Volatile
+        private var _processImportance: Int? = null
 
         /**
-         * Process importance at the moment of creating [DdRumContentProvider]
-         * Should be set from the outside only in tests.
+         * Process importance at the moment of creating [DdRumContentProvider].
+         * If accessed before [DdRumContentProvider.onCreate] is called (e.g. by another
+         * ContentProvider initialised first), it is computed on demand so the value is
+         * never stale. Should be set from the outside only in tests.
          */
-        var processImportance: Int = 0
+        var processImportance: Int
+            get() {
+                val stored = _processImportance
+                if (stored != null) return stored
+                val currentProcessImportance = readProcessImportance()
+                _processImportance = currentProcessImportance
+                return currentProcessImportance
+            }
+
+            /**
+             * Do not call this from production code.
+             */
+            @VisibleForTesting
+            set(value) {
+                _processImportance = if (value == 0) null else value
+            }
+
+        private fun readProcessImportance(): Int {
+            val processInfo = ActivityManager.RunningAppProcessInfo()
+            try {
+                ActivityManager.getMyMemoryState(processInfo)
+            } catch (@Suppress("TooGenericExceptionCaught") e: RuntimeException) {
+                // in this case default value of RunningAppProcessInfo.importance will be returned,
+                // which is IMPORTANCE_FOREGROUND
+                Log.e("DdRumContentProvider", "Cannot read process importance from ActivityManager", e)
+            }
+            return processInfo.importance
+        }
 
         /**
          * fallback for APIs below Android N, see [DefaultAppStartTimeProvider].
