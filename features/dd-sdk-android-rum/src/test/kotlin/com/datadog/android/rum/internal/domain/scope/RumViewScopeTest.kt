@@ -6083,6 +6083,109 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `M set profiling status RUNNING in ViewEvent W handleEvent(StartView) {profiler running}`(
+        @Forgery key: RumScopeKey
+    ) {
+        // Given
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(Feature.PROFILING_FEATURE_NAME, mapOf(FeatureContextKeys.PROFILER_IS_RUNNING to true))
+            }
+        )
+
+        // When
+        testedScope.handleEvent(RumRawEvent.StartView(key, emptyMap()), datadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue).hasProfilingStatus(ViewEvent.ProfilingStatus.RUNNING)
+        }
+    }
+
+    @Test
+    fun `M not set profiling in ViewEvent W handleEvent(StartView) {profiler not running}`(
+        @Forgery key: RumScopeKey
+    ) {
+        // Given
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(Feature.PROFILING_FEATURE_NAME, mapOf(PROFILER_IS_RUNNING to false))
+            }
+        )
+
+        // When
+        testedScope.handleEvent(RumRawEvent.StartView(key, emptyMap()), datadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue).hasNoProfiling()
+        }
+    }
+
+    @Test
+    fun `M include quotaReason in ViewEvent W handleEvent(StartView) {profiler not running and quota denied}`(
+        @Forgery key: RumScopeKey,
+        @StringForgery fakeQuotaReason: String
+    ) {
+        // Given
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeParentContext.sessionId
+                    )
+                )
+            }
+        )
+
+        // When
+        testedScope.handleEvent(RumRawEvent.StartView(key, emptyMap()), datadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue.dd.profiling?.quotaReason).isEqualTo(fakeQuotaReason)
+            assertThat(lastValue.dd.profiling?.status).isEqualTo(ViewEvent.ProfilingStatus.STOPPED)
+        }
+    }
+
+    @Test
+    fun `M ignore stale quotaReason in ViewEvent W handleEvent(StartView) {quota reason for other session}`(
+        @Forgery key: RumScopeKey,
+        @StringForgery fakeQuotaReason: String,
+        @StringForgery fakeOtherSessionId: String
+    ) {
+        // Given — the quota reason is stamped with a different session than the current one
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeOtherSessionId
+                    )
+                )
+            }
+        )
+
+        // When
+        testedScope.handleEvent(RumRawEvent.StartView(key, emptyMap()), datadogContext, mockEventWriteScope, mockWriter)
+
+        // Then — the stale reason is ignored and no profiling status is attached
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue.dd.profiling?.quotaReason).isNull()
+            assertThat(lastValue.dd.profiling?.status).isNull()
+        }
+    }
+
+    @Test
     fun `M decrease pending Long Task W handleEvent(LongTaskDropped) on active view {not frozen}`(
         @LongForgery(1) pendingLongTask: Long,
         @LongForgery(1) pendingFrozenFrame: Long

@@ -1394,7 +1394,8 @@ internal open class RumViewScope(
                         sessionSampleRate = sampleRate,
                         sessionReplaySampleRate = resolveSessionReplaySampleRate(datadogContext),
                         traceSampleRate = resolveTraceSampleRate(datadogContext)
-                    )
+                    ),
+                    profiling = resolveViewProfilingStatus(datadogContext)
                 ),
                 connectivity = datadogContext.networkInfo.toViewConnectivity(),
                 service = datadogContext.service,
@@ -1710,6 +1711,19 @@ internal open class RumViewScope(
                 quotaReason = quotaReason
             )
 
+            else -> null
+        }
+    }
+
+    private fun resolveViewProfilingStatus(datadogContext: DatadogContext): ViewEvent.Profiling? {
+        val isRunning = datadogContext.isProfilerRunning()
+        val quotaReason = datadogContext.resolveProfilingQuotaReason(sessionId)
+        return when {
+            isRunning -> ViewEvent.Profiling(status = ViewEvent.ProfilingStatus.RUNNING)
+            quotaReason != null -> ViewEvent.Profiling(
+                status = ViewEvent.ProfilingStatus.STOPPED,
+                quotaReason = quotaReason
+            )
             else -> null
         }
     }
