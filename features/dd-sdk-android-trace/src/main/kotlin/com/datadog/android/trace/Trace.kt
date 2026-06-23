@@ -31,7 +31,8 @@ object Trace {
             sdkCore = sdkCore as FeatureSdkCore,
             customEndpointUrl = traceConfiguration.customEndpointUrl,
             spanEventMapper = traceConfiguration.eventMapper,
-            networkInfoEnabled = traceConfiguration.networkInfoEnabled
+            networkInfoEnabled = traceConfiguration.networkInfoEnabled,
+            clientSideStatsEnabled = traceConfiguration.statsComputationEnabled
         )
 
         sdkCore.registerFeature(tracingFeature)
