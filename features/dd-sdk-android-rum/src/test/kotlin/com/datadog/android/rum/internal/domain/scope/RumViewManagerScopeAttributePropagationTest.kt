@@ -176,7 +176,8 @@ internal class RumViewManagerScopeAttributePropagationTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionTypeOverride = fakeRumSessionType,
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            heatmapIdentifierRegistry = null
         )
     }
 

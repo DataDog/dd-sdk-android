@@ -29,7 +29,8 @@ data class SessionReplayConfiguration internal constructor(
     internal val textAndInputPrivacy: TextAndInputPrivacy,
     internal val dynamicOptimizationEnabled: Boolean,
     internal val systemRequirementsConfiguration: SystemRequirementsConfiguration,
-    internal val internalCallback: SessionReplayInternalCallback
+    internal val internalCallback: SessionReplayInternalCallback,
+    internal val heatmapsEnabled: Boolean
 ) {
 
     /**
@@ -76,6 +77,7 @@ data class SessionReplayConfiguration internal constructor(
         private var dynamicOptimizationEnabled = true
         private var systemRequirementsConfiguration = SystemRequirementsConfiguration.NONE
         private var internalCallback: SessionReplayInternalCallback = NoOpSessionReplayInternalCallback()
+        private var heatmapsEnabled = false
 
         /**
          * Adds an extension support implementation. This is mostly used when you want to provide
@@ -215,6 +217,16 @@ data class SessionReplayConfiguration internal constructor(
         }
 
         /**
+         * Enables or disables heatmap recording. When enabled, tap targets in the view tree are assigned
+         * stable identifiers that correlate with RUM action events, powering the heatmap feature.
+         * Disabled by default.
+         */
+        fun setHeatmapsEnabled(heatmapsEnabled: Boolean): Builder {
+            this.heatmapsEnabled = heatmapsEnabled
+            return this
+        }
+
+        /**
          * Allows definition of custom callback functions for Session Replay
          * that may require platform-specific behavior.
          * Currently, this enables defining:
@@ -244,7 +256,8 @@ data class SessionReplayConfiguration internal constructor(
                 startRecordingImmediately = startRecordingImmediately,
                 dynamicOptimizationEnabled = dynamicOptimizationEnabled,
                 systemRequirementsConfiguration = systemRequirementsConfiguration,
-                internalCallback = internalCallback
+                internalCallback = internalCallback,
+                heatmapsEnabled = heatmapsEnabled
             )
         }
 

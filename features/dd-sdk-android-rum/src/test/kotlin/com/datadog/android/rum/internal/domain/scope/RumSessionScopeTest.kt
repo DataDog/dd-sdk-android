@@ -1786,7 +1786,8 @@ internal class RumSessionScopeTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = { mockRumSessionScopeStartupManager },
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            heatmapIdentifierRegistry = null
         )
 
         if (withMockChildScope) {

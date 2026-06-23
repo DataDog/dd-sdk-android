@@ -15,12 +15,14 @@ import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.listener.WindowsOnDrawListener
+import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 
 internal class DefaultOnDrawListenerProducer(
     private val snapshotProducer: SnapshotProducer,
     private val recordedDataQueueHandler: RecordedDataQueueHandler,
     private val sdkCore: FeatureSdkCore,
-    private val dynamicOptimizationEnabled: Boolean
+    private val dynamicOptimizationEnabled: Boolean,
+    private val rumContextProvider: RumContextProvider
 ) : OnDrawListenerProducer {
 
     override fun create(
@@ -38,7 +40,8 @@ internal class DefaultOnDrawListenerProducer(
             sdkCore = sdkCore,
             methodCallSamplingRate = MethodCallSamplingRate.LOW.rate,
             dynamicOptimizationEnabled = dynamicOptimizationEnabled,
-            touchPrivacyManager = touchPrivacyManager
+            touchPrivacyManager = touchPrivacyManager,
+            rumContextProvider = rumContextProvider
         )
     }
 }
