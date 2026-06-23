@@ -2931,7 +2931,7 @@ internal class RumViewScopeTest {
 
         // When
         val fakeStartActionEvent =
-            RumRawEvent.StartAction(RumActionType.CUSTOM, name, waitForStop = true, attributes)
+            RumRawEvent.StartAction(RumActionType.CUSTOM, name, waitForStop = true, attributes = attributes)
         val result = testedScope.handleEvent(
             fakeStartActionEvent,
             fakeDatadogContext,
@@ -2960,7 +2960,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
-        fakeEvent = RumRawEvent.StartAction(RumActionType.CUSTOM, name, false, attributes)
+        fakeEvent = RumRawEvent.StartAction(RumActionType.CUSTOM, name, false, attributes = attributes)
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
