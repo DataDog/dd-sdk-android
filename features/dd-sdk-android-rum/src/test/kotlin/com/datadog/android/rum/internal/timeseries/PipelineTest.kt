@@ -14,6 +14,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.timeseries.provider.DataPointsReader
 import com.datadog.android.rum.internal.timeseries.serializer.JsonSerializer
 import com.datadog.android.rum.utils.forge.Configurator
@@ -70,6 +71,9 @@ internal class PipelineTest {
     @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
 
+    @Mock
+    lateinit var mockInsightsCollector: InsightsCollector
+
     @IntForgery(min = 2, max = 10)
     var fakeBufferSize: Int = 0
 
@@ -88,7 +92,14 @@ internal class PipelineTest {
         }
 
         buffer = Buffer(fakeBufferSize)
-        testedPipeline = Pipeline(mockSdkCore, mockReader, buffer, mockSerializer, mockDataWriter)
+        testedPipeline = Pipeline(
+            sdkCore = mockSdkCore,
+            reader = mockReader,
+            buffer = buffer,
+            serializer = mockSerializer,
+            dataWriter = mockDataWriter,
+            insightsCollector = mockInsightsCollector
+        )
     }
 
     @Test
@@ -135,7 +146,8 @@ internal class PipelineTest {
     fun `M flush W execute() { buffer fills to capacity }`(forge: Forge) {
         // Given
         val fakePoint = forge.getForgery<DataPoint<Double>>()
-        val fakeJson = JsonObject().apply { addProperty("k", "v") }
+        val fakeTimeseriesName = "view.cpu"
+        val fakeJson = fakeTimeseriesJson(fakeTimeseriesName)
         whenever(mockReader.read()) doReturn fakePoint
         whenever(mockSerializer.serialize(any())) doReturn fakeJson
         repeat(fakeBufferSize - 1) { testedPipeline.execute() }
@@ -145,6 +157,7 @@ internal class PipelineTest {
 
         // Then
         verify(mockDataWriter).write(mockEventBatchWriter, fakeJson, EventType.DEFAULT)
+        verify(mockInsightsCollector).onTimeseries(fakeTimeseriesName)
         assertThat(buffer.drain()).isEmpty()
     }
 
@@ -158,6 +171,7 @@ internal class PipelineTest {
 
         // Then
         verifyNoInteractions(mockDataWriter)
+        verifyNoInteractions(mockInsightsCollector)
     }
 
     @Test
@@ -172,6 +186,7 @@ internal class PipelineTest {
 
         // Then
         verifyNoInteractions(mockDataWriter)
+        verifyNoInteractions(mockInsightsCollector)
     }
 
     // endregion
@@ -182,7 +197,8 @@ internal class PipelineTest {
     fun `M write partial buffer W flush() { buffer has data }`(forge: Forge) {
         // Given
         val fakePoint = forge.getForgery<DataPoint<Double>>()
-        val fakeJson = JsonObject().apply { addProperty("k", "v") }
+        val fakeTimeseriesName = "view.memory"
+        val fakeJson = fakeTimeseriesJson(fakeTimeseriesName)
         whenever(mockReader.read()) doReturn fakePoint
         whenever(mockSerializer.serialize(any())) doReturn fakeJson
         val sampleCount = fakeBufferSize - 1
@@ -196,6 +212,7 @@ internal class PipelineTest {
         verify(mockSerializer).serialize(captor.capture())
         assertThat(captor.firstValue).hasSize(sampleCount).allMatch { it == fakePoint }
         verify(mockDataWriter).write(mockEventBatchWriter, fakeJson, EventType.DEFAULT)
+        verify(mockInsightsCollector).onTimeseries(fakeTimeseriesName)
         assertThat(buffer.drain()).isEmpty()
     }
 
@@ -206,7 +223,17 @@ internal class PipelineTest {
 
         // Then
         verifyNoInteractions(mockDataWriter)
+        verifyNoInteractions(mockInsightsCollector)
     }
 
     // endregion
+
+    private fun fakeTimeseriesJson(name: String): JsonObject = JsonObject().apply {
+        add(
+            "timeseries",
+            JsonObject().apply {
+                addProperty("name", name)
+            }
+        )
+    }
 }

@@ -224,6 +224,7 @@ interface com.datadog.android.rum.internal.instrumentation.insights.InsightsColl
   fun onCpuVital(Double?)
   fun onMemoryVital(Double?)
   fun onSlowFrameRate(Double?)
+  fun onTimeseries(String)
 interface com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
   fun onDataUpdated()
 interface com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor : com.datadog.android.rum.RumMonitor

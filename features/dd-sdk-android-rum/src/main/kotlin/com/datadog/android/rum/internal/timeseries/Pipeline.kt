@@ -11,6 +11,8 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventType
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
+import com.datadog.android.rum.internal.instrumentation.insights.NoOpInsightsCollector
 import com.datadog.android.rum.internal.timeseries.provider.DataPointsReader
 import com.datadog.android.rum.internal.timeseries.serializer.JsonSerializer
 import com.google.gson.JsonObject
@@ -20,7 +22,8 @@ internal class Pipeline<T : Any>(
     private val reader: DataPointsReader<T>,
     private val buffer: Buffer<T>,
     private val serializer: JsonSerializer<T>,
-    private val dataWriter: DataWriter<Any>
+    private val dataWriter: DataWriter<Any>,
+    private val insightsCollector: InsightsCollector = NoOpInsightsCollector()
 ) {
     val intervalMs: Long get() = reader.intervalMs
 
@@ -39,5 +42,14 @@ internal class Pipeline<T : Any>(
     private fun write(json: JsonObject) = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
         ?.withWriteContext { _, writeScope ->
             writeScope { dataWriter.write(it, json, EventType.DEFAULT) }
+            insightsCollector.onTimeseries(json.timeseriesName())
         }
+
+    private fun JsonObject.timeseriesName(): String =
+        getAsJsonObject(KEY_TIMESERIES)?.get(KEY_NAME)?.asString.orEmpty()
+
+    private companion object {
+        private const val KEY_TIMESERIES = "timeseries"
+        private const val KEY_NAME = "name"
+    }
 }
