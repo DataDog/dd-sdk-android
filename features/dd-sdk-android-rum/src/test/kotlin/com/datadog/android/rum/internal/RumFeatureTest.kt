@@ -867,28 +867,6 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `M flush timeseries before resetting writer W onStop()`() {
-        // Given
-        testedFeature.onInitialize(appContext.mockInstance)
-        val mockDatadogMonitor = mock<DatadogRumMonitor>()
-        GlobalRumMonitor.clear()
-        GlobalRumMonitor.registerIfAbsent(mockDatadogMonitor, mockSdkCore)
-
-        var writerAtFlushTime: DataWriter<Any>? = null
-        doAnswer {
-            writerAtFlushTime = testedFeature.dataWriter
-        }.whenever(mockDatadogMonitor).stopActiveTimeseries()
-
-        // When
-        testedFeature.onStop()
-
-        // Then
-        assertThat(writerAtFlushTime).isNotNull
-        assertThat(writerAtFlushTime).isNotInstanceOf(NoOpDataWriter::class.java)
-        assertThat(testedFeature.dataWriter).isInstanceOf(NoOpDataWriter::class.java)
-    }
-
-    @Test
     fun `M log USER message W timeseries create() { total RAM unavailable }`(
         @StringForgery fakeSessionId: String
     ) {

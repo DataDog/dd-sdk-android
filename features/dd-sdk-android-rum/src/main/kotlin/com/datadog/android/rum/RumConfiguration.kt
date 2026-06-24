@@ -444,7 +444,9 @@ data class RumConfiguration internal constructor(
          */
         @JvmOverloads
         @ExperimentalRumApi
-        fun enableTimeseries(configuration: TimeseriesConfiguration = TimeseriesConfiguration()): Builder {
+        fun enableTimeseries(
+            configuration: TimeseriesConfiguration = TimeseriesConfiguration.Builder().build()
+        ): Builder {
             rumConfig = rumConfig.copy(timeseriesConfiguration = configuration)
             return this
         }
