@@ -834,10 +834,9 @@ internal class DatadogRumMonitor(
      * Stops the timeseries collector on the currently active session, if any.
      *
      * Must be called from [RumFeature.onStop] **before** [GlobalRumMonitor.unregister], so that
-     * the sampling [java.util.concurrent.ScheduledExecutorService] is shut down while the monitor
-     * is still reachable. Without this call, the executor keeps running after SDK teardown and a
-     * subsequent [com.datadog.android.Datadog.initialize] would create a second
-     * `datadog-timeseries` thread in the same process.
+     * the active session can stop sampling and flush buffered timeseries data while the monitor is
+     * still reachable. The shared RUM vitals executor is owned and shut down separately by
+     * [RumFeature.onStop].
      *
      * Must be called **before** [RumFeature.dataWriter] is replaced with a
      * [com.datadog.android.rum.internal.storage.NoOpDataWriter]. [EventWriter.write] captures the

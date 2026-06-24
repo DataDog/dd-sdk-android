@@ -121,6 +121,7 @@ public final class com/datadog/android/rum/RumConfiguration$Builder {
 	public final fun setSessionSampleRate (F)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setSlowFramesConfiguration (Lcom/datadog/android/rum/configuration/SlowFramesConfiguration;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setTelemetrySampleRate (F)Lcom/datadog/android/rum/RumConfiguration$Builder;
+	public final fun setTimeseriesConfiguration (Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setViewEventMapper (Lcom/datadog/android/rum/event/ViewEventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setVitalEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setVitalEventMapper (Lcom/datadog/android/event/EventMapper;Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
@@ -5225,7 +5226,7 @@ public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$DataPoint
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$DataPoint;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$DataPoint;
-	public final fun getMemoryMax ()Ljava/lang/Number;
+	public final fun getMemoryFootprint ()Ljava/lang/Number;
 	public final fun getMemoryPercent ()Ljava/lang/Number;
 	public fun hashCode ()I
 	public final fun toJson ()Lcom/google/gson/JsonElement;
@@ -10103,22 +10104,19 @@ public abstract interface class com/datadog/android/rum/startup/AppStartupActivi
 
 public final class com/datadog/android/rum/timeseries/TimeseriesConfiguration {
 	public static final field Companion Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration$Companion;
-	public static final field DEFAULT_BUFFER_SIZE I
-	public static final field DEFAULT_INTERVAL_MS J
-	public static final field MIN_INTERVAL_MS J
+}
+
+public final class com/datadog/android/rum/timeseries/TimeseriesConfiguration$Builder {
 	public fun <init> ()V
-	public fun <init> (I)V
-	public fun <init> (IJ)V
-	public fun <init> (IJZ)V
-	public fun <init> (IJZZ)V
-	public synthetic fun <init> (IJZZILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun getBufferSize ()I
-	public final fun getCollectInBackground ()Z
-	public final fun getIntervalMs ()J
-	public final fun getUseDeltaCompression ()Z
+	public final fun build ()Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration;
+	public final fun collectInBackground (Z)Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration$Builder;
+	public final fun setBufferSize (I)Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration$Builder;
+	public final fun setIntervalMs (J)Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration$Builder;
+	public final fun useDeltaCompression (Z)Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration$Builder;
 }
 
 public final class com/datadog/android/rum/timeseries/TimeseriesConfiguration$Companion {
+	public final fun getDEFAULT ()Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration;
 }
 
 public class com/datadog/android/rum/tracking/AcceptAllActivities : com/datadog/android/rum/tracking/ComponentPredicate {

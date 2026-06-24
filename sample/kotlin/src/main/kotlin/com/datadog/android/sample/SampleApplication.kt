@@ -40,6 +40,7 @@ import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
 import com.datadog.android.rum.resource.ResourceHeadersExtractor
+import com.datadog.android.rum.timeseries.TimeseriesConfiguration
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.sample.account.AccountFragment
 import com.datadog.android.sample.data.db.LocalDataSource
@@ -375,60 +376,62 @@ class SampleApplication : Application() {
     }
 
     @OptIn(ExperimentalRumApi::class)
-    private fun createRumConfiguration(): RumConfiguration = RumConfiguration.Builder(BuildConfig.DD_RUM_APPLICATION_ID)
-        .apply {
-            if (BuildConfig.DD_OVERRIDE_RUM_URL.isNotBlank()) {
-                useCustomEndpoint(BuildConfig.DD_OVERRIDE_RUM_URL)
+    private fun createRumConfiguration(): RumConfiguration {
+        return RumConfiguration.Builder(BuildConfig.DD_RUM_APPLICATION_ID)
+            .apply {
+                if (BuildConfig.DD_OVERRIDE_RUM_URL.isNotBlank()) {
+                    useCustomEndpoint(BuildConfig.DD_OVERRIDE_RUM_URL)
+                }
             }
-        }
-        .useViewTrackingStrategy(
-            NavigationViewTrackingStrategy(
-                R.id.nav_host_fragment,
-                true,
-                SampleNavigationPredicate()
+            .useViewTrackingStrategy(
+                NavigationViewTrackingStrategy(
+                    R.id.nav_host_fragment,
+                    true,
+                    SampleNavigationPredicate()
+                )
             )
-        )
-        .setTelemetrySampleRate(100f)
-        .trackUserInteractions()
-        .trackLongTasks(250L)
-        .trackNonFatalAnrs(true)
-        .enableRumDebugWidget(this)
-        .setViewEventMapper { event ->
-            event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-            event
-        }
-        .setActionEventMapper { event ->
-            event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-            event
-        }
-        .setResourceEventMapper { event ->
-            event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-            event
-        }
-        .setErrorEventMapper { event ->
-            event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-            event
-        }
-        .setLongTaskEventMapper { event ->
-            event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-            event
-        }
-        .setVitalEventMapper(
-            vitalOperationStepEventMapper = { event ->
-                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
-                event
-            },
-            vitalAppLaunchEventMapper = { event ->
+            .setTelemetrySampleRate(100f)
+            .trackUserInteractions()
+            .trackLongTasks(250L)
+            .trackNonFatalAnrs(true)
+            .enableRumDebugWidget(this)
+            .setViewEventMapper { event ->
                 event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                 event
             }
-        )
-        .trackBackgroundEvents(true)
-        .trackAnonymousUser(true)
-        .enableComposeActionTracking()
-        .collectAccessibility(true)
-        .enableTimeseries()
-        .build()
+            .setActionEventMapper { event ->
+                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+                event
+            }
+            .setResourceEventMapper { event ->
+                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+                event
+            }
+            .setErrorEventMapper { event ->
+                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+                event
+            }
+            .setLongTaskEventMapper { event ->
+                event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+                event
+            }
+            .setVitalEventMapper(
+                vitalOperationStepEventMapper = { event ->
+                    event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+                    event
+                },
+                vitalAppLaunchEventMapper = { event ->
+                    event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
+                    event
+                }
+            )
+            .trackBackgroundEvents(true)
+            .trackAnonymousUser(true)
+            .enableComposeActionTracking()
+            .collectAccessibility(true)
+            .setTimeseriesConfiguration(TimeseriesConfiguration.DEFAULT)
+            .build()
+    }
 
     @SuppressLint("LogNotTimber")
     private fun createDatadogConfiguration(): Configuration {

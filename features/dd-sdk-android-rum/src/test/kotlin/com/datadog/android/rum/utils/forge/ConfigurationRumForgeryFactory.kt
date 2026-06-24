@@ -77,7 +77,7 @@ internal class ConfigurationRumForgeryFactory : ForgeryFactory<RumFeature.Config
         disableJankStats = false,
         insightsCollector = mock(),
         appStartupActivityPredicate = mock(),
-        timeseriesConfiguration = forge.aNullable { TimeseriesConfiguration() },
+        timeseriesConfiguration = forge.aNullable { TimeseriesConfiguration.DEFAULT },
         rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart
     )
 }

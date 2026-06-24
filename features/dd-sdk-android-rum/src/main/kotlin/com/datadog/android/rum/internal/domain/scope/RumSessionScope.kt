@@ -166,7 +166,7 @@ internal class RumSessionScope(
 
         val actualWriter = if (sessionState == State.TRACKED) writer else noOpWriter
 
-        val rumContext = activeView?.getRumContext() ?: getRumContext()
+        val rumContext = getActiveRumContext()
 
         when (event) {
             is RumRawEvent.AppStartTTIDEvent -> {
@@ -204,7 +204,7 @@ internal class RumSessionScope(
             }
         }
 
-        timeseries.onViewTypeUpdate(rumContext.viewType)
+        timeseries.onViewTypeUpdate(getActiveRumContext().viewType)
 
         return if (isSessionComplete()) {
             null
@@ -232,11 +232,15 @@ internal class RumSessionScope(
 
     // region Internal
 
+    private fun getActiveRumContext(): RumContext {
+        return activeView?.getRumContext() ?: getRumContext()
+    }
+
     private fun startTimeseries() {
         timeseries = timeseriesFactory.create(
-            parentScope.getRumContext().applicationId,
-            sessionId,
-            rumSessionTypeOverride ?: RumSessionType.USER
+            sessionId = sessionId,
+            applicationId = parentScope.getRumContext().applicationId,
+            sessionType = getRumContext().resolveSessionType(rumSessionTypeOverride)
         )
         timeseries.onSessionStart()
     }
@@ -351,5 +355,13 @@ internal class RumSessionScope(
         internal const val RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY = "sessionSampleRate"
         internal val DEFAULT_SESSION_INACTIVITY_NS = TimeUnit.MINUTES.toNanos(15)
         internal val DEFAULT_SESSION_MAX_DURATION_NS = TimeUnit.HOURS.toNanos(4)
+
+        internal fun RumContext.resolveSessionType(rumSessionTypeOverride: RumSessionType?): RumSessionType {
+            return when {
+                rumSessionTypeOverride != null -> rumSessionTypeOverride
+                !syntheticsTestId.isNullOrBlank() && !syntheticsResultId.isNullOrBlank() -> RumSessionType.SYNTHETICS
+                else -> RumSessionType.USER
+            }
+        }
     }
 }

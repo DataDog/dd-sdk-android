@@ -89,7 +89,10 @@ class JsonSchemaReaderTest(
                 arrayOf("one_of_nested", WeirdCombo),
                 arrayOf("required_for_other_all_of", RequiredForOtherAllOf),
                 arrayOf("path_array_with_integer", PathArrayWithInteger),
-                arrayOf("path_array_with_number", PathArrayWithNumber)
+                arrayOf("path_array_with_number", PathArrayWithNumber),
+                arrayOf("one_of_primitive_ref", OneOfPrimitiveRef),
+                arrayOf("cross_file_one_of_primitive_a", CrossFileOneOfPrimitiveA),
+                arrayOf("cross_file_one_of_primitive_b", CrossFileOneOfPrimitiveB)
             )
         }
     }

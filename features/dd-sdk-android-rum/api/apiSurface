@@ -90,7 +90,8 @@ data class com.datadog.android.rum.RumConfiguration
     fun setSlowFramesConfiguration(com.datadog.android.rum.configuration.SlowFramesConfiguration?): Builder
     fun trackAnonymousUser(Boolean): Builder
     fun setAppStartupActivityPredicate(com.datadog.android.rum.startup.AppStartupActivityPredicate): Builder
-    fun enableTimeseries(com.datadog.android.rum.timeseries.TimeseriesConfiguration = TimeseriesConfiguration()): Builder
+    fun setTimeseriesConfiguration(com.datadog.android.rum.timeseries.TimeseriesConfiguration?): Builder
+    fun enableTimeseries(com.datadog.android.rum.timeseries.TimeseriesConfiguration = TimeseriesConfiguration.Builder().build()): Builder
     fun disableTimeseries(): Builder
     fun build(): RumConfiguration
 enum com.datadog.android.rum.RumErrorSource
@@ -313,13 +314,14 @@ class com.datadog.android.rum.resource.RumResourceInputStream : java.io.InputStr
 interface com.datadog.android.rum.startup.AppStartupActivityPredicate
   fun shouldTrackStartup(android.app.Activity): Boolean
 class com.datadog.android.rum.timeseries.TimeseriesConfiguration
-  constructor(Int = DEFAULT_BUFFER_SIZE, Long = DEFAULT_INTERVAL_MS, Boolean = false, Boolean = false)
-  val bufferSize: Int
-  val intervalMs: Long
+  class Builder
+    fun setBufferSize(Int): Builder
+    fun setIntervalMs(Long): Builder
+    fun collectInBackground(Boolean): Builder
+    fun useDeltaCompression(Boolean): Builder
+    fun build(): TimeseriesConfiguration
   companion object 
-    const val DEFAULT_BUFFER_SIZE: Int
-    const val DEFAULT_INTERVAL_MS: Long
-    const val MIN_INTERVAL_MS: Long
+    val DEFAULT: TimeseriesConfiguration
 open class com.datadog.android.rum.tracking.AcceptAllActivities : ComponentPredicate<android.app.Activity>
   override fun accept(android.app.Activity): Boolean
   override fun getViewName(android.app.Activity): String?
