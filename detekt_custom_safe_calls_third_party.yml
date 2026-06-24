@@ -512,6 +512,7 @@ datadog:
       - "kotlin.collections.List.fold(kotlin.Long, kotlin.Function2)"
       - "kotlin.collections.List.fold(kotlin.String?, kotlin.Function2)"
       - "kotlin.collections.List.forEach(java.util.function.Consumer)"
+      - "kotlin.collections.List.forEach(java.util.function.Consumer?)"
       - "kotlin.collections.List.forEach(kotlin.Function1)"
       - "kotlin.collections.List.forEachIndexed(kotlin.Function2)"
       - "kotlin.collections.List.getOrNull(kotlin.Int)"
