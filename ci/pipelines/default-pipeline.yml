@@ -151,13 +151,12 @@ analysis:detekt-custom:
   stage: analysis
   timeout: 1h
   script:
-    - ./gradlew assembleLibrariesRelease --stacktrace
+    - ./gradlew assembleLibrariesRelease --parallel --stacktrace
     - ./gradlew unzipAarForDetekt --stacktrace
     - ./gradlew :tools:detekt:jar --stacktrace
     - ./gradlew printDetektClasspath --stacktrace
     - curl -sSLO https://github.com/detekt/detekt/releases/download/v1.23.8/detekt-cli-1.23.8-all.jar
-    - ./gradlew customDetektRules
-
+    - ./gradlew customDetektRules --parallel --max-workers=4
 
 # TODO RUM-1622 cleanup this section
 # TESTS
@@ -173,11 +172,15 @@ test:debug:
   script:
     - rm -rf ~/.gradle/daemon/
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
-    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:debug" ./gradlew :dd-sdk-android-core:testDebugUnitTest --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
-    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:debug" ./gradlew :dd-sdk-android-internal:testDebugUnitTest --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
-    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:debug" ./gradlew :unitTestDebugFeatures --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
-    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:debug" ./gradlew :unitTestDebugIntegrations --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
-    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:debug" ./gradlew :unitTestDebugSamples --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
+    - >-
+        GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:debug" ./gradlew
+        :dd-sdk-android-core:testDebugUnitTest
+        :dd-sdk-android-internal:testDebugUnitTest
+        :unitTestDebugFeatures
+        :unitTestDebugIntegrations
+        :unitTestDebugSamples
+        --parallel --max-workers=4 --no-daemon --build-cache --gradle-user-home cache/
+        -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
   artifacts:
     when: always
     expire_in: 1 week
@@ -217,10 +220,14 @@ test:kover:
     - export DD_API_KEY=$(get_secret $DD_ANDROID_SECRET__API_KEY)
     - export DD_APP_KEY=$(get_secret $DD_ANDROID_SECRET__APP_KEY)
     - CODECOV_TOKEN=$(get_secret $DD_ANDROID_SECRET__CODECOV_TOKEN)
-    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :dd-sdk-android-core:koverXmlReportRelease  --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
-    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :dd-sdk-android-internal:koverXmlReportRelease  --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
-    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :koverReportFeatures  --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
-    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :koverReportIntegrations  --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
+    - >-
+        GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew
+        :dd-sdk-android-core:koverXmlReportRelease
+        :dd-sdk-android-internal:koverXmlReportRelease
+        :koverReportFeatures
+        :koverReportIntegrations
+        --parallel --max-workers=4 --no-daemon --build-cache --gradle-user-home cache/
+        -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
     - bash <(cat ./ci/scripts/codecov.sh) -t $CODECOV_TOKEN
     - npm install -g @datadog/datadog-ci
     - datadog-ci coverage upload --format=jacoco . || true

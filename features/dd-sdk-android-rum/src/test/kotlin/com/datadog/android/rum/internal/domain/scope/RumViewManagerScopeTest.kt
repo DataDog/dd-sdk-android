@@ -206,7 +206,8 @@ internal class RumViewManagerScopeTest {
             displayInfoProvider = mockDisplayInfoProvider,
             insightsCollector = mockInsightsCollector,
             viewEventMapper = mockViewEventMapper,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart
+            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
+            heatmapIdentifierRegistry = null
         )
     }
 
@@ -602,7 +603,8 @@ internal class RumViewManagerScopeTest {
             displayInfoProvider = mockDisplayInfoProvider,
             insightsCollector = mockInsightsCollector,
             viewEventMapper = mockViewEventMapper,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart
+            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
+            heatmapIdentifierRegistry = null
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.validBackgroundEvent()
@@ -641,7 +643,8 @@ internal class RumViewManagerScopeTest {
             displayInfoProvider = mockDisplayInfoProvider,
             insightsCollector = mockInsightsCollector,
             viewEventMapper = mockViewEventMapper,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart
+            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
+            heatmapIdentifierRegistry = null
         )
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true
@@ -683,7 +686,8 @@ internal class RumViewManagerScopeTest {
             displayInfoProvider = mockDisplayInfoProvider,
             insightsCollector = mockInsightsCollector,
             viewEventMapper = mockViewEventMapper,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart
+            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
+            heatmapIdentifierRegistry = null
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.validBackgroundEvent()
@@ -758,7 +762,8 @@ internal class RumViewManagerScopeTest {
             displayInfoProvider = mockDisplayInfoProvider,
             insightsCollector = mockInsightsCollector,
             viewEventMapper = mockViewEventMapper,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart
+            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
+            heatmapIdentifierRegistry = null
         )
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true
@@ -801,7 +806,8 @@ internal class RumViewManagerScopeTest {
             displayInfoProvider = mockDisplayInfoProvider,
             insightsCollector = mockInsightsCollector,
             viewEventMapper = mockViewEventMapper,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart
+            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
+            heatmapIdentifierRegistry = null
         )
         testedScope.stopped = true
         val fakeEvent = forge.applicationStartedEvent()

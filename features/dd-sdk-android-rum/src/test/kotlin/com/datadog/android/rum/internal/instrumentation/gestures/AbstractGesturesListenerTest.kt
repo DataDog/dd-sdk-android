@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.instrumentation.gestures
 import android.app.Application
 import android.content.res.Resources
 import android.graphics.Rect
+import android.util.DisplayMetrics
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
@@ -57,6 +58,8 @@ internal abstract class AbstractGesturesListenerTest {
     @Mock
     lateinit var mockResources: Resources
 
+    val fakeDisplayMetrics = DisplayMetrics()
+
     @Mock
     lateinit var mockWindow: Window
 
@@ -68,6 +71,8 @@ internal abstract class AbstractGesturesListenerTest {
     @BeforeEach
     open fun `set up`() {
         Datadog.setVerbosity(Log.VERBOSE)
+        fakeDisplayMetrics.density = 1f
+        whenever(mockResources.displayMetrics).thenReturn(fakeDisplayMetrics)
         whenever(mockAppContext.resources).thenReturn(mockResources)
     }
 
@@ -132,6 +137,8 @@ internal abstract class AbstractGesturesListenerTest {
             whenever(it.id).thenReturn(id)
             whenever(it.isClickable).thenReturn(clickable)
             whenever(it.visibility).thenReturn(if (visible) View.VISIBLE else View.GONE)
+            whenever(it.isAttachedToWindow).thenReturn(true)
+            whenever(it.resources).thenReturn(mockResources)
 
             whenever(it.width).thenReturn(viewWidth)
             whenever(it.height).thenReturn(viewHeight)

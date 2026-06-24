@@ -276,8 +276,10 @@ public final class com/datadog/android/rum/RumSessionType : java/lang/Enum {
 
 public final class com/datadog/android/rum/_RumInternalProxy {
 	public static final field Companion Lcom/datadog/android/rum/_RumInternalProxy$Companion;
+	public final fun addActionWithHeatmap (Lcom/datadog/android/rum/RumActionType;Ljava/lang/String;Lcom/datadog/android/heatmaps/CrossPlatformHeatmapActionData;Ljava/util/Map;)V
 	public final fun addLongTask (JLjava/lang/String;)V
 	public final fun enableJankStatsTracking (Landroid/app/Activity;)V
+	public final fun getCurrentViewUrl ()Ljava/lang/String;
 	public final fun setInternalViewAttribute (Ljava/lang/String;Ljava/lang/Object;)V
 	public final fun setSyntheticsAttribute (Ljava/lang/String;Ljava/lang/String;)V
 	public final fun setSyntheticsAttributeFromIntent (Landroid/content/Intent;)V
