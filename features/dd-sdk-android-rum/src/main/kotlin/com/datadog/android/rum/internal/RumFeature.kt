@@ -294,7 +294,8 @@ internal class RumFeature(
         configuration.timeseriesConfiguration?.let { configuration ->
             timeseriesFactory = createTimeseriesCollectingFactory(
                 configuration,
-                appContext.readTotalRamBytes(sdkCore.internalLogger) ?: 0L
+                appContext.readTotalRamBytes(sdkCore.internalLogger) ?: 0L,
+                insightsCollector
             )
         }
 
@@ -441,7 +442,8 @@ internal class RumFeature(
 
     internal fun createTimeseriesCollectingFactory(
         configuration: TimeseriesConfiguration,
-        totalRamBytes: Long
+        totalRamBytes: Long,
+        insightsCollector: InsightsCollector
     ): Timeseries.Factory = RumSessionScopeTimeseriesFactory(
         internalLogger = sdkCore.internalLogger,
         collectInBackground = configuration.collectInBackground,
@@ -463,7 +465,8 @@ internal class RumFeature(
                         timeProvider = sdkCore.timeProvider,
                         useDeltaCompression = configuration.useDeltaCompression
                     ),
-                    dataWriter = dataWriter
+                    dataWriter = dataWriter,
+                    insightsCollector = insightsCollector
                 ),
                 if (totalRamBytes > 0L) {
                     Pipeline(
@@ -482,7 +485,8 @@ internal class RumFeature(
                             timeProvider = sdkCore.timeProvider,
                             useDeltaCompression = configuration.useDeltaCompression
                         ),
-                        dataWriter = dataWriter
+                        dataWriter = dataWriter,
+                        insightsCollector = insightsCollector
                     )
                 } else {
                     sdkCore.internalLogger.log(

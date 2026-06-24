@@ -108,6 +108,10 @@ internal class DefaultInsightsCollector internal constructor(
         TimelineEvent.Resource(durationNs)
     )
 
+    override fun onTimeseries(name: String) = registerEvent(
+        TimelineEvent.Timeseries(name)
+    )
+
     override fun addUpdateListener(listener: InsightsUpdatesListener) {
         updatesListeners += listener
     }

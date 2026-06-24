@@ -14,6 +14,7 @@ import com.datadog.tools.annotation.NoOpImplementation
  */
 @InternalApi
 @NoOpImplementation
+@Suppress("TooManyFunctions")
 interface InsightsCollector {
 
     /**
@@ -94,6 +95,11 @@ interface InsightsCollector {
      * @param rate the slow frame rate value.
      */
     fun onSlowFrameRate(rate: Double?)
+
+    /**
+     * Notifies the collector that a timeseries batch has been sent.
+     */
+    fun onTimeseries(name: String)
 }
 
 /**

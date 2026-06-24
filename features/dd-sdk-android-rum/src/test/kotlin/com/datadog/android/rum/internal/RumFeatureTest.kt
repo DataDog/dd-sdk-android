@@ -1807,7 +1807,11 @@ internal class RumFeatureTest {
     @OptIn(ExperimentalRumApi::class)
     private fun createTimeseries(totalRamBytes: Long, sessionId: String): Timeseries =
         testedFeature
-            .createTimeseriesCollectingFactory(TimeseriesConfiguration.Builder().build(), totalRamBytes)
+            .createTimeseriesCollectingFactory(
+                TimeseriesConfiguration.Builder().build(),
+                totalRamBytes,
+                testedFeature.configuration.insightsCollector
+            )
             .create(fakeApplicationId.toString(), sessionId, RumSessionType.USER)
 
     private fun Forge.anApplicationExitInfoList(
