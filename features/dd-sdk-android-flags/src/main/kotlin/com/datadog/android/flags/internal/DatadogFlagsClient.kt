@@ -444,22 +444,6 @@ internal class DatadogFlagsClient(
         }
     }
 
-    private fun extractMetadata(extraLogging: org.json.JSONObject): Map<String, Any> {
-        if (extraLogging.length() == 0) {
-            return emptyMap()
-        }
-
-        val metadata = mutableMapOf<String, Any>()
-        extraLogging.keys().forEach { key ->
-            val value = extraLogging.opt(key)
-            when (value) {
-                is String, is Number, is Boolean -> metadata[key] = value
-            }
-        }
-
-        return metadata
-    }
-
     private fun <T : Any> trackResolution(resolution: InternalResolution.Success<T>) {
         trackResolution(resolution.flagKey, resolution.flag, resolution.context)
     }

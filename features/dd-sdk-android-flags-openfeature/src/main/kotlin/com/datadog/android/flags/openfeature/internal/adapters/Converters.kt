@@ -46,7 +46,6 @@ internal fun <T : Any> ResolutionDetails<T>.toProviderEvaluation(): ProviderEval
 
 private fun Map<String, Any>.toEvaluationMetadata(allocationKey: String? = null): EvaluationMetadata {
     val builder = Builder()
-    allocationKey?.let { builder.putString("allocationKey", it) }
     forEach { (key, value) ->
         when (value) {
             is String -> builder.putString(key, value)
@@ -56,6 +55,7 @@ private fun Map<String, Any>.toEvaluationMetadata(allocationKey: String? = null)
             else -> builder.putString(key, value.toString())
         }
     }
+    allocationKey?.let { builder.putString("allocationKey", it) }
     return builder.build()
 }
 

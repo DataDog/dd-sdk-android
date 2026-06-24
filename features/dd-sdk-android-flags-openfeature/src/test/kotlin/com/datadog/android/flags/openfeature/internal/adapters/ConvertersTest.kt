@@ -135,7 +135,6 @@ internal class ConvertersTest {
         assertThat(result.reason).isEqualTo("ERROR")
     }
 
-
     @Test
     fun `M surface allocationKey in metadata W toProviderEvaluation() {resolution with allocationKey}`(
         @StringForgery fakeAllocationKey: String,
@@ -190,6 +189,48 @@ internal class ConvertersTest {
 
         // Then
         assertThat(result.metadata.getString("allocationKey")).isNull()
+    }
+
+    @Test
+    fun `M surface allocationKey and flagMetadata W toProviderEvaluation() {both present}`(
+        @StringForgery fakeAllocationKey: String,
+        @BoolForgery fakeValue: Boolean
+    ) {
+        // Given
+        val resolution = ResolutionDetails(
+            value = fakeValue,
+            reason = ResolutionReason.TARGETING_MATCH,
+            allocationKey = fakeAllocationKey,
+            flagMetadata = mapOf("env" to "prod")
+        )
+
+        // When
+        val result = resolution.toProviderEvaluation()
+
+        // Then — allocationKey and flagMetadata entries both surfaced
+        assertThat(result.metadata.getString("allocationKey")).isEqualTo(fakeAllocationKey)
+        assertThat(result.metadata.getString("env")).isEqualTo("prod")
+    }
+
+    @Test
+    fun `M typed allocationKey wins W toProviderEvaluation() {flagMetadata also contains allocationKey}`(
+        @StringForgery fakeAllocationKey: String,
+        @StringForgery fakeMetadataAllocationKey: String,
+        @BoolForgery fakeValue: Boolean
+    ) {
+        // Given — flagMetadata has an "allocationKey" entry that should be overridden by the typed field
+        val resolution = ResolutionDetails(
+            value = fakeValue,
+            reason = ResolutionReason.TARGETING_MATCH,
+            allocationKey = fakeAllocationKey,
+            flagMetadata = mapOf("allocationKey" to fakeMetadataAllocationKey)
+        )
+
+        // When
+        val result = resolution.toProviderEvaluation()
+
+        // Then — typed allocationKey field wins over flagMetadata entry
+        assertThat(result.metadata.getString("allocationKey")).isEqualTo(fakeAllocationKey)
     }
 
     // endregion
