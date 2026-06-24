@@ -7,6 +7,7 @@
 package com.datadog.tools.detekt
 
 import com.datadog.tools.detekt.rules.sdk.CheckInternal
+import com.datadog.tools.detekt.rules.sdk.HotMethodIllegalCall
 import com.datadog.tools.detekt.rules.sdk.InvalidStringFormat
 import com.datadog.tools.detekt.rules.sdk.PackageNameVisibility
 import com.datadog.tools.detekt.rules.sdk.PreferTimeProvider
@@ -32,6 +33,7 @@ class DatadogProvider : RuleSetProvider {
             ruleSetId,
             listOf(
                 CheckInternal(),
+                HotMethodIllegalCall(config),
                 InvalidStringFormat(),
                 PackageNameVisibility(config),
                 PreferTimeProvider(config),

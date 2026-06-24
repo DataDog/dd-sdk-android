@@ -7,6 +7,7 @@ package com.datadog.android.rum.internal.metric.slowframes
 
 import android.os.Build
 import androidx.metrics.performance.FrameData
+import com.datadog.android.internal.lint.HotMethod
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.internal.domain.FrameMetricsData
@@ -64,6 +65,7 @@ internal class DefaultSlowFramesListener(
     }
 
     // Called from the background thread
+    @HotMethod(message = "invoked on every JankStats frame to track slow frames; synchronized inside")
     override fun onFrame(volatileFrameData: FrameData) {
         val viewId = currentViewId
         // currentViewStartedTimestampNs can be set by RUM thread in onViewCreated after we read currentViewId,
@@ -109,6 +111,10 @@ internal class DefaultSlowFramesListener(
                 // No previous slow frame record or amount of time since the last update
                 // is significant enough to consider it idle - adding a new slow frame record.
                 if (frameDurationNs > 0) {
+                    // SlowFrameRecord is intentionally allocated here: a new record is only
+                    // created when a genuinely new slow-frame segment starts (not every frame),
+                    // so the allocation rate is bounded by actual jank events, not frame rate.
+                    @Suppress("HotMethodIllegalCall")
                     report.slowFramesRecords += SlowFrameRecord(
                         frameStartedTimestampNs,
                         frameDurationNs

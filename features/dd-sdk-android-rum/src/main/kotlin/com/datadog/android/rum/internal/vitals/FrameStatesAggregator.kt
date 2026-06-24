@@ -23,6 +23,7 @@ import androidx.annotation.RequiresApi
 import androidx.metrics.performance.FrameData
 import androidx.metrics.performance.JankStats
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.lint.HotMethod
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.utils.getSystemServiceAs
 import com.datadog.android.rum.internal.domain.FrameMetricsData
@@ -154,6 +155,7 @@ internal class FrameStatesAggregator(
 
     // region JankStats.OnFrameListener
 
+    @HotMethod(message = "invoked on every JankStats frame; delegates to all frameStateListeners")
     override fun onFrame(volatileFrameData: FrameData) {
         // This method is called pretty often and forEach{} gonna create iterator instance each time.
         // To reduce gc pressure we use for-loop iteration here:
@@ -283,6 +285,7 @@ internal class FrameStatesAggregator(
     @RequiresApi(Build.VERSION_CODES.N)
     inner class DDFrameMetricsListener : Window.OnFrameMetricsAvailableListener {
 
+        @HotMethod(message = "called by the framework on every rendered frame; avoid iterator allocations")
         @RequiresApi(Build.VERSION_CODES.N)
         override fun onFrameMetricsAvailable(
             window: Window,

@@ -12,6 +12,7 @@ import androidx.annotation.MainThread
 import androidx.annotation.UiThread
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.measureMethodCallPerf
+import com.datadog.android.internal.lint.HotMethod
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
@@ -44,6 +45,7 @@ internal class WindowsOnDrawListener(
 
     internal val weakReferencedDecorViews: List<WeakReference<View>> = zOrderedDecorViews.map { WeakReference(it) }
 
+    @HotMethod(message = "triggered on every ViewTreeObserver draw pass; delegates to debounced snapshot runnable")
     @MainThread
     override fun onDraw() {
         debouncer.debounce(snapshotRunnable)
