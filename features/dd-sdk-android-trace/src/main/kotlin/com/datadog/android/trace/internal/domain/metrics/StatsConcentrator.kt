@@ -10,6 +10,7 @@ import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.event.EventMapper
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.trace.api.DatadogTracingConstants
@@ -18,7 +19,8 @@ import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.trace.bootstrap.instrumentation.api.Tags
 import com.datadog.trace.core.DDSpan
-import java.util.concurrent.ExecutorService
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -29,7 +31,7 @@ internal class StatsConcentrator(
     /**
      * Executor that owns stat calculations. It must be a single-thread executor to enforce threading contracts.
      */
-    private val executorService: ExecutorService,
+    private val executorService: ScheduledExecutorService,
     private val statsWriter: StatsWriter,
     private val timeProvider: TimeProvider,
     /**
@@ -39,11 +41,21 @@ internal class StatsConcentrator(
      * This only applies to past buckets. Stats buckets in the future are allowed with no restriction.
      */
     private val bufferLen: Int = DEFAULT_BUFFER_SIZE,
-    private val bucketSizeNs: Long = DEFAULT_BUCKET_LENGTH.inWholeNanoseconds
+    private val bucketSizeNs: Long = DEFAULT_BUCKET_LENGTH.inWholeNanoseconds,
+    startPeriodicFlush: Boolean = true
 ) {
     // These fields below are confined to executorService; never access them from another thread.
     private var oldestTs: Long = 0L
     private val buckets = mutableMapOf<Long, MutableMap<AggregationKey, GroupedStats>>()
+
+    @Volatile
+    private var isStopped = false
+
+    init {
+        if (startPeriodicFlush) {
+            schedulePeriodicFlush()
+        }
+    }
 
     fun record(trace: List<DDSpan>) {
         val metricsFeature = sdkCore.getFeature(Feature.TRACING_CLIENT_STATS_FEATURE_NAME) ?: return
@@ -77,18 +89,46 @@ internal class StatsConcentrator(
         }
     }
 
+    fun stop() {
+        isStopped = true
+        scheduleFlush(flushAll = true)
+    }
+
+    private fun schedulePeriodicFlush() {
+        if (isStopped) {
+            return
+        }
+
+        executorService.scheduleSafe(
+            "stats-flush-periodic",
+            FLUSH_INTERVAL_SECS,
+            TimeUnit.SECONDS,
+            sdkCore.internalLogger
+        ) {
+            flushBuckets(flushAll = false)
+
+            // Schedule next refresh
+            schedulePeriodicFlush()
+        }
+    }
+
     /**
      * Schedules a drain of ready buckets and returns immediately.
      * Flushed buckets are written to [statsWriter].
      *
      * @param flushAll When `true`, drains all buckets regardless of age. Used during SDK teardown.
      */
+    @VisibleForTesting
     fun scheduleFlush(flushAll: Boolean) {
-        executorService.executeSafe("stats-flush", sdkCore.internalLogger) {
-            val buckets = drainBuckets(flushAll)
-            if (buckets.isNotEmpty()) {
-                statsWriter.write(buckets)
-            }
+        executorService.executeSafe("stats-flush-all=$flushAll", sdkCore.internalLogger) {
+            flushBuckets(flushAll)
+        }
+    }
+
+    private fun flushBuckets(flushAll: Boolean) {
+        val buckets = drainBuckets(flushAll)
+        if (buckets.isNotEmpty()) {
+            statsWriter.write(buckets)
         }
     }
 
@@ -236,6 +276,7 @@ internal class StatsConcentrator(
         private const val KEY_SVC_SRC = "_dd.svc_src"
         private const val DEFAULT_BUFFER_SIZE = 2
         private val DEFAULT_BUCKET_LENGTH = 10.seconds
+        private const val FLUSH_INTERVAL_SECS = 10L
 
         private val ELIGIBLE_SPAN_KINDS = setOf(
             Tags.SPAN_KIND_SERVER,

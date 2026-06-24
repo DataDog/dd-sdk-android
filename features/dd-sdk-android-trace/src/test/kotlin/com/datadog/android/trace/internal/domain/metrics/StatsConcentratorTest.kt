@@ -11,7 +11,6 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.api.threads.FakeSameThreadExecutorService
 import com.datadog.android.event.EventMapper
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.trace.api.DatadogTracingConstants
@@ -29,7 +28,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -41,12 +39,15 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.concurrent.ExecutorService
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -77,10 +78,12 @@ internal class StatsConcentratorTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Mock
+    lateinit var mockExecutorService: ScheduledExecutorService
+
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
-    private val executorService: ExecutorService = FakeSameThreadExecutorService()
     private lateinit var testedConcentrator: StatsConcentrator
 
     // Fixed parameters for deterministic timestamp math
@@ -95,6 +98,7 @@ internal class StatsConcentratorTest {
             it.getArgument<(DatadogContext) -> Unit>(1).invoke(fakeDatadogContext)
         }
         whenever(mockEventMapper.map(any())) doAnswer { it.getArgument(0) }
+        whenever(mockExecutorService.execute(any())) doAnswer { it.getArgument<Runnable>(0).run() }
 
         testedConcentrator = StatsConcentrator(
             sdkCore = mockSdkCore,
@@ -102,16 +106,35 @@ internal class StatsConcentratorTest {
             eventMapper = mockEventMapper,
             bufferLen = fakeBufferLen,
             bucketSizeNs = fakeBucketSizeNs,
-            executorService = executorService,
+            executorService = mockExecutorService,
             statsWriter = mockStatsWriter,
-            timeProvider = mockTimeProvider
+            timeProvider = mockTimeProvider,
+            startPeriodicFlush = false
         )
     }
 
-    @AfterEach
-    fun tearDown() {
-        executorService.shutdown()
+    // region Periodic flush scheduling
+
+    @Test
+    fun `M schedule periodic flush on executor W init() { startPeriodicFlush = true }`() {
+        // When
+        StatsConcentrator(
+            sdkCore = mockSdkCore,
+            ddSpanToSpanEventMapper = mockSpanEventMapper,
+            eventMapper = mockEventMapper,
+            bufferLen = fakeBufferLen,
+            bucketSizeNs = fakeBucketSizeNs,
+            executorService = mockExecutorService,
+            statsWriter = mockStatsWriter,
+            timeProvider = mockTimeProvider,
+            startPeriodicFlush = true
+        )
+
+        // Then
+        verify(mockExecutorService).schedule(any<Runnable>(), eq(10L), eq(TimeUnit.SECONDS))
     }
+
+    // endregion
 
     // region Span eligibility
 
@@ -628,6 +651,49 @@ internal class StatsConcentratorTest {
         assertThat(buckets).hasSize(1)
         assertThat(buckets[0].start).isEqualTo(6 * fakeBucketSizeNs)
         assertThat(buckets[0].stats[0].hits).isEqualTo(1L)
+    }
+
+    // endregion
+
+    // region stop
+
+    @Test
+    fun `M submit flush all task W stop()`(forge: Forge) {
+        // Given
+        val (span) = forge.makeEligibleSpan()
+        testedConcentrator.record(listOf(span))
+        stubNow(farFuture())
+
+        // When
+        testedConcentrator.stop()
+
+        // Then
+        verify(mockStatsWriter).write(any())
+    }
+
+    @Test
+    fun `M not reschedule periodic flush W stop() { periodic flush fires after stop }`() {
+        // Given: create concentrator with live scheduling and capture the first scheduled runnable
+        val runnableCaptor = argumentCaptor<Runnable>()
+        val concentrator = StatsConcentrator(
+            sdkCore = mockSdkCore,
+            ddSpanToSpanEventMapper = mockSpanEventMapper,
+            eventMapper = mockEventMapper,
+            bufferLen = fakeBufferLen,
+            bucketSizeNs = fakeBucketSizeNs,
+            executorService = mockExecutorService,
+            statsWriter = mockStatsWriter,
+            timeProvider = mockTimeProvider,
+            startPeriodicFlush = true
+        )
+        verify(mockExecutorService).schedule(runnableCaptor.capture(), any(), any())
+
+        // When: stop then fire the already-scheduled periodic flush callback
+        concentrator.stop()
+        runnableCaptor.firstValue.run()
+
+        // Then: schedule was called exactly once (initial), never re-scheduled after stop
+        verify(mockExecutorService, times(1)).schedule(any<Runnable>(), any(), any())
     }
 
     // endregion

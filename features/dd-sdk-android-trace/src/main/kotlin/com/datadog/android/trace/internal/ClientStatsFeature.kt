@@ -7,7 +7,6 @@
 package com.datadog.android.trace.internal
 
 import android.content.Context
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
@@ -20,11 +19,7 @@ import com.datadog.android.trace.internal.domain.metrics.ClientStatsAdapter
 import com.datadog.android.trace.internal.domain.metrics.StatsConcentrator
 import com.datadog.android.trace.internal.net.ClientStatsRequestFactory
 import com.datadog.trace.api.Config
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.TimeUnit
-import kotlin.time.Duration.Companion.seconds
 
 internal class ClientStatsFeature(
     private val sdkCore: FeatureSdkCore,
@@ -44,12 +39,8 @@ internal class ClientStatsFeature(
         oldBatchThreshold = 18L * 60L * 60L * 1000L
     )
 
-    private val timeProvider = sdkCore.timeProvider
-    private val statAggregator: ExecutorService by lazy {
-        sdkCore.createSingleThreadExecutorService("client-side-stats-aggregator")
-    }
-    private val flushScheduler: ScheduledExecutorService by lazy {
-        sdkCore.createScheduledExecutorService("client-side-flush-scheduler")
+    private val statsExecutor: ScheduledExecutorService by lazy {
+        sdkCore.createScheduledExecutorService("client-side-stats-aggregator")
     }
     private val statsConcentrator by lazy {
         // runtimeId is static and encapsulated in Tracer core's Config. There is no way to get it except via the root
@@ -60,9 +51,9 @@ internal class ClientStatsFeature(
             sdkCore,
             ddSpanToSpanEventMapper = CoreTracerSpanToSpanEventMapper(networkInfoEnabled),
             eventMapper = SpanEventMapperWrapper(spanEventMapper, sdkCore.internalLogger),
-            statAggregator,
+            statsExecutor,
             BatchStatsWriter(sdkCore, runtimeID),
-            timeProvider
+            sdkCore.timeProvider
         )
     }
 
@@ -72,53 +63,11 @@ internal class ClientStatsFeature(
 
     override val requestFactory = ClientStatsRequestFactory(customEndpointUrl)
 
-    override fun onInitialize(appContext: Context) {
-        startPeriodicFlush()
-    }
-
-    private fun startPeriodicFlush() {
-        try {
-            @Suppress("UnsafeThirdPartyFunctionCall") // exception caught below
-            flushScheduler.scheduleWithFixedDelay(
-                { triggerFlush(flushAll = false) },
-                FLUSH_INTERVAL.inWholeMilliseconds,
-                FLUSH_INTERVAL.inWholeMilliseconds,
-                TimeUnit.MILLISECONDS
-            )
-        } catch (e: RejectedExecutionException) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { "Failed to schedule stats flush" },
-                e
-            )
-        }
-    }
+    override fun onInitialize(appContext: Context) {}
 
     override fun onStop() {
-        flushScheduler.shutdownNow()
+        statsConcentrator.stop()
 
-        triggerFlush(flushAll = true)
-
-        statAggregator.shutdown()
-        try {
-            @Suppress("UnsafeThirdPartyFunctionCall") // InterruptedException is caught and handled
-            if (!statAggregator.awaitTermination(DRAIN_WAIT_SECONDS, TimeUnit.SECONDS)) {
-                statAggregator.shutdownNow()
-            }
-        } catch (_: InterruptedException) {
-            statAggregator.shutdownNow()
-            @Suppress("UnsafeThirdPartyFunctionCall") // safe - SecurityException not thrown in Android
-            Thread.currentThread().interrupt()
-        }
-    }
-
-    private fun triggerFlush(flushAll: Boolean) {
-        statsConcentrator.scheduleFlush(flushAll)
-    }
-
-    private companion object {
-        private const val DRAIN_WAIT_SECONDS = 10L
-        private val FLUSH_INTERVAL = 10.seconds
+        statsExecutor.shutdown()
     }
 }

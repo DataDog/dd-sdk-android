@@ -13,7 +13,6 @@ import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.trace.event.SpanEventMapper
 import com.datadog.android.trace.internal.domain.metrics.ClientStatsAdapter
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -29,17 +28,11 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.doThrow
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -61,10 +54,7 @@ internal class ClientStatsFeatureTest {
     lateinit var mockSpanEventMapper: SpanEventMapper
 
     @Mock
-    lateinit var mockStatAggregatorExecutor: ExecutorService
-
-    @Mock
-    lateinit var mockFlushSchedulerExecutor: ScheduledExecutorService
+    lateinit var mockStatsExecutor: ScheduledExecutorService
 
     @Mock
     lateinit var mockTimeProvider: TimeProvider
@@ -83,8 +73,7 @@ internal class ClientStatsFeatureTest {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.timeProvider) doReturn mockTimeProvider
         whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeTimestampMillis
-        whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mockStatAggregatorExecutor
-        whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn mockFlushSchedulerExecutor
+        whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn mockStatsExecutor
 
         testedFeature = ClientStatsFeature(
             sdkCore = mockSdkCore,
@@ -157,92 +146,35 @@ internal class ClientStatsFeatureTest {
 
     // endregion
 
-    // region onInitialize
-
-    @Test
-    fun `M schedule periodic flush with 10 second interval W onInitialize()`() {
-        // When
-        testedFeature.onInitialize(mock())
-
-        // Then
-        verify(mockFlushSchedulerExecutor).scheduleWithFixedDelay(
-            any(),
-            eq(10_000L),
-            eq(10_000L),
-            eq(TimeUnit.MILLISECONDS)
-        )
-    }
-
-    @Test
-    fun `M log warning W onInitialize() { flush scheduling rejected }`() {
-        // Given
-        whenever(mockFlushSchedulerExecutor.scheduleWithFixedDelay(any(), any(), any(), any()))
-            .doThrow(RejectedExecutionException("Rejected"))
-
-        // When
-        testedFeature.onInitialize(mock())
-
-        // Then
-        mockInternalLogger.verifyLog(
-            level = InternalLogger.Level.WARN,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            message = "Failed to schedule stats flush",
-            throwableClass = RejectedExecutionException::class.java
-        )
-    }
-
-    // endregion
-
     // region onStop
 
     @Test
-    fun `M shutdown flush scheduler W onStop()`() {
-        // Given
-        testedFeature.onInitialize(mock())
-
+    fun `M submit flush all task W onStop()`() {
         // When
         testedFeature.onStop()
 
         // Then
-        verify(mockFlushSchedulerExecutor).shutdownNow()
+        verify(mockStatsExecutor).execute(any())
     }
 
     @Test
-    fun `M submit flush all task to stat aggregator W onStop()`() {
-        // Given
-        testedFeature.onInitialize(mock())
-
+    fun `M shutdown stats executor W onStop()`() {
         // When
         testedFeature.onStop()
 
         // Then
-        verify(mockStatAggregatorExecutor).execute(any())
+        verify(mockStatsExecutor).shutdown()
     }
 
     @Test
-    fun `M shutdown stat aggregator W onStop()`() {
-        // Given
-        testedFeature.onInitialize(mock())
-
+    fun `M submit flush all task before shutting down stats executor W onStop()`() {
         // When
         testedFeature.onStop()
 
         // Then
-        verify(mockStatAggregatorExecutor).shutdown()
-    }
-
-    @Test
-    fun `M shutdown flush scheduler before shutting down stat aggregator W onStop()`() {
-        // Given
-        testedFeature.onInitialize(mock())
-
-        // When
-        testedFeature.onStop()
-
-        // Then
-        inOrder(mockFlushSchedulerExecutor, mockStatAggregatorExecutor) {
-            verify(mockFlushSchedulerExecutor).shutdownNow()
-            verify(mockStatAggregatorExecutor).shutdown()
+        inOrder(mockStatsExecutor) {
+            verify(mockStatsExecutor).execute(any())
+            verify(mockStatsExecutor).shutdown()
         }
     }
 
