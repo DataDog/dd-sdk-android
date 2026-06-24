@@ -18,11 +18,16 @@ dependencies {
     implementation(libs.kotlinReflect)
     implementation(libs.androidXAnnotation)
     compileOnly(libs.detektApi)
+    // HotMethod and its CHECK_* companion constants live in dd-sdk-android-internal.
+    // The constants are `const val` strings — the Kotlin compiler inlines them, so
+    // this module has no runtime dependency on Android classes.
+    compileOnly(project(":dd-sdk-android-internal"))
 
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.detektTest)
     testImplementation(libs.robolectric)
+    testImplementation(project(":dd-sdk-android-internal"))
 }
 
 kotlinConfig()

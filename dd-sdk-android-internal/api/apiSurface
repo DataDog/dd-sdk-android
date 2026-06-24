@@ -79,7 +79,7 @@ class com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor : android.a
     fun onStopped()
     fun onPaused()
 annotation com.datadog.android.internal.lint.HotMethod
-  constructor(String)
+  constructor(String, Array<String>)
 enum com.datadog.android.internal.network.GraphQLHeaders
   constructor(String)
   - DD_GRAPHQL_NAME_HEADER

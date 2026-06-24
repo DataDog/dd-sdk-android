@@ -147,6 +147,7 @@ public abstract interface class com/datadog/android/internal/lifecycle/ProcessLi
 }
 
 public abstract interface annotation class com/datadog/android/internal/lint/HotMethod : java/lang/annotation/Annotation {
+	public abstract fun exclude ()[Ljava/lang/String;
 	public abstract fun message ()Ljava/lang/String;
 }
 
@@ -648,4 +649,3 @@ public abstract interface annotation class com/datadog/tools/annotation/NoOpImpl
 	public abstract fun customName ()Ljava/lang/String;
 	public abstract fun publicNoOpImplementation ()Z
 }
-

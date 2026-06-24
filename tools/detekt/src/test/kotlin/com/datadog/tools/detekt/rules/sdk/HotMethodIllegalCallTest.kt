@@ -6,11 +6,13 @@
 
 package com.datadog.tools.detekt.rules.sdk
 
+import com.datadog.android.internal.lint.HotMethod
 import io.github.detekt.test.utils.KotlinCoreEnvironmentWrapper
 import io.github.detekt.test.utils.createEnvironment
 import io.gitlab.arturbosch.detekt.test.TestConfig
 import io.gitlab.arturbosch.detekt.test.assertThat
 import io.gitlab.arturbosch.detekt.test.compileAndLintWithContext
+import org.assertj.core.api.Assertions.assertThat as assertJThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -346,6 +348,124 @@ internal class HotMethodIllegalCallTest {
 
     // endregion
 
+    // region exclude parameter
+
+    @Test
+    fun `M not report constructor W exclude contains constructor category`() {
+        val code = hotMethodCode("val sb = StringBuilder()", exclude = listOf(HotMethod.CHECK_CONSTRUCTOR))
+        assertThat(HotMethodIllegalCall().compileAndLintWithContext(kotlinEnv.env, code)).isEmpty()
+    }
+
+    @Test
+    fun `M not report constructor W exclude contains specific constructor name`() {
+        val code = hotMethodCode("val sb = StringBuilder()", exclude = listOf("StringBuilder"))
+        assertThat(HotMethodIllegalCall().compileAndLintWithContext(kotlinEnv.env, code)).isEmpty()
+    }
+
+    @Test
+    fun `M still report other constructor W exclude contains only unrelated name`() {
+        val code = hotMethodCode("val sb = StringBuilder()", exclude = listOf("ArrayList"))
+        assertThat(HotMethodIllegalCall().compileAndLintWithContext(kotlinEnv.env, code)).hasSize(1)
+    }
+
+    @Test
+    fun `M not report lambda W exclude contains lambda category`() {
+        val code = hotMethodCode("val f: () -> Unit = {}", exclude = listOf(HotMethod.CHECK_LAMBDA))
+        assertThat(HotMethodIllegalCall().compileAndLintWithContext(kotlinEnv.env, code)).isEmpty()
+    }
+
+    @Test
+    fun `M not report string template W exclude contains string-template category`() {
+        val code = hotMethodCode("val s = \"value=\${list.size}\"", exclude = listOf(HotMethod.CHECK_STRING_TEMPLATE))
+        assertThat(HotMethodIllegalCall().compileAndLintWithContext(kotlinEnv.env, code)).isEmpty()
+    }
+
+    @Test
+    fun `M not report forEach W exclude contains specific function name`() {
+        val code = hotMethodCode("list.forEach { println(it) }", exclude = listOf("forEach"))
+        val rule = HotMethodIllegalCall(
+            TestConfig(
+                "forbiddenCalls" to listOf("kotlin.collections.List.forEach"),
+                "allowedInlineFunctions" to listOf("forEach")
+            )
+        )
+        assertThat(rule.compileAndLintWithContext(kotlinEnv.env, code)).isEmpty()
+    }
+
+    @Test
+    fun `M not report forEach W exclude contains qualified name`() {
+        val code = hotMethodCode("list.forEach { println(it) }", exclude = listOf("kotlin.collections.List.forEach"))
+        val rule = HotMethodIllegalCall(
+            TestConfig(
+                "forbiddenCalls" to listOf("kotlin.collections.List.forEach"),
+                "allowedInlineFunctions" to listOf("forEach")
+            )
+        )
+        assertThat(rule.compileAndLintWithContext(kotlinEnv.env, code)).isEmpty()
+    }
+
+    @Test
+    fun `M not report collection-ops W exclude contains collection-ops category`() {
+        val code = hotMethodCode("list.forEach { println(it) }", exclude = listOf(HotMethod.CHECK_COLLECTION_OPS))
+        val rule = HotMethodIllegalCall(
+            TestConfig(
+                "forbiddenCalls" to listOf("kotlin.collections.List.forEach"),
+                "allowedInlineFunctions" to listOf("forEach")
+            )
+        )
+        assertThat(rule.compileAndLintWithContext(kotlinEnv.env, code)).isEmpty()
+    }
+
+    @Test
+    fun `M not report anonymous object W exclude contains anonymous-object category`() {
+        val code = """
+            annotation class HotMethod(val message: String, val exclude: Array<String> = [])
+            interface Task { fun run() }
+            class Foo {
+                @HotMethod(message = "hot", exclude = ["${HotMethod.CHECK_ANONYMOUS_OBJECT}"])
+                fun hotFoo() {
+                    val t = object : Task { override fun run() {} }
+                }
+            }
+        """.trimIndent()
+        assertThat(HotMethodIllegalCall().compileAndLintWithContext(kotlinEnv.env, code)).isEmpty()
+    }
+
+    @Test
+    fun `M not report factory function W exclude contains factory category`() {
+        val code = hotMethodCode("val x = mutableListOf<String>()", exclude = listOf(HotMethod.CHECK_FACTORY))
+        val rule = HotMethodIllegalCall(
+            TestConfig("forbiddenFactoryFunctions" to listOf("kotlin.collections.mutableListOf"))
+        )
+        assertThat(rule.compileAndLintWithContext(kotlinEnv.env, code)).isEmpty()
+    }
+
+    @Test
+    fun `M not report factory function W exclude contains specific factory name`() {
+        val code = hotMethodCode("val x = mutableListOf<String>()", exclude = listOf("mutableListOf"))
+        val rule = HotMethodIllegalCall(
+            TestConfig("forbiddenFactoryFunctions" to listOf("kotlin.collections.mutableListOf"))
+        )
+        assertThat(rule.compileAndLintWithContext(kotlinEnv.env, code)).isEmpty()
+    }
+
+    @Test
+    fun `M still report other calls W exclude only silences specific name`() {
+        val code = hotMethodCode("list.find { it == \"x\" }\nlist.forEach { println(it) }", exclude = listOf("find"))
+        val rule = HotMethodIllegalCall(
+            TestConfig(
+                "forbiddenCalls" to listOf("kotlin.collections.List.find", "kotlin.collections.List.forEach"),
+                "allowedInlineFunctions" to listOf("find", "forEach")
+            )
+        )
+        // find is excluded, forEach is not → exactly 1 finding
+        val findings = rule.compileAndLintWithContext(kotlinEnv.env, code)
+        assertThat(findings).hasSize(1)
+        assertJThat(findings.first().message).contains("forEach")
+    }
+
+    // endregion
+
     // region helpers
 
     private fun assertCallFindings(expected: Int, callCode: String, forbiddenCall: String) {
@@ -375,10 +495,19 @@ internal class HotMethodIllegalCallTest {
         assertThat(findings).hasSize(expected)
     }
 
-    private fun hotMethodCode(callCode: String, annotated: Boolean = true): String {
-        val annotation = if (annotated) "@HotMethod(message = \"hot\")" else ""
+    private fun hotMethodCode(
+        callCode: String,
+        annotated: Boolean = true,
+        exclude: List<String> = emptyList()
+    ): String {
+        val excludeParam = if (exclude.isNotEmpty()) {
+            ", exclude = [${exclude.joinToString(", ") { "\"$it\"" }}]"
+        } else {
+            ""
+        }
+        val annotation = if (annotated) "@HotMethod(message = \"hot\"$excludeParam)" else ""
         return """
-            annotation class HotMethod(val message: String)
+            annotation class HotMethod(val message: String, val exclude: Array<String> = [])
             class Foo(private val list: List<String>) {
                 $annotation
                 fun hotFoo() {

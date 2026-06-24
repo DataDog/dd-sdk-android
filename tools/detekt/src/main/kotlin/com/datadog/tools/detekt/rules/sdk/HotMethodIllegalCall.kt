@@ -6,6 +6,7 @@
 
 package com.datadog.tools.detekt.rules.sdk
 
+import com.datadog.android.internal.lint.HotMethod
 import com.datadog.tools.detekt.rules.AbstractCallExpressionRule
 import io.gitlab.arturbosch.detekt.api.CodeSmell
 import io.gitlab.arturbosch.detekt.api.Config
@@ -16,7 +17,9 @@ import io.gitlab.arturbosch.detekt.api.Severity
 import io.gitlab.arturbosch.detekt.api.config
 import io.gitlab.arturbosch.detekt.api.internal.RequiresTypeResolution
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtCallExpression
+import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
 import org.jetbrains.kotlin.psi.KtLambdaExpression
 import org.jetbrains.kotlin.psi.KtLiteralStringTemplateEntry
 import org.jetbrains.kotlin.psi.KtNamedFunction
@@ -73,19 +76,41 @@ class HotMethodIllegalCall(
     private val forbiddenFactoryFunctionsSet: Set<String> by lazy { forbiddenFactoryFunctions.toSet() }
     private val allowedInlineFunctionsSet: Set<String> by lazy { allowedInlineFunctions.toSet() }
 
-    // Each named function pushes whether it is @HotMethod; lambdas inherit the enclosing context.
-    private val functionDepthStack = ArrayDeque<Boolean>()
+    // Each named function pushes its @HotMethod exclude set (null = not hot).
+    // Lambdas inherit the enclosing named-function context.
+    private val functionDepthStack = ArrayDeque<Set<String>?>()
 
     private val insideHotMethod: Boolean
-        get() = functionDepthStack.lastOrNull() == true
+        get() = functionDepthStack.lastOrNull() != null
+
+    // Returns true if ANY of the candidate strings is in the current exclude set.
+    // Pass the category constant first, then specific names, so a category exclusion
+    // catches all variants (e.g. CHECK_CONSTRUCTOR catches any constructor call).
+    private fun isExcluded(vararg candidates: String): Boolean {
+        val excluded = functionDepthStack.lastOrNull() ?: return false
+        return candidates.any { it in excluded }
+    }
 
     override fun visitNamedFunction(function: KtNamedFunction) {
-        val isHot = function.annotationEntries.any {
+        val hotAnnotation = function.annotationEntries.find {
             it.shortName?.asString() == HOT_METHOD_ANNOTATION
         }
-        functionDepthStack.addLast(isHot)
+        functionDepthStack.addLast(hotAnnotation?.extractExcludedChecks())
         super.visitNamedFunction(function)
         functionDepthStack.removeLast()
+    }
+
+    private fun KtAnnotationEntry.extractExcludedChecks(): Set<String> {
+        val excludeArg = valueArguments.find { it.getArgumentName()?.asName?.asString() == "exclude" }
+            ?: return emptySet()
+        val expr = excludeArg.getArgumentExpression() ?: return emptySet()
+        return (expr as? KtCollectionLiteralExpression)
+            ?.getInnerExpressions()
+            ?.filterIsInstance<KtStringTemplateExpression>()
+            ?.flatMap { it.entries.filterIsInstance<KtLiteralStringTemplateEntry>() }
+            ?.map { it.text }
+            ?.toSet()
+            ?: emptySet()
     }
 
     // Constructor calls (PascalCase) are detected via PSI — the type-resolved path treats some
@@ -94,15 +119,17 @@ class HotMethodIllegalCall(
         if (insideHotMethod) {
             val calleeName = expression.calleeExpression?.text ?: ""
             if (calleeName.isNotEmpty() && calleeName[0].isUpperCase()) {
-                report(
-                    CodeSmell(
-                        issue,
-                        Entity.from(expression),
-                        "Constructor call `$calleeName()` inside a @HotMethod allocates a new object on every " +
-                            "invocation. Move the allocation to a field or pre-allocate outside the hot path."
+                if (!isExcluded(HotMethod.CHECK_CONSTRUCTOR, calleeName)) {
+                    report(
+                        CodeSmell(
+                            issue,
+                            Entity.from(expression),
+                            "Constructor call `$calleeName()` inside a @HotMethod allocates a new object on every " +
+                                "invocation. Move the allocation to a field or pre-allocate outside the hot path."
+                        )
                     )
-                )
-                return
+                    return
+                }
             }
         }
         super.visitCallExpression(expression)
@@ -110,7 +137,7 @@ class HotMethodIllegalCall(
 
     override fun visitObjectLiteralExpression(expression: KtObjectLiteralExpression) {
         super.visitObjectLiteralExpression(expression)
-        if (!insideHotMethod) return
+        if (!insideHotMethod || isExcluded(HotMethod.CHECK_ANONYMOUS_OBJECT)) return
         report(
             CodeSmell(
                 issue,
@@ -123,7 +150,7 @@ class HotMethodIllegalCall(
 
     override fun visitLambdaExpression(expression: KtLambdaExpression) {
         super.visitLambdaExpression(expression)
-        if (!insideHotMethod) return
+        if (!insideHotMethod || isExcluded(HotMethod.CHECK_LAMBDA)) return
         if (expression.isInlinedLambda()) return
         report(
             CodeSmell(
@@ -164,7 +191,7 @@ class HotMethodIllegalCall(
 
     override fun visitStringTemplateExpression(expression: KtStringTemplateExpression) {
         super.visitStringTemplateExpression(expression)
-        if (!insideHotMethod) return
+        if (!insideHotMethod || isExcluded(HotMethod.CHECK_STRING_TEMPLATE)) return
         val hasInterpolation = expression.entries.any { it !is KtLiteralStringTemplateEntry }
         if (!hasInterpolation) return
         report(
@@ -186,7 +213,9 @@ class HotMethodIllegalCall(
         val containerFqName = resolvedCall.containerFqName
         val functionName = resolvedCall.functionName
 
-        if (matchesForbiddenEntry(containerFqName, functionName, forbiddenFactoryFunctionsSet)) {
+        if (matchesForbiddenEntry(containerFqName, functionName, forbiddenFactoryFunctionsSet) &&
+            !isExcluded(HotMethod.CHECK_FACTORY, functionName, "$containerFqName.$functionName")
+        ) {
             report(
                 CodeSmell(
                     issue,
@@ -199,7 +228,9 @@ class HotMethodIllegalCall(
             return
         }
 
-        if (matchesForbiddenEntry(containerFqName, functionName, forbiddenCallsSet)) {
+        if (matchesForbiddenEntry(containerFqName, functionName, forbiddenCallsSet) &&
+            !isExcluded(HotMethod.CHECK_COLLECTION_OPS, functionName, "$containerFqName.$functionName")
+        ) {
             report(
                 CodeSmell(
                     issue,
