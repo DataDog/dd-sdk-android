@@ -112,8 +112,8 @@ object SessionReplay {
     ): Float {
         val remoteSampleRate = (sdkCore as? InternalSdkCore)
             ?.remoteConfiguration
-            ?.rum
-            ?.sessionReplaySampleRate
+            ?.sessionReplay
+            ?.sampleRate
             ?.toFloat()
         return remoteSampleRate ?: configuration.sampleRate
     }

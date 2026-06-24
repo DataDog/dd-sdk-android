@@ -9,7 +9,8 @@ import com.datadog.gradle.utils.createJsonModelsGenerationTask
 createJsonModelsGenerationTask("generateRemoteConfigModelsFromJson") {
     inputDirPath = "src/main/json/rc"
     targetPackageName = "com.datadog.android.core.remote.config.model"
+    ignoredFiles = listOf("mobile.json")
     inputNameMapping = mapOf(
-        "rum-sdk-config.json" to "RemoteConfigState"
+        "android.json" to "RemoteConfigState"
     )
 }

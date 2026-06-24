@@ -483,14 +483,81 @@ enum com.datadog.android.trace.TracingHeaderType
   - B3MULTI
   - TRACECONTEXT
 data class com.datadog.android.core.remote.config.model.RemoteConfigState
-  constructor(Rum? = null)
+  constructor(Rum? = null, SessionReplay? = null, Profiling? = null, Trace? = null)
+  val platform: kotlin.String
   fun toJson(): com.google.gson.JsonElement
   companion object 
     fun fromJson(kotlin.String): RemoteConfigState
     fun fromJsonObject(com.google.gson.JsonObject): RemoteConfigState
   data class Rum
-    constructor(kotlin.String, kotlin.Number? = null)
+    constructor(kotlin.String, kotlin.String? = null, kotlin.String? = null, kotlin.Number? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Number? = null, VitalsUpdateFrequency? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Rum
       fun fromJsonObject(com.google.gson.JsonObject): Rum
+  data class SessionReplay
+    constructor(kotlin.Number? = null, kotlin.Boolean? = null, TextAndInputPrivacy? = null, TouchPrivacy? = null, ImagePrivacy? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): SessionReplay
+      fun fromJsonObject(com.google.gson.JsonObject): SessionReplay
+  data class Profiling
+    constructor(kotlin.Number? = null, kotlin.Number? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Profiling
+      fun fromJsonObject(com.google.gson.JsonObject): Profiling
+  data class Trace
+    constructor(kotlin.Number? = null, TraceContextInjection? = null, kotlin.collections.List<kotlin.String>? = null, kotlin.collections.List<TracingHeaderType>? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Trace
+      fun fromJsonObject(com.google.gson.JsonObject): Trace
+  enum VitalsUpdateFrequency
+    constructor(kotlin.String)
+    - FREQUENT
+    - AVERAGE
+    - RARE
+    - NEVER
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): VitalsUpdateFrequency
+  enum TextAndInputPrivacy
+    constructor(kotlin.String)
+    - MASK_SENSITIVE_INPUTS
+    - MASK_ALL_INPUTS
+    - MASK_ALL
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): TextAndInputPrivacy
+  enum TouchPrivacy
+    constructor(kotlin.String)
+    - SHOW
+    - HIDE
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): TouchPrivacy
+  enum ImagePrivacy
+    constructor(kotlin.String)
+    - MASK_NONE
+    - MASK_LARGE_ONLY
+    - MASK_ALL
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): ImagePrivacy
+  enum TraceContextInjection
+    constructor(kotlin.String)
+    - ALL
+    - SAMPLED
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): TraceContextInjection
+  enum TracingHeaderType
+    constructor(kotlin.String)
+    - DATADOG
+    - B3
+    - B3MULTI
+    - TRACECONTEXT
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): TracingHeaderType
