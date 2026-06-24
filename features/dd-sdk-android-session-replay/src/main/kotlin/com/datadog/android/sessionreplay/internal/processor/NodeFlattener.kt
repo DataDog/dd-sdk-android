@@ -22,7 +22,8 @@ internal class NodeFlattener(private val wireframeUtils: WireframeUtils = Wirefr
             node.wireframes.toList()
                 .map { wireframe ->
                     val clip = wireframeUtils.resolveWireframeClip(wireframe, node.parents)
-                    wireframe.copy(clip = clip)
+                    val withClip = wireframe.copy(clip = clip)
+                    node.heatmapIdentifier?.let { withClip.copyWithPermanentId(it.rawValue) } ?: withClip
                 }
                 .forEach { list.add(it) }
 

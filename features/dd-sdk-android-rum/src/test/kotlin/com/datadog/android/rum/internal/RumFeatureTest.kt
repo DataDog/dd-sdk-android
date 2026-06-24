@@ -863,6 +863,40 @@ internal class RumFeatureTest {
         assertThat(GlobalRumMonitor.get(mockSdkCore)).isInstanceOf(NoOpAdvancedRumMonitor::class.java)
     }
 
+    @Test
+    fun `M keep heatmap identifier registry instance W onStop()`() {
+        // Session Replay holds a direct reference to the registry obtained via unwrap().
+        // Resetting the registry on stop would leave SR writing to an orphaned instance.
+
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        val registryBeforeStop = testedFeature.heatmapIdentifierRegistry
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        assertThat(testedFeature.heatmapIdentifierRegistry)
+            .isSameAs(registryBeforeStop)
+    }
+
+    @Test
+    fun `M keep same heatmap identifier registry instance W onStop() + onInitialize()`() {
+        // SR holds a direct reference from the first init. Re-initializing must reuse the
+        // same instance so SR's cached reference stays valid.
+
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        val registryAfterFirstInit = testedFeature.heatmapIdentifierRegistry
+
+        // When
+        testedFeature.onStop()
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        assertThat(testedFeature.heatmapIdentifierRegistry).isSameAs(registryAfterFirstInit)
+    }
+
     @ParameterizedTest
     @EnumSource(VitalsUpdateFrequency::class, names = ["NEVER"], mode = EnumSource.Mode.EXCLUDE)
     fun `M initialize vital executor W initialize { frequency != NEVER }()`(
