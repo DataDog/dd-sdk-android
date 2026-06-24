@@ -462,6 +462,32 @@ internal class UnsafeThirdPartyFunctionCallTest {
     }
 
     @Test
+    fun `ignores calls present in either known safe calls list`() {
+        // Given - one call allowlisted in knownSafeAndroidCalls, one in knownSafeThirdPartyCalls;
+        // if the lists were not combined (last-wins), one of the two calls would be flagged
+        val config = TestConfig(
+            "knownSafeAndroidCalls" to listOf("java.io.File.inputStream()"),
+            "knownSafeThirdPartyCalls" to listOf("java.io.File.readBytes()")
+        )
+        val code =
+            """
+                import java.io.File
+
+                fun test(f: File) {
+                    f.inputStream()
+                    f.readBytes()
+                }
+            """.trimIndent()
+
+        // When
+        val findings = UnsafeThirdPartyFunctionCall(config)
+            .compileAndLintWithContext(kotlinEnv.env, code)
+
+        // Then
+        assertThat(findings).hasSize(0)
+    }
+
+    @Test
     fun `detekt unsafe call on unknown function {treatUnknownFunctionAsThrowing=true}`() {
         // Given
         val config = TestConfig("treatUnknownFunctionAsThrowing" to true)
