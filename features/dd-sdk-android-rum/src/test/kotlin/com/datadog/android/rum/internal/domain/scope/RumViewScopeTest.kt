@@ -5758,6 +5758,7 @@ internal class RumViewScopeTest {
         argumentCaptor<LongTaskEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue).hasProfilingStatus(LongTaskEvent.ProfilingStatus.RUNNING)
+            assertThat(firstValue).hasProfilingClockDrift(datadogContext.time.serverTimeOffsetMs)
         }
     }
 
@@ -5916,6 +5917,7 @@ internal class RumViewScopeTest {
         argumentCaptor<ErrorEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue).hasProfilingStatus(ErrorEvent.ProfilingStatus.RUNNING)
+            assertThat(firstValue).hasProfilingClockDrift(datadogContext.time.serverTimeOffsetMs)
         }
     }
 

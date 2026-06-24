@@ -22,7 +22,9 @@ import com.datadog.android.profiling.model.ProfileEvent
 import com.datadog.android.profiling.model.RumMetadataEvent
 import com.google.gson.JsonArray
 import java.io.File
+import java.util.Locale
 import java.util.concurrent.TimeUnit
+import kotlin.math.abs
 
 internal class ProfilingDataWriter(
     private val sdkCore: FeatureSdkCore
@@ -68,6 +70,23 @@ internal class ProfilingDataWriter(
         vitalEvents: List<ProfilerEvent.RumVitalEvent>
     ): RawBatchEvent? {
         if (longTaskEvents.isEmpty() && anrEvents.isEmpty() && vitalEvents.isEmpty()) return null
+
+        val driftMs = abs(context.time.serverTimeOffsetMs)
+        if (driftMs > MAX_CLOCK_DRIFT_MS) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.MAINTAINER,
+                {
+                    LOG_PROFILE_DROPPED_CLOCK_DRIFT.format(
+                        Locale.US,
+                        context.time.serverTimeOffsetMs
+                    )
+                }
+            )
+            // TODO RUM-16953: Uncomment the code below to prevent writing the event.
+            // return null
+        }
+
         val perfettoBytes = readProfilingData(profilingResult.resultFilePath)
         val firstRumContext =
             longTaskEvents.firstOrNull()?.rumContext
@@ -232,6 +251,9 @@ internal class ProfilingDataWriter(
     }
 
     companion object {
+        internal const val MAX_CLOCK_DRIFT_MS = 1000L
+        private const val LOG_PROFILE_DROPPED_CLOCK_DRIFT =
+            "Profile dropped during write: clock drift %d ms exceeds threshold"
         private const val LOG_FILE_DELETE_FAILED = "Failed to delete Perfetto trace file: %s"
         private const val TAG_KEY_SERVICE = "service"
         private const val TAG_KEY_VERSION = "version"
