@@ -443,7 +443,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
         val knownSafeCalls = listOf(
             "java.io.File.inputStream()"
         )
-        val config = TestConfig("knownSafeCalls" to knownSafeCalls)
+        val config = TestConfig("knownSafeThirdPartyCalls" to knownSafeCalls)
         val code =
             """
                 import java.io.File
@@ -572,7 +572,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
     @Test
     fun `ignore kotlin helper calls { with + run + also + println }`() {
         // Given
-        val config = TestConfig("knownSafeCalls" to "java.io.File.readBytes()")
+        val config = TestConfig("knownSafeThirdPartyCalls" to "java.io.File.readBytes()")
         val code =
             """
                 import java.io.File
