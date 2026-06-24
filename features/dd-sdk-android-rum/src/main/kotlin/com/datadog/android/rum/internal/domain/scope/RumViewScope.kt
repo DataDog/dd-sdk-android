@@ -18,6 +18,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.internal.attributes.LocalAttribute
 import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
+import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
@@ -94,7 +95,8 @@ internal open class RumViewScope(
     private val accessibilitySnapshotManager: AccessibilitySnapshotManager,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
-    private val insightsCollector: InsightsCollector
+    private val insightsCollector: InsightsCollector,
+    private val heatmapIdentifierRegistry: HeatmapIdentifierRegistry?
 ) : RumScope {
 
     internal val url = key.url.replace('.', '/')
@@ -477,7 +479,8 @@ internal open class RumViewScope(
             accessibilitySnapshotManager = accessibilitySnapshotManager,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
-            insightsCollector = insightsCollector
+            insightsCollector = insightsCollector,
+            heatmapIdentifierRegistry = heatmapIdentifierRegistry
         )
     }
 
@@ -624,12 +627,31 @@ internal open class RumViewScope(
         }
 
         if (activeActionScope != null) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { ACTION_DROPPED_WARNING.format(Locale.US, event.type, event.name) }
-            )
-            return
+            if (event.type == RumActionType.CUSTOM && !event.waitForStop) {
+                // deliver it anyway, even if there is active action ongoing
+                val customActionScope = RumActionScope.fromEvent(
+                    parentScope = this,
+                    sdkCore = sdkCore,
+                    event = event,
+                    timestampOffset = serverTimeOffsetInMs,
+                    featuresContextResolver = featuresContextResolver,
+                    trackFrustrations = trackFrustrations,
+                    sampleRate = sampleRate,
+                    rumSessionTypeOverride = rumSessionTypeOverride,
+                    insightsCollector = insightsCollector,
+                    heatmapIdentifierRegistry = heatmapIdentifierRegistry
+                )
+                pendingActionCount++
+                customActionScope.handleEvent(RumRawEvent.SendCustomActionNow(), datadogContext, writeScope, writer)
+                return
+            } else {
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    { ACTION_DROPPED_WARNING.format(Locale.US, event.type, event.name) }
+                )
+                return
+            }
         }
 
         activeActionScope = RumActionScope.fromEvent(
@@ -641,7 +663,8 @@ internal open class RumViewScope(
             trackFrustrations = trackFrustrations,
             sampleRate = sampleRate,
             rumSessionTypeOverride = rumSessionTypeOverride,
-            insightsCollector = insightsCollector
+            insightsCollector = insightsCollector,
+            heatmapIdentifierRegistry = heatmapIdentifierRegistry
         )
         pendingActionCount++
     }
@@ -1791,7 +1814,8 @@ internal open class RumViewScope(
             accessibilitySnapshotManager: AccessibilitySnapshotManager,
             batteryInfoProvider: InfoProvider<BatteryInfo>,
             displayInfoProvider: InfoProvider<DisplayInfo>,
-            insightsCollector: InsightsCollector
+            insightsCollector: InsightsCollector,
+            heatmapIdentifierRegistry: HeatmapIdentifierRegistry?
         ): RumViewScope {
             val networkSettledMetricResolver = NetworkSettledMetricResolver(
                 networkSettledResourceIdentifier,
@@ -1828,7 +1852,8 @@ internal open class RumViewScope(
                 accessibilitySnapshotManager = accessibilitySnapshotManager,
                 batteryInfoProvider = batteryInfoProvider,
                 displayInfoProvider = displayInfoProvider,
-                insightsCollector = insightsCollector
+                insightsCollector = insightsCollector,
+                heatmapIdentifierRegistry = heatmapIdentifierRegistry
             )
         }
 

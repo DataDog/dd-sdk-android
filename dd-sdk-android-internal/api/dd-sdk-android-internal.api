@@ -1,3 +1,32 @@
+public final class com/datadog/android/heatmaps/CrossPlatformHeatmapActionData {
+	public fun <init> (Ljava/util/List;Ljava/lang/String;JJLjava/lang/Long;Ljava/lang/Long;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()J
+	public final fun component4 ()J
+	public final fun component5 ()Ljava/lang/Long;
+	public final fun component6 ()Ljava/lang/Long;
+	public final fun copy (Ljava/util/List;Ljava/lang/String;JJLjava/lang/Long;Ljava/lang/Long;)Lcom/datadog/android/heatmaps/CrossPlatformHeatmapActionData;
+	public static synthetic fun copy$default (Lcom/datadog/android/heatmaps/CrossPlatformHeatmapActionData;Ljava/util/List;Ljava/lang/String;JJLjava/lang/Long;Ljava/lang/Long;ILjava/lang/Object;)Lcom/datadog/android/heatmaps/CrossPlatformHeatmapActionData;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getElementPath ()Ljava/util/List;
+	public final fun getPositionX ()J
+	public final fun getPositionY ()J
+	public final fun getTargetHeight ()Ljava/lang/Long;
+	public final fun getTargetWidth ()Ljava/lang/Long;
+	public final fun getViewUrl ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/datadog/android/heatmaps/HeatmapIdentifierRegistryProvider {
+	public abstract fun getHeatmapIdentifierRegistry ()Lcom/datadog/android/internal/heatmaps/HeatmapIdentifierRegistry;
+}
+
+public final class com/datadog/android/heatmaps/HeatmapViewKeyKt {
+	public static final fun heatmapViewKey (Landroid/view/View;)J
+}
+
 public final class com/datadog/android/internal/FeatureContextKeys {
 	public static final field INSTANCE Lcom/datadog/android/internal/FeatureContextKeys;
 	public static final field PROFILER_IS_RUNNING Ljava/lang/String;
@@ -130,6 +159,39 @@ public final class com/datadog/android/internal/flags/RumFlagEvaluationMessage {
 	public final fun getValue ()Ljava/lang/Object;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/heatmaps/HeatmapIdentifier {
+	public static final field Companion Lcom/datadog/android/internal/heatmaps/HeatmapIdentifier$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lcom/datadog/android/internal/heatmaps/HeatmapIdentifier;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/heatmaps/HeatmapIdentifier;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/internal/heatmaps/HeatmapIdentifier;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getRawValue ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/heatmaps/HeatmapIdentifier$Companion {
+	public final fun create (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/datadog/android/internal/heatmaps/HeatmapIdentifier;
+	public static synthetic fun create$default (Lcom/datadog/android/internal/heatmaps/HeatmapIdentifier$Companion;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/datadog/android/internal/heatmaps/HeatmapIdentifier;
+}
+
+public abstract interface class com/datadog/android/internal/heatmaps/HeatmapIdentifierRegistry {
+	public static final field Companion Lcom/datadog/android/internal/heatmaps/HeatmapIdentifierRegistry$Companion;
+	public abstract fun getHeatmapIdentifier (JLjava/lang/String;)Lcom/datadog/android/internal/heatmaps/HeatmapIdentifier;
+	public abstract fun setHeatmapIdentifiers (Ljava/util/Map;Ljava/lang/String;)V
+}
+
+public final class com/datadog/android/internal/heatmaps/HeatmapIdentifierRegistry$Companion {
+	public final fun create ()Lcom/datadog/android/internal/heatmaps/HeatmapIdentifierRegistry;
+}
+
+public final class com/datadog/android/internal/heatmaps/NoOpHeatmapIdentifierRegistry : com/datadog/android/internal/heatmaps/HeatmapIdentifierRegistry {
+	public fun <init> ()V
+	public fun getHeatmapIdentifier (JLjava/lang/String;)Lcom/datadog/android/internal/heatmaps/HeatmapIdentifier;
+	public fun setHeatmapIdentifiers (Ljava/util/Map;Ljava/lang/String;)V
 }
 
 public final class com/datadog/android/internal/lifecycle/ProcessLifecycleMonitor : android/app/Application$ActivityLifecycleCallbacks {
@@ -705,6 +767,10 @@ public final class com/datadog/android/internal/utils/StringBuilderExtKt {
 public final class com/datadog/android/internal/utils/StringExtKt {
 	public static final fun fromBase64 (Ljava/lang/String;)Ljava/lang/String;
 	public static final fun toBase64 (Ljava/lang/String;)Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/utils/TapTargetUtilsKt {
+	public static final fun isValidTapTarget (Landroid/view/View;)Z
 }
 
 public final class com/datadog/android/internal/utils/ThreadExtKt {

@@ -15,6 +15,7 @@ import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.InfoProvider
@@ -59,7 +60,8 @@ internal class RumSessionScope(
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS,
     rumSessionTypeOverride: RumSessionType?,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
-    insightsCollector: InsightsCollector
+    insightsCollector: InsightsCollector,
+    heatmapIdentifierRegistry: HeatmapIdentifierRegistry?
 ) : RumScope {
 
     internal var sessionId = RumContext.NULL_UUID
@@ -96,7 +98,8 @@ internal class RumSessionScope(
         accessibilitySnapshotManager = accessibilitySnapshotManager,
         batteryInfoProvider = batteryInfoProvider,
         displayInfoProvider = displayInfoProvider,
-        insightsCollector
+        insightsCollector = insightsCollector,
+        heatmapIdentifierRegistry = heatmapIdentifierRegistry
     )
 
     internal val activeView: RumViewScope?

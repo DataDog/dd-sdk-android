@@ -8,8 +8,6 @@ package com.datadog.android.sessionreplay.compose.internal.utils
 
 import android.graphics.Bitmap
 import android.view.View
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -46,6 +44,7 @@ internal class SemanticsUtils(
     private val reflectionUtils: ReflectionUtils = ReflectionUtils(),
     private val sampler: RateBasedSampler<Unit> = RateBasedSampler(BITMAP_TELEMETRY_SAMPLE_RATE)
 ) {
+    private val backgroundResolver = BackgroundResolver(reflectionUtils, ::resolveInnerBounds)
 
     internal fun findRootSemanticsNode(view: View): SemanticsNode? {
         reflectionUtils.apply {
@@ -59,72 +58,14 @@ internal class SemanticsUtils(
         return null
     }
 
-    private fun resolveOuterBounds(semanticsNode: SemanticsNode): GlobalBounds {
-        var currentBounds = resolveInnerBounds(semanticsNode)
-        semanticsNode.layoutInfo.getModifierInfo().filter {
-            reflectionUtils.isPaddingElement(it.modifier)
-        }.forEach {
-            val top = reflectionUtils.getTopPadding(it.modifier)
-            val start = reflectionUtils.getStartPadding(it.modifier)
-            val end = reflectionUtils.getEndPadding(it.modifier)
-            val bottom = reflectionUtils.getBottomPadding(it.modifier)
-            currentBounds = GlobalBounds(
-                x = currentBounds.x - start.toLong(),
-                y = currentBounds.y - top.toLong(),
-                width = currentBounds.width + (end + start).toLong(),
-                height = currentBounds.height + (bottom + top).toLong()
-            )
-        }
-        return currentBounds
-    }
+    internal fun resolveBackgroundInfo(semanticsNode: SemanticsNode): List<BackgroundInfo> =
+        backgroundResolver.resolveBackgroundInfo(semanticsNode)
 
-    internal fun resolveBackgroundInfo(semanticsNode: SemanticsNode): List<BackgroundInfo> {
-        val backgroundInfoList = mutableListOf<BackgroundInfo>()
-        // CurrentBackgroundInfo is to store bounds, color and shape information in sequence of modifiers.
-        var currentBackgroundInfo = BackgroundInfo()
-        var currentBounds: GlobalBounds = resolveOuterBounds(semanticsNode)
-        // If the currentBounds is already invalid, return with the existing wireframes
-        if (!isGlobalBoundsValid(globalBounds = currentBounds)) {
-            return backgroundInfoList
-        }
-        val density = semanticsNode.layoutInfo.density
-        // Iterate all the modifiers in user calling sequence, when meet:
-        // -> clip(): calculate the corner radius and update `currentBackgroundInfo`
-        // -> padding(): shrink the bounds from the previous bounds and update `currentBackgroundInfo`
-        // -> background(): retrieve the color and use `currentBackgroundInfo` to generate wireframes,
-        //                  then reset `currentBackgroundInfo`.
-        semanticsNode.layoutInfo.getModifierInfo().forEach { modifierInfo ->
-            if (reflectionUtils.isBackgroundElement(modifierInfo.modifier)) {
-                val color = reflectionUtils.getColor(modifierInfo.modifier)
-                currentBackgroundInfo = currentBackgroundInfo.copy(globalBounds = currentBounds, color = color)
-                backgroundInfoList.add(currentBackgroundInfo)
-                currentBackgroundInfo = BackgroundInfo()
-            } else if (reflectionUtils.isPaddingElement(modifierInfo.modifier)) {
-                currentBounds = shrinkInnerBounds(modifierInfo.modifier, currentBounds)
-                currentBackgroundInfo = currentBackgroundInfo.copy(globalBounds = currentBounds)
-            } else if (reflectionUtils.isGraphicsLayerElement(modifierInfo.modifier)) {
-                val cornerRadius =
-                    resolveClipShape(modifierInfo.modifier, currentBounds, density) ?: 0f
-                currentBackgroundInfo = currentBackgroundInfo.copy(cornerRadius = cornerRadius)
-            }
-        }
-        return backgroundInfoList
-    }
+    internal fun resolveBackgroundColor(semanticsNode: SemanticsNode): Long? =
+        backgroundResolver.resolveBackgroundColor(semanticsNode)
 
-    internal fun resolveBackgroundColor(semanticsNode: SemanticsNode): Long? {
-        val backgroundModifierInfo =
-            semanticsNode.layoutInfo.getModifierInfo().firstOrNull { modifierInfo ->
-                reflectionUtils.isBackgroundElement(modifierInfo.modifier)
-            }
-        return backgroundModifierInfo?.let { reflectionUtils.getColor(it.modifier) }
-    }
-
-    internal fun resolveBackgroundShape(semanticsNode: SemanticsNode): Shape? {
-        val backgroundModifier = semanticsNode.layoutInfo.getModifierInfo().firstOrNull {
-            reflectionUtils.isBackgroundElement(it.modifier)
-        }?.modifier
-        return backgroundModifier?.let { reflectionUtils.getShape(it) }
-    }
+    internal fun resolveBackgroundShape(semanticsNode: SemanticsNode): Shape? =
+        backgroundResolver.resolveBackgroundShape(semanticsNode)
 
     internal fun resolveCheckPath(semanticsNode: SemanticsNode): Path? =
         resolveOnDrawInstance(semanticsNode)?.let { onDraw ->
@@ -157,25 +98,8 @@ internal class SemanticsUtils(
             OnDrawFieldType.BORDER_COLOR
         )
 
-    private fun shrinkInnerBounds(
-        modifier: Modifier,
-        currentBounds: GlobalBounds
-    ): GlobalBounds {
-        val top = reflectionUtils.getTopPadding(modifier)
-        val start = reflectionUtils.getStartPadding(modifier)
-        val end = reflectionUtils.getEndPadding(modifier)
-        val bottom = reflectionUtils.getBottomPadding(modifier)
-        return GlobalBounds(
-            x = currentBounds.x + start.toLong(),
-            y = currentBounds.y + top.toLong(),
-            width = currentBounds.width - (end + start).toLong(),
-            height = currentBounds.height - (bottom + top).toLong()
-        )
-    }
-
-    private fun isGlobalBoundsValid(globalBounds: GlobalBounds): Boolean {
-        return (globalBounds.width > 0 && globalBounds.height > 0)
-    }
+    internal fun resolveCornerRadius(shape: Shape, currentBounds: GlobalBounds, density: Density): Float =
+        backgroundResolver.resolveCornerRadius(shape, currentBounds, density)
 
     internal fun resolveInnerBounds(semanticsNode: SemanticsNode): GlobalBounds {
         val offset = semanticsNode.positionInRoot
@@ -198,35 +122,6 @@ internal class SemanticsUtils(
             Size(width = width.toFloat(), height = height.toFloat())
         } else {
             null
-        }
-    }
-
-    private fun resolveClipShape(
-        modifier: Modifier,
-        currentBounds: GlobalBounds,
-        density: Density
-    ): Float? {
-        return reflectionUtils.getClipShape(modifier)?.let { shape ->
-            resolveCornerRadius(shape, currentBounds, density)
-        }
-    }
-
-    internal fun resolveCornerRadius(
-        shape: Shape,
-        currentBounds: GlobalBounds,
-        density: Density
-    ): Float {
-        val size = Size(
-            currentBounds.width.toFloat() * density.density,
-            currentBounds.height.toFloat() * density.density
-        )
-        // We only have a single value for corner radius, so we default to using the
-        // top left (i.e.: topStart) corner's value and apply it to all corners
-        // it.topStart.toPx(size, density) / density.density
-        return if (shape is RoundedCornerShape) {
-            shape.topStart.toPx(size, density) / density.density
-        } else {
-            0f
         }
     }
 
@@ -560,6 +455,10 @@ internal class SemanticsUtils(
         }
         internal const val DEFAULT_COLOR_BLACK = "#000000FF"
         internal const val DEFAULT_COLOR_WHITE = "#FFFFFFFF"
+
+        /** Raw Long encoding of [androidx.compose.ui.graphics.Color.Unspecified] (color-space id 16). */
+        internal const val COLOR_UNSPECIFIED = 16L
+
         private const val BITMAP_TELEMETRY_SAMPLE_RATE = 1f
 
         private const val COMPONENT_NAME = "SemanticsUtils"
