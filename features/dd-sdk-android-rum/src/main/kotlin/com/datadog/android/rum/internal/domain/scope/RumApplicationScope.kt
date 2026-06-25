@@ -15,6 +15,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumSessionListener
@@ -59,7 +60,8 @@ internal class RumApplicationScope(
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
     private val insightsCollector: InsightsCollector,
     private val viewEventMapper: ViewEventMapper,
-    private val rumViewEventWriteConfig: RumViewEventWriteConfig
+    private val rumViewEventWriteConfig: RumViewEventWriteConfig,
+    private val heatmapIdentifierRegistry: HeatmapIdentifierRegistry?
 ) : RumScope, RumViewChangedListener {
 
     override val parentScope: RumScope? = null
@@ -91,7 +93,8 @@ internal class RumApplicationScope(
             rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
             insightsCollector = insightsCollector,
             viewEventMapper = viewEventMapper,
-            rumViewEventWriteConfig = rumViewEventWriteConfig
+            rumViewEventWriteConfig = rumViewEventWriteConfig,
+            heatmapIdentifierRegistry = heatmapIdentifierRegistry
         )
     )
 
@@ -215,7 +218,8 @@ internal class RumApplicationScope(
             rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
             insightsCollector = insightsCollector,
             viewEventMapper = viewEventMapper,
-            rumViewEventWriteConfig = rumViewEventWriteConfig
+            rumViewEventWriteConfig = rumViewEventWriteConfig,
+            heatmapIdentifierRegistry = heatmapIdentifierRegistry
         )
         childScopes.add(newSession)
         if (event !is RumRawEvent.StartView) {

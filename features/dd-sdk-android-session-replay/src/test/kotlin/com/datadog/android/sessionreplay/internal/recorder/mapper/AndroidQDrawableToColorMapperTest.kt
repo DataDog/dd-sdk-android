@@ -144,6 +144,45 @@ class AndroidQDrawableToColorMapperTest : AndroidMDrawableToColorMapperTest() {
         assertThat(result).isNull()
     }
 
+    @Test
+    fun `M return null W mapDrawableToColor {no accessible color filter}`(
+        @IntForgery fillColor: Int
+    ) {
+        // When drawable.colorFilter is null (e.g. tint applied via DrawableCompat.setTintList,
+        // which stores it in the blocked private Drawable.mTintFilter on API 28+), the mapper
+        // returns null so the image wireframe path captures the actual tinted appearance.
+        val baseAlpha = (fillColor.toLong() and 0xFF000000) shr 24
+        assumeTrue(baseAlpha != 0L)
+        testableMapper.fakeResolvedColor = fillColor
+        testableMapper.fakeColorFilter = null
+        val gradientDrawable = GradientDrawable()
+
+        val result = testedMapper.mapDrawableToColor(gradientDrawable, mockInternalLogger)
+
+        assertThat(result).isNull()
+    }
+
+    @Test
+    override fun `M map GradientDrawable to fill paint's color W mapDrawableToColor()`(
+        @IntForgery drawableColor: Int
+    ) {
+        // On Q+, when no color filter is accessible (drawable.colorFilter is null), the mapper
+        // returns null regardless of the fill color so the image wireframe path is used instead.
+        val baseAlpha = (drawableColor.toLong() and 0xFF000000) shr 24
+        assumeTrue(baseAlpha != 0L)
+        val mockFillPaint = mock<Paint>().apply {
+            whenever(this.color) doReturn (drawableColor and 0xFFFFFF)
+            whenever(this.alpha) doReturn baseAlpha.toInt()
+        }
+        val gradientDrawable = GradientDrawable().apply {
+            AndroidMDrawableToColorMapper.fillPaintField?.set(this, mockFillPaint)
+        }
+
+        val result = testedMapper.mapDrawableToColor(gradientDrawable, mockInternalLogger)
+
+        assertThat(result).isNull()
+    }
+
     // Seam to avoid calling API 24+ methods on the test JVM; falls back to parent-injected fillPaintField when fakeResolvedColor is null.
     private class TestableQMapper : AndroidQDrawableToColorMapper() {
         var fakeResolvedColor: Int? = null

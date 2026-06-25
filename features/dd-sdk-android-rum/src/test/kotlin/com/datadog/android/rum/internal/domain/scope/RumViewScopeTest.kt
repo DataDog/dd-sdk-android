@@ -18,6 +18,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
@@ -44,6 +45,8 @@ import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.state.SlowFrameRecord
 import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
+import com.datadog.android.rum.internal.heatmaps.HeatmapActionResolver
+import com.datadog.android.rum.internal.heatmaps.NativeHeatmapActionData
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.NoValueReason
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
@@ -2879,7 +2882,12 @@ internal class RumViewScopeTest {
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
 
         // When
-        val fakeStartActionEvent = RumRawEvent.StartAction(type, name, waitForStop, attributes)
+        val fakeStartActionEvent = RumRawEvent.StartAction(
+            type = type,
+            name = name,
+            waitForStop = waitForStop,
+            attributes = attributes
+        )
         val result = testedScope.handleEvent(
             fakeStartActionEvent,
             fakeDatadogContext,
@@ -2902,6 +2910,32 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `M pass heatmapData through W handleEvent(StartAction) {heatmapData set}`(
+        @Forgery type: RumActionType,
+        @StringForgery name: String,
+        @BoolForgery waitForStop: Boolean,
+        @Forgery fakeHeatmapData: NativeHeatmapActionData,
+        forge: Forge
+    ) {
+        // Given
+        val mockHeatmapRegistry: HeatmapIdentifierRegistry = mock()
+        testedScope = newRumViewScope(heatmapIdentifierRegistry = mockHeatmapRegistry)
+        val fakeStartActionEvent = RumRawEvent.StartAction(
+            type = type,
+            name = name,
+            waitForStop = waitForStop,
+            nativeHeatmapActionData = fakeHeatmapData,
+            attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        )
+
+        // When
+        testedScope.handleEvent(fakeStartActionEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        val actionScope = testedScope.activeActionScope as RumActionScope
+        assertThat(actionScope.heatmapResolver).isInstanceOf(HeatmapActionResolver.Native::class.java)
+    }
+
     fun `M create ActionScope W handleEvent(StartAction+CUSTOM+cont)`(
         @StringForgery name: String,
         forge: Forge
@@ -2911,7 +2945,7 @@ internal class RumViewScopeTest {
 
         // When
         val fakeStartActionEvent =
-            RumRawEvent.StartAction(RumActionType.CUSTOM, name, waitForStop = true, attributes)
+            RumRawEvent.StartAction(RumActionType.CUSTOM, name, waitForStop = true, attributes = attributes)
         val result = testedScope.handleEvent(
             fakeStartActionEvent,
             fakeDatadogContext,
@@ -2940,7 +2974,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
-        fakeEvent = RumRawEvent.StartAction(RumActionType.CUSTOM, name, false, attributes)
+        fakeEvent = RumRawEvent.StartAction(RumActionType.CUSTOM, name, false, attributes = attributes)
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -2981,7 +3015,12 @@ internal class RumViewScopeTest {
         // Given
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         testedScope.activeActionScope = mockChildScope
-        fakeEvent = RumRawEvent.StartAction(actionType, name, waitForStop, attributes)
+        fakeEvent = RumRawEvent.StartAction(
+            type = actionType,
+            name = name,
+            waitForStop = waitForStop,
+            attributes = attributes
+        )
         whenever(
             mockChildScope.handleEvent(
                 fakeEvent,
@@ -3020,7 +3059,12 @@ internal class RumViewScopeTest {
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         testedScope.activeActionScope = mockChildScope
         fakeEvent =
-            RumRawEvent.StartAction(RumActionType.CUSTOM, name, waitForStop = true, attributes)
+            RumRawEvent.StartAction(
+                type = RumActionType.CUSTOM,
+                name = name,
+                waitForStop = true,
+                attributes = attributes
+            )
         whenever(
             mockChildScope.handleEvent(
                 fakeEvent,
@@ -3058,7 +3102,12 @@ internal class RumViewScopeTest {
         // Given
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         testedScope.activeActionScope = mockChildScope
-        fakeEvent = RumRawEvent.StartAction(RumActionType.CUSTOM, name, false, attributes)
+        fakeEvent = RumRawEvent.StartAction(
+            type = RumActionType.CUSTOM,
+            name = name,
+            waitForStop = false,
+            attributes = attributes
+        )
         whenever(
             mockChildScope.handleEvent(
                 fakeEvent,
@@ -3134,7 +3183,12 @@ internal class RumViewScopeTest {
         // Given
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         testedScope.activeActionScope = mockChildScope
-        fakeEvent = RumRawEvent.StartAction(RumActionType.CUSTOM, name, false, attributes)
+        fakeEvent = RumRawEvent.StartAction(
+            type = RumActionType.CUSTOM,
+            name = name,
+            waitForStop = false,
+            attributes = attributes
+        )
         whenever(
             mockChildScope.handleEvent(
                 fakeEvent,
@@ -3215,7 +3269,12 @@ internal class RumViewScopeTest {
         // Given
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         testedScope.stopped = true
-        fakeEvent = RumRawEvent.StartAction(type, name, waitForStop, attributes)
+        fakeEvent = RumRawEvent.StartAction(
+            type = type,
+            name = name,
+            waitForStop = waitForStop,
+            attributes = attributes
+        )
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3287,7 +3346,12 @@ internal class RumViewScopeTest {
         // Given
         testedScope.activeActionScope = null
         testedScope.pendingActionCount = 0
-        fakeEvent = RumRawEvent.StartAction(type, name, waitForStop, emptyMap())
+        fakeEvent = RumRawEvent.StartAction(
+            type = type,
+            name = name,
+            waitForStop = waitForStop,
+            attributes = emptyMap()
+        )
 
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
@@ -9537,7 +9601,8 @@ internal class RumViewScopeTest {
         networkSettledMetricResolver: NetworkSettledMetricResolver = mockNetworkSettledMetricResolver,
         viewEndedMetricDispatcher: ViewMetricDispatcher = mockViewEndedMetricDispatcher,
         slowFramesMetricListener: SlowFramesListener = mockSlowFramesListener,
-        rumViewEventWriterFactory: () -> RumViewEventWriter = { mockRumViewEventWriter }
+        rumViewEventWriterFactory: () -> RumViewEventWriter = { mockRumViewEventWriter },
+        heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null
     ) = RumViewScope(
         parentScope = parentScope,
         sdkCore = sdkCore,
@@ -9563,7 +9628,8 @@ internal class RumViewScopeTest {
         batteryInfoProvider = mockBatteryInfoProvider,
         displayInfoProvider = mockDisplayInfoProvider,
         insightsCollector = mockInsightsCollector,
-        rumViewEventWriterFactory = rumViewEventWriterFactory
+        rumViewEventWriterFactory = rumViewEventWriterFactory,
+        heatmapIdentifierRegistry = heatmapIdentifierRegistry
     )
 
     data class RumRawEventData(val event: RumRawEvent, val viewKey: RumScopeKey)

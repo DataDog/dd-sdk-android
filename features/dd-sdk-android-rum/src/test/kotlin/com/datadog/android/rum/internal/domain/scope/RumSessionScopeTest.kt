@@ -1793,7 +1793,8 @@ internal class RumSessionScopeTest {
             rumSessionScopeStartupManagerFactory = { mockRumSessionScopeStartupManager },
             insightsCollector = mockInsightsCollector,
             viewEventMapper = mockViewEventMapper,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart
+            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
+            heatmapIdentifierRegistry = null
         )
 
         if (withMockChildScope) {
