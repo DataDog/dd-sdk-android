@@ -614,7 +614,8 @@ internal open class RumViewScope(
                 trackFrustrations = trackFrustrations,
                 sampleRate = sampleRate,
                 rumSessionTypeOverride = rumSessionTypeOverride,
-                insightsCollector = insightsCollector
+                insightsCollector = insightsCollector,
+                heatmapIdentifierRegistry = heatmapIdentifierRegistry
             )
             pendingActionCount++
             customActionScope.handleEvent(RumRawEvent.SendCustomActionNow(), datadogContext, writeScope, writer)
@@ -622,31 +623,12 @@ internal open class RumViewScope(
         }
 
         if (activeActionScope != null) {
-            if (event.type == RumActionType.CUSTOM && !event.waitForStop) {
-                // deliver it anyway, even if there is active action ongoing
-                val customActionScope = RumActionScope.fromEvent(
-                    parentScope = this,
-                    sdkCore = sdkCore,
-                    event = event,
-                    timestampOffset = serverTimeOffsetInMs,
-                    featuresContextResolver = featuresContextResolver,
-                    trackFrustrations = trackFrustrations,
-                    sampleRate = sampleRate,
-                    rumSessionTypeOverride = rumSessionTypeOverride,
-                    insightsCollector = insightsCollector,
-                    heatmapIdentifierRegistry = heatmapIdentifierRegistry
-                )
-                pendingActionCount++
-                customActionScope.handleEvent(RumRawEvent.SendCustomActionNow(), datadogContext, writeScope, writer)
-                return
-            } else {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    { ACTION_DROPPED_WARNING.format(Locale.US, event.type, event.name) }
-                )
-                return
-            }
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { ACTION_DROPPED_WARNING.format(Locale.US, event.type, event.name) }
+            )
+            return
         }
 
         activeActionScope = RumActionScope.fromEvent(
