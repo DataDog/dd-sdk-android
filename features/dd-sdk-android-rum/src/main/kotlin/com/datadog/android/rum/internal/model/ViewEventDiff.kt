@@ -180,11 +180,33 @@ private fun diffDd(old: ViewEvent.Dd, new: ViewEvent.Dd): ViewUpdateEvent.Dd {
                     sessionSampleRate = it.sessionSampleRate,
                     sessionReplaySampleRate = it.sessionReplaySampleRate,
                     profilingSampleRate = it.profilingSampleRate,
-                    traceSampleRate = it.traceSampleRate
+                    traceSampleRate = it.traceSampleRate,
+                    startSessionReplayRecordingManually = it.startSessionReplayRecordingManually
                 )
             },
             browserSdkVersion = diffEquals(ViewEvent.Dd::browserSdkVersion),
-            sdkName = diffEquals(ViewEvent.Dd::sdkName)
+            sdkName = diffEquals(ViewEvent.Dd::sdkName),
+            replayStats = diffEquals(ViewEvent.Dd::replayStats)?.let {
+                ViewUpdateEvent.ReplayStats(
+                    recordsCount = it.recordsCount,
+                    segmentsCount = it.segmentsCount,
+                    segmentsTotalRawSize = it.segmentsTotalRawSize
+                )
+            },
+            profiling = diffEquals(ViewEvent.Dd::profiling)?.let {
+                ViewUpdateEvent.Profiling(
+                    status = it.status?.toViewUpdate(),
+                    errorReason = it.errorReason?.toViewUpdate()
+                )
+            },
+            // pageStates uses diffList (drop-by-size), consistent with inForegroundPeriods.
+            // Unlike slowFrames, it is not backed by an EvictingQueue, so drop-by-size is safe.
+            pageStates = diffList(ViewEvent.Dd::pageStates)?.map {
+                ViewUpdateEvent.PageState(start = it.start, state = it.state.toViewUpdate())
+            },
+            cls = diffEquals(ViewEvent.Dd::cls)?.let {
+                ViewUpdateEvent.DdCls(devicePixelRatio = it.devicePixelRatio)
+            }
         )
     }
 }

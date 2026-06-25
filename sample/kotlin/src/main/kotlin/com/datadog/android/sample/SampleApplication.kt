@@ -336,6 +336,7 @@ class SampleApplication : Application() {
             .addExtensionSupport(MaterialExtensionSupport())
             .addExtensionSupport(ComposeExtensionSupport())
             .setSystemRequirements(systemRequirementsConfiguration)
+            .setHeatmapsEnabled(true)
             .build()
         SessionReplay.enable(sessionReplayConfig)
     }

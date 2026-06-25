@@ -702,7 +702,8 @@ internal class RumViewScopeAttributePropagationTest {
         displayInfoProvider = displayInfoProvider,
         rumSessionTypeOverride = rumSessionType,
         insightsCollector = insightsCollector,
-        rumViewEventWriterFactory = { mockRumViewEventWriter }
+        rumViewEventWriterFactory = { mockRumViewEventWriter },
+        heatmapIdentifierRegistry = null
     )
 
     // endregion

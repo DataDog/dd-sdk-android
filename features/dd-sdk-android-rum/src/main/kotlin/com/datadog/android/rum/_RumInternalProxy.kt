@@ -10,6 +10,7 @@ import android.app.Activity
 import android.content.Intent
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.event.EventMapper
+import com.datadog.android.heatmaps.CrossPlatformHeatmapActionData
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.rum.RumConfiguration.Builder
@@ -42,6 +43,17 @@ import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 )
 class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRumMonitor) {
     @Volatile private var handledSyntheticsAttribute = false
+
+    fun addActionWithHeatmap(
+        type: RumActionType,
+        name: String,
+        crossPlatformHeatmapActionData: CrossPlatformHeatmapActionData,
+        attributes: Map<String, Any?>
+    ) {
+        rumMonitor.addActionWithHeatmapAttributes(type, name, crossPlatformHeatmapActionData, attributes)
+    }
+
+    fun getCurrentViewUrl(): String? = rumMonitor.getCurrentViewUrl()
 
     fun addLongTask(durationNs: Long, target: String) {
         rumMonitor.addLongTask(durationNs, target)

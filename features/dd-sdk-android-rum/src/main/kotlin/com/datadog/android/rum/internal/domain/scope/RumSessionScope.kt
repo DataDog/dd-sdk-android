@@ -15,6 +15,7 @@ import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.configuration.RumViewEventWriteConfig
@@ -67,7 +68,8 @@ internal class RumSessionScope(
     insightsCollector: InsightsCollector,
     private val timeseriesFactory: Timeseries.Factory = NoOpTimeseriesFactory(),
     private val viewEventMapper: ViewEventMapper,
-    private val rumViewEventWriteConfig: RumViewEventWriteConfig
+    private val rumViewEventWriteConfig: RumViewEventWriteConfig,
+    heatmapIdentifierRegistry: HeatmapIdentifierRegistry?
 ) : RumScope {
 
     private var timeseries: Timeseries = NoOpTimeseries()
@@ -108,7 +110,8 @@ internal class RumSessionScope(
         displayInfoProvider = displayInfoProvider,
         insightsCollector = insightsCollector,
         viewEventMapper = viewEventMapper,
-        rumViewEventWriteConfig = rumViewEventWriteConfig
+        rumViewEventWriteConfig = rumViewEventWriteConfig,
+        heatmapIdentifierRegistry = heatmapIdentifierRegistry
     )
 
     internal val activeView: RumViewScope?

@@ -2225,7 +2225,8 @@ internal class RumSessionScopeTest {
             insightsCollector = mockInsightsCollector,
             timeseriesFactory = timeseriesFactory,
             viewEventMapper = mockViewEventMapper,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart
+            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
+            heatmapIdentifierRegistry = null
         )
 
         if (withMockChildScope) {

@@ -113,13 +113,16 @@ fun Project.detektCustomConfig() {
 
     tasks.register<JavaExec>("customDetektRules") {
         group = "datadog"
+        maxHeapSize = "2g"
+        dependsOn("printDetektClasspath")
 
         classpath = files("${rootDir.absolutePath}/detekt-cli-1.23.8-all.jar")
 
         args(
             "--config",
             "${rootDir.absolutePath}/detekt_custom_general.yml," +
-                "${rootDir.absolutePath}/detekt_custom_safe_calls.yml," +
+                "${rootDir.absolutePath}/detekt_custom_safe_calls_android.yml," +
+                "${rootDir.absolutePath}/detekt_custom_safe_calls_third_party.yml," +
                 "${rootDir.absolutePath}/detekt_custom_unsafe_calls.yml"
         )
         args("--plugins", "${rootDir.absolutePath}/tools/detekt/build/libs/detekt.jar")
@@ -129,18 +132,18 @@ fun Project.detektCustomConfig() {
 
         val moduleDependencies = collectTransitiveProjectDependencies(project)
 
-        val externalDependencies = File("${projectDir.absolutePath}/detekt_classpath").readText()
-        val moduleDependenciesClasses = moduleDependencies.joinToString(":") {
-            "${rootDir.absolutePath}${it.replace(':', '/')}/build/extracted/classes.jar"
+        doFirst {
+            val externalDependencies = File("${projectDir.absolutePath}/detekt_classpath").readText()
+            val moduleDependenciesClasses = moduleDependencies.joinToString(":") {
+                "${rootDir.absolutePath}${it.replace(':', '/')}/build/extracted/classes.jar"
+            }
+            val dependencies = if (moduleDependenciesClasses.isBlank()) {
+                externalDependencies
+            } else {
+                "$externalDependencies:$moduleDependenciesClasses"
+            }
+            args("-cp", dependencies)
         }
-
-        val dependencies = if (moduleDependenciesClasses.isBlank()) {
-            externalDependencies
-        } else {
-            "$externalDependencies:$moduleDependenciesClasses"
-        }
-
-        args("-cp", dependencies)
     }
 }
 

@@ -34,7 +34,9 @@ import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
+import com.datadog.android.heatmaps.HeatmapIdentifierRegistryProvider
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
+import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.profiling.ProfilingThreadDump
 import com.datadog.android.internal.system.BuildSdkVersionProvider
@@ -157,8 +159,7 @@ internal class RumFeature(
     },
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
     private val handler: Handler = Handler(Looper.getMainLooper())
-) : StorageBackedFeature,
-    FeatureEventReceiver {
+) : StorageBackedFeature, FeatureEventReceiver, HeatmapIdentifierRegistryProvider {
 
     internal var dataWriter: DataWriter<Any> = NoOpDataWriter()
     internal val initialized = AtomicBoolean(false)
@@ -196,6 +197,7 @@ internal class RumFeature(
     internal val rumContextUpdateReceivers = mutableSetOf<FeatureContextUpdateReceiver>()
     internal var insightsCollector: InsightsCollector = NoOpInsightsCollector()
     internal var timeseriesFactory: Timeseries.Factory = NoOpTimeseriesFactory()
+    override val heatmapIdentifierRegistry: HeatmapIdentifierRegistry = HeatmapIdentifierRegistry.create()
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
     internal var rumAppStartupDetector: RumAppStartupDetector? = null
@@ -1014,7 +1016,7 @@ internal class RumFeature(
                 providers,
                 interactionPredicate,
                 composeActionsTrackingStrategy = composeActionTrackingStrategy,
-                internalLogger
+                internalLogger = internalLogger
             )
         }
 

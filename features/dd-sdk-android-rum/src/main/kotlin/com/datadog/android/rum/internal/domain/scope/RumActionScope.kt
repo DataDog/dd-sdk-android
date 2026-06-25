@@ -11,11 +11,13 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.heatmaps.HeatmapActionResolver
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.toAction
@@ -28,7 +30,7 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class RumActionScope(
     override val parentScope: RumScope,
     private val sdkCore: InternalSdkCore,
@@ -44,7 +46,8 @@ internal class RumActionScope(
     private val trackFrustrations: Boolean,
     internal val sampleRate: Float,
     private val rumSessionTypeOverride: RumSessionType?,
-    private val insightsCollector: InsightsCollector
+    private val insightsCollector: InsightsCollector,
+    internal val heatmapResolver: HeatmapActionResolver? = null
 ) : RumScope {
 
     private val inactivityThresholdNs = TimeUnit.MILLISECONDS.toNanos(inactivityThresholdMs)
@@ -71,7 +74,7 @@ internal class RumActionScope(
     private var sent = false
     internal var stopped = false
 
-    // endregion
+    // region RumScope
 
     @WorkerThread
     override fun handleEvent(
@@ -276,7 +279,6 @@ internal class RumActionScope(
                 datadogContext,
                 rumContext.viewId.orEmpty()
             )
-
             insightsCollector.onAction()
             ActionEvent(
                 date = eventTimestamp,
@@ -354,7 +356,8 @@ internal class RumActionScope(
                     session = ActionEvent.DdSession(
                         sessionPrecondition = rumContext.sessionStartReason.toActionSessionPrecondition()
                     ),
-                    configuration = ActionEvent.Configuration(sessionSampleRate = sampleRate)
+                    configuration = ActionEvent.Configuration(sessionSampleRate = sampleRate),
+                    action = heatmapResolver?.resolve(rumContext.viewUrl.orEmpty())
                 ),
                 connectivity = networkInfo.toActionConnectivity(),
                 service = datadogContext.service,
@@ -395,7 +398,8 @@ internal class RumActionScope(
             trackFrustrations: Boolean,
             sampleRate: Float,
             rumSessionTypeOverride: RumSessionType?,
-            insightsCollector: InsightsCollector
+            insightsCollector: InsightsCollector,
+            heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null
         ): RumScope {
             return RumActionScope(
                 parentScope = parentScope,
@@ -410,7 +414,20 @@ internal class RumActionScope(
                 trackFrustrations = trackFrustrations,
                 sampleRate = sampleRate,
                 rumSessionTypeOverride = rumSessionTypeOverride,
-                insightsCollector = insightsCollector
+                insightsCollector = insightsCollector,
+                heatmapResolver = when {
+                    event.crossPlatformHeatmapActionData != null && event.appPackageName != null ->
+                        HeatmapActionResolver.CrossPlatform(
+                            data = event.crossPlatformHeatmapActionData,
+                            appPackageName = event.appPackageName,
+                            logger = sdkCore.internalLogger
+                        )
+                    event.nativeHeatmapActionData != null -> HeatmapActionResolver.Native(
+                        data = event.nativeHeatmapActionData,
+                        registry = heatmapIdentifierRegistry
+                    )
+                    else -> null
+                }
             )
         }
     }

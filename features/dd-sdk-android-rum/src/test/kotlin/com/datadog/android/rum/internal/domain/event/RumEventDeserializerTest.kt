@@ -36,6 +36,7 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import com.datadog.android.rum.utils.assertj.DeserializedViewUpdateEventAssert.Companion.assertThat as assertViewUpdateEvent
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -106,15 +107,7 @@ internal class RumEventDeserializerTest {
         val deserializedEvent = testedDeserializer.deserialize(serializedEvent) as ViewUpdateEvent
 
         // THEN
-        assertThat(deserializedEvent)
-            .usingRecursiveComparison()
-            .ignoringFields(
-                "usr.additionalProperties",
-                "account.additionalProperties",
-                "context.additionalProperties",
-                "device"
-            )
-            .isEqualTo(fakeViewUpdateEvent)
+        assertViewUpdateEvent(deserializedEvent).isEqualTo(fakeViewUpdateEvent)
     }
 
     @Test

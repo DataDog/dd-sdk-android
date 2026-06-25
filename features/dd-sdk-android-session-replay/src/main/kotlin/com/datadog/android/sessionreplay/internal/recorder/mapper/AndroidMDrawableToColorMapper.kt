@@ -136,11 +136,11 @@ internal open class AndroidMDrawableToColorMapper(
 
     @RequiresApi(Build.VERSION_CODES.N)
     internal fun resolveGradientDrawableNPlus(drawable: GradientDrawable): Int? {
-        return resolveGradientFillColor(drawable)?.let { resolvedColor ->
-            val colorAlpha = (resolvedColor ushr ALPHA_SHIFT_ANDROID) and MAX_ALPHA_VALUE
-            val fillAlpha = (colorAlpha * drawable.alpha) / MAX_ALPHA_VALUE
-            if (fillAlpha == 0) null else mergeColorAndAlpha(resolvedColor, fillAlpha)
-        }
+        val resolvedColor = resolveGradientFillColor(drawable)
+        if (resolvedColor == null || drawable.colorFilter == null) return null
+        val colorAlpha = (resolvedColor ushr ALPHA_SHIFT_ANDROID) and MAX_ALPHA_VALUE
+        val fillAlpha = (colorAlpha * drawable.alpha) / MAX_ALPHA_VALUE
+        return if (fillAlpha == 0) null else mergeColorAndAlpha(resolvedColor, fillAlpha)
     }
 
     @Suppress("SwallowedException")

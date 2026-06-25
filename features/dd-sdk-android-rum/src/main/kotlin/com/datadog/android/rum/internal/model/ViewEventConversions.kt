@@ -77,7 +77,7 @@ internal fun ViewEvent.FlutterBuildTime.toViewUpdate() = ViewUpdateEvent.Flutter
     metricMax = metricMax
 )
 
-internal fun ViewEvent.PerformanceCls.toViewUpdate() = ViewUpdateEvent.Cls(
+internal fun ViewEvent.PerformanceCls.toViewUpdate() = ViewUpdateEvent.PerformanceCls(
     score = score,
     timestamp = timestamp,
     targetSelector = targetSelector,
@@ -133,9 +133,9 @@ internal fun ViewEvent.LoadingType.toViewUpdate() = when (this) {
 }
 
 internal fun ViewEvent.ConnectivityStatus.toViewUpdate() = when (this) {
-    ViewEvent.ConnectivityStatus.CONNECTED -> ViewUpdateEvent.Status.CONNECTED
-    ViewEvent.ConnectivityStatus.NOT_CONNECTED -> ViewUpdateEvent.Status.NOT_CONNECTED
-    ViewEvent.ConnectivityStatus.MAYBE -> ViewUpdateEvent.Status.MAYBE
+    ViewEvent.ConnectivityStatus.CONNECTED -> ViewUpdateEvent.ConnectivityStatus.CONNECTED
+    ViewEvent.ConnectivityStatus.NOT_CONNECTED -> ViewUpdateEvent.ConnectivityStatus.NOT_CONNECTED
+    ViewEvent.ConnectivityStatus.MAYBE -> ViewUpdateEvent.ConnectivityStatus.MAYBE
 }
 
 internal fun ViewEvent.Interface.toViewUpdate() = when (this) {
@@ -187,6 +187,28 @@ internal fun ViewEvent.SessionPrecondition.toViewUpdate() = when (this) {
     ViewEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION ->
         ViewUpdateEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
     ViewEvent.SessionPrecondition.EXPLICIT_STOP -> ViewUpdateEvent.SessionPrecondition.EXPLICIT_STOP
+}
+
+internal fun ViewEvent.ProfilingStatus.toViewUpdate() = when (this) {
+    ViewEvent.ProfilingStatus.STARTING -> ViewUpdateEvent.ProfilingStatus.STARTING
+    ViewEvent.ProfilingStatus.RUNNING -> ViewUpdateEvent.ProfilingStatus.RUNNING
+    ViewEvent.ProfilingStatus.STOPPED -> ViewUpdateEvent.ProfilingStatus.STOPPED
+    ViewEvent.ProfilingStatus.ERROR -> ViewUpdateEvent.ProfilingStatus.ERROR
+}
+
+internal fun ViewEvent.ErrorReason.toViewUpdate() = when (this) {
+    ViewEvent.ErrorReason.NOT_SUPPORTED_BY_BROWSER -> ViewUpdateEvent.ErrorReason.NOT_SUPPORTED_BY_BROWSER
+    ViewEvent.ErrorReason.FAILED_TO_LAZY_LOAD -> ViewUpdateEvent.ErrorReason.FAILED_TO_LAZY_LOAD
+    ViewEvent.ErrorReason.MISSING_DOCUMENT_POLICY_HEADER -> ViewUpdateEvent.ErrorReason.MISSING_DOCUMENT_POLICY_HEADER
+    ViewEvent.ErrorReason.UNEXPECTED_EXCEPTION -> ViewUpdateEvent.ErrorReason.UNEXPECTED_EXCEPTION
+}
+
+internal fun ViewEvent.State.toViewUpdate() = when (this) {
+    ViewEvent.State.ACTIVE -> ViewUpdateEvent.State.ACTIVE
+    ViewEvent.State.PASSIVE -> ViewUpdateEvent.State.PASSIVE
+    ViewEvent.State.HIDDEN -> ViewUpdateEvent.State.HIDDEN
+    ViewEvent.State.FROZEN -> ViewUpdateEvent.State.FROZEN
+    ViewEvent.State.TERMINATED -> ViewUpdateEvent.State.TERMINATED
 }
 
 // endregion
