@@ -303,6 +303,7 @@ class ManualTrackingRumTest {
                 hasNoOptionalFields()
             }
             .hasRumViewUpdateEvent(index = 3) {
+                // View updated on stopView
                 application { hasId(fakeApplicationId) }
                 session {
                     hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
@@ -360,7 +361,7 @@ class ManualTrackingRumTest {
                 hasViewUrl(viewKey)
                 hasViewName(viewName)
                 hasActionCount(0)
-                hasDocumentVersion(1)
+                hasDocumentVersion(2)
             }
             .hasRumEvent(index = 1) {
                 // First custom action
@@ -373,17 +374,30 @@ class ManualTrackingRumTest {
                 hasViewName(viewName)
                 hasActionName(actionName1)
             }
-            .hasRumEvent(index = 2) {
+            .hasRumViewUpdateEvent(index = 2) {
                 // View updated with first action
-                hasService(stubSdkCore.getDatadogContext().service)
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasSource("android")
-                hasType("view")
-                hasViewUrl(viewKey)
-                hasViewName(viewName)
-                hasActionCount(1)
-                hasDocumentVersion(2)
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(3) }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    action { hasCount(1) }
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoOptionalViewFields()
+                }
+                hasNoOptionalFields()
             }
             .hasRumEvent(index = 3) {
                 // Second custom action
@@ -396,17 +410,30 @@ class ManualTrackingRumTest {
                 hasViewName(viewName)
                 hasActionName(actionName2)
             }
-            .hasRumEvent(index = 4) {
+            .hasRumViewUpdateEvent(index = 4) {
                 // View updated with second action
-                hasService(stubSdkCore.getDatadogContext().service)
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasSource("android")
-                hasType("view")
-                hasViewUrl(viewKey)
-                hasViewName(viewName)
-                hasActionCount(2)
-                hasDocumentVersion(3)
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                dd { hasDocumentVersion(4) }
+                view {
+                    hasUrl(viewKey)
+                    hasTimeSpentNotNull()
+                    action { hasCount(2) }
+                    hasNoError()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNetworkSettledTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoOptionalViewFields()
+                }
+                hasNoOptionalFields()
             }
     }
 

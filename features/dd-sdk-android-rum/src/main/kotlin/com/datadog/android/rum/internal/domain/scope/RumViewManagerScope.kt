@@ -15,6 +15,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.metrics.MethodCallSamplingRate
+import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumSessionType
@@ -64,7 +65,8 @@ internal class RumViewManagerScope(
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
     private val insightsCollector: InsightsCollector,
     internal val viewEventMapper: ViewEventMapper,
-    private val rumViewEventWriteConfig: RumViewEventWriteConfig
+    private val rumViewEventWriteConfig: RumViewEventWriteConfig,
+    private val heatmapIdentifierRegistry: HeatmapIdentifierRegistry?
 ) : RumScope {
 
     private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver =
@@ -301,7 +303,8 @@ internal class RumViewManagerScope(
             displayInfoProvider = displayInfoProvider,
             insightsCollector = insightsCollector,
             viewEventMapper = viewEventMapper,
-            rumViewEventWriteConfig = rumViewEventWriteConfig
+            rumViewEventWriteConfig = rumViewEventWriteConfig,
+            heatmapIdentifierRegistry = heatmapIdentifierRegistry
         )
         applicationDisplayed = true
         childrenScopes.add(viewScope)
@@ -391,7 +394,8 @@ internal class RumViewManagerScope(
                     viewEventMapper = viewEventMapper,
                     sdkCore = sdkCore
                 )
-            }
+            },
+            heatmapIdentifierRegistry = heatmapIdentifierRegistry
         )
     }
 
@@ -441,7 +445,8 @@ internal class RumViewManagerScope(
                     viewEventMapper = viewEventMapper,
                     sdkCore = sdkCore
                 )
-            }
+            },
+            heatmapIdentifierRegistry = heatmapIdentifierRegistry
         )
     }
 

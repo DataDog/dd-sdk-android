@@ -1332,7 +1332,7 @@ class ViewUpdateAssert(
         actual,
         ConnectivityAssert::class.java
     ) {
-        fun hasStatus(status: ViewUpdateEvent.Status): ConnectivityAssert {
+        fun hasStatus(status: ViewUpdateEvent.ConnectivityStatus): ConnectivityAssert {
             assertThat(actual.status)
                 .overridingErrorMessage("Expected connectivity.status to be <%s> but was <%s>", status, actual.status)
                 .isEqualTo(status)
@@ -1915,8 +1915,8 @@ class ViewUpdateAssert(
     }
 
     class ClsAssert(
-        actual: ViewUpdateEvent.Cls
-    ) : AbstractObjectAssert<ClsAssert, ViewUpdateEvent.Cls>(
+        actual: ViewUpdateEvent.PerformanceCls
+    ) : AbstractObjectAssert<ClsAssert, ViewUpdateEvent.PerformanceCls>(
         actual,
         ClsAssert::class.java
     ) {

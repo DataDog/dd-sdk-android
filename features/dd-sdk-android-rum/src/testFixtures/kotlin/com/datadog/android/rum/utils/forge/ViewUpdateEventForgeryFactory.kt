@@ -92,7 +92,43 @@ class ViewUpdateEventForgeryFactory : ForgeryFactory<ViewUpdateEvent> {
                 )
             },
             dd = ViewUpdateEvent.Dd(
-                documentVersion = forge.aPositiveLong(strict = true)
+                documentVersion = forge.aPositiveLong(strict = true),
+                configuration = forge.aNullable {
+                    ViewUpdateEvent.Configuration(
+                        sessionSampleRate = aFloat(min = 0f, max = 100f),
+                        sessionReplaySampleRate = aNullable { aLong(min = 0, max = 100) },
+                        profilingSampleRate = aNullable { aFloat(min = 0f, max = 100f) },
+                        traceSampleRate = aNullable { aFloat(min = 0f, max = 100f) },
+                        startSessionReplayRecordingManually = aNullable { aBool() }
+                    )
+                },
+                replayStats = forge.aNullable {
+                    ViewUpdateEvent.ReplayStats(
+                        recordsCount = aNullable { aPositiveLong() },
+                        segmentsCount = aNullable { aPositiveLong() },
+                        segmentsTotalRawSize = aNullable { aPositiveLong() }
+                    )
+                },
+                profiling = forge.aNullable {
+                    ViewUpdateEvent.Profiling(
+                        status = aNullable { aValueFrom(ViewUpdateEvent.ProfilingStatus::class.java) },
+                        errorReason = aNullable { aValueFrom(ViewUpdateEvent.ErrorReason::class.java) }
+                    )
+                },
+                pageStates = forge.aNullable {
+                    // Page states are appended in chronological order — generate ascending starts.
+                    var t = 0L
+                    aList {
+                        t += aLong(min = 1L, max = 1_000_000L)
+                        ViewUpdateEvent.PageState(
+                            start = t,
+                            state = aValueFrom(ViewUpdateEvent.State::class.java)
+                        )
+                    }
+                },
+                cls = forge.aNullable {
+                    ViewUpdateEvent.DdCls(devicePixelRatio = aNullable { aDouble(min = 0.5, max = 4.0) })
+                }
             )
         )
     }
