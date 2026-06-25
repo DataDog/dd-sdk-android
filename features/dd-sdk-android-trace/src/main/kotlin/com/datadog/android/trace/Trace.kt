@@ -38,7 +38,10 @@ object Trace {
 
         if (traceConfiguration.statsComputationEnabled) {
             val stats = ClientStatsFeature(
-                customEndpointUrl = traceConfiguration.customStatsEndpointUrl
+                sdkCore = sdkCore,
+                customEndpointUrl = traceConfiguration.customStatsEndpointUrl,
+                spanEventMapper = traceConfiguration.eventMapper,
+                networkInfoEnabled = traceConfiguration.networkInfoEnabled
             )
 
             sdkCore.registerFeature(stats)

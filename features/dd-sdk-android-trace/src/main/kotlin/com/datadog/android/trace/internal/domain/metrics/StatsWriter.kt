@@ -7,5 +7,5 @@
 package com.datadog.android.trace.internal.domain.metrics
 
 internal fun interface StatsWriter {
-    fun write(buckets: List<ClientStatsBucket>)
+    fun write(statBuckets: List<ClientStatsBucket>)
 }

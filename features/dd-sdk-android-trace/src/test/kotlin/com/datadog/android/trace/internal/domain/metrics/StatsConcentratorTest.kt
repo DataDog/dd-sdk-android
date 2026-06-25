@@ -11,8 +11,8 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.api.threads.FakeSameThreadExecutorService
 import com.datadog.android.event.EventMapper
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
 import com.datadog.android.trace.internal.domain.metrics.StatsConcentrator.Companion.alignTimestamp
@@ -28,7 +28,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -40,14 +39,14 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
 @Extensions(
@@ -74,12 +73,17 @@ internal class StatsConcentratorTest {
     lateinit var mockStatsWriter: StatsWriter
 
     @Mock
+    lateinit var mockTimeProvider: TimeProvider
+
+    @Mock
     lateinit var mockInternalLogger: InternalLogger
+
+    @Mock
+    lateinit var mockExecutorService: ScheduledExecutorService
 
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
-    private val executorService: ExecutorService = FakeSameThreadExecutorService()
     private lateinit var testedConcentrator: StatsConcentrator
 
     // Fixed parameters for deterministic timestamp math
@@ -94,6 +98,7 @@ internal class StatsConcentratorTest {
             it.getArgument<(DatadogContext) -> Unit>(1).invoke(fakeDatadogContext)
         }
         whenever(mockEventMapper.map(any())) doAnswer { it.getArgument(0) }
+        whenever(mockExecutorService.execute(any())) doAnswer { it.getArgument<Runnable>(0).run() }
 
         testedConcentrator = StatsConcentrator(
             sdkCore = mockSdkCore,
@@ -101,15 +106,35 @@ internal class StatsConcentratorTest {
             eventMapper = mockEventMapper,
             bufferLen = fakeBufferLen,
             bucketSizeNs = fakeBucketSizeNs,
-            executorService = executorService,
-            statsWriter = mockStatsWriter
+            executorService = mockExecutorService,
+            statsWriter = mockStatsWriter,
+            timeProvider = mockTimeProvider,
+            startPeriodicFlush = false
         )
     }
 
-    @AfterEach
-    fun tearDown() {
-        executorService.shutdown()
+    // region Periodic flush scheduling
+
+    @Test
+    fun `M schedule periodic flush on executor W init() { startPeriodicFlush = true }`() {
+        // When
+        StatsConcentrator(
+            sdkCore = mockSdkCore,
+            ddSpanToSpanEventMapper = mockSpanEventMapper,
+            eventMapper = mockEventMapper,
+            bufferLen = fakeBufferLen,
+            bucketSizeNs = fakeBucketSizeNs,
+            executorService = mockExecutorService,
+            statsWriter = mockStatsWriter,
+            timeProvider = mockTimeProvider,
+            startPeriodicFlush = true
+        )
+
+        // Then
+        verify(mockExecutorService).schedule(any<Runnable>(), eq(10L), eq(TimeUnit.SECONDS))
     }
+
+    // endregion
 
     // region Span eligibility
 
@@ -120,7 +145,8 @@ internal class StatsConcentratorTest {
 
         // When
         testedConcentrator.record(listOf(span))
-        testedConcentrator.scheduleFlush(now = farFuture(), flushAll = true)
+        stubNow(farFuture())
+        testedConcentrator.scheduleFlush(flushAll = true)
 
         // Then
         assertThat(firstGroup().hits).isEqualTo(1L)
@@ -133,7 +159,8 @@ internal class StatsConcentratorTest {
 
         // When
         testedConcentrator.record(listOf(span))
-        testedConcentrator.scheduleFlush(now = farFuture(), flushAll = true)
+        stubNow(farFuture())
+        testedConcentrator.scheduleFlush(flushAll = true)
 
         // Then
         assertThat(firstGroup().hits).isEqualTo(1L)
@@ -146,7 +173,8 @@ internal class StatsConcentratorTest {
 
         // When
         testedConcentrator.record(listOf(span))
-        testedConcentrator.scheduleFlush(now = farFuture(), flushAll = true)
+        stubNow(farFuture())
+        testedConcentrator.scheduleFlush(flushAll = true)
 
         // Then
         assertThat(firstGroup().hits).isEqualTo(1L)
@@ -159,7 +187,8 @@ internal class StatsConcentratorTest {
 
         // When
         testedConcentrator.record(listOf(span))
-        testedConcentrator.scheduleFlush(now = farFuture(), flushAll = true)
+        stubNow(farFuture())
+        testedConcentrator.scheduleFlush(flushAll = true)
 
         // Then
         assertThat(firstGroup().hits).isEqualTo(1L)
@@ -172,7 +201,8 @@ internal class StatsConcentratorTest {
 
         // When
         testedConcentrator.record(listOf(span))
-        testedConcentrator.scheduleFlush(now = farFuture(), flushAll = true)
+        stubNow(farFuture())
+        testedConcentrator.scheduleFlush(flushAll = true)
 
         // Then
         assertThat(firstGroup().hits).isEqualTo(1L)
@@ -185,7 +215,8 @@ internal class StatsConcentratorTest {
 
         // When
         testedConcentrator.record(listOf(span))
-        testedConcentrator.scheduleFlush(now = farFuture(), flushAll = true)
+        stubNow(farFuture())
+        testedConcentrator.scheduleFlush(flushAll = true)
 
         // Then
         assertThat(firstGroup().hits).isEqualTo(1L)
@@ -201,7 +232,8 @@ internal class StatsConcentratorTest {
 
         // When
         testedConcentrator.record(listOf(span))
-        testedConcentrator.scheduleFlush(now = farFuture(), flushAll = true)
+        stubNow(farFuture())
+        testedConcentrator.scheduleFlush(flushAll = true)
 
         // Then
         verifyNoInteractions(mockStatsWriter)
@@ -214,7 +246,8 @@ internal class StatsConcentratorTest {
 
         // When
         testedConcentrator.record(listOf(span))
-        testedConcentrator.scheduleFlush(now = farFuture(), flushAll = true)
+        stubNow(farFuture())
+        testedConcentrator.scheduleFlush(flushAll = true)
 
         // Then
         verifyNoInteractions(mockStatsWriter)
@@ -228,7 +261,8 @@ internal class StatsConcentratorTest {
 
         // When
         testedConcentrator.record(listOf(span))
-        testedConcentrator.scheduleFlush(now = farFuture(), flushAll = true)
+        stubNow(farFuture())
+        testedConcentrator.scheduleFlush(flushAll = true)
 
         // Then
         verifyNoInteractions(mockStatsWriter)
@@ -242,7 +276,8 @@ internal class StatsConcentratorTest {
 
         // When
         testedConcentrator.record(listOf(span))
-        testedConcentrator.scheduleFlush(now = farFuture(), flushAll = true)
+        stubNow(farFuture())
+        testedConcentrator.scheduleFlush(flushAll = true)
 
         // Then
         verifyNoInteractions(mockStatsWriter)
@@ -263,10 +298,8 @@ internal class StatsConcentratorTest {
 
         // When
         testedConcentrator.record(listOf(span))
-        testedConcentrator.scheduleFlush(
-            now = expectedBucketStart + fakeBufferLen.toLong() * fakeBucketSizeNs,
-            flushAll = false
-        )
+        stubNow(expectedBucketStart + fakeBufferLen.toLong() * fakeBucketSizeNs)
+        testedConcentrator.scheduleFlush(flushAll = false)
 
         // Then
         val buckets = captureBuckets()
@@ -284,10 +317,8 @@ internal class StatsConcentratorTest {
 
         // When
         testedConcentrator.record(listOf(span))
-        testedConcentrator.scheduleFlush(
-            now = 7 * fakeBucketSizeNs + fakeBucketSizeNs / 2,
-            flushAll = false
-        )
+        stubNow(7 * fakeBucketSizeNs + fakeBucketSizeNs / 2)
+        testedConcentrator.scheduleFlush(flushAll = false)
 
         // Then
         verifyNoInteractions(mockStatsWriter)
@@ -302,10 +333,8 @@ internal class StatsConcentratorTest {
 
         // When
         testedConcentrator.record(listOf(span))
-        testedConcentrator.scheduleFlush(
-            now = (fakeBufferLen + 6).toLong() * fakeBucketSizeNs,
-            flushAll = false
-        )
+        stubNow((fakeBufferLen + 6).toLong() * fakeBucketSizeNs)
+        testedConcentrator.scheduleFlush(flushAll = false)
 
         // Then
         val buckets = captureBuckets()
@@ -321,7 +350,8 @@ internal class StatsConcentratorTest {
 
         // When
         testedConcentrator.record(listOf(span))
-        testedConcentrator.scheduleFlush(now = fakeStartTime, flushAll = true)
+        stubNow(fakeStartTime)
+        testedConcentrator.scheduleFlush(flushAll = true)
 
         // Then
         assertThat(captureBuckets()).hasSize(1)
@@ -333,8 +363,10 @@ internal class StatsConcentratorTest {
         // After now = 30*B flush: oldestTs = (30 - 1) * B = 29 * B
         val nBuckets = 30L
         val expectedOldestTs = (nBuckets - (fakeBufferLen - 1)) * fakeBucketSizeNs // 29 * B
-        testedConcentrator.scheduleFlush(now = 10 * fakeBucketSizeNs, flushAll = false)
-        testedConcentrator.scheduleFlush(now = nBuckets * fakeBucketSizeNs, flushAll = false)
+        stubNow(10 * fakeBucketSizeNs)
+        testedConcentrator.scheduleFlush(flushAll = false)
+        stubNow(nBuckets * fakeBucketSizeNs)
+        testedConcentrator.scheduleFlush(flushAll = false)
 
         // Late span: startTime=1s, duration=1s → deviceEnd=2s → align(2s,10s)=0 < oldestTs → clamps to 29*B
         // subBucketNs = B/10 = 1s; non-zero so the span is not filtered out by the duration check
@@ -343,12 +375,35 @@ internal class StatsConcentratorTest {
 
         // When
         testedConcentrator.record(listOf(lateSpan))
-        testedConcentrator.scheduleFlush(now = 50 * fakeBucketSizeNs, flushAll = true)
+        stubNow(50 * fakeBucketSizeNs)
+        testedConcentrator.scheduleFlush(flushAll = true)
 
         // Then
         val buckets = captureBuckets()
         assertThat(buckets).isNotEmpty()
         assertThat(buckets[0].start).isEqualTo(expectedOldestTs)
+    }
+
+    @Test
+    fun `M apply server time offset to bucket start W scheduleFlush()`(
+        @LongForgery fakeServerOffsetNanos: Long,
+        forge: Forge
+    ) {
+        // Given
+        val fakeStartTime = 5 * fakeBucketSizeNs
+        val (span) = forge.makeEligibleSpan(startTime = fakeStartTime)
+        val expectedBucketStart = alignTimestamp(fakeBucketSizeNs, fakeStartTime + fakeBucketSizeNs)
+        whenever(mockTimeProvider.getServerOffsetNanos()) doReturn fakeServerOffsetNanos
+
+        // When
+        testedConcentrator.record(listOf(span))
+        stubNow(farFuture())
+        testedConcentrator.scheduleFlush(flushAll = true)
+
+        // Then
+        val buckets = captureBuckets()
+        assertThat(buckets).hasSize(1)
+        assertThat(buckets[0].start).isEqualTo(expectedBucketStart + fakeServerOffsetNanos)
     }
 
     // endregion
@@ -370,7 +425,8 @@ internal class StatsConcentratorTest {
 
         // When
         testedConcentrator.record(spans)
-        testedConcentrator.scheduleFlush(now = farFuture(), flushAll = true)
+        stubNow(farFuture())
+        testedConcentrator.scheduleFlush(flushAll = true)
 
         // Then
         val group = firstGroup()
@@ -401,7 +457,8 @@ internal class StatsConcentratorTest {
 
         // When
         testedConcentrator.record(listOf(topLevelSpan, nonTopLevelSpan))
-        testedConcentrator.scheduleFlush(now = farFuture(), flushAll = true)
+        stubNow(farFuture())
+        testedConcentrator.scheduleFlush(flushAll = true)
 
         // Then
         val group = firstGroup()
@@ -431,7 +488,8 @@ internal class StatsConcentratorTest {
 
         // When
         testedConcentrator.record(listOf(okSpan, errorSpan))
-        testedConcentrator.scheduleFlush(now = farFuture(), flushAll = true)
+        stubNow(farFuture())
+        testedConcentrator.scheduleFlush(flushAll = true)
 
         // Then
         val group = firstGroup()
@@ -454,7 +512,8 @@ internal class StatsConcentratorTest {
 
         // When
         testedConcentrator.record(listOf(span1, span2))
-        testedConcentrator.scheduleFlush(now = farFuture(), flushAll = true)
+        stubNow(farFuture())
+        testedConcentrator.scheduleFlush(flushAll = true)
 
         // Then
         val groups = captureBuckets()[0].stats
@@ -475,7 +534,8 @@ internal class StatsConcentratorTest {
 
         // When
         testedConcentrator.record(listOf(span1, span2))
-        testedConcentrator.scheduleFlush(now = farFuture(), flushAll = true)
+        stubNow(farFuture())
+        testedConcentrator.scheduleFlush(flushAll = true)
 
         // Then
         val groups = captureBuckets()[0].stats
@@ -497,7 +557,8 @@ internal class StatsConcentratorTest {
 
         // When
         testedConcentrator.record(listOf(span))
-        testedConcentrator.scheduleFlush(now = farFuture(), flushAll = true)
+        stubNow(farFuture())
+        testedConcentrator.scheduleFlush(flushAll = true)
 
         // Then
         assertThat(firstGroup().peerTags).isEqualTo(listOf("${Tags.PEER_SERVICE}:$fakePeerService"))
@@ -510,7 +571,8 @@ internal class StatsConcentratorTest {
 
         // When
         testedConcentrator.record(listOf(span))
-        testedConcentrator.scheduleFlush(now = farFuture(), flushAll = true)
+        stubNow(farFuture())
+        testedConcentrator.scheduleFlush(flushAll = true)
 
         // Then
         assertThat(firstGroup().isTraceRoot).isEqualTo(Trilean.TRUE)
@@ -528,7 +590,8 @@ internal class StatsConcentratorTest {
 
         // When
         testedConcentrator.record(listOf(span))
-        testedConcentrator.scheduleFlush(now = farFuture(), flushAll = true)
+        stubNow(farFuture())
+        testedConcentrator.scheduleFlush(flushAll = true)
 
         // Then
         assertThat(firstGroup().resource).isEqualTo(fakeRewrittenResource)
@@ -545,7 +608,8 @@ internal class StatsConcentratorTest {
 
         // When
         testedConcentrator.record(listOf(span))
-        testedConcentrator.scheduleFlush(now = farFuture(), flushAll = true)
+        stubNow(farFuture())
+        testedConcentrator.scheduleFlush(flushAll = true)
 
         // Then
         assertThat(firstGroup().duration).isEqualTo(fakeDuration)
@@ -563,10 +627,8 @@ internal class StatsConcentratorTest {
 
         // When: flush with now before the bucket cutoff — bucket is too recent
         testedConcentrator.record(listOf(span))
-        testedConcentrator.scheduleFlush(
-            now = bucketStart + (fakeBufferLen - 1).toLong() * fakeBucketSizeNs,
-            flushAll = false
-        )
+        stubNow(bucketStart + (fakeBufferLen - 1).toLong() * fakeBucketSizeNs)
+        testedConcentrator.scheduleFlush(flushAll = false)
 
         // Then
         verifyNoInteractions(mockStatsWriter)
@@ -578,11 +640,11 @@ internal class StatsConcentratorTest {
         val (span) = forge.makeEligibleSpan(startTime = 5 * fakeBucketSizeNs)
         testedConcentrator.record(listOf(span))
 
-        val flushNow = (fakeBufferLen + 6).toLong() * fakeBucketSizeNs
-        testedConcentrator.scheduleFlush(now = flushNow, flushAll = false)
+        stubNow((fakeBufferLen + 6).toLong() * fakeBucketSizeNs)
+        testedConcentrator.scheduleFlush(flushAll = false)
 
         // When: second flush after the first has already drained the bucket
-        testedConcentrator.scheduleFlush(now = flushNow, flushAll = false)
+        testedConcentrator.scheduleFlush(flushAll = false)
 
         // Then: write called exactly once with the span's bucket — second flush found empty buckets
         val buckets = captureBuckets()
@@ -593,73 +655,45 @@ internal class StatsConcentratorTest {
 
     // endregion
 
-    // region Flush conflation
+    // region stop
 
     @Test
-    fun `M submit only one flush task W scheduleFlush() { called twice while flush pending }`(forge: Forge) {
-        // Uses a real single-thread executor so tasks actually queue so we can test conflation
-        val realExecutor = Executors.newSingleThreadExecutor()
-        val concentrator = makeConcentrator(realExecutor)
-        try {
-            // Given
-            val (span) = forge.makeEligibleSpan()
-            concentrator.record(listOf(span))
+    fun `M submit flush all task W stop()`(forge: Forge) {
+        // Given
+        val (span) = forge.makeEligibleSpan()
+        testedConcentrator.record(listOf(span))
+        stubNow(farFuture())
 
-            // When: block the executor, then call scheduleFlush twice
-            val blocker = CountDownLatch(1)
-            realExecutor.submit { blocker.await() }
-            // First call: CAS false→true succeeds, queues flush task (blocked behind latch).
-            concentrator.scheduleFlush(now = farFuture(), flushAll = false)
-            // Second call: CAS fails (flushPending already true) → coalesced, no second task queued.
-            concentrator.scheduleFlush(now = farFuture(), flushAll = false)
+        // When
+        testedConcentrator.stop()
 
-            // Unblock the queue and drain all requests
-            blocker.countDown()
-            realExecutor.submit {}.get(FLUSH_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-        } finally {
-            realExecutor.shutdown()
-        }
-
-        // Then: only one flush task ran → write called exactly once with the span's bucket
-        val buckets = captureBuckets()
-        assertThat(buckets).hasSize(1)
-        assertThat(buckets[0].start).isEqualTo(6 * fakeBucketSizeNs)
-        assertThat(buckets[0].stats[0].hits).isEqualTo(1L)
+        // Then
+        verify(mockStatsWriter).write(any())
     }
 
     @Test
-    fun `M preserve flushAll when coalesced W scheduleFlush() { flushAll=true merged into pending flush }`(
-        forge: Forge
-    ) {
-        // Uses a real single-thread executor so tasks actually queue; same reasoning as above.
-        val realExecutor = Executors.newSingleThreadExecutor()
-        val concentrator = makeConcentrator(realExecutor)
-        try {
-            // Given: span in a very recent bucket that a non-force flush won't drain
-            val recentBucketStart = 50 * fakeBucketSizeNs
-            val (span) = forge.makeEligibleSpan(startTime = recentBucketStart)
-            concentrator.record(listOf(span))
+    fun `M not reschedule periodic flush W stop() { periodic flush fires after stop }`() {
+        // Given: create concentrator with live scheduling and capture the first scheduled runnable
+        val runnableCaptor = argumentCaptor<Runnable>()
+        val concentrator = StatsConcentrator(
+            sdkCore = mockSdkCore,
+            ddSpanToSpanEventMapper = mockSpanEventMapper,
+            eventMapper = mockEventMapper,
+            bufferLen = fakeBufferLen,
+            bucketSizeNs = fakeBucketSizeNs,
+            executorService = mockExecutorService,
+            statsWriter = mockStatsWriter,
+            timeProvider = mockTimeProvider,
+            startPeriodicFlush = true
+        )
+        verify(mockExecutorService).schedule(runnableCaptor.capture(), any(), any())
 
-            // When: block the executor, queue a normal flush then a force flush
-            val blocker = CountDownLatch(1)
-            realExecutor.submit { blocker.await() }
-            // First call: queues flush task that would NOT drain the recent bucket on its own.
-            concentrator.scheduleFlush(now = recentBucketStart, flushAll = false)
-            // Second call: coalesced (CAS fails), but sets forcePending=true so the queued task picks it up.
-            concentrator.scheduleFlush(now = recentBucketStart, flushAll = true)
+        // When: stop then fire the already-scheduled periodic flush callback
+        concentrator.stop()
+        runnableCaptor.firstValue.run()
 
-            // Unblock the queue and drain all requests
-            blocker.countDown()
-            realExecutor.submit {}.get(FLUSH_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-        } finally {
-            realExecutor.shutdown()
-        }
-
-        // Then: the queued task picked up forcePending=true and flushed the recent bucket anyway
-        val buckets = captureBuckets()
-        assertThat(buckets).hasSize(1)
-        assertThat(buckets[0].start).isEqualTo(51 * fakeBucketSizeNs)
-        assertThat(buckets[0].stats[0].hits).isEqualTo(1L)
+        // Then: schedule was called exactly once (initial), never re-scheduled after stop
+        verify(mockExecutorService, times(1)).schedule(any<Runnable>(), any(), any())
     }
 
     // endregion
@@ -776,18 +810,12 @@ internal class StatsConcentratorTest {
         )
     }
 
-    /** `now` value that puts any reasonable span bucket well past the flush cutoff. */
+    /** `now` in nanoseconds that puts any reasonable span bucket well past the flush cutoff. */
     private fun farFuture(): Long = 100 * fakeBucketSizeNs
 
-    private fun makeConcentrator(executor: ExecutorService) = StatsConcentrator(
-        sdkCore = mockSdkCore,
-        ddSpanToSpanEventMapper = mockSpanEventMapper,
-        eventMapper = mockEventMapper,
-        bufferLen = fakeBufferLen,
-        bucketSizeNs = fakeBucketSizeNs,
-        executorService = executor,
-        statsWriter = mockStatsWriter
-    )
+    private fun stubNow(nowNs: Long) {
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn nowNs / 1_000_000
+    }
 
     private fun captureBuckets(): List<ClientStatsBucket> {
         val captor = argumentCaptor<List<ClientStatsBucket>>()
@@ -798,8 +826,4 @@ internal class StatsConcentratorTest {
     private fun firstGroup(): ClientGroupedStats = captureBuckets()[0].stats[0]
 
     // endregion
-
-    private companion object {
-        private const val FLUSH_TIMEOUT_MS = 5_000L
-    }
 }

@@ -10,15 +10,18 @@ import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.event.EventMapper
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.internal.ddsketch.DDSketch
 import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.trace.bootstrap.instrumentation.api.Tags
 import com.datadog.trace.core.DDSpan
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 internal class StatsConcentrator(
@@ -26,28 +29,33 @@ internal class StatsConcentrator(
     private val ddSpanToSpanEventMapper: ContextAwareMapper<DDSpan, SpanEvent>,
     private val eventMapper: EventMapper<SpanEvent>,
     /**
+     * Executor that owns stat calculations. It must be a single-thread executor to enforce threading contracts.
+     */
+    private val executorService: ScheduledExecutorService,
+    private val statsWriter: StatsWriter,
+    private val timeProvider: TimeProvider,
+    /**
      * The number of stats buckets we keep in memory before flushing them.
      * It means that we can compute stats only for the last `bufferLen * bucketSizeNs` and that we
      * wait such time before flushing the stats.
      * This only applies to past buckets. Stats buckets in the future are allowed with no restriction.
      */
-    private val bufferLen: Int,
-    private val bucketSizeNs: Long = 10.seconds.inWholeNanoseconds,
-    /**
-     * Executor that owns stat calculations. It must be a single-thread executor to enforce threading contracts.
-     */
-    private val executorService: ExecutorService,
-    private val statsWriter: StatsWriter
+    private val bufferLen: Int = DEFAULT_BUFFER_SIZE,
+    private val bucketSizeNs: Long = DEFAULT_BUCKET_LENGTH.inWholeNanoseconds,
+    startPeriodicFlush: Boolean = true
 ) {
     // These fields below are confined to executorService; never access them from another thread.
     private var oldestTs: Long = 0L
     private val buckets = mutableMapOf<Long, MutableMap<AggregationKey, GroupedStats>>()
 
-    // Coalescing flags: at most one flush task lives in the executor queue at any time.
-    // forcePending is set unconditionally so a force flush is never lost even if a scheduled
-    // flush is already queued and will pick it up.
-    private val flushPending = AtomicBoolean(false)
-    private val forcePending = AtomicBoolean(false)
+    @Volatile
+    private var isStopped = false
+
+    init {
+        if (startPeriodicFlush) {
+            schedulePeriodicFlush()
+        }
+    }
 
     fun record(trace: List<DDSpan>) {
         val metricsFeature = sdkCore.getFeature(Feature.TRACING_CLIENT_STATS_FEATURE_NAME) ?: return
@@ -81,30 +89,46 @@ internal class StatsConcentrator(
         }
     }
 
-    /**
-     * Schedules a drain of ready buckets and returns immediately. If a flush is already queued,
-     * this call is a no-op — the queued task will cover the window. A [flushAll] flush is never dropped:
-     * [forcePending] is set before the coalescing check so the already-queued task picks it up.
-     * Flushed buckets are written to [statsWriter].
-     *
-     * @param now Current device-local time in nanoseconds
-     * @param flushAll When `true`, drains all buckets regardless of age. Used during SDK teardown.
-     */
-    fun scheduleFlush(now: Long, flushAll: Boolean) {
-        if (flushAll) {
-            forcePending.set(true)
-        }
+    fun stop() {
+        isStopped = true
+        scheduleFlush(flushAll = true)
+    }
 
-        if (!flushPending.compareAndSet(false, true)) {
+    private fun schedulePeriodicFlush() {
+        if (isStopped) {
             return
         }
 
-        executorService.executeSafe("stats-flush", sdkCore.internalLogger) {
-            flushPending.set(false)
-            val buckets = drainBuckets(now, forcePending.getAndSet(false))
-            if (buckets.isNotEmpty()) {
-                statsWriter.write(buckets)
-            }
+        executorService.scheduleSafe(
+            "stats-flush-periodic",
+            FLUSH_INTERVAL_SECS,
+            TimeUnit.SECONDS,
+            sdkCore.internalLogger
+        ) {
+            flushBuckets(flushAll = false)
+
+            // Schedule next refresh
+            schedulePeriodicFlush()
+        }
+    }
+
+    /**
+     * Schedules a drain of ready buckets and returns immediately.
+     * Flushed buckets are written to [statsWriter].
+     *
+     * @param flushAll When `true`, drains all buckets regardless of age. Used during SDK teardown.
+     */
+    @VisibleForTesting
+    fun scheduleFlush(flushAll: Boolean) {
+        executorService.executeSafe("stats-flush-all=$flushAll", sdkCore.internalLogger) {
+            flushBuckets(flushAll)
+        }
+    }
+
+    private fun flushBuckets(flushAll: Boolean) {
+        val buckets = drainBuckets(flushAll)
+        if (buckets.isNotEmpty()) {
+            statsWriter.write(buckets)
         }
     }
 
@@ -114,7 +138,9 @@ internal class StatsConcentrator(
         buckets.getOrPut(bucketKey) { mutableMapOf() }.getOrPut(key) { GroupedStats() }.add(s)
     }
 
-    private fun drainBuckets(now: Long, flushAll: Boolean): List<ClientStatsBucket> {
+    private fun drainBuckets(flushAll: Boolean): List<ClientStatsBucket> {
+        val now = timeProvider.getDeviceTimestampMillis().milliseconds.inWholeNanoseconds
+
         // Determine the current cuff off for which buckets to leave as still in progress
         val cutoff = now - (bufferLen * bucketSizeNs)
 
@@ -126,7 +152,7 @@ internal class StatsConcentrator(
 
         return closedBuckets.map { (bucketStart, groups) ->
             ClientStatsBucket(
-                start = bucketStart,
+                start = bucketStart + timeProvider.getServerOffsetNanos(),
                 duration = bucketSizeNs,
                 stats = groups.map { (key, stats) ->
                     ClientGroupedStats(
@@ -248,6 +274,9 @@ internal class StatsConcentrator(
         private const val RELATIVE_ACCURACY = 0.01
         private const val MAX_NUM_BINS = 2048
         private const val KEY_SVC_SRC = "_dd.svc_src"
+        private const val DEFAULT_BUFFER_SIZE = 2
+        private val DEFAULT_BUCKET_LENGTH = 10.seconds
+        private const val FLUSH_INTERVAL_SECS = 10L
 
         private val ELIGIBLE_SPAN_KINDS = setOf(
             Tags.SPAN_KIND_SERVER,
