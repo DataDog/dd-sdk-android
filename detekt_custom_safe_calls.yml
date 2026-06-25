@@ -1126,6 +1126,7 @@ datadog:
       - "kotlin.sequences.Sequence.mapNotNull(kotlin.Function1)"
       - "kotlin.sequences.Sequence.reduceOrNull(kotlin.Function2)"
       - "kotlin.sequences.Sequence.sortedBy(kotlin.Function1)"
+      - "kotlin.sequences.Sequence.toList()"
       - "kotlin.sequences.Sequence.iterator()"
       - "kotlin.sequences.SequenceScope.yield(kotlin.Pair)"
       - "kotlin.sequences.SequenceScope.yieldAll(kotlin.sequences.Sequence)"

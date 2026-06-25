@@ -60,7 +60,7 @@ internal class StatsConcentrator(
     fun record(trace: List<DDSpan>) {
         val metricsFeature = sdkCore.getFeature(Feature.TRACING_CLIENT_STATS_FEATURE_NAME) ?: return
         metricsFeature.withContext { datadogContext ->
-            trace.asSequence()
+            val applicableSpans = trace.asSequence()
                 .filter { shouldComputeMetrics(it) }
                 .mapNotNull { span ->
                     val mapped = eventMapper.map(ddSpanToSpanEventMapper.map(datadogContext, span))
@@ -83,9 +83,9 @@ internal class StatsConcentrator(
                         isTopLevel = span.isTopLevel
                     )
                 }
-                .forEach { snapshot ->
-                    executorService.executeSafe("stats-aggregate", sdkCore.internalLogger) { aggregate(snapshot) }
-                }
+                .toList()
+
+            executorService.executeSafe("stats-aggregate", sdkCore.internalLogger) { aggregate(applicableSpans) }
         }
     }
 
@@ -132,10 +132,14 @@ internal class StatsConcentrator(
         }
     }
 
-    private fun aggregate(s: SpanSnapshot) {
-        val bucketKey = alignTimestamp(bucketSizeNs, s.startTime + s.durationNs).coerceAtLeast(oldestTs)
-        val key = buildAggregationKey(s)
-        buckets.getOrPut(bucketKey) { mutableMapOf() }.getOrPut(key) { GroupedStats() }.add(s)
+    private fun aggregate(spans: List<SpanSnapshot>) {
+        for (span in spans) {
+            val spanEndTime = span.startTime + span.durationNs
+            val bucketKey = alignTimestamp(bucketSizeNs, spanEndTime).coerceAtLeast(oldestTs)
+            val aggregationKey = buildAggregationKey(span)
+            buckets.getOrPut(bucketKey) { mutableMapOf() }
+                .getOrPut(aggregationKey) { GroupedStats() }.add(span)
+        }
     }
 
     private fun drainBuckets(flushAll: Boolean): List<ClientStatsBucket> {
