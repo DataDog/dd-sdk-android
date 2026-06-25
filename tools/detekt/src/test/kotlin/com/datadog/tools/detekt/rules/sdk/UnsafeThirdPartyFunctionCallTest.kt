@@ -443,13 +443,39 @@ internal class UnsafeThirdPartyFunctionCallTest {
         val knownSafeCalls = listOf(
             "java.io.File.inputStream()"
         )
-        val config = TestConfig("knownSafeCalls" to knownSafeCalls)
+        val config = TestConfig("knownSafeThirdPartyCalls" to knownSafeCalls)
         val code =
             """
                 import java.io.File
                 
                 fun test(f: File): Any {
                     return f.inputStream()
+                }
+            """.trimIndent()
+
+        // When
+        val findings = UnsafeThirdPartyFunctionCall(config)
+            .compileAndLintWithContext(kotlinEnv.env, code)
+
+        // Then
+        assertThat(findings).hasSize(0)
+    }
+
+    @Test
+    fun `ignores calls present in either known safe calls list`() {
+        // Given - one call allowlisted in knownSafeAndroidCalls, one in knownSafeThirdPartyCalls;
+        // if the lists were not combined (last-wins), one of the two calls would be flagged
+        val config = TestConfig(
+            "knownSafeAndroidCalls" to listOf("java.io.File.inputStream()"),
+            "knownSafeThirdPartyCalls" to listOf("java.io.File.readBytes()")
+        )
+        val code =
+            """
+                import java.io.File
+
+                fun test(f: File) {
+                    f.inputStream()
+                    f.readBytes()
                 }
             """.trimIndent()
 
@@ -572,7 +598,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
     @Test
     fun `ignore kotlin helper calls { with + run + also + println }`() {
         // Given
-        val config = TestConfig("knownSafeCalls" to "java.io.File.readBytes()")
+        val config = TestConfig("knownSafeThirdPartyCalls" to "java.io.File.readBytes()")
         val code =
             """
                 import java.io.File

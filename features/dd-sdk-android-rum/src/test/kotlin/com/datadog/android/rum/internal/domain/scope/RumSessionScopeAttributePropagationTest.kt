@@ -199,7 +199,8 @@ internal class RumSessionScopeAttributePropagationTest {
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
             viewEventMapper = mock<ViewEventMapper>(),
-            rumViewEventWriteConfig = RumViewEventWriteConfig.AlwaysFullView
+            rumViewEventWriteConfig = RumViewEventWriteConfig.AlwaysFullView,
+            heatmapIdentifierRegistry = null
         )
     }
 

@@ -110,6 +110,7 @@ object Rum {
 
     // region private
 
+    @Suppress("LongMethod")
     private fun createMonitor(
         sdkCore: InternalSdkCore,
         rumFeature: RumFeature
@@ -137,6 +138,7 @@ object Rum {
         return DatadogRumMonitor(
             applicationId = rumFeature.applicationId,
             sdkCore = sdkCore,
+            appPackageName = rumFeature.appContext.packageName,
             sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
             sessionSampler = sessionSampler,
             writer = rumFeature.dataWriter,
@@ -173,7 +175,8 @@ object Rum {
             },
             insightsCollector = rumFeature.insightsCollector,
             viewEventMapper = rumFeature.configuration.viewEventMapper,
-            rumViewEventWriteConfig = rumFeature.configuration.rumViewEventWriteConfig
+            rumViewEventWriteConfig = rumFeature.configuration.rumViewEventWriteConfig,
+            heatmapIdentifierRegistry = rumFeature.heatmapIdentifierRegistry
         )
     }
 

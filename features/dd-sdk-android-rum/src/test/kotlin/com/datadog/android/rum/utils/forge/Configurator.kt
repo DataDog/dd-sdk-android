@@ -55,6 +55,8 @@ internal class Configurator : BaseConfigurator() {
         forge.addFactory(SlowFramesConfigurationForgeryFactory())
         forge.addFactory(DisplayInfoForgeryFactory())
         forge.addFactory(BatteryInfoForgeryFactory())
+        forge.addFactory(NativeHeatmapActionDataForgeryFactory())
+        forge.addFactory(CrossPlatformHeatmapActionDataForgeryFactory())
 
         // Telemetry schema models
         forge.addFactory(TelemetryDebugEventForgeryFactory())
