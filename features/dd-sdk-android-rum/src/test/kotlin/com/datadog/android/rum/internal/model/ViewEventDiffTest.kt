@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.model
 
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.ViewUpdateEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -677,6 +678,192 @@ internal class ViewEventDiffTest {
 
         // Then
         assertThat(result.view.isActive).isEqualTo(newIsActive)
+    }
+
+    // endregion
+
+    // region diffDd — _dd sub-fields
+
+    // --- replay_stats (REPLACE) ---
+
+    @Test
+    fun `M return null for replay_stats W diffViewEvent { replay_stats unchanged }`(
+        @Forgery fakeEvent: ViewEvent
+    ) {
+        // When
+        val result = diffViewEvent(fakeEvent, fakeEvent.copy())
+
+        // Then
+        assertThat(result.dd.replayStats).isNull()
+    }
+
+    @Test
+    fun `M return new value for replay_stats W diffViewEvent { replay_stats changed }`(
+        @Forgery fakeEvent: ViewEvent,
+        forge: Forge
+    ) {
+        // Given
+        val newRecordsCount = forge.aPositiveLong(strict = true)
+        val oldStats = ViewEvent.ReplayStats(recordsCount = null, segmentsCount = null, segmentsTotalRawSize = null)
+        val newStats = ViewEvent.ReplayStats(
+            recordsCount = newRecordsCount,
+            segmentsCount = forge.aPositiveLong(),
+            segmentsTotalRawSize = forge.aPositiveLong()
+        )
+        val old = fakeEvent.copy(dd = fakeEvent.dd.copy(replayStats = oldStats))
+        val new = fakeEvent.copy(dd = fakeEvent.dd.copy(replayStats = newStats))
+
+        // When
+        val result = diffViewEvent(old, new)
+
+        // Then
+        val replayStats = result.dd.replayStats
+        assertThat(replayStats).isNotNull()
+        assertThat(replayStats!!.recordsCount).isEqualTo(newRecordsCount)
+        assertThat(replayStats.segmentsCount).isEqualTo(newStats.segmentsCount)
+        assertThat(replayStats.segmentsTotalRawSize).isEqualTo(newStats.segmentsTotalRawSize)
+    }
+
+    // --- profiling (REPLACE) ---
+
+    @Test
+    fun `M return null for profiling W diffViewEvent { profiling unchanged }`(
+        @Forgery fakeEvent: ViewEvent
+    ) {
+        // When
+        val result = diffViewEvent(fakeEvent, fakeEvent.copy())
+
+        // Then
+        assertThat(result.dd.profiling).isNull()
+    }
+
+    @Test
+    fun `M return new value for profiling W diffViewEvent { profiling changed }`(
+        @Forgery fakeEvent: ViewEvent
+    ) {
+        // Given
+        val old = fakeEvent.copy(dd = fakeEvent.dd.copy(profiling = null))
+        val new = fakeEvent.copy(
+            dd = fakeEvent.dd.copy(
+                profiling = ViewEvent.Profiling(
+                    status = ViewEvent.ProfilingStatus.RUNNING,
+                    errorReason = null
+                )
+            )
+        )
+
+        // When
+        val result = diffViewEvent(old, new)
+
+        // Then
+        assertThat(result.dd.profiling).isNotNull()
+        assertThat(result.dd.profiling!!.status).isEqualTo(ViewUpdateEvent.ProfilingStatus.RUNNING)
+    }
+
+    // --- page_states (APPEND) ---
+
+    @Test
+    fun `M return null for page_states W diffViewEvent { no new page states }`(
+        @Forgery fakeEvent: ViewEvent
+    ) {
+        // When
+        val result = diffViewEvent(fakeEvent, fakeEvent.copy())
+
+        // Then
+        assertThat(result.dd.pageStates).isNull()
+    }
+
+    @Test
+    fun `M return only new page_states W diffViewEvent { page states appended }`(
+        @Forgery fakeEvent: ViewEvent
+    ) {
+        // Given
+        val existingStates = listOf(
+            ViewEvent.PageState(start = 0L, state = ViewEvent.State.ACTIVE),
+            ViewEvent.PageState(start = 1000L, state = ViewEvent.State.HIDDEN)
+        )
+        val newState = ViewEvent.PageState(start = 2000L, state = ViewEvent.State.ACTIVE)
+        val old = fakeEvent.copy(dd = fakeEvent.dd.copy(pageStates = existingStates))
+        val new = fakeEvent.copy(dd = fakeEvent.dd.copy(pageStates = existingStates + newState))
+
+        // When
+        val result = diffViewEvent(old, new)
+
+        // Then — only the newly appended state (drop old.size elements) is returned
+        val pageStates = result.dd.pageStates
+        assertThat(pageStates).hasSize(1)
+        assertThat(pageStates!!.first().start).isEqualTo(2000L)
+        assertThat(pageStates.first().state).isEqualTo(ViewUpdateEvent.State.ACTIVE)
+    }
+
+    // --- cls (REPLACE) ---
+
+    @Test
+    fun `M return null for cls W diffViewEvent { cls unchanged }`(
+        @Forgery fakeEvent: ViewEvent
+    ) {
+        // When
+        val result = diffViewEvent(fakeEvent, fakeEvent.copy())
+
+        // Then
+        assertThat(result.dd.cls).isNull()
+    }
+
+    @Test
+    fun `M return new value for cls W diffViewEvent { cls changed }`(
+        @Forgery fakeEvent: ViewEvent,
+        forge: Forge
+    ) {
+        // Given
+        val newRatio = forge.aDouble(min = 1.0, max = 4.0)
+        val old = fakeEvent.copy(dd = fakeEvent.dd.copy(cls = null))
+        val new = fakeEvent.copy(dd = fakeEvent.dd.copy(cls = ViewEvent.DdCls(devicePixelRatio = newRatio)))
+
+        // When
+        val result = diffViewEvent(old, new)
+
+        // Then
+        assertThat(result.dd.cls).isNotNull()
+        assertThat(result.dd.cls!!.devicePixelRatio).isEqualTo(newRatio)
+    }
+
+    // --- configuration.start_session_replay_recording_manually (REPLACE) ---
+
+    @Test
+    fun `M return null for configuration W diffViewEvent { configuration unchanged }`(
+        @Forgery fakeEvent: ViewEvent
+    ) {
+        // When
+        val result = diffViewEvent(fakeEvent, fakeEvent.copy())
+
+        // Then
+        assertThat(result.dd.configuration).isNull()
+    }
+
+    @Test
+    fun `M include start_session_replay_recording_manually W diffViewEvent { configuration changed }`(
+        @Forgery fakeEvent: ViewEvent,
+        forge: Forge
+    ) {
+        // Given
+        val manualRecording = forge.aBool()
+        val oldConfig = ViewEvent.Configuration(
+            sessionSampleRate = 100f,
+            sessionReplaySampleRate = null,
+            profilingSampleRate = null,
+            traceSampleRate = null,
+            startSessionReplayRecordingManually = !manualRecording
+        )
+        val newConfig = oldConfig.copy(startSessionReplayRecordingManually = manualRecording)
+        val old = fakeEvent.copy(dd = fakeEvent.dd.copy(configuration = oldConfig))
+        val new = fakeEvent.copy(dd = fakeEvent.dd.copy(configuration = newConfig))
+
+        // When
+        val result = diffViewEvent(old, new)
+
+        // Then
+        assertThat(result.dd.configuration).isNotNull()
+        assertThat(result.dd.configuration!!.startSessionReplayRecordingManually).isEqualTo(manualRecording)
     }
 
     // endregion

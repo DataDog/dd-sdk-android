@@ -589,5 +589,71 @@ internal class ViewEventConversionsTest {
         assertThat(result.dd.session!!.plan!!.name).isEqualTo(fakePlan.name)
     }
 
+    @ParameterizedTest
+    @EnumSource(ViewEvent.ProfilingStatus::class)
+    fun `M map profiling status correctly W diffViewEvent { profiling changed }`(
+        fakeStatus: ViewEvent.ProfilingStatus,
+        @Forgery fakeEvent: ViewEvent
+    ) {
+        // Given
+        val old = fakeEvent.copy(dd = fakeEvent.dd.copy(profiling = null))
+        val new = fakeEvent.copy(
+            dd = fakeEvent.dd.copy(
+                profiling = ViewEvent.Profiling(status = fakeStatus, errorReason = null)
+            )
+        )
+
+        // When
+        val result = diffViewEvent(old, new)
+
+        // Then
+        assertThat(result.dd.profiling?.status).isNotNull()
+        assertThat(result.dd.profiling!!.status!!.name).isEqualTo(fakeStatus.name)
+    }
+
+    @ParameterizedTest
+    @EnumSource(ViewEvent.ErrorReason::class)
+    fun `M map profiling error reason correctly W diffViewEvent { profiling changed }`(
+        fakeErrorReason: ViewEvent.ErrorReason,
+        @Forgery fakeEvent: ViewEvent
+    ) {
+        // Given
+        val old = fakeEvent.copy(dd = fakeEvent.dd.copy(profiling = null))
+        val new = fakeEvent.copy(
+            dd = fakeEvent.dd.copy(
+                profiling = ViewEvent.Profiling(status = null, errorReason = fakeErrorReason)
+            )
+        )
+
+        // When
+        val result = diffViewEvent(old, new)
+
+        // Then
+        assertThat(result.dd.profiling?.errorReason).isNotNull()
+        assertThat(result.dd.profiling!!.errorReason!!.name).isEqualTo(fakeErrorReason.name)
+    }
+
+    @ParameterizedTest
+    @EnumSource(ViewEvent.State::class)
+    fun `M map page state correctly W diffViewEvent { page states changed }`(
+        fakeState: ViewEvent.State,
+        @Forgery fakeEvent: ViewEvent
+    ) {
+        // Given
+        val old = fakeEvent.copy(dd = fakeEvent.dd.copy(pageStates = null))
+        val new = fakeEvent.copy(
+            dd = fakeEvent.dd.copy(
+                pageStates = listOf(ViewEvent.PageState(start = 0L, state = fakeState))
+            )
+        )
+
+        // When
+        val result = diffViewEvent(old, new)
+
+        // Then
+        assertThat(result.dd.pageStates).isNotNull()
+        assertThat(result.dd.pageStates!!.first().state.name).isEqualTo(fakeState.name)
+    }
+
     // endregion
 }

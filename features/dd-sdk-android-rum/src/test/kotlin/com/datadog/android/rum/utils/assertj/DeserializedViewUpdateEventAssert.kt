@@ -6,22 +6,30 @@
 
 package com.datadog.android.rum.utils.assertj
 
-import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.ViewUpdateEvent
 import com.datadog.tools.unit.assertj.withGsonIntEqualsForFields
 import org.assertj.core.api.AbstractAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
 
-internal class DeserializedViewEventAssert(actual: ViewEvent) :
-    AbstractAssert<DeserializedViewEventAssert, ViewEvent>(
+internal class DeserializedViewUpdateEventAssert(actual: ViewUpdateEvent) :
+    AbstractAssert<DeserializedViewUpdateEventAssert, ViewUpdateEvent>(
         actual,
-        DeserializedViewEventAssert::class.java
+        DeserializedViewUpdateEventAssert::class.java
     ) {
 
-    fun isEqualTo(expected: ViewEvent): DeserializedViewEventAssert {
+    fun isEqualTo(expected: ViewUpdateEvent): DeserializedViewUpdateEventAssert {
         assertThat(actual)
             .usingRecursiveComparison()
-            .ignoringFields("context", "usr", "account", "view", "device", "dd.configuration", "dd.cls")
+            .ignoringFields(
+                "context",
+                "usr",
+                "account",
+                "view",
+                "device",
+                "dd.configuration",
+                "dd.cls"
+            )
             .isEqualTo(expected)
         assertDdClsEquals(actual.dd.cls, expected.dd.cls)
         assertConfigurationEquals(actual.dd.configuration, expected.dd.configuration)
@@ -34,7 +42,9 @@ internal class DeserializedViewEventAssert(actual: ViewEvent) :
                 "cpuTicksPerSecond",
                 "refreshRateAverage",
                 "refreshRateMin",
-                "cumulativeLayoutShift"
+                "cumulativeLayoutShift",
+                "slowFramesRate",
+                "freezeRate"
             )
             .isEqualTo(expected.view)
         assertNumberFieldEquals(actual.view.memoryAverage, expected.view.memoryAverage)
@@ -43,10 +53,9 @@ internal class DeserializedViewEventAssert(actual: ViewEvent) :
         assertNumberFieldEquals(actual.view.cpuTicksPerSecond, expected.view.cpuTicksPerSecond)
         assertNumberFieldEquals(actual.view.refreshRateAverage, expected.view.refreshRateAverage)
         assertNumberFieldEquals(actual.view.refreshRateMin, expected.view.refreshRateMin)
-        assertNumberFieldEquals(
-            actual.view.cumulativeLayoutShift,
-            expected.view.cumulativeLayoutShift
-        )
+        assertNumberFieldEquals(actual.view.cumulativeLayoutShift, expected.view.cumulativeLayoutShift)
+        assertNumberFieldEquals(actual.view.slowFramesRate, expected.view.slowFramesRate)
+        assertNumberFieldEquals(actual.view.freezeRate, expected.view.freezeRate)
         assertThat(actual.device)
             .usingRecursiveComparison()
             .withGsonIntEqualsForFields("totalRam", "logicalCpuCount")
@@ -81,7 +90,7 @@ internal class DeserializedViewEventAssert(actual: ViewEvent) :
         return this
     }
 
-    private fun assertDdClsEquals(actual: ViewEvent.DdCls?, expected: ViewEvent.DdCls?) {
+    private fun assertDdClsEquals(actual: ViewUpdateEvent.DdCls?, expected: ViewUpdateEvent.DdCls?) {
         if (expected == null) {
             assertThat(actual).isNull()
             return
@@ -91,8 +100,8 @@ internal class DeserializedViewEventAssert(actual: ViewEvent) :
     }
 
     private fun assertConfigurationEquals(
-        actual: ViewEvent.Configuration?,
-        expected: ViewEvent.Configuration?
+        actual: ViewUpdateEvent.Configuration?,
+        expected: ViewUpdateEvent.Configuration?
     ) {
         if (expected == null) {
             assertThat(actual).isNull()
@@ -123,8 +132,8 @@ internal class DeserializedViewEventAssert(actual: ViewEvent) :
     }
 
     companion object {
-        fun assertThat(actual: ViewEvent): DeserializedViewEventAssert {
-            return DeserializedViewEventAssert(actual)
+        fun assertThat(actual: ViewUpdateEvent): DeserializedViewUpdateEventAssert {
+            return DeserializedViewUpdateEventAssert(actual)
         }
     }
 }
