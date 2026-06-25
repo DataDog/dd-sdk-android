@@ -13,16 +13,17 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.persistence.file.readBytesSafe
+import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.utils.formatIsoUtc
 import com.datadog.android.profiling.internal.domain.ProfilingBatchMetadata
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
+import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.model.ProfileEvent
 import com.datadog.android.profiling.model.RumMetadataEvent
 import com.google.gson.JsonArray
 import java.io.File
-import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 
@@ -69,22 +70,33 @@ internal class ProfilingDataWriter(
         anrEvents: List<ProfilerEvent.RumAnrEvent>,
         vitalEvents: List<ProfilerEvent.RumVitalEvent>
     ): RawBatchEvent? {
-        if (longTaskEvents.isEmpty() && anrEvents.isEmpty() && vitalEvents.isEmpty()) return null
+        val driftMs = context.time.serverTimeOffsetMs
 
-        val driftMs = abs(context.time.serverTimeOffsetMs)
-        if (driftMs > MAX_CLOCK_DRIFT_MS) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.MAINTAINER,
-                {
-                    LOG_PROFILE_DROPPED_CLOCK_DRIFT.format(
-                        Locale.US,
-                        context.time.serverTimeOffsetMs
-                    )
-                }
+        if (longTaskEvents.isEmpty() && anrEvents.isEmpty() && vitalEvents.isEmpty()) {
+            logWriteResultMetric(
+                dropped = true,
+                dropReason = DROP_REASON_NO_RUM_EVENTS,
+                driftMs = driftMs,
+                startReason = profilingResult.startReason.value,
+                longTaskEvents = longTaskEvents,
+                anrEvents = anrEvents,
+                vitalEvents = vitalEvents
             )
-            // TODO RUM-16953: Uncomment the code below to prevent writing the event.
-            // return null
+            return null
+        }
+
+        val exceedMaxDrift = abs(driftMs) > MAX_CLOCK_DRIFT_MS
+        if (exceedMaxDrift) {
+            logWriteResultMetric(
+                dropped = true,
+                dropReason = DROP_REASON_CLOCK_DRIFT,
+                driftMs = driftMs,
+                startReason = profilingResult.startReason.value,
+                longTaskEvents = longTaskEvents,
+                anrEvents = anrEvents,
+                vitalEvents = vitalEvents
+            )
+            return null
         }
 
         val perfettoBytes = readProfilingData(profilingResult.resultFilePath)
@@ -106,8 +118,44 @@ internal class ProfilingDataWriter(
             val serializedEvent = profileEvent.toJson().toString().toByteArray(Charsets.UTF_8)
             val rumMobileEventsJson = buildRumMobileEventsJson(longTaskEvents, anrEvents, vitalEvents)
             val metadata = ProfilingBatchMetadata(perfettoBytes, rumMobileEventsJson).toBytes()
+            logWriteResultMetric(
+                dropped = false,
+                dropReason = null,
+                driftMs = driftMs,
+                startReason = profilingResult.startReason.value,
+                longTaskEvents = longTaskEvents,
+                anrEvents = anrEvents,
+                vitalEvents = vitalEvents
+            )
             RawBatchEvent(data = serializedEvent, metadata = metadata)
         }
+    }
+
+    private fun logWriteResultMetric(
+        dropped: Boolean,
+        dropReason: String?,
+        driftMs: Long,
+        startReason: String,
+        longTaskEvents: List<ProfilerEvent.RumLongTaskEvent>,
+        anrEvents: List<ProfilerEvent.RumAnrEvent>,
+        vitalEvents: List<ProfilerEvent.RumVitalEvent>
+    ) {
+        sdkCore.internalLogger.logMetric(
+            messageBuilder = { ProfilingTelemetry.TELEMETRY_MSG_PROFILING_SESSION },
+            additionalProperties = mapOf(
+                ProfilingTelemetry.KEY_METRIC_TYPE to METRIC_TYPE_PROFILING_WRITE,
+                KEY_PROFILING_WRITE to mapOf(
+                    KEY_DROPPED to dropped,
+                    KEY_DROP_REASON to dropReason,
+                    KEY_CLIENT_CLOCK_DRIFT to driftMs,
+                    ProfilingTelemetry.KEY_START_REASON to startReason,
+                    KEY_LONG_TASK_COUNT to longTaskEvents.size,
+                    KEY_ANR_COUNT to anrEvents.size,
+                    KEY_VITAL_COUNT to vitalEvents.size
+                )
+            ),
+            samplingRate = MethodCallSamplingRate.ALL.rate
+        )
     }
 
     private fun createProfileEvent(
@@ -252,9 +300,19 @@ internal class ProfilingDataWriter(
 
     companion object {
         internal const val MAX_CLOCK_DRIFT_MS = 1000L
-        private const val LOG_PROFILE_DROPPED_CLOCK_DRIFT =
-            "Profile dropped during write: clock drift %d ms exceeds threshold"
         private const val LOG_FILE_DELETE_FAILED = "Failed to delete Perfetto trace file: %s"
+
+        internal const val METRIC_TYPE_PROFILING_WRITE = "profiling write"
+        internal const val KEY_PROFILING_WRITE = "profiling_write"
+        internal const val KEY_DROPPED = "dropped"
+        internal const val KEY_DROP_REASON = "drop_reason"
+        internal const val KEY_CLIENT_CLOCK_DRIFT = "client_clock_drift_ms"
+        internal const val KEY_LONG_TASK_COUNT = "long_task_count"
+        internal const val KEY_ANR_COUNT = "anr_count"
+        internal const val KEY_VITAL_COUNT = "vital_count"
+        internal const val DROP_REASON_NO_RUM_EVENTS = "no_rum_events"
+        internal const val DROP_REASON_CLOCK_DRIFT = "clock_drift_exceeded"
+
         private const val TAG_KEY_SERVICE = "service"
         private const val TAG_KEY_VERSION = "version"
         private const val TAG_KEY_BUILD_ID = "build_id"

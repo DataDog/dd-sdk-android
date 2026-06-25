@@ -15,6 +15,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.utils.formatIsoUtc
 import com.datadog.android.profiling.assertj.ProfileEventAssert.Companion.assertThat
@@ -22,6 +23,7 @@ import com.datadog.android.profiling.assertj.RumMetadataEventsAssert.Companion.a
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.domain.ProfilingBatchMetadata
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
+import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.model.ProfileEvent
 import com.datadog.android.profiling.model.RumMetadataEvent
 import com.google.gson.JsonParser
@@ -298,7 +300,7 @@ internal class ProfilingDataWriterTest {
     }
 
     @Test
-    fun `M skip writing W write {no rum events}`(
+    fun `M skip writing and report metric W write {no rum events}`(
         @Forgery fakeResult: PerfettoResult,
         forge: Forge
     ) {
@@ -316,6 +318,24 @@ internal class ProfilingDataWriterTest {
 
         // Then
         assertThat(file.exists()).isFalse()
+        val expectedProps = mapOf(
+            ProfilingTelemetry.KEY_METRIC_TYPE to ProfilingDataWriter.METRIC_TYPE_PROFILING_WRITE,
+            ProfilingDataWriter.KEY_PROFILING_WRITE to mapOf(
+                ProfilingDataWriter.KEY_DROPPED to true,
+                ProfilingDataWriter.KEY_DROP_REASON to ProfilingDataWriter.DROP_REASON_NO_RUM_EVENTS,
+                ProfilingDataWriter.KEY_CLIENT_CLOCK_DRIFT to 0L,
+                ProfilingTelemetry.KEY_START_REASON to fakeResult.startReason.value,
+                ProfilingDataWriter.KEY_LONG_TASK_COUNT to 0,
+                ProfilingDataWriter.KEY_ANR_COUNT to 0,
+                ProfilingDataWriter.KEY_VITAL_COUNT to 0
+            )
+        )
+        verify(mockInternalLogger).logMetric(
+            any(),
+            eq(expectedProps),
+            eq(MethodCallSamplingRate.ALL.rate),
+            isNull()
+        )
         verifyNoMoreInteractions(mockInternalLogger, mockEventBatchWriter)
     }
 
@@ -440,7 +460,7 @@ internal class ProfilingDataWriterTest {
     }
 
     @Test
-    fun `M log drift and write W write {drift over threshold positive}`(
+    fun `M drop and report write metric with clock drift reason W write {drift over threshold positive}`(
         @Forgery fakeResult: PerfettoResult,
         @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
         forge: Forge
@@ -462,19 +482,30 @@ internal class ProfilingDataWriterTest {
         )
 
         // Then
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.INFO),
-            eq(InternalLogger.Target.MAINTAINER),
-            any<() -> String>(),
-            isNull(),
-            eq(false),
+        val expectedProps = mapOf(
+            ProfilingTelemetry.KEY_METRIC_TYPE to ProfilingDataWriter.METRIC_TYPE_PROFILING_WRITE,
+            ProfilingDataWriter.KEY_PROFILING_WRITE to mapOf(
+                ProfilingDataWriter.KEY_DROPPED to true,
+                ProfilingDataWriter.KEY_DROP_REASON to ProfilingDataWriter.DROP_REASON_CLOCK_DRIFT,
+                ProfilingDataWriter.KEY_CLIENT_CLOCK_DRIFT to fakeDriftMs,
+                ProfilingTelemetry.KEY_START_REASON to fakeResult.startReason.value,
+                ProfilingDataWriter.KEY_LONG_TASK_COUNT to 0,
+                ProfilingDataWriter.KEY_ANR_COUNT to 0,
+                ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size
+            )
+        )
+        verify(mockInternalLogger).logMetric(
+            any(),
+            eq(expectedProps),
+            eq(MethodCallSamplingRate.ALL.rate),
             isNull()
         )
+        verifyNoInteractions(mockEventBatchWriter)
         assertThat(file.exists()).isFalse()
     }
 
     @Test
-    fun `M log drift and write W write {drift over threshold negative}`(
+    fun `M drop and report write metric with clock drift reason W write {drift over threshold negative}`(
         @Forgery fakeResult: PerfettoResult,
         @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
         forge: Forge
@@ -496,14 +527,66 @@ internal class ProfilingDataWriterTest {
         )
 
         // Then
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.INFO),
-            eq(InternalLogger.Target.MAINTAINER),
-            any<() -> String>(),
-            isNull(),
-            eq(false),
+        val expectedProps = mapOf(
+            ProfilingTelemetry.KEY_METRIC_TYPE to ProfilingDataWriter.METRIC_TYPE_PROFILING_WRITE,
+            ProfilingDataWriter.KEY_PROFILING_WRITE to mapOf(
+                ProfilingDataWriter.KEY_DROPPED to true,
+                ProfilingDataWriter.KEY_DROP_REASON to ProfilingDataWriter.DROP_REASON_CLOCK_DRIFT,
+                ProfilingDataWriter.KEY_CLIENT_CLOCK_DRIFT to fakeDriftMs,
+                ProfilingTelemetry.KEY_START_REASON to fakeResult.startReason.value,
+                ProfilingDataWriter.KEY_LONG_TASK_COUNT to 0,
+                ProfilingDataWriter.KEY_ANR_COUNT to 0,
+                ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size
+            )
+        )
+        verify(mockInternalLogger).logMetric(
+            any(),
+            eq(expectedProps),
+            eq(MethodCallSamplingRate.ALL.rate),
             isNull()
         )
+        verifyNoInteractions(mockEventBatchWriter)
         assertThat(file.exists()).isFalse()
+    }
+
+    @Test
+    fun `M report write metric with event counts W write {write successful}`(
+        @Forgery fakeResult: PerfettoResult,
+        @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
+        @Forgery fakeLongTasks: List<ProfilerEvent.RumLongTaskEvent>,
+        @Forgery fakeAnrs: List<ProfilerEvent.RumAnrEvent>,
+        forge: Forge
+    ) {
+        // Given
+        val file = tmp.resolve(fakeResult.resultFilePath)
+        file.writeBytes(forge.aString().toByteArray())
+
+        // When
+        testedDataWriterTest.write(
+            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
+            vitalEvents = fakeVitals,
+            anrEvents = fakeAnrs,
+            longTasks = fakeLongTasks
+        )
+
+        // Then
+        val expectedProps = mapOf(
+            ProfilingTelemetry.KEY_METRIC_TYPE to ProfilingDataWriter.METRIC_TYPE_PROFILING_WRITE,
+            ProfilingDataWriter.KEY_PROFILING_WRITE to mapOf(
+                ProfilingDataWriter.KEY_DROPPED to false,
+                ProfilingDataWriter.KEY_DROP_REASON to null,
+                ProfilingDataWriter.KEY_CLIENT_CLOCK_DRIFT to 0L,
+                ProfilingTelemetry.KEY_START_REASON to fakeResult.startReason.value,
+                ProfilingDataWriter.KEY_LONG_TASK_COUNT to fakeLongTasks.size,
+                ProfilingDataWriter.KEY_ANR_COUNT to fakeAnrs.size,
+                ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size
+            )
+        )
+        verify(mockInternalLogger).logMetric(
+            any(),
+            eq(expectedProps),
+            eq(MethodCallSamplingRate.ALL.rate),
+            isNull()
+        )
     }
 }
