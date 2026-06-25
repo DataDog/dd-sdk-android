@@ -6,10 +6,12 @@
 
 package com.datadog.android.trace.internal
 
+import android.content.Context
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
-import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.trace.event.SpanEventMapper
 import com.datadog.android.trace.internal.domain.metrics.ClientStatsAdapter
 import com.datadog.android.utils.forge.Configurator
@@ -45,7 +47,10 @@ internal class ClientStatsFeatureTest {
     private lateinit var testedFeature: ClientStatsFeature
 
     @Mock
-    lateinit var mockSdkCore: FeatureSdkCore
+    lateinit var mockSdkCore: InternalSdkCore
+
+    @Mock
+    lateinit var mockContext: Context
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -72,6 +77,7 @@ internal class ClientStatsFeatureTest {
     fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.timeProvider) doReturn mockTimeProvider
+        whenever(mockSdkCore.trackingConsent) doReturn TrackingConsent.GRANTED
         whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeTimestampMillis
         whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn mockStatsExecutor
 
@@ -81,6 +87,7 @@ internal class ClientStatsFeatureTest {
             spanEventMapper = mockSpanEventMapper,
             networkInfoEnabled = fakeNetworkInfoEnabled
         )
+        testedFeature.onInitialize(mockContext)
     }
 
     // region name
