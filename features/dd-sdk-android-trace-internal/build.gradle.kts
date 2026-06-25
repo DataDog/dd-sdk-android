@@ -12,6 +12,7 @@ import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.publishingConfig
+import com.datadog.gradle.plugin.gitclone.GitCloneDependenciesTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -31,6 +32,7 @@ plugins {
     // Tests
     id("de.mobilej.unmock")
     id("org.jetbrains.kotlinx.kover")
+    id("datadog.unit-test")
 
     // Internal Generation
     id("apiSurface")
@@ -66,8 +68,6 @@ dependencies {
         }
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
-    testImplementation(libs.bundles.jUnit5)
-    testImplementation(libs.bundles.testTools)
     testImplementation(libs.systemStubsJupiter)
 }
 
@@ -75,7 +75,58 @@ unMock {
     keepStartingWith("org.json")
 }
 
-apply(from = "clone_dd_trace.gradle.kts")
+val ddTraceRepository = "https://github.com/DataDog/dd-trace-java.git"
+val ddTraceVersion = "v0.50.0"
+
+tasks.register<GitCloneDependenciesTask>("cloneDdTrace") {
+    extension.apply {
+        clone(
+            ddTraceRepository,
+            "dd-trace-ot",
+            ddTraceVersion,
+            listOf(
+                "dd-trace-ot.gradle",
+                "README.md",
+                "jfr-openjdk/",
+                "src/jmh/", // JVM based benchmark, not relevant for ART/Dalvik
+                "src/traceAgentTest/",
+                "src/ot33CompatabilityTest/",
+                "src/ot31CompatabilityTest/",
+                "src/test/resources/",
+                "src/main/java/datadog/trace/common/processor/",
+                "src/main/java/datadog/trace/common/sampling/RuleBasedSampler.java",
+                "src/main/java/datadog/trace/common/serialization",
+                "src/main/java/datadog/trace/common/writer/unixdomainsockets",
+                "src/main/java/datadog/trace/common/writer/ddagent",
+                "src/main/java/datadog/trace/common/writer/DDAgentWriter.java",
+                "src/main/java/datadog/opentracing/resolver",
+                "src/main/java/datadog/opentracing/ContainerInfo.java",
+                "src/test"
+            )
+        )
+        clone(
+            ddTraceRepository,
+            "dd-trace-api",
+            ddTraceVersion,
+            listOf(
+                "dd-trace-api.gradle",
+                "src/main/java/datadog/trace/api/GlobalTracer.java",
+                "src/main/java/datadog/trace/api/CorrelationIdentifier.java",
+                "src/test"
+            )
+        )
+        clone(
+            ddTraceRepository,
+            "utils/thread-utils",
+            ddTraceVersion,
+            listOf(
+                "thread-utils.gradle",
+                "src/test/"
+            )
+        )
+    }
+    projectDirPath.set(project.layout.projectDirectory.asFile.path)
+}
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 androidLibraryConfig()

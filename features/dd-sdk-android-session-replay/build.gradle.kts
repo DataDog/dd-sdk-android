@@ -12,6 +12,9 @@ import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.publishingConfig
+import com.datadog.gradle.utils.cloneRumEventsFormat
+import com.datadog.gradle.utils.createJsonModelsGenerationTask
+import com.datadog.gradle.utils.createRumSchemaCloneTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -31,6 +34,7 @@ plugins {
     // Tests
     id("de.mobilej.unmock")
     id("org.jetbrains.kotlinx.kover")
+    id("datadog.unit-test")
 
     // Internal Generation
     id("apiSurface")
@@ -67,8 +71,6 @@ dependencies {
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(libs.okHttp)
-    testImplementation(libs.bundles.jUnit5)
-    testImplementation(libs.bundles.testTools)
     unmock(libs.robolectric)
 }
 
@@ -78,8 +80,49 @@ unMock {
     keep("android.graphics.drawable.GradientDrawable")
 }
 
-apply(from = "clone_session_replay_schema.gradle.kts")
-apply(from = "generate_session_replay_models.gradle.kts")
+createRumSchemaCloneTask("cloneSessionReplayRootSchemas") {
+    cloneRumEventsFormat(
+        project = project,
+        subFolder = "schemas/",
+        destinationFolder = "src/main/json/schemas",
+        excludedPrefixes = listOf(
+            "profiling",
+            "session-replay/",
+            "rum",
+            "mobile",
+            "telemetry",
+            "session-replay-schema",
+            "session-replay-browser-schema"
+        )
+    )
+}
+
+createRumSchemaCloneTask("cloneSessionReplayMobileSchemas") {
+    cloneRumEventsFormat(
+        project = project,
+        subFolder = "schemas/session-replay/mobile",
+        destinationFolder = "src/main/json/schemas/session-replay/mobile"
+    )
+}
+
+createRumSchemaCloneTask("cloneSessionReplayCommonSchemas") {
+    cloneRumEventsFormat(
+        project = project,
+        subFolder = "schemas/session-replay/common",
+        destinationFolder = "src/main/json/schemas/session-replay/common"
+    )
+}
+
+tasks.register("cloneSessionReplaySchemas") {
+    dependsOn("cloneSessionReplayRootSchemas")
+    dependsOn("cloneSessionReplayMobileSchemas")
+    dependsOn("cloneSessionReplayCommonSchemas")
+}
+
+createJsonModelsGenerationTask("generateSessionReplayModels") {
+    inputDirPath = "src/main/json/schemas"
+    targetPackageName = "com.datadog.android.sessionreplay.model"
+}
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 androidLibraryConfig()

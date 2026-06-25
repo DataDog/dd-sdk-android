@@ -40,7 +40,7 @@ class ApiSurfacePlugin : Plugin<Project> {
                 this.kotlinSurfaceFile.set(generateApiSurfaceTask.flatMap { it.surfaceFile })
                 if (target.plugins.hasPlugin(GEN_JAVA_API_LAYOUT_PLUGIN)) {
                     this.javaSurfaceFile.set(javaSurfaceFile)
-                    dependsOn(TASK_GEN_JAVA_API_SURFACE)
+                    dependsOn(target.tasks.matching { it.name == TASK_GEN_JAVA_API_SURFACE })
                 } else {
                     logger.info(
                         "No Java API layout plugin found, skipping API surface" +
@@ -72,15 +72,16 @@ class ApiSurfacePlugin : Plugin<Project> {
             // Java API generation task does a clean-up of all files in the output
             // folder, so let it run first
             if (target.plugins.hasPlugin(GEN_JAVA_API_LAYOUT_PLUGIN)) {
+                val apiDumpTasks = target.tasks.matching { it.name == TASK_GEN_JAVA_API_SURFACE }
                 val isCi = target.providers.environmentVariable("CI").isPresent
                 if (isCi) {
                     // Java API generation wires to the release build type, so we can afford triggering compilation
                     // of release type locally when we run debug compilation, but we would like to avoid it on CI
                     if (name == "compileReleaseKotlin") {
-                        finalizedBy(TASK_GEN_JAVA_API_SURFACE)
+                        finalizedBy(apiDumpTasks)
                     }
                 } else {
-                    finalizedBy(TASK_GEN_JAVA_API_SURFACE)
+                    finalizedBy(apiDumpTasks)
                 }
             }
             finalizedBy(generateApiSurfaceTask)

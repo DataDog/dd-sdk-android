@@ -23,7 +23,14 @@ fun Project.registerSubModuleAggregationTask(
                 subProject.name.startsWith(subModuleNamePrefix) &&
                 subProject.path.startsWith(subModulePathPrefix)
             ) {
-                dependsOn("${subProject.path}:$subModuleTaskName")
+                // Lazily depend on the task only when the submodule registers it: `tasks.names`
+                // reads registered task names without creating any task, and `named()` returns a
+                // lazy provider, so unrelated tasks are never configured. The membership check
+                // matters because not every submodule registers every aggregated task (e.g.
+                // printDetektClasspath only exists where detekt is applied).
+                if (subModuleTaskName in subProject.tasks.names) {
+                    dependsOn(subProject.tasks.named(subModuleTaskName))
+                }
             }
         }
         additionalConfiguration()
