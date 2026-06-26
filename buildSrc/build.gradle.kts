@@ -85,10 +85,6 @@ gradlePlugin {
             id = "verificationXml" // the alias
             implementationClass = "com.datadog.gradle.plugin.verification.VerificationXmlPlugin"
         }
-        register("unitTestConvention") {
-            id = "datadog.unit-test" // the alias
-            implementationClass = "com.datadog.gradle.plugin.config.UnitTestConventionPlugin"
-        }
     }
 }
 

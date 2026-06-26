@@ -34,7 +34,7 @@ plugins {
     // Tests
     id("de.mobilej.unmock")
     id("org.jetbrains.kotlinx.kover")
-    id("datadog.unit-test")
+    id("unitTest")
 
     // Internal Generation
     id("apiSurface")

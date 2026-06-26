@@ -35,7 +35,7 @@ plugins {
     // Tests
     id("de.mobilej.unmock")
     id("org.jetbrains.kotlinx.kover")
-    id("datadog.unit-test")
+    id("unitTest")
 
     // Internal Generation
     id("apiSurface")
@@ -85,7 +85,6 @@ dependencies {
         }
     }
 
-    testImplementation(libs.okHttp)
     testImplementation(libs.okHttpMock)
     testImplementation(project(":features:dd-sdk-android-trace"))
     testImplementation(testFixtures(project(":dd-sdk-android-core")))

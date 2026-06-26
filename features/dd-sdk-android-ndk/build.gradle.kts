@@ -30,7 +30,7 @@ plugins {
 
     // Tests
     id("org.jetbrains.kotlinx.kover")
-    id("datadog.unit-test")
+    id("unitTest")
 
     // Internal Generation
     id("apiSurface")
