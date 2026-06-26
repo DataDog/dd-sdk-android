@@ -13,6 +13,9 @@ import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
+import com.datadog.android.heatmaps.CrossPlatformHeatmapActionData
+import com.datadog.android.internal.heatmaps.HeatmapIdentifier
+import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
@@ -22,6 +25,8 @@ import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.heatmaps.HeatmapActionResolver
+import com.datadog.android.rum.internal.heatmaps.NativeHeatmapActionData
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.StorageEvent
@@ -57,6 +62,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isA
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -3041,11 +3047,11 @@ internal class RumActionScopeTest {
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         fakeEvent = RumRawEvent.StartAction(
-            RumActionType.TAP,
-            name,
-            false,
-            emptyMap(),
-            timeWithOffset(TEST_INACTIVITY_MS * 2 + 1)
+            type = RumActionType.TAP,
+            name = name,
+            waitForStop = false,
+            attributes = emptyMap(),
+            eventTime = timeWithOffset(TEST_INACTIVITY_MS * 2 + 1)
         )
         val result2 = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
@@ -3158,6 +3164,439 @@ internal class RumActionScopeTest {
                 fakeParentContext.viewId.orEmpty(),
                 StorageEvent.Action(0, ActionEvent.ActionEventActionType.CUSTOM, testedScope.startedNanos)
             )
+    }
+
+    @Test
+    fun `M populate heatmap fields W sendAction() {viewIdentity present}`(
+        @StringForgery fakeViewIdentity: String,
+        @LongForgery fakeViewKey: Long,
+        @LongForgery fakeWidth: Long,
+        @LongForgery fakeHeight: Long,
+        @LongForgery fakePosX: Long,
+        @LongForgery fakePosY: Long
+    ) {
+        // Given
+        val mockHeatmapRegistry: HeatmapIdentifierRegistry = mock()
+        whenever(mockHeatmapRegistry.getHeatmapIdentifier(fakeViewKey, fakeParentContext.viewUrl.orEmpty()))
+            .thenReturn(HeatmapIdentifier(fakeViewIdentity))
+
+        testedScope = RumActionScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            waitForStop = false,
+            eventTime = fakeEventTime,
+            initialType = fakeType,
+            initialName = fakeName,
+            initialAttributes = fakeAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            inactivityThresholdMs = TEST_INACTIVITY_MS,
+            maxDurationMs = TEST_MAX_DURATION_MS,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = true,
+            sampleRate = fakeSampleRate,
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector,
+            heatmapResolver = HeatmapActionResolver.Native(
+                data = NativeHeatmapActionData(
+                    viewKey = fakeViewKey,
+                    positionX = fakePosX,
+                    positionY = fakePosY,
+                    targetWidth = fakeWidth,
+                    targetHeight = fakeHeight
+                ),
+                registry = mockHeatmapRegistry
+            )
+        )
+
+        // When
+        testedScope.handleEvent(
+            mockEvent(TEST_INACTIVITY_MS + 1),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasPermanentId(fakeViewIdentity)
+                .hasTargetWidth(fakeWidth)
+                .hasTargetHeight(fakeHeight)
+                .hasPositionX(fakePosX)
+                .hasPositionY(fakePosY)
+        }
+    }
+
+    @Test
+    fun `M omit dd action W sendAction() {registry returns null for viewKey}`(
+        @LongForgery fakeViewKey: Long,
+        @LongForgery fakeWidth: Long,
+        @LongForgery fakeHeight: Long,
+        @LongForgery fakePosX: Long,
+        @LongForgery fakePosY: Long
+    ) {
+        // Given
+        val mockHeatmapRegistry: HeatmapIdentifierRegistry = mock()
+        whenever(mockHeatmapRegistry.getHeatmapIdentifier(any(), any())).thenReturn(null)
+
+        testedScope = RumActionScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            waitForStop = false,
+            eventTime = fakeEventTime,
+            initialType = fakeType,
+            initialName = fakeName,
+            initialAttributes = fakeAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            inactivityThresholdMs = TEST_INACTIVITY_MS,
+            maxDurationMs = TEST_MAX_DURATION_MS,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = true,
+            sampleRate = fakeSampleRate,
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector,
+            heatmapResolver = HeatmapActionResolver.Native(
+                data = NativeHeatmapActionData(
+                    viewKey = fakeViewKey,
+                    positionX = fakePosX,
+                    positionY = fakePosY,
+                    targetWidth = fakeWidth,
+                    targetHeight = fakeHeight
+                ),
+                registry = mockHeatmapRegistry
+            )
+        )
+
+        // When
+        testedScope.handleEvent(
+            mockEvent(TEST_INACTIVITY_MS + 1),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue.dd.action).isNull()
+        }
+    }
+
+    @Test
+    fun `M omit dd action W sendAction() {registry is null}`(
+        @LongForgery fakeViewKey: Long,
+        @LongForgery fakePosX: Long,
+        @LongForgery fakePosY: Long
+    ) {
+        // Given — heatmapData is set but no registry is provided
+        testedScope = RumActionScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            waitForStop = false,
+            eventTime = fakeEventTime,
+            initialType = fakeType,
+            initialName = fakeName,
+            initialAttributes = fakeAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            inactivityThresholdMs = TEST_INACTIVITY_MS,
+            maxDurationMs = TEST_MAX_DURATION_MS,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = true,
+            sampleRate = fakeSampleRate,
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector,
+            heatmapResolver = HeatmapActionResolver.Native(
+                data = NativeHeatmapActionData(
+                    viewKey = fakeViewKey,
+                    positionX = fakePosX,
+                    positionY = fakePosY,
+                    targetWidth = null,
+                    targetHeight = null
+                ),
+                registry = null
+            )
+        )
+
+        // When
+        testedScope.handleEvent(
+            mockEvent(TEST_INACTIVITY_MS + 1),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue.dd.action).isNull()
+        }
+    }
+
+    @Test
+    fun `M omit dd action W sendAction() {no heatmap attributes}`() {
+        // Given
+        testedScope = RumActionScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            waitForStop = false,
+            eventTime = fakeEventTime,
+            initialType = fakeType,
+            initialName = fakeName,
+            initialAttributes = fakeAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            inactivityThresholdMs = TEST_INACTIVITY_MS,
+            maxDurationMs = TEST_MAX_DURATION_MS,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = true,
+            sampleRate = fakeSampleRate,
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector
+        )
+
+        // When
+        testedScope.handleEvent(
+            mockEvent(TEST_INACTIVITY_MS + 1),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue.dd.action).isNull()
+        }
+    }
+
+    @Test
+    fun `M populate heatmap fields W sendAction() {crossPlatformHeatmapActionData set}`(
+        @Forgery fakeHeatmapAttributes: CrossPlatformHeatmapActionData,
+        @StringForgery fakeAppPackageName: String
+    ) {
+        val matchingHeatmapAttributes = fakeHeatmapAttributes.copy(
+            viewUrl = fakeParentContext.viewUrl.orEmpty()
+        )
+        val expectedPermanentId = HeatmapIdentifier.create(
+            elementPath = matchingHeatmapAttributes.elementPath,
+            screenName = fakeParentContext.viewUrl.orEmpty(),
+            appPackageName = fakeAppPackageName
+        )?.rawValue
+        testedScope = RumActionScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            waitForStop = false,
+            eventTime = fakeEventTime,
+            initialType = fakeType,
+            initialName = fakeName,
+            initialAttributes = fakeAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            inactivityThresholdMs = TEST_INACTIVITY_MS,
+            maxDurationMs = TEST_MAX_DURATION_MS,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = true,
+            sampleRate = fakeSampleRate,
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector,
+            heatmapResolver = HeatmapActionResolver.CrossPlatform(
+                data = matchingHeatmapAttributes,
+                appPackageName = fakeAppPackageName,
+                logger = rumMonitor.mockSdkCore.internalLogger
+            )
+        )
+
+        // When
+        testedScope.handleEvent(
+            mockEvent(TEST_INACTIVITY_MS + 1),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasPermanentId(checkNotNull(expectedPermanentId))
+                .hasPositionX(fakeHeatmapAttributes.positionX)
+                .hasPositionY(fakeHeatmapAttributes.positionY)
+                .hasTargetWidth(fakeHeatmapAttributes.targetWidth)
+                .hasTargetHeight(fakeHeatmapAttributes.targetHeight)
+        }
+    }
+
+    @Test
+    fun `M prefer crossPlatformHeatmapActionData over nativeHeatmapActionData W sendAction() {both set}`(
+        @Forgery fakeHeatmapAttributes: CrossPlatformHeatmapActionData,
+        @StringForgery fakeAppPackageName: String
+    ) {
+        // StartAction.init enforces mutual exclusivity, so RumActionScope is constructed directly here.
+        val mockHeatmapRegistry: HeatmapIdentifierRegistry = mock()
+        whenever(mockHeatmapRegistry.getHeatmapIdentifier(any(), any()))
+            .thenReturn(HeatmapIdentifier("native-id"))
+        val matchingHeatmapAttributes = fakeHeatmapAttributes.copy(
+            viewUrl = fakeParentContext.viewUrl.orEmpty()
+        )
+        val expectedPermanentId = HeatmapIdentifier.create(
+            elementPath = matchingHeatmapAttributes.elementPath,
+            screenName = fakeParentContext.viewUrl.orEmpty(),
+            appPackageName = fakeAppPackageName
+        )?.rawValue
+
+        testedScope = RumActionScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            waitForStop = false,
+            eventTime = fakeEventTime,
+            initialType = fakeType,
+            initialName = fakeName,
+            initialAttributes = fakeAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            inactivityThresholdMs = TEST_INACTIVITY_MS,
+            maxDurationMs = TEST_MAX_DURATION_MS,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = true,
+            sampleRate = fakeSampleRate,
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector,
+            heatmapResolver = HeatmapActionResolver.CrossPlatform(
+                data = matchingHeatmapAttributes,
+                appPackageName = fakeAppPackageName,
+                logger = rumMonitor.mockSdkCore.internalLogger
+            )
+        )
+
+        // When
+        testedScope.handleEvent(
+            mockEvent(TEST_INACTIVITY_MS + 1),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        verifyNoInteractions(mockHeatmapRegistry)
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue).hasPermanentId(checkNotNull(expectedPermanentId))
+        }
+    }
+
+    @Test
+    fun `M drop heatmap data and warn W sendAction() {heatmapAttributes viewUrl mismatches current view}`(
+        @Forgery fakeHeatmapAttributes: CrossPlatformHeatmapActionData,
+        @StringForgery fakeAppPackageName: String,
+        @StringForgery fakeDifferentViewUrl: String
+    ) {
+        // Given — simulate a race: the action was recorded for a different view than the one
+        // that is active when sendAction() fires (e.g. navigation happened on the async hop
+        // between the cross-platform tap and Android's RUM event queue processing).
+        val staleViewUrl = if (fakeDifferentViewUrl != fakeParentContext.viewUrl.orEmpty()) {
+            fakeDifferentViewUrl
+        } else {
+            "$fakeDifferentViewUrl#other"
+        }
+        val staleHeatmapAttributes = fakeHeatmapAttributes.copy(viewUrl = staleViewUrl)
+
+        testedScope = RumActionScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            waitForStop = false,
+            eventTime = fakeEventTime,
+            initialType = fakeType,
+            initialName = fakeName,
+            initialAttributes = fakeAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            inactivityThresholdMs = TEST_INACTIVITY_MS,
+            maxDurationMs = TEST_MAX_DURATION_MS,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = true,
+            sampleRate = fakeSampleRate,
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector,
+            heatmapResolver = HeatmapActionResolver.CrossPlatform(
+                data = staleHeatmapAttributes,
+                appPackageName = fakeAppPackageName,
+                logger = rumMonitor.mockSdkCore.internalLogger
+            )
+        )
+
+        // When
+        testedScope.handleEvent(
+            mockEvent(TEST_INACTIVITY_MS + 1),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then — heatmap fields are absent; a developer warning was logged
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue.dd.action).isNull()
+        }
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.WARN),
+            eq(InternalLogger.Target.USER),
+            any(),
+            isNull(),
+            eq(false),
+            isNull()
+        )
+    }
+
+    @Test
+    fun `M drop heatmap data and log user error W sendAction() {empty elementPath}`(
+        @Forgery fakeHeatmapAttributes: CrossPlatformHeatmapActionData,
+        @StringForgery fakeAppPackageName: String
+    ) {
+        // Given — elementPath is empty; every tap on the same screen would collide to the same hash
+        val emptyPathAttributes = fakeHeatmapAttributes.copy(
+            elementPath = emptyList(),
+            viewUrl = fakeParentContext.viewUrl.orEmpty()
+        )
+        testedScope = RumActionScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            waitForStop = false,
+            eventTime = fakeEventTime,
+            initialType = fakeType,
+            initialName = fakeName,
+            initialAttributes = fakeAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            inactivityThresholdMs = TEST_INACTIVITY_MS,
+            maxDurationMs = TEST_MAX_DURATION_MS,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = true,
+            sampleRate = fakeSampleRate,
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector,
+            heatmapResolver = HeatmapActionResolver.CrossPlatform(
+                data = emptyPathAttributes,
+                appPackageName = fakeAppPackageName,
+                logger = rumMonitor.mockSdkCore.internalLogger
+            )
+        )
+
+        // When
+        testedScope.handleEvent(
+            mockEvent(TEST_INACTIVITY_MS + 1),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue.dd.action).isNull()
+        }
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.USER),
+            any(),
+            isNull(),
+            eq(false),
+            isNull()
+        )
     }
 
     // region Internal

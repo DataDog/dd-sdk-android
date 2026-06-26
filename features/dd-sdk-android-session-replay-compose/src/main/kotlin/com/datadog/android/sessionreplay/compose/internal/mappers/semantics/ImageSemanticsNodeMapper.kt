@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.SemanticsNode
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.compose.internal.data.BitmapInfo
 import com.datadog.android.sessionreplay.compose.internal.data.SemanticsWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
@@ -20,16 +21,17 @@ import com.datadog.android.sessionreplay.utils.GlobalBounds
 
 internal class ImageSemanticsNodeMapper(
     colorStringFormatter: ColorStringFormatter,
-    private val semanticsUtils: SemanticsUtils
+    semanticsUtils: SemanticsUtils
 ) : AbstractSemanticsNodeMapper(colorStringFormatter, semanticsUtils) {
 
     override fun map(
         semanticsNode: SemanticsNode,
         parentContext: UiContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
     ): SemanticsWireframe {
         val containerBounds = resolveBounds(semanticsNode)
-        val bitmapInfo = semanticsUtils.resolveSemanticsPainter(semanticsNode)
+        val bitmapInfo = semanticsUtils.resolveSemanticsPainter(semanticsNode, internalLogger)
         val containerFrames = resolveModifierWireframes(semanticsNode).toMutableList()
         val imagePrivacy =
             semanticsUtils.getImagePrivacyOverride(semanticsNode) ?: parentContext.imagePrivacy

@@ -167,6 +167,7 @@ internal class DatadogFlagsClient(
                 trackResolution(resolution)
                 createSuccessResolution(resolution.flag, resolution.value)
             }
+
             is InternalResolution.Error -> {
                 trackErrorResolution(resolution)
                 createErrorResolution(
@@ -321,6 +322,7 @@ internal class DatadogFlagsClient(
                         errorCode = ErrorCode.TYPE_MISMATCH
                         errorMessage = exception.message ?: "Type mismatch"
                     }
+
                     else -> {
                         errorCode = ErrorCode.PARSE_ERROR
                         val typeName = FlagValueConverter.getTypeName(defaultValue::class)
@@ -366,6 +368,7 @@ internal class DatadogFlagsClient(
             trackResolution(resolution)
             resolution.value
         }
+
         is InternalResolution.Error -> {
             // Only log type mismatches as warnings to help developers identify configuration issues.
             // Other errors (FLAG_NOT_FOUND, PARSE_ERROR) are expected in normal operation.
@@ -395,8 +398,22 @@ internal class DatadogFlagsClient(
             reason = parseReason(precomputedFlag.reason),
             errorCode = null,
             errorMessage = null,
-            flagMetadata = extractMetadata(precomputedFlag.extraLogging)
+            flagMetadata = buildMetadata(precomputedFlag)
         )
+
+    private fun buildMetadata(precomputedFlag: PrecomputedFlag): Map<String, Any> {
+        val metadata = mutableMapOf<String, Any>()
+        precomputedFlag.extraLogging.keys().forEach { key ->
+            val value = precomputedFlag.extraLogging.opt(key)
+            when (value) {
+                is String, is Number, is Boolean -> metadata[key] = value
+            }
+        }
+        if (precomputedFlag.allocationKey.isNotBlank()) {
+            metadata["allocationKey"] = precomputedFlag.allocationKey
+        }
+        return metadata
+    }
 
     private fun <T : Any> createErrorResolution(
         flagKey: String,
@@ -427,22 +444,6 @@ internal class DatadogFlagsClient(
             // Unknown reason string - return null
             null
         }
-    }
-
-    private fun extractMetadata(extraLogging: JSONObject): Map<String, Any> {
-        if (extraLogging.length() == 0) {
-            return emptyMap()
-        }
-
-        val metadata = mutableMapOf<String, Any>()
-        extraLogging.keys().forEach { key ->
-            val value = extraLogging.opt(key)
-            when (value) {
-                is String, is Number, is Boolean -> metadata[key] = value
-            }
-        }
-
-        return metadata
     }
 
     private fun <T : Any> trackResolution(resolution: InternalResolution.Success<T>) {

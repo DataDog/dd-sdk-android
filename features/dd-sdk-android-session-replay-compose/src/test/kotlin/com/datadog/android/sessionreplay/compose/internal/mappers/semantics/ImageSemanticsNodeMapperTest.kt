@@ -10,6 +10,7 @@ import android.graphics.Bitmap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.SemanticsNode
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.BitmapInfo
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
@@ -49,6 +50,9 @@ import org.mockito.quality.Strictness
 internal class ImageSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() {
 
     private lateinit var testedMapper: ImageSemanticsNodeMapper
+
+    @Mock
+    private lateinit var mockInternalLogger: InternalLogger
 
     @Mock
     private lateinit var mockSemanticsNode: SemanticsNode
@@ -487,7 +491,7 @@ internal class ImageSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() 
         whenever(mockBitmap.width) doReturn 100
         whenever(mockBitmap.height) doReturn 100
         whenever(mockSemanticsUtils.resolveInnerBounds(any())) doReturn containerBounds
-        whenever(mockSemanticsUtils.resolveSemanticsPainter(any())) doReturn bitmapInfo
+        whenever(mockSemanticsUtils.resolveSemanticsPainter(any(), any())) doReturn bitmapInfo
         whenever(mockSemanticsUtils.getImagePrivacyOverride(any())) doReturn null
         whenever(mockSemanticsUtils.resolveBackgroundInfo(any())) doReturn emptyList()
         whenever(
@@ -506,7 +510,12 @@ internal class ImageSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() 
         ) doReturn fakeImageWireframe
 
         // When
-        val result = testedMapper.map(mockSemanticsNode, fakeUiContext, mockAsyncJobStatusCallback)
+        val result = testedMapper.map(
+            mockSemanticsNode,
+            fakeUiContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         verify(mockImageWireframeHelper).createImageWireframeByBitmap(
@@ -530,11 +539,16 @@ internal class ImageSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() 
         val mockSemanticsNode = mockSemanticsNodeWithBound()
         val containerBounds = rectToBounds(fakeBounds, fakeDensity)
         whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode)) doReturn containerBounds
-        whenever(mockSemanticsUtils.resolveSemanticsPainter(mockSemanticsNode)) doReturn null
+        whenever(mockSemanticsUtils.resolveSemanticsPainter(eq(mockSemanticsNode), any())) doReturn null
         whenever(mockSemanticsUtils.resolveBackgroundInfo(mockSemanticsNode)) doReturn emptyList()
 
         // When
-        val result = testedMapper.map(mockSemanticsNode, fakeUiContext, mockAsyncJobStatusCallback)
+        val result = testedMapper.map(
+            mockSemanticsNode,
+            fakeUiContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
 
         // Then
         assertThat(result.wireframes).isEmpty()
@@ -554,7 +568,7 @@ internal class ImageSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() 
         whenever(mockBitmap.width) doReturn 100
         whenever(mockBitmap.height) doReturn 100
         whenever(mockSemanticsUtils.resolveInnerBounds(any())) doReturn containerBounds
-        whenever(mockSemanticsUtils.resolveSemanticsPainter(any())) doReturn bitmapInfo
+        whenever(mockSemanticsUtils.resolveSemanticsPainter(any(), any())) doReturn bitmapInfo
         whenever(mockSemanticsUtils.getImagePrivacyOverride(any())) doReturn ImagePrivacy.MASK_ALL
         whenever(mockSemanticsUtils.resolveBackgroundInfo(any())) doReturn emptyList()
         whenever(
@@ -573,7 +587,7 @@ internal class ImageSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() 
         ) doReturn fakeImageWireframe
 
         // When
-        testedMapper.map(mockSemanticsNode, fakeUiContext, mockAsyncJobStatusCallback)
+        testedMapper.map(mockSemanticsNode, fakeUiContext, mockAsyncJobStatusCallback, mockInternalLogger)
 
         // Then
         verify(mockImageWireframeHelper).createImageWireframeByBitmap(

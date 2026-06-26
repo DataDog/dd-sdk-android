@@ -9,6 +9,8 @@ package com.datadog.android.flags.openfeature.internal.adapters
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionDetails
+import dev.openfeature.kotlin.sdk.Builder
+import dev.openfeature.kotlin.sdk.EvaluationMetadata
 import dev.openfeature.kotlin.sdk.ProviderEvaluation
 import dev.openfeature.kotlin.sdk.EvaluationContext as OpenFeatureEvaluationContext
 import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
@@ -38,8 +40,23 @@ internal fun <T : Any> ResolutionDetails<T>.toProviderEvaluation(): ProviderEval
     variant = this.variant,
     reason = this.reason?.name,
     errorCode = this.errorCode?.toOpenFeatureErrorCode(),
-    errorMessage = this.errorMessage
+    errorMessage = this.errorMessage,
+    metadata = this.flagMetadata.toEvaluationMetadata()
 )
+
+private fun Map<String, Any>.toEvaluationMetadata(): EvaluationMetadata {
+    val builder = Builder()
+    forEach { (key, value) ->
+        when (value) {
+            is String -> builder.putString(key, value)
+            is Boolean -> builder.putBoolean(key, value)
+            is Int -> builder.putInt(key, value)
+            is Double -> builder.putDouble(key, value)
+            else -> builder.putString(key, value.toString())
+        }
+    }
+    return builder.build()
+}
 
 /**
  * Converts a Datadog [ErrorCode] to an OpenFeature [ErrorCode].
@@ -47,10 +64,13 @@ internal fun <T : Any> ResolutionDetails<T>.toProviderEvaluation(): ProviderEval
 internal fun ErrorCode.toOpenFeatureErrorCode(): OpenFeatureErrorCode = when (this) {
     ErrorCode.PROVIDER_NOT_READY ->
         OpenFeatureErrorCode.PROVIDER_NOT_READY
+
     ErrorCode.FLAG_NOT_FOUND ->
         OpenFeatureErrorCode.FLAG_NOT_FOUND
+
     ErrorCode.PARSE_ERROR ->
         OpenFeatureErrorCode.PARSE_ERROR
+
     ErrorCode.TYPE_MISMATCH ->
         OpenFeatureErrorCode.TYPE_MISMATCH
 }

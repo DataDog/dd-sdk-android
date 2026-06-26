@@ -29,6 +29,7 @@ import com.datadog.android.core.internal.privacy.TrackingConsentProvider
 import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvider
 import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
 import com.datadog.android.core.internal.thread.BackPressuredBlockingQueue
+import com.datadog.android.core.internal.thread.BroadcastReceiverThread
 import com.datadog.android.core.internal.time.AppStartTimeProvider
 import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.user.DatadogUserInfoProvider
@@ -82,6 +83,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.isA
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -231,7 +233,7 @@ internal class CoreFeatureTest {
         // Then
         argumentCaptor<BroadcastReceiver> {
             verify(appContext.mockInstance, atLeastOnce())
-                .registerReceiver(capture(), any())
+                .registerReceiver(capture(), any(), isNull(), any())
 
             assertThat(allValues)
                 .containsInstanceOf(BroadcastReceiverSystemInfoProvider::class.java)
@@ -256,7 +258,7 @@ internal class CoreFeatureTest {
         // Then
         argumentCaptor<BroadcastReceiver> {
             verify(appContext.mockInstance, atLeastOnce())
-                .registerReceiver(capture(), any())
+                .registerReceiver(capture(), any(), isNull(), any())
 
             assertThat(allValues)
                 .containsInstanceOf(BroadcastReceiverSystemInfoProvider::class.java)
@@ -1572,6 +1574,41 @@ internal class CoreFeatureTest {
             verify(mockContextExecutor).shutdown()
             verify(mockContextExecutor).awaitTermination(10, TimeUnit.SECONDS)
         }
+    }
+
+    @Test
+    fun `M create broadcastReceiverThread W initialize()`() {
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then — verify the wrapper is initialized (lateinit would throw if not)
+        assertThat(testedFeature.broadcastReceiverThread).isNotNull()
+    }
+
+    @Test
+    fun `M shutdown broadcastReceiverThread W stop()`() {
+        // Given
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+        val mockBroadcastReceiverThread = mock<BroadcastReceiverThread>()
+        // Shut down the real thread before swapping in the mock to avoid leaking a HandlerThread
+        testedFeature.broadcastReceiverThread.quitSafely()
+        testedFeature.broadcastReceiverThread = mockBroadcastReceiverThread
+
+        // When
+        testedFeature.stop()
+
+        // Then
+        verify(mockBroadcastReceiverThread).quitSafely()
     }
 
     // endregion

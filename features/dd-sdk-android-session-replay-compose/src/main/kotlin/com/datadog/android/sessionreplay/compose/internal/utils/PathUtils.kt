@@ -9,16 +9,15 @@ package com.datadog.android.sessionreplay.compose.internal.utils
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asAndroidPath
 import com.datadog.android.api.InternalLogger
+import android.graphics.Path as AndroidPath
 
-internal class PathUtils(
-    private val logger: InternalLogger
-) {
-    internal fun asAndroidPathSafe(path: Path): android.graphics.Path? {
+internal class PathUtils {
+    internal fun asAndroidPathSafe(path: Path, internalLogger: InternalLogger): AndroidPath? {
         return try {
             @Suppress("UnsafeThirdPartyFunctionCall") // handling UnsupportedOperationException
             path.asAndroidPath()
         } catch (e: UnsupportedOperationException) {
-            logger.log(
+            internalLogger.log(
                 target = InternalLogger.Target.MAINTAINER,
                 level = InternalLogger.Level.WARN,
                 messageBuilder = { PATH_CONVERSION_ERROR },

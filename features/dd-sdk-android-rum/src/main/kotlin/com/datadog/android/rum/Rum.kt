@@ -137,6 +137,7 @@ object Rum {
         return DatadogRumMonitor(
             applicationId = rumFeature.applicationId,
             sdkCore = sdkCore,
+            appPackageName = rumFeature.appContext.packageName,
             sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
             sessionSampler = sessionSampler,
             writer = rumFeature.dataWriter,
@@ -171,7 +172,8 @@ object Rum {
                     rumAppStartupTelemetryReporter = rumAppStartupTelemetryReporter
                 )
             },
-            insightsCollector = rumFeature.insightsCollector
+            insightsCollector = rumFeature.insightsCollector,
+            heatmapIdentifierRegistry = rumFeature.heatmapIdentifierRegistry
         )
     }
 
