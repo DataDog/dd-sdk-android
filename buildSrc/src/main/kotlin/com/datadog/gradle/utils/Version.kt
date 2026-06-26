@@ -40,7 +40,7 @@ data class Version(
         }
 
         object Snapshot : Type() {
-            override val suffix: String = "-profiling-rc6-SNAPSHOT"
+            override val suffix: String = "-profiling-rc7-SNAPSHOT"
         }
     }
 
