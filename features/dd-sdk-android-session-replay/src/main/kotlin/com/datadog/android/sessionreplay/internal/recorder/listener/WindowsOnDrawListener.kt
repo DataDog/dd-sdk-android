@@ -21,6 +21,7 @@ import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.internal.recorder.withinSRBenchmarkSpan
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
+import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import java.lang.ref.WeakReference
 
 internal class WindowsOnDrawListener(
@@ -37,7 +38,8 @@ internal class WindowsOnDrawListener(
         sdkCore = sdkCore,
         dynamicOptimizationEnabled = dynamicOptimizationEnabled
     ),
-    private val methodCallSamplingRate: Float
+    private val methodCallSamplingRate: Float,
+    private val rumContextProvider: RumContextProvider
 ) : ViewTreeObserver.OnDrawListener {
 
     internal val weakReferencedDecorViews: List<WeakReference<View>> = zOrderedDecorViews.map { WeakReference(it) }
@@ -59,6 +61,8 @@ internal class WindowsOnDrawListener(
             val systemInformation = miscUtils.resolveSystemInformation(context)
             val item = recordedDataQueueHandler.addSnapshotItem(systemInformation) ?: return
 
+            val currentViewUrl = rumContextProvider.getRumContext().viewUrl
+
             val nodes = sdkCore.internalLogger.measureMethodCallPerf(
                 METHOD_CALL_CALLER_CLASS,
                 METHOD_CALL_CAPTURE_RECORD,
@@ -73,7 +77,8 @@ internal class WindowsOnDrawListener(
                             systemInformation = systemInformation,
                             textAndInputPrivacy = textAndInputPrivacy,
                             imagePrivacy = imagePrivacy,
-                            recordedDataQueueRefs = recordedDataQueueRefs
+                            recordedDataQueueRefs = recordedDataQueueRefs,
+                            activeRumViewUrl = currentViewUrl
                         )
                     }
                 }

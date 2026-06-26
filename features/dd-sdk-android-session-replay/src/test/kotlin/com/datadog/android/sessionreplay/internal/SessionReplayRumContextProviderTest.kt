@@ -10,8 +10,10 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.NULL_UUID
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -34,9 +36,41 @@ internal class SessionReplayRumContextProviderTest {
         @Forgery fakeApplicationId: UUID,
         @Forgery fakeSessionId: UUID,
         @Forgery fakeViewId: UUID,
-        @LongForgery(min = 0L) fakeViewTimeOffsetMs: Long
+        @LongForgery(min = 0L) fakeViewTimeOffsetMs: Long,
+        @StringForgery fakeViewUrl: String
     ) {
         // Given
+        testedSessionReplayContextProvider.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(
+                "application_id" to fakeApplicationId.toString(),
+                "session_id" to fakeSessionId.toString(),
+                "view_id" to fakeViewId.toString(),
+                "view_timestamp_offset" to fakeViewTimeOffsetMs,
+                "view_url" to fakeViewUrl
+            )
+        )
+
+        // When
+        val context = testedSessionReplayContextProvider.getRumContext()
+
+        // Then
+        assertThat(context.applicationId).isEqualTo(fakeApplicationId.toString())
+        assertThat(context.sessionId).isEqualTo(fakeSessionId.toString())
+        assertThat(context.viewId).isEqualTo(fakeViewId.toString())
+        assertThat(context.viewTimeOffsetMs).isEqualTo(fakeViewTimeOffsetMs)
+        assertThat(context.viewUrl).isEqualTo(fakeViewUrl)
+    }
+
+    @Test
+    fun `M provide null viewUrl W getRumContext() { view_url missing from RUM context }`(
+        @Forgery fakeApplicationId: UUID,
+        @Forgery fakeSessionId: UUID,
+        @Forgery fakeViewId: UUID,
+        @LongForgery(min = 0L) fakeViewTimeOffsetMs: Long
+    ) {
+        // Given — RUM context update that does NOT include view_url (mirrors the case where
+        // no RUM view is active yet).
         testedSessionReplayContextProvider.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
             mapOf(
@@ -51,10 +85,35 @@ internal class SessionReplayRumContextProviderTest {
         val context = testedSessionReplayContextProvider.getRumContext()
 
         // Then
-        assertThat(context.applicationId).isEqualTo(fakeApplicationId.toString())
-        assertThat(context.sessionId).isEqualTo(fakeSessionId.toString())
-        assertThat(context.viewId).isEqualTo(fakeViewId.toString())
-        assertThat(context.viewTimeOffsetMs).isEqualTo(fakeViewTimeOffsetMs)
+        assertThat(context.viewUrl).isNull()
+    }
+
+    @Test
+    fun `M provide null viewUrl W getRumContext() { view_url is not a String }`(
+        forge: Forge,
+        @Forgery fakeApplicationId: UUID,
+        @Forgery fakeSessionId: UUID,
+        @Forgery fakeViewId: UUID,
+        @LongForgery(min = 0L) fakeViewTimeOffsetMs: Long
+    ) {
+        // Given — view_url present but wrong type. We expect a silent null rather than a crash
+        // because SR cannot rely on the structure of someone else's feature context.
+        testedSessionReplayContextProvider.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(
+                "application_id" to fakeApplicationId.toString(),
+                "session_id" to fakeSessionId.toString(),
+                "view_id" to fakeViewId.toString(),
+                "view_timestamp_offset" to fakeViewTimeOffsetMs,
+                "view_url" to forge.anInt()
+            )
+        )
+
+        // When
+        val context = testedSessionReplayContextProvider.getRumContext()
+
+        // Then
+        assertThat(context.viewUrl).isNull()
     }
 
     @RepeatedTest(10)

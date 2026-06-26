@@ -74,25 +74,23 @@ internal class RumTest {
         @StringForgery fakePackageName: String,
         @Forgery fakeRumConfiguration: RumConfiguration
     ) {
+        val mockApplication = mock<Application> {
+            whenever(it.packageName) doReturn fakePackageName
+            whenever(it.resources) doReturn mock()
+            whenever(it.contentResolver) doReturn mock()
+            whenever(it.resources.configuration) doReturn mock()
+        }
+        whenever(mockApplication.applicationContext) doReturn mockApplication
+        whenever(mockSdkCore.registerFeature(any())) doAnswer {
+            it.getArgument<RumFeature>(0).onInitialize(appContext = mockApplication)
+        }
+
         // When
         Rum.enable(fakeRumConfiguration, mockSdkCore)
 
         // Then
         argumentCaptor<RumFeature> {
             verify(mockSdkCore).registerFeature(capture())
-
-            val mockApplication = mock<Application> {
-                whenever(it.packageName) doReturn fakePackageName
-                whenever(it.resources) doReturn mock()
-                whenever(it.contentResolver) doReturn mock()
-                whenever(it.resources.configuration) doReturn mock()
-            }
-
-            whenever(mockApplication.applicationContext) doReturn mockApplication
-
-            lastValue.onInitialize(
-                appContext = mockApplication
-            )
             assertThat(lastValue.sampleRate)
                 .isEqualTo(fakeRumConfiguration.featureConfiguration.sampleRate)
             assertThat(lastValue.telemetrySampleRate)
@@ -182,6 +180,7 @@ internal class RumTest {
             .isSameAs(fakeRumConfiguration.featureConfiguration.initialResourceIdentifier)
         assertThat(rumApplicationScope.lastInteractionIdentifier)
             .isSameAs(fakeRumConfiguration.featureConfiguration.lastInteractionIdentifier)
+        assertThat(monitor.appPackageName).isEqualTo(fakePackageName)
     }
 
     @Test

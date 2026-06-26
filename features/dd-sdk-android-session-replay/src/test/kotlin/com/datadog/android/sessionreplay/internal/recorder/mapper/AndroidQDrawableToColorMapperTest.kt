@@ -8,10 +8,10 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 //noinspection SuspiciousImport
 import android.graphics.BlendModeColorFilter
+import android.graphics.ColorFilter
 import android.graphics.Paint
 import android.graphics.drawable.GradientDrawable
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.mapper.AndroidMDrawableToColorMapper.Companion.fillPaintField
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -38,8 +38,10 @@ import org.mockito.quality.Strictness
 class AndroidQDrawableToColorMapperTest : AndroidMDrawableToColorMapperTest() {
 
     override fun createTestedMapper(): DrawableToColorMapper {
-        return AndroidQDrawableToColorMapper()
+        return TestableQMapper()
     }
+
+    private val testableMapper get() = testedMapper as TestableQMapper
 
     @Test
     fun `M map GradientDrawable to fill paint's color blend color W mapDrawableToColor()`(
@@ -55,17 +57,11 @@ class AndroidQDrawableToColorMapperTest : AndroidMDrawableToColorMapperTest() {
             whenever(this.color) doReturn blendColor
             whenever(this.mode) doReturn blendMode
         }
-        val baseColor = fillPaintColor and 0xFFFFFF
         val baseAlpha = (fillPaintColor.toLong() and 0xFF000000) shr 24
         assumeTrue(baseAlpha != 0L)
-        val mockFillPaint = mock<Paint>().apply {
-            whenever(this.color) doReturn baseColor
-            whenever(this.alpha) doReturn baseAlpha.toInt()
-            whenever(this.colorFilter) doReturn mockColorFilter
-        }
-        val gradientDrawable = GradientDrawable().apply {
-            fillPaintField?.set(this, mockFillPaint)
-        }
+        testableMapper.fakeResolvedColor = fillPaintColor
+        testableMapper.fakeColorFilter = mockColorFilter
+        val gradientDrawable = GradientDrawable()
 
         // When
         val result = testedMapper.mapDrawableToColor(gradientDrawable, mockInternalLogger)
@@ -87,16 +83,9 @@ class AndroidQDrawableToColorMapperTest : AndroidMDrawableToColorMapperTest() {
             whenever(this.color) doReturn blendColor
             whenever(this.mode) doReturn blendMode
         }
-        val baseColor = fillPaintColor and 0xFFFFFF
-        val baseAlpha = 0L
-        val mockFillPaint = mock<Paint>().apply {
-            whenever(this.color) doReturn baseColor
-            whenever(this.alpha) doReturn baseAlpha.toInt()
-            whenever(this.colorFilter) doReturn mockColorFilter
-        }
-        val gradientDrawable = GradientDrawable().apply {
-            fillPaintField?.set(this, mockFillPaint)
-        }
+        testableMapper.fakeResolvedColor = fillPaintColor and 0x00FFFFFF // alpha = 0
+        testableMapper.fakeColorFilter = mockColorFilter
+        val gradientDrawable = GradientDrawable()
 
         // When
         val result = testedMapper.mapDrawableToColor(gradientDrawable, mockInternalLogger)
@@ -118,17 +107,11 @@ class AndroidQDrawableToColorMapperTest : AndroidMDrawableToColorMapperTest() {
             whenever(this.color) doReturn blendColor
             whenever(this.mode) doReturn blendMode
         }
-        val baseColor = fillPaintColor and 0xFFFFFF
         val baseAlpha = (fillPaintColor.toLong() and 0xFF000000) shr 24
         assumeTrue(baseAlpha != 0L)
-        val mockFillPaint = mock<Paint>().apply {
-            whenever(this.color) doReturn baseColor
-            whenever(this.alpha) doReturn baseAlpha.toInt()
-            whenever(this.colorFilter) doReturn mockColorFilter
-        }
-        val gradientDrawable = GradientDrawable().apply {
-            fillPaintField?.set(this, mockFillPaint)
-        }
+        testableMapper.fakeResolvedColor = fillPaintColor
+        testableMapper.fakeColorFilter = mockColorFilter
+        val gradientDrawable = GradientDrawable()
 
         // When
         val result = testedMapper.mapDrawableToColor(gradientDrawable, mockInternalLogger)
@@ -150,21 +133,66 @@ class AndroidQDrawableToColorMapperTest : AndroidMDrawableToColorMapperTest() {
             whenever(this.color) doReturn blendColor
             whenever(this.mode) doReturn blendMode
         }
-        val baseColor = fillPaintColor and 0xFFFFFF
-        val baseAlpha = 0L
-        val mockFillPaint = mock<Paint>().apply {
-            whenever(this.color) doReturn baseColor
-            whenever(this.alpha) doReturn baseAlpha.toInt()
-            whenever(this.colorFilter) doReturn mockColorFilter
-        }
-        val gradientDrawable = GradientDrawable().apply {
-            fillPaintField?.set(this, mockFillPaint)
-        }
+        testableMapper.fakeResolvedColor = fillPaintColor and 0x00FFFFFF // alpha = 0
+        testableMapper.fakeColorFilter = mockColorFilter
+        val gradientDrawable = GradientDrawable()
 
         // When
         val result = testedMapper.mapDrawableToColor(gradientDrawable, mockInternalLogger)
 
         // Then
         assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return null W mapDrawableToColor {no accessible color filter}`(
+        @IntForgery fillColor: Int
+    ) {
+        // When drawable.colorFilter is null (e.g. tint applied via DrawableCompat.setTintList,
+        // which stores it in the blocked private Drawable.mTintFilter on API 28+), the mapper
+        // returns null so the image wireframe path captures the actual tinted appearance.
+        val baseAlpha = (fillColor.toLong() and 0xFF000000) shr 24
+        assumeTrue(baseAlpha != 0L)
+        testableMapper.fakeResolvedColor = fillColor
+        testableMapper.fakeColorFilter = null
+        val gradientDrawable = GradientDrawable()
+
+        val result = testedMapper.mapDrawableToColor(gradientDrawable, mockInternalLogger)
+
+        assertThat(result).isNull()
+    }
+
+    @Test
+    override fun `M map GradientDrawable to fill paint's color W mapDrawableToColor()`(
+        @IntForgery drawableColor: Int
+    ) {
+        // On Q+, when no color filter is accessible (drawable.colorFilter is null), the mapper
+        // returns null regardless of the fill color so the image wireframe path is used instead.
+        val baseAlpha = (drawableColor.toLong() and 0xFF000000) shr 24
+        assumeTrue(baseAlpha != 0L)
+        val mockFillPaint = mock<Paint>().apply {
+            whenever(this.color) doReturn (drawableColor and 0xFFFFFF)
+            whenever(this.alpha) doReturn baseAlpha.toInt()
+        }
+        val gradientDrawable = GradientDrawable().apply {
+            AndroidMDrawableToColorMapper.fillPaintField?.set(this, mockFillPaint)
+        }
+
+        val result = testedMapper.mapDrawableToColor(gradientDrawable, mockInternalLogger)
+
+        assertThat(result).isNull()
+    }
+
+    // Seam to avoid calling API 24+ methods on the test JVM; falls back to parent-injected fillPaintField when fakeResolvedColor is null.
+    private class TestableQMapper : AndroidQDrawableToColorMapper() {
+        var fakeResolvedColor: Int? = null
+        var fakeColorFilter: ColorFilter? = null
+
+        override fun resolveGradientFillColor(drawable: GradientDrawable): Int? {
+            val fillPaint = fillPaintField?.get(drawable) as? Paint
+            return fakeResolvedColor ?: fillPaint?.let { (it.alpha shl 24) or (it.color and 0xFFFFFF) }
+        }
+
+        override fun resolveGradientColorFilter(drawable: GradientDrawable): ColorFilter? = fakeColorFilter
     }
 }

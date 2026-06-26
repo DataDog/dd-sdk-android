@@ -12,6 +12,7 @@ import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Handler
 import android.os.Process
 import androidx.annotation.RequiresApi
 import androidx.annotation.WorkerThread
@@ -59,6 +60,7 @@ import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.thread.BackPressureExecutorService
 import com.datadog.android.core.internal.thread.BackPressuredBlockingQueue
+import com.datadog.android.core.internal.thread.BroadcastReceiverThread
 import com.datadog.android.core.internal.thread.DatadogThreadFactory
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.thread.ScheduledExecutorServiceFactory
@@ -201,6 +203,7 @@ internal class CoreFeature(
     internal lateinit var uploadExecutorService: ScheduledThreadPoolExecutor
     internal lateinit var persistenceExecutorService: FlushableExecutorService
     internal lateinit var contextExecutorService: ThreadPoolExecutor
+    internal lateinit var broadcastReceiverThread: BroadcastReceiverThread
     internal lateinit var backpressureStrategy: BackPressureStrategy
 
     internal var localDataEncryption: Encryption? = null
@@ -589,15 +592,17 @@ internal class CoreFeature(
         // Tracking Consent Provider
         trackingConsentProvider = TrackingConsentProvider(consent)
 
+        val broadcastReceiverHandler = Handler(broadcastReceiverThread.looper)
+
         // System Info Provider
         systemInfoProvider = BroadcastReceiverSystemInfoProvider(
             internalLogger = internalLogger,
-            executorService = contextExecutorService
+            handler = broadcastReceiverHandler
         )
         systemInfoProvider.register(appContext)
 
         // Network Info Provider
-        setupNetworkInfoProviders(appContext)
+        setupNetworkInfoProviders(appContext, broadcastReceiverHandler)
 
         // User Info Provider
         userInfoProvider = DatadogUserInfoProvider()
@@ -606,7 +611,7 @@ internal class CoreFeature(
         accountInfoProvider = DatadogAccountInfoProvider(internalLogger)
     }
 
-    private fun setupNetworkInfoProviders(appContext: Context) {
+    private fun setupNetworkInfoProviders(appContext: Context, broadcastReceiverHandler: Handler) {
         networkInfoProvider = if (buildSdkVersionProvider.isAtLeastN) {
             CallbackNetworkInfoProvider(
                 internalLogger = internalLogger,
@@ -615,7 +620,7 @@ internal class CoreFeature(
         } else {
             BroadcastReceiverNetworkInfoProvider(
                 internalLogger = internalLogger,
-                executorService = contextExecutorService,
+                handler = broadcastReceiverHandler,
                 buildSdkVersionProvider = buildSdkVersionProvider
             )
         }
@@ -688,6 +693,9 @@ internal class CoreFeature(
             contextQueue,
             DatadogThreadFactory("context")
         )
+        broadcastReceiverThread = BroadcastReceiverThread()
+        @Suppress("UnsafeThirdPartyFunctionCall") // constructed once; start() is called exactly once here
+        broadcastReceiverThread.start()
     }
 
     private fun resolveProcessInfo(appContext: Context) {
@@ -718,6 +726,7 @@ internal class CoreFeature(
         uploadExecutorService.shutdownNow()
         contextExecutorService.shutdownNow()
         persistenceExecutorService.shutdownNow()
+        broadcastReceiverThread.quitSafely()
 
         try {
             uploadExecutorService.awaitTermination(1, TimeUnit.SECONDS)
