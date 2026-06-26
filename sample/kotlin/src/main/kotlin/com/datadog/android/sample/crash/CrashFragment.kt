@@ -18,6 +18,7 @@ import androidx.appcompat.widget.AppCompatSpinner
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.sample.R
+import java.util.Locale
 
 @Suppress("MagicNumber")
 internal class CrashFragment :
@@ -82,7 +83,7 @@ internal class CrashFragment :
 
     private fun triggerCrash(): Int {
         val className = javaClass.simpleName
-        val i = className.length - className.toUpperCase().length
+        val i = className.length - className.uppercase(Locale.US).length
         return className.length / i
     }
 

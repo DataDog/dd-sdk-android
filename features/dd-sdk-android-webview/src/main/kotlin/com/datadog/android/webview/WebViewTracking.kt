@@ -285,7 +285,7 @@ object WebViewTracking {
     internal const val SESSION_REPLAY_TOUCH_PRIVACY_KEY = "session_replay_touch_privacy"
 
     internal const val JAVA_SCRIPT_NOT_ENABLED_WARNING_MESSAGE =
-        "You are trying to enable the WebView" +
+        "You are trying to enable the WebView " +
             "tracking but the java script capability was not enabled for the given WebView."
     internal const val DATADOG_EVENT_BRIDGE_NAME = "DatadogEventBridge"
 

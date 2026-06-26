@@ -130,18 +130,27 @@ fun Project.detektCustomConfig() {
         args("-ex", "**/*.kts")
         args("--jvm-target", "11")
 
+        // Resolve project paths at configuration time (config-cache friendly), but defer all
+        // detekt_classpath file I/O to execution time. The file is produced by the
+        // printDetektClasspath task, so it may not exist when this task is configured (e.g. while
+        // computing the task graph for assembleLibrariesRelease). Reading it here would fail task
+        // creation and break the whole build.
         val moduleDependencies = collectTransitiveProjectDependencies(project)
+        val rootDirPath = rootDir.absolutePath
+        val detektClasspathFile = File("${projectDir.absolutePath}/detekt_classpath")
 
         doFirst {
-            val externalDependencies = File("${projectDir.absolutePath}/detekt_classpath").readText()
+            val externalDependencies = detektClasspathFile.readText()
             val moduleDependenciesClasses = moduleDependencies.joinToString(":") {
-                "${rootDir.absolutePath}${it.replace(':', '/')}/build/extracted/classes.jar"
+                "$rootDirPath${it.replace(':', '/')}/build/extracted/classes.jar"
             }
+
             val dependencies = if (moduleDependenciesClasses.isBlank()) {
                 externalDependencies
             } else {
                 "$externalDependencies:$moduleDependenciesClasses"
             }
+
             args("-cp", dependencies)
         }
     }
