@@ -12,12 +12,13 @@ import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumVitalAppLaunchEventHelper
+import com.datadog.android.rum.internal.profiling.isProfilerRunning
+import com.datadog.android.rum.internal.profiling.resolveProfilingQuotaReason
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import kotlin.time.Duration.Companion.minutes
@@ -114,6 +115,7 @@ internal class RumSessionScopeStartupManagerImpl(
 
         ttidSentForSession = true
 
+        val profilingStatus = datadogContext.getProfilingStatus(rumContext.sessionId)
         val ttidEvent = rumVitalAppLaunchEventHelper.newVitalAppLaunchEvent(
             timestampMs = event.info.scenario.initialTime.timestamp + sdkCore.time.serverTimeOffsetMs,
             datadogContext = datadogContext,
@@ -124,7 +126,14 @@ internal class RumSessionScopeStartupManagerImpl(
             durationNs = event.info.durationNs,
             appLaunchMetric = VitalAppLaunchEvent.AppLaunchMetric.TTID,
             scenario = event.info.scenario,
-            profilingStatus = datadogContext.getProfilingStatus()
+            profilingStatus = profilingStatus,
+            // The quota reason is only meaningful when profiling is STOPPED; a running profiler
+            // must not carry a denial reason (mirrors the Error/LongTask path in RumViewScope).
+            profilingQuotaReason = if (profilingStatus == VitalAppLaunchEvent.ProfilingStatus.STOPPED) {
+                datadogContext.resolveProfilingQuotaReason(rumContext.sessionId)
+            } else {
+                null
+            }
         )
 
         sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
@@ -250,6 +259,7 @@ internal class RumSessionScopeStartupManagerImpl(
             return
         }
 
+        val profilingStatus = datadogContext.getProfilingStatus(rumContext.sessionId)
         val ttfdEvent = rumVitalAppLaunchEventHelper.newVitalAppLaunchEvent(
             timestampMs = scenario.initialTime.timestamp + sdkCore.time.serverTimeOffsetMs,
             datadogContext = datadogContext,
@@ -260,7 +270,14 @@ internal class RumSessionScopeStartupManagerImpl(
             durationNs = durationNs,
             appLaunchMetric = VitalAppLaunchEvent.AppLaunchMetric.TTFD,
             scenario = scenario,
-            profilingStatus = datadogContext.getProfilingStatus()
+            profilingStatus = profilingStatus,
+            // The quota reason is only meaningful when profiling is STOPPED; a running profiler
+            // must not carry a denial reason (mirrors the TTID and Error/LongTask paths).
+            profilingQuotaReason = if (profilingStatus == VitalAppLaunchEvent.ProfilingStatus.STOPPED) {
+                datadogContext.resolveProfilingQuotaReason(rumContext.sessionId)
+            } else {
+                null
+            }
         )
 
         sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
@@ -311,10 +328,12 @@ internal class RumSessionScopeStartupManagerImpl(
         }.submit()
     }
 
-    private fun DatadogContext.getProfilingStatus(): VitalAppLaunchEvent.ProfilingStatus? {
-        val isProfilerRunning = featuresContext[Feature.PROFILING_FEATURE_NAME]
-            ?.get(FeatureContextKeys.PROFILER_IS_RUNNING)
-        return if (isProfilerRunning == true) VitalAppLaunchEvent.ProfilingStatus.RUNNING else null
+    private fun DatadogContext.getProfilingStatus(
+        currentSessionId: String
+    ): VitalAppLaunchEvent.ProfilingStatus? = when {
+        isProfilerRunning() -> VitalAppLaunchEvent.ProfilingStatus.RUNNING
+        resolveProfilingQuotaReason(currentSessionId) != null -> VitalAppLaunchEvent.ProfilingStatus.STOPPED
+        else -> null
     }
 
     companion object {

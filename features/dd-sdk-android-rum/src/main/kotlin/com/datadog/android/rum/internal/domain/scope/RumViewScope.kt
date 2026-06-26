@@ -50,6 +50,8 @@ import com.datadog.android.rum.internal.metric.networksettled.InternalResourceCo
 import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.StorageEvent
+import com.datadog.android.rum.internal.profiling.isProfilerRunning
+import com.datadog.android.rum.internal.profiling.resolveProfilingQuotaReason
 import com.datadog.android.rum.internal.toError
 import com.datadog.android.rum.internal.toLongTask
 import com.datadog.android.rum.internal.toView
@@ -1404,7 +1406,8 @@ internal open class RumViewScope(
                     sessionSampleRate = sampleRate,
                     sessionReplaySampleRate = resolveSessionReplaySampleRate(datadogContext),
                     traceSampleRate = resolveTraceSampleRate(datadogContext)
-                )
+                ),
+                profiling = resolveViewProfilingStatus(datadogContext)
             ),
             connectivity = datadogContext.networkInfo.toViewConnectivity(),
             service = datadogContext.service,
@@ -1705,28 +1708,52 @@ internal open class RumViewScope(
     }
 
     private fun resolveErrorProfilingStatus(datadogContext: DatadogContext): ErrorEvent.Profiling? {
-        return if (resolveProfilingRunning(datadogContext)) {
-            ErrorEvent.Profiling(status = ErrorEvent.ProfilingStatus.RUNNING)
-        } else {
-            null
+        val isRunning = datadogContext.isProfilerRunning()
+        val quotaReason = datadogContext.resolveProfilingQuotaReason(sessionId)
+        val clockDrift = datadogContext.time.serverTimeOffsetMs
+        return when {
+            isRunning -> ErrorEvent.Profiling(
+                status = ErrorEvent.ProfilingStatus.RUNNING,
+                clockDrift = clockDrift
+            )
+            quotaReason != null -> ErrorEvent.Profiling(
+                status = ErrorEvent.ProfilingStatus.STOPPED,
+                quotaReason = quotaReason
+            )
+            else -> null
         }
     }
 
     private fun resolveLongTaskProfilingStatus(datadogContext: DatadogContext): LongTaskEvent.Profiling? {
-        return if (resolveProfilingRunning(datadogContext)) {
-            LongTaskEvent.Profiling(status = LongTaskEvent.ProfilingStatus.RUNNING)
-        } else {
-            null
+        val isRunning = datadogContext.isProfilerRunning()
+        val quotaReason = datadogContext.resolveProfilingQuotaReason(sessionId)
+        val clockDrift = datadogContext.time.serverTimeOffsetMs
+        return when {
+            isRunning -> LongTaskEvent.Profiling(
+                status = LongTaskEvent.ProfilingStatus.RUNNING,
+                clockDrift = clockDrift
+            )
+
+            quotaReason != null -> LongTaskEvent.Profiling(
+                status = LongTaskEvent.ProfilingStatus.STOPPED,
+                quotaReason = quotaReason
+            )
+
+            else -> null
         }
     }
 
-    private fun resolveProfilingRunning(datadogContext: DatadogContext): Boolean {
-        val profilingFeature = sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)
-        return profilingFeature?.let {
-            datadogContext.featuresContext[Feature.PROFILING_FEATURE_NAME]?.get(
-                FeatureContextKeys.PROFILER_IS_RUNNING
-            ) == true
-        } ?: false
+    private fun resolveViewProfilingStatus(datadogContext: DatadogContext): ViewEvent.Profiling? {
+        val isRunning = datadogContext.isProfilerRunning()
+        val quotaReason = datadogContext.resolveProfilingQuotaReason(sessionId)
+        return when {
+            isRunning -> ViewEvent.Profiling(status = ViewEvent.ProfilingStatus.RUNNING)
+            quotaReason != null -> ViewEvent.Profiling(
+                status = ViewEvent.ProfilingStatus.STOPPED,
+                quotaReason = quotaReason
+            )
+            else -> null
+        }
     }
 
     private fun logSynthetics(key: String, value: String) {
