@@ -21,6 +21,7 @@ import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.bundling.Zip
 import org.gradle.kotlin.dsl.findByType
 import org.gradle.kotlin.dsl.register
 import java.io.File
@@ -107,7 +108,8 @@ fun Project.detektCustomConfig() {
         }
 
     tasks.register<Copy>("unzipAarForDetekt") {
-        from(zipTree(layout.buildDirectory.file("outputs/aar/${project.name}-release.aar")))
+        val aarFile = tasks.named<Zip>("bundleReleaseAar", Zip::class.java).flatMap { it.archiveFile }
+        from(zipTree(aarFile))
         into(layout.buildDirectory.dir("extracted"))
     }
 

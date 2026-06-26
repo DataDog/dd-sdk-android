@@ -198,7 +198,8 @@ if [[ $ANALYSIS == 1 ]]; then
   if [[ $COMPILE == 1 ]]; then
     # Assemble is required to get generated classes type resolution
     echo "------ Assemble Libraries & Build Detekt custom rules"
-    ./gradlew assembleLibrariesDebug printSdkDebugRuntimeClasspath :tools:detekt:jar
+    ./gradlew assembleLibrariesDebug :tools:detekt:jar
+    ./gradlew printSdkDebugRuntimeClasspath --no-parallel
     classpath=$(cat sdk_classpath)
 
     # TODO RUM-628 Switch to Java 17 bytecode
