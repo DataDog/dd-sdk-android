@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder.callback
 import android.content.Context
 import android.graphics.Point
 import android.view.MotionEvent
+import android.view.View
 import android.view.Window
 import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
@@ -21,6 +22,7 @@ import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
 import com.datadog.android.sessionreplay.internal.recorder.WindowInspector
+import com.datadog.android.sessionreplay.internal.recorder.WindowReflectionUtils
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.model.MobileSegment
 import java.util.LinkedList
@@ -45,8 +47,10 @@ internal class RecorderWindowCallback(
     private val motionEventUtils: MotionEventUtils = MotionEventUtils,
     private val motionUpdateThresholdInNs: Long = MOTION_UPDATE_DELAY_THRESHOLD_NS,
     private val flushPositionBufferThresholdInNs: Long = FLUSH_BUFFER_THRESHOLD_NS,
-    private val windowInspector: WindowInspector = WindowInspector
+    private val windowInspector: WindowInspector = WindowInspector,
+    private val windowFromDecorView: (View) -> Window? = { WindowReflectionUtils.getWindowFromDecorView(it) }
 ) : FixedWindowCallback(wrappedCallback) {
+    private val appContext: Context = appContext
     private val pixelsDensity = appContext.resources.displayMetrics.density
     internal val pointerInteractions: MutableList<MobileSegment.MobileRecord> = LinkedList()
     private var lastOnMoveUpdateTimeInNs: Long = 0L
@@ -102,6 +106,7 @@ internal class RecorderWindowCallback(
                 textAndInputPrivacy = privacy,
                 imagePrivacy = imagePrivacy
             )
+            installCallbackOnNewWindows(rootViews)
         }
         super.onWindowFocusChanged(hasFocus)
     }
@@ -109,6 +114,51 @@ internal class RecorderWindowCallback(
     // endregion
 
     // region Internal
+
+    private fun installCallbackOnNewWindows(rootViews: List<View>) {
+        rootViews.forEach { decorView ->
+            // Skip zero-size windows (NavHost scaffolding) — installing on them causes spurious
+            // stopIntercepting() calls that drop frames on every navigation event.
+            if (decorView.width == 0 || decorView.height == 0) return@forEach
+            val window = windowFromDecorView(decorView)
+            if (window == null) {
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.MAINTAINER,
+                    {
+                        WINDOW_FROM_DECOR_VIEW_ERROR_MESSAGE_PREFIX +
+                            decorView.javaClass.name +
+                            WINDOW_FROM_DECOR_VIEW_ERROR_MESSAGE_SUFFIX
+                    },
+                    onlyOnce = true
+                )
+                return@forEach
+            }
+            if (window.callback !is RecorderWindowCallback) {
+                // Post so the dialog's own onWindowFocusChanged(true) fires first,
+                // ensuring the new callback starts in a steady recording state.
+                decorView.post {
+                    if (window.callback !is RecorderWindowCallback) {
+                        val toWrap = window.callback ?: NoOpWindowCallback()
+                        window.callback = RecorderWindowCallback(
+                            appContext = appContext,
+                            recordedDataQueueHandler = recordedDataQueueHandler,
+                            wrappedCallback = toWrap,
+                            timeProvider = timeProvider,
+                            rumContextProvider = rumContextProvider,
+                            viewOnDrawInterceptor = viewOnDrawInterceptor,
+                            internalLogger = internalLogger,
+                            privacy = privacy,
+                            imagePrivacy = imagePrivacy,
+                            touchPrivacyManager = touchPrivacyManager,
+                            windowInspector = windowInspector,
+                            windowFromDecorView = windowFromDecorView
+                        )
+                    }
+                }
+            }
+        }
+    }
 
     @MainThread
     private fun handleEvent(event: MotionEvent) {
@@ -215,5 +265,9 @@ internal class RecorderWindowCallback(
             "RecorderWindowCallback: intercepted null motion event"
         internal const val FAIL_TO_PROCESS_MOTION_EVENT_ERROR_MESSAGE =
             "RecorderWindowCallback: wrapped callback failed to handle the motion event"
+        internal const val WINDOW_FROM_DECOR_VIEW_ERROR_MESSAGE_PREFIX =
+            "SR: failed to get Window from "
+        internal const val WINDOW_FROM_DECOR_VIEW_ERROR_MESSAGE_SUFFIX =
+            " via reflection — Compose dialog {} destination may not be recorded"
     }
 }

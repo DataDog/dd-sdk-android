@@ -410,6 +410,7 @@ datadog:
       - "java.util.zip.Deflater.setInput(kotlin.ByteArray?)"
       # endregion
       # region Kotlin Stdlib
+      - "kotlin.Float.isNaN()"
       - "kotlin.lazy(kotlin.Function0)"
       - "kotlin.lazy(kotlin.LazyThreadSafetyMode, kotlin.Function0)"
       - "kotlin.repeat(kotlin.Int, kotlin.Function1)"
