@@ -640,6 +640,34 @@ internal class SemanticsUtilsTest {
     }
 
     @Test
+    fun `M use default font size W resolveTextLayoutInfo {fontSize is Unspecified}`(forge: Forge) {
+        // Given
+        val testData = setupTextLayoutMocks(forge)
+        whenever(testData.textLayoutResult.layoutInput.style.fontSize) doReturn TextUnit.Unspecified
+
+        // When
+        val result = requireNotNull(testedSemanticsUtils.resolveTextLayoutInfo(mockSemanticsNode, mockInternalLogger))
+
+        // Then
+        assertThat(result.fontSize).isEqualTo(SemanticsUtils.DEFAULT_FONT_SIZE_SP)
+    }
+
+    @Test
+    fun `M use specified font size W resolveTextLayoutInfo {fontSize is valid Sp}`(forge: Forge) {
+        // Given
+        val fakeFontSizeSp = forge.aFloat(min = 1f, max = 500f)
+        val testData = setupTextLayoutMocks(forge)
+        whenever(testData.textLayoutResult.layoutInput.style.fontSize) doReturn
+            TextUnit(fakeFontSizeSp, TextUnitType.Sp)
+
+        // When
+        val result = requireNotNull(testedSemanticsUtils.resolveTextLayoutInfo(mockSemanticsNode, mockInternalLogger))
+
+        // Then
+        assertThat(result.fontSize).isEqualTo(fakeFontSizeSp.toLong())
+    }
+
+    @Test
     fun `M return backgroundInfo W resolveBackgroundInfo`(
         forge: Forge,
         @LongForgery(min = 17L) fakeColorValue: Long,
