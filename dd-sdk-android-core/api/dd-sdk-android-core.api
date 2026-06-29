@@ -773,7 +773,7 @@ public final class com/datadog/android/core/configuration/Configuration$Builder 
 public final class com/datadog/android/core/configuration/Configuration$Companion {
 }
 
-public final class com/datadog/android/core/configuration/HostPatternValidator {
+public final class com/datadog/android/core/configuration/HostPatternSanitizer {
 	public fun <init> (Lcom/datadog/android/api/InternalLogger;)V
 	public final fun validate (Ljava/util/List;Ljava/lang/String;)Ljava/util/List;
 }

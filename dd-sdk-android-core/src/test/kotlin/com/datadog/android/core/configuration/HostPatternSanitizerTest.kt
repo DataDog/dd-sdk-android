@@ -7,6 +7,7 @@
 package com.datadog.android.core.configuration
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -17,20 +18,16 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
 import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
-internal class HostPatternValidatorTest {
+internal class HostPatternSanitizerTest {
 
-    lateinit var testedValidator: HostPatternValidator
+    lateinit var testedValidator: HostPatternSanitizer
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -40,7 +37,7 @@ internal class HostPatternValidatorTest {
 
     @BeforeEach
     fun `set up`() {
-        testedValidator = HostPatternValidator(mockInternalLogger)
+        testedValidator = HostPatternSanitizer(mockInternalLogger)
     }
 
     @Test
@@ -53,6 +50,35 @@ internal class HostPatternValidatorTest {
 
         // Then
         assertThat(result).isEqualTo(patterns)
+    }
+
+    @Test
+    fun `M keep punycode IDN wildcard W validate { punycode domain }`() {
+        // xn--l1a4a.xn--p1ai is the Punycode form of a Russian .рф registrable domain.
+        val pattern = "*.xn--l1a4a.xn--p1ai"
+
+        // When
+        val result = testedValidator.validate(listOf(pattern), fakeFeature)
+
+        // Then
+        assertThat(result).containsExactly(pattern)
+    }
+
+    @Test
+    fun `M drop punycode TLD wildcard W validate { punycode TLD wildcard }`() {
+        // xn--p1ai is the Punycode TLD for .рф — too broad, same as *.com.
+        val pattern = "*.xn--p1ai"
+
+        // When
+        val result = testedValidator.validate(listOf(pattern), fakeFeature)
+
+        // Then
+        assertThat(result).isEmpty()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            HostPatternSanitizer.ERROR_WILDCARD_NOT_SUBDOMAIN.format(Locale.US, pattern, fakeFeature)
+        )
     }
 
     @Test
@@ -92,22 +118,11 @@ internal class HostPatternValidatorTest {
 
         // Then
         assertThat(result).isEmpty()
-        val expectedMessage = HostPatternValidator.ERROR_WILDCARD_NOT_SUBDOMAIN.format(
-            Locale.US,
-            pattern,
-            fakeFeature
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            HostPatternSanitizer.ERROR_WILDCARD_NOT_SUBDOMAIN.format(Locale.US, pattern, fakeFeature)
         )
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.USER),
-                capture(),
-                isNull(),
-                eq(false),
-                eq(null)
-            )
-            assertThat(firstValue()).isEqualTo(expectedMessage)
-        }
     }
 
     @Test
@@ -120,22 +135,11 @@ internal class HostPatternValidatorTest {
 
         // Then
         assertThat(result).isEmpty()
-        val expectedMessage = HostPatternValidator.ERROR_WILDCARD_NOT_SUBDOMAIN.format(
-            Locale.US,
-            pattern,
-            fakeFeature
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            HostPatternSanitizer.ERROR_WILDCARD_NOT_SUBDOMAIN.format(Locale.US, pattern, fakeFeature)
         )
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.USER),
-                capture(),
-                isNull(),
-                eq(false),
-                eq(null)
-            )
-            assertThat(firstValue()).isEqualTo(expectedMessage)
-        }
     }
 
     @Test
@@ -148,24 +152,13 @@ internal class HostPatternValidatorTest {
 
         // Then
         assertThat(result).isEmpty()
-        val expectedMessages = patterns.map {
-            HostPatternValidator.ERROR_WILDCARD_NOT_SUBDOMAIN.format(
-                Locale.US,
-                it,
-                fakeFeature
+        patterns.forEach { pattern ->
+            mockInternalLogger.verifyLog(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                HostPatternSanitizer.ERROR_WILDCARD_NOT_SUBDOMAIN.format(Locale.US, pattern, fakeFeature),
+                mode = times(patterns.size)
             )
-        }
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger, times(patterns.size)).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.USER),
-                capture(),
-                isNull(),
-                eq(false),
-                eq(null)
-            )
-            assertThat(allValues.map { it() })
-                .containsExactlyInAnyOrderElementsOf(expectedMessages)
         }
     }
 
@@ -181,22 +174,11 @@ internal class HostPatternValidatorTest {
 
         // Then
         assertThat(result).isEmpty()
-        val expectedMessage = HostPatternValidator.ERROR_WILDCARD_NOT_SUBDOMAIN.format(
-            Locale.US,
-            pattern,
-            fakeFeature
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            HostPatternSanitizer.ERROR_WILDCARD_NOT_SUBDOMAIN.format(Locale.US, pattern, fakeFeature)
         )
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.USER),
-                capture(),
-                isNull(),
-                eq(false),
-                eq(null)
-            )
-            assertThat(firstValue()).isEqualTo(expectedMessage)
-        }
     }
 
     @Test
@@ -230,22 +212,11 @@ internal class HostPatternValidatorTest {
 
         // Then
         assertThat(result).isEmpty()
-        val expectedMessage = HostPatternValidator.ERROR_MULTIPLE_WILDCARDS.format(
-            Locale.US,
-            pattern,
-            fakeFeature
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            HostPatternSanitizer.ERROR_MULTIPLE_WILDCARDS.format(Locale.US, pattern, fakeFeature)
         )
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.USER),
-                capture(),
-                isNull(),
-                eq(false),
-                eq(null)
-            )
-            assertThat(firstValue()).isEqualTo(expectedMessage)
-        }
     }
 
     @Test
@@ -258,20 +229,13 @@ internal class HostPatternValidatorTest {
 
         // Then
         assertThat(result).isEmpty()
-        val expectedMessages = patterns.map {
-            HostPatternValidator.ERROR_INVALID_CHARACTERS.format(Locale.US, it, fakeFeature)
-        }
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger, times(patterns.size)).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.USER),
-                capture(),
-                isNull(),
-                eq(false),
-                eq(null)
+        patterns.forEach { pattern ->
+            mockInternalLogger.verifyLog(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                HostPatternSanitizer.ERROR_INVALID_CHARACTERS.format(Locale.US, pattern, fakeFeature),
+                mode = times(patterns.size)
             )
-            assertThat(allValues.map { it() })
-                .containsExactlyInAnyOrderElementsOf(expectedMessages)
         }
     }
 
@@ -284,22 +248,11 @@ internal class HostPatternValidatorTest {
         testedValidator.validate(listOf(pattern), fakeFeature)
 
         // Then
-        val expectedMessage = HostPatternValidator.ERROR_INVALID_CHARACTERS.format(
-            Locale.US,
-            pattern,
-            fakeFeature
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            HostPatternSanitizer.ERROR_INVALID_CHARACTERS.format(Locale.US, pattern, fakeFeature)
         )
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.USER),
-                capture(),
-                isNull(),
-                eq(false),
-                eq(null)
-            )
-            assertThat(firstValue()).isEqualTo(expectedMessage)
-        }
     }
 
     @Test

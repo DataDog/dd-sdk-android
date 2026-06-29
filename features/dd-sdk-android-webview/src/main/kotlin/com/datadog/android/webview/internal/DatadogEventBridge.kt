@@ -8,7 +8,7 @@ package com.datadog.android.webview.internal
 
 import android.webkit.JavascriptInterface
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.configuration.HostPatternValidator
+import com.datadog.android.core.configuration.HostPatternSanitizer
 import com.datadog.android.core.configuration.HostsSanitizer
 import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.internal.sampling.DeterministicSampling
@@ -28,8 +28,11 @@ internal class DatadogEventBridge(
     private val allowedHosts: List<String>,
     private val privacyLevel: String,
     private val webViewRumFeature: WebViewRumFeature?,
-    private val internalLogger: InternalLogger
+    internalLogger: InternalLogger
 ) {
+
+    private val hostsSanitizer = HostsSanitizer()
+    private val hostPatternSanitizer = HostPatternSanitizer(internalLogger)
 
     // region Bridge
 
@@ -55,12 +58,12 @@ internal class DatadogEventBridge(
         val (wildcardPatterns, plainHosts) = allowedHosts.partition { host ->
             host.any { it == WILDCARD }
         }
-        HostsSanitizer()
+        hostsSanitizer
             .sanitizeHosts(plainHosts, WEB_VIEW_TRACKING_FEATURE_NAME)
             .forEach {
                 origins.add(it)
             }
-        HostPatternValidator(internalLogger)
+        hostPatternSanitizer
             .validate(wildcardPatterns, WEB_VIEW_TRACKING_FEATURE_NAME)
             .forEach {
                 origins.add(it)

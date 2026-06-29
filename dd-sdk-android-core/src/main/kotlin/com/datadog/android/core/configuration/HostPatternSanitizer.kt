@@ -27,7 +27,7 @@ import java.util.Locale
  *
  * @param internalLogger the logger used to report dropped patterns to the user.
  */
-class HostPatternValidator(
+class HostPatternSanitizer(
     private val internalLogger: InternalLogger
 ) {
 
