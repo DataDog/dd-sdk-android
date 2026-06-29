@@ -271,8 +271,11 @@ internal open class RumViewScope(
     ) {
         if (stopped) return
 
+        val vitalId = UUID.randomUUID().toString()
+        val capturedRumContext = getRumContext()
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             newVitalEvent(
+                vitalId,
                 event,
                 datadogContext,
                 name = event.name,
@@ -280,6 +283,13 @@ internal open class RumViewScope(
                 stepType = VitalOperationStepEvent.StepType.START,
                 failureReason = null,
                 eventAttributes = event.attributes
+            )
+        }.onSuccess {
+            sendProfilingRumOperationEvent(
+                rumContext = capturedRumContext,
+                vitalId = vitalId,
+                eventName = event.name,
+                eventTimestamp = event.eventTime.timestamp
             )
         }.submit()
         sendViewUpdate(event, datadogContext, writeScope, writer)
@@ -293,8 +303,11 @@ internal open class RumViewScope(
     ) {
         if (stopped) return
 
+        val vitalId = UUID.randomUUID().toString()
+        val capturedRumContext = getRumContext()
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             newVitalEvent(
+                vitalId,
                 event,
                 datadogContext,
                 name = event.name,
@@ -303,12 +316,43 @@ internal open class RumViewScope(
                 failureReason = event.failureReason?.toSchemaFailureReason(),
                 eventAttributes = event.attributes
             )
+        }.onSuccess {
+            sendProfilingRumOperationEvent(
+                rumContext = capturedRumContext,
+                vitalId = vitalId,
+                eventName = event.name,
+                eventTimestamp = event.eventTime.timestamp
+            )
         }.submit()
         sendViewUpdate(event, datadogContext, writeScope, writer)
     }
 
+    private fun sendProfilingRumOperationEvent(
+        rumContext: RumContext,
+        vitalId: String,
+        eventName: String,
+        eventTimestamp: Long
+    ) {
+        sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
+            ProfilerEvent.RumVitalEvent(
+                id = vitalId,
+                name = eventName,
+                type = ProfilerEvent.RumVitalEvent.Type.OPERATION,
+                startMs = eventTimestamp + serverTimeOffsetInMs,
+                durationNs = 0L,
+                rumContext = ProfilingRumContext(
+                    applicationId = rumContext.applicationId,
+                    sessionId = rumContext.sessionId,
+                    viewId = rumContext.viewId,
+                    viewName = rumContext.viewName
+                )
+            )
+        )
+    }
+
     @Suppress("LongMethod")
     private fun newVitalEvent(
+        vitalId: String,
         event: RumRawEvent,
         datadogContext: DatadogContext,
         name: String,
@@ -354,7 +398,8 @@ internal open class RumViewScope(
                 session = VitalOperationStepEvent.DdSession(
                     sessionPrecondition = rumContext.sessionStartReason.toVitalOperationStepSessionPrecondition()
                 ),
-                configuration = VitalOperationStepEvent.Configuration(sessionSampleRate = sampleRate)
+                configuration = VitalOperationStepEvent.Configuration(sessionSampleRate = sampleRate),
+                profiling = resolveVitalOperationStepProfilingStatus(datadogContext)
             ),
             application = VitalOperationStepEvent.Application(
                 id = rumContext.applicationId,
@@ -420,7 +465,7 @@ internal open class RumViewScope(
             service = datadogContext.service,
             ddtags = buildDDTagsString(datadogContext),
             vital = VitalOperationStepEvent.Vital(
-                id = UUID.randomUUID().toString(),
+                id = vitalId,
                 name = name,
                 operationKey = operationKey,
                 stepType = stepType,
@@ -1720,10 +1765,33 @@ internal open class RumViewScope(
                 status = ErrorEvent.ProfilingStatus.RUNNING,
                 clockDrift = clockDrift
             )
+
             quotaReason != null -> ErrorEvent.Profiling(
                 status = ErrorEvent.ProfilingStatus.STOPPED,
                 quotaReason = quotaReason
             )
+
+            else -> null
+        }
+    }
+
+    private fun resolveVitalOperationStepProfilingStatus(
+        datadogContext: DatadogContext
+    ): VitalOperationStepEvent.Profiling? {
+        val isRunning = datadogContext.isProfilerRunning()
+        val quotaReason = datadogContext.resolveProfilingQuotaReason(sessionId)
+        val clockDrift = datadogContext.time.serverTimeOffsetMs
+        return when {
+            isRunning -> VitalOperationStepEvent.Profiling(
+                status = VitalOperationStepEvent.ProfilingStatus.RUNNING,
+                clockDrift = clockDrift
+            )
+
+            quotaReason != null -> VitalOperationStepEvent.Profiling(
+                status = VitalOperationStepEvent.ProfilingStatus.STOPPED,
+                quotaReason = quotaReason
+            )
+
             else -> null
         }
     }
@@ -1756,6 +1824,7 @@ internal open class RumViewScope(
                 status = ViewEvent.ProfilingStatus.STOPPED,
                 quotaReason = quotaReason
             )
+
             else -> null
         }
     }
