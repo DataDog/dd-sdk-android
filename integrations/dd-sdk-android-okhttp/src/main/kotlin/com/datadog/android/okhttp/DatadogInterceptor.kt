@@ -39,6 +39,7 @@ import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
+import com.datadog.android.trace.internal._TraceInternalProxy
 import com.datadog.android.trace.internal.net.SessionRebasedSampler
 import com.datadog.android.trace.internal.net.effectiveSampleRate
 import okhttp3.Interceptor
@@ -92,7 +93,8 @@ open class DatadogInterceptor internal constructor(
     redacted404ResourceName: Boolean,
     localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer,
     globalTracerProvider: () -> DatadogTracer?,
-    internal val resourceHeadersExtractor: ResourceHeadersExtractor? = null
+    internal val resourceHeadersExtractor: ResourceHeadersExtractor? = null,
+    defaultTracerCheck: (DatadogTracer) -> Boolean = _TraceInternalProxy::isDefaultTracer
 ) : TracingInterceptor(
     sdkInstanceName,
     tracedHosts,
@@ -102,7 +104,8 @@ open class DatadogInterceptor internal constructor(
     traceContextInjection,
     redacted404ResourceName,
     localTracerFactory,
-    globalTracerProvider
+    globalTracerProvider,
+    defaultTracerCheck
 ) {
     internal val rumResourceAttributesProvider: RumResourceAttributesProvider =
         rumResourceAttributesProvider as? NoOpRumResourceAttributesProvider

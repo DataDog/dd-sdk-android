@@ -23,6 +23,7 @@ import com.datadog.android.trace.internal.ApmNetworkInstrumentation.Companion.ZE
 import com.datadog.android.trace.internal.ParentContextSource
 import com.datadog.android.trace.internal._TraceInternalProxy
 import com.datadog.android.trace.internal._TraceInternalProxy.propagationHelper
+import com.datadog.android.trace.internal.domain.event.FORCE_DROP_SPAN
 import java.util.Locale
 
 internal val FeatureSdkCore?.isRumEnabled: Boolean
@@ -71,11 +72,18 @@ internal fun DatadogSpan.sample(
     }
 }
 
-internal fun DatadogSpan.finishRumAware(isSampled: Boolean, canSendSpan: Boolean) {
-    if (canSendSpan && isSampled) {
-        finish()
-    } else {
-        drop()
+@SuppressWarnings("UndocumentedPublicFunction")
+@InternalApi
+fun DatadogSpan.finishRumAware(isSampled: Boolean, canSendSpan: Boolean, isDefaultTracer: Boolean) {
+    when {
+        !canSendSpan -> drop()
+        isSampled -> finish()
+        !isSampled && isDefaultTracer -> {
+            // SDK-backed tracer: tag the span so CoreTraceWriter suppresses it instead of calling drop()
+            setTag(FORCE_DROP_SPAN, true)
+            finish()
+        }
+        else -> drop()
     }
 }
 

@@ -115,7 +115,7 @@ class ApmNetworkInstrumentation internal constructor(
         }
 
         if (sdkCore == null) {
-            return RequestTracingState(requestInfoBuilder)
+            return RequestTracingState(requestInfoBuilder = requestInfoBuilder, isDefaultTracer = false)
         }
 
         val tracer = tracerProvider.provideTracer(
@@ -125,7 +125,7 @@ class ApmNetworkInstrumentation internal constructor(
         )
 
         if (tracer == null || !request.isTraceable(sdkCore)) {
-            return RequestTracingState(requestInfoBuilder)
+            return RequestTracingState(requestInfoBuilder = requestInfoBuilder, isDefaultTracer = false)
         }
 
         val span = tracer.buildSpan(
@@ -155,7 +155,8 @@ class ApmNetworkInstrumentation internal constructor(
             span = span,
             isSampled = isSampled,
             sampleRate = traceSampler.effectiveSampleRate(span),
-            requestInfoBuilder = tracedRequestInfoBuilder
+            requestInfoBuilder = tracedRequestInfoBuilder,
+            isDefaultTracer = tracer is DatadogTracerAdapter
         )
     }
 
@@ -167,17 +168,19 @@ class ApmNetworkInstrumentation internal constructor(
      * @param response the HTTP response information.
      */
     fun onResponseSucceeded(requestTracingState: RequestTracingState, response: HttpResponseInfo) {
-        if (requestTracingState.isSampled) {
-            requestTracingState.span?.setTag(DatadogTracingConstants.Tags.KEY_HTTP_STATUS, response.statusCode)
-            if (response.statusCode in HttpURLConnection.HTTP_BAD_REQUEST until HttpURLConnection.HTTP_INTERNAL_ERROR) {
-                requestTracingState.span?.isError = true
-            }
-            if (response.statusCode == HttpURLConnection.HTTP_NOT_FOUND && redacted404ResourceName) {
-                requestTracingState.span?.resourceName = RESOURCE_NAME_404
-            }
+        requestTracingState.span?.setTag(DatadogTracingConstants.Tags.KEY_HTTP_STATUS, response.statusCode)
+        if (response.statusCode in HttpURLConnection.HTTP_BAD_REQUEST until HttpURLConnection.HTTP_INTERNAL_ERROR) {
+            requestTracingState.span?.isError = true
+        }
+        if (response.statusCode == HttpURLConnection.HTTP_NOT_FOUND && redacted404ResourceName) {
+            requestTracingState.span?.resourceName = RESOURCE_NAME_404
         }
         requestTracingState.onRequestIntercepted(response, null)
-        requestTracingState.span?.finishRumAware(requestTracingState.isSampled, canSendSpan)
+        requestTracingState.span?.finishRumAware(
+            requestTracingState.isSampled,
+            canSendSpan,
+            requestTracingState.isDefaultTracer
+        )
     }
 
     /**
@@ -188,8 +191,8 @@ class ApmNetworkInstrumentation internal constructor(
      * @param throwable the exception that caused the failure.
      */
     fun onResponseFailed(requestTracingState: RequestTracingState, throwable: Throwable) {
+        requestTracingState.span?.isError = true
         if (requestTracingState.isSampled) {
-            requestTracingState.span?.isError = true
             requestTracingState.span?.setTag(DatadogTracingConstants.Tags.KEY_ERROR_MSG, throwable.message)
             requestTracingState.span?.setTag(DatadogTracingConstants.Tags.KEY_ERROR_TYPE, throwable.javaClass.name)
             requestTracingState.span?.setTag(
@@ -198,7 +201,11 @@ class ApmNetworkInstrumentation internal constructor(
             )
         }
         requestTracingState.onRequestIntercepted(null, throwable)
-        requestTracingState.span?.finishRumAware(requestTracingState.isSampled, canSendSpan)
+        requestTracingState.span?.finishRumAware(
+            requestTracingState.isSampled,
+            canSendSpan,
+            requestTracingState.isDefaultTracer
+        )
     }
 
     /**
