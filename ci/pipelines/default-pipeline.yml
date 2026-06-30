@@ -124,9 +124,14 @@ ci-image:
   except: [ tags, schedules ]
   tags: [ "arch:amd64" ]
   interruptible: false
+  id_tokens:
+    DDSIGN_ID_TOKEN:
+      aud: image-integrity
   image: 486234852809.dkr.ecr.us-east-1.amazonaws.com/docker:24.0.4-jammy
   script:
-    - docker buildx build --tag $CI_IMAGE_DOCKER -f ./ci/Dockerfile.gitlab --push .
+    - METADATA_FILE=$(mktemp)
+    - docker buildx build --tag $CI_IMAGE_DOCKER -f ./ci/Dockerfile.gitlab --push ---metadata-file ${METADATA_FILE} .
+    - ddsign sign $CI_IMAGE_DOCKER --docker-metadata-file ${METADATA_FILE}
 
 # SECURITY
 

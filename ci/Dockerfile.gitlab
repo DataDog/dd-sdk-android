@@ -110,3 +110,6 @@ RUN wget -O $DD_TRACER_FOLDER/dd-java-agent.jar https://repo1.maven.org/maven2/c
 
 COPY --from=registry.ddbuild.io/dd-octo-sts:v1.8.2 /usr/local/bin/dd-octo-sts /usr/local/bin/dd-octo-sts
 COPY --from=registry.ddbuild.io/commit-headless:v2.0.1 /commit-headless /usr/local/bin/commit-headless
+
+# Install ddsign for image signing
+COPY --from=registry.ddbuild.io/ddsign:v1.11.10@sha256:55784668a612ab22129bb15a665a847819bfa64b9a595c59a03a3a725534ce22 /usr/local/bin/ddsign /usr/local/bin/ddsign
