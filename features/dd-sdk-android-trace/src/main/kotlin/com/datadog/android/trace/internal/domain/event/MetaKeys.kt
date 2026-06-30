@@ -8,3 +8,4 @@ package com.datadog.android.trace.internal.domain.event
 
 internal const val TRACE_ID_META_KEY = "_dd.p.id"
 internal const val APPLICATION_VARIANT_KEY = "variant"
+internal const val COMPUTE_STATS_META_KEY = "_dd.compute_stats"
