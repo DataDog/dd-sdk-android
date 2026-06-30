@@ -15,10 +15,8 @@ import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.rum.configuration.RumViewEventWriteConfig
 import com.datadog.android.rum.integration.tests.assertj.hasRumEvent
-import com.datadog.android.rum.integration.tests.assertj.hasRumViewUpdateEvent
 import com.datadog.android.rum.integration.tests.elmyr.RumIntegrationForgeConfigurator
 import com.datadog.android.rum.integration.tests.utils.MainLooperTestConfiguration
-import com.datadog.android.rum.model.ViewUpdateEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.tests.assertj.StubEventsAssert.Companion.assertThat
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -46,7 +44,7 @@ import org.mockito.quality.Strictness
 )
 @ForgeConfiguration(RumIntegrationForgeConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-class ActivityViewTrackingStrategyTest {
+class ActivityViewTrackingAlwaysFullViewTest {
 
     private lateinit var stubSdkCore: StubSDKCore
 
@@ -66,11 +64,11 @@ class ActivityViewTrackingStrategyTest {
         stubSdkCore = StubSDKCore(forge)
 
         val fakeRumConfiguration = RumConfiguration.Builder(fakeApplicationId)
-            .trackNonFatalAnrs(false)
+            .trackNonFatalAnrs(false) // required to prevent infinite loop in tests
             .apply {
                 _RumInternalProxy.setRumViewEventWriteConfig(
                     builder = this@apply,
-                    config = RumViewEventWriteConfig.FullViewOnlyAtStart
+                    config = RumViewEventWriteConfig.AlwaysFullView
                 )
             }
             .build()
@@ -106,9 +104,8 @@ class ActivityViewTrackingStrategyTest {
                 hasSessionType("user")
                 hasSource("android")
                 hasType("view")
-                hasViewUrl("com/datadog/android/rum/integration/ActivityViewTrackingStrategyTest/StubActivity")
-                hasViewName("com.datadog.android.rum.integration.ActivityViewTrackingStrategyTest.StubActivity")
-                hasDocumentVersion(2)
+                hasViewUrl("com/datadog/android/rum/integration/ActivityViewTrackingAlwaysFullViewTest/StubActivity")
+                hasViewName("com.datadog.android.rum.integration.ActivityViewTrackingAlwaysFullViewTest.StubActivity")
             }
     }
 
@@ -131,34 +128,18 @@ class ActivityViewTrackingStrategyTest {
                 hasSessionType("user")
                 hasSource("android")
                 hasType("view")
-                hasViewUrl("com/datadog/android/rum/integration/ActivityViewTrackingStrategyTest/StubActivity")
-                hasViewName("com.datadog.android.rum.integration.ActivityViewTrackingStrategyTest.StubActivity")
-                hasViewIsActive(true)
-                hasDocumentVersion(2)
+                hasViewUrl("com/datadog/android/rum/integration/ActivityViewTrackingAlwaysFullViewTest/StubActivity")
+                hasViewName("com.datadog.android.rum.integration.ActivityViewTrackingAlwaysFullViewTest.StubActivity")
             }
-            .hasRumViewUpdateEvent(index = 1) {
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                dd { hasDocumentVersion(3) }
-                view {
-                    hasUrl("com/datadog/android/rum/integration/ActivityViewTrackingStrategyTest/StubActivity")
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoCustomTimings()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+            .hasRumEvent(index = 1) {
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl("com/datadog/android/rum/integration/ActivityViewTrackingAlwaysFullViewTest/StubActivity")
+                hasViewName("com.datadog.android.rum.integration.ActivityViewTrackingAlwaysFullViewTest.StubActivity")
+                hasViewIsActive(false)
             }
     }
 

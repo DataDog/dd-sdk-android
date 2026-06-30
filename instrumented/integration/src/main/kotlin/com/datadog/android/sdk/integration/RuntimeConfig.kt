@@ -14,6 +14,8 @@ import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.log.Logger
 import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.rum.RumConfiguration
+import com.datadog.android.rum._RumInternalProxy
+import com.datadog.android.rum.configuration.RumViewEventWriteConfig
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.trace.DatadogTracing
 import com.datadog.android.trace.TraceConfiguration
@@ -75,6 +77,12 @@ internal object RuntimeConfig {
     fun rumConfigBuilder(): RumConfiguration.Builder {
         return RumConfiguration.Builder(APP_ID)
             .useCustomEndpoint(rumEndpointUrl)
+            .apply {
+                _RumInternalProxy.setRumViewEventWriteConfig(
+                    builder = this@apply,
+                    config = RumViewEventWriteConfig.FullViewOnlyAtStart
+                )
+            }
     }
 
     fun sessionReplayConfigBuilder(sampleRate: Float): SessionReplayConfiguration.Builder {

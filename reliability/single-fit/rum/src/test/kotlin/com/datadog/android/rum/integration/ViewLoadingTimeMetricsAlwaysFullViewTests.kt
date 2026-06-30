@@ -19,7 +19,6 @@ import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.rum.configuration.RumViewEventWriteConfig
 import com.datadog.android.rum.integration.tests.assertj.hasRumEvent
-import com.datadog.android.rum.integration.tests.assertj.hasRumViewUpdateEvent
 import com.datadog.android.rum.integration.tests.elmyr.RumIntegrationForgeConfigurator
 import com.datadog.android.rum.integration.tests.utils.MainLooperTestConfiguration
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
@@ -28,7 +27,6 @@ import com.datadog.android.rum.metric.interactiontonextview.TimeBasedInteraction
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.metric.networksettled.NetworkSettledResourceContext
 import com.datadog.android.rum.metric.networksettled.TimeBasedInitialResourceIdentifier
-import com.datadog.android.rum.model.ViewUpdateEvent
 import com.datadog.android.tests.assertj.StubEventsAssert.Companion.assertThat
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -59,7 +57,7 @@ import java.util.concurrent.TimeUnit
 )
 @ForgeConfiguration(RumIntegrationForgeConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-class ViewLoadingTimeMetricsTests {
+class ViewLoadingTimeMetricsAlwaysFullViewTests {
 
     private lateinit var stubSdkCore: StubSDKCore
 
@@ -150,53 +148,28 @@ class ViewLoadingTimeMetricsTests {
                 hasViewName(viewName)
                 hasResourceUrl(resourceUrl)
             }
-            .hasRumViewUpdateEvent(index = 2) {
+            .hasRumEvent(index = 2) {
                 // View updated with event
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpentNotNull()
-                    hasNetworkSettledTimeCloseTo(appExpectedTtnsTime, TTNS_METRIC_OFFSET_IN_NANOSECONDS)
-                    resource { hasCount(1) }
-                    hasNoAction()
-                    hasNoError()
-                    hasLoadingTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasViewName(viewName)
+                hasNetworkSettledTime(appExpectedTtnsTime, TTNS_METRIC_OFFSET_IN_NANOSECONDS)
+                hasResourceCount(1)
             }
-            .hasRumViewUpdateEvent(index = 3) {
+            .hasRumEvent(index = 3) {
                 // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpentNotNull()
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasNetworkSettledTime(appExpectedTtnsTime, TTNS_METRIC_OFFSET_IN_NANOSECONDS)
+                hasViewName(viewName)
             }
     }
 
@@ -249,101 +222,52 @@ class ViewLoadingTimeMetricsTests {
                 hasViewName(viewName)
                 hasResourceUrl(resourceUrl)
             }
-            .hasRumViewUpdateEvent(index = 2) {
+            .hasRumEvent(index = 2) {
                 // View updated with event
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpentNotNull()
-                    hasNetworkSettledTimeCloseTo(appExpectedTtnsTime, TTNS_METRIC_OFFSET_IN_NANOSECONDS)
-                    resource { hasCount(1) }
-                    hasNoAction()
-                    hasNoError()
-                    hasLoadingTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasViewName(viewName)
+                hasNetworkSettledTime(appExpectedTtnsTime, TTNS_METRIC_OFFSET_IN_NANOSECONDS)
+                hasResourceCount(1)
             }
-            .hasRumViewUpdateEvent(index = 3) {
+            .hasRumEvent(index = 3) {
                 // View updated with event
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpentNotNull()
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasViewName(viewName)
+                hasNetworkSettledTime(appExpectedTtnsTime, TTNS_METRIC_OFFSET_IN_NANOSECONDS)
+                hasResourceCount(1)
             }
-            .hasRumViewUpdateEvent(index = 4) {
+            .hasRumEvent(index = 4) {
                 // View updated with event
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpentNotNull()
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasViewName(viewName)
+                hasNetworkSettledTime(appExpectedTtnsTime, TTNS_METRIC_OFFSET_IN_NANOSECONDS)
+                hasResourceCount(1)
             }
-            .hasRumViewUpdateEvent(index = 5) {
+            .hasRumEvent(index = 5) {
                 // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpentNotNull()
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasNetworkSettledTime(appExpectedTtnsTime, TTNS_METRIC_OFFSET_IN_NANOSECONDS)
+                hasViewName(viewName)
             }
     }
 
@@ -394,53 +318,30 @@ class ViewLoadingTimeMetricsTests {
                 hasViewUrl(viewKey)
                 hasViewName(viewName)
             }
-            .hasRumViewUpdateEvent(index = 2) {
+            .hasRumEvent(index = 2) {
                 // View updated with event
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpentNotNull()
-                    hasNetworkSettledTimeCloseTo(appExpectedTtnsTime, TTNS_METRIC_OFFSET_IN_NANOSECONDS)
-                    error { hasCount(1) }
-                    hasNoAction()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasViewName(viewName)
+                hasErrorCount(1)
+                hasNetworkSettledTime(appExpectedTtnsTime, TTNS_METRIC_OFFSET_IN_NANOSECONDS)
+                hasResourceCount(0)
             }
-            .hasRumViewUpdateEvent(index = 3) {
+            .hasRumEvent(index = 3) {
                 // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpentNotNull()
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasErrorCount(1)
+                hasNetworkSettledTime(appExpectedTtnsTime, TTNS_METRIC_OFFSET_IN_NANOSECONDS)
+                hasViewName(viewName)
             }
     }
 
@@ -481,30 +382,17 @@ class ViewLoadingTimeMetricsTests {
                 doesNotHaveNetworkSettledTime()
                 doesNotHaveField("feature_flag")
             }
-            .hasRumViewUpdateEvent(index = 1) {
+            .hasRumEvent(index = 1) {
                 // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpentNotNull()
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasErrorCount(0)
+                doesNotHaveNetworkSettledTime()
+                hasViewName(viewName)
             }
     }
 
@@ -541,30 +429,17 @@ class ViewLoadingTimeMetricsTests {
                 doesNotHaveNetworkSettledTime()
                 doesNotHaveField("feature_flag")
             }
-            .hasRumViewUpdateEvent(index = 1) {
+            .hasRumEvent(index = 1) {
                 // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpentNotNull()
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                doesNotHaveNetworkSettledTime()
+                hasViewName(viewName)
+                hasResourceCount(0)
             }
     }
 
@@ -613,54 +488,28 @@ class ViewLoadingTimeMetricsTests {
                 hasViewName(viewName)
                 hasResourceUrl(resourceUrl.toString())
             }
-            .hasRumViewUpdateEvent(index = 2) {
+            .hasRumEvent(index = 2) {
                 // View updated with event
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpentNotNull()
-                    resource { hasCount(1) }
-                    hasNoAction()
-                    hasNoError()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasViewName(viewName)
+                doesNotHaveNetworkSettledTime()
+                hasResourceCount(1)
             }
-            .hasRumViewUpdateEvent(index = 3) {
+            .hasRumEvent(index = 3) {
                 // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpentNotNull()
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                doesNotHaveNetworkSettledTime()
+                hasViewName(viewName)
             }
     }
 
@@ -712,54 +561,28 @@ class ViewLoadingTimeMetricsTests {
                 hasViewName(viewName)
                 hasResourceUrl(resourceUrl)
             }
-            .hasRumViewUpdateEvent(index = 2) {
+            .hasRumEvent(index = 2) {
                 // View updated with event
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpentNotNull()
-                    resource { hasCount(1) }
-                    hasNoAction()
-                    hasNoError()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasViewName(viewName)
+                doesNotHaveNetworkSettledTime()
+                hasResourceCount(1)
             }
-            .hasRumViewUpdateEvent(index = 3) {
+            .hasRumEvent(index = 3) {
                 // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpentNotNull()
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                doesNotHaveNetworkSettledTime()
+                hasViewName(viewName)
             }
     }
 
@@ -811,54 +634,28 @@ class ViewLoadingTimeMetricsTests {
                 hasViewName(viewName)
                 hasResourceUrl(resourceUrl)
             }
-            .hasRumViewUpdateEvent(index = 2) {
+            .hasRumEvent(index = 2) {
                 // View updated with event
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpentNotNull()
-                    resource { hasCount(1) }
-                    hasNoAction()
-                    hasNoError()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasViewName(viewName)
+                doesNotHaveNetworkSettledTime()
+                hasResourceCount(1)
             }
-            .hasRumViewUpdateEvent(index = 3) {
+            .hasRumEvent(index = 3) {
                 // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpentNotNull()
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                doesNotHaveNetworkSettledTime()
+                hasViewName(viewName)
             }
     }
 
@@ -905,54 +702,29 @@ class ViewLoadingTimeMetricsTests {
                 hasActionName(lastInteractionName)
                 hasViewName(previousViewName)
             }
-            .hasRumViewUpdateEvent(index = 2) {
+            .hasRumEvent(index = 2) {
                 // View updated with event
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(previousViewKey)
-                    hasTimeSpentNotNull()
-                    action { hasCount(1) }
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                hasViewName(previousViewName)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(1)
             }
-            .hasRumViewUpdateEvent(index = 3) {
+            .hasRumEvent(index = 3) {
                 // Previous view stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(previousViewKey)
-                    hasTimeSpentNotNull()
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                doesNotHaveInteractionToNextViewTime()
+                hasViewName(previousViewName)
+                hasActionCount(1)
             }
             .hasRumEvent(index = 4) {
                 // New View Event
@@ -965,30 +737,16 @@ class ViewLoadingTimeMetricsTests {
                 hasViewName(viewName)
                 hasInteractionToNextViewTime(appExpectedItnvTime, ITNV_METRIC_OFFSET_IN_NANOSECONDS)
             }
-            .hasRumViewUpdateEvent(index = 5) {
+            .hasRumEvent(index = 5) {
                 // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpentNotNull()
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasInteractionToNextViewTime(appExpectedItnvTime, ITNV_METRIC_OFFSET_IN_NANOSECONDS)
+                hasViewName(viewName)
             }
     }
 
@@ -1031,54 +789,29 @@ class ViewLoadingTimeMetricsTests {
                 hasActionName(lastInteractionName)
                 hasViewName(previousViewName)
             }
-            .hasRumViewUpdateEvent(index = 2) {
+            .hasRumEvent(index = 2) {
                 // View updated with event
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(previousViewKey)
-                    hasTimeSpentNotNull()
-                    action { hasCount(1) }
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                hasViewName(previousViewName)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(1)
             }
-            .hasRumViewUpdateEvent(index = 3) {
+            .hasRumEvent(index = 3) {
                 // Previous view stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(previousViewKey)
-                    hasTimeSpentNotNull()
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(1)
+                hasViewName(previousViewName)
             }
             .hasRumEvent(index = 4) {
                 // New View Event
@@ -1091,30 +824,16 @@ class ViewLoadingTimeMetricsTests {
                 hasViewName(viewName)
                 doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumViewUpdateEvent(index = 5) {
+            .hasRumEvent(index = 5) {
                 // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpentNotNull()
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                doesNotHaveInteractionToNextViewTime()
+                hasViewName(viewName)
             }
     }
 
@@ -1149,30 +868,17 @@ class ViewLoadingTimeMetricsTests {
                 doesNotHaveInteractionToNextViewTime()
                 doesNotHaveField("feature_flag")
             }
-            .hasRumViewUpdateEvent(index = 1) {
+            .hasRumEvent(index = 1) {
                 // Previous view stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(previousViewKey)
-                    hasTimeSpentNotNull()
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(0)
+                hasViewName(previousViewName)
             }
             .hasRumEvent(index = 2) {
                 // New View Event
@@ -1185,30 +891,16 @@ class ViewLoadingTimeMetricsTests {
                 hasViewName(viewName)
                 doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumViewUpdateEvent(index = 3) {
+            .hasRumEvent(index = 3) {
                 // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpentNotNull()
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                doesNotHaveInteractionToNextViewTime()
+                hasViewName(viewName)
             }
     }
 
@@ -1257,54 +949,29 @@ class ViewLoadingTimeMetricsTests {
                 hasActionName(lastInteractionName)
                 hasViewName(previousViewName)
             }
-            .hasRumViewUpdateEvent(index = 2) {
+            .hasRumEvent(index = 2) {
                 // View updated with event
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(previousViewKey)
-                    hasTimeSpentNotNull()
-                    action { hasCount(1) }
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                hasViewName(previousViewName)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(1)
             }
-            .hasRumViewUpdateEvent(index = 3) {
+            .hasRumEvent(index = 3) {
                 // Previous view stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(previousViewKey)
-                    hasTimeSpentNotNull()
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(1)
+                hasViewName(previousViewName)
             }
             .hasRumEvent(index = 4) {
                 // New View Event
@@ -1317,30 +984,16 @@ class ViewLoadingTimeMetricsTests {
                 hasViewName(viewName)
                 hasInteractionToNextViewTime(appExpectedItnvTime, ITNV_METRIC_OFFSET_IN_NANOSECONDS)
             }
-            .hasRumViewUpdateEvent(index = 5) {
+            .hasRumEvent(index = 5) {
                 // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpentNotNull()
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasInteractionToNextViewTime(appExpectedItnvTime, ITNV_METRIC_OFFSET_IN_NANOSECONDS)
+                hasViewName(viewName)
             }
     }
 
@@ -1389,54 +1042,29 @@ class ViewLoadingTimeMetricsTests {
                 hasActionName(lastInteractionName)
                 hasViewName(previousViewName)
             }
-            .hasRumViewUpdateEvent(index = 2) {
+            .hasRumEvent(index = 2) {
                 // View updated with event
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(previousViewKey)
-                    hasTimeSpentNotNull()
-                    action { hasCount(1) }
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                hasViewName(previousViewName)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(1)
             }
-            .hasRumViewUpdateEvent(index = 3) {
+            .hasRumEvent(index = 3) {
                 // Previous view stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(previousViewKey)
-                    hasTimeSpentNotNull()
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(1)
+                hasViewName(previousViewName)
             }
             .hasRumEvent(index = 4) {
                 // New View Event
@@ -1449,30 +1077,16 @@ class ViewLoadingTimeMetricsTests {
                 hasViewName(viewName)
                 doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumViewUpdateEvent(index = 5) {
+            .hasRumEvent(index = 5) {
                 // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpentNotNull()
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                doesNotHaveInteractionToNextViewTime()
+                hasViewName(viewName)
             }
     }
 
@@ -1515,54 +1129,29 @@ class ViewLoadingTimeMetricsTests {
                 hasActionName(lastInteractionName)
                 hasViewName(previousViewName)
             }
-            .hasRumViewUpdateEvent(index = 2) {
+            .hasRumEvent(index = 2) {
                 // View updated with event
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(previousViewKey)
-                    hasTimeSpentNotNull()
-                    action { hasCount(1) }
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                hasViewName(previousViewName)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(1)
             }
-            .hasRumViewUpdateEvent(index = 3) {
+            .hasRumEvent(index = 3) {
                 // Previous view stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(previousViewKey)
-                    hasTimeSpentNotNull()
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(1)
+                hasViewName(previousViewName)
             }
             .hasRumEvent(index = 4) {
                 // New View Event
@@ -1575,30 +1164,16 @@ class ViewLoadingTimeMetricsTests {
                 hasViewName(viewName)
                 hasInteractionToNextViewTime(appExpectedItnvTime, ITNV_METRIC_OFFSET_IN_NANOSECONDS)
             }
-            .hasRumViewUpdateEvent(index = 5) {
+            .hasRumEvent(index = 5) {
                 // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpentNotNull()
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasInteractionToNextViewTime(appExpectedItnvTime, ITNV_METRIC_OFFSET_IN_NANOSECONDS)
+                hasViewName(viewName)
             }
     }
 
@@ -1652,54 +1227,29 @@ class ViewLoadingTimeMetricsTests {
                 hasActionName(lastInteractionName)
                 hasViewName(previousViewName)
             }
-            .hasRumViewUpdateEvent(index = 2) {
+            .hasRumEvent(index = 2) {
                 // View updated with event
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(previousViewKey)
-                    hasTimeSpentNotNull()
-                    action { hasCount(1) }
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                hasViewName(previousViewName)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(1)
             }
-            .hasRumViewUpdateEvent(index = 3) {
+            .hasRumEvent(index = 3) {
                 // Previous view stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(previousViewKey)
-                    hasTimeSpentNotNull()
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(1)
+                hasViewName(previousViewName)
             }
             .hasRumEvent(index = 4) {
                 // New View Event
@@ -1712,30 +1262,16 @@ class ViewLoadingTimeMetricsTests {
                 hasViewName(viewName)
                 doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumViewUpdateEvent(index = 5) {
+            .hasRumEvent(index = 5) {
                 // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpentNotNull()
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                doesNotHaveInteractionToNextViewTime()
+                hasViewName(viewName)
             }
     }
 
@@ -1790,54 +1326,29 @@ class ViewLoadingTimeMetricsTests {
                 hasActionName(lastInteractionName)
                 hasViewName(previousViewName)
             }
-            .hasRumViewUpdateEvent(index = 2) {
+            .hasRumEvent(index = 2) {
                 // View updated with event
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(previousViewKey)
-                    hasTimeSpentNotNull()
-                    action { hasCount(1) }
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                hasViewName(previousViewName)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(1)
             }
-            .hasRumViewUpdateEvent(index = 3) {
+            .hasRumEvent(index = 3) {
                 // Previous view stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(previousViewKey)
-                    hasTimeSpentNotNull()
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(previousViewKey)
+                doesNotHaveInteractionToNextViewTime()
+                hasActionCount(1)
+                hasViewName(previousViewName)
             }
             .hasRumEvent(index = 4) {
                 // New View Event
@@ -1850,30 +1361,16 @@ class ViewLoadingTimeMetricsTests {
                 hasViewName(viewName)
                 doesNotHaveInteractionToNextViewTime()
             }
-            .hasRumViewUpdateEvent(index = 5) {
+            .hasRumEvent(index = 5) {
                 // View stopped
-                application { hasId(fakeApplicationId) }
-                session {
-                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
-                    hasIsActive(null)
-                }
-                view {
-                    hasUrl(viewKey)
-                    hasTimeSpentNotNull()
-                    hasIsActive(false)
-                    hasNoAction()
-                    hasNoError()
-                    hasNoResource()
-                    hasLoadingTime(null)
-                    hasNetworkSettledTime(null)
-                    hasInteractionToNextViewTime(null)
-                    hasNoCrash()
-                    hasNoLongTask()
-                    hasNoFrozenFrame()
-                    hasNoFrustration()
-                    hasNoOptionalViewFields()
-                }
-                hasNoOptionalFields()
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(viewKey)
+                doesNotHaveInteractionToNextViewTime()
+                hasViewName(viewName)
             }
     }
 
@@ -1914,7 +1411,7 @@ class ViewLoadingTimeMetricsTests {
         .apply {
             _RumInternalProxy.setRumViewEventWriteConfig(
                 builder = this@apply,
-                config = RumViewEventWriteConfig.FullViewOnlyAtStart
+                config = RumViewEventWriteConfig.AlwaysFullView
             )
         }
 

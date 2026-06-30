@@ -817,7 +817,7 @@ internal class RumFeature(
             disableJankStats = false,
             insightsCollector = NoOpInsightsCollector(),
             appStartupActivityPredicate = DefaultAppStartupActivityPredicate,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart
+            rumViewEventWriteConfig = RumViewEventWriteConfig.AlwaysFullView
         )
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"
