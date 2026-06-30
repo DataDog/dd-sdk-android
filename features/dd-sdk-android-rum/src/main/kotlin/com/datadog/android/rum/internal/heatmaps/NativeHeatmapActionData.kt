@@ -4,9 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.utils.createJsonModelsGenerationTask
+package com.datadog.android.rum.internal.heatmaps
 
-createJsonModelsGenerationTask("generateFlagsModelsFromJson") {
-    inputDirPath = "src/main/json/flags"
-    targetPackageName = "com.datadog.android.flags.model"
-}
+internal data class NativeHeatmapActionData(
+    val viewKey: Long,
+    val positionX: Long,
+    val positionY: Long,
+    val targetWidth: Long?,
+    val targetHeight: Long?
+)

@@ -21,6 +21,7 @@ import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.bundling.Zip
 import org.gradle.kotlin.dsl.findByType
 import org.gradle.kotlin.dsl.register
 import java.io.File
@@ -107,19 +108,23 @@ fun Project.detektCustomConfig() {
         }
 
     tasks.register<Copy>("unzipAarForDetekt") {
-        from(zipTree(layout.buildDirectory.file("outputs/aar/${project.name}-release.aar")))
+        val aarFile = tasks.named<Zip>("bundleReleaseAar", Zip::class.java).flatMap { it.archiveFile }
+        from(zipTree(aarFile))
         into(layout.buildDirectory.dir("extracted"))
     }
 
     tasks.register<JavaExec>("customDetektRules") {
         group = "datadog"
+        maxHeapSize = "2g"
+        dependsOn("printDetektClasspath")
 
         classpath = files("${rootDir.absolutePath}/detekt-cli-1.23.8-all.jar")
 
         args(
             "--config",
             "${rootDir.absolutePath}/detekt_custom_general.yml," +
-                "${rootDir.absolutePath}/detekt_custom_safe_calls.yml," +
+                "${rootDir.absolutePath}/detekt_custom_safe_calls_android.yml," +
+                "${rootDir.absolutePath}/detekt_custom_safe_calls_third_party.yml," +
                 "${rootDir.absolutePath}/detekt_custom_unsafe_calls.yml"
         )
         args("--plugins", "${rootDir.absolutePath}/tools/detekt/build/libs/detekt.jar")
@@ -127,20 +132,29 @@ fun Project.detektCustomConfig() {
         args("-ex", "**/*.kts")
         args("--jvm-target", "11")
 
+        // Resolve project paths at configuration time (config-cache friendly), but defer all
+        // detekt_classpath file I/O to execution time. The file is produced by the
+        // printDetektClasspath task, so it may not exist when this task is configured (e.g. while
+        // computing the task graph for assembleLibrariesRelease). Reading it here would fail task
+        // creation and break the whole build.
         val moduleDependencies = collectTransitiveProjectDependencies(project)
+        val rootDirPath = rootDir.absolutePath
+        val detektClasspathFile = File("${projectDir.absolutePath}/detekt_classpath")
 
-        val externalDependencies = File("${projectDir.absolutePath}/detekt_classpath").readText()
-        val moduleDependenciesClasses = moduleDependencies.joinToString(":") {
-            "${rootDir.absolutePath}${it.replace(':', '/')}/build/extracted/classes.jar"
+        doFirst {
+            val externalDependencies = detektClasspathFile.readText()
+            val moduleDependenciesClasses = moduleDependencies.joinToString(":") {
+                "$rootDirPath${it.replace(':', '/')}/build/extracted/classes.jar"
+            }
+
+            val dependencies = if (moduleDependenciesClasses.isBlank()) {
+                externalDependencies
+            } else {
+                "$externalDependencies:$moduleDependenciesClasses"
+            }
+
+            args("-cp", dependencies)
         }
-
-        val dependencies = if (moduleDependenciesClasses.isBlank()) {
-            externalDependencies
-        } else {
-            "$externalDependencies:$moduleDependenciesClasses"
-        }
-
-        args("-cp", dependencies)
     }
 }
 

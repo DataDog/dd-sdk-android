@@ -685,7 +685,8 @@ internal class RumViewScopeAttributePropagationTest {
         batteryInfoProvider = batteryInfoProvider,
         displayInfoProvider = displayInfoProvider,
         rumSessionTypeOverride = rumSessionType,
-        insightsCollector = insightsCollector
+        insightsCollector = insightsCollector,
+        heatmapIdentifierRegistry = null
     )
 
     // endregion

@@ -1,3 +1,8 @@
+data class com.datadog.android.heatmaps.CrossPlatformHeatmapActionData
+  constructor(List<String>, String, Long, Long, Long?, Long?)
+interface com.datadog.android.heatmaps.HeatmapIdentifierRegistryProvider
+  val heatmapIdentifierRegistry: com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
+fun heatmapViewKey(android.view.View): Long
 interface com.datadog.android.internal.attributes.LocalAttribute
   enum Key
     constructor(String)
@@ -60,6 +65,15 @@ class com.datadog.android.internal.data.SharedPreferencesStorage : PreferencesSt
   override fun clear()
 data class com.datadog.android.internal.flags.RumFlagEvaluationMessage
   constructor(String, Any)
+data class com.datadog.android.internal.heatmaps.HeatmapIdentifier
+  constructor(String)
+  companion object 
+    fun create(List<String>, String, String, (Throwable) -> Unit = {}): HeatmapIdentifier?
+interface com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
+  fun setHeatmapIdentifiers(Map<Long, HeatmapIdentifier>, String)
+  fun getHeatmapIdentifier(Long, String): HeatmapIdentifier?
+  companion object 
+    fun create(): HeatmapIdentifierRegistry
 class com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor : android.app.Application.ActivityLifecycleCallbacks
   constructor(Callback)
   val activitiesResumedCounter: java.util.concurrent.atomic.AtomicInteger
@@ -242,10 +256,12 @@ interface com.datadog.android.internal.time.TimeProvider
   fun getServerOffsetNanos(): Long
   fun getServerOffsetMillis(): Long
   fun getDeviceElapsedRealtimeMillis(): Long
+  fun getDeviceUptimeMillis(): Long
 abstract class com.datadog.android.internal.time.BaseTimeProvider : TimeProvider
   override fun getDeviceTimestampMillis(): Long
   override fun getDeviceElapsedTimeNanos(): Long
   override fun getDeviceElapsedRealtimeMillis(): Long
+  override fun getDeviceUptimeMillis(): Long
 fun ByteArray.toHexString(): String
 fun <T> android.content.Context.getSystemServiceAs(String): T?
 interface com.datadog.android.internal.utils.DDCoreSubscription<T: Any>
@@ -271,6 +287,7 @@ fun StringBuilder.appendIfNotEmpty(String)
 fun StringBuilder.appendIfNotEmpty(Char)
 fun String.toBase64(): String
 fun String.fromBase64(): String?
+fun android.view.View.isValidTapTarget(): Boolean
 fun Thread.safeGetThreadId(): Long
 fun Thread.State.asString(): String
 fun Array<StackTraceElement>.loggableStackTrace(): String

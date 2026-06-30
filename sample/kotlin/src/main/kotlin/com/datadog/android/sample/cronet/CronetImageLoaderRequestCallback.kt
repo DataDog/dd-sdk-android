@@ -7,6 +7,7 @@ package com.datadog.android.sample.cronet
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import org.chromium.net.CronetException
 import org.chromium.net.UrlRequest
 import org.chromium.net.UrlResponseInfo
 import timber.log.Timber
@@ -46,13 +47,32 @@ internal abstract class CronetImageLoaderRequestCallback : UrlRequest.Callback()
     }
 
     override fun onSucceeded(request: UrlRequest, info: UrlResponseInfo) {
-        val imageData = receivedData.toByteArray()
-        onBitmapLoaded(BitmapFactory.decodeByteArray(imageData, 0, imageData.size))
+        if (info.httpStatusCode != HTTP_OK) {
+            onBitmapFailed(IllegalStateException("Non-200 response received: ${info.httpStatusCode}"))
+            return
+        }
+        try {
+            val imageData = receivedData.toByteArray()
+            onBitmapLoaded(BitmapFactory.decodeByteArray(imageData, 0, imageData.size))
+        } catch (@Suppress("TooGenericExceptionCaught") e: RuntimeException) {
+            onBitmapFailed(e)
+        }
     }
 
-    abstract fun onBitmapLoaded(bitmap: Bitmap)
+    override fun onFailed(
+        request: UrlRequest?,
+        info: UrlResponseInfo?,
+        error: CronetException
+    ) {
+        onBitmapFailed(error)
+    }
 
-    companion object {
+    protected abstract fun onBitmapLoaded(bitmap: Bitmap)
+
+    protected abstract fun onBitmapFailed(error: Exception)
+
+    private companion object {
         private const val BUFFER_SIZE_100_KB = 102400
+        private const val HTTP_OK = 200
     }
 }
