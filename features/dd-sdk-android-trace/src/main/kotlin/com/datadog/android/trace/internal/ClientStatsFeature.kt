@@ -49,7 +49,10 @@ internal class ClientStatsFeature(
 
         StatsConcentrator(
             sdkCore,
-            ddSpanToSpanEventMapper = CoreTracerSpanToSpanEventMapper(networkInfoEnabled),
+            ddSpanToSpanEventMapper = CoreTracerSpanToSpanEventMapper(
+                networkInfoEnabled,
+                clientSideStatsEnabled = true
+            ),
             eventMapper = SpanEventMapperWrapper(spanEventMapper, sdkCore.internalLogger),
             statsExecutor,
             BatchStatsWriter(sdkCore, runtimeID),
