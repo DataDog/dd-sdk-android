@@ -929,7 +929,7 @@ internal class RumFeature(
             insightsCollector = NoOpInsightsCollector(),
             appStartupActivityPredicate = DefaultAppStartupActivityPredicate,
             timeseriesConfiguration = null,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart
+            rumViewEventWriteConfig = RumViewEventWriteConfig.AlwaysFullView
         )
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"
