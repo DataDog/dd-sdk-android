@@ -64,6 +64,12 @@ internal class StatsConcentrator(
     }
 
     fun record(trace: List<DDSpan>) {
+        // Possible rare race when consent switches from NOT_GRANTED to PENDING/GRANTED or vice versa but
+        // the rare and small data loss is worth it for the performance gain
+        if (currentConsent == TrackingConsent.NOT_GRANTED) {
+            return
+        }
+
         val metricsFeature = sdkCore.getFeature(Feature.TRACING_CLIENT_STATS_FEATURE_NAME) ?: return
         metricsFeature.withContext { datadogContext ->
             val applicableSpans = trace.asSequence()

@@ -825,6 +825,20 @@ internal class StatsConcentratorTest {
     }
 
     @Test
+    fun `M discard buffered data W onConsentUpdated() { PENDING to NOT_GRANTED }`(forge: Forge) {
+        // Given: record a span while consent is PENDING
+        val concentrator = makeConcentrator(initialConsent = TrackingConsent.PENDING)
+        val (span) = forge.makeEligibleSpan()
+        concentrator.record(listOf(span))
+
+        // When: consent is revoked
+        concentrator.onConsentUpdated(TrackingConsent.NOT_GRANTED)
+
+        // Then: buffered data is discarded, not written
+        verifyNoInteractions(mockStatsWriter)
+    }
+
+    @Test
     fun `M resume recording W onConsentUpdated() { NOT_GRANTED to GRANTED }`(forge: Forge) {
         // Given: start with no consent
         val concentrator = makeConcentrator(initialConsent = TrackingConsent.NOT_GRANTED)
