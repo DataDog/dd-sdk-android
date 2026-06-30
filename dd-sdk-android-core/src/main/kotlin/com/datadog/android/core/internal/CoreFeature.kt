@@ -72,6 +72,8 @@ import com.datadog.android.core.internal.user.DatadogUserInfoProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
 import com.datadog.android.core.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.core.internal.utils.getSafe
+import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.internal.system.BuildSdkVersionProvider
@@ -349,6 +351,12 @@ internal class CoreFeature(
                 return client.newCall(request)
             }
         }
+    }
+
+    fun flushContextThread() {
+        contextExecutorService
+            .submitSafe("context-drain-fence", internalLogger) {}
+            ?.getSafe("context-drain-fence", DRAIN_WAIT_SECONDS, TimeUnit.SECONDS, internalLogger)
     }
 
     @Throws(UnsupportedOperationException::class, InterruptedException::class)

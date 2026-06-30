@@ -10,7 +10,9 @@ import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.core.internal.utils.getSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
+import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.event.EventMapper
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.privacy.TrackingConsent
@@ -21,6 +23,7 @@ import com.datadog.android.trace.model.SpanEvent
 import com.datadog.trace.bootstrap.instrumentation.api.Tags
 import com.datadog.trace.core.DDSpan
 import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -66,7 +69,7 @@ internal class StatsConcentrator(
     fun record(trace: List<DDSpan>) {
         // Possible rare race when consent switches from NOT_GRANTED to PENDING/GRANTED or vice versa but
         // the rare and small data loss is worth it for the performance gain
-        if (currentConsent == TrackingConsent.NOT_GRANTED) {
+        if (currentConsent == TrackingConsent.NOT_GRANTED || isStopped) {
             return
         }
 
@@ -110,6 +113,35 @@ internal class StatsConcentrator(
     fun stop() {
         isStopped = true
         scheduleFlush(flushAll = true)
+    }
+
+    /**
+     * Synchronously drains any pending tasks queued on [executorService], shuts the executor down,
+     * awaits its termination, runs the drained tasks on the calling thread, and finally performs a
+     * synchronous flush-all of the in-memory buckets so [statsWriter] is invoked while the shared
+     * core write executor is still guaranteed to be alive.
+     *
+     * Unlike [stop], which only schedules a flush asynchronously on [executorService] (and is
+     * therefore unsafe to use right before that executor — or the shared core write executor — gets
+     * shut down), this method blocks the calling thread until the flush has actually completed.
+     *
+     * It should only be used by tests.
+     */
+    @Suppress("UnsafeThirdPartyFunctionCall") // Used in tests only
+    fun drainAndFlush() {
+        isStopped = true
+
+        (executorService as? ScheduledThreadPoolExecutor)?.let {
+            // Don't let not-yet-due delayed tasks (e.g. the periodic flush) run after shutdown.
+            it.executeExistingDelayedTasksAfterShutdownPolicy = false
+        }
+        // Submit the final flush ON the executor thread so it queues after any in-flight
+        // aggregation tasks and runs on the thread that owns buckets/oldestTs.
+        executorService
+            .submitSafe("stats-drain-flush", sdkCore.internalLogger) { flushBuckets(flushAll = true) }
+            ?.getSafe("stats-drain-flush", DRAIN_WAIT_SECONDS, TimeUnit.SECONDS, sdkCore.internalLogger)
+        executorService.shutdown()
+        executorService.awaitTermination(DRAIN_WAIT_SECONDS, TimeUnit.SECONDS)
     }
 
     private fun schedulePeriodicFlush() {
@@ -315,6 +347,7 @@ internal class StatsConcentrator(
         private const val DEFAULT_BUFFER_SIZE = 2
         private val DEFAULT_BUCKET_LENGTH = 10.seconds
         private const val FLUSH_INTERVAL_SECS = 30L
+        private const val DRAIN_WAIT_SECONDS = 10L
 
         private val ELIGIBLE_SPAN_KINDS = setOf(
             Tags.SPAN_KIND_SERVER,

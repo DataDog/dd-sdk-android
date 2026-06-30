@@ -15,6 +15,7 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.trace.event.SpanEventMapper
 import com.datadog.android.trace.internal.domain.metrics.ClientStatsAdapter
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -29,11 +30,14 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.Locale
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ScheduledExecutorService
 
 @Extensions(
@@ -193,6 +197,72 @@ internal class ClientStatsFeatureTest {
     fun `M expose ClientStatsAdapter W aggregator`() {
         // When + Then
         assertThat(testedFeature.aggregator).isInstanceOf(ClientStatsAdapter::class.java)
+    }
+
+    // endregion
+
+    // region onReceive
+
+    @Test
+    fun `M register itself as event receiver W onInitialize()`() {
+        // Then
+        verify(mockSdkCore).setEventReceiver(Feature.TRACING_CLIENT_STATS_FEATURE_NAME, testedFeature)
+    }
+
+    @Test
+    fun `M remove event receiver W onStop()`() {
+        // When
+        testedFeature.onStop()
+
+        // Then
+        verify(mockSdkCore).removeEventReceiver(Feature.TRACING_CLIENT_STATS_FEATURE_NAME)
+    }
+
+    @Test
+    fun `M drain and flush concentrator W onReceive() { flush_and_stop_stats }`() {
+        // Given
+        whenever(mockStatsExecutor.execute(any())) doAnswer { it.getArgument<Runnable>(0).run() }
+        whenever(mockStatsExecutor.submit(any())) doAnswer {
+            it.getArgument<Runnable>(0).run()
+            CompletableFuture.completedFuture(Unit)
+        }
+
+        // When
+        testedFeature.onReceive(mapOf("type" to ClientStatsFeature.FLUSH_AND_STOP_STATS_MESSAGE_TYPE))
+
+        // Then
+        verify(mockStatsExecutor).shutdown()
+        verify(mockStatsExecutor).awaitTermination(any(), any())
+    }
+
+    @Test
+    fun `M log warning W onReceive() { unknown map event type }`(
+        @StringForgery fakeType: String
+    ) {
+        // When
+        testedFeature.onReceive(mapOf("type" to fakeType))
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            ClientStatsFeature.UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(Locale.US, fakeType)
+        )
+    }
+
+    @Test
+    fun `M log warning W onReceive() { unsupported event type }`(
+        @StringForgery fakeEvent: String
+    ) {
+        // When
+        testedFeature.onReceive(fakeEvent)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            ClientStatsFeature.UNSUPPORTED_EVENT_TYPE.format(Locale.US, fakeEvent::class.java.canonicalName)
+        )
     }
 
     // endregion

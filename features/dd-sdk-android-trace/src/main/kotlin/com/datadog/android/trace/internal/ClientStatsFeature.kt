@@ -7,7 +7,9 @@
 package com.datadog.android.trace.internal
 
 import android.content.Context
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.storage.FeatureStorageConfiguration
@@ -24,6 +26,7 @@ import com.datadog.android.trace.internal.net.ClientStatsRequestFactory
 import com.datadog.trace.api.Config
 import com.datadog.trace.common.metrics.MetricsAggregator
 import com.datadog.trace.common.metrics.NoOpMetricsAggregator
+import java.util.Locale
 import java.util.concurrent.ScheduledExecutorService
 
 internal class ClientStatsFeature(
@@ -31,7 +34,7 @@ internal class ClientStatsFeature(
     customEndpointUrl: String?,
     private val spanEventMapper: SpanEventMapper,
     private val networkInfoEnabled: Boolean
-) : StorageBackedFeature, TrackingConsentProviderCallback {
+) : StorageBackedFeature, TrackingConsentProviderCallback, FeatureEventReceiver {
     override val name = Feature.TRACING_CLIENT_STATS_FEATURE_NAME
 
     override val storageConfiguration = FeatureStorageConfiguration(
@@ -70,9 +73,12 @@ internal class ClientStatsFeature(
         statsConcentrator = concentrator
         statsExecutor = executor
         aggregator = ClientStatsAdapter(concentrator)
+
+        sdkCore.setEventReceiver(name, this)
     }
 
     override fun onStop() {
+        sdkCore.removeEventReceiver(name)
         statsConcentrator?.stop()
         statsExecutor?.shutdown()
     }
@@ -82,5 +88,37 @@ internal class ClientStatsFeature(
         newConsent: TrackingConsent
     ) {
         statsConcentrator?.onConsentUpdated(newConsent)
+    }
+
+    override fun onReceive(event: Any) {
+        if (event !is Map<*, *>) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName) }
+            )
+            return
+        }
+
+        when (event["type"]) {
+            FLUSH_AND_STOP_STATS_MESSAGE_TYPE -> statsConcentrator?.drainAndFlush()
+
+            else -> {
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    { UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(Locale.US, event["type"]) }
+                )
+            }
+        }
+    }
+
+    internal companion object {
+        internal const val FLUSH_AND_STOP_STATS_MESSAGE_TYPE = "flush_and_stop_stats"
+
+        internal const val UNSUPPORTED_EVENT_TYPE =
+            "Client Stats feature received an event of unsupported type=%s."
+        internal const val UNKNOWN_EVENT_TYPE_PROPERTY_VALUE =
+            "Client Stats feature received an event with unknown value of \"type\" property=%s."
     }
 }

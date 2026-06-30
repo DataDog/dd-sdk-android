@@ -24,6 +24,7 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 internal const val ERROR_TASK_REJECTED = "Unable to schedule %s task on the executor"
 internal const val ERROR_FUTURE_GET_FAILED = "Unable to get result of the %s task"
@@ -183,6 +184,60 @@ fun <T> Future<T>?.getSafe(
         )
         null
     } catch (e: ExecutionException) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            { ERROR_FUTURE_GET_FAILED.format(Locale.US, operationName) },
+            e
+        )
+        null
+    }
+}
+
+/**
+ * Safely unwraps [Future] result with a timeout without throwing any exception.
+ *
+ * @param T Task result type.
+ * @param operationName Name of the task.
+ * @param timeout Maximum time to wait.
+ * @param unit Time unit of the timeout.
+ * @param internalLogger Internal logger.
+ */
+@InternalApi
+fun <T> Future<T>?.getSafe(
+    operationName: String,
+    timeout: Long,
+    unit: TimeUnit,
+    internalLogger: InternalLogger
+): T? {
+    return try {
+        @Suppress("UnsafeThirdPartyFunctionCall") // timeout args are caller-controlled
+        this?.get(timeout, unit)
+    } catch (e: InterruptedException) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            { ERROR_FUTURE_GET_FAILED.format(Locale.US, operationName) },
+            e
+        )
+        null
+    } catch (e: CancellationException) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            { ERROR_FUTURE_GET_FAILED.format(Locale.US, operationName) },
+            e
+        )
+        null
+    } catch (e: ExecutionException) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            { ERROR_FUTURE_GET_FAILED.format(Locale.US, operationName) },
+            e
+        )
+        null
+    } catch (e: TimeoutException) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),

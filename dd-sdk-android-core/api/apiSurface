@@ -341,6 +341,7 @@ fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(String, Long, jav
 fun java.util.concurrent.ExecutorService.submitSafe(String, com.datadog.android.api.InternalLogger, Runnable): java.util.concurrent.Future<*>?
 fun <T> java.util.concurrent.ExecutorService.submitSafe(String, com.datadog.android.api.InternalLogger, java.util.concurrent.Callable<T>): java.util.concurrent.Future<T>?
 fun <T> java.util.concurrent.Future<T>?.getSafe(String, com.datadog.android.api.InternalLogger): T?
+fun <T> java.util.concurrent.Future<T>?.getSafe(String, Long, java.util.concurrent.TimeUnit, com.datadog.android.api.InternalLogger): T?
 object com.datadog.android.core.internal.utils.JsonSerializer
   fun toJsonElement(Any?): com.google.gson.JsonElement
   fun Map<String, Any?>.safeMapValuesToJson(com.datadog.android.api.InternalLogger): Map<String, com.google.gson.JsonElement>
