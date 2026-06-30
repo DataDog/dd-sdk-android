@@ -191,7 +191,8 @@ internal class RumViewManagerScopeTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            heatmapIdentifierRegistry = null
         )
     }
 
@@ -585,7 +586,8 @@ internal class RumViewManagerScopeTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            heatmapIdentifierRegistry = null
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.validBackgroundEvent()
@@ -622,7 +624,8 @@ internal class RumViewManagerScopeTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            heatmapIdentifierRegistry = null
         )
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true
@@ -662,7 +665,8 @@ internal class RumViewManagerScopeTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            heatmapIdentifierRegistry = null
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.validBackgroundEvent()
@@ -735,7 +739,8 @@ internal class RumViewManagerScopeTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            heatmapIdentifierRegistry = null
         )
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true
@@ -776,7 +781,8 @@ internal class RumViewManagerScopeTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            heatmapIdentifierRegistry = null
         )
         testedScope.stopped = true
         val fakeEvent = forge.applicationStartedEvent()
