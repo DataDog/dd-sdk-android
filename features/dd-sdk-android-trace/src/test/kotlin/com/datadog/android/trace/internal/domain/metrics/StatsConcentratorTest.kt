@@ -13,6 +13,7 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.event.EventMapper
 import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
 import com.datadog.android.trace.internal.domain.metrics.StatsConcentrator.Companion.alignTimestamp
@@ -109,6 +110,7 @@ internal class StatsConcentratorTest {
             executorService = mockExecutorService,
             statsWriter = mockStatsWriter,
             timeProvider = mockTimeProvider,
+            initialConsent = TrackingConsent.GRANTED,
             startPeriodicFlush = false
         )
     }
@@ -127,6 +129,7 @@ internal class StatsConcentratorTest {
             executorService = mockExecutorService,
             statsWriter = mockStatsWriter,
             timeProvider = mockTimeProvider,
+            initialConsent = TrackingConsent.GRANTED,
             startPeriodicFlush = true
         )
 
@@ -684,6 +687,7 @@ internal class StatsConcentratorTest {
             executorService = mockExecutorService,
             statsWriter = mockStatsWriter,
             timeProvider = mockTimeProvider,
+            initialConsent = TrackingConsent.GRANTED,
             startPeriodicFlush = true
         )
         verify(mockExecutorService).schedule(runnableCaptor.capture(), any(), any())
@@ -732,7 +736,154 @@ internal class StatsConcentratorTest {
 
     // endregion
 
+    // region Consent
+
+    @Test
+    fun `M drop all spans W record() { initialConsent = NOT_GRANTED }`(forge: Forge) {
+        // Given
+        val concentrator = makeConcentrator(initialConsent = TrackingConsent.NOT_GRANTED)
+        val (span) = forge.makeEligibleSpan()
+
+        // When
+        concentrator.record(listOf(span))
+        concentrator.scheduleFlush(flushAll = true)
+
+        // Then
+        verifyNoInteractions(mockStatsWriter)
+    }
+
+    @Test
+    fun `M aggregate spans W record() { initialConsent = PENDING }`(forge: Forge) {
+        // Given
+        val concentrator = makeConcentrator(initialConsent = TrackingConsent.PENDING)
+        val (span) = forge.makeEligibleSpan()
+
+        // When
+        concentrator.record(listOf(span))
+        concentrator.scheduleFlush(flushAll = true)
+
+        // Then
+        assertThat(captureBuckets()).hasSize(1)
+    }
+
+    @Test
+    fun `M discard buffered data W onConsentUpdated() { GRANTED to NOT_GRANTED }`(
+        forge: Forge
+    ) {
+        // Given: record a span while consent is GRANTED
+        val (span) = forge.makeEligibleSpan()
+        testedConcentrator.record(listOf(span))
+
+        // When: consent is revoked
+        testedConcentrator.onConsentUpdated(TrackingConsent.NOT_GRANTED)
+
+        // Then
+        verifyNoInteractions(mockStatsWriter)
+    }
+
+    @Test
+    fun `M drop spans recorded after consent revoked W onConsentUpdated() { GRANTED to NOT_GRANTED }`(
+        forge: Forge
+    ) {
+        // Given: flush any existing data, then revoke consent
+        testedConcentrator.onConsentUpdated(TrackingConsent.NOT_GRANTED)
+        val (span) = forge.makeEligibleSpan()
+
+        // When: record a span after revocation
+        testedConcentrator.record(listOf(span))
+        testedConcentrator.scheduleFlush(flushAll = true)
+
+        // Then
+        verifyNoInteractions(mockStatsWriter)
+    }
+
+    @Test
+    fun `M not flush buffered data W onConsentUpdated() { GRANTED to PENDING }`(forge: Forge) {
+        // Given: record a span while consent is GRANTED
+        val (span) = forge.makeEligibleSpan()
+        testedConcentrator.record(listOf(span))
+
+        // When: consent moves to PENDING — both are recording states, no boundary flush needed
+        testedConcentrator.onConsentUpdated(TrackingConsent.PENDING)
+
+        // Then: no flush triggered by the consent change itself
+        verifyNoInteractions(mockStatsWriter)
+    }
+
+    @Test
+    fun `M not flush buffered data W onConsentUpdated() { PENDING to GRANTED }`(forge: Forge) {
+        // Given
+        val concentrator = makeConcentrator(initialConsent = TrackingConsent.PENDING)
+        val (span) = forge.makeEligibleSpan()
+        concentrator.record(listOf(span))
+
+        // When
+        concentrator.onConsentUpdated(TrackingConsent.GRANTED)
+
+        // Then: no flush triggered by the consent change itself
+        verifyNoInteractions(mockStatsWriter)
+    }
+
+    @Test
+    fun `M discard buffered data W onConsentUpdated() { PENDING to NOT_GRANTED }`(forge: Forge) {
+        // Given: record a span while consent is PENDING
+        val concentrator = makeConcentrator(initialConsent = TrackingConsent.PENDING)
+        val (span) = forge.makeEligibleSpan()
+        concentrator.record(listOf(span))
+
+        // When: consent is revoked
+        concentrator.onConsentUpdated(TrackingConsent.NOT_GRANTED)
+
+        // Then: buffered data is discarded, not written
+        verifyNoInteractions(mockStatsWriter)
+    }
+
+    @Test
+    fun `M resume recording W onConsentUpdated() { NOT_GRANTED to GRANTED }`(forge: Forge) {
+        // Given: start with no consent
+        val concentrator = makeConcentrator(initialConsent = TrackingConsent.NOT_GRANTED)
+        val (span) = forge.makeEligibleSpan()
+
+        // When: grant consent then record
+        concentrator.onConsentUpdated(TrackingConsent.GRANTED)
+        concentrator.record(listOf(span))
+        concentrator.scheduleFlush(flushAll = true)
+
+        // Then
+        assertThat(captureBuckets()).hasSize(1)
+    }
+
+    @Test
+    fun `M resume recording W onConsentUpdated() { NOT_GRANTED to PENDING }`(forge: Forge) {
+        // Given: start with no consent
+        val concentrator = makeConcentrator(initialConsent = TrackingConsent.NOT_GRANTED)
+        val (span) = forge.makeEligibleSpan()
+
+        // When: update to pending then record
+        concentrator.onConsentUpdated(TrackingConsent.PENDING)
+        concentrator.record(listOf(span))
+        concentrator.scheduleFlush(flushAll = true)
+
+        // Then
+        assertThat(captureBuckets()).hasSize(1)
+    }
+
+    // endregion
+
     // region Helpers
+
+    private fun makeConcentrator(initialConsent: TrackingConsent) = StatsConcentrator(
+        sdkCore = mockSdkCore,
+        ddSpanToSpanEventMapper = mockSpanEventMapper,
+        eventMapper = mockEventMapper,
+        bufferLen = fakeBufferLen,
+        bucketSizeNs = fakeBucketSizeNs,
+        executorService = mockExecutorService,
+        statsWriter = mockStatsWriter,
+        timeProvider = mockTimeProvider,
+        initialConsent = initialConsent,
+        startPeriodicFlush = false
+    )
 
     /** Creates a matched (DDSpan, SpanEvent) pair and wires the mapper stub. */
     private fun Forge.makeEligibleSpan(

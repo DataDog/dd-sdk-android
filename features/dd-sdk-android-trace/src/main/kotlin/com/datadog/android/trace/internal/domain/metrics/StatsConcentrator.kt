@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.event.EventMapper
 import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.internal.ddsketch.DDSketch
 import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
@@ -24,6 +25,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
+@Suppress("TooManyFunctions")
 internal class StatsConcentrator(
     private val sdkCore: FeatureSdkCore,
     private val ddSpanToSpanEventMapper: ContextAwareMapper<DDSpan, SpanEvent>,
@@ -34,6 +36,7 @@ internal class StatsConcentrator(
     private val executorService: ScheduledExecutorService,
     private val statsWriter: StatsWriter,
     private val timeProvider: TimeProvider,
+    initialConsent: TrackingConsent,
     /**
      * The number of stats buckets we keep in memory before flushing them.
      * It means that we can compute stats only for the last `bufferLen * bucketSizeNs` and that we
@@ -44,6 +47,9 @@ internal class StatsConcentrator(
     private val bucketSizeNs: Long = DEFAULT_BUCKET_LENGTH.inWholeNanoseconds,
     startPeriodicFlush: Boolean = true
 ) {
+    @Volatile
+    private var currentConsent: TrackingConsent = initialConsent
+
     // These fields below are confined to executorService; never access them from another thread.
     private var oldestTs: Long = 0L
     private val buckets = mutableMapOf<Long, MutableMap<AggregationKey, GroupedStats>>()
@@ -58,6 +64,12 @@ internal class StatsConcentrator(
     }
 
     fun record(trace: List<DDSpan>) {
+        // Possible rare race when consent switches from NOT_GRANTED to PENDING/GRANTED or vice versa but
+        // the rare and small data loss is worth it for the performance gain
+        if (currentConsent == TrackingConsent.NOT_GRANTED) {
+            return
+        }
+
         val metricsFeature = sdkCore.getFeature(Feature.TRACING_CLIENT_STATS_FEATURE_NAME) ?: return
         metricsFeature.withContext { datadogContext ->
             val applicableSpans = trace.asSequence()
@@ -85,7 +97,13 @@ internal class StatsConcentrator(
                 }
                 .toList()
 
-            executorService.executeSafe("stats-aggregate", sdkCore.internalLogger) { aggregate(applicableSpans) }
+            executorService.executeSafe("stats-aggregate", sdkCore.internalLogger) {
+                if (currentConsent == TrackingConsent.NOT_GRANTED) {
+                    return@executeSafe
+                }
+
+                aggregate(applicableSpans)
+            }
         }
     }
 
@@ -154,31 +172,35 @@ internal class StatsConcentrator(
         // Update the oldest allowed timestamp that older events will fall into
         oldestTs = (alignTimestamp(bucketSizeNs, now) - (bufferLen - 1) * bucketSizeNs).coerceAtLeast(oldestTs)
 
-        return closedBuckets.map { (bucketStart, groups) ->
-            ClientStatsBucket(
-                start = bucketStart + timeProvider.getServerOffsetNanos(),
-                duration = bucketSizeNs,
-                stats = groups.map { (key, stats) ->
-                    ClientGroupedStats(
-                        service = key.service,
-                        name = key.operation,
-                        resource = key.resource,
-                        httpStatusCode = key.httpStatusCode,
-                        type = key.type,
-                        spanKind = key.spanKind,
-                        isTraceRoot = key.isTraceRoot,
-                        hits = stats.hits,
-                        errors = stats.errors,
-                        duration = stats.duration,
-                        topLevelHits = stats.topLevelHits,
-                        okSummary = stats.okSummary.serialize(),
-                        errorSummary = stats.errSummary.serialize(),
-                        isSynthetic = key.synthetics,
-                        peerTags = key.peerTags,
-                        serviceSource = key.serviceSource
-                    )
-                }
-            )
+        return if (currentConsent == TrackingConsent.NOT_GRANTED) {
+            emptyList()
+        } else {
+            closedBuckets.map { (bucketStart, groups) ->
+                ClientStatsBucket(
+                    start = bucketStart + timeProvider.getServerOffsetNanos(),
+                    duration = bucketSizeNs,
+                    stats = groups.map { (key, stats) ->
+                        ClientGroupedStats(
+                            service = key.service,
+                            name = key.operation,
+                            resource = key.resource,
+                            httpStatusCode = key.httpStatusCode,
+                            type = key.type,
+                            spanKind = key.spanKind,
+                            isTraceRoot = key.isTraceRoot,
+                            hits = stats.hits,
+                            errors = stats.errors,
+                            duration = stats.duration,
+                            topLevelHits = stats.topLevelHits,
+                            okSummary = stats.okSummary.serialize(),
+                            errorSummary = stats.errSummary.serialize(),
+                            isSynthetic = key.synthetics,
+                            peerTags = key.peerTags,
+                            serviceSource = key.serviceSource
+                        )
+                    }
+                )
+            }
         }
     }
 
@@ -213,6 +235,18 @@ internal class StatsConcentrator(
         return PEER_TAG_KEYS
             .mapNotNull { key -> spanTags[key]?.let { value -> "$key:$value" } }
             .sorted()
+    }
+
+    fun onConsentUpdated(newConsent: TrackingConsent) {
+        executorService.executeSafe("stats-consent-change", sdkCore.internalLogger) {
+            currentConsent = newConsent
+            // Only flush when revoking consent. PENDING <-> GRANTED transitions are both recording
+            // states and need no boundary flush. Consent is set first so drainBuckets discards
+            // the in-memory buffer rather than forwarding it to the writer.
+            if (newConsent == TrackingConsent.NOT_GRANTED) {
+                flushBuckets(flushAll = true)
+            }
+        }
     }
 
     private data class AggregationKey(
