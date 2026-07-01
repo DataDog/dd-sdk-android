@@ -249,6 +249,7 @@ internal class RumSessionScope(
 
         val isInteraction = (event is RumRawEvent.StartView) || (event is RumRawEvent.StartAction)
         val isBackgroundEvent = event.javaClass in RumViewManagerScope.validBackgroundEventTypes
+        val isAppStart = event is RumRawEvent.AppStartEvent
         val isSdkInitInForeground = event is RumRawEvent.SdkInit && event.isAppInForeground
         val isSdkInitInBackground = event is RumRawEvent.SdkInit && !event.isAppInForeground
 
@@ -257,7 +258,7 @@ internal class RumSessionScope(
             sessionEndedMetricDispatcher.endMetric(sessionId, sdkCore.time.serverTimeOffsetMs)
         }
 
-        if (isInteraction || isSdkInitInForeground) {
+        if (isInteraction || isSdkInitInForeground || isAppStart) {
             if (isNewSession || isExpired || isTimedOut) {
                 val reason = if (isNewSession) {
                     StartReason.USER_APP_LAUNCH
@@ -328,7 +329,7 @@ internal class RumSessionScope(
         // RUM-15962: Remove with SDK v4 release (RUM-13454).
         internal const val RUM_KEEP_SESSION_BUS_MESSAGE_KEY = "keepSession"
         internal const val RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY = "sessionSampleRate"
-        internal val DEFAULT_SESSION_INACTIVITY_NS = TimeUnit.MINUTES.toNanos(15)
+        internal val DEFAULT_SESSION_INACTIVITY_NS = TimeUnit.SECONDS.toNanos(10)
         internal val DEFAULT_SESSION_MAX_DURATION_NS = TimeUnit.HOURS.toNanos(4)
     }
 }
