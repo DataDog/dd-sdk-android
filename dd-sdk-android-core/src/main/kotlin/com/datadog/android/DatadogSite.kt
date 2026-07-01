@@ -46,6 +46,11 @@ enum class DatadogSite private constructor(internal val siteName: String, privat
     AP2("ap2"),
 
     /**
+     *  The UK1 site: [uk1.datadoghq.com](https://uk1.datadoghq.com).
+     */
+    UK1("uk1"),
+
+    /**
      *  The US1_FED site (FedRAMP compatible): [app.ddog-gov.com](https://app.ddog-gov.com).
      */
     US1_FED("us1_fed", "browser-intake-ddog-gov.com"),
