@@ -22,6 +22,7 @@ enum com.datadog.android.DatadogSite
   - EU1
   - AP1
   - AP2
+  - UK1
   - US1_FED
   - US2_FED
   - STAGING
