@@ -42,4 +42,19 @@
         android:title="@string/legacy_toolbar_title"
         app:layout_constraintTop_toBottomOf="@+id/appcompat_subclass" />
 
+    <!--
+        PixelCopy SR test: a custom leaf View with no registered mapper.
+        Without the PixelCopy fallback, SR records a blank rectangle here.
+        With it, SR should record pixel-perfect concentric coloured rings.
+        Navigate: Home > Session Replay > Unsupported Views
+    -->
+    <com.datadog.android.sample.sessionreplay.PixelCopyTestView
+        android:id="@+id/pixel_copy_test_view"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@+id/toolbar_subclass"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

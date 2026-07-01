@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.listener
 
+import android.os.Build
 import android.view.View
 import android.view.ViewTreeObserver
 import androidx.annotation.MainThread
@@ -18,6 +19,7 @@ import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
+import com.datadog.android.sessionreplay.internal.recorder.PixelCopyCapture
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.internal.recorder.withinSRBenchmarkSpan
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
@@ -39,7 +41,8 @@ internal class WindowsOnDrawListener(
         dynamicOptimizationEnabled = dynamicOptimizationEnabled
     ),
     private val methodCallSamplingRate: Float,
-    private val rumContextProvider: RumContextProvider
+    private val rumContextProvider: RumContextProvider,
+    private val pixelCopyCapture: PixelCopyCapture? = null
 ) : ViewTreeObserver.OnDrawListener {
 
     internal val weakReferencedDecorViews: List<WeakReference<View>> = zOrderedDecorViews.map { WeakReference(it) }
@@ -62,6 +65,9 @@ internal class WindowsOnDrawListener(
             val item = recordedDataQueueHandler.addSnapshotItem(systemInformation) ?: return
 
             val currentViewUrl = rumContextProvider.getRumContext().viewUrl
+
+            // Discard stale bitmap before traversal so mappers never see previous-screen pixels.
+            pixelCopyCapture?.onPreTraversal(currentViewUrl)
 
             val nodes = sdkCore.internalLogger.measureMethodCallPerf(
                 METHOD_CALL_CALLER_CLASS,
@@ -95,14 +101,24 @@ internal class WindowsOnDrawListener(
             }
 
             touchPrivacyManager.updateCurrentTouchOverrideAreas()
+
+            // Post-traversal: evaluate pending crops now that all wireframe bounds are known.
+            // processPendingCrops decides PixelCopy vs isolation per crop based on overlap check.
+            if (nodes.isNotEmpty()) {
+                pixelCopyCapture?.processPendingCrops(nodes)
+            }
+
+            // Fire one full-window PixelCopy per snapshot — O(1) GPU readback.
+            // The resulting bitmap is used by the NEXT cycle's processPendingCrops (PixelCopy path).
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                pixelCopyCapture?.captureLatestFrame()
+            }
         }
     }
 
     companion object {
         private const val METHOD_CALL_CAPTURE_RECORD: String = "Capture Record"
-
         private const val BENCHMARK_SPAN_SNAPSHOT_PRODUCER = "SnapshotProducer"
-
         private val METHOD_CALL_CALLER_CLASS = WindowsOnDrawListener::class.java
     }
 }

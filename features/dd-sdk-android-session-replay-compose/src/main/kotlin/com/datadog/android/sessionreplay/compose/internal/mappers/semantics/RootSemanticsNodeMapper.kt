@@ -6,6 +6,8 @@
 
 package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
+import android.graphics.Rect
+import android.view.View
 import androidx.annotation.UiThread
 import androidx.compose.ui.graphics.toAndroidRectF
 import androidx.compose.ui.semantics.Role
@@ -15,6 +17,9 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.core.graphics.toRect
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.IMAGE_DIMEN_CONSIDERED_PII_IN_DP
+import com.datadog.android.sessionreplay.ImagePrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.withinComposeBenchmarkSpan
@@ -64,7 +69,10 @@ internal class RootSemanticsNodeMapper(
         density: Float,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback,
-        internalLogger: InternalLogger
+        internalLogger: InternalLogger,
+        // PoC: the host AndroidComposeView/ComposeView — passed to View.draw for isolated
+        // composable capture (no overlying views contaminate the result).
+        hostView: View? = null
     ): List<MobileSegment.Wireframe> {
         val wireframes = mutableListOf<MobileSegment.Wireframe>()
         withinComposeBenchmarkSpan(ROOT_NODE_SPAN_NAME, true) {
@@ -81,7 +89,9 @@ internal class RootSemanticsNodeMapper(
                 ),
                 asyncJobStatusCallback = asyncJobStatusCallback,
                 mappingContext = mappingContext,
-                internalLogger = internalLogger
+                internalLogger = internalLogger,
+                density = density,
+                hostView = hostView
             )
         }
         return wireframes
@@ -96,7 +106,9 @@ internal class RootSemanticsNodeMapper(
         parentUiContext: UiContext,
         asyncJobStatusCallback: AsyncJobStatusCallback,
         mappingContext: MappingContext,
-        internalLogger: InternalLogger
+        internalLogger: InternalLogger,
+        density: Float,
+        hostView: View?
     ) {
         if (semanticsUtils.isNodePositionUnavailable(semanticsNode)) {
             // If we cant get the real position, we skip the node.
@@ -142,11 +154,39 @@ internal class RootSemanticsNodeMapper(
                 internalLogger = internalLogger
             )
             var currentUiContext = parentUiContext
-            semanticsWireframe?.let {
-                wireframes.addAll(it.wireframes)
-                currentUiContext = it.uiContext ?: currentUiContext
-            }
+            val producedWireframes = semanticsWireframe?.wireframes.orEmpty()
             val children = semanticsNode.children
+
+            // PoC: dark-spot detection. If this is a leaf node (no children) and the
+            // semantic mapper produced no wireframes, the composable is likely doing
+            // custom Canvas drawing with no semantic equivalent. Attempt a PixelCopy crop
+            // of the exact node bounds from the last captured full-window frame.
+            if (producedWireframes.isEmpty() && children.isEmpty()) {
+                // Resolve the privacy settings that actually apply to THIS node — honoring any
+                // composable-level override (Modifier tagging this node or an ancestor), not
+                // just the global default. semanticsWireframe.uiContext, when present, already
+                // reflects that resolution; fall back to the inherited parent value.
+                val effectiveImagePrivacy = semanticsWireframe?.uiContext?.imagePrivacy
+                    ?: parentUiContext.imagePrivacy
+                val effectiveTextAndInputPrivacy = semanticsWireframe?.uiContext?.textAndInputPrivacy
+                    ?: parentUiContext.textAndInputPrivacy
+                val pixelWireframe = tryPixelCopyCropForNode(
+                    semanticsNode = semanticsNode,
+                    hostView = hostView,
+                    density = density,
+                    mappingContext = mappingContext,
+                    imagePrivacy = effectiveImagePrivacy,
+                    textAndInputPrivacy = effectiveTextAndInputPrivacy,
+                    asyncJobStatusCallback = asyncJobStatusCallback
+                )
+                if (pixelWireframe != null) {
+                    wireframes.add(pixelWireframe)
+                    return  // Pixel-captured — children are included in pixels, skip recursion
+                }
+            }
+
+            wireframes.addAll(producedWireframes)
+            currentUiContext = semanticsWireframe?.uiContext ?: currentUiContext
             children.forEach {
                 createComposerWireframes(
                     semanticsNode = it,
@@ -155,10 +195,107 @@ internal class RootSemanticsNodeMapper(
                     parentUiContext = currentUiContext,
                     asyncJobStatusCallback = asyncJobStatusCallback,
                     mappingContext = mappingContext,
-                    internalLogger = internalLogger
+                    internalLogger = internalLogger,
+                    density = density,
+                    hostView = hostView
                 )
             }
         }
+    }
+
+    /**
+     * Registers a pending crop for this Compose dark-spot node via [PixelCropCallback.registerPendingCrop].
+     *
+     * The decision between PixelCopy (full fidelity) and View.draw isolation (no overlay
+     * contamination) is deferred to post-traversal [processPendingCrops] once all wireframe
+     * bounds are known. An [MobileSegment.Wireframe.ImageWireframe] stub (isEmpty=true) is
+     * returned immediately and populated asynchronously.
+     *
+     * Returns null (triggering the dark-spot detection fallback) if no [PixelCropCallback] is
+     * available, no host view is provided, the node has no drawable area, or privacy disallows
+     * capture:
+     * - [textAndInputPrivacy] must be [TextAndInputPrivacy.MASK_SENSITIVE_INPUTS] (its
+     *   baseline — [TextAndInputPrivacy] has no fully-permissive "off" state); anything
+     *   stricter disables pixel capture unconditionally.
+     * - [imagePrivacy] gates on the node's size, mirroring how [ImagePrivacy.MASK_LARGE_ONLY]
+     *   already behaves for regular images elsewhere in SR: [ImagePrivacy.MASK_NONE] always
+     *   allows capture; [ImagePrivacy.MASK_LARGE_ONLY] allows it only when the node is smaller
+     *   than [IMAGE_DIMEN_CONSIDERED_PII_IN_DP] on both axes; [ImagePrivacy.MASK_ALL] never
+     *   allows it.
+     *
+     * The check is deliberately strict: this pipeline captures raw pixels with no knowledge of
+     * what the composable actually renders, so it cannot apply the same content-aware masking
+     * the semantic mapper chain does. Any privacy restriction beyond what's allowed above —
+     * global or from a composable-level override — disables pixel capture for that node rather
+     * than risk uploading unmasked sensitive content.
+     */
+    private fun tryPixelCopyCropForNode(
+        semanticsNode: SemanticsNode,
+        hostView: View?,
+        density: Float,
+        mappingContext: MappingContext,
+        imagePrivacy: ImagePrivacy,
+        textAndInputPrivacy: TextAndInputPrivacy,
+        asyncJobStatusCallback: AsyncJobStatusCallback
+    ): MobileSegment.Wireframe? {
+        if (textAndInputPrivacy != TextAndInputPrivacy.MASK_SENSITIVE_INPUTS) return null
+        if (imagePrivacy == ImagePrivacy.MASK_ALL) return null
+
+        val pixelCropCallback = mappingContext.pixelCropCallback ?: return null
+        hostView ?: return null
+
+        val bounds = semanticsNode.boundsInRoot
+        if (bounds.width <= 0f || bounds.height <= 0f) return null
+
+        val nodeId = semanticsNode.id.toLong()
+        val globalBounds = semanticsUtils.resolveInnerBounds(semanticsNode)
+
+        // MASK_LARGE_ONLY: only allow capture for nodes small enough to be unlikely to hold
+        // meaningful content (icons, decorations) — same threshold used for regular images.
+        val isLarge = globalBounds.width >= IMAGE_DIMEN_CONSIDERED_PII_IN_DP ||
+            globalBounds.height >= IMAGE_DIMEN_CONSIDERED_PII_IN_DP
+        if (imagePrivacy == ImagePrivacy.MASK_LARGE_ONLY && isLarge) return null
+
+        // Isolation clip rect: composable's bounds within the host view's coordinate space.
+        // boundsInRoot is already relative to the AndroidComposeView / ComposeView.
+        val isolationClipRect = Rect(
+            bounds.left.toInt(), bounds.top.toInt(),
+            bounds.right.toInt(), bounds.bottom.toInt()
+        )
+        if (isolationClipRect.width() <= 0 || isolationClipRect.height() <= 0) return null
+
+        // Window-pixel rect for the PixelCopy crop path.
+        val hostViewLocation = IntArray(2)
+        hostView.getLocationInWindow(hostViewLocation)
+        val windowRect = Rect(
+            hostViewLocation[0] + bounds.left.toInt(),
+            hostViewLocation[1] + bounds.top.toInt(),
+            hostViewLocation[0] + bounds.right.toInt(),
+            hostViewLocation[1] + bounds.bottom.toInt()
+        )
+
+        val imageWireframe = MobileSegment.Wireframe.ImageWireframe(
+            id = nodeId,
+            x = globalBounds.x,
+            y = globalBounds.y,
+            width = globalBounds.width,
+            height = globalBounds.height,
+            isEmpty = true
+        )
+
+        // registerPendingCrop calls jobStarted() and defers the capture decision
+        // (PixelCopy vs isolation) until processPendingCrops has the full wireframe picture.
+        pixelCropCallback.registerPendingCrop(
+            nodeId = nodeId,
+            windowRect = windowRect,
+            dpBounds = globalBounds,
+            isolationView = hostView,
+            isolationClipRect = isolationClipRect,
+            wireframe = imageWireframe,
+            asyncJobStatusCallback = asyncJobStatusCallback
+        )
+
+        return imageWireframe
     }
 
     private fun getSemanticsNodeMapper(

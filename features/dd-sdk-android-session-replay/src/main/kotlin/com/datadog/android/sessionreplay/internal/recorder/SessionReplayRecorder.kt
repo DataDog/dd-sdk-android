@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder
 
 import android.app.Application
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.view.Window
@@ -31,6 +32,7 @@ import com.datadog.android.sessionreplay.internal.processor.RumContextDataHandle
 import com.datadog.android.sessionreplay.internal.recorder.callback.OnWindowRefreshedCallback
 import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.HiddenViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.PixelCopyFallbackMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapPool
@@ -71,6 +73,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private val internalLogger: InternalLogger
     private val uiHandler: Handler
     private val resourceResolver: ResourceResolver
+    private val pixelCopyCapture: PixelCopyCapture?
     private var shouldRecord = false
 
     @Suppress("LongParameterList")
@@ -159,6 +162,23 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             webPImageCompression = WebPImageCompression(internalLogger)
         )
 
+        // PoC: mixed PixelCopy + isolation capture. PixelCopy requires API 26+;
+        // the isolation (View.draw) fallback works on any API level.
+        this.pixelCopyCapture = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            PixelCopyCapture(resourceResolver)
+        } else {
+            null
+        }
+
+        // PoC: PixelCopyFallbackMapper captures unmapped leaf views via View.draw.
+        val pixelCopyFallbackMapper = PixelCopyFallbackMapper(
+            fallbackMapper = defaultVWM,
+            viewIdentifierResolver = viewIdentifierResolver,
+            colorStringFormatter = colorStringFormatter,
+            viewBoundsResolver = viewBoundsResolver,
+            drawableToColorMapper = drawableToColorMapper
+        )
+
         this.viewOnDrawInterceptor = ViewOnDrawInterceptor(
             internalLogger = internalLogger,
             onDrawListenerProducer = DefaultOnDrawListenerProducer(
@@ -170,6 +190,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                         viewUtilsInternal = ViewUtilsInternal(),
                         imageTypeResolver = ImageTypeResolver()
                     ),
+                    pixelCropCallback = pixelCopyCapture,
                     treeViewTraversal = TreeViewTraversal(
                         mappers = mappers,
                         defaultViewMapper = defaultVWM,
@@ -179,7 +200,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                             viewIdentifierResolver = viewIdentifierResolver
                         ),
                         viewUtilsInternal = ViewUtilsInternal(),
-                        internalLogger = internalLogger
+                        internalLogger = internalLogger,
+                        pixelCopyFallbackMapper = pixelCopyFallbackMapper
                     ),
                     optionSelectorDetector = ComposedOptionSelectorDetector(
                         customOptionSelectorDetectors + DefaultOptionSelectorDetector()
@@ -197,7 +219,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                 recordedDataQueueHandler = recordedDataQueueHandler,
                 sdkCore = sdkCore,
                 dynamicOptimizationEnabled = dynamicOptimizationEnabled,
-                rumContextProvider = rumContextProvider
+                rumContextProvider = rumContextProvider,
+                pixelCopyCapture = pixelCopyCapture
             ),
             touchPrivacyManager = touchPrivacyManager
         )
@@ -254,6 +277,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.resourceResolver = resourceResolver
         this.uiHandler = uiHandler
         this.internalLogger = internalLogger
+        this.pixelCopyCapture = null
     }
 
     override fun stopProcessingRecords() {
@@ -275,6 +299,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             shouldRecord = true
             val windows = sessionReplayLifecycleCallback.getCurrentWindows()
             val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
+            pixelCopyCapture?.setCurrentWindow(windows.firstOrNull())
             windowCallbackInterceptor.intercept(windows, appContext)
             viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
         }
@@ -285,13 +310,17 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             viewOnDrawInterceptor.stopIntercepting()
             windowCallbackInterceptor.stopIntercepting()
             shouldRecord = false
+            pixelCopyCapture?.setCurrentWindow(null)
+            pixelCopyCapture?.release()
         }
     }
 
     @MainThread
     override fun onWindowsAdded(windows: List<Window>) {
         if (shouldRecord) {
+            val allWindows = sessionReplayLifecycleCallback.getCurrentWindows()
             val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
+            pixelCopyCapture?.setCurrentWindow(allWindows.firstOrNull())
             windowCallbackInterceptor.intercept(windows, appContext)
             viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
         }
@@ -300,7 +329,9 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     @MainThread
     override fun onWindowsRemoved(windows: List<Window>) {
         if (shouldRecord) {
+            val allWindows = sessionReplayLifecycleCallback.getCurrentWindows()
             val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
+            pixelCopyCapture?.setCurrentWindow(allWindows.firstOrNull())
             windowCallbackInterceptor.stopIntercepting(windows)
             viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
         }

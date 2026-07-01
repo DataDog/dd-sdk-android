@@ -87,9 +87,11 @@ interface com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringO
 interface com.datadog.android.sessionreplay.recorder.InteropViewCallback
   fun map(android.view.View, MappingContext): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
 data class com.datadog.android.sessionreplay.recorder.MappingContext
-  constructor(SystemInformation, com.datadog.android.sessionreplay.utils.ImageWireframeHelper, com.datadog.android.sessionreplay.TextAndInputPrivacy, com.datadog.android.sessionreplay.ImagePrivacy, com.datadog.android.sessionreplay.internal.TouchPrivacyManager, Boolean = false, InteropViewCallback)
+  constructor(SystemInformation, com.datadog.android.sessionreplay.utils.ImageWireframeHelper, com.datadog.android.sessionreplay.TextAndInputPrivacy, com.datadog.android.sessionreplay.ImagePrivacy, com.datadog.android.sessionreplay.internal.TouchPrivacyManager, Boolean = false, InteropViewCallback, PixelCropCallback? = null)
 interface com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
   fun isOptionSelector(android.view.ViewGroup): Boolean
+interface com.datadog.android.sessionreplay.recorder.PixelCropCallback
+  fun registerPendingCrop(Long, android.graphics.Rect, com.datadog.android.sessionreplay.utils.GlobalBounds, android.view.View, android.graphics.Rect, com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.ImageWireframe, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback)
 data class com.datadog.android.sessionreplay.recorder.SystemInformation
   constructor(com.datadog.android.sessionreplay.utils.GlobalBounds, Int = Configuration.ORIENTATION_UNDEFINED, Float, String? = null)
 abstract class com.datadog.android.sessionreplay.recorder.mapper.BaseAsyncBackgroundWireframeMapper<T: android.view.View> : BaseWireframeMapper<T>

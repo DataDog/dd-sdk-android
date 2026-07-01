@@ -22,7 +22,8 @@ internal class DefaultOnDrawListenerProducer(
     private val recordedDataQueueHandler: RecordedDataQueueHandler,
     private val sdkCore: FeatureSdkCore,
     private val dynamicOptimizationEnabled: Boolean,
-    private val rumContextProvider: RumContextProvider
+    private val rumContextProvider: RumContextProvider,
+    private val pixelCopyCapture: PixelCopyCapture? = null
 ) : OnDrawListenerProducer {
 
     override fun create(
@@ -41,7 +42,8 @@ internal class DefaultOnDrawListenerProducer(
             methodCallSamplingRate = MethodCallSamplingRate.LOW.rate,
             dynamicOptimizationEnabled = dynamicOptimizationEnabled,
             touchPrivacyManager = touchPrivacyManager,
-            rumContextProvider = rumContextProvider
+            rumContextProvider = rumContextProvider,
+            pixelCopyCapture = pixelCopyCapture
         )
     }
 }

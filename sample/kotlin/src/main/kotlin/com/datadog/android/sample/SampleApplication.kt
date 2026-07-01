@@ -325,12 +325,15 @@ class SampleApplication : Application() {
                     useCustomEndpoint(BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL)
                 }
 
-                if (shouldUseFgm) {
-                    useFgmConfiguration(this)
-                } else {
-                    useLegacyConfiguration(this)
-                }
+//                if (shouldUseFgm) {
+//                    useFgmConfiguration(this)
+//                } else {
+//                    useLegacyConfiguration(this)
+//                }
             }
+            .setImagePrivacy(ImagePrivacy.MASK_NONE)
+            .setTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
+            .setTouchPrivacy(TouchPrivacy.SHOW)
             .addExtensionSupport(MaterialExtensionSupport())
             .addExtensionSupport(ComposeExtensionSupport())
             .setSystemRequirements(systemRequirementsConfiguration)

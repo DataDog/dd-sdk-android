@@ -21,6 +21,7 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.recorder.SystemInformation
+import com.datadog.android.sessionreplay.recorder.PixelCropCallback
 import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
 import java.util.LinkedList
 
@@ -30,7 +31,8 @@ internal class SnapshotProducer(
     private val optionSelectorDetector: OptionSelectorDetector,
     private val touchPrivacyManager: TouchPrivacyManager,
     private val internalLogger: InternalLogger,
-    private val heatmapResolver: HeatmapIdentifierResolver? = null
+    private val heatmapResolver: HeatmapIdentifierResolver? = null,
+    private val pixelCropCallback: PixelCropCallback? = null
 ) {
 
     @UiThread
@@ -55,7 +57,8 @@ internal class SnapshotProducer(
                 interopViewCallback = DefaultInteropViewCallback(
                     treeViewTraversal,
                     recordedDataQueueRefs
-                )
+                ),
+                pixelCropCallback = pixelCropCallback
             ),
             parents = LinkedList(),
             recordedDataQueueRefs = recordedDataQueueRefs,

@@ -46,7 +46,8 @@ internal class AndroidComposeViewMapper(
             density,
             mappingContext,
             asyncJobStatusCallback,
-            internalLogger
+            internalLogger,
+            hostView = view
         )
     }
 }

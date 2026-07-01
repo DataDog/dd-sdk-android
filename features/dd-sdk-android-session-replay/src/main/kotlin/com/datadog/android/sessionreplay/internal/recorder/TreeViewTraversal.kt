@@ -34,7 +34,11 @@ internal class TreeViewTraversal(
     private val hiddenViewMapper: HiddenViewMapper,
     private val decorViewMapper: WireframeMapper<View>,
     private val viewUtilsInternal: ViewUtilsInternal,
-    private val internalLogger: InternalLogger
+    private val internalLogger: InternalLogger,
+    // PoC: optional pixel-perfect fallback for views with no registered mapper.
+    // When non-null, unrecognised leaf views are captured via PixelCopy instead of
+    // being mapped by defaultViewMapper.
+    private val pixelCopyFallbackMapper: WireframeMapper<View>? = null
 ) {
 
     @Suppress("ReturnCount")
@@ -81,8 +85,17 @@ internal class TreeViewTraversal(
             jobStatusCallback = noOpCallback
         } else {
             traversalStrategy = TraversalStrategy.STOP_AND_RETURN_NODE
-            mapper = defaultViewMapper
-            jobStatusCallback = noOpCallback
+            // Use the PixelCopy fallback mapper when available — it attempts a pixel-perfect
+            // crop of the view from the last captured full-window bitmap, falling back to
+            // defaultViewMapper if no capture is ready or the view is partially off-screen.
+            mapper = pixelCopyFallbackMapper ?: defaultViewMapper
+            jobStatusCallback = if (pixelCopyFallbackMapper != null) {
+                // PixelCopyFallbackMapper may start an async job (ImageWireframe resource
+                // upload), so we need a real QueueStatusCallback to gate queue consumption.
+                QueueStatusCallback(recordedDataQueueRefs)
+            } else {
+                noOpCallback
+            }
             val viewType = view.javaClass.canonicalName ?: view.javaClass.name
 
             internalLogger.log(

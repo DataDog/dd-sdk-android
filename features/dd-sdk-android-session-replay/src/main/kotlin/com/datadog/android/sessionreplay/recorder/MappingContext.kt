@@ -32,5 +32,11 @@ data class MappingContext(
     val imagePrivacy: ImagePrivacy,
     val touchPrivacyManager: TouchPrivacyManager,
     val hasOptionSelectorParent: Boolean = false,
-    val interopViewCallback: InteropViewCallback
+    val interopViewCallback: InteropViewCallback,
+    /**
+     * PoC: a callback that crops pixel-perfect bitmaps from the last captured full-window
+     * PixelCopy frame. Present on API 26+ when at least one SR frame has been captured;
+     * null otherwise. Used by Compose mappers to capture semantically-dark leaf nodes.
+     */
+    val pixelCropCallback: PixelCropCallback? = null
 )

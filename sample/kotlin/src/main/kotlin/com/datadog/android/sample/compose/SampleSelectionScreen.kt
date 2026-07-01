@@ -36,7 +36,8 @@ internal fun SampleSelectionScreen(
     onTabsClicked: () -> Unit,
     onInteropViewClicked: () -> Unit,
     onNav3Clicked: () -> Unit,
-    onBackgroundClicked: () -> Unit
+    onBackgroundClicked: () -> Unit,
+    onPixelCopyClicked: () -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
@@ -90,6 +91,10 @@ internal fun SampleSelectionScreen(
         StyledButton(
             text = "Backgrounds",
             onClick = onBackgroundClicked
+        )
+        StyledButton(
+            text = "PixelCopy SR Demo",
+            onClick = onPixelCopyClicked
         )
     }
 }
@@ -145,6 +150,9 @@ internal fun NavGraphBuilder.selectionNavigation(navController: NavHostControlle
             },
             onBackgroundClicked = {
                 navController.navigate(SampleScreen.Background.navigationRoute)
+            },
+            onPixelCopyClicked = {
+                navController.navigate(SampleScreen.PixelCopy.navigationRoute)
             }
         )
     }
@@ -185,6 +193,10 @@ internal fun NavGraphBuilder.selectionNavigation(navController: NavHostControlle
         BackgroundSample()
     }
 
+    composable(SampleScreen.PixelCopy.navigationRoute) {
+        PixelCopySample()
+    }
+
     activity(SampleScreen.Legacy.navigationRoute) {
         activityClass = LegacyComposeActivity::class
     }
@@ -210,6 +222,7 @@ internal sealed class SampleScreen(
     object InteropView : SampleScreen("$COMPOSE_ROOT/interop_view")
     object Navigation3 : SampleScreen("$COMPOSE_ROOT/nav3")
     object Background : SampleScreen("$COMPOSE_ROOT/background")
+    object PixelCopy : SampleScreen("$COMPOSE_ROOT/pixel_copy")
 
     companion object {
         private const val COMPOSE_ROOT = "compose"
@@ -242,6 +255,8 @@ private fun PreviewSampleSelectionScreen() {
         onNav3Clicked = {
         },
         onBackgroundClicked = {
+        },
+        onPixelCopyClicked = {
         }
     )
 }

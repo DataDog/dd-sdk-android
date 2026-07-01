@@ -32,6 +32,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -114,7 +115,8 @@ class ComposeViewMapperTest {
             eq(fakeMappingContext.systemInformation.screenDensity),
             eq(fakeMappingContext),
             eq(mockAsyncJobStatusCallback),
-            any()
+            any(),
+            anyOrNull()
         )
     }
 
