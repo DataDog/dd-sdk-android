@@ -6,3 +6,8 @@
 
 /docs/ @DataDog/documentation @DataDog/rum-mobile 
 *README.md @DataDog/documentation @DataDog/rum-mobile 
+
+## Feature Flags
+
+/features/dd-sdk-android-flags-openfeature/ @DataDog/rum-mobile @DataDog/rum-mobile-android @DataDog/feature-flags-sdks
+/features/dd-sdk-android-flags-openfeature/README.md @DataDog/documentation @DataDog/rum-mobile @DataDog/rum-mobile-android @DataDog/feature-flags-sdks
