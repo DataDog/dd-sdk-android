@@ -15,6 +15,7 @@ import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.publishingConfig
+import com.datadog.gradle.utils.createJsonModelsGenerationTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -41,6 +42,12 @@ plugins {
     id("transitiveDependencies")
     id("verificationXml")
     id("binary-compatibility-validator")
+}
+
+createJsonModelsGenerationTask("generateRemoteConfigModelsFromJson") {
+    inputDirPath = "src/main/json/rc"
+    targetPackageName = "com.datadog.android.core.internal.remote.model"
+    ignoredFiles = listOf("mobile.json")
 }
 
 /**
