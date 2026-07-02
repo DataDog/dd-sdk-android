@@ -284,6 +284,7 @@ data class com.datadog.android.core.configuration.Configuration
     fun setBackpressureStrategy(BackPressureStrategy): Builder
     fun setUploadSchedulerStrategy(UploadSchedulerStrategy?): Builder
     fun setVersion(String): Builder
+    fun setRemoteConfigurationId(String): Builder
   companion object 
 class com.datadog.android.core.configuration.HostPatternSanitizer
   constructor(com.datadog.android.api.InternalLogger)
