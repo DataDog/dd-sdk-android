@@ -184,11 +184,13 @@ internal class FileMoverTest {
 
     @Test
     fun `M move all files and return true W moveFiles()`(
-        @StringForgery fileNames: List<String>
+        @StringForgery fileNamesInput: List<String>
     ) {
         // Given
         fakeSrcDir.mkdirs()
         fakeDstDir.mkdirs()
+        // on case-insensitive file systems, deduplicate names to avoid collisions
+        val fileNames = fileNamesInput.distinctBy { it.lowercase(Locale.US) }
         fileNames.forEach { name ->
             File(fakeSrcDir, name).writeText(name.reversed())
         }
@@ -231,7 +233,7 @@ internal class FileMoverTest {
         fakeSrcDir.mkdirs()
         assumeFalse(fakeDstDir.exists())
 
-        // in case of file system is not case-sensitive, we need to drop all duplicates
+        // on case-insensitive file systems, deduplicate names to avoid collisions
         val fileNames = fileNamesInput.distinctBy { it.lowercase(Locale.US) }
         fileNames.forEach { name ->
             File(fakeSrcDir, name).writeText(name.reversed())

@@ -565,6 +565,7 @@ public abstract class com/datadog/android/internal/time/BaseTimeProvider : com/d
 	public final fun getDeviceElapsedRealtimeMillis ()J
 	public final fun getDeviceElapsedTimeNanos ()J
 	public final fun getDeviceTimestampMillis ()J
+	public final fun getDeviceUptimeMillis ()J
 }
 
 public final class com/datadog/android/internal/time/DefaultTimeProvider : com/datadog/android/internal/time/BaseTimeProvider {
@@ -578,6 +579,7 @@ public abstract interface class com/datadog/android/internal/time/TimeProvider {
 	public abstract fun getDeviceElapsedRealtimeMillis ()J
 	public abstract fun getDeviceElapsedTimeNanos ()J
 	public abstract fun getDeviceTimestampMillis ()J
+	public abstract fun getDeviceUptimeMillis ()J
 	public abstract fun getServerOffsetMillis ()J
 	public abstract fun getServerOffsetNanos ()J
 	public abstract fun getServerTimestampMillis ()J
