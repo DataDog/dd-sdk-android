@@ -12,6 +12,8 @@ workflow:
       auto_cancel:
         on_new_commit: interruptible # short-lived branches cancel on new commits
     - when: always # develop, master, feature/*, tags: never auto-canceled
+      auto_cancel:
+        on_new_commit: none
 
 stages:
   - ci-image
