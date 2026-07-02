@@ -368,6 +368,33 @@ internal class VitalEventAssert(
             .isEqualTo(serviceName)
     }
 
+    fun hasProfilingStatus(profilingStatus: VitalOperationStepEvent.ProfilingStatus?) = apply {
+        assertThat(actual.dd.profiling?.status)
+            .overridingErrorMessage(
+                "Expected RUM event to have profiling status: $profilingStatus" +
+                    " but instead was: ${actual.dd.profiling?.status}"
+            )
+            .isEqualTo(profilingStatus)
+    }
+
+    fun hasProfilingClockDrift(expected: Number?) = apply {
+        assertThat(actual.dd.profiling?.clockDrift)
+            .overridingErrorMessage(
+                "Expected RUM event to have profiling clock_drift: $expected" +
+                    " but instead was: ${actual.dd.profiling?.clockDrift}"
+            )
+            .isEqualTo(expected)
+    }
+
+    fun hasNoProfiling() = apply {
+        assertThat(actual.dd.profiling)
+            .overridingErrorMessage(
+                "Expected RUM event to have no profiling" +
+                    " but instead was: ${actual.dd.profiling}"
+            )
+            .isNull()
+    }
+
     fun hasDDTags(ddTags: String) = apply {
         assertThat(actual.ddtags)
             .overridingErrorMessage(
