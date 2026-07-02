@@ -706,6 +706,7 @@ datadog:
       - "kotlin.collections.Set.map(kotlin.Function1)"
       - "kotlin.collections.Set.none(kotlin.Function1)"
       - "kotlin.collections.Set.orEmpty()"
+      - "kotlin.collections.Set.partition(kotlin.Function1)"
       - "kotlin.collections.Set.plus(kotlin.collections.Iterable)"
       - "kotlin.collections.Set.toHashSet()"
       - "kotlin.collections.Set.toSet()"

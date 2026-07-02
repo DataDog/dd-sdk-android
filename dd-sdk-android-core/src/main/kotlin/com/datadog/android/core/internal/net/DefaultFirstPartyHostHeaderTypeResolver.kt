@@ -12,6 +12,16 @@ import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.util.Locale
 
+private const val WILDCARD = '*'
+private const val LABEL_SEPARATOR = "."
+
+// What a "*" expands to: one or more host characters, spanning subdomain labels, so "*.example.com"
+// matches both "api.example.com" and "a.b.example.com".
+private const val WILDCARD_LABEL_SEGMENT = "[a-z0-9.-]+"
+
+// Regex metacharacters (other than '*') that are escaped so any pattern yields a valid regex.
+private const val REGEX_METACHARACTERS = "\\^$.|?+()[]{}"
+
 /**
  * Default implementation of [FirstPartyHostHeaderTypeResolver].
  *
@@ -22,15 +32,19 @@ class DefaultFirstPartyHostHeaderTypeResolver(
     hosts: Map<String, Set<TracingHeaderType>>
 ) : FirstPartyHostHeaderTypeResolver {
 
-    internal var knownHosts = hosts.entries.associate { it.key.lowercase(Locale.US) to it.value }
+    internal var knownHosts: Map<String, Set<TracingHeaderType>> = emptyMap()
         private set
+
+    private var wildcardMatchers: Map<String, Regex> = emptyMap()
+
+    init {
+        updateKnownHosts(hosts.entries.associate { it.key.lowercase(Locale.US) to it.value })
+    }
 
     /** @inheritdoc */
     override fun isFirstPartyUrl(url: HttpUrl): Boolean {
         val host = url.host
-        return knownHosts.keys.any {
-            it == "*" || host == it || host.endsWith(".$it")
-        }
+        return knownHosts.keys.any { matchesHost(host, it) }
     }
 
     /** @inheritdoc */
@@ -50,8 +64,7 @@ class DefaultFirstPartyHostHeaderTypeResolver(
         val host = url.host
 
         return knownHosts[host]
-            ?: knownHosts.entries.firstOrNull { host.endsWith(".${it.key}") }?.value
-            ?: knownHosts["*"]
+            ?: knownHosts.entries.firstOrNull { matchesHost(host, it.key) }?.value
             ?: emptySet()
     }
 
@@ -65,20 +78,50 @@ class DefaultFirstPartyHostHeaderTypeResolver(
         return knownHosts.isEmpty()
     }
 
-    internal fun addKnownHosts(hosts: List<String>) {
-        knownHosts = knownHosts + hosts.associate {
-            it.lowercase(Locale.US) to setOf(
-                TracingHeaderType.DATADOG,
-                TracingHeaderType.TRACECONTEXT
-            )
-        }
-    }
-
     internal fun addKnownHostsWithHeaderTypes(
         hostsWithHeaderTypes: Map<String, Set<TracingHeaderType>>
     ) {
-        knownHosts = knownHosts + hostsWithHeaderTypes.entries.associate {
-            it.key.lowercase(Locale.US) to it.value
+        updateKnownHosts(
+            knownHosts + hostsWithHeaderTypes.entries.associate {
+                it.key.lowercase(Locale.US) to it.value
+            }
+        )
+    }
+
+    private fun updateKnownHosts(newHosts: Map<String, Set<TracingHeaderType>>) {
+        knownHosts = newHosts
+        wildcardMatchers = newHosts.keys
+            .filter { it.isWildcardPattern() }
+            .associateWith { it.toHostMatchingRegex() }
+    }
+
+    // A wildcard pattern has a single "*" at a label boundary (followed by "."). Only these get a
+    // matcher; a bare "*" is excluded so it is never treated as match-all.
+    private fun String.isWildcardPattern(): Boolean =
+        count { it == WILDCARD } == 1 && substringAfter(WILDCARD).startsWith(LABEL_SEPARATOR)
+
+    // A wildcard pattern matches via its precompiled regex; anything else matches itself or any of
+    // its subdomains.
+    private fun matchesHost(host: String, pattern: String): Boolean {
+        val matcher = wildcardMatchers[pattern]
+        return if (matcher != null) {
+            matcher.matchEntire(host) != null
+        } else {
+            host == pattern || host.endsWith(".$pattern")
         }
+    }
+
+    // Turns a wildcard pattern into a regex where "*" matches one or more host characters and every
+    // other metacharacter is escaped, so "*.example.com" matches "api.example.com" but not
+    // "example.com" and any input yields a valid regex.
+    private fun String.toHostMatchingRegex(): Regex {
+        val regexPattern = map { char ->
+            when (char) {
+                WILDCARD -> WILDCARD_LABEL_SEGMENT
+                in REGEX_METACHARACTERS -> "\\$char"
+                else -> char.toString()
+            }
+        }.joinToString(separator = "")
+        return Regex(regexPattern)
     }
 }

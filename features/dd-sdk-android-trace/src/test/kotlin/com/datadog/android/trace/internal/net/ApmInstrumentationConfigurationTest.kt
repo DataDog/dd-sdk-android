@@ -230,6 +230,30 @@ internal class ApmInstrumentationConfigurationTest {
     }
 
     @Test
+    fun `M keep wildcard patterns W build() {plain, wildcard and invalid patterns}`() {
+        // Given
+        val plainHost = "example.com"
+        val wildcardPattern = "*.shopist.io"
+        val invalidPattern = "*.com"
+        val mixedHosts = mapOf(
+            plainHost to setOf(TracingHeaderType.DATADOG),
+            wildcardPattern to setOf(TracingHeaderType.TRACECONTEXT),
+            invalidPattern to setOf(TracingHeaderType.B3)
+        )
+        testedBuilder = ApmNetworkInstrumentationConfiguration(mixedHosts)
+
+        // When
+        val resolver = testedBuilder.createInstrumentation(fakeNetworkLibraryName)
+            .localFirstPartyHostHeaderTypeResolver
+
+        // Then
+        assertThat(resolver.isFirstPartyUrl("https://$plainHost/path")).isTrue()
+        assertThat(resolver.isFirstPartyUrl("https://api.shopist.io/path")).isTrue()
+        // overly broad "*.com" is dropped
+        assertThat(resolver.isFirstPartyUrl("https://anything.com/path")).isFalse()
+    }
+
+    @Test
     fun `M set scope W setTraceScope()`(forge: Forge) {
         // Given
         val fakeScope = forge.aValueFrom(ApmNetworkTracingScope::class.java)

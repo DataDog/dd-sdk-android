@@ -236,6 +236,85 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
+    fun `M keep plain hosts and wildcard patterns W setFirstPartyHosts() { mixed }`(
+        @StringForgery(
+            regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+" +
+                "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
+        ) plainHost: String
+    ) {
+        // Given
+        val wildcardPattern = "*.shopist.io"
+        val invalidPattern = "*.com"
+
+        // When
+        val config = testedBuilder
+            .setFirstPartyHosts(listOf(plainHost, wildcardPattern, invalidPattern))
+            .build()
+
+        // Then
+        assertThat(config.coreConfig.firstPartyHostsWithHeaderTypes.keys)
+            .containsExactlyInAnyOrder(plainHost, wildcardPattern)
+    }
+
+    @Test
+    fun `M route wildcard patterns to pattern sanitizer W setFirstPartyHosts() { mixed }`(
+        @StringForgery(
+            regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+" +
+                "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
+        ) plainHost: String
+    ) {
+        // Given
+        val wildcardPattern = "*.shopist.io"
+        val mockPatternSanitizer: HostPatternSanitizer = mock()
+        testedBuilder.hostPatternSanitizer = mockPatternSanitizer
+
+        // When
+        testedBuilder
+            .setFirstPartyHosts(listOf(plainHost, wildcardPattern))
+            .build()
+
+        // Then
+        verify(mockPatternSanitizer)
+            .validate(
+                listOf(wildcardPattern),
+                Configuration.NETWORK_REQUESTS_TRACKING_FEATURE_NAME
+            )
+    }
+
+    @Test
+    fun `M keep plain hosts and wildcard patterns W setFirstPartyHostsWithHeaderType() { mixed }`(
+        @StringForgery(
+            regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+" +
+                "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
+        ) plainHost: String,
+        forge: Forge
+    ) {
+        // Given
+        val wildcardPattern = "*.shopist.io"
+        val invalidPattern = "*.com"
+        val plainHeaderTypes = forge.aList { aValueFrom(TracingHeaderType::class.java) }.toSet()
+        val wildcardHeaderTypes = forge.aList { aValueFrom(TracingHeaderType::class.java) }.toSet()
+        val hostsWithHeaderTypes = mapOf(
+            plainHost to plainHeaderTypes,
+            wildcardPattern to wildcardHeaderTypes,
+            invalidPattern to forge.aList { aValueFrom(TracingHeaderType::class.java) }.toSet()
+        )
+
+        // When
+        val config = testedBuilder
+            .setFirstPartyHostsWithHeaderType(hostsWithHeaderTypes)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig.firstPartyHostsWithHeaderTypes).isEqualTo(
+            mapOf(
+                plainHost to plainHeaderTypes,
+                wildcardPattern to wildcardHeaderTypes
+            )
+        )
+    }
+
+    @Test
     fun `M build config with first party hosts and header types W setFirstPartyHostsWithHeaderType() { host names }`(
         @StringForgery(
             regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+" +

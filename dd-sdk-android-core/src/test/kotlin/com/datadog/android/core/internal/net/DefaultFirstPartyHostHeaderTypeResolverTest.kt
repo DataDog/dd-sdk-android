@@ -81,25 +81,6 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
     }
 
     @Test
-    fun `M return true W isFirstParty(HttpUrl) {known hosts list was updated}`(
-        @StringForgery(regex = "http(s?)") scheme: String,
-        @StringForgery(regex = "(/[a-zA-Z0-9_~\\.-]{1,9}){1,4}") path: String,
-        forge: Forge
-    ) {
-        // Given
-        val fakeNewAllowedHosts = forge.aList { forge.aStringMatching(HOST_REGEX) }
-        testedDetector.addKnownHosts(fakeNewAllowedHosts)
-        val host = forge.anElementFrom(fakeNewAllowedHosts)
-        val url = "$scheme://$host$path".toHttpUrl()
-
-        // When
-        val result = testedDetector.isFirstPartyUrl(url)
-
-        // Then
-        assertThat(result).isTrue()
-    }
-
-    @Test
     fun `M return true W isFirstParty(HttpUrl) {valid host subdomain}`(
         @StringForgery(regex = "http(s?)") scheme: String,
         @StringForgery(regex = "[a-zA-Z0-9_~-]{1,9}") subdomain: String,
@@ -191,26 +172,7 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
     }
 
     @Test
-    fun `M return true W isFirstParty(String) {known hosts list was updated}`(
-        @StringForgery(regex = "http(s?)") scheme: String,
-        @StringForgery(regex = "(/[a-zA-Z0-9_~\\.-]{1,9}){1,4}") path: String,
-        forge: Forge
-    ) {
-        // Given
-        val fakeNewAllowedHosts = forge.aList { forge.aStringMatching(HOST_REGEX) }
-        testedDetector.addKnownHosts(fakeNewAllowedHosts)
-        val host = forge.anElementFrom(fakeNewAllowedHosts)
-        val url = "$scheme://$host$path"
-
-        // When
-        val result = testedDetector.isFirstPartyUrl(url)
-
-        // Then
-        assertThat(result).isTrue()
-    }
-
-    @Test
-    fun `M return true isFirstParty(String) { wild card used for known hosts }`(
+    fun `M return false isFirstParty(String) { bare wildcard is not match-all }`(
         @StringForgery(regex = "http(s?)") scheme: String,
         @StringForgery(regex = "(/[a-zA-Z0-9_~\\.-]{1,9}){1,4}") path: String,
         forge: Forge
@@ -225,11 +187,11 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
         val result = testedDetector.isFirstPartyUrl(url)
 
         // THEN
-        assertThat(result).isTrue()
+        assertThat(result).isFalse()
     }
 
     @Test
-    fun `M return true isFirstParty(HttpUrl) { wild card used for known hosts }`(
+    fun `M return false isFirstParty(HttpUrl) { bare wildcard is not match-all }`(
         @StringForgery(regex = "http(s?)") scheme: String,
         @StringForgery(regex = "(/[a-zA-Z0-9_~\\.-]{1,9}){1,4}") path: String,
         forge: Forge
@@ -244,7 +206,67 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
         val result = testedDetector.isFirstPartyUrl(url)
 
         // THEN
-        assertThat(result).isTrue()
+        assertThat(result).isFalse()
+    }
+
+    @Test
+    fun `M not match plain hosts W isFirstParty { bare wildcard is not match-all }`() {
+        // Given
+        testedDetector = DefaultFirstPartyHostHeaderTypeResolver(
+            mapOf("*" to setOf(TracingHeaderType.DATADOG))
+        )
+
+        // Then a bare "*" must never behave as match-all, for any depth of host
+        assertThat(testedDetector.isFirstPartyUrl("https://example.com".toHttpUrl())).isFalse()
+        assertThat(testedDetector.isFirstPartyUrl("https://api.example.com".toHttpUrl())).isFalse()
+        assertThat(testedDetector.isFirstPartyUrl("https://a.b.example.com".toHttpUrl())).isFalse()
+        assertThat(testedDetector.headerTypesForUrl("https://example.com")).isEmpty()
+    }
+
+    @Test
+    fun `M match subdomain W isFirstParty(HttpUrl) { wildcard pattern }`() {
+        // Given
+        testedDetector = DefaultFirstPartyHostHeaderTypeResolver(
+            mapOf("*.example.com" to setOf(TracingHeaderType.DATADOG))
+        )
+
+        // Then
+        assertThat(testedDetector.isFirstPartyUrl("https://api.example.com/path".toHttpUrl())).isTrue()
+        assertThat(testedDetector.isFirstPartyUrl("https://preview-1.example.com".toHttpUrl())).isTrue()
+        // "*" spans labels, so deeper subdomains are also matched
+        assertThat(testedDetector.isFirstPartyUrl("https://a.b.example.com".toHttpUrl())).isTrue()
+        // apex is not matched by "*.example.com" (add the plain host for that)
+        assertThat(testedDetector.isFirstPartyUrl("https://example.com".toHttpUrl())).isFalse()
+        // a sibling registrable domain is not matched
+        assertThat(testedDetector.isFirstPartyUrl("https://api.notexample.com".toHttpUrl())).isFalse()
+    }
+
+    @Test
+    fun `M match partial label W isFirstParty(HttpUrl) { prefix wildcard pattern }`() {
+        // Given
+        testedDetector = DefaultFirstPartyHostHeaderTypeResolver(
+            mapOf("preview-*.shopist.io" to setOf(TracingHeaderType.DATADOG))
+        )
+
+        // Then
+        assertThat(testedDetector.isFirstPartyUrl("https://preview-123.shopist.io".toHttpUrl())).isTrue()
+        // the wildcard must match at least one character
+        assertThat(testedDetector.isFirstPartyUrl("https://preview-.shopist.io".toHttpUrl())).isFalse()
+        // the prefix must be present
+        assertThat(testedDetector.isFirstPartyUrl("https://staging-1.shopist.io".toHttpUrl())).isFalse()
+    }
+
+    @Test
+    fun `M return header types W headerTypesForUrl(HttpUrl) { wildcard pattern }`() {
+        // Given
+        val headerTypes = setOf(TracingHeaderType.TRACECONTEXT)
+        testedDetector = DefaultFirstPartyHostHeaderTypeResolver(
+            mapOf("*.example.com" to headerTypes)
+        )
+
+        // Then
+        assertThat(testedDetector.headerTypesForUrl("https://api.example.com")).isEqualTo(headerTypes)
+        assertThat(testedDetector.headerTypesForUrl("https://example.com")).isEmpty()
     }
 
     @Test
@@ -327,27 +349,6 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
 
         // Then
         assertThat(testedDetector.getAllHeaderTypes()).isEqualTo(allUsedHeaderTraces)
-    }
-
-    @Test
-    fun `M use datadog and tracecontext header types W addKnownHosts(String)`(
-        @StringForgery(regex = "http(s?)") scheme: String,
-        forge: Forge
-    ) {
-        // Given
-        val fakeHosts = forge.aList { forge.aStringMatching(HOST_REGEX) }
-        val fakeUrls = fakeHosts.map { "$scheme://$it" }
-        testedDetector.addKnownHosts(fakeHosts)
-
-        // When + Then
-        val expectedHeaderTypes = setOf(
-            TracingHeaderType.DATADOG,
-            TracingHeaderType.TRACECONTEXT
-        )
-        fakeUrls.forEach {
-            val headerTypes = testedDetector.headerTypesForUrl(it)
-            assertThat(headerTypes).isEqualTo(expectedHeaderTypes)
-        }
     }
 
     @Test

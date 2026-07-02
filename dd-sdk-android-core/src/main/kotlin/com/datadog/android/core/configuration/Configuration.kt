@@ -8,11 +8,13 @@ package com.datadog.android.core.configuration
 
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
+import com.datadog.android.core.internal.utils.unboundInternalLogger
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.security.Encryption
 import com.datadog.android.trace.TracingHeaderType
 import okhttp3.Authenticator
 import java.net.Proxy
+import java.util.Locale
 
 /**
  * An object describing the configuration of the Datadog SDK.
@@ -76,6 +78,7 @@ internal constructor(
         private var version: String? = null
 
         internal var hostsSanitizer = HostsSanitizer()
+        internal var hostPatternSanitizer = HostPatternSanitizer(unboundInternalLogger)
 
         /**
          * Builds a [Configuration] based on the current state of this Builder.
@@ -113,16 +116,21 @@ internal constructor(
         /**
          * Sets the list of first party hosts.
          * Requests made to a URL with any one of these hosts (or any subdomain) will:
-         * - be considered a first party resource and categorised as such in your RUM dashboard;
+         * - be considered a first party resource and categorized as such in your RUM dashboard;
          * - be wrapped in a Span and have DataDog trace id injected to get a full flame-graph in
          * APM in case of OkHttp instrumentation usage.
+         *
+         * Each entry may be a plain host (e.g. `example.com`, which also matches any subdomain such
+         * as `api.example.com`) or a wildcard pattern (e.g. `*.example.com` or
+         * `preview-*.shopist.io`). A wildcard pattern may contain a single `*`, only the characters
+         * `a-z`, `0-9`, `.`, `-` and `*`, and the `*` may only match a subdomain of a registrable
+         * domain: `*.example.com` matches `api.example.com` but not `example.com` (add the plain host
+         * to also match the apex). Overly broad patterns such as `*`, `*.com` or `*example.com` are
+         * dropped and logged.
          * @param hosts a list of all the hosts that you own.
          */
         fun setFirstPartyHosts(hosts: List<String>): Builder {
-            val sanitizedHosts = hostsSanitizer.sanitizeHosts(
-                hosts,
-                NETWORK_REQUESTS_TRACKING_FEATURE_NAME
-            )
+            val sanitizedHosts = sanitizeHostsAndPatterns(hosts)
             coreConfig = coreConfig.copy(
                 firstPartyHostsWithHeaderTypes = sanitizedHosts.associateWith {
                     setOf(
@@ -138,22 +146,38 @@ internal constructor(
          * Sets the list of first party hosts and specifies the type of HTTP headers used for
          * distributed tracing.
          * Requests made to a URL with any one of these hosts (or any subdomain) will:
-         * - be considered a first party resource and categorised as such in your RUM dashboard;
+         * - be considered a first party resource and categorized as such in your RUM dashboard;
          * - be wrapped in a Span and have trace id of the specified types injected to get a
          * full flame-graph in APM. Multiple header types are supported for each host.
+         *
+         * Each key may be a plain host (e.g. `example.com`, which also matches any subdomain such as
+         * `api.example.com`) or a wildcard pattern (e.g. `*.example.com` or `preview-*.shopist.io`).
+         * A wildcard pattern may contain a single `*`, only the characters `a-z`, `0-9`, `.`, `-` and
+         * `*`, and the `*` may only match a subdomain of a registrable domain: `*.example.com`
+         * matches `api.example.com` but not `example.com` (add the plain host to also match the
+         * apex). Overly broad patterns such as `*`, `*.com` or `*example.com` are dropped and logged.
          * @param hostsWithHeaderType a list of all the hosts that you own and the tracing headers
          * to be used for each host.
          * See [DatadogInterceptor]
          */
         fun setFirstPartyHostsWithHeaderType(hostsWithHeaderType: Map<String, Set<TracingHeaderType>>): Builder {
-            val sanitizedHosts = hostsSanitizer.sanitizeHosts(
-                hostsWithHeaderType.keys.toList(),
-                NETWORK_REQUESTS_TRACKING_FEATURE_NAME
-            )
+            val sanitizedHosts = sanitizeHostsAndPatterns(hostsWithHeaderType.keys.toList())
+                .map { it.lowercase(Locale.US) }
+                .toSet()
             coreConfig = coreConfig.copy(
-                firstPartyHostsWithHeaderTypes = hostsWithHeaderType.filterKeys { sanitizedHosts.contains(it) }
+                firstPartyHostsWithHeaderTypes = hostsWithHeaderType.filterKeys {
+                    sanitizedHosts.contains(it.lowercase(Locale.US))
+                }
             )
             return this
+        }
+
+        // Routes wildcard-free entries to [HostsSanitizer] and entries carrying a '*' to
+        // [HostPatternSanitizer].
+        private fun sanitizeHostsAndPatterns(hosts: List<String>): List<String> {
+            val (patterns, plainHosts) = hosts.partition { it.contains('*') }
+            return hostsSanitizer.sanitizeHosts(plainHosts, NETWORK_REQUESTS_TRACKING_FEATURE_NAME) +
+                hostPatternSanitizer.validate(patterns, NETWORK_REQUESTS_TRACKING_FEATURE_NAME)
         }
 
         /**

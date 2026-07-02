@@ -6,7 +6,9 @@
 package com.datadog.android.trace
 
 import androidx.annotation.FloatRange
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.core.configuration.HostPatternSanitizer
 import com.datadog.android.core.configuration.HostsSanitizer
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
@@ -15,6 +17,7 @@ import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation
 import com.datadog.android.trace.internal.net.SessionRebasedSampler
 import com.datadog.android.trace.internal.net.TracerProvider
+import java.util.Locale
 
 /**
  * Configuration for APM distributed tracing of network requests.
@@ -288,13 +291,16 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
         private fun resolveHosts(
             tracedHosts: Map<String, Set<TracingHeaderType>>
         ): Map<String, Set<TracingHeaderType>> {
-            val sanitizer = HostsSanitizer()
-            val sanitizedHosts = sanitizer.sanitizeHosts(
-                tracedHosts.keys.toList(),
-                NETWORK_REQUESTS_TRACKING_FEATURE_NAME
-            )
+            val (patterns, plainHosts) = tracedHosts.keys.partition { it.contains('*') }
+            val sanitizedHosts = (
+                HostsSanitizer().sanitizeHosts(plainHosts, NETWORK_REQUESTS_TRACKING_FEATURE_NAME) +
+                    HostPatternSanitizer(InternalLogger.UNBOUND)
+                        .validate(patterns, NETWORK_REQUESTS_TRACKING_FEATURE_NAME)
+                )
+                .map { it.lowercase(Locale.US) }
+                .toSet()
 
-            return tracedHosts.filterKeys { sanitizedHosts.contains(it) }
+            return tracedHosts.filterKeys { sanitizedHosts.contains(it.lowercase(Locale.US)) }
         }
 
         private fun Map<String, Set<TracingHeaderType>>.deepCopy() = mapValues { (_, v) -> v.toSet() }
