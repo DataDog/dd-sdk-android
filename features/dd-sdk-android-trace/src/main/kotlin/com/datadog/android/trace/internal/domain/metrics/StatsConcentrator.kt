@@ -314,7 +314,7 @@ internal class StatsConcentrator(
         private const val KEY_SVC_SRC = "_dd.svc_src"
         private const val DEFAULT_BUFFER_SIZE = 2
         private val DEFAULT_BUCKET_LENGTH = 10.seconds
-        private const val FLUSH_INTERVAL_SECS = 10L
+        private const val FLUSH_INTERVAL_SECS = 30L
 
         private val ELIGIBLE_SPAN_KINDS = setOf(
             Tags.SPAN_KIND_SERVER,

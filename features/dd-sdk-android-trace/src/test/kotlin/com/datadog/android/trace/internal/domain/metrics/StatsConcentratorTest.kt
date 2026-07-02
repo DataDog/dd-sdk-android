@@ -134,7 +134,7 @@ internal class StatsConcentratorTest {
         )
 
         // Then
-        verify(mockExecutorService).schedule(any<Runnable>(), eq(10L), eq(TimeUnit.SECONDS))
+        verify(mockExecutorService).schedule(any<Runnable>(), eq(30L), eq(TimeUnit.SECONDS))
     }
 
     // endregion
