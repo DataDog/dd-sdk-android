@@ -89,6 +89,11 @@ stages:
       codesign -d --entitlements :- "$QEMU_BIN" 2>&1 || echo "codesign --entitlements failed"
       echo "--- codesign verify ---"
       codesign --verify --deep "$QEMU_BIN" 2>&1 && echo "signature OK" || echo "signature INVALID"
+      echo "--- system image build.prop (ro.product.cpu.abi) ---"
+      SYSIMG=~/android_sdk/system-images/android-${ANDROID_API}.0/google_apis_ps16k/${ANDROID_ARCH}
+      grep "ro.product.cpu.abi" "$SYSIMG/build.prop" 2>&1 || echo "build.prop not found at $SYSIMG"
+      echo "--- avd config.ini (abi) ---"
+      grep -i "abi" ~/.android/avd/${EMULATOR_NAME}.avd/config.ini 2>&1 || echo "config.ini not found for $EMULATOR_NAME"
       echo "=== end HVF diagnostics ==="
   setup-macos-ami-runner:
     - !reference [ .snippets, source-secrets-macos ]
