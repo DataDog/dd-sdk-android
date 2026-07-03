@@ -102,7 +102,8 @@ The sample app reads credentials from gitignored JSON files in `config/`. Missin
   "logsEndpoint": "",
   "tracesEndpoint": "",
   "rumEndpoint": "",
-  "sessionReplayEndpoint": ""
+  "sessionReplayEndpoint": "",
+  "remoteConfigurationId": ""
 }
 ```
 
