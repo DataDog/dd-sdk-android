@@ -6,6 +6,8 @@
 
 package com.datadog.android
 
+import okhttp3.HttpUrl.Companion.toHttpUrl
+
 /**
  * Defines the Datadog sites you can send tracked data to.
  *
@@ -77,4 +79,9 @@ enum class DatadogSite private constructor(internal val siteName: String, privat
 
     /** The intake endpoint url. */
     val intakeEndpoint: String = "https://$intakeHostName"
+
+    /** The remote configuration CDN endpoint url. */
+    @Suppress("UnsafeThirdPartyFunctionCall") // host is a compile-time constant, cannot be malformed
+    internal val remoteConfigurationEndpoint: okhttp3.HttpUrl =
+        "https://sdk-configuration.$intakeHostName".toHttpUrl()
 }
