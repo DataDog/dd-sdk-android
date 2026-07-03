@@ -94,6 +94,8 @@ stages:
       grep "ro.product.cpu.abi" "$SYSIMG/build.prop" 2>&1 || echo "build.prop not found at $SYSIMG"
       echo "--- avd config.ini (abi) ---"
       grep -i "abi" ~/.android/avd/${EMULATOR_NAME}.avd/config.ini 2>&1 || echo "config.ini not found for $EMULATOR_NAME"
+      echo "--- avd root ini (target / api level) ---"
+      cat ~/.android/avd/${EMULATOR_NAME}.ini 2>&1 || echo "root ini not found for $EMULATOR_NAME"
       echo "=== end HVF diagnostics ==="
   setup-macos-ami-runner:
     - !reference [ .snippets, source-secrets-macos ]
