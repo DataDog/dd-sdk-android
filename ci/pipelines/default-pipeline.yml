@@ -285,7 +285,7 @@ test-pyramid:core-it-min-api:
 test-pyramid:core-it-latest-api:
   extends:
     - .base-cache-pull-job
-  tags: [ "macos:sequoia-arm64", "specific:true" ]
+  tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
   variables:
@@ -400,7 +400,7 @@ test-pyramid:legacy-integration-instrumented-min-api:
 test-pyramid:legacy-integration-instrumented-latest-api:
   extends:
     - .base-cache-pull-job
-  tags: [ "macos:sequoia-arm64", "specific:true" ]
+  tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
   variables:
@@ -430,7 +430,7 @@ test-pyramid:legacy-integration-instrumented-median-api:
 test-pyramid:ndk-instrumented-latest-api:
   extends:
     - .base-cache-pull-job
-  tags: [ "macos:sequoia-arm64", "specific:true" ]
+  tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
   variables:
