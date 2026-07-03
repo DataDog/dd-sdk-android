@@ -66,6 +66,28 @@ stages:
     - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "$ANDROID_EMULATOR_IMAGE"
     - yes | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
     - echo "no" | ~/android_sdk/cmdline-tools/latest/bin/avdmanager --verbose create avd --force --name "$EMULATOR_NAME" --package "$ANDROID_EMULATOR_IMAGE"
+    - |
+      echo "=== HVF diagnostics (RUM-16470) ==="
+      echo "--- host info ---"
+      sw_vers
+      uname -m
+      sysctl kern.hv_support || echo "kern.hv_support unavailable"
+      csrutil status || echo "csrutil unavailable"
+      echo "--- emulator version ---"
+      ~/android_sdk/emulator/emulator -version 2>&1 | head -5 || echo "emulator -version failed"
+      echo "--- accel check ---"
+      ~/android_sdk/emulator/emulator -accel-check 2>&1 || echo "emulator -accel-check failed (non-zero exit is expected when accel is broken)"
+      echo "--- qemu binary ---"
+      ls -la ~/android_sdk/emulator/qemu/ 2>&1 || echo "qemu dir not found"
+      QEMU_BIN=~/android_sdk/emulator/qemu/darwin-aarch64/qemu-system-aarch64-headless
+      file "$QEMU_BIN" 2>&1 || echo "file cmd failed"
+      echo "--- xattr ---"
+      xattr -l "$QEMU_BIN" 2>&1 || echo "no xattr or binary not found"
+      echo "--- codesign entitlements ---"
+      codesign -dvvv "$QEMU_BIN" 2>&1 || echo "codesign -dvvv failed"
+      echo "--- codesign verify ---"
+      codesign --verify --deep "$QEMU_BIN" 2>&1 && echo "signature OK" || echo "signature INVALID"
+      echo "=== end HVF diagnostics ==="
   setup-macos-ami-runner:
     - !reference [ .snippets, source-secrets-macos ]
     - !reference [ .snippets, setup-dd-tracer ]
