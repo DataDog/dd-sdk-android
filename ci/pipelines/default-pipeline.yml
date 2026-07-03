@@ -96,6 +96,12 @@ stages:
       grep -i "abi" ~/.android/avd/${EMULATOR_NAME}.avd/config.ini 2>&1 || echo "config.ini not found for $EMULATOR_NAME"
       echo "--- avd root ini (target / api level) ---"
       cat ~/.android/avd/${EMULATOR_NAME}.ini 2>&1 || echo "root ini not found for $EMULATOR_NAME"
+      echo "--- emulator binary version strings ---"
+      strings ~/android_sdk/emulator/emulator | grep -E "36\.[0-9]|build_id|git[- ]|commit|emu-36" | head -20 || echo "strings failed"
+      echo "--- hvf string presence in emulator binary ---"
+      strings ~/android_sdk/emulator/emulator | grep -i "hvf is not enabled" || echo "string not found in binary"
+      echo "--- qemu binary version strings ---"
+      strings "$QEMU_BIN" | grep -E "36\.[0-9]|build_id|git[- ]|commit|emu-36" | head -20 || echo "strings failed"
       echo "=== end HVF diagnostics ==="
   setup-macos-ami-runner:
     - !reference [ .snippets, source-secrets-macos ]
