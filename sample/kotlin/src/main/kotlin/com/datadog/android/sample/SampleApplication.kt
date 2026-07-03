@@ -441,6 +441,11 @@ class SampleApplication : Application() {
             .setFirstPartyHosts(tracedHosts)
             .setBatchSize(BatchSize.SMALL)
             .setUploadFrequency(UploadFrequency.FREQUENT)
+            .apply {
+                if (BuildConfig.DD_REMOTE_CONFIGURATION_ID.isNotBlank()) {
+                    setRemoteConfigurationId(BuildConfig.DD_REMOTE_CONFIGURATION_ID)
+                }
+            }
 
         try {
             configBuilder.useSite(DatadogSite.valueOf(BuildConfig.DD_SITE_NAME))

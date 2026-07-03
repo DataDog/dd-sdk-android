@@ -461,6 +461,25 @@
           "readOnly": true
         }
       }
+    },
+    "_dd": {
+      "type": "object",
+      "description": "Internal properties",
+      "readOnly": true,
+      "properties": {
+        "configuration": {
+          "type": "object",
+          "description": "Subset of the SDK configuration options in use during its execution",
+          "readOnly": true,
+          "properties": {
+            "remote_configuration_id": {
+              "type": "string",
+              "description": "The id of the remote configuration applied to the SDK, if any",
+              "readOnly": true
+            }
+          }
+        }
+      }
     }
   }
 }
