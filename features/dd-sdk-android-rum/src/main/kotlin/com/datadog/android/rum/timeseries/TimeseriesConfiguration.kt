@@ -20,7 +20,8 @@ class TimeseriesConfiguration internal constructor(
     internal val bufferSize: Int,
     internal val intervalMs: Long,
     internal val collectInBackground: Boolean,
-    internal val useDeltaCompression: Boolean
+    internal val useDeltaCompression: Boolean,
+    internal val additionalAttributes: Map<String, String>
 ) {
 
     /**
@@ -33,6 +34,7 @@ class TimeseriesConfiguration internal constructor(
         private var intervalMs: Long = DEFAULT_INTERVAL_MS
         private var collectInBackground: Boolean = false
         private var useDeltaCompression: Boolean = false
+        private val additionalAttributes: MutableMap<String, String> = mutableMapOf()
 
         /**
          * Sets the number of samples accumulated per pipeline before sending a batch event.
@@ -72,12 +74,21 @@ class TimeseriesConfiguration internal constructor(
             this.useDeltaCompression = useDeltaCompression
         }
 
+        /**
+         * Adds an attribute to all timeseries events created with this configuration.
+         * The attribute is emitted as a key/value entry in the `timeseries.tags` JSON object.
+         */
+        fun addAttribute(key: String, value: String): Builder = apply {
+            additionalAttributes[key] = value
+        }
+
         /** Builds a [TimeseriesConfiguration] from the current builder state. */
         fun build(): TimeseriesConfiguration = TimeseriesConfiguration(
             bufferSize = bufferSize,
             intervalMs = intervalMs,
             collectInBackground = collectInBackground,
-            useDeltaCompression = useDeltaCompression
+            useDeltaCompression = useDeltaCompression,
+            additionalAttributes = additionalAttributes.toMap()
         )
     }
 

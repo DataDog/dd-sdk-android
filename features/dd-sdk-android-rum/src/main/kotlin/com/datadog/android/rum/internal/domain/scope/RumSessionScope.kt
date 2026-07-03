@@ -298,6 +298,7 @@ internal class RumSessionScope(
                 renewSession(event.eventTime, StartReason.BACKGROUND_LAUNCH)
                 lastUserInteractionNs.set(nanoTime)
             } else {
+                stopTimeseries()
                 sessionState = State.EXPIRED
             }
         } else if (isTimedOut) {

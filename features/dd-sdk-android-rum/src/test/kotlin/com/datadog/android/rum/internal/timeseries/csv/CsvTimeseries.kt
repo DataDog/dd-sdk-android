@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.timeseries.csv
 
+import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.scope.RumViewType
@@ -21,8 +22,10 @@ import com.google.gson.JsonObject
  * but pulls samples from CSV-backed readers instead of `VitalReaderWrapper` and drives the
  * pipelines synchronously (no executor) so callers can assert on every emitted JSON.
  */
-internal class CsvTimeseries(private val pipelines: List<Triple<CSVReader, Buffer<Double>, JsonSerializer<Double>>>) :
-    Timeseries {
+internal class CsvTimeseries(
+    private val pipelines: List<Triple<CSVReader, Buffer<Double>, JsonSerializer<Double>>>,
+    private val datadogContext: DatadogContext
+) : Timeseries {
 
     private val emitted = mutableListOf<JsonObject>()
 
@@ -37,17 +40,20 @@ internal class CsvTimeseries(private val pipelines: List<Triple<CSVReader, Buffe
         for ((reader, buffer, serializer) in pipelines) {
             while (reader.hasNext()) {
                 buffer.add(reader.read())
-                if (buffer.isFull()) {
-                    buffer.drain().takeIf { it.isNotEmpty() }?.let(serializer::serialize)?.let(emitted::add)
-                }
+                if (buffer.isFull()) flush(buffer, serializer)
             }
-            buffer.drain().takeIf { it.isNotEmpty() }?.let(serializer::serialize)?.let(emitted::add)
+            flush(buffer, serializer)
         }
     }
 
+    private fun flush(buffer: Buffer<Double>, serializer: JsonSerializer<Double>) = buffer.drain()
+        .takeIf { it.isNotEmpty() }
+        ?.let { serializer.serialize(datadogContext, it) }
+        ?.let(emitted::add)
+
     override fun onSessionStop() = Unit
 
-    override fun onViewTypeUpdate(viewType: RumViewType) = Unit
+    override fun onViewTypeUpdate(newViewType: RumViewType) = Unit
 
     companion object {
 
@@ -56,6 +62,7 @@ internal class CsvTimeseries(private val pipelines: List<Triple<CSVReader, Buffe
          * a memory pipeline followed by a CPU pipeline, each backed by [CSVReader] and the
          * production [MemoryEventSerializer] / [CpuEventSerializer].
          */
+        @Suppress("LongParameterList")
         fun create(
             csvContent: String,
             sessionId: String,
@@ -64,39 +71,39 @@ internal class CsvTimeseries(private val pipelines: List<Triple<CSVReader, Buffe
             totalRamBytes: Long,
             bufferSize: Int,
             timeProvider: TimeProvider,
-            useDeltaCompression: Boolean = false
-        ): CsvTimeseries {
-            val memoryReader = CSVReader(csvContent, METRIC_MEMORY_USAGE, timeProvider)
-            val cpuReader = CSVReader(csvContent, METRIC_CPU_USAGE, timeProvider)
-
-            return CsvTimeseries(
-                pipelines = listOf(
-                    Triple(
-                        memoryReader,
-                        Buffer(bufferSize),
-                        MemoryEventSerializer(
-                            sessionId = sessionId,
-                            applicationId = applicationId,
-                            sessionType = sessionType,
-                            totalRamBytes = totalRamBytes,
-                            timeProvider = timeProvider,
-                            useDeltaCompression = useDeltaCompression
-                        )
-                    ),
-                    Triple(
-                        cpuReader,
-                        Buffer(bufferSize),
-                        CpuEventSerializer(
-                            sessionId = sessionId,
-                            applicationId = applicationId,
-                            sessionType = sessionType,
-                            timeProvider = timeProvider,
-                            useDeltaCompression = useDeltaCompression
-                        )
+            datadogContext: DatadogContext,
+            useDeltaCompression: Boolean = false,
+            additionalAttributes: Map<String, String> = emptyMap()
+        ) = CsvTimeseries(
+            datadogContext = datadogContext,
+            pipelines = listOf(
+                Triple(
+                    CSVReader(csvContent, METRIC_MEMORY_USAGE, timeProvider),
+                    Buffer(bufferSize),
+                    MemoryEventSerializer(
+                        sessionId = sessionId,
+                        applicationId = applicationId,
+                        sessionType = sessionType,
+                        totalRamBytes = totalRamBytes,
+                        timeProvider = timeProvider,
+                        additionalAttributes = additionalAttributes,
+                        useDeltaCompression = useDeltaCompression
+                    )
+                ),
+                Triple(
+                    CSVReader(csvContent, METRIC_CPU_USAGE, timeProvider),
+                    Buffer(bufferSize),
+                    CpuEventSerializer(
+                        sessionId = sessionId,
+                        applicationId = applicationId,
+                        sessionType = sessionType,
+                        timeProvider = timeProvider,
+                        additionalAttributes = additionalAttributes,
+                        useDeltaCompression = useDeltaCompression
                     )
                 )
             )
-        }
+        )
 
         const val METRIC_MEMORY_USAGE: String = "memory_usage"
         const val METRIC_CPU_USAGE: String = "cpu_usage"
