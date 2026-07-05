@@ -618,7 +618,12 @@ internal open class RumViewScope(
                 heatmapIdentifierRegistry = heatmapIdentifierRegistry
             )
             pendingActionCount++
-            customActionScope.handleEvent(RumRawEvent.SendCustomActionNow(), datadogContext, writeScope, writer)
+            customActionScope.handleEvent(
+                RumRawEvent.SendCustomActionNow(Time.now(sdkCore.timeProvider)),
+                datadogContext,
+                writeScope,
+                writer
+            )
             return
         }
 
@@ -963,7 +968,7 @@ internal open class RumViewScope(
             val entry = iterator.next()
             val scope = entry.value.handleEvent(event, datadogContext, writeScope, writer)
             if (scope == null) {
-                // if we finalized this scope and it was by error, we won't have resource
+                // if we finalized this scope, and it was by error, we won't have resource
                 // event written, but error event instead
                 if (event is RumRawEvent.StopResourceWithError ||
                     event is RumRawEvent.StopResourceWithStackTrace
@@ -1753,7 +1758,7 @@ internal open class RumViewScope(
          * This function is used to inverse frame times metrics into frame rates.
          *
          * As we take the inverse, the min of the inverse is the inverse of the max and
-         * vice-versa.
+         * vice versa.
          * For instance, if the min frame time is 20ms (50 fps) and the max is 500ms (2 fps),
          * the max frame rate is 50 fps (1/minValue) and the min is 2 fps (1/maxValue).
          *
