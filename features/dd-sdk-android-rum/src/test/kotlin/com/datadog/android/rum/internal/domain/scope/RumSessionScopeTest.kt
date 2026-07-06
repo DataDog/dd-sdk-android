@@ -1742,6 +1742,69 @@ internal class RumSessionScopeTest {
         verifyNoMoreInteractions(mockRumSessionScopeStartupManager)
     }
 
+    @ParameterizedTest
+    @MethodSource("testScenarios")
+    fun `M record TTID and TTFD W handleEvent { session previously expired }`(
+        scenario: RumStartupScenario,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.handleEvent(
+            event = fakeInitialViewEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter
+        )
+        advanceTimeByMs(TEST_INACTIVITY_MS)
+
+        val appStartEvent = RumRawEvent.AppStartEvent(scenario = scenario)
+        testedScope.handleEvent(
+            event = appStartEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter
+        )
+
+        // When
+        val info = RumTTIDInfo(scenario = scenario, durationNs = forge.aLong(min = 0, max = 10000))
+        val ttidEvent = RumRawEvent.AppStartTTIDEvent(info = info)
+        testedScope.handleEvent(
+            event = ttidEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter
+        )
+
+        val ttfdEvent = RumRawEvent.AppStartTTFDEvent()
+        val result = testedScope.handleEvent(
+            event = ttfdEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter
+        )
+        val rumContext = checkNotNull(result).getRumContext()
+
+        // Then
+        verify(mockRumSessionScopeStartupManager).onAppStartEvent(event = eq(appStartEvent))
+        verify(mockRumSessionScopeStartupManager).onTTIDEvent(
+            event = ttidEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+        verify(mockRumSessionScopeStartupManager).onTTFDEvent(
+            event = ttfdEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+        verifyNoMoreInteractions(mockRumSessionScopeStartupManager)
+    }
+
     // endregion
 
     // region Internal
