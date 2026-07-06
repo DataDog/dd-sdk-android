@@ -48,6 +48,7 @@ createJsonModelsGenerationTask("generateRemoteConfigModelsFromJson") {
     inputDirPath = "src/main/json/rc"
     targetPackageName = "com.datadog.android.core.internal.remote.model"
     ignoredFiles = listOf("mobile.json")
+    inputNameMapping = mapOf("android.json" to "RemoteConfiguration")
 }
 
 /**

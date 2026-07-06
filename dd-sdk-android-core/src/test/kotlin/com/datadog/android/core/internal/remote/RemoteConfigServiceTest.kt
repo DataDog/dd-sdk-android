@@ -8,7 +8,7 @@ package com.datadog.android.core.internal.remote
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
-import com.datadog.android.core.internal.remote.model.Android
+import com.datadog.android.core.internal.remote.model.RemoteConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.google.gson.JsonParseException
@@ -106,8 +106,8 @@ internal class RemoteConfigServiceTest {
     @Test
     fun `M return cached config W getCurrentConfig() { valid cache on disk }`(forge: Forge) {
         // Given — write a real file so existsSafe() passes
-        val fakeAndroid = forgeValidAndroid(forge)
-        val fakeJson = fakeAndroid.toJson().toString()
+        val fakeRemoteConfiguration = forgeValidRemoteConfiguration(forge)
+        val fakeJson = fakeRemoteConfiguration.toJson().toString()
         val cacheFile = File(fakeStorageDir, "$fakeRemoteConfigurationId.json")
         cacheFile.writeText(fakeJson)
         testedService = RemoteConfigServiceImpl(
@@ -124,7 +124,7 @@ internal class RemoteConfigServiceTest {
         val result = testedService.getCurrentConfig()
 
         // Then
-        assertThat(result).isEqualTo(fakeAndroid)
+        assertThat(result).isEqualTo(fakeRemoteConfiguration)
     }
 
     @Test
@@ -165,15 +165,15 @@ internal class RemoteConfigServiceTest {
     ) {
         // Given
         testedService = buildService()
-        val fakeAndroid = forgeValidAndroid(forge)
-        val fakeJson = fakeAndroid.toJson().toString()
+        val fakeRemoteConfiguration = forgeValidRemoteConfiguration(forge)
+        val fakeJson = fakeRemoteConfiguration.toJson().toString()
         whenever(mockFetcher.fetch(any())).doReturn(fakeJson)
 
         // When
         testedService.syncWithRemote()
 
         // Then
-        assertThat(testedService.getCurrentConfig()).isEqualTo(fakeAndroid)
+        assertThat(testedService.getCurrentConfig()).isEqualTo(fakeRemoteConfiguration)
         verify(mockFileReaderWriter).writeData(
             file = any(),
             data = eq(fakeJson.toByteArray(Charsets.UTF_8)),
@@ -189,7 +189,7 @@ internal class RemoteConfigServiceTest {
             .addPathSegment("v1")
             .addPathSegment("$fakeRemoteConfigurationId.json")
             .build()
-        whenever(mockFetcher.fetch(expectedUrl)).doReturn(forgeValidAndroid(forge).toJson().toString())
+        whenever(mockFetcher.fetch(expectedUrl)).doReturn(forgeValidRemoteConfiguration(forge).toJson().toString())
 
         // When
         testedService.syncWithRemote()
@@ -248,7 +248,7 @@ internal class RemoteConfigServiceTest {
     fun `M not update cachedConfig W syncWithRemote() { disk write fails }`(forge: Forge) {
         // Given
         testedService = buildService()
-        val fakeJson = forgeValidAndroid(forge).toJson().toString()
+        val fakeJson = forgeValidRemoteConfiguration(forge).toJson().toString()
         whenever(mockFetcher.fetch(any())).doReturn(fakeJson)
         whenever(mockFileReaderWriter.writeData(any(), any(), any())).doReturn(false)
 
@@ -263,9 +263,9 @@ internal class RemoteConfigServiceTest {
 
     // region helpers
 
-    private fun forgeValidAndroid(forge: Forge): Android {
-        return Android(
-            rum = Android.Rum(
+    private fun forgeValidRemoteConfiguration(forge: Forge): RemoteConfiguration {
+        return RemoteConfiguration(
+            rum = RemoteConfiguration.Rum(
                 applicationId = forge.getForgery<java.util.UUID>().toString()
             )
         )

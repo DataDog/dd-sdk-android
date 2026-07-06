@@ -11,7 +11,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.deleteSafe
 import com.datadog.android.core.internal.persistence.file.existsSafe
-import com.datadog.android.core.internal.remote.model.Android
+import com.datadog.android.core.internal.remote.model.RemoteConfiguration
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.internal.utils.allowThreadDiskReads
 import com.google.gson.JsonParseException
@@ -25,7 +25,7 @@ import java.util.concurrent.Executor
  */
 internal interface RemoteConfigService {
     fun syncWithRemote()
-    fun getCurrentConfig(): Android?
+    fun getCurrentConfig(): RemoteConfiguration?
 }
 
 internal class RemoteConfigServiceImpl(
@@ -50,7 +50,7 @@ internal class RemoteConfigServiceImpl(
         .build()
 
     @Volatile
-    private var cachedConfig: Android? = null
+    private var cachedConfig: RemoteConfiguration? = null
 
     init {
         // Synchronous read on the caller's thread (main thread during SDK init).
@@ -60,7 +60,7 @@ internal class RemoteConfigServiceImpl(
         cachedConfig = allowThreadDiskReads { readConfigFromDisk() }
     }
 
-    override fun getCurrentConfig(): Android? = cachedConfig
+    override fun getCurrentConfig(): RemoteConfiguration? = cachedConfig
 
     override fun syncWithRemote() {
         executor.executeSafe(SYNC_OPERATION_NAME, internalLogger) {
@@ -73,7 +73,7 @@ internal class RemoteConfigServiceImpl(
         val rawConfig = fetcher.fetch(configUrl) ?: return
 
         val config = try {
-            Android.fromJson(rawConfig)
+            RemoteConfiguration.fromJson(rawConfig)
         } catch (e: JsonParseException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -96,12 +96,12 @@ internal class RemoteConfigServiceImpl(
 
     @WorkerThread
     @Suppress("ReturnCount")
-    private fun readConfigFromDisk(): Android? {
+    private fun readConfigFromDisk(): RemoteConfiguration? {
         if (!configFile.existsSafe(internalLogger)) return null
         val bytes = fileReaderWriter.readData(configFile)
         if (bytes.isEmpty()) return null
         return try {
-            Android.fromJson(String(bytes, Charsets.UTF_8))
+            RemoteConfiguration.fromJson(String(bytes, Charsets.UTF_8))
         } catch (e: JsonParseException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
