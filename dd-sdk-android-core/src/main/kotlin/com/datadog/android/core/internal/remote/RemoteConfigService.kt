@@ -11,6 +11,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.deleteSafe
 import com.datadog.android.core.internal.persistence.file.existsSafe
+import com.datadog.android.core.internal.persistence.file.mkdirsSafe
 import com.datadog.android.core.internal.remote.model.RemoteConfiguration
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.internal.utils.allowThreadDiskReads
@@ -96,6 +97,7 @@ internal class RemoteConfigServiceImpl(
             return
         }
 
+        configFile.parentFile?.mkdirsSafe(internalLogger)
         val written = fileReaderWriter.writeData(
             file = configFile,
             data = rawConfig.toByteArray(Charsets.UTF_8),

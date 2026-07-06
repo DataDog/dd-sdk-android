@@ -204,6 +204,34 @@ internal class RemoteConfigServiceTest {
         verify(mockFetcher).fetch(expectedUrl)
     }
 
+    @Test
+    fun `M create storageDir and write config W syncWithRemote() { storageDir does not exist yet }`(
+        @Forgery fakeRemoteConfiguration: RemoteConfiguration
+    ) {
+        // Given — use a non-existent subdirectory as storageDir
+        val nonExistentStorageDir = File(fakeStorageDir, "not-yet-created")
+        assertThat(nonExistentStorageDir).doesNotExist()
+        val fakeJson = fakeRemoteConfiguration.toJson().toString()
+        whenever(mockFetcher.fetch(any())).doReturn(fakeJson)
+        testedService = RemoteConfigServiceImpl(
+            remoteConfigurationId = fakeRemoteConfigurationId,
+            remoteConfigurationEndpoint = fakeEndpoint,
+            fetcher = mockFetcher,
+            storageDir = nonExistentStorageDir,
+            executor = mockExecutor,
+            internalLogger = mockInternalLogger
+            // use real FileReaderWriter so the actual disk write path is exercised
+        )
+
+        // When
+        testedService.syncWithRemote()
+
+        // Then
+        val cacheFile = File(nonExistentStorageDir, "$fakeRemoteConfigurationId.json")
+        assertThat(cacheFile).exists()
+        assertThat(testedService.getCurrentConfig()?.toJson()?.toString()).isEqualTo(fakeJson)
+    }
+
     // endregion
 
     // region syncWithRemote() — fetch failure
