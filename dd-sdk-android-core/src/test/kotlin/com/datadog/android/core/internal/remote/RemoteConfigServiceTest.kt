@@ -12,7 +12,7 @@ import com.datadog.android.core.internal.remote.model.RemoteConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.google.gson.JsonParseException
-import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.HttpUrl
@@ -104,9 +104,10 @@ internal class RemoteConfigServiceTest {
     }
 
     @Test
-    fun `M return cached config W getCurrentConfig() { valid cache on disk }`(forge: Forge) {
+    fun `M return cached config W getCurrentConfig() { valid cache on disk }`(
+        @Forgery fakeRemoteConfiguration: RemoteConfiguration
+    ) {
         // Given — write a real file so existsSafe() passes
-        val fakeRemoteConfiguration = forgeValidRemoteConfiguration(forge)
         val fakeJson = fakeRemoteConfiguration.toJson().toString()
         val cacheFile = File(fakeStorageDir, "$fakeRemoteConfigurationId.json")
         cacheFile.writeText(fakeJson)
@@ -123,8 +124,10 @@ internal class RemoteConfigServiceTest {
         // When
         val result = testedService.getCurrentConfig()
 
-        // Then
-        assertThat(result).isEqualTo(fakeRemoteConfiguration)
+        // Then — compare JSON output: the generated model uses Number fields that deserialize
+        // as LazilyParsedNumber (no equals() override), so object equality is unreliable.
+        // Comparing serialized JSON verifies the full roundtrip without false negatives.
+        assertThat(result?.toJson()?.toString()).isEqualTo(fakeJson)
     }
 
     @Test
@@ -161,19 +164,20 @@ internal class RemoteConfigServiceTest {
 
     @Test
     fun `M update cachedConfig and write to disk W syncWithRemote() { successful fetch }`(
-        forge: Forge
+        @Forgery fakeRemoteConfiguration: RemoteConfiguration
     ) {
         // Given
         testedService = buildService()
-        val fakeRemoteConfiguration = forgeValidRemoteConfiguration(forge)
         val fakeJson = fakeRemoteConfiguration.toJson().toString()
         whenever(mockFetcher.fetch(any())).doReturn(fakeJson)
 
         // When
         testedService.syncWithRemote()
 
-        // Then
-        assertThat(testedService.getCurrentConfig()).isEqualTo(fakeRemoteConfiguration)
+        // Then — compare JSON output: the generated model uses Number fields that deserialize
+        // as LazilyParsedNumber (no equals() override), so object equality is unreliable.
+        // Comparing serialized JSON verifies the full roundtrip without false negatives.
+        assertThat(testedService.getCurrentConfig()?.toJson()?.toString()).isEqualTo(fakeJson)
         verify(mockFileReaderWriter).writeData(
             file = any(),
             data = eq(fakeJson.toByteArray(Charsets.UTF_8)),
@@ -182,14 +186,16 @@ internal class RemoteConfigServiceTest {
     }
 
     @Test
-    fun `M build correct URL W syncWithRemote()`(forge: Forge) {
+    fun `M build correct URL W syncWithRemote()`(
+        @Forgery fakeRemoteConfiguration: RemoteConfiguration
+    ) {
         // Given
         testedService = buildService()
         val expectedUrl = fakeEndpoint.newBuilder()
             .addPathSegment("v1")
             .addPathSegment("$fakeRemoteConfigurationId.json")
             .build()
-        whenever(mockFetcher.fetch(expectedUrl)).doReturn(forgeValidRemoteConfiguration(forge).toJson().toString())
+        whenever(mockFetcher.fetch(expectedUrl)).doReturn(fakeRemoteConfiguration.toJson().toString())
 
         // When
         testedService.syncWithRemote()
@@ -245,10 +251,12 @@ internal class RemoteConfigServiceTest {
     // region syncWithRemote() — disk write failure
 
     @Test
-    fun `M not update cachedConfig W syncWithRemote() { disk write fails }`(forge: Forge) {
+    fun `M not update cachedConfig W syncWithRemote() { disk write fails }`(
+        @Forgery fakeRemoteConfiguration: RemoteConfiguration
+    ) {
         // Given
         testedService = buildService()
-        val fakeJson = forgeValidRemoteConfiguration(forge).toJson().toString()
+        val fakeJson = fakeRemoteConfiguration.toJson().toString()
         whenever(mockFetcher.fetch(any())).doReturn(fakeJson)
         whenever(mockFileReaderWriter.writeData(any(), any(), any())).doReturn(false)
 
@@ -257,18 +265,6 @@ internal class RemoteConfigServiceTest {
 
         // Then
         assertThat(testedService.getCurrentConfig()).isNull()
-    }
-
-    // endregion
-
-    // region helpers
-
-    private fun forgeValidRemoteConfiguration(forge: Forge): RemoteConfiguration {
-        return RemoteConfiguration(
-            rum = RemoteConfiguration.Rum(
-                applicationId = forge.getForgery<java.util.UUID>().toString()
-            )
-        )
     }
 
     // endregion
