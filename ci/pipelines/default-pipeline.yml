@@ -66,6 +66,19 @@ stages:
     - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "$ANDROID_EMULATOR_IMAGE"
     - yes | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
     - echo "no" | ~/android_sdk/cmdline-tools/latest/bin/avdmanager --verbose create avd --force --name "$EMULATOR_NAME" --package "$ANDROID_EMULATOR_IMAGE"
+    - |
+      # The cmdline-tools on the AMI runners speak SDK XML schema v3; API 37 packages use
+      # schema v4. avdmanager cannot fully parse the v4 metadata and writes target=android-0
+      # instead of target=android-37.0. The emulator reads this to gate HVF (requires API
+      # >= 21): with target=android-0, API level is parsed as 0 (clamped to 3), HVF is
+      # skipped, QEMU falls back to TCG, and TCG aborts on Apple Silicon. See RUM-16470.
+      INI_FILE=~/.android/avd/${EMULATOR_NAME}.ini
+      CURRENT_TARGET=$(grep "^target=" "$INI_FILE" 2>/dev/null | cut -d= -f2)
+      EXPECTED_TARGET="android-${ANDROID_API}.0"
+      if [[ "$CURRENT_TARGET" != "$EXPECTED_TARGET" ]]; then
+        echo "WARNING: avdmanager wrote target=$CURRENT_TARGET, patching to $EXPECTED_TARGET"
+        sed -i '' "s|^target=.*|target=$EXPECTED_TARGET|" "$INI_FILE"
+      fi
   setup-macos-ami-runner:
     - !reference [ .snippets, source-secrets-macos ]
     - !reference [ .snippets, setup-dd-tracer ]
