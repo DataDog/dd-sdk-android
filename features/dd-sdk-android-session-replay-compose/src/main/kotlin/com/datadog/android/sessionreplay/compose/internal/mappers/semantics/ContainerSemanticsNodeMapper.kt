@@ -24,7 +24,7 @@ internal class ContainerSemanticsNodeMapper(
         asyncJobStatusCallback: AsyncJobStatusCallback,
         internalLogger: InternalLogger
     ): SemanticsWireframe {
-        val wireframes = resolveModifierWireframes(semanticsNode)
+        val wireframes = resolveModifierWireframes(semanticsNode, parentContext)
         val backgroundColor = semanticsUtils.resolveBackgroundColor(semanticsNode)?.let {
             convertColor(it)
         }

@@ -26,7 +26,7 @@ internal class ComposeHiddenMapper(
         internalLogger: InternalLogger
     ): SemanticsWireframe? {
         val id = resolveId(semanticsNode)
-        val viewGlobalBounds = resolveBounds(semanticsNode)
+        val viewGlobalBounds = resolveBounds(semanticsNode, parentContext)
         return SemanticsWireframe(
             wireframes = MobileSegment.Wireframe.PlaceholderWireframe(
                 id = id,

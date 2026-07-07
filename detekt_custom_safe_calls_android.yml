@@ -233,6 +233,7 @@ datadog:
       - "android.graphics.Rect.constructor()"
       - "android.graphics.Rect.constructor(kotlin.Int, kotlin.Int, kotlin.Int, kotlin.Int)"
       - "android.graphics.Rect.height()"
+      - "android.graphics.Rect.offset(kotlin.Int, kotlin.Int)"
       - "android.graphics.Rect.width()"
       - "android.graphics.RectF.constructor()"
       - "android.graphics.RectF.width()"

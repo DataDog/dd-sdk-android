@@ -23,6 +23,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
@@ -63,13 +64,15 @@ internal class SliderSemanticsNodeMapperNodeMapperTest : AbstractSemanticsNodeMa
     @FloatForgery
     var fakeCornerRadius: Float = 0f
 
-    @FloatForgery
+    // fakeEndInclusive must be strictly greater than fakeStart — the mapper only emits a thumb
+    // wireframe when the range is non-empty (rangeAbs > 0). Set explicitly in `set up` instead of
+    // via independent @FloatForgery fields, which could otherwise forge an empty/inverted range
+    // and silently drop the thumb wireframe the test always expects.
     var fakeStart: Float = 0f
 
     @FloatForgery
     var fakeCurrent: Float = 0f
 
-    @FloatForgery
     var fakeEndInclusive: Float = 0f
 
     @Forgery
@@ -78,6 +81,8 @@ internal class SliderSemanticsNodeMapperNodeMapperTest : AbstractSemanticsNodeMa
     @BeforeEach
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
+        fakeStart = forge.aFloat(min = -1_000f, max = 1_000f)
+        fakeEndInclusive = forge.aFloat(min = fakeStart + 1f, max = fakeStart + 1_000f)
         testedSliderSemanticsNodeMapper = SliderSemanticsNodeMapper(
             colorStringFormatter = mockColorStringFormatter,
             semanticsUtils = mockSemanticsUtils
@@ -90,6 +95,7 @@ internal class SliderSemanticsNodeMapperNodeMapperTest : AbstractSemanticsNodeMa
         }
     }
 
+    @Test
     fun `M return the correct wireframe W map`() {
         // Given
         val mockSemanticsNode = mockSemanticsNode()
@@ -99,10 +105,10 @@ internal class SliderSemanticsNodeMapperNodeMapperTest : AbstractSemanticsNodeMa
             color = fakeBackgroundColor,
             cornerRadius = fakeCornerRadius
         )
-        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode)) doReturn fakeGlobalBounds
-        whenever(mockSemanticsUtils.resolveBackgroundInfo(mockSemanticsNode)) doReturn listOf(
-            fakeBackgroundInfo
-        )
+        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode, fakeUiContext.windowOffset)) doReturn
+            fakeGlobalBounds
+        whenever(mockSemanticsUtils.resolveBackgroundInfo(mockSemanticsNode, fakeUiContext.windowOffset)) doReturn
+            listOf(fakeBackgroundInfo)
         whenever(mockSemanticsUtils.getProgressBarRangeInfo(mockSemanticsNode)) doReturn
             mockProgressBarRangeInfo
         whenever(mockProgressBarRangeInfo.range) doReturn mockRange

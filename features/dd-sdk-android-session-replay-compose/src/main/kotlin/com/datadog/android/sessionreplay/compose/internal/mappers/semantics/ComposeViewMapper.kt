@@ -10,6 +10,7 @@ import androidx.annotation.UiThread
 import androidx.compose.ui.platform.ComposeView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
+import com.datadog.android.sessionreplay.compose.internal.utils.resolveComposeWindowOffset
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.mapper.BaseWireframeMapper
@@ -39,16 +40,20 @@ internal class ComposeViewMapper(
         asyncJobStatusCallback: AsyncJobStatusCallback,
         internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
-        val density =
+        val rootSemanticsNode = semanticsUtils.findRootSemanticsNode(view) ?: return emptyList()
+        // Use the node's own density so it matches SemanticsUtils.resolveInnerBounds.
+        val systemDensity =
             mappingContext.systemInformation.screenDensity.let { if (it == 0.0f) 1.0f else it }
-        return semanticsUtils.findRootSemanticsNode(view)?.let { node ->
-            rootSemanticsNodeMapper.createComposeWireframes(
-                node,
-                density,
-                mappingContext,
-                asyncJobStatusCallback,
-                internalLogger
-            )
-        } ?: emptyList()
+        val density = rootSemanticsNode.layoutInfo.density.density.let { if (it == 0.0f) systemDensity else it }
+        // positionInRoot is relative to the view, not the screen — offset to match other SR mappers.
+        val windowOffset = view.resolveComposeWindowOffset(density)
+        return rootSemanticsNodeMapper.createComposeWireframes(
+            rootSemanticsNode,
+            density,
+            mappingContext,
+            asyncJobStatusCallback,
+            internalLogger,
+            windowOffset = windowOffset
+        )
     }
 }
