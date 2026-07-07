@@ -11,8 +11,8 @@ import com.datadog.android.api.InternalLogger
 import okhttp3.Call
 import okhttp3.HttpUrl
 import okhttp3.Request
+import okhttp3.Response
 import java.io.IOException
-import java.util.Locale
 
 /**
  * Fetches the remote configuration document from the Datadog CDN.
@@ -50,22 +50,24 @@ internal class RemoteConfigNetworkFetcher(
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
-                { ERROR_NETWORK.format(Locale.US, url) },
-                e
+                { ERROR_NETWORK },
+                e,
+                additionalProperties = mapOf(ATTR_URL to url.toString())
             )
             null
         } catch (e: Throwable) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { ERROR_NETWORK.format(Locale.US, url) },
-                e
+                { ERROR_NETWORK },
+                e,
+                additionalProperties = mapOf(ATTR_URL to url.toString())
             )
             null
         }
     }
 
-    private fun handleResponse(response: okhttp3.Response, url: HttpUrl): String? {
+    private fun handleResponse(response: Response, url: HttpUrl): String? {
         return if (response.isSuccessful) {
             @Suppress("UnsafeThirdPartyFunctionCall") // safe: wrapped in outer try-catch
             val body = response.body?.use { it.string() }
@@ -73,8 +75,9 @@ internal class RemoteConfigNetworkFetcher(
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
                     listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                    { ERROR_EMPTY_BODY.format(Locale.US, url) },
-                    onlyOnce = true
+                    { ERROR_EMPTY_BODY },
+                    onlyOnce = true,
+                    additionalProperties = mapOf(ATTR_URL to url.toString())
                 )
                 null
             } else {
@@ -84,9 +87,12 @@ internal class RemoteConfigNetworkFetcher(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { ERROR_HTTP.format(Locale.US, url, response.code) },
+                { ERROR_HTTP },
                 onlyOnce = true,
-                additionalProperties = mapOf(ATTR_RESPONSE_CODE to response.code)
+                additionalProperties = mapOf(
+                    ATTR_RESPONSE_CODE to response.code,
+                    ATTR_URL to url.toString()
+                )
             )
             @Suppress("UnsafeThirdPartyFunctionCall") // safe: wrapped in outer try-catch
             response.body?.close()
@@ -95,9 +101,10 @@ internal class RemoteConfigNetworkFetcher(
     }
 
     internal companion object {
-        internal const val ERROR_NETWORK = "Remote config fetch failed for url: %s"
-        internal const val ERROR_HTTP = "Remote config fetch failed for url: %s with status code: %d"
-        internal const val ERROR_EMPTY_BODY = "Remote config response body is empty for url: %s"
+        internal const val ERROR_NETWORK = "Remote config fetch failed due to a network error"
+        internal const val ERROR_HTTP = "Remote config fetch failed with an HTTP error"
+        internal const val ERROR_EMPTY_BODY = "Remote config response body is empty"
         internal const val ATTR_RESPONSE_CODE = "response_code"
+        internal const val ATTR_URL = "url"
     }
 }

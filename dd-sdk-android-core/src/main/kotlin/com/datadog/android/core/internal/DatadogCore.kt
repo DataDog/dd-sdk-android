@@ -68,7 +68,7 @@ import java.util.concurrent.locks.Lock
  * @param internalLoggerProvider Provider for [InternalLogger] instance.
  * @param executorServiceFactory Custom factory for executors, used only in unit-tests
  * @param buildSdkVersionProvider Build.VERSION.SDK_INT provider used for the test
- * @param remoteConfigServiceFactory Custom factory for remote config service, used only in unit-tests
+ * @param remoteConfigServiceFactory Factory for creating the remote config service, defaults to the real implementation
  */
 @Suppress("TooManyFunctions")
 internal class DatadogCore(
@@ -79,7 +79,7 @@ internal class DatadogCore(
     // only for unit tests
     private val executorServiceFactory: FlushableExecutorService.Factory? = null,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
-    private val remoteConfigServiceFactory: RemoteConfigService.Factory? = null
+    private val remoteConfigServiceFactory: RemoteConfigService.Factory = DEFAULT_REMOTE_CONFIG_SERVICE_FACTORY
 ) : InternalSdkCore {
 
     internal lateinit var coreFeature: CoreFeature
@@ -495,11 +495,16 @@ internal class DatadogCore(
 
     private fun setupRemoteConfiguration(configuration: Configuration) {
         val id = configuration.coreConfig.remoteConfigurationId ?: return
-        val factory = remoteConfigServiceFactory ?: DEFAULT_REMOTE_CONFIG_SERVICE_FACTORY
-        remoteConfigService = factory.create(
+        remoteConfigService = remoteConfigServiceFactory.create(
             remoteConfigurationId = id,
             remoteConfigurationEndpoint = configuration.coreConfig.site.remoteConfigurationEndpoint,
-            callFactory = coreFeature.createOkHttpCallFactory { },
+            callFactory = coreFeature.createOkHttpCallFactory {
+                val proxy = configuration.coreConfig.proxy
+                if (proxy != null) {
+                    proxy(proxy)
+                    proxyAuthenticator(configuration.coreConfig.proxyAuth)
+                }
+            },
             storageDir = coreFeature.storageDir,
             executor = coreFeature.uploadExecutorService,
             internalLogger = internalLogger

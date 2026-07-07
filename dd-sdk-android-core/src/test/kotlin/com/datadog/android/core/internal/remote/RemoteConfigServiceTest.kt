@@ -255,6 +255,72 @@ internal class RemoteConfigServiceTest {
     // region syncWithRemote() — parse failure
 
     @Test
+    fun `M not update cache or disk W syncWithRemote() { response with unknown enum value }`() {
+        // Given — valid JSON but with an unknown vitalsUpdateFrequency enum value
+        testedService = buildService()
+        val fakeJson = """
+            {
+              "platform": "android",
+              "rum": {
+                "applicationId": "38030dde-f9f9-4e52-9443-b9804a030080",
+                "vitalsUpdateFrequency": "supersonic"
+              }
+            }
+        """.trimIndent()
+        whenever(mockFetcher.fetch(any())).doReturn(fakeJson)
+
+        // When
+        testedService.syncWithRemote()
+
+        // Then
+        assertThat(testedService.getCurrentConfig()).isNull()
+        verify(mockFileReaderWriter, never()).writeData(any(), any(), any())
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            message = RemoteConfigServiceImpl.ERROR_PARSE,
+            throwableClass = NoSuchElementException::class.java
+        )
+    }
+
+    @Test
+    fun `M return null W getCurrentConfig() { cached file has unknown enum value }`() {
+        // Given — write a real file with an unknown enum value
+        val cacheFile = File(fakeStorageDir, "$fakeRemoteConfigurationId.json")
+        cacheFile.writeText(
+            """
+            {
+              "platform": "android",
+              "rum": {
+                "applicationId": "38030dde-f9f9-4e52-9443-b9804a030080",
+                "vitalsUpdateFrequency": "supersonic"
+              }
+            }
+            """.trimIndent()
+        )
+        testedService = RemoteConfigServiceImpl(
+            remoteConfigurationId = fakeRemoteConfigurationId,
+            remoteConfigurationEndpoint = fakeEndpoint,
+            fetcher = mockFetcher,
+            storageDir = fakeStorageDir,
+            executor = mockExecutor,
+            internalLogger = mockInternalLogger
+        )
+
+        // When
+        val result = testedService.getCurrentConfig()
+
+        // Then
+        assertThat(result).isNull()
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            message = RemoteConfigServiceImpl.ERROR_PARSE,
+            throwableClass = NoSuchElementException::class.java
+        )
+    }
+
+    @Test
     fun `M not update cache or disk W syncWithRemote() { invalid JSON response }`() {
         // Given
         testedService = buildService()

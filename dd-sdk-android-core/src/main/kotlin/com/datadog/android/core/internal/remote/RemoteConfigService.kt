@@ -84,18 +84,7 @@ internal class RemoteConfigServiceImpl(
     @WorkerThread
     private fun fetchAndCache() {
         val rawConfig = fetcher.fetch(configUrl) ?: return
-
-        val config = try {
-            RemoteConfiguration.fromJson(rawConfig)
-        } catch (e: JsonParseException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { ERROR_PARSE },
-                e
-            )
-            return
-        }
+        val config = parseConfig(rawConfig) ?: return
 
         configFile.parentFile?.mkdirsSafe(internalLogger)
         val written = fileReaderWriter.writeData(
@@ -109,6 +98,31 @@ internal class RemoteConfigServiceImpl(
     }
 
     @WorkerThread
+    private fun parseConfig(rawConfig: String): RemoteConfiguration? {
+        return try {
+            RemoteConfiguration.fromJson(rawConfig)
+        } catch (e: JsonParseException) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                { ERROR_PARSE },
+                e
+            )
+            null
+        } catch (e: NoSuchElementException) {
+            // Generated enum readers use values().first { } which throws NoSuchElementException
+            // for unknown enum values — treat the same as a parse failure.
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                { ERROR_PARSE },
+                e
+            )
+            null
+        }
+    }
+
+    @WorkerThread
     @Suppress("ReturnCount")
     private fun readConfigFromDisk(): RemoteConfiguration? {
         if (!configFile.existsSafe(internalLogger)) return null
@@ -117,6 +131,18 @@ internal class RemoteConfigServiceImpl(
         return try {
             RemoteConfiguration.fromJson(String(bytes, Charsets.UTF_8))
         } catch (e: JsonParseException) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                { ERROR_PARSE },
+                e
+            )
+            // Delete the corrupt file so the next successful fetch can write a clean one.
+            configFile.deleteSafe(internalLogger)
+            null
+        } catch (e: NoSuchElementException) {
+            // Generated enum readers use values().first { } which throws NoSuchElementException
+            // for unknown enum values — treat the same as a parse failure.
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),

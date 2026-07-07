@@ -110,8 +110,9 @@ internal class RemoteConfigFetcherTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            message = RemoteConfigNetworkFetcher.ERROR_EMPTY_BODY.format(fakeUrl.toHttpUrl()),
-            onlyOnce = true
+            message = RemoteConfigNetworkFetcher.ERROR_EMPTY_BODY,
+            onlyOnce = true,
+            additionalProperties = mapOf(RemoteConfigNetworkFetcher.ATTR_URL to fakeUrl.toHttpUrl().toString())
         )
     }
 
@@ -143,9 +144,12 @@ internal class RemoteConfigFetcherTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            message = RemoteConfigNetworkFetcher.ERROR_HTTP.format(fakeUrl.toHttpUrl(), 404),
+            message = RemoteConfigNetworkFetcher.ERROR_HTTP,
             onlyOnce = true,
-            additionalProperties = mapOf(RemoteConfigNetworkFetcher.ATTR_RESPONSE_CODE to 404)
+            additionalProperties = mapOf(
+                RemoteConfigNetworkFetcher.ATTR_RESPONSE_CODE to 404,
+                RemoteConfigNetworkFetcher.ATTR_URL to fakeUrl.toHttpUrl().toString()
+            )
         )
     }
 
@@ -173,9 +177,12 @@ internal class RemoteConfigFetcherTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            message = RemoteConfigNetworkFetcher.ERROR_HTTP.format(fakeUrl.toHttpUrl(), 500),
+            message = RemoteConfigNetworkFetcher.ERROR_HTTP,
             onlyOnce = true,
-            additionalProperties = mapOf(RemoteConfigNetworkFetcher.ATTR_RESPONSE_CODE to 500)
+            additionalProperties = mapOf(
+                RemoteConfigNetworkFetcher.ATTR_RESPONSE_CODE to 500,
+                RemoteConfigNetworkFetcher.ATTR_URL to fakeUrl.toHttpUrl().toString()
+            )
         )
     }
 
@@ -200,8 +207,9 @@ internal class RemoteConfigFetcherTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.WARN,
             target = InternalLogger.Target.MAINTAINER,
-            message = RemoteConfigNetworkFetcher.ERROR_NETWORK.format(fakeUrl.toHttpUrl()),
-            throwableClass = IOException::class.java
+            message = RemoteConfigNetworkFetcher.ERROR_NETWORK,
+            throwableClass = IOException::class.java,
+            additionalProperties = mapOf(RemoteConfigNetworkFetcher.ATTR_URL to fakeUrl.toHttpUrl().toString())
         )
     }
 
@@ -222,8 +230,9 @@ internal class RemoteConfigFetcherTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            message = RemoteConfigNetworkFetcher.ERROR_NETWORK.format(fakeUrl.toHttpUrl()),
-            throwableClass = RuntimeException::class.java
+            message = RemoteConfigNetworkFetcher.ERROR_NETWORK,
+            throwableClass = RuntimeException::class.java,
+            additionalProperties = mapOf(RemoteConfigNetworkFetcher.ATTR_URL to fakeUrl.toHttpUrl().toString())
         )
     }
 
