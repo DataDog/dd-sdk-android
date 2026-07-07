@@ -7,20 +7,29 @@
 package com.datadog.android.rum.internal.timeseries
 
 import androidx.annotation.WorkerThread
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventType
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
+import com.datadog.android.rum.internal.instrumentation.insights.NoOpInsightsCollector
 import com.datadog.android.rum.internal.timeseries.provider.DataPointsReader
 import com.datadog.android.rum.internal.timeseries.serializer.JsonSerializer
+import com.datadog.android.rum.internal.timeseries.serializer.TimeseriesAttributes
 import com.google.gson.JsonObject
 
+@Suppress("LongParameterList")
 internal class Pipeline<T : Any>(
     private val sdkCore: FeatureSdkCore,
     private val reader: DataPointsReader<T>,
     private val buffer: Buffer<T>,
     private val serializer: JsonSerializer<T>,
-    private val dataWriter: DataWriter<Any>
+    private val dataWriter: DataWriter<Any>,
+    private val internalLogger: InternalLogger,
+    private val insightsCollector: InsightsCollector = NoOpInsightsCollector()
 ) {
     val intervalMs: Long get() = reader.intervalMs
 
@@ -31,13 +40,42 @@ internal class Pipeline<T : Any>(
     }
 
     @WorkerThread
-    fun flush() = buffer.drain()
-        .takeIf { it.isNotEmpty() }
-        ?.let(serializer::serialize)
-        ?.let(::write)
+    fun flush() {
+        val dataPoints = buffer.drain().ifEmpty { return }
+        sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+            ?.withWriteContext { datadogContext: DatadogContext, writeScope: EventWriteScope ->
+                val json = safeCall(ERROR_SERIALIZATION_FAILED) {
+                    serializer.serialize(datadogContext, dataPoints)
+                } ?: return@withWriteContext
 
-    private fun write(json: JsonObject) = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
-        ?.withWriteContext { _, writeScope ->
-            writeScope { dataWriter.write(it, json, EventType.DEFAULT) }
-        }
+                writeScope { batchWriter ->
+                    safeCall(ERROR_FLUSH_FAILED) {
+                        if (dataWriter.write(batchWriter, json, EventType.DEFAULT)) {
+                            insightsCollector.onTimeseries(json.timeseriesName)
+                        }
+                    }
+                }
+            }
+    }
+
+    private inline fun <R> safeCall(message: String, block: () -> R): R? = try {
+        block()
+    } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
+        internalLogger.log(
+            level = InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            messageBuilder = { message },
+            throwable = t
+        )
+        null
+    }
+
+    private companion object {
+        private const val ERROR_FLUSH_FAILED = "Timeseries flush failed"
+        private const val ERROR_SERIALIZATION_FAILED = "Timeseries serialization failed"
+        private val JsonObject.timeseriesName: String
+            get() = getAsJsonObject(TimeseriesAttributes.KEY_TIMESERIES)
+                ?.get(TimeseriesAttributes.KEY_NAME)
+                ?.asString.orEmpty()
+    }
 }

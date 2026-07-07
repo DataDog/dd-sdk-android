@@ -18,6 +18,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
@@ -92,17 +93,15 @@ internal class RumSessionScopeFactoryTest {
             pipelinesProvider = emptyProvider
         )
 
-        // When
-        val timeseries = testedFactory.create(fakeSessionId, fakeApplicationId, RumSessionType.USER)
-
-        // Then — collectInBackground is private; tick behavior is covered by RumSessionScopeTimeseriesTest.
-        // Here we just assert the instance was built without throwing.
-        assertThat(timeseries).isNotNull
+        // When / Then
+        assertDoesNotThrow {
+            testedFactory.create(fakeSessionId, fakeApplicationId, RumSessionType.USER)
+        }
     }
 
     private fun mockPipeline(): Pipeline<*> {
         val reader = mock<DataPointsReader<Double>>()
         val serializer = mock<JsonSerializer<Double>>()
-        return Pipeline(mockSdkCore, reader, Buffer(1), serializer, mockWriter)
+        return Pipeline(mockSdkCore, reader, Buffer(1), serializer, mockWriter, mockInternalLogger)
     }
 }

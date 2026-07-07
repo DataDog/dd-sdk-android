@@ -97,6 +97,11 @@ interface InsightsCollector {
      */
     fun onSlowFrameRate(rate: Double?)
 
+     /**
+     * Notifies the collector that a timeseries batch has been sent.
+     */
+    fun onTimeseries(name: String)
+
     /**
      * Binds this collector to the given [sdkCore] so it can subscribe to feature context updates.
      * Called once by the RUM feature during initialization.

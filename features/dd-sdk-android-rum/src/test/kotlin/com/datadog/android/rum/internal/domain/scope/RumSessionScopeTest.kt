@@ -1999,6 +1999,26 @@ internal class RumSessionScopeTest {
     }
 
     @Test
+    fun `M stop timeseries W handleEvent { session expires without renewal }`(forge: Forge) {
+        // Given
+        initializeTestedScope(backgroundTrackingEnabled = false, timeseriesFactory = mockTimeseriesFactory)
+        testedScope.handleEvent(
+            forge.startViewEvent(),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // When
+        advanceTimeByMs(TEST_INACTIVITY_MS)
+        testedScope.handleEvent(mock(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        assertThat(testedScope.sessionState).isEqualTo(RumSessionScope.State.EXPIRED)
+        verify(mockTimeseries).onSessionStop()
+    }
+
+    @Test
     fun `M stop timeseries W handleEvent { StopSession }`(forge: Forge) {
         // Given
         initializeTestedScope(timeseriesFactory = mockTimeseriesFactory)

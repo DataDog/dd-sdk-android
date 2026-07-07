@@ -124,8 +124,8 @@ internal class RumSessionScopeTimeseriesTest {
 
         bufferA = Buffer(fakeBufferSize)
         bufferB = Buffer(fakeBufferSize)
-        pipelineA = Pipeline(mockSdkCore, mockReaderA, bufferA, mockSerializerA, mockDataWriter)
-        pipelineB = Pipeline(mockSdkCore, mockReaderB, bufferB, mockSerializerB, mockDataWriter)
+        pipelineA = Pipeline(mockSdkCore, mockReaderA, bufferA, mockSerializerA, mockDataWriter, mockInternalLogger)
+        pipelineB = Pipeline(mockSdkCore, mockReaderB, bufferB, mockSerializerB, mockDataWriter, mockInternalLogger)
 
         testedTimeseries = RumSessionScopeTimeseries(
             pipelines = listOf(pipelineA, pipelineB),
@@ -188,8 +188,8 @@ internal class RumSessionScopeTimeseriesTest {
         val fakeJson = JsonObject().apply { addProperty("k", "v") }
         whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
         whenever(mockReaderB.read()) doReturn forge.getForgery<DataPoint<Double>>()
-        whenever(mockSerializerA.serialize(any())) doThrow fakeError
-        whenever(mockSerializerB.serialize(any())) doReturn fakeJson
+        whenever(mockSerializerA.serialize(any(), any())) doThrow fakeError
+        whenever(mockSerializerB.serialize(any(), any())) doReturn fakeJson
         testedTimeseries.onSessionStart()
         val runnableA = captureScheduledRunnableForInterval(fakeIntervalAMs)
         val runnableB = captureScheduledRunnableForInterval(fakeIntervalBMs)
@@ -203,7 +203,7 @@ internal class RumSessionScopeTimeseriesTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            RumSessionScopeTimeseries.ERROR_FLUSH_FAILED,
+            "Timeseries serialization failed",
             fakeError
         )
         verify(mockDataWriter).write(any(), eq(fakeJson), eq(EventType.DEFAULT))
@@ -214,7 +214,7 @@ internal class RumSessionScopeTimeseriesTest {
         // Given
         val fakeJson = JsonObject().apply { addProperty("k", "v") }
         whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
-        whenever(mockSerializerA.serialize(any())) doReturn fakeJson
+        whenever(mockSerializerA.serialize(any(), any())) doReturn fakeJson
         testedTimeseries.onSessionStart()
         val runnableA = captureScheduledRunnableForInterval(fakeIntervalAMs)
         runnableA.run()
@@ -223,7 +223,7 @@ internal class RumSessionScopeTimeseriesTest {
         testedTimeseries.onSessionStop()
 
         // Then
-        verify(mockSerializerA).serialize(any())
+        verify(mockSerializerA).serialize(any(), any())
         verify(mockDataWriter).write(any(), eq(fakeJson), eq(EventType.DEFAULT))
     }
 
@@ -234,7 +234,7 @@ internal class RumSessionScopeTimeseriesTest {
         val dataPoints = List(fakeBufferSize) { element }
         val fakeJson = JsonObject().apply { addProperty("a", "1") }
         whenever(mockReaderA.read()) doReturn element
-        whenever(mockSerializerA.serialize(dataPoints)) doReturn fakeJson
+        whenever(mockSerializerA.serialize(any(), eq(dataPoints))) doReturn fakeJson
 
         testedTimeseries.onSessionStart()
         val runnableA = captureScheduledRunnableForInterval(fakeIntervalAMs)
@@ -243,7 +243,7 @@ internal class RumSessionScopeTimeseriesTest {
         repeat(fakeBufferSize) { runnableA.run() }
 
         // Then
-        verify(mockSerializerA).serialize(any())
+        verify(mockSerializerA).serialize(any(), any())
         verify(mockDataWriter).write(any(), eq(fakeJson), eq(EventType.DEFAULT))
     }
 
@@ -273,19 +273,7 @@ internal class RumSessionScopeTimeseriesTest {
         runnableA.run()
 
         // Then
-        verify(mockSerializerA, never()).serialize(any())
-        verify(mockDataWriter, never()).write(any(), any(), any())
-    }
-
-    @Test
-    fun `M discard pre-existing data W onSessionStart() { buffer not empty }`(forge: Forge) {
-        // Given - start() drains all pipelines and ignores any serialized result
-        bufferA.add(forge.getForgery<DataPoint<Double>>())
-
-        // When
-        testedTimeseries.onSessionStart()
-
-        // Then - even though serializer may be invoked, no event reaches the writer
+        verify(mockSerializerA, never()).serialize(any(), any())
         verify(mockDataWriter, never()).write(any(), any(), any())
     }
 
@@ -293,7 +281,7 @@ internal class RumSessionScopeTimeseriesTest {
     fun `M skip writer W sample tick { serializer returns null }`(forge: Forge) {
         // Given - fill the buffer so Pipeline.drain() reaches the serializer; serializer returns null
         whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
-        whenever(mockSerializerA.serialize(any())) doReturn null
+        whenever(mockSerializerA.serialize(any(), any())) doReturn null
         testedTimeseries.onSessionStart()
         val runnableA = captureScheduledRunnableForInterval(fakeIntervalAMs)
 
@@ -301,7 +289,7 @@ internal class RumSessionScopeTimeseriesTest {
         repeat(fakeBufferSize) { runnableA.run() }
 
         // Then
-        verify(mockSerializerA).serialize(any())
+        verify(mockSerializerA).serialize(any(), any())
         verify(mockDataWriter, never()).write(any(), any(), any())
     }
 
@@ -394,6 +382,92 @@ internal class RumSessionScopeTimeseriesTest {
             RumSessionScopeTimeseries.ERROR_SAMPLING_FAILED,
             fakeError
         )
+    }
+
+    @Test
+    fun `M log error and reschedule W sample tick { buffer drain throws }`(forge: Forge) {
+        // Given — drain() throws outside Pipeline's own try/catch, so it must be
+        // caught by RumSessionScopeTimeseries' sampling try/catch instead.
+        val fakeError = RuntimeException("drain failure")
+        val mockBuffer = mock<Buffer<Double>>()
+        whenever(mockBuffer.isFull()) doReturn true
+        whenever(mockBuffer.drain()) doThrow fakeError
+        whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
+        val pipeline =
+            Pipeline(mockSdkCore, mockReaderA, mockBuffer, mockSerializerA, mockDataWriter, mockInternalLogger)
+        val timeseries = RumSessionScopeTimeseries(
+            pipelines = listOf(pipeline),
+            internalLogger = mockInternalLogger,
+            collectInBackground = false,
+            scheduledExecutorService = mockExecutor
+        )
+        timeseries.onViewTypeUpdate(RumViewType.FOREGROUND)
+        timeseries.onSessionStart()
+        val runnableA = captureScheduledRunnableForInterval(fakeIntervalAMs)
+
+        // When
+        runnableA.run()
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            RumSessionScopeTimeseries.ERROR_SAMPLING_FAILED,
+            fakeError
+        )
+        verify(mockExecutor, times(2))
+            .schedule(any<Runnable>(), eq(fakeIntervalAMs), eq(TimeUnit.MILLISECONDS))
+    }
+
+    @Test
+    fun `M log error and reschedule W sample tick { serializer throws }`(forge: Forge) {
+        // Given — serializer throws inside Pipeline's own try/catch: Pipeline logs it itself
+        // and the tick completes normally, so the sampling chain reschedules as usual.
+        val fakeError = RuntimeException("serializer failure")
+        whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
+        whenever(mockSerializerA.serialize(any(), any())) doThrow fakeError
+        testedTimeseries.onSessionStart()
+        val runnableA = captureScheduledRunnableForInterval(fakeIntervalAMs)
+
+        // When
+        repeat(fakeBufferSize) { runnableA.run() }
+
+        // Then
+        // times(1) default on verifyLog also confirms this is the only ERROR log with that
+        // throwable — i.e. RumSessionScopeTimeseries' own sampling catch never fired here.
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            "Timeseries serialization failed",
+            fakeError
+        )
+        verify(mockDataWriter, never()).write(any(), any(), any())
+        verify(mockExecutor, times(fakeBufferSize + 1))
+            .schedule(any<Runnable>(), eq(fakeIntervalAMs), eq(TimeUnit.MILLISECONDS))
+    }
+
+    @Test
+    fun `M log error and reschedule W sample tick { write context resolution throws }`(forge: Forge) {
+        // Given — withWriteContext() itself throws (context/scope resolution failure), outside
+        // Pipeline's own try/catch, so it propagates up to the sampling try/catch.
+        val fakeError = RuntimeException("write context resolution failure")
+        whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
+        whenever(mockRumFeatureScope.withWriteContext(any(), any())) doThrow fakeError
+        testedTimeseries.onSessionStart()
+        val runnableA = captureScheduledRunnableForInterval(fakeIntervalAMs)
+
+        // When
+        repeat(fakeBufferSize) { runnableA.run() }
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            RumSessionScopeTimeseries.ERROR_SAMPLING_FAILED,
+            fakeError
+        )
+        verify(mockExecutor, times(fakeBufferSize + 1))
+            .schedule(any<Runnable>(), eq(fakeIntervalAMs), eq(TimeUnit.MILLISECONDS))
     }
 
     @Test

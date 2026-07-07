@@ -78,13 +78,14 @@ internal class RumSessionScopeTimeseries(
     }
 
     @WorkerThread
-    override fun onViewTypeUpdate(viewType: RumViewType) {
-        val isEnterForeground = currentViewType != RumViewType.FOREGROUND && viewType == RumViewType.FOREGROUND
-        currentViewType = viewType
+    override fun onViewTypeUpdate(newViewType: RumViewType) {
+        if (newViewType == currentViewType) return
+        val isEnterForeground = !currentViewType.isForeground && newViewType.isForeground
+        currentViewType = newViewType
         if (!collectInBackground) {
             if (isEnterForeground && state.compareAndSet(State.SUSPENDED, State.RUNNING)) {
                 startSampling()
-            } else if (viewType != RumViewType.FOREGROUND) {
+            } else if (!newViewType.isForeground) {
                 state.compareAndSet(State.RUNNING, State.SUSPENDED)
             }
         }
@@ -124,8 +125,15 @@ internal class RumSessionScopeTimeseries(
         state.get() == State.RUNNING && currentGeneration.get() == generation
 
     internal companion object {
-        internal const val OPERATION_NAME = "Timeseries sampling"
-        internal const val ERROR_SAMPLING_FAILED = "Timeseries sampling iteration failed; rescheduling next sample."
-        internal const val ERROR_FLUSH_FAILED = "Timeseries flush on session stop failed."
+        const val OPERATION_NAME = "Timeseries sampling"
+        const val ERROR_SAMPLING_FAILED = "Timeseries sampling iteration failed; rescheduling next sample."
+        const val ERROR_FLUSH_FAILED = "Timeseries flush on session stop failed."
+        val RumViewType?.isForeground: Boolean
+            get() = when (this) {
+                RumViewType.FOREGROUND, RumViewType.APPLICATION_LAUNCH -> true
+                RumViewType.BACKGROUND -> false
+                RumViewType.NONE -> false
+                null -> false
+            }
     }
 }

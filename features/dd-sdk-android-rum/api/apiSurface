@@ -91,8 +91,6 @@ data class com.datadog.android.rum.RumConfiguration
     fun trackAnonymousUser(Boolean): Builder
     fun setAppStartupActivityPredicate(com.datadog.android.rum.startup.AppStartupActivityPredicate): Builder
     fun setTimeseriesConfiguration(com.datadog.android.rum.timeseries.TimeseriesConfiguration?): Builder
-    fun enableTimeseries(com.datadog.android.rum.timeseries.TimeseriesConfiguration = TimeseriesConfiguration.Builder().build()): Builder
-    fun disableTimeseries(): Builder
     fun build(): RumConfiguration
 enum com.datadog.android.rum.RumErrorSource
   - NETWORK
@@ -232,6 +230,7 @@ interface com.datadog.android.rum.internal.instrumentation.insights.InsightsColl
   fun onCpuVital(Double?)
   fun onMemoryVital(Double?)
   fun onSlowFrameRate(Double?)
+  fun onTimeseries(String)
   fun bindSdkCore(com.datadog.android.api.feature.FeatureSdkCore)
   fun unbindSdkCore(com.datadog.android.api.feature.FeatureSdkCore)
 interface com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
@@ -321,6 +320,7 @@ class com.datadog.android.rum.timeseries.TimeseriesConfiguration
     fun setIntervalMs(Long): Builder
     fun collectInBackground(Boolean): Builder
     fun useDeltaCompression(Boolean): Builder
+    fun addAttribute(String, String): Builder
     fun build(): TimeseriesConfiguration
   companion object 
     val DEFAULT: TimeseriesConfiguration

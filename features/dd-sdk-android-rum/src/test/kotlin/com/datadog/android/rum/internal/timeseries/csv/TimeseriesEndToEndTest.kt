@@ -6,8 +6,10 @@
 
 package com.datadog.android.rum.internal.timeseries.csv
 
+import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.internal.timeseries.serializer.TimeseriesAttributes
 import com.datadog.android.rum.utils.forge.Configurator
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
@@ -15,6 +17,7 @@ import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -43,6 +46,9 @@ internal class TimeseriesEndToEndTest {
     @Mock
     lateinit var mockTimeProvider: TimeProvider
 
+    @Mock
+    lateinit var mockDatadogContext: DatadogContext
+
     private lateinit var csvContent: String
     private lateinit var emitted: List<JsonObject>
 
@@ -58,7 +64,8 @@ internal class TimeseriesEndToEndTest {
             sessionType = RumSessionType.USER,
             totalRamBytes = TOTAL_RAM_BYTES,
             bufferSize = BATCH_SIZE,
-            timeProvider = mockTimeProvider
+            timeProvider = mockTimeProvider,
+            datadogContext = mockDatadogContext
         )
         testedTimeseries.onSessionStart()
         testedTimeseries.onSessionStop()
@@ -107,7 +114,7 @@ internal class TimeseriesEndToEndTest {
     fun `M emit valid timeseries id W any batch`() {
         // Each emitted event must carry a non-blank UUID; randomness is not asserted.
         for (event in emitted) {
-            val id = event.getAsJsonObject("timeseries").get("id").asString
+            val id = event.getAsJsonObject(TimeseriesAttributes.KEY_TIMESERIES).get("id").asString
             assertThat(UUID.fromString(id)).isNotNull
         }
     }
@@ -115,16 +122,56 @@ internal class TimeseriesEndToEndTest {
     @Test
     fun `M produce monotonic start lt or eq to end W any batch`() {
         for (event in emitted) {
-            val ts = event.getAsJsonObject("timeseries")
+            val ts = event.getAsJsonObject(TimeseriesAttributes.KEY_TIMESERIES)
             assertThat(ts.get("start").asLong).isLessThanOrEqualTo(ts.get("end").asLong)
         }
     }
 
-    private fun metricNameOf(event: JsonObject): String = event.getAsJsonObject("timeseries").get("name").asString
+    @Test
+    fun `M add tags to every emitted event W additionalAttributes is not empty`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeAdditionalAttributes = forge.aMap { anAlphabeticalString() to anAlphabeticalString() }
+        val testedTimeseries = CsvTimeseries.create(
+            csvContent = csvContent,
+            sessionId = SESSION_ID,
+            applicationId = APPLICATION_ID,
+            sessionType = RumSessionType.USER,
+            totalRamBytes = TOTAL_RAM_BYTES,
+            bufferSize = BATCH_SIZE,
+            timeProvider = mockTimeProvider,
+            datadogContext = mockDatadogContext,
+            additionalAttributes = fakeAdditionalAttributes
+        )
+
+        // When
+        testedTimeseries.onSessionStart()
+        testedTimeseries.onSessionStop()
+
+        // Then
+        val events = testedTimeseries.captured
+        assertThat(events).isNotEmpty
+        for (event in events) {
+            val tags = event.getAsJsonObject(
+                TimeseriesAttributes.KEY_TIMESERIES
+            ).getAsJsonObject(TimeseriesAttributes.KEY_TAGS)
+            assertThat(tags).describedAs("tags on %s", event).isNotNull
+            for ((key, value) in fakeAdditionalAttributes) {
+                assertThat(tags.get(key)?.asString).isEqualTo(value)
+            }
+        }
+    }
+
+    private fun metricNameOf(event: JsonObject): String =
+        event.getAsJsonObject(TimeseriesAttributes.KEY_TIMESERIES)
+            .get(TimeseriesAttributes.KEY_NAME)
+            .asString
 
     private fun maskTimeseriesId(actual: JsonObject): JsonObject {
         val copy = actual.deepCopy()
-        copy.getAsJsonObject("timeseries").addProperty("id", MASKED_UUID)
+        copy.getAsJsonObject(TimeseriesAttributes.KEY_TIMESERIES)
+            .addProperty(KEY_ID, MASKED_UUID)
         return copy
     }
 
@@ -236,5 +283,7 @@ internal class TimeseriesEndToEndTest {
         private const val NAME_CPU: String = "cpu"
         private const val MASKED_UUID: String = "00000000-0000-0000-0000-000000000000"
         private const val FP_TOLERANCE: Double = 1e-9
+
+        private const val KEY_ID: String = "id"
     }
 }

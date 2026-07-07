@@ -301,7 +301,8 @@ internal class RumFeature(
         configuration.timeseriesConfiguration?.let { configuration ->
             timeseriesFactory = createTimeseriesCollectingFactory(
                 configuration,
-                appContext.readTotalRamBytes(sdkCore.internalLogger) ?: 0L
+                appContext.readTotalRamBytes(sdkCore.internalLogger) ?: 0L,
+                insightsCollector
             )
         }
 
@@ -444,9 +445,11 @@ internal class RumFeature(
         )
     }
 
+    @Suppress("LongMethod")
     internal fun createTimeseriesCollectingFactory(
         configuration: TimeseriesConfiguration,
-        totalRamBytes: Long
+        totalRamBytes: Long,
+        insightsCollector: InsightsCollector
     ): Timeseries.Factory = RumSessionScopeTimeseriesFactory(
         internalLogger = sdkCore.internalLogger,
         collectInBackground = configuration.collectInBackground,
@@ -466,9 +469,12 @@ internal class RumFeature(
                         applicationId = applicationId,
                         sessionType = sessionType,
                         timeProvider = sdkCore.timeProvider,
-                        useDeltaCompression = configuration.useDeltaCompression
+                        useDeltaCompression = configuration.useDeltaCompression,
+                        additionalAttributes = configuration.additionalAttributes
                     ),
-                    dataWriter = dataWriter
+                    dataWriter = dataWriter,
+                    internalLogger = sdkCore.internalLogger,
+                    insightsCollector = insightsCollector
                 ),
                 if (totalRamBytes > 0L) {
                     Pipeline(
@@ -485,9 +491,12 @@ internal class RumFeature(
                             sessionType = sessionType,
                             totalRamBytes = totalRamBytes,
                             timeProvider = sdkCore.timeProvider,
-                            useDeltaCompression = configuration.useDeltaCompression
+                            useDeltaCompression = configuration.useDeltaCompression,
+                            additionalAttributes = configuration.additionalAttributes
                         ),
-                        dataWriter = dataWriter
+                        dataWriter = dataWriter,
+                        internalLogger = sdkCore.internalLogger,
+                        insightsCollector = insightsCollector
                     )
                 } else {
                     sdkCore.internalLogger.log(
