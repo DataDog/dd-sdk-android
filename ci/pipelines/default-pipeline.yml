@@ -67,6 +67,16 @@ stages:
     - yes | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
     - echo "no" | ~/android_sdk/cmdline-tools/latest/bin/avdmanager --verbose create avd --force --name "$EMULATOR_NAME" --package "$ANDROID_EMULATOR_IMAGE"
     - |
+      # Old cmdline-tools (SDK XML v3) may write target=android-0 for android-37.0 packages.
+      # Patch it to the correct target so the emulator enables HVF (requires API >= 21).
+      INI_FILE=~/.android/avd/${EMULATOR_NAME}.ini
+      CURRENT_TARGET=$(grep "^target=" "$INI_FILE" 2>/dev/null | cut -d= -f2)
+      EXPECTED_TARGET="android-${ANDROID_API}.0"
+      if [[ "$CURRENT_TARGET" != "$EXPECTED_TARGET" ]]; then
+        echo "WARNING: avdmanager wrote target=$CURRENT_TARGET, patching to $EXPECTED_TARGET (RUM-16470)"
+        sed -i '' "s|^target=.*|target=$EXPECTED_TARGET|" "$INI_FILE"
+      fi
+    - |
       echo "=== HVF diagnostics (RUM-16470) ==="
       echo "--- host info ---"
       sw_vers
