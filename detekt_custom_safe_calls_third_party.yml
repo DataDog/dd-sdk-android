@@ -976,6 +976,7 @@ datadog:
       - "com.lyft.kronos.KronosClock.shutdown()"
       # endregion
       # region OkHttp
+      - "okhttp3.Cache.constructor(java.io.File, kotlin.Long)"
       - "okhttp3.Call.Factory.newCall(okhttp3.Request)"
       - "okhttp3.Call.hashCode()"
       - "okhttp3.Call.request()"
@@ -1014,6 +1015,7 @@ datadog:
       - "okhttp3.MultipartBody.parts()"
       - "okhttp3.OkHttpClient.Builder()"
       - "okhttp3.OkHttpClient.Builder.build()"
+      - "okhttp3.OkHttpClient.Builder.cache(okhttp3.Cache?)"
       - "okhttp3.OkHttpClient.Builder.callTimeout(kotlin.Long, java.util.concurrent.TimeUnit)"
       - "okhttp3.OkHttpClient.Builder.connectionSpecs(kotlin.collections.List)"
       - "okhttp3.OkHttpClient.Builder.constructor()"

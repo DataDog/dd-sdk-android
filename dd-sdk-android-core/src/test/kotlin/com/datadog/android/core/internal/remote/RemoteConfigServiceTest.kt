@@ -362,4 +362,20 @@ internal class RemoteConfigServiceTest {
     }
 
     // endregion
+
+    // region stop()
+
+    @Test
+    fun `M stop fetcher W stop()`() {
+        // Given
+        testedService = buildService()
+
+        // When
+        testedService.stop()
+
+        // Then
+        verify(mockFetcher).stop()
+    }
+
+    // endregion
 }

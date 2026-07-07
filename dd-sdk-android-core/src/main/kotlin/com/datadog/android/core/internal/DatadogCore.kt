@@ -498,11 +498,14 @@ internal class DatadogCore(
         remoteConfigService = remoteConfigServiceFactory.create(
             remoteConfigurationId = id,
             remoteConfigurationEndpoint = configuration.coreConfig.site.remoteConfigurationEndpoint,
-            callFactory = coreFeature.createOkHttpCallFactory {
-                val proxy = configuration.coreConfig.proxy
-                if (proxy != null) {
-                    proxy(proxy)
-                    proxyAuthenticator(configuration.coreConfig.proxyAuth)
+            callFactoryProvider = { httpCache ->
+                coreFeature.createOkHttpCallFactory {
+                    cache(httpCache)
+                    val proxy = configuration.coreConfig.proxy
+                    if (proxy != null) {
+                        proxy(proxy)
+                        proxyAuthenticator(configuration.coreConfig.proxyAuth)
+                    }
                 }
             },
             storageDir = coreFeature.storageDir,
@@ -730,6 +733,7 @@ internal class DatadogCore(
         }
 
         contextProvider = NoOpContextProvider()
+        remoteConfigService?.stop()
         remoteConfigService = null
         coreFeature.stop()
         isDeveloperModeEnabled = false
@@ -777,11 +781,15 @@ internal class DatadogCore(
         internal val CONFIGURATION_TELEMETRY_DELAY_MS = TimeUnit.SECONDS.toMillis(5)
 
         internal val DEFAULT_REMOTE_CONFIG_SERVICE_FACTORY =
-            RemoteConfigService.Factory { id, endpoint, callFactory, storageDir, executor, logger ->
+            RemoteConfigService.Factory { id, endpoint, callFactoryProvider, storageDir, executor, logger ->
                 RemoteConfigServiceImpl(
                     remoteConfigurationId = id,
                     remoteConfigurationEndpoint = endpoint,
-                    fetcher = RemoteConfigNetworkFetcher(callFactory, logger),
+                    fetcher = RemoteConfigNetworkFetcher(
+                        callFactoryProvider = callFactoryProvider,
+                        internalLogger = logger,
+                        storageDir = storageDir
+                    ),
                     storageDir = storageDir,
                     executor = executor,
                     internalLogger = logger

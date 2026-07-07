@@ -702,6 +702,34 @@ internal class DatadogCoreInitializationTest {
         verify(mockRemoteConfigService, never()).syncWithRemote()
     }
 
+    @Test
+    fun `M stop RemoteConfigService W stop() { remoteConfigurationId set }`(
+        @StringForgery fakeRemoteConfigurationId: String
+    ) {
+        // Given
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeInstanceId,
+            fakeInstanceName,
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService },
+            remoteConfigServiceFactory = { _, _, _, _, _, _ -> mockRemoteConfigService }
+        ).apply {
+            initialize(
+                fakeConfiguration.copy(
+                    coreConfig = fakeConfiguration.coreConfig.copy(
+                        remoteConfigurationId = fakeRemoteConfigurationId
+                    )
+                )
+            )
+        }
+
+        // When
+        testedCore.stop()
+
+        // Then
+        verify(mockRemoteConfigService).stop()
+    }
+
     // endregion
 
     companion object {

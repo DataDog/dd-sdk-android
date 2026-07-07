@@ -8,10 +8,12 @@ package com.datadog.android.core.internal.remote
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import okhttp3.Cache
 import okhttp3.Call
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
+import java.io.File
 import java.io.IOException
 
 /**
@@ -26,12 +28,25 @@ internal interface RemoteConfigFetcher {
      */
     @WorkerThread
     fun fetch(url: HttpUrl): String?
+
+    /**
+     * Releases any resources held by this fetcher (e.g. HTTP cache).
+     */
+    fun stop()
 }
 
 internal class RemoteConfigNetworkFetcher(
-    private val callFactory: Call.Factory,
-    private val internalLogger: InternalLogger
+    callFactoryProvider: (Cache) -> Call.Factory,
+    private val internalLogger: InternalLogger,
+    storageDir: File
 ) : RemoteConfigFetcher {
+
+    private val httpCache = Cache(
+        directory = File(storageDir, HTTP_CACHE_DIR_NAME),
+        maxSize = HTTP_CACHE_MAX_SIZE
+    )
+
+    private val callFactory: Call.Factory = callFactoryProvider(httpCache)
 
     @WorkerThread
     @Suppress("TooGenericExceptionCaught")
@@ -64,6 +79,19 @@ internal class RemoteConfigNetworkFetcher(
                 additionalProperties = mapOf(ATTR_URL to url.toString())
             )
             null
+        }
+    }
+
+    override fun stop() {
+        try {
+            httpCache.close()
+        } catch (e: IOException) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                { ERROR_CLOSE_CACHE },
+                e
+            )
         }
     }
 
@@ -102,7 +130,13 @@ internal class RemoteConfigNetworkFetcher(
         internal const val ERROR_NETWORK = "Remote config fetch failed due to a network error"
         internal const val ERROR_HTTP = "Remote config fetch failed with an HTTP error"
         internal const val ERROR_EMPTY_BODY = "Remote config response body is empty"
+        internal const val ERROR_CLOSE_CACHE = "Failed to close remote config HTTP cache"
         internal const val ATTR_RESPONSE_CODE = "response_code"
         internal const val ATTR_URL = "url"
+        internal const val HTTP_CACHE_DIR_NAME = "rc-http-cache"
+
+        // One RC entry is ~1.4 KB (437-byte body + headers + journal). 50 KB gives ~35x headroom
+        // to accommodate future schema growth without revisiting this value.
+        internal const val HTTP_CACHE_MAX_SIZE = 50L * 1024
     }
 }

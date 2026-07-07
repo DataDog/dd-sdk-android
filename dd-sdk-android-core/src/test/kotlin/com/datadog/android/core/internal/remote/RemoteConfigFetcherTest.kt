@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -32,6 +33,7 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.isA
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.io.File
 import java.io.IOException
 
 @Extensions(
@@ -51,6 +53,9 @@ internal class RemoteConfigFetcherTest {
     @Mock
     lateinit var mockCall: Call
 
+    @TempDir
+    lateinit var fakeStorageDir: File
+
     private lateinit var testedFetcher: RemoteConfigNetworkFetcher
 
     private val fakeUrl = "https://sdk-configuration.browser-intake-datadoghq.com/v1/fake-id.json"
@@ -58,8 +63,9 @@ internal class RemoteConfigFetcherTest {
     @BeforeEach
     fun `set up`() {
         testedFetcher = RemoteConfigNetworkFetcher(
-            callFactory = mockCallFactory,
-            internalLogger = mockInternalLogger
+            callFactoryProvider = { _ -> mockCallFactory },
+            internalLogger = mockInternalLogger,
+            storageDir = fakeStorageDir
         )
     }
 
@@ -231,6 +237,23 @@ internal class RemoteConfigFetcherTest {
             throwableClass = RuntimeException::class.java,
             additionalProperties = mapOf(RemoteConfigNetworkFetcher.ATTR_URL to fakeUrl.toHttpUrl().toString())
         )
+    }
+
+    // endregion
+
+    // region stop()
+
+    @Test
+    fun `M not throw W stop()`() {
+        // When / Then — cache is a real object on fakeStorageDir; close() should succeed
+        testedFetcher.stop()
+    }
+
+    @Test
+    fun `M be idempotent W stop() { called multiple times }`() {
+        // When / Then — second close on an already-closed cache should not throw from our code
+        testedFetcher.stop()
+        testedFetcher.stop()
     }
 
     // endregion
