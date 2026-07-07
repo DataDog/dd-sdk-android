@@ -112,22 +112,8 @@ stages:
       strings ~/android_sdk/emulator/emulator | grep -i "hvf is not enabled" || echo "string not found in binary"
       echo "--- qemu binary version strings ---"
       strings "$QEMU_BIN" | grep -E "36\.[0-9]|build_id|git[- ]|commit|emu-36" | head -20 || echo "strings failed"
-      echo "--- audit session / process context ---"
+      echo "--- process context ---"
       id
-      auditd_flags=$(audit -c 2>/dev/null) || true
-      launchctl print "gui/$(id -u)" 2>/dev/null | grep -i "hypervisor\|hvf\|limit\|sandbox" | head -5 || true
-      echo "--- quick HVF probe (hv_vm_create via emulator -accel-check stderr) ---"
-      $ANDROID_HOME/emulator/emulator -accel-check 2>&1
-      echo "--- QEMU stderr capture (launch with -machine type=virt -enable-hvf, 3s) ---"
-      QEMU_LOG=/tmp/qemu_hvf_probe.txt
-      $ANDROID_HOME/emulator/qemu/darwin-aarch64/qemu-system-aarch64-headless \
-        -avd "$EMULATOR_NAME" -no-window -no-audio -no-snapstorage -enable-hvf -verbose \
-        > $QEMU_LOG 2>&1 &
-      QPID=$!
-      sleep 3
-      kill $QPID 2>/dev/null; wait $QPID 2>/dev/null
-      grep -E "HVF error|HV_ERROR|HV_DENIED|HV_UNSUPPORTED|HV_BAD|hvf is not enabled|hv_vm_create" $QEMU_LOG | head -10 || echo "no HVF errors found in QEMU log"
-      rm -f $QEMU_LOG
       echo "=== end HVF diagnostics ==="
   setup-macos-ami-runner:
     - !reference [ .snippets, source-secrets-macos ]
