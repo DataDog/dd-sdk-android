@@ -440,6 +440,7 @@ internal class RumFeature(
         )
     }
 
+    @Suppress("LongMethod")
     internal fun createTimeseriesCollectingFactory(
         configuration: TimeseriesConfiguration,
         totalRamBytes: Long,
@@ -463,9 +464,11 @@ internal class RumFeature(
                         applicationId = applicationId,
                         sessionType = sessionType,
                         timeProvider = sdkCore.timeProvider,
-                        useDeltaCompression = configuration.useDeltaCompression
+                        useDeltaCompression = configuration.useDeltaCompression,
+                        additionalAttributes = configuration.additionalAttributes
                     ),
                     dataWriter = dataWriter,
+                    internalLogger = sdkCore.internalLogger,
                     insightsCollector = insightsCollector
                 ),
                 if (totalRamBytes > 0L) {
@@ -483,9 +486,11 @@ internal class RumFeature(
                             sessionType = sessionType,
                             totalRamBytes = totalRamBytes,
                             timeProvider = sdkCore.timeProvider,
-                            useDeltaCompression = configuration.useDeltaCompression
+                            useDeltaCompression = configuration.useDeltaCompression,
+                            additionalAttributes = configuration.additionalAttributes
                         ),
                         dataWriter = dataWriter,
+                        internalLogger = sdkCore.internalLogger,
                         insightsCollector = insightsCollector
                     )
                 } else {

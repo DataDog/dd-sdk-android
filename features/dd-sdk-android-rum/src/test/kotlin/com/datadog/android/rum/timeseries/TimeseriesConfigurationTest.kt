@@ -81,4 +81,53 @@ internal class TimeseriesConfigurationTest {
         // Then
         assertThat(config.collectInBackground).isTrue()
     }
+
+    @Test
+    fun `M default additionalAttributes to empty W built with no args`() {
+        // When
+        val config = TimeseriesConfiguration.Builder().build()
+
+        // Then
+        assertThat(config.additionalAttributes).isEmpty()
+    }
+
+    @Test
+    fun `M store attribute W addAttribute`() {
+        // When
+        val config = TimeseriesConfiguration.Builder()
+            .addAttribute("key1", "value1")
+            .addAttribute("key2", "value2")
+            .build()
+
+        // Then
+        assertThat(config.additionalAttributes).containsExactlyInAnyOrderEntriesOf(
+            mapOf("key1" to "value1", "key2" to "value2")
+        )
+    }
+
+    @Test
+    fun `M overwrite value W addAttribute called twice with same key`() {
+        // When
+        val config = TimeseriesConfiguration.Builder()
+            .addAttribute("key", "first")
+            .addAttribute("key", "second")
+            .build()
+
+        // Then
+        assertThat(config.additionalAttributes).containsExactlyEntriesOf(mapOf("key" to "second"))
+    }
+
+    @Test
+    fun `M keep built attributes unchanged W addAttribute after build`() {
+        // Given
+        val builder = TimeseriesConfiguration.Builder()
+            .addAttribute("key1", "value1")
+        val config = builder.build()
+
+        // When
+        builder.addAttribute("key2", "value2")
+
+        // Then
+        assertThat(config.additionalAttributes).containsExactlyEntriesOf(mapOf("key1" to "value1"))
+    }
 }

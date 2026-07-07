@@ -14,7 +14,7 @@ import com.datadog.tools.annotation.NoOpImplementation
 internal interface Timeseries {
     fun onSessionStart()
     fun onSessionStop()
-    fun onViewTypeUpdate(viewType: RumViewType)
+    fun onViewTypeUpdate(newViewType: RumViewType)
 
     @NoOpImplementation
     interface Factory {

@@ -312,6 +312,7 @@ class com.datadog.android.rum.timeseries.TimeseriesConfiguration
     fun setIntervalMs(Long): Builder
     fun collectInBackground(Boolean): Builder
     fun useDeltaCompression(Boolean): Builder
+    fun addAttribute(String, String): Builder
     fun build(): TimeseriesConfiguration
   companion object 
     val DEFAULT: TimeseriesConfiguration
