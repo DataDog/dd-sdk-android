@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.utils
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.thread.sleepSafe
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.lint.InternalApi
@@ -19,7 +20,20 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
+/**
+ * Retries [block] until it returns `true`, up to [times] attempts in total.
+ *
+ * The first attempt is made immediately. After each failed attempt, this function waits at
+ * least [retryDelayNs] nanoseconds before retrying. An exception thrown by [block] is logged
+ * and counts as a failed attempt. If the thread is interrupted while waiting, retrying stops
+ * immediately instead of honoring the remaining attempts.
+ *
+ * @return `true` as soon as [block] returns `true`, or `false` if every attempt failed or
+ * retrying was interrupted.
+ */
+@Suppress("TooGenericExceptionCaught", "ReturnCount", "NestedBlockDepth")
 internal fun retryWithDelay(
     times: Int,
     retryDelayNs: Long,
@@ -27,41 +41,40 @@ internal fun retryWithDelay(
     timeProvider: TimeProvider,
     block: () -> Boolean
 ): Boolean {
-    return retryWithDelay(block, times, retryDelayNs, internalLogger, timeProvider)
-}
-
-@Suppress("TooGenericExceptionCaught")
-internal inline fun retryWithDelay(
-    block: () -> Boolean,
-    times: Int,
-    loopsDelayInNanos: Long,
-    internalLogger: InternalLogger,
-    timeProvider: TimeProvider
-): Boolean {
-    var retryCounter = 1
-    var wasSuccessful = false
-    var loopTimeOrigin = timeProvider.getDeviceElapsedTimeNanos() - loopsDelayInNanos
-    while (retryCounter <= times && !wasSuccessful) {
-        if ((timeProvider.getDeviceElapsedTimeNanos() - loopTimeOrigin) >= loopsDelayInNanos) {
-            wasSuccessful = try {
-                block()
-            } catch (e: Exception) {
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    targets = listOf(
-                        InternalLogger.Target.MAINTAINER,
-                        InternalLogger.Target.TELEMETRY
-                    ),
-                    { "Internal I/O operation failed" },
-                    e
-                )
-                false
+    var attempt = 1
+    var lastAttemptEndNs = timeProvider.getDeviceElapsedTimeNanos()
+    while (attempt <= times) {
+        if (attempt > 1) {
+            val timeSinceLastAttemptNs = timeProvider.getDeviceElapsedTimeNanos() - lastAttemptEndNs
+            val timeToWaitNs = (retryDelayNs - timeSinceLastAttemptNs)
+            if (timeToWaitNs > 0) {
+                // round up so a floored sub-millisecond remainder never causes an undersleep
+                val sleepTimeMs = TimeUnit.NANOSECONDS.toMillis(timeToWaitNs) + 1
+                val wasInterrupted = sleepSafe(sleepTimeMs, internalLogger)
+                if (wasInterrupted) {
+                    return false
+                }
             }
-            loopTimeOrigin = timeProvider.getDeviceElapsedTimeNanos()
-            retryCounter++
         }
+        try {
+            if (block()) {
+                return true
+            }
+        } catch (e: Exception) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(
+                    InternalLogger.Target.MAINTAINER,
+                    InternalLogger.Target.TELEMETRY
+                ),
+                { "Internal I/O operation failed" },
+                e
+            )
+        }
+        lastAttemptEndNs = timeProvider.getDeviceElapsedTimeNanos()
+        attempt++
     }
-    return wasSuccessful
+    return false
 }
 
 @Suppress("UndocumentedPublicClass")

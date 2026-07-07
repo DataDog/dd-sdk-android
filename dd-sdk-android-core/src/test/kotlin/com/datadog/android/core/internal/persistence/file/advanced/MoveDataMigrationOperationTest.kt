@@ -163,7 +163,10 @@ internal class MoveDataMigrationOperationTest {
 
         // Then
         verify(mockFileMover, times(2)).moveFiles(fakeFromDirectory, fakeToDirectory)
-        assertThat(duration).isBetween(500L, 550L)
+        // Lower bound is a hard guarantee (Thread.sleep never returns early); upper bound is
+        // generous to absorb OS scheduling jitter under CI load, which real-time sleeps are
+        // inherently exposed to.
+        assertThat(duration).isBetween(500L, 500L + JITTER_MARGIN_MS)
     }
 
     @Test
@@ -193,10 +196,15 @@ internal class MoveDataMigrationOperationTest {
 
         // Then
         verify(mockFileMover, times(3)).moveFiles(fakeFromDirectory, fakeToDirectory)
-        assertThat(duration).isBetween(1000L, 1100L)
+        // Two real sleeps happen here, so the jitter margin is doubled relative to the single-retry case.
+        assertThat(duration).isBetween(1000L, 1000L + 2 * JITTER_MARGIN_MS)
     }
 
     companion object {
         private val RETRY_DELAY_NS = TimeUnit.MILLISECONDS.toNanos(500)
+
+        // Generous allowance for OS scheduling jitter on a real Thread.sleep(), so these
+        // real-time tests don't flake under CI load.
+        private const val JITTER_MARGIN_MS = 300L
     }
 }

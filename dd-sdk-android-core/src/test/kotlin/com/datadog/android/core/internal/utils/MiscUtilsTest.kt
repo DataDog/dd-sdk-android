@@ -51,6 +51,7 @@ import org.mockito.quality.Strictness
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.system.measureNanoTime
 
 @Extensions(
@@ -82,7 +83,7 @@ internal class MiscUtilsTest {
         stubTimeProviderWithDelay()
 
         // When
-        val wasSuccessful = retryWithDelay(mockedBlock, fakeTimes, fakeDelayNs, mockInternalLogger, mockTimeProvider)
+        val wasSuccessful = retryWithDelay(fakeTimes, fakeDelayNs, mockInternalLogger, mockTimeProvider, mockedBlock)
 
         // Then
         assertThat(wasSuccessful).isFalse()
@@ -100,7 +101,7 @@ internal class MiscUtilsTest {
 
         // When
         val executionTime = measureNanoTime {
-            retryWithDelay(mockedBlock, fakeTimes, fakeDelay, mockInternalLogger, mockTimeProvider)
+            retryWithDelay(fakeTimes, fakeDelay, mockInternalLogger, mockTimeProvider, mockedBlock)
         }
 
         // Then
@@ -116,7 +117,7 @@ internal class MiscUtilsTest {
         val mockedBlock: () -> Boolean = mock()
 
         // When
-        retryWithDelay(mockedBlock, forge.anInt(Int.MIN_VALUE, 1), fakeDelayNs, mockInternalLogger, mockTimeProvider)
+        retryWithDelay(forge.anInt(Int.MIN_VALUE, 1), fakeDelayNs, mockInternalLogger, mockTimeProvider, mockedBlock)
 
         // Then
         verifyNoInteractions(mockedBlock)
@@ -130,7 +131,7 @@ internal class MiscUtilsTest {
         stubTimeProviderWithDelay()
 
         // When
-        val wasSuccessful = retryWithDelay(mockedBlock, 3, fakeDelayNs, mockInternalLogger, mockTimeProvider)
+        val wasSuccessful = retryWithDelay(3, fakeDelayNs, mockInternalLogger, mockTimeProvider, mockedBlock)
 
         // Then
         assertThat(wasSuccessful).isTrue()
@@ -147,11 +148,36 @@ internal class MiscUtilsTest {
         stubTimeProviderWithDelay()
 
         // When
-        val wasSuccessful = retryWithDelay(mockedBlock, 3, fakeDelayNs, mockInternalLogger, mockTimeProvider)
+        val wasSuccessful = retryWithDelay(3, fakeDelayNs, mockInternalLogger, mockTimeProvider, mockedBlock)
 
         // Then
         assertThat(wasSuccessful).isTrue()
         verify(mockedBlock, times(2)).invoke()
+    }
+
+    @Test
+    fun `M stop retrying W retryWithDelay { sleep is interrupted }`() {
+        // Given
+        val mockedBlock: () -> Boolean = mock()
+        whenever(mockedBlock.invoke()).thenAnswer {
+            Thread.currentThread().interrupt()
+            false
+        }
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).thenAnswer { System.nanoTime() }
+        val fakeSleepDelayNs = TimeUnit.SECONDS.toNanos(5)
+        val resultRef = AtomicReference<Boolean>()
+
+        // When
+        // run on a dedicated thread so the interrupt flag sleepSafe restores doesn't leak into other tests
+        val retryingThread = Thread {
+            resultRef.set(retryWithDelay(3, fakeSleepDelayNs, mockInternalLogger, mockTimeProvider, mockedBlock))
+        }
+        retryingThread.start()
+        retryingThread.join(TimeUnit.SECONDS.toMillis(1))
+
+        // Then
+        assertThat(resultRef.get()).isFalse()
+        verify(mockedBlock, times(1)).invoke()
     }
 
     @Test

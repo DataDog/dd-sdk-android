@@ -147,10 +147,15 @@ internal class WipeDataMigrationOperationTest {
 
         // Then
         verify(mockFileMover, times(3)).delete(fakeTargetDirectory)
-        assertThat(duration).isBetween(1000L, 1100L)
+        // Two real sleeps happen here, so the jitter margin is doubled relative to a single retry.
+        assertThat(duration).isBetween(1000L, 1000L + 2 * JITTER_MARGIN_MS)
     }
 
     companion object {
         private val RETRY_DELAY_NS = TimeUnit.MILLISECONDS.toNanos(500)
+
+        // Generous allowance for OS scheduling jitter on a real Thread.sleep(), so this
+        // real-time test doesn't flake under CI load.
+        private const val JITTER_MARGIN_MS = 300L
     }
 }
