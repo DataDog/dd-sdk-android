@@ -77,6 +77,7 @@ enum com.datadog.android.sessionreplay.TouchPrivacy : PrivacyLevel
 class com.datadog.android.sessionreplay._SessionReplayInternalProxy
   constructor(SessionReplayConfiguration.Builder)
   fun setInternalCallback(SessionReplayInternalCallback): SessionReplayConfiguration.Builder
+  fun setPixelCopyCaptureEnabled(Boolean): SessionReplayConfiguration.Builder
 class com.datadog.android.sessionreplay.internal.TouchPrivacyManager
   constructor(com.datadog.android.sessionreplay.TouchPrivacy)
   fun addTouchOverrideArea(android.graphics.Rect, com.datadog.android.sessionreplay.TouchPrivacy)
@@ -243,7 +244,7 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
       fun fromJson(kotlin.String): MobileRecord
       fun fromJsonElement(com.google.gson.JsonElement): MobileRecord
   data class Data
-    constructor(kotlin.collections.List<Wireframe>)
+    constructor(kotlin.collections.List<Wireframe>, CompositionTree? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Data
@@ -278,6 +279,13 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
       companion object 
         fun fromJson(kotlin.String): PointerInteractionData
         fun fromJsonObject(com.google.gson.JsonObject): PointerInteractionData
+    data class CompositionTreeMutationData : MobileIncrementalData
+      constructor(CompositionLayer? = null, kotlin.collections.List<CompositionLayer>? = null, kotlin.collections.List<kotlin.Long>? = null, kotlin.collections.List<CompositionLayerUpdate>? = null)
+      val source: kotlin.Long
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): CompositionTreeMutationData
+        fun fromJsonObject(com.google.gson.JsonObject): CompositionTreeMutationData
     companion object 
       fun fromJson(kotlin.String): MobileIncrementalData
       fun fromJsonElement(com.google.gson.JsonElement): MobileIncrementalData
@@ -339,6 +347,12 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     companion object 
       fun fromJson(kotlin.String): Wireframe
       fun fromJsonElement(com.google.gson.JsonElement): Wireframe
+  data class CompositionTree
+    constructor(CompositionLayer, kotlin.collections.List<CompositionLayer>? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): CompositionTree
+      fun fromJsonObject(com.google.gson.JsonObject): CompositionTree
   data class Add
     constructor(kotlin.Long? = null, Wireframe)
     fun toJson(): com.google.gson.JsonElement
@@ -397,6 +411,18 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     companion object 
       fun fromJson(kotlin.String): Position
       fun fromJsonObject(com.google.gson.JsonObject): Position
+  data class CompositionLayer
+    constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.collections.List<CompositionLayerChild>, kotlin.collections.List<CompositionLayerModifier>? = null, CompositeOperation? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): CompositionLayer
+      fun fromJsonObject(com.google.gson.JsonObject): CompositionLayer
+  data class CompositionLayerUpdate
+    constructor(kotlin.Long, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.collections.List<CompositionLayerChild>? = null, kotlin.collections.List<CompositionLayerModifier>? = null, CompositeOperation? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): CompositionLayerUpdate
+      fun fromJsonObject(com.google.gson.JsonObject): CompositionLayerUpdate
   data class WireframeClip
     constructor(kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null)
     fun toJson(): com.google.gson.JsonElement
@@ -427,6 +453,80 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     companion object 
       fun fromJson(kotlin.String): TextPosition
       fun fromJsonObject(com.google.gson.JsonObject): TextPosition
+  data class CompositionLayerChild
+    constructor(Type, kotlin.Long)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): CompositionLayerChild
+      fun fromJsonObject(com.google.gson.JsonObject): CompositionLayerChild
+  sealed class CompositionLayerModifier
+    abstract fun toJson(): com.google.gson.JsonElement
+    data class CompositionLayerClipModifier : CompositionLayerModifier
+      constructor(kotlin.String, FillRule? = null)
+      val type: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): CompositionLayerClipModifier
+        fun fromJsonObject(com.google.gson.JsonObject): CompositionLayerClipModifier
+    data class CompositionLayerOpacityModifier : CompositionLayerModifier
+      constructor(kotlin.Number)
+      val type: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): CompositionLayerOpacityModifier
+        fun fromJsonObject(com.google.gson.JsonObject): CompositionLayerOpacityModifier
+    data class CompositionLayerColorMatrixModifier : CompositionLayerModifier
+      constructor(kotlin.collections.List<kotlin.Number>)
+      val type: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): CompositionLayerColorMatrixModifier
+        fun fromJsonObject(com.google.gson.JsonObject): CompositionLayerColorMatrixModifier
+    data class CompositionLayerGaussianBlurModifier : CompositionLayerModifier
+      constructor(kotlin.Number)
+      val type: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): CompositionLayerGaussianBlurModifier
+        fun fromJsonObject(com.google.gson.JsonObject): CompositionLayerGaussianBlurModifier
+    data class CompositionLayerShadowModifier : CompositionLayerModifier
+      constructor(kotlin.String, kotlin.Number, kotlin.Number, kotlin.Number, kotlin.String? = null)
+      val type: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): CompositionLayerShadowModifier
+        fun fromJsonObject(com.google.gson.JsonObject): CompositionLayerShadowModifier
+    data class CompositionLayerBrightnessBiasModifier : CompositionLayerModifier
+      constructor(kotlin.Number)
+      val type: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): CompositionLayerBrightnessBiasModifier
+        fun fromJsonObject(com.google.gson.JsonObject): CompositionLayerBrightnessBiasModifier
+    data class CompositionLayerSaturateModifier : CompositionLayerModifier
+      constructor(kotlin.Number)
+      val type: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): CompositionLayerSaturateModifier
+        fun fromJsonObject(com.google.gson.JsonObject): CompositionLayerSaturateModifier
+    data class CompositionLayerBackgroundMaterialModifier : CompositionLayerModifier
+      constructor(Kind)
+      val type: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): CompositionLayerBackgroundMaterialModifier
+        fun fromJsonObject(com.google.gson.JsonObject): CompositionLayerBackgroundMaterialModifier
+    data class CompositionLayerMaskImageModifier : CompositionLayerModifier
+      constructor(kotlin.String)
+      val type: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): CompositionLayerMaskImageModifier
+        fun fromJsonObject(com.google.gson.JsonObject): CompositionLayerMaskImageModifier
+    companion object 
+      fun fromJson(kotlin.String): CompositionLayerModifier
+      fun fromJsonElement(com.google.gson.JsonElement): CompositionLayerModifier
   data class Padding
     constructor(kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null)
     fun toJson(): com.google.gson.JsonElement
@@ -466,6 +566,14 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): PointerType
+  enum CompositeOperation
+    constructor(kotlin.String)
+    - SOURCEOVER
+    - DESTINATIONIN
+    - PLUSDARKER
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): CompositeOperation
   enum TruncationMode
     constructor(kotlin.String)
     - CLIP
@@ -475,6 +583,26 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): TruncationMode
+  enum Type
+    constructor(kotlin.String)
+    - WIREFRAME
+    - LAYER
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Type
+  enum FillRule
+    constructor(kotlin.String)
+    - NONZERO
+    - EVENODD
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): FillRule
+  enum Kind
+    constructor(kotlin.String)
+    - GLASS
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Kind
   enum Horizontal
     constructor(kotlin.String)
     - LEFT

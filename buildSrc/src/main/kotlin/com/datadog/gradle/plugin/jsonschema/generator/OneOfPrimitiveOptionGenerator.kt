@@ -98,12 +98,26 @@ class OneOfPrimitiveOptionGenerator(
             Identifier.PARAM_JSON_ELEMENT
         )
         funBuilder.nextControlFlow("catch (%L: %T)", Identifier.CAUGHT_EXCEPTION, ClassNameRef.IllegalStateException)
-        funBuilder.addStatement(
-            "throw %T(\"$PARSE_ERROR_MSG %T\", %L)",
-            ClassNameRef.JsonParseException,
-            returnType,
-            Identifier.CAUGHT_EXCEPTION
-        )
+        // For long type names, KotlinPoet's line wrapping can insert a newline in the middle of
+        // a "$PARSE_ERROR_MSG %T" string literal, producing invalid Kotlin — so only those split
+        // the message into two concatenated literals instead. Splitting unconditionally would
+        // needlessly change the generated output (and checked-in golden test fixtures) for
+        // every existing, unaffected short type name.
+        if (returnType.simpleName.length > LONG_TYPE_NAME_THRESHOLD) {
+            funBuilder.addStatement(
+                "throw %T(\"$PARSE_ERROR_MSG \"\n + \"%T\", %L)",
+                ClassNameRef.JsonParseException,
+                returnType,
+                Identifier.CAUGHT_EXCEPTION
+            )
+        } else {
+            funBuilder.addStatement(
+                "throw %T(\"$PARSE_ERROR_MSG %T\", %L)",
+                ClassNameRef.JsonParseException,
+                returnType,
+                Identifier.CAUGHT_EXCEPTION
+            )
+        }
         funBuilder.endControlFlow()
 
         return funBuilder.build()
@@ -142,12 +156,21 @@ class OneOfPrimitiveOptionGenerator(
         definition.type.caughtExceptions()
             .forEach { exception ->
                 funBuilder.nextControlFlow("catch (%L: %T)", Identifier.CAUGHT_EXCEPTION, exception)
-                funBuilder.addStatement(
-                    "throw %T(\"$PARSE_ERROR_MSG %T\", %L)",
-                    ClassNameRef.JsonParseException,
-                    returnType,
-                    Identifier.CAUGHT_EXCEPTION
-                )
+                if (returnType.simpleName.length > LONG_TYPE_NAME_THRESHOLD) {
+                    funBuilder.addStatement(
+                        "throw %T(\"$PARSE_ERROR_MSG \"\n + \"%T\", %L)",
+                        ClassNameRef.JsonParseException,
+                        returnType,
+                        Identifier.CAUGHT_EXCEPTION
+                    )
+                } else {
+                    funBuilder.addStatement(
+                        "throw %T(\"$PARSE_ERROR_MSG %T\", %L)",
+                        ClassNameRef.JsonParseException,
+                        returnType,
+                        Identifier.CAUGHT_EXCEPTION
+                    )
+                }
             }
 
         funBuilder.endControlFlow()
@@ -157,6 +180,11 @@ class OneOfPrimitiveOptionGenerator(
 
     companion object {
         private const val PARSE_ERROR_MSG = "Unable to parse json into type"
+
+        // The longest type name in any schema in this repo today is well under this (31 chars,
+        // MobileIncrementalSnapshotRecord); this threshold only needs to be comfortably above
+        // that to avoid changing already-generated output.
+        private const val LONG_TYPE_NAME_THRESHOLD = 34
 
         private fun JsonPrimitiveType.caughtExceptions(): List<ClassName> {
             return when (this) {

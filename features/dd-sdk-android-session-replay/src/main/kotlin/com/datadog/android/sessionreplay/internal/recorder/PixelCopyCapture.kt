@@ -186,10 +186,26 @@ internal class PixelCopyCapture(
     @UiThread
     fun processPendingCrops(allNodes: List<Node>) {
         if (pendingCrops.isEmpty()) return
-
         val allBounds = mutableListOf<GlobalBounds>()
         collectWireframeBounds(allNodes, allBounds)
+        processPendingCropsAgainst(allBounds)
+    }
 
+    /**
+     * Same as [processPendingCrops], for the composition-tree pipeline — which has no [Node]
+     * tree to walk, only the already-flat wireframe list [CompositionTreeBuilder.Output] produces.
+     * (A separate name, not an overload of [processPendingCrops]: `List<Node>` and
+     * `List<MobileSegment.Wireframe>` erase to the same JVM signature.)
+     */
+    @UiThread
+    fun processPendingCropsForWireframes(allWireframes: List<MobileSegment.Wireframe>) {
+        if (pendingCrops.isEmpty()) return
+        val allBounds = mutableListOf<GlobalBounds>()
+        allWireframes.forEach { wireframeBounds(it)?.let { bounds -> allBounds.add(bounds) } }
+        processPendingCropsAgainst(allBounds)
+    }
+
+    private fun processPendingCropsAgainst(allBounds: List<GlobalBounds>) {
         val snapshot = pendingCrops.toList()
         pendingCrops.clear()
 

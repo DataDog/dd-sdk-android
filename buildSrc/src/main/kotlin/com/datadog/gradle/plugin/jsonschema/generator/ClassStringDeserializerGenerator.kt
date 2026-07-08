@@ -46,7 +46,16 @@ class ClassStringDeserializerGenerator(
                 it
             )
             funBuilder.addStatement("throw %T(", ClassNameRef.JsonParseException)
-            funBuilder.addStatement("    \"$PARSE_ERROR_MSG %T\",", returnType)
+            // For long type names, KotlinPoet's line wrapping can insert a newline in the
+            // middle of a "$PARSE_ERROR_MSG %T" string literal, producing invalid Kotlin — so
+            // only those split the message into two concatenated literals instead. Splitting
+            // unconditionally would needlessly change the generated output (and checked-in
+            // golden test fixtures) for every existing, unaffected short type name.
+            if (returnType.simpleName.length > LONG_TYPE_NAME_THRESHOLD) {
+                funBuilder.addStatement("    \"$PARSE_ERROR_MSG \"\n + \"%T\",", returnType)
+            } else {
+                funBuilder.addStatement("    \"$PARSE_ERROR_MSG %T\",", returnType)
+            }
             funBuilder.addStatement("    %L", Identifier.CAUGHT_EXCEPTION)
             funBuilder.addStatement(")")
         }
@@ -57,6 +66,11 @@ class ClassStringDeserializerGenerator(
 
     companion object {
         private const val PARSE_ERROR_MSG = "Unable to parse json into type"
+
+        // The longest type name in any schema in this repo today is well under this (31 chars,
+        // MobileIncrementalSnapshotRecord); this threshold only needs to be comfortably above
+        // that to avoid changing already-generated output.
+        private const val LONG_TYPE_NAME_THRESHOLD = 34
 
         private val caughtExceptions = arrayOf(
             ClassNameRef.IllegalStateException

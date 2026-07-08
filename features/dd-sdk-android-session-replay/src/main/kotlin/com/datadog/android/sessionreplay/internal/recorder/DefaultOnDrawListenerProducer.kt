@@ -23,7 +23,8 @@ internal class DefaultOnDrawListenerProducer(
     private val sdkCore: FeatureSdkCore,
     private val dynamicOptimizationEnabled: Boolean,
     private val rumContextProvider: RumContextProvider,
-    private val pixelCopyCapture: PixelCopyCapture? = null
+    private val pixelCopyCapture: PixelCopyCapture? = null,
+    private val compositionTreeBuilder: CompositionTreeBuilder? = null
 ) : OnDrawListenerProducer {
 
     override fun create(
@@ -43,7 +44,8 @@ internal class DefaultOnDrawListenerProducer(
             dynamicOptimizationEnabled = dynamicOptimizationEnabled,
             touchPrivacyManager = touchPrivacyManager,
             rumContextProvider = rumContextProvider,
-            pixelCopyCapture = pixelCopyCapture
+            pixelCopyCapture = pixelCopyCapture,
+            compositionTreeBuilder = compositionTreeBuilder
         )
     }
 }

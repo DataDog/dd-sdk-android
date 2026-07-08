@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.view.Window
+import android.widget.TextView
 import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
@@ -50,6 +51,7 @@ import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
 import com.datadog.android.sessionreplay.internal.utils.PathUtils
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
+import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver
@@ -163,6 +165,16 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             webPImageCompression = WebPImageCompression(internalLogger)
         )
 
+        // Named so it can be reused by the composition-tree pipeline below, in addition to the
+        // default pipeline's SnapshotProducer.
+        val imageWireframeHelper = DefaultImageWireframeHelper(
+            logger = internalLogger,
+            resourceResolver = resourceResolver,
+            viewIdentifierResolver = viewIdentifierResolver,
+            viewUtilsInternal = ViewUtilsInternal(),
+            imageTypeResolver = ImageTypeResolver()
+        )
+
         // Mixed PixelCopy + isolation capture, gated by pixelCopyCaptureEnabled.
         // PixelCopy requires API 26+; the isolation (View.draw) fallback works on any API level.
         this.pixelCopyCapture = if (pixelCopyCaptureEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -184,18 +196,41 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             null
         }
 
+        // Maps TextViews directly (crisp/selectable text) instead of falling back to a pixel
+        // capture — used by CompositionTreeBuilder in the composition-tree pipeline.
+        val textViewMapper = if (pixelCopyCaptureEnabled) {
+            TextViewMapper<TextView>(
+                viewIdentifierResolver,
+                colorStringFormatter,
+                viewBoundsResolver,
+                drawableToColorMapper
+            )
+        } else {
+            null
+        }
+
+        // Only the composition-tree pipeline below reads pixelCopyCapture/pixelCopyFallbackMapper —
+        // the default pipeline (SnapshotProducer/TreeViewTraversal) never does, so its behavior
+        // is unchanged whether pixelCopyCaptureEnabled is on or off.
+        val compositionTreeBuilder = pixelCopyFallbackMapper?.let { fallbackMapper ->
+            textViewMapper?.let { textMapper ->
+                CompositionTreeBuilder(
+                    viewIdentifierResolver = viewIdentifierResolver,
+                    viewBoundsResolver = viewBoundsResolver,
+                    textViewMapper = textMapper,
+                    pixelCopyFallbackMapper = fallbackMapper,
+                    touchPrivacyManager = touchPrivacyManager,
+                    imageWireframeHelper = imageWireframeHelper,
+                    pixelCropCallback = pixelCopyCapture
+                )
+            }
+        }
+
         this.viewOnDrawInterceptor = ViewOnDrawInterceptor(
             internalLogger = internalLogger,
             onDrawListenerProducer = DefaultOnDrawListenerProducer(
                 snapshotProducer = SnapshotProducer(
-                    imageWireframeHelper = DefaultImageWireframeHelper(
-                        logger = internalLogger,
-                        resourceResolver = resourceResolver,
-                        viewIdentifierResolver = viewIdentifierResolver,
-                        viewUtilsInternal = ViewUtilsInternal(),
-                        imageTypeResolver = ImageTypeResolver()
-                    ),
-                    pixelCropCallback = pixelCopyCapture,
+                    imageWireframeHelper = imageWireframeHelper,
                     treeViewTraversal = TreeViewTraversal(
                         mappers = mappers,
                         defaultViewMapper = defaultVWM,
@@ -205,8 +240,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                             viewIdentifierResolver = viewIdentifierResolver
                         ),
                         viewUtilsInternal = ViewUtilsInternal(),
-                        internalLogger = internalLogger,
-                        pixelCopyFallbackMapper = pixelCopyFallbackMapper
+                        internalLogger = internalLogger
                     ),
                     optionSelectorDetector = ComposedOptionSelectorDetector(
                         customOptionSelectorDetectors + DefaultOptionSelectorDetector()
@@ -225,7 +259,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                 sdkCore = sdkCore,
                 dynamicOptimizationEnabled = dynamicOptimizationEnabled,
                 rumContextProvider = rumContextProvider,
-                pixelCopyCapture = pixelCopyCapture
+                pixelCopyCapture = pixelCopyCapture,
+                compositionTreeBuilder = compositionTreeBuilder
             ),
             touchPrivacyManager = touchPrivacyManager
         )

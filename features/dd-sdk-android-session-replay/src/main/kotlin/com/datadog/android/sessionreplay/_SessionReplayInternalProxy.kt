@@ -35,4 +35,17 @@ class _SessionReplayInternalProxy(private val builder: SessionReplayConfiguratio
     ): SessionReplayConfiguration.Builder {
         return builder.setInternalCallback(internalCallback)
     }
+
+    /**
+     * Enables or disables the experimental PixelCopy-based composition-tree recording pipeline.
+     * Disabled by default while this pipeline is under active development.
+     *
+     * @param pixelCopyCaptureEnabled whether the pipeline should be enabled.
+     * @return [SessionReplayConfiguration.Builder] instance.
+     */
+    fun setPixelCopyCaptureEnabled(
+        pixelCopyCaptureEnabled: Boolean
+    ): SessionReplayConfiguration.Builder {
+        return builder.setPixelCopyCaptureEnabled(pixelCopyCaptureEnabled)
+    }
 }

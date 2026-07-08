@@ -48,4 +48,19 @@ internal class SessionReplayInternalProxyTest {
         assertThat(result).isEqualTo(testedBuilder)
         assertThat(sessionReplayConfiguration.internalCallback).isEqualTo(mockInternalCallback)
     }
+
+    @Test
+    fun `M return the same builder W setPixelCopyCaptureEnabled`() {
+        // Given
+        testedBuilder = SessionReplayConfiguration.Builder(fakeSampleRate)
+        testedProxy = _SessionReplayInternalProxy(testedBuilder)
+
+        // When
+        val result = testedProxy.setPixelCopyCaptureEnabled(true)
+        val sessionReplayConfiguration = result.build()
+
+        // Then
+        assertThat(result).isEqualTo(testedBuilder)
+        assertThat(sessionReplayConfiguration.pixelCopyCaptureEnabled).isTrue()
+    }
 }

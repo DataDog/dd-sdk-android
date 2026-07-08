@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.async
 
 import com.datadog.android.sessionreplay.internal.processor.RecordedQueuedItemContext
+import com.datadog.android.sessionreplay.internal.recorder.CompositionTreeBuilder
 import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.recorder.SystemInformation
 import java.util.concurrent.atomic.AtomicInteger
@@ -18,6 +19,10 @@ internal class SnapshotRecordedDataQueueItem(
 ) : RecordedDataQueueItem(recordedQueuedItemContext, creationTimestampInNs) {
     @Volatile internal var nodes = emptyList<Node>()
 
+    // Set instead of [nodes] when the composition-tree pipeline is enabled — it produces an
+    // already-flat wireframe list plus the composition tree directly, with no Node tree to flatten.
+    @Volatile internal var compositionTreeOutput: CompositionTreeBuilder.Output? = null
+
     @Volatile internal var isFinishedTraversal = false
     internal val pendingJobs = AtomicInteger(0)
 
@@ -27,7 +32,7 @@ internal class SnapshotRecordedDataQueueItem(
             return true
         }
 
-        return nodes.isNotEmpty()
+        return nodes.isNotEmpty() || compositionTreeOutput?.wireframes?.isNotEmpty() == true
     }
 
     override fun isReady(): Boolean {

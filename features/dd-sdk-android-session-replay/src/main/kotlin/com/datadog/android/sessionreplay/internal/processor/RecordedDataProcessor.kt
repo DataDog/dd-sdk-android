@@ -12,7 +12,6 @@ import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.internal.async.ResourceRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.TouchEventRecordedDataQueueItem
-import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
@@ -64,12 +63,24 @@ internal class RecordedDataProcessor(
     override fun processScreenSnapshots(
         item: SnapshotRecordedDataQueueItem
     ) {
-        handleSnapshots(
-            newRumContext = item.recordedQueuedItemContext.newRumContext,
-            timestamp = item.recordedQueuedItemContext.timestamp,
-            snapshots = item.nodes,
-            systemInformation = item.systemInformation
-        )
+        val compositionOutput = item.compositionTreeOutput
+        if (compositionOutput != null) {
+            handleSnapshots(
+                newRumContext = item.recordedQueuedItemContext.newRumContext,
+                timestamp = item.recordedQueuedItemContext.timestamp,
+                wireframes = compositionOutput.wireframes,
+                compositionTree = compositionOutput.compositionTree,
+                systemInformation = item.systemInformation
+            )
+        } else {
+            handleSnapshots(
+                newRumContext = item.recordedQueuedItemContext.newRumContext,
+                timestamp = item.recordedQueuedItemContext.timestamp,
+                wireframes = item.nodes.flatMap { nodeFlattener.flattenNode(it) },
+                compositionTree = null,
+                systemInformation = item.systemInformation
+            )
+        }
         prevRumContext = item.recordedQueuedItemContext.newRumContext
     }
 
@@ -96,11 +107,10 @@ internal class RecordedDataProcessor(
     private fun handleSnapshots(
         newRumContext: SessionReplayRumContext,
         timestamp: Long,
-        snapshots: List<Node>,
+        wireframes: List<MobileSegment.Wireframe>,
+        compositionTree: MobileSegment.CompositionTree?,
         systemInformation: SystemInformation
     ) {
-        val wireframes = snapshots.flatMap { nodeFlattener.flattenNode(it) }
-
         if (wireframes.isEmpty()) {
             return
         }
@@ -109,7 +119,12 @@ internal class RecordedDataProcessor(
         val isNewView = isNewView(newRumContext)
         val isTimeForFullSnapshot = isTimeForFullSnapshot()
         val screenOrientationChanged = systemInformation.screenOrientation != previousOrientation
-        val fullSnapshotRequired = isNewView || isTimeForFullSnapshot || screenOrientationChanged
+        // The composition-tree pipeline has no mutation/diffing strategy yet (MutationResolver
+        // only knows how to diff flat wireframe lists, and dropping the composition tree from
+        // an incremental record would leave group effects like alpha stale) — so it always
+        // sends a full snapshot instead.
+        val fullSnapshotRequired =
+            compositionTree != null || isNewView || isTimeForFullSnapshot || screenOrientationChanged
 
         if (isNewView) {
             handleViewEndRecord(timestamp)
@@ -143,7 +158,7 @@ internal class RecordedDataProcessor(
             records.add(
                 MobileSegment.MobileRecord.MobileFullSnapshotRecord(
                     timestamp,
-                    MobileSegment.Data(wireframes)
+                    MobileSegment.Data(wireframes, compositionTree)
                 )
             )
         } else {
