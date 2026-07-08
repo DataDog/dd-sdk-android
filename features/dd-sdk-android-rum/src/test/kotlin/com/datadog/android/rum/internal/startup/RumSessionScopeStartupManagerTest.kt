@@ -224,7 +224,8 @@ internal class RumSessionScopeStartupManagerTest {
         )
 
         val event = RumRawEvent.AppStartTTIDEvent(
-            info = info
+            info = info,
+            eventTime = scenario.initialTime
         )
 
         // When
@@ -263,7 +264,8 @@ internal class RumSessionScopeStartupManagerTest {
         )
 
         val event = RumRawEvent.AppStartTTIDEvent(
-            info = info
+            info = info,
+            eventTime = scenario.initialTime
         )
         val mockProfilingFeatureScope = mock<FeatureScope>()
         whenever(
@@ -314,7 +316,8 @@ internal class RumSessionScopeStartupManagerTest {
         )
 
         val event1 = RumRawEvent.AppStartTTIDEvent(
-            info = info1
+            info = info1,
+            eventTime = scenario1.initialTime
         )
 
         val info2 = RumTTIDInfo(
@@ -323,7 +326,8 @@ internal class RumSessionScopeStartupManagerTest {
         )
 
         val event2 = RumRawEvent.AppStartTTIDEvent(
-            info = info2
+            info = info2,
+            eventTime = scenario2.initialTime
         )
 
         // When
@@ -373,12 +377,12 @@ internal class RumSessionScopeStartupManagerTest {
             durationNs = forge.aLong(min = 0, max = 10000)
         )
 
-        val ttidEvent = RumRawEvent.AppStartTTIDEvent(info = info)
+        val ttidEvent = RumRawEvent.AppStartTTIDEvent(info = info, eventTime = scenario.initialTime)
 
         val ttfdEvent = forge.createTTFDEvent(scenario.initialTime)
 
         // When
-        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario))
+        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario, eventTime = scenario.initialTime))
 
         manager.onTTIDEvent(
             event = ttidEvent,
@@ -421,8 +425,8 @@ internal class RumSessionScopeStartupManagerTest {
         forge: Forge
     ) {
         // Given
-        val appStartEvent1 = RumRawEvent.AppStartEvent(scenario = scenario1)
-        val appStartEvent2 = RumRawEvent.AppStartEvent(scenario = scenario2)
+        val appStartEvent1 = RumRawEvent.AppStartEvent(scenario = scenario1, eventTime = scenario1.initialTime)
+        val appStartEvent2 = RumRawEvent.AppStartEvent(scenario = scenario2, eventTime = scenario2.initialTime)
 
         val info1 = RumTTIDInfo(
             scenario = scenario1,
@@ -434,8 +438,8 @@ internal class RumSessionScopeStartupManagerTest {
             durationNs = forge.aLong(min = 0, max = 10000)
         )
 
-        val ttidEvent1 = RumRawEvent.AppStartTTIDEvent(info = info1)
-        val ttidEvent2 = RumRawEvent.AppStartTTIDEvent(info = info2)
+        val ttidEvent1 = RumRawEvent.AppStartTTIDEvent(info = info1, eventTime = scenario1.initialTime)
+        val ttidEvent2 = RumRawEvent.AppStartTTIDEvent(info = info2, eventTime = scenario2.initialTime)
 
         val ttfdEvent1 = forge.createTTFDEvent(scenario1.initialTime)
         val ttfdEvent2 = forge.createTTFDEvent(scenario2.initialTime)
@@ -501,7 +505,7 @@ internal class RumSessionScopeStartupManagerTest {
     fun `M log W onTTFDEvent { if called before onAppStartEvent }`() {
         // When
         manager.onTTFDEvent(
-            event = RumRawEvent.AppStartTTFDEvent(),
+            event = RumRawEvent.AppStartTTFDEvent(eventTime = Time(timestamp = 0L, nanoTime = 0L)),
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -529,10 +533,10 @@ internal class RumSessionScopeStartupManagerTest {
         scenario: RumStartupScenario
     ) {
         // When
-        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario))
+        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario, eventTime = scenario.initialTime))
 
         manager.onTTFDEvent(
-            event = RumRawEvent.AppStartTTFDEvent(),
+            event = RumRawEvent.AppStartTTFDEvent(eventTime = scenario.initialTime),
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -568,13 +572,14 @@ internal class RumSessionScopeStartupManagerTest {
         )
 
         val ttidEvent = RumRawEvent.AppStartTTIDEvent(
-            info = info
+            info = info,
+            eventTime = scenario.initialTime
         )
 
-        val ttfdEvent = RumRawEvent.AppStartTTFDEvent()
+        val ttfdEvent = RumRawEvent.AppStartTTFDEvent(eventTime = scenario.initialTime)
 
         // When
-        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario))
+        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario, eventTime = scenario.initialTime))
 
         manager.onTTFDEvent(
             event = ttfdEvent,
@@ -626,11 +631,12 @@ internal class RumSessionScopeStartupManagerTest {
         )
 
         val ttidEvent = RumRawEvent.AppStartTTIDEvent(
-            info = info
+            info = info,
+            eventTime = scenario.initialTime
         )
 
         // When
-        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario))
+        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario, eventTime = scenario.initialTime))
 
         manager.onTTIDEvent(
             event = ttidEvent,
@@ -669,7 +675,7 @@ internal class RumSessionScopeStartupManagerTest {
             durationNs = forge.aLong(min = 0, max = 10000)
         )
 
-        val ttidEvent = RumRawEvent.AppStartTTIDEvent(info = info)
+        val ttidEvent = RumRawEvent.AppStartTTIDEvent(info = info, eventTime = scenario.initialTime)
 
         val ttfdEvent = forge.createTTFDEvent(
             initialTime = scenario.initialTime,
@@ -677,7 +683,7 @@ internal class RumSessionScopeStartupManagerTest {
         )
 
         // When
-        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario))
+        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario, eventTime = scenario.initialTime))
 
         manager.onTTIDEvent(
             event = ttidEvent,
