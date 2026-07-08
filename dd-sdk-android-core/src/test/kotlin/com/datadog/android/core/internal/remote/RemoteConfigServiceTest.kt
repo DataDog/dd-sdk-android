@@ -275,6 +275,7 @@ internal class RemoteConfigServiceTest {
         // Then
         assertThat(testedService.getCurrentConfig()).isNull()
         verify(mockFileReaderWriter, never()).writeData(any(), any(), any())
+        verify(mockFetcher).evictCache()
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
@@ -332,6 +333,7 @@ internal class RemoteConfigServiceTest {
         // Then
         assertThat(testedService.getCurrentConfig()).isNull()
         verify(mockFileReaderWriter, never()).writeData(any(), any(), any())
+        verify(mockFetcher).evictCache()
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),

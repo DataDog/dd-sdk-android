@@ -257,4 +257,14 @@ internal class RemoteConfigFetcherTest {
     }
 
     // endregion
+
+    // region evictCache()
+
+    @Test
+    fun `M not throw W evictCache()`() {
+        // When / Then — cache is a real object on fakeStorageDir; evictAll() should succeed
+        testedFetcher.evictCache()
+    }
+
+    // endregion
 }

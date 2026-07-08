@@ -33,6 +33,13 @@ internal interface RemoteConfigFetcher {
      * Releases any resources held by this fetcher (e.g. HTTP cache).
      */
     fun stop()
+
+    /**
+     * Evicts all entries from the HTTP cache, forcing a full network re-fetch on the next call.
+     * Should be called when a fetched response cannot be parsed, to prevent the bad response
+     * from being served from cache on subsequent launches.
+     */
+    fun evictCache()
 }
 
 internal class RemoteConfigNetworkFetcher(
@@ -95,6 +102,19 @@ internal class RemoteConfigNetworkFetcher(
         }
     }
 
+    override fun evictCache() {
+        try {
+            httpCache.evictAll()
+        } catch (e: IOException) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                { ERROR_EVICT_CACHE },
+                e
+            )
+        }
+    }
+
     private fun handleResponse(response: Response, url: HttpUrl): String? {
         return if (response.isSuccessful) {
             @Suppress("UnsafeThirdPartyFunctionCall") // safe: wrapped in outer try-catch
@@ -131,6 +151,7 @@ internal class RemoteConfigNetworkFetcher(
         internal const val ERROR_HTTP = "Remote config fetch failed with an HTTP error"
         internal const val ERROR_EMPTY_BODY = "Remote config response body is empty"
         internal const val ERROR_CLOSE_CACHE = "Failed to close remote config HTTP cache"
+        internal const val ERROR_EVICT_CACHE = "Failed to evict remote config HTTP cache"
         internal const val ATTR_RESPONSE_CODE = "response_code"
         internal const val ATTR_URL = "url"
         internal const val HTTP_CACHE_DIR_NAME = "rc-http-cache"

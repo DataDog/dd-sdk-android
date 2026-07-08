@@ -90,7 +90,13 @@ internal class RemoteConfigServiceImpl(
     @WorkerThread
     private fun fetchAndCache() {
         val rawConfig = fetcher.fetch(configUrl) ?: return
-        val config = parseConfig(rawConfig) ?: return
+        val config = parseConfig(rawConfig)
+        if (config == null) {
+            // Evict the bad response from the HTTP cache so the next syncWithRemote()
+            // re-fetches from the network rather than serving the unparseable body again.
+            fetcher.evictCache()
+            return
+        }
 
         configFile.parentFile?.mkdirsSafe(internalLogger)
         val written = fileReaderWriter.writeData(
