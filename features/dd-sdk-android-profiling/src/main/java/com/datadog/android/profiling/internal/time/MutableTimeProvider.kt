@@ -27,6 +27,8 @@ internal interface MutableTimeProvider : TimeProvider {
         override fun getServerOffsetMillis(): Long = delegate.getServerOffsetMillis()
 
         override fun getDeviceElapsedRealtimeMillis(): Long = delegate.getDeviceElapsedRealtimeMillis()
+
+        override fun getDeviceUptimeMillis(): Long = delegate.getDeviceUptimeMillis()
     }
 
     companion object {

@@ -242,15 +242,18 @@ internal class RumSessionScope(
 
         val isInteraction = (event is RumRawEvent.StartView) || (event is RumRawEvent.StartAction)
         val isBackgroundEvent = event.javaClass in RumViewManagerScope.validBackgroundEventTypes
+
         val isSdkInitInForeground = event is RumRawEvent.SdkInit && event.isAppInForeground
         val isSdkInitInBackground = event is RumRawEvent.SdkInit && !event.isAppInForeground
+
+        val isAppStart = event is RumRawEvent.AppStartEvent
 
         // When the session is expired, time-out or stopSession API is called, session ended metric should be sent
         if (isExpired || isTimedOut || isActive.not()) {
             sessionEndedMetricDispatcher.endMetric(sessionId, sdkCore.time.serverTimeOffsetMs)
         }
 
-        if (isInteraction || isSdkInitInForeground) {
+        if (isInteraction || isSdkInitInForeground || isAppStart) {
             if (isNewSession || isExpired || isTimedOut) {
                 val reason = if (isNewSession) {
                     StartReason.USER_APP_LAUNCH
