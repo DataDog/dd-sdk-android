@@ -26,7 +26,9 @@ import com.datadog.android.sessionreplay.utils.GlobalBounds
  * [isolationClipRect]. No overlay contamination — only the view's own drawing is captured.
  *
  * Both paths are evaluated post-traversal in `processPendingCrops` once all wireframe bounds
- * are known, enabling the correct overlap check.
+ * are known, enabling the correct overlap check. If the per-cycle capture budget is exceeded
+ * before a pending crop is reached, it is replaced via [wireframeSlot] with a placeholder
+ * instead of being captured.
  *
  * @see MappingContext.pixelCropCallback
  */
@@ -36,7 +38,7 @@ interface PixelCropCallback {
      * Registers a pending capture for [nodeId]'s region. Called during SR traversal.
      *
      * Calls [asyncJobStatusCallback.jobStarted] immediately to gate the queue item.
-     * The actual capture decision (PixelCopy vs isolation) is deferred until
+     * The actual capture decision (PixelCopy vs isolation vs placeholder) is deferred until
      * `processPendingCrops` runs post-traversal with the full wireframe bounds picture.
      *
      * @param nodeId Stable identifier for the region (semantics node ID or view ID).
@@ -45,6 +47,8 @@ interface PixelCropCallback {
      * @param isolationView The view to call `View.draw` on in the isolation path.
      * @param isolationClipRect Clip rect within [isolationView]'s coordinate space.
      * @param wireframe Stub `ImageWireframe` (isEmpty=true) to populate on success.
+     * @param wireframeSlot Callback used to swap [wireframe] out for a placeholder if the
+     * capture budget is exceeded before this crop can be processed.
      * @param asyncJobStatusCallback Used to call [AsyncJobStatusCallback.jobFinished].
      */
     fun registerPendingCrop(
@@ -54,9 +58,23 @@ interface PixelCropCallback {
         isolationView: View,
         isolationClipRect: Rect,
         wireframe: MobileSegment.Wireframe.ImageWireframe,
+        wireframeSlot: WireframeSlot,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ) {
         // Default no-op — implementations register the crop for deferred processing.
         asyncJobStatusCallback.jobFinished()
     }
+}
+
+/**
+ * Allows a deferred pixel-capture pipeline to replace a stub wireframe already embedded in
+ * the SR node tree — e.g. swapping it for a [MobileSegment.Wireframe.PlaceholderWireframe]
+ * when the per-cycle capture budget runs out before the crop can be processed.
+ */
+fun interface WireframeSlot {
+    /**
+     * Replaces the wireframe originally registered via [PixelCropCallback.registerPendingCrop]
+     * with [wireframe].
+     */
+    fun replace(wireframe: MobileSegment.Wireframe)
 }

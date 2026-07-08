@@ -26,6 +26,7 @@ import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceRes
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolverCallback
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.PixelCropCallback
+import com.datadog.android.sessionreplay.recorder.WireframeSlot
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import java.lang.ref.WeakReference
@@ -64,9 +65,18 @@ import java.util.concurrent.atomic.AtomicReference
  * node until [NODE_SETTLE_MS] has elapsed since it was first observed, then allows the
  * cheaper PixelCopy crop path. This gives newly-appeared content — most commonly an
  * in-flight async load — time to settle before we start trusting a cached screenshot of it.
+ *
+ * **Capture budget:** the whole snapshot cycle — traversal through every mapper, plus this
+ * class's own crop processing — is bounded by [CAPTURE_BUDGET_MS], timed from [onPreTraversal].
+ * Any pending crop [processPendingCrops] hasn't reached once that elapses is replaced with a
+ * placeholder instead of being captured, so a slow traversal can't stall the UI thread
+ * indefinitely.
  */
 internal class PixelCopyCapture(
-    private val resourceResolver: ResourceResolver
+    private val resourceResolver: ResourceResolver,
+    // Injectable for testing — SystemClock.elapsedRealtime() is not advanceable in local unit
+    // tests (the Android unit-test stub returns a fixed 0L).
+    private val elapsedRealtimeMs: () -> Long = { SystemClock.elapsedRealtime() }
 ) : PixelCropCallback {
 
     private val handlerThread = HandlerThread("dd-sr-pixel-copy").also { it.start() }
@@ -79,6 +89,15 @@ internal class PixelCopyCapture(
     private val captureAllowedAfterMs = AtomicLong(0L)
 
     private val pendingCrops = CopyOnWriteArrayList<PendingPixelCrop>()
+
+    /**
+     * elapsedRealtime at which the current snapshot cycle's [onPreTraversal] was called.
+     * Anchors the [CAPTURE_BUDGET_MS] deadline checked in [processPendingCrops], so the budget
+     * covers the **whole** snapshot — traversal through every mapper included — not just the
+     * post-traversal crop-processing loop. Both methods are `@UiThread` and always called on
+     * the same thread within one snapshot cycle, so no synchronization is needed here.
+     */
+    private var snapshotCycleStartMs = 0L
 
     /**
      * elapsedRealtime at which each nodeId was first registered. Used by [processPendingCrops]
@@ -97,16 +116,18 @@ internal class PixelCopyCapture(
 
     /**
      * Must be called **before** the SR traversal.
-     * Discards the stored bitmap and starts the settle timer on URL change.
+     * Marks the start of this snapshot cycle for the [CAPTURE_BUDGET_MS] budget, and — on URL
+     * change — discards the stored bitmap and starts the settle timer.
      */
     @UiThread
     fun onPreTraversal(currentViewUrl: String?) {
+        snapshotCycleStartMs = elapsedRealtimeMs()
         if (currentViewUrl != lastCapturedViewUrl.get()) {
             capturedBitmap.getAndSet(null)?.recycle()
             pendingCrops.clear()
             firstSeenAtMs.clear()
             lastCapturedViewUrl.set(currentViewUrl)
-            captureAllowedAfterMs.set(SystemClock.elapsedRealtime() + NAVIGATION_SETTLE_MS)
+            captureAllowedAfterMs.set(elapsedRealtimeMs() + NAVIGATION_SETTLE_MS)
         }
     }
 
@@ -125,9 +146,10 @@ internal class PixelCopyCapture(
         isolationView: View,
         isolationClipRect: Rect,
         wireframe: MobileSegment.Wireframe.ImageWireframe,
+        wireframeSlot: WireframeSlot,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ) {
-        firstSeenAtMs.putIfAbsent(nodeId, SystemClock.elapsedRealtime())
+        firstSeenAtMs.putIfAbsent(nodeId, elapsedRealtimeMs())
         asyncJobStatusCallback.jobStarted()
         pendingCrops.add(
             PendingPixelCrop(
@@ -137,6 +159,7 @@ internal class PixelCopyCapture(
                 isolationView = isolationView,
                 isolationClipRect = isolationClipRect,
                 wireframe = wireframe,
+                wireframeSlot = wireframeSlot,
                 asyncJobStatusCallback = asyncJobStatusCallback
             )
         )
@@ -149,10 +172,14 @@ internal class PixelCopyCapture(
     /**
      * Must be called **after** traversal, **before** [captureLatestFrame].
      *
-     * For each pending crop:
-     * - Checks whether any other wireframe (non-parent) overlaps its bounds.
-     * - **No overlay:** crops from the stored PixelCopy bitmap (full fidelity).
-     * - **Overlay detected:** calls [View.draw] in isolation (no overlay contamination).
+     * For each pending crop, in order:
+     * - If the [CAPTURE_BUDGET_MS] budget for the whole snapshot cycle — anchored at
+     *   [onPreTraversal], covering traversal through every mapper as well as this loop — has
+     *   been exceeded, [timeoutPending] swaps it for a placeholder instead of attempting a
+     *   capture.
+     * - Otherwise, checks whether any other wireframe (non-parent) overlaps its bounds.
+     *   - **No overlay:** crops from the stored PixelCopy bitmap (full fidelity).
+     *   - **Overlay detected:** calls [View.draw] in isolation (no overlay contamination).
      *
      * Feeds the chosen bitmap to [ResourceResolver] and sets [wireframe.resourceId] on success.
      */
@@ -166,7 +193,14 @@ internal class PixelCopyCapture(
         val snapshot = pendingCrops.toList()
         pendingCrops.clear()
 
+        val deadlineMs = snapshotCycleStartMs + CAPTURE_BUDGET_MS
+
         for (pending in snapshot) {
+            if (elapsedRealtimeMs() >= deadlineMs) {
+                timeoutPending(pending)
+                continue
+            }
+
             val hasOverlay = allBounds.any { other ->
                 val isSelf = other.x == pending.dpBounds.x &&
                     other.y == pending.dpBounds.y &&
@@ -177,8 +211,8 @@ internal class PixelCopyCapture(
                     !fullyContains(container = other, child = pending.dpBounds)
             }
 
-            val firstSeen = firstSeenAtMs[pending.nodeId] ?: SystemClock.elapsedRealtime()
-            val isSettled = SystemClock.elapsedRealtime() - firstSeen >= NODE_SETTLE_MS
+            val firstSeen = firstSeenAtMs[pending.nodeId] ?: elapsedRealtimeMs()
+            val isSettled = elapsedRealtimeMs() - firstSeen >= NODE_SETTLE_MS
 
             if (hasOverlay || !isSettled) {
                 // Overlay detected, or the node appeared less than NODE_SETTLE_MS ago (the
@@ -195,12 +229,35 @@ internal class PixelCopyCapture(
                 if (pixelCopyBitmap != null) {
                     completePendingCrop(pending, pixelCopyBitmap)
                 } else {
-                    captureViewRegionAsync(pending.isolationView, pending.isolationClipRect, pending.windowRect) { bitmap ->
+                    captureViewRegionAsync(
+                        pending.isolationView,
+                        pending.isolationClipRect,
+                        pending.windowRect
+                    ) { bitmap ->
                         completePendingCrop(pending, bitmap)
                     }
                 }
             }
         }
+    }
+
+    /**
+     * Replaces [pending]'s stub wireframe with a [MobileSegment.Wireframe.PlaceholderWireframe]
+     * via [PendingPixelCrop.wireframeSlot] — used when [CAPTURE_BUDGET_MS] is exceeded before
+     * this crop can be processed. No capture work (View.draw, bitmap crop) is attempted.
+     */
+    private fun timeoutPending(pending: PendingPixelCrop) {
+        pending.wireframeSlot.replace(
+            MobileSegment.Wireframe.PlaceholderWireframe(
+                id = pending.nodeId,
+                x = pending.dpBounds.x,
+                y = pending.dpBounds.y,
+                width = pending.dpBounds.width,
+                height = pending.dpBounds.height,
+                label = CAPTURE_BUDGET_EXCEEDED_LABEL
+            )
+        )
+        pending.asyncJobStatusCallback.jobFinished()
     }
 
     /**
@@ -240,7 +297,7 @@ internal class PixelCopyCapture(
      */
     @RequiresApi(Build.VERSION_CODES.O)
     fun captureLatestFrame() {
-        val now = SystemClock.elapsedRealtime()
+        val now = elapsedRealtimeMs()
         val allowedAfter = captureAllowedAfterMs.get()
         if (now < allowedAfter) return
 
@@ -476,5 +533,17 @@ internal class PixelCopyCapture(
          * just marginally more expensive).
          */
         internal const val NODE_SETTLE_MS = 300L
+
+        /**
+         * Wall-clock budget for an entire SR snapshot cycle — from [onPreTraversal], through
+         * traversal and every mapper, to the end of [processPendingCrops] — not just the
+         * post-traversal crop-processing loop on its own. Pending crops not yet processed once
+         * this elapses are replaced with a placeholder instead of being captured, so a slow
+         * traversal or a large/slow batch of unmapped views can't stall the UI thread beyond
+         * this limit.
+         */
+        internal const val CAPTURE_BUDGET_MS = 90L
+
+        internal const val CAPTURE_BUDGET_EXCEEDED_LABEL = "Content"
     }
 }

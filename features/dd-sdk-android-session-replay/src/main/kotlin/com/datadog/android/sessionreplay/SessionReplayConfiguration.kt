@@ -30,7 +30,8 @@ data class SessionReplayConfiguration internal constructor(
     internal val dynamicOptimizationEnabled: Boolean,
     internal val systemRequirementsConfiguration: SystemRequirementsConfiguration,
     internal val internalCallback: SessionReplayInternalCallback,
-    internal val heatmapsEnabled: Boolean
+    internal val heatmapsEnabled: Boolean,
+    internal val pixelCopyCaptureEnabled: Boolean
 ) {
 
     /**
@@ -78,6 +79,7 @@ data class SessionReplayConfiguration internal constructor(
         private var systemRequirementsConfiguration = SystemRequirementsConfiguration.NONE
         private var internalCallback: SessionReplayInternalCallback = NoOpSessionReplayInternalCallback()
         private var heatmapsEnabled = false
+        private var pixelCopyCaptureEnabled = false
 
         /**
          * Adds an extension support implementation. This is mostly used when you want to provide
@@ -240,6 +242,16 @@ data class SessionReplayConfiguration internal constructor(
         }
 
         /**
+         * Enables or disables the experimental PixelCopy-based capture pipeline, used as a
+         * fallback for views/composables with no registered mapper. Disabled by default while
+         * this pipeline is under active development.
+         */
+        internal fun setPixelCopyCaptureEnabled(pixelCopyCaptureEnabled: Boolean): Builder {
+            this.pixelCopyCaptureEnabled = pixelCopyCaptureEnabled
+            return this
+        }
+
+        /**
          * Builds a [SessionReplayConfiguration] based on the current state of this Builder.
          */
         fun build(): SessionReplayConfiguration {
@@ -257,7 +269,8 @@ data class SessionReplayConfiguration internal constructor(
                 dynamicOptimizationEnabled = dynamicOptimizationEnabled,
                 systemRequirementsConfiguration = systemRequirementsConfiguration,
                 internalCallback = internalCallback,
-                heatmapsEnabled = heatmapsEnabled
+                heatmapsEnabled = heatmapsEnabled,
+                pixelCopyCaptureEnabled = pixelCopyCaptureEnabled
             )
         }
 

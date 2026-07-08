@@ -10,11 +10,10 @@ import android.graphics.Rect
 import android.view.View
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.sessionreplay.IMAGE_DIMEN_CONSIDERED_PII_IN_DP
-import com.datadog.android.sessionreplay.ImagePrivacy
-import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.PixelCaptureEligibility
+import com.datadog.android.sessionreplay.recorder.WireframeSlot
 import com.datadog.android.sessionreplay.recorder.mapper.BaseWireframeMapper
 import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
@@ -36,22 +35,11 @@ import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
  *   element physically overlaps this view's region.
  *
  * Falls back to [fallbackMapper] for views that are not fully on-screen, and — critically —
- * based on privacy:
- * - [MappingContext.textAndInputPrivacy] must be [TextAndInputPrivacy.MASK_SENSITIVE_INPUTS]
- *   (its baseline — [TextAndInputPrivacy] has no fully-permissive "off" state); anything
- *   stricter disables pixel capture unconditionally.
- * - [MappingContext.imagePrivacy] gates on the view's size, mirroring how
- *   [ImagePrivacy.MASK_LARGE_ONLY] already behaves for regular images elsewhere in SR:
- *   [ImagePrivacy.MASK_NONE] always allows capture; [ImagePrivacy.MASK_LARGE_ONLY] allows it
- *   only when the view is smaller than [IMAGE_DIMEN_CONSIDERED_PII_IN_DP] on both axes (small
- *   views are unlikely to be meaningful content); [ImagePrivacy.MASK_ALL] never allows it.
- *
- * This pipeline captures raw pixels with no knowledge of what a given unmapped view actually
- * renders — unlike the semantic mapper chain, it can't selectively mask only sensitive text
- * or contextual images. Any privacy restriction beyond what's allowed above — global, or from
- * a per-view privacy tag override, both of which are already resolved into [MappingContext]
- * before this mapper runs — disables pixel capture entirely for that view rather than risk
- * uploading unmasked sensitive content.
+ * based on privacy, gated via [PixelCaptureEligibility] (shared with the Compose-side
+ * dark-spot detection in `RootSemanticsNodeMapper`). Any privacy restriction beyond what
+ * [PixelCaptureEligibility] allows — global, or from a per-view privacy tag override, both of
+ * which are already resolved into [MappingContext] before this mapper runs — disables pixel
+ * capture entirely for that view rather than risk uploading unmasked sensitive content.
  */
 internal class PixelCopyFallbackMapper(
     private val fallbackMapper: WireframeMapper<View>,
@@ -74,10 +62,7 @@ internal class PixelCopyFallbackMapper(
         internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
         val pixelCropCallback = mappingContext.pixelCropCallback
-        if (pixelCropCallback == null ||
-            mappingContext.textAndInputPrivacy != TextAndInputPrivacy.MASK_SENSITIVE_INPUTS ||
-            mappingContext.imagePrivacy == ImagePrivacy.MASK_ALL
-        ) {
+        if (pixelCropCallback == null) {
             return fallbackMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
         }
 
@@ -96,11 +81,12 @@ internal class PixelCopyFallbackMapper(
         val density = mappingContext.systemInformation.screenDensity
         val globalBounds = viewBoundsResolver.resolveViewGlobalBounds(view, density)
 
-        // MASK_LARGE_ONLY: only allow capture for views small enough to be unlikely to hold
-        // meaningful content (icons, decorations) — same threshold used for regular images.
-        val isLarge = globalBounds.width >= IMAGE_DIMEN_CONSIDERED_PII_IN_DP ||
-            globalBounds.height >= IMAGE_DIMEN_CONSIDERED_PII_IN_DP
-        if (mappingContext.imagePrivacy == ImagePrivacy.MASK_LARGE_ONLY && isLarge) {
+        if (!PixelCaptureEligibility.isEligible(
+                textAndInputPrivacy = mappingContext.textAndInputPrivacy,
+                imagePrivacy = mappingContext.imagePrivacy,
+                boundsDp = globalBounds
+            )
+        ) {
             return fallbackMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
         }
 
@@ -110,8 +96,10 @@ internal class PixelCopyFallbackMapper(
         val location = IntArray(2)
         view.getLocationInWindow(location)
         val windowRect = Rect(
-            location[0], location[1],
-            location[0] + view.width, location[1] + view.height
+            location[0],
+            location[1],
+            location[0] + view.width,
+            location[1] + view.height
         )
 
         // Isolation clip rect: view draws into its own canvas, full size.
@@ -126,6 +114,10 @@ internal class PixelCopyFallbackMapper(
             isEmpty = true
         )
 
+        // Mutable so the pixel-capture pipeline can swap this entry for a placeholder if the
+        // per-cycle capture budget runs out before this crop is processed.
+        val wireframes = mutableListOf<MobileSegment.Wireframe>(imageWireframe)
+
         pixelCropCallback.registerPendingCrop(
             nodeId = nodeId,
             windowRect = windowRect,
@@ -133,9 +125,10 @@ internal class PixelCopyFallbackMapper(
             isolationView = view,
             isolationClipRect = isolationClipRect,
             wireframe = imageWireframe,
+            wireframeSlot = WireframeSlot { wireframes[0] = it },
             asyncJobStatusCallback = asyncJobStatusCallback
         )
 
-        return listOf(imageWireframe)
+        return wireframes
     }
 }

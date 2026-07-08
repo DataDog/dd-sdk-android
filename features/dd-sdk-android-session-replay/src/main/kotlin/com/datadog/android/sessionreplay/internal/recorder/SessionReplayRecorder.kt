@@ -94,7 +94,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         resourceDataStoreManager: ResourceDataStoreManager,
         dynamicOptimizationEnabled: Boolean,
         internalCallback: SessionReplayInternalCallback,
-        heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null
+        heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null,
+        pixelCopyCaptureEnabled: Boolean = false
     ) {
         val internalLogger = sdkCore.internalLogger
         val rumContextDataHandler = RumContextDataHandler(
@@ -162,22 +163,26 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             webPImageCompression = WebPImageCompression(internalLogger)
         )
 
-        // PoC: mixed PixelCopy + isolation capture. PixelCopy requires API 26+;
-        // the isolation (View.draw) fallback works on any API level.
-        this.pixelCopyCapture = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        // Mixed PixelCopy + isolation capture, gated by pixelCopyCaptureEnabled.
+        // PixelCopy requires API 26+; the isolation (View.draw) fallback works on any API level.
+        this.pixelCopyCapture = if (pixelCopyCaptureEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             PixelCopyCapture(resourceResolver)
         } else {
             null
         }
 
-        // PoC: PixelCopyFallbackMapper captures unmapped leaf views via View.draw.
-        val pixelCopyFallbackMapper = PixelCopyFallbackMapper(
-            fallbackMapper = defaultVWM,
-            viewIdentifierResolver = viewIdentifierResolver,
-            colorStringFormatter = colorStringFormatter,
-            viewBoundsResolver = viewBoundsResolver,
-            drawableToColorMapper = drawableToColorMapper
-        )
+        // Captures unmapped leaf views via View.draw when the pipeline is enabled.
+        val pixelCopyFallbackMapper = if (pixelCopyCaptureEnabled) {
+            PixelCopyFallbackMapper(
+                fallbackMapper = defaultVWM,
+                viewIdentifierResolver = viewIdentifierResolver,
+                colorStringFormatter = colorStringFormatter,
+                viewBoundsResolver = viewBoundsResolver,
+                drawableToColorMapper = drawableToColorMapper
+            )
+        } else {
+            null
+        }
 
         this.viewOnDrawInterceptor = ViewOnDrawInterceptor(
             internalLogger = internalLogger,

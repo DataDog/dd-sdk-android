@@ -35,9 +35,9 @@ internal class TreeViewTraversal(
     private val decorViewMapper: WireframeMapper<View>,
     private val viewUtilsInternal: ViewUtilsInternal,
     private val internalLogger: InternalLogger,
-    // PoC: optional pixel-perfect fallback for views with no registered mapper.
-    // When non-null, unrecognised leaf views are captured via PixelCopy instead of
-    // being mapped by defaultViewMapper.
+    // Optional pixel-perfect fallback for views with no registered mapper, present only when
+    // pixelCopyCaptureEnabled is set. When non-null, unrecognised leaf views are captured via
+    // PixelCopy instead of being mapped by defaultViewMapper.
     private val pixelCopyFallbackMapper: WireframeMapper<View>? = null
 ) {
 

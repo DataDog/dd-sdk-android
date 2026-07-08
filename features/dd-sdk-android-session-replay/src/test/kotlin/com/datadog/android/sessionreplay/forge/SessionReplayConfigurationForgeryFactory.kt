@@ -36,7 +36,8 @@ class SessionReplayConfigurationForgeryFactory : ForgeryFactory<SessionReplayCon
                 .setMinRAMSizeMb(forge.aSmallInt())
                 .setMinCPUCoreNumber(forge.aSmallInt())
                 .build(),
-            heatmapsEnabled = forge.aBool()
+            heatmapsEnabled = forge.aBool(),
+            pixelCopyCaptureEnabled = forge.aBool()
         )
     }
 }

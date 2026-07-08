@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder
 import android.graphics.Rect
 import android.view.View
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.WireframeSlot
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 
@@ -42,6 +43,8 @@ internal data class PendingPixelCrop(
     val isolationClipRect: Rect,
     /** Stub wireframe — populated with a resource ID once the chosen capture succeeds. */
     val wireframe: MobileSegment.Wireframe.ImageWireframe,
+    /** Used to swap [wireframe] for a placeholder if the capture budget runs out first. */
+    val wireframeSlot: WireframeSlot,
     /** Used to call [AsyncJobStatusCallback.jobFinished] after the pipeline completes. */
     val asyncJobStatusCallback: AsyncJobStatusCallback
 )
