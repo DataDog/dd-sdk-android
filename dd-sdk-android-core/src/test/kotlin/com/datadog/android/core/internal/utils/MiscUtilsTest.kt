@@ -9,7 +9,6 @@ package com.datadog.android.core.internal.utils
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.JsonSerializer.ITEM_SERIALIZATION_ERROR
 import com.datadog.android.core.internal.utils.JsonSerializer.safeMapValuesToJson
-import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
@@ -65,14 +64,8 @@ internal class MiscUtilsTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
-    @Mock
-    lateinit var mockTimeProvider: TimeProvider
-
-    @LongForgery(min = 0L)
-    var fakeCurrentTimeNs = 0L
-
-    @LongForgery(min = 0L, max = 2L)
-    var fakeDelaySeconds = 0L
+    @LongForgery(min = 1L, max = 1_000L)
+    var fakeDelayMilliseconds = 0L
 
     @Test
     fun `M repeat max N times W retryWithDelay { success = false }`(forge: Forge) {
@@ -80,10 +73,9 @@ internal class MiscUtilsTest {
         val fakeTimes = forge.anInt(min = 1, max = 10)
         val mockedBlock: () -> Boolean = mock()
         whenever(mockedBlock.invoke()).thenReturn(false)
-        stubTimeProviderWithDelay()
 
         // When
-        val wasSuccessful = retryWithDelay(fakeTimes, fakeDelayNs, mockInternalLogger, mockTimeProvider, mockedBlock)
+        val wasSuccessful = retryWithDelay(fakeTimes, fakeDelayNs, mockInternalLogger, mockedBlock)
 
         // Then
         assertThat(wasSuccessful).isFalse()
@@ -97,11 +89,10 @@ internal class MiscUtilsTest {
         val fakeDelay = TimeUnit.SECONDS.toNanos(forge.aLong(min = 0, max = 2))
         val mockedBlock: () -> Boolean = mock()
         whenever(mockedBlock.invoke()).thenReturn(false)
-        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).thenAnswer { System.nanoTime() }
 
         // When
         val executionTime = measureNanoTime {
-            retryWithDelay(fakeTimes, fakeDelay, mockInternalLogger, mockTimeProvider, mockedBlock)
+            retryWithDelay(fakeTimes, fakeDelay, mockInternalLogger, mockedBlock)
         }
 
         // Then
@@ -117,7 +108,7 @@ internal class MiscUtilsTest {
         val mockedBlock: () -> Boolean = mock()
 
         // When
-        retryWithDelay(forge.anInt(Int.MIN_VALUE, 1), fakeDelayNs, mockInternalLogger, mockTimeProvider, mockedBlock)
+        retryWithDelay(forge.anInt(Int.MIN_VALUE, 1), fakeDelayNs, mockInternalLogger, mockedBlock)
 
         // Then
         verifyNoInteractions(mockedBlock)
@@ -128,10 +119,9 @@ internal class MiscUtilsTest {
         // Given
         val mockedBlock: () -> Boolean = mock()
         whenever(mockedBlock.invoke()).thenReturn(false).thenReturn(true)
-        stubTimeProviderWithDelay()
 
         // When
-        val wasSuccessful = retryWithDelay(3, fakeDelayNs, mockInternalLogger, mockTimeProvider, mockedBlock)
+        val wasSuccessful = retryWithDelay(3, fakeDelayNs, mockInternalLogger, mockedBlock)
 
         // Then
         assertThat(wasSuccessful).isTrue()
@@ -145,10 +135,9 @@ internal class MiscUtilsTest {
         // Given
         val mockedBlock: () -> Boolean = mock()
         whenever(mockedBlock.invoke()).thenThrow(exception).thenReturn(true)
-        stubTimeProviderWithDelay()
 
         // When
-        val wasSuccessful = retryWithDelay(3, fakeDelayNs, mockInternalLogger, mockTimeProvider, mockedBlock)
+        val wasSuccessful = retryWithDelay(3, fakeDelayNs, mockInternalLogger, mockedBlock)
 
         // Then
         assertThat(wasSuccessful).isTrue()
@@ -163,14 +152,13 @@ internal class MiscUtilsTest {
             Thread.currentThread().interrupt()
             false
         }
-        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).thenAnswer { System.nanoTime() }
         val fakeSleepDelayNs = TimeUnit.SECONDS.toNanos(5)
         val resultRef = AtomicReference<Boolean>()
 
         // When
         // run on a dedicated thread so the interrupt flag sleepSafe restores doesn't leak into other tests
         val retryingThread = Thread {
-            resultRef.set(retryWithDelay(3, fakeSleepDelayNs, mockInternalLogger, mockTimeProvider, mockedBlock))
+            resultRef.set(retryWithDelay(3, fakeSleepDelayNs, mockInternalLogger, mockedBlock))
         }
         retryingThread.start()
         retryingThread.join(TimeUnit.SECONDS.toMillis(1))
@@ -354,14 +342,7 @@ internal class MiscUtilsTest {
     }
 
     private val fakeDelayNs: Long
-        get() = TimeUnit.SECONDS.toNanos(fakeDelaySeconds)
-
-    private fun stubTimeProviderWithDelay() {
-        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).thenAnswer {
-            fakeCurrentTimeNs += fakeDelayNs
-            fakeCurrentTimeNs
-        }
-    }
+        get() = TimeUnit.MILLISECONDS.toNanos(fakeDelayMilliseconds)
 
     // endregion
 }

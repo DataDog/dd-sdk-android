@@ -8,7 +8,6 @@ package com.datadog.android.core.internal.utils
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.thread.sleepSafe
-import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.lint.InternalApi
 import com.google.gson.JsonArray
@@ -38,22 +37,15 @@ internal fun retryWithDelay(
     times: Int,
     retryDelayNs: Long,
     internalLogger: InternalLogger,
-    timeProvider: TimeProvider,
     block: () -> Boolean
 ): Boolean {
-    var attempt = 1
-    var lastAttemptEndNs = timeProvider.getDeviceElapsedTimeNanos()
-    while (attempt <= times) {
-        if (attempt > 1) {
-            val timeSinceLastAttemptNs = timeProvider.getDeviceElapsedTimeNanos() - lastAttemptEndNs
-            val timeToWaitNs = (retryDelayNs - timeSinceLastAttemptNs)
-            if (timeToWaitNs > 0) {
-                // round up so a floored sub-millisecond remainder never causes an undersleep
-                val sleepTimeMs = TimeUnit.NANOSECONDS.toMillis(timeToWaitNs) + 1
-                val wasInterrupted = sleepSafe(sleepTimeMs, internalLogger)
-                if (wasInterrupted) {
-                    return false
-                }
+    repeat(times) { attempt ->
+        if (attempt > 0) {
+            // round up so a floored sub-millisecond remainder never causes an undersleep
+            val sleepTimeMs = TimeUnit.NANOSECONDS.toMillis(retryDelayNs) + 1
+            val wasInterrupted = sleepSafe(sleepTimeMs, internalLogger)
+            if (wasInterrupted) {
+                return false
             }
         }
         try {
@@ -71,8 +63,6 @@ internal fun retryWithDelay(
                 e
             )
         }
-        lastAttemptEndNs = timeProvider.getDeviceElapsedTimeNanos()
-        attempt++
     }
     return false
 }

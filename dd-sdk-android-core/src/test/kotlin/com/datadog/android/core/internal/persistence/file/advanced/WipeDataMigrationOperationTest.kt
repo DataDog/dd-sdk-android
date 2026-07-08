@@ -8,7 +8,6 @@ package com.datadog.android.core.internal.persistence.file.advanced
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.file.FileMover
-import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -30,8 +29,6 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicLong
 import kotlin.system.measureTimeMillis
 
 @Extensions(
@@ -53,24 +50,15 @@ internal class WipeDataMigrationOperationTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
-    @Mock
-    lateinit var mockTimeProvider: TimeProvider
-
     @LongForgery(min = 0L)
     var fakeElapsedTimeNs: Long = 0L
 
     @BeforeEach
     fun `set up`() {
-        val currentTime = AtomicLong(fakeElapsedTimeNs)
-        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).thenAnswer {
-            currentTime.getAndAdd(RETRY_DELAY_NS)
-        }
-
         testedOperation = WipeDataMigrationOperation(
             fakeTargetDirectory,
             mockFileMover,
-            mockInternalLogger,
-            mockTimeProvider
+            mockInternalLogger
         )
     }
 
@@ -80,8 +68,7 @@ internal class WipeDataMigrationOperationTest {
         testedOperation = WipeDataMigrationOperation(
             null,
             mockFileMover,
-            mockInternalLogger,
-            mockTimeProvider
+            mockInternalLogger
         )
 
         // When
@@ -136,7 +123,6 @@ internal class WipeDataMigrationOperationTest {
     @Test
     fun `M retry with 500ms delay W run() {move always fails}`() {
         // Given
-        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).thenAnswer { System.nanoTime() }
         whenever(mockFileMover.delete(fakeTargetDirectory))
             .doReturn(false)
 
@@ -152,8 +138,6 @@ internal class WipeDataMigrationOperationTest {
     }
 
     companion object {
-        private val RETRY_DELAY_NS = TimeUnit.MILLISECONDS.toNanos(500)
-
         // Generous allowance for OS scheduling jitter on a real Thread.sleep(), so this
         // real-time test doesn't flake under CI load.
         private const val JITTER_MARGIN_MS = 300L

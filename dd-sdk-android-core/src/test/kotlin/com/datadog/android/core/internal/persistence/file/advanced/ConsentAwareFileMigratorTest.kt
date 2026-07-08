@@ -52,7 +52,6 @@ internal class ConsentAwareFileMigratorTest {
     fun `set up`() {
         testedMigrator = ConsentAwareFileMigrator(
             mockFileMover,
-            mock(),
             mock()
         )
     }
