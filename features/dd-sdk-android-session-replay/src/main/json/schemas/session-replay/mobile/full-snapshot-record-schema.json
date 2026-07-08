@@ -29,6 +29,11 @@
               },
               "description": "The Wireframes contained by this Record.",
               "readOnly": true
+            },
+            "compositionTree": {
+              "$ref": "composition-tree-schema.json",
+              "description": "Optional composition tree describing the rendering hierarchy. When present, the player uses this tree for rendering order and group operations.",
+              "readOnly": true
             }
           }
         }

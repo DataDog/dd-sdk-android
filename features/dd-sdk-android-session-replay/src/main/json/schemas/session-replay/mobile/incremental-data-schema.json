@@ -16,6 +16,9 @@
     },
     {
       "$ref": "../common/pointer-interaction-data-schema.json"
+    },
+    {
+      "$ref": "composition-tree-mutation-data-schema.json"
     }
   ]
 }

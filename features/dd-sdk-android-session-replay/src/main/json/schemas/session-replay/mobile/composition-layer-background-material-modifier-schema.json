@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "session-replay/mobile/composition-layer-background-material-modifier-schema.json",
+  "title": "CompositionLayerBackgroundMaterialModifier",
+  "type": "object",
+  "description": "Represents a platform background material effect captured as layer rendering state.",
+  "required": ["type", "kind"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "backgroundMaterial",
+      "description": "The type of the modifier.",
+      "readOnly": true
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["glass"],
+      "description": "Material kind.",
+      "readOnly": true
+    }
+  }
+}
