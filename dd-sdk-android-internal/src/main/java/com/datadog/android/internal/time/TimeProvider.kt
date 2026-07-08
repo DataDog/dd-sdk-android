@@ -47,6 +47,15 @@ interface TimeProvider {
      * This is implemented in [BaseTimeProvider] as [SystemClock.elapsedRealtime].
      */
     fun getDeviceElapsedRealtimeMillis(): Long
+
+    /**
+     * Returns the time since boot in milliseconds, NOT including time spent in sleep.
+     * This is implemented in [BaseTimeProvider] as [SystemClock.uptimeMillis].
+     * Uses [CLOCK_MONOTONIC] — the same clock domain as [System.nanoTime] and
+     * [getDeviceElapsedTimeNanos], making it safe to use together with those methods
+     * for duration calculations that should exclude device sleep time.
+     */
+    fun getDeviceUptimeMillis(): Long
 }
 
 /**
@@ -56,4 +65,5 @@ abstract class BaseTimeProvider : TimeProvider {
     final override fun getDeviceTimestampMillis(): Long = System.currentTimeMillis()
     final override fun getDeviceElapsedTimeNanos(): Long = System.nanoTime()
     final override fun getDeviceElapsedRealtimeMillis(): Long = SystemClock.elapsedRealtime()
+    final override fun getDeviceUptimeMillis(): Long = SystemClock.uptimeMillis()
 }

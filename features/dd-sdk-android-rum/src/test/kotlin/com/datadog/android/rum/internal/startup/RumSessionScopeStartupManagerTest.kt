@@ -1033,7 +1033,10 @@ internal class RumSessionScopeStartupManagerTest {
             message = RumSessionScopeStartupManagerImpl.TTID_TOO_LARGE_MESSAGE,
             throwable = null,
             onlyOnce = false,
-            additionalProperties = null
+            additionalProperties = mapOf(
+                RumAppStartupTelemetryReporterImpl.KEY_DURATION_NS to info.durationNs,
+                RumAppStartupTelemetryReporterImpl.KEY_SCENARIO to scenario.name
+            )
         )
     }
 
@@ -1093,7 +1096,11 @@ internal class RumSessionScopeStartupManagerTest {
             message = RumSessionScopeStartupManagerImpl.TTFD_TOO_LARGE_MESSAGE,
             throwable = null,
             onlyOnce = false,
-            additionalProperties = null,
+            additionalProperties = mapOf(
+                RumAppStartupTelemetryReporterImpl.KEY_DURATION_NS to
+                    RumSessionScopeStartupManagerImpl.MAX_TTFD_DURATION_NS + 1,
+                RumAppStartupTelemetryReporterImpl.KEY_SCENARIO to scenario.name
+            ),
             mode = atLeastOnce()
         )
     }
