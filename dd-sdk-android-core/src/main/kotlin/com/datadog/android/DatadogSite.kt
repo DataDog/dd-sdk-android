@@ -6,6 +6,7 @@
 
 package com.datadog.android
 
+import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 
 /**
@@ -82,6 +83,6 @@ enum class DatadogSite private constructor(internal val siteName: String, privat
 
     /** The remote configuration CDN endpoint url. */
     @Suppress("UnsafeThirdPartyFunctionCall") // host is a compile-time constant, cannot be malformed
-    internal val remoteConfigurationEndpoint: okhttp3.HttpUrl =
+    internal val remoteConfigurationEndpoint: HttpUrl =
         "https://sdk-configuration.$intakeHostName".toHttpUrl()
 }

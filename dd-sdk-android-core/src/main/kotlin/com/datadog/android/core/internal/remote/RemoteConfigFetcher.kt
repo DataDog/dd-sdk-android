@@ -76,7 +76,6 @@ internal class RemoteConfigNetworkFetcher(
                     InternalLogger.Level.ERROR,
                     listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                     { ERROR_EMPTY_BODY },
-                    onlyOnce = true,
                     additionalProperties = mapOf(ATTR_URL to url.toString())
                 )
                 null
@@ -88,7 +87,6 @@ internal class RemoteConfigNetworkFetcher(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 { ERROR_HTTP },
-                onlyOnce = true,
                 additionalProperties = mapOf(
                     ATTR_RESPONSE_CODE to response.code,
                     ATTR_URL to url.toString()

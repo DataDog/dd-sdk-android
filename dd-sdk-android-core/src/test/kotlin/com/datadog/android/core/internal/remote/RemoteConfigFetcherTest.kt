@@ -111,7 +111,6 @@ internal class RemoteConfigFetcherTest {
             level = InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             message = RemoteConfigNetworkFetcher.ERROR_EMPTY_BODY,
-            onlyOnce = true,
             additionalProperties = mapOf(RemoteConfigNetworkFetcher.ATTR_URL to fakeUrl.toHttpUrl().toString())
         )
     }
@@ -145,7 +144,6 @@ internal class RemoteConfigFetcherTest {
             level = InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             message = RemoteConfigNetworkFetcher.ERROR_HTTP,
-            onlyOnce = true,
             additionalProperties = mapOf(
                 RemoteConfigNetworkFetcher.ATTR_RESPONSE_CODE to 404,
                 RemoteConfigNetworkFetcher.ATTR_URL to fakeUrl.toHttpUrl().toString()
@@ -178,7 +176,6 @@ internal class RemoteConfigFetcherTest {
             level = InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             message = RemoteConfigNetworkFetcher.ERROR_HTTP,
-            onlyOnce = true,
             additionalProperties = mapOf(
                 RemoteConfigNetworkFetcher.ATTR_RESPONSE_CODE to 500,
                 RemoteConfigNetworkFetcher.ATTR_URL to fakeUrl.toHttpUrl().toString()

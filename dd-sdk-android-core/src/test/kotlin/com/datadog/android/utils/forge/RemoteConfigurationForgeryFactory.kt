@@ -9,13 +9,14 @@ package com.datadog.android.utils.forge
 import com.datadog.android.core.internal.remote.model.RemoteConfiguration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
+import java.util.UUID
 
 internal class RemoteConfigurationForgeryFactory : ForgeryFactory<RemoteConfiguration> {
     override fun getForgery(forge: Forge): RemoteConfiguration {
         return RemoteConfiguration(
             rum = forge.aNullable {
                 RemoteConfiguration.Rum(
-                    applicationId = getForgery<java.util.UUID>().toString(),
+                    applicationId = getForgery<UUID>().toString(),
                     service = aNullable { anAlphabeticalString() },
                     env = aNullable { anAlphabeticalString() },
                     telemetrySampleRate = aNullable { anInt(min = 0, max = 100) },
