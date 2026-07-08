@@ -61,7 +61,10 @@ internal class ConfigurationCoreForgeryFactory :
                 forge.aValueFrom(BackPressureMitigation::class.java)
             ),
             uploadSchedulerStrategy = forge.aNullable { mock() },
-            remoteConfigurationId = forge.aNullable { anAlphabeticalString() }
+            // Intentionally null: a forged non-null ID would cause DatadogCore to schedule
+            // a real CDN fetch on the upload executor, turning unrelated unit tests into
+            // network tests. Tests that exercise RC behaviour set the ID explicitly.
+            remoteConfigurationId = null
         )
     }
 }

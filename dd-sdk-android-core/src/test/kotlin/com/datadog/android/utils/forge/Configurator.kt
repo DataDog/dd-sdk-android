@@ -71,6 +71,9 @@ internal class Configurator :
 
         forge.addFactory(PersistenceStrategyBatchForgeryFactory())
 
+        // Remote Config
+        forge.addFactory(RemoteConfigurationForgeryFactory())
+
         forge.useJvmFactories()
 
         // telemetry

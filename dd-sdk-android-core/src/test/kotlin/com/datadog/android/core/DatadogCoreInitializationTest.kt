@@ -19,6 +19,7 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.DatadogContextProvider
 import com.datadog.android.core.internal.DatadogCore
 import com.datadog.android.core.internal.SdkFeature
+import com.datadog.android.core.internal.remote.RemoteConfigService
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
@@ -53,6 +54,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -76,6 +78,9 @@ internal class DatadogCoreInitializationTest {
 
     @Mock
     lateinit var mockPersistenceExecutorService: FlushableExecutorService
+
+    @Mock
+    lateinit var mockRemoteConfigService: RemoteConfigService
 
     @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL)
     lateinit var fakeInstanceId: String
@@ -645,6 +650,56 @@ internal class DatadogCoreInitializationTest {
 
         // Then
         assertThat(testedCore.coreFeature.packageVersionProvider.version).isEqualTo(appVersion)
+    }
+
+    @Test
+    fun `M create and sync RemoteConfigService W initialize() { remoteConfigurationId set }`(
+        @StringForgery fakeRemoteConfigurationId: String
+    ) {
+        // When
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeInstanceId,
+            fakeInstanceName,
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService },
+            remoteConfigServiceFactory = { _, _, _, _, _, _ -> mockRemoteConfigService }
+        ).apply {
+            initialize(
+                fakeConfiguration.copy(
+                    coreConfig = fakeConfiguration.coreConfig.copy(
+                        remoteConfigurationId = fakeRemoteConfigurationId
+                    )
+                )
+            )
+        }
+
+        // Then
+        assertThat(testedCore.remoteConfigService).isSameAs(mockRemoteConfigService)
+        verify(mockRemoteConfigService).syncWithRemote()
+    }
+
+    @Test
+    fun `M not create RemoteConfigService W initialize() { remoteConfigurationId null }`() {
+        // When
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeInstanceId,
+            fakeInstanceName,
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService },
+            remoteConfigServiceFactory = { _, _, _, _, _, _ -> mockRemoteConfigService }
+        ).apply {
+            initialize(
+                fakeConfiguration.copy(
+                    coreConfig = fakeConfiguration.coreConfig.copy(
+                        remoteConfigurationId = null
+                    )
+                )
+            )
+        }
+
+        // Then
+        assertThat(testedCore.remoteConfigService).isNull()
+        verify(mockRemoteConfigService, never()).syncWithRemote()
     }
 
     // endregion
