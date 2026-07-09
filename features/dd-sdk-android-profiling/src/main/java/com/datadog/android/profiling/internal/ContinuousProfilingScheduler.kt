@@ -278,6 +278,7 @@ internal class ContinuousProfilingScheduler(
             unit = TimeUnit.MILLISECONDS,
             internalLogger = sdkCore.internalLogger,
             runnable = {
+                isActive = false
                 val cooldownMs = jitter(CONTINUOUS_COOLDOWN_DURATION_MS)
                 logToUser { LOG_ACTIVE_WINDOW_ENDED.format(Locale.US, cooldownMs) }
                 scheduleCooldown(cooldownMs)

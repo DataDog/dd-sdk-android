@@ -840,6 +840,36 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
+    fun `M stop accumulating vital events W onReceive {launch stopped at TTID, quota still pending}`(
+        @Forgery fakeLaterVital: ProfilerEvent.RumVitalEvent
+    ) {
+        // Given — continuous disabled so launch profiling stops at TTID
+        testedFeature = ProfilingFeature(
+            mockSdkCore,
+            ProfilingConfiguration(
+                customEndpointUrl = null,
+                applicationLaunchSampleRate = 100f,
+                continuousSampleRate = 0f
+            ),
+            mockProfiler
+        )
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        testedFeature.onInitialize(mockContext)
+        // Launch trace is stopped at TTID; the quota decision and Perfetto result have NOT arrived,
+        // so the write is still pending.
+        testedFeature.onReceive(fakeTTID)
+        verify(mockProfiler).stop(fakeInstanceName)
+
+        // When — a vital arrives after the trace was stopped
+        testedFeature.onReceive(
+            fakeLaterVital.copy(type = ProfilerEvent.RumVitalEvent.Type.OPERATION)
+        )
+
+        // Then — it is not attached to the already-stopped launch profile
+        assertThat(testedFeature.pendingRumEvents.pendingVitalEvents).containsExactly(fakeTTID)
+    }
+
+    @Test
     fun `M accumulate vital event W onReceive {continuous active window open}`(
         @Forgery fakeContinuousVital: ProfilerEvent.RumVitalEvent
     ) {

@@ -325,6 +325,28 @@ internal class ContinuousProfilingSchedulerTest {
             .isBetween((cooldownBase * 0.8).toLong(), (cooldownBase * 1.2).toLong())
     }
 
+    @Test
+    fun `M clear active flag W active window end runnable fires`() {
+        // Given — open an active window
+        val runnableCaptor = argumentCaptor<Runnable>()
+        whenever(
+            mockSchedulerExecutor.schedule(runnableCaptor.capture(), any(), any<TimeUnit>())
+        ) doReturn mockFuture
+        testedScheduler.onRumSessionRenewed(sessionId = fakeSessionId, rumSessionSampleRate = 100f)
+        testedScheduler.start(launchProfilingActive = true)
+        testedScheduler.onAppLaunchProfilingComplete()
+        // Fire the cooldown runnable to reach scheduleNextCycle and start the active window
+        runnableCaptor.firstValue.run()
+        assertThat(testedScheduler.isActive).isTrue()
+
+        // When — the active window end runnable fires (before the Perfetto result callback lands)
+        runnableCaptor.secondValue.run()
+
+        // Then — buffering must stop immediately, without waiting for onActiveWindowEnded()
+        assertThat(testedScheduler.isActive).isFalse()
+        assertThat(testedScheduler.state).isEqualTo(ContinuousProfilingScheduler.State.COOLDOWN)
+    }
+
     // endregion
 
     // region onRumSessionRenewed

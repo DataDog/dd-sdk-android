@@ -238,6 +238,7 @@ internal class ProfilingFeature(
 
         if (continuousProfilingScheduler?.currentSessionSampled != true) {
             profiler.stop(sdkCore.name)
+            isLaunchProfilingActive = false
             tryWriteProfilingEvent()
             sdkCore.internalLogger.log(
                 InternalLogger.Level.INFO,
