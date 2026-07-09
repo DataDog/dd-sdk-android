@@ -270,6 +270,47 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
     }
 
     @Test
+    fun `M prefer wildcard header types over apex W headerTypesForUrl(HttpUrl) { apex and wildcard }`() {
+        // Given
+        val apexHeaderTypes = setOf(TracingHeaderType.DATADOG)
+        val wildcardHeaderTypes = setOf(TracingHeaderType.TRACECONTEXT)
+        // apex is inserted first so, without precedence, iteration order would return the apex types
+        testedDetector = DefaultFirstPartyHostHeaderTypeResolver(
+            mapOf(
+                "example.com" to apexHeaderTypes,
+                "*.example.com" to wildcardHeaderTypes
+            )
+        )
+
+        // Then
+        // a subdomain matches both entries; the wildcard (more specific than the apex) wins
+        assertThat(testedDetector.headerTypesForUrl("https://api.example.com")).isEqualTo(wildcardHeaderTypes)
+        // the apex only matches the plain host
+        assertThat(testedDetector.headerTypesForUrl("https://example.com")).isEqualTo(apexHeaderTypes)
+    }
+
+    @Test
+    fun `M prefer most-specific host over broad wildcard W headerTypesForUrl(HttpUrl) { subtree override }`() {
+        // Given
+        val wildcardHeaderTypes = setOf(TracingHeaderType.DATADOG)
+        val specificHeaderTypes = setOf(TracingHeaderType.TRACECONTEXT)
+        // the broad wildcard is inserted first; a more-specific plain host must still be able to
+        // override the header types for its own subtree
+        testedDetector = DefaultFirstPartyHostHeaderTypeResolver(
+            mapOf(
+                "*.example.com" to wildcardHeaderTypes,
+                "api.example.com" to specificHeaderTypes
+            )
+        )
+
+        // Then
+        // both entries match, but the more-specific "api.example.com" wins for its subtree
+        assertThat(testedDetector.headerTypesForUrl("https://foo.api.example.com")).isEqualTo(specificHeaderTypes)
+        // a subdomain not under the specific host falls back to the wildcard
+        assertThat(testedDetector.headerTypesForUrl("https://foo.example.com")).isEqualTo(wildcardHeaderTypes)
+    }
+
+    @Test
     fun `M return false W isFirstParty(String) {unknown host postfixed with valid host}`(
         @StringForgery(regex = "http(s?)") scheme: String,
         @StringForgery(regex = "[a-zA-Z0-9_~-]{1,9}") prefix: String,

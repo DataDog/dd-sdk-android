@@ -63,8 +63,13 @@ class DefaultFirstPartyHostHeaderTypeResolver(
     override fun headerTypesForUrl(url: HttpUrl): Set<TracingHeaderType> {
         val host = url.host
 
+        // Exact host wins; otherwise the most-specific match (longest matching key) wins, so a
+        // more-specific host or pattern can override a broader one for its subtree.
         return knownHosts[host]
-            ?: knownHosts.entries.firstOrNull { matchesHost(host, it.key) }?.value
+            ?: knownHosts.entries
+                .filter { matchesHost(host, it.key) }
+                .maxByOrNull { it.key.length }
+                ?.value
             ?: emptySet()
     }
 
@@ -115,13 +120,15 @@ class DefaultFirstPartyHostHeaderTypeResolver(
     // other metacharacter is escaped, so "*.example.com" matches "api.example.com" but not
     // "example.com" and any input yields a valid regex.
     private fun String.toHostMatchingRegex(): Regex {
-        val regexPattern = map { char ->
-            when (char) {
-                WILDCARD -> WILDCARD_LABEL_SEGMENT
-                in REGEX_METACHARACTERS -> "\\$char"
-                else -> char.toString()
+        val pattern = this
+        return buildString {
+            for (char in pattern) {
+                when (char) {
+                    WILDCARD -> append(WILDCARD_LABEL_SEGMENT)
+                    in REGEX_METACHARACTERS -> append('\\').append(char)
+                    else -> append(char)
+                }
             }
-        }.joinToString(separator = "")
-        return Regex(regexPattern)
+        }.toRegex()
     }
 }

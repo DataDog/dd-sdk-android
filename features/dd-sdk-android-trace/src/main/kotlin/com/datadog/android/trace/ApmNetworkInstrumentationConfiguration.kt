@@ -6,9 +6,7 @@
 package com.datadog.android.trace
 
 import androidx.annotation.FloatRange
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
-import com.datadog.android.core.configuration.HostPatternSanitizer
 import com.datadog.android.core.configuration.HostsSanitizer
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
@@ -17,7 +15,6 @@ import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.internal.ApmNetworkInstrumentation
 import com.datadog.android.trace.internal.net.SessionRebasedSampler
 import com.datadog.android.trace.internal.net.TracerProvider
-import java.util.Locale
 
 /**
  * Configuration for APM distributed tracing of network requests.
@@ -26,7 +23,10 @@ import java.util.Locale
  * with distributed tracing headers and optional client-side APM spans.
  *
  * At minimum, you must provide a list of first-party hosts (or a map of hosts
- * to [TracingHeaderType]s) so that the SDK knows which requests to instrument.
+ * to [TracingHeaderType]s) so that the SDK knows which requests to instrument. Each entry may be a
+ * plain host (e.g. `example.com`, which also matches subdomains such as `api.example.com`) or a
+ * wildcard pattern such as `*.example.com` or `preview-*.example.com` (the `*` must be the last
+ * character of a subdomain label, so `*-preview.example.com` is not accepted).
  *
  * Example usage:
  * ```kotlin
@@ -291,16 +291,13 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
         private fun resolveHosts(
             tracedHosts: Map<String, Set<TracingHeaderType>>
         ): Map<String, Set<TracingHeaderType>> {
-            val (patterns, plainHosts) = tracedHosts.keys.partition { it.contains('*') }
-            val sanitizedHosts = (
-                HostsSanitizer().sanitizeHosts(plainHosts, NETWORK_REQUESTS_TRACKING_FEATURE_NAME) +
-                    HostPatternSanitizer(InternalLogger.UNBOUND)
-                        .validate(patterns, NETWORK_REQUESTS_TRACKING_FEATURE_NAME)
-                )
-                .map { it.lowercase(Locale.US) }
-                .toSet()
+            val sanitizer = HostsSanitizer()
+            val sanitizedHosts = sanitizer.sanitizeHosts(
+                tracedHosts.keys.toList(),
+                NETWORK_REQUESTS_TRACKING_FEATURE_NAME
+            )
 
-            return tracedHosts.filterKeys { sanitizedHosts.contains(it.lowercase(Locale.US)) }
+            return tracedHosts.filterKeys { sanitizedHosts.contains(it) }
         }
 
         private fun Map<String, Set<TracingHeaderType>>.deepCopy() = mapValues { (_, v) -> v.toSet() }

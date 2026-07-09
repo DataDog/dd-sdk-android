@@ -504,6 +504,7 @@ datadog:
       - "kotlin.collections.List.map(kotlin.Function1)"
       - "kotlin.collections.List.mapIndexed(kotlin.Function2)"
       - "kotlin.collections.List.mapNotNull(kotlin.Function1)"
+      - "kotlin.collections.List.maxByOrNull(kotlin.Function1)"
       - "kotlin.collections.List.maxOrNull()"
       - "kotlin.collections.List.orEmpty()"
       - "kotlin.collections.List.partition(kotlin.Function1)"

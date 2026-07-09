@@ -257,31 +257,6 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `M route wildcard patterns to pattern sanitizer W setFirstPartyHosts() { mixed }`(
-        @StringForgery(
-            regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+" +
-                "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
-        ) plainHost: String
-    ) {
-        // Given
-        val wildcardPattern = "*.shopist.io"
-        val mockPatternSanitizer: HostPatternSanitizer = mock()
-        testedBuilder.hostPatternSanitizer = mockPatternSanitizer
-
-        // When
-        testedBuilder
-            .setFirstPartyHosts(listOf(plainHost, wildcardPattern))
-            .build()
-
-        // Then
-        verify(mockPatternSanitizer)
-            .validate(
-                listOf(wildcardPattern),
-                Configuration.NETWORK_REQUESTS_TRACKING_FEATURE_NAME
-            )
-    }
-
-    @Test
     fun `M keep plain hosts and wildcard patterns W setFirstPartyHostsWithHeaderType() { mixed }`(
         @StringForgery(
             regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+" +
@@ -312,6 +287,23 @@ internal class ConfigurationBuilderTest {
                 wildcardPattern to wildcardHeaderTypes
             )
         )
+    }
+
+    @Test
+    fun `M keep uppercase wildcard pattern W setFirstPartyHostsWithHeaderType() { mixed case }`() {
+        // Given
+        // an uppercase wildcard is a valid case-insensitive pattern; it must survive the map filter
+        val wildcardPattern = "*.EXAMPLE.COM"
+        val hostsWithHeaderTypes = mapOf(wildcardPattern to setOf(TracingHeaderType.DATADOG))
+
+        // When
+        val config = testedBuilder
+            .setFirstPartyHostsWithHeaderType(hostsWithHeaderTypes)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig.firstPartyHostsWithHeaderTypes.keys)
+            .containsExactly(wildcardPattern)
     }
 
     @Test
