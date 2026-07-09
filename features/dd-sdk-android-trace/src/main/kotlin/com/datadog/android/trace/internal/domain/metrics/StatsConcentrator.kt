@@ -7,6 +7,7 @@
 package com.datadog.android.trace.internal.domain.metrics
 
 import androidx.annotation.VisibleForTesting
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.utils.executeSafe
@@ -124,10 +125,7 @@ internal class StatsConcentrator(
      * Unlike [stop], which only schedules a flush asynchronously on [executorService] (and is
      * therefore unsafe to use right before that executor — or the shared core write executor — gets
      * shut down), this method blocks the calling thread until the flush has actually completed.
-     *
-     * It should only be used by tests.
      */
-    @Suppress("UnsafeThirdPartyFunctionCall") // Used in tests only
     fun drainAndFlush() {
         isStopped = true
 
@@ -141,7 +139,21 @@ internal class StatsConcentrator(
             .submitSafe("stats-drain-flush", sdkCore.internalLogger) { flushBuckets(flushAll = true) }
             ?.getSafe("stats-drain-flush", DRAIN_WAIT_SECONDS, TimeUnit.SECONDS, sdkCore.internalLogger)
         executorService.shutdown()
-        executorService.awaitTermination(DRAIN_WAIT_SECONDS, TimeUnit.SECONDS)
+        try {
+            executorService.awaitTermination(DRAIN_WAIT_SECONDS, TimeUnit.SECONDS)
+        } catch (_: InterruptedException) {
+            try {
+                // Restore the interrupted status
+                Thread.currentThread().interrupt()
+            } catch (se: SecurityException) {
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.MAINTAINER,
+                    { "Thread was unable to set its own interrupted state" },
+                    se
+                )
+            }
+        }
     }
 
     private fun schedulePeriodicFlush() {

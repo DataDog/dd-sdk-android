@@ -132,4 +132,18 @@ interface InternalSdkCore : FeatureSdkCore {
      */
     @InternalApi
     fun getDatadogContext(withFeatureContexts: Set<String> = emptySet()): DatadogContext?
+
+    /**
+     * Flushes all currently pending tasks on the context thread and executes them synchronously on the calling thread
+     *
+     * You should not use this method in production code.
+     */
+    @InternalApi
+    fun flushContextThread()
+
+    /**
+     * Flushes all stored data (send everything right now).
+     */
+    @InternalApi
+    fun flushStoredData()
 }

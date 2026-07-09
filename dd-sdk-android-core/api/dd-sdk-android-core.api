@@ -662,6 +662,8 @@ public abstract interface class com/datadog/android/api/storage/datastore/DataSt
 
 public abstract interface class com/datadog/android/core/InternalSdkCore : com/datadog/android/api/feature/FeatureSdkCore {
 	public abstract fun deleteLastViewEvent ()V
+	public abstract fun flushContextThread ()V
+	public abstract fun flushStoredData ()V
 	public abstract fun getAllFeatures ()Ljava/util/List;
 	public abstract fun getAppStartTimeNs ()J
 	public abstract fun getAppUptimeNs ()J

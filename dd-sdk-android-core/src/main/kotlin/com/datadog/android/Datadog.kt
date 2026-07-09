@@ -14,6 +14,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.DatadogCore
 import com.datadog.android.core.internal.HashGenerator
@@ -404,7 +405,7 @@ object Datadog {
         // we need to drain, execute and flush from a background thread or ensure we're
         // not in the main thread!
         synchronized(registry) {
-            val sdkCore = registry.getInstance() as? DatadogCore
+            val sdkCore = registry.getInstance() as? InternalSdkCore
             if (sdkCore != null) {
                 // Flush the context thread in case any features are blocked waiting on the context thread
                 sdkCore.flushContextThread()

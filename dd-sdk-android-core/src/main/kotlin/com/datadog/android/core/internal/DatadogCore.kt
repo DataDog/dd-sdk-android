@@ -708,23 +708,13 @@ internal class DatadogCore(
         removeShutdownHook()
     }
 
-    /**
-     * Flushes all currently pending tasks on the context thread and executes them synchronously on the calling thread
-     *
-     * You should not use this method in production code.
-     */
     @WorkerThread
-    internal fun flushContextThread() {
-        // We need to drain and shutdown the executors first to make sure we avoid duplicated
-        // data due to async operations.
+    override fun flushContextThread() {
         coreFeature.flushContextThread()
     }
 
-    /**
-     * Flushes all stored data (send everything right now).
-     */
     @WorkerThread
-    internal fun flushStoredData() {
+    override fun flushStoredData() {
         // We need to drain and shutdown the executors first to make sure we avoid duplicated
         // data due to async operations.
         coreFeature.drainAndShutdownExecutors()
