@@ -161,12 +161,12 @@ fun <T> ExecutorService.submitSafe(
  * @param internalLogger Internal logger.
  */
 @InternalApi
-fun <T> Future<T>?.getSafe(
+fun <T> Future<T>.getSafe(
     operationName: String,
     internalLogger: InternalLogger
 ): T? {
     return try {
-        this?.get()
+        get()
     } catch (e: InterruptedException) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
@@ -204,7 +204,7 @@ fun <T> Future<T>?.getSafe(
  * @param internalLogger Internal logger.
  */
 @InternalApi
-fun <T> Future<T>?.getSafe(
+fun <T> Future<T>.getSafe(
     operationName: String,
     timeout: Long,
     unit: TimeUnit,
@@ -212,7 +212,7 @@ fun <T> Future<T>?.getSafe(
 ): T? {
     return try {
         @Suppress("UnsafeThirdPartyFunctionCall") // timeout args are caller-controlled
-        this?.get(timeout, unit)
+        get(timeout, unit)
     } catch (e: InterruptedException) {
         internalLogger.log(
             InternalLogger.Level.ERROR,

@@ -226,7 +226,7 @@ internal class SdkFeature(
                     context to eventBatchWriteScope
                 }
             )
-            .getSafe(operationName, internalLogger)
+            ?.getSafe(operationName, internalLogger)
     }
 
     override fun sendEvent(event: Any) {
