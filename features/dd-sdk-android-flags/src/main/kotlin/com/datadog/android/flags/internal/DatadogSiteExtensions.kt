@@ -36,6 +36,7 @@ private fun DatadogSite.flagsHost(customerDomain: String): String? = when (this)
     DatadogSite.US5 -> buildFlagsHostString(customerDomain, dc = "us5", tld = "com")
     DatadogSite.AP1 -> buildFlagsHostString(customerDomain, dc = "ap1", tld = "com")
     DatadogSite.AP2 -> buildFlagsHostString(customerDomain, dc = "ap2", tld = "com")
+    DatadogSite.UK1 -> buildFlagsHostString(customerDomain, dc = "uk1", tld = "com")
 }
 
 private fun buildFlagsHostString(customerDomain: String, dc: String? = null, tld: String = "com"): String {

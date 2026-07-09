@@ -46,6 +46,7 @@ internal class Configurator : BaseConfigurator() {
         forge.addFactory(ViewUpdateMetaForgeryFactory())
         forge.addFactory(RumScopeKeyForgeryFactory())
         forge.addFactory(ResourceIdForgeryFactory())
+        forge.addFactory(TimeForgeryFactory())
         forge.addFactory(InternalResourceContextFactory())
         forge.addFactory(NetworkSettledResourceContextFactory())
         forge.addFactory(InternalInteractionContextFactory())

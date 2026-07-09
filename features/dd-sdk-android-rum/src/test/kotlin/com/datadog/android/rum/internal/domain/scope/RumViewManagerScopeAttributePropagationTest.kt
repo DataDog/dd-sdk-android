@@ -20,7 +20,6 @@ import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
@@ -125,8 +124,6 @@ internal class RumViewManagerScopeAttributePropagationTest {
 
     @Forgery
     lateinit var fakeParentContext: RumContext
-
-    lateinit var fakeEventTime: Time
 
     lateinit var fakeEvent: RumRawEvent
 

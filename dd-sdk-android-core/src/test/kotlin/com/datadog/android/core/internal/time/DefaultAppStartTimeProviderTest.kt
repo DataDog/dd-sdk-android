@@ -53,7 +53,7 @@ class DefaultAppStartTimeProviderTest {
         // GIVEN
         whenever(mockBuildSdkVersionProvider.isAtLeastN) doReturn true
         whenever(mockTimeProvider.getDeviceElapsedTimeNanos()) doReturn fakeCurrentTimeNs
-        val diffMs = stubAndGetElapsedRealtimeMs() - Process.getStartElapsedRealtime()
+        val diffMs = stubAndGetUptimeMs() - Process.getStartUptimeMillis()
         val startTimeNs = fakeCurrentTimeNs - TimeUnit.MILLISECONDS.toNanos(diffMs)
         DdRumContentProvider.createTimeNs = startTimeNs +
             forge.aLong(min = 0, max = DefaultAppStartTimeProvider.PROCESS_START_TO_CP_START_DIFF_THRESHOLD_NS)
@@ -66,14 +66,14 @@ class DefaultAppStartTimeProviderTest {
     }
 
     @Test
-    fun `M fall back to DdRumContentProvider W appStartTime { N+ getStartElapsedRealtime returns buggy value }`(
+    fun `M fall back to DdRumContentProvider W appStartTime { N+ getStartUptimeMillis returns buggy value }`(
         @LongForgery(min = 0L) fakeCurrentTimeNs: Long,
         forge: Forge
     ) {
         // GIVEN
         whenever(mockBuildSdkVersionProvider.isAtLeastN) doReturn true
         whenever(mockTimeProvider.getDeviceElapsedTimeNanos()) doReturn fakeCurrentTimeNs
-        val diffMs = stubAndGetElapsedRealtimeMs() - Process.getStartElapsedRealtime()
+        val diffMs = stubAndGetUptimeMs() - Process.getStartUptimeMillis()
         val startTimeNs = fakeCurrentTimeNs - TimeUnit.MILLISECONDS.toNanos(diffMs)
         DdRumContentProvider.createTimeNs = startTimeNs +
             forge.aLong(min = DefaultAppStartTimeProvider.PROCESS_START_TO_CP_START_DIFF_THRESHOLD_NS)
@@ -91,14 +91,14 @@ class DefaultAppStartTimeProviderTest {
     ) {
         // GIVEN
         whenever(mockBuildSdkVersionProvider.isAtLeastN) doReturn true
-        val diffMs = stubAndGetElapsedRealtimeMs() - Process.getStartElapsedRealtime()
+        val diffMs = stubAndGetUptimeMs() - Process.getStartUptimeMillis()
         val fakeCurrentTimeNs = fakeComputedAppStartTimeNs + TimeUnit.MILLISECONDS.toNanos(diffMs)
         whenever(mockTimeProvider.getDeviceElapsedTimeNanos()) doReturn fakeCurrentTimeNs
 
         val computedAppStartTimeNs = fakeCurrentTimeNs - TimeUnit.MILLISECONDS.toNanos(diffMs)
         // Set createTimeNs strictly before computedAppStartTimeNs, simulating a buggy
-        // getStartElapsedRealtime()
-        // that makes the computed app start time appear to be after the content provider was created.
+        // getStartUptimeMillis() that makes the computed app start time appear to be after
+        // the content provider was created.
         DdRumContentProvider.createTimeNs = computedAppStartTimeNs - 1L
 
         // WHEN
@@ -236,14 +236,18 @@ class DefaultAppStartTimeProviderTest {
         assertThat(uptime2).isGreaterThan(uptime1)
     }
 
-    private fun stubAndGetElapsedRealtimeMs(): Long {
-        val elapsedRealtimeMs = SystemClock.elapsedRealtime()
-        whenever(mockTimeProvider.getDeviceElapsedRealtimeMillis()) doReturn elapsedRealtimeMs
-        return elapsedRealtimeMs
+    // region helpers
+
+    private fun stubAndGetUptimeMs(): Long {
+        val uptimeMs = SystemClock.uptimeMillis()
+        whenever(mockTimeProvider.getDeviceUptimeMillis()) doReturn uptimeMs
+        return uptimeMs
     }
 
     private fun computeCurrentTimeNsForStartTime(fakeStartTimeNs: Long): Long {
-        val diffMs = stubAndGetElapsedRealtimeMs() - Process.getStartElapsedRealtime()
+        val diffMs = stubAndGetUptimeMs() - Process.getStartUptimeMillis()
         return fakeStartTimeNs + TimeUnit.MILLISECONDS.toNanos(diffMs)
     }
+
+    // endregion
 }

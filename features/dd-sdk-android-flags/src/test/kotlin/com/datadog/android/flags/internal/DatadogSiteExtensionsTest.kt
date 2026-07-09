@@ -98,6 +98,7 @@ internal class DatadogSiteExtensionsTest {
             Arguments.of(DatadogSite.US5, "ff-cdn.us5.datadoghq.com"),
             Arguments.of(DatadogSite.AP1, "ff-cdn.ap1.datadoghq.com"),
             Arguments.of(DatadogSite.AP2, "ff-cdn.ap2.datadoghq.com"),
+            Arguments.of(DatadogSite.UK1, "ff-cdn.uk1.datadoghq.com"),
             Arguments.of(DatadogSite.EU1, "ff-cdn.datadoghq.eu"),
             Arguments.of(DatadogSite.STAGING, "ff-cdn.datad0g.com")
         )

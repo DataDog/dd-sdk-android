@@ -113,6 +113,7 @@ internal class RumActionScopeAttributePropagationTest {
     @Forgery
     lateinit var fakeParentContext: RumContext
 
+    @Forgery
     lateinit var fakeEventTime: Time
 
     lateinit var fakeEvent: RumRawEvent
@@ -148,8 +149,6 @@ internal class RumActionScopeAttributePropagationTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeEventTime = Time()
-
         fakeParentAttributes = forge.exhaustiveAttributes()
         fakeActionAttributes = forge.exhaustiveAttributes()
         whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes.toMutableMap()

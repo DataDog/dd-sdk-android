@@ -278,10 +278,12 @@ interface com.datadog.android.internal.time.TimeProvider
   fun getServerOffsetNanos(): Long
   fun getServerOffsetMillis(): Long
   fun getDeviceElapsedRealtimeMillis(): Long
+  fun getDeviceUptimeMillis(): Long
 abstract class com.datadog.android.internal.time.BaseTimeProvider : TimeProvider
   override fun getDeviceTimestampMillis(): Long
   override fun getDeviceElapsedTimeNanos(): Long
   override fun getDeviceElapsedRealtimeMillis(): Long
+  override fun getDeviceUptimeMillis(): Long
 fun ByteArray.toHexString(): String
 fun <T> android.content.Context.getSystemServiceAs(String): T?
 interface com.datadog.android.internal.utils.DDCoreSubscription<T: Any>

@@ -272,11 +272,29 @@ internal class ProfilingDataWriterTest {
             eq(false),
             isNull()
         )
+        val expectedProps = mapOf(
+            ProfilingTelemetry.KEY_METRIC_TYPE to ProfilingDataWriter.METRIC_TYPE_PROFILING_WRITE,
+            ProfilingDataWriter.KEY_PROFILING_WRITE to mapOf(
+                ProfilingDataWriter.KEY_DROPPED to true,
+                ProfilingDataWriter.KEY_DROP_REASON to ProfilingDataWriter.DROP_REASON_PERFETTO_UNREADABLE,
+                ProfilingDataWriter.KEY_CLIENT_CLOCK_DRIFT to 0L,
+                ProfilingTelemetry.KEY_START_REASON to fakeResult.startReason.value,
+                ProfilingDataWriter.KEY_LONG_TASK_COUNT to fakeLongTasks.size,
+                ProfilingDataWriter.KEY_ANR_COUNT to fakeAnrs.size,
+                ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size
+            )
+        )
+        verify(mockInternalLogger).logMetric(
+            any(),
+            eq(expectedProps),
+            eq(MethodCallSamplingRate.ALL.rate),
+            isNull()
+        )
         verifyNoMoreInteractions(mockEventBatchWriter)
     }
 
     @Test
-    fun `M skip writing W file is empty`(
+    fun `M skip writing and report drop metric W write {file is empty}`(
         @Forgery fakeResult: PerfettoResult,
         @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
         @Forgery fakeLongTasks: List<ProfilerEvent.RumLongTaskEvent>,
@@ -296,6 +314,24 @@ internal class ProfilingDataWriterTest {
 
         // Then
         assertThat(file.exists()).isFalse()
+        val expectedProps = mapOf(
+            ProfilingTelemetry.KEY_METRIC_TYPE to ProfilingDataWriter.METRIC_TYPE_PROFILING_WRITE,
+            ProfilingDataWriter.KEY_PROFILING_WRITE to mapOf(
+                ProfilingDataWriter.KEY_DROPPED to true,
+                ProfilingDataWriter.KEY_DROP_REASON to ProfilingDataWriter.DROP_REASON_PERFETTO_UNREADABLE,
+                ProfilingDataWriter.KEY_CLIENT_CLOCK_DRIFT to 0L,
+                ProfilingTelemetry.KEY_START_REASON to fakeResult.startReason.value,
+                ProfilingDataWriter.KEY_LONG_TASK_COUNT to fakeLongTasks.size,
+                ProfilingDataWriter.KEY_ANR_COUNT to fakeAnrs.size,
+                ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size
+            )
+        )
+        verify(mockInternalLogger).logMetric(
+            any(),
+            eq(expectedProps),
+            eq(MethodCallSamplingRate.ALL.rate),
+            isNull()
+        )
         verifyNoMoreInteractions(mockInternalLogger, mockEventBatchWriter)
     }
 
@@ -460,7 +496,7 @@ internal class ProfilingDataWriterTest {
     }
 
     @Test
-    fun `M drop and report write metric with clock drift reason W write {drift over threshold positive}`(
+    fun `M drop and report write metric with clock drift reason W write {continuous, drift over threshold positive}`(
         @Forgery fakeResult: PerfettoResult,
         @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
         forge: Forge
@@ -475,7 +511,10 @@ internal class ProfilingDataWriterTest {
 
         // When
         testedDataWriterTest.write(
-            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
+            profilingResult = fakeResult.copy(
+                resultFilePath = file.absolutePath,
+                startReason = ProfilingStartReason.CONTINUOUS
+            ),
             vitalEvents = fakeVitals,
             anrEvents = emptyList(),
             longTasks = emptyList()
@@ -488,7 +527,7 @@ internal class ProfilingDataWriterTest {
                 ProfilingDataWriter.KEY_DROPPED to true,
                 ProfilingDataWriter.KEY_DROP_REASON to ProfilingDataWriter.DROP_REASON_CLOCK_DRIFT,
                 ProfilingDataWriter.KEY_CLIENT_CLOCK_DRIFT to fakeDriftMs,
-                ProfilingTelemetry.KEY_START_REASON to fakeResult.startReason.value,
+                ProfilingTelemetry.KEY_START_REASON to ProfilingStartReason.CONTINUOUS.value,
                 ProfilingDataWriter.KEY_LONG_TASK_COUNT to 0,
                 ProfilingDataWriter.KEY_ANR_COUNT to 0,
                 ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size
@@ -505,7 +544,7 @@ internal class ProfilingDataWriterTest {
     }
 
     @Test
-    fun `M drop and report write metric with clock drift reason W write {drift over threshold negative}`(
+    fun `M drop and report write metric with clock drift reason W write {continuous, drift over threshold negative}`(
         @Forgery fakeResult: PerfettoResult,
         @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
         forge: Forge
@@ -520,7 +559,10 @@ internal class ProfilingDataWriterTest {
 
         // When
         testedDataWriterTest.write(
-            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
+            profilingResult = fakeResult.copy(
+                resultFilePath = file.absolutePath,
+                startReason = ProfilingStartReason.CONTINUOUS
+            ),
             vitalEvents = fakeVitals,
             anrEvents = emptyList(),
             longTasks = emptyList()
@@ -533,7 +575,7 @@ internal class ProfilingDataWriterTest {
                 ProfilingDataWriter.KEY_DROPPED to true,
                 ProfilingDataWriter.KEY_DROP_REASON to ProfilingDataWriter.DROP_REASON_CLOCK_DRIFT,
                 ProfilingDataWriter.KEY_CLIENT_CLOCK_DRIFT to fakeDriftMs,
-                ProfilingTelemetry.KEY_START_REASON to fakeResult.startReason.value,
+                ProfilingTelemetry.KEY_START_REASON to ProfilingStartReason.CONTINUOUS.value,
                 ProfilingDataWriter.KEY_LONG_TASK_COUNT to 0,
                 ProfilingDataWriter.KEY_ANR_COUNT to 0,
                 ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size
@@ -546,6 +588,102 @@ internal class ProfilingDataWriterTest {
             isNull()
         )
         verifyNoInteractions(mockEventBatchWriter)
+        assertThat(file.exists()).isFalse()
+    }
+
+    @Test
+    fun `M write profile despite clock drift W write {app launch, drift over threshold positive}`(
+        @Forgery fakeResult: PerfettoResult,
+        @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
+        forge: Forge
+    ) {
+        // Given
+        val fakeDriftMs = forge.aLong(min = ProfilingDataWriter.MAX_CLOCK_DRIFT_MS + 1, max = Long.MAX_VALUE / 2)
+        fakeDatadogContext = fakeDatadogContext.copy(
+            time = fakeDatadogContext.time.copy(serverTimeOffsetMs = fakeDriftMs)
+        )
+        val file = tmp.resolve(fakeResult.resultFilePath)
+        file.writeBytes(forge.aString().toByteArray())
+
+        // When
+        testedDataWriterTest.write(
+            profilingResult = fakeResult.copy(
+                resultFilePath = file.absolutePath,
+                startReason = ProfilingStartReason.APPLICATION_LAUNCH
+            ),
+            vitalEvents = fakeVitals,
+            anrEvents = emptyList(),
+            longTasks = emptyList()
+        )
+
+        // Then — profile is written, metric reports dropped=false with no clock-drift drop reason
+        val expectedProps = mapOf(
+            ProfilingTelemetry.KEY_METRIC_TYPE to ProfilingDataWriter.METRIC_TYPE_PROFILING_WRITE,
+            ProfilingDataWriter.KEY_PROFILING_WRITE to mapOf(
+                ProfilingDataWriter.KEY_DROPPED to false,
+                ProfilingDataWriter.KEY_DROP_REASON to null,
+                ProfilingDataWriter.KEY_CLIENT_CLOCK_DRIFT to fakeDriftMs,
+                ProfilingTelemetry.KEY_START_REASON to ProfilingStartReason.APPLICATION_LAUNCH.value,
+                ProfilingDataWriter.KEY_LONG_TASK_COUNT to 0,
+                ProfilingDataWriter.KEY_ANR_COUNT to 0,
+                ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size
+            )
+        )
+        verify(mockInternalLogger).logMetric(
+            any(),
+            eq(expectedProps),
+            eq(MethodCallSamplingRate.ALL.rate),
+            isNull()
+        )
+        verify(mockEventBatchWriter).write(any(), isNull(), eq(EventType.DEFAULT))
+        assertThat(file.exists()).isFalse()
+    }
+
+    @Test
+    fun `M write profile despite clock drift W write {app launch, drift over threshold negative}`(
+        @Forgery fakeResult: PerfettoResult,
+        @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
+        forge: Forge
+    ) {
+        // Given
+        val fakeDriftMs = forge.aLong(min = Long.MIN_VALUE / 2, max = -(ProfilingDataWriter.MAX_CLOCK_DRIFT_MS + 1))
+        fakeDatadogContext = fakeDatadogContext.copy(
+            time = fakeDatadogContext.time.copy(serverTimeOffsetMs = fakeDriftMs)
+        )
+        val file = tmp.resolve(fakeResult.resultFilePath)
+        file.writeBytes(forge.aString().toByteArray())
+
+        // When
+        testedDataWriterTest.write(
+            profilingResult = fakeResult.copy(
+                resultFilePath = file.absolutePath,
+                startReason = ProfilingStartReason.APPLICATION_LAUNCH
+            ),
+            vitalEvents = fakeVitals,
+            anrEvents = emptyList(),
+            longTasks = emptyList()
+        )
+
+        // Then — profile is written, metric reports dropped=false with no clock-drift drop reason
+        val expectedProps = mapOf(
+            ProfilingTelemetry.KEY_METRIC_TYPE to ProfilingDataWriter.METRIC_TYPE_PROFILING_WRITE,
+            ProfilingDataWriter.KEY_PROFILING_WRITE to mapOf(
+                ProfilingDataWriter.KEY_DROPPED to false,
+                ProfilingDataWriter.KEY_DROP_REASON to null,
+                ProfilingDataWriter.KEY_CLIENT_CLOCK_DRIFT to fakeDriftMs,
+                ProfilingTelemetry.KEY_START_REASON to ProfilingStartReason.APPLICATION_LAUNCH.value,
+                ProfilingDataWriter.KEY_LONG_TASK_COUNT to 0,
+                ProfilingDataWriter.KEY_ANR_COUNT to 0,
+                ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size
+            )
+        )
+        verify(mockInternalLogger).logMetric(
+            any(),
+            eq(expectedProps),
+            eq(MethodCallSamplingRate.ALL.rate),
+            isNull()
+        )
+        verify(mockEventBatchWriter).write(any(), isNull(), eq(EventType.DEFAULT))
         assertThat(file.exists()).isFalse()
     }
 

@@ -16,7 +16,6 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.attributes.LocalAttribute
 import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
@@ -277,8 +276,11 @@ internal open class RumViewScope(
     ) {
         if (stopped) return
 
+        val vitalId = UUID.randomUUID().toString()
+        val capturedRumContext = getRumContext()
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             newVitalEvent(
+                vitalId,
                 event,
                 datadogContext,
                 name = event.name,
@@ -286,6 +288,13 @@ internal open class RumViewScope(
                 stepType = VitalOperationStepEvent.StepType.START,
                 failureReason = null,
                 eventAttributes = event.attributes
+            )
+        }.onSuccess {
+            sendProfilingRumOperationEvent(
+                rumContext = capturedRumContext,
+                vitalId = vitalId,
+                eventName = event.name,
+                eventTimestamp = event.eventTime.timestamp
             )
         }.submit()
         sendViewUpdate(event, datadogContext, writeScope, writer)
@@ -299,8 +308,11 @@ internal open class RumViewScope(
     ) {
         if (stopped) return
 
+        val vitalId = UUID.randomUUID().toString()
+        val capturedRumContext = getRumContext()
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             newVitalEvent(
+                vitalId,
                 event,
                 datadogContext,
                 name = event.name,
@@ -309,12 +321,43 @@ internal open class RumViewScope(
                 failureReason = event.failureReason?.toSchemaFailureReason(),
                 eventAttributes = event.attributes
             )
+        }.onSuccess {
+            sendProfilingRumOperationEvent(
+                rumContext = capturedRumContext,
+                vitalId = vitalId,
+                eventName = event.name,
+                eventTimestamp = event.eventTime.timestamp
+            )
         }.submit()
         sendViewUpdate(event, datadogContext, writeScope, writer)
     }
 
+    private fun sendProfilingRumOperationEvent(
+        rumContext: RumContext,
+        vitalId: String,
+        eventName: String,
+        eventTimestamp: Long
+    ) {
+        sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
+            ProfilerEvent.RumVitalEvent(
+                id = vitalId,
+                name = eventName,
+                type = ProfilerEvent.RumVitalEvent.Type.OPERATION,
+                startMs = eventTimestamp + serverTimeOffsetInMs,
+                durationNs = 0L,
+                rumContext = ProfilingRumContext(
+                    applicationId = rumContext.applicationId,
+                    sessionId = rumContext.sessionId,
+                    viewId = rumContext.viewId,
+                    viewName = rumContext.viewName
+                )
+            )
+        )
+    }
+
     @Suppress("LongMethod")
     private fun newVitalEvent(
+        vitalId: String,
         event: RumRawEvent,
         datadogContext: DatadogContext,
         name: String,
@@ -360,7 +403,8 @@ internal open class RumViewScope(
                 session = VitalOperationStepEvent.DdSession(
                     sessionPrecondition = rumContext.sessionStartReason.toVitalOperationStepSessionPrecondition()
                 ),
-                configuration = VitalOperationStepEvent.Configuration(sessionSampleRate = sampleRate)
+                configuration = VitalOperationStepEvent.Configuration(sessionSampleRate = sampleRate),
+                profiling = resolveVitalOperationStepProfilingStatus(datadogContext)
             ),
             application = VitalOperationStepEvent.Application(
                 id = rumContext.applicationId,
@@ -426,7 +470,7 @@ internal open class RumViewScope(
             service = datadogContext.service,
             ddtags = buildDDTagsString(datadogContext),
             vital = VitalOperationStepEvent.Vital(
-                id = UUID.randomUUID().toString(),
+                id = vitalId,
                 name = name,
                 operationKey = operationKey,
                 stepType = stepType,
@@ -630,7 +674,12 @@ internal open class RumViewScope(
                 heatmapIdentifierRegistry = heatmapIdentifierRegistry
             )
             pendingActionCount++
-            customActionScope.handleEvent(RumRawEvent.SendCustomActionNow(), datadogContext, writeScope, writer)
+            customActionScope.handleEvent(
+                RumRawEvent.SendCustomActionNow(Time.now(sdkCore.timeProvider)),
+                datadogContext,
+                writeScope,
+                writer
+            )
             return
         }
 
@@ -1013,7 +1062,7 @@ internal open class RumViewScope(
             val entry = iterator.next()
             val scope = entry.value.handleEvent(event, datadogContext, writeScope, writer)
             if (scope == null) {
-                // if we finalized this scope and it was by error, we won't have resource
+                // if we finalized this scope, and it was by error, we won't have resource
                 // event written, but error event instead
                 if (event is RumRawEvent.StopResourceWithError ||
                     event is RumRawEvent.StopResourceWithStackTrace
@@ -1716,10 +1765,33 @@ internal open class RumViewScope(
                 status = ErrorEvent.ProfilingStatus.RUNNING,
                 clockDrift = clockDrift
             )
+
             quotaReason != null -> ErrorEvent.Profiling(
                 status = ErrorEvent.ProfilingStatus.STOPPED,
                 quotaReason = quotaReason
             )
+
+            else -> null
+        }
+    }
+
+    private fun resolveVitalOperationStepProfilingStatus(
+        datadogContext: DatadogContext
+    ): VitalOperationStepEvent.Profiling? {
+        val isRunning = datadogContext.isProfilerRunning()
+        val quotaReason = datadogContext.resolveProfilingQuotaReason(sessionId)
+        val clockDrift = datadogContext.time.serverTimeOffsetMs
+        return when {
+            isRunning -> VitalOperationStepEvent.Profiling(
+                status = VitalOperationStepEvent.ProfilingStatus.RUNNING,
+                clockDrift = clockDrift
+            )
+
+            quotaReason != null -> VitalOperationStepEvent.Profiling(
+                status = VitalOperationStepEvent.ProfilingStatus.STOPPED,
+                quotaReason = quotaReason
+            )
+
             else -> null
         }
     }
@@ -1752,6 +1824,7 @@ internal open class RumViewScope(
                 status = ViewEvent.ProfilingStatus.STOPPED,
                 quotaReason = quotaReason
             )
+
             else -> null
         }
     }
@@ -1887,7 +1960,7 @@ internal open class RumViewScope(
          * This function is used to inverse frame times metrics into frame rates.
          *
          * As we take the inverse, the min of the inverse is the inverse of the max and
-         * vice-versa.
+         * vice versa.
          * For instance, if the min frame time is 20ms (50 fps) and the max is 500ms (2 fps),
          * the max frame rate is 50 fps (1/minValue) and the min is 2 fps (1/maxValue).
          *

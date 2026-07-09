@@ -32,3 +32,6 @@
 -dontwarn java.lang.management.RuntimeMXBean
 # These annotations are introduced by OpenTelemetry API and we need to make sure R8 will not complain about them
 -dontwarn  com.google.**
+# These annotations are injected by dd-java-agent at class-load time for source code profiling.
+# They are not present in the build classpath, so R8 must not treat them as errors.
+-dontwarn datadog.compiler.annotations.**

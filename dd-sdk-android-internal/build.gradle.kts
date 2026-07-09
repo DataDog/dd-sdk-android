@@ -30,6 +30,7 @@ plugins {
     // Tests
     id("de.mobilej.unmock")
     id("org.jetbrains.kotlinx.kover")
+    id("unitTest")
 
     // Internal Generation
     id("apiSurface")
@@ -71,8 +72,6 @@ dependencies {
             )
         }
     }
-    testImplementation(libs.bundles.jUnit5)
-    testImplementation(libs.bundles.testTools)
     testFixturesImplementation(libs.kotlin)
     testFixturesImplementation(libs.bundles.jUnit5)
     testFixturesImplementation(libs.bundles.testTools)

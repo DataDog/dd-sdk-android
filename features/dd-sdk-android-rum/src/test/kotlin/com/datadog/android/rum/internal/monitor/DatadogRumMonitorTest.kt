@@ -58,7 +58,6 @@ import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_NAME
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_NAME_CHARACTERS
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_OPERATION_KEY
-import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
 import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesFactory
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
@@ -152,9 +151,6 @@ internal class DatadogRumMonitorTest {
 
     @Mock
     lateinit var mockDisplayInfoProvider: InfoProvider<DisplayInfo>
-
-    @Mock
-    lateinit var mockRumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter
 
     @Mock
     private lateinit var mockInsightsCollector: InsightsCollector
@@ -672,7 +668,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M return null W getCurrentViewUrl() { session exists but has NULL_UUID — not yet sampled in }`(
+    fun `M return null W getCurrentViewUrl() { session exists but has NULL_UUID, not yet sampled in }`(
         @Forgery fakeRumContext: RumContext,
         @Forgery type: RumActionType,
         @StringForgery name: String
@@ -2172,7 +2168,7 @@ internal class DatadogRumMonitorTest {
         @StringForgery name: String,
         @StringForgery value: String
     ) {
-        val batch = mapOf(name to value)
+        val batch: Map<String, Any> = mapOf(name to value)
         testedMonitor.addFeatureFlagEvaluations(batch)
 
         argumentCaptor<RumRawEvent> {
@@ -2690,17 +2686,20 @@ internal class DatadogRumMonitorTest {
                         throwable = forge.aThrowable(),
                         stacktrace = forge.anAlphaNumericalString(),
                         threads = emptyList(),
-                        attributes = emptyMap()
+                        attributes = emptyMap(),
+                        eventTime = forge.getForgery()
                     ),
                     RumRawEvent.StartAction(
                         type = forge.aValueFrom(RumActionType::class.java),
                         name = forge.anAlphaNumericalString(),
                         waitForStop = forge.aBool(),
-                        attributes = emptyMap()
+                        attributes = emptyMap(),
+                        eventTime = forge.getForgery()
                     ),
                     RumRawEvent.StartView(
                         key = forge.getForgery(),
-                        attributes = emptyMap()
+                        attributes = emptyMap(),
+                        eventTime = forge.getForgery()
                     )
                 )
                 testedMonitor.handleEvent(event)
@@ -3224,7 +3223,7 @@ internal class DatadogRumMonitorTest {
     @Test
     fun `M warn but still emit W startOperation { operation name contains emoji }`() {
         // Like the non-ASCII case above, an emoji must fail the `[\w.@$-]*`
-        // regex. This additionally pins surrogate-pair / multi-byte handling
+        // regex. This additionally pins surrogate-pair / multibyte handling
         // (mirrors iOS PR #2864 / Browser PR #4525, spec test VAL-09).
         val invalidName = "login🔐"
         val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)

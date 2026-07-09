@@ -66,6 +66,9 @@ internal class RumFeatureStartupDetectorTest {
     @Forgery
     lateinit var fakeConfiguration: RumFeature.Configuration
 
+    @Forgery
+    lateinit var fakeTime: Time
+
     @Mock
     lateinit var mockSdkCore: InternalSdkCore
 
@@ -117,7 +120,6 @@ internal class RumFeatureStartupDetectorTest {
         val listener = extractStartupDetectorListener()
 
         val fakeActivity = mock<Activity>()
-        val fakeTime = Time(nanoTime = 100_000L)
         val fakeScenario = RumStartupScenario.Cold(
             hasSavedInstanceStateBundle = false,
             activity = WeakReference(fakeActivity),
@@ -143,7 +145,6 @@ internal class RumFeatureStartupDetectorTest {
         GlobalRumMonitor.registerIfAbsent(mock<RumMonitor>(), mockSdkCore)
 
         val fakeActivity = mock<Activity>()
-        val fakeTime = Time(nanoTime = 100_000L)
         val fakeScenario = RumStartupScenario.Cold(
             hasSavedInstanceStateBundle = false,
             activity = WeakReference(fakeActivity),
@@ -170,7 +171,6 @@ internal class RumFeatureStartupDetectorTest {
         val listener = extractStartupDetectorListener()
 
         val fakeActivity = mock<Activity>()
-        val fakeTime = Time(nanoTime = 100_000L)
         val fakeScenario = RumStartupScenario.Cold(
             hasSavedInstanceStateBundle = false,
             activity = WeakReference(fakeActivity),
@@ -200,7 +200,6 @@ internal class RumFeatureStartupDetectorTest {
         val listener = extractStartupDetectorListener()
 
         val fakeActivity = mock<Activity>()
-        val fakeTime = Time(nanoTime = 100_000L)
         val fakeScenario = RumStartupScenario.Cold(
             hasSavedInstanceStateBundle = false,
             activity = WeakReference(fakeActivity),
@@ -236,7 +235,7 @@ internal class RumFeatureStartupDetectorTest {
             hasSavedInstanceStateBundle = false,
             activity = WeakReference(mock()),
             appStartActivityOnCreateGapNs = 0L,
-            initialTime = Time(nanoTime = 100_000L)
+            initialTime = fakeTime
         )
 
         // When
