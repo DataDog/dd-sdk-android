@@ -30,6 +30,7 @@ import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.logger.SdkInternalLogger
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.remote.NoOpRemoteConfigFetcher
 import com.datadog.android.core.internal.remote.RemoteConfigNetworkFetcher
 import com.datadog.android.core.internal.remote.RemoteConfigService
 import com.datadog.android.core.internal.remote.RemoteConfigServiceImpl
@@ -493,21 +494,32 @@ internal class DatadogCore(
         sendCoreConfigurationTelemetryEvent(configuration)
     }
 
-    private fun setupRemoteConfiguration(configuration: Configuration) {
+    internal fun setupRemoteConfiguration(configuration: Configuration) {
         val id = configuration.coreConfig.remoteConfigurationId ?: return
+        val fetcher = if (coreFeature.isMainProcess) {
+            RemoteConfigNetworkFetcher(
+                callFactoryProvider = { httpCache ->
+                    coreFeature.createOkHttpCallFactory {
+                        cache(httpCache)
+                        val proxy = configuration.coreConfig.proxy
+                        if (proxy != null) {
+                            proxy(proxy)
+                            proxyAuthenticator(configuration.coreConfig.proxyAuth)
+                        }
+                    }
+                },
+                internalLogger = internalLogger,
+                storageDir = coreFeature.storageDir
+            )
+        } else {
+            // Secondary process: read from the JSON file written by the main process,
+            // but never fetch from the network or create an OkHttp cache.
+            NoOpRemoteConfigFetcher()
+        }
         remoteConfigService = remoteConfigServiceFactory.create(
             remoteConfigurationId = id,
             remoteConfigurationEndpoint = configuration.coreConfig.site.remoteConfigurationEndpoint,
-            callFactoryProvider = { httpCache ->
-                coreFeature.createOkHttpCallFactory {
-                    cache(httpCache)
-                    val proxy = configuration.coreConfig.proxy
-                    if (proxy != null) {
-                        proxy(proxy)
-                        proxyAuthenticator(configuration.coreConfig.proxyAuth)
-                    }
-                }
-            },
+            fetcher = fetcher,
             storageDir = coreFeature.storageDir,
             executor = coreFeature.uploadExecutorService,
             internalLogger = internalLogger
@@ -781,15 +793,11 @@ internal class DatadogCore(
         internal val CONFIGURATION_TELEMETRY_DELAY_MS = TimeUnit.SECONDS.toMillis(5)
 
         internal val DEFAULT_REMOTE_CONFIG_SERVICE_FACTORY =
-            RemoteConfigService.Factory { id, endpoint, callFactoryProvider, storageDir, executor, logger ->
+            RemoteConfigService.Factory { id, endpoint, fetcher, storageDir, executor, logger ->
                 RemoteConfigServiceImpl(
                     remoteConfigurationId = id,
                     remoteConfigurationEndpoint = endpoint,
-                    fetcher = RemoteConfigNetworkFetcher(
-                        callFactoryProvider = callFactoryProvider,
-                        internalLogger = logger,
-                        storageDir = storageDir
-                    ),
+                    fetcher = fetcher,
                     storageDir = storageDir,
                     executor = executor,
                     internalLogger = logger

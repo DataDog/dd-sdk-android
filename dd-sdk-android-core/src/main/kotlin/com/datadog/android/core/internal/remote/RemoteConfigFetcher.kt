@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.remote
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.tools.annotation.NoOpImplementation
 import okhttp3.Cache
 import okhttp3.Call
 import okhttp3.HttpUrl
@@ -19,6 +20,7 @@ import java.io.IOException
 /**
  * Fetches the remote configuration document from the Datadog CDN.
  */
+@NoOpImplementation
 internal interface RemoteConfigFetcher {
     /**
      * Fetches the remote configuration document from the given URL.
@@ -45,13 +47,13 @@ internal interface RemoteConfigFetcher {
 internal class RemoteConfigNetworkFetcher(
     callFactoryProvider: (Cache) -> Call.Factory,
     private val internalLogger: InternalLogger,
-    storageDir: File
-) : RemoteConfigFetcher {
-
-    private val httpCache = Cache(
+    storageDir: File,
+    // only for unit tests
+    private val httpCache: Cache = Cache(
         directory = File(storageDir, HTTP_CACHE_DIR_NAME),
         maxSize = HTTP_CACHE_MAX_SIZE
     )
+) : RemoteConfigFetcher {
 
     private val callFactory: Call.Factory = callFactoryProvider(httpCache)
 
@@ -103,6 +105,7 @@ internal class RemoteConfigNetworkFetcher(
     }
 
     override fun evictCache() {
+        if (httpCache.isClosed) return
         try {
             httpCache.evictAll()
         } catch (e: IOException) {

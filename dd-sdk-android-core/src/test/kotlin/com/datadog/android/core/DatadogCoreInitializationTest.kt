@@ -19,6 +19,8 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.DatadogContextProvider
 import com.datadog.android.core.internal.DatadogCore
 import com.datadog.android.core.internal.SdkFeature
+import com.datadog.android.core.internal.remote.NoOpRemoteConfigFetcher
+import com.datadog.android.core.internal.remote.RemoteConfigFetcher
 import com.datadog.android.core.internal.remote.RemoteConfigService
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.error.internal.CrashReportsFeature
@@ -728,6 +730,39 @@ internal class DatadogCoreInitializationTest {
 
         // Then
         verify(mockRemoteConfigService).stop()
+    }
+
+    @Test
+    fun `M use NoOpRemoteConfigFetcher W setupRemoteConfiguration() { secondary process }`(
+        @StringForgery fakeRemoteConfigurationId: String
+    ) {
+        // Given — initialize normally (main process), then set isMainProcess=false
+        // and call setupRemoteConfiguration() directly to exercise the secondary process path
+        var capturedFetcher: RemoteConfigFetcher? = null
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeInstanceId,
+            fakeInstanceName,
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService },
+            remoteConfigServiceFactory = { _, _, fetcher, _, _, _ ->
+                capturedFetcher = fetcher
+                mockRemoteConfigService
+            }
+        ).apply {
+            initialize(fakeConfiguration)
+            // Simulate secondary process then re-run setupRemoteConfiguration directly
+            coreFeature.isMainProcess = false
+            setupRemoteConfiguration(
+                fakeConfiguration.copy(
+                    coreConfig = fakeConfiguration.coreConfig.copy(
+                        remoteConfigurationId = fakeRemoteConfigurationId
+                    )
+                )
+            )
+        }
+
+        // Then — secondary process path uses NoOpRemoteConfigFetcher (no network, no OkHttp cache)
+        assertThat(capturedFetcher).isInstanceOf(NoOpRemoteConfigFetcher::class.java)
     }
 
     // endregion

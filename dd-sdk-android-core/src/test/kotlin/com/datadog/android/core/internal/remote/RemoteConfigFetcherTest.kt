@@ -12,6 +12,7 @@ import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import okhttp3.Cache
 import okhttp3.Call
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
@@ -31,6 +32,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.isA
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
@@ -53,6 +55,9 @@ internal class RemoteConfigFetcherTest {
     @Mock
     lateinit var mockCall: Call
 
+    @Mock
+    lateinit var mockHttpCache: Cache
+
     @TempDir
     lateinit var fakeStorageDir: File
 
@@ -65,7 +70,8 @@ internal class RemoteConfigFetcherTest {
         testedFetcher = RemoteConfigNetworkFetcher(
             callFactoryProvider = { _ -> mockCallFactory },
             internalLogger = mockInternalLogger,
-            storageDir = fakeStorageDir
+            storageDir = fakeStorageDir,
+            httpCache = mockHttpCache
         )
     }
 
@@ -244,16 +250,29 @@ internal class RemoteConfigFetcherTest {
     // region stop()
 
     @Test
-    fun `M not throw W stop()`() {
-        // When / Then — cache is a real object on fakeStorageDir; close() should succeed
+    fun `M close httpCache W stop()`() {
+        // When
         testedFetcher.stop()
+
+        // Then
+        verify(mockHttpCache).close()
     }
 
     @Test
-    fun `M be idempotent W stop() { called multiple times }`() {
-        // When / Then — second close on an already-closed cache should not throw from our code
+    fun `M log warning W stop() { cache close throws IOException }`() {
+        // Given
+        whenever(mockHttpCache.close()).doThrow(IOException("disk error"))
+
+        // When
         testedFetcher.stop()
-        testedFetcher.stop()
+
+        // Then
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.WARN,
+            target = InternalLogger.Target.MAINTAINER,
+            message = RemoteConfigNetworkFetcher.ERROR_CLOSE_CACHE,
+            throwableClass = IOException::class.java
+        )
     }
 
     // endregion
@@ -261,9 +280,29 @@ internal class RemoteConfigFetcherTest {
     // region evictCache()
 
     @Test
-    fun `M not throw W evictCache()`() {
-        // When / Then — cache is a real object on fakeStorageDir; evictAll() should succeed
+    fun `M evict httpCache W evictCache()`() {
+        // When
         testedFetcher.evictCache()
+
+        // Then
+        verify(mockHttpCache).evictAll()
+    }
+
+    @Test
+    fun `M log warning W evictCache() { evictAll throws IOException }`() {
+        // Given
+        whenever(mockHttpCache.evictAll()).doThrow(IOException("disk error"))
+
+        // When
+        testedFetcher.evictCache()
+
+        // Then
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.WARN,
+            target = InternalLogger.Target.MAINTAINER,
+            message = RemoteConfigNetworkFetcher.ERROR_EVICT_CACHE,
+            throwableClass = IOException::class.java
+        )
     }
 
     // endregion
