@@ -108,7 +108,7 @@ abstract class ObjectTest<T : Any> {
     fun equalsIsTypeSensitive(forge: Forge) {
         // Given
         val x = createInstance(forge)
-        val y = Object()
+        val y = object : Any() {}
         assumeTrue(x !== y) { "Can't check equals type sensitivity: x:$x is same instance as y:$y" }
         assumeTrue(x.javaClass != y.javaClass) {
             "Can't check equals transitivity: x:$x has same type as y:$y"

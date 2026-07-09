@@ -131,8 +131,9 @@ class TestConfigurationExtension :
             .filter {
                 it.isAnnotationPresent(TestConfigurationsProvider::class.java)
             }
-        if (clazz.superclass != null) {
-            collectProviderMethods(clazz.superclass, accumulator)
+        val superclass: Class<*>? = clazz.superclass
+        if (superclass != null) {
+            collectProviderMethods(superclass, accumulator)
         }
     }
 

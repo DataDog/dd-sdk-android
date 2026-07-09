@@ -71,11 +71,17 @@ internal class ProfilingDataWriter(
         vitalEvents: List<ProfilerEvent.RumVitalEvent>
     ): RawBatchEvent? {
         val driftMs = context.time.serverTimeOffsetMs
+        val dropReason = when {
+            longTaskEvents.isEmpty() && anrEvents.isEmpty() && vitalEvents.isEmpty() -> DROP_REASON_NO_RUM_EVENTS
+            profilingResult.startReason != ProfilingStartReason.APPLICATION_LAUNCH &&
+                abs(driftMs) > MAX_CLOCK_DRIFT_MS -> DROP_REASON_CLOCK_DRIFT
 
-        if (longTaskEvents.isEmpty() && anrEvents.isEmpty() && vitalEvents.isEmpty()) {
+            else -> null
+        }
+        if (dropReason != null) {
             logWriteResultMetric(
                 dropped = true,
-                dropReason = DROP_REASON_NO_RUM_EVENTS,
+                dropReason = dropReason,
                 driftMs = driftMs,
                 startReason = profilingResult.startReason.value,
                 longTaskEvents = longTaskEvents,
@@ -85,49 +91,80 @@ internal class ProfilingDataWriter(
             return null
         }
 
-        val exceedMaxDrift = abs(driftMs) > MAX_CLOCK_DRIFT_MS
-        if (exceedMaxDrift) {
-            logWriteResultMetric(
-                dropped = true,
-                dropReason = DROP_REASON_CLOCK_DRIFT,
-                driftMs = driftMs,
-                startReason = profilingResult.startReason.value,
-                longTaskEvents = longTaskEvents,
-                anrEvents = anrEvents,
-                vitalEvents = vitalEvents
-            )
-            return null
-        }
+        return assembleBatchEvent(
+            context,
+            profilingResult,
+            driftMs,
+            longTaskEvents,
+            anrEvents,
+            vitalEvents
+        )
+    }
 
+    private fun assembleBatchEvent(
+        context: DatadogContext,
+        profilingResult: PerfettoResult,
+        driftMs: Long,
+        longTaskEvents: List<ProfilerEvent.RumLongTaskEvent>,
+        anrEvents: List<ProfilerEvent.RumAnrEvent>,
+        vitalEvents: List<ProfilerEvent.RumVitalEvent>
+    ): RawBatchEvent? {
         val perfettoBytes = readProfilingData(profilingResult.resultFilePath)
         val firstRumContext =
             longTaskEvents.firstOrNull()?.rumContext
                 ?: anrEvents.firstOrNull()?.rumContext
                 ?: vitalEvents.firstOrNull()?.rumContext
-        return if (perfettoBytes == null || perfettoBytes.isEmpty() || firstRumContext == null) {
-            null
-        } else {
-            val profileEvent = createProfileEvent(
-                context = context,
-                rumContext = firstRumContext,
-                profilingResult = profilingResult,
-                longTaskEvents = longTaskEvents,
-                anrEvents = anrEvents,
-                vitalEvents = vitalEvents
-            )
-            val serializedEvent = profileEvent.toJson().toString().toByteArray(Charsets.UTF_8)
-            val rumMobileEventsJson = buildRumMobileEventsJson(longTaskEvents, anrEvents, vitalEvents)
-            val metadata = ProfilingBatchMetadata(perfettoBytes, rumMobileEventsJson).toBytes()
-            logWriteResultMetric(
-                dropped = false,
-                dropReason = null,
-                driftMs = driftMs,
-                startReason = profilingResult.startReason.value,
-                longTaskEvents = longTaskEvents,
-                anrEvents = anrEvents,
-                vitalEvents = vitalEvents
-            )
-            RawBatchEvent(data = serializedEvent, metadata = metadata)
+        return when {
+            perfettoBytes == null || perfettoBytes.isEmpty() -> {
+                logWriteResultMetric(
+                    dropped = true,
+                    dropReason = DROP_REASON_PERFETTO_UNREADABLE,
+                    driftMs = driftMs,
+                    startReason = profilingResult.startReason.value,
+                    longTaskEvents = longTaskEvents,
+                    anrEvents = anrEvents,
+                    vitalEvents = vitalEvents
+                )
+                null
+            }
+
+            firstRumContext == null -> {
+                logWriteResultMetric(
+                    dropped = true,
+                    dropReason = DROP_REASON_NO_RUM_CONTEXT,
+                    driftMs = driftMs,
+                    startReason = profilingResult.startReason.value,
+                    longTaskEvents = longTaskEvents,
+                    anrEvents = anrEvents,
+                    vitalEvents = vitalEvents
+                )
+                null
+            }
+
+            else -> {
+                val profileEvent = createProfileEvent(
+                    context = context,
+                    rumContext = firstRumContext,
+                    profilingResult = profilingResult,
+                    longTaskEvents = longTaskEvents,
+                    anrEvents = anrEvents,
+                    vitalEvents = vitalEvents
+                )
+                val serializedEvent = profileEvent.toJson().toString().toByteArray(Charsets.UTF_8)
+                val rumMobileEventsJson =
+                    buildRumMobileEventsJson(longTaskEvents, anrEvents, vitalEvents)
+                val metadata = ProfilingBatchMetadata(perfettoBytes, rumMobileEventsJson).toBytes()
+                logWriteResultMetric(
+                    dropped = false,
+                    dropReason = null,
+                    driftMs = driftMs,
+                    startReason = profilingResult.startReason.value,
+                    longTaskEvents = longTaskEvents,
+                    anrEvents = anrEvents,
+                    vitalEvents = vitalEvents
+                )
+                RawBatchEvent(data = serializedEvent, metadata = metadata)
+            }
         }
     }
 
@@ -312,6 +349,8 @@ internal class ProfilingDataWriter(
         internal const val KEY_VITAL_COUNT = "vital_count"
         internal const val DROP_REASON_NO_RUM_EVENTS = "no_rum_events"
         internal const val DROP_REASON_CLOCK_DRIFT = "clock_drift_exceeded"
+        internal const val DROP_REASON_PERFETTO_UNREADABLE = "perfetto_unreadable"
+        internal const val DROP_REASON_NO_RUM_CONTEXT = "no_rum_context"
 
         private const val TAG_KEY_SERVICE = "service"
         private const val TAG_KEY_VERSION = "version"

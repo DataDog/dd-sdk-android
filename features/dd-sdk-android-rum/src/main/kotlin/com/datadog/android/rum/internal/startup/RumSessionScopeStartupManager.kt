@@ -158,7 +158,8 @@ internal class RumSessionScopeStartupManagerImpl(
             datadogContext = datadogContext,
             writeScope = writeScope,
             writer = writer,
-            ttidEvent = ttidEvent
+            ttidEvent = ttidEvent,
+            scenario = event.info.scenario
         )
 
         if (ttfdReportedForScenario) {
@@ -254,7 +255,7 @@ internal class RumSessionScopeStartupManagerImpl(
                 },
                 throwable = null,
                 onlyOnce = false,
-                additionalProperties = null
+                additionalProperties = getTelemetryAttributes(durationNs, scenario)
             )
             return
         }
@@ -305,7 +306,8 @@ internal class RumSessionScopeStartupManagerImpl(
         datadogContext: DatadogContext,
         writeScope: EventWriteScope,
         writer: DataWriter<Any>,
-        ttidEvent: VitalAppLaunchEvent
+        ttidEvent: VitalAppLaunchEvent,
+        scenario: RumStartupScenario
     ) {
         val durationNs = ttidEvent.vital.duration.toLong()
 
@@ -318,7 +320,7 @@ internal class RumSessionScopeStartupManagerImpl(
                 },
                 throwable = null,
                 onlyOnce = false,
-                additionalProperties = null
+                additionalProperties = getTelemetryAttributes(durationNs, scenario)
             )
             return
         }
@@ -326,6 +328,16 @@ internal class RumSessionScopeStartupManagerImpl(
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             ttidEvent
         }.submit()
+    }
+
+    private fun getTelemetryAttributes(
+        durationNs: Long,
+        scenario: RumStartupScenario
+    ): Map<String, Any?> {
+        return mapOf(
+            RumAppStartupTelemetryReporterImpl.KEY_DURATION_NS to durationNs,
+            RumAppStartupTelemetryReporterImpl.KEY_SCENARIO to scenario.name
+        )
     }
 
     private fun DatadogContext.getProfilingStatus(
