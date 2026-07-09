@@ -167,7 +167,7 @@ static-analysis:
     DETEKT_CLASSPATH_FILE_PATH: "sdk_classpath"
     FLAVORED_ANDROID_LINT: ":tools:lint:lint"
   trigger:
-    include: "https://gitlab-templates.ddbuild.io/mobile/v112054347-9fbe0af8/static-analysis.yml"
+    include: "https://gitlab-templates.ddbuild.io/mobile/v123745390-227cb48b/static-analysis.yml"
     strategy: depend
 
 analysis:detekt-custom:
