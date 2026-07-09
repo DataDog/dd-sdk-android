@@ -391,6 +391,7 @@ internal class RumViewScopeTest {
         whenever(rumMonitorConfiguration.mockSdkCore.time) doReturn fakeTimeInfoAtScopeStart
         whenever(rumMonitorConfiguration.mockSdkCore.networkInfo) doReturn fakeNetworkInfoAtScopeStart
         whenever(rumMonitorConfiguration.mockSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(rumMonitorConfiguration.mockSdkCore.timeProvider) doReturn mock()
         whenever(rumMonitorConfiguration.mockSdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)) doReturn
             mockProfilingFeatureScope
         whenever(mockEventWriteScope.invoke(any())) doAnswer {
@@ -463,7 +464,7 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // Given
-        val fakeEvent = RumRawEvent.StopView(fakeKey, forge.exhaustiveAttributes())
+        val fakeEvent = RumRawEvent.StopView(fakeKey, forge.exhaustiveAttributes(), eventTime = fakeEventTime)
         testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // When
@@ -504,7 +505,7 @@ internal class RumViewScopeTest {
             )
         ) doReturn fakeHasReplay
         testedScope.handleEvent(fakeEvent, datadogContextWithReplay, mockEventWriteScope, mockWriter)
-        val fakeStopEvent = RumRawEvent.StopView(fakeKey, forge.exhaustiveAttributes())
+        val fakeStopEvent = RumRawEvent.StopView(fakeKey, forge.exhaustiveAttributes(), eventTime = fakeEventTime)
         val stopViewContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext +
                 mapOf(Feature.SESSION_REPLAY_FEATURE_NAME to mapOf("has_replay" to false))
@@ -575,7 +576,7 @@ internal class RumViewScopeTest {
 
         // When
         val result = testedScope.handleEvent(
-            RumRawEvent.StartView(key, emptyMap()),
+            RumRawEvent.StartView(key, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -592,7 +593,7 @@ internal class RumViewScopeTest {
     ) {
         // When
         val result = testedScope.handleEvent(
-            RumRawEvent.StartView(key, emptyMap()),
+            RumRawEvent.StartView(key, emptyMap(), eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -672,13 +673,13 @@ internal class RumViewScopeTest {
     ) {
         // When
         val result = testedScope.handleEvent(
-            RumRawEvent.StartView(key, emptyMap()),
+            RumRawEvent.StartView(key, emptyMap(), eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
         )
         val result2 = testedScope.handleEvent(
-            RumRawEvent.StartView(key2, emptyMap()),
+            RumRawEvent.StartView(key2, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -762,7 +763,7 @@ internal class RumViewScopeTest {
 
         // When
         val result = testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, attributes),
+            RumRawEvent.StopView(fakeKey, attributes, eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -852,7 +853,7 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, emptyMap()),
+            RumRawEvent.StopView(fakeKey, emptyMap(), eventTime = fakeEventTime),
             contextWithSr,
             mockEventWriteScope,
             mockWriter
@@ -886,7 +887,7 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, emptyMap()),
+            RumRawEvent.StopView(fakeKey, emptyMap(), eventTime = fakeEventTime),
             contextWithTracing,
             mockEventWriteScope,
             mockWriter
@@ -909,7 +910,7 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, emptyMap()),
+            RumRawEvent.StopView(fakeKey, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -941,7 +942,7 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, emptyMap()),
+            RumRawEvent.StopView(fakeKey, emptyMap(), eventTime = fakeEventTime),
             contextWithNullSrRate,
             mockEventWriteScope,
             mockWriter
@@ -972,7 +973,7 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, emptyMap()),
+            RumRawEvent.StopView(fakeKey, emptyMap(), eventTime = fakeEventTime),
             contextWithNullTraceRate,
             mockEventWriteScope,
             mockWriter
@@ -1008,7 +1009,7 @@ internal class RumViewScopeTest {
 
         // When
         val result = testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, attributes),
+            RumRawEvent.StopView(fakeKey, attributes, eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -1098,7 +1099,7 @@ internal class RumViewScopeTest {
 
         // When
         val result = testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, attributes),
+            RumRawEvent.StopView(fakeKey, attributes, eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -1184,7 +1185,7 @@ internal class RumViewScopeTest {
 
         // When
         val result = testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, attributes),
+            RumRawEvent.StopView(fakeKey, attributes, eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -1258,7 +1259,7 @@ internal class RumViewScopeTest {
     fun `M send event with user extra attributes W handleEvent(StopView) on active view`() {
         // When
         val result = testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, emptyMap()),
+            RumRawEvent.StopView(fakeKey, emptyMap(), eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -1346,7 +1347,7 @@ internal class RumViewScopeTest {
 
         // When
         val result = testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, emptyMap()),
+            RumRawEvent.StopView(fakeKey, emptyMap(), eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -1441,7 +1442,7 @@ internal class RumViewScopeTest {
 
         // When
         val result = testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, emptyMap()),
+            RumRawEvent.StopView(fakeKey, emptyMap(), eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -1526,13 +1527,13 @@ internal class RumViewScopeTest {
 
         // When
         val result = testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, attributes),
+            RumRawEvent.StopView(fakeKey, attributes, eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
         )
         val result2 = testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, attributes),
+            RumRawEvent.StopView(fakeKey, attributes, eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -1612,7 +1613,7 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // Given
-        testedScope.activeResourceScopes.put(key, mockChildScope)
+        testedScope.activeResourceScopes[key] = mockChildScope
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -1620,7 +1621,7 @@ internal class RumViewScopeTest {
 
         // When
         val result = testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, attributes),
+            RumRawEvent.StopView(fakeKey, attributes, eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -1702,7 +1703,7 @@ internal class RumViewScopeTest {
 
         // When
         val result = testedScope.handleEvent(
-            RumRawEvent.StopView(key, attributes),
+            RumRawEvent.StopView(key, attributes, eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -1726,7 +1727,7 @@ internal class RumViewScopeTest {
 
         // When
         val result = testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, attributes),
+            RumRawEvent.StopView(fakeKey, attributes, eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -1742,7 +1743,7 @@ internal class RumViewScopeTest {
         @LongForgery(1) pending: Long
     ) {
         // Given
-        fakeEvent = RumRawEvent.ErrorSent(testedScope.viewId)
+        fakeEvent = RumRawEvent.ErrorSent(testedScope.viewId, eventTime = laterEventTime())
         testedScope.pendingErrorCount = pending
 
         // When
@@ -1821,7 +1822,7 @@ internal class RumViewScopeTest {
         // Given
         val viewId = viewUuid.toString()
         assumeTrue(viewId != testedScope.viewId)
-        fakeEvent = RumRawEvent.ErrorSent(viewId)
+        fakeEvent = RumRawEvent.ErrorSent(viewId, eventTime = fakeEventTime)
         testedScope.pendingErrorCount = pending
 
         // When
@@ -1947,7 +1948,13 @@ internal class RumViewScopeTest {
         @LongForgery(0) actionEventTimestamp: Long
     ) {
         // Given
-        fakeEvent = RumRawEvent.ActionSent(testedScope.viewId, frustrationCount, actionType, actionEventTimestamp)
+        fakeEvent = RumRawEvent.ActionSent(
+            testedScope.viewId,
+            frustrationCount,
+            actionType,
+            actionEventTimestamp,
+            eventTime = laterEventTime()
+        )
         testedScope.pendingActionCount = pending
 
         // When
@@ -2029,7 +2036,14 @@ internal class RumViewScopeTest {
         // Given
         val viewId = viewUuid.toString()
         assumeTrue(viewId != testedScope.viewId)
-        fakeEvent = RumRawEvent.ActionSent(viewId, frustrationCount, actionType, actionEventTimestamp)
+        fakeEvent =
+            RumRawEvent.ActionSent(
+                viewId,
+                frustrationCount,
+                actionType,
+                actionEventTimestamp,
+                eventTime = fakeEventTime
+            )
         testedScope.pendingActionCount = pending
 
         // When
@@ -2047,7 +2061,7 @@ internal class RumViewScopeTest {
         @LongForgery(1) pendingFrozenFrame: Long
     ) {
         // Given
-        fakeEvent = RumRawEvent.LongTaskSent(testedScope.viewId)
+        fakeEvent = RumRawEvent.LongTaskSent(testedScope.viewId, eventTime = laterEventTime())
         testedScope.pendingLongTaskCount = pendingLongTask
         testedScope.pendingFrozenFrameCount = pendingFrozenFrame
 
@@ -2126,7 +2140,7 @@ internal class RumViewScopeTest {
         @LongForgery(1) pendingFrozenFrame: Long
     ) {
         // Given
-        fakeEvent = RumRawEvent.LongTaskSent(testedScope.viewId, true)
+        fakeEvent = RumRawEvent.LongTaskSent(testedScope.viewId, eventTime = laterEventTime(), isFrozenFrame = true)
         testedScope.pendingLongTaskCount = pendingLongTask
         testedScope.pendingFrozenFrameCount = pendingFrozenFrame
 
@@ -2207,7 +2221,7 @@ internal class RumViewScopeTest {
         // Given
         val viewId = viewUuid.toString()
         assumeTrue(viewId != testedScope.viewId)
-        fakeEvent = RumRawEvent.LongTaskSent(viewId)
+        fakeEvent = RumRawEvent.LongTaskSent(viewId, eventTime = fakeEventTime)
         testedScope.pendingLongTaskCount = pending
 
         // When
@@ -2227,7 +2241,7 @@ internal class RumViewScopeTest {
         testedScope.stopped = true
         testedScope.stoppedNanos = fakeEventTime.nanoTime + durationNs
         testedScope.pendingErrorCount = 1
-        fakeEvent = RumRawEvent.ErrorSent(testedScope.viewId)
+        fakeEvent = RumRawEvent.ErrorSent(testedScope.viewId, eventTime = fakeEventTime)
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -2311,7 +2325,7 @@ internal class RumViewScopeTest {
         testedScope.pendingErrorCount = pending
         val viewId = viewUuid.toString()
         assumeTrue(viewId != testedScope.viewId)
-        fakeEvent = RumRawEvent.ErrorSent(viewId)
+        fakeEvent = RumRawEvent.ErrorSent(viewId, eventTime = fakeEventTime)
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -2445,7 +2459,13 @@ internal class RumViewScopeTest {
         testedScope.stopped = true
         testedScope.stoppedNanos = fakeEventTime.nanoTime + durationNs
         testedScope.pendingActionCount = 1
-        fakeEvent = RumRawEvent.ActionSent(testedScope.viewId, frustrationCount, actionType, actionEventTimestamp)
+        fakeEvent = RumRawEvent.ActionSent(
+            testedScope.viewId,
+            frustrationCount,
+            actionType,
+            actionEventTimestamp,
+            eventTime = fakeEventTime
+        )
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -2532,7 +2552,14 @@ internal class RumViewScopeTest {
         testedScope.pendingActionCount = pending
         val viewId = viewUuid.toString()
         assumeTrue(viewId != testedScope.viewId)
-        fakeEvent = RumRawEvent.ActionSent(viewId, frustrationCount, actionType, actionEventTimestamp)
+        fakeEvent =
+            RumRawEvent.ActionSent(
+                viewId,
+                frustrationCount,
+                actionType,
+                actionEventTimestamp,
+                eventTime = fakeEventTime
+            )
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -2551,7 +2578,7 @@ internal class RumViewScopeTest {
         testedScope.stopped = true
         testedScope.stoppedNanos = fakeEventTime.nanoTime + durationNs
         testedScope.pendingLongTaskCount = 1
-        fakeEvent = RumRawEvent.LongTaskSent(testedScope.viewId)
+        fakeEvent = RumRawEvent.LongTaskSent(testedScope.viewId, eventTime = fakeEventTime)
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -2635,7 +2662,7 @@ internal class RumViewScopeTest {
         testedScope.pendingLongTaskCount = pending
         val viewId = viewUuid.toString()
         assumeTrue(viewId != testedScope.viewId)
-        fakeEvent = RumRawEvent.LongTaskSent(viewId)
+        fakeEvent = RumRawEvent.LongTaskSent(viewId, eventTime = fakeEventTime)
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -2791,7 +2818,7 @@ internal class RumViewScopeTest {
 
         // When
         val result = testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, attributes),
+            RumRawEvent.StopView(fakeKey, attributes, eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -2884,6 +2911,7 @@ internal class RumViewScopeTest {
             type = type,
             name = name,
             waitForStop = waitForStop,
+            eventTime = fakeEventTime,
             attributes = attributes
         )
         val result = testedScope.handleEvent(
@@ -2922,6 +2950,7 @@ internal class RumViewScopeTest {
             type = type,
             name = name,
             waitForStop = waitForStop,
+            eventTime = fakeEventTime,
             nativeHeatmapActionData = fakeHeatmapData,
             attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         )
@@ -2943,7 +2972,13 @@ internal class RumViewScopeTest {
 
         // When
         val fakeStartActionEvent =
-            RumRawEvent.StartAction(RumActionType.CUSTOM, name, waitForStop = true, attributes = attributes)
+            RumRawEvent.StartAction(
+                RumActionType.CUSTOM,
+                name,
+                waitForStop = true,
+                eventTime = fakeEventTime,
+                attributes = attributes
+            )
         val result = testedScope.handleEvent(
             fakeStartActionEvent,
             fakeDatadogContext,
@@ -2972,7 +3007,14 @@ internal class RumViewScopeTest {
     ) {
         // Given
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
-        fakeEvent = RumRawEvent.StartAction(RumActionType.CUSTOM, name, false, attributes = attributes)
+        fakeEvent =
+            RumRawEvent.StartAction(
+                RumActionType.CUSTOM,
+                name,
+                false,
+                eventTime = fakeEventTime,
+                attributes = attributes
+            )
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3017,6 +3059,7 @@ internal class RumViewScopeTest {
             type = actionType,
             name = name,
             waitForStop = waitForStop,
+            eventTime = fakeEventTime,
             attributes = attributes
         )
         whenever(
@@ -3061,6 +3104,7 @@ internal class RumViewScopeTest {
                 type = RumActionType.CUSTOM,
                 name = name,
                 waitForStop = true,
+                eventTime = fakeEventTime,
                 attributes = attributes
             )
         whenever(
@@ -3104,6 +3148,7 @@ internal class RumViewScopeTest {
             type = RumActionType.CUSTOM,
             name = name,
             waitForStop = false,
+            eventTime = fakeEventTime,
             attributes = attributes
         )
         whenever(
@@ -3185,6 +3230,7 @@ internal class RumViewScopeTest {
             type = RumActionType.CUSTOM,
             name = name,
             waitForStop = false,
+            eventTime = fakeEventTime,
             attributes = attributes
         )
         whenever(
@@ -3271,6 +3317,7 @@ internal class RumViewScopeTest {
             type = type,
             name = name,
             waitForStop = waitForStop,
+            eventTime = fakeEventTime,
             attributes = attributes
         )
 
@@ -3348,6 +3395,7 @@ internal class RumViewScopeTest {
             type = type,
             name = name,
             waitForStop = waitForStop,
+            eventTime = fakeEventTime,
             attributes = emptyMap()
         )
 
@@ -3363,7 +3411,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.pendingActionCount = pending
-        fakeEvent = RumRawEvent.ActionDropped(testedScope.viewId)
+        fakeEvent = RumRawEvent.ActionDropped(testedScope.viewId, eventTime = fakeEventTime)
 
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
@@ -3375,7 +3423,7 @@ internal class RumViewScopeTest {
     fun `M decrease pending Action W handleEvent(ActionDropped) on stopped view`() {
         // Given
         testedScope.pendingActionCount = 1
-        fakeEvent = RumRawEvent.ActionDropped(testedScope.viewId)
+        fakeEvent = RumRawEvent.ActionDropped(testedScope.viewId, eventTime = fakeEventTime)
         testedScope.stopped = true
 
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3393,7 +3441,7 @@ internal class RumViewScopeTest {
         val viewId = viewUuid.toString()
         assumeTrue(viewId != testedScope.viewId)
         testedScope.pendingActionCount = pending
-        fakeEvent = RumRawEvent.ActionDropped(viewId)
+        fakeEvent = RumRawEvent.ActionDropped(viewId, eventTime = fakeEventTime)
 
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
@@ -3410,7 +3458,7 @@ internal class RumViewScopeTest {
         val viewId = viewUuid.toString()
         assumeTrue(viewId != testedScope.viewId)
         testedScope.pendingActionCount = pending
-        fakeEvent = RumRawEvent.ActionDropped(viewId)
+        fakeEvent = RumRawEvent.ActionDropped(viewId, eventTime = fakeEventTime)
         testedScope.stopped = true
 
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3434,7 +3482,7 @@ internal class RumViewScopeTest {
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
 
         // When
-        val fakeEvent = RumRawEvent.StartResource(key, url, method, attributes)
+        val fakeEvent = RumRawEvent.StartResource(key, url, method, attributes, eventTime = fakeEventTime)
         val result = testedScope.handleEvent(
             fakeEvent,
             fakeDatadogContext,
@@ -3471,7 +3519,7 @@ internal class RumViewScopeTest {
         // Given
         testedScope.activeActionScope = mockActionScope
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
-        fakeEvent = RumRawEvent.StartResource(key, url, method, attributes)
+        fakeEvent = RumRawEvent.StartResource(key, url, method, attributes, eventTime = fakeEventTime)
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3577,7 +3625,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.pendingResourceCount = 0
-        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
+        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap(), eventTime = fakeEventTime)
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3594,7 +3642,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.pendingResourceCount = pending
-        val fakeResourceDrooped = forge.getForgery<RumRawEvent.ResourceDropped>().copy(testedScope.viewId)
+        val fakeResourceDrooped = forge.getForgery<RumRawEvent.ResourceDropped>().copy(viewId = testedScope.viewId)
 
         // When
         val result = testedScope.handleEvent(fakeResourceDrooped, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3727,6 +3775,7 @@ internal class RumViewScopeTest {
             throwable,
             stacktrace,
             isFatal = false,
+            eventTime = fakeEventTime,
             threads = emptyList(),
             attributes = attributes
         )
@@ -3808,6 +3857,7 @@ internal class RumViewScopeTest {
             throwable,
             stacktrace,
             isFatal = false,
+            eventTime = fakeEventTime,
             threads = emptyList(),
             attributes = attributes
         )
@@ -3892,6 +3942,7 @@ internal class RumViewScopeTest {
             throwable,
             stacktrace,
             isFatal = false,
+            eventTime = fakeEventTime,
             threads = emptyList(),
             attributes = attributes
         )
@@ -3970,6 +4021,7 @@ internal class RumViewScopeTest {
             throwable,
             stacktrace,
             isFatal = false,
+            eventTime = fakeEventTime,
             threads = emptyList(),
             attributes = attributes
         )
@@ -4051,7 +4103,8 @@ internal class RumViewScopeTest {
             stacktrace,
             isFatal = false,
             threads = emptyList(),
-            attributes = attributes
+            attributes = attributes,
+            eventTime = fakeEventTime
         )
         val persistenceExecutor = sameThreadExecutorService()
         whenever(rumMonitorConfiguration.mockSdkCore.getPersistenceExecutorService())
@@ -4082,7 +4135,8 @@ internal class RumViewScopeTest {
             stacktrace,
             isFatal = false,
             threads = emptyList(),
-            attributes = attributes
+            attributes = attributes,
+            eventTime = fakeEventTime
         )
         val persistenceExecutor = sameThreadExecutorService()
         whenever(rumMonitorConfiguration.mockSdkCore.getPersistenceExecutorService())
@@ -4113,7 +4167,8 @@ internal class RumViewScopeTest {
             stacktrace,
             isFatal = false,
             threads = emptyList(),
-            attributes = attributes
+            attributes = attributes,
+            eventTime = fakeEventTime
         )
         whenever(mockWriter.write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))) doReturn false
         val persistenceExecutor = sameThreadExecutorService()
@@ -4145,7 +4200,8 @@ internal class RumViewScopeTest {
             stacktrace,
             isFatal = false,
             threads = emptyList(),
-            attributes = attributes
+            attributes = attributes,
+            eventTime = fakeEventTime
         )
         val expectedDurationNs = TimeUnit.MILLISECONDS.toNanos(ANRDetectorRunnable.ANR_THRESHOLD_MS)
         val expectedStartMs = resolveExpectedTimestamp(fakeEvent.eventTime.timestamp) -
@@ -4189,7 +4245,8 @@ internal class RumViewScopeTest {
             stacktrace,
             isFatal = false,
             threads = emptyList(),
-            attributes = attributes
+            attributes = attributes,
+            eventTime = fakeEventTime
         )
 
         // When
@@ -4217,6 +4274,7 @@ internal class RumViewScopeTest {
             throwable,
             stacktrace,
             isFatal = false,
+            eventTime = fakeEventTime,
             threads = emptyList(),
             attributes = attributes
         )
@@ -4299,6 +4357,7 @@ internal class RumViewScopeTest {
             throwable,
             stacktrace,
             isFatal = false,
+            eventTime = fakeEventTime,
             threads = emptyList(),
             attributes = attributes
         )
@@ -4377,6 +4436,7 @@ internal class RumViewScopeTest {
             throwable = null,
             stacktrace,
             isFatal = false,
+            eventTime = fakeEventTime,
             threads = emptyList(),
             attributes = attributes
         )
@@ -4435,6 +4495,7 @@ internal class RumViewScopeTest {
             throwable,
             stacktrace = null,
             isFatal = false,
+            eventTime = fakeEventTime,
             threads = emptyList(),
             attributes = attributes,
             sourceType = sourceType
@@ -4519,6 +4580,7 @@ internal class RumViewScopeTest {
             throwable = null,
             stacktrace = null,
             isFatal = false,
+            eventTime = fakeEventTime,
             threads = emptyList(),
             attributes = attributes,
             sourceType = sourceType
@@ -4604,6 +4666,7 @@ internal class RumViewScopeTest {
             throwable = null,
             stacktrace = null,
             isFatal = true,
+            eventTime = laterEventTime(),
             threads = threads,
             attributes = attributes,
             sourceType = sourceType,
@@ -4752,6 +4815,7 @@ internal class RumViewScopeTest {
             throwable,
             stacktrace,
             isFatal = false,
+            eventTime = fakeEventTime,
             threads = emptyList(),
             attributes = fullAttributes
         )
@@ -4831,6 +4895,7 @@ internal class RumViewScopeTest {
             throwable,
             stacktrace = null,
             isFatal = true,
+            eventTime = laterEventTime(),
             threads = threads,
             attributes = attributes,
             sourceType = sourceType,
@@ -4975,6 +5040,7 @@ internal class RumViewScopeTest {
             throwable,
             stacktrace = null,
             isFatal = false,
+            eventTime = laterEventTime(),
             // empty list, because _dd.error.is_crash is coming from Cross Platform, this not a native crash
             threads = emptyList(),
             attributes = attributesWithCrash,
@@ -4988,6 +5054,7 @@ internal class RumViewScopeTest {
             throwable,
             stacktrace = null,
             isFatal = true,
+            eventTime = fakeEventTime,
             threads = emptyList(),
             attributes = attributes,
             sourceType = sourceType,
@@ -5133,6 +5200,7 @@ internal class RumViewScopeTest {
             throwable,
             stacktrace = null,
             isFatal = false,
+            eventTime = fakeEventTime,
             threads = emptyList(),
             attributes = attributesWithCrash,
             sourceType = sourceType
@@ -5217,6 +5285,7 @@ internal class RumViewScopeTest {
             throwable,
             stacktrace = null,
             isFatal = false,
+            eventTime = fakeEventTime,
             threads = emptyList(),
             attributes = attributes,
             type = errorType,
@@ -5303,6 +5372,7 @@ internal class RumViewScopeTest {
             throwable,
             stacktrace = null,
             isFatal = fatal,
+            eventTime = fakeEventTime,
             threads = emptyList(),
             attributes = attributes
         )
@@ -5333,6 +5403,7 @@ internal class RumViewScopeTest {
             throwable = null,
             stacktrace,
             fatal,
+            eventTime = fakeEventTime,
             threads = emptyList(),
             attributes = attributes
         )
@@ -5360,6 +5431,7 @@ internal class RumViewScopeTest {
             throwable = null,
             stacktrace,
             isFatal = false,
+            eventTime = fakeEventTime,
             threads = emptyList(),
             attributes = emptyMap()
         )
@@ -5384,6 +5456,7 @@ internal class RumViewScopeTest {
             throwable = null,
             stacktrace,
             isFatal = true,
+            eventTime = fakeEventTime,
             threads = emptyList(),
             attributes = emptyMap()
         )
@@ -5400,7 +5473,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.pendingErrorCount = pending
-        fakeEvent = RumRawEvent.ErrorDropped(testedScope.viewId)
+        fakeEvent = RumRawEvent.ErrorDropped(testedScope.viewId, eventTime = fakeEventTime)
 
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
@@ -5412,7 +5485,7 @@ internal class RumViewScopeTest {
     fun `M decrease pending Error W handleEvent(ErrorDropped) on stopped view`() {
         // Given
         testedScope.pendingErrorCount = 1
-        fakeEvent = RumRawEvent.ErrorDropped(testedScope.viewId)
+        fakeEvent = RumRawEvent.ErrorDropped(testedScope.viewId, eventTime = fakeEventTime)
         testedScope.stopped = true
 
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -5430,7 +5503,7 @@ internal class RumViewScopeTest {
         val viewId = viewUuid.toString()
         assumeTrue(viewId != testedScope.viewId)
         testedScope.pendingErrorCount = pending
-        fakeEvent = RumRawEvent.ErrorDropped(viewId)
+        fakeEvent = RumRawEvent.ErrorDropped(viewId, eventTime = fakeEventTime)
 
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
@@ -5447,7 +5520,7 @@ internal class RumViewScopeTest {
         val viewId = viewUuid.toString()
         assumeTrue(viewId != testedScope.viewId)
         testedScope.pendingErrorCount = pending
-        fakeEvent = RumRawEvent.ErrorDropped(viewId)
+        fakeEvent = RumRawEvent.ErrorDropped(viewId, eventTime = fakeEventTime)
         testedScope.stopped = true
 
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -5467,7 +5540,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = null
-        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
         val durationMs = TimeUnit.NANOSECONDS.toMillis(durationNs)
 
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -5529,7 +5602,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = null
-        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
         val durationMs = TimeUnit.NANOSECONDS.toMillis(durationNs)
 
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -5593,7 +5666,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = null
-        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
         val durationMs = TimeUnit.NANOSECONDS.toMillis(durationNs)
         fakeParentContext = fakeParentContext.copy(
             syntheticsTestId = fakeTestId,
@@ -5665,7 +5738,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = null
-        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
         val durationMs = TimeUnit.NANOSECONDS.toMillis(durationNs)
         fakeParentContext = fakeParentContext.copy(
             syntheticsTestId = fakeTestId,
@@ -5737,7 +5810,7 @@ internal class RumViewScopeTest {
         // Given
         testedScope.activeActionScope = mockActionScope
         testedScope.pendingLongTaskCount = pending
-        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
         testedScope.stopped = true
 
         // When
@@ -5756,7 +5829,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.pendingLongTaskCount = 0
-        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
 
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
@@ -5772,7 +5845,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.pendingLongTaskCount = 0
-        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
 
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
@@ -5788,7 +5861,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = null
-        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
         whenever(rumMonitorConfiguration.mockSdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)) doReturn null
 
         // When
@@ -5808,7 +5881,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = null
-        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
         val datadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
                 put(Feature.PROFILING_FEATURE_NAME, mapOf(FeatureContextKeys.PROFILER_IS_RUNNING to true))
@@ -5833,7 +5906,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = null
-        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
         val datadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
                 put(Feature.PROFILING_FEATURE_NAME, mapOf(PROFILER_IS_RUNNING to false))
@@ -5858,7 +5931,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = null
-        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
         val datadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
                 put(
@@ -5892,7 +5965,7 @@ internal class RumViewScopeTest {
     ) {
         // Given — the quota reason is stamped with a different session than the current one
         testedScope.activeActionScope = null
-        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
         val datadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
                 put(
@@ -6061,7 +6134,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = null
-        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
         val expectedStartMs = resolveExpectedTimestamp(fakeEvent.eventTime.timestamp) -
             TimeUnit.NANOSECONDS.toMillis(durationNs)
 
@@ -6103,7 +6176,8 @@ internal class RumViewScopeTest {
             stacktrace,
             isFatal = false,
             threads = emptyList(),
-            attributes = attributes
+            attributes = attributes,
+            eventTime = fakeEventTime
         )
         val datadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
@@ -6140,7 +6214,8 @@ internal class RumViewScopeTest {
             stacktrace,
             isFatal = false,
             threads = emptyList(),
-            attributes = attributes
+            attributes = attributes,
+            eventTime = fakeEventTime
         )
         val datadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
@@ -6176,7 +6251,8 @@ internal class RumViewScopeTest {
             stacktrace,
             isFatal = false,
             threads = emptyList(),
-            attributes = attributes
+            attributes = attributes,
+            eventTime = fakeEventTime
         )
         val datadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
@@ -6213,7 +6289,8 @@ internal class RumViewScopeTest {
             stacktrace,
             isFatal = false,
             threads = emptyList(),
-            attributes = attributes
+            attributes = attributes,
+            eventTime = fakeEventTime
         )
         val datadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
@@ -6259,7 +6336,8 @@ internal class RumViewScopeTest {
             stacktrace,
             isFatal = false,
             threads = emptyList(),
-            attributes = attributes
+            attributes = attributes,
+            eventTime = fakeEventTime
         )
         val datadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
@@ -6297,7 +6375,12 @@ internal class RumViewScopeTest {
         )
 
         // When
-        testedScope.handleEvent(RumRawEvent.StartView(key, emptyMap()), datadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(
+            RumRawEvent.StartView(key, emptyMap(), eventTime = fakeEventTime),
+            datadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
 
         // Then
         argumentCaptor<ViewEvent> {
@@ -6318,7 +6401,12 @@ internal class RumViewScopeTest {
         )
 
         // When
-        testedScope.handleEvent(RumRawEvent.StartView(key, emptyMap()), datadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(
+            RumRawEvent.StartView(key, emptyMap(), eventTime = fakeEventTime),
+            datadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
 
         // Then
         argumentCaptor<ViewEvent> {
@@ -6347,7 +6435,12 @@ internal class RumViewScopeTest {
         )
 
         // When
-        testedScope.handleEvent(RumRawEvent.StartView(key, emptyMap()), datadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(
+            RumRawEvent.StartView(key, emptyMap(), eventTime = fakeEventTime),
+            datadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
 
         // Then
         argumentCaptor<ViewEvent> {
@@ -6378,7 +6471,12 @@ internal class RumViewScopeTest {
         )
 
         // When
-        testedScope.handleEvent(RumRawEvent.StartView(key, emptyMap()), datadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(
+            RumRawEvent.StartView(key, emptyMap(), eventTime = fakeEventTime),
+            datadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
 
         // Then — the stale reason is ignored and no profiling status is attached
         argumentCaptor<ViewEvent> {
@@ -6396,7 +6494,7 @@ internal class RumViewScopeTest {
         // Given
         testedScope.pendingLongTaskCount = pendingLongTask
         testedScope.pendingFrozenFrameCount = pendingFrozenFrame
-        fakeEvent = RumRawEvent.LongTaskDropped(testedScope.viewId, false)
+        fakeEvent = RumRawEvent.LongTaskDropped(testedScope.viewId, eventTime = fakeEventTime, isFrozenFrame = false)
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -6415,7 +6513,7 @@ internal class RumViewScopeTest {
         // Given
         testedScope.pendingLongTaskCount = pendingLongTask
         testedScope.pendingFrozenFrameCount = pendingFrozenFrame
-        fakeEvent = RumRawEvent.LongTaskDropped(testedScope.viewId, true)
+        fakeEvent = RumRawEvent.LongTaskDropped(testedScope.viewId, eventTime = fakeEventTime, isFrozenFrame = true)
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -6431,7 +6529,7 @@ internal class RumViewScopeTest {
         // Given
         testedScope.pendingLongTaskCount = 1
         testedScope.pendingFrozenFrameCount = 0
-        fakeEvent = RumRawEvent.LongTaskDropped(testedScope.viewId, false)
+        fakeEvent = RumRawEvent.LongTaskDropped(testedScope.viewId, eventTime = fakeEventTime, isFrozenFrame = false)
         testedScope.stopped = true
 
         // When
@@ -6448,7 +6546,7 @@ internal class RumViewScopeTest {
         // Given
         testedScope.pendingLongTaskCount = 1
         testedScope.pendingFrozenFrameCount = 1
-        fakeEvent = RumRawEvent.LongTaskDropped(testedScope.viewId, true)
+        fakeEvent = RumRawEvent.LongTaskDropped(testedScope.viewId, eventTime = fakeEventTime, isFrozenFrame = true)
         testedScope.stopped = true
 
         // When
@@ -6470,7 +6568,7 @@ internal class RumViewScopeTest {
         val viewId = viewUuid.toString()
         assumeTrue(viewId != testedScope.viewId)
         testedScope.pendingLongTaskCount = pending
-        fakeEvent = RumRawEvent.LongTaskDropped(viewId, isFrozenFrame)
+        fakeEvent = RumRawEvent.LongTaskDropped(viewId, eventTime = fakeEventTime, isFrozenFrame = isFrozenFrame)
 
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
@@ -6488,7 +6586,7 @@ internal class RumViewScopeTest {
         val viewId = viewUuid.toString()
         assumeTrue(viewId != testedScope.viewId)
         testedScope.pendingLongTaskCount = pending
-        fakeEvent = RumRawEvent.LongTaskDropped(viewId, isFrozenFrame)
+        fakeEvent = RumRawEvent.LongTaskDropped(viewId, eventTime = fakeEventTime, isFrozenFrame = isFrozenFrame)
         testedScope.stopped = true
 
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -6510,7 +6608,7 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.AddCustomTiming(fakeTimingKey),
+            RumRawEvent.AddCustomTiming(fakeTimingKey, eventTime = Time(System.currentTimeMillis(), System.nanoTime())),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -6592,14 +6690,20 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.AddCustomTiming(fakeTimingKey1),
+            RumRawEvent.AddCustomTiming(
+                fakeTimingKey1,
+                eventTime = Time(System.currentTimeMillis(), System.nanoTime())
+            ),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
         )
         val customTiming1EstimatedDuration = System.nanoTime() - fakeEventTime.nanoTime
         testedScope.handleEvent(
-            RumRawEvent.AddCustomTiming(fakeTimingKey2),
+            RumRawEvent.AddCustomTiming(
+                fakeTimingKey2,
+                eventTime = Time(System.currentTimeMillis(), System.nanoTime())
+            ),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -6745,7 +6849,7 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.AddCustomTiming(fakeTimingKey),
+            RumRawEvent.AddCustomTiming(fakeTimingKey, eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -6765,7 +6869,10 @@ internal class RumViewScopeTest {
         @BoolForgery fakeOverwrite: Boolean
     ) {
         // Given
-        val viewLoadingTimeEvent = RumRawEvent.AddViewLoadingTime(overwrite = fakeOverwrite)
+        val viewLoadingTimeEvent = RumRawEvent.AddViewLoadingTime(
+            overwrite = fakeOverwrite,
+            eventTime = laterEventTime()
+        )
         val expectedViewLoadingTime = viewLoadingTimeEvent.eventTime.nanoTime - fakeEventTime.nanoTime
 
         // When
@@ -6863,7 +6970,7 @@ internal class RumViewScopeTest {
         // Given
         val previousLoadingTime = forge.aPositiveLong()
         testedScope.viewLoadingTime = previousLoadingTime
-        val newViewLoadingTime = RumRawEvent.AddViewLoadingTime(overwrite = true)
+        val newViewLoadingTime = RumRawEvent.AddViewLoadingTime(overwrite = true, eventTime = laterEventTime())
         val expectedViewLoadingTime = newViewLoadingTime.eventTime.nanoTime - fakeEventTime.nanoTime
 
         // When
@@ -6962,7 +7069,9 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // Given
-        val viewLoadingTimeEvents = forge.aList { RumRawEvent.AddViewLoadingTime(overwrite = true) }
+        val viewLoadingTimeEvents = forge.aList {
+            RumRawEvent.AddViewLoadingTime(overwrite = true, eventTime = laterEventTime())
+        }
         val expectedViewLoadingTime = viewLoadingTimeEvents.last().eventTime.nanoTime - fakeEventTime.nanoTime
 
         // When
@@ -7045,7 +7154,9 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // Given
-        val viewLoadingTimeEvents = forge.aList { RumRawEvent.AddViewLoadingTime(overwrite = false) }
+        val viewLoadingTimeEvents = forge.aList {
+            RumRawEvent.AddViewLoadingTime(overwrite = false, eventTime = laterEventTime())
+        }
         val expectedViewLoadingTime = viewLoadingTimeEvents.first().eventTime.nanoTime - fakeEventTime.nanoTime
 
         // When
@@ -7132,7 +7243,7 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.AddViewLoadingTime(overwrite = fakeOverwrite),
+            RumRawEvent.AddViewLoadingTime(overwrite = fakeOverwrite, eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -7153,7 +7264,12 @@ internal class RumViewScopeTest {
         @LongForgery(0) resourceStopTimestampInNanos: Long
     ) {
         // Given
-        fakeEvent = RumRawEvent.ErrorSent(testedScope.viewId, resourceId, resourceStopTimestampInNanos)
+        fakeEvent = RumRawEvent.ErrorSent(
+            testedScope.viewId,
+            eventTime = fakeEventTime,
+            resourceId = resourceId,
+            resourceEndTimestampInNanos = resourceStopTimestampInNanos
+        )
 
         // When
         testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -7172,7 +7288,7 @@ internal class RumViewScopeTest {
         @StringForgery resourceId: String
     ) {
         // Given
-        fakeEvent = RumRawEvent.ErrorDropped(testedScope.viewId, resourceId)
+        fakeEvent = RumRawEvent.ErrorDropped(testedScope.viewId, eventTime = fakeEventTime, resourceId = resourceId)
 
         // When
         testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -7184,7 +7300,7 @@ internal class RumViewScopeTest {
     @Test
     fun `M not interact with networkSettledMetricResolver W handleEvent(ErrorSent) { resource info not present }`() {
         // Given
-        fakeEvent = RumRawEvent.ErrorSent(testedScope.viewId)
+        fakeEvent = RumRawEvent.ErrorSent(testedScope.viewId, eventTime = fakeEventTime)
 
         // When
         testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -7196,7 +7312,7 @@ internal class RumViewScopeTest {
     @Test
     fun `M not interact with networkSettledMetricResolver W handleEvent(ErrorDropped) { resource info not present }`() {
         // Given
-        fakeEvent = RumRawEvent.ErrorSent(testedScope.viewId)
+        fakeEvent = RumRawEvent.ErrorSent(testedScope.viewId, eventTime = fakeEventTime)
 
         // When
         testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -7209,7 +7325,7 @@ internal class RumViewScopeTest {
     fun `M notify the networkSettledMetricResolver W view was stopped`() {
         // When
         testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, emptyMap()),
+            RumRawEvent.StopView(fakeKey, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -7228,7 +7344,7 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.StopView(fakeOtherKey, emptyMap()),
+            RumRawEvent.StopView(fakeOtherKey, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -7245,7 +7361,7 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, emptyMap()),
+            RumRawEvent.StopView(fakeKey, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -7336,7 +7452,7 @@ internal class RumViewScopeTest {
             listener.onVitalUpdate(VitalInfo(index + 1, 0.0, value, value / 2.0))
         }
         val result = testedScope.handleEvent(
-            RumRawEvent.StopView(testedScope.key, emptyMap()),
+            RumRawEvent.StopView(testedScope.key, emptyMap(), eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -7427,7 +7543,7 @@ internal class RumViewScopeTest {
         listener.onVitalUpdate(VitalInfo(1, 0.0, 0.0, 0.0))
         listener.onVitalUpdate(VitalInfo(1, 0.0, cpuTicks, cpuTicks / 2.0))
         val result = testedScope.handleEvent(
-            RumRawEvent.StopView(testedScope.key, emptyMap()),
+            RumRawEvent.StopView(testedScope.key, emptyMap(), eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -7511,7 +7627,7 @@ internal class RumViewScopeTest {
         // When
         vitals.forEach { listener.onVitalUpdate(it) }
         val result = testedScope.handleEvent(
-            RumRawEvent.StopView(testedScope.key, emptyMap()),
+            RumRawEvent.StopView(testedScope.key, emptyMap(), eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -7605,7 +7721,7 @@ internal class RumViewScopeTest {
             listener.onVitalUpdate(VitalInfo(count, min, max, sum / count))
         }
         val result = testedScope.handleEvent(
-            RumRawEvent.StopView(testedScope.key, emptyMap()),
+            RumRawEvent.StopView(testedScope.key, emptyMap(), eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -7699,7 +7815,7 @@ internal class RumViewScopeTest {
             listener.onVitalUpdate(VitalInfo(count, min, max, sum / count))
         }
         val result = testedScope.handleEvent(
-            RumRawEvent.StopView(testedScope.key, emptyMap()),
+            RumRawEvent.StopView(testedScope.key, emptyMap(), eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -7779,7 +7895,7 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, emptyMap()),
+            RumRawEvent.StopView(fakeKey, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -7800,7 +7916,7 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.StopView(fakeOtherKey, emptyMap()),
+            RumRawEvent.StopView(fakeOtherKey, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -7820,7 +7936,7 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.StartView(fakeOtherKey, emptyMap()),
+            RumRawEvent.StartView(fakeOtherKey, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -7837,7 +7953,12 @@ internal class RumViewScopeTest {
         // Given
 
         // When
-        testedScope.handleEvent(RumRawEvent.StopSession(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(
+            RumRawEvent.StopSession(eventTime = fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
 
         // Then
         verify(mockCpuVitalMonitor).unregister(testedScope.cpuVitalListener)
@@ -7851,13 +7972,13 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, emptyMap()),
+            RumRawEvent.StopView(fakeKey, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
         )
         testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, emptyMap()),
+            RumRawEvent.StopView(fakeKey, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -7878,13 +7999,13 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, emptyMap()),
+            RumRawEvent.StopView(fakeKey, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
         )
         testedScope.handleEvent(
-            RumRawEvent.StartView(fakeOtherKey, emptyMap()),
+            RumRawEvent.StartView(fakeOtherKey, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -7902,12 +8023,17 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, emptyMap()),
+            RumRawEvent.StopView(fakeKey, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
         )
-        testedScope.handleEvent(RumRawEvent.StopSession(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(
+            RumRawEvent.StopSession(eventTime = fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
 
         // Then
         verify(mockCpuVitalMonitor).unregister(testedScope.cpuVitalListener)
@@ -7924,13 +8050,13 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.StartView(fakeOtherKey, emptyMap()),
+            RumRawEvent.StartView(fakeOtherKey, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
         )
         testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, emptyMap()),
+            RumRawEvent.StopView(fakeKey, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -7954,13 +8080,13 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.StartView(fakeOtherKey1, emptyMap()),
+            RumRawEvent.StartView(fakeOtherKey1, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
         )
         testedScope.handleEvent(
-            RumRawEvent.StartView(fakeOtherKey2, emptyMap()),
+            RumRawEvent.StartView(fakeOtherKey2, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -7981,12 +8107,17 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.StartView(fakeOtherKey, emptyMap()),
+            RumRawEvent.StartView(fakeOtherKey, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
         )
-        testedScope.handleEvent(RumRawEvent.StopSession(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(
+            RumRawEvent.StopSession(eventTime = fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
 
         // Then
         verify(mockCpuVitalMonitor).unregister(testedScope.cpuVitalListener)
@@ -8002,9 +8133,14 @@ internal class RumViewScopeTest {
         assumeFalse(fakeOtherKey == fakeKey)
 
         // When
-        testedScope.handleEvent(RumRawEvent.StopSession(), fakeDatadogContext, mockEventWriteScope, mockWriter)
         testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, emptyMap()),
+            RumRawEvent.StopSession(eventTime = fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -8024,9 +8160,14 @@ internal class RumViewScopeTest {
         assumeFalse(fakeOtherKey == fakeKey)
 
         // When
-        testedScope.handleEvent(RumRawEvent.StopSession(), fakeDatadogContext, mockEventWriteScope, mockWriter)
         testedScope.handleEvent(
-            RumRawEvent.StartView(fakeOtherKey, emptyMap()),
+            RumRawEvent.StopSession(eventTime = fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        testedScope.handleEvent(
+            RumRawEvent.StartView(fakeOtherKey, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -8046,8 +8187,18 @@ internal class RumViewScopeTest {
         assumeFalse(fakeOtherKey == fakeKey)
 
         // When
-        testedScope.handleEvent(RumRawEvent.StopSession(), fakeDatadogContext, mockEventWriteScope, mockWriter)
-        testedScope.handleEvent(RumRawEvent.StopSession(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(
+            RumRawEvent.StopSession(eventTime = fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        testedScope.handleEvent(
+            RumRawEvent.StopSession(eventTime = fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
 
         // Then
         verify(mockCpuVitalMonitor).unregister(testedScope.cpuVitalListener)
@@ -8070,14 +8221,15 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(
             RumRawEvent.UpdatePerformanceMetric(
                 metric = RumPerformanceMetric.FLUTTER_BUILD_TIME,
-                value = value
+                value = value,
+                eventTime = fakeEventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
         )
         testedScope.handleEvent(
-            RumRawEvent.StopView(testedScope.key, emptyMap()),
+            RumRawEvent.StopView(testedScope.key, emptyMap(), eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -8108,14 +8260,15 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(
             RumRawEvent.UpdatePerformanceMetric(
                 metric = RumPerformanceMetric.FLUTTER_RASTER_TIME,
-                value = value
+                value = value,
+                eventTime = fakeEventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
         )
         testedScope.handleEvent(
-            RumRawEvent.StopView(testedScope.key, emptyMap()),
+            RumRawEvent.StopView(testedScope.key, emptyMap(), eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -8147,14 +8300,15 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(
             RumRawEvent.UpdatePerformanceMetric(
                 metric = RumPerformanceMetric.JS_FRAME_TIME,
-                value = value
+                value = value,
+                eventTime = fakeEventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
         )
         testedScope.handleEvent(
-            RumRawEvent.StopView(testedScope.key, emptyMap()),
+            RumRawEvent.StopView(testedScope.key, emptyMap(), eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -8195,7 +8349,8 @@ internal class RumViewScopeTest {
             testedScope.handleEvent(
                 RumRawEvent.UpdatePerformanceMetric(
                     metric = RumPerformanceMetric.FLUTTER_BUILD_TIME,
-                    value = flutterBuildTimes[i]
+                    value = flutterBuildTimes[i],
+                    eventTime = fakeEventTime
                 ),
                 fakeDatadogContext,
                 mockEventWriteScope,
@@ -8204,7 +8359,8 @@ internal class RumViewScopeTest {
             testedScope.handleEvent(
                 RumRawEvent.UpdatePerformanceMetric(
                     metric = RumPerformanceMetric.FLUTTER_RASTER_TIME,
-                    value = flutterRasterTimes[i]
+                    value = flutterRasterTimes[i],
+                    eventTime = fakeEventTime
                 ),
                 fakeDatadogContext,
                 mockEventWriteScope,
@@ -8213,7 +8369,8 @@ internal class RumViewScopeTest {
             testedScope.handleEvent(
                 RumRawEvent.UpdatePerformanceMetric(
                     metric = RumPerformanceMetric.JS_FRAME_TIME,
-                    value = jsFrameTimes[i]
+                    value = jsFrameTimes[i],
+                    eventTime = fakeEventTime
                 ),
                 fakeDatadogContext,
                 mockEventWriteScope,
@@ -8221,7 +8378,7 @@ internal class RumViewScopeTest {
             )
         }
         testedScope.handleEvent(
-            RumRawEvent.StopView(testedScope.key, emptyMap()),
+            RumRawEvent.StopView(testedScope.key, emptyMap(), eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -8272,17 +8429,16 @@ internal class RumViewScopeTest {
         // GIVEN
         val frameTimeSeconds = forge.aDouble(min = 0.001, max = 0.05) // 1ms to 50ms
         val expectedRefreshRate = 1.0 / frameTimeSeconds
-        val expectedRefreshRateMin = expectedRefreshRate
 
         // WHEN
         val result = testedScope.handleEvent(
-            RumRawEvent.UpdateExternalRefreshRate(frameTimeSeconds),
+            RumRawEvent.UpdateExternalRefreshRate(frameTimeSeconds, eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
         )
         testedScope.handleEvent(
-            RumRawEvent.StopView(testedScope.key, emptyMap()),
+            RumRawEvent.StopView(testedScope.key, emptyMap(), eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -8292,7 +8448,7 @@ internal class RumViewScopeTest {
         argumentCaptor<ViewEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
-                .hasRefreshRateMetric(expectedRefreshRate, expectedRefreshRateMin)
+                .hasRefreshRateMetric(expectedRefreshRate, expectedRefreshRate)
         }
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
@@ -8322,7 +8478,7 @@ internal class RumViewScopeTest {
             max = max(max, refreshRate)
 
             result = testedScope.handleEvent(
-                RumRawEvent.UpdateExternalRefreshRate(frameTime),
+                RumRawEvent.UpdateExternalRefreshRate(frameTime, eventTime = fakeEventTime),
                 fakeDatadogContext,
                 mockEventWriteScope,
                 mockWriter
@@ -8330,7 +8486,7 @@ internal class RumViewScopeTest {
         }
 
         testedScope.handleEvent(
-            RumRawEvent.StopView(testedScope.key, emptyMap()),
+            RumRawEvent.StopView(testedScope.key, emptyMap(), eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -8351,13 +8507,13 @@ internal class RumViewScopeTest {
     fun `M ignore invalid frame time W handleEvent(UpdateExternalRefreshRate+StopView) { zero frame time }`() {
         // WHEN
         val result = testedScope.handleEvent(
-            RumRawEvent.UpdateExternalRefreshRate(0.0),
+            RumRawEvent.UpdateExternalRefreshRate(0.0, eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
         )
         testedScope.handleEvent(
-            RumRawEvent.StopView(testedScope.key, emptyMap()),
+            RumRawEvent.StopView(testedScope.key, emptyMap(), eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -8389,7 +8545,7 @@ internal class RumViewScopeTest {
 
         // WHEN
         val result = testedScope.handleEvent(
-            RumRawEvent.UpdateExternalRefreshRate(externalFrameTime),
+            RumRawEvent.UpdateExternalRefreshRate(externalFrameTime, eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -8399,7 +8555,7 @@ internal class RumViewScopeTest {
         vitalListener.onVitalUpdate(VitalInfo(1, internalRefreshRate, internalRefreshRate, internalRefreshRate))
 
         testedScope.handleEvent(
-            RumRawEvent.StopView(testedScope.key, emptyMap()),
+            RumRawEvent.StopView(testedScope.key, emptyMap(), eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -8430,7 +8586,7 @@ internal class RumViewScopeTest {
         vitalListener.onVitalUpdate(VitalInfo(1, internalRefreshRate, internalRefreshRate, internalRefreshRate))
 
         val result = testedScope.handleEvent(
-            RumRawEvent.StopView(testedScope.key, emptyMap()),
+            RumRawEvent.StopView(testedScope.key, emptyMap(), eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -8452,7 +8608,7 @@ internal class RumViewScopeTest {
     ) {
         // GIVEN
         testedScope.handleEvent(
-            RumRawEvent.StopView(fakeKey, emptyMap()),
+            RumRawEvent.StopView(fakeKey, emptyMap(), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -8461,7 +8617,7 @@ internal class RumViewScopeTest {
 
         // WHEN
         val result = testedScope.handleEvent(
-            RumRawEvent.UpdateExternalRefreshRate(frameTimeSeconds),
+            RumRawEvent.UpdateExternalRefreshRate(frameTimeSeconds, eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -8488,26 +8644,26 @@ internal class RumViewScopeTest {
 
         // WHEN
         testedScope.handleEvent(
-            RumRawEvent.UpdateExternalRefreshRate(frameTime1),
+            RumRawEvent.UpdateExternalRefreshRate(frameTime1, eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
         )
         testedScope.handleEvent(
-            RumRawEvent.UpdateExternalRefreshRate(frameTime2),
+            RumRawEvent.UpdateExternalRefreshRate(frameTime2, eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
         )
         val result = testedScope.handleEvent(
-            RumRawEvent.UpdateExternalRefreshRate(frameTime3),
+            RumRawEvent.UpdateExternalRefreshRate(frameTime3, eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
         )
 
         testedScope.handleEvent(
-            RumRawEvent.StopView(testedScope.key, emptyMap()),
+            RumRawEvent.StopView(testedScope.key, emptyMap(), eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -8538,14 +8694,15 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(
             RumRawEvent.SetInternalViewAttribute(
                 key = RumAttributes.FLUTTER_FIRST_BUILD_COMPLETE,
-                value = fbc
+                value = fbc,
+                eventTime = fakeEventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
         )
         testedScope.handleEvent(
-            RumRawEvent.StopView(testedScope.key, emptyMap()),
+            RumRawEvent.StopView(testedScope.key, emptyMap(), eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -8578,14 +8735,15 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(
             RumRawEvent.SetInternalViewAttribute(
                 key = RumAttributes.CUSTOM_INV_VALUE,
-                value = customInv
+                value = customInv,
+                eventTime = fakeEventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
         )
         testedScope.handleEvent(
-            RumRawEvent.StopView(testedScope.key, emptyMap()),
+            RumRawEvent.StopView(testedScope.key, emptyMap(), eventTime = laterEventTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -8614,7 +8772,8 @@ internal class RumViewScopeTest {
         testedScope.handleEvent(
             RumRawEvent.AddFeatureFlagEvaluation(
                 name = flagName,
-                value = flagValue
+                value = flagValue,
+                eventTime = fakeEventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,
@@ -8637,7 +8796,8 @@ internal class RumViewScopeTest {
         testedScope.handleEvent(
             RumRawEvent.AddFeatureFlagEvaluation(
                 name = flagName,
-                value = flagValue
+                value = flagValue,
+                eventTime = fakeEventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,
@@ -8646,7 +8806,8 @@ internal class RumViewScopeTest {
         testedScope.handleEvent(
             RumRawEvent.AddFeatureFlagEvaluation(
                 name = flagName,
-                value = flagValue
+                value = flagValue,
+                eventTime = fakeEventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,
@@ -8672,7 +8833,8 @@ internal class RumViewScopeTest {
         testedScope.handleEvent(
             RumRawEvent.AddFeatureFlagEvaluation(
                 name = flagName,
-                value = flagValue
+                value = flagValue,
+                eventTime = fakeEventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,
@@ -8694,7 +8856,8 @@ internal class RumViewScopeTest {
         testedScope.handleEvent(
             RumRawEvent.AddFeatureFlagEvaluation(
                 name = flagName,
-                value = oldFlagValue
+                value = oldFlagValue,
+                eventTime = fakeEventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,
@@ -8705,7 +8868,8 @@ internal class RumViewScopeTest {
         testedScope.handleEvent(
             RumRawEvent.AddFeatureFlagEvaluation(
                 name = flagName,
-                value = flagValue
+                value = flagValue,
+                eventTime = fakeEventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,
@@ -8729,7 +8893,8 @@ internal class RumViewScopeTest {
         testedScope.handleEvent(
             RumRawEvent.AddFeatureFlagEvaluation(
                 name = flagName,
-                value = flagValue
+                value = flagValue,
+                eventTime = fakeEventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,
@@ -8744,6 +8909,7 @@ internal class RumViewScopeTest {
                 throwable = null,
                 stacktrace = null,
                 isFatal = false,
+                eventTime = fakeEventTime,
                 threads = emptyList(),
                 attributes = emptyMap()
             ),
@@ -8777,7 +8943,8 @@ internal class RumViewScopeTest {
         // WHEN
         testedScope.handleEvent(
             RumRawEvent.AddFeatureFlagEvaluations(
-                mapOf(flagName1 to flagValue1, flagName2 to flagValue2, flagName3 to flagValue3)
+                mapOf(flagName1 to flagValue1, flagName2 to flagValue2, flagName3 to flagValue3),
+                eventTime = fakeEventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,
@@ -8805,7 +8972,8 @@ internal class RumViewScopeTest {
         // WHEN
         testedScope.handleEvent(
             RumRawEvent.AddFeatureFlagEvaluations(
-                mapOf(flagName1 to flagValue1, flagName2 to flagValue2, flagName3 to flagValue3)
+                mapOf(flagName1 to flagValue1, flagName2 to flagValue2, flagName3 to flagValue3),
+                eventTime = fakeEventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,
@@ -8813,7 +8981,8 @@ internal class RumViewScopeTest {
         )
         testedScope.handleEvent(
             RumRawEvent.AddFeatureFlagEvaluations(
-                mapOf(flagName1 to flagValue1, flagName2 to flagValue2, flagName3 to flagValue3)
+                mapOf(flagName1 to flagValue1, flagName2 to flagValue2, flagName3 to flagValue3),
+                eventTime = fakeEventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,
@@ -8839,7 +9008,7 @@ internal class RumViewScopeTest {
 
         // WHEN
         testedScope.handleEvent(
-            RumRawEvent.AddFeatureFlagEvaluations(mapOf(flagName to flagValue)),
+            RumRawEvent.AddFeatureFlagEvaluations(mapOf(flagName to flagValue), eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -8865,7 +9034,8 @@ internal class RumViewScopeTest {
         // GIVEN
         testedScope.handleEvent(
             RumRawEvent.AddFeatureFlagEvaluations(
-                mapOf(flagName1 to oldFlagValue1, flagName2 to oldFlagValue2, flagName3 to oldFlagValue3)
+                mapOf(flagName1 to oldFlagValue1, flagName2 to oldFlagValue2, flagName3 to oldFlagValue3),
+                eventTime = fakeEventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,
@@ -8875,7 +9045,8 @@ internal class RumViewScopeTest {
         // WHEN
         testedScope.handleEvent(
             RumRawEvent.AddFeatureFlagEvaluations(
-                mapOf(flagName1 to flagValue1, flagName2 to flagValue2, flagName3 to flagValue3)
+                mapOf(flagName1 to flagValue1, flagName2 to flagValue2, flagName3 to flagValue3),
+                eventTime = fakeEventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,
@@ -8904,7 +9075,8 @@ internal class RumViewScopeTest {
         // GIVEN
         testedScope.handleEvent(
             RumRawEvent.AddFeatureFlagEvaluations(
-                mapOf(flagName1 to flagValue1, flagName2 to flagValue2, flagName3 to flagValue3)
+                mapOf(flagName1 to flagValue1, flagName2 to flagValue2, flagName3 to flagValue3),
+                eventTime = fakeEventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,
@@ -8919,6 +9091,7 @@ internal class RumViewScopeTest {
                 throwable = null,
                 stacktrace = null,
                 isFatal = false,
+                eventTime = fakeEventTime,
                 threads = emptyList(),
                 attributes = emptyMap()
             ),
@@ -8950,7 +9123,7 @@ internal class RumViewScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.StopSession(),
+            RumRawEvent.StopSession(eventTime = fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -8989,6 +9162,7 @@ internal class RumViewScopeTest {
             throwable,
             stacktrace,
             isFatal = false,
+            eventTime = fakeEventTime,
             threads = emptyList(),
             attributes = attributes
         )
@@ -9018,6 +9192,7 @@ internal class RumViewScopeTest {
             throwable,
             stacktrace,
             isFatal = false,
+            eventTime = fakeEventTime,
             threads = emptyList(),
             attributes = attributes
         )
@@ -9048,6 +9223,7 @@ internal class RumViewScopeTest {
             throwable,
             stacktrace,
             isFatal = false,
+            eventTime = fakeEventTime,
             threads = emptyList(),
             attributes = attributes
         )
@@ -9080,6 +9256,7 @@ internal class RumViewScopeTest {
             throwable,
             stacktrace,
             isFatal = true,
+            eventTime = fakeEventTime,
             threads = emptyList(),
             attributes = attributes
         )
@@ -9109,6 +9286,7 @@ internal class RumViewScopeTest {
             throwable,
             stacktrace,
             isFatal = true,
+            eventTime = fakeEventTime,
             threads = emptyList(),
             attributes = attributes
         )
@@ -9139,6 +9317,7 @@ internal class RumViewScopeTest {
             throwable,
             stacktrace,
             isFatal = true,
+            eventTime = fakeEventTime,
             threads = emptyList(),
             attributes = attributes
         )
@@ -9161,7 +9340,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = mockActionScope
-        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
 
         // When
         testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -9178,7 +9357,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = mockActionScope
-        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
         whenever(mockWriter.write(eq(mockEventBatchWriter), isA<LongTaskEvent>(), eq(EventType.DEFAULT))) doReturn false
 
         // When
@@ -9197,7 +9376,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = mockActionScope
-        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
         whenever(
             mockWriter.write(eq(mockEventBatchWriter), isA<LongTaskEvent>(), eq(EventType.DEFAULT))
         ) doThrow forge.anException()
@@ -9217,7 +9396,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = mockActionScope
-        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
 
         // When
         testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -9234,7 +9413,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = mockActionScope
-        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
         whenever(mockWriter.write(eq(mockEventBatchWriter), isA<LongTaskEvent>(), eq(EventType.DEFAULT))) doReturn false
 
         // When
@@ -9253,7 +9432,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         testedScope.activeActionScope = mockActionScope
-        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
         whenever(
             mockWriter.write(eq(mockEventBatchWriter), isA<LongTaskEvent>(), eq(EventType.DEFAULT))
         ) doThrow forge.anException()
@@ -9420,7 +9599,7 @@ internal class RumViewScopeTest {
         @StringForgery target: String
     ) {
         // Given
-        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
 
         // When
         testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -9437,7 +9616,10 @@ internal class RumViewScopeTest {
         fakeEvent = RumRawEvent.StopView(
             key = testedScope.key,
             attributes = forge.exhaustiveAttributes(),
-            eventTime = Time(nanoTime = fakeEventTime.nanoTime + fakeViewDurationNs)
+            eventTime = Time(
+                timestamp = fakeEventTime.timestamp,
+                nanoTime = fakeEventTime.nanoTime + fakeViewDurationNs
+            )
         )
 
         // When
@@ -9453,7 +9635,13 @@ internal class RumViewScopeTest {
     ) {
         // When
         testedScope.handleEvent(
-            forge.startViewEvent(eventTime = Time(nanoTime = fakeEventTime.nanoTime + fakeViewDurationNs)),
+            forge.startViewEvent(
+                eventTime = Time(
+                    timestamp = fakeEventTime.timestamp,
+                    nanoTime =
+                    fakeEventTime.nanoTime + fakeViewDurationNs
+                )
+            ),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -9467,7 +9655,13 @@ internal class RumViewScopeTest {
     fun `M call resolveReport(viewId, true, Long) of slowFramesListener W handleEvent(StopSession)`() {
         // When
         testedScope.handleEvent(
-            RumRawEvent.StopSession(eventTime = Time(nanoTime = fakeEventTime.nanoTime + fakeViewDurationNs)),
+            RumRawEvent.StopSession(
+                eventTime = Time(
+                    timestamp = fakeEventTime.timestamp,
+                    nanoTime =
+                    fakeEventTime.nanoTime + fakeViewDurationNs
+                )
+            ),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -9599,7 +9793,12 @@ internal class RumViewScopeTest {
         testedScope = newRumViewScope()
 
         // When
-        testedScope.handleEvent(RumRawEvent.StopSession(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(
+            RumRawEvent.StopSession(eventTime = fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
 
         // Then
         mockViewEndedMetricDispatcher.sendViewEnded(fakeInvState, fakeTnsState)
@@ -9608,7 +9807,13 @@ internal class RumViewScopeTest {
     @Test
     fun `M onDurationResolved W closing scope(StopSession)`(@LongForgery(min = 1) expectedDuration: Long) {
         // Given
-        val stopEvent = RumRawEvent.StopSession(eventTime = Time(nanoTime = fakeEventTime.nanoTime + expectedDuration))
+        val stopEvent = RumRawEvent.StopSession(
+            eventTime = Time(
+                timestamp = fakeEventTime.timestamp,
+                nanoTime =
+                fakeEventTime.nanoTime + expectedDuration
+            )
+        )
         testedScope = newRumViewScope()
 
         // When
@@ -9623,7 +9828,7 @@ internal class RumViewScopeTest {
         // Given
         val stopEvent = RumRawEvent.AddViewLoadingTime(
             overwrite = false,
-            eventTime = Time(nanoTime = fakeEventTime.nanoTime + expectedDuration)
+            eventTime = Time(timestamp = fakeEventTime.timestamp, nanoTime = fakeEventTime.nanoTime + expectedDuration)
         )
         testedScope = newRumViewScope()
 
@@ -9637,7 +9842,7 @@ internal class RumViewScopeTest {
     @Test
     fun `M return a new RumViewScope W renew the current one`() {
         // Given
-        val expectedTime = Time(nanoTime = fakeEventTime.nanoTime)
+        val expectedTime = Time(timestamp = fakeEventTime.timestamp, nanoTime = fakeEventTime.nanoTime)
 
         // When
         val newScope = testedScope.renew(expectedTime)
@@ -10411,7 +10616,7 @@ internal class RumViewScopeTest {
         @StringForgery target: String
     ) {
         // Given
-        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
 
         // When
         testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -10468,9 +10673,16 @@ internal class RumViewScopeTest {
 
     private fun mockEvent(): RumRawEvent {
         val event: RumRawEvent = mock()
-        whenever(event.eventTime) doReturn Time()
+        whenever(event.eventTime) doReturn fakeEventTime
         return event
     }
+
+    // Builds an event time that is strictly after the scope start (fakeEventTime), so that the
+    // resolved view duration is positive. Used by tests that assert a non-zero view duration.
+    private fun laterEventTime(offsetMs: Long = 10L) = Time(
+        timestamp = fakeEventTime.timestamp + offsetMs,
+        nanoTime = fakeEventTime.nanoTime + TimeUnit.MILLISECONDS.toNanos(offsetMs)
+    )
 
     private fun forgeGlobalAttributes(
         forge: Forge,

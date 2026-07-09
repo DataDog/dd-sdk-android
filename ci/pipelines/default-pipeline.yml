@@ -74,10 +74,12 @@ stages:
     - !reference [ .snippets, setup-gradle ]
     - !reference [ .snippets, setup-dd-ci-cli ]
     - !reference [ .snippets, install-android-api-components ]
+  start-emulator:
+    - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
   run-legacy-integration-instrumented:
     - set +e
     - exit_code=0
-    - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
+    - !reference [ .snippets, start-emulator ]
     - DD_TAGS="test.configuration.android_api:$ANDROID_API" ./gradlew :instrumented:integration:connectedDebugAndroidTest $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) || exit_code=$?
     - $ANDROID_HOME/platform-tools/adb emu kill
     - datadog-ci junit upload --service dd-sdk-android --tags test.configuration.android_api:$ANDROID_API --xpath-tag test.suite=/testcase/@classname instrumented/integration/build/outputs/androidTest-results/connected/debug/
@@ -86,7 +88,7 @@ stages:
   run-core-it-instrumented:
     - set +e
     - exit_code=0
-    - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
+    - !reference [ .snippets, start-emulator ]
     - DD_TAGS="test.configuration.android_api:$ANDROID_API" ./gradlew :reliability:core-it:connectedDebugAndroidTest $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) || exit_code=$?
     - $ANDROID_HOME/platform-tools/adb emu kill
     - datadog-ci junit upload --service dd-sdk-android --tags test.configuration.android_api:$ANDROID_API --xpath-tag test.suite=/testcase/@classname reliability/core-it/build/outputs/androidTest-results/connected/debug/
@@ -95,7 +97,7 @@ stages:
   run-ndk-instrumented:
     - set +e
     - exit_code=0
-    - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
+    - !reference [ .snippets, start-emulator ]
     - DD_TAGS="test.configuration.android_api:$ANDROID_API" ./gradlew :features:dd-sdk-android-ndk:connectedDebugAndroidTest $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) || exit_code=$?
     - $ANDROID_HOME/platform-tools/adb emu kill
     - datadog-ci junit upload --service dd-sdk-android --tags test.configuration.android_api:$ANDROID_API --xpath-tag test.suite=/testcase/@classname features/dd-sdk-android-ndk/build/outputs/androidTest-results/connected/debug/
@@ -282,9 +284,9 @@ test-pyramid:core-it-latest-api:
   stage: test-pyramid
   timeout: 1h
   variables:
-    ANDROID_API: "36"
-    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
-    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
+    ANDROID_API: "37"
+    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API.0;google_apis_ps16k;${ANDROID_ARCH}"
+    ANDROID_PLATFORM: "platforms;android-$ANDROID_API.0"
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
   script:
     - !reference [.snippets, setup-macos-ami-runner]
@@ -397,9 +399,9 @@ test-pyramid:legacy-integration-instrumented-latest-api:
   stage: test-pyramid
   timeout: 1h
   variables:
-    ANDROID_API: "36"
-    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
-    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
+    ANDROID_API: "37"
+    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API.0;google_apis_ps16k;${ANDROID_ARCH}"
+    ANDROID_PLATFORM: "platforms;android-$ANDROID_API.0"
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
   script:
     - !reference [.snippets, setup-macos-ami-runner]
@@ -427,9 +429,9 @@ test-pyramid:ndk-instrumented-latest-api:
   stage: test-pyramid
   timeout: 1h
   variables:
-    ANDROID_API: "36"
-    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
-    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
+    ANDROID_API: "37"
+    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API.0;google_apis_ps16k;${ANDROID_ARCH}"
+    ANDROID_PLATFORM: "platforms;android-$ANDROID_API.0"
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
   script:
     - !reference [.snippets, setup-macos-ami-runner]

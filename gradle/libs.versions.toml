@@ -49,7 +49,7 @@ androidXJunitRunner = "1.5.0"
 androidXJunitRules = "1.5.0"
 androidXExtJunit = "1.1.5"
 androidXJunitCore = "1.5.0"
-espresso = "3.5.1"
+espresso = "3.7.0"
 
 # Tests Tools
 assertJ = "3.27.7"
