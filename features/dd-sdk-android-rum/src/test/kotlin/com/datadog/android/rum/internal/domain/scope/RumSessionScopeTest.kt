@@ -1779,7 +1779,7 @@ internal class RumSessionScopeTest {
         )
         advanceTimeByMs(TEST_INACTIVITY_MS)
 
-        val appStartEvent = RumRawEvent.AppStartEvent(scenario = scenario)
+        val appStartEvent = RumRawEvent.AppStartEvent(scenario = scenario, currentFakeTime())
         testedScope.handleEvent(
             event = appStartEvent,
             datadogContext = fakeDatadogContext,
@@ -1789,7 +1789,7 @@ internal class RumSessionScopeTest {
 
         // When
         val info = RumTTIDInfo(scenario = scenario, durationNs = forge.aLong(min = 0, max = 10000))
-        val ttidEvent = RumRawEvent.AppStartTTIDEvent(info = info)
+        val ttidEvent = RumRawEvent.AppStartTTIDEvent(info = info, eventTime = currentFakeTime())
         testedScope.handleEvent(
             event = ttidEvent,
             datadogContext = fakeDatadogContext,
@@ -1797,7 +1797,7 @@ internal class RumSessionScopeTest {
             writer = mockWriter
         )
 
-        val ttfdEvent = RumRawEvent.AppStartTTFDEvent()
+        val ttfdEvent = RumRawEvent.AppStartTTFDEvent(eventTime = currentFakeTime())
         val result = testedScope.handleEvent(
             event = ttfdEvent,
             datadogContext = fakeDatadogContext,
