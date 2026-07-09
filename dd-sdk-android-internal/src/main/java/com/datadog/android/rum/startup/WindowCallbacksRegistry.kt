@@ -14,15 +14,50 @@ import java.util.WeakHashMap
 import kotlin.collections.getOrPut
 import kotlin.let
 
+/**
+ * Listener that is notified when the content of an activity's window changes.
+ *
+ * Used to detect when the decor view becomes available after [Activity.setContentView] is called.
+ */
 interface WindowCallbackListener {
+    /**
+     * Called when the window's content has changed (i.e., [Window.Callback.onContentChanged]).
+     */
     fun onContentChanged()
 }
 
+/**
+ * Manages [WindowCallbackListener] registrations on a per-[Activity] basis.
+ *
+ * Wraps the activity's [Window.Callback] so that content-change events can be forwarded to
+ * registered listeners without replacing any existing callback logic.
+ */
 interface WindowCallbacksRegistry {
+    /**
+     * Registers [listener] to receive content-change callbacks for [activity].
+     *
+     * @param activity The activity whose window callback should be observed.
+     * @param listener The listener to register.
+     */
     fun addListener(activity: Activity, listener: WindowCallbackListener)
+
+    /**
+     * Unregisters [listener] from content-change callbacks for [activity].
+     *
+     * If no more listeners remain for the activity, the wrapped window callback is removed.
+     *
+     * @param activity The activity whose window callback is being observed.
+     * @param listener The listener to unregister.
+     */
     fun removeListener(activity: Activity, listener: WindowCallbackListener)
 }
 
+/**
+ * Default implementation of [WindowCallbacksRegistry].
+ *
+ * Maintains a weak mapping from [Activity] to a wrapped [Window.Callback] so that listeners
+ * can be added and removed without leaking activity references.
+ */
 class WindowCallbacksRegistryImpl : WindowCallbacksRegistry {
     private val callbacks = WeakHashMap<Activity, WindowCallback>()
 
@@ -62,6 +97,7 @@ class WindowCallbacksRegistryImpl : WindowCallbacksRegistry {
     }
 }
 
+@Suppress("PackageNameVisibility")
 private class WindowCallback(
     val wrapped: Window.Callback
 ) : FixedWindowCallback(wrapped) {

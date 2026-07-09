@@ -12,7 +12,6 @@ import android.content.ContentProvider
 import android.content.ContentValues
 import android.database.Cursor
 import android.net.Uri
-import android.util.Log
 import com.datadog.android.rum.AppLaunchPreInitCollector
 import com.datadog.android.rum.DdRumContentProvider
 
@@ -28,26 +27,18 @@ import com.datadog.android.rum.DdRumContentProvider
  * No public API is exposed by this class; users interact with this module by adding
  * it as a Gradle dependency only.
  */
+@Suppress("PackageNameVisibility")
 internal class AppLaunchCollectorProvider : ContentProvider() {
 
+    @Suppress("ReturnCount")
     override fun onCreate(): Boolean {
-        val application = context?.applicationContext as? Application ?: run {
-            Log.w(TAG, "onCreate: applicationContext is null, skipping install")
-            return false
-        }
+        val application = context?.applicationContext as? Application ?: return false
         val importance = DdRumContentProvider.processImportance
         if (importance != ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
-            Log.d(TAG, "onCreate: process is not foreground (importance=$importance), skipping install")
             return false
         }
-        Log.d(TAG, "onCreate: foreground process detected, installing AppLaunchPreInitCollector")
         AppLaunchPreInitCollector.install(application)
         return true
-    }
-
-    companion object {
-        // Must match AppLaunchPreInitCollector.TAG for unified logcat filtering
-        private const val TAG = "DD/AppLaunch"
     }
 
     override fun query(

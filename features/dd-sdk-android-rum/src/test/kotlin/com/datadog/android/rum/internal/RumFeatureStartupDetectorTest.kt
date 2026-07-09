@@ -16,9 +16,9 @@ import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.startup.RumAppStartupDetector
 import com.datadog.android.rum.internal.startup.RumAppStartupDetectorImpl
-import com.datadog.android.rum.startup.RumFirstDrawTimeReporter
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
+import com.datadog.android.rum.startup.RumFirstDrawTimeReporter
 import com.datadog.android.rum.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.rum.utils.config.MainLooperTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
@@ -26,6 +26,7 @@ import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.getFieldValue
+import com.datadog.tools.unit.setFieldValue
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -42,8 +43,10 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -114,11 +117,13 @@ internal class RumFeatureStartupDetectorTest {
     // region onAppStartupDetected
 
     @Test
-    fun `M send app start event W onAppStartupDetected`() {
+    fun `M send TTID with wasForwarded=false W onAppStartupDetected + first frame drawn`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
 
         val listener = extractStartupDetectorListener()
+        val mockFirstDrawReporter = replaceFirstDrawReporterWithMock(listener)
+        val mockDetector = replaceDetectorWithMock()
 
         val fakeActivity = mock<Activity>()
         val fakeScenario = RumStartupScenario.Cold(
@@ -128,27 +133,48 @@ internal class RumFeatureStartupDetectorTest {
             initialTime = fakeTime
         )
 
+        whenever(mockDetector.getPendingScenario()) doReturn fakeScenario
+
+        val callbackCaptor = argumentCaptor<RumFirstDrawTimeReporter.Callback>()
+
         // When
         listener.onAppStartupDetected(fakeScenario)
 
-        // Then
+        // Then — sendAppStartEvent should be called
         verify(mockRumMonitor).sendAppStartEvent(fakeScenario)
+
+        verify(mockFirstDrawReporter).subscribeToFirstFrameDrawn(
+            eq(fakeActivity),
+            callbackCaptor.capture()
+        )
+
+        // When — simulate first frame drawn
+        val fakeTimestampNs = 200_000L
+        callbackCaptor.firstValue.onFirstFrameDrawn(fakeTimestampNs)
+
+        // Then
+        val ttidInfoCaptor = argumentCaptor<RumTTIDInfo>()
+        verify(mockRumMonitor).sendTTIDEvent(ttidInfoCaptor.capture())
+
+        val ttidInfo = ttidInfoCaptor.firstValue
+        assertThat(ttidInfo.scenario).isSameAs(fakeScenario)
+        assertThat(ttidInfo.durationNs).isEqualTo(fakeTimestampNs - fakeTime.nanoTime)
+        assertThat(ttidInfo.wasForwarded).isFalse()
+        verify(mockDetector).clearPendingScenario()
     }
 
     @Test
-    fun `M do nothing W onAppStartupDetected + monitor not AdvancedRumMonitor`() {
+    fun `M do nothing W onAppStartupDetected + activity GCd`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
 
         val listener = extractStartupDetectorListener()
+        val mockFirstDrawReporter = replaceFirstDrawReporterWithMock(listener)
 
-        GlobalRumMonitor.clear()
-        GlobalRumMonitor.registerIfAbsent(mock<RumMonitor>(), mockSdkCore)
-
-        val fakeActivity = mock<Activity>()
+        val fakeTime = Time(timestamp = 0L, nanoTime = 100_000L)
         val fakeScenario = RumStartupScenario.Cold(
             hasSavedInstanceStateBundle = false,
-            activity = WeakReference(fakeActivity),
+            activity = WeakReference(null), // GC'd — get() returns null
             appStartActivityOnCreateGapNs = 0L,
             initialTime = fakeTime
         )
@@ -158,30 +184,111 @@ internal class RumFeatureStartupDetectorTest {
 
         // Then
         verify(mockRumMonitor, never()).sendAppStartEvent(any())
+        verify(mockFirstDrawReporter, never()).subscribeToFirstFrameDrawn(any(), any())
+    }
+
+    @Test
+    fun `M do nothing W onAppStartupDetected + monitor not AdvancedRumMonitor`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        val listener = extractStartupDetectorListener()
+        val mockFirstDrawReporter = replaceFirstDrawReporterWithMock(listener)
+
+        // Replace the registered AdvancedRumMonitor with a plain RumMonitor
+        // so the cast in onAppStartupDetected returns null
+        GlobalRumMonitor.clear()
+        GlobalRumMonitor.registerIfAbsent(mock<RumMonitor>(), mockSdkCore)
+
+        val fakeActivity = mock<Activity>()
+        val fakeTime = Time(timestamp = 0L, nanoTime = 100_000L)
+        val fakeScenario = RumStartupScenario.Cold(
+            hasSavedInstanceStateBundle = false,
+            activity = WeakReference(fakeActivity),
+            appStartActivityOnCreateGapNs = 0L,
+            initialTime = fakeTime
+        )
+
+        // When
+        listener.onAppStartupDetected(fakeScenario)
+
+        // Then
+        verify(mockFirstDrawReporter, never()).subscribeToFirstFrameDrawn(any(), any())
+    }
+
+    @Test
+    fun `M call sendAppStartEvent only in onAppStartupDetected W startup flow`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        val listener = extractStartupDetectorListener()
+        replaceFirstDrawReporterWithMock(listener)
+        replaceDetectorWithMock()
+
+        val fakeOriginalActivity = mock<Activity>()
+        val fakeForwardedActivity = mock<Activity>()
+        val fakeTime = Time(timestamp = 0L, nanoTime = 100_000L)
+        val fakeScenario = RumStartupScenario.Cold(
+            hasSavedInstanceStateBundle = false,
+            activity = WeakReference(fakeOriginalActivity),
+            appStartActivityOnCreateGapNs = 0L,
+            initialTime = fakeTime
+        )
+
+        // When
+        listener.onAppStartupDetected(fakeScenario)
+
+        // Then — sendAppStartEvent called once
+        verify(mockRumMonitor, times(1)).sendAppStartEvent(fakeScenario)
+
+        // When
+        listener.onNextActivityCreated(fakeScenario, fakeForwardedActivity)
+
+        // Then — still only called once (not from onNextActivityCreated)
+        verify(mockRumMonitor, times(1)).sendAppStartEvent(any())
     }
 
     // endregion
 
-    // region onTTIDComputed
+    // region onNextActivityCreated
 
     @Test
-    fun `M send TTID event W onTTIDComputed`() {
+    fun `M send TTID with wasForwarded=true W onNextActivityCreated + first frame drawn`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
 
         val listener = extractStartupDetectorListener()
+        val mockFirstDrawReporter = replaceFirstDrawReporterWithMock(listener)
+        val mockDetector = replaceDetectorWithMock()
 
-        val fakeActivity = mock<Activity>()
+        val fakeOriginalActivity = mock<Activity>()
+        val fakeForwardedActivity = mock<Activity>()
+        val fakeTime = Time(timestamp = 0L, nanoTime = 100_000L)
         val fakeScenario = RumStartupScenario.Cold(
             hasSavedInstanceStateBundle = false,
-            activity = WeakReference(fakeActivity),
+            activity = WeakReference(fakeOriginalActivity),
             appStartActivityOnCreateGapNs = 0L,
             initialTime = fakeTime
         )
-        val fakeDurationNs = 100_000L
+
+        whenever(mockDetector.getPendingScenario()) doReturn fakeScenario
+
+        val callbackCaptor = argumentCaptor<RumFirstDrawTimeReporter.Callback>()
 
         // When
-        listener.onTTIDComputed(fakeScenario, fakeDurationNs, wasForwarded = false)
+        listener.onNextActivityCreated(fakeScenario, fakeForwardedActivity)
+
+        // Then — sendAppStartEvent should NOT be called via onNextActivityCreated
+        verify(mockRumMonitor, times(0)).sendAppStartEvent(any())
+
+        verify(mockFirstDrawReporter).subscribeToFirstFrameDrawn(
+            eq(fakeForwardedActivity),
+            callbackCaptor.capture()
+        )
+
+        // When — simulate first frame drawn
+        val fakeTimestampNs = 200_000L
+        callbackCaptor.firstValue.onFirstFrameDrawn(fakeTimestampNs)
 
         // Then
         val ttidInfoCaptor = argumentCaptor<RumTTIDInfo>()
@@ -189,49 +296,26 @@ internal class RumFeatureStartupDetectorTest {
 
         val ttidInfo = ttidInfoCaptor.firstValue
         assertThat(ttidInfo.scenario).isSameAs(fakeScenario)
-        assertThat(ttidInfo.durationNs).isEqualTo(fakeDurationNs)
-        assertThat(ttidInfo.wasForwarded).isFalse()
-    }
-
-    @Test
-    fun `M send TTID event with wasForwarded=true W onTTIDComputed`() {
-        // Given
-        testedFeature.onInitialize(appContext.mockInstance)
-
-        val listener = extractStartupDetectorListener()
-
-        val fakeActivity = mock<Activity>()
-        val fakeScenario = RumStartupScenario.Cold(
-            hasSavedInstanceStateBundle = false,
-            activity = WeakReference(fakeActivity),
-            appStartActivityOnCreateGapNs = 0L,
-            initialTime = fakeTime
-        )
-        val fakeDurationNs = 100_000L
-
-        // When
-        listener.onTTIDComputed(fakeScenario, fakeDurationNs, wasForwarded = true)
-
-        // Then
-        val ttidInfoCaptor = argumentCaptor<RumTTIDInfo>()
-        verify(mockRumMonitor).sendTTIDEvent(ttidInfoCaptor.capture())
-
-        val ttidInfo = ttidInfoCaptor.firstValue
-        assertThat(ttidInfo.scenario).isSameAs(fakeScenario)
-        assertThat(ttidInfo.durationNs).isEqualTo(fakeDurationNs)
+        assertThat(ttidInfo.durationNs).isEqualTo(fakeTimestampNs - fakeTime.nanoTime)
         assertThat(ttidInfo.wasForwarded).isTrue()
+        verify(mockDetector).clearPendingScenario()
     }
 
     @Test
-    fun `M do nothing W onTTIDComputed + monitor not AdvancedRumMonitor`() {
+    fun `M do nothing W onNextActivityCreated + monitor not AdvancedRumMonitor`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
 
         val listener = extractStartupDetectorListener()
+        val mockFirstDrawReporter = replaceFirstDrawReporterWithMock(listener)
 
+        // Replace the registered AdvancedRumMonitor with a plain RumMonitor
+        // so the cast in onNextActivityCreated returns null
         GlobalRumMonitor.clear()
         GlobalRumMonitor.registerIfAbsent(mock<RumMonitor>(), mockSdkCore)
 
+        val fakeForwardedActivity = mock<Activity>()
+        val fakeTime = Time(timestamp = 0L, nanoTime = 100_000L)
         val fakeScenario = RumStartupScenario.Cold(
             hasSavedInstanceStateBundle = false,
             activity = WeakReference(mock()),
@@ -240,10 +324,63 @@ internal class RumFeatureStartupDetectorTest {
         )
 
         // When
-        listener.onTTIDComputed(fakeScenario, 100_000L, wasForwarded = false)
+        listener.onNextActivityCreated(fakeScenario, fakeForwardedActivity)
 
         // Then
-        verify(mockRumMonitor, never()).sendTTIDEvent(any())
+        verify(mockFirstDrawReporter, never()).subscribeToFirstFrameDrawn(any(), any())
+    }
+
+    // endregion
+
+    // region duplicate prevention
+
+    @Test
+    fun `M only send TTID once W both original and forwarded activity draw`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        val listener = extractStartupDetectorListener()
+        val mockFirstDrawReporter = replaceFirstDrawReporterWithMock(listener)
+        val mockDetector = replaceDetectorWithMock()
+
+        val fakeOriginalActivity = mock<Activity>()
+        val fakeForwardedActivity = mock<Activity>()
+        val fakeTime = Time(timestamp = 0L, nanoTime = 100_000L)
+        val fakeScenario = RumStartupScenario.Cold(
+            hasSavedInstanceStateBundle = false,
+            activity = WeakReference(fakeOriginalActivity),
+            appStartActivityOnCreateGapNs = 0L,
+            initialTime = fakeTime
+        )
+
+        whenever(mockDetector.getPendingScenario()) doReturn fakeScenario
+
+        val callbackCaptor = argumentCaptor<RumFirstDrawTimeReporter.Callback>()
+
+        // When — trigger both callbacks
+        listener.onAppStartupDetected(fakeScenario)
+        listener.onNextActivityCreated(fakeScenario, fakeForwardedActivity)
+
+        verify(mockFirstDrawReporter, times(2)).subscribeToFirstFrameDrawn(
+            any(),
+            callbackCaptor.capture()
+        )
+
+        val originalCallback = callbackCaptor.allValues[0]
+        val forwardedCallback = callbackCaptor.allValues[1]
+
+        // First draw fires (original activity)
+        originalCallback.onFirstFrameDrawn(200_000L)
+
+        // After first TTID is sent, scenario is cleared
+        verify(mockDetector).clearPendingScenario()
+        whenever(mockDetector.getPendingScenario()) doReturn null
+
+        // Second draw fires (forwarded activity) — should be no-op
+        forwardedCallback.onFirstFrameDrawn(300_000L)
+
+        // Then — sendTTIDEvent should only be called once
+        verify(mockRumMonitor, times(1)).sendTTIDEvent(any())
     }
 
     // endregion
@@ -264,6 +401,30 @@ internal class RumFeatureStartupDetectorTest {
             "listener",
             RumAppStartupDetectorImpl::class.java
         )
+    }
+
+    /**
+     * Replaces the `rumFirstDrawTimeReporter` field inside the anonymous listener with a mock,
+     * so we can capture the [RumFirstDrawTimeReporter.Callback] passed to
+     * [RumFirstDrawTimeReporter.subscribeToFirstFrameDrawn].
+     */
+    private fun replaceFirstDrawReporterWithMock(
+        listener: RumAppStartupDetector.Listener
+    ): RumFirstDrawTimeReporter {
+        val mockReporter = mock<RumFirstDrawTimeReporter>()
+        listener.setFieldValue("rumFirstDrawTimeReporter", mockReporter)
+        return mockReporter
+    }
+
+    /**
+     * Replaces the `rumAppStartupDetector` field on [RumFeature] with a mock so
+     * [RumAppStartupDetector.getPendingScenario] and [RumAppStartupDetector.clearPendingScenario]
+     * can be controlled.
+     */
+    private fun replaceDetectorWithMock(): RumAppStartupDetector {
+        val mockDetector = mock<RumAppStartupDetector>()
+        testedFeature.setFieldValue("rumAppStartupDetector", mockDetector)
+        return mockDetector
     }
 
     // endregion

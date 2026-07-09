@@ -7,6 +7,7 @@
 package com.datadog.android.rum.startup
 
 import android.app.Activity
+import android.app.Application
 import android.os.Handler
 import android.os.Message
 import android.view.View
@@ -24,6 +25,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -49,6 +51,9 @@ class RumFirstDrawTimeReporterImplTest {
     private lateinit var activity: Activity
 
     @Mock
+    private lateinit var mockApplication: Application
+
+    @Mock
     private lateinit var window: Window
 
     @Mock
@@ -68,6 +73,7 @@ class RumFirstDrawTimeReporterImplTest {
         )
 
         whenever(activity.window) doReturn window
+        whenever(activity.application) doReturn mockApplication
         whenever(window.peekDecorView()) doReturn null
         whenever(window.decorView) doReturn decorView
 
@@ -269,5 +275,58 @@ class RumFirstDrawTimeReporterImplTest {
             verify(viewTreeObserver).removeOnDrawListener(any())
             verifyNoMoreInteractions()
         }
+    }
+
+    @Test
+    fun `M remove WindowCallbackListener W activity destroyed { before setContentView is called }`() {
+        // Simulates InterstitialSplashActivity: decorView is null and setContentView is never called.
+        // The addListener stub must NOT fire onContentChanged immediately, because we want to test
+        // the path where the Activity is destroyed before any content is set.
+        var capturedListener: WindowCallbackListener? = null
+        whenever(windowCallbackRegistry.addListener(any(), any())).doAnswer {
+            capturedListener = it.getArgument(1)
+        }
+        var registeredLifecycleCallback: Application.ActivityLifecycleCallbacks? = null
+        whenever(mockApplication.registerActivityLifecycleCallbacks(any())).doAnswer {
+            registeredLifecycleCallback = it.getArgument(0)
+        }
+
+        // When
+        reporter.subscribeToFirstFrameDrawn(activity, callback)
+
+        checkNotNull(registeredLifecycleCallback) {
+            "Expected a lifecycle callback to be registered for destroy cleanup"
+        }
+        checkNotNull(capturedListener) { "Expected addListener to be called" }
+
+        // When the activity is destroyed before setContentView fires
+        registeredLifecycleCallback!!.onActivityDestroyed(activity)
+
+        // Then — the WindowCallbackListener is removed (breaks the strong reference in WeakHashMap value)
+        verify(windowCallbackRegistry).removeListener(activity, capturedListener!!)
+        // And the lifecycle callback unregisters itself to avoid accumulation
+        verify(mockApplication).unregisterActivityLifecycleCallbacks(registeredLifecycleCallback)
+        verifyNoInteractions(callback)
+    }
+
+    @Test
+    fun `M not remove WindowCallbackListener W activity destroyed { for a different activity }`() {
+        // Given — addListener does not fire onContentChanged
+        var registeredLifecycleCallback: Application.ActivityLifecycleCallbacks? = null
+        whenever(windowCallbackRegistry.addListener(any(), any())).doAnswer { }
+        whenever(mockApplication.registerActivityLifecycleCallbacks(any())).doAnswer {
+            registeredLifecycleCallback = it.getArgument(0)
+        }
+        reporter.subscribeToFirstFrameDrawn(activity, callback)
+        checkNotNull(registeredLifecycleCallback)
+
+        val otherActivity = org.mockito.kotlin.mock<Activity>()
+
+        // When destroyed fires for a different activity
+        registeredLifecycleCallback!!.onActivityDestroyed(otherActivity)
+
+        // Then — nothing is cleaned up for our activity
+        verify(windowCallbackRegistry).addListener(any(), any())
+        org.mockito.kotlin.verifyNoMoreInteractions(windowCallbackRegistry)
     }
 }

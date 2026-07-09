@@ -17,6 +17,8 @@ import com.datadog.android.rum.internal.startup.RumAppStartupDetector
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.startup.AppStartupActivityPredicate
+import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
+import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.rum.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.rum.utils.config.MainLooperTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
@@ -40,9 +42,9 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -137,8 +139,8 @@ internal class RumFeaturePreInitStartupTest {
         @Suppress("UNCHECKED_CAST")
         (callbacksField.get(AppLaunchPreInitCollector) as CopyOnWriteArrayList<*>).clear()
 
-        // Reset _application via reflection
-        val appField = AppLaunchPreInitCollector::class.java.getDeclaredField("_application")
+        // Reset registeredApplication via reflection
+        val appField = AppLaunchPreInitCollector::class.java.getDeclaredField("registeredApplication")
         appField.isAccessible = true
         appField.set(AppLaunchPreInitCollector, null)
     }
@@ -243,8 +245,10 @@ internal class RumFeaturePreInitStartupTest {
     // region INT-03: CAPTURING branch
 
     @Test
-    fun `M send app start event immediately W initRumAppStartupDetector() { collector CAPTURING }`() {
-        // Given
+    fun `M not send app start event during onInitialize W initRumAppStartupDetector() { collector CAPTURING }`() {
+        // Given — GlobalRumMonitor is registered before onInitialize in tests, but in production
+        // the real monitor is registered AFTER onInitialize returns. The CAPTURING branch now
+        // defers events to the first-frame callback to avoid sending to a NoOp monitor.
         val mockActivity = mock<Activity>()
         setCollectorState(AppLaunchPreInitCollector.State.CAPTURING)
         configureCollectorData(
@@ -257,12 +261,12 @@ internal class RumFeaturePreInitStartupTest {
         // When
         testedFeature.onInitialize(appContext.mockInstance)
 
-        // Then — sendAppStartEvent is called once
-        verify(mockRumMonitor, times(1)).sendAppStartEvent(any())
+        // Then — sendAppStartEvent is NOT called immediately; deferred to first-frame callback
+        verify(mockRumMonitor, never()).sendAppStartEvent(any())
     }
 
     @Test
-    fun `M send TTID on first frame callback W initRumAppStartupDetector() { collector CAPTURING }`() {
+    fun `M send app start and TTID on first frame callback W initRumAppStartupDetector() { collector CAPTURING }`() {
         // Given
         val mockActivity = mock<Activity>()
         setCollectorState(AppLaunchPreInitCollector.State.CAPTURING)
@@ -276,14 +280,15 @@ internal class RumFeaturePreInitStartupTest {
         // When
         testedFeature.onInitialize(appContext.mockInstance)
 
-        // Simulate first frame callback by transitioning to COMPLETE and draining
+        // Simulate first frame callback firing (after Rum.enable() would have returned in prod)
         val fakeFirstFrameNs = 300_000L
         setCollectorState(AppLaunchPreInitCollector.State.COMPLETE)
         AppLaunchPreInitCollector.firstFrameNs = fakeFirstFrameNs
         val callbacks = getFirstFrameCallbacks()
         callbacks.forEach { it(fakeFirstFrameNs) }
 
-        // Then — sendTTIDEvent is called once
+        // Then — both sendAppStartEvent and sendTTIDEvent are called from the callback
+        verify(mockRumMonitor, times(1)).sendAppStartEvent(any())
         val ttidCaptor = argumentCaptor<RumTTIDInfo>()
         verify(mockRumMonitor, times(1)).sendTTIDEvent(ttidCaptor.capture())
         assertThat(ttidCaptor.firstValue.durationNs).isEqualTo(fakeFirstFrameNs - 100_000L)
@@ -294,7 +299,28 @@ internal class RumFeaturePreInitStartupTest {
     // region INT-04: COMPLETE branch
 
     @Test
-    fun `M send app start and TTID synchronously W initRumAppStartupDetector() { collector COMPLETE }`() {
+    fun `M not send events during onInitialize W initRumAppStartupDetector() { collector COMPLETE }`() {
+        // Given — events are deferred to pendingPreLaunchAction (invoked by Rum.kt after registerIfAbsent)
+        val mockActivity = mock<Activity>()
+        setCollectorState(AppLaunchPreInitCollector.State.COMPLETE)
+        configureCollectorData(
+            processStartNs = 100_000L,
+            activityOnCreateNs = 200_000L,
+            firstFrameNs = 300_000L,
+            isFirstActivityForProcess = true,
+            activity = mockActivity
+        )
+
+        // When — onInitialize runs but pendingPreLaunchAction has not been invoked yet
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then — events NOT sent yet (action pending Rum.kt dispatch)
+        verify(mockRumMonitor, never()).sendAppStartEvent(any())
+        verify(mockRumMonitor, never()).sendTTIDEvent(any())
+    }
+
+    @Test
+    fun `M send app start and TTID W initRumAppStartupDetector() { collector COMPLETE + action invoked }`() {
         // Given
         val mockActivity = mock<Activity>()
         setCollectorState(AppLaunchPreInitCollector.State.COMPLETE)
@@ -306,12 +332,116 @@ internal class RumFeaturePreInitStartupTest {
             activity = mockActivity
         )
 
-        // When
+        // When — simulate what Rum.kt does after registerIfAbsent
         testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.pendingPreLaunchAction?.invoke()
 
-        // Then — both events called synchronously
+        // Then — both events sent
         verify(mockRumMonitor, times(1)).sendAppStartEvent(any())
         verify(mockRumMonitor, times(1)).sendTTIDEvent(any())
+    }
+
+    @Test
+    fun `M call onActivityStarted on NavigationViewTrackingStrategy W initRumAppStartupDetector() { COMPLETE }`() {
+        // Given
+        val mockActivity = mock<Activity>()
+        val mockNavStrategy = mock<NavigationViewTrackingStrategy>()
+        setCollectorState(AppLaunchPreInitCollector.State.COMPLETE)
+        configureCollectorData(
+            processStartNs = 100_000L,
+            activityOnCreateNs = 200_000L,
+            firstFrameNs = 300_000L,
+            isFirstActivityForProcess = true,
+            activity = mockActivity
+        )
+        // Rebuild feature with NavigationViewTrackingStrategy so viewTrackingStrategy is set
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration.copy(
+                appStartupActivityPredicate = mockAppStartupActivityPredicate,
+                viewTrackingStrategy = mockNavStrategy
+            ),
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+        GlobalRumMonitor.clear()
+        GlobalRumMonitor.registerIfAbsent(mockRumMonitor, mockSdkCore)
+
+        // When — simulate Rum.kt: onInitialize then dispatch pendingPreLaunchAction
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.pendingPreLaunchAction?.invoke()
+
+        // Then — view tracking strategy is primed before startup events so the RUM executor
+        // has a StartView in the queue before AppStart/TTID
+        verify(mockNavStrategy).onActivityStarted(mockActivity)
+        verify(mockRumMonitor, times(1)).sendAppStartEvent(any())
+        verify(mockRumMonitor, times(1)).sendTTIDEvent(any())
+    }
+
+    @Test
+    fun `M call onActivityResumed on ActivityViewTrackingStrategy W initRumAppStartupDetector() { COMPLETE }`() {
+        // Given
+        val mockActivity = mock<Activity>()
+        val mockActivityStrategy = mock<ActivityViewTrackingStrategy>()
+        setCollectorState(AppLaunchPreInitCollector.State.COMPLETE)
+        configureCollectorData(
+            processStartNs = 100_000L,
+            activityOnCreateNs = 200_000L,
+            firstFrameNs = 300_000L,
+            isFirstActivityForProcess = true,
+            activity = mockActivity
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration.copy(
+                appStartupActivityPredicate = mockAppStartupActivityPredicate,
+                viewTrackingStrategy = mockActivityStrategy
+            ),
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+        GlobalRumMonitor.clear()
+        GlobalRumMonitor.registerIfAbsent(mockRumMonitor, mockSdkCore)
+
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.pendingPreLaunchAction?.invoke()
+
+        // Then
+        verify(mockActivityStrategy).onActivityResumed(mockActivity)
+        verify(mockRumMonitor, times(1)).sendAppStartEvent(any())
+        verify(mockRumMonitor, times(1)).sendTTIDEvent(any())
+    }
+
+    @Test
+    fun `M skip view tracking strategy W initRumAppStartupDetector() { collector COMPLETE + activity GCd }`() {
+        // Given — constructScenario returns null when activity is GC'd, falls back to default detector
+        val mockNavStrategy = mock<NavigationViewTrackingStrategy>()
+        setCollectorState(AppLaunchPreInitCollector.State.COMPLETE)
+        configureCollectorData(
+            processStartNs = 100_000L,
+            activityOnCreateNs = 200_000L,
+            firstFrameNs = 300_000L
+        )
+        AppLaunchPreInitCollector.activity = WeakReference(null) // GC'd
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration.copy(
+                appStartupActivityPredicate = mockAppStartupActivityPredicate,
+                viewTrackingStrategy = mockNavStrategy
+            ),
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+        GlobalRumMonitor.clear()
+        GlobalRumMonitor.registerIfAbsent(mockRumMonitor, mockSdkCore)
+
+        // When — pendingPreLaunchAction is null because constructScenario returned null
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.pendingPreLaunchAction?.invoke()
+
+        // Then — no attempt to prime view tracking
+        verify(mockNavStrategy, never()).onActivityStarted(any())
     }
 
     // endregion
@@ -333,6 +463,7 @@ internal class RumFeaturePreInitStartupTest {
 
         // When
         testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.pendingPreLaunchAction?.invoke()
 
         // Then — scenario is Cold with initialTime.nanoTime == processStartNs
         val scenarioCaptor = argumentCaptor<RumStartupScenario>()
@@ -357,6 +488,7 @@ internal class RumFeaturePreInitStartupTest {
 
         // When
         testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.pendingPreLaunchAction?.invoke()
 
         // Then — scenario is WarmFirstActivity with initialTime.nanoTime == activityOnCreateNs
         val scenarioCaptor = argumentCaptor<RumStartupScenario>()
@@ -367,7 +499,7 @@ internal class RumFeaturePreInitStartupTest {
     }
 
     @Test
-    fun `M construct WarmAfterActivityDestroyed scenario W initRumAppStartupDetector() { COMPLETE + not first activity }`() {
+    fun `M construct WarmAfterActivityDestroyed W initRumAppStartupDetector() { COMPLETE + notFirstActivity }`() {
         // Given
         val mockActivity = mock<Activity>()
         setCollectorState(AppLaunchPreInitCollector.State.COMPLETE)
@@ -381,6 +513,7 @@ internal class RumFeaturePreInitStartupTest {
 
         // When
         testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.pendingPreLaunchAction?.invoke()
 
         // Then — scenario is WarmAfterActivityDestroyed
         val scenarioCaptor = argumentCaptor<RumStartupScenario>()

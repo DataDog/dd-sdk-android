@@ -14,7 +14,6 @@ import android.content.Context
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import androidx.annotation.AnyThread
 import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
@@ -59,8 +58,8 @@ import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.debug.UiRumDebugListener
 import com.datadog.android.rum.internal.domain.InfoProvider
-import com.datadog.android.rum.internal.domain.asTimeNs
 import com.datadog.android.rum.internal.domain.RumDataWriter
+import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilityReader
 import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilityReader
@@ -91,9 +90,6 @@ import com.datadog.android.rum.internal.startup.DefaultAppStartupActivityPredica
 import com.datadog.android.rum.internal.startup.RumAppStartupDetector
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
-import com.datadog.android.rum.startup.RumFirstDrawTimeReporter
-import com.datadog.android.rum.startup.RumFirstDrawTimeReporterImpl
-import com.datadog.android.rum.startup.WindowCallbacksRegistryImpl
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.rum.internal.timeseries.DefaultTimeseriesCollectorFactory
 import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollectorFactory
@@ -127,10 +123,14 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
 import com.datadog.android.rum.startup.AppStartupActivityPredicate
+import com.datadog.android.rum.startup.RumFirstDrawTimeReporter
+import com.datadog.android.rum.startup.RumFirstDrawTimeReporterImpl
+import com.datadog.android.rum.startup.WindowCallbacksRegistryImpl
 import com.datadog.android.rum.timeseries.TimeseriesConfiguration
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
+import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpActionTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
@@ -139,17 +139,17 @@ import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import java.util.Locale
-import kotlin.time.Duration.Companion.seconds
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * RUM feature class, which needs to be registered with Datadog SDK instance.
  */
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LargeClass")
 internal class RumFeature(
     private val sdkCore: FeatureSdkCore,
     internal val applicationId: String,
@@ -171,6 +171,11 @@ internal class RumFeature(
     internal var trackFrustrations: Boolean = false
 
     internal var viewTrackingStrategy: ViewTrackingStrategy = NoOpViewTrackingStrategy()
+
+    // Set by initRumAppStartupDetector() when the collector is COMPLETE at SDK init time.
+    // Rum.kt invokes this on the main thread after GlobalRumMonitor.registerIfAbsent() returns,
+    // ensuring the real monitor is available regardless of which thread Rum.enable() is called on.
+    internal var pendingPreLaunchAction: (() -> Unit)? = null
     internal var actionTrackingStrategy: UserActionTrackingStrategy =
         NoOpUserActionTrackingStrategy()
     internal var longTaskTrackingStrategy: TrackingStrategy = NoOpTrackingStrategy()
@@ -764,57 +769,30 @@ internal class RumFeature(
 
     private fun initRumAppStartupDetector() {
         val collector = AppLaunchPreInitCollector
-        Log.d(TTID_LOG_TAG, "initRumAppStartupDetector: collector state=${collector.state}")
         when (collector.state) {
             AppLaunchPreInitCollector.State.NOT_INSTALLED -> {
-                Log.d(TTID_LOG_TAG, "NOT_INSTALLED — prelaunch module not present; using default RumAppStartupDetector")
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.DEBUG,
+                    InternalLogger.Target.MAINTAINER,
+                    { "TTID: NOT_INSTALLED — prelaunch module not present; using default RumAppStartupDetector" }
+                )
                 createDefaultRumAppStartupDetector()
             }
             AppLaunchPreInitCollector.State.IDLE -> {
-                Log.d(TTID_LOG_TAG, "IDLE — SDK init before first Activity; claiming collector, using default RumAppStartupDetector")
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.DEBUG,
+                    InternalLogger.Target.MAINTAINER,
+                    {
+                        "TTID: IDLE — SDK init before first Activity;" +
+                            " claiming collector, using default RumAppStartupDetector"
+                    }
+                )
                 collector.claim()
                 createDefaultRumAppStartupDetector()
             }
-            AppLaunchPreInitCollector.State.CAPTURING -> {
-                Log.d(TTID_LOG_TAG, "CAPTURING — SDK init during Activity capture; will subscribe to first-frame callback for TTID")
-                val scenario = constructScenario(collector)
-                    ?: run {
-                        Log.d(TTID_LOG_TAG, "CAPTURING — constructScenario returned null; falling back to default detector")
-                        createDefaultRumAppStartupDetector()
-                        return
-                    }
-                Log.d(TTID_LOG_TAG, "CAPTURING — scenario=${scenario::class.simpleName}; sending AppStart event, awaiting first frame")
-                val rumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor ?: return
-                rumMonitor.sendAppStartEvent(scenario)
-                collector.addFirstFrameCallback { firstFrameNs ->
-                    val durationNs = firstFrameNs - scenario.initialTime.nanoTime
-                    Log.d(TTID_LOG_TAG, "CAPTURING→COMPLETE callback: TTID durationMs=${durationNs / 1_000_000}")
-                    rumMonitor.sendTTIDEvent(RumTTIDInfo(scenario = scenario, durationNs = durationNs))
-                }
-            }
-            AppLaunchPreInitCollector.State.COMPLETE -> {
-                Log.d(
-                    TTID_LOG_TAG,
-                    "COMPLETE — full timing available:" +
-                        " processStartNs=${collector.processStartNs}" +
-                        " activityOnCreateNs=${collector.activityOnCreateNs}" +
-                        " firstFrameNs=${collector.firstFrameNs}" +
-                        " totalMs=${(collector.firstFrameNs - collector.processStartNs) / 1_000_000}"
-                )
-                val scenario = constructScenario(collector)
-                    ?: run {
-                        Log.d(TTID_LOG_TAG, "COMPLETE — constructScenario returned null; falling back to default detector")
-                        createDefaultRumAppStartupDetector()
-                        return
-                    }
-                val rumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor ?: return
-                val durationNs = collector.firstFrameNs - scenario.initialTime.nanoTime
-                Log.d(TTID_LOG_TAG, "COMPLETE — scenario=${scenario::class.simpleName}; TTID durationMs=${durationNs / 1_000_000}; sending events")
-                rumMonitor.sendAppStartEvent(scenario)
-                rumMonitor.sendTTIDEvent(RumTTIDInfo(scenario = scenario, durationNs = durationNs))
-            }
+            AppLaunchPreInitCollector.State.CAPTURING -> handleCapturingState(collector)
+            AppLaunchPreInitCollector.State.COMPLETE -> handleCompleteState(collector)
             AppLaunchPreInitCollector.State.CLAIMED -> {
-                Log.d(TTID_LOG_TAG, "CLAIMED — collector already claimed by another RumFeature instance; falling back to default detector")
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.MAINTAINER,
@@ -822,6 +800,102 @@ internal class RumFeature(
                 )
                 createDefaultRumAppStartupDetector()
             }
+        }
+    }
+
+    private fun handleCapturingState(collector: AppLaunchPreInitCollector) {
+        sdkCore.internalLogger.log(
+            InternalLogger.Level.DEBUG,
+            InternalLogger.Target.MAINTAINER,
+            { "TTID: CAPTURING — SDK init during Activity capture; subscribing to first-frame callback" }
+        )
+        val scenario = constructScenario(collector)
+            ?: run {
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.DEBUG,
+                    InternalLogger.Target.MAINTAINER,
+                    { "TTID: CAPTURING — constructScenario returned null; fallback to default" }
+                )
+                createDefaultRumAppStartupDetector()
+                return
+            }
+        sdkCore.internalLogger.log(
+            InternalLogger.Level.DEBUG,
+            InternalLogger.Target.MAINTAINER,
+            { "TTID: CAPTURING — scenario=${scenario::class.simpleName}; awaiting first frame" }
+        )
+        // GlobalRumMonitor is not yet registered during onInitialize — the real monitor is
+        // registered in Rum.enable() after onInitialize returns. Re-get the monitor inside
+        // the first-frame callback, which fires after Rum.enable() has completed.
+        collector.addFirstFrameCallback { firstFrameNs ->
+            val durationNs = firstFrameNs - scenario.initialTime.nanoTime
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.DEBUG,
+                InternalLogger.Target.MAINTAINER,
+                { "TTID: CAPTURING→COMPLETE callback: durationMs=${durationNs / NS_PER_MS}" }
+            )
+            val rumMonitor =
+                GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor ?: return@addFirstFrameCallback
+            rumMonitor.sendAppStartEvent(scenario)
+            rumMonitor.sendTTIDEvent(RumTTIDInfo(scenario = scenario, durationNs = durationNs))
+        }
+    }
+
+    // ThreadSafety: pendingPreLaunchAction is dispatched on the main thread in Rum.kt via
+    // Handler(Looper.getMainLooper()).post(), so @MainThread calls inside are safe.
+    @Suppress("ThreadSafety")
+    private fun handleCompleteState(collector: AppLaunchPreInitCollector) {
+        sdkCore.internalLogger.log(
+            InternalLogger.Level.DEBUG,
+            InternalLogger.Target.MAINTAINER,
+            {
+                "TTID: COMPLETE — processStartNs=${collector.processStartNs}" +
+                    " activityOnCreateNs=${collector.activityOnCreateNs}" +
+                    " firstFrameNs=${collector.firstFrameNs}" +
+                    " totalMs=${(collector.firstFrameNs - collector.processStartNs) / NS_PER_MS}"
+            }
+        )
+        val scenario = constructScenario(collector)
+            ?: run {
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.DEBUG,
+                    InternalLogger.Target.MAINTAINER,
+                    { "TTID: COMPLETE — constructScenario returned null; fallback to default" }
+                )
+                createDefaultRumAppStartupDetector()
+                return
+            }
+        val durationNs = collector.firstFrameNs - scenario.initialTime.nanoTime
+        sdkCore.internalLogger.log(
+            InternalLogger.Level.DEBUG,
+            InternalLogger.Target.MAINTAINER,
+            {
+                "TTID: COMPLETE — scenario=${scenario::class.simpleName};" +
+                    " durationMs=${durationNs / NS_PER_MS}; deferring events"
+            }
+        )
+        // GlobalRumMonitor is not yet registered during onInitialize. Rum.kt calls
+        // pendingPreLaunchAction on the main thread after GlobalRumMonitor.registerIfAbsent(),
+        // guaranteeing the real monitor is available regardless of which thread Rum.enable()
+        // is called on (main thread for native Android, background thread for RN/Flutter).
+        //
+        // Additionally, the Activity has already completed its full lifecycle before the
+        // SDK initialized (e.g. a cross-platform bridge delay). The view tracking strategy
+        // missed onActivityStarted/onActivityResumed, so no RUM view has been started yet.
+        // We replay the relevant lifecycle callback here so startView is queued before
+        // AppStart/TTID.
+        val capturedStrategy = viewTrackingStrategy
+        pendingPreLaunchAction = action@{
+            val rumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor ?: return@action
+            scenario.activity.get()?.let { activity ->
+                when (capturedStrategy) {
+                    is NavigationViewTrackingStrategy -> capturedStrategy.onActivityStarted(activity)
+                    is ActivityViewTrackingStrategy -> capturedStrategy.onActivityResumed(activity)
+                    else -> Unit
+                }
+            }
+            rumMonitor.sendAppStartEvent(scenario)
+            rumMonitor.sendTTIDEvent(RumTTIDInfo(scenario = scenario, durationNs = durationNs))
         }
     }
 
@@ -845,29 +919,56 @@ internal class RumFeature(
                 )
 
                 override fun onAppStartupDetected(scenario: RumStartupScenario) {
+                    val activity = scenario.activity.get() ?: return
                     val rumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor ?: return
+
                     rumMonitor.sendAppStartEvent(scenario)
+                    subscribeToFirstFrameDrawn(scenario, activity, rumMonitor, wasForwarded = false)
                 }
 
-                override fun onTTIDComputed(
+                override fun onNextActivityCreated(
+                    pendingScenario: RumStartupScenario,
+                    activity: Activity
+                ) {
+                    val rumMonitor = (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor) ?: return
+                    subscribeToFirstFrameDrawn(pendingScenario, activity, rumMonitor, wasForwarded = true)
+                }
+
+                private fun subscribeToFirstFrameDrawn(
                     scenario: RumStartupScenario,
-                    durationNs: Long,
+                    activity: Activity,
+                    rumMonitor: AdvancedRumMonitor,
                     wasForwarded: Boolean
                 ) {
-                    val rumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor ?: return
-                    val info = RumTTIDInfo(
-                        scenario = scenario,
-                        durationNs = durationNs,
-                        wasForwarded = wasForwarded
-                    )
+                    val callback = object : RumFirstDrawTimeReporter.Callback {
+                        override fun onFirstFrameDrawn(timestampNs: Long) {
+                            // Another activity may have already reported TTID
+                            val pending = rumAppStartupDetector?.getPendingScenario()
+                            if (pending !== scenario) return
 
-                    rumMonitor.sendTTIDEvent(info)
+                            val durationNs = timestampNs - scenario.initialTime.nanoTime
+                            val info = RumTTIDInfo(
+                                scenario = scenario,
+                                durationNs = durationNs,
+                                wasForwarded = wasForwarded
+                            )
+
+                            rumMonitor.sendTTIDEvent(info)
+                            rumAppStartupDetector?.clearPendingScenario()
+                        }
+                    }
+
+                    rumFirstDrawTimeReporter.subscribeToFirstFrameDrawn(
+                        activity = activity,
+                        callback = callback
+                    )
                 }
             },
             appStartupActivityPredicate = configuration.appStartupActivityPredicate
         )
     }
 
+    @Suppress("ReturnCount", "StringLiteralDuplication", "UnsafeCallOnNullableType", "LongMethod")
     private fun constructScenario(collector: AppLaunchPreInitCollector): RumStartupScenario? {
         val activity = collector.activity?.get()
         if (activity == null) {
@@ -883,19 +984,21 @@ internal class RumFeature(
             return null
         }
 
-        val processStartTime = collector.processStartNs.asTimeNs()
-        val activityOnCreateTime = collector.activityOnCreateNs.asTimeNs()
+        val processStartTime = Time.fromNanoTime(collector.processStartNs, sdkCore.timeProvider)
+        val activityOnCreateTime = Time.fromNanoTime(collector.activityOnCreateNs, sdkCore.timeProvider)
         val weakActivity = collector.activity!!
         val hasSavedInstanceStateBundle = collector.hasSavedInstanceState
 
         return if (collector.isFirstActivityForProcess) {
             val gapNs = activityOnCreateTime.nanoTime - processStartTime.nanoTime
             if (gapNs > START_GAP_THRESHOLD_NS) {
-                Log.d(
-                    TTID_LOG_TAG,
-                    "constructScenario: WarmFirstActivity" +
-                        " (gapMs=${gapNs / 1_000_000} > threshold ${START_GAP_THRESHOLD_NS / 1_000_000}ms)" +
-                        " hasSavedInstanceState=$hasSavedInstanceStateBundle"
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.DEBUG,
+                    InternalLogger.Target.MAINTAINER,
+                    {
+                        "TTID: WarmFirstActivity" +
+                            " gapMs=${gapNs / NS_PER_MS} hasSavedInstanceState=$hasSavedInstanceStateBundle"
+                    }
                 )
                 RumStartupScenario.WarmFirstActivity(
                     hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
@@ -904,11 +1007,13 @@ internal class RumFeature(
                     initialTime = activityOnCreateTime
                 )
             } else {
-                Log.d(
-                    TTID_LOG_TAG,
-                    "constructScenario: Cold" +
-                        " (gapMs=${gapNs / 1_000_000} ≤ threshold ${START_GAP_THRESHOLD_NS / 1_000_000}ms)" +
-                        " hasSavedInstanceState=$hasSavedInstanceStateBundle"
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.DEBUG,
+                    InternalLogger.Target.MAINTAINER,
+                    {
+                        "TTID: Cold" +
+                            " gapMs=${gapNs / NS_PER_MS} hasSavedInstanceState=$hasSavedInstanceStateBundle"
+                    }
                 )
                 RumStartupScenario.Cold(
                     hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
@@ -918,10 +1023,10 @@ internal class RumFeature(
                 )
             }
         } else {
-            Log.d(
-                TTID_LOG_TAG,
-                "constructScenario: WarmAfterActivityDestroyed" +
-                    " hasSavedInstanceState=$hasSavedInstanceStateBundle"
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.DEBUG,
+                InternalLogger.Target.MAINTAINER,
+                { "TTID: WarmAfterActivityDestroyed hasSavedInstanceState=$hasSavedInstanceStateBundle" }
             )
             RumStartupScenario.WarmAfterActivityDestroyed(
                 hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
@@ -974,6 +1079,7 @@ internal class RumFeature(
     internal companion object {
 
         private val START_GAP_THRESHOLD_NS = 10.seconds.inWholeNanoseconds
+        private const val NS_PER_MS = 1_000_000L
 
         internal const val NDK_CRASH_BUS_MESSAGE_TYPE = "ndk_crash"
         internal const val LOGGER_ERROR_BUS_MESSAGE_TYPE = "logger_error"
@@ -1084,10 +1190,6 @@ internal class RumFeature(
         internal const val COLLECTOR_ACTIVITY_NULL_MESSAGE =
             "AppLaunchPreInitCollector activity WeakReference was null (GC'd);" +
                 " falling back to default startup detector."
-
-        // Must match TTID_LOG_TAG for unified logcat filtering with:
-        //   adb logcat -s "DD/AppLaunch"
-        private const val TTID_LOG_TAG = "DD/AppLaunch"
 
         private fun provideUserTrackingStrategy(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider>,

@@ -105,6 +105,15 @@ object Rum {
             sdkCore
         )
 
+        // If the pre-launch collector was COMPLETE at init time, RumFeature deferred sending
+        // AppStart + TTID until after monitor registration. Post to the main thread now so the
+        // action runs with the real monitor guaranteed to be available, regardless of which thread
+        // Rum.enable() was called on (main thread for native Android, background for RN/Flutter).
+        rumFeature.pendingPreLaunchAction?.let { action ->
+            rumFeature.pendingPreLaunchAction = null
+            Handler(Looper.getMainLooper()).post(action)
+        }
+
         // TODO RUM-3794 there is a small chance of application crashing between RUM monitor
         //  registration and the moment SDK init is processed, in this case we will miss this crash
         //  (it won't activate new session). Ideally we should start session when monitor is created

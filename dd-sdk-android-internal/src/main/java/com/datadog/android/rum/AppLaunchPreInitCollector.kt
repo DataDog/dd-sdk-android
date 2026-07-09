@@ -13,7 +13,6 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Process
 import android.os.SystemClock
-import android.util.Log
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.startup.RumFirstDrawTimeReporter
@@ -46,6 +45,7 @@ import kotlin.time.Duration.Companion.seconds
  * [java.lang.ref.WeakReference] to an [android.app.Activity]. It is single-use per process: there
  * is no automatic reset for warm re-launches, as each process has exactly one cold-start lifetime.
  */
+@Suppress("PreferTimeProvider", "UnsafeThirdPartyFunctionCall")
 object AppLaunchPreInitCollector {
 
     /**
@@ -142,7 +142,7 @@ object AppLaunchPreInitCollector {
     // endregion
 
     private val firstFrameCallbacks = CopyOnWriteArrayList<(Long) -> Unit>()
-    private var _application: Application? = null
+    private var registeredApplication: Application? = null
 
     /** Private flag tracking whether any Activity has been destroyed (process is warm). */
     private var _isFirstActivityForProcess: Boolean = true
@@ -201,7 +201,6 @@ object AppLaunchPreInitCollector {
     private fun onBeforeActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
         // CAS: only the first caller transitions IDLE -> CAPTURING; concurrent claim() loses
         if (!_state.compareAndSet(State.IDLE, State.CAPTURING)) {
-            Log.d(TAG, "onBeforeActivityCreated: CAS failed — state is ${_state.get()}, not IDLE; skipping")
             return
         }
 
@@ -211,49 +210,33 @@ object AppLaunchPreInitCollector {
         isFirstActivityForProcess = _isFirstActivityForProcess
         processStartNs = computeProcessStartNs()
 
-        Log.d(
-            TAG,
-            "IDLE→CAPTURING: activity=${activity.javaClass.simpleName}" +
-                " hasSavedInstanceState=$hasSavedInstanceState" +
-                " isFirstActivityForProcess=$isFirstActivityForProcess" +
-                " processStartNs=$processStartNs" +
-                " activityOnCreateNs=$activityOnCreateNs" +
-                " gapMs=${(activityOnCreateNs - processStartNs) / 1_000_000}"
-        )
-
         // Unregister lifecycle callbacks — we've captured what we need from the first Activity
-        _application?.unregisterActivityLifecycleCallbacks(lifecycleCallbacks)
+        registeredApplication?.unregisterActivityLifecycleCallbacks(lifecycleCallbacks)
 
         // Subscribe to first frame drawn — transitions CAPTURING -> COMPLETE
         val handler = handlerFactory()
         val reporter = firstDrawTimeReporterFactory(handler)
-        reporter.subscribeToFirstFrameDrawn(activity, object : RumFirstDrawTimeReporter.Callback {
-            override fun onFirstFrameDrawn(timestampNs: Long) {
-                firstFrameNs = timestampNs
-                _state.compareAndSet(State.CAPTURING, State.COMPLETE)
+        reporter.subscribeToFirstFrameDrawn(
+            activity,
+            object : RumFirstDrawTimeReporter.Callback {
+                override fun onFirstFrameDrawn(timestampNs: Long) {
+                    firstFrameNs = timestampNs
+                    _state.compareAndSet(State.CAPTURING, State.COMPLETE)
 
-                Log.d(
-                    TAG,
-                    "CAPTURING->COMPLETE: first frame drawn" +
-                        " firstFrameNs=$firstFrameNs" +
-                        " ttidMs=${(firstFrameNs - activityOnCreateNs) / 1_000_000}" +
-                        " totalMs=${(firstFrameNs - processStartNs) / 1_000_000}" +
-                        " pendingCallbacks=${firstFrameCallbacks.size}"
-                )
-
-                // Drain all enqueued callbacks
-                val callbacks = firstFrameCallbacks.toList()
-                firstFrameCallbacks.clear()
-                callbacks.forEach { cb -> cb(firstFrameNs) }
+                    // Drain all enqueued callbacks
+                    val callbacks = firstFrameCallbacks.toList()
+                    firstFrameCallbacks.clear()
+                    callbacks.forEach { cb -> cb(firstFrameNs) }
+                }
             }
-        })
+        )
     }
 
     /**
      * Compute the process start time in nanoseconds.
      *
      * On API 24+, uses Process.getStartElapsedRealtime() to back-compute from the current
-     * elapsed realtime clock. Applies a two-direction OEM sanity check:
+     * elapsed realtime clock. Applies a two-direction OEM coherence check:
      * - If computed time is after DdRumContentProvider.createTimeNs (impossible), fall back.
      * - If computed time is more than 10s before createTimeNs (unreasonable), fall back.
      *
@@ -294,12 +277,10 @@ object AppLaunchPreInitCollector {
      */
     fun install(application: Application) {
         if (!_state.compareAndSet(State.NOT_INSTALLED, State.IDLE)) {
-            Log.d(TAG, "install() called but already in state ${_state.get()}, skipping")
             return
         }
-        _application = application
+        registeredApplication = application
         application.registerActivityLifecycleCallbacks(lifecycleCallbacks)
-        Log.d(TAG, "Installed — state: IDLE, ActivityLifecycleCallbacks registered")
     }
 
     /**
@@ -318,10 +299,7 @@ object AppLaunchPreInitCollector {
     fun claim(): Boolean {
         val success = _state.compareAndSet(State.IDLE, State.CLAIMED)
         if (success) {
-            _application?.unregisterActivityLifecycleCallbacks(lifecycleCallbacks)
-            Log.d(TAG, "Claimed — SDK initialized before first Activity (IDLE→CLAIMED); callbacks unregistered")
-        } else {
-            Log.d(TAG, "claim() CAS failed — state is ${_state.get()}, not IDLE; collector already in use")
+            registeredApplication?.unregisterActivityLifecycleCallbacks(lifecycleCallbacks)
         }
         return success
     }
@@ -342,7 +320,6 @@ object AppLaunchPreInitCollector {
      */
     fun addFirstFrameCallback(cb: (Long) -> Unit) {
         if (_state.get() == State.COMPLETE) {
-            Log.d(TAG, "addFirstFrameCallback: already COMPLETE, invoking callback synchronously")
             cb(firstFrameNs)
             return
         }
@@ -350,11 +327,8 @@ object AppLaunchPreInitCollector {
         // Double-check: state may have transitioned to COMPLETE between the first check and the add
         if (_state.get() == State.COMPLETE) {
             if (firstFrameCallbacks.remove(cb)) {
-                Log.d(TAG, "addFirstFrameCallback: TOCTOU race — COMPLETE during enqueue, invoking synchronously")
                 cb(firstFrameNs)
             }
-        } else {
-            Log.d(TAG, "addFirstFrameCallback: state=${_state.get()}, callback enqueued (${firstFrameCallbacks.size} total)")
         }
     }
 
@@ -362,10 +336,8 @@ object AppLaunchPreInitCollector {
 
     // region Constants
 
-    internal const val TAG = "DD/AppLaunch"
-
     /**
-     * Threshold for the two-direction OEM clock sanity check.
+     * Threshold for the two-direction OEM clock coherence check.
      * If computed process start time is more than 10s before DdRumContentProvider.createTimeNs,
      * it is considered an OEM bug and createTimeNs is used as fallback.
      */
@@ -392,7 +364,7 @@ object AppLaunchPreInitCollector {
         _isFirstActivityForProcess = true
         activity = null
         firstFrameCallbacks.clear()
-        _application = null
+        registeredApplication = null
         buildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
         handlerFactory = { Handler(Looper.getMainLooper()) }
         firstDrawTimeReporterFactory = { handler ->
