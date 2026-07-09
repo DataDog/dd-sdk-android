@@ -447,6 +447,7 @@ test-pyramid:legacy-integration-instrumented-median-api:
 test-pyramid:ndk-instrumented-latest-api:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
