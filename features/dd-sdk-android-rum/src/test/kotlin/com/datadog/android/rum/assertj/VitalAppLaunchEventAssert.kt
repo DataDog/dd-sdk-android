@@ -389,6 +389,24 @@ internal class VitalAppLaunchEventAssert(
             .isNull()
     }
 
+    fun hasProfilingQuotaReason(quotaReason: String?) = apply {
+        assertThat(actual.dd.profiling?.quotaReason)
+            .overridingErrorMessage(
+                "Expected RUM event to have profiling quota reason: $quotaReason" +
+                    " but instead was: ${actual.dd.profiling?.quotaReason}"
+            )
+            .isEqualTo(quotaReason)
+    }
+
+    fun hasNoProfilingQuotaReason() = apply {
+        assertThat(actual.dd.profiling?.quotaReason)
+            .overridingErrorMessage(
+                "Expected RUM event to have no profiling quota reason" +
+                    " but instead was: ${actual.dd.profiling?.quotaReason}"
+            )
+            .isNull()
+    }
+
     companion object {
         internal fun assertThat(
             actual: VitalAppLaunchEvent

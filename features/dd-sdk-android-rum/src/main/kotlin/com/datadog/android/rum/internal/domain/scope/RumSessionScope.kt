@@ -16,7 +16,6 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
-import com.datadog.android.internal.profiling.ProfilerStopEvent
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.InfoProvider
@@ -162,21 +161,15 @@ internal class RumSessionScope(
 
         when (event) {
             is RumRawEvent.AppStartTTIDEvent -> {
-                if (sessionState == State.TRACKED) {
-                    rumSessionScopeStartupManager?.onTTIDEvent(
-                        event = event,
-                        datadogContext = datadogContext,
-                        writeScope = writeScope,
-                        writer = actualWriter,
-                        rumContext = rumContext,
-                        customAttributes = getCustomAttributes()
-                    )
-                } else {
-                    // can refactor in the future by moving session state check into RumSessionScopeStartupManager
-                    sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
-                        ProfilerStopEvent.TTID()
-                    )
-                }
+                rumSessionScopeStartupManager?.onTTIDEvent(
+                    event = event,
+                    isSessionTracked = sessionState == State.TRACKED,
+                    datadogContext = datadogContext,
+                    writeScope = writeScope,
+                    writer = actualWriter,
+                    rumContext = rumContext,
+                    customAttributes = getCustomAttributes()
+                )
             }
             is RumRawEvent.AppStartEvent -> {
                 if (sessionState == State.TRACKED) {

@@ -12,13 +12,18 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.FeatureContextKeys.PROFILER_IS_RUNNING
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
+import com.datadog.android.internal.profiling.ProfilerEvent
+import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
@@ -35,6 +40,7 @@ import com.datadog.android.rum.assertj.VitalEventAssert
 import com.datadog.android.rum.assertj.VitalOperationPropertiesAssert
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumErrorSourceType
+import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
@@ -129,6 +135,7 @@ import org.mockito.quality.Strictness
 import java.util.Arrays
 import java.util.Locale
 import java.util.UUID
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
@@ -230,6 +237,9 @@ internal class RumViewScopeTest {
 
     @LongForgery(min = 0)
     var fakeReplayRecordsCount: Long = 0
+
+    @Mock
+    lateinit var mockProfilingFeatureScope: FeatureScope
 
     @Mock
     lateinit var mockFeaturesContextResolver: FeaturesContextResolver
@@ -382,6 +392,8 @@ internal class RumViewScopeTest {
         whenever(rumMonitorConfiguration.mockSdkCore.networkInfo) doReturn fakeNetworkInfoAtScopeStart
         whenever(rumMonitorConfiguration.mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(rumMonitorConfiguration.mockSdkCore.timeProvider) doReturn mock()
+        whenever(rumMonitorConfiguration.mockSdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)) doReturn
+            mockProfilingFeatureScope
         whenever(mockEventWriteScope.invoke(any())) doAnswer {
             val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
             callback.invoke(mockEventBatchWriter)
@@ -4066,10 +4078,182 @@ internal class RumViewScopeTest {
                     hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
                     hasBuildId(fakeDatadogContext.appBuildId)
+                    hasNoProfiling()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `M persist lastFatalAnrSent W handleEvent(AddError) {throwable is ANRException, write succeeds}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        val throwable = ANRException(Thread.currentThread())
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes,
+            eventTime = fakeEventTime
+        )
+        val persistenceExecutor = sameThreadExecutorService()
+        whenever(rumMonitorConfiguration.mockSdkCore.getPersistenceExecutorService())
+            .doReturn(persistenceExecutor)
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verify(rumMonitorConfiguration.mockSdkCore).writeLastFatalAnrSent(fakeEvent.eventTime.timestamp)
+    }
+
+    @Test
+    fun `M not persist lastFatalAnrSent W handleEvent(AddError) {throwable is not ANRException}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stacktrace: String,
+        @Forgery throwable: Throwable,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes,
+            eventTime = fakeEventTime
+        )
+        val persistenceExecutor = sameThreadExecutorService()
+        whenever(rumMonitorConfiguration.mockSdkCore.getPersistenceExecutorService())
+            .doReturn(persistenceExecutor)
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verify(rumMonitorConfiguration.mockSdkCore, never()).writeLastFatalAnrSent(any())
+    }
+
+    @Test
+    fun `M not persist lastFatalAnrSent W handleEvent(AddError) {throwable is ANRException, write fails}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        val throwable = ANRException(Thread.currentThread())
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes,
+            eventTime = fakeEventTime
+        )
+        whenever(mockWriter.write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))) doReturn false
+        val persistenceExecutor = sameThreadExecutorService()
+        whenever(rumMonitorConfiguration.mockSdkCore.getPersistenceExecutorService())
+            .doReturn(persistenceExecutor)
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verify(rumMonitorConfiguration.mockSdkCore, never()).writeLastFatalAnrSent(any())
+    }
+
+    @Test
+    fun `M send RumAnrEvent to profiling W handleEvent(AddError) {throwable is ANRException}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        val throwable = ANRException(Thread.currentThread())
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes,
+            eventTime = fakeEventTime
+        )
+        val expectedDurationNs = TimeUnit.MILLISECONDS.toNanos(ANRDetectorRunnable.ANR_THRESHOLD_MS)
+        val expectedStartMs = resolveExpectedTimestamp(fakeEvent.eventTime.timestamp) -
+            ANRDetectorRunnable.ANR_THRESHOLD_MS
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ProfilerEvent.RumAnrEvent> {
+            verify(mockProfilingFeatureScope).sendEvent(capture())
+            assertThat(firstValue.id).isNotEmpty()
+            assertThat(firstValue.startMs).isEqualTo(expectedStartMs)
+            assertThat(firstValue.durationNs).isEqualTo(expectedDurationNs)
+            assertThat(firstValue.rumContext).isEqualTo(
+                ProfilingRumContext(
+                    applicationId = fakeParentContext.applicationId,
+                    sessionId = fakeParentContext.sessionId,
+                    viewId = testedScope.viewId,
+                    viewName = fakeKey.name
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `M not send RumAnrEvent to profiling W handleEvent(AddError) {throwable is not ANRException}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        val throwable = RuntimeException("not an ANR")
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes,
+            eventTime = fakeEventTime
+        )
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verify(mockProfilingFeatureScope, never()).sendEvent(isA<ProfilerEvent.RumAnrEvent>())
     }
 
     @Test
@@ -5404,6 +5588,7 @@ internal class RumViewScopeTest {
                     hasBuildVersion(fakeDatadogContext.versionCode)
                     hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
+                    hasNoProfiling()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5465,6 +5650,7 @@ internal class RumViewScopeTest {
                     hasBuildVersion(fakeDatadogContext.versionCode)
                     hasBuildId(fakeDatadogContext.appBuildId)
                     hasSampleRate(fakeSampleRate)
+                    hasNoProfiling()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5666,6 +5852,638 @@ internal class RumViewScopeTest {
         assertThat(testedScope.pendingLongTaskCount).isEqualTo(1)
         assertThat(testedScope.pendingFrozenFrameCount).isEqualTo(1)
         assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `M not crash W handleEvent(AddLongTask) {profiling feature absent}`(
+        @LongForgery(0L, 700_000_000L) durationNs: Long,
+        @StringForgery target: String
+    ) {
+        // Given
+        testedScope.activeActionScope = null
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
+        whenever(rumMonitorConfiguration.mockSdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)) doReturn null
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<LongTaskEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue).hasNoProfiling()
+        }
+    }
+
+    @Test
+    fun `M set profiling status RUNNING in LongTaskEvent W handleEvent(AddLongTask) {profiler running}`(
+        @LongForgery(0L, 700_000_000L) durationNs: Long,
+        @StringForgery target: String
+    ) {
+        // Given
+        testedScope.activeActionScope = null
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(Feature.PROFILING_FEATURE_NAME, mapOf(FeatureContextKeys.PROFILER_IS_RUNNING to true))
+            }
+        )
+
+        // When
+        testedScope.handleEvent(fakeEvent, datadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<LongTaskEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue).hasProfilingStatus(LongTaskEvent.ProfilingStatus.RUNNING)
+            assertThat(firstValue).hasProfilingClockDrift(datadogContext.time.serverTimeOffsetMs)
+        }
+    }
+
+    @Test
+    fun `M not set profiling status in LongTaskEvent W handleEvent(AddLongTask) {profiler not running}`(
+        @LongForgery(0L, 700_000_000L) durationNs: Long,
+        @StringForgery target: String
+    ) {
+        // Given
+        testedScope.activeActionScope = null
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(Feature.PROFILING_FEATURE_NAME, mapOf(PROFILER_IS_RUNNING to false))
+            }
+        )
+
+        // When
+        testedScope.handleEvent(fakeEvent, datadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<LongTaskEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue).hasNoProfiling()
+        }
+    }
+
+    @Test
+    fun `M include quotaReason in LongTaskEvent W handleEvent(AddLongTask) {profiler not running and quota denied}`(
+        @LongForgery(0L, 700_000_000L) durationNs: Long,
+        @StringForgery target: String,
+        @StringForgery fakeQuotaReason: String
+    ) {
+        // Given
+        testedScope.activeActionScope = null
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeParentContext.sessionId
+                    )
+                )
+            }
+        )
+
+        // When
+        testedScope.handleEvent(fakeEvent, datadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<LongTaskEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue.dd.profiling?.quotaReason).isEqualTo(fakeQuotaReason)
+            assertThat(firstValue.dd.profiling?.status).isEqualTo(LongTaskEvent.ProfilingStatus.STOPPED)
+        }
+    }
+
+    @Test
+    fun `M ignore stale quotaReason in LongTaskEvent W handleEvent(AddLongTask) {quota reason for other session}`(
+        @LongForgery(0L, 700_000_000L) durationNs: Long,
+        @StringForgery target: String,
+        @StringForgery fakeQuotaReason: String,
+        @StringForgery fakeOtherSessionId: String
+    ) {
+        // Given — the quota reason is stamped with a different session than the current one
+        testedScope.activeActionScope = null
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeOtherSessionId
+                    )
+                )
+            }
+        )
+
+        // When
+        testedScope.handleEvent(fakeEvent, datadogContext, mockEventWriteScope, mockWriter)
+
+        // Then — the stale reason is ignored and no profiling status is attached
+        argumentCaptor<LongTaskEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue.dd.profiling?.quotaReason).isNull()
+            assertThat(firstValue.dd.profiling?.status).isNull()
+        }
+    }
+
+    @Test
+    fun `M set profiling status RUNNING in VitalOperationStepEvent W handleEvent(StartOperation) {profiler running}`(
+        @StringForgery fakeName: String
+    ) {
+        // Given
+        val event = RumRawEvent.StartOperation(
+            fakeName,
+            operationKey = null,
+            attributes = emptyMap(),
+            eventTime = fakeEventTime
+        )
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(Feature.PROFILING_FEATURE_NAME, mapOf(FeatureContextKeys.PROFILER_IS_RUNNING to true))
+            }
+        )
+
+        // When
+        testedScope.handleEvent(event, datadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<VitalOperationStepEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            VitalEventAssert.assertThat(firstValue)
+                .hasProfilingStatus(VitalOperationStepEvent.ProfilingStatus.RUNNING)
+                .hasProfilingClockDrift(datadogContext.time.serverTimeOffsetMs)
+        }
+    }
+
+    @Test
+    fun `M not set profiling status in VitalOperationStepEvent W handleEvent(StartOperation) {profiler not running}`(
+        @StringForgery fakeName: String
+    ) {
+        // Given
+        val event = RumRawEvent.StartOperation(
+            fakeName,
+            operationKey = null,
+            attributes = emptyMap(),
+            eventTime = fakeEventTime
+        )
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(Feature.PROFILING_FEATURE_NAME, mapOf(PROFILER_IS_RUNNING to false))
+            }
+        )
+
+        // When
+        testedScope.handleEvent(event, datadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<VitalOperationStepEvent> {
+            verify(mockWriter).write(
+                eq(mockEventBatchWriter),
+                capture(),
+                eq(EventType.DEFAULT)
+            )
+            VitalEventAssert.assertThat(firstValue).hasNoProfiling()
+        }
+    }
+
+    @Test
+    fun `M include quotaReason in VitalOperationStep W handleEvent(StartOperation) {profiler stopped, quota denied}`(
+        @StringForgery fakeName: String,
+        @StringForgery fakeQuotaReason: String
+    ) {
+        // Given
+        val event = RumRawEvent.StartOperation(
+            fakeName,
+            operationKey = null,
+            attributes = emptyMap(),
+            eventTime = fakeEventTime
+        )
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeParentContext.sessionId
+                    )
+                )
+            }
+        )
+
+        // When
+        testedScope.handleEvent(event, datadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<VitalOperationStepEvent> {
+            verify(mockWriter).write(
+                eq(mockEventBatchWriter),
+                capture(),
+                eq(EventType.DEFAULT)
+            )
+            assertThat(firstValue.dd.profiling?.quotaReason).isEqualTo(fakeQuotaReason)
+            assertThat(firstValue.dd.profiling?.status).isEqualTo(VitalOperationStepEvent.ProfilingStatus.STOPPED)
+        }
+    }
+
+    @Test
+    fun `M ignore stale quotaReason in VitalOperationStep W handleEvent(StartOperation) {stale quota, other session}`(
+        @StringForgery fakeName: String,
+        @StringForgery fakeQuotaReason: String,
+        @StringForgery fakeOtherSessionId: String
+    ) {
+        // Given — the quota reason is stamped with a different session than the current one
+        val event = RumRawEvent.StartOperation(
+            fakeName,
+            operationKey = null,
+            attributes = emptyMap(),
+            eventTime = fakeEventTime
+        )
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeOtherSessionId
+                    )
+                )
+            }
+        )
+
+        // When
+        testedScope.handleEvent(event, datadogContext, mockEventWriteScope, mockWriter)
+
+        // Then — the stale reason is ignored and no profiling status is attached
+        argumentCaptor<VitalOperationStepEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue.dd.profiling?.quotaReason).isNull()
+            assertThat(firstValue.dd.profiling?.status).isNull()
+        }
+    }
+
+    @Test
+    fun `M send RumLongTaskEvent to profiling W handleEvent(AddLongTask) {profiling feature registered}`(
+        @LongForgery(0L, 700_000_000L) durationNs: Long,
+        @StringForgery target: String
+    ) {
+        // Given
+        testedScope.activeActionScope = null
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
+        val expectedStartMs = resolveExpectedTimestamp(fakeEvent.eventTime.timestamp) -
+            TimeUnit.NANOSECONDS.toMillis(durationNs)
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ProfilerEvent.RumLongTaskEvent> {
+            verify(mockProfilingFeatureScope).sendEvent(capture())
+            assertThat(firstValue.id).isNotEmpty()
+            assertThat(firstValue.startMs).isEqualTo(expectedStartMs)
+            assertThat(firstValue.durationNs).isEqualTo(durationNs)
+            assertThat(firstValue.rumContext).isEqualTo(
+                ProfilingRumContext(
+                    applicationId = fakeParentContext.applicationId,
+                    sessionId = fakeParentContext.sessionId,
+                    viewId = testedScope.viewId,
+                    viewName = fakeKey.name
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `M set profiling status RUNNING in ErrorEvent W handleEvent(AddError) {ANR, profiler running}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        val throwable = ANRException(Thread.currentThread())
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes,
+            eventTime = fakeEventTime
+        )
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(Feature.PROFILING_FEATURE_NAME, mapOf(FeatureContextKeys.PROFILER_IS_RUNNING to true))
+            }
+        )
+
+        // When
+        testedScope.handleEvent(fakeEvent, datadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ErrorEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue).hasProfilingStatus(ErrorEvent.ProfilingStatus.RUNNING)
+            assertThat(firstValue).hasProfilingClockDrift(datadogContext.time.serverTimeOffsetMs)
+        }
+    }
+
+    @Test
+    fun `M not set profiling status in ErrorEvent W handleEvent(AddError) {ANR, profiler not running}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        val throwable = ANRException(Thread.currentThread())
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes,
+            eventTime = fakeEventTime
+        )
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(Feature.PROFILING_FEATURE_NAME, mapOf(PROFILER_IS_RUNNING to false))
+            }
+        )
+
+        // When
+        testedScope.handleEvent(fakeEvent, datadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ErrorEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue).hasNoProfiling()
+        }
+    }
+
+    @Test
+    fun `M not set profiling status in ErrorEvent W handleEvent(AddError) {non-ANR error}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        val throwable = RuntimeException("not an ANR")
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes,
+            eventTime = fakeEventTime
+        )
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(Feature.PROFILING_FEATURE_NAME, mapOf(FeatureContextKeys.PROFILER_IS_RUNNING to true))
+            }
+        )
+
+        // When
+        testedScope.handleEvent(fakeEvent, datadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ErrorEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue).hasNoProfiling()
+        }
+    }
+
+    @Test
+    fun `M include quotaReason in ErrorEvent W handleEvent(AddError) {ANR, profiler not running and quota denied}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stacktrace: String,
+        @StringForgery fakeQuotaReason: String,
+        forge: Forge
+    ) {
+        // Given
+        val throwable = ANRException(Thread.currentThread())
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes,
+            eventTime = fakeEventTime
+        )
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeParentContext.sessionId
+                    )
+                )
+            }
+        )
+
+        // When
+        testedScope.handleEvent(fakeEvent, datadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ErrorEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue.dd.profiling?.quotaReason).isEqualTo(fakeQuotaReason)
+            assertThat(firstValue.dd.profiling?.status).isEqualTo(ErrorEvent.ProfilingStatus.STOPPED)
+        }
+    }
+
+    @Test
+    fun `M ignore stale quotaReason in ErrorEvent W handleEvent(AddError) {quota reason for other session}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stacktrace: String,
+        @StringForgery fakeQuotaReason: String,
+        @StringForgery fakeOtherSessionId: String,
+        forge: Forge
+    ) {
+        // Given — the quota reason is stamped with a different session than the current one
+        val throwable = ANRException(Thread.currentThread())
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes,
+            eventTime = fakeEventTime
+        )
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeOtherSessionId
+                    )
+                )
+            }
+        )
+
+        // When
+        testedScope.handleEvent(fakeEvent, datadogContext, mockEventWriteScope, mockWriter)
+
+        // Then — the stale reason is ignored and no profiling status is attached
+        argumentCaptor<ErrorEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue.dd.profiling?.quotaReason).isNull()
+            assertThat(firstValue.dd.profiling?.status).isNull()
+        }
+    }
+
+    @Test
+    fun `M set profiling status RUNNING in ViewEvent W handleEvent(StartView) {profiler running}`(
+        @Forgery key: RumScopeKey
+    ) {
+        // Given
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(Feature.PROFILING_FEATURE_NAME, mapOf(FeatureContextKeys.PROFILER_IS_RUNNING to true))
+            }
+        )
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StartView(key, emptyMap(), eventTime = fakeEventTime),
+            datadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue).hasProfilingStatus(ViewEvent.ProfilingStatus.RUNNING)
+        }
+    }
+
+    @Test
+    fun `M not set profiling in ViewEvent W handleEvent(StartView) {profiler not running}`(
+        @Forgery key: RumScopeKey
+    ) {
+        // Given
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(Feature.PROFILING_FEATURE_NAME, mapOf(PROFILER_IS_RUNNING to false))
+            }
+        )
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StartView(key, emptyMap(), eventTime = fakeEventTime),
+            datadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue).hasNoProfiling()
+        }
+    }
+
+    @Test
+    fun `M include quotaReason in ViewEvent W handleEvent(StartView) {profiler not running and quota denied}`(
+        @Forgery key: RumScopeKey,
+        @StringForgery fakeQuotaReason: String
+    ) {
+        // Given
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeParentContext.sessionId
+                    )
+                )
+            }
+        )
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StartView(key, emptyMap(), eventTime = fakeEventTime),
+            datadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue.dd.profiling?.quotaReason).isEqualTo(fakeQuotaReason)
+            assertThat(lastValue.dd.profiling?.status).isEqualTo(ViewEvent.ProfilingStatus.STOPPED)
+        }
+    }
+
+    @Test
+    fun `M ignore stale quotaReason in ViewEvent W handleEvent(StartView) {quota reason for other session}`(
+        @Forgery key: RumScopeKey,
+        @StringForgery fakeQuotaReason: String,
+        @StringForgery fakeOtherSessionId: String
+    ) {
+        // Given — the quota reason is stamped with a different session than the current one
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeOtherSessionId
+                    )
+                )
+            }
+        )
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StartView(key, emptyMap(), eventTime = fakeEventTime),
+            datadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then — the stale reason is ignored and no profiling status is attached
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue.dd.profiling?.quotaReason).isNull()
+            assertThat(lastValue.dd.profiling?.status).isNull()
+        }
     }
 
     @Test
@@ -9606,6 +10424,181 @@ internal class RumViewScopeTest {
                 .hasVitalFailureReason(failureReason)
         }
     }
+
+    @Test
+    fun `M send RumVitalEvent OPERATION START to profiling W handleEvent { StartOperation }`(
+        @StringForgery fakeName: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeOperationKey = forge.aNullable { anAlphabeticalString() }
+        val event = RumRawEvent.StartOperation(
+            fakeName,
+            operationKey = fakeOperationKey,
+            attributes = emptyMap(),
+            eventTime = fakeEventTime
+        )
+        val expectedStartMs = resolveExpectedTimestamp(event.eventTime.timestamp)
+
+        // When
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        val schemaEventCaptor = argumentCaptor<VitalOperationStepEvent>()
+        verify(mockWriter).write(eq(mockEventBatchWriter), schemaEventCaptor.capture(), eq(EventType.DEFAULT))
+        val capturedSchemaEvent = schemaEventCaptor.firstValue
+
+        val profilerEventCaptor = argumentCaptor<ProfilerEvent.RumVitalEvent>()
+        verify(mockProfilingFeatureScope).sendEvent(profilerEventCaptor.capture())
+        val capturedProfilerEvent = profilerEventCaptor.firstValue
+
+        assertThat(capturedProfilerEvent.id).isEqualTo(capturedSchemaEvent.vital.id)
+        assertThat(capturedProfilerEvent.id).isNotEmpty()
+        assertThat(capturedProfilerEvent.name).isEqualTo(fakeName)
+        assertThat(capturedProfilerEvent.type).isEqualTo(ProfilerEvent.RumVitalEvent.Type.OPERATION)
+        assertThat(capturedProfilerEvent.startMs).isEqualTo(expectedStartMs)
+        assertThat(capturedProfilerEvent.durationNs).isEqualTo(0L)
+        assertThat(capturedProfilerEvent.rumContext).isEqualTo(
+            ProfilingRumContext(
+                applicationId = fakeParentContext.applicationId,
+                sessionId = fakeParentContext.sessionId,
+                viewId = testedScope.viewId,
+                viewName = fakeKey.name
+            )
+        )
+    }
+
+    @Test
+    fun `M send RumVitalEvent OPERATION END to profiling W handleEvent { StopOperation }`(
+        @StringForgery fakeName: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeOperationKey = forge.aNullable { anAlphabeticalString() }
+        val event = RumRawEvent.StopOperation(
+            fakeName,
+            operationKey = fakeOperationKey,
+            failureReason = forge.aNullable { aValueFrom(FailureReason::class.java) },
+            attributes = emptyMap(),
+            eventTime = fakeEventTime
+        )
+        val expectedStartMs = resolveExpectedTimestamp(event.eventTime.timestamp)
+
+        // When
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        val schemaEventCaptor = argumentCaptor<VitalOperationStepEvent>()
+        verify(mockWriter).write(eq(mockEventBatchWriter), schemaEventCaptor.capture(), eq(EventType.DEFAULT))
+        val capturedSchemaEvent = schemaEventCaptor.firstValue
+
+        val profilerEventCaptor = argumentCaptor<ProfilerEvent.RumVitalEvent>()
+        verify(mockProfilingFeatureScope).sendEvent(profilerEventCaptor.capture())
+        val capturedProfilerEvent = profilerEventCaptor.firstValue
+
+        assertThat(capturedProfilerEvent.id).isEqualTo(capturedSchemaEvent.vital.id)
+        assertThat(capturedProfilerEvent.id).isNotEmpty()
+        assertThat(capturedProfilerEvent.name).isEqualTo(fakeName)
+        assertThat(capturedProfilerEvent.type).isEqualTo(ProfilerEvent.RumVitalEvent.Type.OPERATION)
+        assertThat(capturedProfilerEvent.startMs).isEqualTo(expectedStartMs)
+        assertThat(capturedProfilerEvent.durationNs).isEqualTo(0L)
+        assertThat(capturedProfilerEvent.rumContext).isEqualTo(
+            ProfilingRumContext(
+                applicationId = fakeParentContext.applicationId,
+                sessionId = fakeParentContext.sessionId,
+                viewId = testedScope.viewId,
+                viewName = fakeKey.name
+            )
+        )
+    }
+
+    @Test
+    fun `M not send RumVitalEvent OPERATION to profiling W handleEvent { StartOperation, profiling feature null }`(
+        @StringForgery fakeName: String
+    ) {
+        // Given
+        whenever(rumMonitorConfiguration.mockSdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)) doReturn null
+        val event = RumRawEvent.StartOperation(
+            fakeName,
+            operationKey = null,
+            attributes = emptyMap(),
+            eventTime = fakeEventTime
+        )
+
+        // When
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verify(mockProfilingFeatureScope, never()).sendEvent(isA<ProfilerEvent.RumVitalEvent>())
+    }
+
+    @Test
+    fun `M not send RumVitalEvent OPERATION to profiling W handleEvent { StopOperation, profiling feature null }`(
+        @StringForgery fakeName: String,
+        forge: Forge
+    ) {
+        // Given
+        whenever(rumMonitorConfiguration.mockSdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)) doReturn null
+        val fakeFailureReason = forge.aNullable { aValueFrom(FailureReason::class.java) }
+        val event = RumRawEvent.StopOperation(
+            fakeName,
+            operationKey = null,
+            failureReason = fakeFailureReason,
+            attributes = emptyMap(),
+            eventTime = fakeEventTime
+        )
+
+        // When
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verify(mockProfilingFeatureScope, never()).sendEvent(isA<ProfilerEvent.RumVitalEvent>())
+    }
+
+    @Test
+    fun `M not send RumVitalEvent OPERATION to profiling W handleEvent { StartOperation, writer returns false }`(
+        @StringForgery fakeName: String
+    ) {
+        // Given — writer returns false, simulating the event mapper dropping the event
+        whenever(mockWriter.write(eq(mockEventBatchWriter), isA<VitalOperationStepEvent>(), eq(EventType.DEFAULT)))
+            .doReturn(false)
+        val event = RumRawEvent.StartOperation(
+            fakeName,
+            operationKey = null,
+            attributes = emptyMap(),
+            eventTime = fakeEventTime
+        )
+
+        // When
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verify(mockProfilingFeatureScope, never()).sendEvent(isA<ProfilerEvent.RumVitalEvent>())
+    }
+
+    @Test
+    fun `M not send RumVitalEvent OPERATION to profiling W handleEvent { StopOperation, writer returns false }`(
+        @StringForgery fakeName: String,
+        forge: Forge
+    ) {
+        // Given — writer returns false, simulating the event mapper dropping the event
+        whenever(mockWriter.write(eq(mockEventBatchWriter), isA<VitalOperationStepEvent>(), eq(EventType.DEFAULT)))
+            .doReturn(false)
+        val fakeFailureReason = forge.aNullable { aValueFrom(FailureReason::class.java) }
+        val event = RumRawEvent.StopOperation(
+            fakeName,
+            operationKey = null,
+            failureReason = fakeFailureReason,
+            attributes = emptyMap(),
+            eventTime = fakeEventTime
+        )
+
+        // When
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verify(mockProfilingFeatureScope, never()).sendEvent(isA<ProfilerEvent.RumVitalEvent>())
+    }
     // endregion
 
     // region InsightsCollector
@@ -9704,6 +10697,11 @@ internal class RumViewScopeTest {
     private fun resolveExpectedTimestamp(timestamp: Long): Long {
         return timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs
     }
+
+    private fun sameThreadExecutorService(): ExecutorService =
+        mock<ExecutorService>().apply {
+            whenever(execute(any())) doAnswer { it.getArgument<Runnable>(0).run() }
+        }
 
     private fun mockSessionReplayContext(testedScope: RumViewScope) {
         whenever(

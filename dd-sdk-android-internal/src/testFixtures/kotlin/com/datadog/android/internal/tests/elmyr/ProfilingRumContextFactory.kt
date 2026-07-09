@@ -6,17 +6,15 @@
 
 package com.datadog.android.internal.tests.elmyr
 
-import com.datadog.android.internal.profiling.TTIDRumContext
+import com.datadog.android.internal.profiling.ProfilingRumContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-class TTIDRumContextFactory : ForgeryFactory<TTIDRumContext> {
-    override fun getForgery(forge: Forge): TTIDRumContext {
-        return TTIDRumContext(
+class ProfilingRumContextFactory : ForgeryFactory<ProfilingRumContext> {
+    override fun getForgery(forge: Forge): ProfilingRumContext {
+        return ProfilingRumContext(
             applicationId = forge.anAlphabeticalString(),
             sessionId = forge.anAlphabeticalString(),
-            vitalId = forge.anAlphabeticalString(),
-            vitalName = forge.aNullable { anAlphabeticalString() },
             viewId = forge.aNullable { anAlphabeticalString() },
             viewName = forge.aNullable { anAlphabeticalString() }
         )

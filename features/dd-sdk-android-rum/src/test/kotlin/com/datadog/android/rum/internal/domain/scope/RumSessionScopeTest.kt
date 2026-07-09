@@ -20,7 +20,6 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.core.sampling.Sampler
-import com.datadog.android.internal.profiling.ProfilerStopEvent
 import com.datadog.android.internal.sampling.SessionSamplingIdProvider
 import com.datadog.android.internal.tests.stub.StubTimeProvider
 import com.datadog.android.rum.RumSessionListener
@@ -1689,6 +1688,7 @@ internal class RumSessionScopeTest {
         // Then
         verify(mockRumSessionScopeStartupManager).onTTIDEvent(
             event = event,
+            isSessionTracked = testedScope.sessionState == RumSessionScope.State.TRACKED,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -1700,12 +1700,10 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `M stop profiler W handleEvent { AppStartTTIDEvent, session not tracked }`(
+    fun `M call onTTIDEvent W handleEvent { AppStartTTIDEvent, session not tracked }`(
         forge: Forge
     ) {
         // Given
-        val mockProfilingFeatureScope = mock<FeatureScope>()
-        whenever(mockSdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)) doReturn mockProfilingFeatureScope
         val event = mock<RumRawEvent.AppStartTTIDEvent>()
 
         testedScope.handleEvent(
@@ -1718,15 +1716,26 @@ internal class RumSessionScopeTest {
             forge.aValueFrom(RumSessionScope.State::class.java, exclude = listOf(RumSessionScope.State.TRACKED))
 
         // When
-        testedScope.handleEvent(
+        val result = testedScope.handleEvent(
             event = event,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter
         )
 
+        val rumContext = checkNotNull(result).getRumContext()
+
         // Then
-        verify(mockProfilingFeatureScope).sendEvent(ProfilerStopEvent.TTID())
+        verify(mockRumSessionScopeStartupManager).onTTIDEvent(
+            event = eq(event),
+            isSessionTracked = eq(false),
+            datadogContext = eq(fakeDatadogContext),
+            writeScope = eq(mockEventWriteScope),
+            writer = isA<NoOpDataWriter<Any>>(),
+            rumContext = eq(rumContext),
+            customAttributes = eq(fakeParentAttributes)
+        )
+        verifyNoMoreInteractions(mockRumSessionScopeStartupManager)
     }
 
     @Test
@@ -1810,6 +1819,7 @@ internal class RumSessionScopeTest {
         verify(mockRumSessionScopeStartupManager).onAppStartEvent(event = eq(appStartEvent))
         verify(mockRumSessionScopeStartupManager).onTTIDEvent(
             event = ttidEvent,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
