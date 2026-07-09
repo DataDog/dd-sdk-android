@@ -10,6 +10,7 @@ import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.kotlinConfig
 
 plugins {
+    id("ktlint")
     id("com.android.application")
     kotlin("android")
 }

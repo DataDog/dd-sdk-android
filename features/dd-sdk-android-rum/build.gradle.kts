@@ -19,6 +19,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.nio.file.Paths
 
 plugins {
+    id("ktlint")
     // Build
     id("com.android.library")
     kotlin("android")

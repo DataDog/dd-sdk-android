@@ -56,6 +56,8 @@ dependencies {
     // Verification Metadata XML
     implementation(libs.kotlinXmlBuilder)
 
+    implementation(libs.ktlintGradlePlugin)
+
     // Tests
     testImplementation(libs.jUnit4)
     testImplementation(libs.mockitoKotlin)

@@ -16,6 +16,7 @@ import com.datadog.gradle.plugin.gitclone.GitCloneDependenciesTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
+    id("ktlint")
     // Build
     id("com.android.library")
     kotlin("android")

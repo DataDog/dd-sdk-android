@@ -15,6 +15,7 @@ import com.datadog.gradle.utils.createJsonModelsGenerationTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
+    id("ktlint")
     // Build
     id("com.android.library")
     kotlin("android")
