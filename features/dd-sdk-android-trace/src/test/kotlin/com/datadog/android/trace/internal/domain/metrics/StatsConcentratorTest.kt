@@ -47,8 +47,11 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -698,6 +701,71 @@ internal class StatsConcentratorTest {
 
         // Then: schedule was called exactly once (initial), never re-scheduled after stop
         verify(mockExecutorService, times(1)).schedule(any<Runnable>(), any(), any())
+    }
+
+    // endregion
+
+    // region drainAndFlush
+
+    @Test
+    fun `M shut down executor W drainAndFlush()`() {
+        // Given
+        whenever(mockExecutorService.submit(any())) doAnswer {
+            it.getArgument<Runnable>(0).run()
+            CompletableFuture.completedFuture(Unit)
+        }
+
+        // When
+        testedConcentrator.drainAndFlush()
+
+        // Then
+        verify(mockExecutorService).shutdown()
+        verify(mockExecutorService).awaitTermination(any(), any())
+    }
+
+    @Test
+    fun `M flush all buckets synchronously W drainAndFlush()`(forge: Forge) {
+        // Given
+        whenever(mockExecutorService.submit(any())) doAnswer {
+            it.getArgument<Runnable>(0).run()
+            CompletableFuture.completedFuture(Unit)
+        }
+
+        val (span) = forge.makeEligibleSpan()
+        testedConcentrator.record(listOf(span))
+        stubNow(farFuture())
+
+        // When
+        testedConcentrator.drainAndFlush()
+
+        // Then
+        assertThat(captureBuckets()).hasSize(1)
+    }
+
+    @Test
+    fun `M run queued tasks W drainAndFlush() { tasks queued in real ScheduledThreadPoolExecutor }`() {
+        // Given
+        val taskRan = AtomicBoolean(false)
+        val realExecutor = ScheduledThreadPoolExecutor(1)
+        val concentrator = StatsConcentrator(
+            sdkCore = mockSdkCore,
+            ddSpanToSpanEventMapper = mockSpanEventMapper,
+            eventMapper = mockEventMapper,
+            bufferLen = fakeBufferLen,
+            bucketSizeNs = fakeBucketSizeNs,
+            executorService = realExecutor,
+            statsWriter = mockStatsWriter,
+            timeProvider = mockTimeProvider,
+            initialConsent = TrackingConsent.GRANTED,
+            startPeriodicFlush = false
+        )
+        realExecutor.execute { taskRan.set(true) }
+
+        // When
+        concentrator.drainAndFlush()
+
+        // Then
+        assertThat(taskRan.get()).isTrue()
     }
 
     // endregion

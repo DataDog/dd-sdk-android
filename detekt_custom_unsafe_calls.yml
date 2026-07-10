@@ -135,6 +135,7 @@ datadog:
       - "java.util.concurrent.LinkedBlockingQueue.offer(kotlin.Any?):java.lang.NullPointerException"
       - "java.util.concurrent.LinkedBlockingQueue.offer(kotlin.Any?, kotlin.Long, java.util.concurrent.TimeUnit?):java.lang.NullPointerException"
       - "java.util.concurrent.ScheduledExecutorService.schedule(java.lang.Runnable, kotlin.Long, java.util.concurrent.TimeUnit):java.util.concurrent.RejectedExecutionException,java.lang.NullPointerException"
+      - "java.util.concurrent.ScheduledExecutorService.awaitTermination(kotlin.Long, java.util.concurrent.TimeUnit?):java.lang.InterruptedException"
       - "java.util.concurrent.ScheduledThreadPoolExecutor.awaitTermination(kotlin.Long, java.util.concurrent.TimeUnit?):java.lang.InterruptedException"
       - "java.util.concurrent.ScheduledThreadPoolExecutor.constructor(kotlin.Int):java.lang.IllegalArgumentException"
       - "java.util.concurrent.ScheduledThreadPoolExecutor.schedule(java.lang.Runnable, kotlin.Long, java.util.concurrent.TimeUnit):java.util.concurrent.RejectedExecutionException,java.lang.NullPointerException"
