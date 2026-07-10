@@ -4,6 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+// doNothing() (used inside lenient().apply { ... } below) confuses detekt's UnusedImports usage tracking
+@file:Suppress("UnusedImports")
+
 package com.datadog.android.flags.openfeature
 
 import com.datadog.android.api.InternalLogger
