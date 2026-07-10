@@ -58,6 +58,7 @@ internal class LeanbackViewAttributesProviderTest : ObjectTest<LeanbackViewAttri
     @Mock
     lateinit var mockViewHolder: ItemBridgeAdapter.ViewHolder
 
+    @Suppress("DoubleMutabilityForCollection") // must stay MutableMap: extractAttributes() mutates it in place
     lateinit var fakeAttributes: MutableMap<String, Any?>
 
     @BeforeEach
