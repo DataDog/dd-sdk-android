@@ -901,6 +901,14 @@ public final class com/datadog/android/core/internal/utils/ConcurrencyExtKt {
 	public static final fun submitSafe (Ljava/util/concurrent/ExecutorService;Ljava/lang/String;Lcom/datadog/android/api/InternalLogger;Ljava/util/concurrent/Callable;)Ljava/util/concurrent/Future;
 }
 
+public final class com/datadog/android/core/internal/utils/DdTagsUtils {
+	public static final field INSTANCE Lcom/datadog/android/core/internal/utils/DdTagsUtils;
+	public final fun toDdTagsMap (Lcom/datadog/android/api/context/DatadogContext;)Ljava/util/Map;
+	public final fun toDdTagsMap (Ljava/lang/String;)Ljava/util/Map;
+	public final fun toDdTagsString (Lcom/datadog/android/api/context/DatadogContext;)Ljava/lang/String;
+	public final fun toDdTagsString (Ljava/util/Map;)Ljava/lang/String;
+}
+
 public final class com/datadog/android/core/internal/utils/JsonSerializer {
 	public static final field INSTANCE Lcom/datadog/android/core/internal/utils/JsonSerializer;
 	public final fun safeMapValuesToJson (Ljava/util/Map;Lcom/datadog/android/api/InternalLogger;)Ljava/util/Map;
