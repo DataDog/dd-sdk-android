@@ -950,7 +950,7 @@ internal class DatadogCoreTest {
                 countDownLatch.countDown()
                 it.putAll(fakeNewContext)
             }
-        }.apply { start() }
+        }.start()
         testedCore.setContextUpdateReceiver(mockContextUpdateListener)
 
         // Then

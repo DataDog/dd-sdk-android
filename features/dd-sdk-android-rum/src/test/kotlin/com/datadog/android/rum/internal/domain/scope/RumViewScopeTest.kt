@@ -9134,10 +9134,7 @@ internal class RumViewScopeTest {
 
         argumentCaptor<ViewEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(lastValue)
-                .apply {
-                    hasSessionActive(false)
-                }
+            assertThat(lastValue).hasSessionActive(false)
         }
     }
 
@@ -9507,10 +9504,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<ViewEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(firstValue)
-                .apply {
-                    hasDuration(1)
-                }
+            assertThat(firstValue).hasDuration(1)
         }
         if (rawEventData.event !is RumRawEvent.StartView) {
             mockInternalLogger.verifyLog(
@@ -9538,10 +9532,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<ViewEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(firstValue)
-                .apply {
-                    hasDuration(1)
-                }
+            assertThat(firstValue).hasDuration(1)
         }
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
@@ -9577,10 +9568,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<ViewEvent> {
             verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(lastValue)
-                .apply {
-                    hasDuration(durationNs)
-                }
+            assertThat(lastValue).hasDuration(durationNs)
         }
     }
 
@@ -10786,7 +10774,7 @@ internal class RumViewScopeTest {
         @JvmStatic
         fun brokenTimeRawEventData(): List<RumRawEventData> {
             val forge = Forge()
-            Configurator().apply { configure(forge) }
+            Configurator().configure(forge)
             val fakeKey = forge.getForgery<RumScopeKey>()
             val fakeName = forge.anAlphabeticalString()
             val eventTime = Time(0, 0)
