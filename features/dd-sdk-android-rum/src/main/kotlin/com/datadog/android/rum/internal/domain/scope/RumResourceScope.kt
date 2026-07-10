@@ -418,7 +418,7 @@ internal class RumResourceScope(
         }
     }
 
-    @SuppressWarnings("LongMethod")
+    @Suppress("LongMethod")
     private fun sendError(
         message: String,
         source: RumErrorSource,

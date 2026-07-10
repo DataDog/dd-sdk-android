@@ -153,7 +153,7 @@ internal class DatadogNdkCrashHandler(
         }
     }
 
-    @SuppressWarnings("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught")
     private fun clearCrashLog() {
         if (ndkCrashDataDirectory.existsSafe(internalLogger)) {
             try {
