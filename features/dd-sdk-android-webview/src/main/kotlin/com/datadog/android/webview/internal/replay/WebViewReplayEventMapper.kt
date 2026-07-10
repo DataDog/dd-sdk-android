@@ -25,7 +25,7 @@ internal class WebViewReplayEventMapper(
         IllegalStateException::class,
         NumberFormatException::class
     )
-    @Suppress("ThrowingInternalException", "UnsafeThirdPartyFunctionCall") // Caught in the caller
+    @Suppress("UnsafeThirdPartyFunctionCall") // Caught in the caller
     fun mapEvent(
         event: JsonObject,
         rumContext: RumContext,
