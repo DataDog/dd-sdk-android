@@ -251,7 +251,7 @@ internal class HeatmapIdentifierStoreTest {
                     repeat(READS_PER_READER) {
                         // ConcurrentLinkedQueue.add() doesn't throw for non-null elements
                         @Suppress("UnsafeThirdPartyFunctionCall")
-                        testedStore.getHeatmapIdentifier(viewId, fakeScreenName)?.let { seenValues.add(it) }
+                        testedStore.getHeatmapIdentifier(viewId, fakeScreenName)?.let { identifier -> seenValues.add(identifier) }
                     }
                 } catch (t: Throwable) {
                     firstError.compareAndSet(null, t)

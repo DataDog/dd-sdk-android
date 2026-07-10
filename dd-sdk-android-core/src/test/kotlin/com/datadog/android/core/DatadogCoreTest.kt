@@ -535,8 +535,8 @@ internal class DatadogCoreTest {
 
         // When
         testedCore.updateFeatureContext(feature, fakeUseContextThread) {
-            testedCore.updateFeatureContext(feature, fakeUseContextThread) {
-                it.putAll(fakeContextA)
+            testedCore.updateFeatureContext(feature, fakeUseContextThread) { innerContext ->
+                innerContext.putAll(fakeContextA)
             }
             it.putAll(fakeContextB)
         }

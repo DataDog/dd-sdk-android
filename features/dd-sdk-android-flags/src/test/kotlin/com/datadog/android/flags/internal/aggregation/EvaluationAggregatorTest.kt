@@ -324,7 +324,7 @@ internal class EvaluationAggregatorTest {
             startLatch.await()
             repeat(drainCount) {
                 Thread.sleep(1)
-                allDrained.addAll(testedAggregator.drain().map { it.count })
+                allDrained.addAll(testedAggregator.drain().map { record -> record.count })
             }
             finishLatch.countDown()
         }
