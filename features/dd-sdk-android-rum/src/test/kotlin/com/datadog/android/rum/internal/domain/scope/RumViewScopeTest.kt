@@ -4257,6 +4257,38 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `M not send RumAnrEvent to profiling W handleEvent(AddError) {ANRException but write fails}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        val throwable = ANRException(Thread.currentThread())
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes,
+            eventTime = fakeEventTime
+        )
+        // The RUM error write does not succeed (e.g. dropped by the errorEventMapper or a storage failure).
+        whenever(mockWriter.write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))) doReturn false
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then — the profile must not reference an ANR error id that RUM never ingested.
+        verify(mockWriter).write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))
+        verify(mockProfilingFeatureScope, never()).sendEvent(isA<ProfilerEvent.RumAnrEvent>())
+    }
+
+    @Test
     fun `M send event W handleEvent(AddError) on active view {throwable_message == blank}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
@@ -6156,6 +6188,25 @@ internal class RumViewScopeTest {
                 )
             )
         }
+    }
+
+    @Test
+    fun `M not send RumLongTaskEvent to profiling W handleEvent(AddLongTask) {write fails}`(
+        @LongForgery(0L, 700_000_000L) durationNs: Long,
+        @StringForgery target: String
+    ) {
+        // Given
+        testedScope.activeActionScope = null
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
+        // The RUM long task write does not succeed (e.g. dropped by the longTaskEventMapper or a storage failure).
+        whenever(mockWriter.write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))) doReturn false
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then — the profile must not reference a long task id that RUM never ingested.
+        verify(mockWriter).write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))
+        verify(mockProfilingFeatureScope, never()).sendEvent(isA<ProfilerEvent.RumLongTaskEvent>())
     }
 
     @Test
@@ -10510,6 +10561,62 @@ internal class RumViewScopeTest {
                 viewName = fakeKey.name
             )
         )
+    }
+
+    @Test
+    fun `M not send RumVitalEvent OPERATION to profiling W handleEvent { StartOperation, write fails }`(
+        @StringForgery fakeName: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeOperationKey = forge.aNullable { anAlphabeticalString() }
+        val event = RumRawEvent.StartOperation(
+            fakeName,
+            operationKey = fakeOperationKey,
+            attributes = emptyMap(),
+            eventTime = fakeEventTime
+        )
+        // The RUM operation vital write does not succeed.
+        whenever(mockWriter.write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))) doReturn false
+
+        // When
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then — the profile must not reference an operation vital id that RUM never ingested.
+        verify(mockProfilingFeatureScope, never()).sendEvent(isA<ProfilerEvent.RumVitalEvent>())
+    }
+
+    @Test
+    fun `M build vital and profiling event from same context W handleEvent { StartOperation }`(
+        @StringForgery fakeName: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeOperationKey = forge.aNullable { anAlphabeticalString() }
+        val event = RumRawEvent.StartOperation(
+            fakeName,
+            operationKey = fakeOperationKey,
+            attributes = emptyMap(),
+            eventTime = fakeEventTime
+        )
+
+        // When
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then — the written vital and the profiling metadata must describe the same RUM context,
+        // so profile/RUM correlation cannot drift if the session/view is renewed mid-write.
+        val schemaEventCaptor = argumentCaptor<VitalOperationStepEvent>()
+        verify(mockWriter).write(eq(mockEventBatchWriter), schemaEventCaptor.capture(), eq(EventType.DEFAULT))
+        val writtenVital = schemaEventCaptor.firstValue
+
+        val profilerEventCaptor = argumentCaptor<ProfilerEvent.RumVitalEvent>()
+        verify(mockProfilingFeatureScope).sendEvent(profilerEventCaptor.capture())
+        val profilerEvent = profilerEventCaptor.firstValue
+
+        assertThat(profilerEvent.rumContext.applicationId).isEqualTo(writtenVital.application.id)
+        assertThat(profilerEvent.rumContext.sessionId).isEqualTo(writtenVital.session.id)
+        assertThat(profilerEvent.rumContext.viewId).isEqualTo(writtenVital.view.id)
+        assertThat(profilerEvent.rumContext.viewName).isEqualTo(writtenVital.view.name)
     }
 
     @Test
