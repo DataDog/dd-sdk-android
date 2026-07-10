@@ -15,15 +15,16 @@ import java.util.Locale
  * Utility class to validate wildcard host patterns.
  *
  * A host pattern may contain at most one `*` wildcard and may only use the characters `a-z`, `0-9`,
- * `.`, `-` and `*`. A wildcard may only match subdomains of a registrable domain, so it must sit in
- * a subdomain label and overly broad patterns such as `*`, `*.com`, `*.co.uk` or
- * `*example.com` are rejected while `*.example.com` and `*.example.co.uk` are accepted.
+ * `.`, `-` and `*`. A wildcard may only match subdomains of a registrable domain, so the `*` must be
+ * the last character of a subdomain label. Overly broad patterns (`*`, `*.com`, `*.co.uk`,
+ * `*example.com`) and mis-placed wildcards (`*-preview.example.com`) are rejected, while
+ * `*.example.com`, `*.example.co.uk` and `preview-*.example.com` are accepted.
  *
  * This is the counterpart of [HostsSanitizer] for entries that are allowed to carry a wildcard, and
- * it only enforces the wildcard rules above. Wildcard-free entries are merely lowercased and
- * character-checked, not fully validated as host names (blanks, bare TLDs such as `com`, etc. are
- * returned as-is), so callers should route wildcard-free entries through [HostsSanitizer] for proper
- * host-name validation.
+ * it only enforces the wildcard rules above. Wildcard-free entries are merely character-checked,
+ * not fully validated as host names (blanks, bare TLDs such as `com`, etc. are returned as-is), so
+ * callers should route wildcard-free entries through [HostsSanitizer] for proper host-name
+ * validation.
  *
  * @param internalLogger the logger used to report dropped patterns to the user.
  */
@@ -32,8 +33,9 @@ class HostPatternSanitizer(
 ) {
 
     /**
-     * Validates the given host patterns, returning the valid ones lowercased and in their original
-     * order. Entries containing characters outside `[a-z0-9.*-]`, more than one `*` wildcard or an
+     * Validates the given host patterns, returning the valid ones in their original case and order
+     * (matching is case-insensitive, so the case is preserved for callers and normalized later).
+     * Entries containing characters outside `[a-z0-9.*-]`, more than one `*` wildcard or an
      * overly broad wildcard are dropped and an error is logged.
      *
      * @param patterns Host patterns to validate.
@@ -48,6 +50,8 @@ class HostPatternSanitizer(
     }
 
     private fun validatePattern(pattern: String, feature: String): String? {
+        // Validate on a lowercased copy (host matching is case-insensitive) but return the original
+        // so callers can match it against their unmodified input; the resolver lowercases keys later.
         val lowercased = pattern.lowercase(Locale.US)
         return when {
             lowercased.contains(INVALID_CHARACTER) -> {
@@ -74,7 +78,7 @@ class HostPatternSanitizer(
                 )
                 null
             }
-            else -> lowercased
+            else -> pattern
         }
     }
 
@@ -82,7 +86,7 @@ class HostPatternSanitizer(
      * A wildcard may only match subdomains of a registrable domain. The `*` must therefore sit in a
      * subdomain label (immediately followed by a `.`) and the remainder must contain a registrable
      * domain according to the public suffix list. This keeps `*.example.com`, `*.example.co.uk`,
-     * `*.foo.example.com` and `preview-*.shopist.io` while rejecting match-all (`*`), public-suffix
+     * `*.foo.example.com` and `preview-*.example.com` while rejecting match-all (`*`), public-suffix
      * (`*.com`, `*.co.uk`, `*.github.io`) and cross-domain (`*example.com`, which would also match
      * `evilexample.com`) patterns.
      */

@@ -60,14 +60,14 @@ object WebViewTracking {
      *
      * Each entry may be a plain host name (e.g. `example.com`) or a wildcard pattern containing a
      * single `*`. A wildcard may only match subdomains of a registrable domain:
-     * - accepted: `*.example.com`, `preview-*.shopist.io`, `*.example.co.uk`
-     * - rejected: `*`, `*.com`, `*example.com` (too broad)
+     * - accepted: `*.example.com`, `preview-*.example.com`, `*.example.co.uk`
+     * - rejected: `*`, `*.com`, `*example.com` (too broad), `*-preview.example.com` (the `*` must end a label)
      *
      * Invalid entries are dropped and the reason is logged.
      *
      * @param webView the webView on which to attach the bridge.
      * @param allowedHosts a list of all the hosts (plain host names or wildcard patterns) that you want
-     * to track when loaded in the WebView (e.g.: `listOf("example.com", "*.example.net", "preview-*.shopist.io")`).
+     * to track when loaded in the WebView (e.g.: `listOf("example.com", "*.example.net", "preview-*.example.com")`).
      * @param logsSampleRate the sample rate for logs coming from the WebView, in percent. A value of `30` means we'll
      * send 30% of the logs. If value is `0`, no logs will be sent to Datadog. Default is 100.0 (ie: all logs are sent).
      * @param sdkCore SDK instance on which to attach the bridge.
