@@ -25,7 +25,7 @@ internal class WebViewReplayEventMapper(
         IllegalStateException::class,
         NumberFormatException::class
     )
-    @Suppress("ThrowingInternalException")
+    @Suppress("ThrowingInternalException", "UnsafeThirdPartyFunctionCall") // Caught in the caller
     fun mapEvent(
         event: JsonObject,
         rumContext: RumContext,
@@ -33,7 +33,7 @@ internal class WebViewReplayEventMapper(
     ): JsonObject {
         val viewDataObject = event.get(VIEW_OBJECT_KEY)?.asJsonObject
         val viewId = viewDataObject?.get(VIEW_ID_KEY)?.asString
-            ?: throw IllegalStateException(BROWSER_EVENT_MISSING_VIEW_DATA_ERROR_MESSAGE)
+            ?: error(BROWSER_EVENT_MISSING_VIEW_DATA_ERROR_MESSAGE)
         event.get(EVENT_KEY)?.asJsonObject?.let { record ->
             val timeOffset = offsetProvider.getOffset(viewId, datadogContext)
             record.get(TIMESTAMP_KEY)?.let { timestamp ->
@@ -43,7 +43,7 @@ internal class WebViewReplayEventMapper(
             }
             record.addProperty(SLOT_ID_KEY, webViewId)
             return bundleIntoEnrichedRecord(record, viewId, rumContext)
-        } ?: throw IllegalStateException(BROWSER_EVENT_MISSING_RECORD_ERROR_MESSAGE)
+        } ?: error(BROWSER_EVENT_MISSING_RECORD_ERROR_MESSAGE)
     }
 
     private fun bundleIntoEnrichedRecord(

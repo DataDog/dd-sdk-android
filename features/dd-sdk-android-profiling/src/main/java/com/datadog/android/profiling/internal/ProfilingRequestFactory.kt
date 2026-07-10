@@ -66,9 +66,7 @@ internal class ProfilingRequestFactory(
 
     @Suppress("UnsafeThirdPartyFunctionCall", "ThrowingInternalException") // Caught in the caller
     private fun buildRequestBody(batchData: List<RawBatchEvent>): RequestBody {
-        if (batchData.isEmpty()) {
-            throw IllegalStateException(EMPTY_BATCH_DATA_ERROR_MESSAGE)
-        }
+        check(batchData.isNotEmpty()) { EMPTY_BATCH_DATA_ERROR_MESSAGE }
         if (batchData.size > 1) {
             internalLogger.log(
                 InternalLogger.Level.WARN,
