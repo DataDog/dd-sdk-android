@@ -300,6 +300,7 @@ internal class ProfilingFeature(
                                 quotaResult.reason.rawValue
                             )
                         )
+                        dataWriter.discard(result)
                         pendingRumEvents.clear()
                     } else {
                         val (longTasks, anrEvents, vitalEvents) = pendingRumEvents.drain()

@@ -57,10 +57,19 @@ internal class ProfilingDataWriter(
                             eventType = EventType.DEFAULT
                         )
                     }
+                    // TODO RUM-17263: when multiple SDK instances share the same resultFilePath,
+                    // the first writer to reach here deletes the file out from under the others,
+                    // so their reads fail and their profiles are dropped as perfetto_unreadable.
+                    // Deletion ownership needs to move to a single coordinator (read-once-and-fan-out
+                    // bytes, or reference-count across instances) before multi-instance is supported.
                     safeDelete(profilingResult.resultFilePath)
                 }
             }
         }
+    }
+
+    override fun discard(profilingResult: PerfettoResult) {
+        safeDelete(profilingResult.resultFilePath)
     }
 
     private fun buildRawBatchEvent(
@@ -74,7 +83,8 @@ internal class ProfilingDataWriter(
         val dropReason = when {
             longTaskEvents.isEmpty() && anrEvents.isEmpty() && vitalEvents.isEmpty() -> DROP_REASON_NO_RUM_EVENTS
             profilingResult.startReason != ProfilingStartReason.APPLICATION_LAUNCH &&
-                abs(driftMs) > MAX_CLOCK_DRIFT_MS -> DROP_REASON_CLOCK_DRIFT
+                    abs(driftMs) > MAX_CLOCK_DRIFT_MS -> DROP_REASON_CLOCK_DRIFT
+
             else -> null
         }
         if (dropReason != null) {
@@ -119,6 +129,7 @@ internal class ProfilingDataWriter(
                 )
                 null
             }
+
             firstRumContext == null -> {
                 logWriteResultMetric(
                     dropped = true,
@@ -131,6 +142,7 @@ internal class ProfilingDataWriter(
                 )
                 null
             }
+
             else -> {
                 val profileEvent = createProfileEvent(
                     context = context,
