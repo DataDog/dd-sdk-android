@@ -1808,7 +1808,11 @@ internal open class RumViewScope(
         val isRunning = datadogContext.isProfilerRunning()
         val quotaReason = datadogContext.resolveProfilingQuotaReason(sessionId)
         return when {
-            isRunning -> ViewEvent.Profiling(status = ViewEvent.ProfilingStatus.RUNNING)
+            isRunning -> ViewEvent.Profiling(
+                status = ViewEvent.ProfilingStatus.RUNNING,
+                clockDrift = datadogContext.time.serverTimeOffsetMs
+            )
+
             quotaReason != null -> ViewEvent.Profiling(
                 status = ViewEvent.ProfilingStatus.STOPPED,
                 quotaReason = quotaReason

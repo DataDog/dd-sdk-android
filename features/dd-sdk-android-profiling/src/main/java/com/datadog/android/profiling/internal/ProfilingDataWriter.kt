@@ -83,7 +83,7 @@ internal class ProfilingDataWriter(
         val dropReason = when {
             longTaskEvents.isEmpty() && anrEvents.isEmpty() && vitalEvents.isEmpty() -> DROP_REASON_NO_RUM_EVENTS
             profilingResult.startReason != ProfilingStartReason.APPLICATION_LAUNCH &&
-                    abs(driftMs) > MAX_CLOCK_DRIFT_MS -> DROP_REASON_CLOCK_DRIFT
+                abs(driftMs) > MAX_CLOCK_DRIFT_MS -> DROP_REASON_CLOCK_DRIFT
 
             else -> null
         }
