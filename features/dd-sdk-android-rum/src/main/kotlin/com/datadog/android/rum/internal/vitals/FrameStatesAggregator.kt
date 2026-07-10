@@ -167,7 +167,7 @@ internal class FrameStatesAggregator(
     // region Internal
     private fun trackActivity(window: Window, activity: Activity) {
         val list = activeActivities[window] ?: mutableListOf()
-        if (list.find { it.get() == activity } != null) {
+        if (list.any { it.get() == activity }) {
             return
         }
         list.add(WeakReference(activity))
