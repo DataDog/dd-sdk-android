@@ -25,23 +25,19 @@ import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 /**
  * Mapper used as a fallback for views that have no registered mapper.
  *
- * Registers a [com.datadog.android.sessionreplay.internal.recorder.PendingPixelCrop] for
- * post-traversal processing by [com.datadog.android.sessionreplay.internal.recorder.PixelCopyCapture.processPendingCrops].
- * That method decides, once all wireframe bounds are known, whether to:
- *
- * - **Crop from the stored PixelCopy bitmap** (full fidelity — parent alpha and transforms
- *   included) when no overlay sits above this view.
- * - **Call [View.draw] in isolation** (no overlay contamination) when another mapped
- *   element physically overlaps this view's region.
+ * Registers a [com.datadog.android.sessionreplay.internal.recorder.PendingPixelCapture] for
+ * post-traversal processing by
+ * [com.datadog.android.sessionreplay.internal.recorder.PixelCapture.processPendingCaptures],
+ * which captures the view via [View.draw], isolated from anything drawn on top of it (see that
+ * class's doc for the content-caching strategy used to avoid drawing on every cycle).
  *
  * Falls back to [fallbackMapper] for views that are not fully on-screen, and — critically —
- * based on privacy, gated via [PixelCaptureEligibility] (shared with the Compose-side
- * dark-spot detection in `RootSemanticsNodeMapper`). Any privacy restriction beyond what
+ * based on privacy, gated via [PixelCaptureEligibility]. Any privacy restriction beyond what
  * [PixelCaptureEligibility] allows — global, or from a per-view privacy tag override, both of
  * which are already resolved into [MappingContext] before this mapper runs — disables pixel
  * capture entirely for that view rather than risk uploading unmasked sensitive content.
  */
-internal class PixelCopyFallbackMapper(
+internal class PixelCaptureFallbackMapper(
     private val fallbackMapper: WireframeMapper<View>,
     viewIdentifierResolver: ViewIdentifierResolver,
     colorStringFormatter: ColorStringFormatter,
@@ -61,8 +57,8 @@ internal class PixelCopyFallbackMapper(
         asyncJobStatusCallback: AsyncJobStatusCallback,
         internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
-        val pixelCropCallback = mappingContext.pixelCropCallback
-        if (pixelCropCallback == null) {
+        val pixelCaptureCallback = mappingContext.pixelCaptureCallback
+        if (pixelCaptureCallback == null) {
             return fallbackMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
         }
 
@@ -92,16 +88,6 @@ internal class PixelCopyFallbackMapper(
 
         val nodeId = resolveViewId(view)
 
-        // Window-pixel rect for the PixelCopy crop path.
-        val location = IntArray(2)
-        view.getLocationInWindow(location)
-        val windowRect = Rect(
-            location[0],
-            location[1],
-            location[0] + view.width,
-            location[1] + view.height
-        )
-
         // Isolation clip rect: view draws into its own canvas, full size.
         val isolationClipRect = Rect(0, 0, view.width, view.height)
 
@@ -115,12 +101,11 @@ internal class PixelCopyFallbackMapper(
         )
 
         // Mutable so the pixel-capture pipeline can swap this entry for a placeholder if the
-        // per-cycle capture budget runs out before this crop is processed.
+        // per-cycle capture budget runs out before this capture is processed.
         val wireframes = mutableListOf<MobileSegment.Wireframe>(imageWireframe)
 
-        pixelCropCallback.registerPendingCrop(
+        pixelCaptureCallback.registerPendingCapture(
             nodeId = nodeId,
-            windowRect = windowRect,
             dpBounds = globalBounds,
             isolationView = view,
             isolationClipRect = isolationClipRect,

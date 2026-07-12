@@ -151,7 +151,7 @@ internal class SessionReplayFeatureTest {
             dynamicOptimizationEnabled = fakeConfiguration.dynamicOptimizationEnabled,
             internalCallback = NoOpSessionReplayInternalCallback(),
             heatmapsEnabled = fakeConfiguration.heatmapsEnabled,
-            pixelCopyCaptureEnabled = fakeConfiguration.pixelCopyCaptureEnabled
+            pixelCaptureEnabled = fakeConfiguration.pixelCaptureEnabled
         )
 
         // When
@@ -181,7 +181,7 @@ internal class SessionReplayFeatureTest {
             dynamicOptimizationEnabled = fakeConfiguration.dynamicOptimizationEnabled,
             internalCallback = NoOpSessionReplayInternalCallback(),
             heatmapsEnabled = fakeConfiguration.heatmapsEnabled,
-            pixelCopyCaptureEnabled = fakeConfiguration.pixelCopyCaptureEnabled
+            pixelCaptureEnabled = fakeConfiguration.pixelCaptureEnabled
         )
 
         // When

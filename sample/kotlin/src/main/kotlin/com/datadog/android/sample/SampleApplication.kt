@@ -334,7 +334,7 @@ class SampleApplication : Application() {
 
                 // Experimental: routes recording through the composition-tree pipeline
                 // (CompositionTreeBuilder) instead of the default mapper-chain pipeline.
-                _SessionReplayInternalProxy(this).setPixelCopyCaptureEnabled(true)
+                _SessionReplayInternalProxy(this).setPixelCaptureEnabled(true)
             }
             .setImagePrivacy(ImagePrivacy.MASK_NONE)
             .setTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)

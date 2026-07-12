@@ -76,7 +76,7 @@ internal class SessionReplayConfigurationBuilderTest {
         assertThat(sessionReplayConfiguration.customOptionSelectorDetectors).isEmpty()
         assertThat(sessionReplayConfiguration.dynamicOptimizationEnabled).isEqualTo(true)
         assertThat(sessionReplayConfiguration.heatmapsEnabled).isFalse()
-        assertThat(sessionReplayConfiguration.pixelCopyCaptureEnabled).isFalse()
+        assertThat(sessionReplayConfiguration.pixelCaptureEnabled).isFalse()
     }
 
     @Test
@@ -91,14 +91,14 @@ internal class SessionReplayConfigurationBuilderTest {
     }
 
     @Test
-    fun `M set pixelCopyCaptureEnabled to true W setPixelCopyCaptureEnabled()`() {
+    fun `M set pixelCaptureEnabled to true W setPixelCaptureEnabled()`() {
         // When
         val sessionReplayConfiguration = testedBuilder
-            .setPixelCopyCaptureEnabled(true)
+            .setPixelCaptureEnabled(true)
             .build()
 
         // Then
-        assertThat(sessionReplayConfiguration.pixelCopyCaptureEnabled).isTrue()
+        assertThat(sessionReplayConfiguration.pixelCaptureEnabled).isTrue()
     }
 
     @Test

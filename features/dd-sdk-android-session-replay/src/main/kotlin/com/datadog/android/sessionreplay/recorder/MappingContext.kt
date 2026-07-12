@@ -34,10 +34,9 @@ data class MappingContext(
     val hasOptionSelectorParent: Boolean = false,
     val interopViewCallback: InteropViewCallback,
     /**
-     * A callback that crops pixel-perfect bitmaps from the last captured full-window
-     * PixelCopy frame. Non-null only when the experimental PixelCopy capture pipeline is
-     * enabled and, on the View side, the platform is API 26+. Used by Compose mappers to
-     * capture semantically-dark leaf nodes.
+     * A callback that captures pixel-perfect bitmaps via `View.draw`, reusing a cached capture
+     * when a region's size hasn't changed. Non-null only when the experimental composition-tree
+     * pipeline is enabled — see `CompositionTreeBuilder` and `PixelCaptureFallbackMapper`.
      */
-    val pixelCropCallback: PixelCropCallback? = null
+    val pixelCaptureCallback: PixelCaptureCallback? = null
 )

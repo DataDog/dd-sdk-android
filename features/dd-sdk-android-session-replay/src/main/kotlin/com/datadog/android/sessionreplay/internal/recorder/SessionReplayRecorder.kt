@@ -7,7 +7,6 @@
 package com.datadog.android.sessionreplay.internal.recorder
 
 import android.app.Application
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.view.Window
@@ -33,7 +32,7 @@ import com.datadog.android.sessionreplay.internal.processor.RumContextDataHandle
 import com.datadog.android.sessionreplay.internal.recorder.callback.OnWindowRefreshedCallback
 import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.HiddenViewMapper
-import com.datadog.android.sessionreplay.internal.recorder.mapper.PixelCopyFallbackMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.PixelCaptureFallbackMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapPool
@@ -75,7 +74,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private val internalLogger: InternalLogger
     private val uiHandler: Handler
     private val resourceResolver: ResourceResolver
-    private val pixelCopyCapture: PixelCopyCapture?
+    private val pixelCapture: PixelCapture?
     private var shouldRecord = false
 
     @Suppress("LongParameterList")
@@ -97,7 +96,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         dynamicOptimizationEnabled: Boolean,
         internalCallback: SessionReplayInternalCallback,
         heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null,
-        pixelCopyCaptureEnabled: Boolean = false
+        pixelCaptureEnabled: Boolean = false
     ) {
         val internalLogger = sdkCore.internalLogger
         val rumContextDataHandler = RumContextDataHandler(
@@ -175,17 +174,17 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             imageTypeResolver = ImageTypeResolver()
         )
 
-        // Mixed PixelCopy + isolation capture, gated by pixelCopyCaptureEnabled.
-        // PixelCopy requires API 26+; the isolation (View.draw) fallback works on any API level.
-        this.pixelCopyCapture = if (pixelCopyCaptureEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            PixelCopyCapture(resourceResolver)
+        // View.draw-based capture (with content caching), gated by pixelCaptureEnabled.
+        // Works on any API level — no PixelCapture/window/API-level dependency.
+        this.pixelCapture = if (pixelCaptureEnabled) {
+            PixelCapture(resourceResolver)
         } else {
             null
         }
 
         // Captures unmapped leaf views via View.draw when the pipeline is enabled.
-        val pixelCopyFallbackMapper = if (pixelCopyCaptureEnabled) {
-            PixelCopyFallbackMapper(
+        val pixelCaptureFallbackMapper = if (pixelCaptureEnabled) {
+            PixelCaptureFallbackMapper(
                 fallbackMapper = defaultVWM,
                 viewIdentifierResolver = viewIdentifierResolver,
                 colorStringFormatter = colorStringFormatter,
@@ -198,7 +197,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
 
         // Maps TextViews directly (crisp/selectable text) instead of falling back to a pixel
         // capture — used by CompositionTreeBuilder in the composition-tree pipeline.
-        val textViewMapper = if (pixelCopyCaptureEnabled) {
+        val textViewMapper = if (pixelCaptureEnabled) {
             TextViewMapper<TextView>(
                 viewIdentifierResolver,
                 colorStringFormatter,
@@ -209,19 +208,19 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             null
         }
 
-        // Only the composition-tree pipeline below reads pixelCopyCapture/pixelCopyFallbackMapper —
+        // Only the composition-tree pipeline below reads pixelCapture/pixelCaptureFallbackMapper —
         // the default pipeline (SnapshotProducer/TreeViewTraversal) never does, so its behavior
-        // is unchanged whether pixelCopyCaptureEnabled is on or off.
-        val compositionTreeBuilder = pixelCopyFallbackMapper?.let { fallbackMapper ->
+        // is unchanged whether pixelCaptureEnabled is on or off.
+        val compositionTreeBuilder = pixelCaptureFallbackMapper?.let { fallbackMapper ->
             textViewMapper?.let { textMapper ->
                 CompositionTreeBuilder(
                     viewIdentifierResolver = viewIdentifierResolver,
                     viewBoundsResolver = viewBoundsResolver,
                     textViewMapper = textMapper,
-                    pixelCopyFallbackMapper = fallbackMapper,
+                    pixelCaptureFallbackMapper = fallbackMapper,
                     touchPrivacyManager = touchPrivacyManager,
                     imageWireframeHelper = imageWireframeHelper,
-                    pixelCropCallback = pixelCopyCapture
+                    pixelCaptureCallback = pixelCapture
                 )
             }
         }
@@ -259,7 +258,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                 sdkCore = sdkCore,
                 dynamicOptimizationEnabled = dynamicOptimizationEnabled,
                 rumContextProvider = rumContextProvider,
-                pixelCopyCapture = pixelCopyCapture,
+                pixelCapture = pixelCapture,
                 compositionTreeBuilder = compositionTreeBuilder
             ),
             touchPrivacyManager = touchPrivacyManager
@@ -317,7 +316,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.resourceResolver = resourceResolver
         this.uiHandler = uiHandler
         this.internalLogger = internalLogger
-        this.pixelCopyCapture = null
+        this.pixelCapture = null
     }
 
     override fun stopProcessingRecords() {
@@ -339,7 +338,6 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             shouldRecord = true
             val windows = sessionReplayLifecycleCallback.getCurrentWindows()
             val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
-            pixelCopyCapture?.setCurrentWindow(windows.firstOrNull())
             windowCallbackInterceptor.intercept(windows, appContext)
             viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
         }
@@ -350,17 +348,14 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             viewOnDrawInterceptor.stopIntercepting()
             windowCallbackInterceptor.stopIntercepting()
             shouldRecord = false
-            pixelCopyCapture?.setCurrentWindow(null)
-            pixelCopyCapture?.release()
+            pixelCapture?.release()
         }
     }
 
     @MainThread
     override fun onWindowsAdded(windows: List<Window>) {
         if (shouldRecord) {
-            val allWindows = sessionReplayLifecycleCallback.getCurrentWindows()
             val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
-            pixelCopyCapture?.setCurrentWindow(allWindows.firstOrNull())
             windowCallbackInterceptor.intercept(windows, appContext)
             viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
         }
@@ -369,9 +364,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     @MainThread
     override fun onWindowsRemoved(windows: List<Window>) {
         if (shouldRecord) {
-            val allWindows = sessionReplayLifecycleCallback.getCurrentWindows()
             val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
-            pixelCopyCapture?.setCurrentWindow(allWindows.firstOrNull())
             windowCallbackInterceptor.stopIntercepting(windows)
             viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
         }

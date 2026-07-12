@@ -31,7 +31,7 @@ data class SessionReplayConfiguration internal constructor(
     internal val systemRequirementsConfiguration: SystemRequirementsConfiguration,
     internal val internalCallback: SessionReplayInternalCallback,
     internal val heatmapsEnabled: Boolean,
-    internal val pixelCopyCaptureEnabled: Boolean
+    internal val pixelCaptureEnabled: Boolean
 ) {
 
     /**
@@ -79,7 +79,7 @@ data class SessionReplayConfiguration internal constructor(
         private var systemRequirementsConfiguration = SystemRequirementsConfiguration.NONE
         private var internalCallback: SessionReplayInternalCallback = NoOpSessionReplayInternalCallback()
         private var heatmapsEnabled = false
-        private var pixelCopyCaptureEnabled = false
+        private var pixelCaptureEnabled = false
 
         /**
          * Adds an extension support implementation. This is mostly used when you want to provide
@@ -242,12 +242,12 @@ data class SessionReplayConfiguration internal constructor(
         }
 
         /**
-         * Enables or disables the experimental PixelCopy-based capture pipeline, used as a
-         * fallback for views/composables with no registered mapper. Disabled by default while
-         * this pipeline is under active development.
+         * Enables or disables the experimental pixel-capture pipeline (View.draw-based, with
+         * content caching), used as a fallback for views/composables with no registered mapper.
+         * Disabled by default while this pipeline is under active development.
          */
-        internal fun setPixelCopyCaptureEnabled(pixelCopyCaptureEnabled: Boolean): Builder {
-            this.pixelCopyCaptureEnabled = pixelCopyCaptureEnabled
+        internal fun setPixelCaptureEnabled(pixelCaptureEnabled: Boolean): Builder {
+            this.pixelCaptureEnabled = pixelCaptureEnabled
             return this
         }
 
@@ -270,7 +270,7 @@ data class SessionReplayConfiguration internal constructor(
                 systemRequirementsConfiguration = systemRequirementsConfiguration,
                 internalCallback = internalCallback,
                 heatmapsEnabled = heatmapsEnabled,
-                pixelCopyCaptureEnabled = pixelCopyCaptureEnabled
+                pixelCaptureEnabled = pixelCaptureEnabled
             )
         }
 

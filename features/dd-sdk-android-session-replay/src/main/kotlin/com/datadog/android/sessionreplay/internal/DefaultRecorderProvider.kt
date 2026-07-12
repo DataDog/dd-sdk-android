@@ -68,7 +68,7 @@ internal class DefaultRecorderProvider(
     private val dynamicOptimizationEnabled: Boolean,
     private val internalCallback: SessionReplayInternalCallback,
     private val heatmapsEnabled: Boolean,
-    private val pixelCopyCaptureEnabled: Boolean
+    private val pixelCaptureEnabled: Boolean
 ) : RecorderProvider {
 
     override fun provideSessionReplayRecorder(
@@ -95,7 +95,7 @@ internal class DefaultRecorderProvider(
             dynamicOptimizationEnabled = dynamicOptimizationEnabled,
             internalCallback = internalCallback,
             heatmapIdentifierRegistry = if (heatmapsEnabled) LazyHeatmapIdentifierRegistry(sdkCore) else null,
-            pixelCopyCaptureEnabled = pixelCopyCaptureEnabled
+            pixelCaptureEnabled = pixelCaptureEnabled
         )
     }
 

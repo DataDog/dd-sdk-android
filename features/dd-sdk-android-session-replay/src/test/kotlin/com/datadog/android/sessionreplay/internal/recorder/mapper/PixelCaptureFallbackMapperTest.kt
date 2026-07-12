@@ -13,7 +13,7 @@ import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.aMockView
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.recorder.PixelCropCallback
+import com.datadog.android.sessionreplay.recorder.PixelCaptureCallback
 import com.datadog.android.sessionreplay.recorder.WireframeSlot
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import fr.xgouchet.elmyr.Forge
@@ -42,13 +42,13 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class PixelCopyFallbackMapperTest : LegacyBaseWireframeMapperTest() {
+internal class PixelCaptureFallbackMapperTest : LegacyBaseWireframeMapperTest() {
 
     @Mock
     lateinit var mockFallbackMapper: ViewWireframeMapper
 
     @Mock
-    lateinit var mockPixelCropCallback: PixelCropCallback
+    lateinit var mockPixelCaptureCallback: PixelCaptureCallback
 
     @Forgery
     lateinit var fakeGlobalBounds: GlobalBounds
@@ -57,14 +57,14 @@ internal class PixelCopyFallbackMapperTest : LegacyBaseWireframeMapperTest() {
 
     private lateinit var mockView: View
 
-    private lateinit var testedMapper: PixelCopyFallbackMapper
+    private lateinit var testedMapper: PixelCaptureFallbackMapper
 
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeMappingContext = fakeMappingContext.copy(
             textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS,
             imagePrivacy = ImagePrivacy.MASK_NONE,
-            pixelCropCallback = mockPixelCropCallback
+            pixelCaptureCallback = mockPixelCaptureCallback
         )
 
         mockView = forge.aMockView()
@@ -86,7 +86,7 @@ internal class PixelCopyFallbackMapperTest : LegacyBaseWireframeMapperTest() {
             mockFallbackMapper.map(mockView, fakeMappingContext, mockAsyncJobStatusCallback, mockInternalLogger)
         ).thenReturn(fakeFallbackWireframes)
 
-        testedMapper = PixelCopyFallbackMapper(
+        testedMapper = PixelCaptureFallbackMapper(
             fallbackMapper = mockFallbackMapper,
             viewIdentifierResolver = mockViewIdentifierResolver,
             colorStringFormatter = mockColorStringFormatter,
@@ -96,9 +96,9 @@ internal class PixelCopyFallbackMapperTest : LegacyBaseWireframeMapperTest() {
     }
 
     @Test
-    fun `M delegate to fallbackMapper W map() {no pixelCropCallback}`() {
+    fun `M delegate to fallbackMapper W map() {no pixelCaptureCallback}`() {
         // Given
-        fakeMappingContext = fakeMappingContext.copy(pixelCropCallback = null)
+        fakeMappingContext = fakeMappingContext.copy(pixelCaptureCallback = null)
         whenever(
             mockFallbackMapper.map(mockView, fakeMappingContext, mockAsyncJobStatusCallback, mockInternalLogger)
         ).thenReturn(fakeFallbackWireframes)
@@ -108,7 +108,7 @@ internal class PixelCopyFallbackMapperTest : LegacyBaseWireframeMapperTest() {
 
         // Then
         assertThat(result).isEqualTo(fakeFallbackWireframes)
-        verifyNoInteractions(mockPixelCropCallback)
+        verifyNoInteractions(mockPixelCaptureCallback)
     }
 
     @Test
@@ -124,7 +124,7 @@ internal class PixelCopyFallbackMapperTest : LegacyBaseWireframeMapperTest() {
 
         // Then
         assertThat(result).isEqualTo(fakeFallbackWireframes)
-        verifyNoInteractions(mockPixelCropCallback)
+        verifyNoInteractions(mockPixelCaptureCallback)
     }
 
     @Test
@@ -140,7 +140,7 @@ internal class PixelCopyFallbackMapperTest : LegacyBaseWireframeMapperTest() {
 
         // Then
         assertThat(result).isEqualTo(fakeFallbackWireframes)
-        verifyNoInteractions(mockPixelCropCallback)
+        verifyNoInteractions(mockPixelCaptureCallback)
     }
 
     @Test
@@ -157,7 +157,7 @@ internal class PixelCopyFallbackMapperTest : LegacyBaseWireframeMapperTest() {
 
         // Then
         assertThat(result).isEqualTo(fakeFallbackWireframes)
-        verifyNoInteractions(mockPixelCropCallback)
+        verifyNoInteractions(mockPixelCaptureCallback)
     }
 
     @Test
@@ -181,11 +181,11 @@ internal class PixelCopyFallbackMapperTest : LegacyBaseWireframeMapperTest() {
 
         // Then
         assertThat(result).isEqualTo(fakeFallbackWireframes)
-        verifyNoInteractions(mockPixelCropCallback)
+        verifyNoInteractions(mockPixelCaptureCallback)
     }
 
     @Test
-    fun `M register a pending crop W map() {eligible}`() {
+    fun `M register a pending capture W map() {eligible}`() {
         // When
         val result = testedMapper.map(mockView, fakeMappingContext, mockAsyncJobStatusCallback, mockInternalLogger)
 
@@ -199,9 +199,8 @@ internal class PixelCopyFallbackMapperTest : LegacyBaseWireframeMapperTest() {
         assertThat(wireframe.isEmpty).isTrue()
 
         val expectedIsolationClipRect = Rect(0, 0, mockView.width, mockView.height)
-        verify(mockPixelCropCallback).registerPendingCrop(
+        verify(mockPixelCaptureCallback).registerPendingCapture(
             nodeId = eq(wireframe.id),
-            windowRect = any(),
             dpBounds = eq(fakeGlobalBounds),
             isolationView = eq(mockView),
             isolationClipRect = eq(expectedIsolationClipRect),
@@ -216,10 +215,9 @@ internal class PixelCopyFallbackMapperTest : LegacyBaseWireframeMapperTest() {
         // Given
         var capturedSlot: WireframeSlot? = null
         doAnswer {
-            capturedSlot = it.getArgument(6)
+            capturedSlot = it.getArgument(5)
             Unit
-        }.whenever(mockPixelCropCallback).registerPendingCrop(
-            any(),
+        }.whenever(mockPixelCaptureCallback).registerPendingCapture(
             any(),
             any(),
             any(),

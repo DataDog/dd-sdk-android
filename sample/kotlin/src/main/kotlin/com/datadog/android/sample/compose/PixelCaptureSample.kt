@@ -35,7 +35,7 @@ import kotlin.math.sin
 /**
  * A screen with purely Canvas-drawn composables that carry no semantic annotations.
  *
- * Purpose: demonstrate the PixelCopy fallback in Session Replay. Without the PixelCopy
+ * Purpose: demonstrate the PixelCapture fallback in Session Replay. Without the PixelCapture
  * mechanism, SR sees nothing for these composables (no semantic node → no wireframe).
  * With it, SR produces a pixel-accurate ImageWireframe for each Canvas region.
  *
@@ -43,7 +43,7 @@ import kotlin.math.sin
  * activity rings and waveform appear in the session rather than blank space.
  */
 @Composable
-internal fun PixelCopySample() {
+internal fun PixelCaptureSample() {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -52,12 +52,12 @@ internal fun PixelCopySample() {
         verticalArrangement = Arrangement.spacedBy(DefaultPadding)
     ) {
         Text(
-            text = "PixelCopy SR Demo",
+            text = "PixelCapture SR Demo",
             style = MaterialTheme.typography.h6
         )
         Text(
             text = "The visuals below are drawn entirely with Canvas — no semantic annotations. " +
-                "Session Replay should capture them via the PixelCopy fallback.",
+                "Session Replay should capture them via the PixelCapture fallback.",
             style = MaterialTheme.typography.body2
         )
 
@@ -74,7 +74,7 @@ internal fun PixelCopySample() {
             ringData = listOf(
                 RingData(sweepAngle = 270f, color = Color(0xFFE53935)), // red, 75%
                 RingData(sweepAngle = 216f, color = Color(0xFF43A047)), // green, 60%
-                RingData(sweepAngle = 144f, color = Color(0xFF1E88E5))  // blue, 40%
+                RingData(sweepAngle = 144f, color = Color(0xFF1E88E5)) // blue, 40%
             )
         )
 
@@ -99,7 +99,7 @@ private data class RingData(val sweepAngle: Float, val color: Color)
 /**
  * Draws concentric activity-style arcs. Each ring occupies a progressively smaller radius
  * to produce a clear, visually distinct pattern. No Semantics block — intentionally invisible
- * to the SR semantic mapper, making it a reliable PixelCopy test target.
+ * to the SR semantic mapper, making it a reliable PixelCapture test target.
  */
 @Composable
 private fun ActivityRings(
@@ -111,7 +111,7 @@ private fun ActivityRings(
 
     // semantics {} makes this node visible in Compose's unmerged semantics tree so that
     // RootSemanticsNodeMapper visits it. Without this, Canvas composables are completely
-    // invisible to the traversal — they produce no semantic node — and the PixelCopy
+    // invisible to the traversal — they produce no semantic node — and the PixelCapture
     // dark-spot detection never fires.
     Canvas(modifier = modifier.semantics { contentDescription = "Activity rings chart" }) {
         val strokePx = strokeWidth.toPx()
@@ -191,6 +191,6 @@ private fun SineWave(modifier: Modifier = Modifier) {
 @Preview(showBackground = true)
 @Composable
 @Suppress("UnusedPrivateMember")
-private fun PreviewPixelCopySample() {
-    PixelCopySample()
+private fun PreviewPixelCaptureSample() {
+    PixelCaptureSample()
 }

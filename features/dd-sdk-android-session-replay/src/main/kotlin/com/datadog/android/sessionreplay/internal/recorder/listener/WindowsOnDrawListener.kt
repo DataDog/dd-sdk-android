@@ -6,7 +6,6 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.listener
 
-import android.os.Build
 import android.view.View
 import android.view.ViewTreeObserver
 import androidx.annotation.MainThread
@@ -21,7 +20,7 @@ import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.recorder.CompositionTreeBuilder
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
-import com.datadog.android.sessionreplay.internal.recorder.PixelCopyCapture
+import com.datadog.android.sessionreplay.internal.recorder.PixelCapture
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.internal.recorder.withinSRBenchmarkSpan
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
@@ -30,7 +29,7 @@ import com.datadog.android.sessionreplay.recorder.SystemInformation
 import java.lang.ref.WeakReference
 
 internal class WindowsOnDrawListener(
-    zOrderedDecorViews: List<View>,
+    decorViews: List<View>,
     private val recordedDataQueueHandler: RecordedDataQueueHandler,
     private val snapshotProducer: SnapshotProducer,
     private val textAndInputPrivacy: TextAndInputPrivacy,
@@ -45,13 +44,13 @@ internal class WindowsOnDrawListener(
     ),
     private val methodCallSamplingRate: Float,
     private val rumContextProvider: RumContextProvider,
-    private val pixelCopyCapture: PixelCopyCapture? = null,
+    private val pixelCapture: PixelCapture? = null,
     // When non-null, this snapshot cycle goes entirely through the composition-tree pipeline
     // instead of snapshotProducer — the two never both run for the same cycle.
     private val compositionTreeBuilder: CompositionTreeBuilder? = null
 ) : ViewTreeObserver.OnDrawListener {
 
-    internal val weakReferencedDecorViews: List<WeakReference<View>> = zOrderedDecorViews.map { WeakReference(it) }
+    internal val weakReferencedDecorViews: List<WeakReference<View>> = decorViews.map { WeakReference(it) }
 
     @MainThread
     override fun onDraw() {
@@ -65,21 +64,20 @@ internal class WindowsOnDrawListener(
         override fun run() {
             val rootViews = weakReferencedDecorViews.mapNotNull { it.get() }
 
-            // is is very important to have the windows sorted by their z-order
+            // Any live window's Context resolves the same SystemInformation (same device, same
+            // process) — which window this comes from doesn't matter here, unlike in
+            // runCompositionTreePipeline's rootView selection below.
             val context = rootViews.firstOrNull()?.context ?: return
             val systemInformation = miscUtils.resolveSystemInformation(context)
             val item = recordedDataQueueHandler.addSnapshotItem(systemInformation) ?: return
 
             val currentViewUrl = rumContextProvider.getRumContext().viewUrl
 
-            // Discard stale bitmap before traversal so mappers never see previous-screen pixels.
-            pixelCopyCapture?.onPreTraversal(currentViewUrl)
-
             val recordedDataQueueRefs = RecordedDataQueueRefs(recordedDataQueueHandler)
             recordedDataQueueRefs.recordedDataQueueItem = item
 
             if (compositionTreeBuilder != null) {
-                runCompositionTreePipeline(rootViews, systemInformation, item, recordedDataQueueRefs)
+                runCompositionTreePipeline(rootViews, systemInformation, currentViewUrl, item, recordedDataQueueRefs)
                 return
             }
 
@@ -113,55 +111,51 @@ internal class WindowsOnDrawListener(
             }
 
             touchPrivacyManager.updateCurrentTouchOverrideAreas()
-
-            // Post-traversal: evaluate pending crops now that all wireframe bounds are known.
-            // processPendingCrops decides PixelCopy vs isolation per crop based on overlap check.
-            if (nodes.isNotEmpty()) {
-                pixelCopyCapture?.processPendingCrops(nodes)
-            }
-
-            // Fire one full-window PixelCopy per snapshot — O(1) GPU readback.
-            // The resulting bitmap is used by the NEXT cycle's processPendingCrops (PixelCopy path).
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                pixelCopyCapture?.captureLatestFrame()
-            }
         }
 
         /**
-         * The composition-tree pipeline, entirely separate from the block above: only one root
-         * view is supported for now (the topmost decor view — matches how [PixelCopyCapture]
-         * itself already only ever tracks a single current window).
+         * The composition-tree pipeline, entirely separate from the block above: every
+         * currently-shown window is captured and merged into one tree, ordered by
+         * [orderRootViewsForComposition].
          */
         @UiThread
         private fun runCompositionTreePipeline(
             rootViews: List<View>,
             systemInformation: SystemInformation,
+            currentViewUrl: String?,
             item: SnapshotRecordedDataQueueItem,
             recordedDataQueueRefs: RecordedDataQueueRefs
         ) {
             val builder = compositionTreeBuilder ?: return
+
+            // Marks the start of this snapshot cycle's capture budget, and clears the content
+            // cache on navigation — see PixelCapture's doc.
+            pixelCapture?.onPreTraversal(currentViewUrl)
+
             val output = sdkCore.internalLogger.measureMethodCallPerf(
                 METHOD_CALL_CALLER_CLASS,
                 METHOD_CALL_CAPTURE_RECORD,
                 methodCallSamplingRate
             ) {
                 withinSRBenchmarkSpan(BENCHMARK_SPAN_SNAPSHOT_PRODUCER, isContainer = true) {
-                    rootViews.firstOrNull()?.let { rootView ->
-                        builder.build(
-                            rootView = rootView,
-                            systemInformation = systemInformation,
-                            textAndInputPrivacy = textAndInputPrivacy,
-                            imagePrivacy = imagePrivacy,
-                            recordedDataQueueRefs = recordedDataQueueRefs,
-                            internalLogger = sdkCore.internalLogger
-                        )
-                    }
+                    builder.build(
+                        rootViews = orderRootViewsForComposition(rootViews),
+                        systemInformation = systemInformation,
+                        textAndInputPrivacy = textAndInputPrivacy,
+                        imagePrivacy = imagePrivacy,
+                        recordedDataQueueRefs = recordedDataQueueRefs,
+                        internalLogger = sdkCore.internalLogger
+                    )
                 }
             }
 
-            if (output != null && output.wireframes.isNotEmpty()) {
+            if (output.wireframes.isNotEmpty()) {
                 item.compositionTreeOutput = output
             }
+
+            // Feeds this screen's shape into PixelCapture's next health-summary log.
+            val layerCount = output.compositionTree?.let { 1 + (it.layers?.size ?: 0) } ?: 0
+            pixelCapture?.recordCompositionTreeStats(layerCount, output.wireframes.size)
 
             item.isFinishedTraversal = true
 
@@ -171,15 +165,24 @@ internal class WindowsOnDrawListener(
 
             touchPrivacyManager.updateCurrentTouchOverrideAreas()
 
-            if (output != null && output.wireframes.isNotEmpty()) {
-                pixelCopyCapture?.processPendingCropsForWireframes(output.wireframes)
-            }
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                pixelCopyCapture?.captureLatestFrame()
-            }
+            // Post-traversal: capture (or reuse cached content for) every pending capture.
+            pixelCapture?.processPendingCaptures()
         }
     }
+
+    /**
+     * Orders [rootViews] so the currently-focused window — the practical, verifiable signal for
+     * "the topmost, actually-visible window" — renders last (on top; composition-layer children
+     * are ordered back-to-front per schema). [rootViews] itself carries no ordering guarantee:
+     * it is built from whatever `WindowInspector` (or the legacy reflection fallback — see
+     * `WindowInspector.getGlobalWindowViews`) returns, which reflects internal bookkeeping
+     * order, not z-order or visibility. [sortedBy] is stable, so relative order among unfocused
+     * windows — still no true z-order signal for those — is preserved rather than randomized.
+     * Visibility filtering (e.g. detached/zero-size windows) happens downstream in
+     * [CompositionTreeBuilder.build], not here — this only orders.
+     */
+    private fun orderRootViewsForComposition(rootViews: List<View>): List<View> =
+        rootViews.sortedBy { it.hasWindowFocus() }
 
     companion object {
         private const val METHOD_CALL_CAPTURE_RECORD: String = "Capture Record"

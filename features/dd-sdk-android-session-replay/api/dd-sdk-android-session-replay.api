@@ -148,7 +148,7 @@ public final class com/datadog/android/sessionreplay/TouchPrivacy : java/lang/En
 public final class com/datadog/android/sessionreplay/_SessionReplayInternalProxy {
 	public fun <init> (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;)V
 	public final fun setInternalCallback (Lcom/datadog/android/sessionreplay/SessionReplayInternalCallback;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
-	public final fun setPixelCopyCaptureEnabled (Z)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
+	public final fun setPixelCaptureEnabled (Z)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
 }
 
 public final class com/datadog/android/sessionreplay/internal/TouchPrivacyManager {
@@ -1897,8 +1897,8 @@ public abstract interface class com/datadog/android/sessionreplay/recorder/Inter
 }
 
 public final class com/datadog/android/sessionreplay/recorder/MappingContext {
-	public fun <init> (Lcom/datadog/android/sessionreplay/recorder/SystemInformation;Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;Lcom/datadog/android/sessionreplay/ImagePrivacy;Lcom/datadog/android/sessionreplay/internal/TouchPrivacyManager;ZLcom/datadog/android/sessionreplay/recorder/InteropViewCallback;Lcom/datadog/android/sessionreplay/recorder/PixelCropCallback;)V
-	public synthetic fun <init> (Lcom/datadog/android/sessionreplay/recorder/SystemInformation;Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;Lcom/datadog/android/sessionreplay/ImagePrivacy;Lcom/datadog/android/sessionreplay/internal/TouchPrivacyManager;ZLcom/datadog/android/sessionreplay/recorder/InteropViewCallback;Lcom/datadog/android/sessionreplay/recorder/PixelCropCallback;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/datadog/android/sessionreplay/recorder/SystemInformation;Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;Lcom/datadog/android/sessionreplay/ImagePrivacy;Lcom/datadog/android/sessionreplay/internal/TouchPrivacyManager;ZLcom/datadog/android/sessionreplay/recorder/InteropViewCallback;Lcom/datadog/android/sessionreplay/recorder/PixelCaptureCallback;)V
+	public synthetic fun <init> (Lcom/datadog/android/sessionreplay/recorder/SystemInformation;Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;Lcom/datadog/android/sessionreplay/ImagePrivacy;Lcom/datadog/android/sessionreplay/internal/TouchPrivacyManager;ZLcom/datadog/android/sessionreplay/recorder/InteropViewCallback;Lcom/datadog/android/sessionreplay/recorder/PixelCaptureCallback;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/datadog/android/sessionreplay/recorder/SystemInformation;
 	public final fun component2 ()Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;
 	public final fun component3 ()Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;
@@ -1906,15 +1906,15 @@ public final class com/datadog/android/sessionreplay/recorder/MappingContext {
 	public final fun component5 ()Lcom/datadog/android/sessionreplay/internal/TouchPrivacyManager;
 	public final fun component6 ()Z
 	public final fun component7 ()Lcom/datadog/android/sessionreplay/recorder/InteropViewCallback;
-	public final fun component8 ()Lcom/datadog/android/sessionreplay/recorder/PixelCropCallback;
-	public final fun copy (Lcom/datadog/android/sessionreplay/recorder/SystemInformation;Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;Lcom/datadog/android/sessionreplay/ImagePrivacy;Lcom/datadog/android/sessionreplay/internal/TouchPrivacyManager;ZLcom/datadog/android/sessionreplay/recorder/InteropViewCallback;Lcom/datadog/android/sessionreplay/recorder/PixelCropCallback;)Lcom/datadog/android/sessionreplay/recorder/MappingContext;
-	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/recorder/MappingContext;Lcom/datadog/android/sessionreplay/recorder/SystemInformation;Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;Lcom/datadog/android/sessionreplay/ImagePrivacy;Lcom/datadog/android/sessionreplay/internal/TouchPrivacyManager;ZLcom/datadog/android/sessionreplay/recorder/InteropViewCallback;Lcom/datadog/android/sessionreplay/recorder/PixelCropCallback;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/recorder/MappingContext;
+	public final fun component8 ()Lcom/datadog/android/sessionreplay/recorder/PixelCaptureCallback;
+	public final fun copy (Lcom/datadog/android/sessionreplay/recorder/SystemInformation;Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;Lcom/datadog/android/sessionreplay/ImagePrivacy;Lcom/datadog/android/sessionreplay/internal/TouchPrivacyManager;ZLcom/datadog/android/sessionreplay/recorder/InteropViewCallback;Lcom/datadog/android/sessionreplay/recorder/PixelCaptureCallback;)Lcom/datadog/android/sessionreplay/recorder/MappingContext;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/recorder/MappingContext;Lcom/datadog/android/sessionreplay/recorder/SystemInformation;Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;Lcom/datadog/android/sessionreplay/ImagePrivacy;Lcom/datadog/android/sessionreplay/internal/TouchPrivacyManager;ZLcom/datadog/android/sessionreplay/recorder/InteropViewCallback;Lcom/datadog/android/sessionreplay/recorder/PixelCaptureCallback;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/recorder/MappingContext;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getHasOptionSelectorParent ()Z
 	public final fun getImagePrivacy ()Lcom/datadog/android/sessionreplay/ImagePrivacy;
 	public final fun getImageWireframeHelper ()Lcom/datadog/android/sessionreplay/utils/ImageWireframeHelper;
 	public final fun getInteropViewCallback ()Lcom/datadog/android/sessionreplay/recorder/InteropViewCallback;
-	public final fun getPixelCropCallback ()Lcom/datadog/android/sessionreplay/recorder/PixelCropCallback;
+	public final fun getPixelCaptureCallback ()Lcom/datadog/android/sessionreplay/recorder/PixelCaptureCallback;
 	public final fun getSystemInformation ()Lcom/datadog/android/sessionreplay/recorder/SystemInformation;
 	public final fun getTextAndInputPrivacy ()Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;
 	public final fun getTouchPrivacyManager ()Lcom/datadog/android/sessionreplay/internal/TouchPrivacyManager;
@@ -1926,17 +1926,17 @@ public abstract interface class com/datadog/android/sessionreplay/recorder/Optio
 	public abstract fun isOptionSelector (Landroid/view/ViewGroup;)Z
 }
 
+public abstract interface class com/datadog/android/sessionreplay/recorder/PixelCaptureCallback {
+	public abstract fun registerPendingCapture (JLcom/datadog/android/sessionreplay/utils/GlobalBounds;Landroid/view/View;Landroid/graphics/Rect;Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$ImageWireframe;Lcom/datadog/android/sessionreplay/recorder/WireframeSlot;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;)V
+}
+
+public final class com/datadog/android/sessionreplay/recorder/PixelCaptureCallback$DefaultImpls {
+	public static fun registerPendingCapture (Lcom/datadog/android/sessionreplay/recorder/PixelCaptureCallback;JLcom/datadog/android/sessionreplay/utils/GlobalBounds;Landroid/view/View;Landroid/graphics/Rect;Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$ImageWireframe;Lcom/datadog/android/sessionreplay/recorder/WireframeSlot;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;)V
+}
+
 public final class com/datadog/android/sessionreplay/recorder/PixelCaptureEligibility {
 	public static final field INSTANCE Lcom/datadog/android/sessionreplay/recorder/PixelCaptureEligibility;
 	public final fun isEligible (Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;Lcom/datadog/android/sessionreplay/ImagePrivacy;Lcom/datadog/android/sessionreplay/utils/GlobalBounds;)Z
-}
-
-public abstract interface class com/datadog/android/sessionreplay/recorder/PixelCropCallback {
-	public abstract fun registerPendingCrop (JLandroid/graphics/Rect;Lcom/datadog/android/sessionreplay/utils/GlobalBounds;Landroid/view/View;Landroid/graphics/Rect;Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$ImageWireframe;Lcom/datadog/android/sessionreplay/recorder/WireframeSlot;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;)V
-}
-
-public final class com/datadog/android/sessionreplay/recorder/PixelCropCallback$DefaultImpls {
-	public static fun registerPendingCrop (Lcom/datadog/android/sessionreplay/recorder/PixelCropCallback;JLandroid/graphics/Rect;Lcom/datadog/android/sessionreplay/utils/GlobalBounds;Landroid/view/View;Landroid/graphics/Rect;Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$ImageWireframe;Lcom/datadog/android/sessionreplay/recorder/WireframeSlot;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;)V
 }
 
 public final class com/datadog/android/sessionreplay/recorder/SystemInformation {

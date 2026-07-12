@@ -47,8 +47,7 @@ internal class ComposeViewMapper(
                 density,
                 mappingContext,
                 asyncJobStatusCallback,
-                internalLogger,
-                hostView = view
+                internalLogger
             )
         } ?: emptyList()
     }

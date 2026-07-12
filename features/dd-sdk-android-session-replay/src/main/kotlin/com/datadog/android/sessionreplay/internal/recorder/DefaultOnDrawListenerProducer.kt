@@ -23,7 +23,7 @@ internal class DefaultOnDrawListenerProducer(
     private val sdkCore: FeatureSdkCore,
     private val dynamicOptimizationEnabled: Boolean,
     private val rumContextProvider: RumContextProvider,
-    private val pixelCopyCapture: PixelCopyCapture? = null,
+    private val pixelCapture: PixelCapture? = null,
     private val compositionTreeBuilder: CompositionTreeBuilder? = null
 ) : OnDrawListenerProducer {
 
@@ -34,7 +34,7 @@ internal class DefaultOnDrawListenerProducer(
         touchPrivacyManager: TouchPrivacyManager
     ): ViewTreeObserver.OnDrawListener {
         return WindowsOnDrawListener(
-            zOrderedDecorViews = decorViews,
+            decorViews = decorViews,
             recordedDataQueueHandler = recordedDataQueueHandler,
             snapshotProducer = snapshotProducer,
             textAndInputPrivacy = textAndInputPrivacy,
@@ -44,7 +44,7 @@ internal class DefaultOnDrawListenerProducer(
             dynamicOptimizationEnabled = dynamicOptimizationEnabled,
             touchPrivacyManager = touchPrivacyManager,
             rumContextProvider = rumContextProvider,
-            pixelCopyCapture = pixelCopyCapture,
+            pixelCapture = pixelCapture,
             compositionTreeBuilder = compositionTreeBuilder
         )
     }

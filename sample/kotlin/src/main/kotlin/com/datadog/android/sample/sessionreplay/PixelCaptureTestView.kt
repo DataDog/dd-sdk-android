@@ -15,16 +15,16 @@ import android.view.View
 import kotlin.math.min
 
 /**
- * A custom [View] used to verify the PixelCopy fallback in Session Replay.
+ * A custom [View] used to verify the PixelCapture fallback in Session Replay.
  *
  * This view has no SR mapper registered and draws purely via [Canvas], making it a reliable
- * "dark spot" test target. Without the PixelCopy mechanism, SR records a blank rectangle here.
+ * "dark spot" test target. Without the PixelCapture mechanism, SR records a blank rectangle here.
  * With it, SR should produce a pixel-accurate [com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.ImageWireframe]
  * showing the concentric coloured rings below.
  *
  * Navigation: Home → Session Replay → Unsupported Views
  */
-class PixelCopyTestView @JvmOverloads constructor(
+class PixelCaptureTestView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
@@ -37,7 +37,7 @@ class PixelCopyTestView @JvmOverloads constructor(
         0xFFFF8F00.toInt(), // amber
         0xFF43A047.toInt(), // green
         0xFF1E88E5.toInt(), // blue
-        0xFF8E24AA.toInt()  // purple
+        0xFF8E24AA.toInt() // purple
     )
 
     override fun onDraw(canvas: Canvas) {

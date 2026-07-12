@@ -22,6 +22,7 @@ import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
+import com.datadog.android.sessionreplay.internal.recorder.CompositionTreeBuilder
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
@@ -135,6 +136,9 @@ internal class WindowsOnDrawListenerTest {
     @Mock
     lateinit var mockRumContextProvider: RumContextProvider
 
+    @Mock
+    lateinit var mockCompositionTreeBuilder: CompositionTreeBuilder
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         whenever(mockSdkCore.internalLogger).thenReturn(mockInternalLogger)
@@ -177,7 +181,7 @@ internal class WindowsOnDrawListenerTest {
         whenever(mockDebouncer.debounce(any())).then { (it.arguments[0] as Runnable).run() }
 
         testedListener = WindowsOnDrawListener(
-            zOrderedDecorViews = fakeMockedDecorViews,
+            decorViews = fakeMockedDecorViews,
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             snapshotProducer = mockSnapshotProducer,
             textAndInputPrivacy = fakeTextAndInputPrivacy,
@@ -233,7 +237,7 @@ internal class WindowsOnDrawListenerTest {
     fun `M do nothing W onDraw(){ windows are empty }`() {
         // When
         testedListener = WindowsOnDrawListener(
-            zOrderedDecorViews = emptyList(),
+            decorViews = emptyList(),
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             snapshotProducer = mockSnapshotProducer,
             textAndInputPrivacy = fakeTextAndInputPrivacy,
@@ -350,7 +354,7 @@ internal class WindowsOnDrawListenerTest {
             )
         }
         val listenerWithProvider = WindowsOnDrawListener(
-            zOrderedDecorViews = fakeMockedDecorViews,
+            decorViews = fakeMockedDecorViews,
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             snapshotProducer = mockSnapshotProducer,
             textAndInputPrivacy = fakeTextAndInputPrivacy,
@@ -378,6 +382,147 @@ internal class WindowsOnDrawListenerTest {
             activeRumViewUrl = eq(fakeViewUrl)
         )
     }
+
+    // region Composition tree pipeline — root view selection
+
+    @Test
+    fun `M build with the focused window last W onDraw() {composition tree pipeline, multiple windows}`() {
+        // Given — the first window in the list has no focus (e.g. a backgrounded-but-visible
+        // window, such as an Activity behind a dialog/sheet); the second one does. Both must be
+        // captured and merged, with the focused one ordered last (renders on top).
+        val mockBackgroundedView = aMockDecorView(hasWindowFocus = false)
+        val mockFocusedView = aMockDecorView(hasWindowFocus = true)
+
+        val listenerWithCompositionTree = WindowsOnDrawListener(
+            decorViews = listOf(mockBackgroundedView, mockFocusedView),
+            recordedDataQueueHandler = mockRecordedDataQueueHandler,
+            snapshotProducer = mockSnapshotProducer,
+            textAndInputPrivacy = fakeTextAndInputPrivacy,
+            imagePrivacy = fakeImagePrivacy,
+            debouncer = mockDebouncer,
+            miscUtils = mockMiscUtils,
+            sdkCore = mockSdkCore,
+            methodCallSamplingRate = fakeMethodCallSamplingRate,
+            dynamicOptimizationEnabled = fakeDynamicOptimizationEnabled,
+            touchPrivacyManager = mockTouchPrivacyManager,
+            rumContextProvider = mockRumContextProvider,
+            compositionTreeBuilder = mockCompositionTreeBuilder
+        )
+        whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
+            .thenReturn(fakeSnapshotQueueItem)
+        fakeSnapshotQueueItem.pendingJobs.set(0)
+        whenever(
+            mockCompositionTreeBuilder.build(any(), any(), any(), any(), any(), any())
+        ).thenReturn(CompositionTreeBuilder.Output(null, emptyList()))
+
+        // When
+        listenerWithCompositionTree.onDraw()
+
+        // Then
+        verify(mockCompositionTreeBuilder).build(
+            rootViews = eq(listOf(mockBackgroundedView, mockFocusedView)),
+            systemInformation = any(),
+            textAndInputPrivacy = eq(fakeTextAndInputPrivacy),
+            imagePrivacy = eq(fakeImagePrivacy),
+            recordedDataQueueRefs = any(),
+            internalLogger = any()
+        )
+    }
+
+    @Test
+    fun `M keep original order W onDraw() {composition tree pipeline, no window has focus}`() {
+        // Given — none of the windows report focus (e.g. a brief window-transition gap): the
+        // stable sort by focus leaves relative order untouched rather than picking just one.
+        val mockFirstView = aMockDecorView(hasWindowFocus = false)
+        val mockSecondView = aMockDecorView(hasWindowFocus = false)
+
+        val listenerWithCompositionTree = WindowsOnDrawListener(
+            decorViews = listOf(mockFirstView, mockSecondView),
+            recordedDataQueueHandler = mockRecordedDataQueueHandler,
+            snapshotProducer = mockSnapshotProducer,
+            textAndInputPrivacy = fakeTextAndInputPrivacy,
+            imagePrivacy = fakeImagePrivacy,
+            debouncer = mockDebouncer,
+            miscUtils = mockMiscUtils,
+            sdkCore = mockSdkCore,
+            methodCallSamplingRate = fakeMethodCallSamplingRate,
+            dynamicOptimizationEnabled = fakeDynamicOptimizationEnabled,
+            touchPrivacyManager = mockTouchPrivacyManager,
+            rumContextProvider = mockRumContextProvider,
+            compositionTreeBuilder = mockCompositionTreeBuilder
+        )
+        whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
+            .thenReturn(fakeSnapshotQueueItem)
+        fakeSnapshotQueueItem.pendingJobs.set(0)
+        whenever(
+            mockCompositionTreeBuilder.build(any(), any(), any(), any(), any(), any())
+        ).thenReturn(CompositionTreeBuilder.Output(null, emptyList()))
+
+        // When
+        listenerWithCompositionTree.onDraw()
+
+        // Then
+        verify(mockCompositionTreeBuilder).build(
+            rootViews = eq(listOf(mockFirstView, mockSecondView)),
+            systemInformation = any(),
+            textAndInputPrivacy = eq(fakeTextAndInputPrivacy),
+            imagePrivacy = eq(fakeImagePrivacy),
+            recordedDataQueueRefs = any(),
+            internalLogger = any()
+        )
+    }
+
+    @Test
+    fun `M pass hidden windows through unfiltered W onDraw() {composition tree pipeline, only reorders}`() {
+        // Given — visibility filtering is CompositionTreeBuilder's job (see its own tests),
+        // not this listener's: it only reorders, it never drops a window from the list.
+        val mockHiddenView = aMockDecorView(hasWindowFocus = false)
+        val mockFocusedView = aMockDecorView(hasWindowFocus = true)
+        whenever(mockHiddenView.isShown).thenReturn(false)
+
+        val listenerWithCompositionTree = WindowsOnDrawListener(
+            decorViews = listOf(mockHiddenView, mockFocusedView),
+            recordedDataQueueHandler = mockRecordedDataQueueHandler,
+            snapshotProducer = mockSnapshotProducer,
+            textAndInputPrivacy = fakeTextAndInputPrivacy,
+            imagePrivacy = fakeImagePrivacy,
+            debouncer = mockDebouncer,
+            miscUtils = mockMiscUtils,
+            sdkCore = mockSdkCore,
+            methodCallSamplingRate = fakeMethodCallSamplingRate,
+            dynamicOptimizationEnabled = fakeDynamicOptimizationEnabled,
+            touchPrivacyManager = mockTouchPrivacyManager,
+            rumContextProvider = mockRumContextProvider,
+            compositionTreeBuilder = mockCompositionTreeBuilder
+        )
+        whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
+            .thenReturn(fakeSnapshotQueueItem)
+        fakeSnapshotQueueItem.pendingJobs.set(0)
+        whenever(
+            mockCompositionTreeBuilder.build(any(), any(), any(), any(), any(), any())
+        ).thenReturn(CompositionTreeBuilder.Output(null, emptyList()))
+
+        // When
+        listenerWithCompositionTree.onDraw()
+
+        // Then — mockHiddenView is still present, just reordered, not dropped
+        verify(mockCompositionTreeBuilder).build(
+            rootViews = eq(listOf(mockHiddenView, mockFocusedView)),
+            systemInformation = any(),
+            textAndInputPrivacy = eq(fakeTextAndInputPrivacy),
+            imagePrivacy = eq(fakeImagePrivacy),
+            recordedDataQueueRefs = any(),
+            internalLogger = any()
+        )
+    }
+
+    private fun aMockDecorView(hasWindowFocus: Boolean): View = mock {
+        whenever(it.viewTreeObserver).thenReturn(mock())
+        whenever(it.context).thenReturn(mockContext)
+        whenever(it.hasWindowFocus()).thenReturn(hasWindowFocus)
+    }
+
+    // endregion
 
     // region Internal
 

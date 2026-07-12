@@ -62,7 +62,7 @@ object SessionReplay {
                     dynamicOptimizationEnabled = sessionReplayConfiguration.dynamicOptimizationEnabled,
                     internalCallback = sessionReplayConfiguration.internalCallback,
                     heatmapsEnabled = sessionReplayConfiguration.heatmapsEnabled,
-                    pixelCopyCaptureEnabled = sessionReplayConfiguration.pixelCopyCaptureEnabled
+                    pixelCaptureEnabled = sessionReplayConfiguration.pixelCaptureEnabled
                 )
 
                 if (isAlreadyRegistered()) {

@@ -77,7 +77,7 @@ enum com.datadog.android.sessionreplay.TouchPrivacy : PrivacyLevel
 class com.datadog.android.sessionreplay._SessionReplayInternalProxy
   constructor(SessionReplayConfiguration.Builder)
   fun setInternalCallback(SessionReplayInternalCallback): SessionReplayConfiguration.Builder
-  fun setPixelCopyCaptureEnabled(Boolean): SessionReplayConfiguration.Builder
+  fun setPixelCaptureEnabled(Boolean): SessionReplayConfiguration.Builder
 class com.datadog.android.sessionreplay.internal.TouchPrivacyManager
   constructor(com.datadog.android.sessionreplay.TouchPrivacy)
   fun addTouchOverrideArea(android.graphics.Rect, com.datadog.android.sessionreplay.TouchPrivacy)
@@ -88,15 +88,15 @@ interface com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringO
 interface com.datadog.android.sessionreplay.recorder.InteropViewCallback
   fun map(android.view.View, MappingContext): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
 data class com.datadog.android.sessionreplay.recorder.MappingContext
-  constructor(SystemInformation, com.datadog.android.sessionreplay.utils.ImageWireframeHelper, com.datadog.android.sessionreplay.TextAndInputPrivacy, com.datadog.android.sessionreplay.ImagePrivacy, com.datadog.android.sessionreplay.internal.TouchPrivacyManager, Boolean = false, InteropViewCallback, PixelCropCallback? = null)
+  constructor(SystemInformation, com.datadog.android.sessionreplay.utils.ImageWireframeHelper, com.datadog.android.sessionreplay.TextAndInputPrivacy, com.datadog.android.sessionreplay.ImagePrivacy, com.datadog.android.sessionreplay.internal.TouchPrivacyManager, Boolean = false, InteropViewCallback, PixelCaptureCallback? = null)
 interface com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
   fun isOptionSelector(android.view.ViewGroup): Boolean
-object com.datadog.android.sessionreplay.recorder.PixelCaptureEligibility
-  fun isEligible(com.datadog.android.sessionreplay.TextAndInputPrivacy, com.datadog.android.sessionreplay.ImagePrivacy, com.datadog.android.sessionreplay.utils.GlobalBounds): Boolean
-interface com.datadog.android.sessionreplay.recorder.PixelCropCallback
-  fun registerPendingCrop(Long, android.graphics.Rect, com.datadog.android.sessionreplay.utils.GlobalBounds, android.view.View, android.graphics.Rect, com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.ImageWireframe, WireframeSlot, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback)
+interface com.datadog.android.sessionreplay.recorder.PixelCaptureCallback
+  fun registerPendingCapture(Long, com.datadog.android.sessionreplay.utils.GlobalBounds, android.view.View, android.graphics.Rect, com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.ImageWireframe, WireframeSlot, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback)
 interface com.datadog.android.sessionreplay.recorder.WireframeSlot
   fun replace(com.datadog.android.sessionreplay.model.MobileSegment.Wireframe)
+object com.datadog.android.sessionreplay.recorder.PixelCaptureEligibility
+  fun isEligible(com.datadog.android.sessionreplay.TextAndInputPrivacy, com.datadog.android.sessionreplay.ImagePrivacy, com.datadog.android.sessionreplay.utils.GlobalBounds): Boolean
 data class com.datadog.android.sessionreplay.recorder.SystemInformation
   constructor(com.datadog.android.sessionreplay.utils.GlobalBounds, Int = Configuration.ORIENTATION_UNDEFINED, Float, String? = null)
 abstract class com.datadog.android.sessionreplay.recorder.mapper.BaseAsyncBackgroundWireframeMapper<T: android.view.View> : BaseWireframeMapper<T>

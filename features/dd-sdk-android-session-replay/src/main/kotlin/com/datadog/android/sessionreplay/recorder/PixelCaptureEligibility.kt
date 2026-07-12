@@ -12,12 +12,10 @@ import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 
 /**
- * Shared privacy gate for raw pixel-capture pipelines (the View-side
- * `PixelCopyFallbackMapper` and the Compose-side dark-spot detection in
- * `RootSemanticsNodeMapper`).
+ * Privacy gate for `PixelCaptureFallbackMapper`'s raw pixel capture of unmapped views.
  *
- * This pipeline captures raw pixels with no knowledge of what a given view/composable
- * actually renders — unlike the semantic mapper chain, it can't selectively mask only
+ * This pipeline captures raw pixels with no knowledge of what a given view actually
+ * renders — unlike the semantic mapper chain, it can't selectively mask only
  * sensitive text or contextual images. Any privacy restriction beyond what's allowed here
  * disables pixel capture entirely for that region rather than risk uploading unmasked
  * sensitive content:

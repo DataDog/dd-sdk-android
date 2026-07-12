@@ -37,7 +37,7 @@ internal fun SampleSelectionScreen(
     onInteropViewClicked: () -> Unit,
     onNav3Clicked: () -> Unit,
     onBackgroundClicked: () -> Unit,
-    onPixelCopyClicked: () -> Unit
+    onPixelCaptureClicked: () -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
@@ -93,8 +93,8 @@ internal fun SampleSelectionScreen(
             onClick = onBackgroundClicked
         )
         StyledButton(
-            text = "PixelCopy SR Demo",
-            onClick = onPixelCopyClicked
+            text = "PixelCapture SR Demo",
+            onClick = onPixelCaptureClicked
         )
     }
 }
@@ -151,8 +151,8 @@ internal fun NavGraphBuilder.selectionNavigation(navController: NavHostControlle
             onBackgroundClicked = {
                 navController.navigate(SampleScreen.Background.navigationRoute)
             },
-            onPixelCopyClicked = {
-                navController.navigate(SampleScreen.PixelCopy.navigationRoute)
+            onPixelCaptureClicked = {
+                navController.navigate(SampleScreen.PixelCapture.navigationRoute)
             }
         )
     }
@@ -193,8 +193,8 @@ internal fun NavGraphBuilder.selectionNavigation(navController: NavHostControlle
         BackgroundSample()
     }
 
-    composable(SampleScreen.PixelCopy.navigationRoute) {
-        PixelCopySample()
+    composable(SampleScreen.PixelCapture.navigationRoute) {
+        PixelCaptureSample()
     }
 
     activity(SampleScreen.Legacy.navigationRoute) {
@@ -222,7 +222,7 @@ internal sealed class SampleScreen(
     object InteropView : SampleScreen("$COMPOSE_ROOT/interop_view")
     object Navigation3 : SampleScreen("$COMPOSE_ROOT/nav3")
     object Background : SampleScreen("$COMPOSE_ROOT/background")
-    object PixelCopy : SampleScreen("$COMPOSE_ROOT/pixel_copy")
+    object PixelCapture : SampleScreen("$COMPOSE_ROOT/pixel_capture")
 
     companion object {
         private const val COMPOSE_ROOT = "compose"
@@ -256,7 +256,7 @@ private fun PreviewSampleSelectionScreen() {
         },
         onBackgroundClicked = {
         },
-        onPixelCopyClicked = {
+        onPixelCaptureClicked = {
         }
     )
 }

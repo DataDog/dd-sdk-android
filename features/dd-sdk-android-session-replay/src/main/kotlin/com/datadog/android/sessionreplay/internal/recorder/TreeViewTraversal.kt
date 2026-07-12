@@ -36,9 +36,9 @@ internal class TreeViewTraversal(
     private val viewUtilsInternal: ViewUtilsInternal,
     private val internalLogger: InternalLogger,
     // Optional pixel-perfect fallback for views with no registered mapper, present only when
-    // pixelCopyCaptureEnabled is set. When non-null, unrecognised leaf views are captured via
-    // PixelCopy instead of being mapped by defaultViewMapper.
-    private val pixelCopyFallbackMapper: WireframeMapper<View>? = null
+    // pixelCaptureEnabled is set. When non-null, unrecognised leaf views are captured via
+    // View.draw instead of being mapped by defaultViewMapper.
+    private val pixelCaptureFallbackMapper: WireframeMapper<View>? = null
 ) {
 
     @Suppress("ReturnCount")
@@ -85,12 +85,13 @@ internal class TreeViewTraversal(
             jobStatusCallback = noOpCallback
         } else {
             traversalStrategy = TraversalStrategy.STOP_AND_RETURN_NODE
-            // Use the PixelCopy fallback mapper when available — it attempts a pixel-perfect
-            // crop of the view from the last captured full-window bitmap, falling back to
-            // defaultViewMapper if no capture is ready or the view is partially off-screen.
-            mapper = pixelCopyFallbackMapper ?: defaultViewMapper
-            jobStatusCallback = if (pixelCopyFallbackMapper != null) {
-                // PixelCopyFallbackMapper may start an async job (ImageWireframe resource
+            // Use the pixel-copy fallback mapper when available — it captures the view via
+            // View.draw (reusing a cached capture when only its position changed), falling
+            // back to defaultViewMapper if no capture is available or the view is partially
+            // off-screen.
+            mapper = pixelCaptureFallbackMapper ?: defaultViewMapper
+            jobStatusCallback = if (pixelCaptureFallbackMapper != null) {
+                // PixelCaptureFallbackMapper may start an async job (ImageWireframe resource
                 // upload), so we need a real QueueStatusCallback to gate queue consumption.
                 QueueStatusCallback(recordedDataQueueRefs)
             } else {

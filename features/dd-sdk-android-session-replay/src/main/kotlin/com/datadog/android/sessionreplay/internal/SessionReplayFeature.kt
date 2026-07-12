@@ -76,7 +76,7 @@ internal class SessionReplayFeature(
         dynamicOptimizationEnabled: Boolean,
         internalCallback: SessionReplayInternalCallback,
         heatmapsEnabled: Boolean,
-        pixelCopyCaptureEnabled: Boolean
+        pixelCaptureEnabled: Boolean
     ) : this(
         sdkCore,
         customEndpointUrl,
@@ -97,7 +97,7 @@ internal class SessionReplayFeature(
             dynamicOptimizationEnabled,
             internalCallback,
             heatmapsEnabled,
-            pixelCopyCaptureEnabled
+            pixelCaptureEnabled
         )
     )
 
