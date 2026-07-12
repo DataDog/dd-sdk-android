@@ -235,6 +235,33 @@ internal class RecorderWindowCallbackTest {
     }
 
     @Test
+    fun `M use absolute coordinates for touch privacy check W onTouchEvent() { ActionDown }`(
+        forge: Forge
+    ) {
+        // Given — the privacy override areas are screen-absolute (built from
+        // getLocationOnScreen()), so the check must use raw/absolute pointer coordinates
+        // rather than event.x/y, which are window-local and only match screen coordinates
+        // for windows positioned at the origin (e.g. not an offset dialog window).
+        val mockEvent: MotionEvent = mock {
+            whenever(it.action).thenReturn(MotionEvent.ACTION_DOWN)
+        }
+        whenever(mockEventUtils.getPointerAbsoluteX(mockEvent, 0))
+            .thenReturn(forge.aFloat(min = 0f, max = 500f))
+        whenever(mockEventUtils.getPointerAbsoluteY(mockEvent, 0))
+            .thenReturn(forge.aFloat(min = 0f, max = 500f))
+
+        // When
+        testedWindowCallback.dispatchTouchEvent(mockEvent)
+
+        // Then
+        verify(mockEventUtils).getPointerAbsoluteX(mockEvent, 0)
+        verify(mockEventUtils).getPointerAbsoluteY(mockEvent, 0)
+        verify(mockEvent, never()).x
+        verify(mockEvent, never()).y
+        verify(mockTouchPrivacyManager).shouldRecordTouch(any())
+    }
+
+    @Test
     fun `M update the positions W onTouchEvent() { ActionDown }`(forge: Forge) {
         // Given
         val fakeRecords = forge.touchRecords(MobileSegment.PointerEventType.DOWN)
@@ -488,6 +515,59 @@ internal class RecorderWindowCallbackTest {
     }
 
     @Test
+    fun `M skip install W window focus changed {recording stopped before post ran}`(forge: Forge) {
+        // Given
+        val mockDialogWindow = mock<Window>()
+        val mockDialogDecorView = mock<View>().also {
+            whenever(it.width).thenReturn(800)
+            whenever(it.height).thenReturn(600)
+        }
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(listOf(mockDialogDecorView))
+        testedWindowCallback = buildCallbackFor(
+            windowFromDecorView = { view -> if (view == mockDialogDecorView) mockDialogWindow else null },
+            shouldInstallCallbacks = { false }
+        )
+
+        // When
+        testedWindowCallback.onWindowFocusChanged(forge.aBool())
+        argumentCaptor<Runnable> {
+            verify(mockDialogDecorView).post(capture())
+            firstValue.run()
+        }
+
+        // Then
+        verify(mockDialogWindow, never()).callback = any<RecorderWindowCallback>()
+    }
+
+    @Test
+    fun `M notify onWindowWrapped W window focus changed {new dialog window installed}`(forge: Forge) {
+        // Given
+        val mockDialogWindow = mock<Window>()
+        val mockDialogDecorView = mock<View>().also {
+            whenever(it.width).thenReturn(800)
+            whenever(it.height).thenReturn(600)
+        }
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(listOf(mockDialogDecorView))
+        val wrappedWindows = mutableListOf<Window>()
+        testedWindowCallback = buildCallbackFor(
+            windowFromDecorView = { view -> if (view == mockDialogDecorView) mockDialogWindow else null },
+            onWindowWrapped = { wrappedWindows.add(it) }
+        )
+
+        // When
+        testedWindowCallback.onWindowFocusChanged(forge.aBool())
+        argumentCaptor<Runnable> {
+            verify(mockDialogDecorView).post(capture())
+            firstValue.run()
+        }
+
+        // Then
+        assertThat(wrappedWindows).containsExactly(mockDialogWindow)
+    }
+
+    @Test
     fun `M not replace existing RecorderWindowCallback W window focus changed`(forge: Forge) {
         // Given
         val mockDialogWindow = mock<Window>().also {
@@ -670,7 +750,9 @@ internal class RecorderWindowCallbackTest {
     // region Internal
 
     private fun buildCallbackFor(
-        windowFromDecorView: (View) -> Window? = { null }
+        windowFromDecorView: (View) -> Window? = { null },
+        onWindowWrapped: (Window) -> Unit = {},
+        shouldInstallCallbacks: () -> Boolean = { true }
     ) = RecorderWindowCallback(
         appContext = mockContext,
         recordedDataQueueHandler = mockRecordedDataQueueHandler,
@@ -687,7 +769,9 @@ internal class RecorderWindowCallbackTest {
         motionUpdateThresholdInNs = TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS,
         flushPositionBufferThresholdInNs = TEST_FLUSH_BUFFER_THRESHOLD_NS,
         windowInspector = mockWindowInspector,
-        windowFromDecorView = windowFromDecorView
+        windowFromDecorView = windowFromDecorView,
+        onWindowWrapped = onWindowWrapped,
+        shouldInstallCallbacks = shouldInstallCallbacks
     )
 
     private fun Forge.touchRecords(

@@ -31,7 +31,13 @@ internal class WindowCallbackInterceptor(
 ) {
     private val wrappedWindows: WeakHashMap<Window, Any?> = WeakHashMap()
 
+    // guards RecorderWindowCallback's deferred (posted) installation of callbacks on newly
+    // discovered dialog windows: without this, a dialog detected right before stopIntercepting()
+    // could still get wrapped after we've stopped, and would never be torn down afterwards.
+    private var isStopped = false
+
     fun intercept(windows: List<Window>, appContext: Context) {
+        isStopped = false
         windows.forEach { window ->
             wrapWindowCallback(window, appContext)
             wrappedWindows[window] = null
@@ -46,10 +52,18 @@ internal class WindowCallbackInterceptor(
     }
 
     fun stopIntercepting() {
+        isStopped = true
         wrappedWindows.entries.forEach {
             unwrapWindowCallback(it.key)
         }
         wrappedWindows.clear()
+    }
+
+    // a RecorderWindowCallback can discover and wrap windows on its own (e.g. dialogs, which
+    // aren't reported through the Activity lifecycle) — this lets it register those windows here
+    // so they get torn down by stopIntercepting() like any other tracked window.
+    internal fun trackWrappedWindow(window: Window) {
+        wrappedWindows[window] = null
     }
 
     private fun wrapWindowCallback(window: Window, appContext: Context) {
@@ -64,7 +78,9 @@ internal class WindowCallbackInterceptor(
             internalLogger,
             textAndInputPrivacy,
             imagePrivacy,
-            touchPrivacyManager
+            touchPrivacyManager,
+            onWindowWrapped = { trackWrappedWindow(it) },
+            shouldInstallCallbacks = { !isStopped }
         )
     }
 

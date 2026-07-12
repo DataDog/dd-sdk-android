@@ -238,6 +238,56 @@ internal class WindowCallbackInterceptorTest {
     }
 
     @Test
+    fun `M forbid new callback installs W stopIntercepting()`() {
+        // Given
+        testedInterceptor.intercept(fakeWindowsList, mockActivity)
+        val captor = argumentCaptor<Window.Callback>()
+        verify(fakeWindowsList.first()).callback = captor.capture()
+        val installedCallback = captor.firstValue as RecorderWindowCallback
+
+        // When
+        testedInterceptor.stopIntercepting()
+
+        // Then
+        assertThat(installedCallback.shouldInstallCallbacks()).isFalse()
+    }
+
+    @Test
+    fun `M allow new callback installs again W intercept() {after a previous stopIntercepting()}`() {
+        // Given
+        testedInterceptor.intercept(fakeWindowsList, mockActivity)
+        testedInterceptor.stopIntercepting()
+
+        // When
+        testedInterceptor.intercept(fakeWindowsList, mockActivity)
+
+        // Then
+        val captor = argumentCaptor<Window.Callback>()
+        verify(fakeWindowsList.first(), times(2)).callback = captor.capture()
+        val installedCallback = captor.lastValue as RecorderWindowCallback
+        assertThat(installedCallback.shouldInstallCallbacks()).isTrue()
+    }
+
+    @Test
+    fun `M unwrap dynamically tracked window W trackWrappedWindow() then stopIntercepting()`() {
+        // Given
+        val mockDefaultCallback: Window.Callback = mock()
+        val mockDynamicallyWrappedCallback: RecorderWindowCallback = mock {
+            whenever(it.wrappedCallback).thenReturn(mockDefaultCallback)
+        }
+        val mockDialogWindow: Window = mock {
+            whenever(it.callback).thenReturn(mockDynamicallyWrappedCallback)
+        }
+
+        // When
+        testedInterceptor.trackWrappedWindow(mockDialogWindow)
+        testedInterceptor.stopIntercepting()
+
+        // Then
+        verify(mockDialogWindow).callback = mockDefaultCallback
+    }
+
+    @Test
     fun `M do nothing W stopIntercepting(windows){window callback was not wrapped}`() {
         // When
         testedInterceptor.stopIntercepting(fakeWindowsList)

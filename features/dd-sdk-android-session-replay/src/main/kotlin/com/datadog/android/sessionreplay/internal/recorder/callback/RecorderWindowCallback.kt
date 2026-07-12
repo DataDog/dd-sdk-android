@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit
 
 @Suppress("TooGenericExceptionCaught")
 internal class RecorderWindowCallback(
-    appContext: Context,
+    private val appContext: Context,
     private val recordedDataQueueHandler: RecordedDataQueueHandler,
     internal val wrappedCallback: Window.Callback,
     private val timeProvider: TimeProvider,
@@ -48,9 +48,10 @@ internal class RecorderWindowCallback(
     private val motionUpdateThresholdInNs: Long = MOTION_UPDATE_DELAY_THRESHOLD_NS,
     private val flushPositionBufferThresholdInNs: Long = FLUSH_BUFFER_THRESHOLD_NS,
     private val windowInspector: WindowInspector = WindowInspector,
-    private val windowFromDecorView: (View) -> Window? = { WindowReflectionUtils.getWindowFromDecorView(it) }
+    private val windowFromDecorView: (View) -> Window? = { WindowReflectionUtils.getWindowFromDecorView(it) },
+    private val onWindowWrapped: (Window) -> Unit = {},
+    internal val shouldInstallCallbacks: () -> Boolean = { true }
 ) : FixedWindowCallback(wrappedCallback) {
-    private val appContext: Context = appContext
     private val pixelsDensity = appContext.resources.displayMetrics.density
     internal val pointerInteractions: MutableList<MobileSegment.MobileRecord> = LinkedList()
     private var lastOnMoveUpdateTimeInNs: Long = 0L
@@ -63,7 +64,13 @@ internal class RecorderWindowCallback(
     override fun dispatchTouchEvent(event: MotionEvent?): Boolean {
         if (event != null) {
             if (event.action == MotionEvent.ACTION_DOWN) {
-                val touchLocation = Point(event.x.toInt(), event.y.toInt())
+                // touch privacy override areas are screen-absolute (built from getLocationOnScreen()),
+                // so we must compare against raw/absolute coordinates rather than event.x/y, which are
+                // window-local and only match screen coordinates for windows positioned at the origin.
+                val touchLocation = Point(
+                    motionEventUtils.getPointerAbsoluteX(event, 0).toInt(),
+                    motionEventUtils.getPointerAbsoluteY(event, 0).toInt()
+                )
                 shouldRecordMotion = touchPrivacyManager.shouldRecordTouch(touchLocation)
             }
 
@@ -138,7 +145,9 @@ internal class RecorderWindowCallback(
                 // Post so the dialog's own onWindowFocusChanged(true) fires first,
                 // ensuring the new callback starts in a steady recording state.
                 decorView.post {
-                    if (window.callback !is RecorderWindowCallback) {
+                    // re-check: recording may have stopped, or another focus change may have
+                    // already installed a callback, while this post was pending in the queue.
+                    if (window.callback !is RecorderWindowCallback && shouldInstallCallbacks()) {
                         val toWrap = window.callback ?: NoOpWindowCallback()
                         window.callback = RecorderWindowCallback(
                             appContext = appContext,
@@ -152,8 +161,11 @@ internal class RecorderWindowCallback(
                             imagePrivacy = imagePrivacy,
                             touchPrivacyManager = touchPrivacyManager,
                             windowInspector = windowInspector,
-                            windowFromDecorView = windowFromDecorView
+                            windowFromDecorView = windowFromDecorView,
+                            onWindowWrapped = onWindowWrapped,
+                            shouldInstallCallbacks = shouldInstallCallbacks
                         )
+                        onWindowWrapped(window)
                     }
                 }
             }
@@ -268,6 +280,6 @@ internal class RecorderWindowCallback(
         internal const val WINDOW_FROM_DECOR_VIEW_ERROR_MESSAGE_PREFIX =
             "SR: failed to get Window from "
         internal const val WINDOW_FROM_DECOR_VIEW_ERROR_MESSAGE_SUFFIX =
-            " via reflection — Compose dialog {} destination may not be recorded"
+            " via reflection — Compose dialog destination may not be recorded"
     }
 }

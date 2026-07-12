@@ -44,7 +44,10 @@ internal class SemanticsUtils(
     private val reflectionUtils: ReflectionUtils = ReflectionUtils(),
     private val sampler: RateBasedSampler<Unit> = RateBasedSampler(BITMAP_TELEMETRY_SAMPLE_RATE)
 ) {
-    private val backgroundResolver = BackgroundResolver(reflectionUtils, ::resolveInnerBounds)
+    private val backgroundResolver = BackgroundResolver(
+        reflectionUtils,
+        { node, offset -> resolveInnerBounds(node, offset) }
+    )
 
     internal fun findRootSemanticsNode(view: View): SemanticsNode? {
         reflectionUtils.apply {
