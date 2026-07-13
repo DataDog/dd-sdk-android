@@ -129,6 +129,9 @@ internal class RemoteConfigNetworkFetcher(
                     { ERROR_EMPTY_BODY },
                     additionalProperties = mapOf(ATTR_URL to url.toString())
                 )
+                // Evict the cached empty response so the next syncWithRemote()
+                // re-fetches from the network rather than serving the empty body again.
+                evictCache()
                 null
             } else {
                 body

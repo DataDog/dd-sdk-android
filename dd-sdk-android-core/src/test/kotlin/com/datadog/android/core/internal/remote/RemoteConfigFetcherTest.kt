@@ -125,6 +125,7 @@ internal class RemoteConfigFetcherTest {
             message = RemoteConfigNetworkFetcher.ERROR_EMPTY_BODY,
             additionalProperties = mapOf(RemoteConfigNetworkFetcher.ATTR_URL to fakeUrl.toHttpUrl().toString())
         )
+        verify(mockHttpCache).evictAll()
     }
 
     // endregion
