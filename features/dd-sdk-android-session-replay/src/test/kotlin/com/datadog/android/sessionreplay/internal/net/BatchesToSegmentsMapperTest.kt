@@ -251,14 +251,13 @@ internal class BatchesToSegmentsMapperTest {
         val fakeBatchData = fakeEnrichedRecords
             .asSequence()
             .map { JsonParser.parseString(it.toJson()).asJsonObject }
-            .map {
+            .onEach {
                 val records = it.get(EnrichedRecord.RECORDS_KEY)
                     .asJsonArray
                 records.forEach { record ->
                     record.asJsonObject.remove(BatchesToSegmentsMapper.TIMESTAMP_KEY)
                 }
                 it.add(EnrichedRecord.RECORDS_KEY, records)
-                it
             }
             .map { it.toString().toByteArray() }
             .toList()
@@ -341,9 +340,8 @@ internal class BatchesToSegmentsMapperTest {
         val fakeBatchData = fakeEnrichedRecords
             .asSequence()
             .map { JsonParser.parseString(it.toJson()).asJsonObject }
-            .map {
+            .onEach {
                 it.remove(EnrichedRecord.APPLICATION_ID_KEY)
-                it
             }
             .map { it.toString().toByteArray() }
             .toList()
@@ -430,9 +428,8 @@ internal class BatchesToSegmentsMapperTest {
         val fakeBatchData = fakeEnrichedRecords
             .asSequence()
             .map { JsonParser.parseString(it.toJson()).asJsonObject }
-            .map {
+            .onEach {
                 it.remove(EnrichedRecord.SESSION_ID_KEY)
-                it
             }
             .map { it.toString().toByteArray() }
             .toList()
@@ -521,9 +518,8 @@ internal class BatchesToSegmentsMapperTest {
         val fakeBatchData = fakeEnrichedRecords
             .asSequence()
             .map { JsonParser.parseString(it.toJson()).asJsonObject }
-            .map {
+            .onEach {
                 it.remove(EnrichedRecord.VIEW_ID_KEY)
-                it
             }
             .map { it.toString().toByteArray() }
             .toList()
