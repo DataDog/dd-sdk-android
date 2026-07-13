@@ -249,6 +249,7 @@ internal class BatchesToSegmentsMapperTest {
                 )
             }
         val fakeBatchData = fakeEnrichedRecords
+            .asSequence()
             .map { JsonParser.parseString(it.toJson()).asJsonObject }
             .map {
                 val records = it.get(EnrichedRecord.RECORDS_KEY)
@@ -260,6 +261,7 @@ internal class BatchesToSegmentsMapperTest {
                 it
             }
             .map { it.toString().toByteArray() }
+            .toList()
 
         // When
         assertThat(testedMapper.map(datadogContext, fakeBatchData)).isEmpty()
@@ -287,6 +289,7 @@ internal class BatchesToSegmentsMapperTest {
             }
         var removedRecords = 0
         val fakeBatchData = fakeEnrichedRecords
+            .asSequence()
             .map { JsonParser.parseString(it.toJson()).asJsonObject }
             .mapIndexed { index, jsonObject ->
                 if (index == 0) {
@@ -303,6 +306,7 @@ internal class BatchesToSegmentsMapperTest {
                 }
             }
             .map { it.toString().toByteArray() }
+            .toList()
 
         // When
         val mappedSegments = testedMapper.map(datadogContext, fakeBatchData)
@@ -335,12 +339,14 @@ internal class BatchesToSegmentsMapperTest {
                 )
             }
         val fakeBatchData = fakeEnrichedRecords
+            .asSequence()
             .map { JsonParser.parseString(it.toJson()).asJsonObject }
             .map {
                 it.remove(EnrichedRecord.APPLICATION_ID_KEY)
                 it
             }
             .map { it.toString().toByteArray() }
+            .toList()
         // When
         assertThat(testedMapper.map(datadogContext, fakeBatchData)).isEmpty()
         mockInternalLogger.verifyLog(
@@ -374,6 +380,7 @@ internal class BatchesToSegmentsMapperTest {
             }
         var removedRecords = 0
         val fakeBatchData = fakeEnrichedRecords
+            .asSequence()
             .map { JsonParser.parseString(it.toJson()).asJsonObject }
             .mapIndexed { index, jsonObject ->
                 if (index == 0) {
@@ -387,6 +394,7 @@ internal class BatchesToSegmentsMapperTest {
                 }
             }
             .map { it.toString().toByteArray() }
+            .toList()
 
         // When
         val mappedSegments = testedMapper.map(datadogContext, fakeBatchData)
@@ -420,12 +428,14 @@ internal class BatchesToSegmentsMapperTest {
                 )
             }
         val fakeBatchData = fakeEnrichedRecords
+            .asSequence()
             .map { JsonParser.parseString(it.toJson()).asJsonObject }
             .map {
                 it.remove(EnrichedRecord.SESSION_ID_KEY)
                 it
             }
             .map { it.toString().toByteArray() }
+            .toList()
 
         // When
         assertThat(testedMapper.map(datadogContext, fakeBatchData)).isEmpty()
@@ -460,6 +470,7 @@ internal class BatchesToSegmentsMapperTest {
             }
         var removedRecords = 0
         val fakeBatchData = fakeEnrichedRecords
+            .asSequence()
             .map { JsonParser.parseString(it.toJson()).asJsonObject }
             .mapIndexed { index, jsonObject ->
                 if (index == 0) {
@@ -473,6 +484,7 @@ internal class BatchesToSegmentsMapperTest {
                 }
             }
             .map { it.toString().toByteArray() }
+            .toList()
 
         // When
         val mappedSegments = testedMapper.map(datadogContext, fakeBatchData)
@@ -507,12 +519,14 @@ internal class BatchesToSegmentsMapperTest {
                 )
             }
         val fakeBatchData = fakeEnrichedRecords
+            .asSequence()
             .map { JsonParser.parseString(it.toJson()).asJsonObject }
             .map {
                 it.remove(EnrichedRecord.VIEW_ID_KEY)
                 it
             }
             .map { it.toString().toByteArray() }
+            .toList()
 
         // Then
         assertThat(testedMapper.map(datadogContext, fakeBatchData)).isEmpty()
@@ -547,6 +561,7 @@ internal class BatchesToSegmentsMapperTest {
             }
         var removedRecords = 0
         val fakeBatchData = fakeEnrichedRecords
+            .asSequence()
             .map { JsonParser.parseString(it.toJson()).asJsonObject }
             .mapIndexed { index, jsonObject ->
                 if (index == 0) {
@@ -560,6 +575,7 @@ internal class BatchesToSegmentsMapperTest {
                 }
             }
             .map { it.toString().toByteArray() }
+            .toList()
 
         // When
         val mappedSegments = testedMapper.map(datadogContext, fakeBatchData)
@@ -595,6 +611,7 @@ internal class BatchesToSegmentsMapperTest {
             }
         var removedRecords = 0
         val fakeBatchData = fakeEnrichedRecords
+            .asSequence()
             .map { JsonParser.parseString(it.toJson()).asJsonObject }
             .mapIndexed { index, jsonObject ->
                 if (index == 0) {
@@ -614,6 +631,7 @@ internal class BatchesToSegmentsMapperTest {
                 }
             }
             .map { it.toString().toByteArray() }
+            .toList()
 
         // When
         val mappedSegments = testedMapper.map(datadogContext, fakeBatchData)
@@ -649,6 +667,7 @@ internal class BatchesToSegmentsMapperTest {
             }
         var removedRecords = 0
         val fakeBatchData = fakeEnrichedRecords
+            .asSequence()
             .map { JsonParser.parseString(it.toJson()).asJsonObject }
             .mapIndexed { index, jsonObject ->
                 if (index == 0) {
@@ -662,6 +681,7 @@ internal class BatchesToSegmentsMapperTest {
                 }
             }
             .map { it.toString().toByteArray() }
+            .toList()
 
         // When
         val mappedSegments = testedMapper.map(datadogContext, fakeBatchData)
