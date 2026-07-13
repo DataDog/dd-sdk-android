@@ -7,5 +7,11 @@
 package com.datadog.android.trace.internal.domain.metrics
 
 internal fun interface StatsWriter {
-    fun write(statBuckets: List<ClientStatsBucket>)
+    /**
+     * Writes the given stat buckets to storage.
+     *
+     * @param statBuckets the buckets to write.
+     * @param forced whether this flush was forced (SDK teardown) rather than periodic.
+     */
+    fun write(statBuckets: List<ClientStatsBucket>, forced: Boolean)
 }

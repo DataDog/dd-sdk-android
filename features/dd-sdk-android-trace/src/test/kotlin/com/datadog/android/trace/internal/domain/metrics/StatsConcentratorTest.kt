@@ -659,6 +659,34 @@ internal class StatsConcentratorTest {
         assertThat(buckets[0].stats[0].hits).isEqualTo(1L)
     }
 
+    @Test
+    fun `M mark write as not forced W scheduleFlush() { flushAll = false }`(forge: Forge) {
+        // Given
+        val (span) = forge.makeEligibleSpan()
+        stubNow(farFuture())
+        testedConcentrator.record(listOf(span))
+
+        // When
+        testedConcentrator.scheduleFlush(flushAll = false)
+
+        // Then
+        verify(mockStatsWriter).write(any(), eq(false))
+    }
+
+    @Test
+    fun `M mark write as forced W scheduleFlush() { flushAll = true }`(forge: Forge) {
+        // Given
+        val (span) = forge.makeEligibleSpan()
+        stubNow(farFuture())
+        testedConcentrator.record(listOf(span))
+
+        // When
+        testedConcentrator.scheduleFlush(flushAll = true)
+
+        // Then
+        verify(mockStatsWriter).write(any(), eq(true))
+    }
+
     // endregion
 
     // region stop
@@ -674,7 +702,7 @@ internal class StatsConcentratorTest {
         testedConcentrator.stop()
 
         // Then
-        verify(mockStatsWriter).write(any())
+        verify(mockStatsWriter).write(any(), any())
     }
 
     @Test
@@ -1038,7 +1066,7 @@ internal class StatsConcentratorTest {
 
     private fun captureBuckets(): List<ClientStatsBucket> {
         val captor = argumentCaptor<List<ClientStatsBucket>>()
-        verify(mockStatsWriter).write(captor.capture())
+        verify(mockStatsWriter).write(captor.capture(), any())
         return captor.firstValue
     }
 
