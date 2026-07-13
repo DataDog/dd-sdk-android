@@ -38,14 +38,6 @@ plugins {
 
 android {
     namespace = "com.datadog.android.rum.coroutines"
-
-    libraryVariants.all {
-        packageLibraryProvider.configure {
-            from("src/main/resources") {
-                include("META-INF/**/verification.properties")
-            }
-        }
-    }
 }
 
 dependencies {
