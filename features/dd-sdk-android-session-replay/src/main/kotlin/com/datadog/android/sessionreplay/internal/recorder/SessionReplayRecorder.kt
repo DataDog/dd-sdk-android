@@ -34,6 +34,7 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMappe
 import com.datadog.android.sessionreplay.internal.recorder.mapper.HiddenViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.PixelCaptureFallbackMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.WebViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapPool
 import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper
@@ -208,20 +209,37 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             null
         }
 
+        // Maps WebViews via the same dedicated mapper the default pipeline uses (see
+        // DefaultRecorderProvider) — a pixel capture can't see WebView content at all, since it
+        // composites through a path View.draw never touches.
+        val webViewMapper = if (pixelCaptureEnabled) {
+            WebViewWireframeMapper(
+                viewIdentifierResolver,
+                colorStringFormatter,
+                viewBoundsResolver,
+                drawableToColorMapper
+            )
+        } else {
+            null
+        }
+
         // Only the composition-tree pipeline below reads pixelCapture/pixelCaptureFallbackMapper —
         // the default pipeline (SnapshotProducer/TreeViewTraversal) never does, so its behavior
         // is unchanged whether pixelCaptureEnabled is on or off.
         val compositionTreeBuilder = pixelCaptureFallbackMapper?.let { fallbackMapper ->
             textViewMapper?.let { textMapper ->
-                CompositionTreeBuilder(
-                    viewIdentifierResolver = viewIdentifierResolver,
-                    viewBoundsResolver = viewBoundsResolver,
-                    textViewMapper = textMapper,
-                    pixelCaptureFallbackMapper = fallbackMapper,
-                    touchPrivacyManager = touchPrivacyManager,
-                    imageWireframeHelper = imageWireframeHelper,
-                    pixelCaptureCallback = pixelCapture
-                )
+                webViewMapper?.let { webMapper ->
+                    CompositionTreeBuilder(
+                        viewIdentifierResolver = viewIdentifierResolver,
+                        viewBoundsResolver = viewBoundsResolver,
+                        textViewMapper = textMapper,
+                        webViewMapper = webMapper,
+                        pixelCaptureFallbackMapper = fallbackMapper,
+                        touchPrivacyManager = touchPrivacyManager,
+                        imageWireframeHelper = imageWireframeHelper,
+                        pixelCaptureCallback = pixelCapture
+                    )
+                }
             }
         }
 

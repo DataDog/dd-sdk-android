@@ -246,6 +246,86 @@ internal class DebouncerTest {
         assertThat(fakeExecutedRunnable.wasExecuted).isTrue
     }
 
+    @Test
+    fun `M count every call regardless of outcome W debounce() { consumeStatsForHealthLog }`(
+        forge: Forge
+    ) {
+        // Given
+        testedDebouncer = Debouncer(
+            mockHandler,
+            TEST_MAX_DELAY_THRESHOLD_IN_NS,
+            sdkCore = mockSdkCore,
+            timeBank = mockTimeBank,
+            dynamicOptimizationEnabled = false
+        )
+        val fakeDelayedRunnables = forge.aList(size = forge.anInt(min = 1, max = 10)) {
+            TestRunnable()
+        }
+        val delayInterval = (TEST_MAX_DELAY_THRESHOLD_IN_NS / (fakeDelayedRunnables.size + 1)) - 1
+        var currentTime = fakeInitialTimeNs
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).thenAnswer { currentTime }
+
+        // When
+        fakeDelayedRunnables.forEach {
+            testedDebouncer.debounce(it)
+            currentTime += delayInterval
+        }
+        currentTime = fakeInitialTimeNs + TEST_MAX_DELAY_THRESHOLD_IN_NS
+        val fakeExecutedRunnable = TestRunnable()
+        testedDebouncer.debounce(fakeExecutedRunnable)
+
+        // Then — every debounce() call is counted, only the one immediate-execute ran
+        val stats = testedDebouncer.consumeStatsForHealthLog()
+        assertThat(stats.callCount).isEqualTo(fakeDelayedRunnables.size + 1)
+        assertThat(stats.executedCount).isEqualTo(1)
+        assertThat(stats.skippedByTimeBankCount).isEqualTo(0)
+        assertThat(fakeExecutedRunnable.wasExecuted).isTrue
+    }
+
+    @Test
+    fun `M count skips by the time bank separately W debounce() { consumeStatsForHealthLog }`() {
+        // Given
+        testedDebouncer = Debouncer(
+            mockHandler,
+            TEST_MAX_DELAY_THRESHOLD_IN_NS,
+            sdkCore = mockSdkCore,
+            timeBank = mockTimeBank,
+            dynamicOptimizationEnabled = true
+        )
+        whenever(mockTimeBank.updateAndCheck(any())).thenReturn(false)
+        val fakeRunnable = TestRunnable()
+        val fakeSecondRunnable = TestRunnable()
+
+        // When
+        testedDebouncer.debounce(fakeRunnable)
+        val fakeExpiredTime = fakeInitialTimeNs + TEST_MAX_DELAY_THRESHOLD_IN_NS
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()) doReturn fakeExpiredTime
+        testedDebouncer.debounce(fakeSecondRunnable)
+
+        // Then
+        val stats = testedDebouncer.consumeStatsForHealthLog()
+        assertThat(stats.callCount).isEqualTo(2)
+        assertThat(stats.executedCount).isEqualTo(0)
+        assertThat(stats.skippedByTimeBankCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `M reset counters W consumeStatsForHealthLog() {called twice}`() {
+        // Given
+        val fakeRunnable = TestRunnable()
+        testedDebouncer.debounce(fakeRunnable)
+
+        // When
+        val firstStats = testedDebouncer.consumeStatsForHealthLog()
+        val secondStats = testedDebouncer.consumeStatsForHealthLog()
+
+        // Then
+        assertThat(firstStats.callCount).isEqualTo(1)
+        assertThat(secondStats.callCount).isEqualTo(0)
+        assertThat(secondStats.executedCount).isEqualTo(0)
+        assertThat(secondStats.skippedByTimeBankCount).isEqualTo(0)
+    }
+
     private class TestRunnable : Runnable {
         var wasExecuted: Boolean = false
 

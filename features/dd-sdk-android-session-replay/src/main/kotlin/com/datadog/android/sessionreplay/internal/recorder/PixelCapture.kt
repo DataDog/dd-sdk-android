@@ -156,6 +156,13 @@ internal class PixelCapture(
 
     private var lastHealthLogAtMs = 0L
 
+    // Accumulated since the last flush via recordDebouncerStats — see DebouncerHealthStats for
+    // what each counts. Reported alongside the rest of this health summary so a low capture
+    // cadence is self-diagnosing from Logcat alone, after the fact: no need to catch it live.
+    private var debouncerCallCount = 0
+    private var debouncerExecutedCount = 0
+    private var debouncerSkippedByTimeBankCount = 0
+
     /**
      * elapsedRealtime at which the current snapshot cycle's [onPreTraversal] was called.
      * Anchors the [CAPTURE_BUDGET_MS] deadline checked in [processPendingCaptures], so the budget
@@ -204,7 +211,9 @@ internal class PixelCapture(
             CAPTURE_PIPELINE_LOG_TAG,
             "[Health] $verb \"$screenLabel\" — composition tree: $lastCompositionTreeLayerCount " +
                 "layer(s)/$lastCompositionTreeWireframeCount wireframe(s), avg cycle ${averageCycleMs}ms " +
-                "(budget ${CAPTURE_BUDGET_MS}ms); over $cycleCount snapshot cycle(s): $capturedCount " +
+                "(budget ${CAPTURE_BUDGET_MS}ms); $debouncerCallCount debounce() call(s) -> " +
+                "$debouncerExecutedCount executed, $debouncerSkippedByTimeBankCount skipped by " +
+                "Debouncer's own time bank; over $cycleCount snapshot cycle(s): $capturedCount " +
                 "drawn via View.draw, $cacheReuseCount reused from cache, $budgetThrottledReuseCount " +
                 "throttled by capture budget (stale reuse), $budgetThrottledPlaceholderCount throttled by " +
                 "capture budget (placeholder), $captureFailureCount failed, $budgetExceededCount budget-exceeded"
@@ -217,6 +226,22 @@ internal class PixelCapture(
         budgetExceededCount = 0
         cycleCount = 0
         snapshotCycleDurationTotalMs = 0
+        debouncerCallCount = 0
+        debouncerExecutedCount = 0
+        debouncerSkippedByTimeBankCount = 0
+    }
+
+    /**
+     * Feeds this cycle's [Debouncer] activity into the running totals reported by the next
+     * [logHealthSummary] — called once per executed cycle, right before [onPreTraversal], from
+     * `WindowsOnDrawListener.runCompositionTreePipeline`. See [DebouncerHealthStats] for what a
+     * call-vs-executed gap in the resulting log line implies.
+     */
+    @UiThread
+    fun recordDebouncerStats(stats: DebouncerHealthStats) {
+        debouncerCallCount += stats.callCount
+        debouncerExecutedCount += stats.executedCount
+        debouncerSkippedByTimeBankCount += stats.skippedByTimeBankCount
     }
 
     /**

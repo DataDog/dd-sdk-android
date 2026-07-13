@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder
 
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.WebView
 import android.widget.TextView
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
@@ -17,6 +18,7 @@ import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.mapper.PixelCaptureFallbackMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.QueueStatusCallback
+import com.datadog.android.sessionreplay.internal.recorder.mapper.WebViewWireframeMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.NoOpInteropViewCallback
@@ -36,10 +38,16 @@ import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
  * This is a **wholly separate traversal** from the default pipeline ([TreeViewTraversal] /
  * [SnapshotProducer] and its full mapper chain), which this class never touches and which
  * behaves exactly as it does today when the flag is off. When the flag is on, this builder
- * replaces that traversal entirely for the views it walks, using only two leaf mappers —
+ * replaces that traversal entirely for the views it walks, using only three leaf mappers —
  * deliberately not the default pipeline's full built-in + extension mapper chain:
  * - Every [TextView] is mapped via [textViewMapper], so text stays crisp/selectable rather than
  *   becoming a pixel capture.
+ * - Every [WebView] is mapped via [webViewMapper], the same dedicated mapper the default pipeline
+ *   uses — a pixel capture would silently come back blank, since WebView's content composites
+ *   through a path [android.view.View.draw] never touches (see [PixelCapture]'s own
+ *   `containsHardwareSurface` doc). Always treated as a leaf regardless of [ViewGroup.getChildCount]
+ *   for the same reason as [isComposeHostView] below — WebView is itself a [ViewGroup], but its
+ *   real content isn't rendered through any child the traversal could recurse into.
  * - Every other leaf view — including Jetpack Compose content (`ComposeView`/`AndroidComposeView`
  *   are forced onto this leaf path by [isComposeHostView] regardless of their child count — they
  *   always carry an internal `AndroidViewsHandler` child even when nothing is drawn through it,
@@ -65,6 +73,7 @@ internal class CompositionTreeBuilder(
     private val viewIdentifierResolver: ViewIdentifierResolver,
     private val viewBoundsResolver: ViewBoundsResolver,
     private val textViewMapper: TextViewMapper<TextView>,
+    private val webViewMapper: WebViewWireframeMapper,
     private val pixelCaptureFallbackMapper: PixelCaptureFallbackMapper,
     private val touchPrivacyManager: TouchPrivacyManager,
     private val imageWireframeHelper: ImageWireframeHelper,
@@ -220,7 +229,7 @@ internal class CompositionTreeBuilder(
         asyncJobStatusCallback: AsyncJobStatusCallback,
         internalLogger: InternalLogger
     ): List<MobileSegment.CompositionLayerChild> {
-        if (view is ViewGroup && view.childCount > 0 && !isComposeHostView(view)) {
+        if (view is ViewGroup && view.childCount > 0 && !isComposeHostView(view) && view !is WebView) {
             val layer = buildLayer(view, mappingContext, asyncJobStatusCallback, internalLogger)
             if (layer != null) {
                 layers.add(layer)
@@ -251,17 +260,21 @@ internal class CompositionTreeBuilder(
             className == "androidx.compose.ui.platform.ComposeView"
     }
 
-    /** [TextView]s go through [textViewMapper] so text stays crisp; everything else is pixel-captured. */
+    /**
+     * [TextView]s go through [textViewMapper] so text stays crisp; [WebView]s go through
+     * [webViewMapper] since a pixel capture can't see their content (see the class doc);
+     * everything else is pixel-captured.
+     */
     private fun mapLeafView(
         view: View,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback,
         internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
-        return if (view is TextView) {
-            textViewMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
-        } else {
-            pixelCaptureFallbackMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
+        return when (view) {
+            is TextView -> textViewMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
+            is WebView -> webViewMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
+            else -> pixelCaptureFallbackMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
         }
     }
 

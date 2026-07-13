@@ -128,6 +128,11 @@ internal class WindowsOnDrawListener(
         ) {
             val builder = compositionTreeBuilder ?: return
 
+            // Feeds this cycle's Debouncer activity into PixelCapture's health counters before
+            // onPreTraversal — which may flush them to Logcat this very call — so a call made
+            // this cycle is never left stranded until the next flush. See DebouncerHealthStats.
+            pixelCapture?.recordDebouncerStats(debouncer.consumeStatsForHealthLog())
+
             // Marks the start of this snapshot cycle's capture budget, and clears the content
             // cache on navigation — see PixelCapture's doc.
             pixelCapture?.onPreTraversal(currentViewUrl)

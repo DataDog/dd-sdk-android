@@ -24,7 +24,9 @@ import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.recorder.CompositionTreeBuilder
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
+import com.datadog.android.sessionreplay.internal.recorder.DebouncerHealthStats
 import com.datadog.android.sessionreplay.internal.recorder.Node
+import com.datadog.android.sessionreplay.internal.recorder.PixelCapture
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
@@ -384,6 +386,53 @@ internal class WindowsOnDrawListenerTest {
     }
 
     // region Composition tree pipeline — root view selection
+
+    @Test
+    fun `M feed Debouncer stats into PixelCapture before onPreTraversal W onDraw() {composition tree pipeline}`(
+        forge: Forge
+    ) {
+        // Given — recordDebouncerStats must run before onPreTraversal so a flush triggered by
+        // this very cycle (navigation, or HEALTH_LOG_INTERVAL_MS elapsed) still reflects it,
+        // rather than leaving this cycle's Debouncer activity stranded until the next one.
+        val mockPixelCapture: PixelCapture = mock()
+        val fakeDebouncerStats = DebouncerHealthStats(
+            callCount = forge.anInt(min = 0, max = 20),
+            executedCount = forge.anInt(min = 0, max = 20),
+            skippedByTimeBankCount = forge.anInt(min = 0, max = 20)
+        )
+        whenever(mockDebouncer.consumeStatsForHealthLog()).thenReturn(fakeDebouncerStats)
+        whenever(
+            mockCompositionTreeBuilder.build(any(), any(), any(), any(), any(), any())
+        ).thenReturn(CompositionTreeBuilder.Output(null, emptyList()))
+        whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
+            .thenReturn(fakeSnapshotQueueItem)
+        fakeSnapshotQueueItem.pendingJobs.set(0)
+
+        val listenerWithCompositionTree = WindowsOnDrawListener(
+            decorViews = fakeMockedDecorViews,
+            recordedDataQueueHandler = mockRecordedDataQueueHandler,
+            snapshotProducer = mockSnapshotProducer,
+            textAndInputPrivacy = fakeTextAndInputPrivacy,
+            imagePrivacy = fakeImagePrivacy,
+            debouncer = mockDebouncer,
+            miscUtils = mockMiscUtils,
+            sdkCore = mockSdkCore,
+            methodCallSamplingRate = fakeMethodCallSamplingRate,
+            dynamicOptimizationEnabled = fakeDynamicOptimizationEnabled,
+            touchPrivacyManager = mockTouchPrivacyManager,
+            rumContextProvider = mockRumContextProvider,
+            compositionTreeBuilder = mockCompositionTreeBuilder,
+            pixelCapture = mockPixelCapture
+        )
+
+        // When
+        listenerWithCompositionTree.onDraw()
+
+        // Then
+        val inOrder = org.mockito.kotlin.inOrder(mockPixelCapture)
+        inOrder.verify(mockPixelCapture).recordDebouncerStats(fakeDebouncerStats)
+        inOrder.verify(mockPixelCapture).onPreTraversal(anyOrNull())
+    }
 
     @Test
     fun `M build with the focused window last W onDraw() {composition tree pipeline, multiple windows}`() {

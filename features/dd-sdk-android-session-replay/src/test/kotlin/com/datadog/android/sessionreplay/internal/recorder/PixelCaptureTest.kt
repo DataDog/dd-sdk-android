@@ -516,6 +516,28 @@ internal class PixelCaptureTest {
     }
 
     @Test
+    fun `M accumulate debouncer stats across cycles W recordDebouncerStats()`(forge: Forge) {
+        // Given — several cycles' worth of Debouncer activity, as WindowsOnDrawListener would
+        // feed in right before each onPreTraversal call
+        val fakeStats = forge.aList(size = forge.anInt(min = 2, max = 5)) {
+            DebouncerHealthStats(
+                callCount = forge.anInt(min = 0, max = 20),
+                executedCount = forge.anInt(min = 0, max = 20),
+                skippedByTimeBankCount = forge.anInt(min = 0, max = 20)
+            )
+        }
+
+        // When
+        fakeStats.forEach { testedPixelCapture.recordDebouncerStats(it) }
+
+        // Then — flushing the health summary (via a navigation-triggered onPreTraversal) must not
+        // throw even though debouncer stats were accumulated across multiple cycles beforehand
+        assertThatCode {
+            testedPixelCapture.onPreTraversal(forge.aStringMatching("https://[a-z]+\\.example/[a-z]+"))
+        }.doesNotThrowAnyException()
+    }
+
+    @Test
     fun `M clear pending captures and cache W onPreTraversal() {navigation}`(forge: Forge) {
         // Given
         testedPixelCapture.registerPendingCapture(

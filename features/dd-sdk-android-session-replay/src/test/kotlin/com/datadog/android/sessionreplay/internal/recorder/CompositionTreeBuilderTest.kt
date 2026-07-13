@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder
 
 import android.content.Context
 import android.view.View
+import android.webkit.WebView
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -19,6 +20,7 @@ import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.mapper.PixelCaptureFallbackMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.WebViewWireframeMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.InteropViewCallback
 import com.datadog.android.sessionreplay.recorder.MappingContext
@@ -67,6 +69,9 @@ internal class CompositionTreeBuilderTest {
     lateinit var mockTextViewMapper: TextViewMapper<TextView>
 
     @Mock
+    lateinit var mockWebViewMapper: WebViewWireframeMapper
+
+    @Mock
     lateinit var mockPixelCaptureFallbackMapper: PixelCaptureFallbackMapper
 
     @Mock
@@ -111,6 +116,7 @@ internal class CompositionTreeBuilderTest {
             viewIdentifierResolver = mockViewIdentifierResolver,
             viewBoundsResolver = mockViewBoundsResolver,
             textViewMapper = mockTextViewMapper,
+            webViewMapper = mockWebViewMapper,
             pixelCaptureFallbackMapper = mockPixelCaptureFallbackMapper,
             touchPrivacyManager = mockTouchPrivacyManager,
             imageWireframeHelper = mockImageWireframeHelper,
@@ -176,6 +182,58 @@ internal class CompositionTreeBuilderTest {
         // Then
         assertThat(output.wireframes).containsExactlyElementsOf(fakeChildWireframes)
         verifyNoInteractions(mockTextViewMapper)
+    }
+
+    @Test
+    fun `M map via webViewMapper W build() {leaf is a WebView}`(forge: Forge) {
+        // Given — a pixel capture can't see WebView content at all (it composites through a path
+        // View.draw never touches), so it must go through the dedicated mapper instead, same as
+        // the default pipeline's TreeViewTraversal does.
+        val mockChild = forge.aMockView<WebView>()
+        val fakeChildWireframes: List<MobileSegment.Wireframe> =
+            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.WebviewWireframe>() }
+        whenever(
+            mockWebViewMapper.map(eq(mockChild), any(), any(), eq(mockInternalLogger))
+        ).thenReturn(fakeChildWireframes)
+
+        val mockRoot = forge.aMockView<FrameLayout>()
+        whenever(mockRoot.childCount).thenReturn(1)
+        whenever(mockRoot.getChildAt(0)).thenReturn(mockChild)
+
+        // When
+        val output = buildOutput(mockRoot)
+
+        // Then
+        assertThat(output.wireframes).containsExactlyElementsOf(fakeChildWireframes)
+        verifyNoInteractions(mockTextViewMapper)
+        verifyNoInteractions(mockPixelCaptureFallbackMapper)
+    }
+
+    @Test
+    fun `M treat WebView as a leaf W build() {WebView reports children}`(forge: Forge) {
+        // Given — WebView is itself a ViewGroup, but its real content isn't rendered through any
+        // child the traversal could recurse into, the same reasoning as isComposeHostView: it
+        // must always take the leaf path regardless of ViewGroup.getChildCount.
+        val mockWebView = forge.aMockView<WebView>()
+        whenever(mockWebView.childCount).thenReturn(1)
+        val fakeChildWireframes: List<MobileSegment.Wireframe> =
+            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.WebviewWireframe>() }
+        whenever(
+            mockWebViewMapper.map(eq(mockWebView), any(), any(), eq(mockInternalLogger))
+        ).thenReturn(fakeChildWireframes)
+
+        val mockRoot = forge.aMockView<FrameLayout>()
+        whenever(mockRoot.childCount).thenReturn(1)
+        whenever(mockRoot.getChildAt(0)).thenReturn(mockWebView)
+
+        // When
+        val output = buildOutput(mockRoot)
+
+        // Then — captured as one leaf wireframe, never turned into its own CompositionLayer
+        assertThat(output.wireframes).containsExactlyElementsOf(fakeChildWireframes)
+        val rootChildren = output.compositionTree!!.root.children
+        assertThat(rootChildren).hasSize(1)
+        assertThat(rootChildren.single().type).isEqualTo(MobileSegment.Type.WIREFRAME)
     }
 
     @Test
