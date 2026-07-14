@@ -16,6 +16,7 @@ plugins {
 
     // Analysis tools
     id("com.github.ben-manes.versions")
+    id("test-pyramid-api-usage")
 }
 
 android {

@@ -105,32 +105,8 @@ if [[ $ANALYSIS == 1 ]]; then
   ./gradlew detekt --continue
 
   if [[ $COMPILE == 1 ]]; then
-    # Assemble is required to get generated classes type resolution
-    echo "------ Assemble Libraries & Build Detekt custom rules"
-    ./gradlew assembleLibrariesDebug :tools:detekt:jar
-    ./gradlew printSdkDebugRuntimeClasspath --no-parallel
-    classpath=$(cat sdk_classpath)
-
     echo "------ Detekt test pyramid rules"
-    rm -f apiSurface.log apiUsage.log
-    detekt --parallel --config detekt_test_pyramid.yml --plugins tools/detekt/build/libs/detekt.jar -cp "$classpath" --jvm-target 11 -ex "**/*.kts"
-
-    set +e
-    grep -v -f apiUsage.log apiSurface.log > apiCoverageMiss.log
-    grep -f apiUsage.log apiSurface.log > apiCoverageHit.log
-    set -e
-
-    surfaceCount=$(sed -n '$=' apiSurface.log)
-    coverageMissCount=$(sed -n '$=' apiCoverageMiss.log)
-    coverageHitCount=$(sed -n '$=' apiCoverageHit.log)
-    if [ -s "apiCoverageMiss.log" ] && [ "${surfaceCount:-0}" -gt 0 ]; then
-      hitPercent=$(( (coverageHitCount * 100) / surfaceCount ))
-      missPercent=$(( (coverageMissCount * 100) / surfaceCount ))
-      echo "⚠ Test Integration coverage missed ${coverageMissCount} apis ($hitPercent % coverage; $missPercent % miss)"
-    else
-      echo "✔ Test Integration coverage 100%"
-    fi
-
+    ./gradlew checkTestPyramidCoverage
   else
     echo "------ Detekt Custom Rules & API Coverage ignored, run again with --analysis --compile"
   fi
