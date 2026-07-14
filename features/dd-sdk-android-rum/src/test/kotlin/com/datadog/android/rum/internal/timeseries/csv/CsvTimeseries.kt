@@ -71,9 +71,7 @@ internal class CsvTimeseries(
             totalRamBytes: Long,
             bufferSize: Int,
             timeProvider: TimeProvider,
-            datadogContext: DatadogContext,
-            useDeltaCompression: Boolean = false,
-            additionalAttributes: Map<String, String> = emptyMap()
+            datadogContext: DatadogContext
         ) = CsvTimeseries(
             datadogContext = datadogContext,
             pipelines = listOf(
@@ -85,9 +83,7 @@ internal class CsvTimeseries(
                         applicationId = applicationId,
                         sessionType = sessionType,
                         totalRamBytes = totalRamBytes,
-                        timeProvider = timeProvider,
-                        additionalAttributes = additionalAttributes,
-                        useDeltaCompression = useDeltaCompression
+                        timeProvider = timeProvider
                     )
                 ),
                 Triple(
@@ -97,9 +93,7 @@ internal class CsvTimeseries(
                         sessionId = sessionId,
                         applicationId = applicationId,
                         sessionType = sessionType,
-                        timeProvider = timeProvider,
-                        additionalAttributes = additionalAttributes,
-                        useDeltaCompression = useDeltaCompression
+                        timeProvider = timeProvider
                     )
                 )
             )

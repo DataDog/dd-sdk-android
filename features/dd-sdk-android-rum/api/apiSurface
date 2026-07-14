@@ -310,9 +310,6 @@ class com.datadog.android.rum.timeseries.TimeseriesConfiguration
   class Builder
     fun setBufferSize(Int): Builder
     fun setIntervalMs(Long): Builder
-    fun collectInBackground(Boolean): Builder
-    fun useDeltaCompression(Boolean): Builder
-    fun addAttribute(String, String): Builder
     fun build(): TimeseriesConfiguration
   companion object 
     val DEFAULT: TimeseriesConfiguration
@@ -1767,24 +1764,25 @@ data class com.datadog.android.rum.model.TimeseriesCpuEvent
       fun fromJson(kotlin.String): Session
       fun fromJsonObject(com.google.gson.JsonObject): Session
   data class Timeseries
-    constructor(kotlin.String, Schema, kotlin.Long, kotlin.Long, kotlin.collections.List<Data>)
+    constructor(kotlin.String, kotlin.Long, kotlin.Long, Data)
     val name: kotlin.String
+    val schema: kotlin.String
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Timeseries
       fun fromJsonObject(com.google.gson.JsonObject): Timeseries
   data class Data
-    constructor(kotlin.Long, DataPoint)
+    constructor(kotlin.collections.List<kotlin.Long>, Values)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Data
       fun fromJsonObject(com.google.gson.JsonObject): Data
-  data class DataPoint
-    constructor(kotlin.Number)
+  data class Values
+    constructor(kotlin.collections.List<kotlin.Number>)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): DataPoint
-      fun fromJsonObject(com.google.gson.JsonObject): DataPoint
+      fun fromJson(kotlin.String): Values
+      fun fromJsonObject(com.google.gson.JsonObject): Values
   enum Source
     constructor(kotlin.String)
     - ANDROID
@@ -1808,13 +1806,6 @@ data class com.datadog.android.rum.model.TimeseriesCpuEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Type
-  enum Schema
-    constructor(kotlin.String)
-    - OBJECT
-    - DELTA_SCALAR
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Schema
 data class com.datadog.android.rum.model.TimeseriesMemoryEvent
   constructor(Dd, Application, Session, Source, kotlin.Long, kotlin.String? = null, kotlin.String? = null, Timeseries)
   val type: kotlin.String
@@ -1841,24 +1832,25 @@ data class com.datadog.android.rum.model.TimeseriesMemoryEvent
       fun fromJson(kotlin.String): Session
       fun fromJsonObject(com.google.gson.JsonObject): Session
   data class Timeseries
-    constructor(kotlin.String, Schema, kotlin.Long, kotlin.Long, kotlin.collections.List<Data>)
+    constructor(kotlin.String, kotlin.Long, kotlin.Long, Data)
     val name: kotlin.String
+    val schema: kotlin.String
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Timeseries
       fun fromJsonObject(com.google.gson.JsonObject): Timeseries
   data class Data
-    constructor(kotlin.Long, DataPoint)
+    constructor(kotlin.collections.List<kotlin.Long>, Values)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Data
       fun fromJsonObject(com.google.gson.JsonObject): Data
-  data class DataPoint
-    constructor(kotlin.Number, kotlin.Number)
+  data class Values
+    constructor(kotlin.collections.List<kotlin.Number>, kotlin.collections.List<kotlin.Number>)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): DataPoint
-      fun fromJsonObject(com.google.gson.JsonObject): DataPoint
+      fun fromJson(kotlin.String): Values
+      fun fromJsonObject(com.google.gson.JsonObject): Values
   enum Source
     constructor(kotlin.String)
     - ANDROID
@@ -1882,13 +1874,6 @@ data class com.datadog.android.rum.model.TimeseriesMemoryEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Type
-  enum Schema
-    constructor(kotlin.String)
-    - OBJECT
-    - DELTA_OBJECT
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Schema
 data class com.datadog.android.rum.model.ViewEvent
   constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, ViewEventSession, ViewEventSource? = null, ViewEventView, Usr? = null, Account? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null, Container? = null, Context? = null, Privacy? = null)
   val type: kotlin.String
