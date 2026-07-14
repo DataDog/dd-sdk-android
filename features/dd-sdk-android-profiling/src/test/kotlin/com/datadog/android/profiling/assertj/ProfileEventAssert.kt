@@ -126,8 +126,8 @@ internal class ProfileEventAssert(actual: ProfileEvent) :
         return this
     }
 
-    fun hasViewIds(expected: List<String>?): ProfileEventAssert {
-        assertThat(actual.view?.id)
+    fun hasViewIds(expected: Set<String>?): ProfileEventAssert {
+        assertThat(actual.view?.id?.toSet())
             .overridingErrorMessage(
                 "Expected event data to have view.id $expected " +
                     "but was ${actual.view?.id}"
@@ -136,8 +136,28 @@ internal class ProfileEventAssert(actual: ProfileEvent) :
         return this
     }
 
-    fun hasViewNames(expected: List<String>?): ProfileEventAssert {
-        assertThat(actual.view?.name)
+    fun hasLongTaskIds(expected: List<String>): ProfileEventAssert {
+        assertThat(actual.longTask?.id)
+            .overridingErrorMessage(
+                "Expected event data to have longTask.id $expected " +
+                    "but was ${actual.longTask?.id}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasErrorIds(expected: List<String>): ProfileEventAssert {
+        assertThat(actual.error?.id)
+            .overridingErrorMessage(
+                "Expected event data to have error.id $expected " +
+                    "but was ${actual.error?.id}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasViewNames(expected: Set<String>?): ProfileEventAssert {
+        assertThat(actual.view?.name?.toSet())
             .overridingErrorMessage(
                 "Expected event data to have view.name $expected " +
                     "but was ${actual.view?.name}"

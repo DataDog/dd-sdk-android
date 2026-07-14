@@ -14,7 +14,8 @@ import androidx.annotation.FloatRange
 @ExperimentalProfilingApi
 data class ProfilingConfiguration internal constructor(
     internal val customEndpointUrl: String?,
-    internal val sampleRate: Float
+    internal val applicationLaunchSampleRate: Float,
+    internal val continuousSampleRate: Float
 ) {
 
     /**
@@ -24,6 +25,7 @@ data class ProfilingConfiguration internal constructor(
 
         private var customEndpointUrl: String? = null
         private var applicationLaunchSampleRate: Float = DEFAULT_APPLICATION_LAUNCH_SAMPLE_RATE
+        private var continuousSampleRate: Float = DEFAULT_CONTINUOUS_SAMPLE_RATE
 
         /**
          * Sets the sampling rate for Application Launch profiling. It will be applied on the next application launch.
@@ -36,6 +38,21 @@ data class ProfilingConfiguration internal constructor(
          */
         fun setApplicationLaunchSampleRate(@FloatRange(from = 0.0, to = 100.0) sampleRate: Float): Builder {
             this.applicationLaunchSampleRate = sampleRate
+            return this
+        }
+
+        /**
+         * Sets the sampling rate for Continuous Profiling.
+         *
+         * @param sampleRate The sample rate, expressed as a percentage between 0 and 100 (inclusive).
+         * A value of 0 disables Continuous Profiling entirely. A value of 100 enables
+         * Continuous Profiling for all eligible RUM sessions, subject to rate limiting enforced by
+         * [android.os.ProfilingManager].
+         */
+        fun setContinuousSampleRate(
+            @FloatRange(from = 0.0, to = 100.0) sampleRate: Float
+        ): Builder {
+            this.continuousSampleRate = sampleRate
             return this
         }
 
@@ -54,7 +71,8 @@ data class ProfilingConfiguration internal constructor(
         fun build(): ProfilingConfiguration {
             return ProfilingConfiguration(
                 customEndpointUrl = customEndpointUrl,
-                sampleRate = applicationLaunchSampleRate
+                applicationLaunchSampleRate = applicationLaunchSampleRate,
+                continuousSampleRate = continuousSampleRate
             )
         }
     }
@@ -62,6 +80,11 @@ data class ProfilingConfiguration internal constructor(
     companion object {
 
         private const val DEFAULT_APPLICATION_LAUNCH_SAMPLE_RATE = 15f
+
+        /**
+         * Default sampling rate for Continuous Profiling.
+         */
+        internal const val DEFAULT_CONTINUOUS_SAMPLE_RATE: Float = 15f
 
         /**
          * A default configuration for the Profiling feature.

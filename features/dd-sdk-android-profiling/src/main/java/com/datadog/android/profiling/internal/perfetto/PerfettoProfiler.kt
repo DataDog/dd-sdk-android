@@ -15,19 +15,24 @@ import androidx.core.os.ProfilingRequest
 import androidx.core.os.StackSamplingRequestBuilder
 import androidx.core.os.requestProfiling
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.internal.persistence.file.lengthSafe
-import com.datadog.android.core.metrics.MethodCallSamplingRate
-import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.core.internal.utils.scheduleSafe
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.profiling.internal.Profiler
 import com.datadog.android.profiling.internal.ProfilerCallback
 import com.datadog.android.profiling.internal.ProfilingStartReason
-import java.io.File
+import com.datadog.android.profiling.internal.anr.AnrListener
+import com.datadog.android.profiling.internal.anr.AnrProfilingTriggerRegistrar
+import com.datadog.android.profiling.internal.anr.AnrTriggerRegistrar
+import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
+import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
+import com.datadog.android.profiling.internal.time.MutableTimeProvider
+import com.datadog.android.profiling.internal.utils.fileSizeSafe
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Consumer
+import kotlin.random.Random
 
 /**
  * Profiler based on Android's [requestProfiling] API to record callstack samples.
@@ -35,15 +40,25 @@ import java.util.function.Consumer
  * Supports multiple start reasons including application launch, RUM operations, and continuous profiling.
  *
  * @param timeProvider The time provider to use to get the current time.
- * @param profilingExecutor the executor service to run the profiling task on.
+ * @param scheduledExecutorService the executor service to run the profiling task on.
+ * @param profilingTelemetry shared telemetry helper that buffers metric events until a logger is
+ * available and dispatches them through the unified `[Mobile Metric] Profiling Session` envelope.
+ * @param anrTriggerRegistrar registrar that owns the system ANR profiling-trigger lifecycle.
+ * The profiler passes its internal fan-out listener to it at register time; the listener
+ * captures the profiler's `callbackMap` so all SDK instances receive the detection.
+ * @param buildSdkVersionProvider Build.VERSION.SDK_INT provider used for the test.
  */
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 internal class PerfettoProfiler(
-    private val timeProvider: TimeProvider,
-    private val profilingExecutor: ExecutorService = Executors.newSingleThreadExecutor()
+    override val timeProvider: MutableTimeProvider,
+    override val scheduledExecutorService: ScheduledExecutorService,
+    internal val profilingTelemetry: ProfilingTelemetry = ProfilingTelemetry(),
+    internal val anrTriggerRegistrar: AnrTriggerRegistrar =
+        AnrProfilingTriggerRegistrar(timeProvider, scheduledExecutorService, profilingTelemetry),
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) : Profiler {
 
-    private var stopSignal: CancellationSignal? = null
+    internal var stopSignal: CancellationSignal? = null
     private val resultCallback: Consumer<ProfilingResult>
 
     // This flag represents which instance of this class is working for.
@@ -61,16 +76,25 @@ internal class PerfettoProfiler(
     @Volatile
     private var profilingAppStartInfo: String? = null
 
-    private val pendingTelemetry: MutableSet<TelemetryData> = mutableSetOf()
+    @Volatile
+    private var profilingSamplingRateHz: Int = PROFILING_SAMPLING_RATE_APP_LAUNCH
 
     @Volatile
     override var internalLogger: InternalLogger? = null
         set(value) {
             field = value
-            if (value != null) {
-                consumePendingTelemetry(value)
-            }
+            anrTriggerRegistrar.internalLogger = value
+            profilingTelemetry.internalLogger = value
         }
+
+    internal val anrListener = AnrListener { event ->
+        callbackMap.values.forEach { callback ->
+            callback.onAnrDetected(event)
+        }
+    }
+
+    @Volatile
+    private var extendLaunchSession = false
 
     // Map of <InstanceName, ProfilerCallback>
     private val callbackMap: MutableMap<String, ProfilerCallback> = ConcurrentHashMap()
@@ -85,46 +109,74 @@ internal class PerfettoProfiler(
             val duration = effectiveStopTime - profilingStartTime
             val resultCallbackDelayMs =
                 if (profilingStopTime > 0L) resultCallbackTime - profilingStopTime else 0L
+            val startReason = ProfilingStartReason.values().firstOrNull { it.value == result.tag.orEmpty() }
+                ?: ProfilingStartReason.UNKNOWN
             if (result.errorCode == ProfilingResult.ERROR_NONE) {
                 // TODO RUM-13679: need to delete the file after it is no longer needed
                 result.resultFilePath?.let {
-                    notifyAllCallbacks(
-                        PerfettoResult(
-                            start = profilingStartTime,
-                            end = resultCallbackTime,
-                            tag = result.tag.orEmpty(),
-                            resultFilePath = it
+                    notifyCallbacks {
+                        onSuccess(
+                            PerfettoResult(
+                                start = profilingStartTime,
+                                startReason = startReason,
+                                end = resultCallbackTime,
+                                resultFilePath = it
+                            )
                         )
-                    )
-                }
+                    }
+                } ?: notifyCallbacks { onFailure(startReason) }
+            } else {
+                notifyCallbacks { onFailure(startReason) }
             }
             runningInstances.set(emptySet())
-            sendProfilingEndTelemetry(
-                result = result,
-                duration = duration,
-                resultCallbackDelayMs = resultCallbackDelayMs,
-                startReason = profilingStartReason,
-                appStartInfo = profilingAppStartInfo
+            profilingTelemetry.report(
+                ProfilingTelemetryEvent.SessionEnd(
+                    startReason = profilingStartReason.value,
+                    appStartInfo = profilingAppStartInfo,
+                    errorCode = result.errorCode,
+                    errorMessage = result.errorMessage,
+                    fileSize = fileSizeSafe(result.resultFilePath, internalLogger),
+                    durationMs = duration,
+                    resultCallbackDelayMs = resultCallbackDelayMs,
+                    clientClockDriftMs = timeProvider.getServerOffsetMillis(),
+                    stopReason = resolveStopReason(result.errorCode),
+                    bufferSizeKb = BUFFER_SIZE_KB,
+                    samplingFrequencyHz = profilingSamplingRateHz
+                )
             )
         }
     }
 
-    private fun buildStackSamplingRequest(startReason: String): ProfilingRequest {
+    private fun buildStackSamplingRequest(
+        startReason: ProfilingStartReason,
+        durationMs: Int
+    ): ProfilingRequest {
+        val samplingRateHz = getSamplingRateHz(startReason)
+        profilingSamplingRateHz = samplingRateHz
         return CancellationSignal().let {
             this.stopSignal = it
             StackSamplingRequestBuilder()
                 .setCancellationSignal(it)
-                .setTag(startReason)
-                .setSamplingFrequencyHz(PROFILING_SAMPLING_RATE)
+                .setTag(startReason.value)
+                .setSamplingFrequencyHz(samplingRateHz)
                 .setBufferSizeKb(BUFFER_SIZE_KB)
-                .setDurationMs(PROFILING_MAX_DURATION_MS)
+                .setDurationMs(durationMs)
                 .build()
         }
     }
 
-    private fun notifyAllCallbacks(result: PerfettoResult) {
-        callbackMap.filter { runningInstances.get().contains(it.key) }.forEach { callback ->
-            callback.value.onSuccess(result)
+    private fun getSamplingRateHz(startReason: ProfilingStartReason): Int {
+        return if (startReason == ProfilingStartReason.APPLICATION_LAUNCH) {
+            PROFILING_SAMPLING_RATE_APP_LAUNCH
+        } else {
+            PROFILING_SAMPLING_RATE_CONTINUOUS
+        }
+    }
+
+    private fun notifyCallbacks(dispatch: ProfilerCallback.() -> Unit) {
+        val running = runningInstances.get()
+        callbackMap.forEach { (key, callback) ->
+            if (running.contains(key)) callback.dispatch()
         }
     }
 
@@ -132,20 +184,40 @@ internal class PerfettoProfiler(
         appContext: Context,
         startReason: ProfilingStartReason,
         additionalAttributes: Map<String, String>,
-        sdkInstanceNames: Set<String>
+        sdkInstanceNames: Set<String>,
+        durationMs: Int
     ) {
+        val effectiveDurationMs =
+            if (durationMs > 0) durationMs else getDefaultDurationMs(startReason)
         // profiling will be launched when no instance is currently running profiling.
         if (runningInstances.compareAndSet(emptySet(), sdkInstanceNames)) {
             profilingStartTime = timeProvider.getDeviceTimestampMillis()
             profilingStopTime = 0L
             profilingStartReason = startReason
-            profilingAppStartInfo = additionalAttributes[TELEMETRY_KEY_APP_START_INFO]
+            profilingAppStartInfo = additionalAttributes[ProfilingTelemetry.KEY_APP_START_INFO]
             requestProfiling(
                 appContext,
-                buildStackSamplingRequest(startReason.value),
-                profilingExecutor,
+                buildStackSamplingRequest(startReason, effectiveDurationMs),
+                scheduledExecutorService,
                 resultCallback
             )
+            if (startReason == ProfilingStartReason.APPLICATION_LAUNCH) {
+                scheduledExecutorService.scheduleSafe(
+                    operationName = OPERATION_NAME_APP_LAUNCH_PROFILING_SCHEDULE,
+                    delay = APP_LAUNCH_PROFILING_MAX_DURATION_MS,
+                    unit = TimeUnit.MILLISECONDS,
+                    internalLogger = internalLogger ?: InternalLogger.UNBOUND,
+                    runnable = {
+                        stopSignal?.let { signal ->
+                            if (profilingStartReason == ProfilingStartReason.APPLICATION_LAUNCH &&
+                                !signal.isCanceled && !extendLaunchSession
+                            ) {
+                                signal.cancel()
+                            }
+                        }
+                    }
+                )
+            }
         }
     }
 
@@ -164,135 +236,89 @@ internal class PerfettoProfiler(
     }
 
     override fun registerProfilingCallback(
+        appContext: Context,
         sdkInstanceName: String,
         callback: ProfilerCallback
     ) {
-        callbackMap[sdkInstanceName] = callback
-    }
-
-    override fun unregisterProfilingCallback(sdkInstanceName: String) {
-        callbackMap.remove(sdkInstanceName)
-    }
-
-    private fun sendProfilingEndTelemetry(
-        result: ProfilingResult,
-        duration: Long,
-        resultCallbackDelayMs: Long,
-        startReason: ProfilingStartReason,
-        appStartInfo: String?
-    ) {
-        val telemetryData = TelemetryData(
-            startReason = startReason.value,
-            appStartInfo = appStartInfo,
-            errorCode = result.errorCode,
-            errorMessage = result.errorMessage,
-            filePath = result.resultFilePath,
-            duration = duration,
-            resultCallbackDelayMs = resultCallbackDelayMs,
-            stopReason = resolveStopReason(result.errorCode)
-        )
-        internalLogger?.let {
-            performLogMetric(it, telemetryData)
-        } ?: run {
-            synchronized(pendingTelemetry) {
-                pendingTelemetry.add(telemetryData)
+        synchronized(callbackMap) {
+            callbackMap[sdkInstanceName] = callback
+            if (buildSdkVersionProvider.isAtLeastBaklava) {
+                anrTriggerRegistrar.register(appContext, anrListener)
             }
         }
+    }
+
+    override fun unregisterProfilingCallback(appContext: Context, sdkInstanceName: String) {
+        synchronized(callbackMap) {
+            callbackMap.remove(sdkInstanceName)
+            // Unregister the ANR triggers only when all the SDK instances have unregistered.
+            if (callbackMap.isEmpty() && buildSdkVersionProvider.isAtLeastBaklava) {
+                anrTriggerRegistrar.unregister(appContext)
+            }
+        }
+    }
+
+    override fun setExtendLaunchSession(extend: Boolean) {
+        this.extendLaunchSession = extend
+    }
+
+    override fun setProfilingPackageVersionCode(versionCode: Long) {
+        profilingTelemetry.profilingPackageVersionCode = versionCode
     }
 
     private fun resolveStopReason(errorCode: Int): String {
         return if (profilingStopTime > 0L) {
-            TELEMETRY_VALUE_STOPPED_REASON_MANUAL
+            ProfilingTelemetry.STOPPED_REASON_MANUAL
         } else {
             when (errorCode) {
-                ProfilingResult.ERROR_NONE -> TELEMETRY_VALUE_STOPPED_REASON_TIMEOUT
-                else -> TELEMETRY_VALUE_STOPPED_REASON_ERROR
+                ProfilingResult.ERROR_NONE -> ProfilingTelemetry.STOPPED_REASON_TIMEOUT
+                else -> ProfilingTelemetry.STOPPED_REASON_ERROR
             }
         }
     }
 
-    private fun consumePendingTelemetry(logger: InternalLogger) {
-        synchronized(pendingTelemetry) {
-            pendingTelemetry.forEach { data ->
-                performLogMetric(logger, data)
-            }
-            pendingTelemetry.clear()
+    private fun getDefaultDurationMs(startReason: ProfilingStartReason): Int {
+        // Application launch profiling should always be considered as the first window of
+        // continuous profiling by default since the duration is not mutable after requesting,
+        // but the effective max duration will be controlled by an external timer if continuous
+        // profiling is not enabled by users.
+        return if (startReason == ProfilingStartReason.APPLICATION_LAUNCH) {
+            // Randomize t1 ∈ (0, CONTINUOUS_WINDOW] to provide phase jitter across sessions,
+            // avoiding systematic cooldown gaps at predictable time points.
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            // Until is always bigger than from.
+            Random.nextInt(
+                APP_LAUNCH_PROFILING_MAX_DURATION_MS.toInt(),
+                PROFILING_MAX_DURATION_MS_CONTINUOUS + 1
+            )
+        } else {
+            PROFILING_MAX_DURATION_MS_CONTINUOUS
         }
     }
-
-    private fun performLogMetric(logger: InternalLogger, telemetryData: TelemetryData) {
-        logger.logMetric(
-            messageBuilder = { TELEMETRY_MSG_PROFILING_SESSION },
-            additionalProperties = mapOf(
-                TELEMETRY_KEY_METRIC_TYPE to TELEMETRY_VALUE_METRIC_TYPE,
-                TELEMETRY_KEY_PROFILING_SESSION to mapOf(
-                    TELEMETRY_KEY_ERROR_CODE to telemetryData.errorCode,
-                    TELEMETRY_KEY_START_REASON to telemetryData.startReason,
-                    TELEMETRY_KEY_DURATION to telemetryData.duration,
-                    TELEMETRY_KEY_CALLBACK_DELAY to telemetryData.resultCallbackDelayMs,
-                    TELEMETRY_KEY_ERROR_MESSAGE to telemetryData.errorMessage,
-                    TELEMETRY_KEY_FILE_SIZE to getFileSize(telemetryData.filePath),
-                    TELEMETRY_KEY_STOPPED_REASON to telemetryData.stopReason,
-                    TELEMETRY_KEY_APP_START_INFO to telemetryData.appStartInfo
-                ),
-                TELEMETRY_KEY_PROFILING_CONFIG to mapOf(
-                    TELEMETRY_KEY_BUFFER_SIZE to BUFFER_SIZE_KB,
-                    TELEMETRY_KEY_SAMPLING_FREQUENCY to PROFILING_SAMPLING_RATE
-                )
-            ),
-            samplingRate = MethodCallSamplingRate.ALL.rate
-        )
-    }
-
-    private fun getFileSize(filePath: String?): Long {
-        return internalLogger?.let { logger ->
-            filePath?.let {
-                val file = File(filePath)
-                file.lengthSafe(logger)
-            }
-        } ?: 0
-    }
-
-    private data class TelemetryData(
-        val startReason: String,
-        val appStartInfo: String?,
-        val errorCode: Int,
-        val errorMessage: String?,
-        val filePath: String?,
-        val duration: Long,
-        val resultCallbackDelayMs: Long,
-        val stopReason: String
-    )
 
     companion object {
 
         // Duration is based on the current P99 TTID metric.
-        private val PROFILING_MAX_DURATION_MS = TimeUnit.SECONDS.toMillis(10).toInt()
+        internal val APP_LAUNCH_PROFILING_MAX_DURATION_MS = TimeUnit.SECONDS.toMillis(10)
+
+        // Duration for continuous profiling cycles (1-minute active window per cycle).
+        private const val PROFILING_MAX_DURATION_MS_CONTINUOUS = 60_000
 
         // Currently we give an estimated maximum size of profiling result to 5MB, it can be
         // increased or configurable if needed.
         private const val BUFFER_SIZE_KB = 5120 // 5MB
 
-        // Currently we give 201HZ frequency to balance the sampling accuracy and performance
-        // overhead also to avoid lockstep sampling, it can be updated or configurable if needed.
-        internal const val PROFILING_SAMPLING_RATE = 201 // 201Hz
-        private const val TELEMETRY_MSG_PROFILING_SESSION = "[Mobile Metric] Profiling Session"
-        private const val TELEMETRY_KEY_METRIC_TYPE = "metric_type"
-        private const val TELEMETRY_VALUE_METRIC_TYPE = "profiling session"
-        private const val TELEMETRY_KEY_PROFILING_SESSION = "profiling_session"
-        private const val TELEMETRY_KEY_PROFILING_CONFIG = "profiling_config"
-        private const val TELEMETRY_KEY_ERROR_CODE = "error_code"
-        private const val TELEMETRY_KEY_START_REASON = "start_reason"
-        private const val TELEMETRY_KEY_ERROR_MESSAGE = "error_message"
-        private const val TELEMETRY_KEY_DURATION = "duration"
-        private const val TELEMETRY_KEY_CALLBACK_DELAY = "callback_delay_ms"
-        private const val TELEMETRY_KEY_FILE_SIZE = "file_size"
-        private const val TELEMETRY_KEY_STOPPED_REASON = "stopped_reason"
-        internal const val TELEMETRY_KEY_APP_START_INFO = "app_start_info"
-        private const val TELEMETRY_KEY_BUFFER_SIZE = "buffer_size"
-        private const val TELEMETRY_KEY_SAMPLING_FREQUENCY = "sampling_frequency"
-        private const val TELEMETRY_VALUE_STOPPED_REASON_MANUAL = "manual"
-        private const val TELEMETRY_VALUE_STOPPED_REASON_TIMEOUT = "timeout"
-        private const val TELEMETRY_VALUE_STOPPED_REASON_ERROR = "error"
+        // 201Hz for app launch: higher accuracy to capture startup behavior.
+        internal const val PROFILING_SAMPLING_RATE_APP_LAUNCH = 201
+
+        // 101Hz for continuous profiling: lower overhead for sustained background recording.
+        internal const val PROFILING_SAMPLING_RATE_CONTINUOUS = 101
+
+        // Re-exported from ProfilingTelemetry so external callers (e.g. content provider)
+        // keep using the same property key when passing app-start info as an additional attribute.
+        internal const val TELEMETRY_KEY_APP_START_INFO = ProfilingTelemetry.KEY_APP_START_INFO
+
+        private const val OPERATION_NAME_APP_LAUNCH_PROFILING_SCHEDULE =
+            "app_launch_profiling_schedule"
     }
 }

@@ -12,11 +12,13 @@ import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.internal.profiling.ProfilerStopEvent
-import com.datadog.android.internal.profiling.TTIDRumContext
+import com.datadog.android.internal.profiling.ProfilerEvent
+import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumVitalAppLaunchEventHelper
+import com.datadog.android.rum.internal.profiling.isProfilerRunning
+import com.datadog.android.rum.internal.profiling.resolveProfilingQuotaReason
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import kotlin.time.Duration.Companion.minutes
@@ -27,6 +29,7 @@ internal interface RumSessionScopeStartupManager {
 
     fun onTTIDEvent(
         event: RumRawEvent.AppStartTTIDEvent,
+        isSessionTracked: Boolean,
         datadogContext: DatadogContext,
         writeScope: EventWriteScope,
         writer: DataWriter<Any>,
@@ -83,14 +86,22 @@ internal class RumSessionScopeStartupManagerImpl(
         appStartCount++
     }
 
+    @Suppress("LongMethod")
     override fun onTTIDEvent(
         event: RumRawEvent.AppStartTTIDEvent,
+        isSessionTracked: Boolean,
         datadogContext: DatadogContext,
         writeScope: EventWriteScope,
         writer: DataWriter<Any>,
         rumContext: RumContext,
         customAttributes: Map<String, Any?>
     ) {
+        if (!isSessionTracked) {
+            sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
+                ProfilerEvent.TTIDNotTracked
+            )
+            return
+        }
         ttidReportedForScenario = true
 
         rumAppStartupTelemetryReporter.reportTTID(
@@ -104,6 +115,7 @@ internal class RumSessionScopeStartupManagerImpl(
 
         ttidSentForSession = true
 
+        val profilingStatus = datadogContext.getProfilingStatus(rumContext.sessionId)
         val ttidEvent = rumVitalAppLaunchEventHelper.newVitalAppLaunchEvent(
             timestampMs = event.info.scenario.initialTime.timestamp + sdkCore.time.serverTimeOffsetMs,
             datadogContext = datadogContext,
@@ -114,19 +126,31 @@ internal class RumSessionScopeStartupManagerImpl(
             durationNs = event.info.durationNs,
             appLaunchMetric = VitalAppLaunchEvent.AppLaunchMetric.TTID,
             scenario = event.info.scenario,
-            profilingStatus = datadogContext.getProfilingStatus()
+            profilingStatus = profilingStatus,
+            // The quota reason is only meaningful when profiling is STOPPED; a running profiler
+            // must not carry a denial reason (mirrors the Error/LongTask path in RumViewScope).
+            profilingQuotaReason = if (profilingStatus == VitalAppLaunchEvent.ProfilingStatus.STOPPED) {
+                datadogContext.resolveProfilingQuotaReason(rumContext.sessionId)
+            } else {
+                null
+            }
         )
 
         sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
-            ProfilerStopEvent.TTID(
-                rumContext = TTIDRumContext(
+            // startMs is different for different scenarios. For Cold it will be process start, for Warm
+            // it will be Activity.onCreate. But we have application launch profiling working for cold starts only anyway.
+            ProfilerEvent.RumVitalEvent(
+                rumContext = ProfilingRumContext(
                     applicationId = rumContext.applicationId,
                     sessionId = rumContext.sessionId,
                     viewId = rumContext.viewId,
-                    viewName = rumContext.viewName,
-                    vitalId = ttidEvent.vital.id,
-                    vitalName = ttidEvent.vital.name
-                )
+                    viewName = rumContext.viewName
+                ),
+                id = ttidEvent.vital.id,
+                name = ttidEvent.vital.name,
+                type = ProfilerEvent.RumVitalEvent.Type.TTID,
+                startMs = ttidEvent.date,
+                durationNs = event.info.durationNs
             )
         )
 
@@ -134,7 +158,8 @@ internal class RumSessionScopeStartupManagerImpl(
             datadogContext = datadogContext,
             writeScope = writeScope,
             writer = writer,
-            ttidEvent = ttidEvent
+            ttidEvent = ttidEvent,
+            scenario = event.info.scenario
         )
 
         if (ttfdReportedForScenario) {
@@ -230,24 +255,50 @@ internal class RumSessionScopeStartupManagerImpl(
                 },
                 throwable = null,
                 onlyOnce = false,
-                additionalProperties = null
+                additionalProperties = getTelemetryAttributes(durationNs, scenario)
             )
             return
         }
 
-        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
-            rumVitalAppLaunchEventHelper.newVitalAppLaunchEvent(
-                timestampMs = scenario.initialTime.timestamp + sdkCore.time.serverTimeOffsetMs,
-                datadogContext = datadogContext,
-                eventAttributes = emptyMap(),
-                customAttributes = customAttributes,
-                hasReplay = null,
-                rumContext = rumContext,
-                durationNs = durationNs,
-                appLaunchMetric = VitalAppLaunchEvent.AppLaunchMetric.TTFD,
-                scenario = scenario,
-                profilingStatus = null
+        val profilingStatus = datadogContext.getProfilingStatus(rumContext.sessionId)
+        val ttfdEvent = rumVitalAppLaunchEventHelper.newVitalAppLaunchEvent(
+            timestampMs = scenario.initialTime.timestamp + sdkCore.time.serverTimeOffsetMs,
+            datadogContext = datadogContext,
+            eventAttributes = emptyMap(),
+            customAttributes = customAttributes,
+            hasReplay = null,
+            rumContext = rumContext,
+            durationNs = durationNs,
+            appLaunchMetric = VitalAppLaunchEvent.AppLaunchMetric.TTFD,
+            scenario = scenario,
+            profilingStatus = profilingStatus,
+            // The quota reason is only meaningful when profiling is STOPPED; a running profiler
+            // must not carry a denial reason (mirrors the TTID and Error/LongTask paths).
+            profilingQuotaReason = if (profilingStatus == VitalAppLaunchEvent.ProfilingStatus.STOPPED) {
+                datadogContext.resolveProfilingQuotaReason(rumContext.sessionId)
+            } else {
+                null
+            }
+        )
+
+        sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
+            ProfilerEvent.RumVitalEvent(
+                rumContext = ProfilingRumContext(
+                    applicationId = rumContext.applicationId,
+                    sessionId = rumContext.sessionId,
+                    viewId = rumContext.viewId,
+                    viewName = rumContext.viewName
+                ),
+                id = ttfdEvent.vital.id,
+                name = ttfdEvent.vital.name,
+                type = ProfilerEvent.RumVitalEvent.Type.TTFD,
+                startMs = ttfdEvent.date,
+                durationNs = durationNs
             )
+        )
+
+        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
+            ttfdEvent
         }.submit()
     }
 
@@ -255,7 +306,8 @@ internal class RumSessionScopeStartupManagerImpl(
         datadogContext: DatadogContext,
         writeScope: EventWriteScope,
         writer: DataWriter<Any>,
-        ttidEvent: VitalAppLaunchEvent
+        ttidEvent: VitalAppLaunchEvent,
+        scenario: RumStartupScenario
     ) {
         val durationNs = ttidEvent.vital.duration.toLong()
 
@@ -268,7 +320,7 @@ internal class RumSessionScopeStartupManagerImpl(
                 },
                 throwable = null,
                 onlyOnce = false,
-                additionalProperties = null
+                additionalProperties = getTelemetryAttributes(durationNs, scenario)
             )
             return
         }
@@ -278,15 +330,25 @@ internal class RumSessionScopeStartupManagerImpl(
         }.submit()
     }
 
-    private fun DatadogContext.getProfilingStatus(): VitalAppLaunchEvent.ProfilingStatus? {
-        val isProfilerRunning = featuresContext[Feature.PROFILING_FEATURE_NAME]
-            ?.get(PROFILER_IS_RUNNING)
-        return if (isProfilerRunning == true) VitalAppLaunchEvent.ProfilingStatus.RUNNING else null
+    private fun getTelemetryAttributes(
+        durationNs: Long,
+        scenario: RumStartupScenario
+    ): Map<String, Any?> {
+        return mapOf(
+            RumAppStartupTelemetryReporterImpl.KEY_DURATION_NS to durationNs,
+            RumAppStartupTelemetryReporterImpl.KEY_SCENARIO to scenario.name
+        )
+    }
+
+    private fun DatadogContext.getProfilingStatus(
+        currentSessionId: String
+    ): VitalAppLaunchEvent.ProfilingStatus? = when {
+        isProfilerRunning() -> VitalAppLaunchEvent.ProfilingStatus.RUNNING
+        resolveProfilingQuotaReason(currentSessionId) != null -> VitalAppLaunchEvent.ProfilingStatus.STOPPED
+        else -> null
     }
 
     companion object {
-        private const val PROFILER_IS_RUNNING = "profiler_is_running"
-
         internal const val REPORT_APP_FULLY_DISPLAYED_CALLED_TOO_EARLY_MESSAGE =
             "RumMonitor.reportAppFullyDisplayed was called before the application launch was detected, ignoring it."
 

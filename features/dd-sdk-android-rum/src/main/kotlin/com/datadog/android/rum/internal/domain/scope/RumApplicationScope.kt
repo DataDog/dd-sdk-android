@@ -68,7 +68,7 @@ internal class RumApplicationScope(
 
     private var rumContext = RumContext(applicationId = applicationId)
 
-    internal val childScopes = mutableListOf<RumSessionScope>(
+    internal val childScopes = mutableListOf(
         RumSessionScope(
             parentScope = this,
             sdkCore = sdkCore,
@@ -226,7 +226,8 @@ internal class RumApplicationScope(
             lastActiveViewInfo?.let {
                 val startViewEvent = RumRawEvent.StartView(
                     key = it.key,
-                    attributes = it.attributes
+                    attributes = it.attributes,
+                    eventTime = Time.now(sdkCore.timeProvider)
                 )
                 newSession.handleEvent(startViewEvent, datadogContext, writeScope, writer)
             }
@@ -267,7 +268,7 @@ internal class RumApplicationScope(
             )
             val startupTime = eventTime.nanoTime - processStartTimeNs
             val appStartedEvent =
-                RumRawEvent.ApplicationStarted(applicationLaunchViewTime, startupTime)
+                RumRawEvent.ApplicationStarted(startupTime, applicationLaunchViewTime)
             delegateToChildren(appStartedEvent, datadogContext, writeScope, writer)
             isAppStartedEventSent = true
         }

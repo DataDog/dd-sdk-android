@@ -11,7 +11,6 @@ import androidx.annotation.UiThread
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.asTimeNs
 import com.datadog.android.rum.startup.AppStartupActivityPredicate
 
 internal interface RumAppStartupDetector {
@@ -38,8 +37,8 @@ internal interface RumAppStartupDetector {
             return RumAppStartupDetectorImpl(
                 application = application,
                 buildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
-                appStartupTimeProvider = { sdkCore.appStartTimeNs.asTimeNs() },
-                timeProvider = { Time() },
+                appStartupTime = { Time.fromNanoTime(sdkCore.appStartTimeNs, sdkCore.timeProvider) },
+                currentTime = { Time.now(sdkCore.timeProvider) },
                 listener = listener,
                 appStartupActivityPredicate = appStartupActivityPredicate,
                 rumFirstDrawTimeReporter = rumFirstDrawTimeReporter

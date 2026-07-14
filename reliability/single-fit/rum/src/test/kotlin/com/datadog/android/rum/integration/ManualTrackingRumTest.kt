@@ -191,6 +191,7 @@ class ManualTrackingRumTest {
 
         // When
         rumMonitor.startView(viewKey, viewName)
+        stubSdkCore.advanceTimeBy(100)
         rumMonitor.addFeatureFlagEvaluation(ffKey, ffValue)
 
         // Then
@@ -217,7 +218,7 @@ class ManualTrackingRumTest {
                 dd { hasDocumentVersion(3) }
                 view {
                     hasUrl(viewKey)
-                    hasTimeSpentNotNull()
+                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(100))
                     hasNoAction()
                     hasNoError()
                     hasNoResource()
@@ -258,7 +259,9 @@ class ManualTrackingRumTest {
 
         // When
         rumMonitor.startView(viewKey, viewName)
+        stubSdkCore.advanceTimeBy(100)
         rumMonitor.addAction(RumActionType.CUSTOM, actionName)
+        stubSdkCore.advanceTimeBy(100)
         rumMonitor.stopView(viewKey)
 
         // Then
@@ -295,7 +298,7 @@ class ManualTrackingRumTest {
                 dd { hasDocumentVersion(3) }
                 view {
                     hasUrl(viewKey)
-                    hasTimeSpentNotNull()
+                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(100))
                     action { hasCount(1) }
                     hasNoError()
                     hasNoResource()
@@ -320,7 +323,7 @@ class ManualTrackingRumTest {
                 dd { hasDocumentVersion(4) }
                 view {
                     hasUrl(viewKey)
-                    hasTimeSpentNotNull()
+                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
                     hasIsActive(false)
                     hasNoAction()
                     hasNoError()
@@ -352,7 +355,9 @@ class ManualTrackingRumTest {
         rumMonitor.startView(viewKey, viewName)
         // Each CUSTOM action must be written immediately. In particular the last action
         // must not be lost just because no further event triggers an inactivity timeout.
+        stubSdkCore.advanceTimeBy(100)
         rumMonitor.addAction(RumActionType.CUSTOM, actionName1)
+        stubSdkCore.advanceTimeBy(100)
         rumMonitor.addAction(RumActionType.CUSTOM, actionName2)
 
         // Then
@@ -392,7 +397,7 @@ class ManualTrackingRumTest {
                 dd { hasDocumentVersion(3) }
                 view {
                     hasUrl(viewKey)
-                    hasTimeSpentNotNull()
+                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(100))
                     action { hasCount(1) }
                     hasNoError()
                     hasNoResource()
@@ -428,7 +433,7 @@ class ManualTrackingRumTest {
                 dd { hasDocumentVersion(4) }
                 view {
                     hasUrl(viewKey)
-                    hasTimeSpentNotNull()
+                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
                     action { hasCount(2) }
                     hasNoError()
                     hasNoResource()
@@ -458,7 +463,9 @@ class ManualTrackingRumTest {
 
         // When
         rumMonitor.startView(viewKey, viewName)
+        stubSdkCore.advanceTimeBy(100)
         rumMonitor.addError(errorMessage, errorSource, exception)
+        stubSdkCore.advanceTimeBy(100)
         rumMonitor.stopView(viewKey)
 
         // Then
@@ -495,7 +502,7 @@ class ManualTrackingRumTest {
                 dd { hasDocumentVersion(3) }
                 view {
                     hasUrl(viewKey)
-                    hasTimeSpentNotNull()
+                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(100))
                     error { hasCount(1) }
                     hasNoAction()
                     hasNoResource()
@@ -519,7 +526,7 @@ class ManualTrackingRumTest {
                 dd { hasDocumentVersion(4) }
                 view {
                     hasUrl(viewKey)
-                    hasTimeSpentNotNull()
+                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
                     hasIsActive(false)
                     hasNoAction()
                     hasNoError()
@@ -554,6 +561,7 @@ class ManualTrackingRumTest {
         rumMonitor.startResource(resourceKey, RumResourceMethod.GET, resourceUrl.toString())
         stubSdkCore.advanceTimeBy(100)
         rumMonitor.stopResource(resourceKey, resourceStatus, resourceSize, RumResourceKind.NATIVE)
+        stubSdkCore.advanceTimeBy(100)
         rumMonitor.stopView(key)
 
         // Then
@@ -591,7 +599,7 @@ class ManualTrackingRumTest {
                 dd { hasDocumentVersion(3) }
                 view {
                     hasUrl(key)
-                    hasTimeSpentNotNull()
+                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(100))
                     hasNetworkSettledTimeNotNull()
                     resource { hasCount(1) }
                     hasNoAction()
@@ -615,7 +623,7 @@ class ManualTrackingRumTest {
                 dd { hasDocumentVersion(4) }
                 view {
                     hasUrl(key)
-                    hasTimeSpentNotNull()
+                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
                     hasIsActive(false)
                     hasNoAction()
                     hasNoError()
@@ -652,6 +660,7 @@ class ManualTrackingRumTest {
         rumMonitor.startResource(resourceId, RumResourceMethod.GET, resourceUrl.toString())
         stubSdkCore.advanceTimeBy(100)
         rumMonitor.stopResource(resourceId, resourceStatus, resourceSize, RumResourceKind.NATIVE)
+        stubSdkCore.advanceTimeBy(100)
         rumMonitor.stopView(key)
 
         // Then
@@ -689,7 +698,7 @@ class ManualTrackingRumTest {
                 dd { hasDocumentVersion(3) }
                 view {
                     hasUrl(key)
-                    hasTimeSpentNotNull()
+                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(100))
                     hasNetworkSettledTimeNotNull()
                     resource { hasCount(1) }
                     hasNoAction()
@@ -713,7 +722,7 @@ class ManualTrackingRumTest {
                 dd { hasDocumentVersion(4) }
                 view {
                     hasUrl(key)
-                    hasTimeSpentNotNull()
+                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(200))
                     hasIsActive(false)
                     hasNoAction()
                     hasNoError()
@@ -776,7 +785,7 @@ class ManualTrackingRumTest {
                 dd { hasDocumentVersion(3) }
                 view {
                     hasUrl(key)
-                    hasTimeSpentNotNull()
+                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(100))
                     hasLoadingTimeCloseTo(expectedViewLoadingTime, Offset.offset(TimeUnit.MILLISECONDS.toNanos(5)))
                     hasNoAction()
                     hasNoError()
@@ -894,7 +903,7 @@ class ManualTrackingRumTest {
                 dd { hasDocumentVersion(3) }
                 view {
                     hasUrl(key)
-                    hasTimeSpentNotNull()
+                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(50))
                     hasLoadingTimeCloseTo(expectedFirstViewLoadingTime, Offset.offset(TimeUnit.MILLISECONDS.toNanos(5)))
                     hasNoAction()
                     hasNoError()
@@ -918,7 +927,7 @@ class ManualTrackingRumTest {
                 dd { hasDocumentVersion(4) }
                 view {
                     hasUrl(key)
-                    hasTimeSpentNotNull()
+                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(100))
                     hasLoadingTimeCloseTo(
                         expectedSecondViewLoadingTime,
                         Offset.offset(TimeUnit.MILLISECONDS.toNanos(5))
@@ -981,7 +990,7 @@ class ManualTrackingRumTest {
                 dd { hasDocumentVersion(3) }
                 view {
                     hasUrl(key)
-                    hasTimeSpentNotNull()
+                    hasTimeSpent(TimeUnit.MILLISECONDS.toNanos(50))
                     hasLoadingTimeCloseTo(expectedViewLoadingTime, Offset.offset(TimeUnit.MILLISECONDS.toNanos(5)))
                     hasNoAction()
                     hasNoError()

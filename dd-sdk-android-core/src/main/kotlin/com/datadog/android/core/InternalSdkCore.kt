@@ -104,7 +104,11 @@ interface InternalSdkCore : FeatureSdkCore {
     fun deleteLastViewEvent()
 
     /**
-     * Writes timestamp of the last fatal ANR sent.
+     * Writes the timestamp of the last ANR RUM reported. Despite the "fatal" in the name,
+     * this same timestamp is also written for non-fatal ANRs (see
+     * `RumViewScope.persistLastNonFatalAnrSent`) so that the fatal-ANR pipeline, which
+     * replays historical `ApplicationExitInfo` ANRs on the next launch, can dedupe
+     * against an ANR the watchdog/profiling-trigger path already reported in-process.
      */
     @InternalApi
     @WorkerThread
