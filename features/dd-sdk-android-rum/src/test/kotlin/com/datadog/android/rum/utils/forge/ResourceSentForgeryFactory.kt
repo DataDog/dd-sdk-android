@@ -16,7 +16,8 @@ internal class ResourceSentForgeryFactory : ForgeryFactory<RumRawEvent.ResourceS
         return RumRawEvent.ResourceSent(
             viewId = forge.getForgery<UUID>().toString(),
             resourceId = forge.getForgery<UUID>().toString(),
-            resourceEndTimestampInNanos = forge.aPositiveLong()
+            resourceEndTimestampInNanos = forge.aPositiveLong(),
+            eventTime = forge.getForgery()
         )
     }
 }

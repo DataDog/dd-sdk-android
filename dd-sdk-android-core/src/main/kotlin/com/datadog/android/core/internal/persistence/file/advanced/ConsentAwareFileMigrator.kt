@@ -10,13 +10,11 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
-import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.privacy.TrackingConsent
 
 internal class ConsentAwareFileMigrator(
     private val fileMover: FileMover,
-    private val internalLogger: InternalLogger,
-    private val timeProvider: TimeProvider
+    private val internalLogger: InternalLogger
 ) : DataMigrator<TrackingConsent> {
 
     @WorkerThread
@@ -49,8 +47,7 @@ internal class ConsentAwareFileMigrator(
             WipeDataMigrationOperation(
                 previousFileOrchestrator.getRootDir(),
                 fileMover,
-                internalLogger,
-                timeProvider
+                internalLogger
             )
         }
 
@@ -59,8 +56,7 @@ internal class ConsentAwareFileMigrator(
             WipeDataMigrationOperation(
                 newFileOrchestrator.getRootDir(),
                 fileMover,
-                internalLogger,
-                timeProvider
+                internalLogger
             )
         }
 
@@ -69,8 +65,7 @@ internal class ConsentAwareFileMigrator(
                 previousFileOrchestrator.getRootDir(),
                 newFileOrchestrator.getRootDir(),
                 fileMover,
-                internalLogger,
-                timeProvider
+                internalLogger
             )
         }
 

@@ -198,12 +198,13 @@ if [[ $ANALYSIS == 1 ]]; then
   if [[ $COMPILE == 1 ]]; then
     # Assemble is required to get generated classes type resolution
     echo "------ Assemble Libraries & Build Detekt custom rules"
-    ./gradlew assembleLibrariesDebug printSdkDebugRuntimeClasspath :tools:detekt:jar
+    ./gradlew assembleLibrariesDebug :tools:detekt:jar
+    ./gradlew printSdkDebugRuntimeClasspath --no-parallel
     classpath=$(cat sdk_classpath)
 
     # TODO RUM-628 Switch to Java 17 bytecode
     echo "------ Detekt custom rules"
-    detekt --parallel --config detekt_custom_general.yml,detekt_custom_safe_calls.yml,detekt_custom_unsafe_calls.yml --plugins tools/detekt/build/libs/detekt.jar -cp "$classpath" --jvm-target 11 -ex "**/*.kts"
+    detekt --parallel --config detekt_custom_general.yml,detekt_custom_safe_calls_android.yml,detekt_custom_safe_calls_third_party.yml,detekt_custom_unsafe_calls.yml --plugins tools/detekt/build/libs/detekt.jar -cp "$classpath" --jvm-target 11 -ex "**/*.kts"
 
     echo "------ Detekt test pyramid rules"
     rm -f apiSurface.log apiUsage.log

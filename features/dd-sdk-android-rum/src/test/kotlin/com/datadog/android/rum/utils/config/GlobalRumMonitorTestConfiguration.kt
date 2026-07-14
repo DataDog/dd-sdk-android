@@ -7,7 +7,9 @@
 package com.datadog.android.rum.utils.config
 
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.heatmaps.CrossPlatformHeatmapActionData
 import com.datadog.android.rum.GlobalRumMonitor
+import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -18,9 +20,14 @@ import org.mockito.kotlin.whenever
 
 @Suppress("TestFunctionName")
 internal abstract class InternalAdvancedRumMonitor : AdvancedRumMonitor {
-    override fun _getInternal(): _RumInternalProxy? {
-        return null
-    }
+    override fun _getInternal(): _RumInternalProxy? = null
+    override fun addActionWithHeatmapAttributes(
+        type: RumActionType,
+        name: String,
+        crossPlatformHeatmapActionData: CrossPlatformHeatmapActionData,
+        attributes: Map<String, Any?>
+    ) = Unit
+    override fun getCurrentViewUrl(): String? = null
 }
 
 internal class GlobalRumMonitorTestConfiguration :

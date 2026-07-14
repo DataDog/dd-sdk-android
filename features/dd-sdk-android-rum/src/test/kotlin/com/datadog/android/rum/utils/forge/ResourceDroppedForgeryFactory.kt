@@ -15,7 +15,8 @@ internal class ResourceDroppedForgeryFactory : ForgeryFactory<RumRawEvent.Resour
     override fun getForgery(forge: Forge): RumRawEvent.ResourceDropped {
         return RumRawEvent.ResourceDropped(
             viewId = forge.getForgery<UUID>().toString(),
-            resourceId = forge.getForgery<UUID>().toString()
+            resourceId = forge.getForgery<UUID>().toString(),
+            eventTime = forge.getForgery()
         )
     }
 }

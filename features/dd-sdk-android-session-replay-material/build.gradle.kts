@@ -28,6 +28,7 @@ plugins {
 
     // Tests
     id("org.jetbrains.kotlinx.kover")
+    id("unitTest")
 
     // Internal Generation
     id("apiSurface")
@@ -42,14 +43,6 @@ android {
     }
 
     namespace = "com.datadog.android.sessionreplay.material"
-
-    libraryVariants.all {
-        packageLibraryProvider.configure {
-            from("src/main/resources") {
-                include("META-INF/**/verification.properties")
-            }
-        }
-    }
 }
 
 dependencies {
@@ -66,8 +59,6 @@ dependencies {
             )
         }
     }
-    testImplementation(libs.bundles.jUnit5)
-    testImplementation(libs.bundles.testTools)
 }
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)

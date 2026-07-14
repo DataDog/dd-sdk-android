@@ -8,10 +8,14 @@ package com.datadog.android.insights.internal
 
 import android.os.Handler
 import android.os.Looper
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureContextUpdateReceiver
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.insights.internal.domain.TimelineEvent
 import com.datadog.android.insights.internal.extensions.Mb
 import com.datadog.android.insights.internal.extensions.round
 import com.datadog.android.insights.internal.platform.Platform
+import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.collections.EvictingQueue
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
@@ -31,7 +35,7 @@ internal class DefaultInsightsCollector internal constructor(
     updateIntervalMs: Long,
     private val handler: Handler,
     private val platform: Platform
-) : InsightsCollector {
+) : InsightsCollector, FeatureContextUpdateReceiver {
 
     constructor(
         maxSize: Int = 50,
@@ -66,6 +70,8 @@ internal class DefaultInsightsCollector internal constructor(
     internal var slowFramesRate: Double = Double.NaN
         private set
     internal var cpuTicksPerSecond: Double = Double.NaN
+        private set
+    internal var isProfilingRunning: Boolean = false
         private set
 
     override var maxSize: Int = maxSize
@@ -130,6 +136,24 @@ internal class DefaultInsightsCollector internal constructor(
 
     override fun onSlowFrameRate(rate: Double?) = withListenersUpdate {
         slowFramesRate = rate.round(PRECISION)
+    }
+
+    override fun bindSdkCore(sdkCore: FeatureSdkCore) {
+        sdkCore.setContextUpdateReceiver(this)
+    }
+
+    override fun unbindSdkCore(sdkCore: FeatureSdkCore) {
+        sdkCore.removeContextUpdateReceiver(this)
+    }
+
+    override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
+        if (featureName == Feature.PROFILING_FEATURE_NAME) {
+            val running = context[FeatureContextKeys.PROFILER_IS_RUNNING] as? Boolean ?: false
+            handler.post {
+                isProfilingRunning = running
+                updatesListeners.forEach(InsightsUpdatesListener::onDataUpdated)
+            }
+        }
     }
 
     private fun clear() = withListenersUpdate {

@@ -28,6 +28,7 @@ plugins {
 
     // Tests
     id("org.jetbrains.kotlinx.kover")
+    id("unitTest")
 
     // Internal Generation
     id("apiSurface")
@@ -54,8 +55,6 @@ dependencies {
             )
         }
     }
-    testImplementation(libs.bundles.jUnit5)
-    testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttpMock)
 }
 

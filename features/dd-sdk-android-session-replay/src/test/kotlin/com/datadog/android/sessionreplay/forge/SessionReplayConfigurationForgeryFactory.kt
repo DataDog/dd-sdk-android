@@ -35,7 +35,8 @@ class SessionReplayConfigurationForgeryFactory : ForgeryFactory<SessionReplayCon
             systemRequirementsConfiguration = SystemRequirementsConfiguration.Builder()
                 .setMinRAMSizeMb(forge.aSmallInt())
                 .setMinCPUCoreNumber(forge.aSmallInt())
-                .build()
+                .build(),
+            heatmapsEnabled = forge.aBool()
         )
     }
 }

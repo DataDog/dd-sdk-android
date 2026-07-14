@@ -113,16 +113,23 @@ internal constructor(
         /**
          * Sets the list of first party hosts.
          * Requests made to a URL with any one of these hosts (or any subdomain) will:
-         * - be considered a first party resource and categorised as such in your RUM dashboard;
+         * - be considered a first party resource and categorized as such in your RUM dashboard;
          * - be wrapped in a Span and have DataDog trace id injected to get a full flame-graph in
          * APM in case of OkHttp instrumentation usage.
+         *
+         * Each entry may be a plain host (e.g. `example.com`, which also matches any subdomain such
+         * as `api.example.com`) or a wildcard pattern (e.g. `*.example.com` or
+         * `preview-*.example.com`). A wildcard pattern may contain a single `*`, only the characters
+         * `a-z`, `0-9`, `.`, `-` and `*`, and the `*` may only match a subdomain of a registrable
+         * domain: `*.example.com` matches `api.example.com` but not `example.com` (add the plain host
+         * to also match the apex). The `*` must be the last
+         * character of a subdomain label, so `preview-*.example.com` is valid but
+         * `*-preview.example.com` is not. Overly broad patterns such as `*`, `*.com` or
+         * `*example.com` are dropped and logged.
          * @param hosts a list of all the hosts that you own.
          */
         fun setFirstPartyHosts(hosts: List<String>): Builder {
-            val sanitizedHosts = hostsSanitizer.sanitizeHosts(
-                hosts,
-                NETWORK_REQUESTS_TRACKING_FEATURE_NAME
-            )
+            val sanitizedHosts = hostsSanitizer.sanitizeHosts(hosts, NETWORK_REQUESTS_TRACKING_FEATURE_NAME)
             coreConfig = coreConfig.copy(
                 firstPartyHostsWithHeaderTypes = sanitizedHosts.associateWith {
                     setOf(
@@ -138,9 +145,16 @@ internal constructor(
          * Sets the list of first party hosts and specifies the type of HTTP headers used for
          * distributed tracing.
          * Requests made to a URL with any one of these hosts (or any subdomain) will:
-         * - be considered a first party resource and categorised as such in your RUM dashboard;
+         * - be considered a first party resource and categorized as such in your RUM dashboard;
          * - be wrapped in a Span and have trace id of the specified types injected to get a
          * full flame-graph in APM. Multiple header types are supported for each host.
+         *
+         * Each key may be a plain host (e.g. `example.com`, which also matches any subdomain such as
+         * `api.example.com`) or a wildcard pattern (e.g. `*.example.com` or `preview-*.example.com`).
+         * A wildcard pattern may contain a single `*`, only the characters `a-z`, `0-9`, `.`, `-` and
+         * `*`, and the `*` may only match a subdomain of a registrable domain: `*.example.com`
+         * matches `api.example.com` but not `example.com` (add the plain host to also match the
+         * apex). Overly broad patterns such as `*`, `*.com` or `*example.com` are dropped and logged.
          * @param hostsWithHeaderType a list of all the hosts that you own and the tracing headers
          * to be used for each host.
          * See [DatadogInterceptor]
