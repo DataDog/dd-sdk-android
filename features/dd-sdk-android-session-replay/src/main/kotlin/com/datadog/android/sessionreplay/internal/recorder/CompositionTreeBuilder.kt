@@ -9,6 +9,9 @@ package com.datadog.android.sessionreplay.internal.recorder
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.WebView
+import android.widget.FrameLayout
+import android.widget.LinearLayout
+import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
@@ -25,6 +28,7 @@ import com.datadog.android.sessionreplay.recorder.NoOpInteropViewCallback
 import com.datadog.android.sessionreplay.recorder.PixelCaptureCallback
 import com.datadog.android.sessionreplay.recorder.SystemInformation
 import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
+import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
@@ -48,6 +52,21 @@ import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
  *   `containsHardwareSurface` doc). Always treated as a leaf regardless of [ViewGroup.getChildCount]
  *   for the same reason as [isComposeHostView] below — WebView is itself a [ViewGroup], but its
  *   real content isn't rendered through any child the traversal could recurse into.
+ * - A leaf whose exact runtime class is [isSimpleContainerView] — [View] itself, or one of a
+ *   short allowlist of stock layout classes ([FrameLayout]/[LinearLayout]/[RelativeLayout]) —
+ *   tries [viewWireframeMapper] before a pixel capture: none of these override [View.onDraw] to
+ *   paint anything beyond their own background, so *when that background resolves to a shape*
+ *   (a plain color, or another [android.graphics.drawable.Drawable] reducible to one), it already
+ *   IS the view's entire visual content — capturing a bitmap for it would only reproduce the same
+ *   flat color at real [View.draw] cost instead of for free. Only used when non-empty, though: an
+ *   image or vector background can't be reduced to a color (see [mapLeafView]'s doc), and
+ *   accepting an empty result there at face value would silently blank out real content a pixel
+ *   capture could have shown correctly — so this only ever *skips* a pixel capture, never
+ *   *replaces* one with nothing. Deliberately an exact class check
+ *   (`view.javaClass == FrameLayout::class.java`, not `is FrameLayout`): a subclass of any of
+ *   these could override `onDraw` to paint real custom content of its own — silently swapping
+ *   that content for just its background would be a correctness regression, not an optimization,
+ *   so only the exact stock classes qualify.
  * - Every other leaf view — including Jetpack Compose content (`ComposeView`/`AndroidComposeView`
  *   are forced onto this leaf path by [isComposeHostView] regardless of their child count — they
  *   always carry an internal `AndroidViewsHandler` child even when nothing is drawn through it,
@@ -74,6 +93,7 @@ internal class CompositionTreeBuilder(
     private val viewBoundsResolver: ViewBoundsResolver,
     private val textViewMapper: TextViewMapper<TextView>,
     private val webViewMapper: WebViewWireframeMapper,
+    private val viewWireframeMapper: WireframeMapper<View>,
     private val pixelCaptureFallbackMapper: PixelCaptureFallbackMapper,
     private val touchPrivacyManager: TouchPrivacyManager,
     private val imageWireframeHelper: ImageWireframeHelper,
@@ -263,7 +283,19 @@ internal class CompositionTreeBuilder(
     /**
      * [TextView]s go through [textViewMapper] so text stays crisp; [WebView]s go through
      * [webViewMapper] since a pixel capture can't see their content (see the class doc);
-     * everything else is pixel-captured.
+     * [isSimpleContainerView] leaves try [viewWireframeMapper] first — but only *use* that result
+     * if it actually resolved a shape. [viewWireframeMapper] returns an empty list for a
+     * background it can't reduce to a color (notably [android.graphics.drawable.BitmapDrawable]
+     * and [android.graphics.drawable.VectorDrawable] — see
+     * [com.datadog.android.sessionreplay.internal.recorder.mapper.AndroidMDrawableToColorMapper])
+     * or for no background at all — accepting that empty result at face value would silently
+     * blank out a real image where a pixel capture could have shown it correctly, trading a
+     * genuine correctness regression for an efficiency win that only applies to *some* leaves in
+     * this allowlist. Falling through to [pixelCaptureFallbackMapper] on empty costs one
+     * discarded, side-effect-free call to [viewWireframeMapper] (it never touches
+     * [asyncJobStatusCallback]) for the leaves where it doesn't pan out, in exchange for never
+     * being worse than pixel-capturing everything the way this pipeline did before. Everything
+     * else falls straight to [pixelCaptureFallbackMapper].
      */
     private fun mapLeafView(
         view: View,
@@ -271,11 +303,27 @@ internal class CompositionTreeBuilder(
         asyncJobStatusCallback: AsyncJobStatusCallback,
         internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
-        return when (view) {
-            is TextView -> textViewMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
-            is WebView -> webViewMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
-            else -> pixelCaptureFallbackMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
+        if (view is TextView) {
+            return textViewMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
         }
+        if (view is WebView) {
+            return webViewMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
+        }
+        if (isSimpleContainerView(view)) {
+            val shapeWireframes = viewWireframeMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
+            if (shapeWireframes.isNotEmpty()) return shapeWireframes
+        }
+        return pixelCaptureFallbackMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
+    }
+
+    /**
+     * True for [View] itself and a short allowlist of stock layout classes that never override
+     * [View.onDraw] to paint anything beyond their own background — see the class doc for why
+     * this must be an exact-class check, not `is`, and why a false positive here would be a
+     * correctness regression rather than just a missed optimization.
+     */
+    private fun isSimpleContainerView(view: View): Boolean {
+        return SIMPLE_CONTAINER_CLASSES.contains(view.javaClass)
     }
 
     private fun opacityModifiers(alpha: Float): List<MobileSegment.CompositionLayerModifier>? {
@@ -313,5 +361,13 @@ internal class CompositionTreeBuilder(
          * JSON/JS-based player downstream.
          */
         internal const val SYNTHETIC_ROOT_LAYER_ID = Int.MAX_VALUE.toLong() + 1L
+
+        /** See [isSimpleContainerView] — kept short and explicit rather than reflection-based. */
+        private val SIMPLE_CONTAINER_CLASSES: Set<Class<*>> = setOf(
+            View::class.java,
+            FrameLayout::class.java,
+            LinearLayout::class.java,
+            RelativeLayout::class.java
+        )
     }
 }

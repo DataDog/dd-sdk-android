@@ -234,6 +234,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                         viewBoundsResolver = viewBoundsResolver,
                         textViewMapper = textMapper,
                         webViewMapper = webMapper,
+                        viewWireframeMapper = defaultVWM,
                         pixelCaptureFallbackMapper = fallbackMapper,
                         touchPrivacyManager = touchPrivacyManager,
                         imageWireframeHelper = imageWireframeHelper,

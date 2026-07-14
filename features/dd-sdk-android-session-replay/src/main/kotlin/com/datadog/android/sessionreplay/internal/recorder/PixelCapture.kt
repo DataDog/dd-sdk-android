@@ -459,19 +459,23 @@ internal class PixelCapture(
      * from any overlying content. Returns null if the region can't be captured — the caller
      * leaves the wireframe unresolved (`isEmpty=true`) rather than surfacing a broken image.
      *
-     * Uses a software [Canvas] via [View.draw]. Two safeguards, layered:
+     * Uses a software [Canvas] via [View.draw] — specifically [HardwareBitmapConvertingCanvas],
+     * which converts any `Bitmap.Config.HARDWARE` bitmap (the default decode format for Coil,
+     * Glide, and similar image loaders on API 26+) to a CPU-readable copy as it's drawn, instead
+     * of a plain [Canvas]'s `IllegalArgumentException`. That still isn't exhaustive — content
+     * promoted onto its own cached hardware layer (a `RenderNode` played back as a single opaque
+     * call, bypassing per-bitmap interception) can still throw — so this stays layered:
      * - [containsHardwareSurface] skips capture entirely — before even attempting it — when
      *   [sourceView] hosts a [SurfaceView]/[TextureView]. Those composite through a path
      *   [View.draw] never touches at all; drawing over one throws no exception, it just
      *   silently produces blank content for that region.
-     * - [View.draw] also cannot render content backed by a `Bitmap.Config.HARDWARE` bitmap —
-     *   the default decode format for Coil, Glide, and similar image loaders on API 26+ —
-     *   throwing `IllegalArgumentException` instead; caught below, tallied for the next health
-     *   summary, and treated as "can't capture."
+     * - Whatever [HardwareBitmapConvertingCanvas] doesn't catch still throws
+     *   `IllegalArgumentException`; caught below, tallied for the next health summary, and
+     *   treated as "can't capture" — the same fallback as before, just for a narrower set of cases.
      * - [isBitmapLikelyEmpty] is a best-effort check on whatever [View.draw] *did* produce, for
-     *   cases the type check doesn't catch (e.g. an unanticipated rendering path). It is not
-     *   comprehensive: an opaque background drawn by an ancestor behind a "hole" would not be
-     *   flagged, and a legitimately fully-transparent capture would be (incorrectly) discarded.
+     *   cases the type check doesn't catch (e.g. an unanticipated rendering path). It downscales
+     *   rather than sampling exact points specifically so real, sparse content (e.g. a padded,
+     *   mostly-transparent Compose layout) isn't misreported as empty — see that method's doc.
      */
     private fun captureViewRegion(sourceView: View, clipRect: Rect): Bitmap? {
         if (clipRect.width() <= 0 || clipRect.height() <= 0) return null
@@ -522,34 +526,51 @@ internal class PixelCapture(
     }
 
     /**
-     * Samples a sparse grid of pixels in [bitmap] and returns true if every sampled pixel is
-     * fully transparent — a signal that nothing was actually drawn into this region. Not
-     * comprehensive (see [captureViewRegion] doc for the known gaps); intended as a cheap
-     * secondary safety net alongside [containsHardwareSurface], not a replacement for it.
+     * Downscales [bitmap] to an [EMPTY_CHECK_GRID_SIZE]x[EMPTY_CHECK_GRID_SIZE] thumbnail and
+     * returns true if every resulting pixel is fully transparent — a signal that nothing was
+     * actually drawn into this region. Not comprehensive (see [captureViewRegion] doc for the
+     * known gaps); intended as a cheap secondary safety net alongside [containsHardwareSurface],
+     * not a replacement for it.
+     *
+     * Deliberately a *downscale* (bilinear-filtered, averaging every source pixel into the
+     * thumbnail) rather than sampling a sparse grid of exact coordinates: real UI content is
+     * routinely mostly transparent background with padding/gaps between elements (a Compose
+     * layout with horizontal padding, for instance, has fully-transparent margins along its
+     * entire left/right edges) — a fixed set of exact sample points can land entirely in such
+     * gaps and misreport abundant real content elsewhere as "empty." Downscaling instead
+     * aggregates every pixel, so any non-transparent content anywhere in the bitmap is reflected
+     * in at least one thumbnail pixel.
      */
     private fun isBitmapLikelyEmpty(bitmap: Bitmap): Boolean {
-        val samplesPerAxis = 8
-        val maxIndex = samplesPerAxis - 1
-        for (row in 0..maxIndex) {
-            for (col in 0..maxIndex) {
-                val x = (bitmap.width - 1) * col / maxIndex
-                val y = (bitmap.height - 1) * row / maxIndex
-                val alpha = (bitmap.getPixel(x, y) ushr 24) and 0xFF
-                if (alpha != 0) return false
+        val thumbnail = Bitmap.createScaledBitmap(
+            bitmap,
+            EMPTY_CHECK_GRID_SIZE,
+            EMPTY_CHECK_GRID_SIZE,
+            true
+        )
+        try {
+            for (y in 0 until EMPTY_CHECK_GRID_SIZE) {
+                for (x in 0 until EMPTY_CHECK_GRID_SIZE) {
+                    val alpha = (thumbnail.getPixel(x, y) ushr 24) and 0xFF
+                    if (alpha != 0) return false
+                }
             }
+            return true
+        } finally {
+            thumbnail.recycle()
         }
-        return true
     }
 
     /**
      * Renders [sourceView] in software clipped to [clipRect]. Captures only what [sourceView]
-     * draws — no overlying views, no composited overlays. Throws [IllegalArgumentException]
-     * if the view (or a descendant) holds a `Bitmap.Config.HARDWARE` bitmap — see
-     * [captureViewRegion] for how that is handled.
+     * draws — no overlying views, no composited overlays. Uses [HardwareBitmapConvertingCanvas]
+     * so most `Bitmap.Config.HARDWARE` content renders correctly instead of throwing; still can
+     * throw [IllegalArgumentException] for hardware bitmaps that Canvas doesn't catch — see
+     * [captureViewRegion] for how that remaining case is handled.
      */
     private fun captureViewRegionViaDraw(sourceView: View, clipRect: Rect): Bitmap {
         val bitmap = Bitmap.createBitmap(clipRect.width(), clipRect.height(), Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
+        val canvas = HardwareBitmapConvertingCanvas(bitmap)
         canvas.translate(-clipRect.left.toFloat(), -clipRect.top.toFloat())
         sourceView.draw(canvas)
         return bitmap
@@ -622,5 +643,8 @@ internal class PixelCapture(
          * staying on one screen (e.g. to test scrolling) would produce zero diagnostic output.
          */
         internal const val HEALTH_LOG_INTERVAL_MS = 5_000L
+
+        /** Thumbnail side length [isBitmapLikelyEmpty] downscales a capture to before checking it. */
+        internal const val EMPTY_CHECK_GRID_SIZE = 8
     }
 }

@@ -10,6 +10,7 @@ import android.content.Context
 import android.view.View
 import android.webkit.WebView
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.compose.ui.platform.AndroidComposeView
@@ -26,6 +27,7 @@ import com.datadog.android.sessionreplay.recorder.InteropViewCallback
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.SystemInformation
 import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
+import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
@@ -70,6 +72,9 @@ internal class CompositionTreeBuilderTest {
 
     @Mock
     lateinit var mockWebViewMapper: WebViewWireframeMapper
+
+    @Mock
+    lateinit var mockViewWireframeMapper: WireframeMapper<View>
 
     @Mock
     lateinit var mockPixelCaptureFallbackMapper: PixelCaptureFallbackMapper
@@ -117,6 +122,7 @@ internal class CompositionTreeBuilderTest {
             viewBoundsResolver = mockViewBoundsResolver,
             textViewMapper = mockTextViewMapper,
             webViewMapper = mockWebViewMapper,
+            viewWireframeMapper = mockViewWireframeMapper,
             pixelCaptureFallbackMapper = mockPixelCaptureFallbackMapper,
             touchPrivacyManager = mockTouchPrivacyManager,
             imageWireframeHelper = mockImageWireframeHelper,
@@ -163,9 +169,11 @@ internal class CompositionTreeBuilderTest {
 
     @Test
     fun `M pixel-capture the leaf W build() {leaf is not a TextView}`(forge: Forge) {
-        // Given — mirrors any non-TextView leaf, including Jetpack Compose content: this
-        // builder only knows about textViewMapper and pixelCaptureFallbackMapper, nothing else.
-        val mockChild = forge.aMockView<View>()
+        // Given — mirrors any leaf with no dedicated mapper and no simple background shortcut
+        // (see isSimpleContainerView), including Jetpack Compose content. ImageView specifically
+        // (not a plain View) — a bare View mock would now legitimately take the
+        // viewWireframeMapper shortcut instead, since it can never draw more than its background.
+        val mockChild = forge.aMockView<ImageView>()
         val fakeChildWireframes: List<MobileSegment.Wireframe> =
             forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.ImageWireframe>() }
         whenever(
@@ -237,6 +245,111 @@ internal class CompositionTreeBuilderTest {
     }
 
     @Test
+    fun `M map via viewWireframeMapper W build() {leaf is exactly a plain View}`(forge: Forge) {
+        // Given — a real instance, not a Mockito mock: a mock's javaClass is always a
+        // dynamically-generated subclass, which would never satisfy the exact-class check this
+        // behavior depends on (see the class doc for why that check must be exact, not `is`).
+        val plainView = View(mock<Context>())
+        val fakeChildWireframes: List<MobileSegment.Wireframe> =
+            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.ShapeWireframe>() }
+        whenever(
+            mockViewWireframeMapper.map(eq(plainView), any(), any(), eq(mockInternalLogger))
+        ).thenReturn(fakeChildWireframes)
+
+        val mockRoot = forge.aMockView<FrameLayout>()
+        whenever(mockRoot.childCount).thenReturn(1)
+        whenever(mockRoot.getChildAt(0)).thenReturn(plainView)
+
+        // When
+        val output = buildOutput(mockRoot)
+
+        // Then
+        assertThat(output.wireframes).containsExactlyElementsOf(fakeChildWireframes)
+        verifyNoInteractions(mockPixelCaptureFallbackMapper)
+    }
+
+    @Test
+    fun `M map via viewWireframeMapper W build() {leaf is exactly a FrameLayout with no children}`(
+        forge: Forge
+    ) {
+        // Given — childCount 0 is FrameLayout's real, default behavior here (nothing added to
+        // it), so this also exercises childReferences() routing it to the leaf path normally,
+        // not via a forced override the way WebView/Compose hosts need.
+        val plainFrameLayout = FrameLayout(mock<Context>())
+        val fakeChildWireframes: List<MobileSegment.Wireframe> =
+            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.ShapeWireframe>() }
+        whenever(
+            mockViewWireframeMapper.map(eq(plainFrameLayout), any(), any(), eq(mockInternalLogger))
+        ).thenReturn(fakeChildWireframes)
+
+        val mockRoot = forge.aMockView<FrameLayout>()
+        whenever(mockRoot.childCount).thenReturn(1)
+        whenever(mockRoot.getChildAt(0)).thenReturn(plainFrameLayout)
+
+        // When
+        val output = buildOutput(mockRoot)
+
+        // Then
+        assertThat(output.wireframes).containsExactlyElementsOf(fakeChildWireframes)
+        verifyNoInteractions(mockPixelCaptureFallbackMapper)
+    }
+
+    @Test
+    fun `M fall through to pixel capture W build() {viewWireframeMapper resolves nothing, image background}`(
+        forge: Forge
+    ) {
+        // Given — viewWireframeMapper returns an empty list for a background it can't reduce to
+        // a color (an image or vector drawable — see DrawableToColorMapper) or no background at
+        // all. Accepting that at face value would silently blank out real content a pixel
+        // capture could show correctly, so it must fall through instead of being trusted blindly.
+        val plainView = View(mock<Context>())
+        whenever(
+            mockViewWireframeMapper.map(eq(plainView), any(), any(), eq(mockInternalLogger))
+        ).thenReturn(emptyList())
+        val fakeChildWireframes: List<MobileSegment.Wireframe> =
+            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.ImageWireframe>() }
+        whenever(
+            mockPixelCaptureFallbackMapper.map(eq(plainView), any(), any(), eq(mockInternalLogger))
+        ).thenReturn(fakeChildWireframes)
+
+        val mockRoot = forge.aMockView<FrameLayout>()
+        whenever(mockRoot.childCount).thenReturn(1)
+        whenever(mockRoot.getChildAt(0)).thenReturn(plainView)
+
+        // When
+        val output = buildOutput(mockRoot)
+
+        // Then
+        assertThat(output.wireframes).containsExactlyElementsOf(fakeChildWireframes)
+    }
+
+    @Test
+    fun `M pixel-capture the leaf W build() {leaf is a View subclass, not exactly View}`(forge: Forge) {
+        // Given — a subclass of a "simple" class could override onDraw to paint real custom
+        // content of its own; this must NOT take the viewWireframeMapper shortcut, even though
+        // it "is" a View, or that content would be silently replaced with just its background.
+        val customView = CustomDrawingView(mock<Context>())
+        val fakeChildWireframes: List<MobileSegment.Wireframe> =
+            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.ImageWireframe>() }
+        whenever(
+            mockPixelCaptureFallbackMapper.map(eq(customView), any(), any(), eq(mockInternalLogger))
+        ).thenReturn(fakeChildWireframes)
+
+        val mockRoot = forge.aMockView<FrameLayout>()
+        whenever(mockRoot.childCount).thenReturn(1)
+        whenever(mockRoot.getChildAt(0)).thenReturn(customView)
+
+        // When
+        val output = buildOutput(mockRoot)
+
+        // Then
+        assertThat(output.wireframes).containsExactlyElementsOf(fakeChildWireframes)
+        verifyNoInteractions(mockViewWireframeMapper)
+    }
+
+    private class CustomDrawingView(context: Context) : View(context)
+
+    @Test
     fun `M build a nested layer W build() {native ViewGroup with children}`(forge: Forge) {
         // Given
         val mockChild = forge.aMockTextView()
@@ -302,8 +415,9 @@ internal class CompositionTreeBuilderTest {
     ) {
         // Given — capture the MappingContext build() constructs internally, via a leaf that
         // falls through to the pixel-capture fallback (same MappingContext instance flows
-        // unchanged through the whole recursive build).
-        val mockPlainChild = forge.aMockView<View>()
+        // unchanged through the whole recursive build). ImageView, not a plain View — see the
+        // other leaf-routing tests for why a bare View mock would take a different path now.
+        val mockPlainChild = forge.aMockView<ImageView>()
         val mockRoot = forge.aMockView<FrameLayout>()
         whenever(mockRoot.childCount).thenReturn(1)
         whenever(mockRoot.getChildAt(0)).thenReturn(mockPlainChild)
