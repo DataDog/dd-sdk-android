@@ -190,7 +190,7 @@ internal class StatsConcentrator(
     private fun flushBuckets(flushAll: Boolean) {
         val buckets = drainBuckets(flushAll)
         if (buckets.isNotEmpty()) {
-            statsWriter.write(buckets)
+            statsWriter.write(buckets, forced = flushAll)
         }
     }
 
