@@ -6,9 +6,7 @@
 
 package com.datadog.android.rum.assertj
 
-import com.datadog.android.rum.internal.timeseries.serializer.TimeseriesAttributes
 import com.datadog.android.rum.model.TimeseriesCpuEvent
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
@@ -17,8 +15,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import java.util.UUID
 
 internal class TimeseriesCpuEventAssert private constructor(
-    actual: TimeseriesCpuEvent,
-    private val json: JsonObject
+    actual: TimeseriesCpuEvent
 ) : AbstractObjectAssert<TimeseriesCpuEventAssert, TimeseriesCpuEvent>(
     actual,
     TimeseriesCpuEventAssert::class.java
@@ -62,7 +59,7 @@ internal class TimeseriesCpuEventAssert private constructor(
             .isEqualTo(expected)
     }
 
-    fun hasTimeseriesSchema(expected: TimeseriesCpuEvent.Schema): TimeseriesCpuEventAssert = apply {
+    fun hasTimeseriesSchema(expected: String): TimeseriesCpuEventAssert = apply {
         assertThat(actual.timeseries.schema)
             .overridingErrorMessage {
                 "Expected event to have timeseries.schema $expected but was ${actual.timeseries.schema}"
@@ -93,96 +90,27 @@ internal class TimeseriesCpuEventAssert private constructor(
     }
 
     fun hasTimeseriesDataCount(expected: Int): TimeseriesCpuEventAssert = apply {
-        assertThat(actual.timeseries.data)
+        assertThat(actual.timeseries.data.timestamps)
             .overridingErrorMessage {
-                "Expected event to have timeseries.data of size $expected but was ${actual.timeseries.data.size}"
+                "Expected event to have timeseries.data of size $expected " +
+                    "but was ${actual.timeseries.data.timestamps.size}"
             }
             .hasSize(expected)
     }
 
     fun hasCpuUsage(expected: Double, offset: Offset<Double>, position: Int = 0): TimeseriesCpuEventAssert = apply {
-        val cpuUsage = actual.timeseries.data.getOrNull(position)?.dataPoint?.cpuUsage?.toDouble()
+        val cpuUsage = actual.timeseries.data.values.cpuUsage.getOrNull(position)?.toDouble()
         assertThat(cpuUsage)
             .overridingErrorMessage { "Expected first data point cpu_usage to be close to $expected but was $cpuUsage" }
             .isNotNull()
             .isCloseTo(expected, offset)
     }
 
-    // region Delta Compression
-
-    // <DOGFOODING> Delta compression is not GA — these assertions cover the delta-scalar wire
-    // format used during dogfooding only. This section will be revisited or removed before GA.
-    // Use assertThatDelta(JsonObject) to enter this path.
-
-    fun hasDeltaPrecision(expected: Int): TimeseriesCpuEventAssert = apply {
-        val precision = json.timeseries
-            .getAsJsonObject(TimeseriesAttributes.KEY_DATA)
-            .get(TimeseriesAttributes.KEY_PRECISION)
-            .asInt
-
-        assertThat(precision)
-            .overridingErrorMessage { "Expected delta data to have precision $expected but was $precision" }
-            .isEqualTo(expected)
-    }
-
-    fun hasDeltaResolution(expected: String): TimeseriesCpuEventAssert = apply {
-        val resolution = json.timeseries
-            .getAsJsonObject(TimeseriesAttributes.KEY_DATA)
-            .get(TimeseriesAttributes.KEY_RESOLUTION)
-            .asString
-
-        assertThat(resolution)
-            .overridingErrorMessage { "Expected delta data to have resolution $expected but was $resolution" }
-            .isEqualTo(expected)
-    }
-
-    fun hasDeltaTsValues(vararg expected: Long): TimeseriesCpuEventAssert = apply {
-        val tsArray = json.timeseries
-            .getAsJsonObject(TimeseriesAttributes.KEY_DATA)
-            .get(TimeseriesAttributes.KEY_TS)
-            .asJsonArray
-
-        expected.forEachIndexed { i, v ->
-            assertThat(tsArray[i].asLong)
-                .overridingErrorMessage { "Expected delta ts[$i] to be $v but was ${tsArray[i].asLong}" }
-                .isEqualTo(v)
-        }
-    }
-
-    fun hasDeltaValueAt(index: Int, expected: Long): TimeseriesCpuEventAssert = apply {
-        val valueArray = json.timeseries
-            .getAsJsonObject(TimeseriesAttributes.KEY_DATA)
-            .get(TimeseriesAttributes.KEY_VALUE)
-            .asJsonArray
-
-        val actual = valueArray[index].asLong
-        assertThat(actual)
-            .overridingErrorMessage { "Expected delta value[$index] to be $expected but was $actual" }
-            .isEqualTo(expected)
-    }
-
-    // endregion
-
     companion object {
-        private val JsonObject.timeseries: JsonObject get() = getAsJsonObject(TimeseriesAttributes.KEY_TIMESERIES)
-
         internal fun assertThat(event: TimeseriesCpuEvent): TimeseriesCpuEventAssert =
-            TimeseriesCpuEventAssert(event, event.toJson() as JsonObject)
+            TimeseriesCpuEventAssert(event)
 
         internal fun assertThat(json: JsonObject): TimeseriesCpuEventAssert =
             assertThat(TimeseriesCpuEvent.fromJsonObject(json))
-
-        /**
-         * <DOGFOODING> Delta encoding replaces timeseries.data with a JsonObject in-place,
-         * making fromJsonObject fail. A patched copy (empty data array) is used to construct
-         * the typed model; the original json is retained for delta assertions.
-         */
-        internal fun assertThatDelta(json: JsonObject): TimeseriesCpuEventAssert {
-            val patchedJson = json.deepCopy().also {
-                it.getAsJsonObject(TimeseriesAttributes.KEY_TIMESERIES)
-                    .add(TimeseriesAttributes.KEY_DATA, JsonArray())
-            }
-            return TimeseriesCpuEventAssert(TimeseriesCpuEvent.fromJsonObject(patchedJson), json)
-        }
     }
 }

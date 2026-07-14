@@ -4961,16 +4961,16 @@ public final class com/datadog/android/rum/model/TimeseriesCpuEvent$Companion {
 
 public final class com/datadog/android/rum/model/TimeseriesCpuEvent$Data {
 	public static final field Companion Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Data$Companion;
-	public fun <init> (JLcom/datadog/android/rum/model/TimeseriesCpuEvent$DataPoint;)V
-	public final fun component1 ()J
-	public final fun component2 ()Lcom/datadog/android/rum/model/TimeseriesCpuEvent$DataPoint;
-	public final fun copy (JLcom/datadog/android/rum/model/TimeseriesCpuEvent$DataPoint;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Data;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Data;JLcom/datadog/android/rum/model/TimeseriesCpuEvent$DataPoint;ILjava/lang/Object;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Data;
+	public fun <init> (Ljava/util/List;Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Values;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component2 ()Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Values;
+	public final fun copy (Ljava/util/List;Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Values;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Data;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Data;Ljava/util/List;Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Values;ILjava/lang/Object;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Data;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Data;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Data;
-	public final fun getDataPoint ()Lcom/datadog/android/rum/model/TimeseriesCpuEvent$DataPoint;
-	public final fun getTimestamp ()J
+	public final fun getTimestamps ()Ljava/util/List;
+	public final fun getValues ()Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Values;
 	public fun hashCode ()I
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public fun toString ()Ljava/lang/String;
@@ -4979,26 +4979,6 @@ public final class com/datadog/android/rum/model/TimeseriesCpuEvent$Data {
 public final class com/datadog/android/rum/model/TimeseriesCpuEvent$Data$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Data;
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Data;
-}
-
-public final class com/datadog/android/rum/model/TimeseriesCpuEvent$DataPoint {
-	public static final field Companion Lcom/datadog/android/rum/model/TimeseriesCpuEvent$DataPoint$Companion;
-	public fun <init> (Ljava/lang/Number;)V
-	public final fun component1 ()Ljava/lang/Number;
-	public final fun copy (Ljava/lang/Number;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$DataPoint;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/TimeseriesCpuEvent$DataPoint;Ljava/lang/Number;ILjava/lang/Object;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$DataPoint;
-	public fun equals (Ljava/lang/Object;)Z
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$DataPoint;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$DataPoint;
-	public final fun getCpuUsage ()Ljava/lang/Number;
-	public fun hashCode ()I
-	public final fun toJson ()Lcom/google/gson/JsonElement;
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/rum/model/TimeseriesCpuEvent$DataPoint$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$DataPoint;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$DataPoint;
 }
 
 public final class com/datadog/android/rum/model/TimeseriesCpuEvent$Dd {
@@ -5013,20 +4993,6 @@ public final class com/datadog/android/rum/model/TimeseriesCpuEvent$Dd {
 public final class com/datadog/android/rum/model/TimeseriesCpuEvent$Dd$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Dd;
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Dd;
-}
-
-public final class com/datadog/android/rum/model/TimeseriesCpuEvent$Schema : java/lang/Enum {
-	public static final field Companion Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Schema$Companion;
-	public static final field DELTA_SCALAR Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Schema;
-	public static final field OBJECT Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Schema;
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Schema;
-	public final fun toJson ()Lcom/google/gson/JsonElement;
-	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Schema;
-	public static fun values ()[Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Schema;
-}
-
-public final class com/datadog/android/rum/model/TimeseriesCpuEvent$Schema$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Schema;
 }
 
 public final class com/datadog/android/rum/model/TimeseriesCpuEvent$Session {
@@ -5075,22 +5041,21 @@ public final class com/datadog/android/rum/model/TimeseriesCpuEvent$Source$Compa
 
 public final class com/datadog/android/rum/model/TimeseriesCpuEvent$Timeseries {
 	public static final field Companion Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Timeseries$Companion;
-	public fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Schema;JJLjava/util/List;)V
+	public fun <init> (Ljava/lang/String;JJLcom/datadog/android/rum/model/TimeseriesCpuEvent$Data;)V
 	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Schema;
+	public final fun component2 ()J
 	public final fun component3 ()J
-	public final fun component4 ()J
-	public final fun component5 ()Ljava/util/List;
-	public final fun copy (Ljava/lang/String;Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Schema;JJLjava/util/List;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Timeseries;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Timeseries;Ljava/lang/String;Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Schema;JJLjava/util/List;ILjava/lang/Object;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Timeseries;
+	public final fun component4 ()Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Data;
+	public final fun copy (Ljava/lang/String;JJLcom/datadog/android/rum/model/TimeseriesCpuEvent$Data;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Timeseries;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Timeseries;Ljava/lang/String;JJLcom/datadog/android/rum/model/TimeseriesCpuEvent$Data;ILjava/lang/Object;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Timeseries;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Timeseries;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Timeseries;
-	public final fun getData ()Ljava/util/List;
+	public final fun getData ()Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Data;
 	public final fun getEnd ()J
 	public final fun getId ()Ljava/lang/String;
 	public final fun getName ()Ljava/lang/String;
-	public final fun getSchema ()Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Schema;
+	public final fun getSchema ()Ljava/lang/String;
 	public final fun getStart ()J
 	public fun hashCode ()I
 	public final fun toJson ()Lcom/google/gson/JsonElement;
@@ -5115,6 +5080,26 @@ public final class com/datadog/android/rum/model/TimeseriesCpuEvent$Type : java/
 
 public final class com/datadog/android/rum/model/TimeseriesCpuEvent$Type$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Type;
+}
+
+public final class com/datadog/android/rum/model/TimeseriesCpuEvent$Values {
+	public static final field Companion Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Values$Companion;
+	public fun <init> (Ljava/util/List;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Values;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Values;Ljava/util/List;ILjava/lang/Object;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Values;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Values;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Values;
+	public final fun getCpuUsage ()Ljava/util/List;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/model/TimeseriesCpuEvent$Values$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Values;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Values;
 }
 
 public final class com/datadog/android/rum/model/TimeseriesMemoryEvent {
@@ -5175,16 +5160,16 @@ public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$Companion
 
 public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$Data {
 	public static final field Companion Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Data$Companion;
-	public fun <init> (JLcom/datadog/android/rum/model/TimeseriesMemoryEvent$DataPoint;)V
-	public final fun component1 ()J
-	public final fun component2 ()Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$DataPoint;
-	public final fun copy (JLcom/datadog/android/rum/model/TimeseriesMemoryEvent$DataPoint;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Data;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Data;JLcom/datadog/android/rum/model/TimeseriesMemoryEvent$DataPoint;ILjava/lang/Object;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Data;
+	public fun <init> (Ljava/util/List;Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Values;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component2 ()Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Values;
+	public final fun copy (Ljava/util/List;Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Values;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Data;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Data;Ljava/util/List;Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Values;ILjava/lang/Object;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Data;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Data;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Data;
-	public final fun getDataPoint ()Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$DataPoint;
-	public final fun getTimestamp ()J
+	public final fun getTimestamps ()Ljava/util/List;
+	public final fun getValues ()Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Values;
 	public fun hashCode ()I
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public fun toString ()Ljava/lang/String;
@@ -5193,28 +5178,6 @@ public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$Data {
 public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$Data$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Data;
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Data;
-}
-
-public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$DataPoint {
-	public static final field Companion Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$DataPoint$Companion;
-	public fun <init> (Ljava/lang/Number;Ljava/lang/Number;)V
-	public final fun component1 ()Ljava/lang/Number;
-	public final fun component2 ()Ljava/lang/Number;
-	public final fun copy (Ljava/lang/Number;Ljava/lang/Number;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$DataPoint;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$DataPoint;Ljava/lang/Number;Ljava/lang/Number;ILjava/lang/Object;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$DataPoint;
-	public fun equals (Ljava/lang/Object;)Z
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$DataPoint;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$DataPoint;
-	public final fun getMemoryFootprint ()Ljava/lang/Number;
-	public final fun getMemoryPercent ()Ljava/lang/Number;
-	public fun hashCode ()I
-	public final fun toJson ()Lcom/google/gson/JsonElement;
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$DataPoint$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$DataPoint;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$DataPoint;
 }
 
 public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$Dd {
@@ -5229,20 +5192,6 @@ public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$Dd {
 public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$Dd$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Dd;
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Dd;
-}
-
-public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$Schema : java/lang/Enum {
-	public static final field Companion Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Schema$Companion;
-	public static final field DELTA_OBJECT Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Schema;
-	public static final field OBJECT Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Schema;
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Schema;
-	public final fun toJson ()Lcom/google/gson/JsonElement;
-	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Schema;
-	public static fun values ()[Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Schema;
-}
-
-public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$Schema$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Schema;
 }
 
 public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$Session {
@@ -5291,22 +5240,21 @@ public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$Source$Co
 
 public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$Timeseries {
 	public static final field Companion Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Timeseries$Companion;
-	public fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Schema;JJLjava/util/List;)V
+	public fun <init> (Ljava/lang/String;JJLcom/datadog/android/rum/model/TimeseriesMemoryEvent$Data;)V
 	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Schema;
+	public final fun component2 ()J
 	public final fun component3 ()J
-	public final fun component4 ()J
-	public final fun component5 ()Ljava/util/List;
-	public final fun copy (Ljava/lang/String;Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Schema;JJLjava/util/List;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Timeseries;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Timeseries;Ljava/lang/String;Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Schema;JJLjava/util/List;ILjava/lang/Object;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Timeseries;
+	public final fun component4 ()Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Data;
+	public final fun copy (Ljava/lang/String;JJLcom/datadog/android/rum/model/TimeseriesMemoryEvent$Data;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Timeseries;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Timeseries;Ljava/lang/String;JJLcom/datadog/android/rum/model/TimeseriesMemoryEvent$Data;ILjava/lang/Object;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Timeseries;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Timeseries;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Timeseries;
-	public final fun getData ()Ljava/util/List;
+	public final fun getData ()Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Data;
 	public final fun getEnd ()J
 	public final fun getId ()Ljava/lang/String;
 	public final fun getName ()Ljava/lang/String;
-	public final fun getSchema ()Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Schema;
+	public final fun getSchema ()Ljava/lang/String;
 	public final fun getStart ()J
 	public fun hashCode ()I
 	public final fun toJson ()Lcom/google/gson/JsonElement;
@@ -5331,6 +5279,28 @@ public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$Type : ja
 
 public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$Type$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Type;
+}
+
+public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$Values {
+	public static final field Companion Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Values$Companion;
+	public fun <init> (Ljava/util/List;Ljava/util/List;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component2 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;Ljava/util/List;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Values;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Values;Ljava/util/List;Ljava/util/List;ILjava/lang/Object;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Values;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Values;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Values;
+	public final fun getMemoryFootprint ()Ljava/util/List;
+	public final fun getMemoryPercent ()Ljava/util/List;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$Values$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Values;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Values;
 }
 
 public final class com/datadog/android/rum/model/ViewEvent {
@@ -8645,12 +8615,9 @@ public final class com/datadog/android/rum/timeseries/TimeseriesConfiguration {
 
 public final class com/datadog/android/rum/timeseries/TimeseriesConfiguration$Builder {
 	public fun <init> ()V
-	public final fun addAttribute (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration$Builder;
 	public final fun build ()Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration;
-	public final fun collectInBackground (Z)Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration$Builder;
 	public final fun setBufferSize (I)Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration$Builder;
 	public final fun setIntervalMs (J)Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration$Builder;
-	public final fun useDeltaCompression (Z)Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration$Builder;
 }
 
 public final class com/datadog/android/rum/timeseries/TimeseriesConfiguration$Companion {

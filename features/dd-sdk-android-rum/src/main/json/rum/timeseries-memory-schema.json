@@ -111,7 +111,7 @@
         "schema": {
           "type": "string",
           "description": "Wire-shape discriminator for the data field",
-          "enum": ["object", "delta-object"],
+          "const": "object-v2",
           "readOnly": true
         },
         "start": {
@@ -125,38 +125,45 @@
           "readOnly": true
         },
         "data": {
-          "type": "array",
-          "description": "Array of memory data points",
-          "items": {
-            "type": "object",
-            "description": "A single memory data point",
-            "required": ["timestamp", "data_point"],
-            "properties": {
-              "timestamp": {
+          "type": "object",
+          "description": "Flattened memory data points",
+          "required": ["timestamps", "values"],
+          "properties": {
+            "timestamps": {
+              "type": "array",
+              "description": "Sample timestamps in nanoseconds from epoch",
+              "items": {
                 "type": "integer",
-                "description": "Sample timestamp in nanoseconds from epoch",
                 "readOnly": true
               },
-              "data_point": {
-                "type": "object",
-                "description": "Memory measurements for this sample",
-                "required": ["memory_footprint", "memory_percent"],
-                "properties": {
-                  "memory_footprint": {
+              "readOnly": true
+            },
+            "values": {
+              "type": "object",
+              "description": "Memory measurements, aligned index-for-index with timestamps",
+              "required": ["memory_footprint", "memory_percent"],
+              "properties": {
+                "memory_footprint": {
+                  "type": "array",
+                  "description": "Physical memory footprint of the process in kilobytes",
+                  "items": {
                     "type": "number",
-                    "description": "Physical memory footprint of the process in bytes",
                     "readOnly": true
                   },
-                  "memory_percent": {
-                    "type": "number",
-                    "description": "Memory footprint as a percentage of total device RAM",
-                    "readOnly": true
-                  }
+                  "readOnly": true
                 },
-                "readOnly": true
-              }
-            },
-            "readOnly": true
+                "memory_percent": {
+                  "type": "array",
+                  "description": "Memory footprint as a percentage of total device RAM",
+                  "items": {
+                    "type": "number",
+                    "readOnly": true
+                  },
+                  "readOnly": true
+                }
+              },
+              "readOnly": true
+            }
           },
           "readOnly": true
         }

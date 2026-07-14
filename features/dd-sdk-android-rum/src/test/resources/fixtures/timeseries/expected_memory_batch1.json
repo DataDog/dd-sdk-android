@@ -8,16 +8,15 @@
   "timeseries": {
     "id": "00000000-0000-0000-0000-000000000000",
     "name": "memory",
-    "schema": "object",
+    "schema": "object-v2",
     "start": 1700000001000000000,
     "end": 1700000005000000000,
-    "count": 5,
-    "data": [
-      {"timestamp": 1700000001000000000, "data_point": {"memory_footprint": 31233300, "memory_percent": 3.12333}},
-      {"timestamp": 1700000002000000000, "data_point": {"memory_footprint": 31245500, "memory_percent": 3.12455}},
-      {"timestamp": 1700000003000000000, "data_point": {"memory_footprint": 31300800, "memory_percent": 3.13008}},
-      {"timestamp": 1700000004000000000, "data_point": {"memory_footprint": 31289100, "memory_percent": 3.12891}},
-      {"timestamp": 1700000005000000000, "data_point": {"memory_footprint": 31350000, "memory_percent": 3.135}}
-    ]
+    "data": {
+      "timestamps": [1700000001000000000, 1700000002000000000, 1700000003000000000, 1700000004000000000, 1700000005000000000],
+      "values": {
+        "memory_footprint": [31233.3, 31245.5, 31300.8, 31289.1, 31350.0],
+        "memory_percent": [3.12333, 3.12455, 3.13008, 3.12891, 3.135]
+      }
+    }
   }
 }

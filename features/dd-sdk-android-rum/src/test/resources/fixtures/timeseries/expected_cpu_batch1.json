@@ -8,16 +8,14 @@
   "timeseries": {
     "id": "00000000-0000-0000-0000-000000000000",
     "name": "cpu",
-    "schema": "object",
+    "schema": "object-v2",
     "start": 1700000001000000000,
     "end": 1700000005000000000,
-    "count": 5,
-    "data": [
-      {"timestamp": 1700000001000000000, "data_point": {"cpu_usage": 12.5}},
-      {"timestamp": 1700000002000000000, "data_point": {"cpu_usage": 14.2}},
-      {"timestamp": 1700000003000000000, "data_point": {"cpu_usage": 11.8}},
-      {"timestamp": 1700000004000000000, "data_point": {"cpu_usage": 16.3}},
-      {"timestamp": 1700000005000000000, "data_point": {"cpu_usage": 13.7}}
-    ]
+    "data": {
+      "timestamps": [1700000001000000000, 1700000002000000000, 1700000003000000000, 1700000004000000000, 1700000005000000000],
+      "values": {
+        "cpu_usage": [12.5, 14.2, 11.8, 16.3, 13.7]
+      }
+    }
   }
 }
