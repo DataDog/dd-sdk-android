@@ -34,7 +34,7 @@ internal interface RemoteConfigFetcher {
     /**
      * Releases any resources held by this fetcher (e.g. HTTP cache).
      */
-    fun stop()
+    fun release()
 
     /**
      * Evicts all entries from the HTTP cache, forcing a full network re-fetch on the next call.
@@ -91,7 +91,7 @@ internal class RemoteConfigNetworkFetcher(
         }
     }
 
-    override fun stop() {
+    override fun release() {
         try {
             httpCache.close()
         } catch (e: IOException) {
@@ -105,7 +105,7 @@ internal class RemoteConfigNetworkFetcher(
     }
 
     override fun evictCache() {
-        if (httpCache.isClosed) return
+        // DiskLruCache.evictAll() is internally synchronized — safe to call even after close()
         try {
             httpCache.evictAll()
         } catch (e: IOException) {

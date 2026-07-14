@@ -251,21 +251,21 @@ internal class RemoteConfigFetcherTest {
     // region stop()
 
     @Test
-    fun `M close httpCache W stop()`() {
+    fun `M close httpCache W release()`() {
         // When
-        testedFetcher.stop()
+        testedFetcher.release()
 
         // Then
         verify(mockHttpCache).close()
     }
 
     @Test
-    fun `M log warning W stop() { cache close throws IOException }`() {
+    fun `M log warning W release() { cache close throws IOException }`() {
         // Given
         whenever(mockHttpCache.close()).doThrow(IOException("disk error"))
 
         // When
-        testedFetcher.stop()
+        testedFetcher.release()
 
         // Then
         mockInternalLogger.verifyLog(

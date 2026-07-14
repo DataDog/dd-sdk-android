@@ -76,7 +76,7 @@ internal class RemoteConfigServiceImpl(
     override fun getCurrentConfig(): RemoteConfiguration? = cachedConfig
 
     override fun stop() {
-        fetcher.stop()
+        fetcher.release()
     }
 
     override fun syncWithRemote() {

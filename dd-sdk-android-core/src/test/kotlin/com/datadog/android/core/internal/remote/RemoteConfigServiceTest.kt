@@ -368,7 +368,7 @@ internal class RemoteConfigServiceTest {
     // region stop()
 
     @Test
-    fun `M stop fetcher W stop()`() {
+    fun `M release fetcher resources W stop()`() {
         // Given
         testedService = buildService()
 
@@ -376,7 +376,7 @@ internal class RemoteConfigServiceTest {
         testedService.stop()
 
         // Then
-        verify(mockFetcher).stop()
+        verify(mockFetcher).release()
     }
 
     // endregion
