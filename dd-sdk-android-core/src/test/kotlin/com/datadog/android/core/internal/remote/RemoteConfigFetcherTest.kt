@@ -12,6 +12,7 @@ import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import okhttp3.Cache
 import okhttp3.Call
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
@@ -24,14 +25,17 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.isA
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.io.File
 import java.io.IOException
 
 @Extensions(
@@ -51,6 +55,12 @@ internal class RemoteConfigFetcherTest {
     @Mock
     lateinit var mockCall: Call
 
+    @Mock
+    lateinit var mockHttpCache: Cache
+
+    @TempDir
+    lateinit var fakeStorageDir: File
+
     private lateinit var testedFetcher: RemoteConfigNetworkFetcher
 
     private val fakeUrl = "https://sdk-configuration.browser-intake-datadoghq.com/v1/fake-id.json"
@@ -58,8 +68,10 @@ internal class RemoteConfigFetcherTest {
     @BeforeEach
     fun `set up`() {
         testedFetcher = RemoteConfigNetworkFetcher(
-            callFactory = mockCallFactory,
-            internalLogger = mockInternalLogger
+            callFactoryProvider = { _ -> mockCallFactory },
+            internalLogger = mockInternalLogger,
+            storageDir = fakeStorageDir,
+            httpCache = mockHttpCache
         )
     }
 
@@ -113,6 +125,7 @@ internal class RemoteConfigFetcherTest {
             message = RemoteConfigNetworkFetcher.ERROR_EMPTY_BODY,
             additionalProperties = mapOf(RemoteConfigNetworkFetcher.ATTR_URL to fakeUrl.toHttpUrl().toString())
         )
+        verify(mockHttpCache).evictAll()
     }
 
     // endregion
@@ -230,6 +243,66 @@ internal class RemoteConfigFetcherTest {
             message = RemoteConfigNetworkFetcher.ERROR_NETWORK,
             throwableClass = RuntimeException::class.java,
             additionalProperties = mapOf(RemoteConfigNetworkFetcher.ATTR_URL to fakeUrl.toHttpUrl().toString())
+        )
+    }
+
+    // endregion
+
+    // region stop()
+
+    @Test
+    fun `M close httpCache W release()`() {
+        // When
+        testedFetcher.release()
+
+        // Then
+        verify(mockHttpCache).close()
+    }
+
+    @Test
+    fun `M log warning W release() { cache close throws IOException }`() {
+        // Given
+        whenever(mockHttpCache.close()).doThrow(IOException("disk error"))
+
+        // When
+        testedFetcher.release()
+
+        // Then
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.WARN,
+            target = InternalLogger.Target.MAINTAINER,
+            message = RemoteConfigNetworkFetcher.ERROR_CLOSE_CACHE,
+            throwableClass = IOException::class.java
+        )
+    }
+
+    // endregion
+
+    // region evictCache()
+
+    @Test
+    fun `M evict httpCache W evictCache()`() {
+        // When
+        testedFetcher.evictCache()
+
+        // Then
+        verify(mockHttpCache).evictAll()
+    }
+
+    @Test
+    fun `M log warning W evictCache() { evictAll throws IOException }`() {
+        // Given
+        whenever(mockHttpCache.evictAll()).doThrow(IOException("disk error"))
+
+        // When
+        testedFetcher.evictCache()
+
+        // Then
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.WARN,
+            target = InternalLogger.Target.MAINTAINER,
+            message = RemoteConfigNetworkFetcher.ERROR_EVICT_CACHE,
+            throwableClass = IOException::class.java
         )
     }
 

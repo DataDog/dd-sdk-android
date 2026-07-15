@@ -16,7 +16,6 @@ import com.datadog.android.core.internal.remote.model.RemoteConfiguration
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.internal.utils.allowThreadDiskReads
 import com.google.gson.JsonParseException
-import okhttp3.Call
 import okhttp3.HttpUrl
 import java.io.File
 import java.util.concurrent.Executor
@@ -28,12 +27,13 @@ import java.util.concurrent.Executor
 internal interface RemoteConfigService {
     fun syncWithRemote()
     fun getCurrentConfig(): RemoteConfiguration?
+    fun stop()
 
     fun interface Factory {
         fun create(
             remoteConfigurationId: String,
             remoteConfigurationEndpoint: HttpUrl,
-            callFactory: Call.Factory,
+            fetcher: RemoteConfigFetcher,
             storageDir: File,
             executor: Executor,
             internalLogger: InternalLogger
@@ -75,6 +75,10 @@ internal class RemoteConfigServiceImpl(
 
     override fun getCurrentConfig(): RemoteConfiguration? = cachedConfig
 
+    override fun stop() {
+        fetcher.release()
+    }
+
     override fun syncWithRemote() {
         executor.executeSafe(SYNC_OPERATION_NAME, internalLogger) {
             fetchAndCache()
@@ -84,7 +88,13 @@ internal class RemoteConfigServiceImpl(
     @WorkerThread
     private fun fetchAndCache() {
         val rawConfig = fetcher.fetch(configUrl) ?: return
-        val config = parseConfig(rawConfig) ?: return
+        val config = parseConfig(rawConfig)
+        if (config == null) {
+            // Evict the bad response from the HTTP cache so the next syncWithRemote()
+            // re-fetches from the network rather than serving the unparseable body again.
+            fetcher.evictCache()
+            return
+        }
 
         configFile.parentFile?.mkdirsSafe(internalLogger)
         val written = fileReaderWriter.writeData(

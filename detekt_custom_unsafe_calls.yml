@@ -227,6 +227,8 @@ datadog:
       - "kotlinx.coroutines.withContext(kotlin.coroutines.CoroutineContext, kotlin.coroutines.SuspendFunction1):kotlinx.coroutines.CancellationException"
       # endregion
       # region OkHttp
+      - "okhttp3.Cache.close():java.io.IOException"
+      - "okhttp3.Cache.evictAll():java.io.IOException"
       - "okhttp3.Call.execute():java.io.IOException"
       - "okhttp3.Dns.lookup(kotlin.String):java.net.UnknownHostException"
       - "okhttp3.Headers.Builder.add(kotlin.String, kotlin.String):java.lang.IllegalArgumentException"

@@ -8,15 +8,19 @@ package com.datadog.android.core.internal.remote
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.tools.annotation.NoOpImplementation
+import okhttp3.Cache
 import okhttp3.Call
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
+import java.io.File
 import java.io.IOException
 
 /**
  * Fetches the remote configuration document from the Datadog CDN.
  */
+@NoOpImplementation
 internal interface RemoteConfigFetcher {
     /**
      * Fetches the remote configuration document from the given URL.
@@ -26,12 +30,32 @@ internal interface RemoteConfigFetcher {
      */
     @WorkerThread
     fun fetch(url: HttpUrl): String?
+
+    /**
+     * Releases any resources held by this fetcher (e.g. HTTP cache).
+     */
+    fun release()
+
+    /**
+     * Evicts all entries from the HTTP cache, forcing a full network re-fetch on the next call.
+     * Should be called when a fetched response cannot be parsed, to prevent the bad response
+     * from being served from cache on subsequent launches.
+     */
+    fun evictCache()
 }
 
 internal class RemoteConfigNetworkFetcher(
-    private val callFactory: Call.Factory,
-    private val internalLogger: InternalLogger
+    callFactoryProvider: (Cache) -> Call.Factory,
+    private val internalLogger: InternalLogger,
+    storageDir: File,
+    // only for unit tests
+    private val httpCache: Cache = Cache(
+        directory = File(storageDir, HTTP_CACHE_DIR_NAME),
+        maxSize = HTTP_CACHE_MAX_SIZE
+    )
 ) : RemoteConfigFetcher {
+
+    private val callFactory: Call.Factory = callFactoryProvider(httpCache)
 
     @WorkerThread
     @Suppress("TooGenericExceptionCaught")
@@ -67,6 +91,33 @@ internal class RemoteConfigNetworkFetcher(
         }
     }
 
+    override fun release() {
+        try {
+            httpCache.close()
+        } catch (e: IOException) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                { ERROR_CLOSE_CACHE },
+                e
+            )
+        }
+    }
+
+    override fun evictCache() {
+        // DiskLruCache.evictAll() is internally synchronized — safe to call even after close()
+        try {
+            httpCache.evictAll()
+        } catch (e: IOException) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                { ERROR_EVICT_CACHE },
+                e
+            )
+        }
+    }
+
     private fun handleResponse(response: Response, url: HttpUrl): String? {
         return if (response.isSuccessful) {
             @Suppress("UnsafeThirdPartyFunctionCall") // safe: wrapped in outer try-catch
@@ -78,6 +129,9 @@ internal class RemoteConfigNetworkFetcher(
                     { ERROR_EMPTY_BODY },
                     additionalProperties = mapOf(ATTR_URL to url.toString())
                 )
+                // Evict the cached empty response so the next syncWithRemote()
+                // re-fetches from the network rather than serving the empty body again.
+                evictCache()
                 null
             } else {
                 body
@@ -102,7 +156,14 @@ internal class RemoteConfigNetworkFetcher(
         internal const val ERROR_NETWORK = "Remote config fetch failed due to a network error"
         internal const val ERROR_HTTP = "Remote config fetch failed with an HTTP error"
         internal const val ERROR_EMPTY_BODY = "Remote config response body is empty"
+        internal const val ERROR_CLOSE_CACHE = "Failed to close remote config HTTP cache"
+        internal const val ERROR_EVICT_CACHE = "Failed to evict remote config HTTP cache"
         internal const val ATTR_RESPONSE_CODE = "response_code"
         internal const val ATTR_URL = "url"
+        internal const val HTTP_CACHE_DIR_NAME = "rc-http-cache"
+
+        // One RC entry is ~1.4 KB (437-byte body + headers + journal). 50 KB gives ~35x headroom
+        // to accommodate future schema growth without revisiting this value.
+        internal const val HTTP_CACHE_MAX_SIZE = 50L * 1024
     }
 }
