@@ -6,13 +6,16 @@
 
 package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
+import androidx.compose.ui.layout.LayoutInfo
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsConfiguration
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.unit.Density
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.compose.internal.utils.ComposeWindowOffset
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
 import com.datadog.android.sessionreplay.recorder.MappingContext
@@ -21,9 +24,11 @@ import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -32,9 +37,11 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -77,13 +84,18 @@ class ComposeViewMapperTest {
     @Mock
     private lateinit var mockSemanticsConfiguration: SemanticsConfiguration
 
+    @Mock
+    private lateinit var mockLayoutInfo: LayoutInfo
+
     @Forgery
     private lateinit var fakeMappingContext: MappingContext
+
+    private var fakeDefaultNodeDensity: Float = 0f
 
     private lateinit var testedComposeViewMapper: ComposeViewMapper
 
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
         testedComposeViewMapper = ComposeViewMapper(
             mockViewIdentifierResolver,
             mockColorStringFormatter,
@@ -92,6 +104,12 @@ class ComposeViewMapperTest {
             mockSemanticsUtils,
             mockRootSemanticsNodeMapper
         )
+        fakeDefaultNodeDensity = forge.aFloat(min = 0.5f, max = 4f)
+        whenever(mockLayoutInfo.density) doReturn Density(fakeDefaultNodeDensity)
+        whenever(mockRootSemanticsNodeMapper.createComposeWireframes(any(), any(), any(), any(), any(), any()))
+            .thenReturn(emptyList())
+        val defaultRootSemanticsNode = mockSemanticsNode(null)
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(defaultRootSemanticsNode)
     }
 
     @Test
@@ -111,10 +129,110 @@ class ComposeViewMapperTest {
         // Then
         verify(mockRootSemanticsNodeMapper).createComposeWireframes(
             eq(mockSemanticsNode),
-            eq(fakeMappingContext.systemInformation.screenDensity),
+            eq(fakeDefaultNodeDensity),
             eq(fakeMappingContext),
             eq(mockAsyncJobStatusCallback),
+            any(),
             any()
+        )
+    }
+
+    @Test
+    fun `M return empty list W map {no root semantics node}`() {
+        // Given
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(null)
+
+        // When
+        val result = testedComposeViewMapper.map(
+            mockView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(result).isEmpty()
+        verify(mockView, never()).getLocationOnScreen(any())
+    }
+
+    @Test
+    fun `M pass window offset to createComposeWireframes W map {view has non-zero screen position}`(forge: Forge) {
+        // Given
+        // windowOffset is now forwarded to RootSemanticsNodeMapper and baked into each wireframe's
+        // bounds at creation time (see SemanticsUtils.resolveInnerBounds), instead of being applied
+        // as a post-hoc translation here. Post-hoc translation would silently detach async-populated
+        // fields like ImageWireframe.resourceId from the wireframe actually returned. See RUM-16362.
+        val fakeScreenX = forge.anInt(min = 1, max = 1000)
+        val fakeScreenY = forge.anInt(min = 1, max = 1000)
+        val density = fakeDefaultNodeDensity
+        doAnswer { invocation ->
+            val array = invocation.arguments[0] as IntArray
+            array[0] = fakeScreenX
+            array[1] = fakeScreenY
+            null
+        }.whenever(mockView).getLocationOnScreen(any())
+
+        // When
+        testedComposeViewMapper.map(
+            mockView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        val expectedWindowOffset = ComposeWindowOffset(
+            xPx = fakeScreenX,
+            yPx = fakeScreenY,
+            xDp = (fakeScreenX / density).toLong(),
+            yDp = (fakeScreenY / density).toLong()
+        )
+        verify(mockRootSemanticsNodeMapper).createComposeWireframes(
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            eq(expectedWindowOffset)
+        )
+    }
+
+    @Test
+    fun `M use root semantics node density for window offset W map {node overrides density}`(forge: Forge) {
+        // Given
+        val fakeScreenX = forge.anInt(min = 1, max = 1000)
+        val fakeScreenY = forge.anInt(min = 1, max = 1000)
+        val fakeNodeDensity = forge.aFloat(min = 0.5f, max = 4f)
+        whenever(mockLayoutInfo.density) doReturn Density(fakeNodeDensity)
+        doAnswer { invocation ->
+            val array = invocation.arguments[0] as IntArray
+            array[0] = fakeScreenX
+            array[1] = fakeScreenY
+            null
+        }.whenever(mockView).getLocationOnScreen(any())
+
+        // When
+        testedComposeViewMapper.map(
+            mockView,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then — offset and the density passed down both use the root node's own density
+        val expectedWindowOffset = ComposeWindowOffset(
+            xPx = fakeScreenX,
+            yPx = fakeScreenY,
+            xDp = (fakeScreenX / fakeNodeDensity).toLong(),
+            yDp = (fakeScreenY / fakeNodeDensity).toLong()
+        )
+        verify(mockRootSemanticsNodeMapper).createComposeWireframes(
+            any(),
+            eq(fakeNodeDensity),
+            any(),
+            any(),
+            any(),
+            eq(expectedWindowOffset)
         )
     }
 
@@ -122,6 +240,7 @@ class ComposeViewMapperTest {
         return mock {
             whenever(mockSemanticsConfiguration.getOrNull(SemanticsProperties.Role)) doReturn role
             whenever(it.config) doReturn mockSemanticsConfiguration
+            whenever(it.layoutInfo) doReturn mockLayoutInfo
         }
     }
 }

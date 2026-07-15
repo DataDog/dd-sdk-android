@@ -19,14 +19,17 @@ import com.datadog.android.sessionreplay.utils.GlobalBounds
 
 internal class BackgroundResolver(
     private val reflectionUtils: ReflectionUtils,
-    private val innerBoundsOf: (SemanticsNode) -> GlobalBounds,
+    private val innerBoundsOf: (SemanticsNode, ComposeWindowOffset) -> GlobalBounds,
     private val internalLogger: InternalLogger = InternalLogger.UNBOUND
 ) {
-    internal fun resolveBackgroundInfo(semanticsNode: SemanticsNode): List<BackgroundInfo> {
+    internal fun resolveBackgroundInfo(
+        semanticsNode: SemanticsNode,
+        windowOffset: ComposeWindowOffset = ComposeWindowOffset.NONE
+    ): List<BackgroundInfo> {
         val backgroundInfoList = mutableListOf<BackgroundInfo>()
         // CurrentBackgroundInfo is to store bounds, color and shape information in sequence of modifiers.
         var currentBackgroundInfo = BackgroundInfo()
-        var currentBounds: GlobalBounds = resolveOuterBounds(semanticsNode)
+        var currentBounds: GlobalBounds = resolveOuterBounds(semanticsNode, windowOffset)
         // If the currentBounds is already invalid, return with the existing wireframes
         if (currentBounds.width <= 0 || currentBounds.height <= 0) {
             return backgroundInfoList
@@ -84,8 +87,8 @@ internal class BackgroundResolver(
         }
     }
 
-    private fun resolveOuterBounds(semanticsNode: SemanticsNode): GlobalBounds {
-        var currentBounds = innerBoundsOf(semanticsNode)
+    private fun resolveOuterBounds(semanticsNode: SemanticsNode, windowOffset: ComposeWindowOffset): GlobalBounds {
+        var currentBounds = innerBoundsOf(semanticsNode, windowOffset)
         semanticsNode.layoutInfo.getModifierInfo().filter {
             reflectionUtils.isPaddingElement(it.modifier)
         }.forEach {
