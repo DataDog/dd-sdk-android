@@ -3,6 +3,12 @@ data class com.datadog.android.heatmaps.CrossPlatformHeatmapActionData
 interface com.datadog.android.heatmaps.HeatmapIdentifierRegistryProvider
   val heatmapIdentifierRegistry: com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 fun heatmapViewKey(android.view.View): Long
+object com.datadog.android.internal.FeatureContextKeys
+  const val PROFILER_IS_RUNNING: String
+  const val RUM_SESSION_ID: String
+  const val RUM_SESSION_SAMPLE_RATE: String
+  const val PROFILING_QUOTA_REASON: String
+  const val PROFILING_QUOTA_SESSION_ID: String
 interface com.datadog.android.internal.attributes.LocalAttribute
   enum Key
     constructor(String)
@@ -173,11 +179,26 @@ object com.datadog.android.internal.profiler.GlobalBenchmark
   fun getProfiler(): BenchmarkProfiler
   fun getBenchmarkSdkUploads(): BenchmarkSdkUploads
   fun createExecutionTimer(String, com.datadog.android.internal.time.TimeProvider): ExecutionTimer
-sealed class com.datadog.android.internal.profiling.ProfilerStopEvent
-  data class TTID : ProfilerStopEvent
-    constructor(TTIDRumContext? = null)
-data class com.datadog.android.internal.profiling.TTIDRumContext
-  constructor(String, String, String, String?, String?, String?)
+sealed class com.datadog.android.internal.profiling.ProfilerEvent
+  object TTIDNotTracked : ProfilerEvent
+  data class RumAnrEvent : ProfilerEvent
+    constructor(String, Long, Long, ProfilingRumContext)
+  data class RumLongTaskEvent : ProfilerEvent
+    constructor(String, Long, Long, ProfilingRumContext)
+  data class RumVitalEvent : ProfilerEvent
+    constructor(String, String?, Type, Long, Long, ProfilingRumContext)
+    enum Type
+      - TTID
+      - TTFD
+      - OPERATION
+data class com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
+  constructor(Long, List<StackTraceElement>, String, Thread.State, List<ProfilingThreadDump>)
+data class com.datadog.android.internal.profiling.ProfilingRumContext
+  constructor(String, String, String?, String?)
+data class com.datadog.android.internal.profiling.ProfilingThreadDump
+  constructor(String, Thread.State, String)
+object com.datadog.android.internal.rum.RumSessionConstants
+  const val EMPTY_RUM_SESSION_ID: String
 object com.datadog.android.internal.sampling.DeterministicSampling
   fun combinedSampleRate(Float, Float): Float
 object com.datadog.android.internal.sampling.SessionSamplingIdProvider
@@ -192,6 +213,7 @@ interface com.datadog.android.internal.system.BuildSdkVersionProvider
   val isAtLeastS: Boolean
   val isAtLeastTiramisu: Boolean
   val isAtLeastVanillaIceCream: Boolean
+  val isAtLeastBaklava: Boolean
   companion object 
     val DEFAULT: BuildSdkVersionProvider
 sealed class com.datadog.android.internal.telemetry.InternalTelemetryEvent

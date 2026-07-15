@@ -70,6 +70,7 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.lang.ref.WeakReference
 import java.util.concurrent.TimeUnit
 
 @Extensions(
@@ -120,6 +121,7 @@ internal class RumActionScopeTest {
 
     private var fakeSampleRate: Float = 0f
 
+    @Forgery
     lateinit var fakeEventTime: Time
 
     lateinit var fakeEvent: RumRawEvent
@@ -151,7 +153,6 @@ internal class RumActionScopeTest {
 
         fakeParentContext = fakeParentContext.copy(syntheticsTestId = null, syntheticsResultId = null)
 
-        fakeEventTime = Time()
         val maxLimit = 1000L
         val minLimit = -1000L
         fakeServerOffset =
@@ -236,7 +237,7 @@ internal class RumActionScopeTest {
         @Forgery kind: RumResourceKind
     ) {
         // When
-        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
+        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap(), fakeEventTime)
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         fakeEvent =
             RumRawEvent.StopResource(key, statusCode, size, kind, emptyMap(), timeWithOffset(TEST_INACTIVITY_MS * 2))
@@ -314,7 +315,7 @@ internal class RumActionScopeTest {
         @Forgery kind: RumResourceKind
     ) {
         // When
-        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
+        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap(), fakeEventTime)
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         fakeEvent =
             RumRawEvent.StopResource(key2, statusCode, size, kind, emptyMap(), timeWithOffset(TEST_INACTIVITY_MS * 2))
@@ -345,7 +346,7 @@ internal class RumActionScopeTest {
         @Forgery throwable: Throwable
     ) {
         // When
-        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
+        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap(), fakeEventTime)
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         fakeEvent = RumRawEvent.StopResourceWithError(
             key,
@@ -438,7 +439,7 @@ internal class RumActionScopeTest {
         val errorType = forge.aNullable { anAlphabeticalString() }
 
         // When
-        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
+        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap(), fakeEventTime)
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         fakeEvent = RumRawEvent.StopResourceWithStackTrace(
             key,
@@ -528,7 +529,7 @@ internal class RumActionScopeTest {
         @Forgery throwable: Throwable
     ) {
         // When
-        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
+        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap(), fakeEventTime)
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         val fakeEvent2 = RumRawEvent.StopResourceWithError(
             key2,
@@ -570,7 +571,7 @@ internal class RumActionScopeTest {
         val errorType = forge.aNullable { anAlphabeticalString() }
 
         // When
-        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
+        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap(), fakeEventTime)
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         val fakeEvent2 = RumRawEvent.StopResourceWithStackTrace(
             key2,
@@ -603,14 +604,22 @@ internal class RumActionScopeTest {
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
     ) {
         // Given
-        var key: Any? = Object()
+        var key: Any? = Any()
+        val keyRef = WeakReference(key)
 
         // When
-        fakeEvent = RumRawEvent.StartResource(key.toString(), url, method, emptyMap())
+        fakeEvent = RumRawEvent.StartResource(key!!, url, method, emptyMap(), fakeEventTime)
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-        fakeEvent = mockEvent(TEST_INACTIVITY_MS * 2)
+
+        // Replace fakeEvent to remove strong reference to key via fakeEvent->StartResource->key field
+        fakeEvent = mockEvent()
+        @Suppress("UNUSED_VALUE", "AssignedValueIsNeverRead") // We are force null-ing to allow it to be GC'ed
         key = null
         System.gc()
+        assertThat(keyRef.get())
+            .describedAs("resource key should have been garbage collected by now")
+            .isNull()
+
         val result2 = testedScope.handleEvent(
             mockEvent(TEST_INACTIVITY_MS * 2 + 1),
             fakeDatadogContext,
@@ -669,7 +678,6 @@ internal class RumActionScopeTest {
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isNull()
-        assertThat(key as? Any).isNull()
     }
 
     @Test
@@ -686,7 +694,8 @@ internal class RumActionScopeTest {
             stacktrace = null,
             isFatal = false,
             threads = emptyList(),
-            attributes = emptyMap()
+            attributes = emptyMap(),
+            eventTime = fakeEventTime
         )
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         val result2 = testedScope.handleEvent(
@@ -759,7 +768,7 @@ internal class RumActionScopeTest {
         @StringForgery target: String
     ) {
         // When
-        fakeEvent = RumRawEvent.AddLongTask(duration, target)
+        fakeEvent = RumRawEvent.AddLongTask(duration, target, eventTime = fakeEventTime)
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         val result2 = testedScope.handleEvent(
             mockEvent(TEST_INACTIVITY_MS * 2 + 1),
@@ -835,7 +844,8 @@ internal class RumActionScopeTest {
             stacktrace = null,
             isFatal = true,
             threads = emptyList(),
-            attributes = emptyMap()
+            attributes = emptyMap(),
+            eventTime = fakeEventTime
         )
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
@@ -909,7 +919,8 @@ internal class RumActionScopeTest {
             stacktrace = null,
             isFatal = false,
             threads = emptyList(),
-            attributes = emptyMap()
+            attributes = emptyMap(),
+            eventTime = fakeEventTime
         )
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         fakeEvent = RumRawEvent.AddError(
@@ -919,7 +930,8 @@ internal class RumActionScopeTest {
             stacktrace = null,
             isFatal = true,
             threads = emptyList(),
-            attributes = emptyMap()
+            attributes = emptyMap(),
+            eventTime = fakeEventTime
         )
         val result2 = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
@@ -988,7 +1000,7 @@ internal class RumActionScopeTest {
         testedScope.resourceCount = count
 
         // When
-        fakeEvent = RumRawEvent.StartView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = startViewEvent()
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1051,7 +1063,7 @@ internal class RumActionScopeTest {
         testedScope.longTaskCount = count
 
         // When
-        fakeEvent = RumRawEvent.StartView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = startViewEvent()
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1114,7 +1126,7 @@ internal class RumActionScopeTest {
         testedScope.errorCount = count
 
         // When
-        fakeEvent = RumRawEvent.StartView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = startViewEvent()
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1186,7 +1198,7 @@ internal class RumActionScopeTest {
         testedScope.crashCount = fatalCount
 
         // When
-        fakeEvent = RumRawEvent.StartView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = startViewEvent()
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1255,7 +1267,7 @@ internal class RumActionScopeTest {
         testedScope.resourceCount = count
 
         // When
-        fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = stopViewEvent()
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1318,7 +1330,7 @@ internal class RumActionScopeTest {
         testedScope.longTaskCount = count
 
         // When
-        fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = stopViewEvent()
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1381,7 +1393,7 @@ internal class RumActionScopeTest {
         testedScope.errorCount = count
 
         // When
-        fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = stopViewEvent()
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1452,7 +1464,7 @@ internal class RumActionScopeTest {
         testedScope.crashCount = fatalCount
 
         // When
-        fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = stopViewEvent()
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1521,7 +1533,7 @@ internal class RumActionScopeTest {
         testedScope.resourceCount = count
 
         // When
-        fakeEvent = RumRawEvent.StopSession()
+        fakeEvent = stopSessionEvent()
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1584,7 +1596,7 @@ internal class RumActionScopeTest {
         testedScope.longTaskCount = count
 
         // When
-        fakeEvent = RumRawEvent.StopSession()
+        fakeEvent = stopSessionEvent()
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1647,7 +1659,7 @@ internal class RumActionScopeTest {
         testedScope.errorCount = count
 
         // When
-        fakeEvent = RumRawEvent.StopSession()
+        fakeEvent = stopSessionEvent()
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1718,7 +1730,7 @@ internal class RumActionScopeTest {
         testedScope.crashCount = fatalCount
 
         // When
-        fakeEvent = RumRawEvent.StopSession()
+        fakeEvent = stopSessionEvent()
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -2398,7 +2410,7 @@ internal class RumActionScopeTest {
         testedScope.resourceCount = 0
         testedScope.errorCount = 0
         testedScope.crashCount = 0
-        fakeEvent = RumRawEvent.StartView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = startViewEvent()
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -2462,7 +2474,7 @@ internal class RumActionScopeTest {
         testedScope.errorCount = 0
         testedScope.crashCount = 0
         testedScope.longTaskCount = 0
-        fakeEvent = RumRawEvent.StartView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = startViewEvent()
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -2526,7 +2538,7 @@ internal class RumActionScopeTest {
         testedScope.resourceCount = 0
         testedScope.errorCount = 0
         testedScope.crashCount = 0
-        fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = stopViewEvent()
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -2590,7 +2602,7 @@ internal class RumActionScopeTest {
         testedScope.errorCount = 0
         testedScope.crashCount = 0
         testedScope.longTaskCount = 0
-        fakeEvent = RumRawEvent.StopSession()
+        fakeEvent = stopSessionEvent()
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -2733,7 +2745,7 @@ internal class RumActionScopeTest {
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
     ) {
         // When
-        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
+        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap(), fakeEventTime)
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         val result2 = testedScope.handleEvent(
             mockEvent(TEST_INACTIVITY_MS * 2 + 1),
@@ -2755,7 +2767,7 @@ internal class RumActionScopeTest {
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
     ) {
         // When
-        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
+        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap(), fakeEventTime)
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         val result2 = testedScope.handleEvent(
             mockEvent(TEST_MAX_DURATION_MS + 1),
@@ -2952,7 +2964,7 @@ internal class RumActionScopeTest {
     fun `M send Action W handleEvent(SendCustomActionNow)`() {
         // When
         testedScope.type = RumActionType.CUSTOM
-        val event = RumRawEvent.SendCustomActionNow()
+        val event = sendCustomActionNowEvent()
         val result = testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -3042,7 +3054,8 @@ internal class RumActionScopeTest {
             stacktrace = null,
             isFatal = false,
             threads = emptyList(),
-            attributes = emptyMap()
+            attributes = emptyMap(),
+            eventTime = fakeEventTime
         )
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
@@ -3113,7 +3126,7 @@ internal class RumActionScopeTest {
     @Test
     fun `M notify about success W handleEvent() { write succeeded }`() {
         // Given
-        val event = RumRawEvent.SendCustomActionNow()
+        val event = sendCustomActionNowEvent()
 
         // When
         testedScope.type = RumActionType.CUSTOM
@@ -3130,7 +3143,7 @@ internal class RumActionScopeTest {
     @Test
     fun `M notify about error W handleEvent() { write failed }`() {
         // Given
-        val event = RumRawEvent.SendCustomActionNow()
+        val event = sendCustomActionNowEvent()
 
         // When
         testedScope.type = RumActionType.CUSTOM
@@ -3150,7 +3163,7 @@ internal class RumActionScopeTest {
         forge: Forge
     ) {
         // Given
-        val event = RumRawEvent.SendCustomActionNow()
+        val event = sendCustomActionNowEvent()
 
         // When
         testedScope.type = RumActionType.CUSTOM
@@ -3618,9 +3631,22 @@ internal class RumActionScopeTest {
         return fakeEventTime.timestamp + fakeServerOffset
     }
 
+    private fun startViewEvent() =
+        RumRawEvent.StartView(RumScopeKey.from(Any()), emptyMap(), timeWithOffset(TEST_ACTION_DURATION_MS))
+
+    private fun stopViewEvent() =
+        RumRawEvent.StopView(RumScopeKey.from(Any()), emptyMap(), timeWithOffset(TEST_ACTION_DURATION_MS))
+
+    private fun stopSessionEvent() =
+        RumRawEvent.StopSession(timeWithOffset(TEST_ACTION_DURATION_MS))
+
+    private fun sendCustomActionNowEvent() =
+        RumRawEvent.SendCustomActionNow(timeWithOffset(TEST_ACTION_DURATION_MS))
+
     // endregion
 
     companion object {
+        internal const val TEST_ACTION_DURATION_MS = 10L
         internal const val TEST_INACTIVITY_MS = 50L
         internal const val TEST_MAX_DURATION_MS = 500L
         internal val TEST_MAX_DURATION_NS = TimeUnit.MILLISECONDS.toNanos(TEST_MAX_DURATION_MS)

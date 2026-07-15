@@ -11,6 +11,7 @@ package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 import androidx.annotation.UiThread
 import androidx.compose.ui.platform.AndroidComposeView
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.compose.internal.utils.resolveComposeWindowOffset
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.mapper.BaseWireframeMapper
@@ -39,14 +40,18 @@ internal class AndroidComposeViewMapper(
         asyncJobStatusCallback: AsyncJobStatusCallback,
         internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
-        val density =
-            mappingContext.systemInformation.screenDensity.let { if (it == 0.0f) 1.0f else it }
+        val rootSemanticsNode = view.semanticsOwner.unmergedRootSemanticsNode
+        // Use the node's own density so it matches SemanticsUtils.resolveInnerBounds.
+        val density = rootSemanticsNode.layoutInfo.density.density
+        // positionInRoot is relative to the view, not the screen — offset to match other SR mappers.
+        val windowOffset = view.resolveComposeWindowOffset(density)
         return rootSemanticsNodeMapper.createComposeWireframes(
-            view.semanticsOwner.unmergedRootSemanticsNode,
+            rootSemanticsNode,
             density,
             mappingContext,
             asyncJobStatusCallback,
-            internalLogger
+            internalLogger,
+            windowOffset = windowOffset
         )
     }
 }

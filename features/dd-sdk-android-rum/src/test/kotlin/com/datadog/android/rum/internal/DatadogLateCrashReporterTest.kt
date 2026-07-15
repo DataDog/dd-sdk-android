@@ -1241,7 +1241,7 @@ internal class DatadogLateCrashReporterTest {
     }
 
     @Test
-    fun `M not send anything W handleAnrCrash() { ANR was already sent }`(
+    fun `M not send anything W handleAnrCrash() { ANR was already sent, exact match }`(
         @Forgery viewEvent: ViewEvent,
         forge: Forge
     ) {
@@ -1276,6 +1276,143 @@ internal class DatadogLateCrashReporterTest {
 
         // Then
         verifyNoInteractions(mockRumWriter)
+    }
+
+    @Test
+    fun `M not send anything W handleAnrCrash() { marker within dedup tolerance }`(
+        @Forgery viewEvent: ViewEvent,
+        forge: Forge
+    ) {
+        // Given
+        val fakeViewEvent = viewEvent.copy(
+            date = fakeCurrentTimeMs - forge.aLong(
+                min = 0L,
+                max = DatadogLateCrashReporter.VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD - 1000
+            )
+        )
+        val fakeTimestamp = fakeViewEvent.date + forge.aLong(min = 1L, max = 1000000L)
+        val fakeServerOffset =
+            forge.aLong(min = -fakeTimestamp, max = Long.MAX_VALUE - fakeTimestamp)
+        fakeDatadogContext = fakeDatadogContext.copy(
+            time = fakeDatadogContext.time.copy(
+                serverTimeOffsetMs = fakeServerOffset
+            )
+        )
+
+        val fakeViewEventJson = fakeViewEvent.toJson().asJsonObject
+
+        whenever(mockRumEventDeserializer.deserialize(fakeViewEventJson)) doReturn fakeViewEvent
+
+        // stub a non-empty threads dump so that dedup is the only thing that can suppress the write
+        val fakeThreadsDump = forge.anrCrashThreadDump()
+        whenever(mockAndroidTraceParser.parse(any())) doReturn fakeThreadsDump
+        val mockAnrExitInfo = mock<ApplicationExitInfo>().apply {
+            whenever(traceInputStream) doReturn mock()
+            whenever(timestamp) doReturn fakeTimestamp
+        }
+        // marker is offset by a positive or negative delta within (and including) the tolerance
+        val fakeDelta = forge.aLong(
+            min = -DatadogLateCrashReporter.FATAL_ANR_DEDUP_TOLERANCE_MS,
+            max = DatadogLateCrashReporter.FATAL_ANR_DEDUP_TOLERANCE_MS
+        )
+        whenever(mockSdkCore.lastFatalAnrSent) doReturn (fakeTimestamp + fakeDelta)
+
+        // When
+        testedHandler.handleAnrCrash(mockAnrExitInfo, fakeViewEventJson, mockRumWriter)
+
+        // Then
+        verifyNoInteractions(mockRumWriter)
+    }
+
+    @Test
+    fun `M send RUM view+error W handleAnrCrash() { marker outside dedup tolerance }`(
+        @Forgery viewEvent: ViewEvent,
+        forge: Forge
+    ) {
+        // Given
+        val fakeViewEvent = viewEvent.copy(
+            date = fakeCurrentTimeMs - forge.aLong(
+                min = 0L,
+                max = DatadogLateCrashReporter.VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD - 1000
+            )
+        )
+        val fakeTimestamp = fakeViewEvent.date + forge.aLong(
+            min = DatadogLateCrashReporter.FATAL_ANR_DEDUP_TOLERANCE_MS + 1L,
+            max = 1000000L
+        )
+        val fakeServerOffset =
+            forge.aLong(min = -fakeTimestamp, max = Long.MAX_VALUE - fakeTimestamp)
+        fakeDatadogContext = fakeDatadogContext.copy(
+            time = fakeDatadogContext.time.copy(
+                serverTimeOffsetMs = fakeServerOffset
+            )
+        )
+
+        val fakeViewEventJson = fakeViewEvent.toJson().asJsonObject
+
+        whenever(mockRumEventDeserializer.deserialize(fakeViewEventJson)) doReturn fakeViewEvent
+
+        val fakeThreadsDump = forge.anrCrashThreadDump()
+        whenever(mockAndroidTraceParser.parse(any())) doReturn fakeThreadsDump
+        val mockAnrExitInfo = mock<ApplicationExitInfo>().apply {
+            whenever(traceInputStream) doReturn mock()
+            whenever(timestamp) doReturn fakeTimestamp
+        }
+        // marker is strictly outside the tolerance window
+        val fakeOutsideMarker = fakeTimestamp -
+            forge.aLong(
+                min = DatadogLateCrashReporter.FATAL_ANR_DEDUP_TOLERANCE_MS + 1L,
+                max = DatadogLateCrashReporter.FATAL_ANR_DEDUP_TOLERANCE_MS + 1000L
+            )
+        whenever(mockSdkCore.lastFatalAnrSent) doReturn fakeOutsideMarker
+
+        // When
+        testedHandler.handleAnrCrash(mockAnrExitInfo, fakeViewEventJson, mockRumWriter)
+
+        // Then
+        verify(mockSdkCore).writeLastFatalAnrSent(fakeTimestamp)
+        verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), any(), eq(EventType.CRASH))
+    }
+
+    @Test
+    fun `M send RUM view+error W handleAnrCrash() { lastFatalAnrSent is null }`(
+        @Forgery viewEvent: ViewEvent,
+        forge: Forge
+    ) {
+        // Given
+        val fakeViewEvent = viewEvent.copy(
+            date = fakeCurrentTimeMs - forge.aLong(
+                min = 0L,
+                max = DatadogLateCrashReporter.VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD - 1000
+            )
+        )
+        val fakeTimestamp = fakeViewEvent.date + forge.aLong(min = 1L, max = 1000000L)
+        val fakeServerOffset =
+            forge.aLong(min = -fakeTimestamp, max = Long.MAX_VALUE - fakeTimestamp)
+        fakeDatadogContext = fakeDatadogContext.copy(
+            time = fakeDatadogContext.time.copy(
+                serverTimeOffsetMs = fakeServerOffset
+            )
+        )
+
+        val fakeViewEventJson = fakeViewEvent.toJson().asJsonObject
+
+        whenever(mockRumEventDeserializer.deserialize(fakeViewEventJson)) doReturn fakeViewEvent
+
+        val fakeThreadsDump = forge.anrCrashThreadDump()
+        whenever(mockAndroidTraceParser.parse(any())) doReturn fakeThreadsDump
+        val mockAnrExitInfo = mock<ApplicationExitInfo>().apply {
+            whenever(traceInputStream) doReturn mock()
+            whenever(timestamp) doReturn fakeTimestamp
+        }
+        whenever(mockSdkCore.lastFatalAnrSent) doReturn null
+
+        // When
+        testedHandler.handleAnrCrash(mockAnrExitInfo, fakeViewEventJson, mockRumWriter)
+
+        // Then
+        verify(mockSdkCore).writeLastFatalAnrSent(fakeTimestamp)
+        verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), any(), eq(EventType.CRASH))
     }
 
     @Test

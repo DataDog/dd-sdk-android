@@ -8,6 +8,8 @@ package com.datadog.benchmark.sample.config
 
 internal enum class SyntheticsScenario(val value: String) {
 
+    Profiling("profiling"),
+
     SessionReplay("sr"),
 
     SessionReplayCompose("sr_compose"),

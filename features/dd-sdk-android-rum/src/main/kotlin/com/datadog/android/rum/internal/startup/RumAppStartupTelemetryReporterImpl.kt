@@ -25,7 +25,7 @@ internal class RumAppStartupTelemetryReporterImpl(
                 KEY_METRIC_TYPE to METRIC_TYPE_VALUE,
                 KEY_APP_LAUNCH_TTID to buildMap {
                     put(KEY_SCENARIO, info.scenario.name)
-                    put(KEY_TTID_DURATION_NS, info.durationNs)
+                    put(KEY_DURATION_NS, info.durationNs)
                     put(KEY_INDEX_IN_SESSION, indexInSession)
 
                     put(KEY_CP_PROCESS_START_DIFF_NS, contentProviderCreationTimeNs - appStartupTimeNs)
@@ -51,7 +51,7 @@ internal class RumAppStartupTelemetryReporterImpl(
         const val KEY_METRIC_TYPE: String = "metric_type"
         const val METRIC_TYPE_VALUE: String = "app launch ttid"
         const val KEY_SCENARIO: String = "scenario"
-        const val KEY_TTID_DURATION_NS: String = "duration_ns"
+        const val KEY_DURATION_NS: String = "duration_ns"
         const val KEY_INDEX_IN_SESSION: String = "index_in_session"
         const val KEY_GAP_NS: String = "app_start_activity_on_create_gap_ns"
         const val KEY_CP_PROCESS_START_DIFF_NS: String = "cp_process_start_diff_ns"

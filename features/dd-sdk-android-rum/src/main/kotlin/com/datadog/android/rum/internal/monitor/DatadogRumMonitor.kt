@@ -52,7 +52,6 @@ import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
-import com.datadog.android.rum.internal.domain.asTime
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
@@ -457,9 +456,9 @@ internal class DatadogRumMonitor(
                 null,
                 false,
                 mutableAttributes,
+                threads.orEmpty(),
                 eventTime,
-                errorType,
-                threads = threads.orEmpty()
+                errorType
             )
         )
     }
@@ -481,10 +480,10 @@ internal class DatadogRumMonitor(
                 stacktrace,
                 false,
                 attributes.toMap(),
+                emptyList(),
                 eventTime,
                 errorType,
-                errorSourceType,
-                threads = emptyList()
+                errorSourceType
             )
         )
     }
@@ -493,27 +492,28 @@ internal class DatadogRumMonitor(
         handleEvent(
             RumRawEvent.AddFeatureFlagEvaluation(
                 name,
-                value
+                value,
+                now()
             )
         )
     }
 
     override fun addFeatureFlagEvaluations(featureFlags: Map<String, Any>) {
         handleEvent(
-            RumRawEvent.AddFeatureFlagEvaluations(featureFlags)
+            RumRawEvent.AddFeatureFlagEvaluations(featureFlags, now())
         )
     }
 
     override fun stopSession() {
         handleEvent(
-            RumRawEvent.StopSession()
+            RumRawEvent.StopSession(now())
         )
     }
 
     @ExperimentalRumApi
     override fun reportAppFullyDisplayed() {
         handleEvent(
-            RumRawEvent.AppStartTTFDEvent()
+            RumRawEvent.AppStartTTFDEvent(now())
         )
     }
 
@@ -546,12 +546,12 @@ internal class DatadogRumMonitor(
     // region AdvancedRumMonitor
 
     override fun sendWebViewEvent() {
-        handleEvent(RumRawEvent.WebViewEvent())
+        handleEvent(RumRawEvent.WebViewEvent(now()))
     }
 
     override fun resetSession() {
         handleEvent(
-            RumRawEvent.ResetSession()
+            RumRawEvent.ResetSession(now())
         )
     }
 
@@ -560,19 +560,19 @@ internal class DatadogRumMonitor(
         val isAppInForeground = processImportance ==
             ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
         handleEvent(
-            RumRawEvent.SdkInit(isAppInForeground)
+            RumRawEvent.SdkInit(isAppInForeground, now())
         )
     }
 
     override fun waitForResourceTiming(key: Any) {
         handleEvent(
-            RumRawEvent.WaitForResourceTiming(key)
+            RumRawEvent.WaitForResourceTiming(key, now())
         )
     }
 
     override fun addResourceTiming(key: Any, timing: ResourceTiming) {
         handleEvent(
-            RumRawEvent.AddResourceTiming(key, timing)
+            RumRawEvent.AddResourceTiming(key, timing, now())
         )
     }
 
@@ -582,7 +582,7 @@ internal class DatadogRumMonitor(
         throwable: Throwable,
         threads: List<ThreadDump>
     ) {
-        val now = getCurrentTime()
+        val now = now()
         val timeSinceAppStartNs = now.nanoTime - sdkCore.appStartTimeNs
         handleEvent(
             RumRawEvent.AddError(
@@ -601,30 +601,30 @@ internal class DatadogRumMonitor(
 
     override fun addTiming(name: String) {
         handleEvent(
-            RumRawEvent.AddCustomTiming(name)
+            RumRawEvent.AddCustomTiming(name, now())
         )
     }
 
     @ExperimentalRumApi
     override fun addViewLoadingTime(overwrite: Boolean) {
-        handleEvent(RumRawEvent.AddViewLoadingTime(overwrite = overwrite, getCurrentTime()))
+        handleEvent(RumRawEvent.AddViewLoadingTime(overwrite = overwrite, now()))
     }
 
     override fun addViewAttributes(attributes: Map<String, Any?>) {
         handleEvent(
-            RumRawEvent.AddViewAttributes(attributes)
+            RumRawEvent.AddViewAttributes(attributes, now())
         )
     }
 
     override fun removeViewAttributes(attributes: Collection<String>) {
         handleEvent(
-            RumRawEvent.RemoveViewAttributes(attributes)
+            RumRawEvent.RemoveViewAttributes(attributes, now())
         )
     }
 
     override fun addLongTask(durationNs: Long, target: String) {
         handleEvent(
-            RumRawEvent.AddLongTask(durationNs, target)
+            RumRawEvent.AddLongTask(durationNs, target, now())
         )
     }
 
@@ -635,7 +635,8 @@ internal class DatadogRumMonitor(
                     viewId,
                     event.frustrationCount,
                     event.type,
-                    event.eventEndTimestampInNanos
+                    event.eventEndTimestampInNanos,
+                    now()
                 )
             )
 
@@ -643,20 +644,22 @@ internal class DatadogRumMonitor(
                 RumRawEvent.ResourceSent(
                     viewId,
                     event.resourceId,
-                    event.resourceStopTimestampInNanos
+                    event.resourceStopTimestampInNanos,
+                    now()
                 )
             )
 
             is StorageEvent.Error -> handleEvent(
                 RumRawEvent.ErrorSent(
                     viewId,
+                    now(),
                     event.resourceId,
                     event.resourceStopTimestampInNanos
                 )
             )
 
-            is StorageEvent.LongTask -> handleEvent(RumRawEvent.LongTaskSent(viewId, false))
-            is StorageEvent.FrozenFrame -> handleEvent(RumRawEvent.LongTaskSent(viewId, true))
+            is StorageEvent.LongTask -> handleEvent(RumRawEvent.LongTaskSent(viewId, now(), false))
+            is StorageEvent.FrozenFrame -> handleEvent(RumRawEvent.LongTaskSent(viewId, now(), true))
             is StorageEvent.View -> {
                 // Nothing to do
             }
@@ -665,11 +668,11 @@ internal class DatadogRumMonitor(
 
     override fun eventDropped(viewId: String, event: StorageEvent) {
         when (event) {
-            is StorageEvent.Action -> handleEvent(RumRawEvent.ActionDropped(viewId))
-            is StorageEvent.Resource -> handleEvent(RumRawEvent.ResourceDropped(viewId, event.resourceId))
-            is StorageEvent.Error -> handleEvent(RumRawEvent.ErrorDropped(viewId, event.resourceId))
-            is StorageEvent.LongTask -> handleEvent(RumRawEvent.LongTaskDropped(viewId, false))
-            is StorageEvent.FrozenFrame -> handleEvent(RumRawEvent.LongTaskDropped(viewId, true))
+            is StorageEvent.Action -> handleEvent(RumRawEvent.ActionDropped(viewId, now()))
+            is StorageEvent.Resource -> handleEvent(RumRawEvent.ResourceDropped(viewId, event.resourceId, now()))
+            is StorageEvent.Error -> handleEvent(RumRawEvent.ErrorDropped(viewId, now(), event.resourceId))
+            is StorageEvent.LongTask -> handleEvent(RumRawEvent.LongTaskDropped(viewId, now(), false))
+            is StorageEvent.FrozenFrame -> handleEvent(RumRawEvent.LongTaskDropped(viewId, now(), true))
             is StorageEvent.View -> {
                 // Nothing to do
             }
@@ -690,7 +693,7 @@ internal class DatadogRumMonitor(
 
     override fun notifyInterceptorInstantiated() {
         handleEvent(
-            RumRawEvent.TelemetryEventWrapper(InternalTelemetryEvent.InterceptorInstantiated)
+            RumRawEvent.TelemetryEventWrapper(InternalTelemetryEvent.InterceptorInstantiated, now())
         )
     }
 
@@ -702,27 +705,27 @@ internal class DatadogRumMonitor(
         mode: InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode
     ) {
         handleEvent(
-            RumRawEvent.TelemetryEventWrapper(InternalTelemetryEvent.ResourceHeadersTrackingConfigured(mode))
+            RumRawEvent.TelemetryEventWrapper(InternalTelemetryEvent.ResourceHeadersTrackingConfigured(mode), now())
         )
     }
 
     override fun updatePerformanceMetric(metric: RumPerformanceMetric, value: Double) {
-        handleEvent(RumRawEvent.UpdatePerformanceMetric(metric, value))
+        handleEvent(RumRawEvent.UpdatePerformanceMetric(metric, value, now()))
     }
 
     override fun updateExternalRefreshRate(frameTimeSeconds: Double) {
-        handleEvent(RumRawEvent.UpdateExternalRefreshRate(frameTimeSeconds))
+        handleEvent(RumRawEvent.UpdateExternalRefreshRate(frameTimeSeconds, now()))
     }
 
     override fun setInternalViewAttribute(key: String, value: Any?) {
-        handleEvent(RumRawEvent.SetInternalViewAttribute(key, value))
+        handleEvent(RumRawEvent.SetInternalViewAttribute(key, value, now()))
     }
 
     override fun setSyntheticsAttribute(
         testId: String,
         resultId: String
     ) {
-        handleEvent(RumRawEvent.SetSyntheticsTestAttribute(testId, resultId))
+        handleEvent(RumRawEvent.SetSyntheticsTestAttribute(testId, resultId, now()))
     }
 
     override fun _getInternal(): _RumInternalProxy {
@@ -730,7 +733,7 @@ internal class DatadogRumMonitor(
     }
 
     override fun sendTelemetryEvent(telemetryEvent: InternalTelemetryEvent) {
-        handleEvent(RumRawEvent.TelemetryEventWrapper(telemetryEvent))
+        handleEvent(RumRawEvent.TelemetryEventWrapper(telemetryEvent, now()))
     }
 
     override fun enableJankStatsTracking(activity: Activity) {
@@ -744,7 +747,8 @@ internal class DatadogRumMonitor(
     ) {
         handleEvent(
             RumRawEvent.AppStartTTIDEvent(
-                info = info
+                info = info,
+                eventTime = now()
             )
         )
     }
@@ -752,7 +756,8 @@ internal class DatadogRumMonitor(
     override fun sendAppStartEvent(scenario: RumStartupScenario) {
         handleEvent(
             RumRawEvent.AppStartEvent(
-                scenario = scenario
+                scenario = scenario,
+                eventTime = now()
             )
         )
     }
@@ -1042,12 +1047,12 @@ internal class DatadogRumMonitor(
         }
     }
 
-    private fun getEventTime(attributes: Map<String, Any?>): Time {
-        return (attributes[RumAttributes.INTERNAL_TIMESTAMP] as? Long)?.asTime() ?: getCurrentTime()
-    }
+    private fun getEventTime(attributes: Map<String, Any?>): Time =
+        (attributes[RumAttributes.INTERNAL_TIMESTAMP] as? Long)
+            ?.let { Time.fromTimestampMillis(it, sdkCore.timeProvider) }
+            ?: now()
 
-    private fun getCurrentTime() =
-        Time(sdkCore.timeProvider.getDeviceTimestampMillis(), sdkCore.timeProvider.getDeviceElapsedTimeNanos())
+    private fun now(): Time = Time.now(sdkCore.timeProvider)
 
     private fun getErrorType(attributes: Map<String, Any?>): String? {
         return attributes[RumAttributes.INTERNAL_ERROR_TYPE] as? String

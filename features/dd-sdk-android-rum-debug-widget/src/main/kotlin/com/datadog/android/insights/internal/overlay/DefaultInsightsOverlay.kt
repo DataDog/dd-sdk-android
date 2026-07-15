@@ -46,6 +46,7 @@ internal class DefaultInsightsOverlay(
     private var gcValue: ChartView? = null
     private var slowFrameRate: ChartView? = null
     private var timelineLegend: TextView? = null
+    private var profilerIndicator: TextView? = null
 
     private var isPaused: Boolean = false
     private var isTransitioning: Boolean = false
@@ -99,6 +100,8 @@ internal class DefaultInsightsOverlay(
                 labelText = "SFR (ms/s)",
                 enableChart = false
             )
+
+            profilerIndicator = overlayView.findViewById(R.id.profiler_indicator)
 
             insightsCollector.addUpdateListener(this)
         }
@@ -195,6 +198,7 @@ internal class DefaultInsightsOverlay(
         gcValue = null
         slowFrameRate = null
         timelineLegend = null
+        profilerIndicator = null
     }
 
     private fun View.restoreVisibility(shouldBeVisible: Boolean) {
@@ -216,6 +220,16 @@ internal class DefaultInsightsOverlay(
             nativeMemoryValue?.update(insightsCollector.nativeHeapMb)
             threadsValue?.update(insightsCollector.threadsCount.toDouble())
             slowFrameRate?.update(insightsCollector.slowFramesRate)
+            updateProfilerIndicator(insightsCollector.isProfilingRunning)
+        }
+    }
+
+    private fun updateProfilerIndicator(isRunning: Boolean) {
+        profilerIndicator?.let { view ->
+            val statusColor = view.color(if (isRunning) R.color.profiler_on else R.color.profiler_off)
+            val label = if (isRunning) PROFILER_ON else PROFILER_OFF
+            view.text = SpannableStringBuilder()
+                .appendColored(PROFILER_DOT + label, statusColor)
         }
     }
 
@@ -225,5 +239,8 @@ internal class DefaultInsightsOverlay(
         private const val RESOURCE = "Resource"
         private const val SLOW_FRAME = "Slow"
         private const val FROZEN_FRAME = "Frozen"
+        private const val PROFILER_DOT = "● "
+        private const val PROFILER_ON = "Profiler: ON"
+        private const val PROFILER_OFF = "Profiler: OFF"
     }
 }

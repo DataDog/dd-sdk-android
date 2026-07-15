@@ -6,12 +6,14 @@
 
 package com.datadog.android.rum.internal.domain
 
+import com.datadog.android.internal.tests.stub.StubTimeProvider
 import com.datadog.android.rum.utils.forge.Configurator
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.data.Offset.offset
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import java.util.concurrent.TimeUnit
@@ -20,55 +22,55 @@ import java.util.concurrent.TimeUnit
 @ForgeConfiguration(Configurator::class)
 internal class TimeTest {
 
-    @Test
-    fun `creates Time with current millis and nanos`() {
-        val startMs = System.currentTimeMillis()
-        val startNs = System.nanoTime()
+    private lateinit var stubTimeProvider: StubTimeProvider
 
-        val time = Time()
-
-        val endNs = System.nanoTime()
-        val endMs = System.currentTimeMillis()
-
-        assertThat(time.timestamp).isBetween(startMs, endMs)
-        assertThat(time.nanoTime).isBetween(startNs, endNs)
-    }
-
-    @Test
-    fun `M convert timestamp to Time W asTime()`(
-        @LongForgery(1000000000000, 2000000000000) timestamp: Long
-    ) {
-        val startMs = System.currentTimeMillis()
-        val startNs = System.nanoTime()
-        val time = timestamp.asTime()
-        val endNs = System.nanoTime()
-        val endMs = System.currentTimeMillis()
-
-        assertThat(time.timestamp).isEqualTo(timestamp)
-        val nanoOffset = time.nanoTime - ((startNs + endNs) / 2)
-        val milliOffset = time.timestamp - ((startMs + endMs) / 2)
-        assertThat(TimeUnit.NANOSECONDS.toMillis(nanoOffset)).isCloseTo(
-            milliOffset,
-            offset(2L)
+    @BeforeEach
+    fun `set up`(forge: Forge) {
+        stubTimeProvider = StubTimeProvider(
+            deviceTimestampMs = forge.aLong(min = 1000000000000, max = 2000000000000),
+            elapsedTimeNs = forge.aLong(min = 1000000000000, max = 2000000000000)
         )
     }
 
     @Test
-    fun `M convert nanoTime to Time W asTimeNs()`(
-        @LongForgery(1000000000000, 2000000000000) nanoTime: Long
-    ) {
-        val startMs = System.currentTimeMillis()
-        val startNs = System.nanoTime()
-        val time = nanoTime.asTimeNs()
-        val endNs = System.nanoTime()
-        val endMs = System.currentTimeMillis()
+    fun `M read current time from provider W now()`() {
+        // When
+        val time = Time.now(stubTimeProvider)
 
-        assertThat(time.nanoTime).isEqualTo(nanoTime)
-        val nanoOffset = time.nanoTime - ((startNs + endNs) / 2)
-        val milliOffset = time.timestamp - ((startMs + endMs) / 2)
-        assertThat(TimeUnit.NANOSECONDS.toMillis(nanoOffset)).isCloseTo(
-            milliOffset,
-            offset(2L)
-        )
+        // Then
+        assertThat(time.timestamp).isEqualTo(stubTimeProvider.deviceTimestampMs)
+        assertThat(time.nanoTime).isEqualTo(stubTimeProvider.elapsedTimeNs)
+    }
+
+    @Test
+    fun `M convert timestamp to Time W fromTimestampMillis()`(
+        @LongForgery(1000000000000, 2000000000000) fakeTimestampMs: Long
+    ) {
+        // Given
+        val expectedNanoTime = stubTimeProvider.elapsedTimeNs +
+            TimeUnit.MILLISECONDS.toNanos(fakeTimestampMs - stubTimeProvider.deviceTimestampMs)
+
+        // When
+        val time = Time.fromTimestampMillis(fakeTimestampMs, stubTimeProvider)
+
+        // Then
+        assertThat(time.timestamp).isEqualTo(fakeTimestampMs)
+        assertThat(time.nanoTime).isEqualTo(expectedNanoTime)
+    }
+
+    @Test
+    fun `M convert nanoTime to Time W fromNanoTime()`(
+        @LongForgery(1000000000000, 2000000000000) fakeNanoTime: Long
+    ) {
+        // Given
+        val expectedTimestamp = stubTimeProvider.deviceTimestampMs +
+            TimeUnit.NANOSECONDS.toMillis(fakeNanoTime - stubTimeProvider.elapsedTimeNs)
+
+        // When
+        val time = Time.fromNanoTime(fakeNanoTime, stubTimeProvider)
+
+        // Then
+        assertThat(time.nanoTime).isEqualTo(fakeNanoTime)
+        assertThat(time.timestamp).isEqualTo(expectedTimestamp)
     }
 }
