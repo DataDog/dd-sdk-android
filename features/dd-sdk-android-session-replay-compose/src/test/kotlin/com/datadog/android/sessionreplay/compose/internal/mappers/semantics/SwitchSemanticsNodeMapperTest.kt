@@ -18,6 +18,7 @@ import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.Swit
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.SwitchSemanticsNodeMapper.Companion.CORNER_RADIUS_DP
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.SwitchSemanticsNodeMapper.Companion.THUMB_DIAMETER_DP
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.SwitchSemanticsNodeMapper.Companion.TRACK_WIDTH_DP
+import com.datadog.android.sessionreplay.compose.internal.utils.ComposeWindowOffset
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils.Companion.DEFAULT_COLOR_BLACK
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils.Companion.DEFAULT_COLOR_WHITE
@@ -54,6 +55,9 @@ internal class SwitchSemanticsNodeMapperTest {
     @Forgery
     lateinit var fakeGlobalBounds: GlobalBounds
 
+    @Forgery
+    lateinit var fakeWindowOffset: ComposeWindowOffset
+
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
@@ -78,7 +82,9 @@ internal class SwitchSemanticsNodeMapperTest {
     @BeforeEach
     fun `set up`() {
         whenever(mockSemanticsNode.id) doReturn fakeSemanticsId
-        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode)) doReturn fakeGlobalBounds
+        whenever(mockParentContext.windowOffset) doReturn fakeWindowOffset
+        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode, fakeWindowOffset)) doReturn
+            fakeGlobalBounds
         whenever(mockSemanticsNode.config).thenReturn(mockConfig)
         whenever(mockParentContext.textAndInputPrivacy).thenReturn(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
 

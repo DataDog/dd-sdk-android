@@ -36,14 +36,6 @@ plugins {
 
 android {
     namespace = "com.datadog.android.apollo"
-
-    libraryVariants.all {
-        packageLibraryProvider.configure {
-            from("src/main/resources") {
-                include("META-INF/**/verification.properties")
-            }
-        }
-    }
 }
 
 dependencies {

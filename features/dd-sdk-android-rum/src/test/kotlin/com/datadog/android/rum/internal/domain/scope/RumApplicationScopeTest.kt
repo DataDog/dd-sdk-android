@@ -22,6 +22,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.InfoProvider
+import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
@@ -29,7 +30,6 @@ import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
-import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -101,9 +101,6 @@ internal class RumApplicationScopeTest {
     lateinit var mockDisplayInfoProvider: InfoProvider<DisplayInfo>
 
     @Mock
-    lateinit var mockRumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter
-
-    @Mock
     private lateinit var mockInsightsCollector: InsightsCollector
 
     @Mock
@@ -161,6 +158,9 @@ internal class RumApplicationScopeTest {
     lateinit var viewUIPerformanceReport: ViewUIPerformanceReport
 
     private var fakeRumSessionType: RumSessionType? = null
+
+    @Forgery
+    private lateinit var fakeEventTime: Time
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -236,7 +236,7 @@ internal class RumApplicationScopeTest {
         @StringForgery fakeResultId: String
     ) {
         // Given
-        val event = RumRawEvent.SetSyntheticsTestAttribute(fakeTestId, fakeResultId)
+        val event = RumRawEvent.SetSyntheticsTestAttribute(fakeTestId, fakeResultId, fakeEventTime)
 
         // When
         val result = testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -325,7 +325,12 @@ internal class RumApplicationScopeTest {
     @Test
     fun `M have no active session W stopping current session`() {
         // When
-        testedScope.handleEvent(RumRawEvent.StopSession(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(
+            RumRawEvent.StopSession(fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
 
         // Then
         val activeSession = testedScope.activeSession
@@ -338,7 +343,7 @@ internal class RumApplicationScopeTest {
         val mockSession: RumSessionScope = mock()
         testedScope.childScopes.clear()
         testedScope.childScopes.add(mockSession)
-        val stopEvent = RumRawEvent.StopSession()
+        val stopEvent = RumRawEvent.StopSession(fakeEventTime)
         whenever(
             mockSession.handleEvent(
                 any(),
@@ -363,11 +368,17 @@ internal class RumApplicationScopeTest {
     ) {
         // Given
         val initialSession = testedScope.childScopes.first()
-        testedScope.handleEvent(RumRawEvent.StopSession(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(
+            RumRawEvent.StopSession(fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
         testedScope.handleEvent(
             RumRawEvent.StartView(
                 key = RumScopeKey.from(viewKey, viewName),
-                attributes = mapOf()
+                attributes = mapOf(),
+                eventTime = fakeEventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,
@@ -395,13 +406,19 @@ internal class RumApplicationScopeTest {
         testedScope.handleEvent(
             RumRawEvent.StartView(
                 key = fakeKey,
-                attributes = mockAttributes
+                attributes = mockAttributes,
+                eventTime = fakeEventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
         )
-        testedScope.handleEvent(RumRawEvent.StopSession(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(
+            RumRawEvent.StopSession(fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
 
         // When
         testedScope.handleEvent(
@@ -409,7 +426,8 @@ internal class RumApplicationScopeTest {
                 type = RumActionType.TAP,
                 name = "MockAction",
                 waitForStop = false,
-                attributes = mapOf()
+                attributes = mapOf(),
+                eventTime = fakeEventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,

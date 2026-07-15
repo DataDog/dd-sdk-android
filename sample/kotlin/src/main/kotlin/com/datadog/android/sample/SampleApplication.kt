@@ -96,8 +96,8 @@ import java.util.UUID
 class SampleApplication : Application() {
 
     private val tracedHosts = listOf(
-        "datadoghq.com",
-        "127.0.0.1"
+        "127.0.0.1",
+        "*.datadoghq.com"
     )
 
     @OptIn(ExperimentalRumApi::class, ExperimentalTraceApi::class)
@@ -189,6 +189,7 @@ class SampleApplication : Application() {
             Profiling.enable(
                 ProfilingConfiguration.Builder()
                     .setApplicationLaunchSampleRate(100f)
+                    .setContinuousSampleRate(100f)
                     .build()
             )
         }

@@ -42,7 +42,7 @@ internal class SliderSemanticsNodeMapper(
         semanticsNode: SemanticsNode,
         index: Int
     ): MobileSegment.Wireframe? {
-        val globalBounds = resolveBounds(semanticsNode)
+        val globalBounds = resolveBounds(semanticsNode, parentContext)
         val progressBarRangeInfo = semanticsUtils.getProgressBarRangeInfo(semanticsNode)
 
         val progress = progressBarRangeInfo?.let {
@@ -76,7 +76,7 @@ internal class SliderSemanticsNodeMapper(
         semanticsNode: SemanticsNode,
         index: Int
     ): MobileSegment.Wireframe {
-        val globalBounds = resolveBounds(semanticsNode)
+        val globalBounds = resolveBounds(semanticsNode, parentContext)
         val trackHeight = DEFAULT_TRACK_HEIGHT.value * parentContext.density
         val yOffset = (globalBounds.height - trackHeight).toLong() / 2
         return MobileSegment.Wireframe.ShapeWireframe(

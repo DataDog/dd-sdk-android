@@ -362,6 +362,30 @@ internal class SemanticsUtilsTest {
     }
 
     @Test
+    fun `M add window offset to inner bounds W resolveInnerBounds { non-zero windowOffset }`(
+        @Forgery fakeWindowOffset: ComposeWindowOffset
+    ) {
+        // Given — RUM-16362: the host view's screen offset must be baked into bounds at the point
+        // they're resolved, so it stays attached to the same wireframe instance that async
+        // resource resolution later mutates (e.g. ImageWireframe.resourceId).
+        val placeable = mock<Placeable>()
+        whenever(mockReflectionUtils.getPlaceable(mockSemanticsNode)) doReturn placeable
+        whenever(mockSemanticsNode.positionInRoot) doReturn fakeOffset
+
+        // When
+        val result = testedSemanticsUtils.resolveInnerBounds(mockSemanticsNode, fakeWindowOffset)
+        val expected = GlobalBounds(
+            x = (fakeOffset.x / fakeDensity).toLong() + fakeWindowOffset.xDp,
+            y = (fakeOffset.y / fakeDensity).toLong() + fakeWindowOffset.yDp,
+            width = (placeable.width / fakeDensity).toLong(),
+            height = (placeable.width / fakeDensity).toLong()
+        )
+
+        // Then
+        assertThat(result).isEqualTo(expected)
+    }
+
+    @Test
     fun `M return corner radius W resolveCornerRadius`(
         @Forgery fakeBounds: GlobalBounds,
         @IntForgery fakeCornerSizeValue: Int
@@ -689,6 +713,37 @@ internal class SemanticsUtilsTest {
         )
 
         // Then
+        assertThat(result).containsExactly(expected)
+    }
+
+    @Test
+    fun `M add window offset to backgroundInfo bounds W resolveBackgroundInfo { non-zero windowOffset }`(
+        forge: Forge,
+        @LongForgery(min = 17L) fakeColorValue: Long,
+        @Forgery fakeWindowOffset: ComposeWindowOffset
+    ) {
+        // Given — RUM-16362: BackgroundResolver's bounds (used for background/padding shape
+        // wireframes) go through a separate code path from resolveInnerBounds, and must get the
+        // same window offset applied.
+        val (fakeRect, fakeBounds) = forgeBackgroundBounds(forge)
+        val backgroundModifierInfo = backgroundModifierStub(color = fakeColorValue, brush = null)
+        whenever(mockLayoutInfo.getModifierInfo()) doReturn listOf(backgroundModifierInfo)
+        whenever(mockSemanticsNode.boundsInRoot) doReturn fakeRect
+        whenever(mockSemanticsNode.positionInRoot) doReturn Offset(fakeRect.left, fakeRect.top)
+
+        // When
+        val result = testedSemanticsUtils.resolveBackgroundInfo(mockSemanticsNode, fakeWindowOffset)
+
+        // Then
+        val expected = BackgroundInfo(
+            color = fakeColorValue,
+            globalBounds = GlobalBounds(
+                x = fakeBounds.x + fakeWindowOffset.xDp,
+                y = fakeBounds.y + fakeWindowOffset.yDp,
+                width = fakeBounds.width,
+                height = fakeBounds.height
+            )
+        )
         assertThat(result).containsExactly(expected)
     }
 

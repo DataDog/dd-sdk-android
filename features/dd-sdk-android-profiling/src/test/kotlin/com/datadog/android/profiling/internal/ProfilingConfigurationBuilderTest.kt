@@ -8,6 +8,8 @@ package com.datadog.android.profiling.internal
 
 import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.ProfilingConfiguration
+import com.datadog.android.profiling.ProfilingConfiguration.Companion.DEFAULT_CONTINUOUS_SAMPLE_RATE
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -41,6 +43,20 @@ internal class ProfilingConfigurationBuilderTest {
 
         // Then
         assertThat(configuration.customEndpointUrl).isNull()
+        assertThat(configuration.continuousSampleRate).isEqualTo(DEFAULT_CONTINUOUS_SAMPLE_RATE)
+    }
+
+    @Test
+    fun `M build config with continuous sample rate W setContinuousSampleRate() and build()`(
+        @FloatForgery(min = 0f, max = 100f) sampleRate: Float
+    ) {
+        // When
+        val configuration = testedBuilder
+            .setContinuousSampleRate(sampleRate)
+            .build()
+
+        // Then
+        assertThat(configuration.continuousSampleRate).isEqualTo(sampleRate)
     }
 
     @Test

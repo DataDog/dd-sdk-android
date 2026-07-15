@@ -316,6 +316,24 @@ internal class HostsSanitizerTest {
         assertThat(sanitizedHosts).isEmpty()
     }
 
+    @Test
+    fun `M route plain hosts and wildcard patterns W sanitizeHosts()`() {
+        // Given
+        val plainHost = "example.com"
+        val wildcardPattern = "*.shopist.io"
+        val invalidPattern = "*.com"
+        val invalidHost = "not a valid host!"
+
+        // When
+        val result = testedSanitizer.sanitizeHosts(
+            listOf(plainHost, wildcardPattern, invalidPattern, invalidHost),
+            fakeFeature
+        )
+
+        // Then
+        assertThat(result).containsExactlyInAnyOrder(plainHost, wildcardPattern)
+    }
+
     companion object {
         val logger = InternalLoggerTestConfiguration()
 

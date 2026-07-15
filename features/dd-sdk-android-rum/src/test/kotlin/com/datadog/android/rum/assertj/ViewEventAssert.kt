@@ -845,6 +845,26 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
+    fun hasProfilingStatus(profilingStatus: ViewEvent.ProfilingStatus?): ViewEventAssert {
+        assertThat(actual.dd.profiling?.status)
+            .overridingErrorMessage(
+                "Expected RUM event to have profiling status: $profilingStatus" +
+                    " but instead was: ${actual.dd.profiling?.status}"
+            )
+            .isEqualTo(profilingStatus)
+        return this
+    }
+
+    fun hasNoProfiling(): ViewEventAssert {
+        assertThat(actual.dd.profiling)
+            .overridingErrorMessage(
+                "Expected RUM event to have no profiling" +
+                    " but instead was: ${actual.dd.profiling}"
+            )
+            .isNull()
+        return this
+    }
+
     companion object {
 
         internal val ONE_SECOND_NS = TimeUnit.SECONDS.toNanos(1)

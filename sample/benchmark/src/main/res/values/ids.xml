@@ -9,6 +9,7 @@
     <item name="logs_heavy_traffic_fragment" type="id" />
     <item name="fragment_session_replay_material" type="id" />
     <item name="fragment_session_replay_appcompat" type="id" />
+    <item name="fragment_profiling" type="id" />
     <item name="fragment_trace_scenario" type="id" />
     <item name="fragment_rum_manual_scenario" type="id" />
     <item name="characters_tab_navigation" type="id" />

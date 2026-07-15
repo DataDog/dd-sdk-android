@@ -14,4 +14,6 @@
     <color name="timeline_slow_frame">#B8860B</color>
     <color name="timeline_freeze_frame">#CC0000</color>
     <color name="timeline_resource">#228B22</color>
+    <color name="profiler_on">#228B22</color>
+    <color name="profiler_off">#9E9E9E</color>
 </resources>
