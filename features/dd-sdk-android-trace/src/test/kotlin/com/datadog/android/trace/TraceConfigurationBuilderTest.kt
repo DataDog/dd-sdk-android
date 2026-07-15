@@ -34,6 +34,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
+@OptIn(ExperimentalTraceApi::class)
 internal class TraceConfigurationBuilderTest {
 
     private val testedBuilder: TraceConfiguration.Builder = TraceConfiguration.Builder()
