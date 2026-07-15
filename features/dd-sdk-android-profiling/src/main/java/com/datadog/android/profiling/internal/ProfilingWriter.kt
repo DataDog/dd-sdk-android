@@ -19,4 +19,10 @@ internal interface ProfilingWriter {
         anrEvents: List<ProfilerEvent.RumAnrEvent>,
         vitalEvents: List<ProfilerEvent.RumVitalEvent>
     )
+
+    /**
+     * Deletes the profiling result file without uploading it. Used when a profile is dropped
+     * before it reaches the write path (e.g. quota denied), so the trace file is not leaked.
+     */
+    fun discard(profilingResult: PerfettoResult)
 }

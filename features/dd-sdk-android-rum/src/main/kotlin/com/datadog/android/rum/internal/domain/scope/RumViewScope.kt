@@ -282,7 +282,8 @@ internal open class RumViewScope(
                 operationKey = event.operationKey,
                 stepType = VitalOperationStepEvent.StepType.START,
                 failureReason = null,
-                eventAttributes = event.attributes
+                eventAttributes = event.attributes,
+                rumContext = capturedRumContext
             )
         }.onSuccess {
             sendProfilingRumOperationEvent(
@@ -314,7 +315,8 @@ internal open class RumViewScope(
                 operationKey = event.operationKey,
                 stepType = VitalOperationStepEvent.StepType.END,
                 failureReason = event.failureReason?.toSchemaFailureReason(),
-                eventAttributes = event.attributes
+                eventAttributes = event.attributes,
+                rumContext = capturedRumContext
             )
         }.onSuccess {
             sendProfilingRumOperationEvent(
@@ -359,9 +361,9 @@ internal open class RumViewScope(
         operationKey: String?,
         stepType: VitalOperationStepEvent.StepType,
         failureReason: VitalOperationStepEvent.FailureReason?,
-        eventAttributes: Map<String, Any?>
+        eventAttributes: Map<String, Any?>,
+        rumContext: RumContext
     ): VitalOperationStepEvent {
-        val rumContext = getRumContext()
         val syntheticsAttribute = if (
             rumContext.syntheticsTestId.isNullOrBlank() ||
             rumContext.syntheticsResultId.isNullOrBlank()
@@ -771,24 +773,7 @@ internal open class RumViewScope(
         // Fatal ANR comes from last session, in this case we don't attach it to Profiling Event.
         // TODO RUM-15344: address non-fatal ANR over Android API 30
         if (event.throwable is ANRException && !isFatal) {
-            val anrDurationMs = ANRDetectorRunnable.ANR_THRESHOLD_MS
-            val anrStartMs = event.eventTime.timestamp + serverTimeOffsetInMs - anrDurationMs
-            val anrDurationNs = TimeUnit.MILLISECONDS.toNanos(anrDurationMs)
-
             profilingStatus = resolveErrorProfilingStatus(datadogContext)
-            sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
-                ProfilerEvent.RumAnrEvent(
-                    id = errorId,
-                    startMs = anrStartMs,
-                    durationNs = anrDurationNs,
-                    rumContext = ProfilingRumContext(
-                        applicationId = rumContext.applicationId,
-                        sessionId = rumContext.sessionId,
-                        viewId = rumContext.viewId,
-                        viewName = rumContext.viewName
-                    )
-                )
-            )
         }
         // end region
 
@@ -916,6 +901,22 @@ internal open class RumViewScope(
                     onSuccess {
                         it.eventSent(rumContext.viewId.orEmpty(), StorageEvent.Error())
                         if (event.throwable is ANRException) {
+                            val anrDurationMs = ANRDetectorRunnable.ANR_THRESHOLD_MS
+                            val anrStartMs = event.eventTime.timestamp + serverTimeOffsetInMs - anrDurationMs
+                            val anrDurationNs = TimeUnit.MILLISECONDS.toNanos(anrDurationMs)
+                            sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
+                                ProfilerEvent.RumAnrEvent(
+                                    id = errorId,
+                                    startMs = anrStartMs,
+                                    durationNs = anrDurationNs,
+                                    rumContext = ProfilingRumContext(
+                                        applicationId = rumContext.applicationId,
+                                        sessionId = rumContext.sessionId,
+                                        viewId = rumContext.viewId,
+                                        viewName = rumContext.viewName
+                                    )
+                                )
+                            )
                             // Intentionally writing through `writeLastFatalAnrSent` even though this is a
                             // non-fatal ANR: both pipelines share the same persisted timestamp so that the
                             // fatal-ANR replay path (DatadogLateCrashReporter, via ApplicationExitInfo on
@@ -1545,20 +1546,6 @@ internal open class RumViewScope(
         )
 
         val longTaskId = UUID.randomUUID().toString()
-        sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
-            ProfilerEvent.RumLongTaskEvent(
-                id = longTaskId,
-                startMs = timestamp - TimeUnit.NANOSECONDS.toMillis(event.durationNs),
-                durationNs = event.durationNs,
-                rumContext = ProfilingRumContext(
-                    applicationId = rumContext.applicationId,
-                    sessionId = rumContext.sessionId,
-                    viewId = rumContext.viewId,
-                    viewName = rumContext.viewName
-                )
-            )
-        )
-
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             val user = datadogContext.userInfo
             val syntheticsAttribute = if (
@@ -1656,7 +1643,22 @@ internal open class RumViewScope(
                 val storageEvent =
                     if (isFrozenFrame) StorageEvent.FrozenFrame else StorageEvent.LongTask
                 onError { it.eventDropped(rumContext.viewId.orEmpty(), storageEvent) }
-                onSuccess { it.eventSent(rumContext.viewId.orEmpty(), storageEvent) }
+                onSuccess {
+                    it.eventSent(rumContext.viewId.orEmpty(), storageEvent)
+                    sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
+                        ProfilerEvent.RumLongTaskEvent(
+                            id = longTaskId,
+                            startMs = timestamp - TimeUnit.NANOSECONDS.toMillis(event.durationNs),
+                            durationNs = event.durationNs,
+                            rumContext = ProfilingRumContext(
+                                applicationId = rumContext.applicationId,
+                                sessionId = rumContext.sessionId,
+                                viewId = rumContext.viewId,
+                                viewName = rumContext.viewName
+                            )
+                        )
+                    )
+                }
             }
             .submit()
 
@@ -1806,7 +1808,11 @@ internal open class RumViewScope(
         val isRunning = datadogContext.isProfilerRunning()
         val quotaReason = datadogContext.resolveProfilingQuotaReason(sessionId)
         return when {
-            isRunning -> ViewEvent.Profiling(status = ViewEvent.ProfilingStatus.RUNNING)
+            isRunning -> ViewEvent.Profiling(
+                status = ViewEvent.ProfilingStatus.RUNNING,
+                clockDrift = datadogContext.time.serverTimeOffsetMs
+            )
+
             quotaReason != null -> ViewEvent.Profiling(
                 status = ViewEvent.ProfilingStatus.STOPPED,
                 quotaReason = quotaReason
