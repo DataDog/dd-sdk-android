@@ -47,14 +47,6 @@ android {
     buildFeatures {
         compose = true
     }
-
-    libraryVariants.all {
-        packageLibraryProvider.configure {
-            from("src/main/resources") {
-                include("META-INF/**/verification.properties")
-            }
-        }
-    }
 }
 
 dependencies {

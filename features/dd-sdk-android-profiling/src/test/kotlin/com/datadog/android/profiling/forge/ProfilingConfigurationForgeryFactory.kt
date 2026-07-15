@@ -16,7 +16,8 @@ class ProfilingConfigurationForgeryFactory :
     ForgeryFactory<ProfilingConfiguration> {
     override fun getForgery(forge: Forge): ProfilingConfiguration {
         return ProfilingConfiguration(
-            sampleRate = forge.aFloat(min = 0f, max = 100f),
+            applicationLaunchSampleRate = forge.aFloat(min = 0f, max = 100f),
+            continuousSampleRate = forge.aFloat(min = 0f, max = 100f),
             customEndpointUrl = forge.aNullable {
                 aStringMatching("http(s?)://[a-z]+\\.com/\\w+")
             }

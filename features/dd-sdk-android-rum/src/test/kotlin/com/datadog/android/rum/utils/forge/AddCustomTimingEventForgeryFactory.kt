@@ -12,7 +12,8 @@ import fr.xgouchet.elmyr.ForgeryFactory
 internal class AddCustomTimingEventForgeryFactory : ForgeryFactory<RumRawEvent.AddCustomTiming> {
     override fun getForgery(forge: Forge): RumRawEvent.AddCustomTiming {
         return RumRawEvent.AddCustomTiming(
-            name = forge.aString()
+            name = forge.aString(),
+            eventTime = forge.getForgery()
         )
     }
 }

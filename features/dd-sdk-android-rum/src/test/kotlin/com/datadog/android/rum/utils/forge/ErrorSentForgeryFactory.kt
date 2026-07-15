@@ -13,6 +13,7 @@ internal class ErrorSentForgeryFactory : ForgeryFactory<RumRawEvent.ErrorSent> {
     override fun getForgery(forge: Forge) = RumRawEvent.ErrorSent(
         viewId = forge.aString(),
         resourceId = forge.aNullable { aString() },
-        resourceEndTimestampInNanos = forge.aNullable { aPositiveLong() }
+        resourceEndTimestampInNanos = forge.aNullable { aPositiveLong() },
+        eventTime = forge.getForgery()
     )
 }

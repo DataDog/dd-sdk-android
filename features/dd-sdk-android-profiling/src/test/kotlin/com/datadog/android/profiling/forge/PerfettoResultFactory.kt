@@ -14,8 +14,8 @@ internal class PerfettoResultFactory : ForgeryFactory<PerfettoResult> {
     override fun getForgery(forge: Forge): PerfettoResult {
         return PerfettoResult(
             start = forge.aLong(),
+            startReason = forge.getForgery(),
             end = forge.aLong(),
-            tag = forge.aString(),
             resultFilePath = forge.anAlphabeticalString()
         )
     }

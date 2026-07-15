@@ -756,7 +756,9 @@ internal constructor(
     /**
      * A Builder class for the [TracingInterceptor].
      * @param tracedHostsWithHeaderType a list of all the hosts and header types that you want to
-     * be automatically tracked by this interceptor. If registering a [GlobalDatadogTracer], the tracer must be
+     * be automatically tracked by this interceptor. Each host may be a plain host (e.g. `example.com`,
+     * which also matches subdomains such as `api.example.com`) or a wildcard pattern such as
+     * `*.example.com` or `preview-*.example.com`. If registering a [GlobalDatadogTracer], the tracer must be
      * configured with [com.datadog.android.trace.api.tracer.DatadogTracerBuilder.withTracingHeadersTypes] containing all the necessary
      * header types configured for OkHttp tracking.
      * If no hosts are provided (via this argument or global configuration
