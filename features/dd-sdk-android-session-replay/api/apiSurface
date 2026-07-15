@@ -3,6 +3,7 @@ interface com.datadog.android.sessionreplay.ExtensionSupport
   fun getCustomViewMappers(): List<MapperTypeWrapper<*>>
   fun getOptionSelectorDetectors(): List<com.datadog.android.sessionreplay.recorder.OptionSelectorDetector>
   fun getCustomDrawableMapper(): List<com.datadog.android.sessionreplay.utils.DrawableToColorMapper>
+  fun getHostViewDecomposer(): com.datadog.android.sessionreplay.recorder.HostViewDecomposer?
 enum com.datadog.android.sessionreplay.ImagePrivacy : PrivacyLevel
   - MASK_NONE
   - MASK_LARGE_ONLY
@@ -85,6 +86,13 @@ interface com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringO
   fun obfuscate(String): String
   companion object 
     fun getStringObfuscator(): StringObfuscator
+interface com.datadog.android.sessionreplay.recorder.HostViewDecomposer
+  fun canDecompose(android.view.View): Boolean
+  fun decompose(android.view.View, HostViewDecomposeRequest): HostViewDecomposeResult?
+class com.datadog.android.sessionreplay.recorder.HostViewDecomposeRequest
+  constructor(MappingContext, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback, com.datadog.android.api.InternalLogger, PixelCaptureCallback?, (android.view.View) -> List<com.datadog.android.sessionreplay.model.MobileSegment.CompositionLayerChild>)
+class com.datadog.android.sessionreplay.recorder.HostViewDecomposeResult
+  constructor(List<com.datadog.android.sessionreplay.model.MobileSegment.CompositionLayerChild>, List<com.datadog.android.sessionreplay.model.MobileSegment.CompositionLayer>, List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>)
 interface com.datadog.android.sessionreplay.recorder.InteropViewCallback
   fun map(android.view.View, MappingContext): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
 data class com.datadog.android.sessionreplay.recorder.MappingContext

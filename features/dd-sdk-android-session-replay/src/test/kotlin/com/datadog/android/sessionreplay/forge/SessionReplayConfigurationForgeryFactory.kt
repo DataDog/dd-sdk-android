@@ -37,7 +37,8 @@ class SessionReplayConfigurationForgeryFactory : ForgeryFactory<SessionReplayCon
                 .setMinCPUCoreNumber(forge.aSmallInt())
                 .build(),
             heatmapsEnabled = forge.aBool(),
-            pixelCaptureEnabled = forge.aBool()
+            pixelCaptureEnabled = forge.aBool(),
+            hostViewDecomposer = null
         )
     }
 }

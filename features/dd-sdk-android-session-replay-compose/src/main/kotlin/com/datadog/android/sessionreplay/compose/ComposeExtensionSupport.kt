@@ -15,6 +15,8 @@ import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.AndroidComposeViewMapper
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.ComposeViewMapper
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.RootSemanticsNodeMapper
+import com.datadog.android.sessionreplay.compose.internal.tree.DefaultComposeCompositionWalker
+import com.datadog.android.sessionreplay.recorder.HostViewDecomposer
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
@@ -35,6 +37,7 @@ class ComposeExtensionSupport : ExtensionSupport {
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver
     private val drawableToColorMapper: DrawableToColorMapper = DrawableToColorMapper.getDefault()
     private val rootSemanticsNodeMapper = RootSemanticsNodeMapper(colorStringFormatter)
+    private val hostViewDecomposer = DefaultComposeCompositionWalker()
 
     override fun getCustomViewMappers(): List<MapperTypeWrapper<*>> {
         return listOf(
@@ -68,6 +71,8 @@ class ComposeExtensionSupport : ExtensionSupport {
     override fun getCustomDrawableMapper(): List<DrawableToColorMapper> {
         return emptyList()
     }
+
+    override fun getHostViewDecomposer(): HostViewDecomposer = hostViewDecomposer
 
     override fun name(): String =
         COMPOSE_EXTENSION_SUPPORT_NAME

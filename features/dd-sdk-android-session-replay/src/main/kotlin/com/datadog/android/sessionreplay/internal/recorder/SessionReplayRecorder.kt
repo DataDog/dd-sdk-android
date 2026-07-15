@@ -50,6 +50,7 @@ import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
 import com.datadog.android.sessionreplay.internal.utils.PathUtils
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
+import com.datadog.android.sessionreplay.recorder.HostViewDecomposer
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
@@ -97,7 +98,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         dynamicOptimizationEnabled: Boolean,
         internalCallback: SessionReplayInternalCallback,
         heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null,
-        pixelCaptureEnabled: Boolean = false
+        pixelCaptureEnabled: Boolean = false,
+        hostViewDecomposer: HostViewDecomposer? = null
     ) {
         val internalLogger = sdkCore.internalLogger
         val rumContextDataHandler = RumContextDataHandler(
@@ -238,7 +240,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                         pixelCaptureFallbackMapper = fallbackMapper,
                         touchPrivacyManager = touchPrivacyManager,
                         imageWireframeHelper = imageWireframeHelper,
-                        pixelCaptureCallback = pixelCapture
+                        pixelCaptureCallback = pixelCapture,
+                        hostViewDecomposer = hostViewDecomposer
                     )
                 }
             }

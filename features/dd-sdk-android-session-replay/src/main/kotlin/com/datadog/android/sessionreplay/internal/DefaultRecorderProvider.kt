@@ -43,6 +43,7 @@ import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreMan
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
+import com.datadog.android.sessionreplay.recorder.HostViewDecomposer
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.recorder.mapper.EditTextMapper
 import com.datadog.android.sessionreplay.recorder.mapper.ImageViewMapper
@@ -68,7 +69,8 @@ internal class DefaultRecorderProvider(
     private val dynamicOptimizationEnabled: Boolean,
     private val internalCallback: SessionReplayInternalCallback,
     private val heatmapsEnabled: Boolean,
-    private val pixelCaptureEnabled: Boolean
+    private val pixelCaptureEnabled: Boolean,
+    private val hostViewDecomposer: HostViewDecomposer? = null
 ) : RecorderProvider {
 
     override fun provideSessionReplayRecorder(
@@ -95,7 +97,8 @@ internal class DefaultRecorderProvider(
             dynamicOptimizationEnabled = dynamicOptimizationEnabled,
             internalCallback = internalCallback,
             heatmapIdentifierRegistry = if (heatmapsEnabled) LazyHeatmapIdentifierRegistry(sdkCore) else null,
-            pixelCaptureEnabled = pixelCaptureEnabled
+            pixelCaptureEnabled = pixelCaptureEnabled,
+            hostViewDecomposer = hostViewDecomposer
         )
     }
 

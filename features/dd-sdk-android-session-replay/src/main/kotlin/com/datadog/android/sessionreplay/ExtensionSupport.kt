@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay
 
 import android.view.View
+import com.datadog.android.sessionreplay.recorder.HostViewDecomposer
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
@@ -43,4 +44,14 @@ interface ExtensionSupport {
      * @return a list of custom [DrawableToColorMapper] implementation.
      */
     fun getCustomDrawableMapper(): List<DrawableToColorMapper>
+
+    /**
+     * SDK-internal hook for the experimental pixel-capture pipeline: implement this to provide a
+     * [HostViewDecomposer] able to decompose a container host view into individual
+     * pixel-captured regions, instead of the whole view being captured as one region. Not part
+     * of the extension surface end users are expected to implement — the only real
+     * implementation is `com.datadog.android.sessionreplay.compose.ComposeExtensionSupport`.
+     * @return a decomposer, or null if this extension doesn't provide one.
+     */
+    fun getHostViewDecomposer(): HostViewDecomposer? = null
 }

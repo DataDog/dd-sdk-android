@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay
 import androidx.annotation.FloatRange
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.SessionReplayRecorder
+import com.datadog.android.sessionreplay.recorder.HostViewDecomposer
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import java.util.Locale
@@ -31,7 +32,8 @@ data class SessionReplayConfiguration internal constructor(
     internal val systemRequirementsConfiguration: SystemRequirementsConfiguration,
     internal val internalCallback: SessionReplayInternalCallback,
     internal val heatmapsEnabled: Boolean,
-    internal val pixelCaptureEnabled: Boolean
+    internal val pixelCaptureEnabled: Boolean,
+    internal val hostViewDecomposer: HostViewDecomposer?
 ) {
 
     /**
@@ -270,7 +272,8 @@ data class SessionReplayConfiguration internal constructor(
                 systemRequirementsConfiguration = systemRequirementsConfiguration,
                 internalCallback = internalCallback,
                 heatmapsEnabled = heatmapsEnabled,
-                pixelCaptureEnabled = pixelCaptureEnabled
+                pixelCaptureEnabled = pixelCaptureEnabled,
+                hostViewDecomposer = hostViewDecomposer()
             )
         }
 
@@ -296,11 +299,25 @@ data class SessionReplayConfiguration internal constructor(
         private fun optionsSelectorDetectors(): List<OptionSelectorDetector> =
             extensionSupportSet.flatMap { it.getOptionSelectorDetectors() }.toList()
 
+        private fun hostViewDecomposer(): HostViewDecomposer? {
+            val decomposers = extensionSupportSet.mapNotNull { it.getHostViewDecomposer() }
+            if (decomposers.size > 1) {
+                logger.log(
+                    target = InternalLogger.Target.MAINTAINER,
+                    level = InternalLogger.Level.WARN,
+                    messageBuilder = { DUPLICATE_HOST_VIEW_DECOMPOSER_DETECTED }
+                )
+            }
+            return decomposers.firstOrNull()
+        }
+
         internal companion object {
             internal const val SAMPLE_IN_ALL_SESSIONS = 100.0f
             internal const val DUPLICATE_EXTENSION_DETECTED =
                 "Attempting to add support twice for the same extension %s. The duplicate will be ignored."
             internal const val DUPLICATE_MAPPER_DETECTED = "Duplicate mapper for %s. The duplicate will be ignored."
+            internal const val DUPLICATE_HOST_VIEW_DECOMPOSER_DETECTED =
+                "Multiple extensions provide a HostViewDecomposer. Only the first one will be used."
         }
     }
 }

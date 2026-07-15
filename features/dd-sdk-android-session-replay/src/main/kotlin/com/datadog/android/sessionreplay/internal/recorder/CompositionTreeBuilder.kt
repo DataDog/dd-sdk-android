@@ -23,6 +23,8 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.PixelCaptureFa
 import com.datadog.android.sessionreplay.internal.recorder.mapper.QueueStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WebViewWireframeMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.HostViewDecomposeRequest
+import com.datadog.android.sessionreplay.recorder.HostViewDecomposer
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.NoOpInteropViewCallback
 import com.datadog.android.sessionreplay.recorder.PixelCaptureCallback
@@ -98,6 +100,7 @@ internal class CompositionTreeBuilder(
     private val touchPrivacyManager: TouchPrivacyManager,
     private val imageWireframeHelper: ImageWireframeHelper,
     private val pixelCaptureCallback: PixelCaptureCallback? = null,
+    private val hostViewDecomposer: HostViewDecomposer? = null,
     private val viewUtilsInternal: ViewUtilsInternal = ViewUtilsInternal()
 ) {
 
@@ -237,11 +240,14 @@ internal class CompositionTreeBuilder(
     /**
      * Resolves how [view] should be referenced from its parent's children list:
      * - A container (has its own children) — build its own layer and reference it by id.
-     * - Otherwise — or if a layer could not be built for a container (missing/duplicate id) —
-     *   map it as a leaf (one or more wireframes; a leaf mapper can produce more than one, e.g.
-     *   a background plus content) and reference each by id. A container that falls back this
-     *   way is captured as a single flat pixel snapshot of the whole subtree instead of a
-     *   group — a degraded but still-correct result, never a dropped one.
+     * - A Compose host — decompose it via [hostViewDecomposer] into its own layer, if a
+     *   decomposer is wired in and can decompose it (see [buildComposeLayer]).
+     * - Otherwise — or if a layer/decomposition could not be built (missing/duplicate id,
+     *   no decomposer, decomposition failed) — map it as a leaf (one or more wireframes; a leaf
+     *   mapper can produce more than one, e.g. a background plus content) and reference each by
+     *   id. A container that falls back this way is captured as a single flat pixel snapshot of
+     *   the whole subtree instead of a group — a degraded but still-correct result, never a
+     *   dropped one.
      */
     private fun childReferences(
         view: View,
@@ -257,11 +263,65 @@ internal class CompositionTreeBuilder(
             }
         }
 
+        if (isComposeHostView(view)) {
+            val composeLayer = buildComposeLayer(view, mappingContext, asyncJobStatusCallback, internalLogger)
+            if (composeLayer != null) {
+                layers.add(composeLayer)
+                return listOf(MobileSegment.CompositionLayerChild(id = composeLayer.id, type = LAYER_CHILD_TYPE))
+            }
+        }
+
         val leafWireframes = mapLeafView(view, mappingContext, asyncJobStatusCallback, internalLogger)
         wireframes.addAll(leafWireframes)
         return leafWireframes.map {
             MobileSegment.CompositionLayerChild(id = it.id(), type = WIREFRAME_CHILD_TYPE)
         }
+    }
+
+    /**
+     * Decomposes a Compose host [view] into individual composable-level regions via
+     * [hostViewDecomposer], instead of falling through to [mapLeafView]'s whole-view pixel
+     * capture. Returns null (falling through to that whole-view capture, unchanged from before
+     * this extension point existed) when no decomposer is wired in, [HostViewDecomposer.canDecompose]
+     * declines, an id couldn't be resolved, or [HostViewDecomposer.decompose] itself fails.
+     */
+    private fun buildComposeLayer(
+        view: View,
+        mappingContext: MappingContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger
+    ): MobileSegment.CompositionLayer? {
+        val decomposer = hostViewDecomposer ?: return null
+        if (!decomposer.canDecompose(view)) return null
+
+        val id = viewIdentifierResolver.resolveChildUniqueIdentifier(view, COMPOSITION_LAYER_KEY_NAME)
+            ?: return null
+        val density = mappingContext.systemInformation.screenDensity
+        val bounds = viewBoundsResolver.resolveViewGlobalBounds(view, density)
+
+        val request = HostViewDecomposeRequest(
+            mappingContext = mappingContext,
+            asyncJobStatusCallback = asyncJobStatusCallback,
+            internalLogger = internalLogger,
+            pixelCaptureCallback = pixelCaptureCallback,
+            nativeViewHandoff = { nativeView ->
+                childReferences(nativeView, mappingContext, asyncJobStatusCallback, internalLogger)
+            }
+        )
+        val result = decomposer.decompose(view, request) ?: return null
+
+        layers.addAll(result.nestedLayers)
+        wireframes.addAll(result.wireframes)
+
+        return MobileSegment.CompositionLayer(
+            id = id,
+            x = bounds.x,
+            y = bounds.y,
+            width = bounds.width,
+            height = bounds.height,
+            children = result.rootChildren,
+            modifiers = opacityModifiers(view.alpha)
+        )
     }
 
     /**
