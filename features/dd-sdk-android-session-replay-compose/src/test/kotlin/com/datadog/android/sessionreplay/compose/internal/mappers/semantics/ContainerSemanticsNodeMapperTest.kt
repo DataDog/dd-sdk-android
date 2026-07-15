@@ -82,9 +82,8 @@ internal class ContainerSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTes
             color = fakeBackgroundColor,
             cornerRadius = fakeCornerRadius
         )
-        whenever(mockSemanticsUtils.resolveBackgroundInfo(mockSemanticsNode)) doReturn listOf(
-            fakeBackgroundInfo
-        )
+        whenever(mockSemanticsUtils.resolveBackgroundInfo(mockSemanticsNode, fakeUiContext.windowOffset)) doReturn
+            listOf(fakeBackgroundInfo)
         whenever(mockSemanticsUtils.resolveBackgroundColor(mockSemanticsNode)) doReturn fakeBackgroundColor
 
         // When

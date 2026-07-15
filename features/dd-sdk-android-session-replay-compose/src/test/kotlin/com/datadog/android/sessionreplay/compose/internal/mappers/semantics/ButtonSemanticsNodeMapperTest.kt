@@ -89,13 +89,13 @@ internal class ButtonSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest()
             color = fakeBackgroundColor,
             cornerRadius = fakeCornerRadius
         )
-        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode)) doReturn rectToBounds(
-            fakeBounds,
-            fakeDensity
-        )
-        whenever(mockSemanticsUtils.resolveBackgroundInfo(mockSemanticsNode)) doReturn listOf(
-            fakeBackgroundInfo
-        )
+        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode, fakeUiContext.windowOffset)) doReturn
+            rectToBounds(
+                fakeBounds,
+                fakeDensity
+            )
+        whenever(mockSemanticsUtils.resolveBackgroundInfo(mockSemanticsNode, fakeUiContext.windowOffset)) doReturn
+            listOf(fakeBackgroundInfo)
 
         // When
         val actual = testedButtonSemanticsNodeMapper.map(

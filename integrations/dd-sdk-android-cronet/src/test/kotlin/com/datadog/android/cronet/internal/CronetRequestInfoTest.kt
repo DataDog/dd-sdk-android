@@ -39,7 +39,7 @@ internal class CronetRequestInfoTest {
     @StringForgery(regex = URL_FORGERY_PATTERN)
     lateinit var fakeUrl: String
     lateinit var fakeMethod: String
-    lateinit var fakeHeaders: MutableMap<String, List<String>>
+    lateinit var fakeHeaders: Map<String, List<String>>
 
     @Mock
     lateinit var mockExecutor: Executor
@@ -56,7 +56,7 @@ internal class CronetRequestInfoTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeMethod = forge.anElementFrom(HttpSpec.Method.values())
-        fakeHeaders = forge.exhaustiveAttributes().mapValues { listOf(it.value.toString()) }.toMutableMap()
+        fakeHeaders = forge.exhaustiveAttributes().mapValues { listOf(it.value.toString()) }
     }
 
     @Test

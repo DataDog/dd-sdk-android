@@ -196,7 +196,7 @@ interface RumMonitor {
      * @see [startResource]
      * @see [stopResource]
      */
-    @SuppressWarnings("LongParameterList")
+    @Suppress("LongParameterList")
     fun stopResourceWithError(
         key: String,
         statusCode: Int?,

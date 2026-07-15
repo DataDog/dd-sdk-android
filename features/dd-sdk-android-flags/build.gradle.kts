@@ -11,6 +11,7 @@ import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.publishingConfig
+import com.datadog.gradle.utils.createJsonModelsGenerationTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -30,15 +31,20 @@ plugins {
     // Tests
     id("de.mobilej.unmock")
     id("org.jetbrains.kotlinx.kover")
+    id("unitTest")
 
     // Internal Generation
     id("apiSurface")
     id("transitiveDependencies")
     id("verificationXml")
     id("binary-compatibility-validator")
+    id("detekt-conventions")
 }
 
-apply(from = "generate_flags_models.gradle.kts")
+createJsonModelsGenerationTask("generateFlagsModelsFromJson") {
+    inputDirPath = "src/main/json/flags"
+    targetPackageName = "com.datadog.android.flags.model"
+}
 
 android {
     namespace = "com.datadog.android.flags"
@@ -68,10 +74,7 @@ dependencies {
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(testFixtures(project(":features:dd-sdk-android-rum")))
-    testImplementation(libs.okHttp)
     testImplementation(libs.okHttpMock)
-    testImplementation(libs.bundles.jUnit5)
-    testImplementation(libs.bundles.testTools)
     unmock(libs.robolectric)
 }
 

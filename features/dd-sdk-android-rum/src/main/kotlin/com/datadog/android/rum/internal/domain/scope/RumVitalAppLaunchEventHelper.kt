@@ -38,7 +38,8 @@ internal class RumVitalAppLaunchEventHelper(
         durationNs: Long,
         scenario: RumStartupScenario,
         appLaunchMetric: VitalAppLaunchEvent.AppLaunchMetric,
-        profilingStatus: VitalAppLaunchEvent.ProfilingStatus?
+        profilingStatus: VitalAppLaunchEvent.ProfilingStatus?,
+        profilingQuotaReason: String? = null
     ): VitalAppLaunchEvent {
         val syntheticsAttribute = if (
             rumContext.syntheticsTestId.isNullOrBlank() ||
@@ -82,7 +83,9 @@ internal class RumVitalAppLaunchEventHelper(
                 ),
                 configuration = VitalAppLaunchEvent.Configuration(sessionSampleRate = sampleRate),
                 profiling = VitalAppLaunchEvent.Profiling(
-                    status = profilingStatus
+                    status = profilingStatus,
+                    quotaReason = profilingQuotaReason,
+                    clockDrift = if (profilingStatus != null) datadogContext.time.serverTimeOffsetMs else null
                 )
             ),
             application = VitalAppLaunchEvent.Application(

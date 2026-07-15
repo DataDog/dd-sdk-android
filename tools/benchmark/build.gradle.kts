@@ -11,6 +11,7 @@ import com.datadog.gradle.config.java11
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.publishingConfig
+import com.datadog.gradle.utils.createJsonModelsGenerationTask
 
 plugins {
     id("com.android.library")
@@ -53,7 +54,10 @@ dependencies {
     testImplementation(libs.bundles.testTools)
 }
 
-apply(from = "generate_trace_models.gradle.kts")
+createJsonModelsGenerationTask("generateTraceModelsFromJson") {
+    inputDirPath = "src/main/json"
+    targetPackageName = "com.datadog.benchmark.internal.model"
+}
 
 kotlinConfig()
 junitConfig()

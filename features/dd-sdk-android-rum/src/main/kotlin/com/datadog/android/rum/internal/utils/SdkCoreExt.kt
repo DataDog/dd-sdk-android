@@ -47,7 +47,7 @@ internal class WriteOperation(
     }
 
     fun submit() {
-        writeScope {
+        writeScope { eventBatchWriter ->
             if (rumDataWriter is NoOpDataWriter) {
                 sdkCore.internalLogger.log(
                     level = InternalLogger.Level.INFO,
@@ -58,7 +58,7 @@ internal class WriteOperation(
             } else {
                 try {
                     val event = eventSource()
-                    val isSuccess = rumDataWriter.write(it, event, eventType)
+                    val isSuccess = rumDataWriter.write(eventBatchWriter, event, eventType)
                     if (isSuccess) {
                         advancedRumMonitor?.let {
                             onSuccess(it)

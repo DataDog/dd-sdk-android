@@ -3,6 +3,18 @@ include:
 
 # SETUP
 
+default:
+  interruptible: true # default all jobs to be interruptable
+
+workflow:
+  rules:
+    - if: "$CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH !~ /^(develop|master)$|^feature\//"
+      auto_cancel:
+        on_new_commit: interruptible # short-lived branches cancel on new commits
+    - when: always # develop, master, feature/*, tags: never auto-canceled
+      auto_cancel:
+        on_new_commit: none
+
 stages:
   - ci-image
   - security
@@ -34,6 +46,19 @@ stages:
     - npm install -g @datadog/datadog-ci
     - export DATADOG_API_KEY=$(get_secret $DD_ANDROID_SECRET__API_KEY)
 
+  setup-gradle:
+    - export GRADLE_USER_HOME="cache/"
+    - echo "org.gradle.jvmargs=-Xmx4096m -javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG" >> gradle.properties
+    # Set max workers to keep memory under control
+    - echo "org.gradle.workers.max=4" >> gradle.properties
+    # Disable cache clean up if we won't upload the cache anywhere
+    - echo "org.gradle.cache.cleanup=$( [[ "$GRADLE_CACHE_CLEANUP" == "true" ]] && echo "always" || echo "disabled" )" >> gradle.properties
+    # Equal to --stacktrace
+    - echo "org.gradle.logging.stacktrace=all" >> gradle.properties
+    # Keep kotlin compiler in Gradle daemon process for more predictable memory
+    - echo "kotlin.compiler.execution.strategy=in-process" >> gradle.properties
+    - echo "--- gradle.properties ---" && cat gradle.properties
+
   # macOS AMI will already have cmdline-tools installed
   install-android-api-components:
     - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "emulator"
@@ -46,13 +71,16 @@ stages:
   setup-macos-ami-runner:
     - !reference [ .snippets, source-secrets-macos ]
     - !reference [ .snippets, setup-dd-tracer ]
+    - !reference [ .snippets, setup-gradle ]
     - !reference [ .snippets, setup-dd-ci-cli ]
     - !reference [ .snippets, install-android-api-components ]
+  start-emulator:
+    - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
   run-legacy-integration-instrumented:
     - set +e
     - exit_code=0
-    - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
-    - GRADLE_OPTS="-Xmx3072m -javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG" DD_TAGS="test.configuration.android_api:$ANDROID_API" ./gradlew :instrumented:integration:connectedDebugAndroidTest --stacktrace --no-daemon $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) || exit_code=$?
+    - !reference [ .snippets, start-emulator ]
+    - DD_TAGS="test.configuration.android_api:$ANDROID_API" ./gradlew :instrumented:integration:connectedDebugAndroidTest $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) || exit_code=$?
     - $ANDROID_HOME/platform-tools/adb emu kill
     - datadog-ci junit upload --service dd-sdk-android --tags test.configuration.android_api:$ANDROID_API --xpath-tag test.suite=/testcase/@classname instrumented/integration/build/outputs/androidTest-results/connected/debug/
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
@@ -60,8 +88,8 @@ stages:
   run-core-it-instrumented:
     - set +e
     - exit_code=0
-    - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
-    - GRADLE_OPTS="-Xmx3072m -javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG" DD_TAGS="test.configuration.android_api:$ANDROID_API" ./gradlew :reliability:core-it:connectedDebugAndroidTest --stacktrace --no-daemon $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) || exit_code=$?
+    - !reference [ .snippets, start-emulator ]
+    - DD_TAGS="test.configuration.android_api:$ANDROID_API" ./gradlew :reliability:core-it:connectedDebugAndroidTest $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) || exit_code=$?
     - $ANDROID_HOME/platform-tools/adb emu kill
     - datadog-ci junit upload --service dd-sdk-android --tags test.configuration.android_api:$ANDROID_API --xpath-tag test.suite=/testcase/@classname reliability/core-it/build/outputs/androidTest-results/connected/debug/
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
@@ -69,15 +97,14 @@ stages:
   run-ndk-instrumented:
     - set +e
     - exit_code=0
-    - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
-    - GRADLE_OPTS="-Xmx3072m -javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG" DD_TAGS="test.configuration.android_api:$ANDROID_API" ./gradlew :features:dd-sdk-android-ndk:connectedDebugAndroidTest --stacktrace --no-daemon $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) || exit_code=$?
+    - !reference [ .snippets, start-emulator ]
+    - DD_TAGS="test.configuration.android_api:$ANDROID_API" ./gradlew :features:dd-sdk-android-ndk:connectedDebugAndroidTest $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) || exit_code=$?
     - $ANDROID_HOME/platform-tools/adb emu kill
     - datadog-ci junit upload --service dd-sdk-android --tags test.configuration.android_api:$ANDROID_API --xpath-tag test.suite=/testcase/@classname features/dd-sdk-android-ndk/build/outputs/androidTest-results/connected/debug/
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
     - exit 0
   set-publishing-credentials:
     - !reference [.snippets, source-secrets]
-    - get_secret $DD_ANDROID_SECRET__GRADLE_PROPERTIES >> ./gradle.properties
     - export GPG_PRIVATE_KEY=$(get_secret $DD_ANDROID_SECRET__SIGNING_GPG_PRIVATE_KEY)
     - export GPG_PASSWORD=$(get_secret $DD_ANDROID_SECRET__SIGNING_GPG_PASSPHRASE)
     - export CENTRAL_PUBLISHER_USERNAME=$(get_secret $DD_ANDROID_SECRET__PUBLISHING_CENTRAL_USERNAME)
@@ -89,6 +116,7 @@ stages:
     key: $CI_COMMIT_REF_SLUG
     paths:
       - cache/caches/
+      - cache/wrapper/
       - cache/notifications/
     policy: pull
 
@@ -99,9 +127,15 @@ ci-image:
   when: manual
   except: [ tags, schedules ]
   tags: [ "arch:amd64" ]
+  interruptible: false
+  id_tokens:
+    DDSIGN_ID_TOKEN:
+      aud: image-integrity
   image: 486234852809.dkr.ecr.us-east-1.amazonaws.com/docker:24.0.4-jammy
   script:
-    - docker buildx build --tag $CI_IMAGE_DOCKER -f ./ci/Dockerfile.gitlab --push .
+    - METADATA_FILE=$(mktemp)
+    - docker buildx build --tag $CI_IMAGE_DOCKER -f ./ci/Dockerfile.gitlab --push --metadata-file ${METADATA_FILE} .
+    - ddsign sign $CI_IMAGE_DOCKER --docker-metadata-file ${METADATA_FILE}
 
 # SECURITY
 
@@ -109,6 +143,7 @@ create_key:
   stage: security
   when: manual
   tags: [ "arch:amd64" ]
+  interruptible: false
   variables:
     PROJECT_NAME: "dd-sdk-android"
     EXPORT_TO_KEYSERVER: "true"
@@ -127,11 +162,12 @@ static-analysis:
   stage: analysis
   variables:
     DETEKT_PUBLIC_API: "true"
-    DETEKT_GENERATE_CLASSPATH_BUILD_TASK: "printSdkDebugRuntimeClasspath"
+    # Our Detekt tasks can't run in parallel mode
+    DETEKT_GENERATE_CLASSPATH_BUILD_TASK: "printSdkDebugRuntimeClasspath --no-parallel"
     DETEKT_CLASSPATH_FILE_PATH: "sdk_classpath"
     FLAVORED_ANDROID_LINT: ":tools:lint:lint"
   trigger:
-    include: "https://gitlab-templates.ddbuild.io/mobile/v112054347-9fbe0af8/static-analysis.yml"
+    include: "https://gitlab-templates.ddbuild.io/mobile/v123745390-227cb48b/static-analysis.yml"
     strategy: depend
 
 analysis:detekt-custom:
@@ -143,12 +179,11 @@ analysis:detekt-custom:
   stage: analysis
   timeout: 1h
   script:
-    - ./gradlew assembleLibrariesRelease --parallel --stacktrace
-    - ./gradlew unzipAarForDetekt --stacktrace
-    - ./gradlew :tools:detekt:jar --stacktrace
-    - ./gradlew printDetektClasspath --stacktrace
+    - !reference [.snippets, setup-gradle]
+    - ./gradlew unzipAarForDetekt :tools:detekt:jar
+    - ./gradlew printDetektClasspath --no-parallel
     - curl -sSLO https://github.com/detekt/detekt/releases/download/v1.23.8/detekt-cli-1.23.8-all.jar
-    - ./gradlew customDetektRules --parallel --max-workers=4
+    - ./gradlew customDetektRules
 
 # TODO RUM-1622 cleanup this section
 # TESTS
@@ -161,17 +196,15 @@ test:debug:
   stage: test
   timeout: 1h
   script:
-    - rm -rf ~/.gradle/daemon/
+    - !reference [.snippets, setup-gradle]
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
     - >-
-        GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:debug" ./gradlew
+        DD_TAGS="test.configuration.variant:debug" ./gradlew
         :dd-sdk-android-core:testDebugUnitTest
         :dd-sdk-android-internal:testDebugUnitTest
         :unitTestDebugFeatures
         :unitTestDebugIntegrations
         :unitTestDebugSamples
-        --parallel --max-workers=4 --no-daemon --build-cache --gradle-user-home cache/
-        -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
   artifacts:
     when: always
     expire_in: 1 week
@@ -186,36 +219,37 @@ test:tools:
   stage: test
   timeout: 1h
   script:
-    - rm -rf ~/.gradle/daemon/
+    - !reference [.snippets, setup-gradle]
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
-    - GRADLE_OPTS="-Xmx3072m" ./gradlew :unitTestTools --stacktrace --no-daemon --build-cache --gradle-user-home cache/
+    - ./gradlew :unitTestTools
 
 test:kover:
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test
   timeout: 1h
+  variables:
+    GRADLE_CACHE_CLEANUP: "true"
   cache:
     key: $CI_COMMIT_REF_SLUG
     paths:
       - cache/caches/
+      - cache/wrapper/
       - cache/notifications/
   script:
     - !reference [.snippets, source-secrets]
+    - !reference [.snippets, setup-gradle]
     - pip3 install datadog
-    - rm -rf ~/.gradle/daemon/
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
     - export DD_API_KEY=$(get_secret $DD_ANDROID_SECRET__API_KEY)
     - export DD_APP_KEY=$(get_secret $DD_ANDROID_SECRET__APP_KEY)
     - CODECOV_TOKEN=$(get_secret $DD_ANDROID_SECRET__CODECOV_TOKEN)
     - >-
-        GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew
+        DD_TAGS="test.configuration.variant:release" ./gradlew
         :dd-sdk-android-core:koverXmlReportRelease
         :dd-sdk-android-internal:koverXmlReportRelease
         :koverReportFeatures
         :koverReportIntegrations
-        --parallel --max-workers=4 --no-daemon --build-cache --gradle-user-home cache/
-        -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
     - bash <(cat ./ci/scripts/codecov.sh) -t $CODECOV_TOKEN
     - npm install -g @datadog/datadog-ci
     - datadog-ci coverage upload --format=jacoco . || true
@@ -250,9 +284,9 @@ test-pyramid:core-it-latest-api:
   stage: test-pyramid
   timeout: 1h
   variables:
-    ANDROID_API: "36"
-    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
-    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
+    ANDROID_API: "37"
+    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API.0;google_apis_ps16k;${ANDROID_ARCH}"
+    ANDROID_PLATFORM: "platforms;android-$ANDROID_API.0"
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
   script:
     - !reference [.snippets, setup-macos-ami-runner]
@@ -281,9 +315,9 @@ test-pyramid:single-fit-logs:
   stage: test-pyramid
   timeout: 1h
   script:
-    - rm -rf ~/.gradle/daemon/
+    - !reference [.snippets, setup-gradle]
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
-    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:logs:testReleaseUnitTest --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
+    - DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:logs:testReleaseUnitTest
   artifacts:
     when: always
     expire_in: 1 week
@@ -298,9 +332,9 @@ test-pyramid:single-fit-rum:
   stage: test-pyramid
   timeout: 1h
   script:
-    - rm -rf ~/.gradle/daemon/
+    - !reference [.snippets, setup-gradle]
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
-    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:rum:testReleaseUnitTest --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
+    - DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:rum:testReleaseUnitTest
   artifacts:
     when: always
     expire_in: 1 week
@@ -315,9 +349,9 @@ test-pyramid:single-fit-trace:
   stage: test-pyramid
   timeout: 1h
   script:
-    - rm -rf ~/.gradle/daemon/
+    - !reference [.snippets, setup-gradle]
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
-    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:trace:testReleaseUnitTest --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
+    - DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:trace:testReleaseUnitTest
   artifacts:
     when: always
     expire_in: 1 week
@@ -332,9 +366,9 @@ test-pyramid:single-fit-okhttp:
   stage: test-pyramid
   timeout: 1h
   script:
-    - rm -rf ~/.gradle/daemon/
+    - !reference [.snippets, setup-gradle]
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
-    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:okhttp:testReleaseUnitTest --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
+    - DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:okhttp:testReleaseUnitTest
   artifacts:
     when: always
     expire_in: 1 week
@@ -365,9 +399,9 @@ test-pyramid:legacy-integration-instrumented-latest-api:
   stage: test-pyramid
   timeout: 1h
   variables:
-    ANDROID_API: "36"
-    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
-    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
+    ANDROID_API: "37"
+    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API.0;google_apis_ps16k;${ANDROID_ARCH}"
+    ANDROID_PLATFORM: "platforms;android-$ANDROID_API.0"
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
   script:
     - !reference [.snippets, setup-macos-ami-runner]
@@ -395,9 +429,9 @@ test-pyramid:ndk-instrumented-latest-api:
   stage: test-pyramid
   timeout: 1h
   variables:
-    ANDROID_API: "36"
-    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
-    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
+    ANDROID_API: "37"
+    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API.0;google_apis_ps16k;${ANDROID_ARCH}"
+    ANDROID_PLATFORM: "platforms;android-$ANDROID_API.0"
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
   script:
     - !reference [.snippets, setup-macos-ami-runner]
@@ -412,11 +446,10 @@ test-pyramid:detekt-api-coverage:
   timeout: 1h
   script:
     - !reference [ .snippets, source-secrets ]
+    - !reference [ .snippets, setup-gradle ]
     - mkdir -p ./config/
-    - get_secret $DD_ANDROID_SECRET__GRADLE_PROPERTIES >> ./gradle.properties
-    - GRADLE_OPTS="-Xmx4096M" ./gradlew assembleLibrariesDebug --stacktrace --no-daemon
-    - GRADLE_OPTS="-Xmx4096M" ./gradlew printSdkDebugRuntimeClasspath --stacktrace --no-daemon
-    - GRADLE_OPTS="-Xmx4096M" ./gradlew :tools:detekt:jar --stacktrace --no-daemon
+    - ./gradlew assembleLibrariesDebug :tools:detekt:jar
+    - ./gradlew printSdkDebugRuntimeClasspath --no-parallel # can't be combined with line above due to fails in parallel mode due to design of our detekt system
     - curl -sSLO https://github.com/detekt/detekt/releases/download/v1.23.8/detekt-cli-1.23.8-all.jar
     # Explicit includes to avoid OOM. Keep it in sync with includes for rules.
     - java -jar detekt-cli-1.23.8-all.jar --config detekt_test_pyramid.yml --plugins tools/detekt/build/libs/detekt.jar -ex "**/*.kts" -in "**/reliability/**,**/dd-sdk-android-*/**" --jvm-target 11 -cp $(cat sdk_classpath)
@@ -435,15 +468,14 @@ test-pyramid:publish-e2e-synthetics:
   script:
     - !reference [ .snippets, source-secrets ]
     - mkdir -p ./config/
-    - get_secret $DD_ANDROID_SECRET__GRADLE_PROPERTIES >> ./gradle.properties
     - get_secret $DD_ANDROID_SECRET__KEYSTORE | base64 -d > ./sample-android.keystore
     - get_secret $DD_ANDROID_SECRET__E2E_CONFIG_JSON > ./config/us1.json
     - export E2E_STORE_PASSWD=$(get_secret $DD_ANDROID_SECRET__KEYSTORE_PWD)
     - export E2E_DD_API_KEY=$(get_secret $DD_ANDROID_SECRET__E2E_API_KEY)
     - export E2E_DD_APP_KEY=$(get_secret $DD_ANDROID_SECRET__E2E_APP_KEY)
     - export E2E_MOBILE_APP_ID=$(get_secret $DD_ANDROID_SECRET__E2E_MOBILE_APP_ID)
-    - GRADLE_OPTS="-Xmx4096M" ./gradlew assembleLibrariesRelease --stacktrace --no-daemon
-    - GRADLE_OPTS="-Xmx4096M" ./gradlew :sample:kotlin:packageUs1Release --stacktrace --no-daemon
+    - !reference [ .snippets, setup-gradle ]
+    - ./gradlew :sample:kotlin:packageUs1Release
     - npm update -g @datadog/datadog-ci
     - echo "Using datadog-ci $(npx @datadog/datadog-ci version)"
     - npx @datadog/datadog-ci synthetics upload-application --appKey "$E2E_DD_APP_KEY" --apiKey "$E2E_DD_API_KEY" --mobileApp "sample/kotlin/build/outputs/apk/us1/release/kotlin-us1-release.apk" --mobileApplicationId "$E2E_MOBILE_APP_ID" --versionName "$CI_COMMIT_SHORT_SHA" --latest
@@ -465,15 +497,14 @@ test-pyramid:publish-webview-synthetics:
   script:
     - !reference [ .snippets, source-secrets ]
     - mkdir -p ./config/
-    - get_secret $DD_ANDROID_SECRET__GRADLE_PROPERTIES >> ./gradle.properties
     - get_secret $DD_ANDROID_SECRET__KEYSTORE | base64 -d > ./sample-android.keystore
     - get_secret $DD_ANDROID_SECRET__WEBVIEW_CONFIG_JSON > ./config/us1.json
     - export E2E_STORE_PASSWD=$(get_secret $DD_ANDROID_SECRET__KEYSTORE_PWD)
     - export E2E_DD_API_KEY=$(get_secret $DD_ANDROID_SECRET__WEBVIEW_API_KEY)
     - export E2E_DD_APP_KEY=$(get_secret $DD_ANDROID_SECRET__WEBVIEW_APP_KEY)
     - export E2E_MOBILE_APP_ID=$(get_secret $DD_ANDROID_SECRET__WEBVIEW_MOBILE_APP_ID)
-    - GRADLE_OPTS="-Xmx4096M" ./gradlew assembleLibrariesRelease --stacktrace --no-daemon
-    - GRADLE_OPTS="-Xmx4096M" ./gradlew :sample:kotlin:packageUs1Release --stacktrace --no-daemon
+    - !reference [ .snippets, setup-gradle ]
+    - ./gradlew :sample:kotlin:packageUs1Release
     - npm update -g @datadog/datadog-ci
     - echo "Using datadog-ci $(npx @datadog/datadog-ci version)"
     - npx @datadog/datadog-ci synthetics upload-application --appKey "$E2E_DD_APP_KEY" --apiKey "$E2E_DD_API_KEY" --mobileApp "sample/kotlin/build/outputs/apk/us1/release/kotlin-us1-release.apk" --mobileApplicationId "$E2E_MOBILE_APP_ID" --versionName "$CI_COMMIT_SHORT_SHA" --latest
@@ -495,15 +526,14 @@ test-pyramid:publish-staging-synthetics:
   script:
     - !reference [ .snippets, source-secrets ]
     - mkdir -p ./config/
-    - get_secret $DD_ANDROID_SECRET__GRADLE_PROPERTIES >> ./gradle.properties
     - get_secret $DD_ANDROID_SECRET__KEYSTORE | base64 -d > ./sample-android.keystore
     - get_secret $DD_ANDROID_SECRET__E2E_STAGING_CONFIG_JSON > ./config/staging.json
     - export E2E_STORE_PASSWD=$(get_secret $DD_ANDROID_SECRET__KEYSTORE_PWD)
     - export E2E_DD_API_KEY=$(get_secret $DD_ANDROID_SECRET__E2E_STAGING_API_KEY)
     - export E2E_DD_APP_KEY=$(get_secret $DD_ANDROID_SECRET__E2E_STAGING_APP_KEY)
     - export E2E_MOBILE_APP_ID=$(get_secret $DD_ANDROID_SECRET__E2E_STAGING_APP_ID)
-    - GRADLE_OPTS="-Xmx4096M" ./gradlew assembleLibrariesRelease --stacktrace --no-daemon
-    - GRADLE_OPTS="-Xmx4096M" ./gradlew :sample:kotlin:packageStagingRelease --stacktrace --no-daemon
+    - !reference [ .snippets, setup-gradle ]
+    - ./gradlew :sample:kotlin:packageStagingRelease
     - npm update -g @datadog/datadog-ci
     - echo "Using datadog-ci $(npx @datadog/datadog-ci version)"
     - npx @datadog/datadog-ci synthetics upload-application --appKey "$E2E_DD_APP_KEY" --apiKey "$E2E_DD_API_KEY" --mobileApp "sample/kotlin/build/outputs/apk/staging/release/kotlin-staging-release.apk" --mobileApplicationId "$E2E_MOBILE_APP_ID" --versionName "$CI_COMMIT_SHORT_SHA" --latest --datadogSite "datad0g.com"
@@ -525,15 +555,14 @@ test-pyramid:publish-benchmark-synthetics:
   script:
     - !reference [ .snippets, source-secrets ]
     - mkdir -p ./config/
-    - get_secret $DD_ANDROID_SECRET__GRADLE_PROPERTIES >> ./gradle.properties
     - get_secret $DD_ANDROID_SECRET__KEYSTORE | base64 -d >  ./sample-benchmark.keystore
     - get_secret $DD_ANDROID_SECRET__BENCHMARK_CONFIG_JSON > ./config/benchmark.json
     - export BM_STORE_PASSWD=$(get_secret $DD_ANDROID_SECRET__KEYSTORE_PWD)
     - export BM_DD_API_KEY=$(get_secret $DD_ANDROID_SECRET__BENCHMARK_API_KEY)
     - export BM_DD_APP_KEY=$(get_secret $DD_ANDROID_SECRET__BENCHMARK_APP_KEY)
     - export BM_MOBILE_APP_ID=$(get_secret $DD_ANDROID_SECRET__BENCHMARK_MOBILE_APP_ID)
-    - GRADLE_OPTS="-Xmx4096M" ./gradlew assembleLibrariesRelease --stacktrace --no-daemon
-    - GRADLE_OPTS="-Xmx4096M" ./gradlew :sample:benchmark:packageRelease --stacktrace --no-daemon
+    - !reference [ .snippets, setup-gradle ]
+    - ./gradlew :sample:benchmark:packageRelease
     - npm update -g @datadog/datadog-ci
     - echo "Using datadog-ci $(npx @datadog/datadog-ci version)"
     - npx @datadog/datadog-ci synthetics upload-application --appKey "$BM_DD_APP_KEY" --apiKey "$BM_DD_API_KEY" --mobileApp "sample/benchmark/build/outputs/apk/release/benchmark-release.apk" --mobileApplicationId "$BM_MOBILE_APP_ID" --versionName "$CI_COMMIT_SHORT_SHA" --latest
@@ -547,6 +576,7 @@ test-pyramid:publish-benchmark-synthetics:
 
 publish:release-all:
   tags: [ "arch:amd64" ]
+  interruptible: false
   only:
     - tags
     - develop
@@ -555,7 +585,8 @@ publish:release-all:
   timeout: 30m
   script:
     - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
+    - !reference [.snippets, setup-gradle]
+    - ./gradlew publishToSonatype closeSonatypeStagingRepository --no-build-cache
   artifacts:
     when: on_success
     expire_in: 7 days
@@ -567,6 +598,7 @@ publish:release-all:
 
 notify:publish-develop-success:
   extends: .slack-notifier-base
+  interruptible: false
   stage: notify
   when: on_success
   only:
@@ -577,6 +609,7 @@ notify:publish-develop-success:
 
 notify:publish-develop-failure:
   extends: .slack-notifier-base
+  interruptible: false
   stage: notify
   when: on_failure
   only:
@@ -588,6 +621,7 @@ notify:publish-develop-failure:
 
 notify:publish-release-success:
   extends: .slack-notifier-base
+  interruptible: false
   stage: notify
   when: on_success
   only:
@@ -599,6 +633,7 @@ notify:publish-release-success:
 
 notify:publish-release-failure:
   extends: .slack-notifier-base
+  interruptible: false
   stage: notify
   when: on_failure
   only:
@@ -610,6 +645,7 @@ notify:publish-release-failure:
 
 notify:dogfood-app:
   tags: [ "arch:amd64" ]
+  interruptible: false
   only:
     - tags
   image: $CI_IMAGE_DOCKER
@@ -625,6 +661,7 @@ notify:dogfood-app:
 
 notify:dogfood-demo:
   tags: [ "arch:amd64" ]
+  interruptible: false
   only:
     - tags
   image: $CI_IMAGE_DOCKER
@@ -640,6 +677,7 @@ notify:dogfood-demo:
 
 notify:dogfood-gradle-plugin:
   tags: [ "arch:amd64" ]
+  interruptible: false
   only:
     - tags
   image: $CI_IMAGE_DOCKER
@@ -655,6 +693,7 @@ notify:dogfood-gradle-plugin:
 
 notify:merge-verification-metadata:
   tags: [ "arch:amd64" ]
+  interruptible: false
   only:
     - tags
   image: $CI_IMAGE_DOCKER

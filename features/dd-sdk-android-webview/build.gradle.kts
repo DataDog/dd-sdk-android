@@ -30,12 +30,14 @@ plugins {
     // Tests
     id("de.mobilej.unmock")
     id("org.jetbrains.kotlinx.kover")
+    id("unitTest")
 
     // Internal Generation
     id("apiSurface")
     id("transitiveDependencies")
     id("verificationXml")
     id("binary-compatibility-validator")
+    id("detekt-conventions")
 }
 
 android {
@@ -63,8 +65,6 @@ dependencies {
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(testFixtures(project(":features:dd-sdk-android-rum")))
     testImplementation(libs.okHttp)
-    testImplementation(libs.bundles.jUnit5)
-    testImplementation(libs.bundles.testTools)
     unmock(libs.robolectric)
 }
 

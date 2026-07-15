@@ -29,12 +29,14 @@ plugins {
     // Tests
     id("de.mobilej.unmock")
     id("org.jetbrains.kotlinx.kover")
+    id("unitTest")
 
     // Internal Generation
     id("apiSurface")
     id("transitiveDependencies")
     id("verificationXml")
     id("binary-compatibility-validator")
+    id("detekt-conventions")
 }
 
 android {
@@ -64,8 +66,6 @@ dependencies {
     testImplementation(testFixtures(project(":features:dd-sdk-android-trace")))
 
     testImplementation(libs.elmyrJUnit4)
-    testImplementation(libs.bundles.jUnit5)
-    testImplementation(libs.bundles.testTools)
     testImplementation(project(":tools:unit")) {
         attributes {
             attribute(

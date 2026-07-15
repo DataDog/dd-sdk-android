@@ -234,6 +234,7 @@ build,org.eclipse.jetty.toolchain,"Eclipse Public License - v 2.0","Copyright Ec
 build,org.freemarker,Apache-2.0,"Copyright 2015-2018 The Apache Software Foundation"
 build,org.fusesource.jansi,Apache-2.0,"Copyright Jansi authors"
 build,org.glassfish.jaxb,"Eclipse Distribution License - v 1.0","Copyright (c) 2018 Oracle and/or its affiliates"
+build,org.jcommander,Apache-2.0,"Copyright (C) 2010 the original author or authors"
 build,org.jetbrains.dokka,Apache-2.0,"Copyright 2014-2019 JetBrains s.r.o. and Dokka project contributors."
 build,org.jetbrains.intellij.deps,LGPL-2.1-only,"Copyright (c) 2001-2002, Eric D. Friedman, Jason Baldridge, Copyright (c) 1999 CERN - European Organization for Nuclear Research"
 build,org.jvnet.staxex,"Eclipse Distribution License - v 1.0","Copyright (c) 1997-2015 Oracle and/or its affiliates"

@@ -4,6 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+// doNothing() (used inside lenient().apply { ... } below) confuses detekt's UnusedImports usage tracking
+@file:Suppress("UnusedImports")
+
 package com.datadog.android.flags.openfeature
 
 import com.datadog.android.api.InternalLogger
@@ -71,6 +74,7 @@ internal class DatadogFlagsProviderTest {
     private var capturedStateListener: FlagsStateListener? = null
 
     @BeforeEach
+    @Suppress("UnnecessaryApply") // lenient()'s pending-stub marker must consume the same mock invocation it wraps
     fun setUp() {
         whenever(mockSdkCore.internalLogger).thenReturn(mockInternalLogger)
 

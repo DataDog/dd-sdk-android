@@ -30,12 +30,14 @@ plugins {
     // Tests
     id("de.mobilej.unmock")
     id("org.jetbrains.kotlinx.kover")
+    id("unitTest")
 
     // Internal Generation
     id("apiSurface")
     id("transitiveDependencies")
     id("verificationXml")
     id("binary-compatibility-validator")
+    id("detekt-conventions")
 }
 
 android {
@@ -46,14 +48,6 @@ android {
     }
     buildFeatures {
         compose = true
-    }
-
-    libraryVariants.all {
-        packageLibraryProvider.configure {
-            from("src/main/resources") {
-                include("META-INF/**/verification.properties")
-            }
-        }
     }
 }
 
@@ -76,8 +70,6 @@ dependencies {
         }
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
-    testImplementation(libs.bundles.jUnit5)
-    testImplementation(libs.bundles.testTools)
     unmock(libs.robolectric)
 }
 
