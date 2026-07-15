@@ -350,9 +350,11 @@ internal class PixelCapture(
         // Only reads View.isDirty (a real interaction, not free) when there's actually a same-size
         // entry to weigh it against — with no cache at all, or a size mismatch, the entry can't be
         // fresh regardless of what isDirty reports, so checking it would be pure waste.
+        val ageMs = cached?.let { elapsedRealtimeMs() - it.capturedAtMs }
+        val isDirty = if (cacheMatchesSize) pending.isolationView.isDirty else null
         val cacheIsFresh = cacheMatchesSize &&
-            elapsedRealtimeMs() - checkNotNull(cached).capturedAtMs <
-            if (pending.isolationView.isDirty) MIN_REDRAW_INTERVAL_MS else MAX_CACHE_AGE_MS
+            checkNotNull(ageMs) < if (checkNotNull(isDirty)) MIN_REDRAW_INTERVAL_MS else MAX_CACHE_AGE_MS
+
         if (cacheIsFresh) {
             cacheReuseCount++
             applyResourceId(pending, checkNotNull(cached).resourceId)

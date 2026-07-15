@@ -10,10 +10,15 @@
 package com.datadog.android.sessionreplay.compose.internal.tree
 
 import android.graphics.Rect
+import android.graphics.Typeface
+import android.text.TextPaint
 import android.view.View
 import android.view.ViewGroup
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.isSpecified
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.node.DrawModifierNode
@@ -28,9 +33,11 @@ import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.unit.Density
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.GenericFontFamily
 import androidx.compose.ui.unit.isUnspecified
 import androidx.compose.ui.unit.sp
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.compose.internal.utils.BackgroundResolver
 import com.datadog.android.sessionreplay.compose.internal.utils.ReflectionUtils
@@ -45,6 +52,7 @@ import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
+import kotlin.math.max
 
 /**
  * Walks a Compose host's real [LayoutNode] tree via public APIs (see the class-level notes on
@@ -67,6 +75,10 @@ internal class DefaultComposeCompositionWalker : HostViewDecomposer {
     private val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter
     private val reflectionUtils = ReflectionUtils()
 
+    // Matches DEFAULT_FONT_FAMILY ("roboto, sans-serif") — used to re-measure text width when a
+    // node's real font is being substituted for it, see widthPaddedForFontFallback.
+    private val fallbackFontPaint = TextPaint().apply { typeface = Typeface.SANS_SERIF }
+
     // `innerBoundsOf` is only used by `BackgroundResolver.resolveBackgroundInfo`, which this class
     // doesn't call — only `resolveBackgroundColor`/`resolveBackgroundShape`, neither of which
     // invoke it — so this is a harmless placeholder, never actually invoked.
@@ -84,8 +96,8 @@ internal class DefaultComposeCompositionWalker : HostViewDecomposer {
             owner.root
         } catch (e: Exception) {
             request.internalLogger.log(
-                com.datadog.android.api.InternalLogger.Level.WARN,
-                com.datadog.android.api.InternalLogger.Target.MAINTAINER,
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
                 { "HostViewDecomposer: failed to resolve root LayoutNode" },
                 e
             )
@@ -104,7 +116,16 @@ internal class DefaultComposeCompositionWalker : HostViewDecomposer {
             collectSemanticsNodes(it, semanticsById)
         }
 
-        fun walk(node: LayoutNode, effectiveAlpha: Float) {
+        // ancestorOpaqueColorHex: the nearest fully-opaque ancestor shape wireframe's color, or
+        // null if there isn't one (or it's translucent). A node with a `.clip(shape)` modifier
+        // clips *everything drawn inside it* to that shape on the real screen — which we don't
+        // and (with today's rectangle-only WireframeClip) largely can't reproduce generally. But
+        // when a descendant shape is fully opaque and the exact same color as that ancestor, it's
+        // visually redundant regardless of its own (possibly mismatched) corner radius — skipping
+        // it avoids exactly that mismatch (e.g. a button's inner content/state-layer container
+        // carrying a squarer radius than the outer pill it's invisibly clipped within) without
+        // needing real clip propagation. See resolveShapeCornerRadius's doc for the underlying gap.
+        fun walk(node: LayoutNode, effectiveAlpha: Float, ancestorOpaqueColorHex: String?) {
             if (!node.isPlaced || !node.isAttached) return
 
             val interopView = (node as? InteroperableComposeUiNode)?.getInteropView()
@@ -118,7 +139,24 @@ internal class DefaultComposeCompositionWalker : HostViewDecomposer {
             val ownSemantics = semanticsById[node.semanticsId]?.config ?: SemanticsConfiguration()
             val textContent = resolveTextContent(ownSemantics)
             if (textContent != null) {
-                val wireframe = buildTextWireframe(node, view, ownSemantics, textContent, request)
+                val resolvedLayoutResult = resolveTextLayoutResult(ownSemantics)
+                val fontFamily = resolvedLayoutResult?.layoutInput?.style?.fontFamily
+                val isCustomFont = fontFamily != null && fontFamily !is GenericFontFamily
+
+                // A custom font (as opposed to a GenericFontFamily) has no equivalent the player
+                // can render — see resolveFontFamily/widthPaddedForFontFallback. Pixel-capturing
+                // the real rendered glyphs is strictly more faithful than substituting a
+                // different font, so prefer it here — falling back to the (already
+                // width-padded) text wireframe when capture is ineligible (privacy — see
+                // PixelCaptureEligibility) or this host's per-cycle capture budget is spent,
+                // rather than ever dropping the text.
+                val wireframe = if (isCustomFont && captureCount < MAX_CAPTURES_PER_HOST) {
+                    registerLeafCapture(node, view, request)?.also { captureCount++ }
+                        ?: buildTextWireframe(node, view, textContent, resolvedLayoutResult, request)
+                } else {
+                    buildTextWireframe(node, view, textContent, resolvedLayoutResult, request)
+                }
+
                 if (wireframe == null) return
                 emitWireframe(wireframe, nodeAlpha, rootChildren, wireframes, nestedLayers)
                 return
@@ -131,9 +169,15 @@ internal class DefaultComposeCompositionWalker : HostViewDecomposer {
                 val semanticsNode = semanticsById[node.semanticsId]
                 val shapeWireframe = resolveSimpleShapeWireframe(node, semanticsNode, view, request)
                 if (shapeWireframe != null) {
-                    emitWireframe(shapeWireframe, nodeAlpha, rootChildren, wireframes, nestedLayers)
+                    val colorHex = shapeWireframe.shapeStyle?.backgroundColor
+                    val isOpaque = colorHex != null && colorHex.endsWith(OPAQUE_HEX_SUFFIX, ignoreCase = true)
+                    val isRedundant = isOpaque && colorHex == ancestorOpaqueColorHex
+                    if (!isRedundant) {
+                        emitWireframe(shapeWireframe, nodeAlpha, rootChildren, wireframes, nestedLayers)
+                    }
+                    val childAncestorColorHex = if (isOpaque) colorHex else ancestorOpaqueColorHex
                     for (i in 0 until children.size) {
-                        walk(children[i], nodeAlpha)
+                        walk(children[i], nodeAlpha, childAncestorColorHex)
                     }
                     return
                 }
@@ -147,12 +191,12 @@ internal class DefaultComposeCompositionWalker : HostViewDecomposer {
                 emitWireframe(wireframe, nodeAlpha, rootChildren, wireframes, nestedLayers)
             } else {
                 for (i in 0 until children.size) {
-                    walk(children[i], nodeAlpha)
+                    walk(children[i], nodeAlpha, ancestorOpaqueColorHex)
                 }
             }
         }
 
-        walk(root, 1f)
+        walk(root, 1f, null)
 
         if (rootChildren.isEmpty()) return null
 
@@ -238,6 +282,32 @@ internal class DefaultComposeCompositionWalker : HostViewDecomposer {
     }
 
     /**
+     * [node]'s own `Modifier.paint(painter, ...)` element's [Painter.intrinsicSize] in px, or
+     * `null` if this node has no such modifier (or the painter's intrinsic size is unspecified) —
+     * read via the same public, stable [InspectableValue] mechanism [nodeOwnAlpha]/[hasDrawingEffect]
+     * already use for `alpha`/`clip` (confirmed: every `ModifierNodeElement`, including the private
+     * `PainterElement` backing `.paint()`, is an `InspectableValue`, and `PainterElement` explicitly
+     * exposes `painter` under the `"paint"` name — no reflection, no internal member access).
+     *
+     * Only a fallback for [registerLeafCapture] when [LayoutCoordinates.boundsInRoot] degenerates
+     * to a zero size — see that function's doc for why `node.coordinates` (LayoutNode's
+     * `innerCoordinator`) can't see this modifier's size effect.
+     */
+    private fun resolvePainterIntrinsicSizePx(node: LayoutNode): Size? {
+        for (info in node.getModifierInfo()) {
+            val modifier = info.modifier
+            if (modifier is InspectableValue && modifier.nameFallback == PAINT_NAME_FALLBACK) {
+                val painter = modifier.inspectableElements
+                    .firstOrNull { it.name == PAINTER_PROPERTY_NAME }?.value as? Painter
+                // Size.Unspecified is NaN-backed, so a plain > 0f comparison (done by the caller)
+                // already excludes it without needing a separate isUnspecified check/import here.
+                if (painter != null) return painter.intrinsicSize
+            }
+        }
+        return null
+    }
+
+    /**
      * `AndroidComposeView` implements `Owner` directly — but the traversal usually first
      * encounters the *outer* `ComposeView` wrapper (which itself hosts one `AndroidComposeView`
      * child), since `isComposeHostView` in `CompositionTreeBuilder` matches on either class name
@@ -267,12 +337,43 @@ internal class DefaultComposeCompositionWalker : HostViewDecomposer {
     ): MobileSegment.Wireframe.ImageWireframe? {
         val pixelCaptureCallback = request.pixelCaptureCallback ?: return null
 
-        val boundsPx = try {
+        // node.coordinates resolves to LayoutNode.innerCoordinator — the node's own content
+        // coordinate space *before* its modifier chain applies — not the outer coordinator that's
+        // actually drawn/hit-tested and what Layout Inspector shows. For a plain clip()+background()
+        // this makes no visible difference (those modifiers don't change measured size, so inner
+        // and outer coincide) — but a node with a size-affecting modifier further in the chain
+        // (e.g. Icon's internal .paint(painter), sized from the painter's intrinsic size) measures
+        // that effect *outside* the inner coordinate space, so this can read 0 height for a node
+        // that's genuinely, say, 32x32 on screen (confirmed on-device via Layout Inspector). The
+        // outer coordinator would be the correct read, but it's a true `internal`-only Compose UI
+        // member (unlike coordinates, which overrides a public interface) — Kotlin's
+        // internal-visibility name-mangling embeds a compose-ui-module suffix (e.g. `$ui_release`)
+        // in the compiled method name, not guaranteed stable across the Compose UI build variants
+        // a host app might bundle — confirmed on-device via a NoSuchMethodError crash. Do not
+        // switch this back to node.outerCoordinator.
+        //
+        // POSITION (left/top) from node.coordinates is still reliable here: translating even a
+        // degenerate zero-size box up the coordinator chain lands at the correct root-space origin,
+        // since .paint()/.clip()/.background() all place themselves at a zero intra-node offset —
+        // only the SIZE half of boundsInRoot() is broken. So when the primary read is degenerate,
+        // this falls back to the node's own position (still correct) combined with a SIZE derived
+        // from the Painter's public, stable intrinsicSize — read via the same safe InspectableValue
+        // mechanism already used above for alpha/clip/shape, not reflection or any internal member.
+        val rawBoundsPx = try {
             node.coordinates.boundsInRoot()
         } catch (e: Exception) {
             return null
         }
-        if (boundsPx.width <= 0f || boundsPx.height <= 0f) return null
+        val boundsPx = if (rawBoundsPx.width > 0f && rawBoundsPx.height > 0f) {
+            rawBoundsPx
+        } else {
+            val painterSize = resolvePainterIntrinsicSizePx(node)
+            if (painterSize != null && painterSize.width > 0f && painterSize.height > 0f) {
+                androidx.compose.ui.geometry.Rect(offset = rawBoundsPx.topLeft, size = painterSize)
+            } else {
+                return null
+            }
+        }
 
         val locationOnScreen = IntArray(2)
         hostView.getLocationOnScreen(locationOnScreen)
@@ -311,6 +412,7 @@ internal class DefaultComposeCompositionWalker : HostViewDecomposer {
             y = globalBounds.y,
             width = globalBounds.width,
             height = globalBounds.height,
+            clip = resolveClip(screenBoundsPx(locationOnScreen, boundsPx), request, density),
             isEmpty = true
         )
 
@@ -404,7 +506,19 @@ internal class DefaultComposeCompositionWalker : HostViewDecomposer {
     ): MobileSegment.Wireframe.ShapeWireframe? {
         if (semanticsNode == null) return null
         for (info in node.getModifierInfo()) {
-            if (info.modifier is DrawModifierNode) return null
+            val modifier = info.modifier
+            if (modifier is DrawModifierNode) return null
+            // getModifierInfo() surfaces the wrapping *Element* (PainterElement), not the
+            // PainterNode it creates — the same gap documented above for BackgroundElement — so
+            // the is DrawModifierNode check above never catches Modifier.paint(painter). Without
+            // this, a node with .paint() (e.g. Icon/Image) chained alongside .clip()/.background()
+            // was silently flattened into a plain background-color shape, discarding the actual
+            // painted content (a vector icon glyph) entirely — confirmed on-device: the icon's
+            // grey circle background rendered, but the glyph inside never did. Explicitly reject
+            // shape-flattening whenever a paint() modifier is present so this instead falls
+            // through to registerLeafCapture, which pixel-captures the whole node (background +
+            // glyph) as one real screenshot.
+            if (modifier is InspectableValue && modifier.nameFallback == PAINT_NAME_FALLBACK) return null
         }
 
         val colorLong = backgroundResolver.resolveBackgroundColor(semanticsNode) ?: return null
@@ -432,9 +546,7 @@ internal class DefaultComposeCompositionWalker : HostViewDecomposer {
         val argb = composeColor.toArgb()
         val alpha255 = (composeColor.alpha * OPAQUE_ALPHA_VALUE).toInt()
 
-        val cornerRadius = backgroundResolver.resolveBackgroundShape(semanticsNode)?.let { shape ->
-            backgroundResolver.resolveCornerRadius(shape, globalBounds, node.density)
-        }
+        val cornerRadius = resolveShapeCornerRadius(node, semanticsNode, globalBounds)
 
         return MobileSegment.Wireframe.ShapeWireframe(
             id = composeNodeId(node.semanticsId),
@@ -442,11 +554,50 @@ internal class DefaultComposeCompositionWalker : HostViewDecomposer {
             y = globalBounds.y,
             width = globalBounds.width,
             height = globalBounds.height,
+            clip = resolveClip(screenBoundsPx(locationOnScreen, boundsPx), request, density),
             shapeStyle = MobileSegment.ShapeStyle(
                 backgroundColor = colorStringFormatter.formatColorAndAlphaAsHexString(argb, alpha255),
                 cornerRadius = cornerRadius?.toDouble()
             )
         )
+    }
+
+    /**
+     * [backgroundResolver.resolveBackgroundShape] only reads the `shape` *parameter* passed
+     * directly to `Modifier.background(color, shape = ...)` — which defaults to `RectangleShape`
+     * when omitted. The equally (if not more) common `Modifier.clip(RoundedCornerShape(...))
+     * .background(color)` idiom rounds the corners via a *separate* `graphicsLayer` modifier
+     * ([hasDrawingEffect]'s `isClipped` check already detects *that* one is present, but only as
+     * a boolean, discarding the actual shape) — so a node using that idiom was silently resolving
+     * to a 0dp corner radius here despite genuinely being rounded on-screen. Prefers a
+     * `graphicsLayer` clip shape when present (it's the shape actually applied to the final
+     * drawn bounds), falling back to the background element's own shape parameter otherwise.
+     *
+     * Deliberately reads `shape` the same way [nodeOwnAlpha] reads `alpha` and [hasDrawingEffect]
+     * reads `clip` — via the public [InspectableValue.inspectableElements] API, not
+     * [reflectionUtils]. This pipeline is meant to minimize reflection wherever a public
+     * alternative exists; `GraphicsLayerElement.inspectableProperties()` already exposes `shape`
+     * alongside `alpha`/`clip` (confirmed via `javap`, same as the other two), so there was no
+     * need to reach for [ReflectionUtils.getClipShape] — that stays legacy-mapper-only.
+     */
+    private fun resolveShapeCornerRadius(
+        node: LayoutNode,
+        semanticsNode: SemanticsNode,
+        globalBounds: GlobalBounds
+    ): Float? {
+        val clipShape = node.getModifierInfo().asSequence()
+            .mapNotNull { info ->
+                val modifier = info.modifier
+                if (modifier is InspectableValue && modifier.nameFallback == GRAPHICS_LAYER_NAME_FALLBACK) {
+                    modifier.inspectableElements.firstOrNull { it.name == SHAPE_PROPERTY_NAME }?.value as? Shape
+                } else {
+                    null
+                }
+            }
+            .firstOrNull()
+        val backgroundShape = backgroundResolver.resolveBackgroundShape(semanticsNode)
+        val shape = clipShape ?: backgroundShape
+        return shape?.let { backgroundResolver.resolveCornerRadius(it, globalBounds, node.density) }
     }
 
     private fun hasDrawingEffect(node: LayoutNode): Boolean {
@@ -591,14 +742,16 @@ internal class DefaultComposeCompositionWalker : HostViewDecomposer {
         } catch (e: Exception) {
             false
         }
-        return if (handled) results.firstOrNull() else null
+        if (!handled) return null
+
+        return results.firstOrNull()
     }
 
     private fun buildTextWireframe(
         node: LayoutNode,
         hostView: View,
-        config: SemanticsConfiguration,
         textContent: String,
+        resolvedLayoutResult: TextLayoutResult?,
         request: HostViewDecomposeRequest
     ): MobileSegment.Wireframe.TextWireframe? {
         val boundsPx = try {
@@ -613,15 +766,34 @@ internal class DefaultComposeCompositionWalker : HostViewDecomposer {
 
         val density = request.mappingContext.systemInformation.screenDensity
         val inverseDensity = if (density == 0f) 1f else 1f / density
+
+        val capturedText = resolveCapturedText(textContent, request.mappingContext.textAndInputPrivacy)
+        val resolvedStyle = resolvedLayoutResult?.layoutInput?.style
+        val fontSizePx = if (resolvedStyle != null && !resolvedStyle.fontSize.isUnspecified) {
+            with(node.density) { resolvedStyle.fontSize.toPx() }
+        } else {
+            with(node.density) { DEFAULT_FONT_SIZE_SP.toPx() }
+        }
+        val textStyle = resolveTextStyle(fontSizePx, density, resolvedStyle)
+        val widthPx = widthPaddedForFontFallback(
+            fontFamily = resolvedStyle?.fontFamily,
+            text = capturedText,
+            fontSizePx = fontSizePx,
+            originalWidthPx = boundsPx.width
+        )
+
         val globalBounds = GlobalBounds(
             x = ((locationOnScreen[0] + boundsPx.left) * inverseDensity).toLong(),
             y = ((locationOnScreen[1] + boundsPx.top) * inverseDensity).toLong(),
-            width = (boundsPx.width * inverseDensity).toLong(),
+            width = (widthPx * inverseDensity).toLong(),
             height = (boundsPx.height * inverseDensity).toLong()
         )
-
-        val capturedText = resolveCapturedText(textContent, request.mappingContext.textAndInputPrivacy)
-        val textStyle = resolveTextStyle(node.density, density, resolveTextLayoutResult(config)?.layoutInput?.style)
+        val screenBoundsPx = Rect(
+            (locationOnScreen[0] + boundsPx.left).toInt(),
+            (locationOnScreen[1] + boundsPx.top).toInt(),
+            (locationOnScreen[0] + boundsPx.left + widthPx).toInt(),
+            (locationOnScreen[1] + boundsPx.bottom).toInt()
+        )
 
         return MobileSegment.Wireframe.TextWireframe(
             id = composeNodeId(node.semanticsId),
@@ -629,8 +801,56 @@ internal class DefaultComposeCompositionWalker : HostViewDecomposer {
             y = globalBounds.y,
             width = globalBounds.width,
             height = globalBounds.height,
+            clip = resolveClip(screenBoundsPx, request, density),
             text = capturedText,
             textStyle = textStyle
+        )
+    }
+
+    /**
+     * [boundsPx] (Compose root-relative) translated into screen-pixel coordinates via
+     * [locationOnScreen] — the same space [HostViewDecomposeRequest.hostVisibleRectPx] is in,
+     * so the two can be compared directly in [resolveClip].
+     */
+    private fun screenBoundsPx(locationOnScreen: IntArray, boundsPx: androidx.compose.ui.geometry.Rect): Rect {
+        return Rect(
+            (locationOnScreen[0] + boundsPx.left).toInt(),
+            (locationOnScreen[1] + boundsPx.top).toInt(),
+            (locationOnScreen[0] + boundsPx.right).toInt(),
+            (locationOnScreen[1] + boundsPx.bottom).toInt()
+        )
+    }
+
+    /**
+     * How much of [nodeScreenBoundsPx] falls outside [HostViewDecomposeRequest.hostVisibleRectPx]
+     * — i.e. how much of it is currently clipped by a scrolling ancestor *outside* the Compose
+     * host itself (a native `NestedScrollView`/`ScrollView`, say), which nothing in this class's
+     * own [LayoutNode] walk can otherwise see (see the doc on [HostViewDecomposeRequest.hostVisibleRectPx]).
+     * Mirrors [com.datadog.android.sessionreplay.internal.recorder.mapper.PixelCaptureFallbackMapper.resolveWireframeClip]'s
+     * max-overflow-per-edge math exactly, just against the host's visible rect instead of the
+     * individual view's own. Returns null when there's no clip rect to compare against (host not
+     * attached/resolvable) or the node is already fully within it.
+     */
+    private fun resolveClip(
+        nodeScreenBoundsPx: Rect,
+        request: HostViewDecomposeRequest,
+        screenDensity: Float
+    ): MobileSegment.WireframeClip? {
+        val visibleRect = request.hostVisibleRectPx ?: return null
+        val inverseDensity = if (screenDensity == 0f) 1f else 1f / screenDensity
+
+        val clipTop = max(0, visibleRect.top - nodeScreenBoundsPx.top)
+        val clipBottom = max(0, nodeScreenBoundsPx.bottom - visibleRect.bottom)
+        val clipLeft = max(0, visibleRect.left - nodeScreenBoundsPx.left)
+        val clipRight = max(0, nodeScreenBoundsPx.right - visibleRect.right)
+
+        if (clipTop == 0 && clipBottom == 0 && clipLeft == 0 && clipRight == 0) return null
+
+        return MobileSegment.WireframeClip(
+            top = (clipTop * inverseDensity).toLong(),
+            bottom = (clipBottom * inverseDensity).toLong(),
+            left = (clipLeft * inverseDensity).toLong(),
+            right = (clipRight * inverseDensity).toLong()
         )
     }
 
@@ -643,25 +863,59 @@ internal class DefaultComposeCompositionWalker : HostViewDecomposer {
     }
 
     private fun resolveTextStyle(
-        composeDensity: Density,
+        fontSizePx: Float,
         screenDensity: Float,
         style: TextStyle?
     ): MobileSegment.TextStyle {
-        val fontSizePx = if (style != null && !style.fontSize.isUnspecified) {
-            with(composeDensity) { style.fontSize.toPx() }
-        } else {
-            with(composeDensity) { DEFAULT_FONT_SIZE_SP.toPx() }
-        }
         val colorArgb = if (style != null && style.color.isSpecified) {
             style.color.toArgb()
         } else {
             DEFAULT_TEXT_COLOR_ARGB
         }
         return MobileSegment.TextStyle(
-            family = DEFAULT_FONT_FAMILY,
+            family = resolveFontFamily(style?.fontFamily),
             size = (fontSizePx / screenDensity).toLong(),
             color = colorStringFormatter.formatColorAndAlphaAsHexString(colorArgb, OPAQUE_ALPHA_VALUE)
         )
+    }
+
+    /**
+     * When [fontFamily] isn't a [GenericFontFamily], [resolveFontFamily] substitutes
+     * [DEFAULT_FONT_FAMILY] for it — and a box Compose measured and placed for the *real* font's
+     * metrics can be too narrow for the *substitute* font's metrics at the same declared point
+     * size, wrapping text that never wrapped on-device (see [resolveFontFamily]'s doc). Since the
+     * substitute is a font this class controls (not an arbitrary unknown), its actual on-device
+     * width for [text] at [fontSizePx] can be measured directly via [fallbackFontPaint] — using
+     * the max of that and [originalWidthPx] widens an about-to-be-too-tight box without ever
+     * narrowing one that's already correct (e.g. for text whose real font already matches or is
+     * narrower than the substitute).
+     */
+    private fun widthPaddedForFontFallback(
+        fontFamily: FontFamily?,
+        text: String,
+        fontSizePx: Float,
+        originalWidthPx: Float
+    ): Float {
+        if (fontFamily is GenericFontFamily || text.isEmpty()) return originalWidthPx
+        val fallbackWidthPx = fallbackFontPaint.apply { textSize = fontSizePx }.measureText(text)
+        return max(originalWidthPx, fallbackWidthPx)
+    }
+
+    /**
+     * Mirrors [com.datadog.android.sessionreplay.compose.internal.mappers.semantics.AbstractSemanticsNodeMapper.resolveTextLayoutInfoToTextStyle]'s
+     * font-family handling — only a built-in [GenericFontFamily] (`FontFamily.Serif`/`SansSerif`/
+     * `Monospace`/`Cursive`) has a name the player can substitute a matching web font for; a
+     * custom/downloadable [FontFamily] has no equivalent there regardless, so [DEFAULT_FONT_FAMILY]
+     * is the best available fallback either way. Previously this always returned
+     * [DEFAULT_FONT_FAMILY] regardless of [fontFamily] — silently swapping e.g. `FontFamily.Serif`
+     * (a common choice for a "display" price/heading) for a sans-serif player font. Different
+     * fonts have different character widths at the same declared point size, so a box Compose
+     * measured and placed correctly for the real (serif) font can wrap or overflow once the player
+     * substitutes a narrower/wider one — this is what was producing the wrong-looking, wrapped
+     * price text, not a font-*size* bug.
+     */
+    private fun resolveFontFamily(fontFamily: FontFamily?): String {
+        return (fontFamily as? GenericFontFamily)?.name ?: DEFAULT_FONT_FAMILY
     }
 
     private companion object {
@@ -686,6 +940,16 @@ internal class DefaultComposeCompositionWalker : HostViewDecomposer {
         private const val GRAPHICS_LAYER_NAME_FALLBACK = "graphicsLayer"
         private const val CLIP_PROPERTY_NAME = "clip"
         private const val ALPHA_PROPERTY_NAME = "alpha"
+        private const val SHAPE_PROPERTY_NAME = "shape"
+        private const val PAINT_NAME_FALLBACK = "paint"
+        private const val PAINTER_PROPERTY_NAME = "painter"
+
+        /**
+         * [ColorStringFormatter.formatColorAndAlphaAsHexString] emits `#RRGGBBAA` — this is that
+         * suffix at full (255) alpha, used to recognize an opaque shape color for the
+         * redundant-same-color-child skip in [walk].
+         */
+        private const val OPAQUE_HEX_SUFFIX = "ff"
 
         /**
          * See [isTooLargeToCollapse]: a drawing-effect node covering more than half the screen's

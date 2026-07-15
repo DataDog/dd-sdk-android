@@ -24,7 +24,12 @@ internal class DefaultOnDrawListenerProducer(
     private val dynamicOptimizationEnabled: Boolean,
     private val rumContextProvider: RumContextProvider,
     private val pixelCapture: PixelCapture? = null,
-    private val compositionTreeBuilder: CompositionTreeBuilder? = null
+    private val compositionTreeBuilder: CompositionTreeBuilder? = null,
+    // Non-null only alongside compositionTreeBuilder — see ComposeFrameCallbackAttacher's doc.
+    // Notified here, at the single point a fresh composition-tree listener is created, rather
+    // than through ViewOnDrawInterceptor (which the legacy pipeline also uses and never learns
+    // about this).
+    private val composeFrameCallbackAttacher: ComposeFrameCallbackAttacher? = null
 ) : OnDrawListenerProducer {
 
     override fun create(
@@ -33,7 +38,7 @@ internal class DefaultOnDrawListenerProducer(
         imagePrivacy: ImagePrivacy,
         touchPrivacyManager: TouchPrivacyManager
     ): ViewTreeObserver.OnDrawListener {
-        return WindowsOnDrawListener(
+        val listener = WindowsOnDrawListener(
             decorViews = decorViews,
             recordedDataQueueHandler = recordedDataQueueHandler,
             snapshotProducer = snapshotProducer,
@@ -47,5 +52,9 @@ internal class DefaultOnDrawListenerProducer(
             pixelCapture = pixelCapture,
             compositionTreeBuilder = compositionTreeBuilder
         )
+        if (compositionTreeBuilder != null) {
+            composeFrameCallbackAttacher?.onListenerCreated(listener)
+        }
+        return listener
     }
 }

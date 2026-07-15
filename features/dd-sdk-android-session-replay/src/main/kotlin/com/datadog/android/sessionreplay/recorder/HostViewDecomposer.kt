@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.recorder
 
+import android.graphics.Rect
 import android.view.View
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -47,13 +48,25 @@ interface HostViewDecomposer {
  * the decomposer encounters a real interop `View` embedded inside the host (e.g. Compose's
  * `AndroidView { }`), so that region is mapped through the ordinary View-based path instead of
  * being pixel-captured as opaque content.
+ * @param hostVisibleRectPx The decomposed host view's own currently-visible rect (screen pixels,
+ * from [View.getGlobalVisibleRect]) — null if it couldn't be resolved (e.g. the view isn't
+ * attached). A scrolling ancestor outside the host — a native `NestedScrollView`/`ScrollView`
+ * wrapping a `ComposeView`, say — clips the host itself at the View layer, which the decomposer's
+ * own traversal of the host's internal layout tree has no way to observe on its own: every
+ * descendant node's position comes from Compose's layout coordinates, which know nothing about
+ * View-level ancestor clipping. Comparing each produced wireframe's own screen bounds against this
+ * rect (the same [MobileSegment.WireframeClip] mechanism
+ * [com.datadog.android.sessionreplay.internal.recorder.mapper.PixelCaptureFallbackMapper] already
+ * uses) is what lets scrolled-past content stay correctly cropped instead of visually bleeding
+ * into whatever is drawn below the scrolling container.
  */
 class HostViewDecomposeRequest(
     val mappingContext: MappingContext,
     val asyncJobStatusCallback: AsyncJobStatusCallback,
     val internalLogger: InternalLogger,
     val pixelCaptureCallback: PixelCaptureCallback?,
-    val nativeViewHandoff: (View) -> List<MobileSegment.CompositionLayerChild>
+    val nativeViewHandoff: (View) -> List<MobileSegment.CompositionLayerChild>,
+    val hostVisibleRectPx: Rect? = null
 )
 
 /**

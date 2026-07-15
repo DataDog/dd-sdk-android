@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.recorder
 
+import android.graphics.Rect
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.WebView
@@ -299,6 +300,11 @@ internal class CompositionTreeBuilder(
         val density = mappingContext.systemInformation.screenDensity
         val bounds = viewBoundsResolver.resolveViewGlobalBounds(view, density)
 
+        // Null when the view reports no visible area at all (e.g. fully scrolled off-screen) —
+        // the decomposer treats that the same as "no clip info available" and skips clipping
+        // rather than misreading it as "nothing is visible, clip everything".
+        val visibleRect = Rect().takeIf { view.getGlobalVisibleRect(it) }
+
         val request = HostViewDecomposeRequest(
             mappingContext = mappingContext,
             asyncJobStatusCallback = asyncJobStatusCallback,
@@ -306,7 +312,8 @@ internal class CompositionTreeBuilder(
             pixelCaptureCallback = pixelCaptureCallback,
             nativeViewHandoff = { nativeView ->
                 childReferences(nativeView, mappingContext, asyncJobStatusCallback, internalLogger)
-            }
+            },
+            hostVisibleRectPx = visibleRect
         )
         val result = decomposer.decompose(view, request) ?: return null
 

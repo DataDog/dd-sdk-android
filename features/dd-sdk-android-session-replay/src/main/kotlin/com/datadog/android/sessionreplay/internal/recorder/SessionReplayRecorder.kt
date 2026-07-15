@@ -16,6 +16,7 @@ import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
+import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
@@ -71,6 +72,16 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private val windowInspector: WindowInspector
     private val windowCallbackInterceptor: WindowCallbackInterceptor
     private val sessionReplayLifecycleCallback: LifecycleCallback
+
+    // Non-null only when the composition-tree pipeline is active (pixelCaptureEnabled) — see
+    // createProcessLifecycleMonitor's call sites. The legacy pipeline never registers this at
+    // all, not just a no-op version of it, so it behaves exactly as it did before this was added.
+    private val processLifecycleMonitor: ProcessLifecycleMonitor?
+
+    // Non-null only when the composition-tree pipeline is active (pixelCaptureEnabled) — see
+    // ComposeFrameCallbackAttacher's doc. Entirely independent of viewOnDrawInterceptor, which
+    // the legacy pipeline also uses and which never learns this exists.
+    private val composeFrameCallbackAttacher: ComposeFrameCallbackAttacher?
     private val recordedDataQueueHandler: RecordedDataQueueHandler
     private val viewOnDrawInterceptor: ViewOnDrawInterceptor
     private val internalLogger: InternalLogger
@@ -247,6 +258,13 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             }
         }
 
+        val composeFrameCallbackAttacher = if (pixelCaptureEnabled) {
+            ComposeFrameCallbackAttacher()
+        } else {
+            null
+        }
+        this.composeFrameCallbackAttacher = composeFrameCallbackAttacher
+
         this.viewOnDrawInterceptor = ViewOnDrawInterceptor(
             internalLogger = internalLogger,
             onDrawListenerProducer = DefaultOnDrawListenerProducer(
@@ -281,7 +299,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                 dynamicOptimizationEnabled = dynamicOptimizationEnabled,
                 rumContextProvider = rumContextProvider,
                 pixelCapture = pixelCapture,
-                compositionTreeBuilder = compositionTreeBuilder
+                compositionTreeBuilder = compositionTreeBuilder,
+                composeFrameCallbackAttacher = composeFrameCallbackAttacher
             ),
             touchPrivacyManager = touchPrivacyManager
         )
@@ -308,6 +327,11 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
 
         this.uiHandler = Handler(Looper.getMainLooper())
         this.internalLogger = internalLogger
+        this.processLifecycleMonitor = if (composeFrameCallbackAttacher != null) {
+            createProcessLifecycleMonitor(composeFrameCallbackAttacher)
+        } else {
+            null
+        }
     }
 
     @VisibleForTesting
@@ -339,6 +363,28 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.uiHandler = uiHandler
         this.internalLogger = internalLogger
         this.pixelCapture = null
+        // This test-only constructor never wires up the composition-tree pipeline (pixelCapture
+        // is always null above) — see the field doc, this stays null to match.
+        this.processLifecycleMonitor = null
+        this.composeFrameCallbackAttacher = null
+    }
+
+    private fun createProcessLifecycleMonitor(
+        composeFrameCallbackAttacher: ComposeFrameCallbackAttacher
+    ): ProcessLifecycleMonitor {
+        return ProcessLifecycleMonitor(
+            object : ProcessLifecycleMonitor.Callback {
+                // onStarted/onStopped (visibility-based) rather than onResumed/onPaused
+                // (interactivity-based) — a momentary interruption like a permission dialog
+                // pauses the underlying Activity without making it (or its content) invisible,
+                // and content there can still change; onStopped is the point nothing is actually
+                // being composited anymore, matching what pause() is meant to avoid.
+                override fun onStarted() = composeFrameCallbackAttacher.resume()
+                override fun onResumed() = Unit
+                override fun onStopped() = composeFrameCallbackAttacher.pause()
+                override fun onPaused() = Unit
+            }
+        )
     }
 
     override fun stopProcessingRecords() {
@@ -347,11 +393,13 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
 
     override fun registerCallbacks() {
         appContext.registerActivityLifecycleCallbacks(sessionReplayLifecycleCallback)
+        processLifecycleMonitor?.let { appContext.registerActivityLifecycleCallbacks(it) }
         resourceResolver.registerCallbacks()
     }
 
     override fun unregisterCallbacks() {
         appContext.unregisterActivityLifecycleCallbacks(sessionReplayLifecycleCallback)
+        processLifecycleMonitor?.let { appContext.unregisterActivityLifecycleCallbacks(it) }
         resourceResolver.unregisterCallbacks()
     }
 
@@ -368,6 +416,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     override fun stopRecorders() {
         uiHandler.post {
             viewOnDrawInterceptor.stopIntercepting()
+            composeFrameCallbackAttacher?.stopAll()
             windowCallbackInterceptor.stopIntercepting()
             shouldRecord = false
             pixelCapture?.release()

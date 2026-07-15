@@ -1898,8 +1898,10 @@ public final class com/datadog/android/sessionreplay/model/ResourceMetadata$Comp
 }
 
 public final class com/datadog/android/sessionreplay/recorder/HostViewDecomposeRequest {
-	public fun <init> (Lcom/datadog/android/sessionreplay/recorder/MappingContext;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;Lcom/datadog/android/api/InternalLogger;Lcom/datadog/android/sessionreplay/recorder/PixelCaptureCallback;Lkotlin/jvm/functions/Function1;)V
+	public fun <init> (Lcom/datadog/android/sessionreplay/recorder/MappingContext;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;Lcom/datadog/android/api/InternalLogger;Lcom/datadog/android/sessionreplay/recorder/PixelCaptureCallback;Lkotlin/jvm/functions/Function1;Landroid/graphics/Rect;)V
+	public synthetic fun <init> (Lcom/datadog/android/sessionreplay/recorder/MappingContext;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;Lcom/datadog/android/api/InternalLogger;Lcom/datadog/android/sessionreplay/recorder/PixelCaptureCallback;Lkotlin/jvm/functions/Function1;Landroid/graphics/Rect;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getAsyncJobStatusCallback ()Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;
+	public final fun getHostVisibleRectPx ()Landroid/graphics/Rect;
 	public final fun getInternalLogger ()Lcom/datadog/android/api/InternalLogger;
 	public final fun getMappingContext ()Lcom/datadog/android/sessionreplay/recorder/MappingContext;
 	public final fun getNativeViewHandoff ()Lkotlin/jvm/functions/Function1;

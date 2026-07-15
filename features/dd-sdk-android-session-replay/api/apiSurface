@@ -90,7 +90,7 @@ interface com.datadog.android.sessionreplay.recorder.HostViewDecomposer
   fun canDecompose(android.view.View): Boolean
   fun decompose(android.view.View, HostViewDecomposeRequest): HostViewDecomposeResult?
 class com.datadog.android.sessionreplay.recorder.HostViewDecomposeRequest
-  constructor(MappingContext, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback, com.datadog.android.api.InternalLogger, PixelCaptureCallback?, (android.view.View) -> List<com.datadog.android.sessionreplay.model.MobileSegment.CompositionLayerChild>)
+  constructor(MappingContext, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback, com.datadog.android.api.InternalLogger, PixelCaptureCallback?, (android.view.View) -> List<com.datadog.android.sessionreplay.model.MobileSegment.CompositionLayerChild>, android.graphics.Rect? = null)
 class com.datadog.android.sessionreplay.recorder.HostViewDecomposeResult
   constructor(List<com.datadog.android.sessionreplay.model.MobileSegment.CompositionLayerChild>, List<com.datadog.android.sessionreplay.model.MobileSegment.CompositionLayer>, List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>)
 interface com.datadog.android.sessionreplay.recorder.InteropViewCallback
