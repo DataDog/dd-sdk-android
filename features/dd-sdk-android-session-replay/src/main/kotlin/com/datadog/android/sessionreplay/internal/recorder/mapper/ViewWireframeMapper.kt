@@ -36,11 +36,9 @@ internal class ViewWireframeMapper(
         asyncJobStatusCallback: AsyncJobStatusCallback,
         internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
-        val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(
-            view,
-            mappingContext.systemInformation.screenDensity
-        )
-        val shapeStyle = view.background?.let { resolveShapeStyle(it, view.alpha, internalLogger) }
+        val density = mappingContext.systemInformation.screenDensity
+        val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(view, density)
+        val shapeStyle = view.background?.let { resolveShapeStyle(it, view.alpha, density, internalLogger) }
 
         if (shapeStyle != null) {
             return listOf(

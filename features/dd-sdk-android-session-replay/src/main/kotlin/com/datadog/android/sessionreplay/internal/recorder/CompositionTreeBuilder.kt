@@ -73,7 +73,13 @@ import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
  * - Every other leaf view — including Jetpack Compose content (`ComposeView`/`AndroidComposeView`
  *   are forced onto this leaf path by [isComposeHostView] regardless of their child count — they
  *   always carry an internal `AndroidViewsHandler` child even when nothing is drawn through it,
- *   so child count alone can't be used to tell whether one is a real container) — is captured via
+ *   so child count alone can't be used to tell whether one is a real container) and Material's
+ *   `TextInputLayout` (forced onto this leaf path by [isMaterialTextInputLayout] for a different
+ *   reason: its own box outline/floating label are real content, but neither is representable by
+ *   recursing into its single `EditText` child — the box background drawable actually gets
+ *   attached to that *child*, not the layout, and the floating label is canvas-drawn directly in
+ *   `TextInputLayout.draw()` with its expanded/collapsed state decided by a package-private
+ *   method this module has no compile-time visibility into) — is captured via
  *   [pixelCaptureFallbackMapper]. This pipeline never handles Compose interop views, hence
  *   [NoOpInteropViewCallback].
  * - Every container (a [ViewGroup] with children) becomes its own [MobileSegment.CompositionLayer]
@@ -256,7 +262,12 @@ internal class CompositionTreeBuilder(
         asyncJobStatusCallback: AsyncJobStatusCallback,
         internalLogger: InternalLogger
     ): List<MobileSegment.CompositionLayerChild> {
-        if (view is ViewGroup && view.childCount > 0 && !isComposeHostView(view) && view !is WebView) {
+        if (view is ViewGroup &&
+            view.childCount > 0 &&
+            !isComposeHostView(view) &&
+            view !is WebView &&
+            !isMaterialTextInputLayout(view)
+        ) {
             val layer = buildLayer(view, mappingContext, asyncJobStatusCallback, internalLogger)
             if (layer != null) {
                 layers.add(layer)
@@ -345,6 +356,18 @@ internal class CompositionTreeBuilder(
         val className = view.javaClass.name
         return className == "androidx.compose.ui.platform.AndroidComposeView" ||
             className == "androidx.compose.ui.platform.ComposeView"
+    }
+
+    /**
+     * See the class doc's note on `TextInputLayout` for why this is forced onto the leaf/
+     * pixel-capture path rather than being treated as an ordinary container. A by-name check
+     * rather than `is TextInputLayout`, matching [isComposeHostView]'s approach, since this
+     * module has no compile-time dependency on the Material Components library — an app-level
+     * subclass of `TextInputLayout` won't match this exact-name check, same limitation as
+     * [isComposeHostView] has for Compose subclasses.
+     */
+    private fun isMaterialTextInputLayout(view: View): Boolean {
+        return view.javaClass.name == "com.google.android.material.textfield.TextInputLayout"
     }
 
     /**

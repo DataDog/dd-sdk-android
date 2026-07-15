@@ -7,6 +7,11 @@
 package com.datadog.android.sessionreplay.recorder.mapper
 
 import android.graphics.drawable.Drawable
+import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.InsetDrawable
+import android.graphics.drawable.LayerDrawable
+import android.graphics.drawable.RippleDrawable
+import android.graphics.drawable.StateListDrawable
 import android.view.View
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -56,5 +61,65 @@ abstract class BaseWireframeMapper<in T : View>(
         } else {
             null
         }
+    }
+
+    /**
+     * Resolves the [MobileSegment.ShapeStyle] based on the [View] drawables, additionally
+     * reading a uniform corner radius off [drawable] (see [resolveCornerRadiusPx]) and
+     * density-normalizing it via [density] — the same convention every other dimension in this
+     * wire format follows. Kept as a separate overload from [resolveShapeStyle] above rather than
+     * adding [density] there, since that one is public/protected API on a published SDK class and
+     * changing its signature would break any external subclass calling it.
+     */
+    protected fun resolveShapeStyle(
+        drawable: Drawable,
+        viewAlpha: Float,
+        density: Float,
+        internalLogger: InternalLogger
+    ): MobileSegment.ShapeStyle? {
+        val color = drawableToColorMapper.mapDrawableToColor(drawable, internalLogger)
+        return if (color != null) {
+            val cornerRadiusPx = resolveCornerRadiusPx(drawable)
+            MobileSegment.ShapeStyle(
+                backgroundColor = colorStringFormatter.formatColorAsHexString(color),
+                opacity = viewAlpha,
+                cornerRadius = cornerRadiusPx?.let { if (density == 0f) it else it / density }
+            )
+        } else {
+            null
+        }
+    }
+
+    /**
+     * Resolves a uniform corner radius (in raw px) from [drawable], unwrapping the same wrapper
+     * chain [DrawableToColorMapper] resolves for color — [RippleDrawable]/[LayerDrawable]/
+     * [InsetDrawable]/[StateListDrawable] are all common ways a `<shape>` [GradientDrawable]
+     * background ends up wrapped at runtime (e.g. `MaterialButton` composites its declared
+     * background through some of these). Only [GradientDrawable.getCornerRadius] is read — the
+     * per-corner [GradientDrawable.getCornerRadii] array isn't representable in this wire
+     * format's single [MobileSegment.ShapeStyle.cornerRadius] value, so a drawable using those
+     * instead falls back to square corners, same as before this function existed. Null when no
+     * wrapped [GradientDrawable] is found, or its radius is unset/non-positive.
+     */
+    @Suppress("UNNECESSARY_SAFE_CALL")
+    private fun resolveCornerRadiusPx(drawable: Drawable): Float? {
+        return when (drawable) {
+            is GradientDrawable -> drawable.cornerRadius.takeIf { it > 0f }
+            is RippleDrawable -> resolveLayerDrawableCornerRadiusPx(drawable)
+            is LayerDrawable -> resolveLayerDrawableCornerRadiusPx(drawable)
+            is InsetDrawable -> drawable.drawable?.let { resolveCornerRadiusPx(it) }
+            // Drawable.getCurrent() can return null in case <selector> doesn't have an item for
+            // the default case — see AndroidMDrawableToColorMapper.resolveStateListDrawable.
+            is StateListDrawable -> drawable.current?.let { resolveCornerRadiusPx(it) }
+            else -> null
+        }
+    }
+
+    private fun resolveLayerDrawableCornerRadiusPx(drawable: LayerDrawable): Float? {
+        return (0 until drawable.numberOfLayers)
+            .asSequence()
+            .mapNotNull { idx -> drawable.getDrawable(idx) }
+            .mapNotNull { resolveCornerRadiusPx(it) }
+            .firstOrNull()
     }
 }
