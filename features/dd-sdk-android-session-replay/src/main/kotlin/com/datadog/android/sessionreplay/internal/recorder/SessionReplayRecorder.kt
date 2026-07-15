@@ -14,6 +14,7 @@ import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
@@ -89,7 +90,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         sdkCore: FeatureSdkCore,
         resourceDataStoreManager: ResourceDataStoreManager,
         dynamicOptimizationEnabled: Boolean,
-        internalCallback: SessionReplayInternalCallback
+        internalCallback: SessionReplayInternalCallback,
+        heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null
     ) {
         val internalLogger = sdkCore.internalLogger
         val rumContextDataHandler = RumContextDataHandler(
@@ -161,14 +163,14 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             internalLogger = internalLogger,
             onDrawListenerProducer = DefaultOnDrawListenerProducer(
                 snapshotProducer = SnapshotProducer(
-                    DefaultImageWireframeHelper(
+                    imageWireframeHelper = DefaultImageWireframeHelper(
                         logger = internalLogger,
                         resourceResolver = resourceResolver,
                         viewIdentifierResolver = viewIdentifierResolver,
                         viewUtilsInternal = ViewUtilsInternal(),
                         imageTypeResolver = ImageTypeResolver()
                     ),
-                    TreeViewTraversal(
+                    treeViewTraversal = TreeViewTraversal(
                         mappers = mappers,
                         defaultViewMapper = defaultVWM,
                         decorViewMapper = DecorViewMapper(defaultVWM, viewIdentifierResolver),
@@ -179,15 +181,23 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                         viewUtilsInternal = ViewUtilsInternal(),
                         internalLogger = internalLogger
                     ),
-                    ComposedOptionSelectorDetector(
+                    optionSelectorDetector = ComposedOptionSelectorDetector(
                         customOptionSelectorDetectors + DefaultOptionSelectorDetector()
                     ),
-                    touchPrivacyManager,
-                    internalLogger = internalLogger
+                    touchPrivacyManager = touchPrivacyManager,
+                    internalLogger = internalLogger,
+                    heatmapResolver = heatmapIdentifierRegistry?.let {
+                        HeatmapIdentifierResolver(
+                            appPackageName = appContext.packageName,
+                            registry = it,
+                            internalLogger = internalLogger
+                        )
+                    }
                 ),
                 recordedDataQueueHandler = recordedDataQueueHandler,
                 sdkCore = sdkCore,
-                dynamicOptimizationEnabled = dynamicOptimizationEnabled
+                dynamicOptimizationEnabled = dynamicOptimizationEnabled,
+                rumContextProvider = rumContextProvider
             ),
             touchPrivacyManager = touchPrivacyManager
         )

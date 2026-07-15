@@ -6,6 +6,7 @@
 
 package com.datadog.android.webview.internal
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -44,13 +45,17 @@ internal class DatadogEventBridgeTest {
     @Mock
     lateinit var mockWebViewRumFeature: WebViewRumFeature
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @BeforeEach
     fun `set up`() {
         testedDatadogEventBridge = DatadogEventBridge(
             mockWebViewEventConsumer,
             emptyList(),
             fakePrivacyLevel,
-            mockWebViewRumFeature
+            mockWebViewRumFeature,
+            mockInternalLogger
         )
     }
 
@@ -72,7 +77,13 @@ internal class DatadogEventBridgeTest {
     ) {
         // Given
         val expectedHosts = hosts.joinToString(",", prefix = "[", postfix = "]") { "\"$it\"" }
-        testedDatadogEventBridge = DatadogEventBridge(mock(), hosts, fakePrivacyLevel, mockWebViewRumFeature)
+        testedDatadogEventBridge = DatadogEventBridge(
+            mock(),
+            hosts,
+            fakePrivacyLevel,
+            mockWebViewRumFeature,
+            mockInternalLogger
+        )
 
         // When
         val allowedWebViewHosts = testedDatadogEventBridge.getAllowedWebViewHosts()
@@ -94,7 +105,8 @@ internal class DatadogEventBridgeTest {
             mockWebViewEventConsumer,
             hosts,
             fakePrivacyLevel,
-            mockWebViewRumFeature
+            mockWebViewRumFeature,
+            mockInternalLogger
         )
 
         // When
@@ -117,7 +129,8 @@ internal class DatadogEventBridgeTest {
             mockWebViewEventConsumer,
             hosts,
             fakePrivacyLevel,
-            mockWebViewRumFeature
+            mockWebViewRumFeature,
+            mockInternalLogger
         )
 
         // When
@@ -125,6 +138,110 @@ internal class DatadogEventBridgeTest {
 
         // Then
         assertThat(allowedWebViewHosts).isEqualTo(expectedHosts)
+    }
+
+    @Test
+    fun `M return sanitized plain hosts and wildcard patterns W getAllowedWebViewHosts() { wildcard patterns }`() {
+        // Given
+        val patterns = listOf("*.example.com", "preview-*.shopist.io", "example.net")
+        testedDatadogEventBridge = DatadogEventBridge(
+            mockWebViewEventConsumer,
+            patterns,
+            fakePrivacyLevel,
+            mockWebViewRumFeature,
+            mockInternalLogger
+        )
+
+        // When
+        val allowedWebViewHosts = testedDatadogEventBridge.getAllowedWebViewHosts()
+
+        // Then
+        // Plain hosts are sanitized first, then wildcard patterns are appended.
+        assertThat(allowedWebViewHosts)
+            .isEqualTo("[\"example.net\",\"*.example.com\",\"preview-*.shopist.io\"]")
+    }
+
+    @Test
+    fun `M drop invalid patterns W getAllowedWebViewHosts() { invalid patterns }`() {
+        // Given
+        val patterns = listOf("*.example.com", "*.foo.*.bar", "in valid", "EXAMPLE.NET")
+        testedDatadogEventBridge = DatadogEventBridge(
+            mockWebViewEventConsumer,
+            patterns,
+            fakePrivacyLevel,
+            mockWebViewRumFeature,
+            mockInternalLogger
+        )
+
+        // When
+        val allowedWebViewHosts = testedDatadogEventBridge.getAllowedWebViewHosts()
+
+        // Then
+        // "in valid" is dropped by the host sanitizer, "*.foo.*.bar" by the pattern validator.
+        // "EXAMPLE.NET" is a plain host so it keeps the sanitizer's behavior (no lowercasing).
+        assertThat(allowedWebViewHosts).isEqualTo("[\"EXAMPLE.NET\",\"*.example.com\"]")
+    }
+
+    @Test
+    fun `M drop bare TLD and empty entries W getAllowedWebViewHosts() { edge cases }`() {
+        // Given
+        val patterns = listOf("com", "", "*", "*.co.uk", "*.example.com")
+        testedDatadogEventBridge = DatadogEventBridge(
+            mockWebViewEventConsumer,
+            patterns,
+            fakePrivacyLevel,
+            mockWebViewRumFeature,
+            mockInternalLogger
+        )
+
+        // When
+        val allowedWebViewHosts = testedDatadogEventBridge.getAllowedWebViewHosts()
+
+        // Then
+        // "com" (bare TLD) and "" are wildcard-free, so HostsSanitizer drops them.
+        // "*" and "*.co.uk" are dropped by the pattern validator because a wildcard must match
+        // subdomains of a registrable domain (they are too broad).
+        assertThat(allowedWebViewHosts).isEqualTo("[\"*.example.com\"]")
+    }
+
+    @Test
+    fun `M strip URLs from plain hosts W getAllowedWebViewHosts() { url in patterns }`() {
+        // Given
+        val patterns = listOf("https://foo.com", "*.shopist.io")
+        testedDatadogEventBridge = DatadogEventBridge(
+            mockWebViewEventConsumer,
+            patterns,
+            fakePrivacyLevel,
+            mockWebViewRumFeature,
+            mockInternalLogger
+        )
+
+        // When
+        val allowedWebViewHosts = testedDatadogEventBridge.getAllowedWebViewHosts()
+
+        // Then
+        // "https://foo.com" is a wildcard-free entry, so it is URL-stripped to its host by the
+        // sanitizer rather than being dropped for containing invalid characters.
+        assertThat(allowedWebViewHosts).isEqualTo("[\"foo.com\",\"*.shopist.io\"]")
+    }
+
+    @Test
+    fun `M merge sanitized hosts and patterns W getAllowedWebViewHosts() { mixed }`() {
+        // Given
+        val hosts = listOf("example.com", "*.shopist.io")
+        testedDatadogEventBridge = DatadogEventBridge(
+            mockWebViewEventConsumer,
+            hosts,
+            fakePrivacyLevel,
+            mockWebViewRumFeature,
+            mockInternalLogger
+        )
+
+        // When
+        val allowedWebViewHosts = testedDatadogEventBridge.getAllowedWebViewHosts()
+
+        // Then
+        assertThat(allowedWebViewHosts).isEqualTo("[\"example.com\",\"*.shopist.io\"]")
     }
 
     @Test
@@ -198,7 +315,8 @@ internal class DatadogEventBridgeTest {
             mockWebViewEventConsumer,
             emptyList(),
             fakePrivacyLevel,
-            null
+            null,
+            mockInternalLogger
         )
 
         // When

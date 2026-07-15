@@ -49,7 +49,7 @@ object WebViewTracking {
      * ```
      * webView.settings.javaScriptEnabled = true
      * ```
-     * - by default, navigation will happen outside of your application (in a browser or a different app). To prevent
+     * - by default, navigation will happen outside your application (in a browser or a different app). To prevent
      * that and ensure Datadog can track the full WebView user journey, attach a [android.webkit.WebViewClient] to your
      * WebView, as following:
      * ```
@@ -58,9 +58,16 @@ object WebViewTracking {
      * The WebView events will not be tracked unless the web page's URL Host is part of
      * the list of allowed hosts.
      *
+     * Each entry may be a plain host name (e.g. `example.com`) or a wildcard pattern containing a
+     * single `*`. A wildcard may only match subdomains of a registrable domain:
+     * - accepted: `*.example.com`, `preview-*.example.com`, `*.example.co.uk`
+     * - rejected: `*`, `*.com`, `*example.com` (too broad), `*-preview.example.com` (the `*` must end a label)
+     *
+     * Invalid entries are dropped and the reason is logged.
+     *
      * @param webView the webView on which to attach the bridge.
-     * @param allowedHosts a list of all the hosts that you want to track when loaded in the
-     * WebView (e.g.: `listOf("example.com", "example.net")`).
+     * @param allowedHosts a list of all the hosts (plain host names or wildcard patterns) that you want
+     * to track when loaded in the WebView (e.g.: `listOf("example.com", "*.example.net", "preview-*.example.com")`).
      * @param logsSampleRate the sample rate for logs coming from the WebView, in percent. A value of `30` means we'll
      * send 30% of the logs. If value is `0`, no logs will be sent to Datadog. Default is 100.0 (ie: all logs are sent).
      * @param sdkCore SDK instance on which to attach the bridge.
@@ -98,7 +105,13 @@ object WebViewTracking {
             .getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
             ?.unwrap<StorageBackedFeature>() as? WebViewRumFeature
         webView.addJavascriptInterface(
-            DatadogEventBridge(webViewEventConsumer, allowedHosts, privacyLevel, webViewRumFeature),
+            DatadogEventBridge(
+                webViewEventConsumer,
+                allowedHosts,
+                privacyLevel,
+                webViewRumFeature,
+                featureSdkCore.internalLogger
+            ),
             DATADOG_EVENT_BRIDGE_NAME
         )
         featureSdkCore.internalLogger.logApiUsage {
@@ -285,7 +298,7 @@ object WebViewTracking {
     internal const val SESSION_REPLAY_TOUCH_PRIVACY_KEY = "session_replay_touch_privacy"
 
     internal const val JAVA_SCRIPT_NOT_ENABLED_WARNING_MESSAGE =
-        "You are trying to enable the WebView" +
+        "You are trying to enable the WebView " +
             "tracking but the java script capability was not enabled for the given WebView."
     internal const val DATADOG_EVENT_BRIDGE_NAME = "DatadogEventBridge"
 

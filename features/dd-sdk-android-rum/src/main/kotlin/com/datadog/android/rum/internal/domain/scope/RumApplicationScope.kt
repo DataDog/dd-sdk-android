@@ -15,6 +15,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumSessionListener
@@ -55,14 +56,15 @@ internal class RumApplicationScope(
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
-    private val insightsCollector: InsightsCollector
+    private val insightsCollector: InsightsCollector,
+    private val heatmapIdentifierRegistry: HeatmapIdentifierRegistry?
 ) : RumScope, RumViewChangedListener {
 
     override val parentScope: RumScope? = null
 
     private var rumContext = RumContext(applicationId = applicationId)
 
-    internal val childScopes = mutableListOf<RumSessionScope>(
+    internal val childScopes = mutableListOf(
         RumSessionScope(
             parentScope = this,
             sdkCore = sdkCore,
@@ -85,7 +87,8 @@ internal class RumApplicationScope(
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
             rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
-            insightsCollector = insightsCollector
+            insightsCollector = insightsCollector,
+            heatmapIdentifierRegistry = heatmapIdentifierRegistry
         )
     )
 
@@ -207,14 +210,16 @@ internal class RumApplicationScope(
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
             rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
-            insightsCollector = insightsCollector
+            insightsCollector = insightsCollector,
+            heatmapIdentifierRegistry = heatmapIdentifierRegistry
         )
         childScopes.add(newSession)
         if (event !is RumRawEvent.StartView) {
             lastActiveViewInfo?.let {
                 val startViewEvent = RumRawEvent.StartView(
                     key = it.key,
-                    attributes = it.attributes
+                    attributes = it.attributes,
+                    eventTime = Time.now(sdkCore.timeProvider)
                 )
                 newSession.handleEvent(startViewEvent, datadogContext, writeScope, writer)
             }
@@ -255,7 +260,7 @@ internal class RumApplicationScope(
             )
             val startupTime = eventTime.nanoTime - processStartTimeNs
             val appStartedEvent =
-                RumRawEvent.ApplicationStarted(applicationLaunchViewTime, startupTime)
+                RumRawEvent.ApplicationStarted(startupTime, applicationLaunchViewTime)
             delegateToChildren(appStartedEvent, datadogContext, writeScope, writer)
             isAppStartedEventSent = true
         }

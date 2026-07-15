@@ -18,7 +18,6 @@ import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
@@ -121,8 +120,6 @@ internal class RumViewManagerScopeAttributePropagationTest {
     @Forgery
     lateinit var fakeParentContext: RumContext
 
-    lateinit var fakeEventTime: Time
-
     lateinit var fakeEvent: RumRawEvent
 
     @Forgery
@@ -176,7 +173,8 @@ internal class RumViewManagerScopeAttributePropagationTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionTypeOverride = fakeRumSessionType,
-            insightsCollector = mockInsightsCollector
+            insightsCollector = mockInsightsCollector,
+            heatmapIdentifierRegistry = null
         )
     }
 

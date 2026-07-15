@@ -15,7 +15,7 @@ import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
-import com.datadog.android.internal.profiling.ProfilerStopEvent
+import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.InfoProvider
@@ -60,7 +60,8 @@ internal class RumSessionScope(
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS,
     rumSessionTypeOverride: RumSessionType?,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
-    insightsCollector: InsightsCollector
+    insightsCollector: InsightsCollector,
+    heatmapIdentifierRegistry: HeatmapIdentifierRegistry?
 ) : RumScope {
 
     internal var sessionId = RumContext.NULL_UUID
@@ -97,7 +98,8 @@ internal class RumSessionScope(
         accessibilitySnapshotManager = accessibilitySnapshotManager,
         batteryInfoProvider = batteryInfoProvider,
         displayInfoProvider = displayInfoProvider,
-        insightsCollector
+        insightsCollector = insightsCollector,
+        heatmapIdentifierRegistry = heatmapIdentifierRegistry
     )
 
     internal val activeView: RumViewScope?
@@ -159,21 +161,15 @@ internal class RumSessionScope(
 
         when (event) {
             is RumRawEvent.AppStartTTIDEvent -> {
-                if (sessionState == State.TRACKED) {
-                    rumSessionScopeStartupManager?.onTTIDEvent(
-                        event = event,
-                        datadogContext = datadogContext,
-                        writeScope = writeScope,
-                        writer = actualWriter,
-                        rumContext = rumContext,
-                        customAttributes = getCustomAttributes()
-                    )
-                } else {
-                    // can refactor in the future by moving session state check into RumSessionScopeStartupManager
-                    sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
-                        ProfilerStopEvent.TTID()
-                    )
-                }
+                rumSessionScopeStartupManager?.onTTIDEvent(
+                    event = event,
+                    isSessionTracked = sessionState == State.TRACKED,
+                    datadogContext = datadogContext,
+                    writeScope = writeScope,
+                    writer = actualWriter,
+                    rumContext = rumContext,
+                    customAttributes = getCustomAttributes()
+                )
             }
             is RumRawEvent.AppStartEvent -> {
                 if (sessionState == State.TRACKED) {
@@ -246,15 +242,18 @@ internal class RumSessionScope(
 
         val isInteraction = (event is RumRawEvent.StartView) || (event is RumRawEvent.StartAction)
         val isBackgroundEvent = event.javaClass in RumViewManagerScope.validBackgroundEventTypes
+
         val isSdkInitInForeground = event is RumRawEvent.SdkInit && event.isAppInForeground
         val isSdkInitInBackground = event is RumRawEvent.SdkInit && !event.isAppInForeground
+
+        val isAppStart = event is RumRawEvent.AppStartEvent
 
         // When the session is expired, time-out or stopSession API is called, session ended metric should be sent
         if (isExpired || isTimedOut || isActive.not()) {
             sessionEndedMetricDispatcher.endMetric(sessionId, sdkCore.time.serverTimeOffsetMs)
         }
 
-        if (isInteraction || isSdkInitInForeground) {
+        if (isInteraction || isSdkInitInForeground || isAppStart) {
             if (isNewSession || isExpired || isTimedOut) {
                 val reason = if (isNewSession) {
                     StartReason.USER_APP_LAUNCH

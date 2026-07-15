@@ -6,8 +6,13 @@
 
 package com.datadog.android.profiling.internal
 
+import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 
-internal fun interface ProfilerCallback {
+internal interface ProfilerCallback {
     fun onSuccess(result: PerfettoResult)
+
+    fun onFailure(startReason: ProfilingStartReason)
+
+    fun onAnrDetected(event: ProfilingAnrDetectedEvent)
 }

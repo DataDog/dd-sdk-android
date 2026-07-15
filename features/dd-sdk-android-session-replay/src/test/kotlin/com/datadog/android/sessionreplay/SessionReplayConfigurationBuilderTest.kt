@@ -75,6 +75,18 @@ internal class SessionReplayConfigurationBuilderTest {
         assertThat(sessionReplayConfiguration.customMappers).isEmpty()
         assertThat(sessionReplayConfiguration.customOptionSelectorDetectors).isEmpty()
         assertThat(sessionReplayConfiguration.dynamicOptimizationEnabled).isEqualTo(true)
+        assertThat(sessionReplayConfiguration.heatmapsEnabled).isFalse()
+    }
+
+    @Test
+    fun `M set heatmapsEnabled to true W setHeatmapsEnabled()`() {
+        // When
+        val sessionReplayConfiguration = testedBuilder
+            .setHeatmapsEnabled(true)
+            .build()
+
+        // Then
+        assertThat(sessionReplayConfiguration.heatmapsEnabled).isTrue()
     }
 
     @Test

@@ -12,6 +12,9 @@ import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.publishingConfig
+import com.datadog.gradle.utils.cloneRumEventsFormat
+import com.datadog.gradle.utils.createJsonModelsGenerationTask
+import com.datadog.gradle.utils.createRumSchemaCloneTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.nio.file.Paths
 
@@ -32,6 +35,7 @@ plugins {
     // Tests
     id("de.mobilej.unmock")
     id("org.jetbrains.kotlinx.kover")
+    id("unitTest")
 
     // Internal Generation
     id("apiSurface")
@@ -81,9 +85,6 @@ dependencies {
         }
     }
 
-    testImplementation(libs.bundles.jUnit5)
-    testImplementation(libs.bundles.testTools)
-    testImplementation(libs.okHttp)
     testImplementation(libs.okHttpMock)
     testImplementation(project(":features:dd-sdk-android-trace"))
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
@@ -129,10 +130,59 @@ unMock {
     keepStartingWith("org.json")
 }
 
-apply(from = "clone_rum_schema.gradle.kts")
-apply(from = "clone_telemetry_schema.gradle.kts")
-apply(from = "generate_rum_models.gradle.kts")
-apply(from = "generate_telemetry_models.gradle.kts")
+createRumSchemaCloneTask("cloneRumSchema") {
+    cloneRumEventsFormat(
+        project = project,
+        subFolder = "schemas/rum",
+        destinationFolder = "src/main/json/rum"
+    )
+}
+
+createRumSchemaCloneTask("cloneTelemetrySchema") {
+    cloneRumEventsFormat(
+        project = project,
+        subFolder = "schemas/telemetry",
+        destinationFolder = "src/main/json/telemetry"
+    )
+}
+
+createJsonModelsGenerationTask("generateRumModelsFromJson") {
+    inputDirPath = "src/main/json/rum"
+    targetPackageName = "com.datadog.android.rum.model"
+    ignoredFiles = listOf(
+        "_common-schema.json",
+        "_action-child-schema.json",
+        "_perf-metric-schema.json",
+        "_profiling-internal-context-schema.json",
+        "_rect-schema.json",
+        "_view-container-schema.json",
+        "_view-accessibility-schema.json",
+        "_view-performance-schema.json",
+        "_view-properties-schema.json",
+        "_vital-common-schema.json"
+    )
+    inputNameMapping = mapOf(
+        "action-schema.json" to "ActionEvent",
+        "error-schema.json" to "ErrorEvent",
+        "resource-schema.json" to "ResourceEvent",
+        "view-schema.json" to "ViewEvent",
+        "long_task-schema.json" to "LongTaskEvent",
+        "vital-app-launch-schema.json" to "VitalAppLaunchEvent",
+        "vital-operation-step-schema.json" to "VitalOperationStepEvent"
+    )
+}
+
+createJsonModelsGenerationTask("generateTelemetryModelsFromJson") {
+    inputDirPath = "src/main/json/telemetry"
+    targetPackageName = "com.datadog.android.telemetry.model"
+    ignoredFiles = listOf(
+        "_common-schema.json"
+    )
+    inputNameMapping = mapOf(
+        "debug-schema.json" to "TelemetryDebugEvent",
+        "error-schema.json" to "TelemetryErrorEvent"
+    )
+}
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 androidLibraryConfig()

@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
+import android.view.View
 import androidx.annotation.UiThread
 import androidx.compose.ui.graphics.toAndroidRectF
 import androidx.compose.ui.semantics.Role
@@ -16,6 +17,7 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.core.graphics.toRect
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
+import com.datadog.android.sessionreplay.compose.internal.utils.ComposeWindowOffset
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.withinComposeBenchmarkSpan
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
@@ -64,7 +66,8 @@ internal class RootSemanticsNodeMapper(
         density: Float,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback,
-        internalLogger: InternalLogger
+        internalLogger: InternalLogger,
+        windowOffset: ComposeWindowOffset = ComposeWindowOffset.NONE
     ): List<MobileSegment.Wireframe> {
         val wireframes = mutableListOf<MobileSegment.Wireframe>()
         withinComposeBenchmarkSpan(ROOT_NODE_SPAN_NAME, true) {
@@ -72,12 +75,17 @@ internal class RootSemanticsNodeMapper(
                 semanticsNode = semanticsNode,
                 wireframes = wireframes,
                 touchPrivacyManager = mappingContext.touchPrivacyManager,
+                // Positions must be correct from creation (see UiContext.windowOffset), since
+                // wireframes can be mutated in place later by async resource resolution (e.g.
+                // ImageWireframe.resourceId); translating them after the fact would silently
+                // detach those updates. See RUM-16362.
                 parentUiContext = UiContext(
                     parentContentColor = null,
                     density = density,
                     imagePrivacy = mappingContext.imagePrivacy,
                     textAndInputPrivacy = mappingContext.textAndInputPrivacy,
-                    imageWireframeHelper = mappingContext.imageWireframeHelper
+                    imageWireframeHelper = mappingContext.imageWireframeHelper,
+                    windowOffset = windowOffset
                 ),
                 asyncJobStatusCallback = asyncJobStatusCallback,
                 mappingContext = mappingContext,
@@ -106,31 +114,18 @@ internal class RootSemanticsNodeMapper(
 
         // If Hidden node is detected, add placeholder wireframe and return
         if (semanticsUtils.isNodeHidden(semanticsNode)) {
-            composeHiddenMapper.map(
-                semanticsNode,
-                parentUiContext,
-                asyncJobStatusCallback,
-                internalLogger
-            )?.let {
-                wireframes.addAll(it.wireframes)
-            }
+            addHiddenWireframe(semanticsNode, parentUiContext, asyncJobStatusCallback, internalLogger, wireframes)
             return
         }
 
         val interopView = semanticsUtils.getInteropView(semanticsNode)
-
         if (interopView != null) {
-            val interopViewWireframes =
-                mappingContext.interopViewCallback.map(interopView, mappingContext)
-            wireframes.addAll(interopViewWireframes)
+            addInteropWireframes(interopView, mappingContext, wireframes)
             return
         }
 
         val mapper = getSemanticsNodeMapper(semanticsNode)
-        updateTouchOverrideAreas(
-            touchPrivacyManager = touchPrivacyManager,
-            semanticsNode = semanticsNode
-        )
+        updateTouchOverrideAreas(touchPrivacyManager, semanticsNode, parentUiContext.windowOffset)
         withinComposeBenchmarkSpan(
             mapper::class.java.simpleName,
             isContainer = mapper is ContainerSemanticsNodeMapper
@@ -141,13 +136,9 @@ internal class RootSemanticsNodeMapper(
                 asyncJobStatusCallback = asyncJobStatusCallback,
                 internalLogger = internalLogger
             )
-            var currentUiContext = parentUiContext
-            semanticsWireframe?.let {
-                wireframes.addAll(it.wireframes)
-                currentUiContext = it.uiContext ?: currentUiContext
-            }
-            val children = semanticsNode.children
-            children.forEach {
+            val currentUiContext = semanticsWireframe?.uiContext ?: parentUiContext
+            semanticsWireframe?.let { wireframes.addAll(it.wireframes) }
+            semanticsNode.children.forEach {
                 createComposerWireframes(
                     semanticsNode = it,
                     touchPrivacyManager = touchPrivacyManager,
@@ -159,6 +150,34 @@ internal class RootSemanticsNodeMapper(
                 )
             }
         }
+    }
+
+    @UiThread
+    private fun addHiddenWireframe(
+        semanticsNode: SemanticsNode,
+        parentUiContext: UiContext,
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        internalLogger: InternalLogger,
+        wireframes: MutableList<MobileSegment.Wireframe>
+    ) {
+        composeHiddenMapper.map(
+            semanticsNode,
+            parentUiContext,
+            asyncJobStatusCallback,
+            internalLogger
+        )?.let {
+            wireframes.addAll(it.wireframes)
+        }
+    }
+
+    @UiThread
+    private fun addInteropWireframes(
+        interopView: View,
+        mappingContext: MappingContext,
+        wireframes: MutableList<MobileSegment.Wireframe>
+    ) {
+        // Already screen-absolute (getLocationOnScreen internally) — no offset needed.
+        wireframes.addAll(mappingContext.interopViewCallback.map(interopView, mappingContext))
     }
 
     private fun getSemanticsNodeMapper(
@@ -188,11 +207,15 @@ internal class RootSemanticsNodeMapper(
 
     @UiThread
     private fun updateTouchOverrideAreas(
+        touchPrivacyManager: TouchPrivacyManager,
         semanticsNode: SemanticsNode,
-        touchPrivacyManager: TouchPrivacyManager
+        windowOffset: ComposeWindowOffset
     ) {
         semanticsUtils.getTouchPrivacyOverride(semanticsNode)?.let { touchPrivacy ->
-            val viewArea = semanticsNode.boundsInRoot.toAndroidRectF().toRect()
+            // boundsInRoot is root-relative; offset it like wireframes so touch redaction stays aligned.
+            val viewArea = semanticsNode.boundsInRoot.toAndroidRectF().toRect().apply {
+                offset(windowOffset.xPx, windowOffset.yPx)
+            }
             touchPrivacyManager.addTouchOverrideArea(viewArea, touchPrivacy)
         }
     }

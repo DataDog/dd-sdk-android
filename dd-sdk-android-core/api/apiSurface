@@ -22,6 +22,7 @@ enum com.datadog.android.DatadogSite
   - EU1
   - AP1
   - AP2
+  - UK1
   - US1_FED
   - US2_FED
   - STAGING
@@ -284,7 +285,11 @@ data class com.datadog.android.core.configuration.Configuration
     fun setUploadSchedulerStrategy(UploadSchedulerStrategy?): Builder
     fun setVersion(String): Builder
   companion object 
+class com.datadog.android.core.configuration.HostPatternSanitizer
+  constructor(com.datadog.android.api.InternalLogger)
+  fun validate(List<String>, String): List<String>
 class com.datadog.android.core.configuration.HostsSanitizer
+  constructor(com.datadog.android.api.InternalLogger = unboundInternalLogger)
   fun sanitizeHosts(List<String>, String): List<String>
 enum com.datadog.android.core.configuration.UploadFrequency
   constructor(Long)
