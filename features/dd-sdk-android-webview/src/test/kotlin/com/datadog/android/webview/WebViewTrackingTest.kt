@@ -352,6 +352,31 @@ internal class WebViewTrackingTest {
     }
 
     @Test
+    fun `M pass valid hosts and wildcard patterns to the bridge W enable { wildcard patterns }`() {
+        // Given
+        val fakeAllowedHosts = listOf("*.example.com", "preview-*.shopist.io", "example.net")
+        val mockSettings: WebSettings = mock {
+            whenever(it.javaScriptEnabled).thenReturn(true)
+        }
+        val mockWebView: WebView = mock {
+            whenever(it.settings).thenReturn(mockSettings)
+        }
+
+        // When
+        WebViewTracking.enable(mockWebView, fakeAllowedHosts, sdkCore = mockCore)
+
+        // Then
+        argumentCaptor<DatadogEventBridge> {
+            verify(mockWebView).addJavascriptInterface(
+                capture(),
+                eq(WebViewTracking.DATADOG_EVENT_BRIDGE_NAME)
+            )
+            assertThat(firstValue.getAllowedWebViewHosts())
+                .isEqualTo("[\"example.net\",\"*.example.com\",\"preview-*.shopist.io\"]")
+        }
+    }
+
+    @Test
     fun `M create a default WebEventConsumer W enable()`(
         @Forgery fakeUrls: List<URL>
     ) {
@@ -648,7 +673,7 @@ internal class WebViewTrackingTest {
             val feature = it.getArgument<Feature>(0)
             feature.onInitialize(mock())
         }
-        val fakeFeaturesContext = mapOf<String, Map<String, Any?>>(
+        val fakeFeaturesContext = mapOf(
             "rum" to mapOf<String, Any?>(
                 "application_id" to fakeApplicationId,
                 "session_id" to fakeSessionId,

@@ -28,23 +28,32 @@ import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.JvmCrash
+import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
+import com.datadog.android.heatmaps.HeatmapIdentifierRegistryProvider
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
+import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
+import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
+import com.datadog.android.internal.profiling.ProfilingThreadDump
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.thread.isMainThread
+import com.datadog.android.internal.utils.asString
 import com.datadog.android.internal.utils.getSystemServiceAs
+import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRumMonitor
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
+import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.debug.UiRumDebugListener
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumDataWriter
@@ -141,7 +150,7 @@ internal class RumFeature(
     },
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
     private val handler: Handler = Handler(Looper.getMainLooper())
-) : StorageBackedFeature, FeatureEventReceiver {
+) : StorageBackedFeature, FeatureEventReceiver, HeatmapIdentifierRegistryProvider {
 
     internal var dataWriter: DataWriter<Any> = NoOpDataWriter()
     internal val initialized = AtomicBoolean(false)
@@ -179,6 +188,7 @@ internal class RumFeature(
     internal var displayInfoProvider: InfoProvider<DisplayInfo> = NoOpDisplayInfoProvider()
     internal val rumContextUpdateReceivers = mutableSetOf<FeatureContextUpdateReceiver>()
     internal var insightsCollector: InsightsCollector = NoOpInsightsCollector()
+    override val heatmapIdentifierRegistry: HeatmapIdentifierRegistry = HeatmapIdentifierRegistry.create()
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
     internal var rumAppStartupDetector: RumAppStartupDetector? = null
@@ -203,6 +213,7 @@ internal class RumFeature(
         initialResourceIdentifier = configuration.initialResourceIdentifier
         lastInteractionIdentifier = configuration.lastInteractionIdentifier
         insightsCollector = configuration.insightsCollector
+        insightsCollector.bindSdkCore(sdkCore)
 
         dataWriter = createDataWriter(
             configuration,
@@ -333,6 +344,7 @@ internal class RumFeature(
             sdkCore.removeContextUpdateReceiver(it)
         }
         rumContextUpdateReceivers.clear()
+        insightsCollector.unbindSdkCore(sdkCore)
 
         unregisterTrackingStrategies(appContext)
 
@@ -418,6 +430,7 @@ internal class RumFeature(
             is JvmCrash.Rum -> addJvmCrash(event)
             is InternalTelemetryEvent -> handleTelemetryEvent(event)
             is RumFlagEvaluationMessage -> handleFlagEvaluationEvent(event)
+            is ProfilingAnrDetectedEvent -> handleProfilingAnrDetectedEvent(event)
             else -> {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
@@ -437,6 +450,29 @@ internal class RumFeature(
             value = event.value
         )
     }
+
+    private fun handleProfilingAnrDetectedEvent(event: ProfilingAnrDetectedEvent) {
+        val anrException = ANRException(event.anrThreadStack.toTypedArray())
+        val mainThreadDump = ThreadDump(
+            name = event.anrThreadName,
+            state = event.anrThreadState.asString(),
+            stack = anrException.loggableStackTrace(),
+            crashed = false
+        )
+        val allThreads = listOf(mainThreadDump) + event.allThreads.map { it.toThreadDump() }
+        GlobalRumMonitor.get(sdkCore).addError(
+            ANRDetectorRunnable.ANR_MESSAGE,
+            RumErrorSource.SOURCE,
+            anrException,
+            mapOf(
+                RumAttributes.INTERNAL_TIMESTAMP to event.detectedAtMs,
+                RumAttributes.INTERNAL_ALL_THREADS to allThreads
+            )
+        )
+    }
+
+    private fun ProfilingThreadDump.toThreadDump(): ThreadDump =
+        ThreadDump(name = name, state = state.asString(), stack = stack, crashed = false)
 
     private fun handleMapLikeEvent(event: Map<*, *>) {
         when (event["type"]) {
@@ -887,7 +923,7 @@ internal class RumFeature(
                 providers,
                 interactionPredicate,
                 composeActionsTrackingStrategy = composeActionTrackingStrategy,
-                internalLogger
+                internalLogger = internalLogger
             )
         }
 

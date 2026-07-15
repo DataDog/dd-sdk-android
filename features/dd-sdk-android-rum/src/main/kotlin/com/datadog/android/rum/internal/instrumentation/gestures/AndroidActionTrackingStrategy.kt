@@ -13,6 +13,7 @@ import android.widget.AbsListView
 import android.widget.ScrollView
 import androidx.core.view.ScrollingView
 import com.datadog.android.api.SdkCore
+import com.datadog.android.internal.utils.isValidTapTarget
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ViewTarget
 import java.lang.ref.WeakReference
@@ -35,7 +36,7 @@ internal class AndroidActionTrackingStrategy : ActionTrackingStrategy {
     }
 
     override fun findTargetForTap(view: View, x: Float, y: Float): ViewTarget? {
-        return if (hitTest(view, x, y, visibleRect) && isValidTapTarget(view)) {
+        return if (hitTest(view, x, y, visibleRect) && view.isValidTapTarget()) {
             ViewTarget(viewRef = WeakReference(view))
         } else {
             null
@@ -49,13 +50,6 @@ internal class AndroidActionTrackingStrategy : ActionTrackingStrategy {
             null
         }
     }
-
-    private fun isValidTapTarget(view: View): Boolean {
-        return view.isClickable && view.isVisible
-    }
-
-    private val View.isVisible: Boolean
-        get() = visibility == View.VISIBLE
 
     private fun hitTest(
         view: View,
@@ -75,7 +69,7 @@ internal class AndroidActionTrackingStrategy : ActionTrackingStrategy {
     }
 
     private fun isValidScrollableTarget(view: View): Boolean {
-        return view.isVisible && isScrollableView(view)
+        return view.visibility == View.VISIBLE && isScrollableView(view)
     }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here

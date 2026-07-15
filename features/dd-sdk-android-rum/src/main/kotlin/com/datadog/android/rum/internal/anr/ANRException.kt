@@ -6,9 +6,13 @@
 
 package com.datadog.android.rum.internal.anr
 
-internal class ANRException(thread: Thread) : Exception() {
+internal class ANRException : Exception {
 
-    init {
+    constructor(thread: Thread) : super() {
         stackTrace = thread.stackTrace
+    }
+
+    constructor(stack: Array<StackTraceElement>) : super() {
+        stackTrace = stack
     }
 }

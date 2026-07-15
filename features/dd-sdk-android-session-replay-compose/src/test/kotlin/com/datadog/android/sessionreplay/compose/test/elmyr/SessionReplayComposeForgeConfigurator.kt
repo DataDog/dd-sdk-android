@@ -28,6 +28,7 @@ class SessionReplayComposeForgeConfigurator : BaseConfigurator() {
         forge.addFactory(WireframeForgeryFactory())
 
         // Compose Specifics
+        forge.addFactory(ComposeWindowOffsetForgeryFactory())
         forge.addFactory(UIContextForgeryFactory())
         forge.addFactory(ComposeWireframeForgeryFactory())
         forge.addFactory(TextLayoutInfoForgeryFactory())

@@ -53,6 +53,7 @@ internal class RadioButtonSemanticsNodeMapper(
 
         resolveBoxWireframe(
             semanticsNode = semanticsNode,
+            parentContext = parentContext,
             color = radioButtonColor,
             wireframeIndex = 0
         )
@@ -61,6 +62,7 @@ internal class RadioButtonSemanticsNodeMapper(
         if (!isMasked(parentContext)) {
             resolveDotWireframe(
                 semanticsNode = semanticsNode,
+                parentContext = parentContext,
                 color = radioButtonColor,
                 wireframeIndex = 1
             )
@@ -75,10 +77,11 @@ internal class RadioButtonSemanticsNodeMapper(
 
     private fun resolveBoxWireframe(
         semanticsNode: SemanticsNode,
+        parentContext: UiContext,
         wireframeIndex: Int,
         color: String
     ): MobileSegment.Wireframe {
-        val globalBounds = resolveBounds(semanticsNode)
+        val globalBounds = resolveBounds(semanticsNode, parentContext)
 
         return MobileSegment.Wireframe.ShapeWireframe(
             id = resolveId(semanticsNode, wireframeIndex),
@@ -98,11 +101,12 @@ internal class RadioButtonSemanticsNodeMapper(
 
     private fun resolveDotWireframe(
         semanticsNode: SemanticsNode,
+        parentContext: UiContext,
         wireframeIndex: Int,
         color: String
     ): MobileSegment.Wireframe? {
         val selected = semanticsNode.config.getOrNull(SemanticsProperties.Selected) ?: false
-        val globalBounds = resolveBounds(semanticsNode)
+        val globalBounds = resolveBounds(semanticsNode, parentContext)
         return if (selected) {
             MobileSegment.Wireframe.ShapeWireframe(
                 id = resolveId(semanticsNode, wireframeIndex),

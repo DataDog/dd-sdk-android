@@ -62,6 +62,7 @@ public final class com/datadog/android/DatadogSite : java/lang/Enum {
 	public static final field AP2 Lcom/datadog/android/DatadogSite;
 	public static final field EU1 Lcom/datadog/android/DatadogSite;
 	public static final field STAGING Lcom/datadog/android/DatadogSite;
+	public static final field UK1 Lcom/datadog/android/DatadogSite;
 	public static final field US1 Lcom/datadog/android/DatadogSite;
 	public static final field US1_FED Lcom/datadog/android/DatadogSite;
 	public static final field US2_FED Lcom/datadog/android/DatadogSite;
@@ -773,8 +774,15 @@ public final class com/datadog/android/core/configuration/Configuration$Builder 
 public final class com/datadog/android/core/configuration/Configuration$Companion {
 }
 
+public final class com/datadog/android/core/configuration/HostPatternSanitizer {
+	public fun <init> (Lcom/datadog/android/api/InternalLogger;)V
+	public final fun validate (Ljava/util/List;Ljava/lang/String;)Ljava/util/List;
+}
+
 public final class com/datadog/android/core/configuration/HostsSanitizer {
 	public fun <init> ()V
+	public fun <init> (Lcom/datadog/android/api/InternalLogger;)V
+	public synthetic fun <init> (Lcom/datadog/android/api/InternalLogger;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun sanitizeHosts (Ljava/util/List;Ljava/lang/String;)Ljava/util/List;
 }
 

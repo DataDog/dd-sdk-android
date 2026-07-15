@@ -12,6 +12,7 @@ object com.datadog.android.profiling.Profiling
 data class com.datadog.android.profiling.ProfilingConfiguration
   class Builder
     fun setApplicationLaunchSampleRate(Float): Builder
+    fun setContinuousSampleRate(Float): Builder
     fun useCustomEndpoint(String): Builder
     fun build(): ProfilingConfiguration
   companion object 
@@ -66,3 +67,17 @@ data class com.datadog.android.profiling.model.ProfileEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Family
+data class com.datadog.android.profiling.model.RumMetadataEvent
+  constructor(Type, kotlin.String, kotlin.String? = null, kotlin.Long, kotlin.Long? = null)
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): RumMetadataEvent
+    fun fromJsonObject(com.google.gson.JsonObject): RumMetadataEvent
+  enum Type
+    constructor(kotlin.String)
+    - VITAL
+    - LONG_TASK
+    - ERROR
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Type

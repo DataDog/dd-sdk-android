@@ -26,7 +26,7 @@ internal class TabSemanticsNodeMapper(
         asyncJobStatusCallback: AsyncJobStatusCallback,
         internalLogger: InternalLogger
     ): SemanticsWireframe {
-        val globalBounds = resolveBounds(semanticsNode)
+        val globalBounds = resolveBounds(semanticsNode, parentContext)
         val shapeStyle =
             MobileSegment.ShapeStyle(backgroundColor = parentContext.parentContentColor)
         val wireframe = MobileSegment.Wireframe.ShapeWireframe(

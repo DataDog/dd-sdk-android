@@ -32,7 +32,7 @@ internal open class TextSemanticsNodeMapper(
         val textAndInputPrivacy = semanticsUtils.getTextAndInputPrivacyOverride(semanticsNode)
             ?: parentContext.textAndInputPrivacy
         val textWireframe = resolveTextWireFrame(parentContext, semanticsNode, textAndInputPrivacy, internalLogger)
-        val backgroundWireframes = resolveModifierWireframes(semanticsNode)
+        val backgroundWireframes = resolveModifierWireframes(semanticsNode, parentContext)
         wireframes.addAll(backgroundWireframes)
         textWireframe?.let {
             wireframes.add(it)
@@ -53,7 +53,7 @@ internal open class TextSemanticsNodeMapper(
         val capturedText = textLayoutInfo?.text?.let {
             transformCapturedText(it, textAndInputPrivacy)
         }
-        val bounds = resolveBounds(semanticsNode)
+        val bounds = resolveBounds(semanticsNode, parentContext)
         return capturedText?.let { text ->
             MobileSegment.Wireframe.TextWireframe(
                 id = semanticsNode.id.toLong(),

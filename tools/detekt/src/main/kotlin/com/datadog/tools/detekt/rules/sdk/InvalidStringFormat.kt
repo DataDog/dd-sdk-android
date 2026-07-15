@@ -88,8 +88,7 @@ class InvalidStringFormat : Rule() {
         resolvedCall: ResolvedCall<out CallableDescriptor>
     ): String? {
         val call = resolvedCall.call
-        val explicitReceiver = call.explicitReceiver
-        val stringExpression = when (explicitReceiver) {
+        val stringExpression = when (val explicitReceiver = call.explicitReceiver) {
             is ClassQualifier -> {
                 // String.format(…)
                 val arguments = resolvedCall.valueArguments.toList().firstOrNull {
@@ -232,7 +231,7 @@ class InvalidStringFormat : Rule() {
             val message = ERROR_INVALID_ARGUMENT_TYPE +
                 "Unknown specifier %$type."
             report(CodeSmell(issue, Entity.from(expression), message))
-        } else if (allowedTypes != ANY_TYPES && argType !in allowedTypes) {
+        } else if (!allowedTypes.contentEquals(ANY_TYPES) && argType !in allowedTypes) {
             val message = ERROR_INVALID_ARGUMENT_TYPE +
                 " Expected one of ${allowedTypes.joinToString()}; but was $argType."
             report(CodeSmell(issue, Entity.from(expression), message))

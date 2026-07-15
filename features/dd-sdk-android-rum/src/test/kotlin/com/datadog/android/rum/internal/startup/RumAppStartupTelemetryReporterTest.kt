@@ -90,7 +90,7 @@ internal class RumAppStartupTelemetryReporterTest {
         assertThat(innerMap).containsExactlyEntriesOf(
             buildMap {
                 put(RumAppStartupTelemetryReporterImpl.KEY_SCENARIO, info.scenario.name)
-                put(RumAppStartupTelemetryReporterImpl.KEY_TTID_DURATION_NS, info.durationNs)
+                put(RumAppStartupTelemetryReporterImpl.KEY_DURATION_NS, info.durationNs)
                 put(RumAppStartupTelemetryReporterImpl.KEY_INDEX_IN_SESSION, appStartIndex)
                 put(
                     RumAppStartupTelemetryReporterImpl.KEY_CP_PROCESS_START_DIFF_NS,

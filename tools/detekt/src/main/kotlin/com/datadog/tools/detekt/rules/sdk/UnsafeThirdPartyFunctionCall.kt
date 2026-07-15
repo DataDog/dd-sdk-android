@@ -36,7 +36,12 @@ class UnsafeThirdPartyFunctionCall(
     private val internalPackagePrefix: String by config(defaultValue = "")
     private val treatUnknownFunctionAsThrowing: Boolean by config(defaultValue = true)
     private val knownThrowingCalls: List<String> by config(defaultValue = emptyList())
-    private val knownSafeCalls: List<String> by config(defaultValue = emptyList())
+    private val knownSafeAndroidCalls: List<String> by config(defaultValue = emptyList())
+    private val knownSafeThirdPartyCalls: List<String> by config(defaultValue = emptyList())
+
+    private val knownSafeCalls: Set<String> by lazy {
+        (knownSafeAndroidCalls + knownSafeThirdPartyCalls).toSet()
+    }
 
     private val knownThrowingCallsMap: Map<String, List<String>> by lazy {
         knownThrowingCalls.map {

@@ -18,6 +18,7 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
@@ -46,6 +47,8 @@ class StubSDKCore(
 ) : InternalSdkCore by mockSdkCore {
 
     private val featureScopes = mutableMapOf<String, FeatureScope>()
+
+    private val contextUpdateReceivers = mutableSetOf<FeatureContextUpdateReceiver>()
 
     private var currentTimestampMillis: Long = 0L
     private var currentNanoTime: Long = 0L
@@ -181,6 +184,7 @@ class StubSDKCore(
         override fun getServerOffsetNanos(): Long = 0L
         override fun getServerOffsetMillis(): Long = 0L
         override fun getDeviceElapsedRealtimeMillis(): Long = SystemClock.elapsedRealtime()
+        override fun getDeviceUptimeMillis(): Long = SystemClock.uptimeMillis()
     }
 
     override fun registerFeature(feature: Feature) {
@@ -204,10 +208,29 @@ class StubSDKCore(
                 put(featureName, featureContext)
             }
         )
+        contextUpdateReceivers.forEach { it.onContextUpdate(featureName, featureContext) }
     }
 
     override fun getFeatureContext(featureName: String, useContextThread: Boolean): Map<String, Any?> {
         return datadogContext.featuresContext[featureName].orEmpty()
+    }
+
+    override fun setContextUpdateReceiver(listener: FeatureContextUpdateReceiver) {
+        // Mirror DatadogCore: replay the current context for every registered feature so
+        // listeners that subscribe after some feature has already populated its context
+        // still receive a bootstrap update. Forged entries for non-registered features are
+        // ignored to keep the stub faithful to production behavior.
+        featureScopes.keys.forEach { featureName ->
+            val context = datadogContext.featuresContext[featureName].orEmpty()
+            if (context.isNotEmpty()) {
+                listener.onContextUpdate(featureName, context)
+            }
+        }
+        contextUpdateReceivers.add(listener)
+    }
+
+    override fun removeContextUpdateReceiver(listener: FeatureContextUpdateReceiver) {
+        contextUpdateReceivers.remove(listener)
     }
 
     override fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService {

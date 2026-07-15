@@ -21,8 +21,8 @@ import kotlin.time.Duration.Companion.seconds
 internal class RumAppStartupDetectorImpl(
     private val application: Application,
     private val buildSdkVersionProvider: BuildSdkVersionProvider,
-    private val appStartupTimeProvider: () -> Time,
-    private val timeProvider: () -> Time,
+    private val appStartupTime: () -> Time,
+    private val currentTime: () -> Time,
     private val listener: RumAppStartupDetector.Listener,
     private val appStartupActivityPredicate: AppStartupActivityPredicate,
     private val rumFirstDrawTimeReporter: RumFirstDrawTimeReporter
@@ -82,7 +82,7 @@ internal class RumAppStartupDetectorImpl(
     @Suppress("LongMethod")
     private fun onBeforeActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
         numberOfActivities++
-        val now = timeProvider()
+        val now = currentTime()
 
         val shouldTrackStartup = appStartupActivityPredicate.shouldTrackStartup(activity)
 
@@ -106,7 +106,7 @@ internal class RumAppStartupDetectorImpl(
                 pendingScenario == null
 
         if (isFirstTrackedActivityWithNoPendingStartup) {
-            val processStartTime = appStartupTimeProvider()
+            val processStartTime = appStartupTime()
 
             val gapNs = now.nanoTime - processStartTime.nanoTime
             val hasSavedInstanceStateBundle = savedInstanceState != null
