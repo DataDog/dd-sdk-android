@@ -523,6 +523,37 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
+    fun `M return new File W getWritableFile() {previous file leaves no room for a max-size item}`(
+        @StringForgery(size = MAX_BATCH_SIZE - MAX_ITEM_SIZE) previousData: String
+    ) {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val fileCreateTimestamp = stubTimeProvider.deviceTimestampMs
+        val previousFile = testedOrchestrator.getWritableFile()
+        checkNotNull(previousFile)
+        previousFile.writeText(previousData)
+        stubTimeProvider.deviceTimestampMs += 1
+        val newFileTimestamp = stubTimeProvider.deviceTimestampMs
+
+        // When
+        val result = testedOrchestrator.getWritableFile()
+
+        // Then
+        checkNotNull(result)
+        assertThat(result)
+            .doesNotExist()
+            .hasParent(fakeRootDir)
+        assertThat(result.name.toLong()).isEqualTo(newFileTimestamp)
+        assertThat(previousFile.readText()).isEqualTo(previousData)
+        argumentCaptor<BatchClosedMetadata> {
+            verify(mockMetricsDispatcher).sendBatchClosedMetric(eq(previousFile), capture())
+            assertThat(firstValue.lastTimeWasUsedInMs).isEqualTo(fileCreateTimestamp)
+            assertThat(firstValue.eventsCount).isEqualTo(1L)
+        }
+        verifyNoMoreInteractions(mockMetricsDispatcher)
+    }
+
+    @Test
     fun `M return new File W getWritableFile() {previous file has too many items}`(
         forge: Forge
     ) {

@@ -237,7 +237,7 @@ internal class BatchFileOrchestrator(
         }
 
         val isRecentEnough = isFileRecent(lastFile, recentWriteDelayMs)
-        val hasRoomForMore = lastFile.lengthSafe(internalLogger) < config.maxBatchSize
+        val hasRoomForMore = lastFile.lengthSafe(internalLogger) < config.maxBatchSize - config.maxItemSize
         val hasSlotForMore = (lastKnownFileItemCount < config.maxItemsPerBatch)
 
         return if (isRecentEnough && hasRoomForMore && hasSlotForMore) {
