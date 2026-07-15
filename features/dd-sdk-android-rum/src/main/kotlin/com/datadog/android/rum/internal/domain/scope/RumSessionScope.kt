@@ -103,7 +103,7 @@ internal class RumSessionScope(
     )
 
     internal val activeView: RumViewScope?
-        get() = if (isActive() && childScope != null) {
+        get() = if (isActive()) {
             childScope?.activeView
         } else {
             null

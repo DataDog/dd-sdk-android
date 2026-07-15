@@ -32,6 +32,7 @@ plugins {
     id("apiSurface")
     id("transitiveDependencies")
     id("verificationXml")
+    id("detekt-conventions")
 }
 
 android {

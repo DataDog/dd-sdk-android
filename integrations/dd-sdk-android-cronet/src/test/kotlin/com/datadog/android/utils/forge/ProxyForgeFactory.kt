@@ -19,8 +19,8 @@ internal class ProxyForgeFactory : ForgeryFactory<Proxy> {
         forge.aString(),
         forge.anInt(min = 1, max = 65535),
         mock<Executor> {
-            on { execute(any()) } doAnswer {
-                it.getArgument<() -> Unit>(0).invoke()
+            on { execute(any()) } doAnswer { invocation ->
+                invocation.getArgument<() -> Unit>(0).invoke()
             }
         },
         object : Proxy.Callback() {

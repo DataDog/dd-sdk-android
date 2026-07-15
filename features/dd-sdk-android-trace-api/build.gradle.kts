@@ -37,6 +37,7 @@ plugins {
     id("apiSurface")
     id("transitiveDependencies")
     id("binary-compatibility-validator")
+    id("detekt-conventions")
 }
 
 android {

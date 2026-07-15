@@ -187,14 +187,14 @@ internal class DatadogLateCrashReporter(
         threadDumps: List<ThreadDump>?,
         viewEvent: ViewEvent
     ): ErrorEvent {
-        val connectivity = viewEvent.connectivity?.let {
+        val connectivity = viewEvent.connectivity?.let { viewConnectivity ->
             val connectivityStatus =
-                ErrorEvent.ConnectivityStatus.valueOf(it.status.name)
+                ErrorEvent.ConnectivityStatus.valueOf(viewConnectivity.status.name)
             val connectivityInterfaces =
-                it.interfaces?.map { ErrorEvent.Interface.valueOf(it.name) }
+                viewConnectivity.interfaces?.map { ErrorEvent.Interface.valueOf(it.name) }
             val cellular = ErrorEvent.Cellular(
-                it.cellular?.technology,
-                it.cellular?.carrierName
+                viewConnectivity.cellular?.technology,
+                viewConnectivity.cellular?.carrierName
             )
             ErrorEvent.Connectivity(connectivityStatus, connectivityInterfaces, cellular = cellular)
         }

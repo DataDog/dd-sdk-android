@@ -64,7 +64,7 @@ data class SessionReplayConfiguration internal constructor(
         }
 
         private var customEndpointUrl: String? = null
-        private var privacy = SessionReplayPrivacy.MASK
+        private val privacy = SessionReplayPrivacy.MASK
 
         // indicates whether fine grained masking levels have been explicitly set
         private var fineGrainedMaskingSet = false
@@ -73,7 +73,7 @@ data class SessionReplayConfiguration internal constructor(
         private var startRecordingImmediately = true
         private var touchPrivacy = TouchPrivacy.HIDE
         private var textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL
-        private var extensionSupportSet: MutableSet<ExtensionSupport> = mutableSetOf()
+        private val extensionSupportSet: MutableSet<ExtensionSupport> = mutableSetOf()
         private var dynamicOptimizationEnabled = true
         private var systemRequirementsConfiguration = SystemRequirementsConfiguration.NONE
         private var internalCallback: SessionReplayInternalCallback = NoOpSessionReplayInternalCallback()
