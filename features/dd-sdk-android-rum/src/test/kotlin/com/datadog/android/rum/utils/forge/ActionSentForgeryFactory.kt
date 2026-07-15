@@ -18,7 +18,8 @@ internal class ActionSentForgeryFactory : ForgeryFactory<RumRawEvent.ActionSent>
             viewId = forge.getForgery<UUID>().toString(),
             frustrationCount = forge.anInt(min = 0),
             type = forge.aValueFrom(ActionEvent.ActionEventActionType::class.java),
-            eventEndTimestampInNanos = forge.aPositiveLong()
+            eventEndTimestampInNanos = forge.aPositiveLong(),
+            eventTime = forge.getForgery()
         )
     }
 }

@@ -32,6 +32,7 @@ import com.google.gson.JsonObject
 import java.io.IOException
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import kotlin.math.abs
 
 internal class DatadogLateCrashReporter(
     private val sdkCore: InternalSdkCore,
@@ -133,7 +134,11 @@ internal class DatadogLateCrashReporter(
                 if (lastViewEvent.session.id == datadogContext.rumSessionId) return@withWriteContext
 
                 val lastFatalAnrSent = sdkCore.lastFatalAnrSent
-                if (anrExitInfo.timestamp == lastFatalAnrSent) return@withWriteContext
+                if (lastFatalAnrSent != null &&
+                    abs(anrExitInfo.timestamp - lastFatalAnrSent) <= FATAL_ANR_DEDUP_TOLERANCE_MS
+                ) {
+                    return@withWriteContext
+                }
 
                 val threadDumps = readThreadsDump(anrExitInfo)
                 if (threadDumps.isEmpty()) return@withWriteContext
@@ -388,5 +393,12 @@ internal class DatadogLateCrashReporter(
         internal const val OPEN_ANR_TRACE_ERROR = "Cannot open trace for the last known exit reason."
 
         internal val VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD = TimeUnit.HOURS.toMillis(4)
+
+        // Profiling reports an ANR via in-session addError using `detectedAtMs` (in-process
+        // detection time), while the next-launch path reads `ApplicationExitInfo.timestamp`
+        // (process death time). These come from different moments and won't match exactly,
+        // so dedup is done with a tolerance window: any marker within this window of the
+        // exit-info timestamp is treated as the same ANR.
+        internal const val FATAL_ANR_DEDUP_TOLERANCE_MS = 10_000L
     }
 }

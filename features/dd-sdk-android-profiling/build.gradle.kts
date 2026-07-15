@@ -3,6 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
+@file:Suppress("StringLiteralDuplication")
 
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
@@ -44,6 +45,10 @@ plugins {
 
 android {
     namespace = "com.datadog.android.profiling"
+
+    testFixtures {
+        enable = true
+    }
 }
 
 dependencies {
@@ -70,6 +75,11 @@ dependencies {
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(testFixtures(project(":dd-sdk-android-internal")))
     unmock(libs.robolectric)
+
+    // Test Fixtures
+    testFixturesImplementation(libs.kotlin)
+    testFixturesImplementation(project(":dd-sdk-android-internal"))
+    testFixturesImplementation(libs.androidXAnnotation)
 }
 
 unMock {
@@ -107,7 +117,8 @@ createJsonModelsGenerationTask("generateProfilingModelsFromJson") {
     // watch for changes in the referenced schema
     extraInputWatchDir = project.layout.projectDirectory.dir("src/main/json/profiling")
     inputNameMapping = mapOf(
-        "profile-event-schema.json" to "ProfileEvent"
+        "profile-event-schema.json" to "ProfileEvent",
+        "profile-rum-metadata-event-schema.json" to "RumMetadataEvent"
     )
     targetPackageName = "com.datadog.android.profiling.model"
 }

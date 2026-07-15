@@ -218,15 +218,9 @@ internal class LogsFeature(
             "Logs feature receive an event of unsupported type=%s."
         internal const val UNKNOWN_EVENT_TYPE_PROPERTY_VALUE =
             "Logs feature received an event with unknown value of \"type\" property=%s."
-        internal const val NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING =
-            "Logs feature received a NDK crash event where" +
-                " one or more mandatory (loggerName, message, timestamp, attributes)" +
-                " fields are either missing or have wrong type."
         internal const val SPAN_LOG_EVENT_MISSING_MANDATORY_FIELDS_WARNING =
             "Logs feature received a Span log event where" +
                 " one or more mandatory (loggerName, message, timestamp, attributes)" +
                 " fields are either missing or have wrong type."
-
-        internal const val MAX_WRITE_WAIT_TIMEOUT_MS = 500L
     }
 }

@@ -6,17 +6,19 @@
 
 package com.datadog.android.profiling.internal.perfetto
 
+import com.datadog.android.profiling.internal.ProfilingStartReason
+
 /**
  * Result of a profiling request made through [androidx.core.os.requestProfiling].
  *
  * @param start the start time of the profiling in milliseconds since epoch.
+ * @param startReason the start reason used to start profiler.
  * @param end the end time of the profiling in milliseconds since epoch.
- * @param tag the tag used to start profiler
  * @param resultFilePath the path to the file containing the profiling result.
  */
 internal data class PerfettoResult(
     val start: Long,
+    val startReason: ProfilingStartReason,
     val end: Long,
-    val tag: String,
     val resultFilePath: String
 )
