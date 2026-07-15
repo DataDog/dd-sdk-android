@@ -90,10 +90,12 @@ class AndroidComposeViewMapperTest {
     @Forgery
     private lateinit var fakeMappingContext: MappingContext
 
+    private var fakeDefaultNodeDensity: Float = 0f
+
     private lateinit var testedAndroidComposeViewMapper: AndroidComposeViewMapper
 
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
         testedAndroidComposeViewMapper = AndroidComposeViewMapper(
             mockViewIdentifierResolver,
             mockColorStringFormatter,
@@ -101,9 +103,8 @@ class AndroidComposeViewMapperTest {
             mockDrawableToColorMapper,
             mockRootSemanticsNodeMapper
         )
-        // Node density 0f falls back to system density, matching the tests below that assert
-        // against fakeMappingContext.systemInformation.screenDensity.
-        whenever(mockLayoutInfo.density) doReturn Density(0f)
+        fakeDefaultNodeDensity = forge.aFloat(min = 0.5f, max = 4f)
+        whenever(mockLayoutInfo.density) doReturn Density(fakeDefaultNodeDensity)
         whenever(mockRootSemanticsNodeMapper.createComposeWireframes(any(), any(), any(), any(), any(), any()))
             .thenReturn(emptyList())
         whenever(mockAndroidComposeView.semanticsOwner).thenReturn(mockSemanticsOwner)
@@ -128,7 +129,7 @@ class AndroidComposeViewMapperTest {
         // Then
         verify(mockRootSemanticsNodeMapper).createComposeWireframes(
             eq(mockSemanticsNode),
-            eq(fakeMappingContext.systemInformation.screenDensity),
+            eq(fakeDefaultNodeDensity),
             eq(fakeMappingContext),
             eq(mockAsyncJobStatusCallback),
             any(),
@@ -145,7 +146,7 @@ class AndroidComposeViewMapperTest {
         // fields like ImageWireframe.resourceId from the wireframe actually returned. See RUM-16362.
         val fakeScreenX = forge.anInt(min = 1, max = 1000)
         val fakeScreenY = forge.anInt(min = 1, max = 1000)
-        val density = fakeMappingContext.systemInformation.screenDensity.let { if (it == 0.0f) 1.0f else it }
+        val density = fakeDefaultNodeDensity
         doAnswer { invocation ->
             val array = invocation.arguments[0] as IntArray
             array[0] = fakeScreenX

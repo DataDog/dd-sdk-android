@@ -42,9 +42,7 @@ internal class AndroidComposeViewMapper(
     ): List<MobileSegment.Wireframe> {
         val rootSemanticsNode = view.semanticsOwner.unmergedRootSemanticsNode
         // Use the node's own density so it matches SemanticsUtils.resolveInnerBounds.
-        val systemDensity =
-            mappingContext.systemInformation.screenDensity.let { if (it == 0.0f) 1.0f else it }
-        val density = rootSemanticsNode.layoutInfo.density.density.let { if (it == 0.0f) systemDensity else it }
+        val density = rootSemanticsNode.layoutInfo.density.density
         // positionInRoot is relative to the view, not the screen — offset to match other SR mappers.
         val windowOffset = view.resolveComposeWindowOffset(density)
         return rootSemanticsNodeMapper.createComposeWireframes(

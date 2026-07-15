@@ -75,12 +75,10 @@ internal class RootSemanticsNodeMapper(
                 semanticsNode = semanticsNode,
                 wireframes = wireframes,
                 touchPrivacyManager = mappingContext.touchPrivacyManager,
-                // windowOffset is baked into every wireframe's bounds via UiContext (see
-                // SemanticsUtils.resolveInnerBounds/resolveBackgroundInfo) so positions are correct
-                // from the moment each wireframe is created — including ones later mutated in place
-                // by async resource resolution (e.g. ImageWireframe.resourceId). Translating
-                // already-built wireframes after the fact would silently detach those async
-                // updates. See RUM-16362.
+                // Positions must be correct from creation (see UiContext.windowOffset), since
+                // wireframes can be mutated in place later by async resource resolution (e.g.
+                // ImageWireframe.resourceId); translating them after the fact would silently
+                // detach those updates. See RUM-16362.
                 parentUiContext = UiContext(
                     parentContentColor = null,
                     density = density,
@@ -132,14 +130,14 @@ internal class RootSemanticsNodeMapper(
             mapper::class.java.simpleName,
             isContainer = mapper is ContainerSemanticsNodeMapper
         ) {
-            val currentUiContext = addMapperWireframes(
-                mapper,
-                semanticsNode,
-                parentUiContext,
-                asyncJobStatusCallback,
-                internalLogger,
-                wireframes
+            val semanticsWireframe = mapper.map(
+                semanticsNode = semanticsNode,
+                parentContext = parentUiContext,
+                asyncJobStatusCallback = asyncJobStatusCallback,
+                internalLogger = internalLogger
             )
+            val currentUiContext = semanticsWireframe?.uiContext ?: parentUiContext
+            semanticsWireframe?.let { wireframes.addAll(it.wireframes) }
             semanticsNode.children.forEach {
                 createComposerWireframes(
                     semanticsNode = it,
@@ -180,26 +178,6 @@ internal class RootSemanticsNodeMapper(
     ) {
         // Already screen-absolute (getLocationOnScreen internally) — no offset needed.
         wireframes.addAll(mappingContext.interopViewCallback.map(interopView, mappingContext))
-    }
-
-    /** Maps [semanticsNode] with [mapper], adds its wireframes to [wireframes], and returns the UiContext for its children. */
-    @UiThread
-    private fun addMapperWireframes(
-        mapper: SemanticsNodeMapper,
-        semanticsNode: SemanticsNode,
-        parentUiContext: UiContext,
-        asyncJobStatusCallback: AsyncJobStatusCallback,
-        internalLogger: InternalLogger,
-        wireframes: MutableList<MobileSegment.Wireframe>
-    ): UiContext {
-        val semanticsWireframe = mapper.map(
-            semanticsNode = semanticsNode,
-            parentContext = parentUiContext,
-            asyncJobStatusCallback = asyncJobStatusCallback,
-            internalLogger = internalLogger
-        ) ?: return parentUiContext
-        wireframes.addAll(semanticsWireframe.wireframes)
-        return semanticsWireframe.uiContext ?: parentUiContext
     }
 
     private fun getSemanticsNodeMapper(
