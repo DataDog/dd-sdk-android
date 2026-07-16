@@ -846,4 +846,62 @@ internal class AppLaunchPreInitCollectorTest {
     }
 
     // endregion
+
+    // region computeProcessStartNs OEM guard branches
+
+    @Test
+    fun `M fall back to createTimeNs W computeProcessStartNs() {API 24+, computed is after createTimeNs}`() {
+        // Given: createTimeNs set to 1 so computed (≈ nanoTime - uptime, a large value) > fallback
+        whenever(stubBuildSdkVersionProvider.isAtLeastN).thenReturn(true)
+        DdRumContentProvider.createTimeNs = 1L
+
+        // When
+        val result = AppLaunchPreInitCollector.computeProcessStartNs()
+
+        // Then: computed > fallback guard → returns fallback
+        assertThat(result).isEqualTo(1L)
+    }
+
+    @Test
+    fun `M fall back to createTimeNs W computeProcessStartNs() {API 24+, computed too far before createTimeNs}`() {
+        // Given: createTimeNs set to far future so (fallback - computed) >> 10s threshold
+        whenever(stubBuildSdkVersionProvider.isAtLeastN).thenReturn(true)
+        val farFuture = Long.MAX_VALUE / 2
+        DdRumContentProvider.createTimeNs = farFuture
+
+        // When
+        val result = AppLaunchPreInitCollector.computeProcessStartNs()
+
+        // Then: isTooFarBefore guard → returns fallback
+        assertThat(result).isEqualTo(farFuture)
+    }
+
+    // endregion
+
+    // region isFirstActivityForProcess tracking
+
+    @Test
+    fun `M set isFirstActivityForProcess false W onBeforeActivityCreated() {previous activity was destroyed}`() {
+        // Given: install, then simulate a prior activity being destroyed before our capture
+        AppLaunchPreInitCollector.install(mockApplication)
+        val captor = argumentCaptor<Application.ActivityLifecycleCallbacks>()
+        verify(mockApplication).registerActivityLifecycleCallbacks(captor.capture())
+        val callbacks = captor.firstValue
+
+        // Simulate an activity destroyed before the first capture
+        callbacks.onActivityDestroyed(mockActivity)
+
+        // A new activity is then created (the one we capture)
+        val mockNewActivity = mock<Activity>()
+        whenever(mockNewActivity.window).thenReturn(mockWindow)
+        whenever(mockNewActivity.application).thenReturn(mockApplication)
+
+        // When
+        callbacks.onActivityPreCreated(mockNewActivity, null)
+
+        // Then: because _isFirstActivityForProcess was set to false, isFirstActivityForProcess is false
+        assertThat(AppLaunchPreInitCollector.isFirstActivityForProcess).isFalse()
+    }
+
+    // endregion
 }

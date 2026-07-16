@@ -667,6 +667,96 @@ internal class RumFeaturePreInitStartupTest {
 
     // endregion
 
+    // region monitor not available at dispatch time
+
+    @Test
+    fun `M skip events W pendingPreLaunchAction() { GlobalRumMonitor not an AdvancedRumMonitor }`() {
+        // Given — COMPLETE state with valid data
+        val mockActivity = mock<Activity>()
+        setCollectorState(AppLaunchPreInitCollector.State.COMPLETE)
+        configureCollectorData(
+            processStartNs = 100_000L,
+            activityOnCreateNs = 200_000L,
+            firstFrameNs = 300_000L,
+            isFirstActivityForProcess = true,
+            activity = mockActivity
+        )
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Clear the registered monitor so GlobalRumMonitor.get() returns a NoOp (not AdvancedRumMonitor)
+        GlobalRumMonitor.clear()
+
+        // When
+        testedFeature.pendingPreLaunchAction?.invoke()
+
+        // Then — early return: no events sent, no crash
+        verify(mockRumMonitor, never()).sendAppStartEvent(any())
+        verify(mockRumMonitor, never()).sendTTIDEvent(any())
+    }
+
+    @Test
+    fun `M skip first-frame events W addFirstFrameCallback() { CAPTURING + monitor not AdvancedRumMonitor }`() {
+        // Given — CAPTURING state
+        val mockActivity = mock<Activity>()
+        setCollectorState(AppLaunchPreInitCollector.State.CAPTURING)
+        configureCollectorData(
+            processStartNs = 100_000L,
+            activityOnCreateNs = 200_000L,
+            isFirstActivityForProcess = true,
+            activity = mockActivity
+        )
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Clear monitor so GlobalRumMonitor.get() inside the callback returns NoOp
+        GlobalRumMonitor.clear()
+
+        // When — fire the first-frame callback
+        val fakeFirstFrameNs = 300_000L
+        setCollectorState(AppLaunchPreInitCollector.State.COMPLETE)
+        AppLaunchPreInitCollector.firstFrameNs = fakeFirstFrameNs
+        val callbacks = getFirstFrameCallbacks()
+        callbacks.forEach { it(fakeFirstFrameNs) }
+
+        // Then — early return inside callback: no events sent, no crash
+        verify(mockRumMonitor, never()).sendAppStartEvent(any())
+        verify(mockRumMonitor, never()).sendTTIDEvent(any())
+    }
+
+    @Test
+    fun `M not call view tracking strategy W pendingPreLaunchAction() { strategy is null }`() {
+        // Given — null viewTrackingStrategy hits the else -> Unit branch
+        val mockActivity = mock<Activity>()
+        setCollectorState(AppLaunchPreInitCollector.State.COMPLETE)
+        configureCollectorData(
+            processStartNs = 100_000L,
+            activityOnCreateNs = 200_000L,
+            firstFrameNs = 300_000L,
+            isFirstActivityForProcess = true,
+            activity = mockActivity
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration.copy(
+                appStartupActivityPredicate = mockAppStartupActivityPredicate,
+                viewTrackingStrategy = null
+            ),
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+        GlobalRumMonitor.clear()
+        GlobalRumMonitor.registerIfAbsent(mockRumMonitor, mockSdkCore)
+
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.pendingPreLaunchAction?.invoke()
+
+        // Then — no NPE, events still sent
+        verify(mockRumMonitor, times(1)).sendAppStartEvent(any())
+        verify(mockRumMonitor, times(1)).sendTTIDEvent(any())
+    }
+
+    // endregion
+
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
         private val mainLooper = MainLooperTestConfiguration()

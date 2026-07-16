@@ -9,6 +9,7 @@ package com.datadog.android.rum.prelaunch
 import android.app.ActivityManager
 import android.app.Application
 import android.content.Context
+import android.net.Uri
 import com.datadog.android.rum.AppLaunchPreInitCollector
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.prelaunch.forge.Configurator
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.atomic.AtomicReference
@@ -120,6 +122,54 @@ internal class AppLaunchCollectorProviderTest {
         assertThat(result).isTrue()
         assertThat(AppLaunchPreInitCollector.state)
             .isEqualTo(AppLaunchPreInitCollector.State.IDLE)
+    }
+
+    @Test
+    fun `M return false W onCreate() {applicationContext is not Application}`() {
+        // Given: applicationContext returns a plain Context, not Application
+        whenever(mockContext.applicationContext).thenReturn(mockContext)
+
+        // When
+        val result = testedProvider.onCreate()
+
+        // Then
+        assertThat(result).isFalse()
+        assertThat(AppLaunchPreInitCollector.state)
+            .isEqualTo(AppLaunchPreInitCollector.State.NOT_INSTALLED)
+    }
+
+    // endregion
+
+    // region stub methods
+
+    @Test
+    fun `M return null W query() {stub}`() {
+        val mockUri = mock<Uri>()
+        assertThat(testedProvider.query(mockUri, null, null, null, null)).isNull()
+    }
+
+    @Test
+    fun `M return null W getType() {stub}`() {
+        val mockUri = mock<Uri>()
+        assertThat(testedProvider.getType(mockUri)).isNull()
+    }
+
+    @Test
+    fun `M return null W insert() {stub}`() {
+        val mockUri = mock<Uri>()
+        assertThat(testedProvider.insert(mockUri, null)).isNull()
+    }
+
+    @Test
+    fun `M return 0 W delete() {stub}`() {
+        val mockUri = mock<Uri>()
+        assertThat(testedProvider.delete(mockUri, null, null)).isEqualTo(0)
+    }
+
+    @Test
+    fun `M return 0 W update() {stub}`() {
+        val mockUri = mock<Uri>()
+        assertThat(testedProvider.update(mockUri, null, null, null)).isEqualTo(0)
     }
 
     // endregion
