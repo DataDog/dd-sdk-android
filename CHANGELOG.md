@@ -1,3 +1,7 @@
+# 3.12.1 / 2026-07-16
+
+* [BUGFIX] Fix R8 failures due to missing `SourceLines` annotation. See [#3642](https://github.com/DataDog/dd-sdk-android/pull/3642)
+
 # 3.12.0 / 2026-07-15
 
 * [FEATURE] Continuous Profiling: capture profiling sessions correlated with RUM, with app-launch, ANR and long-task triggers, cross-feature sampling, quota checks and clock-drift gating. See [#3622](https://github.com/DataDog/dd-sdk-android/pull/3622)
