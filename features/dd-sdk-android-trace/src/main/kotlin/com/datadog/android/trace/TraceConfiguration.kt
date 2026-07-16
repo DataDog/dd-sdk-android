@@ -68,6 +68,7 @@ data class TraceConfiguration internal constructor(
          *
          * @param enabled false by default
          */
+        @ExperimentalTraceApi
         fun setStatsComputationEnabled(enabled: Boolean): Builder {
             statsComputationEnabled = enabled
             return this
@@ -77,6 +78,7 @@ data class TraceConfiguration internal constructor(
          * Let the Tracing client-side stats feature target a custom server.
          * The provided url should be the full endpoint url, e.g.: https://example.com/stats/upload
          */
+        @ExperimentalTraceApi
         fun useCustomStatsEndpoint(endpoint: String): Builder {
             customStatsEndpointUrl = endpoint
             return this
