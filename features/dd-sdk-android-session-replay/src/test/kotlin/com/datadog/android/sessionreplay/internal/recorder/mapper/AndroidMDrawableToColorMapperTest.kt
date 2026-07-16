@@ -283,20 +283,21 @@ open class AndroidMDrawableToColorMapperTest {
     }
 
     @Test
-    fun `M return null W resolveGradientDrawableNPlus() {public API path, no color filter}`(
+    fun `M return the resolved color W resolveGradientDrawableNPlus() {public API path, no color filter}`(
         @IntForgery fillColor: Int
     ) {
-        // Given
+        // Given — no colorFilter means no tint was applied, not that the drawable's own solid
+        // fill color is invalid; it should be returned as-is.
         val baseAlpha = (fillColor.toLong() and 0xFF000000) shr 24
         assumeTrue(baseAlpha != 0L)
         val testableMMapper = TestableMMapper().apply { fakeResolvedColor = fillColor }
-        val gradientDrawable = GradientDrawable() // colorFilter is null by default
+        val gradientDrawable = GradientDrawable() // colorFilter is null by default, alpha fully opaque
 
         // When
         val result = testableMMapper.resolveGradientDrawableNPlus(gradientDrawable)
 
         // Then
-        assertThat(result).isNull()
+        assertThat(result).isEqualTo(fillColor)
     }
 
     @Test

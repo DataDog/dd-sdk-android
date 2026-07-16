@@ -47,6 +47,8 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -344,7 +346,10 @@ internal class CompositionTreeBuilderTest {
 
         // Then
         assertThat(output.wireframes).containsExactlyElementsOf(fakeChildWireframes)
-        verifyNoInteractions(mockViewWireframeMapper)
+        // mockRoot itself (the container) now legitimately calls viewWireframeMapper for its own
+        // background — see buildLayer's background-wireframe fix — so this only asserts the
+        // customView leaf specifically never takes that shortcut, not that the mapper is untouched.
+        verify(mockViewWireframeMapper, never()).map(eq(customView), any(), any(), any())
     }
 
     private class CustomDrawingView(context: Context) : View(context)

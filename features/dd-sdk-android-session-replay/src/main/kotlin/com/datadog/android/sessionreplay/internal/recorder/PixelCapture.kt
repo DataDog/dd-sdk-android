@@ -475,9 +475,8 @@ internal class PixelCapture(
      *   `IllegalArgumentException`; caught below, tallied for the next health summary, and
      *   treated as "can't capture" — the same fallback as before, just for a narrower set of cases.
      * - [isBitmapLikelyEmpty] is a best-effort check on whatever [View.draw] *did* produce, for
-     *   cases the type check doesn't catch (e.g. an unanticipated rendering path). It downscales
-     *   rather than sampling exact points specifically so real, sparse content (e.g. a padded,
-     *   mostly-transparent Compose layout) isn't misreported as empty — see that method's doc.
+     *   cases the type check doesn't catch (e.g. an unanticipated rendering path) — see that
+     *   method's doc for why it scans every real pixel rather than a downscaled thumbnail.
      */
     private fun captureViewRegion(sourceView: View, clipRect: Rect): Bitmap? {
         if (clipRect.width() <= 0 || clipRect.height() <= 0) return null
@@ -528,39 +527,27 @@ internal class PixelCapture(
     }
 
     /**
-     * Downscales [bitmap] to an [EMPTY_CHECK_GRID_SIZE]x[EMPTY_CHECK_GRID_SIZE] thumbnail and
-     * returns true if every resulting pixel is fully transparent — a signal that nothing was
+     * Returns true if every pixel in [bitmap] is fully transparent — a signal that nothing was
      * actually drawn into this region. Not comprehensive (see [captureViewRegion] doc for the
      * known gaps); intended as a cheap secondary safety net alongside [containsHardwareSurface],
      * not a replacement for it.
      *
-     * Deliberately a *downscale* (bilinear-filtered, averaging every source pixel into the
-     * thumbnail) rather than sampling a sparse grid of exact coordinates: real UI content is
-     * routinely mostly transparent background with padding/gaps between elements (a Compose
-     * layout with horizontal padding, for instance, has fully-transparent margins along its
-     * entire left/right edges) — a fixed set of exact sample points can land entirely in such
-     * gaps and misreport abundant real content elsewhere as "empty." Downscaling instead
-     * aggregates every pixel, so any non-transparent content anywhere in the bitmap is reflected
-     * in at least one thumbnail pixel.
+     * Reads every pixel via one bulk [Bitmap.getPixels] call rather than downscaling to a
+     * thumbnail first: an earlier version of this check used `Bitmap.createScaledBitmap(...,
+     * filter = true)` to shrink the capture to a small grid before inspecting it, on the theory
+     * that averaging every source pixel into the thumbnail would guarantee any non-transparent
+     * content anywhere in the bitmap shows up in at least one thumbnail pixel. That guarantee
+     * doesn't actually hold — `createScaledBitmap`'s bilinear filter samples only the 2x2 source
+     * texels nearest each output pixel, it does not average an output cell's full source region —
+     * so real, sparse content (confirmed on-device: a nav bar item's icon+label filling roughly
+     * 3% of its full capture bounds) can have every one of those sample points land in the
+     * surrounding transparent gaps and be misreported as empty. Scanning every real pixel has no
+     * such gap; the one-time bulk read keeps it cheap despite the larger pixel count.
      */
     private fun isBitmapLikelyEmpty(bitmap: Bitmap): Boolean {
-        val thumbnail = Bitmap.createScaledBitmap(
-            bitmap,
-            EMPTY_CHECK_GRID_SIZE,
-            EMPTY_CHECK_GRID_SIZE,
-            true
-        )
-        try {
-            for (y in 0 until EMPTY_CHECK_GRID_SIZE) {
-                for (x in 0 until EMPTY_CHECK_GRID_SIZE) {
-                    val alpha = (thumbnail.getPixel(x, y) ushr 24) and 0xFF
-                    if (alpha != 0) return false
-                }
-            }
-            return true
-        } finally {
-            thumbnail.recycle()
-        }
+        val pixels = IntArray(bitmap.width * bitmap.height)
+        bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+        return pixels.none { (it ushr 24) != 0 }
     }
 
     /**
@@ -645,8 +632,5 @@ internal class PixelCapture(
          * staying on one screen (e.g. to test scrolling) would produce zero diagnostic output.
          */
         internal const val HEALTH_LOG_INTERVAL_MS = 5_000L
-
-        /** Thumbnail side length [isBitmapLikelyEmpty] downscales a capture to before checking it. */
-        internal const val EMPTY_CHECK_GRID_SIZE = 8
     }
 }

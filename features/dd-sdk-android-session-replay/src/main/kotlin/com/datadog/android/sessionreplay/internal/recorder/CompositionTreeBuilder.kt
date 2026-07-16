@@ -79,7 +79,12 @@ import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
  *   recursing into its single `EditText` child — the box background drawable actually gets
  *   attached to that *child*, not the layout, and the floating label is canvas-drawn directly in
  *   `TextInputLayout.draw()` with its expanded/collapsed state decided by a package-private
- *   method this module has no compile-time visibility into) — is captured via
+ *   method this module has no compile-time visibility into) and `NavigationBarItemView`/
+ *   `BottomNavigationItemView` (forced onto this leaf path by [isNavigationBarItemView]: a
+ *   `BadgeDrawable` — e.g. from `BottomNavigationView.getOrCreateBadge()` — attaches to the icon's
+ *   wrapping container via [View.getOverlay], which only ever paints as the last step of that
+ *   exact view's own `draw()` — something no container in this pipeline ever gets, see
+ *   [isNavigationBarItemView]'s doc for the full reasoning) — is captured via
  *   [pixelCaptureFallbackMapper]. This pipeline never handles Compose interop views, hence
  *   [NoOpInteropViewCallback].
  * - Every container (a [ViewGroup] with children) becomes its own [MobileSegment.CompositionLayer]
@@ -202,6 +207,19 @@ internal class CompositionTreeBuilder(
         val density = mappingContext.systemInformation.screenDensity
         val bounds = viewBoundsResolver.resolveViewGlobalBounds(view, density)
 
+        // A container only ever contributed its children here — its own `view.background` was
+        // silently dropped, unlike a leaf (which goes through mapLeafView's viewWireframeMapper/
+        // pixelCaptureFallbackMapper). Reusing viewWireframeMapper here closes that gap: it
+        // already resolves a color (and, since BaseWireframeMapper's corner-radius fix, a corner
+        // radius) from view.background, exactly as it would if this view had no children and hit
+        // isSimpleContainerView in mapLeafView instead. Prepended so it renders as a backdrop
+        // behind the real children, not on top of them.
+        val backgroundWireframes = viewWireframeMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
+        wireframes.addAll(backgroundWireframes)
+        val backgroundChildren = backgroundWireframes.map {
+            MobileSegment.CompositionLayerChild(id = it.id(), type = WIREFRAME_CHILD_TYPE)
+        }
+
         // CompositionLayer is the working representation while alpha is still a plain float —
         // it is translated into a CompositionLayerOpacityModifier below, the same way iOS's
         // modifiers() only emits one when opacity < 1.
@@ -212,7 +230,8 @@ internal class CompositionTreeBuilder(
             width = bounds.width,
             height = bounds.height,
             alpha = view.alpha,
-            children = buildChildren(view, mappingContext, asyncJobStatusCallback, internalLogger)
+            children = backgroundChildren +
+                buildChildren(view, mappingContext, asyncJobStatusCallback, internalLogger)
         )
 
         return MobileSegment.CompositionLayer(
@@ -266,7 +285,8 @@ internal class CompositionTreeBuilder(
             view.childCount > 0 &&
             !isComposeHostView(view) &&
             view !is WebView &&
-            !isMaterialTextInputLayout(view)
+            !isMaterialTextInputLayout(view) &&
+            !isNavigationBarItemView(view)
         ) {
             val layer = buildLayer(view, mappingContext, asyncJobStatusCallback, internalLogger)
             if (layer != null) {
@@ -368,6 +388,32 @@ internal class CompositionTreeBuilder(
      */
     private fun isMaterialTextInputLayout(view: View): Boolean {
         return view.javaClass.name == "com.google.android.material.textfield.TextInputLayout"
+    }
+
+    /**
+     * `NavigationBarItemView` (the shared item view backing both `BottomNavigationView` and
+     * `NavigationRailView`, and `BottomNavigationItemView` on older Material versions before the
+     * two were unified) is forced onto the leaf/pixel-capture path for the same class of reason
+     * as [isMaterialTextInputLayout]: real content that recursing into its children can't
+     * reproduce. Here that's [com.google.android.material.badge.BadgeDrawable] — attached via
+     * `BadgeUtils.attachBadgeDrawable` to the icon's wrapping `FrameLayout` (so the badge can
+     * overflow that container's own bounds), which means it's added to that container's
+     * [View.getOverlay], not as a real child view. An overlay-drawn [android.graphics.drawable.Drawable]
+     * only ever gets painted as the last step of that exact view's own `draw()` call — and a
+     * *container* in this pipeline never gets one (see [buildLayer]'s doc: only a background-color
+     * wireframe, plus recursing into children, each captured independently) — so the badge would
+     * otherwise never be captured by anything: not the icon container (never drawn as a whole),
+     * and not the icon `ImageView` itself (the badge isn't attached there). Capturing the whole
+     * item view as one leaf via [pixelCaptureFallbackMapper] naturally includes it: `ViewGroup`'s
+     * child-dispatch draw already calls each child's own `draw()` (overlay included), so the
+     * badge comes along for free in the same pass as the icon/label/active-indicator pill. A
+     * by-name check, matching [isComposeHostView]/[isMaterialTextInputLayout]'s approach, since
+     * this module has no compile-time dependency on Material Components.
+     */
+    private fun isNavigationBarItemView(view: View): Boolean {
+        val className = view.javaClass.name
+        return className == "com.google.android.material.navigation.NavigationBarItemView" ||
+            className == "com.google.android.material.bottomnavigation.BottomNavigationItemView"
     }
 
     /**

@@ -73,7 +73,7 @@ abstract class BaseAsyncBackgroundWireframeMapper<in T : View>(
         internalLogger: InternalLogger
     ): MobileSegment.Wireframe? {
         val density = mappingContext.systemInformation.screenDensity
-        val shapeStyle = view.background?.let { resolveShapeStyle(it, view.alpha, density, internalLogger) }
+        val shapeStyle = view.background?.let { resolveShapeStyle(it, view.alpha, density, view, internalLogger) }
 
         val bounds = viewBoundsResolver.resolveViewGlobalBounds(view, density)
         val width = view.width

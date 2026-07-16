@@ -70,14 +70,26 @@ abstract class BaseWireframeMapper<in T : View>(
      * wire format follows. Kept as a separate overload from [resolveShapeStyle] above rather than
      * adding [density] there, since that one is public/protected API on a published SDK class and
      * changing its signature would break any external subclass calling it.
+     *
+     * Falls back to [view]'s own [View.getBackgroundTintList] when [drawable] itself can't be
+     * reduced to a color: some composited drawables (e.g. a `MaterialButton`'s tinted background)
+     * carry no `<solid>` color of their own at all once tinted — the entire effective fill color
+     * comes from a `PorterDuffColorFilter`, which has no public getter for its color (this is
+     * exactly why [AndroidMDrawableToColorMapper][com.datadog.android.sessionreplay.internal.recorder.mapper.AndroidMDrawableToColorMapper]
+     * resorts to reflection for it elsewhere, reflection that's blocked outright on API 28+
+     * anyway). Reading the tint straight off the [View] sidesteps that gap: it's the exact same
+     * [android.content.res.ColorStateList] the drawable's filter was built from, just reachable
+     * through a public, reflection-free API.
      */
     protected fun resolveShapeStyle(
         drawable: Drawable,
         viewAlpha: Float,
         density: Float,
+        view: View,
         internalLogger: InternalLogger
     ): MobileSegment.ShapeStyle? {
         val color = drawableToColorMapper.mapDrawableToColor(drawable, internalLogger)
+            ?: view.backgroundTintList?.defaultColor
         return if (color != null) {
             val cornerRadiusPx = resolveCornerRadiusPx(drawable)
             MobileSegment.ShapeStyle(

@@ -136,8 +136,11 @@ internal open class AndroidMDrawableToColorMapper(
 
     @RequiresApi(Build.VERSION_CODES.N)
     internal fun resolveGradientDrawableNPlus(drawable: GradientDrawable): Int? {
-        val resolvedColor = resolveGradientFillColor(drawable)
-        if (resolvedColor == null || drawable.colorFilter == null) return null
+        // colorFilter (a tint, when one was applied) isn't read anywhere below — resolvedColor
+        // already IS the drawable's real fill color regardless of whether it's tinted, so
+        // requiring colorFilter here only discarded an already-valid color for the common case
+        // of an untinted <shape> drawable.
+        val resolvedColor = resolveGradientFillColor(drawable) ?: return null
         val colorAlpha = (resolvedColor ushr ALPHA_SHIFT_ANDROID) and MAX_ALPHA_VALUE
         val fillAlpha = (colorAlpha * drawable.alpha) / MAX_ALPHA_VALUE
         return if (fillAlpha == 0) null else mergeColorAndAlpha(resolvedColor, fillAlpha)

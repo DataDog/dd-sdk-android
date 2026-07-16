@@ -145,21 +145,22 @@ class AndroidQDrawableToColorMapperTest : AndroidMDrawableToColorMapperTest() {
     }
 
     @Test
-    fun `M return null W mapDrawableToColor {no accessible color filter}`(
+    fun `M return the resolved color W mapDrawableToColor {no accessible color filter}`(
         @IntForgery fillColor: Int
     ) {
-        // When drawable.colorFilter is null (e.g. tint applied via DrawableCompat.setTintList,
-        // which stores it in the blocked private Drawable.mTintFilter on API 28+), the mapper
-        // returns null so the image wireframe path captures the actual tinted appearance.
+        // When drawable.colorFilter is null (no tint was applied at all — the common case for a
+        // plain untinted <shape> drawable), the mapper returns the drawable's own resolved fill
+        // color as-is rather than discarding it: colorFilter only ever refines a color, it
+        // shouldn't gate whether one is returned in the first place.
         val baseAlpha = (fillColor.toLong() and 0xFF000000) shr 24
         assumeTrue(baseAlpha != 0L)
         testableMapper.fakeResolvedColor = fillColor
         testableMapper.fakeColorFilter = null
-        val gradientDrawable = GradientDrawable()
+        val gradientDrawable = GradientDrawable() // alpha defaults to fully opaque
 
         val result = testedMapper.mapDrawableToColor(gradientDrawable, mockInternalLogger)
 
-        assertThat(result).isNull()
+        assertThat(result).isEqualTo(fillColor)
     }
 
     @Test
@@ -167,7 +168,8 @@ class AndroidQDrawableToColorMapperTest : AndroidMDrawableToColorMapperTest() {
         @IntForgery drawableColor: Int
     ) {
         // On Q+, when no color filter is accessible (drawable.colorFilter is null), the mapper
-        // returns null regardless of the fill color so the image wireframe path is used instead.
+        // still returns the resolved fill color as-is — colorFilter is only used to refine it
+        // further when one is present.
         val baseAlpha = (drawableColor.toLong() and 0xFF000000) shr 24
         assumeTrue(baseAlpha != 0L)
         val mockFillPaint = mock<Paint>().apply {
@@ -180,7 +182,7 @@ class AndroidQDrawableToColorMapperTest : AndroidMDrawableToColorMapperTest() {
 
         val result = testedMapper.mapDrawableToColor(gradientDrawable, mockInternalLogger)
 
-        assertThat(result).isNull()
+        assertThat(result).isEqualTo(drawableColor)
     }
 
     // Seam to avoid calling API 24+ methods on the test JVM; falls back to parent-injected fillPaintField when fakeResolvedColor is null.

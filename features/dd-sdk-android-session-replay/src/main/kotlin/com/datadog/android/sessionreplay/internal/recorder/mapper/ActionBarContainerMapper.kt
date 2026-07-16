@@ -47,7 +47,7 @@ internal class ActionBarContainerMapper(
         // which allows us to access it via the DatadogActionBarContainerAccessor.
         val density = mappingContext.systemInformation.screenDensity
         val background = DatadogActionBarContainerAccessor(view).getBackgroundDrawable()
-        val shapeStyle = background?.let { resolveShapeStyle(it, view.alpha, density, internalLogger) }
+        val shapeStyle = background?.let { resolveShapeStyle(it, view.alpha, density, view, internalLogger) }
         val id = viewIdentifierResolver.resolveChildUniqueIdentifier(view, PREFIX_BACKGROUND_DRAWABLE)
 
         if ((shapeStyle != null) && (id != null)) {

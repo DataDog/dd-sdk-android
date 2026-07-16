@@ -2011,7 +2011,7 @@ public abstract class com/datadog/android/sessionreplay/recorder/mapper/BaseWire
 	protected final fun getDrawableToColorMapper ()Lcom/datadog/android/sessionreplay/utils/DrawableToColorMapper;
 	protected final fun getViewBoundsResolver ()Lcom/datadog/android/sessionreplay/utils/ViewBoundsResolver;
 	protected final fun getViewIdentifierResolver ()Lcom/datadog/android/sessionreplay/utils/ViewIdentifierResolver;
-	protected final fun resolveShapeStyle (Landroid/graphics/drawable/Drawable;FFLcom/datadog/android/api/InternalLogger;)Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;
+	protected final fun resolveShapeStyle (Landroid/graphics/drawable/Drawable;FFLandroid/view/View;Lcom/datadog/android/api/InternalLogger;)Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;
 	protected final fun resolveShapeStyle (Landroid/graphics/drawable/Drawable;FLcom/datadog/android/api/InternalLogger;)Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;
 	protected final fun resolveViewId (Landroid/view/View;)J
 }
