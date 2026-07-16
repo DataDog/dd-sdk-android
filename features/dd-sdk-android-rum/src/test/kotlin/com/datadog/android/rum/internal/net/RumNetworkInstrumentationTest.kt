@@ -236,6 +236,24 @@ internal class RumNetworkInstrumentationTest {
     }
 
     @Test
+    fun `M redact sensitive query params W startResource()`() {
+        // Given
+        val fakeSensitiveUrl = "$fakeUrl?X-Amz-Security-Token=some-secret-token"
+        fakeRequestInfo = fakeRequestInfo.copy(url = fakeSensitiveUrl)
+
+        // When
+        testedInstrumentation.startResource(fakeRequestInfo)
+
+        // Then
+        verify(mockRumMonitor).startResource(
+            any<ResourceId>(),
+            eq(RumResourceMethod.GET),
+            eq("$fakeUrl?X-Amz-Security-Token=<redacted>"),
+            eq(emptyMap())
+        )
+    }
+
+    @Test
     fun `M log warning and use GET W startResource() {unknown HTTP method}`(
         @StringForgery fakeUnknownMethod: String
     ) {
@@ -466,6 +484,41 @@ internal class RumNetworkInstrumentationTest {
             )
             assertThat(firstValue.key).isEqualTo("$fakeMethod•$fakeUrl")
         }
+    }
+
+    @Test
+    fun `M redact sensitive query params W stopResourceWithError()`(
+        @Forgery fakeThrowable: Throwable
+    ) {
+        // Given
+        val fakeSensitiveUrl = "$fakeUrl?X-Amz-Security-Token=some-secret-token"
+        fakeRequestInfo = fakeRequestInfo.copy(url = fakeSensitiveUrl)
+        whenever(
+            mockRumResourceAttributesProvider.onProvideAttributes(
+                any<HttpRequestInfo>(),
+                anyOrNull(),
+                anyOrNull()
+            )
+        ) doReturn emptyMap()
+
+        // When
+        testedInstrumentation.stopResourceWithError(fakeRequestInfo, fakeThrowable)
+
+        // Then
+        val expectedMessage = RumNetworkInstrumentation.ERROR_MSG_FORMAT.format(
+            Locale.US,
+            fakeNetworkInstrumentationName,
+            fakeMethod,
+            "$fakeUrl?X-Amz-Security-Token=<redacted>"
+        )
+        verify(mockRumMonitor).stopResourceWithError(
+            any<ResourceId>(),
+            eq(null),
+            eq(expectedMessage),
+            eq(RumErrorSource.NETWORK),
+            eq(fakeThrowable),
+            any<Map<String, Any?>>()
+        )
     }
 
     @Test

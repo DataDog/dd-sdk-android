@@ -16,6 +16,7 @@ import com.datadog.android.api.instrumentation.network.tag
 import com.datadog.android.core.SdkReference
 import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.utils.redactSensitiveQueryParams
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
@@ -92,7 +93,7 @@ class RumNetworkInstrumentation internal constructor(
         sdkCore.networkMonitor?.startResource(
             buildResourceId(requestInfo, generateUuid = true),
             requestInfo.toRumResourceMethod(networkInstrumentationName, sdkCore.internalLogger),
-            requestInfo.url
+            requestInfo.url.redactSensitiveQueryParams()
         )
     }
 
@@ -133,7 +134,12 @@ class RumNetworkInstrumentation internal constructor(
         sdkCore.networkMonitor?.stopResourceWithError(
             buildResourceId(requestInfo, generateUuid = false),
             null,
-            ERROR_MSG_FORMAT.format(Locale.US, networkInstrumentationName, requestInfo.method, requestInfo.url),
+            ERROR_MSG_FORMAT.format(
+                Locale.US,
+                networkInstrumentationName,
+                requestInfo.method,
+                requestInfo.url.redactSensitiveQueryParams()
+            ),
             RumErrorSource.NETWORK,
             throwable,
             rumResourceAttributesProvider.onProvideAttributes(requestInfo, null, throwable)
