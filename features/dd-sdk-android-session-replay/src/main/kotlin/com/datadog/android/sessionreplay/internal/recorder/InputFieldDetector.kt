@@ -43,23 +43,23 @@ internal class InputFieldDetector {
     private var inputFieldCount = 0
 
     /**
-     * True if any of [textBounds] appears to sit inside an input field. Always runs every check
-     * for every region (rather than stopping at the first match) so [recordStats] reflects the
-     * true per-capture cost, not a best case that a real screen with several text regions
-     * wouldn't get.
+     * Returns the subset of [textBounds] that individually appear to sit inside an input field —
+     * empty if none do. Returning the specific matching rects (not just a boolean) lets
+     * [DefaultTextDetector] mask exactly the region that looks like a field rather than every
+     * text block sharing the same capture, e.g. sparing unrelated static text next to it. Always
+     * runs every check for every region (rather than stopping at the first match) so
+     * [recordStats] reflects the true per-capture cost, not a best case that a real screen with
+     * several text regions wouldn't get.
      */
     @WorkerThread
-    fun looksLikeInputField(bitmap: Bitmap, textBounds: List<Rect>): Boolean {
+    fun findInputFieldRegions(bitmap: Bitmap, textBounds: List<Rect>): List<Rect> {
         val startNs = System.nanoTime()
         val backgroundColor = bitmap.getPixel(0, 0)
-        var found = false
-        textBounds.forEach { rect ->
-            if (hasUnderline(bitmap, rect, backgroundColor) || hasOutline(bitmap, rect, backgroundColor)) {
-                found = true
-            }
+        val matches = textBounds.filter { rect ->
+            hasUnderline(bitmap, rect, backgroundColor) || hasOutline(bitmap, rect, backgroundColor)
         }
-        recordStats(System.nanoTime() - startNs, found)
-        return found
+        recordStats(System.nanoTime() - startNs, matches.isNotEmpty())
+        return matches
     }
 
     /**

@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.recorder
 
 import android.graphics.Rect
 import android.view.View
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.GlobalBounds
@@ -56,6 +57,40 @@ interface PixelCaptureCallback {
         wireframe: MobileSegment.Wireframe.ImageWireframe,
         wireframeSlot: WireframeSlot,
         asyncJobStatusCallback: AsyncJobStatusCallback
+    ) {
+        // Delegates to the privacy-aware overload with the only privacy level pixel capture is
+        // eligible under today (see `PixelCaptureEligibility`), so an implementation that only
+        // overrides that overload (e.g. `PixelCapture`) still registers the capture correctly
+        // when called via this signature — rather than silently falling through to the *other*
+        // overload's own no-op default below.
+        registerPendingCapture(
+            nodeId,
+            dpBounds,
+            isolationView,
+            isolationClipRect,
+            wireframe,
+            wireframeSlot,
+            asyncJobStatusCallback,
+            TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
+        )
+    }
+
+    /**
+     * Same as the other [registerPendingCapture] overload, with [textAndInputPrivacy] — the
+     * already-resolved (including any per-view tag override) privacy level in effect for
+     * [isolationView] — so an implementation that redacts sensitive content within a capture
+     * (e.g. masking a detected input field) can decide *whether* to, rather than assuming a fixed
+     * policy.
+     */
+    fun registerPendingCapture(
+        nodeId: Long,
+        dpBounds: GlobalBounds,
+        isolationView: View,
+        isolationClipRect: Rect,
+        wireframe: MobileSegment.Wireframe.ImageWireframe,
+        wireframeSlot: WireframeSlot,
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        textAndInputPrivacy: TextAndInputPrivacy
     ) {
         // Default no-op — implementations register the capture for deferred processing.
         asyncJobStatusCallback.jobFinished()

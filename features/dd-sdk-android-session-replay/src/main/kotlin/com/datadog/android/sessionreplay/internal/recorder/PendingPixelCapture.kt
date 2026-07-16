@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder
 
 import android.graphics.Rect
 import android.view.View
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.WireframeSlot
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
@@ -32,5 +33,7 @@ internal data class PendingPixelCapture(
     /** Used to swap [wireframe] for a placeholder if the capture budget runs out first. */
     val wireframeSlot: WireframeSlot,
     /** Used to call [AsyncJobStatusCallback.jobFinished] after the pipeline completes. */
-    val asyncJobStatusCallback: AsyncJobStatusCallback
+    val asyncJobStatusCallback: AsyncJobStatusCallback,
+    /** Already-resolved privacy level for [isolationView] — see [TextDetector.detectText]. */
+    val textAndInputPrivacy: TextAndInputPrivacy
 )

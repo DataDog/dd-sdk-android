@@ -101,6 +101,7 @@ interface com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
   fun isOptionSelector(android.view.ViewGroup): Boolean
 interface com.datadog.android.sessionreplay.recorder.PixelCaptureCallback
   fun registerPendingCapture(Long, com.datadog.android.sessionreplay.utils.GlobalBounds, android.view.View, android.graphics.Rect, com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.ImageWireframe, WireframeSlot, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback)
+  fun registerPendingCapture(Long, com.datadog.android.sessionreplay.utils.GlobalBounds, android.view.View, android.graphics.Rect, com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.ImageWireframe, WireframeSlot, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback, com.datadog.android.sessionreplay.TextAndInputPrivacy)
 interface com.datadog.android.sessionreplay.recorder.WireframeSlot
   fun replace(com.datadog.android.sessionreplay.model.MobileSegment.Wireframe)
 object com.datadog.android.sessionreplay.recorder.PixelCaptureEligibility

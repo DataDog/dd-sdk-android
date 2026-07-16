@@ -301,7 +301,8 @@ internal class PixelCaptureFallbackMapperTest : LegacyBaseWireframeMapperTest() 
             isolationClipRect = eq(expectedIsolationClipRect),
             wireframe = eq(wireframe),
             wireframeSlot = any(),
-            asyncJobStatusCallback = eq(mockAsyncJobStatusCallback)
+            asyncJobStatusCallback = eq(mockAsyncJobStatusCallback),
+            textAndInputPrivacy = eq(fakeMappingContext.textAndInputPrivacy)
         )
     }
 
@@ -343,7 +344,8 @@ internal class PixelCaptureFallbackMapperTest : LegacyBaseWireframeMapperTest() 
             isolationClipRect = eq(expectedIsolationClipRect),
             wireframe = eq(wireframe),
             wireframeSlot = any(),
-            asyncJobStatusCallback = eq(mockAsyncJobStatusCallback)
+            asyncJobStatusCallback = eq(mockAsyncJobStatusCallback),
+            textAndInputPrivacy = eq(fakeMappingContext.textAndInputPrivacy)
         )
     }
 
@@ -355,6 +357,7 @@ internal class PixelCaptureFallbackMapperTest : LegacyBaseWireframeMapperTest() 
             capturedSlot = it.getArgument(5)
             Unit
         }.whenever(mockPixelCaptureCallback).registerPendingCapture(
+            any(),
             any(),
             any(),
             any(),

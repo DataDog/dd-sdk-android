@@ -17,6 +17,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.UiThread
 import androidx.annotation.VisibleForTesting
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolverCallback
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -269,7 +270,10 @@ internal class PixelCapture(
 
     /**
      * Registers a pending capture, calling [asyncJobStatusCallback.jobStarted] immediately.
-     * The actual capture (or cache reuse) is resolved in [processPendingCaptures].
+     * The actual capture (or cache reuse) is resolved in [processPendingCaptures]. Overrides only
+     * the privacy-aware overload — [PixelCaptureCallback]'s default implementation of the other
+     * one already delegates here with [com.datadog.android.sessionreplay.TextAndInputPrivacy.MASK_SENSITIVE_INPUTS],
+     * matching the only privacy level pixel capture is eligible under today.
      */
     override fun registerPendingCapture(
         nodeId: Long,
@@ -278,7 +282,8 @@ internal class PixelCapture(
         isolationClipRect: Rect,
         wireframe: MobileSegment.Wireframe.ImageWireframe,
         wireframeSlot: WireframeSlot,
-        asyncJobStatusCallback: AsyncJobStatusCallback
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        textAndInputPrivacy: TextAndInputPrivacy
     ) {
         asyncJobStatusCallback.jobStarted()
         pendingCaptures.add(
@@ -289,7 +294,8 @@ internal class PixelCapture(
                 isolationClipRect = isolationClipRect,
                 wireframe = wireframe,
                 wireframeSlot = wireframeSlot,
-                asyncJobStatusCallback = asyncJobStatusCallback
+                asyncJobStatusCallback = asyncJobStatusCallback,
+                textAndInputPrivacy = textAndInputPrivacy
             )
         )
     }
@@ -392,8 +398,34 @@ internal class PixelCapture(
 
         capturedCount++
         val looksLikeBlinkingCursor = blinkingCursorTracker.recordFreshCapture(pending.nodeId, elapsedRealtimeMs())
-        textDetector?.detectText(bitmap, pending.nodeId, looksLikeBlinkingCursor)
 
+        val detector = textDetector
+        if (detector == null) {
+            resolveAndCache(pending, bitmap, width, height)
+        } else {
+            // Text detection must run to completion — masking any region privacy requires,
+            // directly on this same bitmap (see TextDetector's doc) — before the resolver ever
+            // sees it. Calling both at once, the way this used to purely for logging, would race:
+            // the resolver could compress and upload the bitmap before a mask is ever painted onto it.
+            detector.detectText(
+                bitmap,
+                pending.nodeId,
+                looksLikeBlinkingCursor,
+                pending.textAndInputPrivacy
+            ) { maybeMaskedBitmap ->
+                resolveAndCache(pending, maybeMaskedBitmap, width, height)
+            }
+        }
+    }
+
+    /**
+     * Hands [bitmap] off to [resourceResolver] for compression/upload, caching the result under
+     * [pending]'s nodeId on success. Called either directly from [captureOrReuse] (no
+     * [textDetector] configured) or from [TextDetector.detectText]'s completion callback — either
+     * way, [bitmap] here is whatever text detection decided to hand back (masked or untouched),
+     * never a stale reference to what [captureViewRegion] originally produced.
+     */
+    private fun resolveAndCache(pending: PendingPixelCapture, bitmap: Bitmap, width: Int, height: Int) {
         resourceResolver.resolveResourceIdFromBitmap(
             bitmap = bitmap,
             resourceResolverCallback = object : ResourceResolverCallback {

@@ -7,12 +7,16 @@
 package com.datadog.android.sessionreplay.internal.recorder
 
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
 import android.graphics.Rect
 import android.util.Log
 import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
@@ -26,10 +30,7 @@ import java.util.concurrent.Executor
  * (never on a cache-reused capture, so a region already known to be static isn't re-scanned every
  * cycle) — purely to scope which unmapped views actually contain text, and whether that text (or,
  * via [BlinkingCursorTracker] alone, even an empty field with no text yet) sits inside an input
- * field. [PixelCaptureFallbackMapper]'s doc already calls out the gap this targets: raw pixel
- * capture has no idea what a region contains, so — unlike the semantic mapper chain — it can't
- * selectively mask just the sensitive text within one; this is the first step toward closing that,
- * not the fix itself.
+ * field.
  *
  * Two independent, complementary signals decide [Category.HAS_INPUT_FIELD] — see
  * [categorizeAndLog] for how they combine:
@@ -38,6 +39,18 @@ import java.util.concurrent.Executor
  *   for a *focused* field but works even with zero OCR'd text.
  * - [InputFieldDetector]'s pixel-based signal, which catches an unfocused field too but needs at
  *   least one OCR'd text block (a value or a placeholder) to anchor its scan to.
+ *
+ * [Category.HAS_INPUT_FIELD] with at least one OCR'd text block is also where
+ * [PixelCaptureFallbackMapper]'s doc-documented gap actually gets closed, not just described: raw
+ * pixel capture has no idea what a region contains, so — unlike the semantic mapper chain — it
+ * couldn't selectively mask just the sensitive text within one. [maskRegions] closes that by
+ * painting a solid black rectangle directly onto the bitmap, before it's ever handed off for
+ * upload — see [TextDetector]'s doc for why that ordering, not a separate overlay wireframe, is
+ * how this works. *Which* regions get masked depends on [textAndInputPrivacy] — see
+ * [categorizeAndLog] — not a single fixed policy: `MASK_ALL` masks every detected block
+ * regardless of category, since that level requires masking all text, not just fields; the other
+ * two levels mask only input-field regions (all of them, pixel capture having no way to tell a
+ * *sensitive* input field from an ordinary one apart from OCR'd content and layout alone).
  *
  * Buckets every capture into exactly one of [Category] and logs it — see [logCategory] for
  * exactly what that line does and, just as importantly, does **not** include.
@@ -58,34 +71,60 @@ internal class DefaultTextDetector(
     /** The three buckets a pixel-captured region is classified into — see the class doc. */
     internal enum class Category { NO_TEXT, HAS_TEXT, HAS_INPUT_FIELD }
 
+    private val maskPaint = Paint().apply {
+        color = Color.BLACK
+        style = Paint.Style.FILL
+    }
+
     @AnyThread
-    override fun detectText(bitmap: Bitmap, nodeId: Long, looksLikeBlinkingCursor: Boolean) {
+    override fun detectText(
+        bitmap: Bitmap,
+        nodeId: Long,
+        looksLikeBlinkingCursor: Boolean,
+        textAndInputPrivacy: TextAndInputPrivacy,
+        onComplete: (Bitmap) -> Unit
+    ) {
         executor.executeSafe(DETECT_TEXT_OPERATION_NAME, internalLogger) {
-            processBitmap(bitmap, nodeId, looksLikeBlinkingCursor)
+            processBitmap(bitmap, nodeId, looksLikeBlinkingCursor, textAndInputPrivacy, onComplete)
         }
     }
 
     @WorkerThread
-    private fun processBitmap(bitmap: Bitmap, nodeId: Long, looksLikeBlinkingCursor: Boolean) {
+    private fun processBitmap(
+        bitmap: Bitmap,
+        nodeId: Long,
+        looksLikeBlinkingCursor: Boolean,
+        textAndInputPrivacy: TextAndInputPrivacy,
+        onComplete: (Bitmap) -> Unit
+    ) {
         // The bitmap is owned by the capture pipeline for the duration of this call (see
         // PixelCapture's doc — nothing recycles it on this path), but guarding here costs nothing
-        // and InputImage.fromBitmap has undefined behavior on a recycled one.
-        if (bitmap.isRecycled) return
+        // and InputImage.fromBitmap has undefined behavior on a recycled one. Every early return
+        // below still calls onComplete — see TextDetector's doc: skipping it would mean this
+        // capture never reaches the resource resolver at all, not just that it goes up unmasked.
+        if (bitmap.isRecycled) {
+            onComplete(bitmap)
+            return
+        }
 
         val image = try {
             InputImage.fromBitmap(bitmap, ROTATION_DEGREES_NONE)
         } catch (e: IllegalArgumentException) {
+            onComplete(bitmap)
             return
         }
 
         recognizer.process(image)
             .addOnSuccessListener(executor) { visionText ->
-                categorizeAndLog(bitmap, nodeId, visionText, looksLikeBlinkingCursor)
+                categorizeAndLog(bitmap, nodeId, visionText, looksLikeBlinkingCursor, textAndInputPrivacy, onComplete)
             }
-        // No failure listener: on-device recognition failing (e.g. the bundled model isn't ready
-        // yet on this device) just means this cycle contributes no signal — self-correcting the
-        // next time this node is freshly captured, no different from any other dropped capture in
-        // this experimental pipeline.
+            .addOnFailureListener(executor) {
+                // On-device recognition failing (e.g. the bundled model isn't ready yet on this
+                // device) just means this cycle contributes no signal and uploads unmasked —
+                // self-correcting the next time this node is freshly captured, no different from
+                // any other dropped capture in this experimental pipeline.
+                onComplete(bitmap)
+            }
     }
 
     /**
@@ -93,33 +132,85 @@ internal class DefaultTextDetector(
      * [Category.HAS_INPUT_FIELD] without ever calling [InputFieldDetector] — both because it's
      * the only signal that can catch an empty field with zero OCR'd text, and because skipping
      * the pixel-scan heuristic once cadence alone has already answered the question is free
-     * performance back for [InputFieldDetector]'s own budget.
+     * performance back for [InputFieldDetector]'s own budget. Note that in that specific case
+     * (blink-triggered, zero OCR'd text) there's nothing for [maskRegions] to black out — an
+     * empty field showing just a cursor has no content to redact yet.
+     *
+     * [textAndInputPrivacy] only affects *masking* ([regionsToMask]), never [category] — the
+     * category is a description of what was found, independent of what privacy demands be done
+     * about it.
      */
     @WorkerThread
-    private fun categorizeAndLog(bitmap: Bitmap, nodeId: Long, visionText: Text, looksLikeBlinkingCursor: Boolean) {
+    private fun categorizeAndLog(
+        bitmap: Bitmap,
+        nodeId: Long,
+        visionText: Text,
+        looksLikeBlinkingCursor: Boolean,
+        textAndInputPrivacy: TextAndInputPrivacy,
+        onComplete: (Bitmap) -> Unit
+    ) {
         val blocksWithBounds = visionText.textBlocks.mapNotNull { block -> block.boundingBox?.let { it to block } }
+        val matchedRegions = if (blocksWithBounds.isEmpty()) {
+            emptyList()
+        } else {
+            inputFieldDetector.findInputFieldRegions(bitmap, blocksWithBounds.map { it.first })
+        }
 
         val category = when {
             looksLikeBlinkingCursor -> Category.HAS_INPUT_FIELD
             blocksWithBounds.isEmpty() -> Category.NO_TEXT
-            inputFieldDetector.looksLikeInputField(
-                bitmap,
-                blocksWithBounds.map { it.first }
-            ) -> Category.HAS_INPUT_FIELD
+            matchedRegions.isNotEmpty() -> Category.HAS_INPUT_FIELD
             else -> Category.HAS_TEXT
         }
+
+        // MASK_ALL requires masking every detected block regardless of category — plain text
+        // included, not just fields. The other two levels (MASK_SENSITIVE_INPUTS,
+        // MASK_ALL_INPUTS) both only care about inputs; pixel capture has no way to tell a
+        // *sensitive* input apart from an ordinary one (that distinction lives in Android's
+        // InputType flags, invisible to raw pixels), so both are treated the same: mask every
+        // input-field region, precisely (matchedRegions) when the pixel heuristic found the
+        // specific block(s) that look like a field — sparing unrelated static text sharing the
+        // same capture — or, when only the blinking-cursor signal (a whole-view signal, not
+        // attributable to one block) is why this is HAS_INPUT_FIELD, every block in this capture,
+        // on the reasoning that any text sharing a view with a focused input cursor is very
+        // likely that field's own content.
+        val regionsToMask = when {
+            textAndInputPrivacy == TextAndInputPrivacy.MASK_ALL -> blocksWithBounds.map { it.first }
+            matchedRegions.isNotEmpty() -> matchedRegions
+            category == Category.HAS_INPUT_FIELD -> blocksWithBounds.map { it.first }
+            else -> emptyList()
+        }
+        if (regionsToMask.isNotEmpty()) {
+            maskRegions(bitmap, regionsToMask)
+        }
+
         logCategory(nodeId, category, blocksWithBounds)
+        onComplete(bitmap)
+    }
+
+    /**
+     * Paints a solid black rectangle over each of [regions], directly onto [bitmap] — the same
+     * bitmap [PixelCapture] is about to hand to the resource resolver for upload, so this is the
+     * actual pixel data that ends up recorded, not a separate overlay a player has to know to
+     * composite. [regions] are already in this bitmap's own pixel coordinate space (straight from
+     * ML Kit's bounding boxes), so no coordinate conversion is needed here — unlike a wireframe
+     * overlay would require, converting into the surrounding dp/screen coordinate space.
+     */
+    @WorkerThread
+    private fun maskRegions(bitmap: Bitmap, regions: List<Rect>) {
+        val canvas = Canvas(bitmap)
+        regions.forEach { canvas.drawRect(it, maskPaint) }
     }
 
     /**
      * One Logcat line for [category], plus — for [Category.HAS_TEXT] and
      * [Category.HAS_INPUT_FIELD] — one further line per detected text block: [nodeId] (to
      * correlate with the pixel-capture pipeline's own health logging), the block's bounding box
-     * (the eventual target for a redaction rectangle), and how many characters it contains —
-     * **never the recognized text itself**. Logging the actual content back out to Logcat would
-     * defeat the entire point of this experiment: it's precisely the kind of on-screen text this
-     * pipeline can't yet mask that it's trying to locate, not surface in the clear through a
-     * different channel.
+     * (also, for [Category.HAS_INPUT_FIELD], exactly the region [maskRegions] just blacked out),
+     * and how many characters it contains — **never the recognized text itself**. Logging the
+     * actual content back out to Logcat would defeat the entire point of this experiment: it's
+     * precisely the kind of on-screen text this pipeline is trying to locate (and, now, mask),
+     * not surface in the clear through a different channel.
      */
     @WorkerThread
     private fun logCategory(
