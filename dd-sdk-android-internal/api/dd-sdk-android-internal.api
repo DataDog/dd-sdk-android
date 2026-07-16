@@ -789,6 +789,10 @@ public final class com/datadog/android/internal/utils/TimeExtKt {
 	public static final fun formatIsoUtc (J)Ljava/lang/String;
 }
 
+public final class com/datadog/android/internal/utils/UrlSanitizerKt {
+	public static final fun redactSensitiveQueryParams (Ljava/lang/String;)Ljava/lang/String;
+}
+
 public final class com/datadog/android/rum/DdRumContentProvider : android/content/ContentProvider {
 	public static final field Companion Lcom/datadog/android/rum/DdRumContentProvider$Companion;
 	public fun <init> ()V
