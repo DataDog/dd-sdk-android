@@ -191,7 +191,13 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         // View.draw-based capture (with content caching), gated by pixelCaptureEnabled.
         // Works on any API level — no PixelCapture/window/API-level dependency.
         this.pixelCapture = if (pixelCaptureEnabled) {
-            PixelCapture(resourceResolver)
+            PixelCapture(
+                resourceResolver = resourceResolver,
+                textDetector = DefaultTextDetector(
+                    executor = sdkCore.createSingleThreadExecutorService("text-detection"),
+                    internalLogger = internalLogger
+                )
+            )
         } else {
             null
         }

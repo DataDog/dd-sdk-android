@@ -114,7 +114,16 @@ internal class PixelCapture(
     // Dedicated to real View.draw work specifically — see the class doc's capture-budget section.
     // Separate from CAPTURE_BUDGET_MS (a per-cycle ceiling) and from Debouncer's own RecordingTimeBank
     // (which budgets the whole traversal+capture cycle, not capture work specifically).
-    private val captureTimeBank: TimeBank = RecordingTimeBank(PIXEL_CAPTURE_BUDGET_PER_SEC_MS)
+    private val captureTimeBank: TimeBank = RecordingTimeBank(PIXEL_CAPTURE_BUDGET_PER_SEC_MS),
+    // Experimental, optional: scopes which unmapped views actually contain text — see
+    // DefaultTextDetector's doc. Invoked from captureOrReuse only on a freshly-drawn bitmap, never
+    // a cache-reused one, so a region already known static isn't re-scanned every cycle.
+    private val textDetector: TextDetector? = null,
+    // Feeds textDetector's blinking-cursor signal — see BlinkingCursorTracker's doc. Only
+    // meaningful alongside textDetector, but kept unconditional (not nulled out with it) since
+    // it's cheap regardless and simpler than threading a second nullability check through
+    // captureOrReuse.
+    private val blinkingCursorTracker: BlinkingCursorTracker = BlinkingCursorTracker()
 ) : PixelCaptureCallback {
 
     private val pendingCaptures = CopyOnWriteArrayList<PendingPixelCapture>()
@@ -192,6 +201,7 @@ internal class PixelCapture(
         if (navigated) {
             cache.clear()
             pendingCaptures.clear()
+            blinkingCursorTracker.clear()
             lastCapturedViewUrl = currentViewUrl
         }
     }
@@ -381,6 +391,8 @@ internal class PixelCapture(
         }
 
         capturedCount++
+        val looksLikeBlinkingCursor = blinkingCursorTracker.recordFreshCapture(pending.nodeId, elapsedRealtimeMs())
+        textDetector?.detectText(bitmap, pending.nodeId, looksLikeBlinkingCursor)
 
         resourceResolver.resolveResourceIdFromBitmap(
             bitmap = bitmap,
@@ -432,6 +444,7 @@ internal class PixelCapture(
     fun release() {
         pendingCaptures.clear()
         cache.clear()
+        textDetector?.release()
     }
 
     // endregion

@@ -58,6 +58,7 @@ dependencies {
     implementation(libs.kotlin)
     implementation(libs.gson)
     implementation(libs.androidXAppCompat)
+    implementation(libs.mlkitTextRecognition)
 
     ksp(project(":tools:noopfactory"))
 
