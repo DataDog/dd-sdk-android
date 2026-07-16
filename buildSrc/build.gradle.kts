@@ -41,6 +41,7 @@ dependencies {
     // but since buildSrc leaks to the buildscript, we still have to load plugin artifacts
     // and then it will be classpath conflict. Maybe convention plugins will fix that.
     implementation(libs.kotlinGradlePlugin)
+    implementation(libs.detektGradlePlugin)
     implementation(libs.androidToolsGradlePlugin)
     implementation(libs.versionsGradlePlugin)
     implementation(libs.dokkaGradlePlugin)

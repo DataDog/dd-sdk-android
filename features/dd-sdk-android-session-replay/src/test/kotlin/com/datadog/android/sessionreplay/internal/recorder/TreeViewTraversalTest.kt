@@ -112,12 +112,12 @@ internal class TreeViewTraversalTest {
         val fakeTypeToMapperMap: Map<Class<out View>, WireframeMapper<View>> = fakeTypes
             .associateWith { mock() }
         val fakeTypeMapperWrappers = fakeTypes.map {
-            val mapper = fakeTypeToMapperMap[it]!!
+            val mapper = fakeTypeToMapperMap.getValue(it)
             MapperTypeWrapper(it, mapper)
         }
         val mockView = forge.anElementFrom(mockViews)
         whenever(
-            fakeTypeToMapperMap[mockView::class.java]!!.map(
+            fakeTypeToMapperMap.getValue(mockView::class.java).map(
                 eq(mockView),
                 eq(fakeMappingContext),
                 any(),
@@ -231,12 +231,12 @@ internal class TreeViewTraversalTest {
         val fakeTypeToMapperMap: Map<Class<out ViewGroup>, TraverseAllChildrenMapper<ViewGroup>> = fakeTypes
             .associateWith { mock() }
         val fakeTypeMapperWrappers = fakeTypes.map {
-            val mapper = fakeTypeToMapperMap[it]!!
+            val mapper = fakeTypeToMapperMap.getValue(it)
             MapperTypeWrapper(it, mapper)
         }
         val mockView = forge.anElementFrom(mockViews)
         whenever(
-            fakeTypeToMapperMap[mockView::class.java]!!.map(
+            fakeTypeToMapperMap.getValue(mockView::class.java).map(
                 eq(mockView),
                 eq(fakeMappingContext),
                 any(),

@@ -551,15 +551,15 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         }
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(validTarget, expectedResourceName)
-        var expectedAttributes: MutableMap<String, Any?> = mutableMapOf(
+        var expectedAttributes: Map<String, Any?> = mapOf(
             RumAttributes.ACTION_TARGET_CLASS_NAME to validTarget.javaClass.canonicalName,
             RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName
         )
         val providers = Array<ViewAttributesProvider>(forge.anInt(min = 0, max = 10)) {
-            mock {
-                whenever(it.extractAttributes(eq(validTarget), any())).thenAnswer {
+            mock { provider ->
+                whenever(provider.extractAttributes(eq(validTarget), any())).thenAnswer { invocation ->
                     @Suppress("UNCHECKED_CAST")
-                    val map = it.arguments[1] as MutableMap<String, Any?>
+                    val map = invocation.arguments[1] as MutableMap<String, Any?>
                     map[forge.aString()] = forge.aString()
                     expectedAttributes = map
                     null
@@ -620,16 +620,16 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         }
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(validTarget, expectedResourceName)
-        var expectedAttributes: MutableMap<String, Any?> = mutableMapOf(
+        var expectedAttributes: Map<String, Any?> = mapOf(
             RumAttributes.ACTION_TARGET_CLASS_NAME to validTarget.javaClass.simpleName,
             RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName
         )
 
         val providers = Array<ViewAttributesProvider>(forge.anInt(min = 0, max = 10)) {
-            mock {
-                whenever(it.extractAttributes(eq(validTarget), any())).thenAnswer {
+            mock { provider ->
+                whenever(provider.extractAttributes(eq(validTarget), any())).thenAnswer { invocation ->
                     @Suppress("UNCHECKED_CAST")
-                    val map = it.arguments[1] as MutableMap<String, Any?>
+                    val map = invocation.arguments[1] as MutableMap<String, Any?>
                     map[forge.aString()] = forge.aString()
                     expectedAttributes = map
                     null

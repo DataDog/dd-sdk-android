@@ -50,6 +50,7 @@ internal class WindowsOnDrawListener(
     }
 
     // Note: we declare the anonymous object explicitly to annotate the run method as @UiThread
+    @Suppress("ObjectLiteralToLambda")
     private val snapshotRunnable: Runnable = object : Runnable {
 
         @UiThread

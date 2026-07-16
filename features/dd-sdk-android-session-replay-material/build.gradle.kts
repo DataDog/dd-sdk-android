@@ -35,6 +35,7 @@ plugins {
     id("transitiveDependencies")
     id("verificationXml")
     id("binary-compatibility-validator")
+    id("detekt-conventions")
 }
 
 android {

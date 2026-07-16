@@ -84,6 +84,8 @@ internal class DataStoreFileReaderTest {
     private lateinit var fakeDataBytes: ByteArray
     private lateinit var versionBlock: TLVBlock
     private lateinit var dataBlock: TLVBlock
+
+    @Suppress("DoubleMutabilityForCollection") // must stay mutable: tests add/remove/clear blocks in place
     private lateinit var blocksReturned: ArrayList<TLVBlock>
 
     @BeforeEach
@@ -236,7 +238,8 @@ internal class DataStoreFileReaderTest {
     @Test
     fun `M log unexpectedBlocksOrder error W read() { unexpected block order }`() {
         // Given
-        blocksReturned = arrayListOf(dataBlock, versionBlock)
+        blocksReturned.clear()
+        blocksReturned.addAll(listOf(dataBlock, versionBlock))
         whenever(mockTLVBlockFileReader.read(mockDataStoreFile)).thenReturn(blocksReturned)
         val mockCallback = mock<DataStoreReadCallback<ByteArray>>()
 
