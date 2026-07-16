@@ -79,6 +79,7 @@ internal class WebViewRumEventConsumer(
                 timeOffset,
                 sessionReplayEnabled,
                 datadogContext.userInfo.anonymousId,
+                datadogContext,
                 traceSampleRate
             )
         } catch (e: ClassCastException) {
