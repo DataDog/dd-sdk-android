@@ -98,9 +98,10 @@ internal class SessionEndedMetricDispatcherTest {
             fakeNtpOffsetAtStart,
             backgroundEventTracking
         )
-        viewEvent.copy(session = viewEvent.session.copy(id = fakeSessionId2)).apply {
-            dispatcher.onViewTracked(fakeSessionId1, this)
-        }
+        dispatcher.onViewTracked(
+            fakeSessionId1,
+            viewEvent.copy(session = viewEvent.session.copy(id = fakeSessionId2))
+        )
 
         dispatcher.endMetric(fakeSessionId1, fakeNtpOffsetAtEnd)
         dispatcher.endMetric(fakeSessionId2, fakeNtpOffsetAtEnd)

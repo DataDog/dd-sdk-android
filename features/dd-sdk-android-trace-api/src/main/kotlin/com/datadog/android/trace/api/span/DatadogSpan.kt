@@ -13,7 +13,7 @@ import com.datadog.tools.annotation.NoOpImplementation
  * This includes span metadata, error handling, timing, and tag/metric management.
  */
 @NoOpImplementation
-@SuppressWarnings("TooManyFunctions")
+@Suppress("TooManyFunctions")
 interface DatadogSpan {
     /**
      * Indicates whether the current span is marked as an error.

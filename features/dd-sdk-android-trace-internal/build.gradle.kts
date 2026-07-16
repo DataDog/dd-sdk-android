@@ -38,18 +38,11 @@ plugins {
     id("apiSurface")
     id("transitiveDependencies")
     id("binary-compatibility-validator")
+    id("detekt-conventions")
 }
 
 android {
     namespace = "com.datadog.android.trace.internal"
-
-    libraryVariants.all {
-        packageLibraryProvider.configure {
-            from("src/main/resources") {
-                include("META-INF/**/verification.properties")
-            }
-        }
-    }
 }
 
 dependencies {

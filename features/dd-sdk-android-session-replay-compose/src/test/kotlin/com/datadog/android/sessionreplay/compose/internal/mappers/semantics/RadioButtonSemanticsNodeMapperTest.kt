@@ -14,10 +14,12 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.RadioButtonSemanticsNodeMapper.Companion.DEFAULT_COLOR_GRAY
+import com.datadog.android.sessionreplay.compose.internal.utils.ComposeWindowOffset
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -60,6 +62,9 @@ internal class RadioButtonSemanticsNodeMapperTest : AbstractSemanticsNodeMapperT
     @StringForgery(regex = "#[0-9A-F]{8}")
     lateinit var fakeBackgroundColorHexString: String
 
+    @Forgery
+    lateinit var fakeWindowOffset: ComposeWindowOffset
+
     @Mock
     lateinit var mockUiContext: UiContext
 
@@ -69,14 +74,16 @@ internal class RadioButtonSemanticsNodeMapperTest : AbstractSemanticsNodeMapperT
         mockSemanticsNode = mockSemanticsNode()
 
         whenever(mockUiContext.textAndInputPrivacy) doReturn TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
+        whenever(mockUiContext.windowOffset) doReturn fakeWindowOffset
         mockColorStringFormatter(fakeBackgroundColor, fakeBackgroundColorHexString)
         whenever(mockSemanticsUtils.resolveRadioButtonColor(mockSemanticsNode))
             .doReturn(fakeBackgroundColor)
 
-        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode)) doReturn rectToBounds(
-            fakeBounds,
-            fakeDensity
-        )
+        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode, fakeWindowOffset)) doReturn
+            rectToBounds(
+                fakeBounds,
+                fakeDensity
+            )
 
         testedRadioButtonSemanticsNodeMapper = RadioButtonSemanticsNodeMapper(
             colorStringFormatter = mockColorStringFormatter,

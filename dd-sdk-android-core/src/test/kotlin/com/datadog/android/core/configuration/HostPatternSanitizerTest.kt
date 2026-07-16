@@ -191,15 +191,16 @@ internal class HostPatternSanitizerTest {
     }
 
     @Test
-    fun `M lowercase patterns W validate { uppercase }`() {
+    fun `M keep valid uppercase patterns in original case W validate { uppercase }`() {
         // When
+        // matching is case-insensitive, so uppercase patterns are valid and returned unchanged
         val result = testedValidator.validate(
             listOf("*.SHOPIST.IO", "Preview-*.Example.COM"),
             fakeFeature
         )
 
         // Then
-        assertThat(result).containsExactly("*.shopist.io", "preview-*.example.com")
+        assertThat(result).containsExactly("*.SHOPIST.IO", "Preview-*.Example.COM")
     }
 
     @Test

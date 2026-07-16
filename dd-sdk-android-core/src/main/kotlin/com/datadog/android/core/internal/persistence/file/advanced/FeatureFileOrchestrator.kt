@@ -62,8 +62,7 @@ internal class FeatureFileOrchestrator(
         ),
         ConsentAwareFileMigrator(
             FileMover(internalLogger),
-            internalLogger,
-            timeProvider
+            internalLogger
         ),
         executorService,
         internalLogger

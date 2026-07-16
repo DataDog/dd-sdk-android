@@ -120,6 +120,7 @@ internal class RumResourceScopeAttributePropagationTest {
     @Forgery
     lateinit var fakeParentContext: RumContext
 
+    @Forgery
     lateinit var fakeEventTime: Time
 
     lateinit var fakeEvent: RumRawEvent
@@ -161,8 +162,6 @@ internal class RumResourceScopeAttributePropagationTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeEventTime = Time()
-
         fakeParentAttributes = forge.exhaustiveAttributes()
         fakeResourceAttributes = forge.exhaustiveAttributes()
         fakeErrorAttributes = forge.exhaustiveAttributes()
@@ -232,7 +231,14 @@ internal class RumResourceScopeAttributePropagationTest {
         expectedAttributes.putAll(fakeParentAttributes)
         expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(stopResourceAttributes)
-        val fakeEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, stopResourceAttributes)
+        val fakeEvent = RumRawEvent.StopResource(
+            fakeKey,
+            statusCode,
+            size,
+            kind,
+            stopResourceAttributes,
+            timeWithOffset(RESOURCE_DURATION_MS)
+        )
 
         // When
         testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -263,7 +269,8 @@ internal class RumResourceScopeAttributePropagationTest {
             message,
             source,
             throwable,
-            fakeErrorAttributes
+            fakeErrorAttributes,
+            eventTime = fakeEventTime
         )
 
         // When

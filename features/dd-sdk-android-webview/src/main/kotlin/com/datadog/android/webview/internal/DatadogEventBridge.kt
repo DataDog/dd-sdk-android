@@ -8,7 +8,6 @@ package com.datadog.android.webview.internal
 
 import android.webkit.JavascriptInterface
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.configuration.HostPatternSanitizer
 import com.datadog.android.core.configuration.HostsSanitizer
 import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.internal.sampling.DeterministicSampling
@@ -31,8 +30,7 @@ internal class DatadogEventBridge(
     internalLogger: InternalLogger
 ) {
 
-    private val hostsSanitizer = HostsSanitizer()
-    private val hostPatternSanitizer = HostPatternSanitizer(internalLogger)
+    private val hostsSanitizer = HostsSanitizer(internalLogger)
 
     // region Bridge
 
@@ -55,19 +53,9 @@ internal class DatadogEventBridge(
     fun getAllowedWebViewHosts(): String {
         // We need to use a JsonArray here otherwise it cannot be parsed on the JS side
         val origins = JsonArray()
-        val (wildcardPatterns, plainHosts) = allowedHosts.partition { host ->
-            host.any { it == WILDCARD }
-        }
         hostsSanitizer
-            .sanitizeHosts(plainHosts, WEB_VIEW_TRACKING_FEATURE_NAME)
-            .forEach {
-                origins.add(it)
-            }
-        hostPatternSanitizer
-            .validate(wildcardPatterns, WEB_VIEW_TRACKING_FEATURE_NAME)
-            .forEach {
-                origins.add(it)
-            }
+            .sanitizeHosts(allowedHosts, WEB_VIEW_TRACKING_FEATURE_NAME)
+            .forEach { origins.add(it) }
         return origins.toString()
     }
 
@@ -123,8 +111,6 @@ internal class DatadogEventBridge(
 
     companion object {
         internal const val WEB_VIEW_TRACKING_FEATURE_NAME = "WebView"
-
-        private const val WILDCARD = '*'
 
         private const val SESSION_ID_KEY = "session_id"
         private const val SESSION_STATE_KEY = "session_state"

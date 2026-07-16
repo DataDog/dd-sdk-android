@@ -740,8 +740,9 @@ internal class DatadogCore(
             features.remove(it)?.stop()
         }
 
-        if (appContext is Application && processLifecycleMonitor != null) {
-            appContext.unregisterActivityLifecycleCallbacks(processLifecycleMonitor)
+        val lifecycleMonitor = processLifecycleMonitor
+        if (appContext is Application && lifecycleMonitor != null) {
+            appContext.unregisterActivityLifecycleCallbacks(lifecycleMonitor)
         }
 
         contextProvider = NoOpContextProvider()

@@ -15,6 +15,7 @@ import com.datadog.benchmark.sample.config.SyntheticsScenario
 import com.datadog.benchmark.sample.di.activity.BenchmarkActivityScope
 import com.datadog.benchmark.sample.ui.logscustom.LogsFragment
 import com.datadog.benchmark.sample.ui.logsheavytraffic.LogsHeavyTrafficHostFragment
+import com.datadog.benchmark.sample.ui.profiling.ProfilingScenarioFragment
 import com.datadog.benchmark.sample.ui.rumauto.screens.characterdetails.RumAutoCharacterDetailFragment
 import com.datadog.benchmark.sample.ui.rumauto.screens.characters.RumAutoCharactersFragment
 import com.datadog.benchmark.sample.ui.rumauto.screens.episodedetails.RumAutoEpisodeDetailsFragment
@@ -28,7 +29,7 @@ import com.datadog.benchmark.sample.ui.trace.TraceScenarioFragment
 import com.datadog.sample.benchmark.R
 import javax.inject.Inject
 
-@Suppress("DEPRECATION")
+@Suppress("DEPRECATION", "TooManyFunctions")
 @BenchmarkActivityScope
 internal class NavigationGraphInitializer @Inject constructor() {
 
@@ -50,6 +51,7 @@ internal class NavigationGraphInitializer @Inject constructor() {
             SyntheticsScenario.RumAuto -> R.id.characters_tab_navigation
             SyntheticsScenario.RumManual -> R.id.fragment_rum_manual_scenario
             SyntheticsScenario.Trace -> R.id.fragment_trace_scenario
+            SyntheticsScenario.Profiling -> R.id.fragment_profiling
         }
     }
 
@@ -65,6 +67,7 @@ internal class NavigationGraphInitializer @Inject constructor() {
             SyntheticsScenario.RumAuto -> navGraphRumAutoScenario()
             SyntheticsScenario.RumManual -> navGraphRumManualScenario()
             SyntheticsScenario.Trace -> navGraphTraceScenario()
+            SyntheticsScenario.Profiling -> navGraphProfilingScenario()
         }
     }
 
@@ -87,6 +90,12 @@ internal class NavigationGraphInitializer @Inject constructor() {
 
         fragment<SessionReplayAppcompatFragment>(R.id.fragment_session_replay_appcompat) {
             label = "session replay"
+        }
+    }
+
+    private fun NavGraphBuilder.navGraphProfilingScenario() {
+        fragment<ProfilingScenarioFragment>(R.id.fragment_profiling) {
+            label = "profiling scenario"
         }
     }
 

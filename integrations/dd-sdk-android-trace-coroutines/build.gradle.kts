@@ -34,18 +34,11 @@ plugins {
     id("apiSurface")
     id("transitiveDependencies")
     id("verificationXml")
+    id("detekt-conventions")
 }
 
 android {
     namespace = "com.datadog.android.trace.coroutines"
-
-    libraryVariants.all {
-        packageLibraryProvider.configure {
-            from("src/main/resources") {
-                include("META-INF/**/verification.properties")
-            }
-        }
-    }
 }
 
 dependencies {

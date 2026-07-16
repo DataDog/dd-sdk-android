@@ -35,18 +35,11 @@ plugins {
     id("transitiveDependencies")
     id("verificationXml")
     id("binary-compatibility-validator")
+    id("detekt-conventions")
 }
 
 android {
     namespace = "com.datadog.android.coil"
-
-    libraryVariants.all {
-        packageLibraryProvider.configure {
-            from("src/main/resources") {
-                include("META-INF/**/verification.properties")
-            }
-        }
-    }
 }
 
 dependencies {

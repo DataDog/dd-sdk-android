@@ -37,6 +37,7 @@ plugins {
     id("transitiveDependencies")
     id("verificationXml")
     id("binary-compatibility-validator")
+    id("detekt-conventions")
 }
 
 android {
@@ -52,14 +53,6 @@ android {
         )
     }
     namespace = "com.datadog.android.trace.opentelemetry"
-
-    libraryVariants.all {
-        packageLibraryProvider.configure {
-            from("src/main/resources") {
-                include("META-INF/**/verification.properties")
-            }
-        }
-    }
 }
 
 dependencies {

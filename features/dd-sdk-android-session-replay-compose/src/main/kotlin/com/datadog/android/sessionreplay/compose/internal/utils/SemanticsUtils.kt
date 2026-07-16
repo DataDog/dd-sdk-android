@@ -58,8 +58,11 @@ internal class SemanticsUtils(
         return null
     }
 
-    internal fun resolveBackgroundInfo(semanticsNode: SemanticsNode): List<BackgroundInfo> =
-        backgroundResolver.resolveBackgroundInfo(semanticsNode)
+    internal fun resolveBackgroundInfo(
+        semanticsNode: SemanticsNode,
+        windowOffset: ComposeWindowOffset = ComposeWindowOffset.NONE
+    ): List<BackgroundInfo> =
+        backgroundResolver.resolveBackgroundInfo(semanticsNode, windowOffset)
 
     internal fun resolveBackgroundColor(semanticsNode: SemanticsNode): Long? =
         backgroundResolver.resolveBackgroundColor(semanticsNode)
@@ -101,7 +104,10 @@ internal class SemanticsUtils(
     internal fun resolveCornerRadius(shape: Shape, currentBounds: GlobalBounds, density: Density): Float =
         backgroundResolver.resolveCornerRadius(shape, currentBounds, density)
 
-    internal fun resolveInnerBounds(semanticsNode: SemanticsNode): GlobalBounds {
+    internal fun resolveInnerBounds(
+        semanticsNode: SemanticsNode,
+        windowOffset: ComposeWindowOffset = ComposeWindowOffset.NONE
+    ): GlobalBounds {
         val offset = semanticsNode.positionInRoot
         // Resolve the measured size.
         // Some semantics node doesn't have InnerLayerCoordinator, so use boundsInRoot as a fallback.
@@ -109,8 +115,10 @@ internal class SemanticsUtils(
         val density = semanticsNode.layoutInfo.density.density
         val width = (size.width / density).toLong()
         val height = (size.height / density).toLong()
-        val x = (offset.x / density).toLong()
-        val y = (offset.y / density).toLong()
+        // positionInRoot is relative to the AndroidComposeView, not the screen — add the host
+        // view's screen offset so bounds line up with the rest of the (screen-absolute) wireframes.
+        val x = (offset.x / density).toLong() + windowOffset.xDp
+        val y = (offset.y / density).toLong() + windowOffset.yDp
         return GlobalBounds(x, y, width, height)
     }
 
