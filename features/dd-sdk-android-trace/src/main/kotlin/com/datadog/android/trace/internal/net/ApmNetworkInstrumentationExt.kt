@@ -9,6 +9,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.internal.utils.redactSensitiveQueryParams
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.trace.api.DatadogTracingConstants.PrioritySampling
 import com.datadog.android.trace.api.DatadogTracingConstants.Tags
@@ -112,7 +113,7 @@ internal fun DatadogTracer.buildSpan(
     val span = builder.start()
 
     span.resourceName = request.url.substringBefore(URL_QUERY_PARAMS_BLOCK_SEPARATOR)
-    span.setTag(Tags.KEY_HTTP_URL, request.url)
+    span.setTag(Tags.KEY_HTTP_URL, request.url.redactSensitiveQueryParams())
     span.setTag(Tags.KEY_HTTP_METHOD, request.method)
     span.setTag(Tags.KEY_SPAN_KIND, Tags.VALUE_SPAN_KIND_CLIENT)
 

@@ -248,6 +248,25 @@ internal class ApmNetworkInstrumentationTest {
     }
 
     @Test
+    fun `M redact sensitive query params in http url tag W onRequest()`() {
+        // Given
+        val fakeSensitiveUrl = "$fakeUrl?X-Amz-Security-Token=some-secret-token"
+        whenever(mockRequestInfo.url) doReturn fakeSensitiveUrl
+        whenever(mockLocalFirstPartyHostResolver.isFirstPartyUrl(fakeSensitiveUrl)) doReturn true
+        whenever(mockLocalFirstPartyHostResolver.headerTypesForUrl(fakeSensitiveUrl)) doReturn
+            setOf(TracingHeaderType.DATADOG)
+
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            testedInstrumentation.onRequest(mockRequestInfo)
+
+            // Then
+            verify(mockSpan).setTag(Tags.KEY_HTTP_URL, "$fakeUrl?X-Amz-Security-Token=<redacted>")
+            verify(mockSpan).resourceName = fakeUrl
+        }
+    }
+
+    @Test
     fun `M return RequestTraceState without span W onRequest() {not first party url}`() {
         // Given
         whenever(mockLocalFirstPartyHostResolver.isFirstPartyUrl(fakeUrl)) doReturn false
