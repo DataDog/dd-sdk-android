@@ -43,6 +43,21 @@
         app:layout_constraintTop_toBottomOf="@+id/appcompat_subclass" />
 
     <!--
+        ImageContentDetector test: pure text, no other visual content at all — should stay
+        visible even under ImagePrivacy.MASK_ALL, unlike PixelCaptureTestView below (which mixes
+        text with the rings' substantial non-text ink). Placed above it, and before it in the
+        layout, so it's guaranteed on-screen regardless of this (non-scrolling) fragment's height.
+    -->
+    <com.datadog.android.sample.sessionreplay.PixelCapturePureTextTestView
+        android:id="@+id/pixel_capture_pure_text_test_view"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@+id/toolbar_subclass"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!--
         PixelCapture SR test: a custom leaf View with no registered mapper.
         Without the PixelCapture fallback, SR records a blank rectangle here.
         With it, SR should record pixel-perfect concentric coloured rings, plus rows exercising
@@ -54,7 +69,7 @@
         android:layout_width="match_parent"
         android:layout_height="580dp"
         android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@+id/toolbar_subclass"
+        app:layout_constraintTop_toBottomOf="@+id/pixel_capture_pure_text_test_view"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 

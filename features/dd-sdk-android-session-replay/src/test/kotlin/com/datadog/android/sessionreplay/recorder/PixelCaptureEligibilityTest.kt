@@ -66,8 +66,9 @@ internal class PixelCaptureEligibilityTest {
     }
 
     @Test
-    fun `M return false W isEligible() {imagePrivacy is MASK_ALL}`() {
-        // When
+    fun `M return true W isEligible() {imagePrivacy is MASK_ALL, deferred to content-aware check}`() {
+        // When — MASK_ALL no longer disables capture up front; DefaultTextDetector decides,
+        // per-capture, once the content is actually known (see ImageContentDetector).
         val result = PixelCaptureEligibility.isEligible(
             textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS,
             imagePrivacy = ImagePrivacy.MASK_ALL,
@@ -75,7 +76,21 @@ internal class PixelCaptureEligibilityTest {
         )
 
         // Then
-        assertThat(result).isFalse()
+        assertThat(result).isTrue()
+    }
+
+    @Test
+    fun `M return true W isEligible() {imagePrivacy is MASK_ALL, regardless of size}`() {
+        // When — the size gate only applies to MASK_LARGE_ONLY specifically; MASK_ALL doesn't
+        // check size at all here, since it's deferred entirely to the later content-aware check.
+        val result = PixelCaptureEligibility.isEligible(
+            textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS,
+            imagePrivacy = ImagePrivacy.MASK_ALL,
+            boundsDp = fakeLargeBounds
+        )
+
+        // Then
+        assertThat(result).isTrue()
     }
 
     @Test

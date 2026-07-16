@@ -145,7 +145,8 @@ internal class PixelCaptureFallbackMapper(
             wireframe = imageWireframe,
             wireframeSlot = WireframeSlot { wireframes[0] = it },
             asyncJobStatusCallback = asyncJobStatusCallback,
-            textAndInputPrivacy = mappingContext.textAndInputPrivacy
+            textAndInputPrivacy = mappingContext.textAndInputPrivacy,
+            imagePrivacy = mappingContext.imagePrivacy
         )
 
         return wireframes

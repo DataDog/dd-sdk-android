@@ -17,7 +17,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.UiThread
 import androidx.annotation.VisibleForTesting
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolverCallback
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -283,7 +285,8 @@ internal class PixelCapture(
         wireframe: MobileSegment.Wireframe.ImageWireframe,
         wireframeSlot: WireframeSlot,
         asyncJobStatusCallback: AsyncJobStatusCallback,
-        textAndInputPrivacy: TextAndInputPrivacy
+        textAndInputPrivacy: TextAndInputPrivacy,
+        imagePrivacy: ImagePrivacy
     ) {
         asyncJobStatusCallback.jobStarted()
         pendingCaptures.add(
@@ -295,7 +298,8 @@ internal class PixelCapture(
                 wireframe = wireframe,
                 wireframeSlot = wireframeSlot,
                 asyncJobStatusCallback = asyncJobStatusCallback,
-                textAndInputPrivacy = textAndInputPrivacy
+                textAndInputPrivacy = textAndInputPrivacy,
+                imagePrivacy = imagePrivacy
             )
         )
     }
@@ -411,9 +415,13 @@ internal class PixelCapture(
                 bitmap,
                 pending.nodeId,
                 looksLikeBlinkingCursor,
-                pending.textAndInputPrivacy
-            ) { maybeMaskedBitmap ->
-                resolveAndCache(pending, maybeMaskedBitmap, width, height)
+                pending.textAndInputPrivacy,
+                pending.imagePrivacy
+            ) { outcome ->
+                when (outcome) {
+                    is CaptureOutcome.Upload -> resolveAndCache(pending, outcome.bitmap, width, height)
+                    CaptureOutcome.ReplaceWithPlaceholder -> replaceWithImagePrivacyPlaceholder(pending)
+                }
             }
         }
     }
@@ -464,6 +472,29 @@ internal class PixelCapture(
                 width = pending.dpBounds.width,
                 height = pending.dpBounds.height,
                 label = CAPTURE_BUDGET_EXCEEDED_LABEL
+            )
+        )
+        pending.asyncJobStatusCallback.jobFinished()
+    }
+
+    /**
+     * Replaces [pending]'s stub wireframe with a placeholder, the same mechanism as
+     * [timeoutPending] but for a different reason: [TextDetector.detectText] decided this
+     * capture's content requires it — [ImagePrivacy.MASK_ALL] found non-text content within it
+     * (see [ImageContentDetector]) — rather than the capture budget running out. Reuses
+     * [DefaultImageWireframeHelper.MASK_ALL_CONTENT_LABEL] —
+     * the same label [ImagePrivacy.MASK_ALL] already uses for a masked image everywhere else in
+     * SR — so this reads consistently in a session replay regardless of which path produced it.
+     */
+    private fun replaceWithImagePrivacyPlaceholder(pending: PendingPixelCapture) {
+        pending.wireframeSlot.replace(
+            MobileSegment.Wireframe.PlaceholderWireframe(
+                id = pending.nodeId,
+                x = pending.dpBounds.x,
+                y = pending.dpBounds.y,
+                width = pending.dpBounds.width,
+                height = pending.dpBounds.height,
+                label = DefaultImageWireframeHelper.MASK_ALL_CONTENT_LABEL
             )
         )
         pending.asyncJobStatusCallback.jobFinished()

@@ -65,6 +65,7 @@ internal class SessionReplayFragment :
             R.id.navigation_webview_recording -> R.id.fragment_webview_record
             R.id.navigation_view_group -> R.id.fragment_view_group_components
             R.id.navigation_tabs -> R.id.fragment_tabs
+            R.id.navigation_privacy_matrix -> R.id.fragment_privacy_matrix
             else -> null
         }
         if (destination != null) {

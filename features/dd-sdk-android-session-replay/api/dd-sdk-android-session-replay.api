@@ -1956,12 +1956,12 @@ public abstract interface class com/datadog/android/sessionreplay/recorder/Optio
 
 public abstract interface class com/datadog/android/sessionreplay/recorder/PixelCaptureCallback {
 	public abstract fun registerPendingCapture (JLcom/datadog/android/sessionreplay/utils/GlobalBounds;Landroid/view/View;Landroid/graphics/Rect;Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$ImageWireframe;Lcom/datadog/android/sessionreplay/recorder/WireframeSlot;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;)V
-	public abstract fun registerPendingCapture (JLcom/datadog/android/sessionreplay/utils/GlobalBounds;Landroid/view/View;Landroid/graphics/Rect;Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$ImageWireframe;Lcom/datadog/android/sessionreplay/recorder/WireframeSlot;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;)V
+	public abstract fun registerPendingCapture (JLcom/datadog/android/sessionreplay/utils/GlobalBounds;Landroid/view/View;Landroid/graphics/Rect;Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$ImageWireframe;Lcom/datadog/android/sessionreplay/recorder/WireframeSlot;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;Lcom/datadog/android/sessionreplay/ImagePrivacy;)V
 }
 
 public final class com/datadog/android/sessionreplay/recorder/PixelCaptureCallback$DefaultImpls {
 	public static fun registerPendingCapture (Lcom/datadog/android/sessionreplay/recorder/PixelCaptureCallback;JLcom/datadog/android/sessionreplay/utils/GlobalBounds;Landroid/view/View;Landroid/graphics/Rect;Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$ImageWireframe;Lcom/datadog/android/sessionreplay/recorder/WireframeSlot;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;)V
-	public static fun registerPendingCapture (Lcom/datadog/android/sessionreplay/recorder/PixelCaptureCallback;JLcom/datadog/android/sessionreplay/utils/GlobalBounds;Landroid/view/View;Landroid/graphics/Rect;Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$ImageWireframe;Lcom/datadog/android/sessionreplay/recorder/WireframeSlot;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;)V
+	public static fun registerPendingCapture (Lcom/datadog/android/sessionreplay/recorder/PixelCaptureCallback;JLcom/datadog/android/sessionreplay/utils/GlobalBounds;Landroid/view/View;Landroid/graphics/Rect;Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$ImageWireframe;Lcom/datadog/android/sessionreplay/recorder/WireframeSlot;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;Lcom/datadog/android/sessionreplay/ImagePrivacy;)V
 }
 
 public final class com/datadog/android/sessionreplay/recorder/PixelCaptureEligibility {

@@ -16,8 +16,8 @@ import com.datadog.android.sessionreplay.utils.GlobalBounds
  *
  * This pipeline captures raw pixels with no knowledge of what a given view actually
  * renders — unlike the semantic mapper chain, it can't selectively mask only
- * sensitive text or contextual images. Any privacy restriction beyond what's allowed here
- * disables pixel capture entirely for that region rather than risk uploading unmasked
+ * sensitive text or contextual images up front. Any privacy restriction beyond what's allowed
+ * here disables pixel capture entirely for that region rather than risk uploading unmasked
  * sensitive content:
  *
  * - [textAndInputPrivacy] must be [TextAndInputPrivacy.MASK_SENSITIVE_INPUTS] (its
@@ -27,7 +27,15 @@ import com.datadog.android.sessionreplay.utils.GlobalBounds
  *   already behaves for regular images elsewhere in SR: [ImagePrivacy.MASK_NONE] always
  *   allows capture; [ImagePrivacy.MASK_LARGE_ONLY] allows it only when the region is
  *   smaller than [IMAGE_DIMEN_CONSIDERED_PII_IN_DP] on both axes (small regions are
- *   unlikely to be meaningful content); [ImagePrivacy.MASK_ALL] never allows it.
+ *   unlikely to be meaningful content).
+ *
+ * [ImagePrivacy.MASK_ALL] no longer disables capture outright here — unlike at this
+ * eligibility check, by the time a capture actually completes, its content *is* known (via
+ * `DefaultTextDetector`'s OCR pass), and text alone isn't an image. A capture that turns out to
+ * contain only text is uploaded (with whatever `textAndInputPrivacy` demands already masked); one
+ * that also contains real image content still falls back to a placeholder — see
+ * `ImageContentDetector` and `CaptureOutcome` for where that later, content-aware decision
+ * actually happens.
  */
 object PixelCaptureEligibility {
 
@@ -41,7 +49,6 @@ object PixelCaptureEligibility {
         boundsDp: GlobalBounds
     ): Boolean {
         if (textAndInputPrivacy != TextAndInputPrivacy.MASK_SENSITIVE_INPUTS) return false
-        if (imagePrivacy == ImagePrivacy.MASK_ALL) return false
 
         val isLarge = boundsDp.width >= IMAGE_DIMEN_CONSIDERED_PII_IN_DP ||
             boundsDp.height >= IMAGE_DIMEN_CONSIDERED_PII_IN_DP

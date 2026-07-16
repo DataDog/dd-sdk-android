@@ -188,19 +188,30 @@ internal class PixelCaptureFallbackMapperTest : LegacyBaseWireframeMapperTest() 
     }
 
     @Test
-    fun `M delegate to fallbackMapper W map() {imagePrivacy is MASK_ALL}`() {
-        // Given
+    fun `M register a pending capture W map() {imagePrivacy is MASK_ALL, deferred to content-aware check}`() {
+        // Given — MASK_ALL no longer disables capture up front (PixelCaptureEligibility); content
+        // known only once TextDetector's OCR pass completes decides whether this specific capture
+        // needs a placeholder instead (see ImageContentDetector, CaptureOutcome).
         fakeMappingContext = fakeMappingContext.copy(imagePrivacy = ImagePrivacy.MASK_ALL)
-        whenever(
-            mockFallbackMapper.map(mockView, fakeMappingContext, mockAsyncJobStatusCallback, mockInternalLogger)
-        ).thenReturn(fakeFallbackWireframes)
 
         // When
         val result = testedMapper.map(mockView, fakeMappingContext, mockAsyncJobStatusCallback, mockInternalLogger)
 
         // Then
-        assertThat(result).isEqualTo(fakeFallbackWireframes)
-        verifyNoInteractions(mockPixelCaptureCallback)
+        assertThat(result).hasSize(1)
+        val wireframe = result.first() as MobileSegment.Wireframe.ImageWireframe
+        val expectedIsolationClipRect = Rect(0, 0, mockView.width, mockView.height)
+        verify(mockPixelCaptureCallback).registerPendingCapture(
+            nodeId = eq(wireframe.id),
+            dpBounds = eq(fakeGlobalBounds),
+            isolationView = eq(mockView),
+            isolationClipRect = eq(expectedIsolationClipRect),
+            wireframe = eq(wireframe),
+            wireframeSlot = any(),
+            asyncJobStatusCallback = eq(mockAsyncJobStatusCallback),
+            textAndInputPrivacy = eq(fakeMappingContext.textAndInputPrivacy),
+            imagePrivacy = eq(ImagePrivacy.MASK_ALL)
+        )
     }
 
     @Test
@@ -302,7 +313,8 @@ internal class PixelCaptureFallbackMapperTest : LegacyBaseWireframeMapperTest() 
             wireframe = eq(wireframe),
             wireframeSlot = any(),
             asyncJobStatusCallback = eq(mockAsyncJobStatusCallback),
-            textAndInputPrivacy = eq(fakeMappingContext.textAndInputPrivacy)
+            textAndInputPrivacy = eq(fakeMappingContext.textAndInputPrivacy),
+            imagePrivacy = eq(fakeMappingContext.imagePrivacy)
         )
     }
 
@@ -345,7 +357,8 @@ internal class PixelCaptureFallbackMapperTest : LegacyBaseWireframeMapperTest() 
             wireframe = eq(wireframe),
             wireframeSlot = any(),
             asyncJobStatusCallback = eq(mockAsyncJobStatusCallback),
-            textAndInputPrivacy = eq(fakeMappingContext.textAndInputPrivacy)
+            textAndInputPrivacy = eq(fakeMappingContext.textAndInputPrivacy),
+            imagePrivacy = eq(fakeMappingContext.imagePrivacy)
         )
     }
 
@@ -357,6 +370,7 @@ internal class PixelCaptureFallbackMapperTest : LegacyBaseWireframeMapperTest() 
             capturedSlot = it.getArgument(5)
             Unit
         }.whenever(mockPixelCaptureCallback).registerPendingCapture(
+            any(),
             any(),
             any(),
             any(),

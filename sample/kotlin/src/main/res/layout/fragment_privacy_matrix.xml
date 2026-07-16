@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+  ~ This product includes software developed at Datadog (https://www.datadoghq.com/).
+  ~ Copyright 2016-Present Datadog, Inc.
+  -->
+
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".NavActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="TEXT MASKING — TextAndInputPrivacy"
+            android:textStyle="bold"
+            android:textSize="18sp" />
+
+        <!-- MASK_SENSITIVE_INPUTS -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="MASK_SENSITIVE_INPUTS — plain text\nExpected: visible, unmasked (not an input)"
+            android:textStyle="italic" />
+
+        <com.datadog.android.sample.sessionreplay.PrivacyMatrixTextView
+            android:id="@+id/matrix_text_sensitive_plain"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:layout_marginTop="8dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="MASK_SENSITIVE_INPUTS — input-styled text\nExpected: masked (black box over the text)"
+            android:textStyle="italic" />
+
+        <com.datadog.android.sample.sessionreplay.PrivacyMatrixTextView
+            android:id="@+id/matrix_text_sensitive_input"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:layout_marginTop="8dp" />
+
+        <!-- MASK_ALL_INPUTS -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="MASK_ALL_INPUTS — plain text\nExpected: visible, unmasked (pixel capture can't tell a sensitive input apart from any other, so this behaves the same as MASK_SENSITIVE_INPUTS here)"
+            android:textStyle="italic" />
+
+        <com.datadog.android.sample.sessionreplay.PrivacyMatrixTextView
+            android:id="@+id/matrix_text_all_inputs_plain"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:layout_marginTop="8dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="MASK_ALL_INPUTS — input-styled text\nExpected: masked (black box over the text)"
+            android:textStyle="italic" />
+
+        <com.datadog.android.sample.sessionreplay.PrivacyMatrixTextView
+            android:id="@+id/matrix_text_all_inputs_input"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:layout_marginTop="8dp" />
+
+        <!-- MASK_ALL -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="MASK_ALL — plain text\nExpected: masked (this level masks ALL text, not just inputs)"
+            android:textStyle="italic" />
+
+        <com.datadog.android.sample.sessionreplay.PrivacyMatrixTextView
+            android:id="@+id/matrix_text_all_plain"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:layout_marginTop="8dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="MASK_ALL — input-styled text\nExpected: masked (black box over the text)"
+            android:textStyle="italic" />
+
+        <com.datadog.android.sample.sessionreplay.PrivacyMatrixTextView
+            android:id="@+id/matrix_text_all_input"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:layout_marginTop="8dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:layout_marginBottom="8dp"
+            android:text="IMAGE MASKING — ImagePrivacy"
+            android:textStyle="bold"
+            android:textSize="18sp" />
+
+        <!-- MASK_NONE -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="MASK_NONE — image only, no text\nExpected: visible, unmasked"
+            android:textStyle="italic" />
+
+        <com.datadog.android.sample.sessionreplay.PrivacyMatrixImageView
+            android:id="@+id/matrix_image_none_only"
+            android:layout_width="match_parent"
+            android:layout_height="150dp"
+            android:layout_marginTop="8dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="MASK_NONE — image with a text caption\nExpected: visible, unmasked (image and caption both)"
+            android:textStyle="italic" />
+
+        <com.datadog.android.sample.sessionreplay.PrivacyMatrixImageView
+            android:id="@+id/matrix_image_none_with_text"
+            android:layout_width="match_parent"
+            android:layout_height="150dp"
+            android:layout_marginTop="8dp" />
+
+        <!-- MASK_LARGE_ONLY -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="MASK_LARGE_ONLY — image only, no text\nExpected: blank placeholder, no label (this view is match_parent-width, so it always exceeds the 100dp size threshold — this is a pure size check, made before any capture is attempted, so content never matters here)"
+            android:textStyle="italic" />
+
+        <com.datadog.android.sample.sessionreplay.PrivacyMatrixImageView
+            android:id="@+id/matrix_image_large_only_only"
+            android:layout_width="match_parent"
+            android:layout_height="150dp"
+            android:layout_marginTop="8dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="MASK_LARGE_ONLY — image with a text caption\nExpected: blank placeholder, no label — identical outcome to the no-text case above, since this gate never looks at content"
+            android:textStyle="italic" />
+
+        <com.datadog.android.sample.sessionreplay.PrivacyMatrixImageView
+            android:id="@+id/matrix_image_large_only_with_text"
+            android:layout_width="match_parent"
+            android:layout_height="150dp"
+            android:layout_marginTop="8dp" />
+
+        <!-- MASK_ALL -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="MASK_ALL — image only, no text\nExpected: &quot;Image&quot;-labeled placeholder (no OCR'd text at all, so this is conservatively treated as image content)"
+            android:textStyle="italic" />
+
+        <com.datadog.android.sample.sessionreplay.PrivacyMatrixImageView
+            android:id="@+id/matrix_image_all_only"
+            android:layout_width="match_parent"
+            android:layout_height="150dp"
+            android:layout_marginTop="8dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="MASK_ALL — image with a text caption\nExpected: &quot;Image&quot;-labeled placeholder — the caption alone doesn't exempt it, since the icon itself is still non-text ink"
+            android:textStyle="italic" />
+
+        <com.datadog.android.sample.sessionreplay.PrivacyMatrixImageView
+            android:id="@+id/matrix_image_all_with_text"
+            android:layout_width="match_parent"
+            android:layout_height="150dp"
+            android:layout_marginTop="8dp" />
+
+    </LinearLayout>
+</ScrollView>

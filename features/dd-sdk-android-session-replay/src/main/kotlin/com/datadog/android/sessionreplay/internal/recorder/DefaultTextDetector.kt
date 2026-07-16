@@ -16,6 +16,7 @@ import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text
@@ -52,6 +53,13 @@ import java.util.concurrent.Executor
  * two levels mask only input-field regions (all of them, pixel capture having no way to tell a
  * *sensitive* input field from an ordinary one apart from OCR'd content and layout alone).
  *
+ * [imagePrivacy] governs a separate decision: whether to upload the capture at all, versus
+ * replacing it wholesale with a placeholder (see [CaptureOutcome]). `MASK_ALL` requires masking
+ * every *image* — but text on its own isn't an image, so [ImageContentDetector] decides whether
+ * this specific capture contains anything beyond the text `TextAndInputPrivacy` already handled;
+ * only if it does does this fall back to a placeholder, the same call `PixelCaptureEligibility`
+ * used to make blanket for `MASK_ALL`, now made per-capture with actual content in hand.
+ *
  * Buckets every capture into exactly one of [Category] and logs it — see [logCategory] for
  * exactly what that line does and, just as importantly, does **not** include.
  *
@@ -65,7 +73,8 @@ internal class DefaultTextDetector(
     private val executor: Executor,
     private val internalLogger: InternalLogger,
     private val recognizer: TextRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS),
-    private val inputFieldDetector: InputFieldDetector = InputFieldDetector()
+    private val inputFieldDetector: InputFieldDetector = InputFieldDetector(),
+    private val imageContentDetector: ImageContentDetector = ImageContentDetector()
 ) : TextDetector {
 
     /** The three buckets a pixel-captured region is classified into — see the class doc. */
@@ -82,10 +91,11 @@ internal class DefaultTextDetector(
         nodeId: Long,
         looksLikeBlinkingCursor: Boolean,
         textAndInputPrivacy: TextAndInputPrivacy,
-        onComplete: (Bitmap) -> Unit
+        imagePrivacy: ImagePrivacy,
+        onComplete: (CaptureOutcome) -> Unit
     ) {
         executor.executeSafe(DETECT_TEXT_OPERATION_NAME, internalLogger) {
-            processBitmap(bitmap, nodeId, looksLikeBlinkingCursor, textAndInputPrivacy, onComplete)
+            processBitmap(bitmap, nodeId, looksLikeBlinkingCursor, textAndInputPrivacy, imagePrivacy, onComplete)
         }
     }
 
@@ -95,7 +105,8 @@ internal class DefaultTextDetector(
         nodeId: Long,
         looksLikeBlinkingCursor: Boolean,
         textAndInputPrivacy: TextAndInputPrivacy,
-        onComplete: (Bitmap) -> Unit
+        imagePrivacy: ImagePrivacy,
+        onComplete: (CaptureOutcome) -> Unit
     ) {
         // The bitmap is owned by the capture pipeline for the duration of this call (see
         // PixelCapture's doc — nothing recycles it on this path), but guarding here costs nothing
@@ -103,27 +114,35 @@ internal class DefaultTextDetector(
         // below still calls onComplete — see TextDetector's doc: skipping it would mean this
         // capture never reaches the resource resolver at all, not just that it goes up unmasked.
         if (bitmap.isRecycled) {
-            onComplete(bitmap)
+            onComplete(CaptureOutcome.Upload(bitmap))
             return
         }
 
         val image = try {
             InputImage.fromBitmap(bitmap, ROTATION_DEGREES_NONE)
         } catch (e: IllegalArgumentException) {
-            onComplete(bitmap)
+            onComplete(CaptureOutcome.Upload(bitmap))
             return
         }
 
         recognizer.process(image)
             .addOnSuccessListener(executor) { visionText ->
-                categorizeAndLog(bitmap, nodeId, visionText, looksLikeBlinkingCursor, textAndInputPrivacy, onComplete)
+                categorizeAndLog(
+                    bitmap,
+                    nodeId,
+                    visionText,
+                    looksLikeBlinkingCursor,
+                    textAndInputPrivacy,
+                    imagePrivacy,
+                    onComplete
+                )
             }
             .addOnFailureListener(executor) {
                 // On-device recognition failing (e.g. the bundled model isn't ready yet on this
                 // device) just means this cycle contributes no signal and uploads unmasked —
                 // self-correcting the next time this node is freshly captured, no different from
                 // any other dropped capture in this experimental pipeline.
-                onComplete(bitmap)
+                onComplete(CaptureOutcome.Upload(bitmap))
             }
     }
 
@@ -138,7 +157,8 @@ internal class DefaultTextDetector(
      *
      * [textAndInputPrivacy] only affects *masking* ([regionsToMask]), never [category] — the
      * category is a description of what was found, independent of what privacy demands be done
-     * about it.
+     * about it. [imagePrivacy] is independent again — it decides the final [CaptureOutcome], after
+     * masking (if any) has already been painted on.
      */
     @WorkerThread
     private fun categorizeAndLog(
@@ -147,7 +167,8 @@ internal class DefaultTextDetector(
         visionText: Text,
         looksLikeBlinkingCursor: Boolean,
         textAndInputPrivacy: TextAndInputPrivacy,
-        onComplete: (Bitmap) -> Unit
+        imagePrivacy: ImagePrivacy,
+        onComplete: (CaptureOutcome) -> Unit
     ) {
         val blocksWithBounds = visionText.textBlocks.mapNotNull { block -> block.boundingBox?.let { it to block } }
         val matchedRegions = if (blocksWithBounds.isEmpty()) {
@@ -185,7 +206,33 @@ internal class DefaultTextDetector(
         }
 
         logCategory(nodeId, category, blocksWithBounds)
-        onComplete(bitmap)
+
+        val requiresPlaceholder = imagePrivacy == ImagePrivacy.MASK_ALL &&
+            hasNonTextContent(bitmap, category, blocksWithBounds)
+        val outcome = if (requiresPlaceholder) {
+            CaptureOutcome.ReplaceWithPlaceholder
+        } else {
+            CaptureOutcome.Upload(bitmap)
+        }
+        onComplete(outcome)
+    }
+
+    /**
+     * [Category.NO_TEXT] is treated as non-text content unconditionally — no text at all means
+     * there's nothing to compare against, so [ImageContentDetector] (which requires at least one
+     * text bound) isn't even called; a blank capture and an actual photo look identical from
+     * here, and the safe assumption is the same one [PixelCaptureEligibility] used to make
+     * blanket for every `MASK_ALL` region. Otherwise, delegates to [ImageContentDetector] to check
+     * whether anything besides the OCR'd text is present.
+     */
+    @WorkerThread
+    private fun hasNonTextContent(
+        bitmap: Bitmap,
+        category: Category,
+        blocksWithBounds: List<Pair<Rect, Text.TextBlock>>
+    ): Boolean {
+        if (category == Category.NO_TEXT) return true
+        return imageContentDetector.hasNonTextContent(bitmap, blocksWithBounds.map { it.first })
     }
 
     /**

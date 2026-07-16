@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.recorder
 
 import android.graphics.Rect
 import android.view.View
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
@@ -71,16 +72,17 @@ interface PixelCaptureCallback {
             wireframe,
             wireframeSlot,
             asyncJobStatusCallback,
-            TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
+            TextAndInputPrivacy.MASK_SENSITIVE_INPUTS,
+            ImagePrivacy.MASK_NONE
         )
     }
 
     /**
-     * Same as the other [registerPendingCapture] overload, with [textAndInputPrivacy] — the
-     * already-resolved (including any per-view tag override) privacy level in effect for
-     * [isolationView] — so an implementation that redacts sensitive content within a capture
-     * (e.g. masking a detected input field) can decide *whether* to, rather than assuming a fixed
-     * policy.
+     * Same as the other [registerPendingCapture] overload, with [textAndInputPrivacy] and
+     * [imagePrivacy] — the already-resolved (including any per-view tag override) privacy levels
+     * in effect for [isolationView] — so an implementation that redacts sensitive content within
+     * a capture (e.g. masking a detected input field, or replacing a capture with non-text
+     * content wholesale) can decide *whether* to, rather than assuming a fixed policy.
      */
     fun registerPendingCapture(
         nodeId: Long,
@@ -90,7 +92,8 @@ interface PixelCaptureCallback {
         wireframe: MobileSegment.Wireframe.ImageWireframe,
         wireframeSlot: WireframeSlot,
         asyncJobStatusCallback: AsyncJobStatusCallback,
-        textAndInputPrivacy: TextAndInputPrivacy
+        textAndInputPrivacy: TextAndInputPrivacy,
+        imagePrivacy: ImagePrivacy
     ) {
         // Default no-op — implementations register the capture for deferred processing.
         asyncJobStatusCallback.jobFinished()
