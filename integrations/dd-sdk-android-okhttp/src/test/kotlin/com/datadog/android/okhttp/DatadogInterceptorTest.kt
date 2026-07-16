@@ -1028,6 +1028,51 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         }
     }
 
+    @Test
+    fun `M redact sensitive query params W intercept() {successful request}`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        fakeRequest = forgeRequest { builder -> builder.url("$fakeUrl?X-Amz-Security-Token=some-secret-token") }
+        stubChain(mockChain, statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        verify(rumMonitor.mockInstance).startResource(
+            any<ResourceId>(),
+            eq(fakeMethod),
+            eq("$fakeUrl?X-Amz-Security-Token=<redacted>"),
+            any()
+        )
+    }
+
+    @Test
+    fun `M redact sensitive query params W intercept() {throwing request}`(
+        @Forgery throwable: Throwable
+    ) {
+        // Given
+        fakeRequest = forgeRequest { builder -> builder.url("$fakeUrl?X-Amz-Security-Token=some-secret-token") }
+        whenever(mockChain.request()) doReturn fakeRequest
+        whenever(mockChain.proceed(any())) doThrow throwable
+
+        // When
+        assertThrows<Throwable>(throwable.message.orEmpty()) {
+            testedInterceptor.intercept(mockChain)
+        }
+
+        // Then
+        verify(rumMonitor.mockInstance).stopResourceWithError(
+            any<ResourceId>(),
+            eq(null),
+            eq("OkHttp request error $fakeMethod $fakeUrl?X-Amz-Security-Token=<redacted>"),
+            eq(RumErrorSource.NETWORK),
+            eq(throwable),
+            any()
+        )
+    }
+
     // region graphQL headers
 
     @Test

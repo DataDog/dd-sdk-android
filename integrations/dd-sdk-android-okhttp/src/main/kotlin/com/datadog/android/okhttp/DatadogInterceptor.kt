@@ -16,6 +16,7 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.utils.redactSensitiveQueryParams
 import com.datadog.android.okhttp.internal.RumResourceAttributesProviderCompatibilityAdapter
 import com.datadog.android.okhttp.internal.buildResourceId
 import com.datadog.android.okhttp.internal.graphql.OkHttpGraphQLAdapter
@@ -131,7 +132,7 @@ open class DatadogInterceptor internal constructor(
             .safeBuild() ?: originalRequest
 
         if (rumFeature != null) {
-            val url = request.url.toString()
+            val url = request.url.toString().redactSensitiveQueryParams()
             val method = toHttpMethod(request.method, sdkCore.internalLogger)
 
             @Suppress("DEPRECATION")
@@ -274,7 +275,7 @@ open class DatadogInterceptor internal constructor(
         @Suppress("DEPRECATION")
         val requestId = request.buildResourceId(generateUuid = false)
         val method = request.method
-        val url = request.url.toString()
+        val url = request.url.toString().redactSensitiveQueryParams()
         @Suppress("DEPRECATION")
         (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.stopResourceWithError(
             requestId,
