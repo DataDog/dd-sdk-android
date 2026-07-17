@@ -18,6 +18,7 @@ import com.datadog.android.core.SdkReference
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.utils.loggableStackTrace
+import com.datadog.android.internal.utils.redactSensitiveQueryParams
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.trace.ApmNetworkTracingScope
 import com.datadog.android.trace.NetworkTracedRequestListener
@@ -240,7 +241,7 @@ class ApmNetworkInstrumentation internal constructor(
             internalSdkCore?.internalLogger?.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
-                { "$ERROR_STACK_OVERFLOW\nRequest: ${request.method}:${request.url}" },
+                { "$ERROR_STACK_OVERFLOW\nRequest: ${request.method}:${request.url.redactSensitiveQueryParams()}" },
                 e
             )
             @Suppress("ThrowingInternalException")
