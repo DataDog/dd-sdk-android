@@ -22,6 +22,7 @@ import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeReso
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.internal.utils.loggableStackTrace
+import com.datadog.android.internal.utils.redactSensitiveQueryParams
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.okhttp.internal.trace.toTelemetryTracingHeaderType
 import com.datadog.android.trace.DatadogTracing
@@ -376,7 +377,7 @@ internal constructor(
         val span = builder.start()
 
         span.resourceName = url.substringBefore(URL_QUERY_PARAMS_BLOCK_SEPARATOR)
-        span.setTag(Tags.KEY_HTTP_URL, url)
+        span.setTag(Tags.KEY_HTTP_URL, url.redactSensitiveQueryParams())
         span.setTag(Tags.KEY_HTTP_METHOD, request.method)
         span.setTag(Tags.KEY_SPAN_KIND, Tags.VALUE_SPAN_KIND_CLIENT)
 

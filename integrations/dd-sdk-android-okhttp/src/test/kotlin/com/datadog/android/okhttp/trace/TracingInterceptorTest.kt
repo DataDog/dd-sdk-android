@@ -226,6 +226,27 @@ internal open class TracingInterceptorTest {
         assertThat(response).isSameAs(fakeResponse)
     }
 
+    @Test
+    fun `M redact sensitive query params in http url tag W intercept()`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        fakeUrl = "${forgeUrlWithoutQueryParams(forge.anElementFrom(fakeLocalHosts.keys))}" +
+            "?X-Amz-Security-Token=some-secret-token"
+        fakeRequest = forgeRequest(fakeUrl)
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        stubChain(mockChain, statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        verify(mockSpan).setTag(
+            "http.url",
+            "${fakeUrl.substringBefore('?').lowercase(Locale.US)}?X-Amz-Security-Token=<redacted>"
+        )
+    }
+
     open fun instantiateTestedInterceptor(
         tracedHosts: Map<String, Set<TracingHeaderType>> = emptyMap(),
         globalTracerProvider: () -> DatadogTracer? = { null },
