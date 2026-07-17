@@ -35,6 +35,7 @@ import com.datadog.android.core.internal.remote.RemoteConfigLifecycleCallback
 import com.datadog.android.core.internal.remote.RemoteConfigNetworkFetcher
 import com.datadog.android.core.internal.remote.RemoteConfigService
 import com.datadog.android.core.internal.remote.RemoteConfigServiceImpl
+import com.datadog.android.core.internal.remote.model.RemoteConfiguration
 import com.datadog.android.core.internal.time.DefaultAppStartTimeProvider
 import com.datadog.android.core.internal.time.composeTimeInfo
 import com.datadog.android.core.internal.utils.executeSafe
@@ -442,6 +443,9 @@ internal class DatadogCore(
             )
             .getSafe("getDatadogContext", internalLogger)
     }
+
+    override val remoteConfiguration: RemoteConfiguration?
+        get() = remoteConfigService?.getCurrentConfig()
 
     // endregion
 
