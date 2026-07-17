@@ -28,6 +28,7 @@ internal class FileEventBatchWriter(
 ) : EventBatchWriter {
 
     @WorkerThread
+    @Suppress("ReturnCount")
     override fun write(
         event: RawBatchEvent,
         batchMetadata: ByteArray?,
