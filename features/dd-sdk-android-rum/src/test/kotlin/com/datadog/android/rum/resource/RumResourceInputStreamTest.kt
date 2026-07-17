@@ -246,6 +246,23 @@ internal class RumResourceInputStreamTest {
         verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
+    @Test
+    fun `M redact sensitive query params W init()`() {
+        // Given
+        val fakeSensitiveUrl = "$fakeUrl?X-Amz-Security-Token=some-secret-token"
+
+        // When
+        testedInputStream = RumResourceInputStream(mockInputStream, fakeSensitiveUrl, rumMonitor.mockSdkCore)
+
+        // Then
+        verify(rumMonitor.mockInstance).startResource(
+            testedInputStream.key,
+            RumResourceInputStream.METHOD,
+            "$fakeUrl?X-Amz-Security-Token=<redacted>",
+            emptyMap()
+        )
+    }
+
     // endregion
 
     // region Failing Atomic Methods

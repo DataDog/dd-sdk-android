@@ -10,6 +10,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.internal.utils.redactSensitiveQueryParams
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
@@ -49,7 +50,7 @@ constructor(
 
     init {
         val rumMonitor = GlobalRumMonitor.get(sdkCore)
-        rumMonitor.startResource(key, METHOD, url)
+        rumMonitor.startResource(key, METHOD, url.redactSensitiveQueryParams())
         callStart = timeProvider.getDeviceElapsedTimeNanos()
         if (rumMonitor is AdvancedRumMonitor) {
             rumMonitor.waitForResourceTiming(key)
