@@ -463,9 +463,7 @@ internal class RumFeature(
                         sessionId = sessionId,
                         applicationId = applicationId,
                         sessionType = sessionType,
-                        timeProvider = sdkCore.timeProvider,
-                        useDeltaCompression = configuration.useDeltaCompression,
-                        additionalAttributes = configuration.additionalAttributes
+                        timeProvider = sdkCore.timeProvider
                     ),
                     dataWriter = dataWriter,
                     internalLogger = sdkCore.internalLogger,
@@ -485,9 +483,7 @@ internal class RumFeature(
                             applicationId = applicationId,
                             sessionType = sessionType,
                             totalRamBytes = totalRamBytes,
-                            timeProvider = sdkCore.timeProvider,
-                            useDeltaCompression = configuration.useDeltaCompression,
-                            additionalAttributes = configuration.additionalAttributes
+                            timeProvider = sdkCore.timeProvider
                         ),
                         dataWriter = dataWriter,
                         internalLogger = sdkCore.internalLogger,

@@ -17,7 +17,6 @@ import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -127,42 +126,6 @@ internal class TimeseriesEndToEndTest {
         }
     }
 
-    @Test
-    fun `M add tags to every emitted event W additionalAttributes is not empty`(
-        forge: Forge
-    ) {
-        // Given
-        val fakeAdditionalAttributes = forge.aMap { anAlphabeticalString() to anAlphabeticalString() }
-        val testedTimeseries = CsvTimeseries.create(
-            csvContent = csvContent,
-            sessionId = SESSION_ID,
-            applicationId = APPLICATION_ID,
-            sessionType = RumSessionType.USER,
-            totalRamBytes = TOTAL_RAM_BYTES,
-            bufferSize = BATCH_SIZE,
-            timeProvider = mockTimeProvider,
-            datadogContext = mockDatadogContext,
-            additionalAttributes = fakeAdditionalAttributes
-        )
-
-        // When
-        testedTimeseries.onSessionStart()
-        testedTimeseries.onSessionStop()
-
-        // Then
-        val events = testedTimeseries.captured
-        assertThat(events).isNotEmpty
-        for (event in events) {
-            val tags = event.getAsJsonObject(
-                TimeseriesAttributes.KEY_TIMESERIES
-            ).getAsJsonObject(TimeseriesAttributes.KEY_TAGS)
-            assertThat(tags).describedAs("tags on %s", event).isNotNull
-            for ((key, value) in fakeAdditionalAttributes) {
-                assertThat(tags.get(key)?.asString).isEqualTo(value)
-            }
-        }
-    }
-
     private fun metricNameOf(event: JsonObject): String =
         event.getAsJsonObject(TimeseriesAttributes.KEY_TIMESERIES)
             .get(TimeseriesAttributes.KEY_NAME)
@@ -269,7 +232,7 @@ internal class TimeseriesEndToEndTest {
 
     private fun String.toBigDecimalOrNull(): BigDecimal? = try {
         BigDecimal(this)
-    } catch (e: NumberFormatException) {
+    } catch (_: NumberFormatException) {
         null
     }
 

@@ -14,7 +14,6 @@ import com.datadog.android.rum.model.TimeseriesMemoryEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -33,8 +32,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.UUID
-import kotlin.math.pow
-import kotlin.math.roundToLong
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -59,13 +56,8 @@ internal class MemoryEventSerializerTest {
     @LongForgery(min = 1L)
     var fakeNowMs: Long = 0L
 
-    @IntForgery(min = 2, max = 9)
-    var fakePrecision: Int = 0
-
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
-
-    val fakeScale: Long get() = 10.0.pow(fakePrecision.toDouble()).toLong()
 
     @BeforeEach
     fun `set up`() {
@@ -73,20 +65,14 @@ internal class MemoryEventSerializerTest {
     }
 
     private fun testedSerializer(
-        useDeltaCompression: Boolean = false,
         sessionType: RumSessionType = RumSessionType.USER,
-        totalRamBytes: Long = fakeTotalRamBytes,
-        precision: Int = fakePrecision,
-        additionalAttributes: Map<String, String> = emptyMap()
+        totalRamBytes: Long = fakeTotalRamBytes
     ) = MemoryEventSerializer(
         sessionId = fakeSessionId,
         applicationId = fakeApplicationId,
         sessionType = sessionType,
         totalRamBytes = totalRamBytes,
-        timeProvider = mockTimeProvider,
-        additionalAttributes = additionalAttributes,
-        useDeltaCompression = useDeltaCompression,
-        precision = precision
+        timeProvider = mockTimeProvider
     )
 
     @Test
@@ -150,10 +136,10 @@ internal class MemoryEventSerializerTest {
         assertThat(json.get(KEY_VERSION).asString).isEqualTo(fakeDatadogContext.version)
 
         val parsed = TimeseriesMemoryEvent.fromJsonObject(json)
-        assertThat(parsed.timeseries.data).hasSize(2)
-        val first = parsed.timeseries.data.first().dataPoint
-        assertThat(first.memoryFootprint.toDouble()).isCloseTo(fakeMemory, Offset.offset(MEMORY_OFFSET))
-        assertThat(first.memoryPercent.toDouble())
+        assertThat(parsed.timeseries.data.timestamps).hasSize(2)
+        assertThat(parsed.timeseries.data.values.memoryFootprint.first().toDouble())
+            .isCloseTo(fakeMemory / 1000.0, Offset.offset(MEMORY_OFFSET))
+        assertThat(parsed.timeseries.data.values.memoryPercent.first().toDouble())
             .isCloseTo(fakeMemory / fakeTotalRamBytes * PERCENT_FACTOR, Offset.offset(MEMORY_OFFSET))
     }
 
@@ -171,107 +157,6 @@ internal class MemoryEventSerializerTest {
         assertThat(json.getAsJsonObject(KEY_SESSION).get(KEY_TYPE).asString).isEqualTo(VALUE_TYPE_SYNTHETICS)
     }
 
-    @Test
-    fun `M add tags W serialize() { additionalAttributes non-empty }`(
-        @DoubleForgery(min = 1.0) fakeMemory: Double,
-        @LongForgery(min = 1L) fakeTs: Long,
-        @StringForgery fakeTagKey: String,
-        @StringForgery fakeTagValue: String
-    ) {
-        // When
-        val result = testedSerializer(additionalAttributes = mapOf(fakeTagKey to fakeTagValue))
-            .serialize(fakeDatadogContext, listOf(DataPoint(fakeTs, fakeMemory)))
-
-        // Then
-        val json = checkNotNull(result)
-        val tags = json
-            .getAsJsonObject(TimeseriesAttributes.KEY_TIMESERIES)
-            .getAsJsonObject(TimeseriesAttributes.KEY_TAGS)
-        assertThat(tags.get(fakeTagKey).asString).isEqualTo(fakeTagValue)
-    }
-
-    @Test
-    fun `M not add tags W serialize() { additionalAttributes empty }`(
-        @DoubleForgery(min = 1.0) fakeMemory: Double,
-        @LongForgery(min = 1L) fakeTs: Long
-    ) {
-        // When
-        val result = testedSerializer(additionalAttributes = emptyMap())
-            .serialize(fakeDatadogContext, listOf(DataPoint(fakeTs, fakeMemory)))
-
-        // Then
-        val json = checkNotNull(result)
-        assertThat(
-            json.getAsJsonObject(TimeseriesAttributes.KEY_TIMESERIES)
-                .has(TimeseriesAttributes.KEY_TAGS)
-        ).isFalse()
-    }
-
-    @Test
-    fun `M produce delta-object schema W serialize() { compression on, multi-sample }`(
-        @DoubleForgery(min = 1.0, max = 1_000_000.0) fakeMem1: Double,
-        @DoubleForgery(min = 1.0, max = 1_000_000.0) fakeMem2: Double,
-        @DoubleForgery(min = 1.0, max = 1_000_000.0) fakeMem3: Double,
-        @LongForgery(min = 1L, max = 1_000_000L) fakeTs1: Long,
-        @LongForgery(min = 1L, max = 1_000L) fakeTimestampStep: Long
-    ) {
-        // Given
-        val fakeTs2 = fakeTs1 + fakeTimestampStep
-        val fakeTs3 = fakeTs2 + fakeTimestampStep
-
-        val samples = listOf(
-            DataPoint(fakeTs1, fakeMem1),
-            DataPoint(fakeTs2, fakeMem2),
-            DataPoint(fakeTs3, fakeMem3)
-        )
-
-        // When
-        val result = testedSerializer(useDeltaCompression = true).serialize(fakeDatadogContext, samples)
-
-        // Then
-        val json = checkNotNull(result)
-        val timeseries = json.getAsJsonObject(TimeseriesAttributes.KEY_TIMESERIES)
-        assertThat(timeseries.get(TimeseriesAttributes.KEY_SCHEMA).asString).isEqualTo(VALUE_SCHEMA_DELTA_OBJECT)
-        val data = timeseries.get(TimeseriesAttributes.KEY_DATA).asJsonObject
-        assertThat(data.get(TimeseriesAttributes.KEY_PRECISION).asInt).isEqualTo(fakePrecision)
-        assertThat(data.get(TimeseriesAttributes.KEY_RESOLUTION).asString).isEqualTo(TimeseriesAttributes.NS)
-
-        val tsArray = data.get(TimeseriesAttributes.KEY_TS).asJsonArray
-        assertThat(tsArray[0].asLong).isEqualTo(fakeTs1)
-        assertThat(tsArray[1].asLong).isEqualTo(fakeTimestampStep)
-        assertThat(tsArray[2].asLong).isEqualTo(fakeTimestampStep)
-
-        val maxArr = data.get(TimeseriesAttributes.KEY_MEMORY_FOOTPRINT).asJsonArray
-        val pctArr = data.get(TimeseriesAttributes.KEY_MEMORY_PERCENT).asJsonArray
-        val scaledMax = listOf(fakeMem1, fakeMem2, fakeMem3).map { (it * fakeScale).roundToLong() }
-        val scaledPct = listOf(fakeMem1, fakeMem2, fakeMem3)
-            .map { (it / fakeTotalRamBytes * PERCENT_FACTOR * fakeScale).roundToLong() }
-
-        assertThat(maxArr[0].asLong).isEqualTo(scaledMax[0])
-        assertThat(maxArr[1].asLong).isEqualTo(scaledMax[1] - scaledMax[0])
-        assertThat(maxArr[2].asLong).isEqualTo(scaledMax[2] - scaledMax[1])
-
-        assertThat(pctArr[0].asLong).isEqualTo(scaledPct[0])
-        assertThat(pctArr[1].asLong).isEqualTo(scaledPct[1] - scaledPct[0])
-        assertThat(pctArr[2].asLong).isEqualTo(scaledPct[2] - scaledPct[1])
-    }
-
-    @Test
-    fun `M fall back to object schema W serialize() { compression on, single sample }`(
-        @DoubleForgery(min = 1.0) fakeMemory: Double,
-        @LongForgery(min = 1L) fakeTs: Long
-    ) {
-        // When
-        val result = testedSerializer(useDeltaCompression = true)
-            .serialize(fakeDatadogContext, listOf(DataPoint(fakeTs, fakeMemory)))
-
-        // Then
-        val json = checkNotNull(result)
-        val timeseries = json.getAsJsonObject(TimeseriesAttributes.KEY_TIMESERIES)
-        assertThat(timeseries.get(TimeseriesAttributes.KEY_SCHEMA).asString).isEqualTo(VALUE_SCHEMA_OBJECT)
-        assertThat(timeseries.get(TimeseriesAttributes.KEY_DATA).isJsonArray).isTrue()
-    }
-
     private companion object {
         private const val PERCENT_FACTOR: Double = 100.0
         private const val MEMORY_OFFSET: Double = 0.0001
@@ -286,8 +171,7 @@ internal class MemoryEventSerializerTest {
         private const val KEY_VERSION: String = "version"
 
         // JSON values
-        private const val VALUE_SCHEMA_OBJECT: String = "object"
-        private const val VALUE_SCHEMA_DELTA_OBJECT: String = "delta-object"
+        private const val VALUE_SCHEMA_OBJECT: String = "object-v2"
         private const val VALUE_TYPE_SYNTHETICS: String = "synthetics"
     }
 }

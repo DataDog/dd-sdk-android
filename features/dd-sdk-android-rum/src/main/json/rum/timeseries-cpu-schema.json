@@ -111,7 +111,7 @@
         "schema": {
           "type": "string",
           "description": "Wire-shape discriminator for the data field",
-          "enum": ["object", "delta-scalar"],
+          "const": "object-v2",
           "readOnly": true
         },
         "start": {
@@ -125,33 +125,36 @@
           "readOnly": true
         },
         "data": {
-          "type": "array",
-          "description": "Array of CPU data points",
-          "items": {
-            "type": "object",
-            "description": "A single CPU data point",
-            "required": ["timestamp", "data_point"],
-            "properties": {
-              "timestamp": {
+          "type": "object",
+          "description": "Flattened CPU data points",
+          "required": ["timestamps", "values"],
+          "properties": {
+            "timestamps": {
+              "type": "array",
+              "description": "Sample timestamps in nanoseconds from epoch",
+              "items": {
                 "type": "integer",
-                "description": "Sample timestamp in nanoseconds from epoch",
                 "readOnly": true
               },
-              "data_point": {
-                "type": "object",
-                "description": "CPU measurements for this sample",
-                "required": ["cpu_usage"],
-                "properties": {
-                  "cpu_usage": {
-                    "type": "number",
-                    "description": "CPU usage as a percentage (0.0 to 100.0)",
-                    "readOnly": true
-                  }
-                },
-                "readOnly": true
-              }
+              "readOnly": true
             },
-            "readOnly": true
+            "values": {
+              "type": "object",
+              "description": "CPU measurements, aligned index-for-index with timestamps",
+              "required": ["cpu_usage"],
+              "properties": {
+                "cpu_usage": {
+                  "type": "array",
+                  "description": "CPU usage as a percentage (0.0 to 100.0)",
+                  "items": {
+                    "type": "number",
+                    "readOnly": true
+                  },
+                  "readOnly": true
+                }
+              },
+              "readOnly": true
+            }
           },
           "readOnly": true
         }

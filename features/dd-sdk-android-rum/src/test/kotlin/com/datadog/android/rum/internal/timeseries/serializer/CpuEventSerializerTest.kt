@@ -10,14 +10,12 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.TimeseriesCpuEventAssert.Companion.assertThat
-import com.datadog.android.rum.assertj.TimeseriesCpuEventAssert.Companion.assertThatDelta
 import com.datadog.android.rum.internal.timeseries.DataPoint
 import com.datadog.android.rum.model.TimeseriesCpuEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -32,8 +30,6 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
 import org.mockito.quality.Strictness
-import kotlin.math.pow
-import kotlin.math.roundToLong
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -52,31 +48,20 @@ internal class CpuEventSerializerTest {
     @StringForgery
     lateinit var fakeApplicationId: String
 
-    @IntForgery(min = 2, max = 9)
-    var fakePrecision: Int = 0
-
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
-
-    val fakeScale: Long get() = 10.0.pow(fakePrecision.toDouble()).toLong()
 
     val mockTimeProvider: TimeProvider = mock<TimeProvider> {
         on { getDeviceTimestampMillis() } doAnswer { fakeNowMs }
     }
 
     private fun testedSerializer(
-        useDeltaCompression: Boolean = false,
-        sessionType: RumSessionType = RumSessionType.USER,
-        precision: Int = fakePrecision,
-        additionalAttributes: Map<String, String> = emptyMap()
+        sessionType: RumSessionType = RumSessionType.USER
     ) = CpuEventSerializer(
         sessionId = fakeSessionId,
         applicationId = fakeApplicationId,
         sessionType = sessionType,
-        timeProvider = mockTimeProvider,
-        additionalAttributes = additionalAttributes,
-        useDeltaCompression = useDeltaCompression,
-        precision = precision
+        timeProvider = mockTimeProvider
     )
 
     @Test
@@ -111,7 +96,7 @@ internal class CpuEventSerializerTest {
             .hasTimeseriesEnd(fakeTs + 1L)
             .hasApplicationId(fakeApplicationId)
             .hasSessionType(TimeseriesCpuEvent.Type.USER)
-            .hasTimeseriesSchema(TimeseriesCpuEvent.Schema.OBJECT)
+            .hasTimeseriesSchema("object-v2")
             .hasService(fakeDatadogContext.service)
             .hasVersion(fakeDatadogContext.version)
     }
@@ -131,98 +116,6 @@ internal class CpuEventSerializerTest {
 
         // Then
         assertThat(json).hasSessionType(TimeseriesCpuEvent.Type.SYNTHETICS)
-    }
-
-    @Test
-    fun `M add tags W serialize() { additionalAttributes non-empty }`(
-        @DoubleForgery(min = 0.0, max = 100.0) fakeCpuValue: Double,
-        @LongForgery(min = 1L) fakeTs: Long,
-        @StringForgery fakeTagKey: String,
-        @StringForgery fakeTagValue: String
-    ) {
-        // Given
-        val samples = listOf(DataPoint(fakeTs, fakeCpuValue))
-
-        // When
-        val json = testedSerializer(additionalAttributes = mapOf(fakeTagKey to fakeTagValue))
-            .serialize(fakeDatadogContext, samples)
-            .failIfNull()
-
-        // Then
-        val tags = json
-            .getAsJsonObject(TimeseriesAttributes.KEY_TIMESERIES)
-            .getAsJsonObject(TimeseriesAttributes.KEY_TAGS)
-        assertThat(tags.get(fakeTagKey).asString).isEqualTo(fakeTagValue)
-    }
-
-    @Test
-    fun `M not add tags W serialize() { additionalAttributes empty }`(
-        @DoubleForgery(min = 0.0, max = 100.0) fakeCpuValue: Double,
-        @LongForgery(min = 1L) fakeTs: Long
-    ) {
-        // Given
-        val samples = listOf(DataPoint(fakeTs, fakeCpuValue))
-
-        // When
-        val json = testedSerializer(additionalAttributes = emptyMap())
-            .serialize(fakeDatadogContext, samples)
-            .failIfNull()
-
-        // Then
-        assertThat(
-            json.getAsJsonObject(TimeseriesAttributes.KEY_TIMESERIES)
-                .has(TimeseriesAttributes.KEY_TAGS)
-        ).isFalse()
-    }
-
-    @Test
-    fun `M produce delta-scalar schema W serialize() { compression on, multi-sample }`(
-        @DoubleForgery(min = 0.001, max = 100.0) fakeFirstCpu: Double,
-        @DoubleForgery(min = 0.001, max = 100.0) fakeSecondCpu: Double,
-        @DoubleForgery(min = 0.001, max = 100.0) fakeThirdCpu: Double,
-        @LongForgery(min = 1L, max = 1_000_000L) fakeTs1: Long,
-        @LongForgery(min = 1L, max = 1_000L) fakeTimestampStep: Long
-    ) {
-        // Given
-        val fakeTs2 = fakeTs1 + fakeTimestampStep
-        val fakeTs3 = fakeTs2 + fakeTimestampStep
-        val samples = listOf(
-            DataPoint(fakeTs1, fakeFirstCpu),
-            DataPoint(fakeTs2, fakeSecondCpu),
-            DataPoint(fakeTs3, fakeThirdCpu)
-        )
-
-        // When
-        val json = testedSerializer(useDeltaCompression = true)
-            .serialize(fakeDatadogContext, samples)
-            .failIfNull()
-
-        // Then
-        val scaled = listOf(fakeFirstCpu, fakeSecondCpu, fakeThirdCpu).map { (it * fakeScale).roundToLong() }
-        assertThatDelta(json)
-            .hasTimeseriesSchema(TimeseriesCpuEvent.Schema.DELTA_SCALAR)
-            .hasDeltaPrecision(fakePrecision)
-            .hasDeltaResolution(TimeseriesAttributes.NS)
-            .hasDeltaTsValues(fakeTs1, fakeTimestampStep, fakeTimestampStep)
-            .hasDeltaValueAt(0, scaled[0])
-            .hasDeltaValueAt(1, scaled[1] - scaled[0])
-            .hasDeltaValueAt(2, scaled[2] - scaled[1])
-    }
-
-    @Test
-    fun `M fall back to object schema W serialize() { compression on, single sample }`(
-        @DoubleForgery(min = 0.001, max = 100.0) fakeCpu: Double,
-        @LongForgery(min = 1L) fakeTs: Long
-    ) {
-        // When
-        val json = testedSerializer(useDeltaCompression = true)
-            .serialize(fakeDatadogContext, listOf(DataPoint(fakeTs, fakeCpu)))
-            .failIfNull()
-
-        // Then
-        assertThat(json)
-            .hasTimeseriesSchema(TimeseriesCpuEvent.Schema.OBJECT)
-            .hasTimeseriesDataCount(1)
     }
 
     @Test
