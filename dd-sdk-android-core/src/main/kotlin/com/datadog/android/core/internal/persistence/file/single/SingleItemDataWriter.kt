@@ -54,7 +54,7 @@ internal open class SingleItemDataWriter<T : Any>(
     @WorkerThread
     private fun writeData(byteArray: ByteArray): Boolean {
         if (!checkEventSize(byteArray.size)) return false
-        val file = fileOrchestrator.getWritableFile() ?: return false
+        val file = fileOrchestrator.getWritableFile(byteArray.size.toLong()) ?: return false
         return fileWriter.writeData(file, byteArray, false)
     }
 

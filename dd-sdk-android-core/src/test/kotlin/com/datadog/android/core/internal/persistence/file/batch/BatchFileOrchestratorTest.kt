@@ -107,7 +107,7 @@ internal class BatchFileOrchestratorTest {
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
 
         // When
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(1L)
 
         // Then
         checkNotNull(result)
@@ -118,11 +118,11 @@ internal class BatchFileOrchestratorTest {
     fun `M send batch_closed metric W getWritableFile()`() {
         // Given
         val fileCreationTimestamp = stubTimeProvider.deviceTimestampMs
-        val oldFile = testedOrchestrator.getWritableFile()
+        val oldFile = testedOrchestrator.getWritableFile(1L)
         stubTimeProvider.deviceTimestampMs += RECENT_DELAY_MS + 1
 
         // When
-        testedOrchestrator.getWritableFile()
+        testedOrchestrator.getWritableFile(1L)
 
         // Then
         val fileArgumentCaptor = argumentCaptor<File>()
@@ -156,7 +156,7 @@ internal class BatchFileOrchestratorTest {
         )
 
         // When
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(1L)
 
         // Then
         assertThat(result).isNull()
@@ -184,7 +184,7 @@ internal class BatchFileOrchestratorTest {
         )
 
         // When
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(1L)
 
         // Then
         assertThat(result).isNull()
@@ -213,7 +213,7 @@ internal class BatchFileOrchestratorTest {
         )
 
         // When
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(1L)
 
         // Then
         assertThat(result).isNull()
@@ -231,7 +231,7 @@ internal class BatchFileOrchestratorTest {
         fakeRootDir.deleteRecursively()
 
         // When
-        testedOrchestrator.getWritableFile()
+        testedOrchestrator.getWritableFile(1L)
 
         // Then
         assertThat(fakeRootDir).exists().isDirectory()
@@ -255,7 +255,7 @@ internal class BatchFileOrchestratorTest {
         youngFile.createNewFile()
 
         // When
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(1L)
 
         // Then
         checkNotNull(result)
@@ -291,12 +291,12 @@ internal class BatchFileOrchestratorTest {
         youngFile.createNewFile()
 
         // When
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(1L)
         // let's add very old file after the previous cleanup call. If threshold is respected,
         // cleanup shouldn't be performed during the next getWritableFile call
         val evenOlderFile = File(fakeRootDir, (oldTimestamp - 1).toString())
         evenOlderFile.createNewFile()
-        testedOrchestrator.getWritableFile()
+        testedOrchestrator.getWritableFile(1L)
 
         // Then
         checkNotNull(result)
@@ -329,11 +329,11 @@ internal class BatchFileOrchestratorTest {
         oldFileMeta.createNewFile()
 
         // When
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(1L)
         stubTimeProvider.deviceTimestampMs += CLEANUP_FREQUENCY_THRESHOLD_MS + 1
         val evenOlderFile = File(fakeRootDir, (oldTimestamp - 1).toString())
         evenOlderFile.createNewFile()
-        testedOrchestrator.getWritableFile()
+        testedOrchestrator.getWritableFile(1L)
 
         // Then
         checkNotNull(result)
@@ -372,7 +372,7 @@ internal class BatchFileOrchestratorTest {
         val currentTime = stubTimeProvider.deviceTimestampMs
 
         // When
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(1L)
 
         // Then
         checkNotNull(result)
@@ -389,13 +389,13 @@ internal class BatchFileOrchestratorTest {
     ) {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
-        val previousFile = testedOrchestrator.getWritableFile()
+        val previousFile = testedOrchestrator.getWritableFile(1L)
         checkNotNull(previousFile)
         previousFile.writeText(previousData)
         stubTimeProvider.deviceTimestampMs += 1
 
         // When
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(1L)
 
         // Then
         checkNotNull(result)
@@ -411,7 +411,7 @@ internal class BatchFileOrchestratorTest {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
         val fileCreateTimestamp = stubTimeProvider.deviceTimestampMs
-        val previousFile = testedOrchestrator.getWritableFile()
+        val previousFile = testedOrchestrator.getWritableFile(1L)
 
         checkNotNull(previousFile)
         previousFile.writeText(previousData)
@@ -419,7 +419,7 @@ internal class BatchFileOrchestratorTest {
         val newFileTimestamp = stubTimeProvider.deviceTimestampMs
 
         // When
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(1L)
 
         // Then
         checkNotNull(result)
@@ -449,7 +449,7 @@ internal class BatchFileOrchestratorTest {
         val newFileTimestamp = stubTimeProvider.deviceTimestampMs
 
         // When
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(1L)
 
         // Then
         checkNotNull(result)
@@ -466,7 +466,7 @@ internal class BatchFileOrchestratorTest {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
         val fileCreateTimestamp = stubTimeProvider.deviceTimestampMs
-        val previousFile = testedOrchestrator.getWritableFile()
+        val previousFile = testedOrchestrator.getWritableFile(1L)
         checkNotNull(previousFile)
         previousFile.createNewFile()
         previousFile.delete()
@@ -474,7 +474,7 @@ internal class BatchFileOrchestratorTest {
         val newFileTimestamp = stubTimeProvider.deviceTimestampMs
 
         // When
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(1L)
 
         // Then
         checkNotNull(result)
@@ -498,14 +498,14 @@ internal class BatchFileOrchestratorTest {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
         val fileCreateTimestamp = stubTimeProvider.deviceTimestampMs
-        val previousFile = testedOrchestrator.getWritableFile()
+        val previousFile = testedOrchestrator.getWritableFile(1L)
         checkNotNull(previousFile)
         previousFile.writeText(previousData)
         stubTimeProvider.deviceTimestampMs += 1
         val newFileTimestamp = stubTimeProvider.deviceTimestampMs
 
         // When
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(1L)
 
         // Then
         checkNotNull(result)
@@ -523,20 +523,21 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `M return new File W getWritableFile() {previous file leaves no room for a max-size item}`(
-        @StringForgery(size = MAX_BATCH_SIZE - MAX_ITEM_SIZE) previousData: String
+    fun `M return new File W getWritableFile() {previous file has no room for the event}`(
+        // one byte too much to fit a max-size event without exceeding maxBatchSize
+        @StringForgery(size = MAX_BATCH_SIZE - MAX_ITEM_SIZE + 1) previousData: String
     ) {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
         val fileCreateTimestamp = stubTimeProvider.deviceTimestampMs
-        val previousFile = testedOrchestrator.getWritableFile()
+        val previousFile = testedOrchestrator.getWritableFile(1L)
         checkNotNull(previousFile)
         previousFile.writeText(previousData)
         stubTimeProvider.deviceTimestampMs += 1
         val newFileTimestamp = stubTimeProvider.deviceTimestampMs
 
         // When
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(MAX_ITEM_SIZE.toLong())
 
         // Then
         checkNotNull(result)
@@ -551,6 +552,28 @@ internal class BatchFileOrchestratorTest {
             assertThat(firstValue.eventsCount).isEqualTo(1L)
         }
         verifyNoMoreInteractions(mockMetricsDispatcher)
+    }
+
+    @Test
+    fun `M return existing File W getWritableFile() {previous file has exact room for the event}`(
+        // leaves room for exactly one max-size event before reaching maxBatchSize
+        @StringForgery(size = MAX_BATCH_SIZE - MAX_ITEM_SIZE) previousData: String
+    ) {
+        // Given
+        assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
+        val previousFile = testedOrchestrator.getWritableFile(1L)
+        checkNotNull(previousFile)
+        previousFile.writeText(previousData)
+        stubTimeProvider.deviceTimestampMs += 1
+
+        // When
+        val result = testedOrchestrator.getWritableFile(MAX_ITEM_SIZE.toLong())
+
+        // Then
+        checkNotNull(result)
+        assertThat(result).isEqualTo(previousFile)
+        assertThat(previousFile.readText()).isEqualTo(previousData)
+        verifyNoInteractions(mockMetricsDispatcher)
     }
 
     @Test
@@ -560,7 +583,7 @@ internal class BatchFileOrchestratorTest {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
         val fileCreateTimestamp = stubTimeProvider.deviceTimestampMs
-        var previousFile = testedOrchestrator.getWritableFile()
+        var previousFile = testedOrchestrator.getWritableFile(1L)
 
         repeat(4) {
             checkNotNull(previousFile)
@@ -572,7 +595,7 @@ internal class BatchFileOrchestratorTest {
             previousFile?.writeText(previousData[0])
 
             for (i in 1 until MAX_ITEM_PER_BATCH) {
-                val file = testedOrchestrator.getWritableFile()
+                val file = testedOrchestrator.getWritableFile(1L)
                 assumeTrue(file == previousFile)
                 file?.appendText(previousData[i])
             }
@@ -581,7 +604,7 @@ internal class BatchFileOrchestratorTest {
             // When
             stubTimeProvider.deviceTimestampMs += 1
             val newFileTimestamp = stubTimeProvider.deviceTimestampMs
-            val nextFile = testedOrchestrator.getWritableFile()
+            val nextFile = testedOrchestrator.getWritableFile(1L)
 
             // Then
             checkNotNull(nextFile)
@@ -611,7 +634,7 @@ internal class BatchFileOrchestratorTest {
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
         val filesCount = MAX_DISK_SPACE / MAX_BATCH_SIZE
         val files = (0..filesCount).map {
-            val file = testedOrchestrator.getWritableFile()
+            val file = testedOrchestrator.getWritableFile(1L)
             checkNotNull(file)
             file.writeText(previousData)
             stubTimeProvider.deviceTimestampMs += 1
@@ -621,7 +644,7 @@ internal class BatchFileOrchestratorTest {
         // When
         stubTimeProvider.deviceTimestampMs += CLEANUP_FREQUENCY_THRESHOLD_MS + 1
         val newFileTimestamp = stubTimeProvider.deviceTimestampMs
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(1L)
 
         // Then
         checkNotNull(result)

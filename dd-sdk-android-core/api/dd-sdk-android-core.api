@@ -577,7 +577,6 @@ public abstract interface class com/datadog/android/api/storage/DataWriter {
 }
 
 public abstract interface class com/datadog/android/api/storage/EventBatchWriter {
-	public abstract fun currentMetadata ()[B
 	public abstract fun write (Lcom/datadog/android/api/storage/RawBatchEvent;[BLcom/datadog/android/api/storage/EventType;)Z
 }
 

@@ -57,7 +57,7 @@ internal class BatchFileOrchestrator(
     // region FileOrchestrator
 
     @WorkerThread
-    override fun getWritableFile(): File? {
+    override fun getWritableFile(eventSize: Long): File? {
         if (!isRootDirValid()) {
             return null
         }
@@ -69,7 +69,7 @@ internal class BatchFileOrchestrator(
             lastCleanupTimestamp = timeProvider.getDeviceTimestampMillis()
         }
 
-        return getReusableWritableFile() ?: createNewFile()
+        return getReusableWritableFile(eventSize) ?: createNewFile()
     }
 
     @WorkerThread
@@ -221,7 +221,7 @@ internal class BatchFileOrchestrator(
     }
 
     @Suppress("ReturnCount")
-    private fun getReusableWritableFile(): File? {
+    private fun getReusableWritableFile(eventSize: Long): File? {
         val files = listBatchFiles()
         val lastFile = files.latestBatchFile ?: return null
 
@@ -237,7 +237,7 @@ internal class BatchFileOrchestrator(
         }
 
         val isRecentEnough = isFileRecent(lastFile, recentWriteDelayMs)
-        val hasRoomForMore = lastFile.lengthSafe(internalLogger) < config.maxBatchSize - config.maxItemSize
+        val hasRoomForMore = lastFile.lengthSafe(internalLogger) + eventSize <= config.maxBatchSize
         val hasSlotForMore = (lastKnownFileItemCount < config.maxItemsPerBatch)
 
         return if (isRecentEnough && hasRoomForMore && hasSlotForMore) {
