@@ -31,6 +31,7 @@ import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.logger.SdkInternalLogger
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.remote.NoOpRemoteConfigFetcher
+import com.datadog.android.core.internal.remote.RemoteConfigLifecycleCallback
 import com.datadog.android.core.internal.remote.RemoteConfigNetworkFetcher
 import com.datadog.android.core.internal.remote.RemoteConfigService
 import com.datadog.android.core.internal.remote.RemoteConfigServiceImpl
@@ -86,6 +87,8 @@ internal class DatadogCore(
     internal lateinit var coreFeature: CoreFeature
 
     internal var remoteConfigService: RemoteConfigService? = null
+
+    internal var rcLifecycleMonitor: ProcessLifecycleMonitor? = null
 
     private lateinit var shutdownHook: Thread
 
@@ -525,6 +528,15 @@ internal class DatadogCore(
             internalLogger = internalLogger
         )
         remoteConfigService?.syncWithRemote()
+
+        val service = remoteConfigService ?: return
+        if (appContext is Application && coreFeature.isMainProcess) {
+            rcLifecycleMonitor = ProcessLifecycleMonitor(
+                RemoteConfigLifecycleCallback(service)
+            ).apply {
+                appContext.registerActivityLifecycleCallbacks(this)
+            }
+        }
     }
 
     private fun initializeCrashReportFeature() {
@@ -744,10 +756,17 @@ internal class DatadogCore(
         if (appContext is Application && lifecycleMonitor != null) {
             appContext.unregisterActivityLifecycleCallbacks(lifecycleMonitor)
         }
+        processLifecycleMonitor = null
 
-        contextProvider = NoOpContextProvider()
+        val rcMonitor = rcLifecycleMonitor
+        if (appContext is Application && rcMonitor != null) {
+            appContext.unregisterActivityLifecycleCallbacks(rcMonitor)
+        }
+        rcLifecycleMonitor = null
         remoteConfigService?.stop()
         remoteConfigService = null
+
+        contextProvider = NoOpContextProvider()
         coreFeature.stop()
         isDeveloperModeEnabled = false
 

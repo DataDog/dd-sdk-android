@@ -21,9 +21,11 @@ import com.datadog.android.core.internal.DatadogCore
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.remote.NoOpRemoteConfigFetcher
 import com.datadog.android.core.internal.remote.RemoteConfigFetcher
+import com.datadog.android.core.internal.remote.RemoteConfigLifecycleCallback
 import com.datadog.android.core.internal.remote.RemoteConfigService
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.error.internal.CrashReportsFeature
+import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.security.Encryption
@@ -57,6 +59,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -739,6 +742,43 @@ internal class DatadogCoreInitializationTest {
     }
 
     @Test
+    fun `M unregister RC lifecycle monitor W stop() { remoteConfigurationId set }`(
+        @StringForgery fakeRemoteConfigurationId: String
+    ) {
+        // Given — crashReportsEnabled=false ensures a stable unregister count:
+        // processLifecycleMonitor (1) + rcLifecycleMonitor (1) = 2 total.
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeInstanceId,
+            fakeInstanceName,
+            executorServiceFactory = mockExecutorServiceFactory,
+            remoteConfigServiceFactory = mockRemoteConfigServiceFactory
+        ).apply {
+            initialize(
+                fakeConfiguration.copy(
+                    crashReportsEnabled = false,
+                    coreConfig = fakeConfiguration.coreConfig.copy(
+                        remoteConfigurationId = fakeRemoteConfigurationId
+                    )
+                )
+            )
+        }
+
+        // When
+        testedCore.stop()
+
+        // Then — exactly 2 unregister calls: processLifecycleMonitor + rcLifecycleMonitor.
+        // Exactly one wraps a RemoteConfigLifecycleCallback.
+        argumentCaptor<Application.ActivityLifecycleCallbacks> {
+            verify(appContext.mockInstance, times(2))
+                .unregisterActivityLifecycleCallbacks(capture())
+            val rcMonitors = allValues.filterIsInstance<ProcessLifecycleMonitor>()
+                .filter { it.callback is RemoteConfigLifecycleCallback }
+            assertThat(rcMonitors).hasSize(1)
+        }
+    }
+
+    @Test
     fun `M use NoOpRemoteConfigFetcher W setupRemoteConfiguration() { secondary process }`(
         @StringForgery fakeRemoteConfigurationId: String
     ) {
@@ -769,6 +809,34 @@ internal class DatadogCoreInitializationTest {
 
         // Then — secondary process path uses NoOpRemoteConfigFetcher (no network, no OkHttp cache)
         assertThat(capturedFetcher).isInstanceOf(NoOpRemoteConfigFetcher::class.java)
+    }
+
+    @Test
+    fun `M not register RC lifecycle monitor W setupRemoteConfiguration() { secondary process }`(
+        @StringForgery fakeRemoteConfigurationId: String
+    ) {
+        // Given
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeInstanceId,
+            fakeInstanceName,
+            executorServiceFactory = mockExecutorServiceFactory,
+            remoteConfigServiceFactory = mockRemoteConfigServiceFactory
+        ).apply {
+            initialize(fakeConfiguration)
+            coreFeature.isMainProcess = false
+            setupRemoteConfiguration(
+                fakeConfiguration.copy(
+                    coreConfig = fakeConfiguration.coreConfig.copy(
+                        remoteConfigurationId = fakeRemoteConfigurationId
+                    )
+                )
+            )
+        }
+
+        // Then — secondary processes should not register a RC lifecycle monitor.
+        // Checked directly on the field to avoid captor ambiguity with calls from initialize().
+        assertThat(testedCore.rcLifecycleMonitor).isNull()
     }
 
     // endregion
