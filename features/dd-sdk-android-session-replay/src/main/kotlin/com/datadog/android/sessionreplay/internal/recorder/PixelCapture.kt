@@ -131,8 +131,13 @@ internal class PixelCapture(
 
     private val pendingCaptures = CopyOnWriteArrayList<PendingPixelCapture>()
 
-    /** Last-captured content per nodeId — see the class doc for the reuse/invalidation rules. */
-    private val cache = ConcurrentHashMap<Long, CachedRegion>()
+    /**
+     * Last-resolved outcome per nodeId — see the class doc for the reuse/invalidation rules.
+     * Covers *both* a successfully uploaded capture and a decision to show a placeholder instead
+     * (see [CachedOutcome]/[cachePlaceholderAndApply]'s doc) — either one needs a cache entry so a
+     * later cycle can re-apply it synchronously rather than waiting on another async round-trip.
+     */
+    private val cache = ConcurrentHashMap<Long, CachedOutcome>()
 
     // Tallied since the last health-summary flush (see logHealthSummary) — @UiThread-only, same
     // as every other method here, so no synchronization is needed.
@@ -304,6 +309,38 @@ internal class PixelCapture(
         )
     }
 
+    /**
+     * Synchronous fast path for `PixelCaptureFallbackMapper`: true if [cache] still holds a fresh
+     * [CachedOutcome.Placeholder] decision for [nodeId] at this size — i.e. this node was already
+     * decided, on a *previous* cycle, to need a placeholder rather than an uploaded capture.
+     *
+     * This exists because [CompositionTreeBuilder] copies each leaf's wireframe list into its own
+     * combined list (`wireframes.addAll(leafWireframes)`) as soon as that leaf is visited — well
+     * before [processPendingCaptures] (called once, after the *entire* traversal/`build()` call
+     * has already returned) could ever swap a stub for a placeholder via [WireframeSlot]. That
+     * swap only ever reaches the *leaf-local* list, which by then has already been copied from —
+     * mutating it has no effect on what [CompositionTreeBuilder.build] actually returns. An
+     * uploaded capture doesn't have this problem: [applyResourceId] mutates the *same*
+     * [MobileSegment.Wireframe.ImageWireframe] instance that was already copied by reference, so
+     * the change is visible regardless of which list holds it. A placeholder can't use that trick
+     * — [MobileSegment.Wireframe.PlaceholderWireframe] is a different concrete type, not a
+     * mutable-field variant of the same one — so the only way it can ever reach the tree
+     * `CompositionTreeBuilder` actually returns is for the mapper to emit it directly, from the
+     * start, before any copying happens. [PixelCaptureFallbackMapper] calls this before deciding
+     * what to emit for [nodeId] this cycle; on a hit, it constructs the placeholder wireframe
+     * itself and skips [registerPendingCapture] entirely — no pending capture, no ImageWireframe
+     * stub, nothing left to race. The decision naturally re-verifies once [cache]'s
+     * [MAX_CACHE_AGE_MS]/[MIN_REDRAW_INTERVAL_MS] trust window lapses, the same as any other
+     * cached outcome.
+     */
+    @UiThread
+    internal fun hasFreshPlaceholderDecision(nodeId: Long, width: Int, height: Int, isDirty: Boolean): Boolean {
+        val cached = cache[nodeId] as? CachedOutcome.Placeholder ?: return false
+        if (cached.width != width || cached.height != height) return false
+        val ageMs = elapsedRealtimeMs() - cached.capturedAtMs
+        return ageMs < if (isDirty) MIN_REDRAW_INTERVAL_MS else MAX_CACHE_AGE_MS
+    }
+
     // endregion
 
     // region Post-traversal processing
@@ -377,14 +414,14 @@ internal class PixelCapture(
 
         if (cacheIsFresh) {
             cacheReuseCount++
-            applyResourceId(pending, checkNotNull(cached).resourceId)
+            applyCachedOutcome(pending, checkNotNull(cached))
             return
         }
 
         if (!captureTimeBank.updateAndCheck(elapsedRealtimeMs())) {
             if (cacheMatchesSize) {
                 budgetThrottledReuseCount++
-                applyResourceId(pending, checkNotNull(cached).resourceId)
+                applyCachedOutcome(pending, checkNotNull(cached))
             } else {
                 budgetThrottledPlaceholderCount++
                 timeoutPending(pending)
@@ -420,9 +457,24 @@ internal class PixelCapture(
             ) { outcome ->
                 when (outcome) {
                     is CaptureOutcome.Upload -> resolveAndCache(pending, outcome.bitmap, width, height)
-                    CaptureOutcome.ReplaceWithPlaceholder -> replaceWithImagePrivacyPlaceholder(pending)
+                    CaptureOutcome.ReplaceWithPlaceholder -> cachePlaceholderAndApply(pending, width, height)
                 }
             }
+        }
+    }
+
+    /**
+     * Applies [cached]'s outcome to [pending] — the exact same result this node resolved to last
+     * time, without waiting on another [View.draw]/detection round-trip. Synchronous, unlike the
+     * first time an outcome is decided (via [resolveAndCache]/[cachePlaceholderAndApply], both
+     * off [TextDetector.detectText]'s async callback): this is what makes a cache hit self-correct
+     * within the *same* cycle instead of one cycle late — see [cache]'s doc for why that
+     * distinction is what actually matters here.
+     */
+    private fun applyCachedOutcome(pending: PendingPixelCapture, cached: CachedOutcome) {
+        when (cached) {
+            is CachedOutcome.Uploaded -> applyResourceId(pending, cached.resourceId)
+            is CachedOutcome.Placeholder -> replaceWithImagePrivacyPlaceholder(pending)
         }
     }
 
@@ -438,7 +490,7 @@ internal class PixelCapture(
             bitmap = bitmap,
             resourceResolverCallback = object : ResourceResolverCallback {
                 override fun onSuccess(resourceId: String) {
-                    cache[pending.nodeId] = CachedRegion(width, height, resourceId, elapsedRealtimeMs())
+                    cache[pending.nodeId] = CachedOutcome.Uploaded(width, height, resourceId, elapsedRealtimeMs())
                     applyResourceId(pending, resourceId)
                 }
 
@@ -447,6 +499,22 @@ internal class PixelCapture(
                 }
             }
         )
+    }
+
+    /**
+     * Caches the placeholder decision under [pending]'s nodeId — mirroring [resolveAndCache]'s own
+     * caching of a successful upload — before applying it to *this* cycle's wireframe. Without
+     * this, every single cycle would re-decide from scratch: [captureOrReuse] never short-circuits
+     * to a cache hit, so it always re-draws and re-runs (async) detection, and by the time that
+     * resolves, this cycle's own wireframe list has already been superseded by a newer one — the
+     * replacement lands on a discarded object and is silently lost, forever, every cycle. Caching
+     * the decision here means the *next* cycle's [captureOrReuse] finds it via [cache] and applies
+     * it through [applyCachedOutcome] synchronously instead, the same way a cached upload already
+     * did — self-correcting from the second cycle on rather than never at all.
+     */
+    private fun cachePlaceholderAndApply(pending: PendingPixelCapture, width: Int, height: Int) {
+        cache[pending.nodeId] = CachedOutcome.Placeholder(width, height, elapsedRealtimeMs())
+        replaceWithImagePrivacyPlaceholder(pending)
     }
 
     private fun applyResourceId(pending: PendingPixelCapture, resourceId: String) {
@@ -527,7 +595,18 @@ internal class PixelCapture(
         resourceId: String,
         capturedAtMs: Long = elapsedRealtimeMs()
     ) {
-        cache[nodeId] = CachedRegion(width, height, resourceId, capturedAtMs)
+        cache[nodeId] = CachedOutcome.Uploaded(width, height, resourceId, capturedAtMs)
+    }
+
+    /** Same as [seedCacheForTesting], but for the placeholder-decision branch of [cache]. */
+    @VisibleForTesting
+    internal fun seedPlaceholderCacheForTesting(
+        nodeId: Long,
+        width: Int,
+        height: Int,
+        capturedAtMs: Long = elapsedRealtimeMs()
+    ) {
+        cache[nodeId] = CachedOutcome.Placeholder(width, height, capturedAtMs)
     }
 
     // region Capture primitives
@@ -644,10 +723,27 @@ internal class PixelCapture(
     // endregion
 
     /**
-     * The cached content for one nodeId — valid as long as the region's size still matches,
-     * [View.isDirty] reads false, and [capturedAtMs] isn't older than [MAX_CACHE_AGE_MS].
+     * The last-resolved outcome for one nodeId — valid as long as the region's size still
+     * matches, [View.isDirty] reads false, and [capturedAtMs] isn't older than [MAX_CACHE_AGE_MS].
      */
-    private data class CachedRegion(val width: Int, val height: Int, val resourceId: String, val capturedAtMs: Long)
+    private sealed class CachedOutcome {
+        abstract val width: Int
+        abstract val height: Int
+        abstract val capturedAtMs: Long
+
+        data class Uploaded(
+            override val width: Int,
+            override val height: Int,
+            val resourceId: String,
+            override val capturedAtMs: Long
+        ) : CachedOutcome()
+
+        data class Placeholder(
+            override val width: Int,
+            override val height: Int,
+            override val capturedAtMs: Long
+        ) : CachedOutcome()
+    }
 
     companion object {
         /**

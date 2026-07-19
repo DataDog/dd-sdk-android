@@ -37,7 +37,8 @@ internal fun SampleSelectionScreen(
     onInteropViewClicked: () -> Unit,
     onNav3Clicked: () -> Unit,
     onBackgroundClicked: () -> Unit,
-    onPixelCaptureClicked: () -> Unit
+    onPixelCaptureClicked: () -> Unit,
+    onPrivacyMatrixClicked: () -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
@@ -96,6 +97,10 @@ internal fun SampleSelectionScreen(
             text = "PixelCapture SR Demo",
             onClick = onPixelCaptureClicked
         )
+        StyledButton(
+            text = "Privacy Matrix",
+            onClick = onPrivacyMatrixClicked
+        )
     }
 }
 
@@ -153,6 +158,9 @@ internal fun NavGraphBuilder.selectionNavigation(navController: NavHostControlle
             },
             onPixelCaptureClicked = {
                 navController.navigate(SampleScreen.PixelCapture.navigationRoute)
+            },
+            onPrivacyMatrixClicked = {
+                navController.navigate(SampleScreen.PrivacyMatrix.navigationRoute)
             }
         )
     }
@@ -197,6 +205,10 @@ internal fun NavGraphBuilder.selectionNavigation(navController: NavHostControlle
         PixelCaptureSample()
     }
 
+    composable(SampleScreen.PrivacyMatrix.navigationRoute) {
+        PrivacyMatrixSample()
+    }
+
     activity(SampleScreen.Legacy.navigationRoute) {
         activityClass = LegacyComposeActivity::class
     }
@@ -223,6 +235,7 @@ internal sealed class SampleScreen(
     object Navigation3 : SampleScreen("$COMPOSE_ROOT/nav3")
     object Background : SampleScreen("$COMPOSE_ROOT/background")
     object PixelCapture : SampleScreen("$COMPOSE_ROOT/pixel_capture")
+    object PrivacyMatrix : SampleScreen("$COMPOSE_ROOT/privacy_matrix")
 
     companion object {
         private const val COMPOSE_ROOT = "compose"
@@ -257,6 +270,8 @@ private fun PreviewSampleSelectionScreen() {
         onBackgroundClicked = {
         },
         onPixelCaptureClicked = {
+        },
+        onPrivacyMatrixClicked = {
         }
     )
 }

@@ -123,7 +123,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             resourceDataStoreManager,
             resourcesWriter,
             recordWriter,
-            MutationResolver(internalLogger),
+            MutationResolver(),
             timeProvider
         )
 
@@ -255,6 +255,10 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                         webViewMapper = webMapper,
                         viewWireframeMapper = defaultVWM,
                         pixelCaptureFallbackMapper = fallbackMapper,
+                        hiddenViewMapper = HiddenViewMapper(
+                            viewBoundsResolver = viewBoundsResolver,
+                            viewIdentifierResolver = viewIdentifierResolver
+                        ),
                         touchPrivacyManager = touchPrivacyManager,
                         imageWireframeHelper = imageWireframeHelper,
                         pixelCaptureCallback = pixelCapture,

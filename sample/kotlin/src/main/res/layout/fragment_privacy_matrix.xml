@@ -151,7 +151,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:text="MASK_LARGE_ONLY — image only, no text\nExpected: blank placeholder, no label (this view is match_parent-width, so it always exceeds the 100dp size threshold — this is a pure size check, made before any capture is attempted, so content never matters here)"
+            android:text="MASK_LARGE_ONLY — image only, no text\nExpected: &quot;Content Image&quot;-labeled placeholder (this view is match_parent-width, so it always exceeds the 100dp size threshold — this is a pure size check, made before any capture is attempted, so content never matters here)"
             android:textStyle="italic" />
 
         <com.datadog.android.sample.sessionreplay.PrivacyMatrixImageView
@@ -164,7 +164,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="MASK_LARGE_ONLY — image with a text caption\nExpected: blank placeholder, no label — identical outcome to the no-text case above, since this gate never looks at content"
+            android:text="MASK_LARGE_ONLY — image with a text caption\nExpected: &quot;Content Image&quot;-labeled placeholder — identical outcome to the no-text case above, since this gate never looks at content"
             android:textStyle="italic" />
 
         <com.datadog.android.sample.sessionreplay.PrivacyMatrixImageView

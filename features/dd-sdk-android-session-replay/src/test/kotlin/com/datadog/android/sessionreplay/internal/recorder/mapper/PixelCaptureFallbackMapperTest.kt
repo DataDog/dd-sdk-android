@@ -11,7 +11,9 @@ import android.view.View
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.recorder.PixelCapture
 import com.datadog.android.sessionreplay.internal.recorder.aMockView
+import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.PixelCaptureCallback
 import com.datadog.android.sessionreplay.recorder.WireframeSlot
@@ -30,6 +32,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -49,6 +52,11 @@ internal class PixelCaptureFallbackMapperTest : LegacyBaseWireframeMapperTest() 
 
     @Mock
     lateinit var mockPixelCaptureCallback: PixelCaptureCallback
+
+    /** A distinct mock from [mockPixelCaptureCallback] — [PixelCapture] is the concrete type the
+     * synchronous placeholder-decision fast path checks for via `as?`; see that test's doc. */
+    @Mock
+    lateinit var mockPixelCapture: PixelCapture
 
     private lateinit var fakeFallbackWireframes: List<MobileSegment.Wireframe>
 
@@ -241,9 +249,13 @@ internal class PixelCaptureFallbackMapperTest : LegacyBaseWireframeMapperTest() 
     }
 
     @Test
-    fun `M delegate to fallbackMapper W map() {imagePrivacy is MASK_LARGE_ONLY, view too large}`() {
+    fun `M return a placeholder W map() {imagePrivacy is MASK_LARGE_ONLY, view too large}`() {
         // Given — the view's full bounds (what's actually captured/uploaded) are PII-sized,
-        // regardless of how much of it is currently visible.
+        // regardless of how much of it is currently visible. Rejected by PixelCaptureEligibility,
+        // but that must not fall through to fallbackMapper the way any OTHER rejection reason
+        // does — a custom, unmapped view's onDraw content is invisible to it, so it would return
+        // nothing at all (blank space) rather than a real, labeled placeholder (mirrors
+        // DefaultImageWireframeHelper's own MASK_LARGE_ONLY+large+contextual placeholder).
         fakeMappingContext = fakeMappingContext.copy(imagePrivacy = ImagePrivacy.MASK_LARGE_ONLY)
         val fakeLargeBounds = fakeGlobalBounds.copy(
             width = com.datadog.android.sessionreplay.IMAGE_DIMEN_CONSIDERED_PII_IN_DP.toLong(),
@@ -252,16 +264,20 @@ internal class PixelCaptureFallbackMapperTest : LegacyBaseWireframeMapperTest() 
         whenever(
             mockViewBoundsResolver.resolveViewGlobalBounds(mockView, fakeMappingContext.systemInformation.screenDensity)
         ).thenReturn(fakeLargeBounds)
-        whenever(
-            mockFallbackMapper.map(mockView, fakeMappingContext, mockAsyncJobStatusCallback, mockInternalLogger)
-        ).thenReturn(fakeFallbackWireframes)
 
         // When
         val result = testedMapper.map(mockView, fakeMappingContext, mockAsyncJobStatusCallback, mockInternalLogger)
 
         // Then
-        assertThat(result).isEqualTo(fakeFallbackWireframes)
+        assertThat(result).hasSize(1)
+        val wireframe = result.first() as MobileSegment.Wireframe.PlaceholderWireframe
+        assertThat(wireframe.x).isEqualTo(fakeLargeBounds.x)
+        assertThat(wireframe.y).isEqualTo(fakeLargeBounds.y)
+        assertThat(wireframe.width).isEqualTo(fakeLargeBounds.width)
+        assertThat(wireframe.height).isEqualTo(fakeLargeBounds.height)
+        assertThat(wireframe.label).isEqualTo(DefaultImageWireframeHelper.MASK_CONTEXTUAL_CONTENT_LABEL)
         verifyNoInteractions(mockPixelCaptureCallback)
+        verifyNoInteractions(mockFallbackMapper)
     }
 
     @Test
@@ -395,5 +411,46 @@ internal class PixelCaptureFallbackMapperTest : LegacyBaseWireframeMapperTest() 
 
         // Then — the slot writes back into the exact same list the mapper returned
         assertThat(result).containsExactly(placeholder)
+    }
+
+    @Test
+    fun `M return a placeholder directly W map() {a fresh placeholder decision is already cached}`() {
+        // Given — see PixelCapture.hasFreshPlaceholderDecision's doc: a decision from a previous
+        // cycle can only ever reach CompositionTreeBuilder's output if it's emitted synchronously
+        // here, rather than registered as a pending capture the way every other outcome is
+        fakeMappingContext = fakeMappingContext.copy(pixelCaptureCallback = mockPixelCapture)
+        val expectedIsolationClipRect = Rect(0, 0, mockView.width, mockView.height)
+        val isViewDirty = mockView.isDirty
+        whenever(
+            mockPixelCapture.hasFreshPlaceholderDecision(
+                any(),
+                eq(expectedIsolationClipRect.width()),
+                eq(expectedIsolationClipRect.height()),
+                eq(isViewDirty)
+            )
+        ).thenReturn(true)
+
+        // When
+        val result = testedMapper.map(mockView, fakeMappingContext, mockAsyncJobStatusCallback, mockInternalLogger)
+
+        // Then
+        assertThat(result).hasSize(1)
+        val wireframe = result.first() as MobileSegment.Wireframe.PlaceholderWireframe
+        assertThat(wireframe.x).isEqualTo(fakeGlobalBounds.x)
+        assertThat(wireframe.y).isEqualTo(fakeGlobalBounds.y)
+        assertThat(wireframe.width).isEqualTo(fakeGlobalBounds.width)
+        assertThat(wireframe.height).isEqualTo(fakeGlobalBounds.height)
+        assertThat(wireframe.label).isEqualTo(DefaultImageWireframeHelper.MASK_ALL_CONTENT_LABEL)
+        verify(mockPixelCapture, never()).registerPendingCapture(
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any()
+        )
     }
 }

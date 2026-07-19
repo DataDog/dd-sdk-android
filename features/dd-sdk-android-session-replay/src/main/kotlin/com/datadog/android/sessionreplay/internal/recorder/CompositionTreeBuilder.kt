@@ -20,6 +20,7 @@ import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
+import com.datadog.android.sessionreplay.internal.recorder.mapper.HiddenViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.PixelCaptureFallbackMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.QueueStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WebViewWireframeMapper
@@ -94,6 +95,15 @@ import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
  *   see [com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper] — it
  *   never reaches descendants).
  *
+ * Per-view privacy overrides (`View.setSessionReplayImagePrivacy`/`setSessionReplayTextAndInputPrivacy`/
+ * `setSessionReplayHidden`/`setSessionReplayTouchPrivacy`) are resolved fresh for every view via
+ * [resolveViewPrivacyOverrides]/[isViewHiddenForSessionReplay]/[resolveTouchPrivacyOverride] in
+ * [childReferences] (and once per root window in [build]) — this pipeline used to build one
+ * [MappingContext] from the app-wide config and reuse it unchanged for the whole tree, silently
+ * ignoring every per-view override for as long as pixel capture was enabled; see those functions'
+ * docs for why this is shared with [SnapshotProducer]/[TreeViewTraversal] rather than a second,
+ * separately-maintained copy.
+ *
  * Mirrors iOS's `CompositionTreeBuilder` (see
  * https://github.com/DataDog/dd-sdk-ios/pull/3014): recursively walks the view hierarchy
  * directly, producing both the [MobileSegment.CompositionTree] and the flat
@@ -109,6 +119,7 @@ internal class CompositionTreeBuilder(
     private val webViewMapper: WebViewWireframeMapper,
     private val viewWireframeMapper: WireframeMapper<View>,
     private val pixelCaptureFallbackMapper: PixelCaptureFallbackMapper,
+    private val hiddenViewMapper: HiddenViewMapper,
     private val touchPrivacyManager: TouchPrivacyManager,
     private val imageWireframeHelper: ImageWireframeHelper,
     private val pixelCaptureCallback: PixelCaptureCallback? = null,
@@ -157,7 +168,12 @@ internal class CompositionTreeBuilder(
 
         val visibleRootViews = rootViews.filterNot { viewUtilsInternal.isNotVisible(it) }
         val windowLayers = visibleRootViews.mapNotNull {
-            buildLayer(it, mappingContext, asyncJobStatusCallback, internalLogger)
+            // Resolved per root window for the same reason childReferences resolves it per
+            // child — a root is vanishingly unlikely to carry its own override in practice, but
+            // this keeps every view in the tree, root or not, subject to the same rule.
+            resolveTouchPrivacyOverride(it, mappingContext, internalLogger)
+            val localMappingContext = resolveViewPrivacyOverrides(it, mappingContext, internalLogger)
+            buildLayer(it, localMappingContext, asyncJobStatusCallback, internalLogger)
         }
 
         val rootLayer = when (windowLayers.size) {
@@ -264,7 +280,16 @@ internal class CompositionTreeBuilder(
     }
 
     /**
-     * Resolves how [view] should be referenced from its parent's children list:
+     * Resolves how [view] should be referenced from its parent's children list. [mappingContext]
+     * is resolved for [view]'s own privacy tag overrides first — see [resolveViewPrivacyOverrides] —
+     * before any of the checks below, and that resolved context (not the one passed in) is what
+     * every branch actually uses. [resolveTouchPrivacyOverride] runs unconditionally, before any
+     * of those checks — it registers a screen-space area in a separate, shared accumulator rather
+     * than affecting how [view] itself gets mapped, so it applies the same way regardless of
+     * which branch below [view] ends up taking:
+     * - [isViewHiddenForSessionReplay] — replaced with a single "Hidden"-labeled placeholder via
+     *   [hiddenViewMapper], its children never visited at all, mirroring [TreeViewTraversal]'s
+     *   own handling of the same tag in the default pipeline.
      * - A container (has its own children) — build its own layer and reference it by id.
      * - A Compose host — decompose it via [hostViewDecomposer] into its own layer, if a
      *   decomposer is wired in and can decompose it (see [buildComposeLayer]).
@@ -281,6 +306,22 @@ internal class CompositionTreeBuilder(
         asyncJobStatusCallback: AsyncJobStatusCallback,
         internalLogger: InternalLogger
     ): List<MobileSegment.CompositionLayerChild> {
+        resolveTouchPrivacyOverride(view, mappingContext, internalLogger)
+        val localMappingContext = resolveViewPrivacyOverrides(view, mappingContext, internalLogger)
+
+        if (isViewHiddenForSessionReplay(view)) {
+            val hiddenWireframes = hiddenViewMapper.map(
+                view,
+                localMappingContext,
+                asyncJobStatusCallback,
+                internalLogger
+            )
+            wireframes.addAll(hiddenWireframes)
+            return hiddenWireframes.map {
+                MobileSegment.CompositionLayerChild(id = it.id(), type = WIREFRAME_CHILD_TYPE)
+            }
+        }
+
         if (view is ViewGroup &&
             view.childCount > 0 &&
             !isComposeHostView(view) &&
@@ -288,7 +329,7 @@ internal class CompositionTreeBuilder(
             !isMaterialTextInputLayout(view) &&
             !isNavigationBarItemView(view)
         ) {
-            val layer = buildLayer(view, mappingContext, asyncJobStatusCallback, internalLogger)
+            val layer = buildLayer(view, localMappingContext, asyncJobStatusCallback, internalLogger)
             if (layer != null) {
                 layers.add(layer)
                 return listOf(MobileSegment.CompositionLayerChild(id = layer.id, type = LAYER_CHILD_TYPE))
@@ -296,14 +337,14 @@ internal class CompositionTreeBuilder(
         }
 
         if (isComposeHostView(view)) {
-            val composeLayer = buildComposeLayer(view, mappingContext, asyncJobStatusCallback, internalLogger)
+            val composeLayer = buildComposeLayer(view, localMappingContext, asyncJobStatusCallback, internalLogger)
             if (composeLayer != null) {
                 layers.add(composeLayer)
                 return listOf(MobileSegment.CompositionLayerChild(id = composeLayer.id, type = LAYER_CHILD_TYPE))
             }
         }
 
-        val leafWireframes = mapLeafView(view, mappingContext, asyncJobStatusCallback, internalLogger)
+        val leafWireframes = mapLeafView(view, localMappingContext, asyncJobStatusCallback, internalLogger)
         wireframes.addAll(leafWireframes)
         return leafWireframes.map {
             MobileSegment.CompositionLayerChild(id = it.id(), type = WIREFRAME_CHILD_TYPE)

@@ -10,6 +10,9 @@ import android.graphics.Rect
 import android.view.View
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.internal.recorder.PixelCapture
+import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.PixelCaptureEligibility
@@ -105,6 +108,7 @@ internal class PixelCaptureFallbackMapper(
 
         val density = mappingContext.systemInformation.screenDensity
         val globalBounds = viewBoundsResolver.resolveViewGlobalBounds(view, density)
+        val wireframeClip = resolveWireframeClip(view, visibleRect, density)
 
         if (!PixelCaptureEligibility.isEligible(
                 textAndInputPrivacy = mappingContext.textAndInputPrivacy,
@@ -112,6 +116,29 @@ internal class PixelCaptureFallbackMapper(
                 boundsDp = globalBounds
             )
         ) {
+            // isEligible only ever fails for one of two reasons (see its doc): textAndInputPrivacy
+            // stricter than baseline, or imagePrivacy == MASK_LARGE_ONLY with a large region. The
+            // first says nothing about whether this view even holds image content at all — the
+            // ordinary fallback (whatever the default mapper does for it) is correct there. The
+            // second can be inferred here without re-deriving the size check: if
+            // textAndInputPrivacy alone would have passed, the size gate must be what rejected it
+            // — mirroring DefaultImageWireframeHelper's own MASK_LARGE_ONLY placeholder for a
+            // large contextual image, instead of silently falling through to a plain mapper that
+            // has no idea this view draws anything (a custom View's onDraw content is invisible
+            // to it) and returns nothing at all — blank space, not a placeholder.
+            if (mappingContext.textAndInputPrivacy == TextAndInputPrivacy.MASK_SENSITIVE_INPUTS) {
+                return listOf(
+                    MobileSegment.Wireframe.PlaceholderWireframe(
+                        id = resolveViewId(view),
+                        x = globalBounds.x,
+                        y = globalBounds.y,
+                        width = globalBounds.width,
+                        height = globalBounds.height,
+                        label = DefaultImageWireframeHelper.MASK_CONTEXTUAL_CONTENT_LABEL,
+                        clip = wireframeClip
+                    )
+                )
+            }
             return fallbackMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
         }
 
@@ -121,7 +148,29 @@ internal class PixelCaptureFallbackMapper(
         // this size regardless of how much is currently scrolled into view (see the class doc).
         val isolationClipRect = Rect(0, 0, view.width, view.height)
 
-        val wireframeClip = resolveWireframeClip(view, visibleRect, density)
+        // See PixelCapture.hasFreshPlaceholderDecision's doc: a placeholder decision from a
+        // previous cycle can only ever reach CompositionTreeBuilder's output if it's emitted
+        // directly here, synchronously — registering a pending capture and letting it swap the
+        // stub later never actually lands for this pipeline.
+        if ((pixelCaptureCallback as? PixelCapture)?.hasFreshPlaceholderDecision(
+                nodeId,
+                isolationClipRect.width(),
+                isolationClipRect.height(),
+                view.isDirty
+            ) == true
+        ) {
+            return listOf(
+                MobileSegment.Wireframe.PlaceholderWireframe(
+                    id = nodeId,
+                    x = globalBounds.x,
+                    y = globalBounds.y,
+                    width = globalBounds.width,
+                    height = globalBounds.height,
+                    label = DefaultImageWireframeHelper.MASK_ALL_CONTENT_LABEL,
+                    clip = wireframeClip
+                )
+            )
+        }
 
         val imageWireframe = MobileSegment.Wireframe.ImageWireframe(
             id = nodeId,

@@ -6,7 +6,6 @@
 
 package com.datadog.android.sessionreplay.internal.processor
 
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import fr.xgouchet.elmyr.Forge
@@ -19,16 +18,10 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
-import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 import java.util.LinkedList
-import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -40,12 +33,9 @@ internal class MutationResolverTest {
 
     private lateinit var testedMutationResolver: MutationResolver
 
-    @Mock
-    lateinit var mockInternalLogger: InternalLogger
-
     @BeforeEach
     fun `set up`() {
-        testedMutationResolver = MutationResolver(mockInternalLogger)
+        testedMutationResolver = MutationResolver()
     }
 
     // region adds mutations
@@ -730,40 +720,30 @@ internal class MutationResolverTest {
 
     @ParameterizedTest
     @MethodSource("typeMutationData")
-    fun `M do nothing W resolveMutations {wrong type}`(
+    fun `M emit remove and add W resolveMutations {wireframe type changed}`(
         mutationTestData: MutationTestData
     ) {
+        // Given — same id as before, but a different concrete Wireframe subtype: this is exactly
+        // what PixelCapture.replaceWithImagePrivacyPlaceholder/timeoutPending produce (an
+        // ImageWireframe stub swapped for a PlaceholderWireframe under the same id). A type
+        // change can't be expressed as a WireframeUpdateMutation the way a permanentId change
+        // can't either — see recordChangedWireframeMutations's doc.
+        val expectedRemoves = mutationTestData.prevSnapshot.map { MobileSegment.Remove(it.id()) }
+        val expectedAdds = mutationTestData.newSnapshot.mapIndexed { index, wireframe ->
+            val previousId = if (index > 0) mutationTestData.newSnapshot[index - 1].id() else null
+            MobileSegment.Add(previousId = previousId, wireframe = wireframe)
+        }
+
         // When
         val mutations = testedMutationResolver.resolveMutations(
             mutationTestData.prevSnapshot,
             mutationTestData.newSnapshot
         )
 
-        // Then
-        assertThat(mutations?.adds).isNullOrEmpty()
-        assertThat(mutations?.removes).isNullOrEmpty()
+        // Then — delivered as remove+add, never an in-place update
         assertThat(mutations?.updates).isNullOrEmpty()
-        val captor = argumentCaptor<() -> String> {
-            verify(mockInternalLogger, times(mutationTestData.prevSnapshot.size)).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.MAINTAINER),
-                capture(),
-                eq(null),
-                eq(false),
-                eq(null)
-            )
-        }
-        mutationTestData.prevSnapshot.forEachIndexed { index, wireframe ->
-            assertThat(captor.allValues[index].invoke())
-                .isEqualTo(
-                    MutationResolver.MISS_MATCHING_TYPES_IN_SNAPSHOTS_ERROR_MESSAGE_FORMAT
-                        .format(
-                            Locale.ENGLISH,
-                            wireframe.javaClass.name,
-                            mutationTestData.newSnapshot[index].javaClass.name
-                        )
-                )
-        }
+        assertThat(mutations?.removes).isEqualTo(expectedRemoves)
+        assertThat(mutations?.adds).isEqualTo(expectedAdds)
     }
 
     // endregion

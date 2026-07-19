@@ -6,12 +6,10 @@
 
 package com.datadog.android.sessionreplay.internal.processor
 
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.model.MobileSegment
 import java.util.LinkedList
-import java.util.Locale
 
-internal class MutationResolver(private val internalLogger: InternalLogger) {
+internal class MutationResolver {
 
     /**
      * Computes a diff between two arrays.
@@ -353,10 +351,16 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
         removes: LinkedList<MobileSegment.Remove>,
         updates: LinkedList<MobileSegment.WireframeUpdateMutation>
     ) {
-        if (newElement.permanentId() != oldElement.permanentId()) {
-            // WireframeUpdateMutation has no permanentId field, so a changed permanentId
-            // cannot be expressed as an in-place update. Fall back to remove+add to deliver
-            // the full wireframe with the new identifier.
+        val changedType = oldElement.javaClass != newElement.javaClass
+        if (newElement.permanentId() != oldElement.permanentId() || changedType) {
+            // WireframeUpdateMutation has no permanentId field, so a changed permanentId cannot
+            // be expressed as an in-place update. A changed concrete Wireframe subtype (e.g. an
+            // id going from ImageWireframe to PlaceholderWireframe — see PixelCapture's
+            // replaceWithImagePrivacyPlaceholder/timeoutPending) can't be expressed as one
+            // either — WireframeUpdateMutation is itself one fixed subtype per wireframe type, so
+            // there is no single mutation shape that could describe "this id is now a different
+            // kind of wireframe." Either case falls back to remove+add to deliver the full
+            // wireframe under its new identifier/type.
             removes.add(MobileSegment.Remove(newElement.id()))
             adds.add(MobileSegment.Add(previousId = previousId, newElement))
         } else {
@@ -365,6 +369,12 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
         }
     }
 
+    /**
+     * Only ever called from [recordChangedWireframeMutations] once it's already established
+     * [prevWireframe] and [currentWireframe] are the same concrete [MobileSegment.Wireframe]
+     * subtype (a type change is intercepted earlier and delivered as remove+add instead) — so
+     * the cast in each branch below is always safe.
+     */
     private fun resolveUpdateMutation(
         currentWireframe: MobileSegment.Wireframe,
         prevWireframe: MobileSegment.Wireframe
@@ -372,49 +382,31 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
         return if (prevWireframe == currentWireframe) {
             null
         } else {
-            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-            val isSameClass = prevWireframe.javaClass.isAssignableFrom(currentWireframe.javaClass)
-            if (!isSameClass) {
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    InternalLogger.Target.MAINTAINER,
-                    {
-                        MISS_MATCHING_TYPES_IN_SNAPSHOTS_ERROR_MESSAGE_FORMAT
-                            .format(
-                                Locale.ENGLISH,
-                                prevWireframe.javaClass.name,
-                                currentWireframe.javaClass.name
-                            )
-                    }
+            when (prevWireframe) {
+                is MobileSegment.Wireframe.TextWireframe -> resolveTextMutation(
+                    prevWireframe,
+                    currentWireframe as MobileSegment.Wireframe.TextWireframe
                 )
-                null
-            } else {
-                when (prevWireframe) {
-                    is MobileSegment.Wireframe.TextWireframe -> resolveTextMutation(
-                        prevWireframe,
-                        currentWireframe as MobileSegment.Wireframe.TextWireframe
-                    )
 
-                    is MobileSegment.Wireframe.ShapeWireframe -> resolveShapeMutation(
-                        prevWireframe,
-                        currentWireframe as MobileSegment.Wireframe.ShapeWireframe
-                    )
+                is MobileSegment.Wireframe.ShapeWireframe -> resolveShapeMutation(
+                    prevWireframe,
+                    currentWireframe as MobileSegment.Wireframe.ShapeWireframe
+                )
 
-                    is MobileSegment.Wireframe.ImageWireframe -> resolveImageMutation(
-                        prevWireframe,
-                        currentWireframe as MobileSegment.Wireframe.ImageWireframe
-                    )
+                is MobileSegment.Wireframe.ImageWireframe -> resolveImageMutation(
+                    prevWireframe,
+                    currentWireframe as MobileSegment.Wireframe.ImageWireframe
+                )
 
-                    is MobileSegment.Wireframe.PlaceholderWireframe -> resolvePlaceholderMutation(
-                        prevWireframe,
-                        currentWireframe as MobileSegment.Wireframe.PlaceholderWireframe
-                    )
+                is MobileSegment.Wireframe.PlaceholderWireframe -> resolvePlaceholderMutation(
+                    prevWireframe,
+                    currentWireframe as MobileSegment.Wireframe.PlaceholderWireframe
+                )
 
-                    is MobileSegment.Wireframe.WebviewWireframe -> resolveWebViewWireframeMutation(
-                        prevWireframe,
-                        currentWireframe as MobileSegment.Wireframe.WebviewWireframe
-                    )
-                }
+                is MobileSegment.Wireframe.WebviewWireframe -> resolveWebViewWireframeMutation(
+                    prevWireframe,
+                    currentWireframe as MobileSegment.Wireframe.WebviewWireframe
+                )
             }
         }
     }
@@ -497,11 +489,5 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
         // Index of element in other array (in `oldArray` for `na: [Entry]`
         // and in `newArray` for `oa: [Entry]`).
         class Index(val index: Int) : Entry()
-    }
-
-    companion object {
-        const val MISS_MATCHING_TYPES_IN_SNAPSHOTS_ERROR_MESSAGE_FORMAT =
-            "SR MutationResolver: wireframe of type [%1s] is " +
-                "not matching the wireframe of type [%2s]"
     }
 }

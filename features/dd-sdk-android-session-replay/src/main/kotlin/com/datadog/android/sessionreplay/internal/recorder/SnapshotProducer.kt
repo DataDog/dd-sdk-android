@@ -12,7 +12,6 @@ import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.utils.isValidTapTarget
 import com.datadog.android.sessionreplay.ImagePrivacy
-import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
@@ -170,47 +169,10 @@ internal class SnapshotProducer(
         }
     }
 
-    private fun resolvePrivacyOverrides(view: View, mappingContext: MappingContext): MappingContext {
-        val imagePrivacy =
-            try {
-                val privacy = view.getTag(R.id.datadog_image_privacy) as? String
-                if (privacy == null) {
-                    mappingContext.imagePrivacy
-                } else {
-                    ImagePrivacy.valueOf(privacy)
-                }
-            } catch (e: IllegalArgumentException) {
-                logInvalidPrivacyLevelError(e)
-                mappingContext.imagePrivacy
-            }
-
-        val textAndInputPrivacy =
-            try {
-                val privacy = view.getTag(R.id.datadog_text_and_input_privacy) as? String
-                if (privacy == null) {
-                    mappingContext.textAndInputPrivacy
-                } else {
-                    TextAndInputPrivacy.valueOf(privacy)
-                }
-            } catch (e: IllegalArgumentException) {
-                logInvalidPrivacyLevelError(e)
-                mappingContext.textAndInputPrivacy
-            }
-
-        return mappingContext.copy(
-            imagePrivacy = imagePrivacy,
-            textAndInputPrivacy = textAndInputPrivacy
-        )
-    }
-
-    private fun logInvalidPrivacyLevelError(e: Exception) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            { INVALID_PRIVACY_LEVEL_ERROR },
-            e
-        )
-    }
+    // Shared with CompositionTreeBuilder — see resolveViewPrivacyOverrides's doc for why this
+    // isn't duplicated locally anymore.
+    private fun resolvePrivacyOverrides(view: View, mappingContext: MappingContext): MappingContext =
+        resolveViewPrivacyOverrides(view, mappingContext, internalLogger)
 
     internal companion object {
         internal const val INVALID_PRIVACY_LEVEL_ERROR = "Invalid privacy level"

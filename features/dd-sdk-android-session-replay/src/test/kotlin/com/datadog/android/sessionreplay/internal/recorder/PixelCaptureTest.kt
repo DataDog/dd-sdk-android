@@ -559,4 +559,111 @@ internal class PixelCaptureTest {
         verify(mockAsyncJobStatusCallback).jobStarted()
         verifyNoMoreInteractions(mockAsyncJobStatusCallback)
     }
+
+    @Test
+    fun `M return true W hasFreshPlaceholderDecision() {fresh placeholder cached at this size}`(forge: Forge) {
+        // Given — PixelCaptureFallbackMapper's synchronous fast path (see that method's doc for
+        // why this must be checked before the mapper ever emits an ImageWireframe stub)
+        val nodeId = forge.aPositiveInt().toLong()
+        testedPixelCapture.seedPlaceholderCacheForTesting(
+            nodeId = nodeId,
+            width = fakeIsolationClipRect.width(),
+            height = fakeIsolationClipRect.height()
+        )
+
+        // When
+        val result = testedPixelCapture.hasFreshPlaceholderDecision(
+            nodeId,
+            fakeIsolationClipRect.width(),
+            fakeIsolationClipRect.height(),
+            isDirty = false
+        )
+
+        // Then
+        assertThat(result).isTrue()
+    }
+
+    @Test
+    fun `M return false W hasFreshPlaceholderDecision() {no cache entry}`(forge: Forge) {
+        // When
+        val result = testedPixelCapture.hasFreshPlaceholderDecision(
+            forge.aPositiveInt().toLong(),
+            fakeIsolationClipRect.width(),
+            fakeIsolationClipRect.height(),
+            isDirty = false
+        )
+
+        // Then
+        assertThat(result).isFalse()
+    }
+
+    @Test
+    fun `M return false W hasFreshPlaceholderDecision() {region resized since the cached decision}`(forge: Forge) {
+        // Given
+        val nodeId = forge.aPositiveInt().toLong()
+        testedPixelCapture.seedPlaceholderCacheForTesting(
+            nodeId = nodeId,
+            width = fakeIsolationClipRect.width() + 1,
+            height = fakeIsolationClipRect.height()
+        )
+
+        // When
+        val result = testedPixelCapture.hasFreshPlaceholderDecision(
+            nodeId,
+            fakeIsolationClipRect.width(),
+            fakeIsolationClipRect.height(),
+            isDirty = false
+        )
+
+        // Then
+        assertThat(result).isFalse()
+    }
+
+    @Test
+    fun `M return false W hasFreshPlaceholderDecision() {decision older than MAX_CACHE_AGE_MS}`(forge: Forge) {
+        // Given
+        val nodeId = forge.aPositiveInt().toLong()
+        testedPixelCapture.seedPlaceholderCacheForTesting(
+            nodeId = nodeId,
+            width = fakeIsolationClipRect.width(),
+            height = fakeIsolationClipRect.height(),
+            capturedAtMs = fakeElapsedRealtimeMs
+        )
+        fakeElapsedRealtimeMs += PixelCapture.MAX_CACHE_AGE_MS
+
+        // When
+        val result = testedPixelCapture.hasFreshPlaceholderDecision(
+            nodeId,
+            fakeIsolationClipRect.width(),
+            fakeIsolationClipRect.height(),
+            isDirty = false
+        )
+
+        // Then
+        assertThat(result).isFalse()
+    }
+
+    @Test
+    fun `M return false W hasFreshPlaceholderDecision() {dirty, past MIN_REDRAW_INTERVAL_MS}`(forge: Forge) {
+        // Given — the shorter trust window applies once the view reports being dirty again
+        val nodeId = forge.aPositiveInt().toLong()
+        testedPixelCapture.seedPlaceholderCacheForTesting(
+            nodeId = nodeId,
+            width = fakeIsolationClipRect.width(),
+            height = fakeIsolationClipRect.height(),
+            capturedAtMs = fakeElapsedRealtimeMs
+        )
+        fakeElapsedRealtimeMs += PixelCapture.MIN_REDRAW_INTERVAL_MS
+
+        // When
+        val result = testedPixelCapture.hasFreshPlaceholderDecision(
+            nodeId,
+            fakeIsolationClipRect.width(),
+            fakeIsolationClipRect.height(),
+            isDirty = true
+        )
+
+        // Then
+        assertThat(result).isFalse()
+    }
 }

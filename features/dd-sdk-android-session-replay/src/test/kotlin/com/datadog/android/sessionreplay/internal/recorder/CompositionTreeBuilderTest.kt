@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder
 
 import android.content.Context
+import android.graphics.Rect
 import android.view.View
 import android.webkit.WebView
 import android.widget.FrameLayout
@@ -16,10 +17,13 @@ import android.widget.TextView
 import androidx.compose.ui.platform.AndroidComposeView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.ImagePrivacy
+import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
+import com.datadog.android.sessionreplay.internal.recorder.mapper.HiddenViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.PixelCaptureFallbackMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WebViewWireframeMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -82,6 +86,9 @@ internal class CompositionTreeBuilderTest {
     lateinit var mockPixelCaptureFallbackMapper: PixelCaptureFallbackMapper
 
     @Mock
+    lateinit var mockHiddenViewMapper: HiddenViewMapper
+
+    @Mock
     lateinit var mockTouchPrivacyManager: TouchPrivacyManager
 
     @Mock
@@ -126,6 +133,7 @@ internal class CompositionTreeBuilderTest {
             webViewMapper = mockWebViewMapper,
             viewWireframeMapper = mockViewWireframeMapper,
             pixelCaptureFallbackMapper = mockPixelCaptureFallbackMapper,
+            hiddenViewMapper = mockHiddenViewMapper,
             touchPrivacyManager = mockTouchPrivacyManager,
             imageWireframeHelper = mockImageWireframeHelper,
             viewUtilsInternal = mockViewUtilsInternal
@@ -505,5 +513,117 @@ internal class CompositionTreeBuilderTest {
         // becomes the root directly, with no synthetic wrapper
         val compositionTree = output.compositionTree!!
         assertThat(compositionTree.root.id).isNotEqualTo(CompositionTreeBuilder.SYNTHETIC_ROOT_LAYER_ID)
+    }
+
+    @Test
+    fun `M replace with a placeholder and skip its children W build() {view is tagged hidden}`(forge: Forge) {
+        // Given — a container tagged setSessionReplayHidden(true), with its own child, so this
+        // also proves the child is never visited: without the hidden check this container would
+        // otherwise correctly recurse into it (see the nested-layer test above)
+        val mockGrandchild = forge.aMockTextView()
+        val mockHiddenContainer = forge.aMockView<LinearLayout>()
+        whenever(mockHiddenContainer.getTag(R.id.datadog_hidden)).thenReturn(true)
+        whenever(mockHiddenContainer.childCount).thenReturn(1)
+        whenever(mockHiddenContainer.getChildAt(0)).thenReturn(mockGrandchild)
+
+        val fakeHiddenWireframes: List<MobileSegment.Wireframe> =
+            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.PlaceholderWireframe>() }
+        whenever(
+            mockHiddenViewMapper.map(eq(mockHiddenContainer), any(), any(), eq(mockInternalLogger))
+        ).thenReturn(fakeHiddenWireframes)
+
+        val mockRoot = forge.aMockView<FrameLayout>()
+        whenever(mockRoot.childCount).thenReturn(1)
+        whenever(mockRoot.getChildAt(0)).thenReturn(mockHiddenContainer)
+
+        // When
+        val output = buildOutput(mockRoot)
+
+        // Then — the placeholder is the only wireframe produced, referenced directly from root
+        assertThat(output.wireframes).containsExactlyElementsOf(fakeHiddenWireframes)
+        verifyNoInteractions(mockTextViewMapper)
+        val rootChildren = output.compositionTree!!.root.children
+        assertThat(rootChildren).hasSize(1)
+        assertThat(rootChildren.single().type).isEqualTo(MobileSegment.Type.WIREFRAME)
+    }
+
+    @Test
+    fun `M apply the view's own tag override W build() {leaf has an ImagePrivacy override}`(forge: Forge) {
+        // Given — buildOutput() configures the app-wide default as ImagePrivacy.MASK_NONE; this
+        // child carries its own override, same tag View.setSessionReplayImagePrivacy sets
+        val mockChild = forge.aMockView<ImageView>()
+        whenever(mockChild.getTag(R.id.datadog_image_privacy)).thenReturn(ImagePrivacy.MASK_ALL.toString())
+
+        var capturedMappingContext: MappingContext? = null
+        whenever(
+            mockPixelCaptureFallbackMapper.map(eq(mockChild), any(), any(), eq(mockInternalLogger))
+        ).thenAnswer {
+            capturedMappingContext = it.getArgument(1)
+            emptyList<MobileSegment.Wireframe>()
+        }
+
+        val mockRoot = forge.aMockView<FrameLayout>()
+        whenever(mockRoot.childCount).thenReturn(1)
+        whenever(mockRoot.getChildAt(0)).thenReturn(mockChild)
+
+        // When
+        buildOutput(mockRoot)
+
+        // Then — the child's own tag override wins over the inherited app-wide default
+        assertThat(capturedMappingContext!!.imagePrivacy).isEqualTo(ImagePrivacy.MASK_ALL)
+    }
+
+    @Test
+    fun `M register a touch override area W build() {leaf has a TouchPrivacy tag}`(forge: Forge) {
+        // Given — same tag View.setSessionReplayTouchPrivacy sets
+        val mockChild = forge.aMockView<ImageView>()
+        whenever(mockChild.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.HIDE.toString())
+        whenever(
+            mockPixelCaptureFallbackMapper.map(eq(mockChild), any(), any(), eq(mockInternalLogger))
+        ).thenReturn(emptyList())
+
+        val mockRoot = forge.aMockView<FrameLayout>()
+        whenever(mockRoot.childCount).thenReturn(1)
+        whenever(mockRoot.getChildAt(0)).thenReturn(mockChild)
+
+        val location = IntArray(2)
+        mockChild.getLocationOnScreen(location)
+        val expectedArea = Rect(
+            location[0] - mockChild.paddingLeft,
+            location[1] - mockChild.paddingTop,
+            location[0] + mockChild.width + mockChild.paddingRight,
+            location[1] + mockChild.height + mockChild.paddingBottom
+        )
+
+        // When
+        buildOutput(mockRoot)
+
+        // Then — registered in the shared TouchPrivacyManager, the same mechanism the default
+        // (non-pixel-capture) pipeline's TreeViewTraversal already uses for the same tag
+        verify(mockTouchPrivacyManager).addTouchOverrideArea(expectedArea, TouchPrivacy.HIDE)
+    }
+
+    @Test
+    fun `M register a touch override area W build() {hidden view still carries its own tag}`(forge: Forge) {
+        // Given — touch privacy is orthogonal to the hidden check: a hidden view's own touch
+        // override must still be registered even though its mapped content is replaced with a
+        // placeholder (mirrors TreeViewTraversal, which reads the touch tag unconditionally
+        // before ever checking isHidden)
+        val mockHiddenChild = forge.aMockView<LinearLayout>()
+        whenever(mockHiddenChild.getTag(R.id.datadog_hidden)).thenReturn(true)
+        whenever(mockHiddenChild.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.SHOW.toString())
+        whenever(
+            mockHiddenViewMapper.map(eq(mockHiddenChild), any(), any(), eq(mockInternalLogger))
+        ).thenReturn(emptyList())
+
+        val mockRoot = forge.aMockView<FrameLayout>()
+        whenever(mockRoot.childCount).thenReturn(1)
+        whenever(mockRoot.getChildAt(0)).thenReturn(mockHiddenChild)
+
+        // When
+        buildOutput(mockRoot)
+
+        // Then
+        verify(mockTouchPrivacyManager).addTouchOverrideArea(any(), eq(TouchPrivacy.SHOW))
     }
 }
