@@ -16,17 +16,49 @@ internal class WireframeUtils(private val boundsUtils: BoundsUtils = BoundsUtils
         wireframe: MobileSegment.Wireframe,
         parents: List<MobileSegment.Wireframe>
     ): MobileSegment.WireframeClip? {
-        val previousClip = wireframe.clip()
+        return resolveClip(
+            bounds = boundsUtils.resolveBounds(wireframe),
+            previousClip = wireframe.clip(),
+            ancestorBounds = parents.map { boundsUtils.resolveBounds(it) }
+        )
+    }
+
+    /**
+     * Same ancestor-overflow computation as [resolveWireframeClip], for a caller that already has
+     * ancestor bounds on hand rather than a [MobileSegment.Wireframe] list to derive them from —
+     * currently only [com.datadog.android.sessionreplay.internal.recorder.CompositionTreeBuilder],
+     * which builds a `CompositionLayer`/`CompositionLayerChild` tree, not `Node`/`parents`, so
+     * there's no equivalent wireframe list to pass to [resolveWireframeClip] directly. Returns
+     * [wireframe]'s own current clip unchanged when [ancestorBounds] is empty (a root-level
+     * wireframe with no container above it) — same as [resolveWireframeClip] naturally does for
+     * an empty `parents` list.
+     */
+    internal fun resolveClipFromAncestorBounds(
+        wireframe: MobileSegment.Wireframe,
+        ancestorBounds: List<WireframeBounds>
+    ): MobileSegment.WireframeClip? {
+        if (ancestorBounds.isEmpty()) return wireframe.clip()
+        return resolveClip(
+            bounds = boundsUtils.resolveBounds(wireframe),
+            previousClip = wireframe.clip(),
+            ancestorBounds = ancestorBounds
+        )
+    }
+
+    private fun resolveClip(
+        bounds: WireframeBounds,
+        previousClip: MobileSegment.WireframeClip?,
+        ancestorBounds: List<WireframeBounds>
+    ): MobileSegment.WireframeClip? {
         var clipTop = previousClip?.top ?: 0L
         var clipLeft = previousClip?.left ?: 0L
         var clipRight = previousClip?.right ?: 0L
         var clipBottom = previousClip?.bottom ?: 0L
-        val wireframeBounds = boundsUtils.resolveBounds(wireframe)
-        parents.map { boundsUtils.resolveBounds(it) }.forEach {
-            clipTop = max(it.top - wireframeBounds.top, clipTop)
-            clipBottom = max(wireframeBounds.bottom - it.bottom, clipBottom)
-            clipLeft = max(it.left - wireframeBounds.left, clipLeft)
-            clipRight = max(wireframeBounds.right - it.right, clipRight)
+        ancestorBounds.forEach {
+            clipTop = max(it.top - bounds.top, clipTop)
+            clipBottom = max(bounds.bottom - it.bottom, clipBottom)
+            clipLeft = max(it.left - bounds.left, clipLeft)
+            clipRight = max(bounds.right - it.right, clipRight)
         }
 
         @Suppress("ComplexCondition")

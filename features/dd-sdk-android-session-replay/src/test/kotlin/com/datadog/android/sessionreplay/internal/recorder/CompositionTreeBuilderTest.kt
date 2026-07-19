@@ -140,6 +140,54 @@ internal class CompositionTreeBuilderTest {
         )
     }
 
+    /**
+     * Every mocked view in this test class resolves to the same [fakeGlobalBounds] via the
+     * global `resolveViewGlobalBounds` stub (root, container, and leaf alike) — so with
+     * ancestor-bounds clipping (see CompositionTreeBuilder's own doc), a *forged* leaf wireframe
+     * with its own random x/y/width/height (and, sometimes, a random pre-existing partial [clip])
+     * would spuriously overflow that ancestor and pick up a clip most of these tests aren't
+     * about. Snapping a forged wireframe's bounds to exactly match [fakeGlobalBounds] and
+     * clearing any pre-existing clip keeps it perfectly nested (zero overflow, clip stays null),
+     * preserving these tests' original intent — verifying mapper routing, not clip computation.
+     */
+    private fun MobileSegment.Wireframe.withRootBounds(): MobileSegment.Wireframe = when (this) {
+        is MobileSegment.Wireframe.ShapeWireframe -> copy(
+            x = fakeGlobalBounds.x,
+            y = fakeGlobalBounds.y,
+            width = fakeGlobalBounds.width,
+            height = fakeGlobalBounds.height,
+            clip = null
+        )
+        is MobileSegment.Wireframe.TextWireframe -> copy(
+            x = fakeGlobalBounds.x,
+            y = fakeGlobalBounds.y,
+            width = fakeGlobalBounds.width,
+            height = fakeGlobalBounds.height,
+            clip = null
+        )
+        is MobileSegment.Wireframe.ImageWireframe -> copy(
+            x = fakeGlobalBounds.x,
+            y = fakeGlobalBounds.y,
+            width = fakeGlobalBounds.width,
+            height = fakeGlobalBounds.height,
+            clip = null
+        )
+        is MobileSegment.Wireframe.PlaceholderWireframe -> copy(
+            x = fakeGlobalBounds.x,
+            y = fakeGlobalBounds.y,
+            width = fakeGlobalBounds.width,
+            height = fakeGlobalBounds.height,
+            clip = null
+        )
+        is MobileSegment.Wireframe.WebviewWireframe -> copy(
+            x = fakeGlobalBounds.x,
+            y = fakeGlobalBounds.y,
+            width = fakeGlobalBounds.width,
+            height = fakeGlobalBounds.height,
+            clip = null
+        )
+    }
+
     private fun buildOutput(rootView: View): CompositionTreeBuilder.Output {
         return buildOutput(listOf(rootView))
     }
@@ -160,7 +208,7 @@ internal class CompositionTreeBuilderTest {
         // Given
         val mockChild = forge.aMockTextView()
         val fakeChildWireframes: List<MobileSegment.Wireframe> =
-            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.TextWireframe>() }
+            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.TextWireframe>().withRootBounds() }
         whenever(
             mockTextViewMapper.map(eq(mockChild), any(), any(), eq(mockInternalLogger))
         ).thenReturn(fakeChildWireframes)
@@ -185,7 +233,7 @@ internal class CompositionTreeBuilderTest {
         // viewWireframeMapper shortcut instead, since it can never draw more than its background.
         val mockChild = forge.aMockView<ImageView>()
         val fakeChildWireframes: List<MobileSegment.Wireframe> =
-            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.ImageWireframe>() }
+            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.ImageWireframe>().withRootBounds() }
         whenever(
             mockPixelCaptureFallbackMapper.map(eq(mockChild), any(), any(), eq(mockInternalLogger))
         ).thenReturn(fakeChildWireframes)
@@ -209,7 +257,7 @@ internal class CompositionTreeBuilderTest {
         // the default pipeline's TreeViewTraversal does.
         val mockChild = forge.aMockView<WebView>()
         val fakeChildWireframes: List<MobileSegment.Wireframe> =
-            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.WebviewWireframe>() }
+            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.WebviewWireframe>().withRootBounds() }
         whenever(
             mockWebViewMapper.map(eq(mockChild), any(), any(), eq(mockInternalLogger))
         ).thenReturn(fakeChildWireframes)
@@ -235,7 +283,7 @@ internal class CompositionTreeBuilderTest {
         val mockWebView = forge.aMockView<WebView>()
         whenever(mockWebView.childCount).thenReturn(1)
         val fakeChildWireframes: List<MobileSegment.Wireframe> =
-            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.WebviewWireframe>() }
+            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.WebviewWireframe>().withRootBounds() }
         whenever(
             mockWebViewMapper.map(eq(mockWebView), any(), any(), eq(mockInternalLogger))
         ).thenReturn(fakeChildWireframes)
@@ -261,7 +309,7 @@ internal class CompositionTreeBuilderTest {
         // behavior depends on (see the class doc for why that check must be exact, not `is`).
         val plainView = View(mock<Context>())
         val fakeChildWireframes: List<MobileSegment.Wireframe> =
-            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.ShapeWireframe>() }
+            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.ShapeWireframe>().withRootBounds() }
         whenever(
             mockViewWireframeMapper.map(eq(plainView), any(), any(), eq(mockInternalLogger))
         ).thenReturn(fakeChildWireframes)
@@ -287,7 +335,7 @@ internal class CompositionTreeBuilderTest {
         // not via a forced override the way WebView/Compose hosts need.
         val plainFrameLayout = FrameLayout(mock<Context>())
         val fakeChildWireframes: List<MobileSegment.Wireframe> =
-            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.ShapeWireframe>() }
+            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.ShapeWireframe>().withRootBounds() }
         whenever(
             mockViewWireframeMapper.map(eq(plainFrameLayout), any(), any(), eq(mockInternalLogger))
         ).thenReturn(fakeChildWireframes)
@@ -317,7 +365,7 @@ internal class CompositionTreeBuilderTest {
             mockViewWireframeMapper.map(eq(plainView), any(), any(), eq(mockInternalLogger))
         ).thenReturn(emptyList())
         val fakeChildWireframes: List<MobileSegment.Wireframe> =
-            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.ImageWireframe>() }
+            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.ImageWireframe>().withRootBounds() }
         whenever(
             mockPixelCaptureFallbackMapper.map(eq(plainView), any(), any(), eq(mockInternalLogger))
         ).thenReturn(fakeChildWireframes)
@@ -340,7 +388,7 @@ internal class CompositionTreeBuilderTest {
         // it "is" a View, or that content would be silently replaced with just its background.
         val customView = CustomDrawingView(mock<Context>())
         val fakeChildWireframes: List<MobileSegment.Wireframe> =
-            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.ImageWireframe>() }
+            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.ImageWireframe>().withRootBounds() }
         whenever(
             mockPixelCaptureFallbackMapper.map(eq(customView), any(), any(), eq(mockInternalLogger))
         ).thenReturn(fakeChildWireframes)
@@ -367,7 +415,7 @@ internal class CompositionTreeBuilderTest {
         // Given
         val mockChild = forge.aMockTextView()
         val fakeChildWireframes: List<MobileSegment.Wireframe> =
-            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.TextWireframe>() }
+            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.TextWireframe>().withRootBounds() }
         whenever(
             mockTextViewMapper.map(eq(mockChild), any(), any(), eq(mockInternalLogger))
         ).thenReturn(fakeChildWireframes)
@@ -396,13 +444,104 @@ internal class CompositionTreeBuilderTest {
     }
 
     @Test
+    fun `M clip a leaf wireframe against its container W build() {leaf overflows the container's bounds}`(
+        forge: Forge
+    ) {
+        // Given — root is large enough to never constrain anything on its own; the nested
+        // container is much smaller, and the leaf's own wireframe extends past every one of the
+        // container's edges — this is exactly what a scrolled-out-of-view list item looks like:
+        // without clipping, it would render past its container's bounds (see this class's own
+        // doc for why that regressed once CompositionTreeBuilder started building the tree).
+        val density = fakeSystemInformation.screenDensity
+        val rootBounds = GlobalBounds(x = 0, y = 0, width = 1_000, height = 1_000)
+        val containerBounds = GlobalBounds(x = 100, y = 100, width = 200, height = 200)
+        val leafBounds = GlobalBounds(x = 50, y = 50, width = 400, height = 400)
+
+        val mockChild = forge.aMockTextView()
+        val fakeChildWireframe = forge.getForgery<MobileSegment.Wireframe.TextWireframe>().copy(
+            x = leafBounds.x,
+            y = leafBounds.y,
+            width = leafBounds.width,
+            height = leafBounds.height,
+            clip = null
+        )
+        whenever(
+            mockTextViewMapper.map(eq(mockChild), any(), any(), eq(mockInternalLogger))
+        ).thenReturn(listOf(fakeChildWireframe))
+
+        val mockContainer = forge.aMockView<LinearLayout>()
+        whenever(mockContainer.childCount).thenReturn(1)
+        whenever(mockContainer.getChildAt(0)).thenReturn(mockChild)
+        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockContainer, density)).thenReturn(containerBounds)
+
+        val mockRoot = forge.aMockView<FrameLayout>()
+        whenever(mockRoot.childCount).thenReturn(1)
+        whenever(mockRoot.getChildAt(0)).thenReturn(mockContainer)
+        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockRoot, density)).thenReturn(rootBounds)
+
+        // When
+        val output = buildOutput(mockRoot)
+
+        // Then — clipped against the (tighter) container, not the (non-constraining) root
+        val wireframe = output.wireframes.single() as MobileSegment.Wireframe.TextWireframe
+        assertThat(wireframe.clip).isEqualTo(
+            MobileSegment.WireframeClip(top = 50, bottom = 150, left = 50, right = 150)
+        )
+    }
+
+    @Test
+    fun `M clip a leaf wireframe against every ancestor W build() {grandparent is tighter than parent}`(
+        forge: Forge
+    ) {
+        // Given — three levels deep: the immediate parent alone wouldn't clip the leaf at all, but
+        // the grandparent (root) is small enough that it still must — proving the ancestor chain
+        // accumulates all the way up, not just the immediate parent.
+        val density = fakeSystemInformation.screenDensity
+        val rootBounds = GlobalBounds(x = 0, y = 0, width = 100, height = 100)
+        val containerBounds = GlobalBounds(x = 0, y = 0, width = 500, height = 500)
+        val leafBounds = GlobalBounds(x = 0, y = 0, width = 300, height = 300)
+
+        val mockChild = forge.aMockTextView()
+        val fakeChildWireframe = forge.getForgery<MobileSegment.Wireframe.TextWireframe>().copy(
+            x = leafBounds.x,
+            y = leafBounds.y,
+            width = leafBounds.width,
+            height = leafBounds.height,
+            clip = null
+        )
+        whenever(
+            mockTextViewMapper.map(eq(mockChild), any(), any(), eq(mockInternalLogger))
+        ).thenReturn(listOf(fakeChildWireframe))
+
+        val mockContainer = forge.aMockView<LinearLayout>()
+        whenever(mockContainer.childCount).thenReturn(1)
+        whenever(mockContainer.getChildAt(0)).thenReturn(mockChild)
+        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockContainer, density)).thenReturn(containerBounds)
+
+        val mockRoot = forge.aMockView<FrameLayout>()
+        whenever(mockRoot.childCount).thenReturn(1)
+        whenever(mockRoot.getChildAt(0)).thenReturn(mockContainer)
+        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockRoot, density)).thenReturn(rootBounds)
+
+        // When
+        val output = buildOutput(mockRoot)
+
+        // Then — the leaf fits fully inside its immediate container (500x500), but overflows the
+        // root (100x100) on the bottom/right by 200 each
+        val wireframe = output.wireframes.single() as MobileSegment.Wireframe.TextWireframe
+        assertThat(wireframe.clip).isEqualTo(
+            MobileSegment.WireframeClip(top = 0, bottom = 200, left = 0, right = 200)
+        )
+    }
+
+    @Test
     fun `M pixel-capture the whole view W build() {leaf is an AndroidComposeView with a child}`(forge: Forge) {
         // Given — AndroidComposeView always carries an internal AndroidViewsHandler child even
         // when nothing is drawn through it, so childCount alone can't route it to buildLayer the
         // way it correctly does for ordinary ViewGroups: it must always take the leaf path.
         val composeView = AndroidComposeView(mock<Context>())
         val fakeChildWireframes: List<MobileSegment.Wireframe> =
-            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.ImageWireframe>() }
+            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.ImageWireframe>().withRootBounds() }
         whenever(
             mockPixelCaptureFallbackMapper.map(eq(composeView), any(), any(), eq(mockInternalLogger))
         ).thenReturn(fakeChildWireframes)
@@ -527,7 +666,7 @@ internal class CompositionTreeBuilderTest {
         whenever(mockHiddenContainer.getChildAt(0)).thenReturn(mockGrandchild)
 
         val fakeHiddenWireframes: List<MobileSegment.Wireframe> =
-            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.PlaceholderWireframe>() }
+            forge.aList(size = 1) { getForgery<MobileSegment.Wireframe.PlaceholderWireframe>().withRootBounds() }
         whenever(
             mockHiddenViewMapper.map(eq(mockHiddenContainer), any(), any(), eq(mockInternalLogger))
         ).thenReturn(fakeHiddenWireframes)

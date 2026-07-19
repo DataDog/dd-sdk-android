@@ -20,6 +20,9 @@ import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
+import com.datadog.android.sessionreplay.internal.processor.WireframeBounds
+import com.datadog.android.sessionreplay.internal.processor.WireframeUtils
+import com.datadog.android.sessionreplay.internal.processor.copy
 import com.datadog.android.sessionreplay.internal.recorder.mapper.HiddenViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.PixelCaptureFallbackMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.QueueStatusCallback
@@ -124,7 +127,8 @@ internal class CompositionTreeBuilder(
     private val imageWireframeHelper: ImageWireframeHelper,
     private val pixelCaptureCallback: PixelCaptureCallback? = null,
     private val hostViewDecomposer: HostViewDecomposer? = null,
-    private val viewUtilsInternal: ViewUtilsInternal = ViewUtilsInternal()
+    private val viewUtilsInternal: ViewUtilsInternal = ViewUtilsInternal(),
+    private val wireframeUtils: WireframeUtils = WireframeUtils()
 ) {
 
     private val layers = mutableListOf<MobileSegment.CompositionLayer>()
@@ -173,7 +177,7 @@ internal class CompositionTreeBuilder(
             // this keeps every view in the tree, root or not, subject to the same rule.
             resolveTouchPrivacyOverride(it, mappingContext, internalLogger)
             val localMappingContext = resolveViewPrivacyOverrides(it, mappingContext, internalLogger)
-            buildLayer(it, localMappingContext, asyncJobStatusCallback, internalLogger)
+            buildLayer(it, localMappingContext, asyncJobStatusCallback, internalLogger, ancestorBounds = emptyList())
         }
 
         val rootLayer = when (windowLayers.size) {
@@ -211,12 +215,19 @@ internal class CompositionTreeBuilder(
         children = windowLayers.map { MobileSegment.CompositionLayerChild(id = it.id, type = LAYER_CHILD_TYPE) }
     )
 
-    /** Always builds a layer for [view] — callers decide whether a view warrants one. */
+    /**
+     * Always builds a layer for [view] — callers decide whether a view warrants one.
+     * [ancestorBounds] is every container's bounds from the root window down to (not including)
+     * [view] itself — see [childReferences]'s doc for why this is threaded through instead of
+     * relying on [WireframeUtils]'s `Node`/`parents`-based clipping, which this pipeline has no
+     * equivalent of.
+     */
     private fun buildLayer(
         view: View,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback,
-        internalLogger: InternalLogger
+        internalLogger: InternalLogger,
+        ancestorBounds: List<WireframeBounds>
     ): MobileSegment.CompositionLayer? {
         val id = viewIdentifierResolver.resolveChildUniqueIdentifier(view, COMPOSITION_LAYER_KEY_NAME)
             ?: return null
@@ -231,10 +242,16 @@ internal class CompositionTreeBuilder(
         // isSimpleContainerView in mapLeafView instead. Prepended so it renders as a backdrop
         // behind the real children, not on top of them.
         val backgroundWireframes = viewWireframeMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
+            .clippedAgainst(ancestorBounds)
         wireframes.addAll(backgroundWireframes)
         val backgroundChildren = backgroundWireframes.map {
             MobileSegment.CompositionLayerChild(id = it.id(), type = WIREFRAME_CHILD_TYPE)
         }
+
+        // [view] becomes an ancestor constraint for its own children from here on — appended,
+        // never replacing what came before, so a grandchild is still clipped against every
+        // container above it, not just its immediate parent.
+        val childAncestorBounds = ancestorBounds + bounds.toWireframeBounds()
 
         // CompositionLayer is the working representation while alpha is still a plain float —
         // it is translated into a CompositionLayerOpacityModifier below, the same way iOS's
@@ -247,7 +264,7 @@ internal class CompositionTreeBuilder(
             height = bounds.height,
             alpha = view.alpha,
             children = backgroundChildren +
-                buildChildren(view, mappingContext, asyncJobStatusCallback, internalLogger)
+                buildChildren(view, mappingContext, asyncJobStatusCallback, internalLogger, childAncestorBounds)
         )
 
         return MobileSegment.CompositionLayer(
@@ -266,7 +283,8 @@ internal class CompositionTreeBuilder(
         view: View,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback,
-        internalLogger: InternalLogger
+        internalLogger: InternalLogger,
+        ancestorBounds: List<WireframeBounds>
     ): List<MobileSegment.CompositionLayerChild> {
         if (view !is ViewGroup || view.childCount == 0) return emptyList()
 
@@ -274,7 +292,9 @@ internal class CompositionTreeBuilder(
         for (i in 0 until view.childCount) {
             val child = view.getChildAt(i) ?: continue
             if (viewUtilsInternal.isNotVisible(child) || viewUtilsInternal.isSystemNoise(child)) continue
-            children.addAll(childReferences(child, mappingContext, asyncJobStatusCallback, internalLogger))
+            children.addAll(
+                childReferences(child, mappingContext, asyncJobStatusCallback, internalLogger, ancestorBounds)
+            )
         }
         return children
     }
@@ -299,12 +319,22 @@ internal class CompositionTreeBuilder(
      *   id. A container that falls back this way is captured as a single flat pixel snapshot of
      *   the whole subtree instead of a group — a degraded but still-correct result, never a
      *   dropped one.
+     *
+     * Every wireframe this produces is clipped against [ancestorBounds] — every container's
+     * bounds from the root window down to [view]'s own parent — via [clippedAgainst]. This
+     * pipeline builds a `CompositionLayer`/`CompositionLayerChild` tree, not the default
+     * pipeline's `Node`/`parents`, so it has no equivalent of [WireframeUtils.resolveWireframeClip]
+     * running as a post-processing pass over the whole tree; without this, a wireframe that
+     * scrolls outside its container's bounds keeps its full, unclipped on-screen geometry and
+     * renders straight over whatever's drawn above that container (e.g. a fixed toolbar) instead
+     * of being visually cropped by it.
      */
     private fun childReferences(
         view: View,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback,
-        internalLogger: InternalLogger
+        internalLogger: InternalLogger,
+        ancestorBounds: List<WireframeBounds>
     ): List<MobileSegment.CompositionLayerChild> {
         resolveTouchPrivacyOverride(view, mappingContext, internalLogger)
         val localMappingContext = resolveViewPrivacyOverrides(view, mappingContext, internalLogger)
@@ -315,7 +345,7 @@ internal class CompositionTreeBuilder(
                 localMappingContext,
                 asyncJobStatusCallback,
                 internalLogger
-            )
+            ).clippedAgainst(ancestorBounds)
             wireframes.addAll(hiddenWireframes)
             return hiddenWireframes.map {
                 MobileSegment.CompositionLayerChild(id = it.id(), type = WIREFRAME_CHILD_TYPE)
@@ -329,7 +359,7 @@ internal class CompositionTreeBuilder(
             !isMaterialTextInputLayout(view) &&
             !isNavigationBarItemView(view)
         ) {
-            val layer = buildLayer(view, localMappingContext, asyncJobStatusCallback, internalLogger)
+            val layer = buildLayer(view, localMappingContext, asyncJobStatusCallback, internalLogger, ancestorBounds)
             if (layer != null) {
                 layers.add(layer)
                 return listOf(MobileSegment.CompositionLayerChild(id = layer.id, type = LAYER_CHILD_TYPE))
@@ -337,7 +367,8 @@ internal class CompositionTreeBuilder(
         }
 
         if (isComposeHostView(view)) {
-            val composeLayer = buildComposeLayer(view, localMappingContext, asyncJobStatusCallback, internalLogger)
+            val composeLayer =
+                buildComposeLayer(view, localMappingContext, asyncJobStatusCallback, internalLogger, ancestorBounds)
             if (composeLayer != null) {
                 layers.add(composeLayer)
                 return listOf(MobileSegment.CompositionLayerChild(id = composeLayer.id, type = LAYER_CHILD_TYPE))
@@ -345,6 +376,7 @@ internal class CompositionTreeBuilder(
         }
 
         val leafWireframes = mapLeafView(view, localMappingContext, asyncJobStatusCallback, internalLogger)
+            .clippedAgainst(ancestorBounds)
         wireframes.addAll(leafWireframes)
         return leafWireframes.map {
             MobileSegment.CompositionLayerChild(id = it.id(), type = WIREFRAME_CHILD_TYPE)
@@ -357,12 +389,21 @@ internal class CompositionTreeBuilder(
      * capture. Returns null (falling through to that whole-view capture, unchanged from before
      * this extension point existed) when no decomposer is wired in, [HostViewDecomposer.canDecompose]
      * declines, an id couldn't be resolved, or [HostViewDecomposer.decompose] itself fails.
+     *
+     * [ancestorBounds] is only threaded through to [nativeViewHandoff] here — any native
+     * View embedded in [view]'s composable tree still gets clipped correctly against every
+     * ancestor including [view] itself. The decomposed composables' own wireframes/nested layers
+     * (`result.wireframes`/`result.nestedLayers`) come from [decomposer]'s own internal structure
+     * and are **not** clipped against [ancestorBounds] by this pipeline — doing so would mean
+     * threading ancestor bounds through [HostViewDecomposeRequest] and having the decomposer
+     * itself apply them, a change to that decomposer, not this class.
      */
     private fun buildComposeLayer(
         view: View,
         mappingContext: MappingContext,
         asyncJobStatusCallback: AsyncJobStatusCallback,
-        internalLogger: InternalLogger
+        internalLogger: InternalLogger,
+        ancestorBounds: List<WireframeBounds>
     ): MobileSegment.CompositionLayer? {
         val decomposer = hostViewDecomposer ?: return null
         if (!decomposer.canDecompose(view)) return null
@@ -371,6 +412,7 @@ internal class CompositionTreeBuilder(
             ?: return null
         val density = mappingContext.systemInformation.screenDensity
         val bounds = viewBoundsResolver.resolveViewGlobalBounds(view, density)
+        val childAncestorBounds = ancestorBounds + bounds.toWireframeBounds()
 
         // Null when the view reports no visible area at all (e.g. fully scrolled off-screen) —
         // the decomposer treats that the same as "no clip info available" and skips clipping
@@ -383,7 +425,7 @@ internal class CompositionTreeBuilder(
             internalLogger = internalLogger,
             pixelCaptureCallback = pixelCaptureCallback,
             nativeViewHandoff = { nativeView ->
-                childReferences(nativeView, mappingContext, asyncJobStatusCallback, internalLogger)
+                childReferences(nativeView, mappingContext, asyncJobStatusCallback, internalLogger, childAncestorBounds)
             },
             hostVisibleRectPx = visibleRect
         )
@@ -515,6 +557,28 @@ internal class CompositionTreeBuilder(
         is MobileSegment.Wireframe.ImageWireframe -> id
         is MobileSegment.Wireframe.PlaceholderWireframe -> id
         is MobileSegment.Wireframe.WebviewWireframe -> id
+    }
+
+    /** [GlobalBounds] (x/y/width/height) in [WireframeBounds]'s left/top/right/bottom shape. */
+    private fun GlobalBounds.toWireframeBounds(): WireframeBounds = WireframeBounds(
+        left = x,
+        top = y,
+        right = x + width,
+        bottom = y + height,
+        width = width,
+        height = height
+    )
+
+    /**
+     * Clips every wireframe in this list against [ancestorBounds] — see [childReferences]'s doc
+     * for why this pipeline has to do this itself instead of relying on
+     * [WireframeUtils.resolveWireframeClip]'s usual `Node`/`parents`-based post-processing pass.
+     */
+    private fun List<MobileSegment.Wireframe>.clippedAgainst(
+        ancestorBounds: List<WireframeBounds>
+    ): List<MobileSegment.Wireframe> {
+        if (ancestorBounds.isEmpty()) return this
+        return map { it.copy(clip = wireframeUtils.resolveClipFromAncestorBounds(it, ancestorBounds)) }
     }
 
     internal data class Output(

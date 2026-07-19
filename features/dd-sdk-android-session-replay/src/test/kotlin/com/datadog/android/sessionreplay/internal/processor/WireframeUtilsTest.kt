@@ -21,6 +21,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -358,6 +359,90 @@ internal class WireframeUtilsTest {
 
         // Then
         assertThat(testedWireframeUtils.resolveWireframeClip(wireframe, emptyList())).isNull()
+    }
+
+    // endregion
+
+    // region resolveClipFromAncestorBounds
+
+    @Test
+    fun `M return the same clip as resolveWireframeClip W resolveClipFromAncestorBounds() {overflowing ancestor}`(
+        forge: Forge
+    ) {
+        // Given — CompositionTreeBuilder's own entry point: it already has ancestor bounds on
+        // hand (from its own tree, not a Node/parents list), so this must produce exactly the
+        // same result resolveWireframeClip would for an equivalent single parent.
+        val fakeWireframe: MobileSegment.Wireframe = forge.getForgery<MobileSegment.Wireframe>().copy(clip = null)
+        val fakeWireframeBounds: WireframeBounds = forge.getForgery<WireframeBounds>().apply {
+            whenever(mockBoundsUtils.resolveBounds(fakeWireframe)).thenReturn(this)
+        }
+        val ancestorBounds = fakeWireframeBounds.copy(
+            left = fakeWireframeBounds.left + forge.aLong(min = 1, max = 100),
+            top = fakeWireframeBounds.top + forge.aLong(min = 1, max = 100),
+            right = fakeWireframeBounds.right - forge.aLong(min = 1, max = 100),
+            bottom = fakeWireframeBounds.bottom - forge.aLong(min = 1, max = 100)
+        )
+
+        // When
+        val result = testedWireframeUtils.resolveClipFromAncestorBounds(fakeWireframe, listOf(ancestorBounds))
+
+        // Then
+        assertThat(result).isEqualTo(
+            MobileSegment.WireframeClip(
+                top = ancestorBounds.top - fakeWireframeBounds.top,
+                bottom = fakeWireframeBounds.bottom - ancestorBounds.bottom,
+                left = ancestorBounds.left - fakeWireframeBounds.left,
+                right = fakeWireframeBounds.right - ancestorBounds.right
+            )
+        )
+    }
+
+    @Test
+    fun `M pick the tightest ancestor W resolveClipFromAncestorBounds() {multiple ancestors}`(forge: Forge) {
+        // Given — a nearer ancestor that doesn't constrain at all, and a farther one (e.g. a
+        // grandparent) that does — mirrors CompositionTreeBuilder threading the full chain, not
+        // just the immediate parent, down to every leaf.
+        val fakeWireframe: MobileSegment.Wireframe = forge.getForgery<MobileSegment.Wireframe>().copy(clip = null)
+        val fakeWireframeBounds: WireframeBounds = forge.getForgery<WireframeBounds>().apply {
+            whenever(mockBoundsUtils.resolveBounds(fakeWireframe)).thenReturn(this)
+        }
+        val nonConstrainingAncestor = fakeWireframeBounds.copy(
+            left = fakeWireframeBounds.left - 100,
+            top = fakeWireframeBounds.top - 100,
+            right = fakeWireframeBounds.right + 100,
+            bottom = fakeWireframeBounds.bottom + 100
+        )
+        val constrainingAncestor = fakeWireframeBounds.copy(
+            left = fakeWireframeBounds.left + 10,
+            top = fakeWireframeBounds.top + 10,
+            right = fakeWireframeBounds.right - 10,
+            bottom = fakeWireframeBounds.bottom - 10
+        )
+
+        // When
+        val result = testedWireframeUtils.resolveClipFromAncestorBounds(
+            fakeWireframe,
+            listOf(nonConstrainingAncestor, constrainingAncestor)
+        )
+
+        // Then
+        assertThat(result).isEqualTo(MobileSegment.WireframeClip(top = 10, bottom = 10, left = 10, right = 10))
+    }
+
+    @Test
+    fun `M return the wireframe's own clip unchanged W resolveClipFromAncestorBounds() {no ancestors}`(forge: Forge) {
+        // Given
+        val fakeClip = forge.getForgery<MobileSegment.WireframeClip>()
+        val fakeWireframe: MobileSegment.Wireframe = forge.getForgery<MobileSegment.Wireframe>().copy(clip = fakeClip)
+
+        // When
+        val result = testedWireframeUtils.resolveClipFromAncestorBounds(fakeWireframe, emptyList())
+
+        // Then — an empty ancestor list means there was nothing to derive bounds from at all
+        // (mirrors resolveWireframeClip's own empty-parents behavior), so this must not even
+        // touch mockBoundsUtils
+        assertThat(result).isEqualTo(fakeClip)
+        verifyNoInteractions(mockBoundsUtils)
     }
 
     // endregion
