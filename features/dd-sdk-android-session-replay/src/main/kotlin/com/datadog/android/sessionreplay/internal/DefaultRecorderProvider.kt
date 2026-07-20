@@ -80,6 +80,17 @@ internal class DefaultRecorderProvider(
         rumContextProvider: RumContextProvider,
         application: Application
     ): Recorder {
+        // Deliberately kept in (not removed after investigation) at the user's explicit
+        // request — see the git history/PR discussion for the "full screen broken images"
+        // investigation this was added for. android.util.Log rather than InternalLogger:
+        // this is meant to be read straight off Logcat on a real device/app while
+        // reproducing the issue, not routed through the SDK's own telemetry/user-facing
+        // channels.
+        android.util.Log.d(
+            "DD_SessionReplay",
+            "[DefaultRecorderProvider] provideSessionReplayRecorder: " +
+                "hostViewDecomposer=${hostViewDecomposer?.javaClass?.name}"
+        )
         return SessionReplayRecorder(
             application,
             resourceDataStoreManager = resourceDataStoreManager,

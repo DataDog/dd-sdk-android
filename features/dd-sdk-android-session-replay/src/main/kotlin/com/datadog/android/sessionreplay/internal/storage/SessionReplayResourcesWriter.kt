@@ -18,13 +18,41 @@ internal class SessionReplayResourcesWriter(
     private val sdkCore: FeatureSdkCore
 ) : ResourcesWriter {
     override fun write(enrichedResource: EnrichedResource) {
-        sdkCore.getFeature(Feature.SESSION_REPLAY_RESOURCES_FEATURE_NAME)
+        val feature = sdkCore.getFeature(Feature.SESSION_REPLAY_RESOURCES_FEATURE_NAME)
+        // Deliberately kept in (not removed after investigation) at the user's explicit
+        // request — see the git history/PR discussion for the "full screen broken images"
+        // investigation this was added for. android.util.Log rather than InternalLogger:
+        // this is meant to be read straight off Logcat on a real device/app while
+        // reproducing the issue, not routed through the SDK's own telemetry/user-facing
+        // channels. Traces the last-mile handoff for a resource whose client-side
+        // enqueueing (see ResourceItemCreationHandler's own logging) already succeeded —
+        // if `feature` is null here, SESSION_REPLAY_RESOURCES_FEATURE_NAME was never
+        // registered/is gone, and this whole write silently no-ops (the `?.` below skips
+        // everything). If `feature` is non-null but the withWriteContext callback below
+        // never logs, `withWriteContext` itself silently short-circuited (e.g.
+        // SdkFeature's own `coreFeature.initialized` check) — also a silent no-op today.
+        android.util.Log.d(
+            "DD_SessionReplay",
+            "[SessionReplayResourcesWriter] write: nodeId=${enrichedResource.filename} " +
+                "resourceFeature=${feature != null}"
+        )
+        feature
             ?.withWriteContext(
                 withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)
             ) { datadogContext, writeScope ->
+                android.util.Log.d(
+                    "DD_SessionReplay",
+                    "[SessionReplayResourcesWriter] write: nodeId=${enrichedResource.filename} " +
+                        "withWriteContext callback invoked, rumApplicationId=${datadogContext.rumApplicationId}"
+                )
                 writeScope {
                     synchronized(this@SessionReplayResourcesWriter) {
                         val serializedMetadata = enrichedResource.asBinaryMetadata(datadogContext.rumApplicationId)
+                        android.util.Log.d(
+                            "DD_SessionReplay",
+                            "[SessionReplayResourcesWriter] write: nodeId=${enrichedResource.filename} " +
+                                "writeScope invoked, resourceBytes=${enrichedResource.resource.size}"
+                        )
                         it.write(
                             event = RawBatchEvent(
                                 data = enrichedResource.resource,

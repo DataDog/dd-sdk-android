@@ -22,6 +22,20 @@ internal class BackgroundResolver(
     private val innerBoundsOf: (SemanticsNode) -> GlobalBounds,
     private val internalLogger: InternalLogger = InternalLogger.UNBOUND
 ) {
+    // Diagnostic-logging-only support — see debugLogOnce. A node's background-resolution outcome
+    // doesn't change cycle-to-cycle for a static node, so without this every one of these lines
+    // would repeat identically on every single decompose() call this class's own caller
+    // (DefaultComposeCompositionWalker) makes many times per second on a busy screen.
+    private val debugLogExecutor = java.util.concurrent.Executors.newSingleThreadExecutor()
+    private val loggedOnceMessages: MutableSet<String> = java.util.concurrent.ConcurrentHashMap.newKeySet()
+
+    private fun debugLogOnce(message: String) {
+        if (loggedOnceMessages.add(message)) {
+            debugLogExecutor.execute {
+                android.util.Log.d(DEBUG_LOG_TAG, "[BackgroundResolver] $message")
+            }
+        }
+    }
     internal fun resolveBackgroundInfo(semanticsNode: SemanticsNode): List<BackgroundInfo> {
         val backgroundInfoList = mutableListOf<BackgroundInfo>()
         // CurrentBackgroundInfo is to store bounds, color and shape information in sequence of modifiers.
@@ -60,7 +74,31 @@ internal class BackgroundResolver(
             semanticsNode.layoutInfo.getModifierInfo().lastOrNull { modifierInfo ->
                 reflectionUtils.isBackgroundElement(modifierInfo.modifier)
             }
-        return topmostBackground?.let { resolveBackgroundElementColor(it.modifier) }
+        if (topmostBackground == null) {
+            // Deliberately kept in (not removed after investigation) at the user's explicit
+            // request — see the git history/PR discussion for the "full screen broken images"
+            // investigation this was added for. android.util.Log rather than InternalLogger:
+            // this is meant to be read straight off Logcat on a real device/app while
+            // reproducing the issue, not routed through the SDK's own telemetry/user-facing
+            // channels. Distinguishes "no BackgroundElement at all" (a real Material
+            // Surface/Card almost certainly paints its background through its own internal
+            // implementation, not the public Modifier.background() extension this class reads)
+            // from "found one but couldn't resolve a color from it" (see the log inside
+            // resolveBackgroundElementColor for that case).
+            debugLogOnce(
+                "resolveBackgroundColor: node=${semanticsNode.id} " +
+                    "no BackgroundElement modifier found at all"
+            )
+            return null
+        }
+        val color = resolveBackgroundElementColor(topmostBackground.modifier)
+        if (color == null) {
+            debugLogOnce(
+                "resolveBackgroundColor: node=${semanticsNode.id} " +
+                    "BackgroundElement found but resolveBackgroundElementColor returned null"
+            )
+        }
+        return color
     }
 
     internal fun resolveBackgroundShape(semanticsNode: SemanticsNode): Shape? {
@@ -122,20 +160,39 @@ internal class BackgroundResolver(
         if (rawColor != null && rawColor != COLOR_UNSPECIFIED) {
             return applyAlphaToColor(rawColor, alpha)
         }
+        // Deliberately kept in (not removed after investigation) — see resolveBackgroundColor's
+        // doc for why this whole file is being instrumented. rawColor being null/unspecified here
+        // means the BackgroundElement's `color` param wasn't set directly (or wasn't specified) —
+        // the common idiom for that is Modifier.background(brush = ...) instead, handed off to
+        // resolveBrushColor below; logging this transition point so a "no color at all" outcome
+        // can be told apart from "there was a color parameter, it's just COLOR_UNSPECIFIED".
+        debugLogOnce(
+            "resolveBackgroundElementColor: rawColor=$rawColor " +
+                "(null-or-unspecified), falling through to resolveBrushColor"
+        )
         return resolveBrushColor(modifier, alpha)
     }
 
     private fun resolveBrushColor(modifier: Modifier, alpha: Float?): Long? {
-        val brush = reflectionUtils.getBrush(modifier) ?: return null
+        val brush = reflectionUtils.getBrush(modifier)
+        if (brush == null) {
+            debugLogOnce("resolveBrushColor: getBrush(modifier) is null")
+            return null
+        }
         val colors = reflectionUtils.getBrushColors(brush)
         return when {
             colors == null -> {
+                debugLogOnce("resolveBrushColor: unsupported Brush type ${brush.javaClass.name}")
                 logBrushIssue(brush, InternalLogger.Level.INFO) {
                     "Unsupported Brush type for Compose background: ${brush.javaClass.name}"
                 }
                 null
             }
             colors.isEmpty() -> {
+                debugLogOnce(
+                    "resolveBrushColor: known Brush type ${brush.javaClass.name} " +
+                        "but reflection read an empty color list"
+                )
                 logBrushIssue(brush, InternalLogger.Level.WARN) {
                     "Known Brush type but failed to read color list via reflection: ${brush.javaClass.name}"
                 }
@@ -173,5 +230,11 @@ internal class BackgroundResolver(
     private companion object {
         private const val COMPONENT_NAME = "BackgroundResolver"
         private const val COMPONENT_KEY = "component"
+
+        // Shared literally (not a cross-file constant) with DefaultComposeCompositionWalker.kt's
+        // own debug logging added for the same "full screen broken images" investigation — kept
+        // as a plain string in each file rather than introducing a shared dependency just for a
+        // log tag.
+        private const val DEBUG_LOG_TAG = "DD_SessionReplay"
     }
 }

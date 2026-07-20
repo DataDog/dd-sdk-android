@@ -28,19 +28,12 @@ internal open class AndroidQDrawableToColorMapper(
 ) : AndroidMDrawableToColorMapper(extensionMappers) {
 
     override fun resolveGradientDrawable(drawable: GradientDrawable, internalLogger: InternalLogger): Int? {
-        // colorFilter is only present when a tint/blend was actually applied — absent for the
-        // common case of a plain untinted <shape> drawable. resolvedColor (the drawable's own
-        // <solid> fill color) is already valid on its own in that case, so colorFilter should
-        // only ever refine it, never gate it away entirely.
-        val resolvedColor = resolveGradientFillColor(drawable) ?: return null
+        val resolvedColor = resolveGradientFillColor(drawable)
         val colorFilter = resolveGradientColorFilter(drawable)
+        if (resolvedColor == null || colorFilter == null) return null
         val colorAlpha = (resolvedColor ushr ALPHA_SHIFT_ANDROID) and MAX_ALPHA_VALUE
         val fillAlpha = (colorAlpha * drawable.alpha) / MAX_ALPHA_VALUE
-        val fillColor = if (colorFilter != null) {
-            resolveBlendModeColorFilter(resolvedColor, colorFilter, internalLogger)
-        } else {
-            resolvedColor
-        }
+        val fillColor = resolveBlendModeColorFilter(resolvedColor, colorFilter, internalLogger)
         return if (fillAlpha == 0) null else mergeColorAndAlpha(fillColor, fillAlpha)
     }
 

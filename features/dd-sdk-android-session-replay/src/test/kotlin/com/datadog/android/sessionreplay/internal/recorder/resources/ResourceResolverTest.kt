@@ -174,6 +174,14 @@ internal class ResourceResolverTest {
         whenever(mockBitmap.height).thenReturn(fakeBitmapHeight)
         whenever(mockBitmapDrawable.bitmap).thenReturn(mockBitmap)
 
+        // ResourceItemCreationHandler only marks a resourceId as "seen" (skipping re-queueing on
+        // a later call) once addResourceItem actually returns non-null — see that class' own
+        // doc for why unconditionally marking it "seen" used to silently, permanently drop a
+        // resource whenever this returned null (e.g. an invalid RUM context) even once. Default
+        // every test in this class to the common case (a real enqueue) unless a specific test
+        // overrides it to exercise the null/dropped path.
+        whenever(mockRecordedDataQueueHandler.addResourceItem(any(), any(), anyOrNull())).thenReturn(mock())
+
         testedResourceResolver = createResourceResolver()
     }
 

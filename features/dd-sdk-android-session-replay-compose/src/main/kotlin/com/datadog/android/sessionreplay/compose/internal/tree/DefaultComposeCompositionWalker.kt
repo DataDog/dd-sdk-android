@@ -35,6 +35,7 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.GenericFontFamily
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.isUnspecified
 import androidx.compose.ui.unit.sp
 import com.datadog.android.api.InternalLogger
@@ -87,9 +88,25 @@ internal class DefaultComposeCompositionWalker : HostViewDecomposer {
         innerBoundsOf = { GlobalBounds(x = 0, y = 0, width = 0, height = 0) }
     )
 
+    // Diagnostic-logging-only support — see debugLog/debugLogOnce. A node's structural diagnostics
+    // (hasDrawingEffect/resolveSimpleShapeWireframe's bail reasons, the clip-only pass-through
+    // notice) don't change cycle-to-cycle for a static node, so without this every one of them
+    // would repeat identically on every single decompose() call — many times per second on a busy
+    // screen — competing with actual decomposition work for UI-thread time. Single background
+    // thread so the Log.d syscall itself is also off this thread, not just deduplicated.
+    private val debugLogExecutor = java.util.concurrent.Executors.newSingleThreadExecutor()
+    private val loggedOnceMessages: MutableSet<String> = java.util.concurrent.ConcurrentHashMap.newKeySet()
+
     override fun canDecompose(view: View): Boolean = resolveOwner(view) is Owner
 
     override fun decompose(view: View, request: HostViewDecomposeRequest): HostViewDecomposeResult? {
+        // Deliberately kept in (not removed after investigation) at the user's explicit request —
+        // see the git history/PR discussion for the "full screen broken images" investigation this
+        // was added for. Bumped by hand every time this file changes during that investigation, so
+        // a fresh Logcat capture can be checked against the marker value quoted in conversation to
+        // immediately rule out (or confirm) a stale/not-yet-reinstalled build, without having to
+        // infer it from apk timestamps or reasoning about what a given code change should produce.
+        debugLog("BUILD_MARKER=$DEBUG_BUILD_MARKER")
         val owner = resolveOwner(view)
         if (owner !is Owner) return null
         val root = try {
@@ -165,25 +182,66 @@ internal class DefaultComposeCompositionWalker : HostViewDecomposer {
             val children = node.zSortedChildren
             val drawingEffect = hasDrawingEffect(node)
 
-            if (drawingEffect) {
+            var mustCaptureRegardlessOfDrawingEffect = false
+
+            if (drawingEffect != DrawingEffect.NONE) {
                 val semanticsNode = semanticsById[node.semanticsId]
-                val shapeWireframe = resolveSimpleShapeWireframe(node, semanticsNode, view, request)
-                if (shapeWireframe != null) {
-                    val colorHex = shapeWireframe.shapeStyle?.backgroundColor
-                    val isOpaque = colorHex != null && colorHex.endsWith(OPAQUE_HEX_SUFFIX, ignoreCase = true)
-                    val isRedundant = isOpaque && colorHex == ancestorOpaqueColorHex
-                    if (!isRedundant) {
-                        emitWireframe(shapeWireframe, nodeAlpha, rootChildren, wireframes, nestedLayers)
+                when (val shapeResolution = resolveSimpleShapeWireframe(node, semanticsNode, view, request)) {
+                    is ShapeResolution.Resolved -> {
+                        val shapeWireframe = shapeResolution.wireframe
+                        val colorHex = shapeWireframe.shapeStyle?.backgroundColor
+                        val isOpaque = colorHex != null && colorHex.endsWith(OPAQUE_HEX_SUFFIX, ignoreCase = true)
+                        val isRedundant = isOpaque && colorHex == ancestorOpaqueColorHex
+                        if (!isRedundant) {
+                            emitWireframe(shapeWireframe, nodeAlpha, rootChildren, wireframes, nestedLayers)
+                        }
+                        val childAncestorColorHex = if (isOpaque) colorHex else ancestorOpaqueColorHex
+                        for (i in 0 until children.size) {
+                            walk(children[i], nodeAlpha, childAncestorColorHex)
+                        }
+                        return
                     }
-                    val childAncestorColorHex = if (isOpaque) colorHex else ancestorOpaqueColorHex
-                    for (i in 0 until children.size) {
-                        walk(children[i], nodeAlpha, childAncestorColorHex)
+                    ShapeResolution.SafeToPassThrough -> {
+                        if (drawingEffect == DrawingEffect.CLIP_ONLY) {
+                            // Confirmed on-device (see hasDrawingEffect's CLIP_ONLY doc): a
+                            // clip-only node with no resolvable background AND no paint()
+                            // (see ShapeResolution.SafeToPassThrough's doc) paints nothing of its
+                            // own — there is nothing to flatten into a shape or to pixel-capture.
+                            // Falling through to the atomic-leaf path below would force a
+                            // screenshot of whatever an ancestor already painted behind it,
+                            // needlessly losing every descendant's own decomposition (text
+                            // masking, nested shapes, etc). Pass through instead: apply no
+                            // visual of its own, just recurse into children as if this node had
+                            // no drawing effect at all.
+                            debugLogOnce(
+                                "walk: node=${node.semanticsId} clip-only with no resolvable " +
+                                    "background, passing through to children instead of atomic " +
+                                    "pixel capture"
+                            )
+                            for (i in 0 until children.size) {
+                                walk(children[i], nodeAlpha, ancestorOpaqueColorHex)
+                            }
+                            return
+                        }
+                        // REAL_DRAW with nothing to flatten falls through to the atomic-leaf
+                        // check below, same as before this distinction existed.
                     }
-                    return
+                    ShapeResolution.MustCapture -> {
+                        // A real .paint() glyph (or unreadable semantics/bounds) that can't be
+                        // flattened — see ShapeResolution.MustCapture's doc for why a CLIP_ONLY
+                        // node bailing for this reason must still be forced into the atomic-leaf
+                        // path below, the same as a REAL_DRAW node already is, rather than being
+                        // treated as a harmless pass-through.
+                        mustCaptureRegardlessOfDrawingEffect = true
+                    }
                 }
             }
 
-            val isAtomicLeaf = children.isEmpty() || (drawingEffect && !isTooLargeToCollapse(node, request))
+            val isAtomicLeaf = children.isEmpty() ||
+                (
+                    (drawingEffect == DrawingEffect.REAL_DRAW || mustCaptureRegardlessOfDrawingEffect) &&
+                        !isTooLargeToCollapse(node, request)
+                    )
             if (isAtomicLeaf) {
                 if (captureCount >= MAX_CAPTURES_PER_HOST) return
                 val wireframe = registerLeafCapture(node, view, request) ?: return
@@ -319,8 +377,41 @@ internal class DefaultComposeCompositionWalker : HostViewDecomposer {
         if (view is ViewGroup && view.childCount > 0) {
             val child = view.getChildAt(0)
             if (child is Owner) return child
+            debugLog(
+                "resolveOwner: view=${view.javaClass.name}@${System.identityHashCode(view)} " +
+                    "childCount=${view.childCount} child(0)=${child?.javaClass?.name} is not an Owner"
+            )
+            return null
         }
+        debugLog(
+            "resolveOwner: view=${view.javaClass.name}@${System.identityHashCode(view)} " +
+                "is not an Owner and not a non-empty ViewGroup " +
+                "(isViewGroup=${view is ViewGroup}, childCount=${(view as? ViewGroup)?.childCount})"
+        )
         return null
+    }
+
+    // Deliberately kept in (not removed after investigation) at the user's explicit request —
+    // see the git history/PR discussion for the "full screen broken images" investigation this
+    // was added for. android.util.Log rather than InternalLogger: this is meant to be read
+    // straight off Logcat on a real device/app while reproducing the issue, not routed through
+    // the SDK's own telemetry/user-facing channels.
+    private fun debugLog(message: String) {
+        debugLogExecutor.execute {
+            android.util.Log.d(DEBUG_LOG_TAG, "[DefaultComposeCompositionWalker] $message")
+        }
+    }
+
+    /**
+     * Same as [debugLog], but only the first time [message] is seen — see [loggedOnceMessages]'s
+     * doc on why this exists. Keeps every debugLog call site (per the standing "never remove"
+     * instruction) while not repeating an unchanged diagnostic line on every single decompose()
+     * call for a static node.
+     */
+    private fun debugLogOnce(message: String) {
+        if (loggedOnceMessages.add(message)) {
+            debugLog(message)
+        }
     }
 
     /**
@@ -480,11 +571,25 @@ internal class DefaultComposeCompositionWalker : HostViewDecomposer {
      * Attempts to represent [node]'s own drawing effect as a flat [MobileSegment.Wireframe.ShapeWireframe]
      * (background color + optional rounded corner radius) instead of pixel-capturing it — mirroring
      * the native View pipeline's `ViewWireframeMapper` (simple background → shape) vs
-     * `PixelCaptureFallbackMapper` (everything else) split. Returns null (falls back to atomic pixel
-     * capture) when [node] has any drawing effect beyond a plain `Modifier.background()` — a real
-     * `DrawModifierNode`-implementing custom draw modifier (`drawBehind{}`/`drawWithContent{}`/
-     * third-party) can't be safely flattened — or when the background's color isn't resolvable at
-     * all (an unsupported `Brush` type).
+     * `PixelCaptureFallbackMapper` (everything else) split.
+     *
+     * Deliberately approximates away any *decoration* drawn alongside a resolvable background color
+     * — a shadow/elevation, a border stroke, `drawBehind{}`/`drawWithContent{}`, third-party
+     * `DrawModifierNode`s — rather than bailing to a full pixel capture over it. A flattened shape
+     * missing a shadow is a minor, local fidelity loss (the element renders slightly flatter than the
+     * real screen); bailing to [registerLeafCapture] over the *entire node* instead would swallow
+     * this node's children too — every descendant's own text/shape decomposition, and per-node
+     * privacy masking, lost with it. That tradeoff only makes sense when there's nothing else to
+     * lose (see [isTooLargeToCollapse]/the atomic-leaf path in `walk`), not merely because this one
+     * node also happens to draw a shadow.
+     *
+     * Still returns null (falling back to atomic pixel capture) in two cases where flattening would
+     * be a correctness bug, not just an approximation:
+     * - a `.paint()` modifier (`Icon`/`Image`) is present — see the check below, that content is
+     *   the size of the node, not a decoration on top of it, and would be silently deleted, not
+     *   just fidelity-reduced.
+     * - the background's color isn't resolvable at all (e.g. an unsupported `Brush` type) — nothing
+     *   to flatten to.
      *
      * Reads `BackgroundElement`'s `color`/`shape`/`brush`/`alpha` fields via the existing, already
      * shipped reflection utilities in this module (`ReflectionUtils`/`BackgroundResolver`, originally
@@ -503,32 +608,73 @@ internal class DefaultComposeCompositionWalker : HostViewDecomposer {
         semanticsNode: SemanticsNode?,
         hostView: View,
         request: HostViewDecomposeRequest
-    ): MobileSegment.Wireframe.ShapeWireframe? {
-        if (semanticsNode == null) return null
+    ): ShapeResolution {
+        if (semanticsNode == null) {
+            debugLogOnce("resolveSimpleShapeWireframe: node=${node.semanticsId} bailing, semanticsNode is null")
+            // Can't check for a background either way — unlike the confirmed "no BackgroundElement
+            // at all" case below, this doesn't prove there's nothing to lose, so this must still be
+            // captured rather than passed through (see ShapeResolution.MustCapture's doc).
+            return ShapeResolution.MustCapture
+        }
         for (info in node.getModifierInfo()) {
             val modifier = info.modifier
-            if (modifier is DrawModifierNode) return null
             // getModifierInfo() surfaces the wrapping *Element* (PainterElement), not the
             // PainterNode it creates — the same gap documented above for BackgroundElement — so
-            // the is DrawModifierNode check above never catches Modifier.paint(painter). Without
-            // this, a node with .paint() (e.g. Icon/Image) chained alongside .clip()/.background()
-            // was silently flattened into a plain background-color shape, discarding the actual
+            // a DrawModifierNode check (deliberately not present here — see the doc above) would
+            // never have caught Modifier.paint(painter) anyway. Without this explicit check, a
+            // node with .paint() (e.g. Icon/Image) chained alongside .clip()/.background() was
+            // silently flattened into a plain background-color shape, discarding the actual
             // painted content (a vector icon glyph) entirely — confirmed on-device: the icon's
             // grey circle background rendered, but the glyph inside never did. Explicitly reject
             // shape-flattening whenever a paint() modifier is present so this instead falls
             // through to registerLeafCapture, which pixel-captures the whole node (background +
             // glyph) as one real screenshot.
-            if (modifier is InspectableValue && modifier.nameFallback == PAINT_NAME_FALLBACK) return null
+            //
+            // Confirmed on-device this is exactly what a clip()+paint() icon wrapper (e.g. Now in
+            // Android's topic-row icons) looks like: hasDrawingEffect classifies it as CLIP_ONLY
+            // (paint()'s PainterElement isn't a DrawModifierNode either — same gap), so without
+            // ShapeResolution.MustCapture here, `walk`'s clip-only pass-through logic would treat
+            // this node as "nothing of its own to draw" and skip capturing it entirely — the
+            // dumped bitmaps confirmed this exact failure: a blank, background-only capture with
+            // no icon glyph, because the node that actually paints the glyph was never captured at
+            // all, only some unrelated descendant leaf was.
+            if (modifier is InspectableValue && modifier.nameFallback == PAINT_NAME_FALLBACK) {
+                debugLogOnce(
+                    "resolveSimpleShapeWireframe: node=${node.semanticsId} bailing, paint() modifier present"
+                )
+                return ShapeResolution.MustCapture
+            }
         }
 
-        val colorLong = backgroundResolver.resolveBackgroundColor(semanticsNode) ?: return null
+        val colorLong = backgroundResolver.resolveBackgroundColor(semanticsNode)
+        if (colorLong == null) {
+            // A pixel-sampling fallback (reading one real, already-rendered pixel off hostView via
+            // hostView.draw(canvas) into a throwaway 1x1 Bitmap) was tried here and reverted —
+            // confirmed on-device to corrupt live rendering across the whole screen, not just this
+            // node: hostView is the *entire* ComposeView, so every sampling attempt forced an extra
+            // full-tree redraw into a degenerate 1x1 destination, and image-loading Painters
+            // (Coil's AsyncImagePainter, used for Now in Android's topic icons) that read their
+            // render size from that DrawScope during onDraw treated the spurious tiny size as
+            // unrenderable, permanently falling back to their error/placeholder drawable — visible
+            // as every icon on screen (title bar, topic icons, follow buttons, bottom nav)
+            // simultaneously turning into the generic broken-image glyph. Do not reintroduce a
+            // fallback here that calls draw()/measure()/layout() on the shared host view tree —
+            // any such call is not guaranteed side-effect-free against arbitrary child content.
+            debugLogOnce(
+                "resolveSimpleShapeWireframe: node=${node.semanticsId} bailing, resolveBackgroundColor is null"
+            )
+            // Confirmed no BackgroundElement at all (see BackgroundResolver's own logging) and
+            // already confirmed above there's no .paint() either — this node genuinely has nothing
+            // of its own to paint, so it's safe for `walk`'s clip-only pass-through to skip it.
+            return ShapeResolution.SafeToPassThrough
+        }
 
         val boundsPx = try {
             node.coordinates.boundsInRoot()
         } catch (e: Exception) {
-            return null
+            return ShapeResolution.MustCapture
         }
-        if (boundsPx.width <= 0f || boundsPx.height <= 0f) return null
+        if (boundsPx.width <= 0f || boundsPx.height <= 0f) return ShapeResolution.MustCapture
 
         val locationOnScreen = IntArray(2)
         hostView.getLocationOnScreen(locationOnScreen)
@@ -548,18 +694,42 @@ internal class DefaultComposeCompositionWalker : HostViewDecomposer {
 
         val cornerRadius = resolveShapeCornerRadius(node, semanticsNode, globalBounds)
 
-        return MobileSegment.Wireframe.ShapeWireframe(
-            id = composeNodeId(node.semanticsId),
-            x = globalBounds.x,
-            y = globalBounds.y,
-            width = globalBounds.width,
-            height = globalBounds.height,
-            clip = resolveClip(screenBoundsPx(locationOnScreen, boundsPx), request, density),
-            shapeStyle = MobileSegment.ShapeStyle(
-                backgroundColor = colorStringFormatter.formatColorAndAlphaAsHexString(argb, alpha255),
-                cornerRadius = cornerRadius?.toDouble()
+        return ShapeResolution.Resolved(
+            MobileSegment.Wireframe.ShapeWireframe(
+                id = composeNodeId(node.semanticsId),
+                x = globalBounds.x,
+                y = globalBounds.y,
+                width = globalBounds.width,
+                height = globalBounds.height,
+                clip = resolveClip(screenBoundsPx(locationOnScreen, boundsPx), request, density),
+                shapeStyle = MobileSegment.ShapeStyle(
+                    backgroundColor = colorStringFormatter.formatColorAndAlphaAsHexString(argb, alpha255),
+                    cornerRadius = cornerRadius?.toDouble()
+                )
             )
         )
+    }
+
+    /**
+     * The outcome of [resolveSimpleShapeWireframe] — deliberately three-way, not a nullable
+     * wireframe, because `walk`'s clip-only pass-through (see the doc there) is only correct for
+     * one specific kind of failure:
+     * - [Resolved]: flattened into a shape wireframe successfully.
+     * - [SafeToPassThrough]: confirmed this node paints nothing of its own at all (no `.paint()`,
+     *   no resolvable background) — safe for a [DrawingEffect.CLIP_ONLY] node to skip entirely
+     *   and recurse into children as a pure pass-through.
+     * - [MustCapture]: bailed for a reason that does *not* prove there's nothing to lose — a
+     *   `.paint()` modifier (real content, e.g. an Icon's glyph), or semantics/bounds that
+     *   couldn't be read at all. A [DrawingEffect.CLIP_ONLY] node bailing for this reason must
+     *   still fall through to the atomic-leaf/pixel-capture path, exactly as it would if this
+     *   distinction didn't exist — confirmed on-device that skipping it here (treating it the
+     *   same as [SafeToPassThrough]) produced empty, background-only captures with the actual
+     *   icon glyph never rendered at all.
+     */
+    private sealed class ShapeResolution {
+        data class Resolved(val wireframe: MobileSegment.Wireframe.ShapeWireframe) : ShapeResolution()
+        object SafeToPassThrough : ShapeResolution()
+        object MustCapture : ShapeResolution()
     }
 
     /**
@@ -600,21 +770,55 @@ internal class DefaultComposeCompositionWalker : HostViewDecomposer {
         return shape?.let { backgroundResolver.resolveCornerRadius(it, globalBounds, node.density) }
     }
 
-    private fun hasDrawingEffect(node: LayoutNode): Boolean {
+    /**
+     * Which kind of drawing effect [node] has, if any — see the enum's own doc for how [walk]
+     * treats each case differently. A single boolean used to conflate [DrawingEffect.REAL_DRAW]
+     * and [DrawingEffect.CLIP_ONLY], which is what let a clip-only container with no resolvable
+     * background get forced into an atomic pixel-capture leaf (see [DrawingEffect.CLIP_ONLY]'s
+     * doc for the confirmed-on-device bug this caused).
+     */
+    private fun hasDrawingEffect(node: LayoutNode): DrawingEffect {
         for (info in node.getModifierInfo()) {
             val modifier = info.modifier
             if (modifier is DrawModifierNode) {
-                return true
+                debugLogOnce(
+                    "hasDrawingEffect: node=${node.semanticsId} REAL_DRAW via real DrawModifierNode " +
+                        "(${modifier.javaClass.name})"
+                )
+                return DrawingEffect.REAL_DRAW
             }
             if (modifier is InspectableValue && modifier.nameFallback == GRAPHICS_LAYER_NAME_FALLBACK) {
                 val isClipped = modifier.inspectableElements
                     .firstOrNull { it.name == CLIP_PROPERTY_NAME }
                     ?.value == true
-                if (isClipped) return true
+                if (isClipped) {
+                    debugLogOnce("hasDrawingEffect: node=${node.semanticsId} CLIP_ONLY graphicsLayer, no draw")
+                    return DrawingEffect.CLIP_ONLY
+                }
             }
         }
-        return false
+        return DrawingEffect.NONE
     }
+
+    /**
+     * - [NONE]: no drawing effect of its own — a pure structural container.
+     * - [REAL_DRAW]: a real [DrawModifierNode] is attached (`drawBehind`/`drawWithContent`/shadow/
+     *   border/custom draw) — it genuinely paints something. [resolveSimpleShapeWireframe] tries to
+     *   flatten it first; if that fails, it's pixel-captured as one atomic leaf (see [walk]) so its
+     *   actual paint isn't lost.
+     * - [CLIP_ONLY]: only a `Modifier.clip(shape)` (a clipped `graphicsLayer`, no real draw) is
+     *   present. This restricts where *children* render but paints nothing of its own — the common
+     *   `Modifier.clip(shape).background(color)` idiom still resolves a background here (clip and
+     *   background frequently co-occur), so [resolveSimpleShapeWireframe] is still tried first. Only
+     *   when that also fails (confirmed on-device: nodes with no `Modifier.background()` at all,
+     *   e.g. a plain clipped `Box` used purely to bound a `LazyRow`/scroll region) does [walk] treat
+     *   this differently from [REAL_DRAW]: there is nothing of this node's own to represent, so it's
+     *   a pass-through (recurse into children directly) instead of an atomic pixel-capture leaf —
+     *   forcing a screenshot here was baking an ancestor's background plus this node's whole subtree
+     *   into one opaque image, which is what produced the black-square-over-content bug this was
+     *   investigating (see the debugLog calls throughout this file for the diagnostic trail).
+     */
+    private enum class DrawingEffect { NONE, REAL_DRAW, CLIP_ONLY }
 
     /**
      * Whether [node]'s own bounds are too large a fraction of the screen to usefully collapse into
@@ -775,12 +979,27 @@ internal class DefaultComposeCompositionWalker : HostViewDecomposer {
             with(node.density) { DEFAULT_FONT_SIZE_SP.toPx() }
         }
         val textStyle = resolveTextStyle(fontSizePx, density, resolvedStyle)
-        val widthPx = widthPaddedForFontFallback(
-            fontFamily = resolvedStyle?.fontFamily,
-            text = capturedText,
-            fontSizePx = fontSizePx,
-            originalWidthPx = boundsPx.width
-        )
+        // widthPaddedForFontFallback's own doc explains its premise: a box Compose measured for
+        // ONE line of the real font can be too narrow for the substitute font's wider metrics,
+        // silently wrapping text that never wrapped on-device. That premise inverts for text
+        // Compose already wrapped across multiple real lines: boundsPx.width there is the
+        // *paragraph's* wrap width, not a single line's natural width, but
+        // fallbackFontPaint.measureText(text) still measures the whole string as if it were one
+        // line — producing a width wide enough to fit the entire multi-line paragraph on a single
+        // line, and forcing the player to render (and truncate) it that way instead of wrapping
+        // normally. Confirmed on-device: a 2-line paragraph rendered as one cut-off line in the
+        // replay. Only apply the fallback-widening to genuinely single-line text.
+        val isMultiline = (resolvedLayoutResult?.lineCount ?: 1) > 1
+        val widthPx = if (isMultiline) {
+            boundsPx.width
+        } else {
+            widthPaddedForFontFallback(
+                fontFamily = resolvedStyle?.fontFamily,
+                text = capturedText,
+                fontSizePx = fontSizePx,
+                originalWidthPx = boundsPx.width
+            )
+        }
 
         val globalBounds = GlobalBounds(
             x = ((locationOnScreen[0] + boundsPx.left) * inverseDensity).toLong(),
@@ -803,8 +1022,30 @@ internal class DefaultComposeCompositionWalker : HostViewDecomposer {
             height = globalBounds.height,
             clip = resolveClip(screenBoundsPx, request, density),
             text = capturedText,
-            textStyle = textStyle
+            textStyle = textStyle,
+            textPosition = resolveTextPosition(resolvedStyle)
         )
+    }
+
+    /**
+     * `Modifier.paint()`/font substitution aren't the only place this pipeline already accepts an
+     * approximation over losing a real, visible layout property — text center/right alignment
+     * (e.g. `Text("...", textAlign = TextAlign.Center)`) was previously dropped entirely, always
+     * rendering left-aligned in the replay regardless of the real composable's own alignment.
+     * [TextAlign.Start]/[TextAlign.End] are directionality-relative, not literally left/right —
+     * mapped assuming LTR here, the same simplification [resolveFontFamily]/[widthPaddedForFontFallback]
+     * already make by not tracking [androidx.compose.ui.unit.LayoutDirection] anywhere in this
+     * class. [TextAlign.Justify] has no matching [MobileSegment.Horizontal] value; null (no
+     * override, left-aligned default) is the closest available fallback, same as unspecified.
+     */
+    private fun resolveTextPosition(style: TextStyle?): MobileSegment.TextPosition? {
+        val horizontal = when (style?.textAlign) {
+            TextAlign.Center -> MobileSegment.Horizontal.CENTER
+            TextAlign.Right, TextAlign.End -> MobileSegment.Horizontal.RIGHT
+            TextAlign.Left, TextAlign.Start -> MobileSegment.Horizontal.LEFT
+            else -> return null
+        }
+        return MobileSegment.TextPosition(alignment = MobileSegment.Alignment(horizontal = horizontal))
     }
 
     /**
@@ -919,6 +1160,18 @@ internal class DefaultComposeCompositionWalker : HostViewDecomposer {
     }
 
     private companion object {
+        // Shared literally (not a cross-file constant) with PixelCapture.kt/
+        // PixelCaptureFallbackMapper.kt/CompositionTreeBuilder.kt's own debug logging added for
+        // the same investigation — kept as a plain string in each file rather than introducing a
+        // shared dependency just for a log tag.
+        private const val DEBUG_LOG_TAG = "DD_SessionReplay"
+
+        // Bumped by hand on every change to this file during the "full screen broken images"
+        // investigation — see the debugLog call at the top of decompose(). Lets a fresh Logcat
+        // capture be checked against the marker value quoted in conversation to immediately rule
+        // out a stale/not-yet-reinstalled build.
+        private const val DEBUG_BUILD_MARKER = "resolveSimpleShapeWireframe-diag-v15"
+
         /**
          * Defensive cap on pixel captures per Compose host per cycle. Text and pure-structural
          * containers are free (no capture at all), so in practice this only bounds pathological

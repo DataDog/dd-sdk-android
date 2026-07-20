@@ -289,6 +289,20 @@ private fun logNoSuchException(name: String, type: String, e: ReflectiveOperatio
 }
 
 private fun logReflectionException(name: String, type: String, reason: String, e: Throwable) {
+    // Deliberately kept in (not removed after investigation) at the user's explicit request —
+    // see the git history/PR discussion for the "full screen broken images" investigation this
+    // was added for. android.util.Log rather than InternalLogger: this is meant to be read
+    // straight off Logcat on a real device/app while reproducing the issue, not routed through
+    // the SDK's own telemetry/user-facing channels — unlike the InternalLogger.log call below,
+    // which every one of these reflection failures already went through, just not visibly on
+    // Logcat by default. Covers every Class/Field/Method resolution in this file, not just one —
+    // this single addition is what actually surfaces a version-mismatch/obfuscation failure like
+    // BackgroundElementClass resolving to null for an entire app session.
+    android.util.Log.d(
+        "DD_SessionReplay",
+        "[ComposeReflection] Unable to get $type [$name] through reflection: $reason " +
+            "(${e.javaClass.name}: ${e.message})"
+    )
     (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
         level = InternalLogger.Level.ERROR,
         targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),

@@ -35,6 +35,20 @@ internal class RumContextDataHandler(
                     )
                 }
             )
+            // Deliberately kept in (not removed after investigation) at the user's explicit
+            // request — see the git history/PR discussion for the "full screen broken images"
+            // investigation this was added for. android.util.Log rather than InternalLogger:
+            // this is meant to be read straight off Logcat on a real device/app while
+            // reproducing the issue, not routed through the SDK's own telemetry/user-facing
+            // channels. Added to trace a specific symptom: a resource (e.g. a pixel-captured
+            // icon) whose queueItem call lands here gets dropped — see
+            // ResourceItemCreationHandler's own logging for why this used to be permanently
+            // silent for that resourceId regardless of whether RUM context later became valid.
+            android.util.Log.d(
+                "DD_SessionReplay",
+                "[RumContextDataHandler] createRumContextData: dropping item, invalid RUM " +
+                    "context: $newRumContext"
+            )
             return null
         }
 

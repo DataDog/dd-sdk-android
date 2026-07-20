@@ -84,10 +84,12 @@ internal class PixelCaptureFallbackMapper(
     ): List<MobileSegment.Wireframe> {
         val pixelCaptureCallback = mappingContext.pixelCaptureCallback
         if (pixelCaptureCallback == null) {
+            debugLog("no pixelCaptureCallback wired in", view)
             return fallbackMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
         }
 
         if (view.width <= 0 || view.height <= 0) {
+            debugLog("zero-size view (width=${view.width} height=${view.height})", view)
             return fallbackMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
         }
 
@@ -98,11 +100,17 @@ internal class PixelCaptureFallbackMapper(
         // rather than assumed away. Falls back rather than silently truncating: a partial capture
         // of arbitrarily-chosen content would be as misleading as the bug this class fixes.
         if (isTooLargeToCapture(view, mappingContext)) {
+            debugLog(
+                "too large to capture (${view.width}x${view.height}px, > " +
+                    "${MAX_CAPTURABLE_AREA_IN_SCREENS}x screen area)",
+                view
+            )
             return fallbackMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
         }
 
         val visibleRect = Rect()
         if (!view.getGlobalVisibleRect(visibleRect) || visibleRect.isEmpty) {
+            debugLog("no visible area at all (getGlobalVisibleRect empty/false)", view)
             return fallbackMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
         }
 
@@ -127,6 +135,11 @@ internal class PixelCaptureFallbackMapper(
             // has no idea this view draws anything (a custom View's onDraw content is invisible
             // to it) and returns nothing at all — blank space, not a placeholder.
             if (mappingContext.textAndInputPrivacy == TextAndInputPrivacy.MASK_SENSITIVE_INPUTS) {
+                debugLog(
+                    "ineligible (imagePrivacy=${mappingContext.imagePrivacy}, size gate) -> " +
+                        "Content Image placeholder, bounds=$globalBounds",
+                    view
+                )
                 return listOf(
                     MobileSegment.Wireframe.PlaceholderWireframe(
                         id = resolveViewId(view),
@@ -139,6 +152,10 @@ internal class PixelCaptureFallbackMapper(
                     )
                 )
             }
+            debugLog(
+                "ineligible (textAndInputPrivacy=${mappingContext.textAndInputPrivacy}) -> fallbackMapper",
+                view
+            )
             return fallbackMapper.map(view, mappingContext, asyncJobStatusCallback, internalLogger)
         }
 
@@ -159,6 +176,7 @@ internal class PixelCaptureFallbackMapper(
                 view.isDirty
             ) == true
         ) {
+            debugLog("fresh placeholder decision cached, node=$nodeId, bounds=$globalBounds", view)
             return listOf(
                 MobileSegment.Wireframe.PlaceholderWireframe(
                     id = nodeId,
@@ -186,6 +204,12 @@ internal class PixelCaptureFallbackMapper(
         // per-cycle capture budget runs out before this capture is processed.
         val wireframes = mutableListOf<MobileSegment.Wireframe>(imageWireframe)
 
+        debugLog(
+            "registering pending capture, node=$nodeId, isolationClipRect=$isolationClipRect, " +
+                "globalBounds=$globalBounds",
+            view
+        )
+
         pixelCaptureCallback.registerPendingCapture(
             nodeId = nodeId,
             dpBounds = globalBounds,
@@ -199,6 +223,19 @@ internal class PixelCaptureFallbackMapper(
         )
 
         return wireframes
+    }
+
+    // Deliberately kept in (not removed after investigation) at the user's explicit request —
+    // see the git history/PR discussion for the "full screen broken images" investigation this
+    // was added for. android.util.Log rather than InternalLogger: this is meant to be read
+    // straight off Logcat on a real device/app while reproducing the issue, not routed through
+    // the SDK's own telemetry/user-facing channels.
+    private fun debugLog(message: String, view: View) {
+        android.util.Log.d(
+            DEBUG_LOG_TAG,
+            "[PixelCaptureFallbackMapper] view=${view.javaClass.name}@${System.identityHashCode(view)} " +
+                "size=${view.width}x${view.height}px: $message"
+        )
     }
 
     /**
@@ -264,5 +301,10 @@ internal class PixelCaptureFallbackMapper(
          * bitmap allocation or blow through this cycle's capture budget.
          */
         private const val MAX_CAPTURABLE_AREA_IN_SCREENS = 8f
+
+        // Shared literally (not a cross-file constant) with PixelCapture.kt/CompositionTreeBuilder.kt's
+        // own debug logging added for the same investigation — kept as a plain string in each file
+        // rather than introducing a shared dependency just for a log tag.
+        private const val DEBUG_LOG_TAG = "DD_SessionReplay"
     }
 }

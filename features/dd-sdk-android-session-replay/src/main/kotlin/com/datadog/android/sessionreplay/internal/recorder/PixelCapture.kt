@@ -29,6 +29,7 @@ import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.Executors
 
 /**
  * Implements [PixelCaptureCallback] using **only [View.draw]** — no [android.view.PixelCopy]. Every
@@ -131,6 +132,19 @@ internal class PixelCapture(
 
     private val pendingCaptures = CopyOnWriteArrayList<PendingPixelCapture>()
 
+    // Diagnostic-logging-only support — see debugLog/debugLogOnce. Not on the pixel-capture
+    // critical path itself (no capture decision reads either of these), so a single background
+    // thread and an unbounded (but debug-build-scale) dedup set are an acceptable tradeoff for
+    // keeping every debugLog call site's actual Log.d write off the UI thread.
+    private val debugLogExecutor = Executors.newSingleThreadExecutor()
+
+    // Every distinct message ever passed to debugLogOnce, so a call site whose message doesn't
+    // change cycle-to-cycle (the common case for a static node) only ever reaches Logcat once —
+    // see debugLogOnce. Not cleared on navigation: a message that already fired once for a given
+    // node/state on an earlier screen visit isn't worth repeating verbatim if that screen is
+    // revisited, and this is diagnostic-only, not user-facing telemetry.
+    private val loggedOnceMessages: MutableSet<String> = ConcurrentHashMap.newKeySet()
+
     /**
      * Last-resolved outcome per nodeId — see the class doc for the reuse/invalidation rules.
      * Covers *both* a successfully uploaded capture and a decision to show a placeholder instead
@@ -192,6 +206,17 @@ internal class PixelCapture(
     private var lastCapturedViewUrl: String? = null
 
     /**
+     * Round-robin starting index into next cycle's [pendingCaptures] snapshot — see
+     * [processPendingCaptures]'s doc for why this exists: without it, [CAPTURE_BUDGET_MS] running
+     * out partway through a cycle always times out the *same* tail of nodes (registration order is
+     * stable cycle-to-cycle for a static screen), which never draw, never populate [cache], and so
+     * never benefit from cache-reuse either — starving indefinitely rather than eventually
+     * converging. Advanced, each cycle, to just past the last node this cycle actually reached
+     * (drawn or cache-reused, not timed-out-by-budget) — see the end of [processPendingCaptures].
+     */
+    private var pendingCaptureRotationOffset = 0
+
+    /**
      * Must be called **before** the SR traversal. Marks the start of this snapshot cycle for
      * the [CAPTURE_BUDGET_MS] budget. Flushes the health summary — see [logHealthSummary] — when
      * navigation is detected (URL change) or, failing that, once [HEALTH_LOG_INTERVAL_MS] has
@@ -210,6 +235,7 @@ internal class PixelCapture(
             cache.clear()
             pendingCaptures.clear()
             blinkingCursorTracker.clear()
+            pendingCaptureRotationOffset = 0
             lastCapturedViewUrl = currentViewUrl
         }
     }
@@ -293,6 +319,11 @@ internal class PixelCapture(
         textAndInputPrivacy: TextAndInputPrivacy,
         imagePrivacy: ImagePrivacy
     ) {
+        debugLogOnce(
+            "registerPendingCapture: node=$nodeId dpBounds=$dpBounds " +
+                "isolationClipRect=$isolationClipRect view=${isolationView.javaClass.name} " +
+                "textAndInputPrivacy=$textAndInputPrivacy imagePrivacy=$imagePrivacy"
+        )
         asyncJobStatusCallback.jobStarted()
         pendingCaptures.add(
             PendingPixelCapture(
@@ -354,6 +385,16 @@ internal class PixelCapture(
      * [timeoutPending] swaps it for a placeholder instead of attempting a capture (tallied for
      * the next health summary); otherwise [captureOrReuse] either reuses a cached capture or
      * draws a fresh one.
+     *
+     * Processed in **round-robin order**, not [pendingCaptures]' registration order — see
+     * [pendingCaptureRotationOffset]'s doc. [CAPTURE_BUDGET_MS] can only ever run out once, and
+     * once it does, `elapsedRealtimeMs() >= deadlineMs` stays true for every remaining item in
+     * this same pass (time doesn't go backwards) — so processing in a fixed order always times
+     * out the same tail every cycle on a busy screen. Starting from a different index each cycle
+     * spreads that timeout tail across different nodes over time instead, letting every node
+     * eventually get its one real [View.draw] and populate [cache] — after which it's a cheap
+     * cache-reuse hit on every later cycle regardless of processing order, so this rotation only
+     * needs to matter for a node's *first* resolution, not indefinitely.
      */
     @UiThread
     fun processPendingCaptures() {
@@ -366,66 +407,132 @@ internal class PixelCapture(
         pendingCaptures.clear()
 
         val deadlineMs = snapshotCycleStartMs + CAPTURE_BUDGET_MS
+        val size = snapshot.size
+        val startIndex = pendingCaptureRotationOffset % size
+        val rotated = ArrayList<PendingPixelCapture>(size)
+        for (i in 0 until size) rotated.add(snapshot[(startIndex + i) % size])
+        var reachedCount = 0
 
-        for (pending in snapshot) {
+        // Every index this pass has already resolved — either directly, or as another member of
+        // an earlier index's batched group (see below) — so the loop can skip straight past it
+        // when it reaches that original position.
+        val handled = BooleanArray(size)
+
+        // Deliberately still ONE index at a time, in rotation order — not "classify everything,
+        // then draw everything" — so CAPTURE_BUDGET_MS is rechecked against real elapsed time
+        // right before each unit of real work (a single draw or a shared-group draw), the same
+        // way it always was before batching existed. A slow capture's own real work (or, in a
+        // test, a stubbed side effect on its AsyncJobStatusCallback) can push the clock past
+        // budget for everything still to come — that must be visible to the *next* index's check,
+        // not decided in advance from a snapshot of "was it over budget before any drawing began."
+        for (i in 0 until size) {
+            if (handled[i]) continue
+            val pending = rotated[i]
             if (elapsedRealtimeMs() >= deadlineMs) {
                 timeoutPending(pending)
                 budgetExceededCount++
+                handled[i] = true
                 continue
             }
-            captureOrReuse(pending)
+            reachedCount++
+            handled[i] = true
+
+            val cached = freshCacheEntry(pending)
+            if (cached != null) {
+                cacheReuseCount++
+                applyCachedOutcome(pending, cached)
+                continue
+            }
+
+            // This index needs a real capture — look ahead (not yet handled, not yet visited by
+            // the outer loop, so nothing has drawn or consumed time since pending's own check
+            // above) for every other pending node sharing pending.isolationView that also needs
+            // one, so they can share a single View.draw instead of one each — see
+            // captureSharedRegions' doc for why. A look-ahead candidate's own cache freshness is
+            // still checked (cheap, no drawing involved) so a same-view node that's actually a
+            // cache hit isn't needlessly pulled into the group.
+            val group = mutableListOf(pending)
+            for (j in i + 1 until size) {
+                if (handled[j]) continue
+                val candidate = rotated[j]
+                if (candidate.isolationView !== pending.isolationView) continue
+                if (freshCacheEntry(candidate) != null) continue
+                group.add(candidate)
+                handled[j] = true
+                reachedCount++
+            }
+
+            if (group.size == 1) {
+                captureSingle(pending)
+            } else {
+                captureSharedRegions(pending.isolationView, group)
+            }
         }
+        pendingCaptureRotationOffset = (startIndex + reachedCount) % size
 
         snapshotCycleDurationTotalMs += elapsedRealtimeMs() - snapshotCycleStartMs
     }
 
     /**
-     * Reuses [cache] when [pending]'s region is still the same size and the entry isn't older
-     * than its currently-applicable trust window; otherwise captures a fresh [View.draw] and
-     * refreshes the cache entry on success. That window is [MIN_REDRAW_INTERVAL_MS] when
+     * [pending]'s current [cache] entry if [pending]'s region is still the same size and the
+     * entry isn't older than its currently-applicable trust window — [MIN_REDRAW_INTERVAL_MS] when
      * [View.isDirty] is true, or the much longer [MAX_CACHE_AGE_MS] when it's false — seeing
      * isDirty true doesn't force an immediate redraw, only a sooner one, so a view invalidating
      * continuously without genuinely new content each time (e.g. a blinking text cursor) doesn't
      * force a full recapture on every single cycle (see the class doc for the full reasoning).
-     *
-     * Even when the above says a redraw is warranted, [captureTimeBank] gets the final say —
-     * unconditionally, regardless of whether this is this node's first-ever capture: not stalling
-     * the host app's UI thread always outranks capture fidelity, full stop, so there is no case
-     * where drawing is allowed to bypass this budget. When it's exhausted: a same-size cache
-     * entry, if one exists, is reused as-is instead of drawing (a little staler than usual, never
-     * a placeholder); otherwise this capture is deferred exactly like a [CAPTURE_BUDGET_MS]
-     * timeout — [timeoutPending] — since there is nothing to fall back on and drawing anyway is
-     * not an option. Both are self-correcting: the same node gets re-registered and re-attempted
-     * next cycle, whenever the budget allows it.
+     * Null otherwise, meaning a real capture is needed.
      */
-    private fun captureOrReuse(pending: PendingPixelCapture) {
+    private fun freshCacheEntry(pending: PendingPixelCapture): CachedOutcome? {
+        val width = pending.isolationClipRect.width()
+        val height = pending.isolationClipRect.height()
+        val cached = cache[pending.nodeId] ?: return null
+        if (cached.width != width || cached.height != height) return null
+        val ageMs = elapsedRealtimeMs() - cached.capturedAtMs
+        // Only reads View.isDirty (a real interaction, not free) once a same-size entry is
+        // already known to exist — with no cache at all, or a size mismatch, checking it first
+        // would be pure waste since freshness is already decided regardless of what it reports.
+        val isDirty = pending.isolationView.isDirty
+        return if (ageMs < if (isDirty) MIN_REDRAW_INTERVAL_MS else MAX_CACHE_AGE_MS) cached else null
+    }
+
+    /**
+     * [captureTimeBank]'s exhausted-budget fallback, shared by [captureSingle] and
+     * [captureSharedRegions] — a same-size cache entry, if one exists, is reused as-is (a little
+     * staler than usual, never a placeholder) rather than drawing; otherwise this capture is
+     * deferred exactly like a [CAPTURE_BUDGET_MS] timeout — [timeoutPending] — since there is
+     * nothing to fall back on and drawing anyway is not an option. Both are self-correcting: the
+     * same node gets re-registered and re-attempted next cycle, whenever the budget allows it.
+     */
+    private fun applyCaptureBudgetExhausted(pending: PendingPixelCapture) {
+        val width = pending.isolationClipRect.width()
+        val height = pending.isolationClipRect.height()
+        val cached = cache[pending.nodeId]
+        if (cached != null && cached.width == width && cached.height == height) {
+            budgetThrottledReuseCount++
+            applyCachedOutcome(pending, cached)
+        } else {
+            budgetThrottledPlaceholderCount++
+            timeoutPending(pending)
+        }
+    }
+
+    /**
+     * The only pending capture needing a real draw for its [PendingPixelCapture.isolationView]
+     * this cycle — captures just its own (typically small) [PendingPixelCapture.isolationClipRect]
+     * directly, exactly as before batching existed. Not worth the overhead of a full-View draw
+     * (see [captureSharedRegions]) when there's nothing else to share it with.
+     *
+     * [captureTimeBank] gets the final say on whether to draw at all — unconditionally, regardless
+     * of whether this is this node's first-ever capture: not stalling the host app's UI thread
+     * always outranks capture fidelity, full stop, so there is no case where drawing is allowed to
+     * bypass this budget.
+     */
+    private fun captureSingle(pending: PendingPixelCapture) {
         val width = pending.isolationClipRect.width()
         val height = pending.isolationClipRect.height()
 
-        val cached = cache[pending.nodeId]
-        val cacheMatchesSize = cached != null && cached.width == width && cached.height == height
-        // Only reads View.isDirty (a real interaction, not free) when there's actually a same-size
-        // entry to weigh it against — with no cache at all, or a size mismatch, the entry can't be
-        // fresh regardless of what isDirty reports, so checking it would be pure waste.
-        val ageMs = cached?.let { elapsedRealtimeMs() - it.capturedAtMs }
-        val isDirty = if (cacheMatchesSize) pending.isolationView.isDirty else null
-        val cacheIsFresh = cacheMatchesSize &&
-            checkNotNull(ageMs) < if (checkNotNull(isDirty)) MIN_REDRAW_INTERVAL_MS else MAX_CACHE_AGE_MS
-
-        if (cacheIsFresh) {
-            cacheReuseCount++
-            applyCachedOutcome(pending, checkNotNull(cached))
-            return
-        }
-
         if (!captureTimeBank.updateAndCheck(elapsedRealtimeMs())) {
-            if (cacheMatchesSize) {
-                budgetThrottledReuseCount++
-                applyCachedOutcome(pending, checkNotNull(cached))
-            } else {
-                budgetThrottledPlaceholderCount++
-                timeoutPending(pending)
-            }
+            applyCaptureBudgetExhausted(pending)
             return
         }
 
@@ -433,10 +540,102 @@ internal class PixelCapture(
         val bitmap = captureViewRegion(pending.isolationView, pending.isolationClipRect)
         captureTimeBank.consume(elapsedRealtimeMs() - drawStartMs)
         if (bitmap == null) {
+            debugLogOnce(
+                "captureSingle: captureViewRegion returned null, node=${pending.nodeId} " +
+                    "view=${pending.isolationView.javaClass.name} size=${width}x$height — wireframe " +
+                    "stays isEmpty=true this cycle"
+            )
             pending.asyncJobStatusCallback.jobFinished()
             return
         }
 
+        finishCapture(pending, bitmap, width, height)
+    }
+
+    /**
+     * Two or more pending captures sharing the same [view] this cycle — captured with **one**
+     * [View.draw] of the whole [view] (not each member's own small region) into a single bitmap,
+     * then each member's own region is cropped out of that one bitmap via [Bitmap.createBitmap]
+     * (a pixel copy, not another draw). This is the whole reason batching exists: before it, a
+     * Compose screen decomposing into N separate small leaf captures meant N separate full-tree
+     * `View.draw` passes on the same shared host View each cycle (translated/clipped down
+     * afterward, but the draw itself still walks the *entire* composition every time) — confirmed
+     * on-device to risk corrupting a stateful [androidx.compose.ui.graphics.painter.Painter]'s own
+     * rendering state (Coil's `AsyncImagePainter` reading a spurious size from an SDK-injected
+     * extra draw pass), the more often it happens the more likely it manifests. One shared, full
+     * (not degenerately small) draw per cycle per host View — instead of one per leaf — cuts that
+     * risk back down regardless of how many leaves this screen decomposes into.
+     *
+     * [captureTimeBank] gates the one shared draw exactly as [captureSingle] gates its own single
+     * draw — if exhausted, every member falls back to [applyCaptureBudgetExhausted] individually
+     * (some may have their own stale cache entry to reuse, others may not).
+     */
+    private fun captureSharedRegions(view: View, group: List<PendingPixelCapture>) {
+        if (!captureTimeBank.updateAndCheck(elapsedRealtimeMs())) {
+            group.forEach { applyCaptureBudgetExhausted(it) }
+            return
+        }
+
+        val drawStartMs = elapsedRealtimeMs()
+        val shared = captureViewRegion(view, Rect(0, 0, view.width, view.height))
+        captureTimeBank.consume(elapsedRealtimeMs() - drawStartMs)
+
+        if (shared == null) {
+            group.forEach { pending ->
+                debugLogOnce(
+                    "captureSharedRegions: shared capture returned null, node=${pending.nodeId} " +
+                        "view=${view.javaClass.name} — wireframe stays isEmpty=true this cycle"
+                )
+                pending.asyncJobStatusCallback.jobFinished()
+            }
+            return
+        }
+
+        group.forEach { pending -> applySharedCapture(pending, shared) }
+        shared.recycle()
+    }
+
+    /**
+     * Crops [pending]'s own region out of [shared] (see [captureSharedRegions]) and finishes it
+     * exactly as [captureSingle] would with its own directly-drawn bitmap. [Rect.intersect] guards
+     * against [PendingPixelCapture.isolationClipRect] extending beyond [shared]'s bounds — it
+     * shouldn't in practice (both derive from the same View's own coordinate space), but
+     * [Bitmap.createBitmap] throws on an out-of-bounds subset rather than clamping, and a stale
+     * bounds mismatch is far cheaper to leave unresolved for one cycle than to crash on.
+     */
+    private fun applySharedCapture(pending: PendingPixelCapture, shared: Bitmap) {
+        val bounded = Rect(pending.isolationClipRect)
+        if (!bounded.intersect(0, 0, shared.width, shared.height) || bounded.isEmpty) {
+            debugLogOnce(
+                "applySharedCapture: node=${pending.nodeId} clipRect=${pending.isolationClipRect} " +
+                    "outside shared bitmap bounds (${shared.width}x${shared.height}) — wireframe " +
+                    "stays isEmpty=true this cycle"
+            )
+            pending.asyncJobStatusCallback.jobFinished()
+            return
+        }
+
+        val bitmap = Bitmap.createBitmap(shared, bounded.left, bounded.top, bounded.width(), bounded.height())
+        if (isBitmapLikelyEmpty(bitmap)) {
+            debugLogOnce(
+                "applySharedCapture: node=${pending.nodeId} cropped region is fully transparent " +
+                    "(isBitmapLikelyEmpty) — wireframe stays isEmpty=true this cycle"
+            )
+            bitmap.recycle()
+            pending.asyncJobStatusCallback.jobFinished()
+            return
+        }
+
+        finishCapture(pending, bitmap, bounded.width(), bounded.height())
+    }
+
+    /**
+     * Common tail of [captureSingle]/[applySharedCapture] once a real, non-empty [bitmap] for
+     * [pending] is in hand — tallies it, feeds [blinkingCursorTracker], and either uploads it
+     * directly or routes it through [textDetector] first, exactly as this used to be inlined at
+     * the end of the pre-batching `captureOrReuse`.
+     */
+    private fun finishCapture(pending: PendingPixelCapture, bitmap: Bitmap, width: Int, height: Int) {
         capturedCount++
         val looksLikeBlinkingCursor = blinkingCursorTracker.recordFreshCapture(pending.nodeId, elapsedRealtimeMs())
 
@@ -486,15 +685,25 @@ internal class PixelCapture(
      * never a stale reference to what [captureViewRegion] originally produced.
      */
     private fun resolveAndCache(pending: PendingPixelCapture, bitmap: Bitmap, width: Int, height: Int) {
+        debugLogOnce(
+            "resolveAndCache: handing bitmap (${bitmap.width}x${bitmap.height}px) to resourceResolver, " +
+                "node=${pending.nodeId} isolationSize=${width}x$height"
+        )
         resourceResolver.resolveResourceIdFromBitmap(
             bitmap = bitmap,
             resourceResolverCallback = object : ResourceResolverCallback {
                 override fun onSuccess(resourceId: String) {
+                    debugLogOnce("resolveAndCache: onSuccess, node=${pending.nodeId} resourceId=$resourceId")
+                    dumpBitmapForDebugging(pending, resourceId, bitmap)
                     cache[pending.nodeId] = CachedOutcome.Uploaded(width, height, resourceId, elapsedRealtimeMs())
                     applyResourceId(pending, resourceId)
                 }
 
                 override fun onFailure() {
+                    debugLogOnce(
+                        "resolveAndCache: onFailure, node=${pending.nodeId} — wireframe stays " +
+                            "isEmpty=true, nothing cached"
+                    )
                     pending.asyncJobStatusCallback.jobFinished()
                 }
             }
@@ -513,11 +722,13 @@ internal class PixelCapture(
      * did — self-correcting from the second cycle on rather than never at all.
      */
     private fun cachePlaceholderAndApply(pending: PendingPixelCapture, width: Int, height: Int) {
+        debugLogOnce("cachePlaceholderAndApply: node=${pending.nodeId} size=${width}x$height")
         cache[pending.nodeId] = CachedOutcome.Placeholder(width, height, elapsedRealtimeMs())
         replaceWithImagePrivacyPlaceholder(pending)
     }
 
     private fun applyResourceId(pending: PendingPixelCapture, resourceId: String) {
+        debugLogOnce("applyResourceId: node=${pending.nodeId} resourceId=$resourceId")
         pending.wireframe.resourceId = resourceId
         pending.wireframe.isEmpty = false
         pending.asyncJobStatusCallback.jobFinished()
@@ -532,6 +743,10 @@ internal class PixelCapture(
      * fidelity.
      */
     private fun timeoutPending(pending: PendingPixelCapture) {
+        debugLogOnce(
+            "timeoutPending: node=${pending.nodeId} bounds=${pending.dpBounds} — " +
+                "\"$CAPTURE_BUDGET_EXCEEDED_LABEL\" placeholder (budget exceeded, no capture attempted)"
+        )
         pending.wireframeSlot.replace(
             MobileSegment.Wireframe.PlaceholderWireframe(
                 id = pending.nodeId,
@@ -555,6 +770,10 @@ internal class PixelCapture(
      * SR — so this reads consistently in a session replay regardless of which path produced it.
      */
     private fun replaceWithImagePrivacyPlaceholder(pending: PendingPixelCapture) {
+        debugLogOnce(
+            "replaceWithImagePrivacyPlaceholder: node=${pending.nodeId} bounds=${pending.dpBounds} — " +
+                "\"${DefaultImageWireframeHelper.MASK_ALL_CONTENT_LABEL}\" placeholder"
+        )
         pending.wireframeSlot.replace(
             MobileSegment.Wireframe.PlaceholderWireframe(
                 id = pending.nodeId,
@@ -576,9 +795,78 @@ internal class PixelCapture(
         pendingCaptures.clear()
         cache.clear()
         textDetector?.release()
+        debugLogExecutor.shutdown()
     }
 
     // endregion
+
+    // Deliberately kept in (not removed after investigation) at the user's explicit request —
+    // see the git history/PR discussion for the "full screen broken images" investigation this
+    // was added for. android.util.Log rather than InternalLogger: this is meant to be read
+    // straight off Logcat on a real device/app while reproducing the issue, not routed through
+    // the SDK's own telemetry/user-facing channels.
+    //
+    // The actual Log.d call (a syscall into logd, not free) is dispatched onto
+    // debugLogExecutor rather than made inline here — every caller of this method runs on the
+    // UI thread, inside the same CAPTURE_BUDGET_MS window this class is trying to protect, so a
+    // synchronous log write on that thread competes with capture work for the same budget it's
+    // diagnosing. Ordering across threads is not preserved (Logcat's own timestamps disambiguate),
+    // which is an acceptable tradeoff for diagnostic-only output.
+    private fun debugLog(message: String) {
+        debugLogExecutor.execute { android.util.Log.d(DEBUG_LOG_TAG, "[PixelCapture] $message") }
+    }
+
+    /**
+     * Same as [debugLog], but only the first time [message] is seen — see [loggedOnceMessages]'s
+     * doc. Used at call sites that would otherwise repeat the identical line every single snapshot
+     * cycle for a node whose state hasn't changed (the overwhelming common case for a static
+     * screen) — keeping the log statement itself (per the standing "never remove" instruction)
+     * while not flooding Logcat with hundreds of identical lines per second.
+     */
+    private fun debugLogOnce(message: String) {
+        if (loggedOnceMessages.add(message)) {
+            debugLog(message)
+        }
+    }
+
+    // Every resourceId this process has already dumped to disk for visual inspection — see
+    // dumpBitmapForDebugging. Keeps this a one-shot-per-distinct-resource operation (a static
+    // icon's bitmap is identical across cycles, same resourceId every time) rather than writing
+    // the same PNG to disk repeatedly.
+    private val dumpedResourceIds: MutableSet<String> = ConcurrentHashMap.newKeySet()
+
+    /**
+     * Deliberately kept in (not removed after investigation) at the user's explicit request —
+     * see the git history/PR discussion for the "full screen broken images" investigation this
+     * was added for. Writes [bitmap] — the *exact* pixels handed to [resourceResolver] for
+     * [resourceId] — to this app's own external files dir as a plain PNG, so it can be pulled
+     * off-device and inspected directly (`adb pull`). Every other signal available in this
+     * investigation (onSuccess firing, isBitmapLikelyEmpty passing, a resource getting
+     * enqueued/uploaded) only proves the pipeline *believes* it captured something real —
+     * isBitmapLikelyEmpty in particular only checks the alpha channel, so a fully-opaque bitmap
+     * that's just the surrounding background color with no actual icon glyph in it (a legitimate
+     * possibility if the real content hadn't finished composing/laying out at the exact instant
+     * the shared View.draw happened — see captureSharedRegions' doc) would pass every check here
+     * and still render as a blank square in the replay. This is the only way to settle that by
+     * looking at the actual pixels instead of inferring from logs.
+     */
+    private fun dumpBitmapForDebugging(pending: PendingPixelCapture, resourceId: String, bitmap: Bitmap) {
+        if (!dumpedResourceIds.add(resourceId)) return
+        try {
+            val dir = pending.isolationView.context.getExternalFilesDir(null) ?: return
+            val file = java.io.File(dir, "sr_debug_$resourceId.png")
+            java.io.FileOutputStream(file).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            debugLog(
+                "dumpBitmapForDebugging: node=${pending.nodeId} resourceId=$resourceId " +
+                    "wrote ${file.absolutePath} (${bitmap.width}x${bitmap.height}px)"
+            )
+        } catch (e: Exception) {
+            debugLog(
+                "dumpBitmapForDebugging: node=${pending.nodeId} resourceId=$resourceId failed: " +
+                    "${e.javaClass.simpleName}(${e.message})"
+            )
+        }
+    }
 
     /**
      * Seeds [cache] directly — real [View.draw]/[Bitmap] capture can't run in a plain JVM unit
@@ -634,8 +922,20 @@ internal class PixelCapture(
      *   method's doc for why it scans every real pixel rather than a downscaled thumbnail.
      */
     private fun captureViewRegion(sourceView: View, clipRect: Rect): Bitmap? {
-        if (clipRect.width() <= 0 || clipRect.height() <= 0) return null
-        if (containsHardwareSurface(sourceView)) return null
+        if (clipRect.width() <= 0 || clipRect.height() <= 0) {
+            debugLogOnce(
+                "captureViewRegion: clipRect has zero/negative size ($clipRect), " +
+                    "view=${sourceView.javaClass.name}"
+            )
+            return null
+        }
+        if (containsHardwareSurface(sourceView)) {
+            debugLogOnce(
+                "captureViewRegion: contains a SurfaceView/TextureView, skipping capture, " +
+                    "view=${sourceView.javaClass.name} clipRect=$clipRect"
+            )
+            return null
+        }
 
         val drawn = try {
             captureViewRegionViaDraw(sourceView, clipRect)
@@ -645,11 +945,20 @@ internal class PixelCapture(
             // a Bitmap.Config.HARDWARE bitmap. There is no way to render that content through
             // a software Canvas. Tallied for the next health summary rather than logged
             // immediately here — see the class doc.
+            debugLogOnce(
+                "captureViewRegion: View.draw threw ${e.javaClass.simpleName}(${e.message}), " +
+                    "view=${sourceView.javaClass.name} clipRect=$clipRect"
+            )
             captureFailureCount++
             null
         }
 
         if (drawn != null && isBitmapLikelyEmpty(drawn)) {
+            debugLogOnce(
+                "captureViewRegion: drawn bitmap is fully transparent (isBitmapLikelyEmpty), " +
+                    "view=${sourceView.javaClass.name} clipRect=$clipRect " +
+                    "bitmapSize=${drawn.width}x${drawn.height}"
+            )
             drawn.recycle()
             return null
         }
@@ -746,6 +1055,12 @@ internal class PixelCapture(
     }
 
     companion object {
+        // Shared literally (not a cross-file constant) with PixelCaptureFallbackMapper.kt/
+        // CompositionTreeBuilder.kt's own debug logging added for the same investigation — kept
+        // as a plain string in each file rather than introducing a shared dependency just for a
+        // log tag.
+        private const val DEBUG_LOG_TAG = "DD_SessionReplay"
+
         /**
          * Wall-clock budget for an entire SR snapshot cycle — from [onPreTraversal], through
          * traversal and every mapper, to the end of [processPendingCaptures] — not just the

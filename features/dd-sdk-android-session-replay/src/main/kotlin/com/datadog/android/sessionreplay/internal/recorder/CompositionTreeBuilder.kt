@@ -190,6 +190,13 @@ internal class CompositionTreeBuilder(
                 buildSyntheticRootLayer(windowLayers, systemInformation.screenBounds)
             }
         }
+        if (rootLayer == null) {
+            debugLog(
+                "build: no root layer produced (rootViews=${rootViews.size}, " +
+                    "visibleRootViews=${visibleRootViews.size}, windowLayers=${windowLayers.size}) " +
+                    "-> entire snapshot will be empty"
+            )
+        }
         val compositionTree = rootLayer?.let {
             MobileSegment.CompositionTree(root = it, layers = layers.toList().ifEmpty { null })
         }
@@ -230,7 +237,10 @@ internal class CompositionTreeBuilder(
         ancestorBounds: List<WireframeBounds>
     ): MobileSegment.CompositionLayer? {
         val id = viewIdentifierResolver.resolveChildUniqueIdentifier(view, COMPOSITION_LAYER_KEY_NAME)
-            ?: return null
+        if (id == null) {
+            debugLog("buildLayer: could not resolve a unique id, falling back to leaf/compose path", view)
+            return null
+        }
         val density = mappingContext.systemInformation.screenDensity
         val bounds = viewBoundsResolver.resolveViewGlobalBounds(view, density)
 
@@ -340,6 +350,7 @@ internal class CompositionTreeBuilder(
         val localMappingContext = resolveViewPrivacyOverrides(view, mappingContext, internalLogger)
 
         if (isViewHiddenForSessionReplay(view)) {
+            debugLog("routing=hidden", view)
             val hiddenWireframes = hiddenViewMapper.map(
                 view,
                 localMappingContext,
@@ -361,22 +372,31 @@ internal class CompositionTreeBuilder(
         ) {
             val layer = buildLayer(view, localMappingContext, asyncJobStatusCallback, internalLogger, ancestorBounds)
             if (layer != null) {
+                debugLog("routing=container, layer=${layer.id}, childCount=${view.childCount}", view)
                 layers.add(layer)
                 return listOf(MobileSegment.CompositionLayerChild(id = layer.id, type = LAYER_CHILD_TYPE))
             }
+            debugLog("routing=container failed to build layer, falling through", view)
         }
 
         if (isComposeHostView(view)) {
             val composeLayer =
                 buildComposeLayer(view, localMappingContext, asyncJobStatusCallback, internalLogger, ancestorBounds)
             if (composeLayer != null) {
+                debugLog("routing=composeHost, layer=${composeLayer.id}", view)
                 layers.add(composeLayer)
                 return listOf(MobileSegment.CompositionLayerChild(id = composeLayer.id, type = LAYER_CHILD_TYPE))
             }
+            debugLog("routing=composeHost failed to decompose, falling through to leaf mapping", view)
         }
 
         val leafWireframes = mapLeafView(view, localMappingContext, asyncJobStatusCallback, internalLogger)
             .clippedAgainst(ancestorBounds)
+        debugLog(
+            "routing=leaf, wireframeCount=${leafWireframes.size}, " +
+                "isContainer=${view is ViewGroup && view.childCount > 0}",
+            view
+        )
         wireframes.addAll(leafWireframes)
         return leafWireframes.map {
             MobileSegment.CompositionLayerChild(id = it.id(), type = WIREFRAME_CHILD_TYPE)
@@ -405,8 +425,14 @@ internal class CompositionTreeBuilder(
         internalLogger: InternalLogger,
         ancestorBounds: List<WireframeBounds>
     ): MobileSegment.CompositionLayer? {
-        val decomposer = hostViewDecomposer ?: return null
-        if (!decomposer.canDecompose(view)) return null
+        val decomposer = hostViewDecomposer
+        if (decomposer == null) {
+            debugLog("buildComposeLayer: hostViewDecomposer is null, cannot decompose", view)
+            return null
+        }
+        val canDecompose = decomposer.canDecompose(view)
+        debugLog("buildComposeLayer: decomposer=${decomposer.javaClass.name} canDecompose=$canDecompose", view)
+        if (!canDecompose) return null
 
         val id = viewIdentifierResolver.resolveChildUniqueIdentifier(view, COMPOSITION_LAYER_KEY_NAME)
             ?: return null
@@ -545,6 +571,23 @@ internal class CompositionTreeBuilder(
         return SIMPLE_CONTAINER_CLASSES.contains(view.javaClass)
     }
 
+    // Deliberately kept in (not removed after investigation) at the user's explicit request —
+    // see the git history/PR discussion for the "full screen broken images" investigation this
+    // was added for. android.util.Log rather than InternalLogger: this is meant to be read
+    // straight off Logcat on a real device/app while reproducing the issue, not routed through
+    // the SDK's own telemetry/user-facing channels.
+    private fun debugLog(message: String, view: View) {
+        android.util.Log.d(
+            DEBUG_LOG_TAG,
+            "[CompositionTreeBuilder] view=${view.javaClass.name}@${System.identityHashCode(view)} " +
+                "size=${view.width}x${view.height}px: $message"
+        )
+    }
+
+    private fun debugLog(message: String) {
+        android.util.Log.d(DEBUG_LOG_TAG, "[CompositionTreeBuilder] $message")
+    }
+
     private fun opacityModifiers(alpha: Float): List<MobileSegment.CompositionLayerModifier>? {
         if (alpha >= 1f) return null
         return listOf(MobileSegment.CompositionLayerModifier.CompositionLayerOpacityModifier(value = alpha))
@@ -587,6 +630,12 @@ internal class CompositionTreeBuilder(
     )
 
     companion object {
+        // Shared literally (not a cross-file constant) with PixelCapture.kt/
+        // PixelCaptureFallbackMapper.kt's own debug logging added for the same investigation —
+        // kept as a plain string in each file rather than introducing a shared dependency just
+        // for a log tag.
+        private const val DEBUG_LOG_TAG = "DD_SessionReplay"
+
         internal const val COMPOSITION_LAYER_KEY_NAME = "composition_layer"
         private val WIREFRAME_CHILD_TYPE = MobileSegment.Type.WIREFRAME
         private val LAYER_CHILD_TYPE = MobileSegment.Type.LAYER
