@@ -4,14 +4,14 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.utils.forge
+package com.datadog.android.tests.elmyr
 
 import com.datadog.android.core.internal.remote.model.RemoteConfiguration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import java.util.UUID
 
-internal class RemoteConfigurationForgeryFactory : ForgeryFactory<RemoteConfiguration> {
+class RemoteConfigurationForgeryFactory : ForgeryFactory<RemoteConfiguration> {
     override fun getForgery(forge: Forge): RemoteConfiguration {
         return RemoteConfiguration(
             rum = forge.aNullable {
