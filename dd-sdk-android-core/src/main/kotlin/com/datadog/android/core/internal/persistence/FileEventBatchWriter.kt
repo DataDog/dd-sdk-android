@@ -14,51 +14,39 @@ import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
-import com.datadog.android.core.internal.persistence.file.FileWriter
-import com.datadog.android.core.internal.persistence.file.existsSafe
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import java.io.File
 import java.util.Locale
 
 internal class FileEventBatchWriter(
     private val fileOrchestrator: FileOrchestrator,
-    private val eventsWriter: FileWriter<RawBatchEvent>,
+    private val eventsWriter: BatchFileReaderWriter,
     private val metadataReaderWriter: FileReaderWriter,
     private val filePersistenceConfig: FilePersistenceConfig,
     private val batchWriteEventListener: BatchWriteEventListener,
     private val internalLogger: InternalLogger
 ) : EventBatchWriter {
 
-    @get:WorkerThread
-    private val batchFile: File? by lazy {
-        @Suppress("ThreadSafety") // called in the worker context
-        fileOrchestrator.getWritableFile()
-    }
-
-    @get:WorkerThread
-    private val metadataFile: File?
-        get() = batchFile?.let {
-            @Suppress("ThreadSafety") // called in the worker context
-            fileOrchestrator.getMetadataFile(it)
-        }
-
     @WorkerThread
-    override fun currentMetadata(): ByteArray? {
-        return with(metadataFile) {
-            if (this == null || !existsSafe(internalLogger)) {
-                null
-            } else {
-                metadataReaderWriter.readData(this)
-            }
-        }
-    }
-
-    @WorkerThread
+    @Suppress("ReturnCount")
     override fun write(
         event: RawBatchEvent,
         batchMetadata: ByteArray?,
         eventType: EventType
     ): Boolean {
-        val (batchFile, metadataFile) = batchFile to metadataFile
+        // prevent useless operation for empty event
+        if (event.data.isEmpty()) {
+            return true
+        }
+        if (!checkEventSize(event.data.size)) {
+            return false
+        }
+
+        // Serialize once (TLV-wrapped, encrypted if configured) so the exact on-disk size is known
+        // before asking the orchestrator for a file with enough room to hold it.
+        val serializedEvent = eventsWriter.serializeToBytes(event) ?: return false
+
+        val batchFile = fileOrchestrator.getWritableFile(serializedEvent.size.toLong())
         if (batchFile == null) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -68,12 +56,9 @@ internal class FileEventBatchWriter(
             return false
         }
 
-        // prevent useless operation for empty event
-        return if (event.data.isEmpty()) {
-            true
-        } else if (!checkEventSize(event.data.size)) {
-            false
-        } else if (eventsWriter.writeData(batchFile, event, true)) {
+        val metadataFile = fileOrchestrator.getMetadataFile(batchFile)
+
+        return if (eventsWriter.writeBinaryData(batchFile, serializedEvent, true)) {
             batchWriteEventListener.onWriteEvent(event.data.size.toLong())
             if (batchMetadata?.isNotEmpty() == true && metadataFile != null) {
                 writeBatchMetadata(metadataFile, batchMetadata)

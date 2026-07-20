@@ -200,7 +200,6 @@ interface com.datadog.android.api.net.RequestFactory
 interface com.datadog.android.api.storage.DataWriter<T>
   fun write(EventBatchWriter, T, EventType): Boolean
 interface com.datadog.android.api.storage.EventBatchWriter
-  fun currentMetadata(): ByteArray?
   fun write(RawBatchEvent, ByteArray?, EventType): Boolean
 enum com.datadog.android.api.storage.EventType
   - DEFAULT
