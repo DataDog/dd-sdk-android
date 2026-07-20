@@ -17,13 +17,23 @@
         "telemetrySampleRate": { "type": "number", "minimum": 0, "maximum": 100 },
         "trackAnonymousUser": { "type": "boolean" },
         "trackUserInteractions": { "type": "boolean" },
-        "trackResources": { "type": "boolean" },
         "trackBackgroundEvents": { "type": "boolean" },
         "trackFrustrations": { "type": "boolean" },
-        "longTaskThresholdMs": {
-          "type": "number",
-          "minimum": 100,
-          "description": "Minimum main-thread task duration to report as a long task"
+        "longTask": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Long task detection configuration",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enables long task detection. Omit to fall back to SDK in-code default."
+            },
+            "threshold": {
+              "type": "number",
+              "minimum": 100,
+              "description": "Minimum main-thread task duration in ms. Only relevant when enabled is true."
+            }
+          }
         },
         "vitalsUpdateFrequency": {
           "type": "string",
@@ -34,6 +44,7 @@
     },
     "sessionReplay": {
       "type": "object",
+      "additionalProperties": false,
       "properties": {
         "sampleRate": { "type": "number", "minimum": 0, "maximum": 100 },
         "startRecordingImmediately": {
@@ -66,8 +77,19 @@
         "traceContextInjection": { "type": "string", "enum": ["all", "sampled"] },
         "tracedHosts": {
           "type": "array",
-          "description": "Hostnames for which distributed tracing headers are injected",
-          "items": { "type": "string" }
+          "description": "Per-host distributed tracing configuration",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["host"],
+            "properties": {
+              "host": { "type": "string" },
+              "propagatorTypes": {
+                "type": "array",
+                "items": { "type": "string", "enum": ["datadog", "b3", "b3multi", "tracecontext"] }
+              }
+            }
+          }
         },
         "tracingHeaderTypes": {
           "type": "array",
