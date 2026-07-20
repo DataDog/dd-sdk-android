@@ -15,6 +15,6 @@ val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
 ktlint {
     version = provider { libs.findVersion("ktlint").get().requiredVersion }
     filter {
-        exclude { it.file.path.contains("/build/generated/") }
+        exclude { it.file.invariantSeparatorsPath.contains("/build/generated/") }
     }
 }

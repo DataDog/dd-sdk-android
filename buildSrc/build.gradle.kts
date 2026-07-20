@@ -98,7 +98,7 @@ java.sourceCompatibility = JavaVersion.VERSION_17
 ktlint {
     version = provider { libs.versions.ktlint.get() }
     filter {
-        exclude { it.file.path.contains("/build/generated") }
+        exclude { it.file.invariantSeparatorsPath.contains("/build/generated") }
     }
 }
 
