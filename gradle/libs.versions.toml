@@ -393,3 +393,4 @@ sqlDelightGradlePlugin = { id = "com.squareup.sqldelight", version.ref = "sqlDel
 binaryCompatibilityGradlePlugin = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibility" }
 kotlinxSerializationPlugin = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 koverPlugin = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+ktlintGradlePlugin = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradlePlugin" }

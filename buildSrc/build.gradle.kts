@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     `kotlin-dsl`
     alias(libs.plugins.versionsGradlePlugin)
+    alias(libs.plugins.ktlintGradlePlugin)
 }
 
 buildscript {
@@ -93,6 +94,13 @@ gradlePlugin {
 
 java.targetCompatibility = JavaVersion.VERSION_17
 java.sourceCompatibility = JavaVersion.VERSION_17
+
+ktlint {
+    version = provider { libs.versions.ktlint.get() }
+    filter {
+        exclude { it.file.path.contains("/build/generated") }
+    }
+}
 
 tasks.withType<KotlinCompile>().configureEach {
     compilerOptions {
