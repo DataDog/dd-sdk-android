@@ -13,6 +13,19 @@ import org.gradle.api.Project
 import java.io.File
 import java.util.Locale
 
+val SAMPLE_APP_REGIONS = arrayOf(
+    "us1",
+    "us3",
+    "us5",
+    "us1_fed",
+    "us2_fed",
+    "eu1",
+    "uk1",
+    "ap1",
+    "ap2",
+    "staging"
+)
+
 fun sampleAppConfig(filePath: String): SampleAppConfig {
     val file = File(filePath)
     if (!file.exists()) {
