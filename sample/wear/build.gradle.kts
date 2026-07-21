@@ -5,6 +5,7 @@
  */
 
 import com.datadog.gradle.config.AndroidConfig
+import com.datadog.gradle.config.SAMPLE_APP_REGIONS
 import com.datadog.gradle.config.configureFlavorForSampleApp
 import com.datadog.gradle.config.java17
 
@@ -38,9 +39,7 @@ android {
 
     flavorDimensions += listOf("site")
     productFlavors {
-        val regions = arrayOf("us1", "us3", "us5", "us1_fed", "us2_fed", "eu1", "ap1", "ap2", "staging")
-
-        regions.forEachIndexed { index, region ->
+        SAMPLE_APP_REGIONS.forEachIndexed { index, region ->
             register(region) {
                 isDefault = index == 0
                 dimension = "site"
