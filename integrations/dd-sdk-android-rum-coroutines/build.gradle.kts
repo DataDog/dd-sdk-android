@@ -35,6 +35,7 @@ plugins {
     id("transitiveDependencies")
     id("verificationXml")
     id("detekt-conventions")
+    id("test-pyramid-api-surface")
 }
 
 android {
