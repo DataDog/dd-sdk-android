@@ -7,7 +7,7 @@ The root `build.gradle.kts` registers aggregate tasks that run across all submod
 ./gradlew assembleLibraries          # build all library modules (debug + release)
 ./gradlew unitTestDebug              # unit tests, all modules, debug variant
 ./gradlew unitTestRelease            # unit tests, all modules, release variant
-./gradlew lintCheckAll               # lint all modules
+./gradlew :lintCheckAll              # lint all modules
 ./gradlew checkAll                   # lint + unit tests + instrumented tests
 ./gradlew instrumentTestAll          # all instrumented (integration) tests — requires connected device/emulator
 ```

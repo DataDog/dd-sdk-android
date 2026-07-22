@@ -112,7 +112,7 @@ if [[ $ANALYSIS == 1 ]]; then
   fi
 
   echo "---- AndroidLint"
-  ./gradlew :lintCheckAll
+  ./gradlew :lintCheckAll --continue
 
   echo "---- 3rd Party License"
   CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
