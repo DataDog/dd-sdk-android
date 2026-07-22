@@ -40,9 +40,9 @@ internal inline fun <reified T : View> Forge.aMockView(): T {
     return mock {
         val absX = anInt(min = 0)
         val absY = anInt(min = 0)
-        whenever(it.getLocationOnScreen(any())).thenAnswer {
+        whenever(it.getLocationOnScreen(any())).thenAnswer { invocation ->
             val location = (
-                it.arguments[0]
+                invocation.arguments[0]
                     as IntArray
                 )
             location[0] = absX

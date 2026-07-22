@@ -18,9 +18,7 @@ internal object ProfilingStorage {
     internal var sharedPreferencesStorage: SharedPreferencesStorage? = null
 
     internal fun setSampleRate(appContext: Context, sampleRate: Float) {
-        getStorage(appContext).apply {
-            putFloat(KEY_PROFILING_SAMPLE_RATE, sampleRate)
-        }
+        getStorage(appContext).putFloat(KEY_PROFILING_SAMPLE_RATE, sampleRate)
     }
 
     internal fun getSampleRate(appContext: Context): Float {

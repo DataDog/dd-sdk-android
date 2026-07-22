@@ -105,13 +105,14 @@ internal open class AbstractSemanticsNodeMapperTest {
     }
 
     @Test
-    fun `M return correct bound W resolveBounds`() {
+    fun `M return correct bound W resolveBounds`(@Forgery fakeUiContext: UiContext) {
         // Given
         val semanticsNode = mock<SemanticsNode>()
-        whenever(mockSemanticsUtils.resolveInnerBounds(semanticsNode)) doReturn fakeGlobalBounds
+        whenever(mockSemanticsUtils.resolveInnerBounds(semanticsNode, fakeUiContext.windowOffset)) doReturn
+            fakeGlobalBounds
 
         // When
-        val result = testedMapper.stubResolveBounds(semanticsNode)
+        val result = testedMapper.stubResolveBounds(semanticsNode, fakeUiContext)
 
         // Then
         assertThat(result).isEqualTo(fakeGlobalBounds)
@@ -298,8 +299,8 @@ internal class StubAbstractSemanticsNodeMapper(
         return super.resolveId(semanticsNode, index)
     }
 
-    fun stubResolveBounds(semanticsNode: SemanticsNode): GlobalBounds {
-        return super.resolveBounds(semanticsNode)
+    fun stubResolveBounds(semanticsNode: SemanticsNode, parentContext: UiContext): GlobalBounds {
+        return super.resolveBounds(semanticsNode, parentContext)
     }
 
     fun stubResolveTextAlign(textLayoutInfo: TextLayoutInfo): MobileSegment.TextPosition {

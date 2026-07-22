@@ -17,8 +17,10 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.internal.profiling.ProfilerStopEvent
-import com.datadog.android.internal.profiling.TTIDRumContext
+import com.datadog.android.core.internal.utils.DdTagsUtils
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.profiling.ProfilerEvent
+import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.VitalAppLaunchEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.VitalAppLaunchPropertiesAssert.Companion.assertThat
@@ -33,7 +35,6 @@ import com.datadog.android.rum.internal.domain.scope.RumVitalAppLaunchEventHelpe
 import com.datadog.android.rum.internal.domain.scope.toVitalAppLaunchSchemaType
 import com.datadog.android.rum.internal.domain.scope.toVitalAppLaunchStartupType
 import com.datadog.android.rum.internal.toVitalAppLaunch
-import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.utils.forge.Configurator
@@ -174,7 +175,7 @@ internal class RumSessionScopeStartupManagerTest {
             featuresContext = fakeDatadogContext.featuresContext.let {
                 if (forge.aBool()) {
                     it.toMutableMap().apply {
-                        put(Feature.PROFILING_FEATURE_NAME, mapOf("profiler_is_running" to true))
+                        put(Feature.PROFILING_FEATURE_NAME, mapOf(FeatureContextKeys.PROFILER_IS_RUNNING to true))
                     }
                 } else {
                     it
@@ -224,7 +225,8 @@ internal class RumSessionScopeStartupManagerTest {
         )
 
         val event = RumRawEvent.AppStartTTIDEvent(
-            info = info
+            info = info,
+            eventTime = scenario.initialTime
         )
 
         // When
@@ -232,6 +234,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         manager.onTTIDEvent(
             event = event,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -252,6 +255,317 @@ internal class RumSessionScopeStartupManagerTest {
 
     @ParameterizedTest
     @MethodSource("testScenarios")
+    fun `M not attach quota reason W onTTIDEvent {profiler running and quota reason present}`(
+        scenario: RumStartupScenario,
+        forge: Forge
+    ) {
+        // Given
+        val fakeQuotaReason = forge.anAlphabeticalString()
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        FeatureContextKeys.PROFILER_IS_RUNNING to true,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to rumContext.sessionId
+                    )
+                )
+            }
+        )
+        val info = RumTTIDInfo(
+            scenario = scenario,
+            durationNs = forge.aLong(min = 0, max = 10000)
+        )
+        val event = RumRawEvent.AppStartTTIDEvent(info = info, eventTime = scenario.initialTime)
+
+        // When
+        manager.onAppStartEvent(mock())
+        manager.onTTIDEvent(
+            event = event,
+            isSessionTracked = true,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+
+        // Then
+        argumentCaptor<VitalAppLaunchEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasProfilingStatus(VitalAppLaunchEvent.ProfilingStatus.RUNNING)
+                .hasNoProfilingQuotaReason()
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("testScenarios")
+    fun `M attach quota reason W onTTIDEvent {profiler stopped by quota}`(
+        scenario: RumStartupScenario,
+        forge: Forge
+    ) {
+        // Given — profiling is not running and the quota API denied the session
+        val fakeQuotaReason = forge.anAlphabeticalString()
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        FeatureContextKeys.PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to rumContext.sessionId
+                    )
+                )
+            }
+        )
+        val info = RumTTIDInfo(
+            scenario = scenario,
+            durationNs = forge.aLong(min = 0, max = 10000)
+        )
+        val event = RumRawEvent.AppStartTTIDEvent(info = info, eventTime = scenario.initialTime)
+
+        // When
+        manager.onAppStartEvent(mock())
+        manager.onTTIDEvent(
+            event = event,
+            isSessionTracked = true,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+
+        // Then — status is STOPPED and the quota reason is attached
+        argumentCaptor<VitalAppLaunchEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasProfilingStatus(VitalAppLaunchEvent.ProfilingStatus.STOPPED)
+                .hasProfilingQuotaReason(fakeQuotaReason)
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("testScenarios")
+    fun `M ignore stale quota reason W onTTIDEvent {quota reason for other session}`(
+        scenario: RumStartupScenario,
+        forge: Forge
+    ) {
+        // Given — a quota reason stamped with a session other than the current one
+        val fakeQuotaReason = forge.anAlphabeticalString()
+        val fakeOtherSessionId = forge.anHexadecimalString()
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        FeatureContextKeys.PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeOtherSessionId
+                    )
+                )
+            }
+        )
+        val info = RumTTIDInfo(
+            scenario = scenario,
+            durationNs = forge.aLong(min = 0, max = 10000)
+        )
+        val event = RumRawEvent.AppStartTTIDEvent(info = info, eventTime = scenario.initialTime)
+
+        // When
+        manager.onAppStartEvent(mock())
+        manager.onTTIDEvent(
+            event = event,
+            isSessionTracked = true,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+
+        // Then — the stale reason is ignored: no status and no quota reason
+        argumentCaptor<VitalAppLaunchEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasNoProfilingStatus()
+                .hasNoProfilingQuotaReason()
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("testScenarios")
+    fun `M attach quota reason W onTTFDEvent {profiler stopped by quota}`(
+        scenario: RumStartupScenario,
+        forge: Forge
+    ) {
+        // Given — profiling is not running and the quota API denied the session
+        val fakeQuotaReason = forge.anAlphabeticalString()
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        FeatureContextKeys.PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to rumContext.sessionId
+                    )
+                )
+            }
+        )
+        val ttidEvent = RumRawEvent.AppStartTTIDEvent(
+            info = RumTTIDInfo(scenario = scenario, durationNs = forge.aLong(min = 0, max = 10000)),
+            eventTime = scenario.initialTime
+        )
+        val ttfdEvent = forge.createTTFDEvent(scenario.initialTime)
+
+        // When
+        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario, eventTime = scenario.initialTime))
+        manager.onTTIDEvent(
+            event = ttidEvent,
+            isSessionTracked = true,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+        manager.onTTFDEvent(
+            event = ttfdEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+
+        // Then — the TTFD vital carries STOPPED and the denial reason, like TTID
+        argumentCaptor<VitalAppLaunchEvent> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasProfilingStatus(VitalAppLaunchEvent.ProfilingStatus.STOPPED)
+                .hasProfilingQuotaReason(fakeQuotaReason)
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("testScenarios")
+    fun `M not attach quota reason W onTTFDEvent {profiler running and quota reason present}`(
+        scenario: RumStartupScenario,
+        forge: Forge
+    ) {
+        // Given — the profiler is still running but a quota-denied reason is also present
+        val fakeQuotaReason = forge.anAlphabeticalString()
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        FeatureContextKeys.PROFILER_IS_RUNNING to true,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to rumContext.sessionId
+                    )
+                )
+            }
+        )
+        val ttidEvent = RumRawEvent.AppStartTTIDEvent(
+            info = RumTTIDInfo(
+                scenario = scenario,
+                durationNs = forge.aLong(min = 0, max = 10000)
+            ),
+            eventTime = scenario.initialTime
+        )
+        val ttfdEvent = forge.createTTFDEvent(scenario.initialTime)
+
+        // When
+        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario, eventTime = scenario.initialTime))
+        manager.onTTIDEvent(
+            event = ttidEvent,
+            isSessionTracked = true,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+        manager.onTTFDEvent(
+            event = ttfdEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+
+        // Then — status is RUNNING and no quota reason leaks onto a running profiler
+        argumentCaptor<VitalAppLaunchEvent> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasProfilingStatus(VitalAppLaunchEvent.ProfilingStatus.RUNNING)
+                .hasNoProfilingQuotaReason()
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("testScenarios")
+    fun `M ignore stale quota reason W onTTFDEvent {quota reason for other session}`(
+        scenario: RumStartupScenario,
+        forge: Forge
+    ) {
+        // Given — a quota reason stamped with a session other than the current one
+        val fakeQuotaReason = forge.anAlphabeticalString()
+        val fakeOtherSessionId = forge.anHexadecimalString()
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        FeatureContextKeys.PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeOtherSessionId
+                    )
+                )
+            }
+        )
+        val ttidEvent = RumRawEvent.AppStartTTIDEvent(
+            info = RumTTIDInfo(scenario = scenario, durationNs = forge.aLong(min = 0, max = 10000)),
+            eventTime = scenario.initialTime
+        )
+        val ttfdEvent = forge.createTTFDEvent(scenario.initialTime)
+
+        // When
+        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario, eventTime = scenario.initialTime))
+        manager.onTTIDEvent(
+            event = ttidEvent,
+            isSessionTracked = true,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+        manager.onTTFDEvent(
+            event = ttfdEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+
+        // Then — the stale reason is ignored: no status and no quota reason on the TTFD vital
+        argumentCaptor<VitalAppLaunchEvent> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasNoProfilingStatus()
+                .hasNoProfilingQuotaReason()
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("testScenarios")
     fun `M stop profiler W onTTIDEvent`(
         scenario: RumStartupScenario,
         forge: Forge
@@ -263,7 +577,8 @@ internal class RumSessionScopeStartupManagerTest {
         )
 
         val event = RumRawEvent.AppStartTTIDEvent(
-            info = info
+            info = info,
+            eventTime = scenario.initialTime
         )
         val mockProfilingFeatureScope = mock<FeatureScope>()
         whenever(
@@ -275,6 +590,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         manager.onTTIDEvent(
             event = event,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -286,15 +602,83 @@ internal class RumSessionScopeStartupManagerTest {
         argumentCaptor<VitalAppLaunchEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             verify(mockProfilingFeatureScope).sendEvent(
-                ProfilerStopEvent.TTID(
-                    TTIDRumContext(
+                ProfilerEvent.RumVitalEvent(
+                    rumContext = ProfilingRumContext(
                         applicationId = rumContext.applicationId,
                         sessionId = rumContext.sessionId,
-                        vitalId = lastValue.vital.id,
-                        vitalName = lastValue.vital.name,
                         viewId = rumContext.viewId,
                         viewName = rumContext.viewName
-                    )
+                    ),
+                    id = lastValue.vital.id,
+                    name = lastValue.vital.name,
+                    type = ProfilerEvent.RumVitalEvent.Type.TTID,
+                    startMs = lastValue.date,
+                    durationNs = info.durationNs
+                )
+            )
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("testScenarios")
+    fun `M notify profiling W onTTFDEvent`(
+        scenario: RumStartupScenario,
+        forge: Forge
+    ) {
+        // Given
+        val info = RumTTIDInfo(
+            scenario = scenario,
+            durationNs = forge.aLong(min = 0, max = 10000)
+        )
+
+        val ttidEvent = RumRawEvent.AppStartTTIDEvent(info = info, eventTime = scenario.initialTime)
+        val ttfdEvent = forge.createTTFDEvent(scenario.initialTime)
+
+        val mockProfilingFeatureScope = mock<FeatureScope>()
+        whenever(
+            mockSdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)
+        ) doReturn mockProfilingFeatureScope
+
+        // When
+        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario, eventTime = scenario.initialTime))
+
+        manager.onTTIDEvent(
+            event = ttidEvent,
+            isSessionTracked = true,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+
+        manager.onTTFDEvent(
+            event = ttfdEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
+        )
+
+        // Then
+        argumentCaptor<VitalAppLaunchEvent> {
+            verify(mockWriter, times(2))
+                .write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+
+            verify(mockProfilingFeatureScope).sendEvent(
+                ProfilerEvent.RumVitalEvent(
+                    rumContext = ProfilingRumContext(
+                        applicationId = rumContext.applicationId,
+                        sessionId = rumContext.sessionId,
+                        viewId = rumContext.viewId,
+                        viewName = rumContext.viewName
+                    ),
+                    id = lastValue.vital.id,
+                    name = lastValue.vital.name,
+                    type = ProfilerEvent.RumVitalEvent.Type.TTFD,
+                    startMs = lastValue.date,
+                    durationNs = ttfdEvent.eventTime.nanoTime - scenario.initialTime.nanoTime
                 )
             )
         }
@@ -314,7 +698,8 @@ internal class RumSessionScopeStartupManagerTest {
         )
 
         val event1 = RumRawEvent.AppStartTTIDEvent(
-            info = info1
+            info = info1,
+            eventTime = scenario1.initialTime
         )
 
         val info2 = RumTTIDInfo(
@@ -323,7 +708,8 @@ internal class RumSessionScopeStartupManagerTest {
         )
 
         val event2 = RumRawEvent.AppStartTTIDEvent(
-            info = info2
+            info = info2,
+            eventTime = scenario2.initialTime
         )
 
         // When
@@ -331,6 +717,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         manager.onTTIDEvent(
             event = event1,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -342,6 +729,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         manager.onTTIDEvent(
             event = event2,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -373,15 +761,16 @@ internal class RumSessionScopeStartupManagerTest {
             durationNs = forge.aLong(min = 0, max = 10000)
         )
 
-        val ttidEvent = RumRawEvent.AppStartTTIDEvent(info = info)
+        val ttidEvent = RumRawEvent.AppStartTTIDEvent(info = info, eventTime = scenario.initialTime)
 
         val ttfdEvent = forge.createTTFDEvent(scenario.initialTime)
 
         // When
-        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario))
+        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario, eventTime = scenario.initialTime))
 
         manager.onTTIDEvent(
             event = ttidEvent,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -421,8 +810,8 @@ internal class RumSessionScopeStartupManagerTest {
         forge: Forge
     ) {
         // Given
-        val appStartEvent1 = RumRawEvent.AppStartEvent(scenario = scenario1)
-        val appStartEvent2 = RumRawEvent.AppStartEvent(scenario = scenario2)
+        val appStartEvent1 = RumRawEvent.AppStartEvent(scenario = scenario1, eventTime = scenario1.initialTime)
+        val appStartEvent2 = RumRawEvent.AppStartEvent(scenario = scenario2, eventTime = scenario2.initialTime)
 
         val info1 = RumTTIDInfo(
             scenario = scenario1,
@@ -434,8 +823,8 @@ internal class RumSessionScopeStartupManagerTest {
             durationNs = forge.aLong(min = 0, max = 10000)
         )
 
-        val ttidEvent1 = RumRawEvent.AppStartTTIDEvent(info = info1)
-        val ttidEvent2 = RumRawEvent.AppStartTTIDEvent(info = info2)
+        val ttidEvent1 = RumRawEvent.AppStartTTIDEvent(info = info1, eventTime = scenario1.initialTime)
+        val ttidEvent2 = RumRawEvent.AppStartTTIDEvent(info = info2, eventTime = scenario2.initialTime)
 
         val ttfdEvent1 = forge.createTTFDEvent(scenario1.initialTime)
         val ttfdEvent2 = forge.createTTFDEvent(scenario2.initialTime)
@@ -445,6 +834,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         manager.onTTIDEvent(
             event = ttidEvent1,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -465,6 +855,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         manager.onTTIDEvent(
             event = ttidEvent2,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -501,7 +892,7 @@ internal class RumSessionScopeStartupManagerTest {
     fun `M log W onTTFDEvent { if called before onAppStartEvent }`() {
         // When
         manager.onTTFDEvent(
-            event = RumRawEvent.AppStartTTFDEvent(),
+            event = RumRawEvent.AppStartTTFDEvent(eventTime = Time(timestamp = 0L, nanoTime = 0L)),
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -529,10 +920,10 @@ internal class RumSessionScopeStartupManagerTest {
         scenario: RumStartupScenario
     ) {
         // When
-        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario))
+        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario, eventTime = scenario.initialTime))
 
         manager.onTTFDEvent(
-            event = RumRawEvent.AppStartTTFDEvent(),
+            event = RumRawEvent.AppStartTTFDEvent(eventTime = scenario.initialTime),
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -568,13 +959,14 @@ internal class RumSessionScopeStartupManagerTest {
         )
 
         val ttidEvent = RumRawEvent.AppStartTTIDEvent(
-            info = info
+            info = info,
+            eventTime = scenario.initialTime
         )
 
-        val ttfdEvent = RumRawEvent.AppStartTTFDEvent()
+        val ttfdEvent = RumRawEvent.AppStartTTFDEvent(eventTime = scenario.initialTime)
 
         // When
-        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario))
+        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario, eventTime = scenario.initialTime))
 
         manager.onTTFDEvent(
             event = ttfdEvent,
@@ -587,6 +979,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         manager.onTTIDEvent(
             event = ttidEvent,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -626,14 +1019,16 @@ internal class RumSessionScopeStartupManagerTest {
         )
 
         val ttidEvent = RumRawEvent.AppStartTTIDEvent(
-            info = info
+            info = info,
+            eventTime = scenario.initialTime
         )
 
         // When
-        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario))
+        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario, eventTime = scenario.initialTime))
 
         manager.onTTIDEvent(
             event = ttidEvent,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -650,7 +1045,10 @@ internal class RumSessionScopeStartupManagerTest {
             message = RumSessionScopeStartupManagerImpl.TTID_TOO_LARGE_MESSAGE,
             throwable = null,
             onlyOnce = false,
-            additionalProperties = null
+            additionalProperties = mapOf(
+                RumAppStartupTelemetryReporterImpl.KEY_DURATION_NS to info.durationNs,
+                RumAppStartupTelemetryReporterImpl.KEY_SCENARIO to scenario.name
+            )
         )
     }
 
@@ -666,7 +1064,7 @@ internal class RumSessionScopeStartupManagerTest {
             durationNs = forge.aLong(min = 0, max = 10000)
         )
 
-        val ttidEvent = RumRawEvent.AppStartTTIDEvent(info = info)
+        val ttidEvent = RumRawEvent.AppStartTTIDEvent(info = info, eventTime = scenario.initialTime)
 
         val ttfdEvent = forge.createTTFDEvent(
             initialTime = scenario.initialTime,
@@ -674,10 +1072,11 @@ internal class RumSessionScopeStartupManagerTest {
         )
 
         // When
-        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario))
+        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario, eventTime = scenario.initialTime))
 
         manager.onTTIDEvent(
             event = ttidEvent,
+            isSessionTracked = true,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -709,7 +1108,11 @@ internal class RumSessionScopeStartupManagerTest {
             message = RumSessionScopeStartupManagerImpl.TTFD_TOO_LARGE_MESSAGE,
             throwable = null,
             onlyOnce = false,
-            additionalProperties = null,
+            additionalProperties = mapOf(
+                RumAppStartupTelemetryReporterImpl.KEY_DURATION_NS to
+                    RumSessionScopeStartupManagerImpl.MAX_TTFD_DURATION_NS + 1,
+                RumAppStartupTelemetryReporterImpl.KEY_SCENARIO to scenario.name
+            ),
             mode = atLeastOnce()
         )
     }
@@ -754,7 +1157,7 @@ internal class RumSessionScopeStartupManagerTest {
             hasConnectivityInfo(fakeDatadogContext.networkInfo)
             hasVersion(fakeDatadogContext.version)
             hasServiceName(fakeDatadogContext.service)
-            hasDDTags(buildDDTagsString(fakeDatadogContext))
+            hasDDTags(DdTagsUtils.toDdTagsString(fakeDatadogContext))
                 .apply {
                     if (fakeDatadogContext.featuresContext.containsKey(Feature.PROFILING_FEATURE_NAME)) {
                         hasProfilingStatus(VitalAppLaunchEvent.ProfilingStatus.RUNNING)
@@ -822,8 +1225,14 @@ internal class RumSessionScopeStartupManagerTest {
             hasConnectivityInfo(fakeDatadogContext.networkInfo)
             hasVersion(fakeDatadogContext.version)
             hasServiceName(fakeDatadogContext.service)
-            hasDDTags(buildDDTagsString(fakeDatadogContext))
-            hasNoProfilingStatus()
+            hasDDTags(DdTagsUtils.toDdTagsString(fakeDatadogContext))
+                .apply {
+                    if (fakeDatadogContext.featuresContext.containsKey(Feature.PROFILING_FEATURE_NAME)) {
+                        hasProfilingStatus(VitalAppLaunchEvent.ProfilingStatus.RUNNING)
+                    } else {
+                        hasNoProfilingStatus()
+                    }
+                }
             hasNoProfilingErrorReason()
         }
 

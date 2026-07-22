@@ -41,11 +41,6 @@ internal class NoOpEventBatchWriterTest {
     }
 
     @Test
-    fun `M return no metadata W currentMetadata()`() {
-        assertThat(testedWriter.currentMetadata()).isNull()
-    }
-
-    @Test
     fun `M notify about successful write W write()`(
         @Forgery fakeData: RawBatchEvent,
         @StringForgery fakeMetadata: String,

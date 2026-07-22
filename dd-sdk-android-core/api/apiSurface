@@ -22,6 +22,7 @@ enum com.datadog.android.DatadogSite
   - EU1
   - AP1
   - AP2
+  - UK1
   - US1_FED
   - US2_FED
   - STAGING
@@ -199,7 +200,6 @@ interface com.datadog.android.api.net.RequestFactory
 interface com.datadog.android.api.storage.DataWriter<T>
   fun write(EventBatchWriter, T, EventType): Boolean
 interface com.datadog.android.api.storage.EventBatchWriter
-  fun currentMetadata(): ByteArray?
   fun write(RawBatchEvent, ByteArray?, EventType): Boolean
 enum com.datadog.android.api.storage.EventType
   - DEFAULT
@@ -284,7 +284,11 @@ data class com.datadog.android.core.configuration.Configuration
     fun setUploadSchedulerStrategy(UploadSchedulerStrategy?): Builder
     fun setVersion(String): Builder
   companion object 
+class com.datadog.android.core.configuration.HostPatternSanitizer
+  constructor(com.datadog.android.api.InternalLogger)
+  fun validate(List<String>, String): List<String>
 class com.datadog.android.core.configuration.HostsSanitizer
+  constructor(com.datadog.android.api.InternalLogger = unboundInternalLogger)
   fun sanitizeHosts(List<String>, String): List<String>
 enum com.datadog.android.core.configuration.UploadFrequency
   constructor(Long)
@@ -340,6 +344,11 @@ fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(String, Long, jav
 fun java.util.concurrent.ExecutorService.submitSafe(String, com.datadog.android.api.InternalLogger, Runnable): java.util.concurrent.Future<*>?
 fun <T> java.util.concurrent.ExecutorService.submitSafe(String, com.datadog.android.api.InternalLogger, java.util.concurrent.Callable<T>): java.util.concurrent.Future<T>?
 fun <T> java.util.concurrent.Future<T>?.getSafe(String, com.datadog.android.api.InternalLogger): T?
+object com.datadog.android.core.internal.utils.DdTagsUtils
+  fun toDdTagsString(com.datadog.android.api.context.DatadogContext): String
+  fun toDdTagsString(Map<String, String>): String
+  fun toDdTagsMap(com.datadog.android.api.context.DatadogContext): Map<String, String>
+  fun toDdTagsMap(String?): Map<String, String>?
 object com.datadog.android.core.internal.utils.JsonSerializer
   fun toJsonElement(Any?): com.google.gson.JsonElement
   fun Map<String, Any?>.safeMapValuesToJson(com.datadog.android.api.InternalLogger): Map<String, com.google.gson.JsonElement>

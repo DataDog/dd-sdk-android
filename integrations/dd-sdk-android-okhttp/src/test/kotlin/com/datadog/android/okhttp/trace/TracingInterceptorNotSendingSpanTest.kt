@@ -1595,8 +1595,9 @@ internal open class TracingInterceptorNotSendingSpanTest {
     ) {
         fakeResponse = forge.anOkHttpResponse(fakeRequest, statusCode) {
             body(fakeResponseBody.toResponseBody(fakeMediaType))
-            if (fakeMediaType != null) {
-                header(TracingInterceptor.HEADER_CT, fakeMediaType?.type.orEmpty())
+            val mediaType = fakeMediaType
+            if (mediaType != null) {
+                header(TracingInterceptor.HEADER_CT, mediaType.type)
             }
             configure()
         }

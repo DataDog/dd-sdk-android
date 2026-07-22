@@ -7,8 +7,10 @@
 package com.datadog.android.sessionreplay.internal.processor
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -27,6 +29,7 @@ import java.util.Locale
     ExtendWith(ForgeExtension::class),
     ExtendWith(MockitoExtension::class)
 )
+@ForgeConfiguration(ForgeConfigurator::class)
 internal class MobileSegmentExtTest {
 
     @Mock
@@ -89,6 +92,161 @@ internal class MobileSegmentExtTest {
                     fakeInvalidSource
                 )
             )
+        }
+    }
+
+    // endregion
+
+    // region MobileSegment.Wireframe.permanentId()
+
+    @Test
+    fun `M return permanentId W permanentId() { ShapeWireframe }`(forge: Forge) {
+        val fakeId = forge.anAlphabeticalString()
+        val wireframe = forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>()
+            .copy(permanentId = fakeId)
+        assertThat(wireframe.permanentId()).isEqualTo(fakeId)
+    }
+
+    @Test
+    fun `M return permanentId W permanentId() { TextWireframe }`(forge: Forge) {
+        val fakeId = forge.anAlphabeticalString()
+        val wireframe = forge.getForgery<MobileSegment.Wireframe.TextWireframe>()
+            .copy(permanentId = fakeId)
+        assertThat(wireframe.permanentId()).isEqualTo(fakeId)
+    }
+
+    @Test
+    fun `M return permanentId W permanentId() { ImageWireframe }`(forge: Forge) {
+        val fakeId = forge.anAlphabeticalString()
+        val wireframe = forge.getForgery<MobileSegment.Wireframe.ImageWireframe>()
+            .copy(permanentId = fakeId)
+        assertThat(wireframe.permanentId()).isEqualTo(fakeId)
+    }
+
+    @Test
+    fun `M return permanentId W permanentId() { PlaceholderWireframe }`(forge: Forge) {
+        val fakeId = forge.anAlphabeticalString()
+        val wireframe = forge.getForgery<MobileSegment.Wireframe.PlaceholderWireframe>()
+            .copy(permanentId = fakeId)
+        assertThat(wireframe.permanentId()).isEqualTo(fakeId)
+    }
+
+    @Test
+    fun `M return permanentId W permanentId() { WebviewWireframe }`(forge: Forge) {
+        val fakeId = forge.anAlphabeticalString()
+        val wireframe = forge.getForgery<MobileSegment.Wireframe.WebviewWireframe>()
+            .copy(permanentId = fakeId)
+        assertThat(wireframe.permanentId()).isEqualTo(fakeId)
+    }
+
+    @Test
+    fun `M return null W permanentId() { permanentId not set }`(forge: Forge) {
+        val wireframe = forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>()
+            .copy(permanentId = null)
+        assertThat(wireframe.permanentId()).isNull()
+    }
+
+    // endregion
+
+    // region MobileSegment.Wireframe.copyWithPermanentId
+
+    @Test
+    fun `M set permanentId on ShapeWireframe W copyWithPermanentId()`(forge: Forge) {
+        // Given
+        val fakeWireframe = forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>()
+            .copy(permanentId = null)
+        val fakePermanentId = forge.anAlphabeticalString()
+
+        // When
+        val result = fakeWireframe.copyWithPermanentId(fakePermanentId)
+
+        // Then
+        assertThat(result).isInstanceOfSatisfying(MobileSegment.Wireframe.ShapeWireframe::class.java) {
+            assertThat(it.permanentId).isEqualTo(fakePermanentId)
+            assertThat(it.id).isEqualTo(fakeWireframe.id)
+            assertThat(it.x).isEqualTo(fakeWireframe.x)
+            assertThat(it.y).isEqualTo(fakeWireframe.y)
+        }
+    }
+
+    @Test
+    fun `M set permanentId on TextWireframe W copyWithPermanentId()`(forge: Forge) {
+        // Given
+        val fakeWireframe = forge.getForgery<MobileSegment.Wireframe.TextWireframe>()
+            .copy(permanentId = null)
+        val fakePermanentId = forge.anAlphabeticalString()
+
+        // When
+        val result = fakeWireframe.copyWithPermanentId(fakePermanentId)
+
+        // Then
+        assertThat(result).isInstanceOfSatisfying(MobileSegment.Wireframe.TextWireframe::class.java) {
+            assertThat(it.permanentId).isEqualTo(fakePermanentId)
+            assertThat(it.text).isEqualTo(fakeWireframe.text)
+        }
+    }
+
+    @Test
+    fun `M set permanentId on ImageWireframe W copyWithPermanentId()`(forge: Forge) {
+        // Given
+        val fakeWireframe = forge.getForgery<MobileSegment.Wireframe.ImageWireframe>()
+            .copy(permanentId = null)
+        val fakePermanentId = forge.anAlphabeticalString()
+
+        // When
+        val result = fakeWireframe.copyWithPermanentId(fakePermanentId)
+
+        // Then
+        assertThat(result).isInstanceOfSatisfying(MobileSegment.Wireframe.ImageWireframe::class.java) {
+            assertThat(it.permanentId).isEqualTo(fakePermanentId)
+        }
+    }
+
+    @Test
+    fun `M set permanentId on PlaceholderWireframe W copyWithPermanentId()`(forge: Forge) {
+        // Given
+        val fakeWireframe = forge.getForgery<MobileSegment.Wireframe.PlaceholderWireframe>()
+            .copy(permanentId = null)
+        val fakePermanentId = forge.anAlphabeticalString()
+
+        // When
+        val result = fakeWireframe.copyWithPermanentId(fakePermanentId)
+
+        // Then
+        assertThat(result).isInstanceOfSatisfying(MobileSegment.Wireframe.PlaceholderWireframe::class.java) {
+            assertThat(it.permanentId).isEqualTo(fakePermanentId)
+        }
+    }
+
+    @Test
+    fun `M set permanentId on WebviewWireframe W copyWithPermanentId()`(forge: Forge) {
+        // Given
+        val fakeWireframe = forge.getForgery<MobileSegment.Wireframe.WebviewWireframe>()
+            .copy(permanentId = null)
+        val fakePermanentId = forge.anAlphabeticalString()
+
+        // When
+        val result = fakeWireframe.copyWithPermanentId(fakePermanentId)
+
+        // Then
+        assertThat(result).isInstanceOfSatisfying(MobileSegment.Wireframe.WebviewWireframe::class.java) {
+            assertThat(it.permanentId).isEqualTo(fakePermanentId)
+        }
+    }
+
+    @Test
+    fun `M clear permanentId W copyWithPermanentId() { null }`(forge: Forge) {
+        // Given — a wireframe that already has a non-null permanentId; a null arg should clear it.
+        val fakeOriginalId = forge.anAlphabeticalString()
+        val fakeWireframe = forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>()
+            .copy(permanentId = fakeOriginalId)
+
+        // When
+        val result = fakeWireframe.copyWithPermanentId(null)
+
+        // Then
+        assertThat(result).isInstanceOfSatisfying(MobileSegment.Wireframe.ShapeWireframe::class.java) {
+            assertThat(it.permanentId).isNull()
         }
     }
 

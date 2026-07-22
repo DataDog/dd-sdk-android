@@ -13,6 +13,9 @@ import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
+import com.datadog.android.heatmaps.CrossPlatformHeatmapActionData
+import com.datadog.android.internal.heatmaps.HeatmapIdentifier
+import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
@@ -22,6 +25,8 @@ import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.heatmaps.HeatmapActionResolver
+import com.datadog.android.rum.internal.heatmaps.NativeHeatmapActionData
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.StorageEvent
@@ -57,6 +62,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isA
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -64,6 +70,7 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.lang.ref.WeakReference
 import java.util.concurrent.TimeUnit
 
 @Extensions(
@@ -114,6 +121,7 @@ internal class RumActionScopeTest {
 
     private var fakeSampleRate: Float = 0f
 
+    @Forgery
     lateinit var fakeEventTime: Time
 
     lateinit var fakeEvent: RumRawEvent
@@ -145,7 +153,6 @@ internal class RumActionScopeTest {
 
         fakeParentContext = fakeParentContext.copy(syntheticsTestId = null, syntheticsResultId = null)
 
-        fakeEventTime = Time()
         val maxLimit = 1000L
         val minLimit = -1000L
         fakeServerOffset =
@@ -230,7 +237,7 @@ internal class RumActionScopeTest {
         @Forgery kind: RumResourceKind
     ) {
         // When
-        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
+        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap(), fakeEventTime)
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         fakeEvent =
             RumRawEvent.StopResource(key, statusCode, size, kind, emptyMap(), timeWithOffset(TEST_INACTIVITY_MS * 2))
@@ -308,7 +315,7 @@ internal class RumActionScopeTest {
         @Forgery kind: RumResourceKind
     ) {
         // When
-        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
+        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap(), fakeEventTime)
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         fakeEvent =
             RumRawEvent.StopResource(key2, statusCode, size, kind, emptyMap(), timeWithOffset(TEST_INACTIVITY_MS * 2))
@@ -339,7 +346,7 @@ internal class RumActionScopeTest {
         @Forgery throwable: Throwable
     ) {
         // When
-        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
+        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap(), fakeEventTime)
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         fakeEvent = RumRawEvent.StopResourceWithError(
             key,
@@ -432,7 +439,7 @@ internal class RumActionScopeTest {
         val errorType = forge.aNullable { anAlphabeticalString() }
 
         // When
-        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
+        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap(), fakeEventTime)
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         fakeEvent = RumRawEvent.StopResourceWithStackTrace(
             key,
@@ -522,7 +529,7 @@ internal class RumActionScopeTest {
         @Forgery throwable: Throwable
     ) {
         // When
-        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
+        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap(), fakeEventTime)
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         val fakeEvent2 = RumRawEvent.StopResourceWithError(
             key2,
@@ -564,7 +571,7 @@ internal class RumActionScopeTest {
         val errorType = forge.aNullable { anAlphabeticalString() }
 
         // When
-        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
+        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap(), fakeEventTime)
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         val fakeEvent2 = RumRawEvent.StopResourceWithStackTrace(
             key2,
@@ -597,14 +604,22 @@ internal class RumActionScopeTest {
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
     ) {
         // Given
-        var key: Any? = Object()
+        var key: Any? = Any()
+        val keyRef = WeakReference(key)
 
         // When
-        fakeEvent = RumRawEvent.StartResource(key.toString(), url, method, emptyMap())
+        fakeEvent = RumRawEvent.StartResource(key!!, url, method, emptyMap(), fakeEventTime)
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-        fakeEvent = mockEvent(TEST_INACTIVITY_MS * 2)
+
+        // Replace fakeEvent to remove strong reference to key via fakeEvent->StartResource->key field
+        fakeEvent = mockEvent()
+        @Suppress("UNUSED_VALUE", "AssignedValueIsNeverRead") // We are force null-ing to allow it to be GC'ed
         key = null
         System.gc()
+        assertThat(keyRef.get())
+            .describedAs("resource key should have been garbage collected by now")
+            .isNull()
+
         val result2 = testedScope.handleEvent(
             mockEvent(TEST_INACTIVITY_MS * 2 + 1),
             fakeDatadogContext,
@@ -663,7 +678,6 @@ internal class RumActionScopeTest {
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isNull()
-        assertThat(key as? Any).isNull()
     }
 
     @Test
@@ -680,7 +694,8 @@ internal class RumActionScopeTest {
             stacktrace = null,
             isFatal = false,
             threads = emptyList(),
-            attributes = emptyMap()
+            attributes = emptyMap(),
+            eventTime = fakeEventTime
         )
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         val result2 = testedScope.handleEvent(
@@ -753,7 +768,7 @@ internal class RumActionScopeTest {
         @StringForgery target: String
     ) {
         // When
-        fakeEvent = RumRawEvent.AddLongTask(duration, target)
+        fakeEvent = RumRawEvent.AddLongTask(duration, target, eventTime = fakeEventTime)
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         val result2 = testedScope.handleEvent(
             mockEvent(TEST_INACTIVITY_MS * 2 + 1),
@@ -829,7 +844,8 @@ internal class RumActionScopeTest {
             stacktrace = null,
             isFatal = true,
             threads = emptyList(),
-            attributes = emptyMap()
+            attributes = emptyMap(),
+            eventTime = fakeEventTime
         )
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
@@ -903,7 +919,8 @@ internal class RumActionScopeTest {
             stacktrace = null,
             isFatal = false,
             threads = emptyList(),
-            attributes = emptyMap()
+            attributes = emptyMap(),
+            eventTime = fakeEventTime
         )
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         fakeEvent = RumRawEvent.AddError(
@@ -913,7 +930,8 @@ internal class RumActionScopeTest {
             stacktrace = null,
             isFatal = true,
             threads = emptyList(),
-            attributes = emptyMap()
+            attributes = emptyMap(),
+            eventTime = fakeEventTime
         )
         val result2 = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
@@ -982,7 +1000,7 @@ internal class RumActionScopeTest {
         testedScope.resourceCount = count
 
         // When
-        fakeEvent = RumRawEvent.StartView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = startViewEvent()
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1045,7 +1063,7 @@ internal class RumActionScopeTest {
         testedScope.longTaskCount = count
 
         // When
-        fakeEvent = RumRawEvent.StartView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = startViewEvent()
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1108,7 +1126,7 @@ internal class RumActionScopeTest {
         testedScope.errorCount = count
 
         // When
-        fakeEvent = RumRawEvent.StartView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = startViewEvent()
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1180,7 +1198,7 @@ internal class RumActionScopeTest {
         testedScope.crashCount = fatalCount
 
         // When
-        fakeEvent = RumRawEvent.StartView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = startViewEvent()
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1249,7 +1267,7 @@ internal class RumActionScopeTest {
         testedScope.resourceCount = count
 
         // When
-        fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = stopViewEvent()
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1312,7 +1330,7 @@ internal class RumActionScopeTest {
         testedScope.longTaskCount = count
 
         // When
-        fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = stopViewEvent()
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1375,7 +1393,7 @@ internal class RumActionScopeTest {
         testedScope.errorCount = count
 
         // When
-        fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = stopViewEvent()
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1446,7 +1464,7 @@ internal class RumActionScopeTest {
         testedScope.crashCount = fatalCount
 
         // When
-        fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = stopViewEvent()
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1515,7 +1533,7 @@ internal class RumActionScopeTest {
         testedScope.resourceCount = count
 
         // When
-        fakeEvent = RumRawEvent.StopSession()
+        fakeEvent = stopSessionEvent()
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1578,7 +1596,7 @@ internal class RumActionScopeTest {
         testedScope.longTaskCount = count
 
         // When
-        fakeEvent = RumRawEvent.StopSession()
+        fakeEvent = stopSessionEvent()
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1641,7 +1659,7 @@ internal class RumActionScopeTest {
         testedScope.errorCount = count
 
         // When
-        fakeEvent = RumRawEvent.StopSession()
+        fakeEvent = stopSessionEvent()
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -1712,7 +1730,7 @@ internal class RumActionScopeTest {
         testedScope.crashCount = fatalCount
 
         // When
-        fakeEvent = RumRawEvent.StopSession()
+        fakeEvent = stopSessionEvent()
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -2392,7 +2410,7 @@ internal class RumActionScopeTest {
         testedScope.resourceCount = 0
         testedScope.errorCount = 0
         testedScope.crashCount = 0
-        fakeEvent = RumRawEvent.StartView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = startViewEvent()
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -2456,7 +2474,7 @@ internal class RumActionScopeTest {
         testedScope.errorCount = 0
         testedScope.crashCount = 0
         testedScope.longTaskCount = 0
-        fakeEvent = RumRawEvent.StartView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = startViewEvent()
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -2520,7 +2538,7 @@ internal class RumActionScopeTest {
         testedScope.resourceCount = 0
         testedScope.errorCount = 0
         testedScope.crashCount = 0
-        fakeEvent = RumRawEvent.StopView(RumScopeKey.from(Object()), emptyMap())
+        fakeEvent = stopViewEvent()
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -2584,7 +2602,7 @@ internal class RumActionScopeTest {
         testedScope.errorCount = 0
         testedScope.crashCount = 0
         testedScope.longTaskCount = 0
-        fakeEvent = RumRawEvent.StopSession()
+        fakeEvent = stopSessionEvent()
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -2727,7 +2745,7 @@ internal class RumActionScopeTest {
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
     ) {
         // When
-        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
+        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap(), fakeEventTime)
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         val result2 = testedScope.handleEvent(
             mockEvent(TEST_INACTIVITY_MS * 2 + 1),
@@ -2749,7 +2767,7 @@ internal class RumActionScopeTest {
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
     ) {
         // When
-        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
+        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap(), fakeEventTime)
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         val result2 = testedScope.handleEvent(
             mockEvent(TEST_MAX_DURATION_MS + 1),
@@ -2946,7 +2964,7 @@ internal class RumActionScopeTest {
     fun `M send Action W handleEvent(SendCustomActionNow)`() {
         // When
         testedScope.type = RumActionType.CUSTOM
-        val event = RumRawEvent.SendCustomActionNow()
+        val event = sendCustomActionNowEvent()
         val result = testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
@@ -3036,16 +3054,17 @@ internal class RumActionScopeTest {
             stacktrace = null,
             isFatal = false,
             threads = emptyList(),
-            attributes = emptyMap()
+            attributes = emptyMap(),
+            eventTime = fakeEventTime
         )
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         fakeEvent = RumRawEvent.StartAction(
-            RumActionType.TAP,
-            name,
-            false,
-            emptyMap(),
-            timeWithOffset(TEST_INACTIVITY_MS * 2 + 1)
+            type = RumActionType.TAP,
+            name = name,
+            waitForStop = false,
+            attributes = emptyMap(),
+            eventTime = timeWithOffset(TEST_INACTIVITY_MS * 2 + 1)
         )
         val result2 = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
@@ -3107,7 +3126,7 @@ internal class RumActionScopeTest {
     @Test
     fun `M notify about success W handleEvent() { write succeeded }`() {
         // Given
-        val event = RumRawEvent.SendCustomActionNow()
+        val event = sendCustomActionNowEvent()
 
         // When
         testedScope.type = RumActionType.CUSTOM
@@ -3124,7 +3143,7 @@ internal class RumActionScopeTest {
     @Test
     fun `M notify about error W handleEvent() { write failed }`() {
         // Given
-        val event = RumRawEvent.SendCustomActionNow()
+        val event = sendCustomActionNowEvent()
 
         // When
         testedScope.type = RumActionType.CUSTOM
@@ -3144,7 +3163,7 @@ internal class RumActionScopeTest {
         forge: Forge
     ) {
         // Given
-        val event = RumRawEvent.SendCustomActionNow()
+        val event = sendCustomActionNowEvent()
 
         // When
         testedScope.type = RumActionType.CUSTOM
@@ -3158,6 +3177,439 @@ internal class RumActionScopeTest {
                 fakeParentContext.viewId.orEmpty(),
                 StorageEvent.Action(0, ActionEvent.ActionEventActionType.CUSTOM, testedScope.startedNanos)
             )
+    }
+
+    @Test
+    fun `M populate heatmap fields W sendAction() {viewIdentity present}`(
+        @StringForgery fakeViewIdentity: String,
+        @LongForgery fakeViewKey: Long,
+        @LongForgery fakeWidth: Long,
+        @LongForgery fakeHeight: Long,
+        @LongForgery fakePosX: Long,
+        @LongForgery fakePosY: Long
+    ) {
+        // Given
+        val mockHeatmapRegistry: HeatmapIdentifierRegistry = mock()
+        whenever(mockHeatmapRegistry.getHeatmapIdentifier(fakeViewKey, fakeParentContext.viewUrl.orEmpty()))
+            .thenReturn(HeatmapIdentifier(fakeViewIdentity))
+
+        testedScope = RumActionScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            waitForStop = false,
+            eventTime = fakeEventTime,
+            initialType = fakeType,
+            initialName = fakeName,
+            initialAttributes = fakeAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            inactivityThresholdMs = TEST_INACTIVITY_MS,
+            maxDurationMs = TEST_MAX_DURATION_MS,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = true,
+            sampleRate = fakeSampleRate,
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector,
+            heatmapResolver = HeatmapActionResolver.Native(
+                data = NativeHeatmapActionData(
+                    viewKey = fakeViewKey,
+                    positionX = fakePosX,
+                    positionY = fakePosY,
+                    targetWidth = fakeWidth,
+                    targetHeight = fakeHeight
+                ),
+                registry = mockHeatmapRegistry
+            )
+        )
+
+        // When
+        testedScope.handleEvent(
+            mockEvent(TEST_INACTIVITY_MS + 1),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasPermanentId(fakeViewIdentity)
+                .hasTargetWidth(fakeWidth)
+                .hasTargetHeight(fakeHeight)
+                .hasPositionX(fakePosX)
+                .hasPositionY(fakePosY)
+        }
+    }
+
+    @Test
+    fun `M omit dd action W sendAction() {registry returns null for viewKey}`(
+        @LongForgery fakeViewKey: Long,
+        @LongForgery fakeWidth: Long,
+        @LongForgery fakeHeight: Long,
+        @LongForgery fakePosX: Long,
+        @LongForgery fakePosY: Long
+    ) {
+        // Given
+        val mockHeatmapRegistry: HeatmapIdentifierRegistry = mock()
+        whenever(mockHeatmapRegistry.getHeatmapIdentifier(any(), any())).thenReturn(null)
+
+        testedScope = RumActionScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            waitForStop = false,
+            eventTime = fakeEventTime,
+            initialType = fakeType,
+            initialName = fakeName,
+            initialAttributes = fakeAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            inactivityThresholdMs = TEST_INACTIVITY_MS,
+            maxDurationMs = TEST_MAX_DURATION_MS,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = true,
+            sampleRate = fakeSampleRate,
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector,
+            heatmapResolver = HeatmapActionResolver.Native(
+                data = NativeHeatmapActionData(
+                    viewKey = fakeViewKey,
+                    positionX = fakePosX,
+                    positionY = fakePosY,
+                    targetWidth = fakeWidth,
+                    targetHeight = fakeHeight
+                ),
+                registry = mockHeatmapRegistry
+            )
+        )
+
+        // When
+        testedScope.handleEvent(
+            mockEvent(TEST_INACTIVITY_MS + 1),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue.dd.action).isNull()
+        }
+    }
+
+    @Test
+    fun `M omit dd action W sendAction() {registry is null}`(
+        @LongForgery fakeViewKey: Long,
+        @LongForgery fakePosX: Long,
+        @LongForgery fakePosY: Long
+    ) {
+        // Given — heatmapData is set but no registry is provided
+        testedScope = RumActionScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            waitForStop = false,
+            eventTime = fakeEventTime,
+            initialType = fakeType,
+            initialName = fakeName,
+            initialAttributes = fakeAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            inactivityThresholdMs = TEST_INACTIVITY_MS,
+            maxDurationMs = TEST_MAX_DURATION_MS,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = true,
+            sampleRate = fakeSampleRate,
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector,
+            heatmapResolver = HeatmapActionResolver.Native(
+                data = NativeHeatmapActionData(
+                    viewKey = fakeViewKey,
+                    positionX = fakePosX,
+                    positionY = fakePosY,
+                    targetWidth = null,
+                    targetHeight = null
+                ),
+                registry = null
+            )
+        )
+
+        // When
+        testedScope.handleEvent(
+            mockEvent(TEST_INACTIVITY_MS + 1),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue.dd.action).isNull()
+        }
+    }
+
+    @Test
+    fun `M omit dd action W sendAction() {no heatmap attributes}`() {
+        // Given
+        testedScope = RumActionScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            waitForStop = false,
+            eventTime = fakeEventTime,
+            initialType = fakeType,
+            initialName = fakeName,
+            initialAttributes = fakeAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            inactivityThresholdMs = TEST_INACTIVITY_MS,
+            maxDurationMs = TEST_MAX_DURATION_MS,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = true,
+            sampleRate = fakeSampleRate,
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector
+        )
+
+        // When
+        testedScope.handleEvent(
+            mockEvent(TEST_INACTIVITY_MS + 1),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue.dd.action).isNull()
+        }
+    }
+
+    @Test
+    fun `M populate heatmap fields W sendAction() {crossPlatformHeatmapActionData set}`(
+        @Forgery fakeHeatmapAttributes: CrossPlatformHeatmapActionData,
+        @StringForgery fakeAppPackageName: String
+    ) {
+        val matchingHeatmapAttributes = fakeHeatmapAttributes.copy(
+            viewUrl = fakeParentContext.viewUrl.orEmpty()
+        )
+        val expectedPermanentId = HeatmapIdentifier.create(
+            elementPath = matchingHeatmapAttributes.elementPath,
+            screenName = fakeParentContext.viewUrl.orEmpty(),
+            appPackageName = fakeAppPackageName
+        )?.rawValue
+        testedScope = RumActionScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            waitForStop = false,
+            eventTime = fakeEventTime,
+            initialType = fakeType,
+            initialName = fakeName,
+            initialAttributes = fakeAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            inactivityThresholdMs = TEST_INACTIVITY_MS,
+            maxDurationMs = TEST_MAX_DURATION_MS,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = true,
+            sampleRate = fakeSampleRate,
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector,
+            heatmapResolver = HeatmapActionResolver.CrossPlatform(
+                data = matchingHeatmapAttributes,
+                appPackageName = fakeAppPackageName,
+                logger = rumMonitor.mockSdkCore.internalLogger
+            )
+        )
+
+        // When
+        testedScope.handleEvent(
+            mockEvent(TEST_INACTIVITY_MS + 1),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasPermanentId(checkNotNull(expectedPermanentId))
+                .hasPositionX(fakeHeatmapAttributes.positionX)
+                .hasPositionY(fakeHeatmapAttributes.positionY)
+                .hasTargetWidth(fakeHeatmapAttributes.targetWidth)
+                .hasTargetHeight(fakeHeatmapAttributes.targetHeight)
+        }
+    }
+
+    @Test
+    fun `M prefer crossPlatformHeatmapActionData over nativeHeatmapActionData W sendAction() {both set}`(
+        @Forgery fakeHeatmapAttributes: CrossPlatformHeatmapActionData,
+        @StringForgery fakeAppPackageName: String
+    ) {
+        // StartAction.init enforces mutual exclusivity, so RumActionScope is constructed directly here.
+        val mockHeatmapRegistry: HeatmapIdentifierRegistry = mock()
+        whenever(mockHeatmapRegistry.getHeatmapIdentifier(any(), any()))
+            .thenReturn(HeatmapIdentifier("native-id"))
+        val matchingHeatmapAttributes = fakeHeatmapAttributes.copy(
+            viewUrl = fakeParentContext.viewUrl.orEmpty()
+        )
+        val expectedPermanentId = HeatmapIdentifier.create(
+            elementPath = matchingHeatmapAttributes.elementPath,
+            screenName = fakeParentContext.viewUrl.orEmpty(),
+            appPackageName = fakeAppPackageName
+        )?.rawValue
+
+        testedScope = RumActionScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            waitForStop = false,
+            eventTime = fakeEventTime,
+            initialType = fakeType,
+            initialName = fakeName,
+            initialAttributes = fakeAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            inactivityThresholdMs = TEST_INACTIVITY_MS,
+            maxDurationMs = TEST_MAX_DURATION_MS,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = true,
+            sampleRate = fakeSampleRate,
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector,
+            heatmapResolver = HeatmapActionResolver.CrossPlatform(
+                data = matchingHeatmapAttributes,
+                appPackageName = fakeAppPackageName,
+                logger = rumMonitor.mockSdkCore.internalLogger
+            )
+        )
+
+        // When
+        testedScope.handleEvent(
+            mockEvent(TEST_INACTIVITY_MS + 1),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        verifyNoInteractions(mockHeatmapRegistry)
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue).hasPermanentId(checkNotNull(expectedPermanentId))
+        }
+    }
+
+    @Test
+    fun `M drop heatmap data and warn W sendAction() {heatmapAttributes viewUrl mismatches current view}`(
+        @Forgery fakeHeatmapAttributes: CrossPlatformHeatmapActionData,
+        @StringForgery fakeAppPackageName: String,
+        @StringForgery fakeDifferentViewUrl: String
+    ) {
+        // Given — simulate a race: the action was recorded for a different view than the one
+        // that is active when sendAction() fires (e.g. navigation happened on the async hop
+        // between the cross-platform tap and Android's RUM event queue processing).
+        val staleViewUrl = if (fakeDifferentViewUrl != fakeParentContext.viewUrl.orEmpty()) {
+            fakeDifferentViewUrl
+        } else {
+            "$fakeDifferentViewUrl#other"
+        }
+        val staleHeatmapAttributes = fakeHeatmapAttributes.copy(viewUrl = staleViewUrl)
+
+        testedScope = RumActionScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            waitForStop = false,
+            eventTime = fakeEventTime,
+            initialType = fakeType,
+            initialName = fakeName,
+            initialAttributes = fakeAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            inactivityThresholdMs = TEST_INACTIVITY_MS,
+            maxDurationMs = TEST_MAX_DURATION_MS,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = true,
+            sampleRate = fakeSampleRate,
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector,
+            heatmapResolver = HeatmapActionResolver.CrossPlatform(
+                data = staleHeatmapAttributes,
+                appPackageName = fakeAppPackageName,
+                logger = rumMonitor.mockSdkCore.internalLogger
+            )
+        )
+
+        // When
+        testedScope.handleEvent(
+            mockEvent(TEST_INACTIVITY_MS + 1),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then — heatmap fields are absent; a developer warning was logged
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue.dd.action).isNull()
+        }
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.WARN),
+            eq(InternalLogger.Target.USER),
+            any(),
+            isNull(),
+            eq(false),
+            isNull()
+        )
+    }
+
+    @Test
+    fun `M drop heatmap data and log user error W sendAction() {empty elementPath}`(
+        @Forgery fakeHeatmapAttributes: CrossPlatformHeatmapActionData,
+        @StringForgery fakeAppPackageName: String
+    ) {
+        // Given — elementPath is empty; every tap on the same screen would collide to the same hash
+        val emptyPathAttributes = fakeHeatmapAttributes.copy(
+            elementPath = emptyList(),
+            viewUrl = fakeParentContext.viewUrl.orEmpty()
+        )
+        testedScope = RumActionScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            waitForStop = false,
+            eventTime = fakeEventTime,
+            initialType = fakeType,
+            initialName = fakeName,
+            initialAttributes = fakeAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            inactivityThresholdMs = TEST_INACTIVITY_MS,
+            maxDurationMs = TEST_MAX_DURATION_MS,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = true,
+            sampleRate = fakeSampleRate,
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector,
+            heatmapResolver = HeatmapActionResolver.CrossPlatform(
+                data = emptyPathAttributes,
+                appPackageName = fakeAppPackageName,
+                logger = rumMonitor.mockSdkCore.internalLogger
+            )
+        )
+
+        // When
+        testedScope.handleEvent(
+            mockEvent(TEST_INACTIVITY_MS + 1),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue.dd.action).isNull()
+        }
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.USER),
+            any(),
+            isNull(),
+            eq(false),
+            isNull()
+        )
     }
 
     // region Internal
@@ -3179,9 +3631,22 @@ internal class RumActionScopeTest {
         return fakeEventTime.timestamp + fakeServerOffset
     }
 
+    private fun startViewEvent() =
+        RumRawEvent.StartView(RumScopeKey.from(Any()), emptyMap(), timeWithOffset(TEST_ACTION_DURATION_MS))
+
+    private fun stopViewEvent() =
+        RumRawEvent.StopView(RumScopeKey.from(Any()), emptyMap(), timeWithOffset(TEST_ACTION_DURATION_MS))
+
+    private fun stopSessionEvent() =
+        RumRawEvent.StopSession(timeWithOffset(TEST_ACTION_DURATION_MS))
+
+    private fun sendCustomActionNowEvent() =
+        RumRawEvent.SendCustomActionNow(timeWithOffset(TEST_ACTION_DURATION_MS))
+
     // endregion
 
     companion object {
+        internal const val TEST_ACTION_DURATION_MS = 10L
         internal const val TEST_INACTIVITY_MS = 50L
         internal const val TEST_MAX_DURATION_MS = 500L
         internal val TEST_MAX_DURATION_NS = TimeUnit.MILLISECONDS.toNanos(TEST_MAX_DURATION_MS)

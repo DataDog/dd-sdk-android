@@ -28,7 +28,6 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.lang.Exception
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -86,8 +85,8 @@ internal class InvocationUtilsTest {
     ) {
         // Given
         val mockFunc = mock<() -> Boolean>()
-        val mockException: Exception = mock()
-        doThrow(mockException).`when`(mockFunc)
+        val mockException: RuntimeException = mock()
+        whenever(mockFunc()) doThrow mockException
 
         val captor = argumentCaptor<() -> String>()
 

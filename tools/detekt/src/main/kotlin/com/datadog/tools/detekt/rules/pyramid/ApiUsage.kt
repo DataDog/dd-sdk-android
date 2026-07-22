@@ -26,7 +26,9 @@ class ApiUsage(
 ) : AbstractCallExpressionRule(config, simplifyLocalTypes = true, includeTypeArguments = false) {
 
     private val outputFileName: String by config(defaultValue = "apiUsage.log")
-    private val outputFile: File by lazy { File(outputFileName) }
+    private val outputFile: File by lazy {
+        File(outputFileName).absoluteFile.also { it.parentFile.mkdirs() }
+    }
 
     private val internalPackagePrefix: String by config(defaultValue = "")
 

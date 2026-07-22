@@ -24,10 +24,14 @@ import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
+import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.utils.asString
+import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
+import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.RumFeatureAssert
@@ -35,6 +39,8 @@ import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.RumFeature.Companion.MEMORY_TIMESERIES_DISABLED_MESSAGE
 import com.datadog.android.rum.internal.RumFeature.Companion.SLOW_FRAMES_MONITORING_DISABLED_MESSAGE
 import com.datadog.android.rum.internal.RumFeature.Companion.SLOW_FRAMES_MONITORING_ENABLED_MESSAGE
+import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
+import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilityReader
@@ -953,6 +959,40 @@ internal class RumFeatureTest {
         assertThat(GlobalRumMonitor.get(mockSdkCore)).isInstanceOf(NoOpAdvancedRumMonitor::class.java)
     }
 
+    @Test
+    fun `M keep heatmap identifier registry instance W onStop()`() {
+        // Session Replay holds a direct reference to the registry obtained via unwrap().
+        // Resetting the registry on stop would leave SR writing to an orphaned instance.
+
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        val registryBeforeStop = testedFeature.heatmapIdentifierRegistry
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        assertThat(testedFeature.heatmapIdentifierRegistry)
+            .isSameAs(registryBeforeStop)
+    }
+
+    @Test
+    fun `M keep same heatmap identifier registry instance W onStop() + onInitialize()`() {
+        // SR holds a direct reference from the first init. Re-initializing must reuse the
+        // same instance so SR's cached reference stays valid.
+
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        val registryAfterFirstInit = testedFeature.heatmapIdentifierRegistry
+
+        // When
+        testedFeature.onStop()
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        assertThat(testedFeature.heatmapIdentifierRegistry).isSameAs(registryAfterFirstInit)
+    }
+
     @ParameterizedTest
     @EnumSource(VitalsUpdateFrequency::class, names = ["NEVER"], mode = EnumSource.Mode.EXCLUDE)
     fun `M initialize vital executor W initialize { frequency != NEVER }()`(
@@ -1187,6 +1227,79 @@ internal class RumFeatureTest {
         )
 
         verifyNoInteractions(mockRumMonitor)
+    }
+
+    @Test
+    fun `M call addError with ANRException using supplied stack W onReceive(ProfilingAnrDetectedEvent)`(
+        @Forgery fakeEvent: ProfilingAnrDetectedEvent
+    ) {
+        // When
+        testedFeature.onReceive(fakeEvent)
+
+        // Then
+        val throwableCaptor = argumentCaptor<Throwable>()
+        val attributesCaptor = argumentCaptor<Map<String, Any?>>()
+        verify(mockRumMonitor).addError(
+            eq(ANRDetectorRunnable.ANR_MESSAGE),
+            eq(RumErrorSource.SOURCE),
+            throwableCaptor.capture(),
+            attributesCaptor.capture()
+        )
+        val throwable = throwableCaptor.firstValue
+        assertThat(throwable).isInstanceOf(ANRException::class.java)
+        assertThat(throwable.stackTrace.toList()).isEqualTo(fakeEvent.anrThreadStack)
+
+        assertThat(attributesCaptor.firstValue[RumAttributes.INTERNAL_TIMESTAMP])
+            .isEqualTo(fakeEvent.detectedAtMs)
+
+        @Suppress("UNCHECKED_CAST")
+        val attached = attributesCaptor.firstValue[RumAttributes.INTERNAL_ALL_THREADS] as List<ThreadDump>
+        assertThat(attached).hasSize(fakeEvent.allThreads.size + 1)
+        val mainDump = attached.first()
+        assertThat(mainDump.name).isEqualTo(fakeEvent.anrThreadName)
+        assertThat(mainDump.state).isEqualTo(fakeEvent.anrThreadState.asString())
+        assertThat(mainDump.stack).isEqualTo(throwable.loggableStackTrace())
+        assertThat(mainDump.crashed).isFalse
+        attached.drop(1).zip(fakeEvent.allThreads).forEach { (mapped, original) ->
+            assertThat(mapped.name).isEqualTo(original.name)
+            assertThat(mapped.state).isEqualTo(original.state.asString())
+            assertThat(mapped.stack).isEqualTo(original.stack)
+            assertThat(mapped.crashed).isFalse
+        }
+    }
+
+    @Test
+    fun `M include only main thread in _dd_error_threads W onReceive(ProfilingAnrDetectedEvent) {empty allThreads}`(
+        @Forgery fakeEvent: ProfilingAnrDetectedEvent
+    ) {
+        // Given
+        val eventWithNoOtherThreads = fakeEvent.copy(allThreads = emptyList())
+
+        // When
+        testedFeature.onReceive(eventWithNoOtherThreads)
+
+        // Then
+        val throwableCaptor = argumentCaptor<Throwable>()
+        val attributesCaptor = argumentCaptor<Map<String, Any?>>()
+        verify(mockRumMonitor).addError(
+            eq(ANRDetectorRunnable.ANR_MESSAGE),
+            eq(RumErrorSource.SOURCE),
+            throwableCaptor.capture(),
+            attributesCaptor.capture()
+        )
+        val throwable = throwableCaptor.firstValue
+
+        assertThat(attributesCaptor.firstValue[RumAttributes.INTERNAL_TIMESTAMP])
+            .isEqualTo(eventWithNoOtherThreads.detectedAtMs)
+
+        @Suppress("UNCHECKED_CAST")
+        val attached = attributesCaptor.firstValue[RumAttributes.INTERNAL_ALL_THREADS] as List<ThreadDump>
+        assertThat(attached).hasSize(1)
+        val mainDump = attached.first()
+        assertThat(mainDump.name).isEqualTo(eventWithNoOtherThreads.anrThreadName)
+        assertThat(mainDump.state).isEqualTo(eventWithNoOtherThreads.anrThreadState.asString())
+        assertThat(mainDump.stack).isEqualTo(throwable.loggableStackTrace())
+        assertThat(mainDump.crashed).isFalse
     }
 
     // endregion

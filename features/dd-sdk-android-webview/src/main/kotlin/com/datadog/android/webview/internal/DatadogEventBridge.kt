@@ -7,6 +7,7 @@
 package com.datadog.android.webview.internal
 
 import android.webkit.JavascriptInterface
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.configuration.HostsSanitizer
 import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.internal.sampling.DeterministicSampling
@@ -25,15 +26,18 @@ internal class DatadogEventBridge(
     internal val webViewEventConsumer: WebViewEventConsumer<String>,
     private val allowedHosts: List<String>,
     private val privacyLevel: String,
-    private val webViewRumFeature: WebViewRumFeature?
+    private val webViewRumFeature: WebViewRumFeature?,
+    internalLogger: InternalLogger
 ) {
+
+    private val hostsSanitizer = HostsSanitizer(internalLogger)
 
     // region Bridge
 
     /**
      * Called from the browser-sdk side whenever there is a new RUM/LOG event
      * available related with the tracked WebView.
-     * @param event as the bundled web event as a Json string
+     * @param event as the bundled web event as a JSON string
      */
     @JavascriptInterface
     fun send(event: String) {
@@ -49,11 +53,9 @@ internal class DatadogEventBridge(
     fun getAllowedWebViewHosts(): String {
         // We need to use a JsonArray here otherwise it cannot be parsed on the JS side
         val origins = JsonArray()
-        HostsSanitizer()
+        hostsSanitizer
             .sanitizeHosts(allowedHosts, WEB_VIEW_TRACKING_FEATURE_NAME)
-            .forEach {
-                origins.add(it)
-            }
+            .forEach { origins.add(it) }
         return origins.toString()
     }
 
@@ -97,7 +99,7 @@ internal class DatadogEventBridge(
         }
 
         val combinedRate = DeterministicSampling.combinedSampleRate(sessionSampleRate, traceSampleRate)
-        val sampler = DeterministicSampler<String>(
+        val sampler = DeterministicSampler(
             SessionSamplingIdProvider::provideId,
             combinedRate
         )

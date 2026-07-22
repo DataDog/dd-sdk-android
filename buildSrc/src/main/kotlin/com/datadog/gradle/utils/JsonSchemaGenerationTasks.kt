@@ -6,6 +6,7 @@
 
 package com.datadog.gradle.utils
 
+import com.android.build.gradle.tasks.ExtractAnnotations
 import com.android.build.gradle.tasks.SourceJarTask
 import com.datadog.gradle.config.taskConfig
 import com.datadog.gradle.plugin.apisurface.GenerateApiSurfaceTask
@@ -100,10 +101,18 @@ fun Project.createJsonModelsGenerationTask(
         dependsOn(task)
     }
 
+    tasks.matching { it.name.startsWith("ksp") && it.name.endsWith("Kotlin") }.configureEach {
+        dependsOn(task)
+    }
+
     // need to add an explicit dependency, otherwise there is an error during publishing
     // Task 'sourceReleaseJar' uses this output of task
     // this task without declaring an explicit or implicit dependency
     taskConfig<SourceJarTask> {
+        dependsOn(task)
+    }
+
+    taskConfig<ExtractAnnotations> {
         dependsOn(task)
     }
 }

@@ -50,12 +50,12 @@ class LeanbackViewAttributesProvider :
         child: View,
         attributes: MutableMap<String, Any?>
     ) {
-        parent.findAction(child)?.let {
-            attributes[ACTION_TARGET_ACTION_ID] = it.id
-            it.label1?.let {
+        parent.findAction(child)?.let { action ->
+            attributes[ACTION_TARGET_ACTION_ID] = action.id
+            action.label1?.let {
                 attributes[ACTION_TARGET_LABEL1] = it
             }
-            it.label2?.let {
+            action.label2?.let {
                 attributes[ACTION_TARGET_LABEL2] = it
             }
         }

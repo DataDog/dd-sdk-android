@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.utils.isValidTapTarget
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
@@ -28,7 +29,8 @@ internal class SnapshotProducer(
     private val treeViewTraversal: TreeViewTraversal,
     private val optionSelectorDetector: OptionSelectorDetector,
     private val touchPrivacyManager: TouchPrivacyManager,
-    private val internalLogger: InternalLogger
+    private val internalLogger: InternalLogger,
+    private val heatmapResolver: HeatmapIdentifierResolver? = null
 ) {
 
     @UiThread
@@ -37,11 +39,14 @@ internal class SnapshotProducer(
         systemInformation: SystemInformation,
         textAndInputPrivacy: TextAndInputPrivacy,
         imagePrivacy: ImagePrivacy,
-        recordedDataQueueRefs: RecordedDataQueueRefs
+        recordedDataQueueRefs: RecordedDataQueueRefs,
+        activeRumViewUrl: String? = null
     ): Node? {
-        return convertViewToNode(
-            rootView,
-            MappingContext(
+        val heatmapContext = if (activeRumViewUrl != null) heatmapResolver?.beginTraversal(activeRumViewUrl) else null
+
+        val rootNode = convertViewToNode(
+            view = rootView,
+            mappingContext = MappingContext(
                 systemInformation = systemInformation,
                 imageWireframeHelper = imageWireframeHelper,
                 textAndInputPrivacy = textAndInputPrivacy,
@@ -52,18 +57,28 @@ internal class SnapshotProducer(
                     recordedDataQueueRefs
                 )
             ),
-            LinkedList(),
-            recordedDataQueueRefs
+            parents = LinkedList(),
+            recordedDataQueueRefs = recordedDataQueueRefs,
+            nodePath = emptyList(),
+            typeIndex = 0,
+            heatmapContext = heatmapContext
         )
+
+        heatmapContext?.publish()
+
+        return rootNode
     }
 
-    @Suppress("ComplexMethod", "ReturnCount")
+    @Suppress("ComplexMethod", "ReturnCount", "LongParameterList")
     @UiThread
     private fun convertViewToNode(
         view: View,
         mappingContext: MappingContext,
         parents: LinkedList<MobileSegment.Wireframe>,
-        recordedDataQueueRefs: RecordedDataQueueRefs
+        recordedDataQueueRefs: RecordedDataQueueRefs,
+        nodePath: List<String>,
+        typeIndex: Int,
+        heatmapContext: HeatmapIdentifierResolver.TraversalContext?
     ): Node? {
         return withinSRBenchmarkSpan(view::class.java.simpleName, view is ViewGroup) {
             val localMappingContext = resolvePrivacyOverrides(view, mappingContext)
@@ -73,8 +88,17 @@ internal class SnapshotProducer(
             if (nextTraversalStrategy == TraversalStrategy.STOP_AND_DROP_NODE) {
                 return null
             }
+
+            val identity = resolveHeatmapIdentity(view, nodePath, typeIndex, nextTraversalStrategy, heatmapContext)
+            val viewPath = identity?.viewPath ?: nodePath
+            val heatmapIdentifier = identity?.identifier
+
             if (nextTraversalStrategy == TraversalStrategy.STOP_AND_RETURN_NODE) {
-                return Node(wireframes = resolvedWireframes, parents = parents)
+                return Node(
+                    wireframes = resolvedWireframes,
+                    parents = parents,
+                    heatmapIdentifier = heatmapIdentifier
+                )
             }
 
             val childNodes = LinkedList<Node>()
@@ -84,9 +108,21 @@ internal class SnapshotProducer(
             ) {
                 val childMappingContext = resolveChildMappingContext(view, localMappingContext)
                 val parentsCopy = LinkedList(parents).apply { addAll(resolvedWireframes) }
+                val childTypeIndices = heatmapContext?.computeChildTypeIndices(view)
                 for (i in 0 until view.childCount) {
                     val viewChild = view.getChildAt(i) ?: continue
-                    convertViewToNode(viewChild, childMappingContext, parentsCopy, recordedDataQueueRefs)?.let {
+
+                    @Suppress("UnsafeThirdPartyFunctionCall") // i is always in-bounds: array size == view.childCount
+                    val childTypeIndex = childTypeIndices?.get(i) ?: 0
+                    convertViewToNode(
+                        view = viewChild,
+                        mappingContext = childMappingContext,
+                        parents = parentsCopy,
+                        recordedDataQueueRefs = recordedDataQueueRefs,
+                        nodePath = viewPath,
+                        typeIndex = childTypeIndex,
+                        heatmapContext = heatmapContext
+                    )?.let {
                         childNodes.add(it)
                     }
                 }
@@ -94,8 +130,29 @@ internal class SnapshotProducer(
             Node(
                 children = childNodes,
                 wireframes = resolvedWireframes,
-                parents = parents
+                parents = parents,
+                heatmapIdentifier = heatmapIdentifier
             )
+        }
+    }
+
+    @UiThread
+    private fun resolveHeatmapIdentity(
+        view: View,
+        nodePath: List<String>,
+        typeIndex: Int,
+        nextTraversalStrategy: TraversalStrategy,
+        heatmapContext: HeatmapIdentifierResolver.TraversalContext?
+    ): HeatmapIdentifierResolver.HeatmapIdentity? {
+        return heatmapContext?.let { ctx ->
+            val pathNeededForChildren = view is ViewGroup &&
+                view.childCount > 0 &&
+                nextTraversalStrategy == TraversalStrategy.TRAVERSE_ALL_CHILDREN
+            if (pathNeededForChildren || view.isValidTapTarget()) {
+                ctx.resolveIdentity(view, nodePath, typeIndex)
+            } else {
+                null
+            }
         }
     }
 

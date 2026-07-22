@@ -46,7 +46,7 @@ class NavigationViewTrackingStrategy(
 
     private var startedActivity: Activity? = null
 
-    private var lifecycleCallbackRefs =
+    private val lifecycleCallbackRefs =
         WeakHashMap<Activity, NavControllerFragmentLifecycleCallbacks>()
 
     private val predicate: ComponentPredicate<Fragment> = object : ComponentPredicate<Fragment> {

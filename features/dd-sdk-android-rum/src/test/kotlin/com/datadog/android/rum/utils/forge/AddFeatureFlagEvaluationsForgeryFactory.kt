@@ -11,6 +11,7 @@ import fr.xgouchet.elmyr.ForgeryFactory
 
 internal class AddFeatureFlagEvaluationsForgeryFactory : ForgeryFactory<RumRawEvent.AddFeatureFlagEvaluations> {
     override fun getForgery(forge: Forge) = RumRawEvent.AddFeatureFlagEvaluations(
-        featureFlags = forge.aMap { aString() to aString() }
+        featureFlags = forge.aMap { aString() to aString() },
+        eventTime = forge.getForgery()
     )
 }

@@ -195,7 +195,7 @@ internal class DebouncerTest {
             .postDelayed(any(), eq(Debouncer.DEBOUNCE_TIME_IN_MS))
         verify(mockHandler, times(fakeDelayedRunnables.size + 1))
             .removeCallbacksAndMessages(null)
-        assertThat(fakeDelayedRunnables.filter { it.wasExecuted }.size).isEqualTo(0)
+        assertThat(fakeDelayedRunnables.count { it.wasExecuted }).isEqualTo(0)
         assertThat(fakeExecutedRunnable.wasExecuted).isTrue
     }
 
@@ -241,8 +241,8 @@ internal class DebouncerTest {
         val numOfCancelInvocations = fakeDelayedRunnablesPack1.size +
             fakeDelayedRunnablesPack2.size + 1
         verify(mockHandler, times(numOfCancelInvocations)).removeCallbacksAndMessages(null)
-        assertThat(fakeDelayedRunnablesPack1.filter { it.wasExecuted }.size).isEqualTo(0)
-        assertThat(fakeDelayedRunnablesPack2.filter { it.wasExecuted }.size).isEqualTo(0)
+        assertThat(fakeDelayedRunnablesPack1.count { it.wasExecuted }).isEqualTo(0)
+        assertThat(fakeDelayedRunnablesPack2.count { it.wasExecuted }).isEqualTo(0)
         assertThat(fakeExecutedRunnable.wasExecuted).isTrue
     }
 

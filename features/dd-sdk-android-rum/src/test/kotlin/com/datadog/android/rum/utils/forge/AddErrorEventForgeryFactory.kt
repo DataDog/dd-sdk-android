@@ -24,6 +24,7 @@ internal class AddErrorEventForgeryFactory : ForgeryFactory<RumRawEvent.AddError
         attributes = forge.exhaustiveAttributes(),
         type = forge.aNullable { aString() },
         threads = forge.aList { getForgery() },
-        timeSinceAppStartNs = forge.aNullable { aPositiveLong() }
+        timeSinceAppStartNs = forge.aNullable { aPositiveLong() },
+        eventTime = forge.getForgery()
     )
 }

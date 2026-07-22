@@ -36,6 +36,7 @@ import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -105,6 +106,24 @@ internal class WebViewTrackingTest {
     @Mock
     lateinit var mockReplayFeatureScope: FeatureScope
 
+    @StringForgery
+    lateinit var fakeService: String
+
+    @StringForgery
+    lateinit var fakeVersion: String
+
+    @StringForgery
+    lateinit var fakeSdkVersion: String
+
+    @StringForgery
+    lateinit var fakeEnv: String
+
+    @StringForgery
+    lateinit var fakeVariant: String
+
+    @Mock
+    lateinit var mockDatadogContext: DatadogContext
+
     @BeforeEach
     fun `set up`() {
         whenever(
@@ -135,6 +154,12 @@ internal class WebViewTrackingTest {
         val mockWebViewSettings = mock<WebSettings>()
         whenever(mockWebViewSettings.javaScriptEnabled) doReturn true
         whenever(mockWebView.settings) doReturn mockWebViewSettings
+
+        whenever(mockDatadogContext.service) doReturn fakeService
+        whenever(mockDatadogContext.version) doReturn fakeVersion
+        whenever(mockDatadogContext.sdkVersion) doReturn fakeSdkVersion
+        whenever(mockDatadogContext.env) doReturn fakeEnv
+        whenever(mockDatadogContext.variant) doReturn fakeVariant
     }
 
     @Test
@@ -349,6 +374,31 @@ internal class WebViewTrackingTest {
             InternalLogger.Target.USER,
             WebViewTracking.JAVA_SCRIPT_NOT_ENABLED_WARNING_MESSAGE
         )
+    }
+
+    @Test
+    fun `M pass valid hosts and wildcard patterns to the bridge W enable { wildcard patterns }`() {
+        // Given
+        val fakeAllowedHosts = listOf("*.example.com", "preview-*.shopist.io", "example.net")
+        val mockSettings: WebSettings = mock {
+            whenever(it.javaScriptEnabled).thenReturn(true)
+        }
+        val mockWebView: WebView = mock {
+            whenever(it.settings).thenReturn(mockSettings)
+        }
+
+        // When
+        WebViewTracking.enable(mockWebView, fakeAllowedHosts, sdkCore = mockCore)
+
+        // Then
+        argumentCaptor<DatadogEventBridge> {
+            verify(mockWebView).addJavascriptInterface(
+                capture(),
+                eq(WebViewTracking.DATADOG_EVENT_BRIDGE_NAME)
+            )
+            assertThat(firstValue.getAllowedWebViewHosts())
+                .isEqualTo("[\"example.net\",\"*.example.com\",\"preview-*.shopist.io\"]")
+        }
     }
 
     @Test
@@ -635,6 +685,11 @@ internal class WebViewTrackingTest {
             add("application", JsonObject().apply { addProperty("id", fakeApplicationId) })
             add("session", JsonObject().apply { addProperty("id", fakeSessionId) })
             add("usr", JsonObject().apply { addProperty("anonymous_id", fakeAnonymousId) })
+            addProperty(
+                "ddtags",
+                "service:$fakeService,version:$fakeVersion,sdk_version:$fakeSdkVersion," +
+                    "env:$fakeEnv,variant:$fakeVariant"
+            )
         }
 
         whenever(
@@ -648,14 +703,13 @@ internal class WebViewTrackingTest {
             val feature = it.getArgument<Feature>(0)
             feature.onInitialize(mock())
         }
-        val fakeFeaturesContext = mapOf<String, Map<String, Any?>>(
+        val fakeFeaturesContext = mapOf(
             "rum" to mapOf<String, Any?>(
                 "application_id" to fakeApplicationId,
                 "session_id" to fakeSessionId,
                 "session_state" to "TRACKED"
             )
         )
-        val mockDatadogContext = mock<DatadogContext>()
         whenever(mockDatadogContext.featuresContext) doReturn fakeFeaturesContext
         whenever(mockDatadogContext.userInfo) doReturn fakeUserInfo
         val mockEventBatchWriter = mock<EventBatchWriter>()

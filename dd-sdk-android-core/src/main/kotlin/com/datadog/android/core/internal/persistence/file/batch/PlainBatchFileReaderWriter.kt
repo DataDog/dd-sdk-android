@@ -26,16 +26,31 @@ internal class PlainBatchFileReaderWriter(
     private val internalLogger: InternalLogger
 ) : BatchFileReaderWriter {
 
-    // region FileWriter
+    // region BatchFileReaderWriter
+
+    @Suppress("UnsafeThirdPartyFunctionCall")
+    override fun serializeToBytes(data: RawBatchEvent): ByteArray {
+        val meta = data.metadata
+        val metaBlockSize = TYPE_SIZE_BYTES + LENGTH_SIZE_BYTES + meta.size
+        val dataBlockSize = TYPE_SIZE_BYTES + LENGTH_SIZE_BYTES + data.data.size
+
+        // ByteBuffer by default has BigEndian ordering, which matches to how Java
+        // reads data, so no need to define it explicitly
+        return ByteBuffer
+            .allocate(metaBlockSize + dataBlockSize)
+            .putAsTlv(BlockType.META, meta)
+            .putAsTlv(BlockType.EVENT, data.data)
+            .array()
+    }
 
     @WorkerThread
-    override fun writeData(
+    override fun writeBinaryData(
         file: File,
-        data: RawBatchEvent,
+        bytes: ByteArray,
         append: Boolean
     ): Boolean {
         return try {
-            lockFileAndWriteData(file, append, data)
+            lockFileAndWriteData(file, append, bytes)
             true
         } catch (e: IOException) {
             internalLogger.log(
@@ -94,7 +109,7 @@ internal class PlainBatchFileReaderWriter(
     private fun lockFileAndWriteData(
         file: File,
         append: Boolean,
-        data: RawBatchEvent
+        bytes: ByteArray
     ) {
         RandomAccessFile(file, "rw").use { raf ->
             val channel = raf.channel
@@ -106,17 +121,7 @@ internal class PlainBatchFileReaderWriter(
                 channel.truncate(rollbackLength)
                 channel.position(rollbackLength)
 
-                val meta = data.metadata
-                val metaBlockSize = TYPE_SIZE_BYTES + LENGTH_SIZE_BYTES + meta.size
-                val dataBlockSize = TYPE_SIZE_BYTES + LENGTH_SIZE_BYTES + data.data.size
-
-                // ByteBuffer by default has BigEndian ordering, which matches to how Java
-                // reads data, so no need to define it explicitly
-                val buffer = ByteBuffer
-                    .allocate(metaBlockSize + dataBlockSize)
-                    .putAsTlv(BlockType.META, meta)
-                    .putAsTlv(BlockType.EVENT, data.data)
-                buffer.flip()
+                val buffer = ByteBuffer.wrap(bytes)
 
                 try {
                     while (buffer.hasRemaining()) {
