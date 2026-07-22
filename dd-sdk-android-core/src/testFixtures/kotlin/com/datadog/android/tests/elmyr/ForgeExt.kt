@@ -61,6 +61,7 @@ fun <T : Forge> T.useCoreFactories(): T {
     addFactory(RequestExecutionContextForgeryFactory())
     addFactory(RequestInfoForgeryFactory())
     addFactory(MutableRequestInfoForgeryFactory())
+    addFactory(RemoteConfigurationForgeryFactory())
 
     return this
 }
