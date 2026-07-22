@@ -10,14 +10,17 @@ import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.datadog.android.Datadog
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.profiling.internal.NoOpProfiler
 import com.datadog.android.profiling.internal.Profiler
 import com.datadog.android.profiling.internal.ProfilingFeature
 import com.datadog.android.profiling.internal.ProfilingStartReason
 import com.datadog.android.profiling.internal.ProfilingStorage
+import com.datadog.android.profiling.internal.applyRemoteConfiguration
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
 import com.datadog.android.profiling.internal.time.MutableTimeProvider
 import java.util.concurrent.Executors
@@ -47,14 +50,23 @@ object Profiling {
         configuration: ProfilingConfiguration = ProfilingConfiguration.DEFAULT,
         sdkCore: SdkCore = Datadog.getInstance()
     ) {
-        val featureSdkCore = sdkCore as FeatureSdkCore
+        if (sdkCore !is InternalSdkCore) {
+            val logger = (sdkCore as? FeatureSdkCore)?.internalLogger ?: InternalLogger.UNBOUND
+            logger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                { UNEXPECTED_SDK_CORE_TYPE }
+            )
+            return
+        }
         initializeProfiler()
+        val effectiveConfiguration = configuration.applyRemoteConfiguration(sdkCore.remoteConfiguration)
         val profilingFeature = ProfilingFeature(
-            sdkCore = featureSdkCore,
-            configuration = configuration,
+            sdkCore = sdkCore,
+            configuration = effectiveConfiguration,
             profiler = profiler
         )
-        featureSdkCore.registerFeature(profilingFeature)
+        sdkCore.registerFeature(profilingFeature)
     }
 
     /**
@@ -113,4 +125,7 @@ object Profiling {
             )
         }
     }
+
+    internal const val UNEXPECTED_SDK_CORE_TYPE =
+        "SDK instance provided doesn't implement InternalSdkCore."
 }
