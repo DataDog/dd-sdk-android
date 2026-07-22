@@ -30,7 +30,6 @@ import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
-import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
 import com.datadog.android.rum.internal.timeseries.Timeseries
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
@@ -235,7 +234,8 @@ internal class RumApplicationScopeTest {
         testedScope.handleEvent(
             RumRawEvent.StartView(
                 key = RumScopeKey.from(viewKey, viewName),
-                attributes = emptyMap()
+                attributes = emptyMap(),
+                eventTime = fakeEventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,
@@ -255,14 +255,15 @@ internal class RumApplicationScopeTest {
         testedScope.handleEvent(
             RumRawEvent.StartView(
                 key = RumScopeKey.from(viewKey, viewName),
-                attributes = emptyMap()
+                attributes = emptyMap(),
+                eventTime = fakeEventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
         )
         testedScope.handleEvent(
-            RumRawEvent.StopSession(),
+            RumRawEvent.StopSession(fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -272,7 +273,8 @@ internal class RumApplicationScopeTest {
         testedScope.handleEvent(
             RumRawEvent.StartView(
                 key = RumScopeKey.from(viewKey, viewName),
-                attributes = emptyMap()
+                attributes = emptyMap(),
+                eventTime = fakeEventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,
