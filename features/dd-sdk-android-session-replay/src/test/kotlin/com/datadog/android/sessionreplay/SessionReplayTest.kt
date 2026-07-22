@@ -10,7 +10,10 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.internal.remote.model.RemoteConfiguration
 import com.datadog.android.sessionreplay.SessionReplay.IS_ALREADY_REGISTERED_WARNING
+import com.datadog.android.sessionreplay.SessionReplay.UNEXPECTED_SDK_CORE_TYPE
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
@@ -45,7 +48,7 @@ import org.mockito.quality.Strictness
 internal class SessionReplayTest {
 
     @Mock
-    lateinit var mockSdkCore: FeatureSdkCore
+    lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
     lateinit var mockSystemRequirementsConfiguration: SystemRequirementsConfiguration
@@ -53,6 +56,7 @@ internal class SessionReplayTest {
     @BeforeEach
     fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mock()
+        whenever(mockSdkCore.remoteConfiguration) doReturn null
         SessionReplay.currentRegisteredCore = null
     }
 
@@ -127,14 +131,16 @@ internal class SessionReplayTest {
     @Test
     fun `M warn and send telemetry W enable { session replay feature already registered with another core }`(
         @Forgery fakeSessionReplayConfiguration: SessionReplayConfiguration,
-        @Mock mockCore1: FeatureSdkCore,
-        @Mock mockCore2: FeatureSdkCore,
+        @Mock mockCore1: InternalSdkCore,
+        @Mock mockCore2: InternalSdkCore,
         @Mock mockInternalLogger: InternalLogger
     ) {
         // Given
         whenever(mockCore1.isCoreActive()).thenReturn(true)
         whenever(mockCore1.internalLogger).thenReturn(mockInternalLogger)
+        whenever(mockCore1.remoteConfiguration) doReturn null
         whenever(mockCore2.internalLogger).thenReturn(mockInternalLogger)
+        whenever(mockCore2.remoteConfiguration) doReturn null
         val fakeSessionReplayConfigurationWithMockRequirement = fakeSessionReplayConfiguration.copy(
             systemRequirementsConfiguration = mockSystemRequirementsConfiguration
         )
@@ -172,13 +178,15 @@ internal class SessionReplayTest {
     @Test
     fun `M allow changing cores W enable { Session Replay already enabled but old core inactive }`(
         @Forgery fakeSessionReplayConfiguration: SessionReplayConfiguration,
-        @Mock mockCore1: FeatureSdkCore,
-        @Mock mockCore2: FeatureSdkCore,
+        @Mock mockCore1: InternalSdkCore,
+        @Mock mockCore2: InternalSdkCore,
         @Mock mockInternalLogger: InternalLogger
     ) {
         // Given
         whenever(mockCore1.internalLogger).thenReturn(mockInternalLogger)
+        whenever(mockCore1.remoteConfiguration) doReturn null
         whenever(mockCore2.internalLogger).thenReturn(mockInternalLogger)
+        whenever(mockCore2.remoteConfiguration) doReturn null
         val fakeSessionReplayConfigurationWithMockRequirement = fakeSessionReplayConfiguration.copy(
             systemRequirementsConfiguration = mockSystemRequirementsConfiguration
         )
@@ -204,4 +212,120 @@ internal class SessionReplayTest {
         // Then
         assertThat(SessionReplay.currentRegisteredCore?.get()).isEqualTo(mockCore2)
     }
+
+    // region Remote Configuration
+
+    @Test
+    fun `M log error and return W enable { sdkCore is not InternalSdkCore }`(
+        @Forgery fakeSessionReplayConfiguration: SessionReplayConfiguration,
+        @Mock mockNonInternalCore: FeatureSdkCore,
+        @Mock mockInternalLogger: InternalLogger
+    ) {
+        // Given
+        whenever(mockNonInternalCore.internalLogger) doReturn mockInternalLogger
+
+        // When
+        SessionReplay.enable(fakeSessionReplayConfiguration, mockNonInternalCore)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.USER),
+            message = UNEXPECTED_SDK_CORE_TYPE
+        )
+        assertThat(SessionReplay.currentRegisteredCore).isNull()
+    }
+
+    @Test
+    fun `M register feature with merged configuration W enable { RC provides sessionReplay values }`(
+        @Forgery fakeSessionReplayConfiguration: SessionReplayConfiguration,
+        @Forgery fakeRemoteConfiguration: RemoteConfiguration
+    ) {
+        // Given
+        val fakeConfigWithMockRequirements = fakeSessionReplayConfiguration.copy(
+            systemRequirementsConfiguration = mockSystemRequirementsConfiguration
+        )
+        whenever(mockSdkCore.remoteConfiguration) doReturn fakeRemoteConfiguration
+        whenever(
+            mockSystemRequirementsConfiguration.runIfRequirementsMet(any(), any())
+        ) doAnswer {
+            it.getArgument<() -> Unit>(1).invoke()
+        }
+
+        // When
+        SessionReplay.enable(fakeConfigWithMockRequirements, mockSdkCore)
+
+        // Then — SessionReplayFeature is registered with the effective (potentially merged) config
+        argumentCaptor<SessionReplayFeature> {
+            verify(mockSdkCore).registerFeature(capture())
+            val remoteSessionReplay = fakeRemoteConfiguration.sessionReplay
+            // Privacy fields from RC override in-code values when present
+            assertThat(lastValue.imagePrivacy).isEqualTo(
+                remoteSessionReplay?.imagePrivacy?.toSdkImagePrivacy()
+                    ?: fakeConfigWithMockRequirements.imagePrivacy
+            )
+            assertThat(lastValue.textAndInputPrivacy).isEqualTo(
+                remoteSessionReplay?.textAndInputPrivacy?.toSdkTextAndInputPrivacy()
+                    ?: fakeConfigWithMockRequirements.textAndInputPrivacy
+            )
+            assertThat(lastValue.touchPrivacy).isEqualTo(
+                remoteSessionReplay?.touchPrivacy?.toSdkTouchPrivacy()
+                    ?: fakeConfigWithMockRequirements.touchPrivacy
+            )
+        }
+    }
+
+    @Test
+    fun `M register feature with in-code configuration W enable { null remote configuration }`(
+        @Forgery fakeSessionReplayConfiguration: SessionReplayConfiguration
+    ) {
+        // Given
+        val fakeConfigWithMockRequirements = fakeSessionReplayConfiguration.copy(
+            systemRequirementsConfiguration = mockSystemRequirementsConfiguration
+        )
+        whenever(mockSdkCore.remoteConfiguration) doReturn null
+        whenever(
+            mockSystemRequirementsConfiguration.runIfRequirementsMet(any(), any())
+        ) doAnswer {
+            it.getArgument<() -> Unit>(1).invoke()
+        }
+
+        // When
+        SessionReplay.enable(fakeConfigWithMockRequirements, mockSdkCore)
+
+        // Then — SessionReplayFeature is registered with in-code values unchanged
+        argumentCaptor<SessionReplayFeature> {
+            verify(mockSdkCore).registerFeature(capture())
+            assertThat(lastValue.imagePrivacy).isEqualTo(fakeConfigWithMockRequirements.imagePrivacy)
+            assertThat(lastValue.textAndInputPrivacy)
+                .isEqualTo(fakeConfigWithMockRequirements.textAndInputPrivacy)
+            assertThat(lastValue.touchPrivacy).isEqualTo(fakeConfigWithMockRequirements.touchPrivacy)
+        }
+    }
+
+    // endregion
+
+    // region Helpers
+
+    private fun RemoteConfiguration.ImagePrivacy.toSdkImagePrivacy(): ImagePrivacy = when (this) {
+        RemoteConfiguration.ImagePrivacy.MASK_NONE -> ImagePrivacy.MASK_NONE
+        RemoteConfiguration.ImagePrivacy.MASK_LARGE_ONLY -> ImagePrivacy.MASK_LARGE_ONLY
+        RemoteConfiguration.ImagePrivacy.MASK_ALL -> ImagePrivacy.MASK_ALL
+    }
+
+    private fun RemoteConfiguration.TextAndInputPrivacy.toSdkTextAndInputPrivacy(): TextAndInputPrivacy =
+        when (this) {
+            RemoteConfiguration.TextAndInputPrivacy.MASK_SENSITIVE_INPUTS ->
+                TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
+            RemoteConfiguration.TextAndInputPrivacy.MASK_ALL_INPUTS ->
+                TextAndInputPrivacy.MASK_ALL_INPUTS
+            RemoteConfiguration.TextAndInputPrivacy.MASK_ALL -> TextAndInputPrivacy.MASK_ALL
+        }
+
+    private fun RemoteConfiguration.TouchPrivacy.toSdkTouchPrivacy(): TouchPrivacy = when (this) {
+        RemoteConfiguration.TouchPrivacy.SHOW -> TouchPrivacy.SHOW
+        RemoteConfiguration.TouchPrivacy.HIDE -> TouchPrivacy.HIDE
+    }
+
+    // endregion
 }

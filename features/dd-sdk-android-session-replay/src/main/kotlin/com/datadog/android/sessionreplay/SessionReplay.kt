@@ -12,8 +12,10 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
+import com.datadog.android.sessionreplay.internal.applyRemoteConfiguration
 import java.lang.ref.WeakReference
 
 /**
@@ -26,6 +28,9 @@ object SessionReplay {
     internal const val IS_ALREADY_REGISTERED_WARNING =
         "Session Replay is already enabled and does not support multiple instances. " +
             "The existing instance will continue to be used."
+
+    internal const val UNEXPECTED_SDK_CORE_TYPE =
+        "SDK instance provided doesn't implement InternalSdkCore."
 
     /**
      * Enables a SessionReplay feature based on the configuration provided.
@@ -42,26 +47,36 @@ object SessionReplay {
         sessionReplayConfiguration: SessionReplayConfiguration,
         sdkCore: SdkCore = Datadog.getInstance()
     ) {
-        val featureSdkCore = sdkCore as FeatureSdkCore
+        if (sdkCore !is InternalSdkCore) {
+            val logger = (sdkCore as? FeatureSdkCore)?.internalLogger ?: InternalLogger.UNBOUND
+            logger.log(
+                level = InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.USER),
+                messageBuilder = { UNEXPECTED_SDK_CORE_TYPE }
+            )
+            return
+        }
         sessionReplayConfiguration.systemRequirementsConfiguration
-            .runIfRequirementsMet(featureSdkCore.internalLogger) {
-                val touchPrivacyManager = TouchPrivacyManager(sessionReplayConfiguration.touchPrivacy)
+            .runIfRequirementsMet(sdkCore.internalLogger) {
+                val effectiveConfiguration = sessionReplayConfiguration
+                    .applyRemoteConfiguration(sdkCore.remoteConfiguration)
+                val touchPrivacyManager = TouchPrivacyManager(effectiveConfiguration.touchPrivacy)
                 val sessionReplayFeature = SessionReplayFeature(
-                    sdkCore = featureSdkCore,
-                    customEndpointUrl = sessionReplayConfiguration.customEndpointUrl,
-                    privacy = sessionReplayConfiguration.privacy,
-                    imagePrivacy = sessionReplayConfiguration.imagePrivacy,
-                    touchPrivacy = sessionReplayConfiguration.touchPrivacy,
+                    sdkCore = sdkCore,
+                    customEndpointUrl = effectiveConfiguration.customEndpointUrl,
+                    privacy = effectiveConfiguration.privacy,
+                    imagePrivacy = effectiveConfiguration.imagePrivacy,
+                    touchPrivacy = effectiveConfiguration.touchPrivacy,
                     touchPrivacyManager = touchPrivacyManager,
-                    textAndInputPrivacy = sessionReplayConfiguration.textAndInputPrivacy,
-                    customMappers = sessionReplayConfiguration.customMappers,
-                    customOptionSelectorDetectors = sessionReplayConfiguration.customOptionSelectorDetectors,
-                    customDrawableMappers = sessionReplayConfiguration.customDrawableMappers,
-                    sampleRate = sessionReplayConfiguration.sampleRate,
-                    startRecordingImmediately = sessionReplayConfiguration.startRecordingImmediately,
-                    dynamicOptimizationEnabled = sessionReplayConfiguration.dynamicOptimizationEnabled,
-                    internalCallback = sessionReplayConfiguration.internalCallback,
-                    heatmapsEnabled = sessionReplayConfiguration.heatmapsEnabled
+                    textAndInputPrivacy = effectiveConfiguration.textAndInputPrivacy,
+                    customMappers = effectiveConfiguration.customMappers,
+                    customOptionSelectorDetectors = effectiveConfiguration.customOptionSelectorDetectors,
+                    customDrawableMappers = effectiveConfiguration.customDrawableMappers,
+                    sampleRate = effectiveConfiguration.sampleRate,
+                    startRecordingImmediately = effectiveConfiguration.startRecordingImmediately,
+                    dynamicOptimizationEnabled = effectiveConfiguration.dynamicOptimizationEnabled,
+                    internalCallback = effectiveConfiguration.internalCallback,
+                    heatmapsEnabled = effectiveConfiguration.heatmapsEnabled
                 )
 
                 if (isAlreadyRegistered()) {
