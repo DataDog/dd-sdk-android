@@ -34,23 +34,42 @@ fun Modifier.datadog(name: String, isImage: Boolean = false): Modifier {
 /**
  * This is the internal function reserved to Datadog Kotlin Compiler Plugin for auto instrumentation,
  * with telemetry to indicate that the auto-instrumentation is used instead of manual instrumentation.
+ *
+ * @param name The name of the component, identical in meaning and value to what manual
+ *             instrumentation would set. Unaffected by [elementPath].
+ * @param isImage Set to `true` if the component represents an image.
+ * @param elementPath A path unique to this call site at compile time (e.g. "MyScreen/Button#1"),
+ *                     intended for future stable element identification (e.g. heatmaps). This is
+ *                     additive: it is stored under a separate key and never replaces or alters
+ *                     [name] or the existing `_dd_semantics` tag read by RUM action tracking today.
+ *                     Defaults to `null` (no value stored) when omitted
  */
-internal fun Modifier.instrumentedDatadog(name: String, isImage: Boolean): Modifier {
+internal fun Modifier.instrumentedDatadog(name: String, isImage: Boolean, elementPath: String? = null): Modifier {
     sendTelemetry(autoInstrumented = true, InstrumentationType.Semantics)
-    return this.datadogSemantics(name, isImage)
+    return this.datadogSemantics(name, isImage, elementPath)
 }
 
-private fun Modifier.datadogSemantics(name: String, isImage: Boolean): Modifier {
+private fun Modifier.datadogSemantics(name: String, isImage: Boolean, elementPath: String? = null): Modifier {
     return this.semantics {
         this.datadog = name
         if (isImage) {
             this[SemanticsProperties.Role] = Role.Image
+        }
+        if (elementPath != null) {
+            this[DatadogElementPathPropertyKey] = elementPath
         }
     }
 }
 
 internal val DatadogSemanticsPropertyKey: SemanticsPropertyKey<String> = SemanticsPropertyKey(
     name = "_dd_semantics",
+    mergePolicy = { parentValue, _ ->
+        parentValue
+    }
+)
+
+internal val DatadogElementPathPropertyKey: SemanticsPropertyKey<String> = SemanticsPropertyKey(
+    name = "_dd_element_path",
     mergePolicy = { parentValue, _ ->
         parentValue
     }
