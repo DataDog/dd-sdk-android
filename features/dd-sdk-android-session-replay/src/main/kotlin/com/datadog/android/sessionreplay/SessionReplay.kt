@@ -56,14 +56,13 @@ object SessionReplay {
             )
             return
         }
-        val featureSdkCore = sdkCore as FeatureSdkCore
         sessionReplayConfiguration.systemRequirementsConfiguration
-            .runIfRequirementsMet(featureSdkCore.internalLogger) {
+            .runIfRequirementsMet(sdkCore.internalLogger) {
                 val effectiveConfiguration = sessionReplayConfiguration
                     .applyRemoteConfiguration(sdkCore.remoteConfiguration)
                 val touchPrivacyManager = TouchPrivacyManager(effectiveConfiguration.touchPrivacy)
                 val sessionReplayFeature = SessionReplayFeature(
-                    sdkCore = featureSdkCore,
+                    sdkCore = sdkCore,
                     customEndpointUrl = effectiveConfiguration.customEndpointUrl,
                     privacy = effectiveConfiguration.privacy,
                     imagePrivacy = effectiveConfiguration.imagePrivacy,
