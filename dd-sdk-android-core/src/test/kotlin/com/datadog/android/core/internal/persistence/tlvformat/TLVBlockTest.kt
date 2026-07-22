@@ -7,7 +7,9 @@
 package com.datadog.android.core.internal.persistence.tlvformat
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.telemetry.TelemetryContext
 import com.datadog.android.utils.forge.Configurator
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -42,6 +44,9 @@ internal class TLVBlockTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Forgery
+    lateinit var fakeTelemetryContext: TelemetryContext
+
     @Test
     fun `M return null W serialize() { empty data }`() {
         // Given
@@ -52,7 +57,7 @@ internal class TLVBlockTest {
         )
 
         // When
-        val block = testedTLVBlock.serialize()
+        val block = testedTLVBlock.serialize(fakeTelemetryContext)
 
         // Then
         assertThat(block).isNull()
@@ -75,7 +80,7 @@ internal class TLVBlockTest {
         )
 
         // When
-        val block = testedTLVBlock.serialize()
+        val block = testedTLVBlock.serialize(fakeTelemetryContext)
 
         // Then
         checkNotNull(block)
@@ -107,18 +112,24 @@ internal class TLVBlockTest {
         )
 
         // When
-        testedTLVBlock.serialize(1)
+        testedTLVBlock.serialize(fakeTelemetryContext, 1)
 
         // Then
         val stringCaptor = argumentCaptor<() -> String>()
+        val propertiesCaptor = argumentCaptor<Map<String, Any>>()
         verify(mockInternalLogger).log(
-            level = eq(InternalLogger.Level.WARN),
-            target = eq(InternalLogger.Target.MAINTAINER),
+            level = eq(InternalLogger.Level.ERROR),
+            targets = eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY)),
             stringCaptor.capture(),
             anyOrNull(),
             anyOrNull(),
-            anyOrNull()
+            propertiesCaptor.capture()
         )
         assertThat(stringCaptor.firstValue.invoke()).startsWith("DataBlock length exceeds limit")
+        assertThat(propertiesCaptor.firstValue).isEqualTo(
+            fakeTelemetryContext.asAttributesMap(
+                bytesLost = fakeByteArray.size + 6
+            )
+        )
     }
 }

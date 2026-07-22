@@ -9,6 +9,8 @@ package com.datadog.android.core.internal.persistence.file
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.use
+import com.datadog.android.internal.telemetry.TelemetryContext
+import com.datadog.android.internal.telemetry.TelemetryContext.Companion.BYTE_LOST_UNKNOWN
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -27,7 +29,8 @@ internal class PlainFileReaderWriter(
     override fun writeData(
         file: File,
         data: ByteArray,
-        append: Boolean
+        append: Boolean,
+        telemetryContext: TelemetryContext
     ): Boolean {
         return try {
             lockFileAndWriteData(file, append, data)
@@ -37,7 +40,8 @@ internal class PlainFileReaderWriter(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 { ERROR_WRITE.format(Locale.US, file.path) },
-                e
+                e,
+                additionalProperties = telemetryContext.asAttributesMap(bytesLost = data.size)
             )
             false
         } catch (e: SecurityException) {
@@ -45,7 +49,8 @@ internal class PlainFileReaderWriter(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 { ERROR_WRITE.format(Locale.US, file.path) },
-                e
+                e,
+                additionalProperties = telemetryContext.asAttributesMap(bytesLost = data.size)
             )
             false
         }
@@ -53,21 +58,24 @@ internal class PlainFileReaderWriter(
 
     @WorkerThread
     override fun readData(
-        file: File
+        file: File,
+        telemetryContext: TelemetryContext
     ): ByteArray {
         return try {
             if (!file.exists()) {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
                     listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                    { ERROR_READ.format(Locale.US, file.path) }
+                    { ERROR_READ.format(Locale.US, file.path) },
+                    additionalProperties = telemetryContext.asAttributesMap(bytesLost = BYTE_LOST_UNKNOWN)
                 )
                 EMPTY_BYTE_ARRAY
             } else if (file.isDirectory) {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
                     listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                    { ERROR_READ.format(Locale.US, file.path) }
+                    { ERROR_READ.format(Locale.US, file.path) },
+                    additionalProperties = telemetryContext.asAttributesMap(bytesLost = BYTE_LOST_UNKNOWN)
                 )
                 EMPTY_BYTE_ARRAY
             } else {
@@ -79,7 +87,8 @@ internal class PlainFileReaderWriter(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 { ERROR_READ.format(Locale.US, file.path) },
-                e
+                e,
+                additionalProperties = telemetryContext.asAttributesMap(bytesLost = BYTE_LOST_UNKNOWN)
             )
             EMPTY_BYTE_ARRAY
         } catch (e: SecurityException) {
@@ -87,7 +96,8 @@ internal class PlainFileReaderWriter(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 { ERROR_READ.format(Locale.US, file.path) },
-                e
+                e,
+                additionalProperties = telemetryContext.asAttributesMap(bytesLost = BYTE_LOST_UNKNOWN)
             )
             EMPTY_BYTE_ARRAY
         }
@@ -116,7 +126,6 @@ internal class PlainFileReaderWriter(
     companion object {
 
         private val EMPTY_BYTE_ARRAY = ByteArray(0)
-
         internal const val ERROR_WRITE = "Unable to write data to file: %s"
         internal const val ERROR_READ = "Unable to read data from file: %s"
     }

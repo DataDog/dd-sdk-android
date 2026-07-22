@@ -7,10 +7,13 @@
 package com.datadog.android.core.internal.persistence.file
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.telemetry.TelemetryContext
+import com.datadog.android.internal.telemetry.TelemetryContext.Companion.BYTE_LOST_UNKNOWN
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -51,6 +54,9 @@ internal class PlainFileReaderWriterTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Forgery
+    lateinit var fakeTelemetryContext: TelemetryContext
+
     private lateinit var fakeSrcDir: File
     private lateinit var fakeDstDir: File
 
@@ -77,7 +83,8 @@ internal class PlainFileReaderWriterTest {
         val result = testedFileReaderWriter.writeData(
             file,
             contentBytes,
-            append = false
+            append = false,
+            telemetryContext = fakeTelemetryContext
         )
 
         // Then
@@ -99,7 +106,8 @@ internal class PlainFileReaderWriterTest {
         val result = testedFileReaderWriter.writeData(
             file,
             contentBytes,
-            append = false
+            append = false,
+            telemetryContext = fakeTelemetryContext
         )
 
         // Then
@@ -122,7 +130,8 @@ internal class PlainFileReaderWriterTest {
         val result = testedFileReaderWriter.writeData(
             file,
             contentBytes,
-            append = false
+            append = false,
+            telemetryContext = fakeTelemetryContext
         )
 
         // Then
@@ -146,7 +155,8 @@ internal class PlainFileReaderWriterTest {
         val result = testedFileReaderWriter.writeData(
             file,
             contentBytes,
-            append = true
+            append = true,
+            telemetryContext = fakeTelemetryContext
         )
 
         // Then
@@ -171,7 +181,8 @@ internal class PlainFileReaderWriterTest {
         val result = testedFileReaderWriter.writeData(
             file,
             content.toByteArray(),
-            append = append
+            append = append,
+            telemetryContext = fakeTelemetryContext
         )
 
         // Then
@@ -181,7 +192,8 @@ internal class PlainFileReaderWriterTest {
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             PlainFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path),
-            IOException::class.java
+            IOException::class.java,
+            additionalProperties = fakeTelemetryContext.asAttributesMap(bytesLost = content.toByteArray().size)
         )
     }
 
@@ -199,7 +211,8 @@ internal class PlainFileReaderWriterTest {
         val result = testedFileReaderWriter.writeData(
             file,
             content.toByteArray(),
-            append = append
+            append = append,
+            telemetryContext = fakeTelemetryContext
         )
 
         // Then
@@ -208,7 +221,8 @@ internal class PlainFileReaderWriterTest {
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             PlainFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path),
-            IOException::class.java
+            IOException::class.java,
+            additionalProperties = fakeTelemetryContext.asAttributesMap(bytesLost = content.toByteArray().size)
         )
     }
 
@@ -225,7 +239,7 @@ internal class PlainFileReaderWriterTest {
         assumeFalse(file.exists())
 
         // When
-        val result = testedFileReaderWriter.readData(file)
+        val result = testedFileReaderWriter.readData(file, fakeTelemetryContext)
 
         // Then
         assertThat(result).isEmpty()
@@ -234,7 +248,8 @@ internal class PlainFileReaderWriterTest {
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             PlainFileReaderWriter.ERROR_READ.format(Locale.US, file.path),
-            null
+            null,
+            additionalProperties = fakeTelemetryContext.asAttributesMap(bytesLost = BYTE_LOST_UNKNOWN)
         )
     }
 
@@ -244,10 +259,11 @@ internal class PlainFileReaderWriterTest {
     ) {
         // Given
         val file = File(fakeRootDirectory, fileName)
-        assumeFalse(file.exists())
+        file.mkdirs()
+        assumeFalse(file.isFile)
 
         // When
-        val result = testedFileReaderWriter.readData(file)
+        val result = testedFileReaderWriter.readData(file, fakeTelemetryContext)
 
         // Then
         assertThat(result).isEmpty()
@@ -255,7 +271,8 @@ internal class PlainFileReaderWriterTest {
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             PlainFileReaderWriter.ERROR_READ.format(Locale.US, file.path),
-            null
+            null,
+            additionalProperties = fakeTelemetryContext.asAttributesMap(bytesLost = BYTE_LOST_UNKNOWN)
         )
     }
 
@@ -270,7 +287,7 @@ internal class PlainFileReaderWriterTest {
         file.writeBytes(eventBytes)
 
         // When
-        val result = testedFileReaderWriter.readData(file)
+        val result = testedFileReaderWriter.readData(file, fakeTelemetryContext)
 
         // Then
         assertThat(result).isEqualTo(eventBytes)
@@ -290,7 +307,7 @@ internal class PlainFileReaderWriterTest {
         file.writeBytes(data)
 
         // When
-        val result = testedFileReaderWriter.readData(file)
+        val result = testedFileReaderWriter.readData(file, fakeTelemetryContext)
 
         // Then
         assertThat(result).isEqualTo(data)
@@ -309,8 +326,8 @@ internal class PlainFileReaderWriterTest {
         val file = File(fakeRootDirectory, fileName)
 
         // When
-        val writeResult = testedFileReaderWriter.writeData(file, content.toByteArray(), false)
-        val readResult = testedFileReaderWriter.readData(file)
+        val writeResult = testedFileReaderWriter.writeData(file, content.toByteArray(), false, fakeTelemetryContext)
+        val readResult = testedFileReaderWriter.readData(file, fakeTelemetryContext)
 
         // Then
         assertThat(writeResult).isTrue()
@@ -335,10 +352,11 @@ internal class PlainFileReaderWriterTest {
             writeResult = writeResult && testedFileReaderWriter.writeData(
                 file,
                 it,
-                true
+                true,
+                fakeTelemetryContext
             )
         }
-        val readResult = testedFileReaderWriter.readData(file)
+        val readResult = testedFileReaderWriter.readData(file, fakeTelemetryContext)
 
         // Then
         assertThat(writeResult).isTrue()

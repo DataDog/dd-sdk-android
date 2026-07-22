@@ -201,6 +201,7 @@ interface com.datadog.android.api.storage.DataWriter<T>
   fun write(EventBatchWriter, T, EventType): Boolean
 interface com.datadog.android.api.storage.EventBatchWriter
   fun write(RawBatchEvent, ByteArray?, EventType): Boolean
+fun EventBatchWriter.write(RawBatchEvent, ByteArray?, EventType, com.datadog.android.internal.telemetry.TelemetryContext): Boolean
 enum com.datadog.android.api.storage.EventType
   - DEFAULT
   - CRASH
@@ -338,6 +339,8 @@ fun java.io.File.lengthSafe(com.datadog.android.api.InternalLogger): Long
 fun java.io.File.readTextSafe(java.nio.charset.Charset = Charsets.UTF_8, com.datadog.android.api.InternalLogger): String?
 fun java.io.File.readBytesSafe(com.datadog.android.api.InternalLogger): ByteArray?
 fun java.io.File.readLinesSafe(java.nio.charset.Charset = Charsets.UTF_8, com.datadog.android.api.InternalLogger): List<String>?
+interface com.datadog.android.core.internal.storage.TelemetryAwareEventBatchWriter : com.datadog.android.api.storage.EventBatchWriter
+  fun write(com.datadog.android.api.storage.RawBatchEvent, ByteArray?, com.datadog.android.api.storage.EventType, com.datadog.android.internal.telemetry.TelemetryContext): Boolean
 fun Collection<ByteArray>.join(ByteArray, ByteArray = ByteArray(0), ByteArray = ByteArray(0), com.datadog.android.api.InternalLogger): ByteArray
 fun java.util.concurrent.Executor.executeSafe(String, com.datadog.android.api.InternalLogger, Runnable)
 fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(String, Long, java.util.concurrent.TimeUnit, com.datadog.android.api.InternalLogger, Runnable): java.util.concurrent.ScheduledFuture<*>?

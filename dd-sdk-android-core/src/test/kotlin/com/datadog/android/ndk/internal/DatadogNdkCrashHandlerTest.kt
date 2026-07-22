@@ -94,7 +94,7 @@ internal class DatadogNdkCrashHandlerTest {
     @BeforeEach
     fun `set up`() {
         fakeNdkCacheDir = File(tempDir, DatadogNdkCrashHandler.NDK_CRASH_REPORTS_FOLDER_NAME)
-        whenever(mockEnvFileReader.readData(any())) doAnswer {
+        whenever(mockEnvFileReader.readData(any(), any())) doAnswer {
             it.getArgument<File>(0).readBytes()
         }
 

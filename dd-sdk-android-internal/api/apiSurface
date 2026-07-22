@@ -253,6 +253,12 @@ sealed class com.datadog.android.internal.telemetry.InternalTelemetryEvent
     enum Mode
       - DEFAULT_HEADERS
       - CUSTOM
+data class com.datadog.android.internal.telemetry.TelemetryContext
+  constructor(String, String? = null)
+  fun asAttributesMap(Int): Map<String, Any>
+  companion object 
+    const val BYTE_LOST_UNKNOWN: Int
+    fun asAttributesMap(String, Int? = null, String? = null): Map<String, Any>
 enum com.datadog.android.internal.telemetry.TracingHeaderType
   - DATADOG
   - B3

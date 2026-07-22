@@ -11,6 +11,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.core.internal.utils.use
+import com.datadog.android.internal.telemetry.TelemetryContext
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
@@ -28,8 +29,11 @@ internal class PlainBatchFileReaderWriter(
 
     // region BatchFileReaderWriter
 
-    @Suppress("UnsafeThirdPartyFunctionCall")
-    override fun serializeToBytes(data: RawBatchEvent): ByteArray {
+    @Suppress("UnsafeThirdPartyFunctionCall", "UNUSED_PARAMETER")
+    override fun serializeToBytes(
+        data: RawBatchEvent,
+        telemetryContext: TelemetryContext
+    ): ByteArray {
         val meta = data.metadata
         val metaBlockSize = TYPE_SIZE_BYTES + LENGTH_SIZE_BYTES + meta.size
         val dataBlockSize = TYPE_SIZE_BYTES + LENGTH_SIZE_BYTES + data.data.size
@@ -47,7 +51,8 @@ internal class PlainBatchFileReaderWriter(
     override fun writeBinaryData(
         file: File,
         bytes: ByteArray,
-        append: Boolean
+        append: Boolean,
+        telemetryContext: TelemetryContext
     ): Boolean {
         return try {
             lockFileAndWriteData(file, append, bytes)
@@ -55,9 +60,10 @@ internal class PlainBatchFileReaderWriter(
         } catch (e: IOException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER),
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 { ERROR_WRITE.format(Locale.US, file.path) },
-                e
+                e,
+                additionalProperties = telemetryContext.asAttributesMap(bytesLost = bytes.size)
             )
             false
         } catch (e: SecurityException) {
@@ -65,7 +71,8 @@ internal class PlainBatchFileReaderWriter(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 { ERROR_WRITE.format(Locale.US, file.path) },
-                e
+                e,
+                additionalProperties = telemetryContext.asAttributesMap(bytesLost = bytes.size)
             )
             false
         }
@@ -77,24 +84,28 @@ internal class PlainBatchFileReaderWriter(
 
     @WorkerThread
     override fun readData(
-        file: File
+        file: File,
+        telemetryContext: TelemetryContext
     ): List<RawBatchEvent> {
+        val inputLength = file.lengthSafe(internalLogger).toInt()
         return try {
-            readFileData(file)
+            readFileData(file, inputLength, telemetryContext)
         } catch (e: IOException) {
             internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { ERROR_READ.format(Locale.US, file.path) },
-                e
+                level = InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                messageBuilder = { ERROR_READ.format(Locale.US, file.path) },
+                throwable = e,
+                additionalProperties = telemetryContext.asAttributesMap(bytesLost = inputLength)
             )
             emptyList()
         } catch (e: SecurityException) {
             internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { ERROR_READ.format(Locale.US, file.path) },
-                e
+                level = InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                messageBuilder = { ERROR_READ.format(Locale.US, file.path) },
+                throwable = e,
+                additionalProperties = telemetryContext.asAttributesMap(inputLength)
             )
             emptyList()
         }
@@ -151,23 +162,34 @@ internal class PlainBatchFileReaderWriter(
     @Suppress("UnsafeThirdPartyFunctionCall", "ComplexMethod", "LoopWithTooManyJumpStatements")
     // Called within a try/catch block
     private fun readFileData(
-        file: File
+        file: File,
+        inputLength: Int,
+        telemetryContext: TelemetryContext
     ): List<RawBatchEvent> {
-        val inputLength = file.lengthSafe(internalLogger).toInt()
-
         val result = mutableListOf<RawBatchEvent>()
 
         // Read file iteratively
         var remaining = inputLength
+        // Snapshot of `remaining` at the start of the current iteration, i.e. the same value already
+        // reported to the readBlock/checkReadExpected telemetry above on failure. Used only for the
+        // summary log below, since `remaining` itself gets decremented by the partial bytes consumed
+        // by a failed read, which would otherwise under-report what this method actually drops.
+        var remainingAtIterationStart = remaining
         file.inputStream().buffered().use {
             while (remaining > 0) {
-                val metaReadResult = readBlock(it, BlockType.META)
+                remainingAtIterationStart = remaining
+                val metaReadResult = readBlock(it, BlockType.META, telemetryContext, remaining)
                 if (metaReadResult.data == null) {
                     remaining -= metaReadResult.bytesRead
                     break
                 }
 
-                val eventReadResult = readBlock(it, BlockType.EVENT)
+                val eventReadResult = readBlock(
+                    it,
+                    BlockType.EVENT,
+                    telemetryContext,
+                    remaining
+                )
                 remaining -= metaReadResult.bytesRead + eventReadResult.bytesRead
 
                 if (eventReadResult.data == null) break
@@ -177,10 +199,12 @@ internal class PlainBatchFileReaderWriter(
         }
 
         if (remaining != 0 || (inputLength > 0 && result.isEmpty())) {
+            val droppedBytes = if (result.isEmpty()) inputLength else remainingAtIterationStart
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                { WARNING_NOT_ALL_DATA_READ.format(Locale.US, file.path) }
+                { WARNING_NOT_ALL_DATA_READ.format(Locale.US, file.path) },
+                additionalProperties = telemetryContext.asAttributesMap(bytesLost = droppedBytes)
             )
         }
 
@@ -189,7 +213,12 @@ internal class PlainBatchFileReaderWriter(
 
     @Suppress("ReturnCount")
     @Throws(IOException::class)
-    private fun readBlock(stream: InputStream, expectedBlockType: BlockType): BlockReadResult {
+    private fun readBlock(
+        stream: InputStream,
+        expectedBlockType: BlockType,
+        telemetryContext: TelemetryContext,
+        remaining: Int
+    ): BlockReadResult {
         @Suppress("UnsafeThirdPartyFunctionCall") // allocation size is always positive
         val headerBuffer = ByteBuffer.allocate(HEADER_SIZE_BYTES)
 
@@ -199,7 +228,9 @@ internal class PlainBatchFileReaderWriter(
         if (!checkReadExpected(
                 HEADER_SIZE_BYTES,
                 headerReadBytes,
-                "Block(${expectedBlockType.name}): Header read"
+                "Block(${expectedBlockType.name}): Header read",
+                telemetryContext,
+                remaining
             )
         ) {
             return BlockReadResult(null, max(0, headerReadBytes))
@@ -209,11 +240,12 @@ internal class PlainBatchFileReaderWriter(
         if (blockType != expectedBlockType.identifier) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 {
                     "Unexpected block type identifier=$blockType met," +
                         " was expecting $expectedBlockType(${expectedBlockType.identifier})"
-                }
+                },
+                additionalProperties = telemetryContext.asAttributesMap(bytesLost = remaining)
             )
             // in theory, we could continue reading, because we still know data size,
             // but unexpected type says that at least relationship between blocks is broken,
@@ -230,7 +262,9 @@ internal class PlainBatchFileReaderWriter(
         return if (checkReadExpected(
                 dataSize,
                 dataReadBytes,
-                "Block(${expectedBlockType.name}):Data read"
+                "Block(${expectedBlockType.name}):Data read",
+                telemetryContext,
+                remaining
             )
         ) {
             BlockReadResult(dataBuffer, headerReadBytes + dataReadBytes)
@@ -239,22 +273,30 @@ internal class PlainBatchFileReaderWriter(
         }
     }
 
-    private fun checkReadExpected(expected: Int, actual: Int, operation: String): Boolean {
+    private fun checkReadExpected(
+        expected: Int,
+        actual: Int,
+        operation: String,
+        telemetryContext: TelemetryContext,
+        bytesLost: Int
+    ): Boolean {
         return if (expected != actual) {
             if (actual != -1) {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
-                    InternalLogger.Target.MAINTAINER,
+                    listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                     {
                         "Number of bytes read for operation='$operation' doesn't" +
                             " match with expected: expected=$expected, actual=$actual"
-                    }
+                    },
+                    additionalProperties = telemetryContext.asAttributesMap(bytesLost = bytesLost)
                 )
             } else {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
-                    InternalLogger.Target.MAINTAINER,
-                    { "Unexpected EOF at the operation=$operation" }
+                    listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                    { "Unexpected EOF at the operation=$operation" },
+                    additionalProperties = telemetryContext.asAttributesMap(bytesLost = bytesLost)
                 )
             }
             false
