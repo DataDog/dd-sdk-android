@@ -24,8 +24,10 @@ import java.util.concurrent.atomic.AtomicReference
  *  - After [onSessionStop], the instance must not be restarted; create a new instance.
  *
  * Background sampling:
- *  - When [collectInBackground] is `false`, [onViewTypeUpdate] pauses sampling on leaving foreground
- *    and resumes it on returning to foreground.
+ *  - When [collectInBackground] is `false`, [onViewTypeUpdate] flushes buffered samples and pauses
+ *    sampling on leaving foreground, and resumes it on returning to foreground. Flushing on the
+ *    foreground→background transition persists partial batches before the OS can kill the
+ *    backgrounded process (mirrors dd-sdk-ios `TimeseriesSessionCollector.pause()`).
  *
  * Threading:
  *  - [onSessionStart] / [onSessionStop] / [onViewTypeUpdate] are called from the RUM event-handler thread.
@@ -62,18 +64,7 @@ internal class RumSessionScopeTimeseries(
     @WorkerThread
     override fun onSessionStop() {
         if (state.getAndSet(State.STOPPED) != State.STOPPED) {
-            pipelines.forEach { pipeline ->
-                try {
-                    synchronized(pipeline, pipeline::flush)
-                } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
-                    internalLogger.log(
-                        level = InternalLogger.Level.ERROR,
-                        targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                        messageBuilder = { ERROR_FLUSH_FAILED },
-                        throwable = t
-                    )
-                }
-            }
+            flushPipelines()
         }
     }
 
@@ -85,8 +76,11 @@ internal class RumSessionScopeTimeseries(
         if (!collectInBackground) {
             if (isEnterForeground && state.compareAndSet(State.SUSPENDED, State.RUNNING)) {
                 startSampling()
-            } else if (!newViewType.isForeground) {
-                state.compareAndSet(State.RUNNING, State.SUSPENDED)
+            } else if (!newViewType.isForeground && state.compareAndSet(State.RUNNING, State.SUSPENDED)) {
+                // Flush buffered samples before suspending: the OS may kill the backgrounded
+                // process before the buffer fills or the session stops, dropping the in-memory
+                // buffer. Mirrors dd-sdk-ios TimeseriesSessionCollector.pause().
+                flushPipelines()
             }
         }
     }
@@ -124,10 +118,24 @@ internal class RumSessionScopeTimeseries(
     private fun isActive(generation: Int): Boolean =
         state.get() == State.RUNNING && currentGeneration.get() == generation
 
+    @WorkerThread
+    private fun flushPipelines() = pipelines.forEach { pipeline ->
+        try {
+            synchronized(pipeline, pipeline::flush)
+        } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
+            internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                messageBuilder = { ERROR_FLUSH_FAILED },
+                throwable = t
+            )
+        }
+    }
+
     internal companion object {
         const val OPERATION_NAME = "Timeseries sampling"
         const val ERROR_SAMPLING_FAILED = "Timeseries sampling iteration failed; rescheduling next sample."
-        const val ERROR_FLUSH_FAILED = "Timeseries flush on session stop failed."
+        const val ERROR_FLUSH_FAILED = "Timeseries flush failed."
         val RumViewType?.isForeground: Boolean
             get() = when (this) {
                 RumViewType.FOREGROUND, RumViewType.APPLICATION_LAUNCH -> true

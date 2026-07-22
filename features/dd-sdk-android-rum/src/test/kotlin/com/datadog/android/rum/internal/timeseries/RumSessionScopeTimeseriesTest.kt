@@ -78,6 +78,9 @@ internal class RumSessionScopeTimeseriesTest {
     lateinit var mockEventBatchWriter: EventBatchWriter
 
     @Mock
+    lateinit var mockDatadogContext: DatadogContext
+
+    @Mock
     lateinit var mockExecutor: ScheduledExecutorService
 
     @Mock
@@ -116,7 +119,7 @@ internal class RumSessionScopeTimeseriesTest {
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer { inv ->
             inv.getArgument<(DatadogContext, EventWriteScope) -> Unit>(inv.arguments.lastIndex)
-                .invoke(mock(), mockEventWriteScope)
+                .invoke(mockDatadogContext, mockEventWriteScope)
         }
         whenever(mockEventWriteScope.invoke(any())) doAnswer { inv ->
             inv.getArgument<(EventBatchWriter) -> Unit>(0).invoke(mockEventBatchWriter)
@@ -506,6 +509,91 @@ internal class RumSessionScopeTimeseriesTest {
             eq(fakeIntervalAMs),
             eq(TimeUnit.MILLISECONDS)
         )
+    }
+
+    @Test
+    fun `M flush partial buffer W onViewTypeUpdate() { foreground to background }`(forge: Forge) {
+        // Given
+        val fakeSample = forge.getForgery<DataPoint<Double>>()
+        val fakeJson = JsonObject().apply { addProperty("k", "v") }
+        whenever(mockReaderA.read()) doReturn fakeSample
+        whenever(mockSerializerA.serialize(eq(mockDatadogContext), eq(listOf(fakeSample)))) doReturn fakeJson
+        testedTimeseries.onSessionStart()
+        captureScheduledRunnableForInterval(fakeIntervalAMs).run() // buffers one sample for pipeline A
+
+        // When
+        testedTimeseries.onViewTypeUpdate(RumViewType.BACKGROUND)
+
+        // Then
+        verify(mockSerializerA).serialize(mockDatadogContext, listOf(fakeSample))
+        verify(mockDataWriter).write(mockEventBatchWriter, fakeJson, EventType.DEFAULT)
+        verify(mockSerializerB, never()).serialize(any(), any())
+    }
+
+    @Test
+    fun `M flush partial buffer W onViewTypeUpdate() { foreground to none }`(forge: Forge) {
+        // Given
+        val fakeSample = forge.getForgery<DataPoint<Double>>()
+        val fakeJson = JsonObject().apply { addProperty("k", "v") }
+        whenever(mockReaderA.read()) doReturn fakeSample
+        whenever(mockSerializerA.serialize(eq(mockDatadogContext), eq(listOf(fakeSample)))) doReturn fakeJson
+        testedTimeseries.onSessionStart()
+        captureScheduledRunnableForInterval(fakeIntervalAMs).run() // buffers one sample for pipeline A
+
+        // When
+        testedTimeseries.onViewTypeUpdate(RumViewType.NONE)
+
+        // Then
+        verify(mockSerializerA).serialize(mockDatadogContext, listOf(fakeSample))
+        verify(mockDataWriter).write(mockEventBatchWriter, fakeJson, EventType.DEFAULT)
+    }
+
+    @Test
+    fun `M not flush W onViewTypeUpdate() { foreground to application launch }`(forge: Forge) {
+        // Given
+        whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
+        testedTimeseries.onSessionStart()
+        captureScheduledRunnableForInterval(fakeIntervalAMs).run() // buffers one sample
+
+        // When
+        testedTimeseries.onViewTypeUpdate(RumViewType.APPLICATION_LAUNCH)
+
+        // Then
+        verify(mockDataWriter, never()).write(any(), any(), any())
+    }
+
+    @Test
+    fun `M not flush W onViewTypeUpdate() { stays foreground }`(forge: Forge) {
+        // Given
+        whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
+        testedTimeseries.onSessionStart()
+        captureScheduledRunnableForInterval(fakeIntervalAMs).run() // buffers one sample
+
+        // When
+        testedTimeseries.onViewTypeUpdate(RumViewType.FOREGROUND)
+
+        // Then
+        verify(mockDataWriter, never()).write(any(), any(), any())
+    }
+
+    @Test
+    fun `M not flush W onViewTypeUpdate() { background, collectInBackground = true }`(forge: Forge) {
+        // Given
+        whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
+        val bgTimeseries = RumSessionScopeTimeseries(
+            pipelines = listOf(pipelineA, pipelineB),
+            internalLogger = mockInternalLogger,
+            collectInBackground = true,
+            scheduledExecutorService = mockExecutor
+        )
+        bgTimeseries.onSessionStart()
+        captureScheduledRunnableForInterval(fakeIntervalAMs).run() // buffers one sample
+
+        // When
+        bgTimeseries.onViewTypeUpdate(RumViewType.BACKGROUND)
+
+        // Then
+        verify(mockDataWriter, never()).write(any(), any(), any())
     }
 
     @Test
