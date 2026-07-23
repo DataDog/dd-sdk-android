@@ -81,6 +81,10 @@ dependencyLicenses {
     transitiveDependencies = true
 }
 
+tasks.register<Delete>("clean") {
+    delete(rootProject.layout.buildDirectory)
+}
+
 tasks.register("checkAll") {
     dependsOn(
         "lintCheckAll",
@@ -142,7 +146,12 @@ tasks.register("unitTestAll") {
     )
 }
 
-registerSubModuleAggregationTask("lintCheckAll", "lintRelease") {
+registerSubModuleAggregationTask(
+    "lintCheckAll",
+    "lintRelease",
+    // lint all modules, not only for published ones
+    subModuleNamePrefix = ""
+) {
     dependsOn(":tools:lint:lint")
 }
 
@@ -159,9 +168,6 @@ registerSubModuleAggregationTask("checkCompilerMetadataChangesAll", "checkCompil
 
 registerSubModuleAggregationTask("checkTransitiveDependenciesListAll", "checkTransitiveDependenciesList")
 
-/**
- * Task necessary to be compliant with the shared Android static analysis pipeline
- */
 tasks.register("checkGeneratedFiles") {
     dependsOn("checkDependencyLicensesAll")
     dependsOn("checkApiSurfaceChangesAll")

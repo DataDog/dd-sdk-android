@@ -18,7 +18,7 @@ workflow:
 stages:
   - ci-image
   - security
-  - test # TODO RUM-1622 cleanup eventually
+  - verify
   - test-pyramid
   - publish
   - notify
@@ -157,44 +157,45 @@ create_key:
 
 # TESTS
 
-test:generated-files-check:
+analysis:generated-files-check:
   extends:
     - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
-  stage: test
+  stage: verify
+  timeout: 30m
   script:
     - !reference [.snippets, setup-gradle]
     - ./gradlew checkGeneratedFiles
 
-test:ktlint:
+analysis:ktlint:
   extends:
     - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
-  stage: test
+  stage: verify
   timeout: 30m
   script:
     - !reference [.snippets, setup-gradle]
     - ./gradlew ktlintCheck :buildSrc:ktlintCheck
 
-test:detekt:
+analysis:detekt:
   extends:
     - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
-  stage: test
+  stage: verify
   timeout: 1h
   script:
     - !reference [.snippets, setup-gradle]
     - ./gradlew detekt --continue
 
-test:android-lint:
+analysis:android-lint:
   extends:
     - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
-  stage: test
+  stage: verify
   timeout: 1h
   script:
     - !reference [.snippets, setup-gradle]
@@ -205,7 +206,7 @@ test:debug:
     - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
-  stage: test
+  stage: verify
   timeout: 1h
   script:
     - !reference [.snippets, setup-gradle]
@@ -228,7 +229,7 @@ test:tools:
     - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
-  stage: test
+  stage: verify
   timeout: 1h
   script:
     - !reference [.snippets, setup-gradle]
@@ -238,7 +239,7 @@ test:tools:
 test:kover:
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
-  stage: test
+  stage: verify
   timeout: 1h
   variables:
     GRADLE_CACHE_CLEANUP: "true"

@@ -64,6 +64,7 @@ comments:
     allowParamOnConstructorProperties: true
     excludes:
       - '**/test/**'
+      - '**/testFixtures/**'
       - '**/androidTest/**'
       - '**/build/generated/**'
   UndocumentedPublicClass:
@@ -71,6 +72,7 @@ comments:
     ignoreDefaultCompanionObject: true
     excludes:
       - '**/test/**'
+      - '**/testFixtures/**'
       - '**/androidTest/**'
       - '**/build/generated/**'
       - '**/dd-sdk-android/tools/**'
@@ -86,6 +88,7 @@ comments:
     active: true
     excludes:
       - '**/test/**'
+      - '**/testFixtures/**'
       - '**/androidTest/**'
       - '**/build/generated/**'
       - '**/dd-sdk-android/tools/**'
@@ -97,6 +100,7 @@ comments:
     active: true
     excludes:
       - '**/test/**'
+      - '**/testFixtures/**'
       - '**/androidTest/**'
       - '**/build/generated/**'
       - '**/dd-sdk-android/tools/**'

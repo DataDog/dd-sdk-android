@@ -39,6 +39,7 @@ plugins {
     id("transitiveDependencies")
     id("binary-compatibility-validator")
     id("detekt-conventions")
+    id("test-pyramid-api-surface")
 }
 
 android {

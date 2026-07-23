@@ -8,7 +8,6 @@ ANALYSIS=0
 COMPILE=0
 TEST=0
 KTLINT_VERSION=1.5.0
-DETEKT_VERSION=1.23.8
 
 export CI=true
 
@@ -60,19 +59,6 @@ if [[ $SETUP == 1 ]]; then
   sudo mv ktlint "$TARGET_KTLINT"
   hash -r
   echo "  installed at $TARGET_KTLINT"
-
-  echo "---- Install Detekt $DETEKT_VERSION"
-  TARGET_DETEKT=$(command -v detekt || echo "/usr/local/bin/detekt")
-  sudo rm -f "$TARGET_DETEKT"
-  curl -sSLO https://github.com/detekt/detekt/releases/download/v$DETEKT_VERSION/detekt-cli-$DETEKT_VERSION-all.jar
-  sudo mv detekt-cli-$DETEKT_VERSION-all.jar /usr/local/lib/detekt-cli.jar
-  sudo tee "$TARGET_DETEKT" > /dev/null <<'EOF'
-#!/usr/bin/env bash
-exec java -jar /usr/local/lib/detekt-cli.jar "$@"
-EOF
-  sudo chmod a+x "$TARGET_DETEKT"
-  hash -r
-  echo "  installed at $TARGET_DETEKT"
 fi
 
 if [[ $CLEANUP == 1 ]]; then
