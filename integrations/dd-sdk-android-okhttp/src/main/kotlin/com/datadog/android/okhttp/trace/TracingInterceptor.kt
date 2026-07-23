@@ -26,7 +26,6 @@ import com.datadog.android.lint.InternalApi
 import com.datadog.android.okhttp.internal.trace.toTelemetryTracingHeaderType
 import com.datadog.android.trace.DatadogTracing
 import com.datadog.android.trace.DeterministicTraceSampler
-import com.datadog.android.trace.internal.applyRcSampleRate
 import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
@@ -39,6 +38,7 @@ import com.datadog.android.trace.internal.ParentContextSource
 import com.datadog.android.trace.internal.RumContextPropagator
 import com.datadog.android.trace.internal.RumContextPropagator.Companion.extractRumContext
 import com.datadog.android.trace.internal._TraceInternalProxy
+import com.datadog.android.trace.internal.applyRcSampleRate
 import com.datadog.android.trace.internal.buildRcHostResolver
 import com.datadog.android.trace.internal.net.TraceContext
 import com.datadog.android.trace.internal.net.effectiveSampleRate
