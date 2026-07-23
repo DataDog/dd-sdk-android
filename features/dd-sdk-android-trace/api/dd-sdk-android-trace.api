@@ -158,6 +158,13 @@ public final class com/datadog/android/trace/internal/RumContextPropagator$Compa
 	public static synthetic fun extractRumContext$default (Lcom/datadog/android/trace/internal/RumContextPropagator$Companion;Lcom/datadog/android/trace/api/span/DatadogSpan;Lcom/datadog/android/trace/internal/RumContextPropagator;ZILjava/lang/Object;)Lcom/datadog/android/trace/api/span/DatadogSpan;
 }
 
+public final class com/datadog/android/trace/internal/TraceRemoteConfigExtKt {
+	public static final fun applyRcSampleRate (Lcom/datadog/android/core/sampling/Sampler;F)Lcom/datadog/android/core/sampling/Sampler;
+	public static final fun buildRcHostResolver (Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Trace;)Lcom/datadog/android/core/internal/net/DefaultFirstPartyHostHeaderTypeResolver;
+	public static final fun toSdkHeaderType (Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TracingHeaderType;)Lcom/datadog/android/trace/TracingHeaderType;
+	public static final fun toSdkInjection (Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Trace;)Lcom/datadog/android/trace/TraceContextInjection;
+}
+
 public final class com/datadog/android/trace/internal/_TraceInternalProxy {
 	public static final field INSTANCE Lcom/datadog/android/trace/internal/_TraceInternalProxy;
 	public static final field spanIdConverter Lcom/datadog/android/trace/internal/DatadogSpanIdConverter;

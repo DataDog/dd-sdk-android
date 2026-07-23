@@ -26,6 +26,7 @@ import com.datadog.android.lint.InternalApi
 import com.datadog.android.okhttp.internal.trace.toTelemetryTracingHeaderType
 import com.datadog.android.trace.DatadogTracing
 import com.datadog.android.trace.DeterministicTraceSampler
+import com.datadog.android.trace.internal.applyRcSampleRate
 import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
@@ -38,15 +39,18 @@ import com.datadog.android.trace.internal.ParentContextSource
 import com.datadog.android.trace.internal.RumContextPropagator
 import com.datadog.android.trace.internal.RumContextPropagator.Companion.extractRumContext
 import com.datadog.android.trace.internal._TraceInternalProxy
+import com.datadog.android.trace.internal.buildRcHostResolver
 import com.datadog.android.trace.internal.net.TraceContext
 import com.datadog.android.trace.internal.net.effectiveSampleRate
 import com.datadog.android.trace.internal.net.isDropped
 import com.datadog.android.trace.internal.net.isDroppedPriority
+import com.datadog.android.trace.internal.toSdkInjection
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import java.net.HttpURLConnection
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import com.datadog.android.okhttp.TraceContext as DeprecatedTraceContext
 
@@ -86,12 +90,14 @@ internal constructor(
     internal val tracedHosts: Map<String, Set<TracingHeaderType>>,
     internal val tracedRequestListener: TracedRequestListener,
     internal val traceOrigin: String?,
-    internal val traceSampler: Sampler<DatadogSpan>,
-    internal val traceContextInjection: TraceContextInjection,
+    @Volatile internal var traceSampler: Sampler<DatadogSpan>,
+    @Volatile internal var traceContextInjection: TraceContextInjection,
     internal val redacted404ResourceName: Boolean,
     internal val localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer,
     private val globalTracerProvider: () -> DatadogTracer?
 ) : Interceptor {
+
+    private val rcApplied = AtomicBoolean(false)
 
     private val localTracerReference: AtomicReference<DatadogTracer> = AtomicReference()
     private val sanitizedHosts = HostsSanitizer().sanitizeHosts(
@@ -99,7 +105,7 @@ internal constructor(
         NETWORK_REQUESTS_TRACKING_FEATURE_NAME
     )
 
-    private val localFirstPartyHostHeaderTypeResolver = DefaultFirstPartyHostHeaderTypeResolver(
+    @Volatile internal var localFirstPartyHostHeaderTypeResolver = DefaultFirstPartyHostHeaderTypeResolver(
         tracedHosts.filterKeys { sanitizedHosts.contains(it) }
     )
 
@@ -212,6 +218,13 @@ internal constructor(
     // region Internal
 
     internal open fun onSdkInstanceReady(sdkCore: InternalSdkCore) {
+        if (rcApplied.compareAndSet(false, true)) {
+            sdkCore.remoteConfiguration?.trace?.let { trace ->
+                trace.sampleRate?.toFloat()?.let { traceSampler = applyRcSampleRate(traceSampler, it) }
+                trace.toSdkInjection()?.let { traceContextInjection = it }
+                trace.buildRcHostResolver()?.let { localFirstPartyHostHeaderTypeResolver = it }
+            }
+        }
         updateTracingFeatureContext(sdkCore)
         if (localFirstPartyHostHeaderTypeResolver.isEmpty() &&
             sdkCore.firstPartyHostResolver.isEmpty()
@@ -230,7 +243,7 @@ internal constructor(
         sdkCore.updateFeatureContext(Feature.TRACING_FEATURE_NAME, useContextThread = false) {
             it[OKHTTP_INTERCEPTOR_SAMPLE_RATE] = traceSampler.getSampleRate()
             it[OKHTTP_INTERCEPTOR_HEADER_TYPES] = TracingHeaderTypesSet(
-                tracedHosts.values.flatten()
+                localFirstPartyHostHeaderTypeResolver.getAllHeaderTypes()
                     .map(TracingHeaderType::toTelemetryTracingHeaderType)
                     .toSet()
             )
