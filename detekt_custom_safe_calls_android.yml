@@ -286,6 +286,7 @@ datadog:
       - "androidx.compose.ui.geometry.Size(kotlin.Float, kotlin.Float)"
       - "androidx.compose.ui.geometry.Size.copy(kotlin.Float, kotlin.Float)"
       - "androidx.compose.ui.layout.LayoutCoordinates.boundsInWindow()"
+      - "androidx.compose.ui.semantics.SemanticsConfiguration.constructor()"
       - "androidx.compose.ui.semantics.SemanticsConfiguration.firstOrNull(kotlin.Function1)"
       - "androidx.compose.ui.Modifier.semantics(kotlin.Boolean, kotlin.Function1)"
       - "androidx.compose.ui.node.LayoutNode.getModifierInfo()"
