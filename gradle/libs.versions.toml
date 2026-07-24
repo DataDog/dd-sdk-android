@@ -175,6 +175,8 @@ androidXComposeNavigation = { module = "androidx.navigation:navigation-compose",
 androidXComposeRuntime = { module = "androidx.compose.runtime:runtime" }
 androidXComposeUi = { module = "androidx.compose.ui:ui" }
 androidXComposeUiTooling = { module = "androidx.compose.ui:ui-tooling" }
+androidXComposeUiTestJUnit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+androidXComposeUiTestManifest = { module = "androidx.compose.ui:ui-test-manifest" }
 androidXComposeMaterial = { module = "androidx.compose.material:material" }
 material3Android = { group = "androidx.compose.material3", name = "material3", version.ref = "material3Android" }
 
