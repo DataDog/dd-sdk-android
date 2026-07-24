@@ -845,6 +845,16 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
+    fun hasRemoteConfigurationId(expected: String?): ViewEventAssert {
+        assertThat(actual.dd.configuration?.remoteConfigurationId)
+            .overridingErrorMessage(
+                "Expected RUM event to have remoteConfigurationId: $expected" +
+                    " but instead was: ${actual.dd.configuration?.remoteConfigurationId}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasProfilingStatus(profilingStatus: ViewEvent.ProfilingStatus?): ViewEventAssert {
         assertThat(actual.dd.profiling?.status)
             .overridingErrorMessage(

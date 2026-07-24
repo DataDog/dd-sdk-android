@@ -33,6 +33,7 @@ import com.datadog.android.privacy.TrackingConsent
  * @property accountInfo information about the current account
  * @property trackingConsent information about the current tracking consent
  * @property appBuildId unique build ID of the running application. Will be missing if Datadog Gradle Plugin is not applied or obfuscation is not enabled for the running build.
+ * @property remoteConfigurationId the opaque identifier of the remote configuration applied to the SDK, if any. Matches the value provided via [com.datadog.android.core.configuration.Configuration.Builder.setRemoteConfigurationId].
  * @property featuresContext agnostic dictionary with information from all features registered to
  * the parent SDK instance
  */
@@ -54,5 +55,6 @@ data class DatadogContext(
     val accountInfo: AccountInfo?,
     val trackingConsent: TrackingConsent,
     val appBuildId: String?,
+    val remoteConfigurationId: String?,
     val featuresContext: Map<String, Map<String, Any?>>
 )
