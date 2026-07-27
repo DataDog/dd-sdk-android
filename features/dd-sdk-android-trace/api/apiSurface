@@ -80,6 +80,10 @@ class com.datadog.android.trace.internal.RumContextPropagator
   constructor(() -> com.datadog.android.api.feature.FeatureSdkCore?)
   companion object 
     fun com.datadog.android.trace.api.span.DatadogSpan.extractRumContext(RumContextPropagator, Boolean = false)
+fun applyRcSampleRate(com.datadog.android.core.sampling.Sampler<com.datadog.android.trace.api.span.DatadogSpan>, Float): com.datadog.android.core.sampling.Sampler<com.datadog.android.trace.api.span.DatadogSpan>
+fun com.datadog.android.core.internal.remote.model.RemoteConfiguration.Trace.toSdkInjection(): com.datadog.android.trace.TraceContextInjection?
+fun com.datadog.android.core.internal.remote.model.RemoteConfiguration.TracingHeaderType.toSdkHeaderType(): com.datadog.android.trace.TracingHeaderType
+fun com.datadog.android.core.internal.remote.model.RemoteConfiguration.Trace.buildRcHostResolver(): com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver?
 object com.datadog.android.trace.internal._TraceInternalProxy
   val spanIdConverter: DatadogSpanIdConverter
   var propagationHelper: DatadogPropagationHelper
