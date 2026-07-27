@@ -8,16 +8,20 @@ package com.datadog.android.sessionreplay.internal.recorder
 
 import android.view.View
 import android.view.Window
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -28,14 +32,24 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class WindowReflectionUtilsTest {
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @Test
-    fun `M return null W getWindowFromDecorView {view has no mWindow field}`() {
-        assertThat(WindowReflectionUtils.getWindowFromDecorView(mock())).isNull()
+    fun `M return null and log to telemetry W getWindowFromDecorView {view has no mWindow field}`() {
+        assertThat(WindowReflectionUtils.getWindowFromDecorView(mock(), mockInternalLogger)).isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.TELEMETRY,
+            WindowReflectionUtils.FAILED_TO_RETRIEVE_WINDOW_ERROR_MESSAGE,
+            NoSuchFieldException::class.java,
+            onlyOnce = true
+        )
     }
 
     @Test
     fun `M return Window W getWindowFromDecorView {view class has mWindow field}`() {
-        // Given — mimics DecorView's private mWindow field
+        // Given
         val fakeWindow = mock<Window>()
         val fakeDecorLike = object : View(mock()) {
             @Suppress("unused")
@@ -43,6 +57,8 @@ internal class WindowReflectionUtilsTest {
         }
 
         // When + Then
-        assertThat(WindowReflectionUtils.getWindowFromDecorView(fakeDecorLike)).isSameAs(fakeWindow)
+        assertThat(WindowReflectionUtils.getWindowFromDecorView(fakeDecorLike, mockInternalLogger))
+            .isSameAs(fakeWindow)
+        verifyNoInteractions(mockInternalLogger)
     }
 }

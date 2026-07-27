@@ -31,6 +31,12 @@ internal class WindowCallbackInterceptor(
 ) {
     private val wrappedWindows: WeakHashMap<Window, Any?> = WeakHashMap()
 
+    // windows explicitly torn down via stopIntercepting(windows) (e.g. a paused Activity whose
+    // decorView is still globally attached) — RecorderWindowCallback's dynamic discovery must not
+    // re-wrap these on its own, or a subsequent intercept() on resume would double-wrap them and
+    // stopIntercepting() would only ever unwind the outer layer.
+    private val excludedWindows: WeakHashMap<Window, Any?> = WeakHashMap()
+
     // guards RecorderWindowCallback's deferred (posted) installation of callbacks on newly
     // discovered dialog windows: without this, a dialog detected right before stopIntercepting()
     // could still get wrapped after we've stopped, and would never be torn down afterwards.
@@ -39,6 +45,7 @@ internal class WindowCallbackInterceptor(
     fun intercept(windows: List<Window>, appContext: Context) {
         isStopped = false
         windows.forEach { window ->
+            excludedWindows.remove(window)
             wrapWindowCallback(window, appContext)
             wrappedWindows[window] = null
         }
@@ -46,8 +53,10 @@ internal class WindowCallbackInterceptor(
 
     fun stopIntercepting(windows: List<Window>) {
         windows.forEach {
+            excludedWindows[it] = null
             unwrapWindowCallback(it)
             wrappedWindows.remove(it)
+            RecorderWindowCallback.cancelPendingLayoutRetry(it)
         }
     }
 
@@ -57,6 +66,8 @@ internal class WindowCallbackInterceptor(
             unwrapWindowCallback(it.key)
         }
         wrappedWindows.clear()
+        excludedWindows.clear()
+        RecorderWindowCallback.cancelAllPendingLayoutRetries()
     }
 
     // a RecorderWindowCallback can discover and wrap windows on its own (e.g. dialogs, which
@@ -66,7 +77,10 @@ internal class WindowCallbackInterceptor(
         wrappedWindows[window] = null
     }
 
+    internal fun isExcluded(window: Window): Boolean = excludedWindows.containsKey(window)
+
     private fun wrapWindowCallback(window: Window, appContext: Context) {
+        if (window.callback is RecorderWindowCallback) return
         val toWrap = window.callback ?: NoOpWindowCallback()
         window.callback = RecorderWindowCallback(
             appContext,
@@ -80,7 +94,7 @@ internal class WindowCallbackInterceptor(
             imagePrivacy,
             touchPrivacyManager,
             onWindowWrapped = { trackWrappedWindow(it) },
-            shouldInstallCallbacks = { !isStopped }
+            shouldInstallCallbacks = { candidate -> !isStopped && !excludedWindows.containsKey(candidate) }
         )
     }
 

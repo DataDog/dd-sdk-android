@@ -109,6 +109,22 @@ internal class WindowCallbackInterceptorTest {
     }
 
     @Test
+    fun `M not re-wrap an already-intercepted window W intercept() {called again for same window}`() {
+        // Given
+        val mockWindow: Window = mock()
+        testedInterceptor.intercept(listOf(mockWindow), mockActivity)
+        val captor = argumentCaptor<Window.Callback>()
+        verify(mockWindow).callback = captor.capture()
+        whenever(mockWindow.callback).thenReturn(captor.firstValue)
+
+        // When
+        testedInterceptor.intercept(listOf(mockWindow), mockActivity)
+
+        // Then
+        verify(mockWindow, times(1)).callback = any()
+    }
+
+    @Test
     fun `M register the RecorderWindowCallback W intercept{default callback is null}`() {
         // Given
         fakeWindowsList.forEach {
@@ -249,7 +265,7 @@ internal class WindowCallbackInterceptorTest {
         testedInterceptor.stopIntercepting()
 
         // Then
-        assertThat(installedCallback.shouldInstallCallbacks()).isFalse()
+        assertThat(installedCallback.shouldInstallCallbacks(fakeWindowsList.first())).isFalse()
     }
 
     @Test
@@ -265,7 +281,70 @@ internal class WindowCallbackInterceptorTest {
         val captor = argumentCaptor<Window.Callback>()
         verify(fakeWindowsList.first(), times(2)).callback = captor.capture()
         val installedCallback = captor.lastValue as RecorderWindowCallback
-        assertThat(installedCallback.shouldInstallCallbacks()).isTrue()
+        assertThat(installedCallback.shouldInstallCallbacks(fakeWindowsList.first())).isTrue()
+    }
+
+    @Test
+    fun `M exclude window from dynamic install W stopIntercepting(windows) {single window torn down}`() {
+        // Given
+        val pausedWindow: Window = mock()
+        val stillActiveWindow: Window = mock()
+        testedInterceptor.intercept(listOf(pausedWindow, stillActiveWindow), mockActivity)
+        val captor = argumentCaptor<Window.Callback>()
+        verify(stillActiveWindow).callback = captor.capture()
+        val installedCallback = captor.firstValue as RecorderWindowCallback
+
+        // When
+        testedInterceptor.stopIntercepting(listOf(pausedWindow))
+
+        // Then
+        assertThat(installedCallback.shouldInstallCallbacks(pausedWindow)).isFalse()
+        assertThat(installedCallback.shouldInstallCallbacks(stillActiveWindow)).isTrue()
+    }
+
+    @Test
+    fun `M report a window as excluded W stopIntercepting(windows)`() {
+        // Given
+        val mockWindow: Window = mock()
+        testedInterceptor.intercept(listOf(mockWindow), mockActivity)
+
+        // When
+        testedInterceptor.stopIntercepting(listOf(mockWindow))
+
+        // Then
+        assertThat(testedInterceptor.isExcluded(mockWindow)).isTrue()
+    }
+
+    @Test
+    fun `M no longer report a window as excluded W intercept() {after stopIntercepting(windows)}`() {
+        // Given
+        val mockWindow: Window = mock()
+        testedInterceptor.intercept(listOf(mockWindow), mockActivity)
+        testedInterceptor.stopIntercepting(listOf(mockWindow))
+
+        // When
+        testedInterceptor.intercept(listOf(mockWindow), mockActivity)
+
+        // Then
+        assertThat(testedInterceptor.isExcluded(mockWindow)).isFalse()
+    }
+
+    @Test
+    fun `M allow dynamic install again W intercept() {window re-added after stopIntercepting(windows)}`() {
+        // Given
+        val pausedWindow: Window = mock()
+        val stillActiveWindow: Window = mock()
+        testedInterceptor.intercept(listOf(pausedWindow, stillActiveWindow), mockActivity)
+        val captor = argumentCaptor<Window.Callback>()
+        verify(stillActiveWindow).callback = captor.capture()
+        val installedCallback = captor.firstValue as RecorderWindowCallback
+        testedInterceptor.stopIntercepting(listOf(pausedWindow))
+
+        // When
+        testedInterceptor.intercept(listOf(pausedWindow), mockActivity)
+
+        // Then
+        assertThat(installedCallback.shouldInstallCallbacks(pausedWindow)).isTrue()
     }
 
     @Test

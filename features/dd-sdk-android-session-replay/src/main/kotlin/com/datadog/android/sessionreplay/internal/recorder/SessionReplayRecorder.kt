@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder
 import android.app.Application
 import android.os.Handler
 import android.os.Looper
+import android.view.View
 import android.view.Window
 import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
@@ -71,6 +72,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private val internalLogger: InternalLogger
     private val uiHandler: Handler
     private val resourceResolver: ResourceResolver
+    private val windowFromDecorView: (View) -> Window?
     private var shouldRecord = false
 
     @Suppress("LongParameterList")
@@ -224,6 +226,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
 
         this.uiHandler = Handler(Looper.getMainLooper())
         this.internalLogger = internalLogger
+        this.windowFromDecorView = { WindowReflectionUtils.getWindowFromDecorView(it, internalLogger) }
     }
 
     @VisibleForTesting
@@ -240,7 +243,10 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         recordedDataQueueHandler: RecordedDataQueueHandler,
         resourceResolver: ResourceResolver,
         uiHandler: Handler,
-        internalLogger: InternalLogger
+        internalLogger: InternalLogger,
+        windowFromDecorView: (View) -> Window? = {
+            WindowReflectionUtils.getWindowFromDecorView(it, internalLogger)
+        }
     ) {
         this.appContext = appContext
         this.textAndInputPrivacy = textAndInputPrivacy
@@ -253,6 +259,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.sessionReplayLifecycleCallback = sessionReplayLifecycleCallback
         this.resourceResolver = resourceResolver
         this.uiHandler = uiHandler
+        this.windowFromDecorView = windowFromDecorView
         this.internalLogger = internalLogger
     }
 
@@ -275,7 +282,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             shouldRecord = true
             val windows = sessionReplayLifecycleCallback.getCurrentWindows()
             val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
-            windowCallbackInterceptor.intercept(windows, appContext)
+            windowCallbackInterceptor.intercept(windows + resolveUntrackedWindows(decorViews, windows), appContext)
             viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
         }
     }
@@ -292,7 +299,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     override fun onWindowsAdded(windows: List<Window>) {
         if (shouldRecord) {
             val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
-            windowCallbackInterceptor.intercept(windows, appContext)
+            windowCallbackInterceptor.intercept(windows + resolveUntrackedWindows(decorViews, windows), appContext)
             viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
         }
     }
@@ -304,5 +311,14 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             windowCallbackInterceptor.stopIntercepting(windows)
             viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
         }
+    }
+
+    // a window already open (e.g. a dialog) isn't reported through the Activity lifecycle
+    private fun resolveUntrackedWindows(decorViews: List<View>, knownWindows: List<Window>): List<Window> {
+        return decorViews
+            .filterNot { it.width == 0 || it.height == 0 }
+            .mapNotNull { windowFromDecorView(it) }
+            .filterNot { it in knownWindows || windowCallbackInterceptor.isExcluded(it) }
+            .distinct()
     }
 }

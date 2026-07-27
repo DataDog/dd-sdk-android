@@ -10,6 +10,7 @@ import android.content.Context
 import android.graphics.Point
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewTreeObserver
 import android.view.Window
 import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
@@ -26,6 +27,7 @@ import com.datadog.android.sessionreplay.internal.recorder.WindowReflectionUtils
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.model.MobileSegment
 import java.util.LinkedList
+import java.util.WeakHashMap
 import java.util.concurrent.TimeUnit
 
 @Suppress("TooGenericExceptionCaught")
@@ -48,9 +50,11 @@ internal class RecorderWindowCallback(
     private val motionUpdateThresholdInNs: Long = MOTION_UPDATE_DELAY_THRESHOLD_NS,
     private val flushPositionBufferThresholdInNs: Long = FLUSH_BUFFER_THRESHOLD_NS,
     private val windowInspector: WindowInspector = WindowInspector,
-    private val windowFromDecorView: (View) -> Window? = { WindowReflectionUtils.getWindowFromDecorView(it) },
+    private val windowFromDecorView: (
+        View
+    ) -> Window? = { WindowReflectionUtils.getWindowFromDecorView(it, internalLogger) },
     private val onWindowWrapped: (Window) -> Unit = {},
-    internal val shouldInstallCallbacks: () -> Boolean = { true }
+    internal val shouldInstallCallbacks: (Window) -> Boolean = { true }
 ) : FixedWindowCallback(wrappedCallback) {
     private val pixelsDensity = appContext.resources.displayMetrics.density
     internal val pointerInteractions: MutableList<MobileSegment.MobileRecord> = LinkedList()
@@ -123,53 +127,84 @@ internal class RecorderWindowCallback(
     // region Internal
 
     private fun installCallbackOnNewWindows(rootViews: List<View>) {
-        rootViews.forEach { decorView ->
-            // Skip zero-size windows (NavHost scaffolding) — installing on them causes spurious
-            // stopIntercepting() calls that drop frames on every navigation event.
-            if (decorView.width == 0 || decorView.height == 0) return@forEach
-            val window = windowFromDecorView(decorView)
-            if (window == null) {
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.MAINTAINER,
-                    {
-                        WINDOW_FROM_DECOR_VIEW_ERROR_MESSAGE_PREFIX +
-                            decorView.javaClass.name +
-                            WINDOW_FROM_DECOR_VIEW_ERROR_MESSAGE_SUFFIX
-                    },
-                    onlyOnce = true
-                )
-                return@forEach
-            }
-            if (window.callback !is RecorderWindowCallback) {
-                // Post so the dialog's own onWindowFocusChanged(true) fires first,
-                // ensuring the new callback starts in a steady recording state.
-                decorView.post {
-                    // re-check: recording may have stopped, or another focus change may have
-                    // already installed a callback, while this post was pending in the queue.
-                    if (window.callback !is RecorderWindowCallback && shouldInstallCallbacks()) {
-                        val toWrap = window.callback ?: NoOpWindowCallback()
-                        window.callback = RecorderWindowCallback(
-                            appContext = appContext,
-                            recordedDataQueueHandler = recordedDataQueueHandler,
-                            wrappedCallback = toWrap,
-                            timeProvider = timeProvider,
-                            rumContextProvider = rumContextProvider,
-                            viewOnDrawInterceptor = viewOnDrawInterceptor,
-                            internalLogger = internalLogger,
-                            privacy = privacy,
-                            imagePrivacy = imagePrivacy,
-                            touchPrivacyManager = touchPrivacyManager,
-                            windowInspector = windowInspector,
-                            windowFromDecorView = windowFromDecorView,
-                            onWindowWrapped = onWindowWrapped,
-                            shouldInstallCallbacks = shouldInstallCallbacks
-                        )
-                        onWindowWrapped(window)
-                    }
+        rootViews.forEach { decorView -> installCallbackOnWindow(decorView) }
+    }
+
+    private fun installCallbackOnWindow(decorView: View) {
+        val window = windowFromDecorView(decorView)
+        if (window == null) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                {
+                    WINDOW_FROM_DECOR_VIEW_ERROR_MESSAGE_PREFIX +
+                        decorView.javaClass.name +
+                        WINDOW_FROM_DECOR_VIEW_ERROR_MESSAGE_SUFFIX
+                },
+                onlyOnce = true
+            )
+            return
+        }
+        // Zero-size windows (NavHost scaffolding, or a dialog window not yet laid out) would
+        // trigger spurious stopIntercepting() calls that drop frames, so we wait for the next
+        // layout pass instead of installing immediately.
+        if (decorView.width == 0 || decorView.height == 0) {
+            retryInstallAfterNextLayout(decorView, window)
+            return
+        }
+        if (window.callback !is RecorderWindowCallback) {
+            // Post so the dialog's own onWindowFocusChanged(true) fires first,
+            // ensuring the new callback starts in a steady recording state.
+            decorView.post {
+                // re-check: recording may have stopped, or another focus change may have
+                // already installed a callback, while this post was pending in the queue.
+                if (window.callback !is RecorderWindowCallback && shouldInstallCallbacks(window)) {
+                    val toWrap = window.callback ?: NoOpWindowCallback()
+                    window.callback = RecorderWindowCallback(
+                        appContext = appContext,
+                        recordedDataQueueHandler = recordedDataQueueHandler,
+                        wrappedCallback = toWrap,
+                        timeProvider = timeProvider,
+                        rumContextProvider = rumContextProvider,
+                        viewOnDrawInterceptor = viewOnDrawInterceptor,
+                        internalLogger = internalLogger,
+                        privacy = privacy,
+                        imagePrivacy = imagePrivacy,
+                        touchPrivacyManager = touchPrivacyManager,
+                        windowInspector = windowInspector,
+                        windowFromDecorView = windowFromDecorView,
+                        onWindowWrapped = onWindowWrapped,
+                        shouldInstallCallbacks = shouldInstallCallbacks
+                    )
+                    onWindowWrapped(window)
                 }
             }
         }
+    }
+
+    private fun retryInstallAfterNextLayout(decorView: View, window: Window) {
+        if (pendingLayoutRetries.containsKey(window)) return
+        val viewTreeObserver = decorView.viewTreeObserver
+        if (viewTreeObserver == null || !viewTreeObserver.isAlive) return
+        val layoutListener = object : ViewTreeObserver.OnGlobalLayoutListener {
+            override fun onGlobalLayout() {
+                if (decorView.width == 0 || decorView.height == 0) return
+                pendingLayoutRetries.remove(window)?.cancel()
+                installCallbackOnWindow(decorView)
+            }
+        }
+        // a dialog dismissed before it ever lays out to a non-zero size would otherwise never
+        // trigger onGlobalLayout's removal above, leaking this entry (and everything it retains)
+        // until recording stops — detach is the fallback cleanup signal for that case.
+        val attachStateListener = object : View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(v: View) = Unit
+            override fun onViewDetachedFromWindow(v: View) {
+                pendingLayoutRetries.remove(window)?.cancel()
+            }
+        }
+        pendingLayoutRetries[window] = PendingLayoutRetry(decorView, layoutListener, attachStateListener)
+        viewTreeObserver.addOnGlobalLayoutListener(layoutListener)
+        decorView.addOnAttachStateChangeListener(attachStateListener)
     }
 
     @MainThread
@@ -265,6 +300,19 @@ internal class RecorderWindowCallback(
     // endregion
 
     companion object {
+        // shared across all RecorderWindowCallback instances (one per active window) so a decorView
+        // scanned by multiple windows' focus events still gets at most one pending retry listener.
+        private val pendingLayoutRetries: WeakHashMap<Window, PendingLayoutRetry> = WeakHashMap()
+
+        internal fun cancelPendingLayoutRetry(window: Window) {
+            pendingLayoutRetries.remove(window)?.cancel()
+        }
+
+        internal fun cancelAllPendingLayoutRetries() {
+            pendingLayoutRetries.values.forEach { it.cancel() }
+            pendingLayoutRetries.clear()
+        }
+
         private const val EVENT_CONSUMED: Boolean = true
 
         // every frame we collect the move event positions
@@ -281,5 +329,19 @@ internal class RecorderWindowCallback(
             "SR: failed to get Window from "
         internal const val WINDOW_FROM_DECOR_VIEW_ERROR_MESSAGE_SUFFIX =
             " via reflection — Compose dialog destination may not be recorded"
+    }
+}
+
+private class PendingLayoutRetry(
+    private val decorView: View,
+    private val layoutListener: ViewTreeObserver.OnGlobalLayoutListener,
+    private val attachStateListener: View.OnAttachStateChangeListener
+) {
+    fun cancel() {
+        val observer = decorView.viewTreeObserver
+        if (observer != null && observer.isAlive) {
+            observer.removeOnGlobalLayoutListener(layoutListener)
+        }
+        decorView.removeOnAttachStateChangeListener(attachStateListener)
     }
 }
