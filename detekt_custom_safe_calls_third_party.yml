@@ -724,7 +724,6 @@ datadog:
       - "kotlin.collections.Set.ifEmpty(kotlin.Function0)"
       - "kotlin.collections.Set.isEmpty()"
       - "kotlin.collections.Set.isNotEmpty()"
-      - "kotlin.collections.Set.takeIf(kotlin.Function1)"
       - "kotlin.collections.Set.joinToString(kotlin.CharSequence, kotlin.CharSequence, kotlin.CharSequence, kotlin.Int, kotlin.CharSequence, kotlin.Function1?)"
       - "kotlin.collections.Set.map(kotlin.Function1)"
       - "kotlin.collections.Set.none(kotlin.Function1)"
