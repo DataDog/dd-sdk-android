@@ -52,7 +52,6 @@ interface FeatureScope {
         callback: (datadogContext: DatadogContext) -> Unit
     )
 
-    // TODO RUM-9852 Implement better passthrough mechanism for the JVM crash scenario
     /**
      * Same as [withWriteContext] but will be executed in the blocking manner.
      *

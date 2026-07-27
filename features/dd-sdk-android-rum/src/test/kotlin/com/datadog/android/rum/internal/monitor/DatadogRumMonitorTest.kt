@@ -1413,6 +1413,34 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `M fetch write context before acquiring rootScope lock W addCrash() { fatal error }`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable
+    ) {
+        // Given
+        var rootScopeHeldDuringContextFetch = false
+        whenever(
+            mockRumFeatureScope.getWriteContextSync(setOf(Feature.SESSION_REPLAY_FEATURE_NAME))
+        ) doAnswer {
+            // Check whether the rootScope lock is held at the moment getWriteContextSync is called
+            rootScopeHeldDuringContextFetch = Thread.holdsLock(testedMonitor.rootScope)
+            fakeDatadogContext to mockEventWriteScope
+        }
+
+        // When
+        testedMonitor.addCrash(message, source, throwable, threads = emptyList())
+
+        // Then
+        assertThat(rootScopeHeldDuringContextFetch)
+            .withFailMessage(
+                "getWriteContextSync must not be called while holding the rootScope lock" +
+                    " — lock-ordering inversion causes deadlock (RUM-17619)"
+            )
+            .isFalse()
+    }
+
+    @Test
     fun `M delegate event to rootScope W resetSession()`() {
         // When
         testedMonitor.resetSession()
