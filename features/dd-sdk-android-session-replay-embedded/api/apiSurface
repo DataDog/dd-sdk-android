@@ -1,3 +1,7 @@
+object com.datadog.android.sessionreplay.embedded.EmbeddedSessionReplay
+  fun register(android.view.View, Any)
+  fun unregister(Any)
+  fun writeRecords(Any, String, List<com.google.gson.JsonObject>, com.datadog.android.api.SdkCore = Datadog.getInstance())
 class com.datadog.android.sessionreplay.embedded.EmbeddedViewExtensionSupport : com.datadog.android.sessionreplay.ExtensionSupport
   constructor(List<String>)
   constructor(String)

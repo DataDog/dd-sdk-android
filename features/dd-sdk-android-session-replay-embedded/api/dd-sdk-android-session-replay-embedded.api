@@ -1,3 +1,12 @@
+public final class com/datadog/android/sessionreplay/embedded/EmbeddedSessionReplay {
+	public static final field INSTANCE Lcom/datadog/android/sessionreplay/embedded/EmbeddedSessionReplay;
+	public static final fun register (Landroid/view/View;Ljava/lang/Object;)V
+	public static final fun unregister (Ljava/lang/Object;)V
+	public static final fun writeRecords (Ljava/lang/Object;Ljava/lang/String;Ljava/util/List;)V
+	public static final fun writeRecords (Ljava/lang/Object;Ljava/lang/String;Ljava/util/List;Lcom/datadog/android/api/SdkCore;)V
+	public static synthetic fun writeRecords$default (Ljava/lang/Object;Ljava/lang/String;Ljava/util/List;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
+}
+
 public final class com/datadog/android/sessionreplay/embedded/EmbeddedViewExtensionSupport : com/datadog/android/sessionreplay/ExtensionSupport {
 	public fun <init> (Ljava/util/List;)V
 	public fun <init> ([Ljava/lang/String;)V
