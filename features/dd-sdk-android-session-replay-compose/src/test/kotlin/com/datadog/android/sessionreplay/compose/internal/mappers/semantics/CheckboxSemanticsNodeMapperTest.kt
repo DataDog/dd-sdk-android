@@ -21,6 +21,7 @@ import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.Chec
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.CheckboxSemanticsNodeMapper.Companion.CHECKBOX_SIZE_DP
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.CheckboxSemanticsNodeMapper.Companion.STROKE_WIDTH_DP
 import com.datadog.android.sessionreplay.compose.internal.utils.ColorUtils
+import com.datadog.android.sessionreplay.compose.internal.utils.ComposeWindowOffset
 import com.datadog.android.sessionreplay.compose.internal.utils.PathUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils.Companion.DEFAULT_COLOR_BLACK
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils.Companion.DEFAULT_COLOR_WHITE
@@ -29,6 +30,7 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -90,6 +92,9 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
     @StringForgery(regex = "#[0-9A-F]{8}")
     lateinit var fakeCheckmarkColorHexString: String
 
+    @Forgery
+    lateinit var fakeWindowOffset: ComposeWindowOffset
+
     @Mock
     private lateinit var mockUiContext: UiContext
 
@@ -118,10 +123,13 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
         whenever(mockUiContext.textAndInputPrivacy)
             .thenReturn(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
 
-        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode)) doReturn rectToBounds(
-            fakeBounds,
-            fakeDensity
-        )
+        whenever(mockUiContext.windowOffset) doReturn fakeWindowOffset
+
+        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode, fakeWindowOffset)) doReturn
+            rectToBounds(
+                fakeBounds,
+                fakeDensity
+            )
 
         mockSemanticsNodeWithBound {
             whenever(mockSemanticsNode.layoutInfo).doReturn(mockLayoutInfo)
@@ -371,7 +379,8 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
     @Test
     fun `M call image wireframe creation W map { checked, reflection resolution success }`() {
         // Given
-        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode)) doReturn fakeGlobalBounds
+        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode, fakeWindowOffset)) doReturn
+            fakeGlobalBounds
 
         whenever(mockConfig.getOrNull(SemanticsProperties.ToggleableState))
             .thenReturn(ToggleableState.On)
@@ -447,7 +456,8 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
     @Test
     fun `M return image wireframe W map { checked, reflection resolution success }`() {
         // Given
-        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode)) doReturn fakeGlobalBounds
+        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode, fakeWindowOffset)) doReturn
+            fakeGlobalBounds
 
         whenever(mockConfig.getOrNull(SemanticsProperties.ToggleableState))
             .thenReturn(ToggleableState.On)

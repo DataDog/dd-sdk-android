@@ -64,11 +64,9 @@ internal class ProfilingRequestFactory(
         return customEndpointUrl ?: (context.site.intakeEndpoint + "/api/v2/profile")
     }
 
-    @Suppress("UnsafeThirdPartyFunctionCall", "ThrowingInternalException") // Caught in the caller
+    @Suppress("UnsafeThirdPartyFunctionCall", "CheckInternal") // Caught in the caller
     private fun buildRequestBody(batchData: List<RawBatchEvent>): RequestBody {
-        if (batchData.isEmpty()) {
-            throw IllegalStateException(EMPTY_BATCH_DATA_ERROR_MESSAGE)
-        }
+        check(batchData.isNotEmpty()) { EMPTY_BATCH_DATA_ERROR_MESSAGE }
         if (batchData.size > 1) {
             internalLogger.log(
                 InternalLogger.Level.WARN,

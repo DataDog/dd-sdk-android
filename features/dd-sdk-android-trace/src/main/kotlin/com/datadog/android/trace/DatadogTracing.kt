@@ -21,7 +21,7 @@ import com.datadog.trace.core.CoreTracer
 /**
  * Object responsible for providing tracing capabilities in the Datadog SDK.
  */
-@SuppressWarnings("UndocumentedPublicFunction")
+@Suppress("UndocumentedPublicFunction")
 object DatadogTracing {
     /**
      * Creates and returns a new instance of [DatadogTracerBuilder]. This method initializes and configures the

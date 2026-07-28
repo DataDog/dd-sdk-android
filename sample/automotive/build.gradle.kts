@@ -14,6 +14,7 @@ import com.datadog.gradle.config.taskConfig
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
+    id("ktlint")
     id("com.android.application")
     kotlin("android")
     id("com.github.ben-manes.versions")

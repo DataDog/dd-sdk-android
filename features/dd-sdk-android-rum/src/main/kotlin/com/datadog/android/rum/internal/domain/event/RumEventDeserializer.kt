@@ -54,7 +54,7 @@ internal class RumEventDeserializer(private val internalLogger: InternalLogger) 
 
     // region Internal
 
-    @SuppressWarnings("ThrowingInternalException")
+    @Suppress("ThrowingInternalException")
     @Throws(JsonParseException::class)
     private fun parseEvent(eventType: String?, model: JsonObject): Any {
         return when (eventType) {

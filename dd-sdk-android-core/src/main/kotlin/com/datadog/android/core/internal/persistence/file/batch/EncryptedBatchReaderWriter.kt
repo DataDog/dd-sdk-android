@@ -18,31 +18,28 @@ internal class EncryptedBatchReaderWriter(
     private val internalLogger: InternalLogger
 ) : BatchFileReaderWriter by delegate {
 
-    @WorkerThread
-    override fun writeData(
-        file: File,
-        data: RawBatchEvent,
-        append: Boolean
-    ): Boolean {
-        val encryptedRawBatchEvent = RawBatchEvent(
-            data = encryption.encrypt(data.data),
-            metadata = encryption.encrypt(data.metadata)
-        )
+    override fun serializeToBytes(data: RawBatchEvent): ByteArray? {
+        val encryptedData = encryption.encrypt(data.data)
 
-        if (data.data.isNotEmpty() && encryptedRawBatchEvent.data.isEmpty()) {
+        if (data.data.isNotEmpty() && encryptedData.isEmpty()) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
                 { BAD_ENCRYPTION_RESULT_MESSAGE }
             )
-            return false
+            return null
         }
 
-        return delegate.writeData(
-            file,
-            encryptedRawBatchEvent,
-            append
+        val encryptedRawBatchEvent = RawBatchEvent(
+            data = encryptedData,
+            metadata = encryption.encrypt(data.metadata)
         )
+        return delegate.serializeToBytes(encryptedRawBatchEvent)
+    }
+
+    @WorkerThread
+    override fun writeBinaryData(file: File, bytes: ByteArray, append: Boolean): Boolean {
+        return delegate.writeBinaryData(file, bytes, append)
     }
 
     @WorkerThread

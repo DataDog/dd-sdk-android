@@ -35,7 +35,7 @@ internal class SwitchSemanticsNodeMapper(
         internalLogger: InternalLogger
     ): SemanticsWireframe {
         val isSwitchOn = isSwitchOn(semanticsNode)
-        val globalBounds = resolveBounds(semanticsNode)
+        val globalBounds = resolveBounds(semanticsNode, parentContext)
         val isDarkBackground =
             parentContext.parentContentColor?.let { colorUtils.isDarkColor(it, internalLogger) } ?: false
         val switchWireframes = if (isSwitchMasked(parentContext)) {
@@ -64,7 +64,7 @@ internal class SwitchSemanticsNodeMapper(
                 isDarkBackground = isDarkBackground
             )
 
-            listOfNotNull(trackWireframe, thumbWireframe)
+            listOf(trackWireframe, thumbWireframe)
         }
 
         return SemanticsWireframe(

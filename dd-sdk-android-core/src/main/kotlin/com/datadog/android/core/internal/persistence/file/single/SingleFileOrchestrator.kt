@@ -20,7 +20,7 @@ internal class SingleFileOrchestrator(
     // region FileOrchestrator
 
     @WorkerThread
-    override fun getWritableFile(): File? {
+    override fun getWritableFile(eventSize: Long): File? {
         file.parentFile?.mkdirsSafe(internalLogger)
         return file
     }

@@ -30,9 +30,9 @@ internal class ImageSemanticsNodeMapper(
         asyncJobStatusCallback: AsyncJobStatusCallback,
         internalLogger: InternalLogger
     ): SemanticsWireframe {
-        val containerBounds = resolveBounds(semanticsNode)
+        val containerBounds = resolveBounds(semanticsNode, parentContext)
         val bitmapInfo = semanticsUtils.resolveSemanticsPainter(semanticsNode, internalLogger)
-        val containerFrames = resolveModifierWireframes(semanticsNode).toMutableList()
+        val containerFrames = resolveModifierWireframes(semanticsNode, parentContext).toMutableList()
         val imagePrivacy =
             semanticsUtils.getImagePrivacyOverride(semanticsNode) ?: parentContext.imagePrivacy
         val imageWireframe = if (bitmapInfo != null) {

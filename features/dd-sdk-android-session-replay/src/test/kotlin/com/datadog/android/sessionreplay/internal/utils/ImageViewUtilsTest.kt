@@ -218,8 +218,8 @@ internal class ImageViewUtilsTest {
         val fakeLeftPadding = forge.aPositiveInt()
         val fakeRightPadding = forge.aPositiveInt()
         val mockView: View = mock {
-            whenever(it.getLocationOnScreen(any())).thenAnswer {
-                val coords = it.arguments[0] as IntArray
+            whenever(it.getLocationOnScreen(any())).thenAnswer { invocation ->
+                val coords = invocation.arguments[0] as IntArray
                 coords[0] = fakeGlobalX
                 coords[1] = fakeGlobalY
                 null
@@ -259,8 +259,8 @@ internal class ImageViewUtilsTest {
         whenever(mockDrawable.intrinsicHeight).thenReturn(fakeDrawableHeight)
 
         val mockImageView: ImageView = mock {
-            whenever(it.getLocationOnScreen(any())).thenAnswer {
-                val coords = it.arguments[0] as IntArray
+            whenever(it.getLocationOnScreen(any())).thenAnswer { invocation ->
+                val coords = invocation.arguments[0] as IntArray
                 coords[0] = fakeGlobalX
                 coords[1] = fakeGlobalY
                 null
@@ -307,8 +307,8 @@ internal class ImageViewUtilsTest {
         whenever(mockDrawable.intrinsicHeight).thenReturn(fakeDrawableHeight)
 
         val mockImageView: ImageView = mock {
-            whenever(it.getLocationOnScreen(any())).thenAnswer {
-                val coords = it.arguments[0] as IntArray
+            whenever(it.getLocationOnScreen(any())).thenAnswer { invocation ->
+                val coords = invocation.arguments[0] as IntArray
                 coords[0] = fakeGlobalX
                 coords[1] = fakeGlobalY
                 null
@@ -355,8 +355,8 @@ internal class ImageViewUtilsTest {
         whenever(mockDrawable.intrinsicHeight).thenReturn(fakeDrawableHeight)
 
         val mockImageView: ImageView = mock {
-            whenever(it.getLocationOnScreen(any())).thenAnswer {
-                val coords = it.arguments[0] as IntArray
+            whenever(it.getLocationOnScreen(any())).thenAnswer { invocation ->
+                val coords = invocation.arguments[0] as IntArray
                 coords[0] = fakeGlobalX
                 coords[1] = fakeGlobalY
                 null
@@ -403,8 +403,8 @@ internal class ImageViewUtilsTest {
         whenever(mockDrawable.intrinsicHeight).thenReturn(fakeDrawableHeight)
 
         val mockImageView: ImageView = mock {
-            whenever(it.getLocationOnScreen(any())).thenAnswer {
-                val coords = it.arguments[0] as IntArray
+            whenever(it.getLocationOnScreen(any())).thenAnswer { invocation ->
+                val coords = invocation.arguments[0] as IntArray
                 coords[0] = fakeGlobalX
                 coords[1] = fakeGlobalY
                 null
@@ -458,8 +458,8 @@ internal class ImageViewUtilsTest {
         whenever(mockDrawable.intrinsicHeight).thenReturn(fakeDrawableHeight)
 
         val mockImageView: ImageView = mock {
-            whenever(it.getLocationOnScreen(any())).thenAnswer {
-                val coords = it.arguments[0] as IntArray
+            whenever(it.getLocationOnScreen(any())).thenAnswer { invocation ->
+                val coords = invocation.arguments[0] as IntArray
                 coords[0] = fakeGlobalX
                 coords[1] = fakeGlobalY
                 null
@@ -506,8 +506,8 @@ internal class ImageViewUtilsTest {
         whenever(mockDrawable.intrinsicHeight).thenReturn(fakeDrawableHeight)
 
         val mockImageView: ImageView = mock {
-            whenever(it.getLocationOnScreen(any())).thenAnswer {
-                val coords = it.arguments[0] as IntArray
+            whenever(it.getLocationOnScreen(any())).thenAnswer { invocation ->
+                val coords = invocation.arguments[0] as IntArray
                 coords[0] = fakeGlobalX
                 coords[1] = fakeGlobalY
                 null
@@ -558,8 +558,8 @@ internal class ImageViewUtilsTest {
         whenever(mockDrawable.intrinsicHeight).thenReturn(fakeDrawableHeight)
 
         val mockImageView: ImageView = mock {
-            whenever(it.getLocationOnScreen(any())).thenAnswer {
-                val coords = it.arguments[0] as IntArray
+            whenever(it.getLocationOnScreen(any())).thenAnswer { invocation ->
+                val coords = invocation.arguments[0] as IntArray
                 coords[0] = fakeGlobalX
                 coords[1] = fakeGlobalY
                 null
@@ -608,8 +608,8 @@ internal class ImageViewUtilsTest {
         whenever(mockDrawable.intrinsicHeight).thenReturn(fakeDrawableHeight)
 
         val mockImageView: ImageView = mock {
-            whenever(it.getLocationOnScreen(any())).thenAnswer {
-                val coords = it.arguments[0] as IntArray
+            whenever(it.getLocationOnScreen(any())).thenAnswer { invocation ->
+                val coords = invocation.arguments[0] as IntArray
                 coords[0] = fakeGlobalX
                 coords[1] = fakeGlobalY
                 null
@@ -654,8 +654,8 @@ internal class ImageViewUtilsTest {
         whenever(mockDrawable.intrinsicHeight).thenReturn(fakeDrawableHeight)
 
         val mockImageView: ImageView = mock {
-            whenever(it.getLocationOnScreen(any())).thenAnswer {
-                val coords = it.arguments[0] as IntArray
+            whenever(it.getLocationOnScreen(any())).thenAnswer { invocation ->
+                val coords = invocation.arguments[0] as IntArray
                 coords[0] = fakeGlobalX
                 coords[1] = fakeGlobalY
                 null
@@ -699,8 +699,8 @@ internal class ImageViewUtilsTest {
         whenever(mockDrawable.intrinsicHeight).thenReturn(fakeDrawableHeight)
 
         val mockImageView: ImageView = mock {
-            whenever(it.getLocationOnScreen(any())).thenAnswer {
-                val coords = it.arguments[0] as IntArray
+            whenever(it.getLocationOnScreen(any())).thenAnswer { invocation ->
+                val coords = invocation.arguments[0] as IntArray
                 coords[0] = fakeGlobalX
                 coords[1] = fakeGlobalY
                 null
@@ -744,8 +744,8 @@ internal class ImageViewUtilsTest {
         whenever(mockDrawable.intrinsicHeight).thenReturn(fakeDrawableHeight)
 
         val mockImageView: ImageView = mock {
-            whenever(it.getLocationOnScreen(any())).thenAnswer {
-                val coords = it.arguments[0] as IntArray
+            whenever(it.getLocationOnScreen(any())).thenAnswer { invocation ->
+                val coords = invocation.arguments[0] as IntArray
                 coords[0] = fakeGlobalX
                 coords[1] = fakeGlobalY
                 null

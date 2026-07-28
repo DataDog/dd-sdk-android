@@ -18,7 +18,7 @@ import com.datadog.android.trace.api.span.DatadogSpan
  * @param block the lambda function traced by this newly created [DatadogSpan]
  *
  */
-@SuppressWarnings("TooGenericExceptionCaught")
+@Suppress("TooGenericExceptionCaught")
 inline fun <T : Any?> withinSpan(
     operationName: String,
     parentSpan: DatadogSpan? = null,

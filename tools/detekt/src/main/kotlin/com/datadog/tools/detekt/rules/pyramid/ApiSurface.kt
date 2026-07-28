@@ -39,7 +39,9 @@ class ApiSurface(
 ) : AbstractTypedRule(ruleSetConfig) {
 
     private val outputFileName: String by config(defaultValue = "apiSurface.log")
-    private val outputFile: File by lazy { File(outputFileName) }
+    private val outputFile: File by lazy {
+        File(outputFileName).absoluteFile.also { it.parentFile.mkdirs() }
+    }
     private val internalPackagePrefix: String by config(defaultValue = "")
     private val ignoredAnnotations: List<String> by config(defaultValue = emptyList())
     private val ignoredClasses: List<String> by config(defaultValue = emptyList())

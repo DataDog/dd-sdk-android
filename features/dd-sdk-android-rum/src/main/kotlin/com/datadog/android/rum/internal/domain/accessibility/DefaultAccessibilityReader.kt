@@ -62,7 +62,7 @@ internal class DefaultAccessibilityReader(
         }
     }
 
-    private val touchListener = TouchExplorationStateChangeListener {
+    private val touchListener = TouchExplorationStateChangeListener { _ ->
         val newScreenReaderEnabled = isScreenReaderEnabled(accessibilityManager)
         updateState { it.copy(isScreenReaderEnabled = newScreenReaderEnabled) }
     }

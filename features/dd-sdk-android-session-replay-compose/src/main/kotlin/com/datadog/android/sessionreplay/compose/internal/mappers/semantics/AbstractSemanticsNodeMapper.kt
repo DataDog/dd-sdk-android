@@ -36,14 +36,15 @@ internal abstract class AbstractSemanticsNodeMapper(
         return (semanticsNode.id.toLong() shl SEMANTICS_ID_BIT_SHIFT) + currentIndex
     }
 
-    protected fun resolveBounds(semanticsNode: SemanticsNode): GlobalBounds {
-        return semanticsUtils.resolveInnerBounds(semanticsNode)
+    protected fun resolveBounds(semanticsNode: SemanticsNode, parentContext: UiContext): GlobalBounds {
+        return semanticsUtils.resolveInnerBounds(semanticsNode, parentContext.windowOffset)
     }
 
     protected fun resolveModifierWireframes(
-        semanticsNode: SemanticsNode
+        semanticsNode: SemanticsNode,
+        parentContext: UiContext
     ): List<MobileSegment.Wireframe> {
-        return semanticsUtils.resolveBackgroundInfo(semanticsNode)
+        return semanticsUtils.resolveBackgroundInfo(semanticsNode, parentContext.windowOffset)
             .mapIndexed { index, backgroundInfo ->
                 convertBackgroundInfoToWireframes(
                     semanticsNode = semanticsNode,

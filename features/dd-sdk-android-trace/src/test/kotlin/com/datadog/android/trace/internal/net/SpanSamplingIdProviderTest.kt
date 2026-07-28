@@ -63,7 +63,7 @@ internal class SpanSamplingIdProviderTest {
     ) {
         // Given
         val expectedId = part4.toULong()
-        val sessionId = arrayOf(part0, part1, part2, part3, part4).joinToString("-") { it.toHexString() }
+        val sessionId = longArrayOf(part0, part1, part2, part3, part4).joinToString("-") { it.toHexString() }
         val fakeTagsWithSessionId = fakeTags + mapOf(LogAttributes.RUM_SESSION_ID to sessionId)
         whenever(mockSpanContext.tags) doReturn fakeTagsWithSessionId
 

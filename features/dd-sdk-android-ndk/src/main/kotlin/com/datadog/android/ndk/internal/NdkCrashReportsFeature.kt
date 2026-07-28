@@ -114,7 +114,7 @@ internal class NdkCrashReportsFeature(
             nativeLibraryLoaded = true
         } catch (e: SecurityException) {
             exception = e
-        } catch (@SuppressWarnings("TooGenericExceptionCaught") e: NullPointerException) {
+        } catch (@Suppress("TooGenericExceptionCaught") e: NullPointerException) {
             exception = e
         } catch (e: UnsatisfiedLinkError) {
             exception = e

@@ -83,7 +83,7 @@ internal class BatchMetricsDispatcher(
 
     // region Internal
 
-    @SuppressWarnings("ReturnCount")
+    @Suppress("ReturnCount")
     private fun resolveBatchDeletedMetricAttributes(
         file: File,
         deletionReason: RemovalReason,
@@ -115,7 +115,7 @@ internal class BatchMetricsDispatcher(
         )
     }
 
-    @SuppressWarnings("ReturnCount")
+    @Suppress("ReturnCount")
     private fun resolveBatchClosedMetricAttributes(
         file: File,
         batchMetadata: BatchClosedMetadata

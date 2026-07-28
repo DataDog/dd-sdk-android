@@ -6,9 +6,12 @@
 
 package com.datadog.android.webview.internal.rum
 
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.core.internal.utils.DdTagsUtils
 import com.datadog.android.webview.internal.rum.domain.NativeRumViewsCache
 import com.datadog.android.webview.internal.rum.domain.RumContext
 import com.google.gson.JsonObject
+import com.google.gson.JsonPrimitive
 
 internal class WebViewRumEventMapper(
     private val nativeRumViewsCache: NativeRumViewsCache
@@ -25,6 +28,7 @@ internal class WebViewRumEventMapper(
         timeOffset: Long,
         sessionReplayEnabled: Boolean,
         anonymousId: String?,
+        datadogContext: DatadogContext,
         traceSampleRate: Float? = null
     ): JsonObject {
         val containerObject = JsonObject().apply {
@@ -70,8 +74,18 @@ internal class WebViewRumEventMapper(
         }
 
         addAnonymousId(event, anonymousId)
+        mergeDDTags(event, datadogContext)
 
         return event
+    }
+
+    private fun mergeDDTags(event: JsonObject, datadogContext: DatadogContext) {
+        val mobileTags = DdTagsUtils.toDdTagsMap(datadogContext).toMutableMap()
+        (event.get(DDTAGS_KEY_NAME) as? JsonPrimitive)?.asString
+            ?.let(DdTagsUtils::toDdTagsMap)
+            ?.let(mobileTags::putAll)
+
+        event.addProperty(DDTAGS_KEY_NAME, DdTagsUtils.toDdTagsString(mobileTags))
     }
 
     private fun addAnonymousId(event: JsonObject, anonymousId: String?) {
@@ -97,6 +111,7 @@ internal class WebViewRumEventMapper(
         internal const val RULE_PSR_KEY_NAME = "rule_psr"
         internal const val USR_KEY_NAME = "usr"
         internal const val ANONYMOUS_ID_KEY_NAME = "anonymous_id"
+        internal const val DDTAGS_KEY_NAME = "ddtags"
         private const val SAMPLE_ALL_RATE = 100f
     }
 }

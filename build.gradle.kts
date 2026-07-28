@@ -15,6 +15,8 @@ import java.util.Properties
 
 plugins {
     `maven-publish`
+    id("ktlint")
+    id("test-pyramid-aggregation")
     alias(libs.plugins.nexusPublishGradlePlugin)
     alias(libs.plugins.dependencyLicenseGradlePlugin)
 

@@ -16,6 +16,7 @@ import kotlin.coroutines.CoroutineContext
 
 private const val TAG_DISPATCHER: String = "coroutine.dispatcher"
 
+@Suppress("InjectDispatcher") // context is a comparison sentinel here, not an instantiated dispatcher
 internal suspend fun <T : Any?> CoroutineScope.withinCoroutineSpan(
     operationName: String,
     parentSpan: DatadogSpan? = null,

@@ -99,7 +99,7 @@ class AsyncEventWriteScopeTest {
         // if write operations are parallel, there is a chance that there will be a conflict
         // updating the meta (applying different updates to the same original state).
         val callback: (EventBatchWriter) -> Unit = {
-            val value = it.currentMetadata()?.first() ?: 0
+            val value = accumulator
             it.write(
                 event = RawBatchEvent(data = event),
                 batchMetadata = byteArrayOf((value + 1).toByte()),
@@ -107,7 +107,6 @@ class AsyncEventWriteScopeTest {
             )
         }
 
-        whenever(mockEventBatchWriter.currentMetadata()) doAnswer { byteArrayOf(accumulator) }
         whenever(
             mockEventBatchWriter.write(any(), any(), any())
         ) doAnswer {

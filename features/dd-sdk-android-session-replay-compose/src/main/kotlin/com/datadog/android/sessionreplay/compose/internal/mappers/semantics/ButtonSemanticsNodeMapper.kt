@@ -26,7 +26,7 @@ internal class ButtonSemanticsNodeMapper(
         internalLogger: InternalLogger
     ): SemanticsWireframe {
         return SemanticsWireframe(
-            wireframes = resolveModifierWireframes(semanticsNode),
+            wireframes = resolveModifierWireframes(semanticsNode, parentContext),
             uiContext = parentContext
         )
     }

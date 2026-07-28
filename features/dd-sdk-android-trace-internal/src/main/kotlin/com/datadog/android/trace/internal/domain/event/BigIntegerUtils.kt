@@ -11,7 +11,7 @@ import java.math.BigInteger
 
 // TODO RUM-9902 Make internal internal after opentracing code removal. Required for DdSpanToSpanEventMapperTest
 @InternalApi
-@SuppressWarnings("UndocumentedPublicClass")
+@Suppress("UndocumentedPublicClass")
 object BigIntegerUtils {
 
     private const val LONG_BITS_SIZE = 64
