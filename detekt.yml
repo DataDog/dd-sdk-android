@@ -18,7 +18,6 @@ console-reports:
     - 'ComplexityReport'
     - 'FileBasedFindingsReport'
     - 'BuildFailureReport'
-    - 'LiteFindingsReport'
 
 output-reports:
   active: false

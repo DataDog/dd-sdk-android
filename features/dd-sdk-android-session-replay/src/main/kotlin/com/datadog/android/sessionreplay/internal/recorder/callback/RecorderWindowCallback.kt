@@ -186,12 +186,10 @@ internal class RecorderWindowCallback(
         if (pendingLayoutRetries.containsKey(window)) return
         val viewTreeObserver = decorView.viewTreeObserver
         if (viewTreeObserver == null || !viewTreeObserver.isAlive) return
-        val layoutListener = object : ViewTreeObserver.OnGlobalLayoutListener {
-            override fun onGlobalLayout() {
-                if (decorView.width == 0 || decorView.height == 0) return
-                pendingLayoutRetries.remove(window)?.cancel()
-                installCallbackOnWindow(decorView)
-            }
+        val layoutListener = ViewTreeObserver.OnGlobalLayoutListener {
+            if (decorView.width == 0 || decorView.height == 0) return@OnGlobalLayoutListener
+            pendingLayoutRetries.remove(window)?.cancel()
+            installCallbackOnWindow(decorView)
         }
         // a dialog dismissed before it ever lays out to a non-zero size would otherwise never
         // trigger onGlobalLayout's removal above, leaking this entry (and everything it retains)
