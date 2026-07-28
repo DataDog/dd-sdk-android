@@ -560,15 +560,18 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$MobileR
 
 public final class com/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileFullSnapshotRecord : com/datadog/android/sessionreplay/model/MobileSegment$MobileRecord {
 	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileFullSnapshotRecord$Companion;
-	public fun <init> (JLcom/datadog/android/sessionreplay/model/MobileSegment$Data;)V
+	public fun <init> (JLjava/lang/String;Lcom/datadog/android/sessionreplay/model/MobileSegment$Data;)V
+	public synthetic fun <init> (JLjava/lang/String;Lcom/datadog/android/sessionreplay/model/MobileSegment$Data;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()J
-	public final fun component2 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$Data;
-	public final fun copy (JLcom/datadog/android/sessionreplay/model/MobileSegment$Data;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileFullSnapshotRecord;
-	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileFullSnapshotRecord;JLcom/datadog/android/sessionreplay/model/MobileSegment$Data;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileFullSnapshotRecord;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$Data;
+	public final fun copy (JLjava/lang/String;Lcom/datadog/android/sessionreplay/model/MobileSegment$Data;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileFullSnapshotRecord;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileFullSnapshotRecord;JLjava/lang/String;Lcom/datadog/android/sessionreplay/model/MobileSegment$Data;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileFullSnapshotRecord;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileFullSnapshotRecord;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileFullSnapshotRecord;
 	public final fun getData ()Lcom/datadog/android/sessionreplay/model/MobileSegment$Data;
+	public final fun getSlotId ()Ljava/lang/String;
 	public final fun getTimestamp ()J
 	public final fun getType ()J
 	public fun hashCode ()I
@@ -583,15 +586,18 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$MobileR
 
 public final class com/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileIncrementalSnapshotRecord : com/datadog/android/sessionreplay/model/MobileSegment$MobileRecord {
 	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileIncrementalSnapshotRecord$Companion;
-	public fun <init> (JLcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData;)V
+	public fun <init> (JLjava/lang/String;Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData;)V
+	public synthetic fun <init> (JLjava/lang/String;Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()J
-	public final fun component2 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData;
-	public final fun copy (JLcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileIncrementalSnapshotRecord;
-	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileIncrementalSnapshotRecord;JLcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileIncrementalSnapshotRecord;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData;
+	public final fun copy (JLjava/lang/String;Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileIncrementalSnapshotRecord;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileIncrementalSnapshotRecord;JLjava/lang/String;Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileIncrementalSnapshotRecord;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileIncrementalSnapshotRecord;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileIncrementalSnapshotRecord;
 	public final fun getData ()Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData;
+	public final fun getSlotId ()Ljava/lang/String;
 	public final fun getTimestamp ()J
 	public final fun getType ()J
 	public fun hashCode ()I

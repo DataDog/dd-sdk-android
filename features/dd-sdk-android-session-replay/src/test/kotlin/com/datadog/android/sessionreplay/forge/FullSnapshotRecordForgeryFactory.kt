@@ -14,8 +14,9 @@ internal class FullSnapshotRecordForgeryFactory :
     ForgeryFactory<MobileSegment.MobileRecord.MobileFullSnapshotRecord> {
     override fun getForgery(forge: Forge): MobileSegment.MobileRecord.MobileFullSnapshotRecord {
         return MobileSegment.MobileRecord.MobileFullSnapshotRecord(
-            forge.aPositiveLong(),
-            MobileSegment.Data(forge.aList { forge.getForgery() })
+            timestamp = forge.aPositiveLong(),
+            slotId = forge.aNullable { aPositiveLong().toString() },
+            data = MobileSegment.Data(forge.aList { forge.getForgery() })
         )
     }
 }
