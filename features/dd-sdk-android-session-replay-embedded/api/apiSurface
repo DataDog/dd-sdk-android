@@ -1,0 +1,7 @@
+class com.datadog.android.sessionreplay.embedded.EmbeddedViewExtensionSupport : com.datadog.android.sessionreplay.ExtensionSupport
+  constructor(List<String>)
+  constructor(String)
+  override fun getCustomViewMappers(): List<com.datadog.android.sessionreplay.MapperTypeWrapper<*>>
+  override fun getOptionSelectorDetectors(): List<com.datadog.android.sessionreplay.recorder.OptionSelectorDetector>
+  override fun getCustomDrawableMapper(): List<com.datadog.android.sessionreplay.utils.DrawableToColorMapper>
+  override fun name(): String

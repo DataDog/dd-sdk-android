@@ -1,0 +1,9 @@
+public final class com/datadog/android/sessionreplay/embedded/EmbeddedViewExtensionSupport : com/datadog/android/sessionreplay/ExtensionSupport {
+	public fun <init> (Ljava/util/List;)V
+	public fun <init> ([Ljava/lang/String;)V
+	public fun getCustomDrawableMapper ()Ljava/util/List;
+	public fun getCustomViewMappers ()Ljava/util/List;
+	public fun getOptionSelectorDetectors ()Ljava/util/List;
+	public fun name ()Ljava/lang/String;
+}
+
