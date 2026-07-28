@@ -92,26 +92,26 @@ internal class RumViewEventWriterTest {
         forge: Forge
     ) {
         // Given
-        val secondEvent = fakeViewEvent.copy(
-            view = fakeViewEvent.view.copy(
-                action = ViewEvent.Action(fakeViewEvent.view.action.count + forge.aPositiveLong(strict = true))
-            )
+        val firstEvent = fakeViewEvent.copy(
+            dd = fakeViewEvent.dd.copy(documentVersion = 1L)
         )
-        whenever(mockViewEventMapper.map(fakeViewEvent)) doReturn fakeViewEvent
+        val secondEvent = firstEvent.copy(
+            view = firstEvent.view.copy(
+                action = ViewEvent.Action(firstEvent.view.action.count + forge.aPositiveLong(strict = true))
+            ),
+            dd = firstEvent.dd.copy(documentVersion = 2L)
+        )
+        whenever(mockViewEventMapper.map(firstEvent)) doReturn firstEvent
         whenever(mockViewEventMapper.map(secondEvent)) doReturn secondEvent
         val writtenEvents = mutableListOf<Any>()
         whenever(mockDataWriter.write(eq(mockEventBatchWriter), any(), eq(fakeEventType))) doAnswer {
             writtenEvents += it.getArgument<Any>(1)
-            if (writtenEvents.size == 1) {
-                false
-            } else {
-                true
-            }
+            writtenEvents.size != 1
         }
 
         // When
         testedWriter.writeViewEvent(
-            viewEvent = fakeViewEvent,
+            viewEvent = firstEvent,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockDataWriter,
@@ -136,12 +136,16 @@ internal class RumViewEventWriterTest {
         forge: Forge
     ) {
         // Given
-        val secondEvent = fakeViewEvent.copy(
-            view = fakeViewEvent.view.copy(
-                action = ViewEvent.Action(fakeViewEvent.view.action.count + forge.aPositiveLong(strict = true))
-            )
+        val firstEvent = fakeViewEvent.copy(
+            dd = fakeViewEvent.dd.copy(documentVersion = 1L)
         )
-        whenever(mockViewEventMapper.map(fakeViewEvent)) doReturn fakeViewEvent
+        val secondEvent = firstEvent.copy(
+            view = firstEvent.view.copy(
+                action = ViewEvent.Action(firstEvent.view.action.count + forge.aPositiveLong(strict = true))
+            ),
+            dd = firstEvent.dd.copy(documentVersion = 2L)
+        )
+        whenever(mockViewEventMapper.map(firstEvent)) doReturn firstEvent
         whenever(mockViewEventMapper.map(secondEvent)) doReturn secondEvent
         val writtenEvents = mutableListOf<Any>()
         whenever(mockDataWriter.write(eq(mockEventBatchWriter), any(), eq(fakeEventType))) doAnswer {
@@ -151,7 +155,7 @@ internal class RumViewEventWriterTest {
 
         // When
         testedWriter.writeViewEvent(
-            viewEvent = fakeViewEvent,
+            viewEvent = firstEvent,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockDataWriter,
@@ -176,17 +180,22 @@ internal class RumViewEventWriterTest {
         forge: Forge
     ) {
         // Given
-        val secondEvent = fakeViewEvent.copy(
-            view = fakeViewEvent.view.copy(
-                action = ViewEvent.Action(fakeViewEvent.view.action.count + forge.aPositiveLong(strict = true))
-            )
+        val firstEvent = fakeViewEvent.copy(
+            dd = fakeViewEvent.dd.copy(documentVersion = 1L)
+        )
+        val secondEvent = firstEvent.copy(
+            view = firstEvent.view.copy(
+                action = ViewEvent.Action(firstEvent.view.action.count + forge.aPositiveLong(strict = true))
+            ),
+            dd = firstEvent.dd.copy(documentVersion = 2L)
         )
         val thirdEvent = secondEvent.copy(
             view = secondEvent.view.copy(
                 action = ViewEvent.Action(secondEvent.view.action.count + forge.aPositiveLong(strict = true))
-            )
+            ),
+            dd = secondEvent.dd.copy(documentVersion = 3L)
         )
-        whenever(mockViewEventMapper.map(fakeViewEvent)) doReturn fakeViewEvent
+        whenever(mockViewEventMapper.map(firstEvent)) doReturn firstEvent
         whenever(mockViewEventMapper.map(secondEvent)) doReturn secondEvent
         whenever(mockViewEventMapper.map(thirdEvent)) doReturn thirdEvent
         val writtenEvents = mutableListOf<Any>()
@@ -197,7 +206,7 @@ internal class RumViewEventWriterTest {
 
         // When
         testedWriter.writeViewEvent(
-            viewEvent = fakeViewEvent,
+            viewEvent = firstEvent,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockDataWriter,
@@ -234,12 +243,16 @@ internal class RumViewEventWriterTest {
         whenever(mockEventWriteScope.invoke(any())) doAnswer {
             pendingWrites += it.getArgument<(EventBatchWriter) -> Unit>(0)
         }
-        val secondEvent = fakeViewEvent.copy(
-            view = fakeViewEvent.view.copy(
-                action = ViewEvent.Action(fakeViewEvent.view.action.count + forge.aPositiveLong(strict = true))
-            )
+        val firstEvent = fakeViewEvent.copy(
+            dd = fakeViewEvent.dd.copy(documentVersion = 1L)
         )
-        whenever(mockViewEventMapper.map(fakeViewEvent)) doReturn fakeViewEvent
+        val secondEvent = firstEvent.copy(
+            view = firstEvent.view.copy(
+                action = ViewEvent.Action(firstEvent.view.action.count + forge.aPositiveLong(strict = true))
+            ),
+            dd = firstEvent.dd.copy(documentVersion = 2L)
+        )
+        whenever(mockViewEventMapper.map(firstEvent)) doReturn firstEvent
         whenever(mockViewEventMapper.map(secondEvent)) doReturn secondEvent
         val writtenEvents = mutableListOf<Any>()
         whenever(mockDataWriter.write(eq(mockEventBatchWriter), any(), eq(fakeEventType))) doAnswer {
@@ -249,7 +262,7 @@ internal class RumViewEventWriterTest {
 
         // When
         testedWriter.writeViewEvent(
-            viewEvent = fakeViewEvent,
+            viewEvent = firstEvent,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockDataWriter,
@@ -293,6 +306,150 @@ internal class RumViewEventWriterTest {
         // Then
         assertThat(writtenEvents).hasSize(1)
         assertThat(writtenEvents[0]).isEqualTo(MappedViewEvent(fakeViewEvent))
+    }
+
+    @Test
+    fun `M write full view W documentVersion is multiple of FULL_VIEW_EVERY_N_UPDATES`(
+        @Forgery fakeViewEvent: ViewEvent
+    ) {
+        // Given
+        val firstEvent = fakeViewEvent.copy(
+            dd = fakeViewEvent.dd.copy(documentVersion = 1L)
+        )
+        val checkpointEvent = firstEvent.copy(
+            dd = firstEvent.dd.copy(documentVersion = RumViewEventWriterImpl.FULL_VIEW_EVERY_N_UPDATES)
+        )
+        whenever(mockViewEventMapper.map(firstEvent)) doReturn firstEvent
+        whenever(mockViewEventMapper.map(checkpointEvent)) doReturn checkpointEvent
+        val writtenEvents = mutableListOf<Any>()
+        whenever(mockDataWriter.write(eq(mockEventBatchWriter), any(), eq(fakeEventType))) doAnswer {
+            writtenEvents += it.getArgument<Any>(1)
+            true
+        }
+
+        // When
+        testedWriter.writeViewEvent(
+            viewEvent = firstEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockDataWriter,
+            eventType = fakeEventType
+        )
+        testedWriter.writeViewEvent(
+            viewEvent = checkpointEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockDataWriter,
+            eventType = fakeEventType
+        )
+
+        // Then
+        assertThat(writtenEvents[0]).isInstanceOf(MappedViewEvent::class.java)
+        assertThat(writtenEvents[1]).isInstanceOf(MappedViewEvent::class.java)
+    }
+
+    @Test
+    fun `M write view update W documentVersion is not multiple of FULL_VIEW_EVERY_N_UPDATES`(
+        @Forgery fakeViewEvent: ViewEvent
+    ) {
+        // Given
+        val firstEvent = fakeViewEvent.copy(
+            dd = fakeViewEvent.dd.copy(documentVersion = 1L)
+        )
+        val beforeCheckpoint = firstEvent.copy(
+            dd = firstEvent.dd.copy(documentVersion = RumViewEventWriterImpl.FULL_VIEW_EVERY_N_UPDATES - 1L)
+        )
+        val afterCheckpoint = firstEvent.copy(
+            dd = firstEvent.dd.copy(documentVersion = RumViewEventWriterImpl.FULL_VIEW_EVERY_N_UPDATES + 1L)
+        )
+        whenever(mockViewEventMapper.map(firstEvent)) doReturn firstEvent
+        whenever(mockViewEventMapper.map(beforeCheckpoint)) doReturn beforeCheckpoint
+        whenever(mockViewEventMapper.map(afterCheckpoint)) doReturn afterCheckpoint
+        val writtenEvents = mutableListOf<Any>()
+        whenever(mockDataWriter.write(eq(mockEventBatchWriter), any(), eq(fakeEventType))) doAnswer {
+            writtenEvents += it.getArgument<Any>(1)
+            true
+        }
+
+        // When
+        testedWriter.writeViewEvent(
+            viewEvent = firstEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockDataWriter,
+            eventType = fakeEventType
+        )
+        testedWriter.writeViewEvent(
+            viewEvent = beforeCheckpoint,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockDataWriter,
+            eventType = fakeEventType
+        )
+        testedWriter.writeViewEvent(
+            viewEvent = afterCheckpoint,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockDataWriter,
+            eventType = fakeEventType
+        )
+
+        // Then
+        assertThat(writtenEvents[0]).isInstanceOf(MappedViewEvent::class.java)
+        assertThat(writtenEvents[1]).isInstanceOf(RumViewUpdateData::class.java)
+        assertThat(writtenEvents[2]).isInstanceOf(RumViewUpdateData::class.java)
+    }
+
+    @Test
+    fun `M write full view W documentVersion is multiple of FULL_VIEW_EVERY_N_UPDATES then resume diffs`(
+        @Forgery fakeViewEvent: ViewEvent
+    ) {
+        // Given
+        val firstEvent = fakeViewEvent.copy(
+            dd = fakeViewEvent.dd.copy(documentVersion = 1L)
+        )
+        val checkpointEvent = firstEvent.copy(
+            dd = firstEvent.dd.copy(documentVersion = RumViewEventWriterImpl.FULL_VIEW_EVERY_N_UPDATES)
+        )
+        val afterCheckpoint = firstEvent.copy(
+            dd = firstEvent.dd.copy(documentVersion = RumViewEventWriterImpl.FULL_VIEW_EVERY_N_UPDATES + 1L)
+        )
+        whenever(mockViewEventMapper.map(firstEvent)) doReturn firstEvent
+        whenever(mockViewEventMapper.map(checkpointEvent)) doReturn checkpointEvent
+        whenever(mockViewEventMapper.map(afterCheckpoint)) doReturn afterCheckpoint
+        val writtenEvents = mutableListOf<Any>()
+        whenever(mockDataWriter.write(eq(mockEventBatchWriter), any(), eq(fakeEventType))) doAnswer {
+            writtenEvents += it.getArgument<Any>(1)
+            true
+        }
+
+        // When
+        testedWriter.writeViewEvent(
+            viewEvent = firstEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockDataWriter,
+            eventType = fakeEventType
+        )
+        testedWriter.writeViewEvent(
+            viewEvent = checkpointEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockDataWriter,
+            eventType = fakeEventType
+        )
+        testedWriter.writeViewEvent(
+            viewEvent = afterCheckpoint,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockDataWriter,
+            eventType = fakeEventType
+        )
+
+        // Then
+        assertThat(writtenEvents[0]).isInstanceOf(MappedViewEvent::class.java) // baseline
+        assertThat(writtenEvents[1]).isInstanceOf(MappedViewEvent::class.java) // checkpoint
+        assertThat(writtenEvents[2]).isInstanceOf(RumViewUpdateData::class.java) // diff resumes
     }
 
     companion object {

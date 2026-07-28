@@ -91,7 +91,8 @@ internal class RumViewEventWriterImpl(
                 when (config) {
                     RumViewEventWriteConfig.AlwaysFullView -> MappedViewEvent(mapped)
                     RumViewEventWriteConfig.FullViewOnlyAtStart -> {
-                        if (prev == null) {
+                        // First update of the view, or periodic checkpoint (every FULL_VIEW_EVERY_N_UPDATES versions)
+                        if (prev == null || mapped.dd.documentVersion % FULL_VIEW_EVERY_N_UPDATES == 0L) {
                             MappedViewEvent(mapped)
                         } else {
                             RumViewUpdateData(
@@ -110,5 +111,6 @@ internal class RumViewEventWriterImpl(
     companion object {
         internal const val VIEW_EVENT_MAPPER_FALLBACK_WARNING_MESSAGE =
             "ViewEventMapper failed, using original ViewEvent."
+        internal const val FULL_VIEW_EVERY_N_UPDATES = 4L
     }
 }
