@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.embedded.forge
 
+import com.datadog.android.tests.elmyr.useCoreFactories
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.jvm.useJvmFactories
@@ -15,10 +16,14 @@ internal class ForgeConfigurator : BaseConfigurator() {
     override fun configure(forge: Forge) {
         super.configure(forge)
 
+        // Core
+        forge.useCoreFactories()
+
         // Session Replay
         forge.addFactory(GlobalBoundsForgeryFactory())
         forge.addFactory(SystemInformationForgeryFactory())
         forge.addFactory(MappingContextForgeryFactory())
+        forge.addFactory(RumContextForgeryFactory())
 
         forge.useJvmFactories()
     }

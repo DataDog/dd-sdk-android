@@ -50,6 +50,7 @@ dependencies {
     api(project(":features:dd-sdk-android-session-replay"))
     implementation(libs.kotlin)
     implementation(libs.gson)
+    implementation(libs.androidXAnnotation)
 
     testImplementation(project(":tools:unit")) {
         attributes {
@@ -59,6 +60,7 @@ dependencies {
             )
         }
     }
+    testImplementation(testFixtures(project(":dd-sdk-android-core")))
 }
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
