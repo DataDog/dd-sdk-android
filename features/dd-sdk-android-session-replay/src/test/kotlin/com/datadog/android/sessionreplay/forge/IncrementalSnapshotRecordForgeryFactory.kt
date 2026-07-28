@@ -14,8 +14,9 @@ internal class IncrementalSnapshotRecordForgeryFactory :
     ForgeryFactory<MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord> {
     override fun getForgery(forge: Forge): MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord {
         return MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord(
-            forge.aPositiveLong(),
-            forge.getForgery()
+            timestamp = forge.aPositiveLong(),
+            slotId = forge.aNullable { aPositiveLong().toString() },
+            data = forge.getForgery()
         )
     }
 }
