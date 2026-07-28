@@ -227,7 +227,7 @@ internal class ContinuousProfilingScheduler(
     private fun onGracePeriodExpired() {
         state = State.PAUSED_AFTER_GRACE
         isActive = false
-        profiler.stop(sdkCore.name)
+        profiler.stop()
         logToUser { LOG_GRACE_PERIOD_EXPIRED }
     }
 
@@ -254,11 +254,10 @@ internal class ContinuousProfilingScheduler(
                 appContext = appContext,
                 startReason = ProfilingStartReason.CONTINUOUS,
                 additionalAttributes = emptyMap(),
-                sdkInstanceNames = setOf(sdkCore.name),
                 durationMs = activeMs.toInt()
             )
             sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-                context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning(sdkCore.name)
+                context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning()
             }
         } else {
             logToUser { LOG_ACTIVE_WINDOW_SKIPPED }

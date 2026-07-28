@@ -25,21 +25,19 @@ internal class NoOpProfiler : Profiler {
         appContext: Context,
         startReason: ProfilingStartReason,
         additionalAttributes: Map<String, String>,
-        sdkInstanceNames: Set<String>,
         durationMs: Int
     ) = Unit
 
-    override fun stop(sdkInstanceName: String) = Unit
+    override fun stop() = Unit
 
-    override fun isRunning(sdkInstanceName: String): Boolean = false
+    override fun isRunning(): Boolean = false
 
     override fun registerProfilingCallback(
         appContext: Context,
-        sdkInstanceName: String,
         callback: ProfilerCallback
     ) = Unit
 
-    override fun unregisterProfilingCallback(appContext: Context, sdkInstanceName: String) = Unit
+    override fun unregisterProfilingCallback(appContext: Context) = Unit
 
     override fun setExtendLaunchSession(extend: Boolean) = Unit
 
