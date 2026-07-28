@@ -91,8 +91,7 @@ internal class RumViewEventWriterImpl(
                 when (config) {
                     RumViewEventWriteConfig.AlwaysFullView -> MappedViewEvent(mapped)
                     RumViewEventWriteConfig.FullViewOnlyAtStart -> {
-                        // First update of the view, or periodic checkpoint (every FULL_VIEW_EVERY_N_UPDATES versions)
-                        if (prev == null || mapped.dd.documentVersion % FULL_VIEW_EVERY_N_UPDATES == 0L) {
+                        if (prev == null || shouldWriteFullView(mapped.dd.documentVersion, mapped.view.isActive)) {
                             MappedViewEvent(mapped)
                         } else {
                             RumViewUpdateData(
@@ -106,6 +105,14 @@ internal class RumViewEventWriterImpl(
         ).onSuccess {
             mappedViewEvent?.let { event -> prevViewEvent = event }
         }.submit()
+    }
+
+    // Returns true when a full ViewEvent must be sent instead of a diff:
+    // - Periodic checkpoint (every FULL_VIEW_EVERY_N_UPDATES versions)
+    // - View is closing (isActive transitions to false)
+    private fun shouldWriteFullView(documentVersion: Long, isActive: Boolean?): Boolean {
+        return documentVersion % FULL_VIEW_EVERY_N_UPDATES == 0L ||
+            isActive == false
     }
 
     companion object {
