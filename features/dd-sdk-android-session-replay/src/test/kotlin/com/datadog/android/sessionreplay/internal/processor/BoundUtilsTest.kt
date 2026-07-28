@@ -148,6 +148,7 @@ internal class BoundUtilsTest {
             is MobileSegment.Wireframe.ImageWireframe -> this.x
             is MobileSegment.Wireframe.PlaceholderWireframe -> this.x
             is MobileSegment.Wireframe.WebviewWireframe -> this.x
+            is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.x
         }
     }
 
@@ -158,6 +159,7 @@ internal class BoundUtilsTest {
             is MobileSegment.Wireframe.ImageWireframe -> this.y
             is MobileSegment.Wireframe.PlaceholderWireframe -> this.y
             is MobileSegment.Wireframe.WebviewWireframe -> this.y
+            is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.y
         }
     }
 
@@ -168,6 +170,7 @@ internal class BoundUtilsTest {
             is MobileSegment.Wireframe.ImageWireframe -> this.width
             is MobileSegment.Wireframe.PlaceholderWireframe -> this.width
             is MobileSegment.Wireframe.WebviewWireframe -> this.width
+            is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.width
         }
     }
 
@@ -178,6 +181,7 @@ internal class BoundUtilsTest {
             is MobileSegment.Wireframe.ImageWireframe -> this.height
             is MobileSegment.Wireframe.PlaceholderWireframe -> this.height
             is MobileSegment.Wireframe.WebviewWireframe -> this.height
+            is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.height
         }
     }
 
@@ -199,6 +203,8 @@ internal class BoundUtilsTest {
                 this.copy(clip = clip, x = x, y = y, width = width, height = height)
             is MobileSegment.Wireframe.WebviewWireframe ->
                 this.copy(clip = clip, x = x, y = y, width = width, height = height)
+            is MobileSegment.Wireframe.EmbeddedContentWireframe ->
+                this.copy(clip = clip, x = x, y = y, width = width, height = height)
         }
     }
 
@@ -211,7 +217,8 @@ internal class BoundUtilsTest {
                 WireframeExtTest.forge.getForgery<MobileSegment.Wireframe.TextWireframe>(),
                 WireframeExtTest.forge.getForgery<MobileSegment.Wireframe.ImageWireframe>(),
                 WireframeExtTest.forge.getForgery<MobileSegment.Wireframe.PlaceholderWireframe>(),
-                WireframeExtTest.forge.getForgery<MobileSegment.Wireframe.WebviewWireframe>()
+                WireframeExtTest.forge.getForgery<MobileSegment.Wireframe.WebviewWireframe>(),
+                WireframeExtTest.forge.getForgery<MobileSegment.Wireframe.EmbeddedContentWireframe>()
             )
         }
     }

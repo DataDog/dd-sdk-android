@@ -150,6 +150,16 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
                             )
                         )
                     }
+                } else if (oldWireframe is MobileSegment.Wireframe.EmbeddedContentWireframe) {
+                    if (oldWireframe.isVisible != false) {
+                        updates.add(
+                            MobileSegment.WireframeUpdateMutation.EmbeddedContentWireframeUpdate(
+                                id = oldWireframe.id,
+                                slotId = oldWireframe.slotId,
+                                isVisible = false
+                            )
+                        )
+                    }
                 } else {
                     // Old element was removed
                     removes.add(MobileSegment.Remove(oldWireframe.id()))
@@ -345,6 +355,39 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
         return mutation
     }
 
+    private fun resolveEmbeddedContentWireframeMutation(
+        prevWireframe: MobileSegment.Wireframe.EmbeddedContentWireframe,
+        currentWireframe: MobileSegment.Wireframe.EmbeddedContentWireframe
+    ): MobileSegment.WireframeUpdateMutation {
+        var mutation = MobileSegment.WireframeUpdateMutation
+            .EmbeddedContentWireframeUpdate(currentWireframe.id, slotId = currentWireframe.slotId)
+        if (prevWireframe.x != currentWireframe.x) {
+            mutation = mutation.copy(x = currentWireframe.x)
+        }
+        if (prevWireframe.y != currentWireframe.y) {
+            mutation = mutation.copy(y = currentWireframe.y)
+        }
+        if (prevWireframe.width != currentWireframe.width) {
+            mutation = mutation.copy(width = currentWireframe.width)
+        }
+        if (prevWireframe.height != currentWireframe.height) {
+            mutation = mutation.copy(height = currentWireframe.height)
+        }
+        if (prevWireframe.border != currentWireframe.border) {
+            mutation = mutation.copy(border = currentWireframe.border)
+        }
+        if (prevWireframe.shapeStyle != currentWireframe.shapeStyle) {
+            mutation = mutation.copy(shapeStyle = currentWireframe.shapeStyle)
+        }
+        if (prevWireframe.clip != currentWireframe.clip) {
+            mutation = mutation.copy(
+                clip = currentWireframe.clip
+                    ?: MobileSegment.WireframeClip(0, 0, 0, 0)
+            )
+        }
+        return mutation
+    }
+
     private fun recordChangedWireframeMutations(
         oldElement: MobileSegment.Wireframe,
         newElement: MobileSegment.Wireframe,
@@ -414,6 +457,11 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
                         prevWireframe,
                         currentWireframe as MobileSegment.Wireframe.WebviewWireframe
                     )
+
+                    is MobileSegment.Wireframe.EmbeddedContentWireframe -> resolveEmbeddedContentWireframeMutation(
+                        prevWireframe,
+                        currentWireframe as MobileSegment.Wireframe.EmbeddedContentWireframe
+                    )
                 }
             }
         }
@@ -472,6 +520,7 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
             is MobileSegment.Wireframe.ImageWireframe -> this.id
             is MobileSegment.Wireframe.PlaceholderWireframe -> this.id
             is MobileSegment.Wireframe.WebviewWireframe -> this.id
+            is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.id
         }
     }
 

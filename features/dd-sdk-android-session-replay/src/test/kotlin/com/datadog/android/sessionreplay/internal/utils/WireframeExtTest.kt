@@ -207,6 +207,7 @@ internal class WireframeExtTest {
             is MobileSegment.Wireframe.ImageWireframe -> this.copy(shapeStyle = shapeStyle)
             is MobileSegment.Wireframe.PlaceholderWireframe -> this
             is MobileSegment.Wireframe.WebviewWireframe -> this.copy(shapeStyle = shapeStyle)
+            is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.copy(shapeStyle = shapeStyle)
         }
     }
 

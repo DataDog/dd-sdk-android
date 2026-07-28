@@ -694,6 +694,7 @@ internal class WireframeUtilsTest {
             is MobileSegment.Wireframe.ImageWireframe -> clip?.normalized()
             is MobileSegment.Wireframe.PlaceholderWireframe -> clip?.normalized()
             is MobileSegment.Wireframe.WebviewWireframe -> clip?.normalized()
+            is MobileSegment.Wireframe.EmbeddedContentWireframe -> clip?.normalized()
         }
     }
 
@@ -736,6 +737,7 @@ internal class WireframeUtilsTest {
 
             is MobileSegment.Wireframe.PlaceholderWireframe -> this
             is MobileSegment.Wireframe.WebviewWireframe -> this
+            is MobileSegment.Wireframe.EmbeddedContentWireframe -> this
         }
     }
 

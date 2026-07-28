@@ -684,6 +684,66 @@ internal class MutationResolverTest {
 
     // endregion
 
+    // region EmbeddedContent "remove" mutations
+
+    @Test
+    fun `M identify the updated wireframes W resolveMutations {EmbeddedContent removed at beginning}`(forge: Forge) {
+        // Given
+        val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 3, max = 10)) {
+            forge.getForgery(MobileSegment.Wireframe.EmbeddedContentWireframe::class.java)
+        }
+        val fakeHiddenEmbeddedContents = forge.anInt(min = 1, max = fakePrevSnapshot.size - 1)
+        val fakeCurrentSnapshot = fakePrevSnapshot.drop(fakeHiddenEmbeddedContents)
+        val expectedUpdates = fakePrevSnapshot.take(fakeHiddenEmbeddedContents).map {
+            MobileSegment.WireframeUpdateMutation.EmbeddedContentWireframeUpdate(
+                id = it.id(),
+                slotId = it.slotId,
+                isVisible = false
+            )
+        }
+
+        // When
+        val mutations = testedMutationResolver.resolveMutations(
+            fakePrevSnapshot,
+            fakeCurrentSnapshot
+        )
+
+        // Then
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
+    }
+
+    @Test
+    fun `M identify the updated wireframes W resolveMutations {EmbeddedContent removed at end}`(forge: Forge) {
+        // Given
+        val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 3, max = 10)) {
+            forge.getForgery(MobileSegment.Wireframe.EmbeddedContentWireframe::class.java)
+        }
+        val fakeHiddenEmbeddedContents = forge.anInt(min = 1, max = fakePrevSnapshot.size - 1)
+        val fakeCurrentSnapshot = fakePrevSnapshot.dropLast(fakeHiddenEmbeddedContents)
+        val expectedUpdates = fakePrevSnapshot.takeLast(fakeHiddenEmbeddedContents).map {
+            MobileSegment.WireframeUpdateMutation.EmbeddedContentWireframeUpdate(
+                id = it.id(),
+                slotId = it.slotId,
+                isVisible = false
+            )
+        }
+
+        // When
+        val mutations = testedMutationResolver.resolveMutations(
+            fakePrevSnapshot,
+            fakeCurrentSnapshot
+        )
+
+        // Then
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
+    }
+
+    // endregion
+
     // region no mutation
 
     @Test
@@ -777,6 +837,7 @@ internal class MutationResolverTest {
             is MobileSegment.Wireframe.ImageWireframe -> this.id
             is MobileSegment.Wireframe.PlaceholderWireframe -> this.id
             is MobileSegment.Wireframe.WebviewWireframe -> this.id
+            is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.id
         }
     }
 
@@ -798,6 +859,7 @@ internal class MutationResolverTest {
                 is MobileSegment.Wireframe.ImageWireframe -> this.id
                 is MobileSegment.Wireframe.PlaceholderWireframe -> this.id
                 is MobileSegment.Wireframe.WebviewWireframe -> this.id
+                is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.id
             }
         }
 
@@ -879,6 +941,22 @@ internal class MutationResolverTest {
                 )
             }
 
+            val fakePrevEmbeddedContentSnapshot =
+                forgePrevSnapshot<MobileSegment.Wireframe.EmbeddedContentWireframe>()
+            val fakeEmbeddedContentUpdatedWireframes = forgeMutatedWireframes(fakePrevEmbeddedContentSnapshot) {
+                it.copy(x = forge.aLong(), y = forge.aLong())
+            }
+            val fakeCurrentEmbeddedContentSnapshot = fakeEmbeddedContentUpdatedWireframes +
+                fakePrevEmbeddedContentSnapshot.drop(fakeEmbeddedContentUpdatedWireframes.size)
+            val expectedEmbeddedContentUpdates = fakeEmbeddedContentUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.EmbeddedContentWireframeUpdate(
+                    id = it.id(),
+                    slotId = it.slotId,
+                    x = it.x,
+                    y = it.y
+                )
+            }
+
             return listOf(
                 MutationTestData(
                     prevSnapshot = fakePrevShapeSnapshot,
@@ -904,6 +982,11 @@ internal class MutationResolverTest {
                     prevSnapshot = fakePrevWebViewSnapshot,
                     newSnapshot = fakeCurrentWebViewSnapshot,
                     expectedMutation = expectedWebViewUpdates
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevEmbeddedContentSnapshot,
+                    newSnapshot = fakeCurrentEmbeddedContentSnapshot,
+                    expectedMutation = expectedEmbeddedContentUpdates
                 )
             )
         }
@@ -986,6 +1069,22 @@ internal class MutationResolverTest {
                 )
             }
 
+            val fakePrevEmbeddedContentSnapshot =
+                forgePrevSnapshot<MobileSegment.Wireframe.EmbeddedContentWireframe>()
+            val fakeEmbeddedContentUpdatedWireframes = forgeMutatedWireframes(fakePrevEmbeddedContentSnapshot) {
+                it.copy(width = forge.aLong(), height = forge.aLong())
+            }
+            val fakeCurrentEmbeddedContentSnapshot = fakeEmbeddedContentUpdatedWireframes +
+                fakePrevEmbeddedContentSnapshot.drop(fakeEmbeddedContentUpdatedWireframes.size)
+            val expectedEmbeddedContentUpdates = fakeEmbeddedContentUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.EmbeddedContentWireframeUpdate(
+                    id = it.id(),
+                    slotId = it.slotId,
+                    width = it.width,
+                    height = it.height
+                )
+            }
+
             return listOf(
                 MutationTestData(
                     prevSnapshot = fakePrevShapeSnapshot,
@@ -1011,6 +1110,11 @@ internal class MutationResolverTest {
                     prevSnapshot = fakePrevWebViewSnapshot,
                     newSnapshot = fakeCurrentWebViewSnapshot,
                     expectedMutation = expectedWebViewUpdates
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevEmbeddedContentSnapshot,
+                    newSnapshot = fakeCurrentEmbeddedContentSnapshot,
+                    expectedMutation = expectedEmbeddedContentUpdates
                 )
             )
         }
@@ -1088,6 +1192,21 @@ internal class MutationResolverTest {
                 )
             }
 
+            val fakePrevEmbeddedContentSnapshot =
+                forgePrevSnapshot<MobileSegment.Wireframe.EmbeddedContentWireframe>()
+            val fakeEmbeddedContentUpdatedWireframes = forgeMutatedWireframes(fakePrevEmbeddedContentSnapshot) {
+                it.copy(clip = forge.forgeDifferent(it.clip))
+            }
+            val fakeCurrentEmbeddedContentSnapshot = fakeEmbeddedContentUpdatedWireframes +
+                fakePrevEmbeddedContentSnapshot.drop(fakeEmbeddedContentUpdatedWireframes.size)
+            val expectedEmbeddedContentUpdates = fakeEmbeddedContentUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.EmbeddedContentWireframeUpdate(
+                    id = it.id(),
+                    clip = it.clip,
+                    slotId = it.slotId
+                )
+            }
+
             return listOf(
                 MutationTestData(
                     prevSnapshot = fakePrevShapeSnapshot,
@@ -1113,6 +1232,11 @@ internal class MutationResolverTest {
                     prevSnapshot = fakePrevWebViewSnapshot,
                     newSnapshot = fakeCurrentWebViewSnapshot,
                     expectedMutation = expectedWebViewUpdates
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevEmbeddedContentSnapshot,
+                    newSnapshot = fakeCurrentEmbeddedContentSnapshot,
+                    expectedMutation = expectedEmbeddedContentUpdates
                 )
             )
         }
@@ -1195,6 +1319,22 @@ internal class MutationResolverTest {
                 )
             }
 
+            val fakePrevEmbeddedContentSnapshot =
+                forgePrevSnapshot<MobileSegment.Wireframe.EmbeddedContentWireframe>()
+                    .map { it.copy(clip = forge.getForgery()) }
+            val fakeEmbeddedContentUpdatedWireframes = forgeMutatedWireframes(fakePrevEmbeddedContentSnapshot) {
+                it.copy(clip = null)
+            }
+            val fakeCurrentEmbeddedContentSnapshot = fakeEmbeddedContentUpdatedWireframes +
+                fakePrevEmbeddedContentSnapshot.drop(fakeEmbeddedContentUpdatedWireframes.size)
+            val expectedEmbeddedContentUpdates = fakeEmbeddedContentUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.EmbeddedContentWireframeUpdate(
+                    id = it.id(),
+                    clip = nullClipWireframe,
+                    slotId = it.slotId
+                )
+            }
+
             return listOf(
                 MutationTestData(
                     prevSnapshot = fakePrevShapeSnapshot,
@@ -1220,6 +1360,11 @@ internal class MutationResolverTest {
                     prevSnapshot = fakePrevWebViewSnapshot,
                     newSnapshot = fakeCurrentWebViewSnapshot,
                     expectedMutation = expectedWebViewUpdates
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevEmbeddedContentSnapshot,
+                    newSnapshot = fakeCurrentEmbeddedContentSnapshot,
+                    expectedMutation = expectedEmbeddedContentUpdates
                 )
             )
         }
@@ -1344,6 +1489,21 @@ internal class MutationResolverTest {
                 )
             }
 
+            val fakePrevEmbeddedContentSnapshot =
+                forgePrevSnapshot<MobileSegment.Wireframe.EmbeddedContentWireframe>()
+            val fakeEmbeddedContentUpdatedWireframes = forgeMutatedWireframes(fakePrevEmbeddedContentSnapshot) {
+                it.copy(shapeStyle = forge.getForgery())
+            }
+            val fakeCurrentEmbeddedContentSnapshot = fakeEmbeddedContentUpdatedWireframes +
+                fakePrevEmbeddedContentSnapshot.drop(fakeEmbeddedContentUpdatedWireframes.size)
+            val expectedEmbeddedContentUpdates = fakeEmbeddedContentUpdatedWireframes.map {
+                MobileSegment.WireframeUpdateMutation.EmbeddedContentWireframeUpdate(
+                    id = it.id(),
+                    shapeStyle = it.shapeStyle,
+                    slotId = it.slotId
+                )
+            }
+
             return listOf(
                 MutationTestData(
                     prevSnapshot = fakePrevShapeSnapshot,
@@ -1364,6 +1524,11 @@ internal class MutationResolverTest {
                     prevSnapshot = fakePrevWebViewSnapshot,
                     newSnapshot = fakeCurrentWebViewSnapshot,
                     expectedMutation = expectedWebViewUpdates
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevEmbeddedContentSnapshot,
+                    newSnapshot = fakeCurrentEmbeddedContentSnapshot,
+                    expectedMutation = expectedEmbeddedContentUpdates
                 )
             )
         }
@@ -1399,6 +1564,14 @@ internal class MutationResolverTest {
                     id = it.id
                 )
             }
+
+            val fakePrevEmbeddedContentSnapshot =
+                forgePrevSnapshot<MobileSegment.Wireframe.EmbeddedContentWireframe>()
+            val fakeCurrentEmbeddedContentSnapshot = fakePrevEmbeddedContentSnapshot.map {
+                forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>().copy(
+                    id = it.id
+                )
+            }
             return listOf(
                 MutationTestData(
                     prevSnapshot = fakePrevShapeSnapshot,
@@ -1423,6 +1596,11 @@ internal class MutationResolverTest {
                 MutationTestData(
                     prevSnapshot = fakePrevWebViewSnapshot,
                     newSnapshot = fakeCurrentWebViewSnapshot,
+                    expectedMutation = emptyList()
+                ),
+                MutationTestData(
+                    prevSnapshot = fakePrevEmbeddedContentSnapshot,
+                    newSnapshot = fakeCurrentEmbeddedContentSnapshot,
                     expectedMutation = emptyList()
                 )
             )
