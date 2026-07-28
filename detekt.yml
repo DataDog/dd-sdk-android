@@ -26,9 +26,14 @@ output-reports:
 comments:
   active: true
   AbsentOrWrongFileLicense:
-    active: false
+    active: true
     licenseTemplateFile: 'license.template'
     licenseTemplateIsRegex: false
+    excludes:
+      # Gradle build outputs and generated artifacts.
+      - '**/build/generated/**'
+      # Vendored test files ported from the upstream dd-trace-java library.
+      - '**/features/dd-sdk-android-trace-internal/src/test/kotlin/com/datadog/trace/**'
   CommentOverPrivateFunction:
     active: false
   CommentOverPrivateProperty:
@@ -59,6 +64,7 @@ comments:
     allowParamOnConstructorProperties: true
     excludes:
       - '**/test/**'
+      - '**/testFixtures/**'
       - '**/androidTest/**'
       - '**/build/generated/**'
   UndocumentedPublicClass:
@@ -66,6 +72,7 @@ comments:
     ignoreDefaultCompanionObject: true
     excludes:
       - '**/test/**'
+      - '**/testFixtures/**'
       - '**/androidTest/**'
       - '**/build/generated/**'
       - '**/dd-sdk-android/tools/**'
@@ -81,6 +88,7 @@ comments:
     active: true
     excludes:
       - '**/test/**'
+      - '**/testFixtures/**'
       - '**/androidTest/**'
       - '**/build/generated/**'
       - '**/dd-sdk-android/tools/**'
@@ -92,6 +100,7 @@ comments:
     active: true
     excludes:
       - '**/test/**'
+      - '**/testFixtures/**'
       - '**/androidTest/**'
       - '**/build/generated/**'
       - '**/dd-sdk-android/tools/**'
