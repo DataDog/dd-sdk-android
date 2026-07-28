@@ -77,10 +77,10 @@ internal class PlainBatchFileReaderWriterTest {
         testedReaderWriter = PlainBatchFileReaderWriter(mockInternalLogger)
     }
 
-    // region writeData
+    // region writeBinaryData
 
     @Test
-    fun `M write data in empty file W writeData() {append=false}`(
+    fun `M write bytes in empty file W writeBinaryData() {append=false}`(
         @StringForgery fileName: String,
         @Forgery event: RawBatchEvent
     ) {
@@ -89,9 +89,9 @@ internal class PlainBatchFileReaderWriterTest {
         file.createNewFile()
 
         // When
-        val result = testedReaderWriter.writeData(
+        val result = testedReaderWriter.writeBinaryData(
             file,
-            event,
+            encode(event),
             append = false
         )
 
@@ -101,28 +101,7 @@ internal class PlainBatchFileReaderWriterTest {
     }
 
     @Test
-    fun `M write data in empty file  W writeData() {append=true}`(
-        @StringForgery fileName: String,
-        @Forgery event: RawBatchEvent
-    ) {
-        // Given
-        val file = File(fakeRootDirectory, fileName)
-        file.createNewFile()
-
-        // When
-        val result = testedReaderWriter.writeData(
-            file,
-            event,
-            append = false
-        )
-
-        // Then
-        assertThat(result).isTrue()
-        assertThat(file).exists().hasBinaryContent(encode(event))
-    }
-
-    @Test
-    fun `M overwrite data in non empty file W writeData() {append=false}`(
+    fun `M overwrite bytes in non empty file W writeBinaryData() {append=false}`(
         @StringForgery fileName: String,
         @StringForgery previousContent: String,
         @Forgery event: RawBatchEvent
@@ -132,9 +111,9 @@ internal class PlainBatchFileReaderWriterTest {
         file.writeText(previousContent)
 
         // When
-        val result = testedReaderWriter.writeData(
+        val result = testedReaderWriter.writeBinaryData(
             file,
-            event,
+            encode(event),
             append = false
         )
 
@@ -144,7 +123,7 @@ internal class PlainBatchFileReaderWriterTest {
     }
 
     @Test
-    fun `M append data in non empty file W writeData() {append=true}`(
+    fun `M append bytes in non empty file W writeBinaryData() {append=true}`(
         @StringForgery fileName: String,
         @Forgery previousEvent: RawBatchEvent,
         @Forgery event: RawBatchEvent
@@ -154,9 +133,9 @@ internal class PlainBatchFileReaderWriterTest {
         file.writeBytes(encode(previousEvent))
 
         // When
-        val result = testedReaderWriter.writeData(
+        val result = testedReaderWriter.writeBinaryData(
             file,
-            event,
+            encode(event),
             append = true
         )
 
@@ -169,7 +148,7 @@ internal class PlainBatchFileReaderWriterTest {
     }
 
     @Test
-    fun `M return false and warn W writeData() {parent dir does not exist}`(
+    fun `M return false and warn W writeBinaryData() {parent dir does not exist}`(
         @StringForgery fileName: String,
         @Forgery event: RawBatchEvent,
         @BoolForgery append: Boolean
@@ -179,9 +158,9 @@ internal class PlainBatchFileReaderWriterTest {
         val file = File(fakeSrcDir, fileName)
 
         // When
-        val result = testedReaderWriter.writeData(
+        val result = testedReaderWriter.writeBinaryData(
             file,
-            event,
+            encode(event),
             append = append
         )
 
@@ -197,7 +176,7 @@ internal class PlainBatchFileReaderWriterTest {
     }
 
     @Test
-    fun `M return false and warn W writeData() {file is not file}`(
+    fun `M return false and warn W writeBinaryData() {file is not file}`(
         @StringForgery fileName: String,
         @Forgery event: RawBatchEvent,
         @BoolForgery append: Boolean
@@ -207,9 +186,9 @@ internal class PlainBatchFileReaderWriterTest {
         file.mkdirs()
 
         // When
-        val result = testedReaderWriter.writeData(
+        val result = testedReaderWriter.writeBinaryData(
             file,
-            event,
+            encode(event),
             append = append
         )
 
@@ -224,7 +203,7 @@ internal class PlainBatchFileReaderWriterTest {
     }
 
     @Test
-    fun `M roll back partial write W writeData() {channel write throws IOException}`(
+    fun `M roll back partial write W writeBinaryData() {channel write throws IOException}`(
         @StringForgery fileName: String,
         @Forgery event: RawBatchEvent,
         @BoolForgery append: Boolean,
@@ -244,9 +223,9 @@ internal class PlainBatchFileReaderWriterTest {
             whenever(mock.channel) doReturn mockChannel
         }.use {
             // When
-            val result = testedReaderWriter.writeData(
+            val result = testedReaderWriter.writeBinaryData(
                 file,
-                event,
+                encode(event),
                 append = append
             )
 
@@ -261,6 +240,21 @@ internal class PlainBatchFileReaderWriterTest {
                 IOException::class.java
             )
         }
+    }
+
+    // endregion
+
+    // region serializeToBytes
+
+    @Test
+    fun `M return TLV encoded bytes W serializeToBytes()`(
+        @Forgery event: RawBatchEvent
+    ) {
+        // When
+        val result = testedReaderWriter.serializeToBytes(event)
+
+        // Then
+        assertThat(result).isEqualTo(encode(event))
     }
 
     // endregion
@@ -449,10 +443,10 @@ internal class PlainBatchFileReaderWriterTest {
 
     // endregion
 
-    // region writeData + readData
+    // region writeBinaryData + readData
 
     @Test
-    fun `M return file content W writeData + readData() { append = false }`(
+    fun `M return file content W writeBinaryData + readData() { append = false }`(
         @StringForgery fileName: String,
         @Forgery event: RawBatchEvent
     ) {
@@ -460,7 +454,11 @@ internal class PlainBatchFileReaderWriterTest {
         val file = File(fakeRootDirectory, fileName)
 
         // When
-        val writeResult = testedReaderWriter.writeData(file, event, false)
+        val writeResult = testedReaderWriter.writeBinaryData(
+            file,
+            testedReaderWriter.serializeToBytes(event),
+            false
+        )
         val readResult = testedReaderWriter.readData(file)
 
         // Then
@@ -469,7 +467,7 @@ internal class PlainBatchFileReaderWriterTest {
     }
 
     @Test
-    fun `M return file content W writeData + readData() { append = true }`(
+    fun `M return file content W writeBinaryData + readData() { append = true }`(
         @StringForgery fileName: String,
         @Forgery events: List<RawBatchEvent>
     ) {
@@ -479,9 +477,9 @@ internal class PlainBatchFileReaderWriterTest {
         // When
         var writeResult = true
         events.forEach {
-            writeResult = writeResult && testedReaderWriter.writeData(
+            writeResult = writeResult && testedReaderWriter.writeBinaryData(
                 file,
-                it,
+                testedReaderWriter.serializeToBytes(it),
                 true
             )
         }

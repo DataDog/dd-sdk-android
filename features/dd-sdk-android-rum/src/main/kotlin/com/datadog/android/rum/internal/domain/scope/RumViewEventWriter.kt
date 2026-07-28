@@ -103,7 +103,7 @@ internal class RumViewEventWriterImpl(
                 }
             }
         ).onSuccess {
-            mappedViewEvent?.let { prevViewEvent = it }
+            mappedViewEvent?.let { event -> prevViewEvent = event }
         }.submit()
     }
 

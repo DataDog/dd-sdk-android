@@ -279,14 +279,17 @@ internal class PrecomputeMapperTest {
         assertThat(result).hasSize(3)
         assertThat(result).containsKeys(flagKey1, flagKey2, flagKey3)
 
-        assertThat(result[flagKey1]!!.variationType).isEqualTo(VariationType.STRING.value)
-        assertThat(result[flagKey1]!!.variationValue).isEqualTo("value1")
+        val flag1 = result.getValue(flagKey1)
+        assertThat(flag1.variationType).isEqualTo(VariationType.STRING.value)
+        assertThat(flag1.variationValue).isEqualTo("value1")
 
-        assertThat(result[flagKey2]!!.variationType).isEqualTo(VariationType.BOOLEAN.value)
-        assertThat(result[flagKey2]!!.variationValue).isEqualTo("true")
+        val flag2 = result.getValue(flagKey2)
+        assertThat(flag2.variationType).isEqualTo(VariationType.BOOLEAN.value)
+        assertThat(flag2.variationValue).isEqualTo("true")
 
-        assertThat(result[flagKey3]!!.variationType).isEqualTo(VariationType.INTEGER.value)
-        assertThat(result[flagKey3]!!.variationValue).isEqualTo("42")
+        val flag3 = result.getValue(flagKey3)
+        assertThat(flag3.variationType).isEqualTo(VariationType.INTEGER.value)
+        assertThat(flag3.variationValue).isEqualTo("42")
 
         verifyNoInteractions(mockInternalLogger)
     }

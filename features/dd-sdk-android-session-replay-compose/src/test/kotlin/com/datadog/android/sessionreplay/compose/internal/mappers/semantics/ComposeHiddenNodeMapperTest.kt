@@ -69,10 +69,11 @@ internal class ComposeHiddenNodeMapperTest : AbstractSemanticsNodeMapperTest() {
     fun `M return the correct wireframe W map`() {
         // Given
         val mockSemanticsNode = mockSemanticsNode()
-        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode)) doReturn rectToBounds(
-            fakeBounds,
-            fakeDensity
-        )
+        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode, fakeUiContext.windowOffset)) doReturn
+            rectToBounds(
+                fakeBounds,
+                fakeDensity
+            )
 
         // When
         val actual = testedComposeHiddenNodeMapper.map(

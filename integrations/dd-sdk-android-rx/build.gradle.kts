@@ -14,6 +14,7 @@ import com.datadog.gradle.config.publishingConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
+    id("ktlint")
     // Build
     id("com.android.library")
     kotlin("android")
@@ -35,6 +36,8 @@ plugins {
     id("transitiveDependencies")
     id("verificationXml")
     id("binary-compatibility-validator")
+    id("detekt-conventions")
+    id("test-pyramid-api-surface")
 }
 
 android {

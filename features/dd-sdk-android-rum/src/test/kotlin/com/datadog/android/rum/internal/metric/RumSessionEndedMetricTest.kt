@@ -519,9 +519,7 @@ class RumSessionEndedMetricTest {
         val sessionEndedMetric = stubSessionEndedMetric()
 
         // When
-        viewEvent.copy(session = viewEvent.session.copy(id = fakeSessionId)).apply {
-            sessionEndedMetric.onViewTracked(this)
-        }
+        sessionEndedMetric.onViewTracked(viewEvent.copy(session = viewEvent.session.copy(id = fakeSessionId)))
 
         // Then
 

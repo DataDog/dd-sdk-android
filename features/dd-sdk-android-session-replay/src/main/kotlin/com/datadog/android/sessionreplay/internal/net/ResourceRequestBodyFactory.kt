@@ -33,7 +33,7 @@ internal class ResourceRequestBodyFactory(
         val applicationId = getApplicationId(deserializedResources) ?: return null
 
         // type is valid, so cannot throw IllegalArgumentException
-        @SuppressWarnings("UnsafeThirdPartyFunctionCall")
+        @Suppress("UnsafeThirdPartyFunctionCall")
         val builder = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
 
@@ -78,7 +78,7 @@ internal class ResourceRequestBodyFactory(
         }
 
         // list is not empty, so cannot throw NoSuchElementException
-        @SuppressWarnings("UnsafeThirdPartyFunctionCall")
+        @Suppress("UnsafeThirdPartyFunctionCall")
         val applicationId = resources.last().applicationId
 
         return applicationId

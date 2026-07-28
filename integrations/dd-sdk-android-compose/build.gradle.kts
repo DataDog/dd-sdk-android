@@ -15,6 +15,7 @@ import com.datadog.gradle.config.taskConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
+    id("ktlint")
     // Build
     id("com.android.library")
     kotlin("android")
@@ -37,6 +38,8 @@ plugins {
     id("apiSurface")
     id("transitiveDependencies")
     id("verificationXml")
+    id("detekt-conventions")
+    id("test-pyramid-api-surface")
 }
 
 android {

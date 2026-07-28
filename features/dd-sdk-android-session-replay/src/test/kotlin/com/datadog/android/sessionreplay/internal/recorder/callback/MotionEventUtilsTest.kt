@@ -38,8 +38,8 @@ internal class MotionEventUtilsTest {
     @Mock
     lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
 
-    var pointerXExpectedValues = mutableListOf<Float>()
-    var pointerYExpectedValues = mutableListOf<Float>()
+    val pointerXExpectedValues = mutableListOf<Float>()
+    val pointerYExpectedValues = mutableListOf<Float>()
 
     @BeforeEach
     fun `set up`(forge: Forge) {

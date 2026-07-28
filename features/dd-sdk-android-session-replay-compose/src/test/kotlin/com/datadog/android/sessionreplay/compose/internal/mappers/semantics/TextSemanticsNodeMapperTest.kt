@@ -102,7 +102,7 @@ internal class TextSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() {
         val mockNode = mockSemanticsNodeWithBound {}
 
         whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(mockNode), any())) doReturn fakeTextLayoutInfo
-        whenever(mockSemanticsUtils.resolveInnerBounds(mockNode)) doReturn rectToBounds(
+        whenever(mockSemanticsUtils.resolveInnerBounds(mockNode, fakeUiContext.windowOffset)) doReturn rectToBounds(
             fakeBounds,
             fakeDensity
         )
@@ -140,7 +140,7 @@ internal class TextSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() {
         val mockNode = mockSemanticsNodeWithBound {}
         whenever(mockSemanticsUtils.getTextAndInputPrivacyOverride(mockNode)) doReturn TextAndInputPrivacy.MASK_ALL
         whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(mockNode), any())) doReturn fakeTextLayoutInfo
-        whenever(mockSemanticsUtils.resolveInnerBounds(mockNode)) doReturn rectToBounds(
+        whenever(mockSemanticsUtils.resolveInnerBounds(mockNode, fakeUiContext.windowOffset)) doReturn rectToBounds(
             fakeBounds,
             fakeDensity
         )

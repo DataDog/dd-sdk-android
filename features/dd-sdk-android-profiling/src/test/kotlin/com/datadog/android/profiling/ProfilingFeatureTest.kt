@@ -1111,6 +1111,34 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
+    fun `M discard result and not write W app-launch profiling result received {quota denied}`(
+        @Forgery fakePerfettoResult: PerfettoResult
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        val callbackCaptor = argumentCaptor<ProfilerCallback>()
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        verify(mockProfiler).registerProfilingCallback(
+            eq(mockContext),
+            eq(fakeInstanceName),
+            callbackCaptor.capture()
+        )
+        testedFeature.onReceive(fakeRumLongTaskEvent)
+        testedFeature.onReceive(fakeTTID)
+        testedFeature.propagateQuotaResult(QuotaResult.QUOTA_EXCEEDED)
+        val launchResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)
+
+        // When
+        callbackCaptor.firstValue.onSuccess(launchResult)
+
+        // Then
+        verify(mockDataWriter).discard(launchResult)
+        verify(mockDataWriter, never()).write(any(), any(), any(), any())
+    }
+
+    @Test
     fun `M write launch event with ANR events W app-launch profiling result received`(
         @Forgery fakePerfettoResult: PerfettoResult
     ) {

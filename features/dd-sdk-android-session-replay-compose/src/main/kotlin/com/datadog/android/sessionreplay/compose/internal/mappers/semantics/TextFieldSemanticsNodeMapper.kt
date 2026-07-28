@@ -51,7 +51,7 @@ internal class TextFieldSemanticsNodeMapper(
         val color = semanticsUtils.resolveBackgroundColor(semanticsNode)?.let {
             convertColor(it)
         }
-        val globalBounds = semanticsUtils.resolveInnerBounds(semanticsNode)
+        val globalBounds = semanticsUtils.resolveInnerBounds(semanticsNode, parentContext.windowOffset)
         val shape = semanticsUtils.resolveBackgroundShape(semanticsNode)
         val cornerRadius = shape?.let {
             semanticsUtils.resolveCornerRadius(it, globalBounds, parentContext.composeDensity)
@@ -78,7 +78,7 @@ internal class TextFieldSemanticsNodeMapper(
         index: Int,
         internalLogger: InternalLogger
     ): MobileSegment.Wireframe? {
-        val globalBounds = semanticsUtils.resolveInnerBounds(semanticsNode)
+        val globalBounds = semanticsUtils.resolveInnerBounds(semanticsNode, parentContext.windowOffset)
         val editText = resolveEditText(semanticsNode.config)?.let {
             transformCapturedText(it, textAndInputPrivacy, true)
         }

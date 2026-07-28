@@ -22,9 +22,7 @@ class WorkerParametersForgeryFactory : ForgeryFactory<WorkerParameters> {
     // region ForgeryFactory
 
     override fun getForgery(forge: Forge): WorkerParameters {
-        val sameThreadExecutor = object : Executor {
-            override fun execute(command: Runnable) = command.run()
-        }
+        val sameThreadExecutor = Executor { command -> command.run() }
         return WorkerParameters(
             forge.getForgery(),
             Data.EMPTY,

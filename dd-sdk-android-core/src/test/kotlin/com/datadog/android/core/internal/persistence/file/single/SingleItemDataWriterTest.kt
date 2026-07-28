@@ -94,7 +94,7 @@ internal class SingleItemDataWriterTest {
     ) {
         // Given
         val serialized = data.reversed().toByteArray(Charsets.UTF_8)
-        whenever(mockOrchestrator.getWritableFile()) doReturn file
+        whenever(mockOrchestrator.getWritableFile(any())) doReturn file
 
         // When
         testedWriter.write(data)
@@ -115,7 +115,7 @@ internal class SingleItemDataWriterTest {
     ) {
         // Given
         val lastSerialized = data.last().reversed().toByteArray(Charsets.UTF_8)
-        whenever(mockOrchestrator.getWritableFile()) doReturn file
+        whenever(mockOrchestrator.getWritableFile(any())) doReturn file
 
         // When
         testedWriter.write(data)

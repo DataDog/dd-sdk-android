@@ -9,15 +9,9 @@ package com.datadog.android.api.storage
 import androidx.annotation.WorkerThread
 
 /**
- * Writer allowing [FeatureScope] to write events in the storage exposing current batch metadata.
+ * Writer allowing [FeatureScope] to write events in the storage.
  */
 interface EventBatchWriter {
-
-    /**
-     * @return the metadata of the current writeable batch
-     */
-    @WorkerThread
-    fun currentMetadata(): ByteArray?
 
     /**
      * Writes the content of the event to the current available batch.

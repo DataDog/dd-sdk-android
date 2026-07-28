@@ -35,7 +35,7 @@ internal object WindowInspector {
         return@lazy GLOBAL_WM_CLASS?.getDeclaredField("mViews")
     }
 
-    @SuppressWarnings("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught")
     fun getGlobalWindowViews(
         internalLogger: InternalLogger,
         buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
