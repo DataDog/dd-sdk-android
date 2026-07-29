@@ -30,7 +30,6 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 import java.io.File
 import java.io.IOException
-import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -191,9 +190,12 @@ internal class PlainFileReaderWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            PlainFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path),
+            PlainFileReaderWriter.ERROR_WRITE,
             IOException::class.java,
-            additionalProperties = fakeTelemetryContext.asAttributesMap(bytesLost = content.toByteArray().size)
+            additionalProperties = fakeTelemetryContext.asAttributesMap(
+                bytesLost = content.toByteArray().size,
+                TelemetryContext.TELEMETRY_FILE_PATH to file.path
+            )
         )
     }
 
@@ -220,9 +222,12 @@ internal class PlainFileReaderWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            PlainFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path),
+            PlainFileReaderWriter.ERROR_WRITE,
             IOException::class.java,
-            additionalProperties = fakeTelemetryContext.asAttributesMap(bytesLost = content.toByteArray().size)
+            additionalProperties = fakeTelemetryContext.asAttributesMap(
+                bytesLost = content.toByteArray().size,
+                TelemetryContext.TELEMETRY_FILE_PATH to file.path
+            )
         )
     }
 
@@ -247,9 +252,12 @@ internal class PlainFileReaderWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            PlainFileReaderWriter.ERROR_READ.format(Locale.US, file.path),
+            PlainFileReaderWriter.ERROR_READ,
             null,
-            additionalProperties = fakeTelemetryContext.asAttributesMap(bytesLost = BYTE_LOST_UNKNOWN)
+            additionalProperties = fakeTelemetryContext.asAttributesMap(
+                bytesLost = BYTE_LOST_UNKNOWN,
+                TelemetryContext.TELEMETRY_FILE_PATH to file.path
+            )
         )
     }
 
@@ -270,9 +278,12 @@ internal class PlainFileReaderWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            PlainFileReaderWriter.ERROR_READ.format(Locale.US, file.path),
+            PlainFileReaderWriter.ERROR_READ,
             null,
-            additionalProperties = fakeTelemetryContext.asAttributesMap(bytesLost = BYTE_LOST_UNKNOWN)
+            additionalProperties = fakeTelemetryContext.asAttributesMap(
+                bytesLost = BYTE_LOST_UNKNOWN,
+                TelemetryContext.TELEMETRY_FILE_PATH to file.path
+            )
         )
     }
 

@@ -90,14 +90,11 @@ internal class FileEventBatchWriter(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                messageBuilder = {
-                    ERROR_LARGE_DATA.format(
-                        Locale.US,
-                        eventSize,
-                        filePersistenceConfig.maxItemSize
-                    )
-                },
-                additionalProperties = telemetryContext.asAttributesMap(bytesLost = eventSize)
+                messageBuilder = { ERROR_LARGE_DATA },
+                additionalProperties = telemetryContext.asAttributesMap(
+                    bytesLost = eventSize,
+                    TelemetryContext.TELEMETRY_DATA_LIMIT to filePersistenceConfig.maxItemSize
+                )
             )
             return false
         }
@@ -119,21 +116,15 @@ internal class FileEventBatchWriter(
         if (!result) {
             internalLogger.log(
                 InternalLogger.Level.WARN,
-                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                {
-                    WARNING_METADATA_WRITE_FAILED.format(
-                        Locale.US,
-                        metadataFile.path
-                    )
-                },
-                additionalProperties = telemetryContext.asAttributesMap(bytesLost = metadata.size)
+                InternalLogger.Target.USER,
+                { WARNING_METADATA_WRITE_FAILED.format(Locale.US, metadataFile.path) }
             )
         }
     }
 
     companion object {
         internal const val WARNING_METADATA_WRITE_FAILED = "Unable to write metadata file: %s"
-        internal const val ERROR_LARGE_DATA = "Can't write data with size %d (max item size is %d)"
+        internal const val ERROR_LARGE_DATA = "Can't write data - too big."
         internal const val NO_BATCH_FILE_AVAILABLE = "No batch file available"
     }
 }

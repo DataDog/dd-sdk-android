@@ -33,6 +33,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -183,9 +184,12 @@ internal class PlainBatchFileReaderWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            PlainBatchFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path),
+            PlainBatchFileReaderWriter.ERROR_WRITE,
             FileNotFoundException::class.java,
-            additionalProperties = fakeTelemetryContext.asAttributesMap(bytesLost = encode(event).size)
+            additionalProperties = fakeTelemetryContext.asAttributesMap(
+                bytesLost = encode(event).size,
+                TelemetryContext.TELEMETRY_FILE_PATH to file.path
+            )
         )
     }
 
@@ -212,9 +216,12 @@ internal class PlainBatchFileReaderWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            PlainBatchFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path),
+            PlainBatchFileReaderWriter.ERROR_WRITE,
             FileNotFoundException::class.java,
-            additionalProperties = fakeTelemetryContext.asAttributesMap(bytesLost = encode(event).size)
+            additionalProperties = fakeTelemetryContext.asAttributesMap(
+                bytesLost = encode(event).size,
+                TelemetryContext.TELEMETRY_FILE_PATH to file.path
+            )
         )
     }
 
@@ -253,9 +260,12 @@ internal class PlainBatchFileReaderWriterTest {
             mockInternalLogger.verifyLog(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                PlainBatchFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path),
+                PlainBatchFileReaderWriter.ERROR_WRITE,
                 IOException::class.java,
-                additionalProperties = fakeTelemetryContext.asAttributesMap(bytesLost = encode(event).size)
+                additionalProperties = fakeTelemetryContext.asAttributesMap(
+                    bytesLost = encode(event).size,
+                    TelemetryContext.TELEMETRY_FILE_PATH to file.path
+                )
             )
         }
     }
@@ -312,9 +322,12 @@ internal class PlainBatchFileReaderWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            PlainBatchFileReaderWriter.ERROR_READ.format(Locale.US, file.path),
+            PlainBatchFileReaderWriter.ERROR_READ,
             FileNotFoundException::class.java,
-            additionalProperties = fakeTelemetryContext.asAttributesMap(bytesLost = 0)
+            additionalProperties = fakeTelemetryContext.asAttributesMap(
+                bytesLost = 0,
+                TelemetryContext.TELEMETRY_FILE_PATH to file.path
+            )
         )
     }
 
@@ -334,16 +347,19 @@ internal class PlainBatchFileReaderWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            PlainBatchFileReaderWriter.ERROR_READ.format(Locale.US, file.path),
+            PlainBatchFileReaderWriter.ERROR_READ,
             FileNotFoundException::class.java,
-            additionalProperties = fakeTelemetryContext.asAttributesMap(bytesLost = 0)
+            additionalProperties = fakeTelemetryContext.asAttributesMap(
+                bytesLost = 0,
+                TelemetryContext.TELEMETRY_FILE_PATH to file.path
+            )
         )
     }
 
     @Test
     fun `M return empty list and warn user W readData() { corrupted data }`(
         @StringForgery fileName: String,
-        @StringForgery content: String
+        @StringForgery(regex = "[a-z]{1,5}") content: String
     ) {
         // Given
         val file = File(fakeRootDirectory, fileName)
@@ -355,12 +371,23 @@ internal class PlainBatchFileReaderWriterTest {
 
         // Then
         assertThat(result).isEmpty()
-        // whole file is unreadable -> file-level warning to USER+TELEMETRY with the full size dropped
+        // header is shorter than HEADER_SIZE_BYTES -> block-level (MAINTAINER) diagnostic
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
-            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            PlainBatchFileReaderWriter.WARNING_NOT_ALL_DATA_READ.format(Locale.US, file.path),
-            additionalProperties = droppedBytesTelemetry(contentBytes.size)
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            PlainBatchFileReaderWriter.ERROR_UNEXPECTED_NUMBERS_OF_BYTES,
+            additionalProperties = droppedBytesTelemetry(
+                contentBytes.size,
+                TelemetryContext.TELEMETRY_BATCH_OPERATION to "Block(META): Header read",
+                TelemetryContext.TELEMETRY_BATCH_BYTES_EXPECTED to PlainBatchFileReaderWriter.HEADER_SIZE_BYTES,
+                TelemetryContext.TELEMETRY_BATCH_BYTES_ACTUAL to contentBytes.size
+            )
+        )
+
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER),
+            PlainBatchFileReaderWriter.WARNING_NOT_ALL_DATA_READ.format(Locale.US, file.path)
         )
     }
 
@@ -423,14 +450,18 @@ internal class PlainBatchFileReaderWriterTest {
         // Then
         assertThat(result).containsExactly(validEvent)
         // the corrupted data block is read up to the declared (but absent) tail, consuming the
-        // rest of the file, so `remaining` lands exactly on 0 and the file-level warning stays silent
+        // rest of the file
         val droppedBytes = corruptedMetadataBytes.size + corruptedEventBytes.size
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            "Number of bytes read for operation='Block(EVENT):Data read' doesn't match with expected: " +
-                "expected=$declaredEventDataSize, actual=${corruptedEventData.size}",
-            additionalProperties = droppedBytesTelemetry(droppedBytes)
+            PlainBatchFileReaderWriter.ERROR_UNEXPECTED_NUMBERS_OF_BYTES,
+            additionalProperties = droppedBytesTelemetry(
+                droppedBytes,
+                TelemetryContext.TELEMETRY_BATCH_OPERATION to "Block(EVENT):Data read",
+                TelemetryContext.TELEMETRY_BATCH_BYTES_EXPECTED to declaredEventDataSize,
+                TelemetryContext.TELEMETRY_BATCH_BYTES_ACTUAL to corruptedEventData.size
+            )
         )
     }
 
@@ -473,9 +504,8 @@ internal class PlainBatchFileReaderWriterTest {
         // Then
         assertThat(result).containsExactlyElementsOf(events.take(badEventIndex))
 
-        // an unexpected block type is a block-level (MAINTAINER) diagnostic, and the file-level
-        // (USER) summary warning must report the same dropped byte count, not a partially
-        // decremented one, since everything from the bad block to EOF is discarded
+        // an unexpected block type is a block-level (MAINTAINER) diagnostic; everything from the
+        // bad block to EOF is discarded
         val expectedBlockName = if (isBadBlockTypeInMeta) "META" else "EVENT"
         val expectedIdentifier = if (isBadBlockTypeInMeta) 1 else 0
         val droppedBytes =
@@ -483,15 +513,13 @@ internal class PlainBatchFileReaderWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            "Unexpected block type identifier=$badBlockType met," +
-                " was expecting $expectedBlockName($expectedIdentifier)",
-            additionalProperties = droppedBytesTelemetry(droppedBytes)
-        )
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.ERROR,
-            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            PlainBatchFileReaderWriter.WARNING_NOT_ALL_DATA_READ.format(Locale.US, file.path),
-            additionalProperties = droppedBytesTelemetry(droppedBytes)
+            PlainBatchFileReaderWriter.ERROR_UNEXPECTED_BLOCK_TYPE_MET,
+            additionalProperties = droppedBytesTelemetry(
+                droppedBytes,
+                TelemetryContext.TELEMETRY_BLOCK_TYPE_ACTUAL_IDENTIFIER to badBlockType.toShort(),
+                TelemetryContext.TELEMETRY_BLOCK_TYPE_EXPECTED_IDENTIFIER to expectedIdentifier.toShort(),
+                TelemetryContext.TELEMETRY_BLOCK_TYPE_EXPECTED to expectedBlockName
+            )
         )
     }
 
@@ -519,9 +547,10 @@ internal class PlainBatchFileReaderWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            "Unexpected EOF at the operation=Block(EVENT):Data read",
+            PlainBatchFileReaderWriter.ERROR_UNEXPECTED_EOF,
             additionalProperties = droppedBytesTelemetry(
-                metaBytes.size + eventHeaderOnly.size
+                metaBytes.size + eventHeaderOnly.size,
+                TelemetryContext.TELEMETRY_BATCH_OPERATION to "Block(EVENT):Data read"
             )
         )
     }
@@ -549,9 +578,12 @@ internal class PlainBatchFileReaderWriterTest {
             mockInternalLogger.verifyLog(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                PlainBatchFileReaderWriter.ERROR_READ.format(Locale.US, file.path),
+                PlainBatchFileReaderWriter.ERROR_READ,
                 IOException::class.java,
-                additionalProperties = droppedBytesTelemetry(contentBytes.size)
+                additionalProperties = droppedBytesTelemetry(
+                    contentBytes.size,
+                    TelemetryContext.TELEMETRY_FILE_PATH to file.path
+                )
             )
         }
     }
@@ -586,9 +618,42 @@ internal class PlainBatchFileReaderWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            "Number of bytes read for operation='Block(META): Header read' doesn't match with expected: " +
-                "expected=${PlainBatchFileReaderWriter.HEADER_SIZE_BYTES}, actual=$surplus",
-            additionalProperties = droppedBytesTelemetry(surplus)
+            PlainBatchFileReaderWriter.ERROR_UNEXPECTED_NUMBERS_OF_BYTES,
+            additionalProperties = droppedBytesTelemetry(
+                surplus,
+                TelemetryContext.TELEMETRY_BATCH_OPERATION to "Block(META): Header read",
+                TelemetryContext.TELEMETRY_BATCH_BYTES_EXPECTED to PlainBatchFileReaderWriter.HEADER_SIZE_BYTES,
+                TelemetryContext.TELEMETRY_BATCH_BYTES_ACTUAL to surplus
+            )
+        )
+    }
+
+    @Test
+    fun `M log warning W readData() { bad block type leaves trailing bytes unread }`(
+        @StringForgery fileName: String,
+        @Forgery validEvent: RawBatchEvent,
+        @StringForgery(regex = "[a-z]{1,10}") fakeTrailingData: String
+    ) {
+        // Given
+        val file = File(fakeRootDirectory, fileName)
+        val trailingBytes = fakeTrailingData.toByteArray()
+        // header declares the EVENT identifier where a META block is expected -> block type
+        // mismatch is detected right after the header, so the trailing bytes are never read
+        val corruptedMetaHeader = ByteBuffer.allocate(PlainBatchFileReaderWriter.HEADER_SIZE_BYTES)
+            .putShort(0x00)
+            .putInt(trailingBytes.size)
+            .array()
+        file.writeBytes(encode(validEvent) + corruptedMetaHeader + trailingBytes)
+
+        // When
+        val result = testedReaderWriter.readData(file, fakeTelemetryContext)
+
+        // Then
+        assertThat(result).containsExactly(validEvent)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER),
+            PlainBatchFileReaderWriter.WARNING_NOT_ALL_DATA_READ.format(Locale.US, file.path)
         )
     }
 
@@ -622,6 +687,12 @@ internal class PlainBatchFileReaderWriterTest {
 
         // Then
         assertThat(result).containsExactlyElementsOf(events)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER),
+            PlainBatchFileReaderWriter.WARNING_NOT_ALL_DATA_READ.format(Locale.US, file.path),
+            mode = never()
+        )
     }
 
     // endregion
@@ -729,8 +800,8 @@ internal class PlainBatchFileReaderWriterTest {
             .array()
     }
 
-    private fun droppedBytesTelemetry(droppedBytes: Int): Map<String, Any> =
-        fakeTelemetryContext.asAttributesMap(bytesLost = droppedBytes)
+    private fun droppedBytesTelemetry(droppedBytes: Int, vararg customFields: Pair<String, Any>): Map<String, Any> =
+        fakeTelemetryContext.asAttributesMap(bytesLost = droppedBytes, *customFields)
 
     // endregion
 }

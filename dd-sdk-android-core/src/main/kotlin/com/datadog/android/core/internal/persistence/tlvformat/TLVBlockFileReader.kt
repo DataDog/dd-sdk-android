@@ -13,8 +13,12 @@ import com.datadog.android.core.internal.utils.copyOfRangeSafe
 import com.datadog.android.core.internal.utils.toInt
 import com.datadog.android.core.internal.utils.toShort
 import com.datadog.android.internal.telemetry.TelemetryContext
+import com.datadog.android.internal.telemetry.TelemetryContext.Companion.TELEMETRY_TLV_DATA_LENGTH
+import com.datadog.android.internal.telemetry.TelemetryContext.Companion.TELEMETRY_TLV_DATA_LENGTH_LIMIT
+import com.datadog.android.internal.telemetry.TelemetryContext.Companion.TELEMETRY_TLV_HEADER_LENGTH
+import com.datadog.android.internal.telemetry.TelemetryContext.Companion.TELEMETRY_TLV_HEADER_LENGTH_LIMIT
+import com.datadog.android.internal.telemetry.TelemetryContext.Companion.TELEMETRY_TLV_TYPE
 import java.io.File
-import java.util.Locale
 
 internal class TLVBlockFileReader(
     val internalLogger: InternalLogger,
@@ -71,7 +75,16 @@ internal class TLVBlockFileReader(
         newIndex += typeBlockSize
 
         if (newIndex > inputArray.size) {
-            internalLogger.logFailedToDeserializeError(telemetryContext, bytesLost = inputArray.size - currentIndex)
+            internalLogger.log(
+                level = InternalLogger.Level.WARN,
+                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                messageBuilder = { WARN_CORRUPT_HEADER_LENGTH_ERROR },
+                additionalProperties = telemetryContext.asAttributesMap(
+                    inputArray.size - currentIndex,
+                    TELEMETRY_TLV_HEADER_LENGTH to typeBlockSize,
+                    TELEMETRY_TLV_HEADER_LENGTH_LIMIT to (inputArray.size - currentIndex)
+                )
+            )
             return null
         }
 
@@ -85,8 +98,11 @@ internal class TLVBlockFileReader(
             internalLogger.log(
                 level = InternalLogger.Level.WARN,
                 targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                messageBuilder = { CORRUPT_TLV_HEADER_TYPE_ERROR.format(Locale.US, shortValue) },
-                additionalProperties = telemetryContext.asAttributesMap(bytesLost = inputArray.size - currentIndex)
+                messageBuilder = { WARN_CORRUPT_TLV_HEADER_TYPE },
+                additionalProperties = telemetryContext.asAttributesMap(
+                    bytesLost = inputArray.size - currentIndex,
+                    TELEMETRY_TLV_TYPE to shortValue
+                )
             )
             return null
         }
@@ -108,7 +124,17 @@ internal class TLVBlockFileReader(
         var newIndex = currentIndex + lengthBlockSize
 
         if (newIndex > inputArray.size) {
-            internalLogger.logFailedToDeserializeError(telemetryContext, bytesLost = bytesLeft)
+            internalLogger.log(
+                level = InternalLogger.Level.WARN,
+                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                messageBuilder = { WARN_CORRUPT_DATA_LENGTH_ERROR },
+                additionalProperties = telemetryContext.asAttributesMap(
+                    bytesLost = bytesLeft,
+                    TELEMETRY_TLV_DATA_LENGTH to lengthBlockSize,
+                    TELEMETRY_TLV_DATA_LENGTH_LIMIT to (inputArray.size - currentIndex)
+                )
+            )
+
             return null
         }
 
@@ -117,12 +143,25 @@ internal class TLVBlockFileReader(
             internalLogger.log(
                 level = InternalLogger.Level.ERROR,
                 targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                messageBuilder = { CORRUPT_DATA_LENGTH_ERROR.format(Locale.US, maxEntrySize, lengthData) },
-                additionalProperties = telemetryContext.asAttributesMap(bytesLeft)
+                messageBuilder = { WARN_CORRUPT_DATA_LENGTH_ERROR },
+                additionalProperties = telemetryContext.asAttributesMap(
+                    bytesLeft,
+                    TELEMETRY_TLV_DATA_LENGTH to lengthData,
+                    TELEMETRY_TLV_DATA_LENGTH_LIMIT to maxEntrySize
+                )
             )
             return null
         } else if (newIndex + lengthData > inputArray.size) {
-            internalLogger.logFailedToDeserializeError(telemetryContext, bytesLost = bytesLeft)
+            internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                messageBuilder = { WARN_CORRUPT_DATA_LENGTH_ERROR },
+                additionalProperties = telemetryContext.asAttributesMap(
+                    bytesLeft,
+                    TELEMETRY_TLV_DATA_LENGTH to lengthData,
+                    TELEMETRY_TLV_DATA_LENGTH_LIMIT to inputArray.size - newIndex
+                )
+            )
             return null
         }
 
@@ -139,19 +178,10 @@ internal class TLVBlockFileReader(
     )
 
     internal companion object {
-        internal const val CORRUPT_TLV_HEADER_TYPE_ERROR = "TLV header corrupt. Invalid type %s"
-        internal const val FAILED_TO_DESERIALIZE_ERROR = "Failed to deserialize TLV data length"
-        internal const val CORRUPT_DATA_LENGTH_ERROR =
-            "DataBlock length read from file is invalid or exceeds limit of %s bytes, was %s"
-
-        private fun InternalLogger.logFailedToDeserializeError(
-            telemetryContext: TelemetryContext,
-            bytesLost: Int
-        ) = log(
-            level = InternalLogger.Level.WARN,
-            targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            messageBuilder = { FAILED_TO_DESERIALIZE_ERROR },
-            additionalProperties = telemetryContext.asAttributesMap(bytesLost)
-        )
+        internal const val WARN_CORRUPT_TLV_HEADER_TYPE = "TLV header corrupt. Invalid type."
+        internal const val WARN_CORRUPT_HEADER_LENGTH_ERROR =
+            "Header block length read from file is invalid or exceeds limit"
+        internal const val WARN_CORRUPT_DATA_LENGTH_ERROR =
+            "Data block length read from file is invalid or exceeds limit"
     }
 }

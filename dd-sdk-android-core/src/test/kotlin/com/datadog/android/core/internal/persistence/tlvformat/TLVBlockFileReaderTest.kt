@@ -8,8 +8,13 @@ package com.datadog.android.core.internal.persistence.tlvformat
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
-import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockFileReader.Companion.FAILED_TO_DESERIALIZE_ERROR
+import com.datadog.android.core.internal.utils.toShort
 import com.datadog.android.internal.telemetry.TelemetryContext
+import com.datadog.android.internal.telemetry.TelemetryContext.Companion.TELEMETRY_TLV_DATA_LENGTH
+import com.datadog.android.internal.telemetry.TelemetryContext.Companion.TELEMETRY_TLV_DATA_LENGTH_LIMIT
+import com.datadog.android.internal.telemetry.TelemetryContext.Companion.TELEMETRY_TLV_HEADER_LENGTH
+import com.datadog.android.internal.telemetry.TelemetryContext.Companion.TELEMETRY_TLV_HEADER_LENGTH_LIMIT
+import com.datadog.android.internal.telemetry.TelemetryContext.Companion.TELEMETRY_TLV_TYPE
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -25,15 +30,10 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
 import java.nio.ByteBuffer
-import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -123,8 +123,12 @@ internal class TLVBlockFileReaderTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.WARN,
             targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            message = FAILED_TO_DESERIALIZE_ERROR,
-            additionalProperties = fakeTelemetryContext.asAttributesMap(bytesLost = fakeBufferBytes.size)
+            message = TLVBlockFileReader.WARN_CORRUPT_HEADER_LENGTH_ERROR,
+            additionalProperties = fakeTelemetryContext.asAttributesMap(
+                bytesLost = fakeBufferBytes.size,
+                TELEMETRY_TLV_HEADER_LENGTH to Short.SIZE_BYTES,
+                TELEMETRY_TLV_HEADER_LENGTH_LIMIT to fakeBufferBytes.size
+            )
         )
     }
 
@@ -141,17 +145,16 @@ internal class TLVBlockFileReaderTest {
         testedReader.read(file = mockFile, telemetryContext = fakeTelemetryContext)
 
         // Then
-        val captor = argumentCaptor<() -> String>()
-        verify(mockInternalLogger).log(
-            level = eq(InternalLogger.Level.WARN),
-            targets = eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
-            captor.capture(),
-            anyOrNull(),
-            anyOrNull(),
-            eq(fakeTelemetryContext.asAttributesMap(bytesLost = fakeBufferBytes.size))
+        val actualType = fakeBufferBytes.copyOfRange(0, Short.SIZE_BYTES).toShort()
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.WARN,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            message = TLVBlockFileReader.WARN_CORRUPT_TLV_HEADER_TYPE,
+            additionalProperties = fakeTelemetryContext.asAttributesMap(
+                bytesLost = fakeBufferBytes.size,
+                TELEMETRY_TLV_TYPE to actualType
+            )
         )
-        assertThat(captor.firstValue.invoke())
-            .startsWith("TLV header corrupt. Invalid type")
     }
 
     @Test
@@ -184,8 +187,12 @@ internal class TLVBlockFileReaderTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.WARN,
             targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            message = FAILED_TO_DESERIALIZE_ERROR,
-            additionalProperties = fakeTelemetryContext.asAttributesMap(bytesLost = fakeByteArray.size)
+            message = TLVBlockFileReader.WARN_CORRUPT_HEADER_LENGTH_ERROR,
+            additionalProperties = fakeTelemetryContext.asAttributesMap(
+                bytesLost = fakeByteArray.size,
+                TELEMETRY_TLV_HEADER_LENGTH to Short.SIZE_BYTES,
+                TELEMETRY_TLV_HEADER_LENGTH_LIMIT to fakeByteArray.size
+            )
         )
     }
 
@@ -201,11 +208,16 @@ internal class TLVBlockFileReaderTest {
 
         // Then
         assertThat(result).isEmpty()
+        // 2 bytes of type consumed, only 1 byte left for the 4-byte length field
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.WARN,
             targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            message = FAILED_TO_DESERIALIZE_ERROR,
-            additionalProperties = fakeTelemetryContext.asAttributesMap(bytesLost = fakeArray.size)
+            message = TLVBlockFileReader.WARN_CORRUPT_DATA_LENGTH_ERROR,
+            additionalProperties = fakeTelemetryContext.asAttributesMap(
+                fakeArray.size,
+                TELEMETRY_TLV_DATA_LENGTH to Int.SIZE_BYTES,
+                TELEMETRY_TLV_DATA_LENGTH_LIMIT to (fakeArray.size - Short.SIZE_BYTES)
+            )
         )
     }
 
@@ -234,9 +246,12 @@ internal class TLVBlockFileReaderTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            message = TLVBlockFileReader.CORRUPT_DATA_LENGTH_ERROR
-                .format(Locale.US, fakeMaxEntrySize, fakeDeclaredLength),
-            additionalProperties = fakeTelemetryContext.asAttributesMap(bytesLost = fakeBlock.size)
+            message = TLVBlockFileReader.WARN_CORRUPT_DATA_LENGTH_ERROR,
+            additionalProperties = fakeTelemetryContext.asAttributesMap(
+                fakeBlock.size,
+                TELEMETRY_TLV_DATA_LENGTH to fakeDeclaredLength,
+                TELEMETRY_TLV_DATA_LENGTH_LIMIT to fakeMaxEntrySize
+            )
         )
     }
 
@@ -265,9 +280,12 @@ internal class TLVBlockFileReaderTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            message = TLVBlockFileReader.CORRUPT_DATA_LENGTH_ERROR
-                .format(Locale.US, fakeMaxEntrySize, fakeNegativeLength),
-            additionalProperties = fakeTelemetryContext.asAttributesMap(bytesLost = fakeBlock.size)
+            message = TLVBlockFileReader.WARN_CORRUPT_DATA_LENGTH_ERROR,
+            additionalProperties = fakeTelemetryContext.asAttributesMap(
+                fakeBlock.size,
+                TELEMETRY_TLV_DATA_LENGTH to fakeNegativeLength,
+                TELEMETRY_TLV_DATA_LENGTH_LIMIT to fakeMaxEntrySize
+            )
         )
     }
 
@@ -290,10 +308,14 @@ internal class TLVBlockFileReaderTest {
         // Then
         assertThat(result).isEmpty()
         mockInternalLogger.verifyLog(
-            level = InternalLogger.Level.WARN,
+            level = InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            message = FAILED_TO_DESERIALIZE_ERROR,
-            additionalProperties = fakeTelemetryContext.asAttributesMap(bytesLost = fakeBlock.size)
+            message = TLVBlockFileReader.WARN_CORRUPT_DATA_LENGTH_ERROR,
+            additionalProperties = fakeTelemetryContext.asAttributesMap(
+                fakeBlock.size,
+                TELEMETRY_TLV_DATA_LENGTH to fakeDeclaredLength,
+                TELEMETRY_TLV_DATA_LENGTH_LIMIT to fakeAvailableDataSize
+            )
         )
     }
 

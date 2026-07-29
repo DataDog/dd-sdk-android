@@ -11,10 +11,10 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.use
 import com.datadog.android.internal.telemetry.TelemetryContext
 import com.datadog.android.internal.telemetry.TelemetryContext.Companion.BYTE_LOST_UNKNOWN
+import com.datadog.android.internal.telemetry.TelemetryContext.Companion.TELEMETRY_FILE_PATH
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.util.Locale
 
 /**
  * Stores data as-is. Use for any non-RUM/Trace/Logs data.
@@ -39,18 +39,24 @@ internal class PlainFileReaderWriter(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { ERROR_WRITE.format(Locale.US, file.path) },
+                { ERROR_WRITE },
                 e,
-                additionalProperties = telemetryContext.asAttributesMap(bytesLost = data.size)
+                additionalProperties = telemetryContext.asAttributesMap(
+                    bytesLost = data.size,
+                    TELEMETRY_FILE_PATH to file.path
+                )
             )
             false
         } catch (e: SecurityException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { ERROR_WRITE.format(Locale.US, file.path) },
+                { ERROR_WRITE },
                 e,
-                additionalProperties = telemetryContext.asAttributesMap(bytesLost = data.size)
+                additionalProperties = telemetryContext.asAttributesMap(
+                    bytesLost = data.size,
+                    TELEMETRY_FILE_PATH to file.path
+                )
             )
             false
         }
@@ -66,16 +72,22 @@ internal class PlainFileReaderWriter(
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
                     listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                    { ERROR_READ.format(Locale.US, file.path) },
-                    additionalProperties = telemetryContext.asAttributesMap(bytesLost = BYTE_LOST_UNKNOWN)
+                    { ERROR_READ },
+                    additionalProperties = telemetryContext.asAttributesMap(
+                        bytesLost = BYTE_LOST_UNKNOWN,
+                        TELEMETRY_FILE_PATH to file.path
+                    )
                 )
                 EMPTY_BYTE_ARRAY
             } else if (file.isDirectory) {
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
                     listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                    { ERROR_READ.format(Locale.US, file.path) },
-                    additionalProperties = telemetryContext.asAttributesMap(bytesLost = BYTE_LOST_UNKNOWN)
+                    { ERROR_READ },
+                    additionalProperties = telemetryContext.asAttributesMap(
+                        bytesLost = BYTE_LOST_UNKNOWN,
+                        TELEMETRY_FILE_PATH to file.path
+                    )
                 )
                 EMPTY_BYTE_ARRAY
             } else {
@@ -86,18 +98,24 @@ internal class PlainFileReaderWriter(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { ERROR_READ.format(Locale.US, file.path) },
+                { ERROR_READ },
                 e,
-                additionalProperties = telemetryContext.asAttributesMap(bytesLost = BYTE_LOST_UNKNOWN)
+                additionalProperties = telemetryContext.asAttributesMap(
+                    bytesLost = BYTE_LOST_UNKNOWN,
+                    TELEMETRY_FILE_PATH to file.path
+                )
             )
             EMPTY_BYTE_ARRAY
         } catch (e: SecurityException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { ERROR_READ.format(Locale.US, file.path) },
+                { ERROR_READ },
                 e,
-                additionalProperties = telemetryContext.asAttributesMap(bytesLost = BYTE_LOST_UNKNOWN)
+                additionalProperties = telemetryContext.asAttributesMap(
+                    bytesLost = BYTE_LOST_UNKNOWN,
+                    TELEMETRY_FILE_PATH to file.path
+                )
             )
             EMPTY_BYTE_ARRAY
         }
@@ -126,7 +144,7 @@ internal class PlainFileReaderWriter(
     companion object {
 
         private val EMPTY_BYTE_ARRAY = ByteArray(0)
-        internal const val ERROR_WRITE = "Unable to write data to file: %s"
-        internal const val ERROR_READ = "Unable to read data from file: %s"
+        internal const val ERROR_WRITE = "Unable to write data to file."
+        internal const val ERROR_READ = "Unable to read data from file."
     }
 }

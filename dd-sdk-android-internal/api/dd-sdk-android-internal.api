@@ -622,9 +622,25 @@ public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent
 public final class com/datadog/android/internal/telemetry/TelemetryContext {
 	public static final field BYTE_LOST_UNKNOWN I
 	public static final field Companion Lcom/datadog/android/internal/telemetry/TelemetryContext$Companion;
+	public static final field TELEMETRY_BATCH_BYTES_ACTUAL Ljava/lang/String;
+	public static final field TELEMETRY_BATCH_BYTES_EXPECTED Ljava/lang/String;
+	public static final field TELEMETRY_BATCH_OPERATION Ljava/lang/String;
+	public static final field TELEMETRY_BLOCK_TYPE_ACTUAL_IDENTIFIER Ljava/lang/String;
+	public static final field TELEMETRY_BLOCK_TYPE_EXPECTED Ljava/lang/String;
+	public static final field TELEMETRY_BLOCK_TYPE_EXPECTED_IDENTIFIER Ljava/lang/String;
+	public static final field TELEMETRY_DATA_LIMIT Ljava/lang/String;
+	public static final field TELEMETRY_FILE_PATH Ljava/lang/String;
+	public static final field TELEMETRY_TLV_DATA_LENGTH Ljava/lang/String;
+	public static final field TELEMETRY_TLV_DATA_LENGTH_LIMIT Ljava/lang/String;
+	public static final field TELEMETRY_TLV_HEADER_LENGTH Ljava/lang/String;
+	public static final field TELEMETRY_TLV_HEADER_LENGTH_LIMIT Ljava/lang/String;
+	public static final field TELEMETRY_TLV_SIZE Ljava/lang/String;
+	public static final field TELEMETRY_TLV_SIZE_LIMIT Ljava/lang/String;
+	public static final field TELEMETRY_TLV_TYPE Ljava/lang/String;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun asAttributesMap (I)Ljava/util/Map;
+	public final fun asAttributesMap (I[Lkotlin/Pair;)Ljava/util/Map;
+	public static synthetic fun asAttributesMap$default (Lcom/datadog/android/internal/telemetry/TelemetryContext;I[Lkotlin/Pair;ILjava/lang/Object;)Ljava/util/Map;
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/internal/telemetry/TelemetryContext;
@@ -637,8 +653,8 @@ public final class com/datadog/android/internal/telemetry/TelemetryContext {
 }
 
 public final class com/datadog/android/internal/telemetry/TelemetryContext$Companion {
-	public final fun asAttributesMap (Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;)Ljava/util/Map;
-	public static synthetic fun asAttributesMap$default (Lcom/datadog/android/internal/telemetry/TelemetryContext$Companion;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;ILjava/lang/Object;)Ljava/util/Map;
+	public final fun asAttributesMap (Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;[Lkotlin/Pair;)Ljava/util/Map;
+	public static synthetic fun asAttributesMap$default (Lcom/datadog/android/internal/telemetry/TelemetryContext$Companion;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;[Lkotlin/Pair;ILjava/lang/Object;)Ljava/util/Map;
 }
 
 public final class com/datadog/android/internal/telemetry/TracingHeaderType : java/lang/Enum {

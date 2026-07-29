@@ -227,8 +227,11 @@ internal class FileEventBatchWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            ERROR_LARGE_DATA.format(Locale.US, batchEvent.data.size, maxItemSize),
-            additionalProperties = fakeTelemetryContext.asAttributesMap(batchEvent.data.size)
+            ERROR_LARGE_DATA,
+            additionalProperties = fakeTelemetryContext.asAttributesMap(
+                bytesLost = batchEvent.data.size,
+                TelemetryContext.TELEMETRY_DATA_LIMIT to maxItemSize.toLong()
+            )
         )
     }
 
@@ -366,12 +369,11 @@ internal class FileEventBatchWriterTest {
 
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
-            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            InternalLogger.Target.USER,
             WARNING_METADATA_WRITE_FAILED.format(
                 Locale.US,
                 fakeBatchMetadataFile
-            ),
-            additionalProperties = fakeTelemetryContext.asAttributesMap(serializedBatchMetadata.size)
+            )
         )
     }
 

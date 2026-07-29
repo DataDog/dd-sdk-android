@@ -8,8 +8,10 @@ package com.datadog.android.core.internal.persistence.tlvformat
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.telemetry.TelemetryContext
+import com.datadog.android.internal.telemetry.TelemetryContext.Companion.TELEMETRY_TLV_SIZE
+import com.datadog.android.internal.telemetry.TelemetryContext.Companion.TELEMETRY_TLV_SIZE_LIMIT
+import com.datadog.android.internal.telemetry.TelemetryContext.Companion.TELEMETRY_TLV_TYPE
 import java.nio.ByteBuffer
-import java.util.Locale
 
 internal class TLVBlock(
     val type: TLVBlockType,
@@ -30,7 +32,18 @@ internal class TLVBlock(
         val entrySize = typeFieldSize + dataLengthFieldSize + dataFieldSize
 
         if (entrySize > maxEntrySize) {
-            logEntrySizeExceededError(entrySize, maxEntrySize, telemetryContext)
+            internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                messageBuilder = { BYTE_LENGTH_EXCEEDED_ERROR },
+                additionalProperties = telemetryContext.asAttributesMap(
+                    bytesLost = entrySize,
+                    TELEMETRY_TLV_SIZE_LIMIT to maxEntrySize,
+                    TELEMETRY_TLV_SIZE to entrySize,
+                    TELEMETRY_TLV_TYPE to type
+                )
+
+            )
             return null
         }
 
@@ -47,23 +60,9 @@ internal class TLVBlock(
             .array()
     }
 
-    private fun logEntrySizeExceededError(
-        entrySize: Int,
-        maxEntrySize: Int,
-        telemetryContext: TelemetryContext
-    ) {
-        internalLogger.log(
-            level = InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            messageBuilder = { BYTE_LENGTH_EXCEEDED_ERROR.format(Locale.US, maxEntrySize, entrySize) },
-            additionalProperties = telemetryContext.asAttributesMap(bytesLost = entrySize)
-        )
-    }
-
     internal companion object {
         // The maximum length of data (Value) in TLV block defining key data.
         internal const val MAXIMUM_DATA_SIZE_MB = 10 * 1024 * 1024 // 10 mb
-        internal const val BYTE_LENGTH_EXCEEDED_ERROR =
-            "DataBlock length exceeds limit of %s bytes, was %s"
+        internal const val BYTE_LENGTH_EXCEEDED_ERROR = "DataBlock length exceeds limit."
     }
 }
