@@ -102,15 +102,20 @@ internal class RumDataWriter(
         eventData: DiffThenFullView,
         eventType: EventType
     ): Boolean {
-        // Write the partial diff — skip crash-recovery write since the full view below will do it
-        writeViewUpdateEvent(
+        // Write the partial diff first — skip crash-recovery write since the full view below will do it
+        val diffWritten = writeViewUpdateEvent(
             writer,
             RumViewUpdateData(eventData.viewUpdate, eventData.viewEvent),
             eventType,
             writeCrashRecovery = false
         )
-        // Then write the full view as ground-truth checkpoint (single crash-recovery write)
-        return writeMappedViewEvent(writer, eventData.viewEvent, eventType)
+        // Only write the full view checkpoint if the diff was persisted
+        if (diffWritten) {
+            writeMappedViewEvent(writer, eventData.viewEvent, eventType)
+        }
+        // Always return diffWritten so prevViewEvent is updated whenever the diff was
+        // persisted, keeping the baseline consistent regardless of full view write outcome
+        return diffWritten
     }
 
     @WorkerThread

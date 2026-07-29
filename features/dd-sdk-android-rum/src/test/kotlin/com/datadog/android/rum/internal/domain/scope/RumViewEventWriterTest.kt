@@ -318,7 +318,7 @@ internal class RumViewEventWriterTest {
     }
 
     @Test
-    fun `M write diff then full view W documentVersion is multiple of FULL_VIEW_EVERY_N_UPDATES`(
+    fun `M write diff then full view W writeViewEvent() {documentVersion is multiple of FULL_VIEW_EVERY_N_UPDATES}`(
         @Forgery fakeViewEvent: ViewEvent
     ) {
         // Given
@@ -360,7 +360,7 @@ internal class RumViewEventWriterTest {
     }
 
     @Test
-    fun `M write view update W documentVersion is not multiple of FULL_VIEW_EVERY_N_UPDATES`(
+    fun `M write view update W writeViewEvent() {documentVersion is not multiple of FULL_VIEW_EVERY_N_UPDATES}`(
         @Forgery fakeViewEvent: ViewEvent
     ) {
         // Given
@@ -415,7 +415,7 @@ internal class RumViewEventWriterTest {
     }
 
     @Test
-    fun `M write diff then full view W documentVersion is multiple of FULL_VIEW_EVERY_N_UPDATES then resume diffs`(
+    fun `M write diff then full view W writeViewEvent() {checkpoint, then resume diffs}`(
         @Forgery fakeViewEvent: ViewEvent
     ) {
         // Given
@@ -470,7 +470,7 @@ internal class RumViewEventWriterTest {
     }
 
     @Test
-    fun `M write diff then full view W view is closing {isActive is false}`(
+    fun `M write diff then full view W writeViewEvent() {isActive is false}`(
         @Forgery fakeViewEvent: ViewEvent
     ) {
         // Given
@@ -512,7 +512,7 @@ internal class RumViewEventWriterTest {
     }
 
     @Test
-    fun `M write view update W view is active {isActive is true}`(
+    fun `M write view update W writeViewEvent() {isActive is true}`(
         @Forgery fakeViewEvent: ViewEvent
     ) {
         // Given
@@ -554,7 +554,7 @@ internal class RumViewEventWriterTest {
     }
 
     @Test
-    fun `M write diff then full view W documentVersion is multiple of FULL_VIEW_EVERY_N_UPDATES {carries diff}`(
+    fun `M write diff then full view W writeViewEvent() {checkpoint carries diff}`(
         @Forgery fakeViewEvent: ViewEvent
     ) {
         // Given
@@ -597,7 +597,7 @@ internal class RumViewEventWriterTest {
     }
 
     @Test
-    fun `M write diff then full view W view is closing {diff contains previous state}`(
+    fun `M write diff then full view W writeViewEvent() {isActive is false, carries diff}`(
         @Forgery fakeViewEvent: ViewEvent
     ) {
         // Given

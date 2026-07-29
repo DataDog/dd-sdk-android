@@ -57,7 +57,7 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
                     }
                     rumPayload
                         .forEach {
-                            if (it.isEventRelatedToApplicationLaunch) {
+                            if (it.isEventRelatedToApplicationLaunch && !it.isClosingViewEvent) {
                                 sentLaunchEvents += it
                             } else if (it.isViewUpdateEventRelatedToApplicationLaunch) {
                                 sentLaunchUpdateEvents += it
