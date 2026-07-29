@@ -5,16 +5,13 @@
  */
 @file:Suppress("StringLiteralDuplication")
 
-import com.android.build.gradle.LibraryExtension
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.depotProxied
 import com.datadog.gradle.config.registerSubModuleAggregationTask
-import org.gradle.api.internal.file.UnionFileTree
-import org.gradle.api.internal.tasks.DefaultTaskDependencyFactory
-import java.util.Properties
 
 plugins {
     `maven-publish`
+    id("ktlint")
     id("test-pyramid-aggregation")
     alias(libs.plugins.nexusPublishGradlePlugin)
     alias(libs.plugins.dependencyLicenseGradlePlugin)
@@ -149,7 +146,12 @@ tasks.register("unitTestAll") {
     )
 }
 
-registerSubModuleAggregationTask("lintCheckAll", "lintRelease") {
+registerSubModuleAggregationTask(
+    "lintCheckAll",
+    "lintRelease",
+    // lint all modules, not only for published ones
+    subModuleNamePrefix = ""
+) {
     dependsOn(":tools:lint:lint")
 }
 
@@ -166,9 +168,6 @@ registerSubModuleAggregationTask("checkCompilerMetadataChangesAll", "checkCompil
 
 registerSubModuleAggregationTask("checkTransitiveDependenciesListAll", "checkTransitiveDependenciesList")
 
-/**
- * Task necessary to be compliant with the shared Android static analysis pipeline
- */
 tasks.register("checkGeneratedFiles") {
     dependsOn("checkDependencyLicensesAll")
     dependsOn("checkApiSurfaceChangesAll")
@@ -179,10 +178,6 @@ tasks.register("checkGeneratedFiles") {
 registerSubModuleAggregationTask("koverReportAll", "koverXmlReportRelease")
 registerSubModuleAggregationTask("koverReportFeatures", "koverXmlReportRelease", ":features:")
 registerSubModuleAggregationTask("koverReportIntegrations", "koverXmlReportRelease", ":integrations:")
-
-registerSubModuleAggregationTask("printDetektClasspathAll", "printDetektClasspath")
-registerSubModuleAggregationTask("printDetektClasspathFeatures", "printDetektClasspath", ":features:")
-registerSubModuleAggregationTask("printDetektClasspathIntegrations", "printDetektClasspath", ":integrations:")
 
 tasks.register("instrumentTestAll") {
     dependsOn(":instrumented:integration:connectedCheck")
@@ -197,73 +192,6 @@ tasks.register("buildNdkIntegrationTestsArtifacts") {
     dependsOn(":features:dd-sdk-android-ndk:assembleDebugAndroidTest")
     // we need this artifact to trick Bitrise
     dependsOn(":instrumented:integration:assembleDebug")
-}
-
-tasks.register("printSdkDebugRuntimeClasspath") {
-    val fileTreeClassPathCollector = UnionFileTree(
-        DefaultTaskDependencyFactory.withNoAssociatedProject()
-    )
-    val nonFileTreeClassPathCollector = mutableListOf<FileCollection>()
-
-    allprojects.minus(project).forEach { subproject ->
-        val childTask = subproject.tasks.register("printDebugRuntimeClasspath") {
-            doLast {
-                val ext =
-                    subproject.extensions.findByType(LibraryExtension::class.java) ?: return@doLast
-                val classpath = ext.libraryVariants
-                    .filter { it.name == "jvmDebug" || it.name == "debug" }
-                    .map { libVariant ->
-                        // returns also test part of classpath for now, no idea how to filter it out
-                        libVariant.getCompileClasspath(null).filter { it.exists() }
-                    }
-                    .first()
-                if (classpath is FileTree) {
-                    fileTreeClassPathCollector.addToUnion(classpath)
-                } else {
-                    nonFileTreeClassPathCollector += classpath
-                }
-            }
-        }
-        this@register.dependsOn(childTask)
-    }
-    doLast {
-        val fileCollections = mutableListOf<FileCollection>()
-        fileCollections.addAll(nonFileTreeClassPathCollector)
-        if (!fileTreeClassPathCollector.isEmpty) {
-            fileCollections.add(fileTreeClassPathCollector)
-        }
-        val result = fileCollections.flatMap {
-            it.files
-        }.toMutableSet()
-
-        val localPropertiesFile = File(project.rootDir, "local.properties")
-        if (localPropertiesFile.exists()) {
-            val localProperties = Properties().apply {
-                localPropertiesFile.inputStream().use { load(it) }
-            }
-            val sdkDirPath = localProperties["sdk.dir"]
-            val androidJarFilePath = listOf(
-                sdkDirPath,
-                "platforms",
-                "android-${AndroidConfig.TARGET_SDK}",
-                "android.jar"
-            )
-            result += File(androidJarFilePath.joinToString(File.separator))
-        }
-
-        val envSdkHome = System.getenv("ANDROID_SDK_ROOT")
-        if (!envSdkHome.isNullOrBlank()) {
-            val androidJarFilePath = listOf(
-                envSdkHome,
-                "platforms",
-                "android-${AndroidConfig.TARGET_SDK}",
-                "android.jar"
-            )
-            result += File(androidJarFilePath.joinToString(File.separator))
-        }
-
-        File("sdk_classpath").writeText(result.joinToString(File.pathSeparator) { it.absolutePath })
-    }
 }
 
 tasks.register("listAllPublishedArtifactIds") {
