@@ -28,6 +28,11 @@ internal data class MappedViewEvent(
     val viewEvent: ViewEvent
 )
 
+internal data class DiffThenFullView(
+    val viewUpdate: ViewUpdateEvent,
+    val viewEvent: ViewEvent
+)
+
 internal interface RumViewEventWriter {
     fun writeViewEvent(
         viewEvent: ViewEvent,
@@ -91,8 +96,14 @@ internal class RumViewEventWriterImpl(
                 when (config) {
                     RumViewEventWriteConfig.AlwaysFullView -> MappedViewEvent(mapped)
                     RumViewEventWriteConfig.FullViewOnlyAtStart -> {
-                        if (prev == null || shouldWriteFullView(mapped.dd.documentVersion, mapped.view.isActive)) {
+                        if (prev == null) {
                             MappedViewEvent(mapped)
+                        } else if (shouldWriteFullView(mapped.dd.documentVersion, mapped.view.isActive)) {
+                            // Send the last partial diff followed immediately by the full view checkpoint
+                            DiffThenFullView(
+                                viewUpdate = diffViewEvent(prev, mapped),
+                                viewEvent = mapped
+                            )
                         } else {
                             RumViewUpdateData(
                                 viewUpdate = diffViewEvent(prev, mapped),

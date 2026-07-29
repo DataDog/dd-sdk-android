@@ -318,7 +318,7 @@ internal class RumViewEventWriterTest {
     }
 
     @Test
-    fun `M write full view W documentVersion is multiple of FULL_VIEW_EVERY_N_UPDATES`(
+    fun `M write diff then full view W documentVersion is multiple of FULL_VIEW_EVERY_N_UPDATES`(
         @Forgery fakeViewEvent: ViewEvent
     ) {
         // Given
@@ -356,7 +356,7 @@ internal class RumViewEventWriterTest {
 
         // Then
         assertThat(writtenEvents[0]).isInstanceOf(MappedViewEvent::class.java)
-        assertThat(writtenEvents[1]).isInstanceOf(MappedViewEvent::class.java)
+        assertThat(writtenEvents[1]).isInstanceOf(DiffThenFullView::class.java)
     }
 
     @Test
@@ -415,7 +415,7 @@ internal class RumViewEventWriterTest {
     }
 
     @Test
-    fun `M write full view W documentVersion is multiple of FULL_VIEW_EVERY_N_UPDATES then resume diffs`(
+    fun `M write diff then full view W documentVersion is multiple of FULL_VIEW_EVERY_N_UPDATES then resume diffs`(
         @Forgery fakeViewEvent: ViewEvent
     ) {
         // Given
@@ -465,12 +465,12 @@ internal class RumViewEventWriterTest {
 
         // Then
         assertThat(writtenEvents[0]).isInstanceOf(MappedViewEvent::class.java) // baseline
-        assertThat(writtenEvents[1]).isInstanceOf(MappedViewEvent::class.java) // checkpoint
+        assertThat(writtenEvents[1]).isInstanceOf(DiffThenFullView::class.java) // diff + full view checkpoint
         assertThat(writtenEvents[2]).isInstanceOf(RumViewUpdateData::class.java) // diff resumes
     }
 
     @Test
-    fun `M write full view W view is closing {isActive is false}`(
+    fun `M write diff then full view W view is closing {isActive is false}`(
         @Forgery fakeViewEvent: ViewEvent
     ) {
         // Given
@@ -508,7 +508,7 @@ internal class RumViewEventWriterTest {
 
         // Then
         assertThat(writtenEvents[0]).isInstanceOf(MappedViewEvent::class.java) // baseline
-        assertThat(writtenEvents[1]).isInstanceOf(MappedViewEvent::class.java) // closing → full view
+        assertThat(writtenEvents[1]).isInstanceOf(DiffThenFullView::class.java) // closing → diff + full view
     }
 
     @Test
@@ -551,6 +551,92 @@ internal class RumViewEventWriterTest {
         // Then
         assertThat(writtenEvents[0]).isInstanceOf(MappedViewEvent::class.java) // baseline
         assertThat(writtenEvents[1]).isInstanceOf(RumViewUpdateData::class.java) // active → diff
+    }
+
+    @Test
+    fun `M write diff then full view W documentVersion is multiple of FULL_VIEW_EVERY_N_UPDATES {carries diff}`(
+        @Forgery fakeViewEvent: ViewEvent
+    ) {
+        // Given
+        val firstEvent = fakeViewEvent.copy(
+            dd = fakeViewEvent.dd.copy(documentVersion = 1L),
+            view = fakeViewEvent.view.copy(isActive = true)
+        )
+        val checkpointEvent = firstEvent.copy(
+            dd = firstEvent.dd.copy(documentVersion = RumViewEventWriterImpl.FULL_VIEW_EVERY_N_UPDATES),
+            view = firstEvent.view.copy(isActive = true)
+        )
+        whenever(mockViewEventMapper.map(firstEvent)) doReturn firstEvent
+        whenever(mockViewEventMapper.map(checkpointEvent)) doReturn checkpointEvent
+        val writtenEvents = mutableListOf<Any>()
+        whenever(mockDataWriter.write(eq(mockEventBatchWriter), any(), eq(fakeEventType))) doAnswer {
+            writtenEvents += it.getArgument<Any>(1)
+            true
+        }
+
+        // When
+        testedWriter.writeViewEvent(
+            viewEvent = firstEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockDataWriter,
+            eventType = fakeEventType
+        )
+        testedWriter.writeViewEvent(
+            viewEvent = checkpointEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockDataWriter,
+            eventType = fakeEventType
+        )
+
+        // Then
+        assertThat(writtenEvents[1]).isInstanceOf(DiffThenFullView::class.java)
+        val diffThenFull = writtenEvents[1] as DiffThenFullView
+        assertThat(diffThenFull.viewEvent).isEqualTo(checkpointEvent)
+    }
+
+    @Test
+    fun `M write diff then full view W view is closing {diff contains previous state}`(
+        @Forgery fakeViewEvent: ViewEvent
+    ) {
+        // Given
+        val firstEvent = fakeViewEvent.copy(
+            dd = fakeViewEvent.dd.copy(documentVersion = 1L),
+            view = fakeViewEvent.view.copy(isActive = true)
+        )
+        val closingEvent = firstEvent.copy(
+            dd = firstEvent.dd.copy(documentVersion = 2L),
+            view = firstEvent.view.copy(isActive = false)
+        )
+        whenever(mockViewEventMapper.map(firstEvent)) doReturn firstEvent
+        whenever(mockViewEventMapper.map(closingEvent)) doReturn closingEvent
+        val writtenEvents = mutableListOf<Any>()
+        whenever(mockDataWriter.write(eq(mockEventBatchWriter), any(), eq(fakeEventType))) doAnswer {
+            writtenEvents += it.getArgument<Any>(1)
+            true
+        }
+
+        // When
+        testedWriter.writeViewEvent(
+            viewEvent = firstEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockDataWriter,
+            eventType = fakeEventType
+        )
+        testedWriter.writeViewEvent(
+            viewEvent = closingEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockDataWriter,
+            eventType = fakeEventType
+        )
+
+        // Then
+        assertThat(writtenEvents[1]).isInstanceOf(DiffThenFullView::class.java)
+        val diffThenFull = writtenEvents[1] as DiffThenFullView
+        assertThat(diffThenFull.viewEvent).isEqualTo(closingEvent)
     }
 
     companion object {

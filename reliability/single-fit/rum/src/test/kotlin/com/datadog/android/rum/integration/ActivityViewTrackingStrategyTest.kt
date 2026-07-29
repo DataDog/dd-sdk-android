@@ -124,7 +124,7 @@ class ActivityViewTrackingStrategyTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(2)
+            .hasSize(3)
             .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -159,6 +159,12 @@ class ActivityViewTrackingStrategyTest {
                     hasNoOptionalViewFields()
                 }
                 hasNoOptionalFields()
+            }
+            .hasRumEvent(index = 2) {
+                // Full view checkpoint (closing)
+                hasType("view")
+                hasViewUrl("com/datadog/android/rum/integration/ActivityViewTrackingStrategyTest/StubActivity")
+                hasViewIsActive(false)
             }
     }
 

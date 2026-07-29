@@ -61,7 +61,12 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
                                 sentLaunchEvents += it
                             } else if (it.isViewUpdateEventRelatedToApplicationLaunch) {
                                 sentLaunchUpdateEvents += it
-                            } else if (it.isViewEvent) {
+                            } else if (it.isViewEvent && !it.isClosingViewEvent) {
+                                // Exclude closing full ViewEvents emitted by DiffThenFullView
+                                // (isActive=false). These have a higher documentVersion than the
+                                // initial ViewEvent and would replace it after reduceViewEvents(),
+                                // causing assertions on the initial view to fail. The closing full
+                                // view behaviour is already covered by unit and reliability tests.
                                 sentViewEvents += it
                             } else if (it.isViewUpdateEvent) {
                                 sentViewUpdateEvents += it
@@ -142,6 +147,12 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
 
     private val JsonObject.isViewEvent
         get() = get("type")?.asString == "view"
+
+    private val JsonObject.isClosingViewEvent
+        get() = isViewEvent &&
+            has("view") &&
+            getAsJsonObject("view").has("is_active") &&
+            !getAsJsonObject("view").get("is_active").asBoolean
 
     private val JsonObject.isViewUpdateEvent
         get() = get("type")?.asString == "view_update"
