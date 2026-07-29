@@ -78,6 +78,7 @@ internal class WireframeUtils(private val boundsUtils: BoundsUtils = BoundsUtils
             is MobileSegment.Wireframe.ImageWireframe -> this.clip
             is MobileSegment.Wireframe.PlaceholderWireframe -> this.clip
             is MobileSegment.Wireframe.WebviewWireframe -> this.clip
+            is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.clip
         }
     }
 }
