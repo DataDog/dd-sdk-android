@@ -137,6 +137,35 @@ internal class NodeFlattenerTest {
     }
 
     @Test
+    fun `M keep covered wireframe W flattenNode { covering embedded content is hidden }`(forge: Forge) {
+        // Given
+        val fakeBottomWireframe = forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>().copy(
+            x = 0,
+            y = 0,
+            width = 100,
+            height = 100,
+            clip = null,
+            shapeStyle = forge.getForgery()
+        )
+        val fakeHiddenEmbeddedContent =
+            forge.getForgery<MobileSegment.Wireframe.EmbeddedContentWireframe>().copy(
+                x = 0,
+                y = 0,
+                width = 100,
+                height = 100,
+                clip = null,
+                isVisible = false
+            )
+        val fakeNode = Node(wireframes = listOf(fakeBottomWireframe, fakeHiddenEmbeddedContent))
+
+        // When
+        val wireframes = NodeFlattener().flattenNode(fakeNode)
+
+        // Then
+        assertThat(wireframes).containsExactly(fakeBottomWireframe, fakeHiddenEmbeddedContent)
+    }
+
+    @Test
     fun `M not have ConcurrentModificationException W modifying nodes concurrently`(forge: Forge) {
         // Given
         val maxWidth = forge.aLong(2, 1000)

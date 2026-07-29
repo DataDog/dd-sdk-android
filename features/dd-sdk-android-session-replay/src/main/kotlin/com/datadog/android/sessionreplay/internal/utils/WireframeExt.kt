@@ -17,7 +17,7 @@ internal fun MobileSegment.Wireframe.hasOpaqueBackground(): Boolean {
         is MobileSegment.Wireframe.TextWireframe -> this.hasOpaqueBackground()
         is MobileSegment.Wireframe.PlaceholderWireframe -> true
         is MobileSegment.Wireframe.WebviewWireframe -> true
-        is MobileSegment.Wireframe.EmbeddedContentWireframe -> true
+        is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.isVisible != false
     }
 }
 
