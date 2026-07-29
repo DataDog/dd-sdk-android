@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.timeseries.serializer
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.timeseries.DataPoint
 import com.datadog.android.rum.model.TimeseriesMemoryEvent
 import com.datadog.android.rum.utils.forge.Configurator
@@ -59,6 +60,9 @@ internal class MemoryEventSerializerTest {
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
+    @Forgery
+    lateinit var fakeRumContext: RumContext
+
     @BeforeEach
     fun `set up`() {
         whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeNowMs
@@ -69,7 +73,7 @@ internal class MemoryEventSerializerTest {
         totalRamBytes: Long = fakeTotalRamBytes
     ) = MemoryEventSerializer(
         sessionId = fakeSessionId,
-        applicationId = fakeApplicationId,
+        rumContext = fakeRumContext.copy(applicationId = fakeApplicationId),
         sessionType = sessionType,
         totalRamBytes = totalRamBytes,
         timeProvider = mockTimeProvider
@@ -126,7 +130,7 @@ internal class MemoryEventSerializerTest {
         val result = testedSerializer().serialize(fakeDatadogContext, samples)
 
         // Then
-        val json = checkNotNull(result)
+        val json = checkNotNull(result).asJsonObject
         val timeseries = json.getAsJsonObject(TimeseriesAttributes.KEY_TIMESERIES)
         assertThat(timeseries.get(TimeseriesAttributes.KEY_SCHEMA).asString).isEqualTo(VALUE_SCHEMA_OBJECT)
         assertThat(timeseries.get(KEY_START).asLong).isEqualTo(fakeTs)
@@ -153,7 +157,7 @@ internal class MemoryEventSerializerTest {
             .serialize(fakeDatadogContext, listOf(DataPoint(fakeTs, fakeMemory), DataPoint(fakeTs + 1L, fakeMemory)))
 
         // Then
-        val json = checkNotNull(result)
+        val json = checkNotNull(result).asJsonObject
         assertThat(json.getAsJsonObject(KEY_SESSION).get(KEY_TYPE).asString).isEqualTo(VALUE_TYPE_SYNTHETICS)
     }
 

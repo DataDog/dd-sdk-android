@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.timeseries.csv
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumViewType
 import com.datadog.android.rum.internal.timeseries.Buffer
 import com.datadog.android.rum.internal.timeseries.Timeseries
@@ -49,7 +50,7 @@ internal class CsvTimeseries(
     private fun flush(buffer: Buffer<Double>, serializer: JsonSerializer<Double>) = buffer.drain()
         .takeIf { it.isNotEmpty() }
         ?.let { serializer.serialize(datadogContext, it) }
-        ?.let(emitted::add)
+        ?.let { emitted.add(it.asJsonObject) }
 
     override fun onSessionStop() = Unit
 
@@ -80,7 +81,7 @@ internal class CsvTimeseries(
                     Buffer(bufferSize),
                     MemoryEventSerializer(
                         sessionId = sessionId,
-                        applicationId = applicationId,
+                        rumContext = RumContext(applicationId = applicationId),
                         sessionType = sessionType,
                         totalRamBytes = totalRamBytes,
                         timeProvider = timeProvider
@@ -91,7 +92,7 @@ internal class CsvTimeseries(
                     Buffer(bufferSize),
                     CpuEventSerializer(
                         sessionId = sessionId,
-                        applicationId = applicationId,
+                        rumContext = RumContext(applicationId = applicationId),
                         sessionType = sessionType,
                         timeProvider = timeProvider
                     )

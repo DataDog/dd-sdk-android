@@ -1869,11 +1869,13 @@ internal class RumSessionScopeTest {
         )
 
         // Then
+        val rumContextCaptor = argumentCaptor<RumContext>()
         verify(mockTimeseriesFactory).create(
-            fakeParentContext.applicationId,
-            testedScope.sessionId,
-            fakeRumSessionType ?: RumSessionType.USER
+            eq(testedScope.sessionId),
+            eq(fakeRumSessionType ?: RumSessionType.USER),
+            rumContextCaptor.capture()
         )
+        assertThat(rumContextCaptor.firstValue.applicationId).isEqualTo(fakeParentContext.applicationId)
         verify(mockTimeseries).onSessionStart()
     }
 
@@ -1888,11 +1890,13 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
+        val rumContextCaptor = argumentCaptor<RumContext>()
         verify(mockTimeseriesFactory).create(
-            fakeParentContext.applicationId,
-            testedScope.sessionId,
-            RumSessionType.USER
+            eq(testedScope.sessionId),
+            eq(RumSessionType.USER),
+            rumContextCaptor.capture()
         )
+        assertThat(rumContextCaptor.firstValue.applicationId).isEqualTo(fakeParentContext.applicationId)
     }
 
     @Test
@@ -1910,11 +1914,13 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
+        val rumContextCaptor = argumentCaptor<RumContext>()
         verify(mockTimeseriesFactory).create(
-            fakeParentContext.applicationId,
-            testedScope.sessionId,
-            RumSessionType.SYNTHETICS
+            eq(testedScope.sessionId),
+            eq(RumSessionType.SYNTHETICS),
+            rumContextCaptor.capture()
         )
+        assertThat(rumContextCaptor.firstValue.applicationId).isEqualTo(fakeParentContext.applicationId)
     }
 
     @Test
@@ -1933,11 +1939,13 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
+        val rumContextCaptor = argumentCaptor<RumContext>()
         verify(mockTimeseriesFactory).create(
-            fakeParentContext.applicationId,
-            testedScope.sessionId,
-            expectedSessionType
+            eq(testedScope.sessionId),
+            eq(expectedSessionType),
+            rumContextCaptor.capture()
         )
+        assertThat(rumContextCaptor.firstValue.applicationId).isEqualTo(fakeParentContext.applicationId)
     }
 
     @Test
@@ -1954,7 +1962,7 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        verify(mockTimeseriesFactory).create(any(), any(), eq(expectedSessionType))
+        verify(mockTimeseriesFactory).create(any(), eq(expectedSessionType), any())
     }
 
     @Test
@@ -1971,7 +1979,7 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        verify(mockTimeseriesFactory).create(any(), any(), eq(RumSessionType.USER))
+        verify(mockTimeseriesFactory).create(any(), eq(RumSessionType.USER), any())
     }
 
     @Test
@@ -1988,7 +1996,7 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        verify(mockTimeseriesFactory).create(any(), any(), eq(RumSessionType.USER))
+        verify(mockTimeseriesFactory).create(any(), eq(RumSessionType.USER), any())
     }
 
     @Test
@@ -2005,7 +2013,7 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        verify(mockTimeseriesFactory).create(any(), any(), eq(RumSessionType.USER))
+        verify(mockTimeseriesFactory).create(any(), eq(RumSessionType.USER), any())
     }
 
     @Test
@@ -2022,7 +2030,7 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        verify(mockTimeseriesFactory).create(any(), any(), eq(RumSessionType.USER))
+        verify(mockTimeseriesFactory).create(any(), eq(RumSessionType.USER), any())
     }
 
     @Test

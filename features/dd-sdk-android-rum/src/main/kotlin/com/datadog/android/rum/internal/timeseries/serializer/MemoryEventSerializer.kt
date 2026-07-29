@@ -9,31 +9,41 @@ package com.datadog.android.rum.internal.timeseries.serializer
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.timeseries.DataPoint
 import com.datadog.android.rum.internal.toTimeseriesMemorySessionType
 import com.datadog.android.rum.model.TimeseriesMemoryEvent
-import com.google.gson.JsonObject
+import com.google.gson.JsonElement
 import java.util.UUID
 
 @Suppress("LongParameterList")
 internal class MemoryEventSerializer(
     private val sessionId: String,
-    private val applicationId: String,
     private val sessionType: RumSessionType,
     private val totalRamBytes: Long,
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    private val rumContext: RumContext
 ) : JsonSerializer<Double> {
 
-    override fun serialize(datadogContext: DatadogContext, dataPoints: List<DataPoint<Double>>): JsonObject? {
+    override fun serialize(datadogContext: DatadogContext, dataPoints: List<DataPoint<Double>>): JsonElement? {
         if (totalRamBytes <= 0L || dataPoints.isEmpty()) return null
         return TimeseriesMemoryEvent(
             dd = TimeseriesMemoryEvent.Dd(),
-            application = TimeseriesMemoryEvent.Application(id = applicationId),
-            session = TimeseriesMemoryEvent.Session(id = sessionId, type = sessionType.toTimeseriesMemorySessionType()),
+            application = TimeseriesMemoryEvent.Application(id = rumContext.applicationId),
+            session = TimeseriesMemoryEvent.TimeseriesMemoryEventSession(
+                id = sessionId,
+                type = sessionType.toTimeseriesMemorySessionType()
+            ),
             source = TimeseriesMemoryEvent.Source.ANDROID,
             date = timeProvider.getDeviceTimestampMillis(),
             version = datadogContext.version,
             service = datadogContext.service,
+            view = TimeseriesMemoryEvent.View(
+                referrer = null,
+                name = rumContext.viewName,
+                url = rumContext.viewUrl ?: "",
+                id = rumContext.viewId ?: RumContext.NULL_UUID
+            ),
             timeseries = TimeseriesMemoryEvent.Timeseries(
                 id = UUID.randomUUID().toString(),
                 start = dataPoints.firstOrNull()?.timestampNs ?: 0L,
@@ -46,7 +56,7 @@ internal class MemoryEventSerializer(
                     )
                 )
             )
-        ).toJson().asJsonObject
+        ).toJson()
     }
 
     private companion object {

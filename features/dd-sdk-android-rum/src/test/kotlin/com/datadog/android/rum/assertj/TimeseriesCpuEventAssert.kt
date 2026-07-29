@@ -7,6 +7,7 @@
 package com.datadog.android.rum.assertj
 
 import com.datadog.android.rum.model.TimeseriesCpuEvent
+import com.datadog.android.rum.model.TimeseriesCpuEvent.TimeseriesCpuEventSessionType
 import com.google.gson.JsonObject
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
@@ -35,7 +36,7 @@ internal class TimeseriesCpuEventAssert private constructor(
             .isEqualTo(expected)
     }
 
-    fun hasSessionType(expected: TimeseriesCpuEvent.Type): TimeseriesCpuEventAssert = apply {
+    fun hasSessionType(expected: TimeseriesCpuEventSessionType): TimeseriesCpuEventAssert = apply {
         assertThat(actual.session.type)
             .overridingErrorMessage { "Expected event to have session.type $expected but was ${actual.session.type}" }
             .isEqualTo(expected)

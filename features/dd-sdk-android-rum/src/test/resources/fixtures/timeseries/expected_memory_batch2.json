@@ -4,6 +4,7 @@
   "application": {"id": "fake-app-id"},
   "session": {"id": "fake-session-id", "type": "user"},
   "source": "android",
+  "view": {"id": "00000000-0000-0000-0000-000000000000", "url": ""},
   "date": 1700000001000,
   "timeseries": {
     "id": "00000000-0000-0000-0000-000000000000",

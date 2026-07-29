@@ -55,9 +55,9 @@ import java.util.concurrent.TimeUnit
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class RumSessionScopeTimeseriesTest {
+internal class RumTimeseriesTest {
 
-    private lateinit var testedTimeseries: RumSessionScopeTimeseries
+    private lateinit var testedTimeseries: RumTimeseries
 
     @Mock
     lateinit var mockDataWriter: DataWriter<Any>
@@ -127,10 +127,10 @@ internal class RumSessionScopeTimeseriesTest {
 
         bufferA = Buffer(fakeBufferSize)
         bufferB = Buffer(fakeBufferSize)
-        pipelineA = Pipeline(mockSdkCore, mockReaderA, bufferA, mockSerializerA, mockDataWriter, mockInternalLogger)
-        pipelineB = Pipeline(mockSdkCore, mockReaderB, bufferB, mockSerializerB, mockDataWriter, mockInternalLogger)
+        pipelineA = Pipeline(mockSdkCore, mockReaderA, bufferA, mockSerializerA, mockDataWriter)
+        pipelineB = Pipeline(mockSdkCore, mockReaderB, bufferB, mockSerializerB, mockDataWriter)
 
-        testedTimeseries = RumSessionScopeTimeseries(
+        testedTimeseries = RumTimeseries(
             pipelines = listOf(pipelineA, pipelineB),
             internalLogger = mockInternalLogger,
             collectInBackground = false,
@@ -382,7 +382,7 @@ internal class RumSessionScopeTimeseriesTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            RumSessionScopeTimeseries.ERROR_SAMPLING_FAILED,
+            RumTimeseries.ERROR_SAMPLING_FAILED,
             fakeError
         )
     }
@@ -397,8 +397,8 @@ internal class RumSessionScopeTimeseriesTest {
         whenever(mockBuffer.drain()) doThrow fakeError
         whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
         val pipeline =
-            Pipeline(mockSdkCore, mockReaderA, mockBuffer, mockSerializerA, mockDataWriter, mockInternalLogger)
-        val timeseries = RumSessionScopeTimeseries(
+            Pipeline(mockSdkCore, mockReaderA, mockBuffer, mockSerializerA, mockDataWriter)
+        val timeseries = RumTimeseries(
             pipelines = listOf(pipeline),
             internalLogger = mockInternalLogger,
             collectInBackground = false,
@@ -415,7 +415,7 @@ internal class RumSessionScopeTimeseriesTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            RumSessionScopeTimeseries.ERROR_SAMPLING_FAILED,
+            RumTimeseries.ERROR_SAMPLING_FAILED,
             fakeError
         )
         verify(mockExecutor, times(2))
@@ -466,7 +466,7 @@ internal class RumSessionScopeTimeseriesTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            RumSessionScopeTimeseries.ERROR_SAMPLING_FAILED,
+            RumTimeseries.ERROR_SAMPLING_FAILED,
             fakeError
         )
         verify(mockExecutor, times(fakeBufferSize + 1))
@@ -580,7 +580,7 @@ internal class RumSessionScopeTimeseriesTest {
     fun `M not flush W onViewTypeUpdate() { background, collectInBackground = true }`(forge: Forge) {
         // Given
         whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
-        val bgTimeseries = RumSessionScopeTimeseries(
+        val bgTimeseries = RumTimeseries(
             pipelines = listOf(pipelineA, pipelineB),
             internalLogger = mockInternalLogger,
             collectInBackground = true,
@@ -600,7 +600,7 @@ internal class RumSessionScopeTimeseriesTest {
     fun `M sample W sample tick { background, collectInBackground = true }`(forge: Forge) {
         // Given
         whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
-        val bgTimeseries = RumSessionScopeTimeseries(
+        val bgTimeseries = RumTimeseries(
             pipelines = listOf(pipelineA, pipelineB),
             internalLogger = mockInternalLogger,
             collectInBackground = true,

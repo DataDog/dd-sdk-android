@@ -134,6 +134,13 @@ object Rum {
             sampleRate = rumFeature.sampleRate
         )
 
+        val telemetryEventHandler = TelemetryEventHandler(
+            sdkCore = sdkCore,
+            eventSampler = RateBasedSampler(rumFeature.telemetrySampleRate),
+            sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
+            configurationExtraSampler = RateBasedSampler(rumFeature.telemetryConfigurationSampleRate)
+        )
+
         return DatadogRumMonitor(
             applicationId = rumFeature.applicationId,
             sdkCore = sdkCore,
@@ -142,14 +149,7 @@ object Rum {
             sessionSampler = sessionSampler,
             writer = rumFeature.dataWriter,
             handler = Handler(Looper.getMainLooper()),
-            telemetryEventHandler = TelemetryEventHandler(
-                sdkCore = sdkCore,
-                eventSampler = RateBasedSampler(rumFeature.telemetrySampleRate),
-                sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
-                configurationExtraSampler = RateBasedSampler(
-                    rumFeature.telemetryConfigurationSampleRate
-                )
-            ),
+            telemetryEventHandler = telemetryEventHandler,
             firstPartyHostHeaderTypeResolver = sdkCore.firstPartyHostResolver,
             cpuVitalMonitor = rumFeature.cpuVitalMonitor,
             memoryVitalMonitor = rumFeature.memoryVitalMonitor,

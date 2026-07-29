@@ -9,30 +9,40 @@ package com.datadog.android.rum.internal.timeseries.serializer
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.timeseries.DataPoint
 import com.datadog.android.rum.internal.toTimeseriesCpuSessionType
 import com.datadog.android.rum.model.TimeseriesCpuEvent
-import com.google.gson.JsonObject
+import com.google.gson.JsonElement
 import java.util.UUID
 
 @Suppress("LongParameterList")
 internal class CpuEventSerializer(
     private val sessionId: String,
-    private val applicationId: String,
     private val sessionType: RumSessionType,
+    private val rumContext: RumContext,
     private val timeProvider: TimeProvider
 ) : JsonSerializer<Double> {
 
-    override fun serialize(datadogContext: DatadogContext, dataPoints: List<DataPoint<Double>>): JsonObject? {
+    override fun serialize(datadogContext: DatadogContext, dataPoints: List<DataPoint<Double>>): JsonElement? {
         if (dataPoints.isEmpty()) return null
         return TimeseriesCpuEvent(
             dd = TimeseriesCpuEvent.Dd(),
-            application = TimeseriesCpuEvent.Application(id = applicationId),
-            session = TimeseriesCpuEvent.Session(id = sessionId, type = sessionType.toTimeseriesCpuSessionType()),
+            application = TimeseriesCpuEvent.Application(id = rumContext.applicationId),
+            session = TimeseriesCpuEvent.TimeseriesCpuEventSession(
+                id = sessionId,
+                type = sessionType.toTimeseriesCpuSessionType()
+            ),
             source = TimeseriesCpuEvent.Source.ANDROID,
             date = timeProvider.getDeviceTimestampMillis(),
             version = datadogContext.version,
             service = datadogContext.service,
+            view = TimeseriesCpuEvent.View(
+                referrer = null,
+                name = rumContext.viewName,
+                url = rumContext.viewUrl ?: "",
+                id = rumContext.viewId ?: RumContext.NULL_UUID
+            ),
             timeseries = TimeseriesCpuEvent.Timeseries(
                 id = UUID.randomUUID().toString(),
                 start = dataPoints.firstOrNull()?.timestampNs ?: 0L,
@@ -42,6 +52,6 @@ internal class CpuEventSerializer(
                     values = TimeseriesCpuEvent.Values(dataPoints.map { it.value })
                 )
             )
-        ).toJson().asJsonObject
+        ).toJson()
     }
 }

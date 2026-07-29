@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicReference
  *    When [startSampling] starts a new generation, any in-flight or queued ticks from the
  *    previous generation self-terminate on their first check.
  */
-internal class RumSessionScopeTimeseries(
+internal class RumTimeseries(
     private val internalLogger: InternalLogger,
     internal val pipelines: List<Pipeline<*>>,
     private val collectInBackground: Boolean,

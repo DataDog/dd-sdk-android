@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.timeseries
 
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumViewType
 import com.datadog.tools.annotation.NoOpImplementation
 
@@ -18,6 +19,6 @@ internal interface Timeseries {
 
     @NoOpImplementation
     interface Factory {
-        fun create(applicationId: String, sessionId: String, sessionType: RumSessionType): Timeseries
+        fun create(sessionId: String, sessionType: RumSessionType, rumContext: RumContext): Timeseries
     }
 }

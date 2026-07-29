@@ -19,7 +19,7 @@ import com.datadog.android.rum.internal.instrumentation.insights.NoOpInsightsCol
 import com.datadog.android.rum.internal.timeseries.provider.DataPointsReader
 import com.datadog.android.rum.internal.timeseries.serializer.JsonSerializer
 import com.datadog.android.rum.internal.timeseries.serializer.TimeseriesAttributes
-import com.google.gson.JsonObject
+import com.google.gson.JsonElement
 
 @Suppress("LongParameterList")
 internal class Pipeline<T : Any>(
@@ -28,7 +28,6 @@ internal class Pipeline<T : Any>(
     private val buffer: Buffer<T>,
     private val serializer: JsonSerializer<T>,
     private val dataWriter: DataWriter<Any>,
-    private val internalLogger: InternalLogger,
     private val insightsCollector: InsightsCollector = NoOpInsightsCollector()
 ) {
     val intervalMs: Long get() = reader.intervalMs
@@ -61,7 +60,7 @@ internal class Pipeline<T : Any>(
     private inline fun <R> safeCall(message: String, block: () -> R): R? = try {
         block()
     } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
-        internalLogger.log(
+        sdkCore.internalLogger.log(
             level = InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             messageBuilder = { message },
@@ -73,8 +72,8 @@ internal class Pipeline<T : Any>(
     private companion object {
         private const val ERROR_FLUSH_FAILED = "Timeseries flush failed"
         private const val ERROR_SERIALIZATION_FAILED = "Timeseries serialization failed"
-        private val JsonObject.timeseriesName: String
-            get() = getAsJsonObject(TimeseriesAttributes.KEY_TIMESERIES)
+        private val JsonElement.timeseriesName: String
+            get() = asJsonObject.getAsJsonObject(TimeseriesAttributes.KEY_TIMESERIES)
                 ?.get(TimeseriesAttributes.KEY_NAME)
                 ?.asString.orEmpty()
     }

@@ -42,6 +42,7 @@ import com.datadog.android.rum.internal.RumFeature.Companion.SLOW_FRAMES_MONITOR
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.InfoProvider
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilityReader
 import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilitySnapshotManager
@@ -56,7 +57,8 @@ import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.startup.RumAppStartupDetector
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
-import com.datadog.android.rum.internal.timeseries.RumSessionScopeTimeseries
+import com.datadog.android.rum.internal.timeseries.DefaultTimeseriesFactory
+import com.datadog.android.rum.internal.timeseries.RumTimeseries
 import com.datadog.android.rum.internal.timeseries.Timeseries
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
@@ -904,7 +906,7 @@ internal class RumFeatureTest {
         val timeseries = createTimeseries(totalRamBytes = 0L, sessionId = fakeSessionId)
 
         // Then: only the CPU pipeline is created; the memory pipeline is skipped.
-        check(timeseries is RumSessionScopeTimeseries)
+        check(timeseries is RumTimeseries)
         assertThat(timeseries.pipelines).hasSize(1)
     }
 
@@ -917,7 +919,7 @@ internal class RumFeatureTest {
         val timeseries = createTimeseries(totalRamBytes = fakeTotalRamBytes, sessionId = fakeSessionId)
 
         // Then: both the CPU and memory pipelines are created.
-        check(timeseries is RumSessionScopeTimeseries)
+        check(timeseries is RumTimeseries)
         assertThat(timeseries.pipelines).hasSize(2)
     }
 
@@ -1919,13 +1921,18 @@ internal class RumFeatureTest {
     // ActivityManager read so the skip/collect/log behavior can be exercised deterministically.
     @OptIn(ExperimentalRumApi::class)
     private fun createTimeseries(totalRamBytes: Long, sessionId: String): Timeseries =
-        testedFeature
-            .createTimeseriesCollectingFactory(
-                TimeseriesConfiguration.Builder().build(),
-                totalRamBytes,
-                testedFeature.configuration.insightsCollector
-            )
-            .create(fakeApplicationId.toString(), sessionId, RumSessionType.USER)
+        DefaultTimeseriesFactory(
+            sdkCore = mockSdkCore,
+            dataWriter = testedFeature.dataWriter,
+            insightsCollector = testedFeature.insightsCollector,
+            configuration = TimeseriesConfiguration.Builder().build(),
+            scheduledExecutorService = testedFeature.vitalExecutorService,
+            totalRamBytes = totalRamBytes
+        ).create(
+            sessionId = sessionId,
+            sessionType = RumSessionType.USER,
+            rumContext = RumContext(applicationId = fakeApplicationId.toString(), sessionId = sessionId)
+        )
 
     private fun Forge.anApplicationExitInfoList(
         mustInclude: Int? = null

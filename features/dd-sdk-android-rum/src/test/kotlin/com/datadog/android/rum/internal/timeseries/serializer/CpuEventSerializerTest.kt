@@ -10,10 +10,11 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.TimeseriesCpuEventAssert.Companion.assertThat
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.timeseries.DataPoint
-import com.datadog.android.rum.model.TimeseriesCpuEvent
+import com.datadog.android.rum.model.TimeseriesCpuEvent.TimeseriesCpuEventSessionType
 import com.datadog.android.rum.utils.forge.Configurator
-import com.google.gson.JsonObject
+import com.google.gson.JsonElement
 import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -51,6 +52,9 @@ internal class CpuEventSerializerTest {
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
+    @Forgery
+    lateinit var fakeRumContext: RumContext
+
     val mockTimeProvider: TimeProvider = mock<TimeProvider> {
         on { getDeviceTimestampMillis() } doAnswer { fakeNowMs }
     }
@@ -59,8 +63,8 @@ internal class CpuEventSerializerTest {
         sessionType: RumSessionType = RumSessionType.USER
     ) = CpuEventSerializer(
         sessionId = fakeSessionId,
-        applicationId = fakeApplicationId,
         sessionType = sessionType,
+        rumContext = fakeRumContext.copy(applicationId = fakeApplicationId),
         timeProvider = mockTimeProvider
     )
 
@@ -95,7 +99,7 @@ internal class CpuEventSerializerTest {
             .hasTimeseriesStart(fakeTs)
             .hasTimeseriesEnd(fakeTs + 1L)
             .hasApplicationId(fakeApplicationId)
-            .hasSessionType(TimeseriesCpuEvent.Type.USER)
+            .hasSessionType(TimeseriesCpuEventSessionType.USER)
             .hasTimeseriesSchema("object-v2")
             .hasService(fakeDatadogContext.service)
             .hasVersion(fakeDatadogContext.version)
@@ -115,7 +119,7 @@ internal class CpuEventSerializerTest {
             .failIfNull()
 
         // Then
-        assertThat(json).hasSessionType(TimeseriesCpuEvent.Type.SYNTHETICS)
+        assertThat(json).hasSessionType(TimeseriesCpuEventSessionType.SYNTHETICS)
     }
 
     @Test
@@ -140,8 +144,7 @@ internal class CpuEventSerializerTest {
     private companion object {
         private const val CPU_OFFSET: Double = 0.0001
         private const val NON_NULL_JSON_ERROR: String = "expected non-null json"
-        private fun JsonObject?.failIfNull(): JsonObject {
-            if (this == null) error(NON_NULL_JSON_ERROR) else return this
-        }
+        private fun JsonElement?.failIfNull() =
+            if (this == null) error(NON_NULL_JSON_ERROR) else asJsonObject
     }
 }

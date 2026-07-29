@@ -8,10 +8,10 @@ package com.datadog.android.rum.internal.timeseries.serializer
 
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.rum.internal.timeseries.DataPoint
-import com.google.gson.JsonObject
+import com.google.gson.JsonElement
 
 internal fun interface JsonSerializer<T : Any> {
-    fun serialize(datadogContext: DatadogContext, dataPoints: List<DataPoint<T>>): JsonObject?
+    fun serialize(datadogContext: DatadogContext, dataPoints: List<DataPoint<T>>): JsonElement?
 }
 
 internal object TimeseriesAttributes {

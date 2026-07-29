@@ -93,6 +93,7 @@ internal class PipelineTest {
 
     @BeforeEach
     fun `set up`() {
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
             it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
@@ -110,7 +111,6 @@ internal class PipelineTest {
             buffer = buffer,
             serializer = mockSerializer,
             dataWriter = mockDataWriter,
-            internalLogger = mockInternalLogger,
             insightsCollector = mockInsightsCollector
         )
     }

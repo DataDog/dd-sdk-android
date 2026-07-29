@@ -22,6 +22,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.InfoProvider
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
@@ -243,7 +244,9 @@ internal class RumApplicationScopeTest {
         )
 
         // Then - the child session uses the same factory we gave to the application scope
-        verify(mockTimeseriesFactory).create(eq(fakeApplicationId), any(), any())
+        val rumContextCaptor = argumentCaptor<RumContext>()
+        verify(mockTimeseriesFactory).create(any(), any(), rumContextCaptor.capture())
+        assertThat(rumContextCaptor.firstValue.applicationId).isEqualTo(fakeApplicationId)
     }
 
     @Test
@@ -282,7 +285,9 @@ internal class RumApplicationScopeTest {
         )
 
         // Then - factory.create is invoked once per tracked session (initial + new)
-        verify(mockTimeseriesFactory, times(2)).create(eq(fakeApplicationId), any(), any())
+        val rumContextCaptor = argumentCaptor<RumContext>()
+        verify(mockTimeseriesFactory, times(2)).create(any(), any(), rumContextCaptor.capture())
+        rumContextCaptor.allValues.forEach { assertThat(it.applicationId).isEqualTo(fakeApplicationId) }
     }
 
     @Test

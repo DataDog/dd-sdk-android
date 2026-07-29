@@ -91,15 +91,9 @@ import com.datadog.android.rum.internal.startup.RumAppStartupDetector
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
-import com.datadog.android.rum.internal.timeseries.Buffer
+import com.datadog.android.rum.internal.timeseries.DefaultTimeseriesFactory
 import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesFactory
-import com.datadog.android.rum.internal.timeseries.Pipeline
-import com.datadog.android.rum.internal.timeseries.RumSessionScopeTimeseriesFactory
 import com.datadog.android.rum.internal.timeseries.Timeseries
-import com.datadog.android.rum.internal.timeseries.provider.CpuDatapointReader
-import com.datadog.android.rum.internal.timeseries.provider.VitalReaderWrapper
-import com.datadog.android.rum.internal.timeseries.serializer.CpuEventSerializer
-import com.datadog.android.rum.internal.timeseries.serializer.MemoryEventSerializer
 import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
@@ -302,11 +296,14 @@ internal class RumFeature(
 
         sessionListener = configuration.sessionListener
 
-        configuration.timeseriesConfiguration?.let { configuration ->
-            timeseriesFactory = createTimeseriesCollectingFactory(
-                configuration,
-                appContext.readTotalRamBytes(sdkCore.internalLogger) ?: 0L,
-                insightsCollector
+        configuration.timeseriesConfiguration?.let { timeseriesConfiguration ->
+            timeseriesFactory = DefaultTimeseriesFactory(
+                sdkCore = sdkCore,
+                dataWriter = dataWriter,
+                insightsCollector = insightsCollector,
+                configuration = timeseriesConfiguration,
+                scheduledExecutorService = vitalExecutorService,
+                totalRamBytes = appContext.readTotalRamBytes(sdkCore.internalLogger) ?: 0L
             )
         }
 
@@ -451,68 +448,6 @@ internal class RumFeature(
             sdkCore = sdkCore
         )
     }
-
-    @Suppress("LongMethod")
-    internal fun createTimeseriesCollectingFactory(
-        configuration: TimeseriesConfiguration,
-        totalRamBytes: Long,
-        insightsCollector: InsightsCollector
-    ): Timeseries.Factory = RumSessionScopeTimeseriesFactory(
-        internalLogger = sdkCore.internalLogger,
-        collectInBackground = configuration.collectInBackground,
-        scheduledExecutorService = vitalExecutorService,
-        pipelinesProvider = { applicationId, sessionId, sessionType ->
-            listOfNotNull(
-                Pipeline(
-                    sdkCore = sdkCore,
-                    reader = CpuDatapointReader(
-                        cpuStatReader = CpuStatReader(internalLogger = sdkCore.internalLogger),
-                        cpuTimeProvider = sdkCore.timeProvider,
-                        intervalMs = configuration.intervalMs
-                    ),
-                    buffer = Buffer(configuration.bufferSize),
-                    serializer = CpuEventSerializer(
-                        sessionId = sessionId,
-                        applicationId = applicationId,
-                        sessionType = sessionType,
-                        timeProvider = sdkCore.timeProvider
-                    ),
-                    dataWriter = dataWriter,
-                    internalLogger = sdkCore.internalLogger,
-                    insightsCollector = insightsCollector
-                ),
-                if (totalRamBytes > 0L) {
-                    Pipeline(
-                        sdkCore = sdkCore,
-                        reader = VitalReaderWrapper(
-                            vitalReader = MemoryVitalReader(internalLogger = sdkCore.internalLogger),
-                            timeProvider = sdkCore.timeProvider,
-                            intervalMs = configuration.intervalMs
-                        ),
-                        buffer = Buffer(configuration.bufferSize),
-                        serializer = MemoryEventSerializer(
-                            sessionId = sessionId,
-                            applicationId = applicationId,
-                            sessionType = sessionType,
-                            totalRamBytes = totalRamBytes,
-                            timeProvider = sdkCore.timeProvider
-                        ),
-                        dataWriter = dataWriter,
-                        internalLogger = sdkCore.internalLogger,
-                        insightsCollector = insightsCollector
-                    )
-                } else {
-                    sdkCore.internalLogger.log(
-                        InternalLogger.Level.WARN,
-                        InternalLogger.Target.USER,
-                        { MEMORY_TIMESERIES_DISABLED_MESSAGE },
-                        onlyOnce = true
-                    )
-                    null
-                }
-            )
-        }
-    )
 
     // region FeatureEventReceiver
 
