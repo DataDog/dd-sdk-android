@@ -155,7 +155,6 @@ internal class ContinuousProfilingSchedulerTest {
             appContext = eq(mockApplication),
             startReason = eq(ProfilingStartReason.CONTINUOUS),
             additionalAttributes = eq(emptyMap()),
-            sdkInstanceNames = eq(setOf(fakeInstanceName)),
             durationMs = durationCaptor.capture()
         )
         val captured = durationCaptor.firstValue.toLong()
@@ -169,7 +168,7 @@ internal class ContinuousProfilingSchedulerTest {
         testedScheduler.start(launchProfilingActive = true)
 
         // Then
-        verify(mockProfiler, never()).start(any(), any(), any(), any(), any())
+        verify(mockProfiler, never()).start(any(), any(), any(), any())
         verifyNoInteractions(mockSchedulerExecutor)
     }
 
@@ -198,7 +197,7 @@ internal class ContinuousProfilingSchedulerTest {
         testedScheduler.start(launchProfilingActive = false)
 
         // Then
-        verify(mockProfiler, never()).start(any(), any(), any(), any(), any())
+        verify(mockProfiler, never()).start(any(), any(), any(), any())
     }
 
     @Test
@@ -239,7 +238,7 @@ internal class ContinuousProfilingSchedulerTest {
         testedScheduler.onAppLaunchProfilingComplete()
 
         // Then
-        verify(mockProfiler, never()).start(any(), any(), any(), any(), any())
+        verify(mockProfiler, never()).start(any(), any(), any(), any())
     }
 
     @Test
@@ -252,7 +251,7 @@ internal class ContinuousProfilingSchedulerTest {
         testedScheduler.onAppLaunchProfilingComplete()
 
         // Then — profiling must not start until the cooldown fires
-        verify(mockProfiler, never()).start(any(), any(), any(), any(), any())
+        verify(mockProfiler, never()).start(any(), any(), any(), any())
     }
 
     @Test
@@ -272,7 +271,6 @@ internal class ContinuousProfilingSchedulerTest {
             appContext = eq(mockApplication),
             startReason = eq(ProfilingStartReason.CONTINUOUS),
             additionalAttributes = eq(emptyMap()),
-            sdkInstanceNames = eq(setOf(fakeInstanceName)),
             durationMs = any()
         )
     }
@@ -341,7 +339,7 @@ internal class ContinuousProfilingSchedulerTest {
         runnableCaptor.firstValue.run()
 
         // Then
-        verify(mockProfiler, never()).start(any(), any(), any(), any(), any())
+        verify(mockProfiler, never()).start(any(), any(), any(), any())
     }
 
     @Test
@@ -353,7 +351,7 @@ internal class ContinuousProfilingSchedulerTest {
         testedScheduler.onRumSessionRenewed(sessionId = fakeSessionId, rumSessionSampleRate = 0f)
 
         // Then
-        verify(mockProfiler, never()).stop(any())
+        verify(mockProfiler, never()).stop()
     }
 
     @Test
@@ -366,7 +364,7 @@ internal class ContinuousProfilingSchedulerTest {
         testedScheduler.onRumSessionRenewed(sessionId = fakeSessionId, rumSessionSampleRate = 0f)
 
         // Then
-        verify(mockProfiler, never()).stop(any())
+        verify(mockProfiler, never()).stop()
         assertThat(testedScheduler.currentSessionSampled).isFalse()
     }
 
@@ -508,7 +506,7 @@ internal class ContinuousProfilingSchedulerTest {
         runnableCaptor.firstValue.run()
 
         // Then
-        verify(mockProfiler, never()).start(any(), any(), any(), any(), any())
+        verify(mockProfiler, never()).start(any(), any(), any(), any())
         assertThat(testedScheduler.state).isEqualTo(ContinuousProfilingScheduler.State.COOLDOWN)
         assertThat(testedScheduler.isActive).isFalse()
         assertThat(activeWindowStartedCount).isEqualTo(0)
@@ -539,7 +537,7 @@ internal class ContinuousProfilingSchedulerTest {
         runnableCaptor.firstValue.run()
 
         // Then — the window is skipped until the decision lands
-        verify(mockProfiler, never()).start(any(), any(), any(), any(), any())
+        verify(mockProfiler, never()).start(any(), any(), any(), any())
         assertThat(testedScheduler.state).isEqualTo(ContinuousProfilingScheduler.State.COOLDOWN)
         assertThat(testedScheduler.isActive).isFalse()
         assertThat(activeWindowStartedCount).isEqualTo(0)
@@ -573,7 +571,6 @@ internal class ContinuousProfilingSchedulerTest {
             appContext = eq(mockApplication),
             startReason = eq(ProfilingStartReason.CONTINUOUS),
             additionalAttributes = eq(emptyMap()),
-            sdkInstanceNames = eq(setOf(fakeInstanceName)),
             durationMs = any()
         )
         assertThat(testedScheduler.isActive).isTrue()
@@ -622,7 +619,6 @@ internal class ContinuousProfilingSchedulerTest {
 
         // Then
         verify(mockProfiler, atLeastOnce()).start(
-            any(),
             any(),
             any(),
             any(),
@@ -706,7 +702,7 @@ internal class ContinuousProfilingSchedulerTest {
         testedScheduler.onBackground()
 
         // Then
-        verify(mockProfiler, never()).stop(any())
+        verify(mockProfiler, never()).stop()
     }
 
     @Test
@@ -720,7 +716,7 @@ internal class ContinuousProfilingSchedulerTest {
 
         // Then
         assertThat(testedScheduler.state).isEqualTo(ContinuousProfilingScheduler.State.ACTIVE)
-        verify(mockProfiler, never()).start(any(), any(), any(), any(), eq(0))
+        verify(mockProfiler, never()).start(any(), any(), any(), eq(0))
     }
 
     @Test
@@ -739,7 +735,7 @@ internal class ContinuousProfilingSchedulerTest {
         runnableCaptor.lastValue.run()
 
         // Then
-        verify(mockProfiler).stop(fakeInstanceName)
+        verify(mockProfiler).stop()
     }
 
     @Test
@@ -801,7 +797,7 @@ internal class ContinuousProfilingSchedulerTest {
         testedScheduler.onBackground()
 
         // Then
-        verify(mockProfiler, never()).stop(any())
+        verify(mockProfiler, never()).stop()
         verify(mockFuture, never()).cancel(any())
     }
 
@@ -811,7 +807,7 @@ internal class ContinuousProfilingSchedulerTest {
         testedScheduler.onForeground()
 
         // Then
-        verify(mockProfiler, never()).start(any(), any(), any(), any(), any())
+        verify(mockProfiler, never()).start(any(), any(), any(), any())
         verify(mockSchedulerExecutor, never()).schedule(any<Runnable>(), any(), any())
     }
 

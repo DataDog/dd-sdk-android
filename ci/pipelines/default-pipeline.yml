@@ -18,8 +18,7 @@ workflow:
 stages:
   - ci-image
   - security
-  - analysis
-  - test # TODO RUM-1622 cleanup eventually
+  - verify
   - test-pyramid
   - publish
   - notify
@@ -156,44 +155,58 @@ create_key:
       - pubkeys
 
 
-# STATIC ANALYSIS
+# TESTS
 
-static-analysis:
-  stage: analysis
-  variables:
-    DETEKT_PUBLIC_API: "true"
-    # Our Detekt tasks can't run in parallel mode
-    DETEKT_GENERATE_CLASSPATH_BUILD_TASK: "printSdkDebugRuntimeClasspath --no-parallel"
-    DETEKT_CLASSPATH_FILE_PATH: "sdk_classpath"
-    FLAVORED_ANDROID_LINT: ":tools:lint:lint"
-  trigger:
-    include: "https://gitlab-templates.ddbuild.io/mobile/v123745390-227cb48b/static-analysis.yml"
-    strategy: depend
-
-analysis:detekt-custom:
+analysis:generated-files-check:
   extends:
     - .base-cache-pull-job
-  tags:
-    - "arch:amd64"
+  tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
-  stage: analysis
+  stage: verify
+  timeout: 30m
+  script:
+    - !reference [.snippets, setup-gradle]
+    - ./gradlew checkGeneratedFiles
+
+analysis:ktlint:
+  extends:
+    - .base-cache-pull-job
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  stage: verify
+  timeout: 30m
+  script:
+    - !reference [.snippets, setup-gradle]
+    - ./gradlew ktlintCheck :buildSrc:ktlintCheck
+
+analysis:detekt:
+  extends:
+    - .base-cache-pull-job
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  stage: verify
   timeout: 1h
   script:
     - !reference [.snippets, setup-gradle]
-    - ./gradlew unzipAarForDetekt :tools:detekt:jar
-    - ./gradlew printDetektClasspath --no-parallel
-    - curl -sSLO https://github.com/detekt/detekt/releases/download/v1.23.8/detekt-cli-1.23.8-all.jar
-    - ./gradlew customDetektRules
+    - ./gradlew detekt --continue
 
-# TODO RUM-1622 cleanup this section
-# TESTS
+analysis:android-lint:
+  extends:
+    - .base-cache-pull-job
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  stage: verify
+  timeout: 1h
+  script:
+    - !reference [.snippets, setup-gradle]
+    - ./gradlew :lintCheckAll --continue
 
 test:debug:
   extends:
     - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
-  stage: test
+  stage: verify
   timeout: 1h
   script:
     - !reference [.snippets, setup-gradle]
@@ -216,7 +229,7 @@ test:tools:
     - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
-  stage: test
+  stage: verify
   timeout: 1h
   script:
     - !reference [.snippets, setup-gradle]
@@ -226,7 +239,7 @@ test:tools:
 test:kover:
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
-  stage: test
+  stage: verify
   timeout: 1h
   variables:
     GRADLE_CACHE_CLEANUP: "true"
@@ -437,7 +450,7 @@ test-pyramid:ndk-instrumented-latest-api:
     - !reference [.snippets, setup-macos-ami-runner]
     - !reference [.snippets, run-ndk-instrumented]
 
-test-pyramid:detekt-api-coverage:
+test-pyramid:api-coverage:
   extends:
     - .base-cache-pull-job
   tags: [ "arch:amd64" ]
@@ -445,16 +458,13 @@ test-pyramid:detekt-api-coverage:
   stage: test-pyramid
   timeout: 1h
   script:
-    - !reference [ .snippets, source-secrets ]
     - !reference [ .snippets, setup-gradle ]
-    - mkdir -p ./config/
-    - ./gradlew assembleLibrariesDebug :tools:detekt:jar
-    - ./gradlew printSdkDebugRuntimeClasspath --no-parallel # can't be combined with line above due to fails in parallel mode due to design of our detekt system
-    - curl -sSLO https://github.com/detekt/detekt/releases/download/v1.23.8/detekt-cli-1.23.8-all.jar
-    # Explicit includes to avoid OOM. Keep it in sync with includes for rules.
-    - java -jar detekt-cli-1.23.8-all.jar --config detekt_test_pyramid.yml --plugins tools/detekt/build/libs/detekt.jar -ex "**/*.kts" -in "**/reliability/**,**/dd-sdk-android-*/**" --jvm-target 11 -cp $(cat sdk_classpath)
-    # For now we just print the uncovered apis, eventually we will fail if it's not empty
-    - grep -v -f apiUsage.log apiSurface.log
+    - ./gradlew checkTestPyramidCoverage
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - build/reports/test-pyramid/coverage.txt
 
 test-pyramid:publish-e2e-synthetics:
   extends:

@@ -23,17 +23,16 @@ internal interface Profiler {
         appContext: Context,
         startReason: ProfilingStartReason,
         additionalAttributes: Map<String, String>,
-        sdkInstanceNames: Set<String>,
         durationMs: Int = 0
     )
 
-    fun stop(sdkInstanceName: String)
+    fun stop()
 
-    fun isRunning(sdkInstanceName: String): Boolean
+    fun isRunning(): Boolean
 
-    fun registerProfilingCallback(appContext: Context, sdkInstanceName: String, callback: ProfilerCallback)
+    fun registerProfilingCallback(appContext: Context, callback: ProfilerCallback)
 
-    fun unregisterProfilingCallback(appContext: Context, sdkInstanceName: String)
+    fun unregisterProfilingCallback(appContext: Context)
 
     /**
      * Controls whether an app launch profiling session should extend past the 10-second
