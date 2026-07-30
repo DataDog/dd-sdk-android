@@ -237,6 +237,10 @@ internal class DatadogRumMonitorTest {
         whenever(mockExecutorService.execute(any<Runnable>())) doAnswer {
             it.getArgument<Runnable>(0).run()
         }
+        whenever(mockExecutorService.submit(any<Runnable>())) doAnswer {
+            it.getArgument<Runnable>(0).run()
+            mock<Future<*>>()
+        }
         whenever(mockExecutorService.submit(any<Callable<RumContext?>>())) doAnswer {
             val rumContext = it.getArgument<Callable<RumContext?>>(0).call()
             mock<Future<RumContext?>>().apply { whenever(get()) doReturn rumContext }

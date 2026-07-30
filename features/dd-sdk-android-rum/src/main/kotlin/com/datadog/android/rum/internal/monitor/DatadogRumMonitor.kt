@@ -917,19 +917,24 @@ internal class DatadogRumMonitor(
         }
     }
 
-    internal fun handleEvent(event: RumRawEvent) {
-        if (event is RumRawEvent.AddError && event.isFatal) {
-            // Fetch the write context BEFORE acquiring the rootScope lock (RUM-17619).
-            // The normal-event path acquires the lock inside the context-thread callback, i.e.
-            // context-thread → pipeline-thread → synchronized(rootScope).
-            // If we called getWriteContextSync while holding the lock we would invert that order:
-            // synchronized(rootScope) → getWriteContextSync (waits for context thread) → deadlock.
-            val writeContext = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
-                ?.getWriteContextSync(withFeatureContexts = setOf(Feature.SESSION_REPLAY_FEATURE_NAME))
-            if (writeContext != null) {
-                val (datadogContext, eventWriteScope) = writeContext
+    @Suppress("NestedBlockDepth", "LongMethod")
+    private fun handleFatalEvent(event: RumRawEvent.AddError) {
+        // The normal-event path acquires resources in this order:
+        //   context-thread → pipeline-thread → synchronized(rootScope)
+        // Calling getWriteContextSync while holding synchronized(rootScope) would
+        // invert that order and deadlock. Fetch the write context first (no lock held),
+        // then inject the crash task into the pipeline queue via put() so it is
+        // serialized correctly and never dropped by back-pressure.
+        val writeContext = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+            ?.getWriteContextSync(withFeatureContexts = setOf(Feature.SESSION_REPLAY_FEATURE_NAME))
+        if (writeContext != null) {
+            val (datadogContext, eventWriteScope) = writeContext
+
+            @Suppress("UnsafeThirdPartyFunctionCall") // count is 1, cannot throw
+            val latch = CountDownLatch(1)
+            val crashTask = Runnable {
                 synchronized(rootScope) {
-                    @Suppress("ThreadSafety") // Crash handling, can't delegate to another thread
+                    @Suppress("ThreadSafety") // runs on the pipeline thread via crashTask
                     rootScope.handleEvent(event, datadogContext, eventWriteScope, writer)
                     val rumContext = currentRumContext()
                     sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
@@ -937,13 +942,59 @@ internal class DatadogRumMonitor(
                         rumContext?.toMap()?.let(it::putAll)
                     }
                 }
-            } else {
+                latch.countDown()
+            }
+            // put() blocks until a slot is available without dropping, unlike submit() which uses offer().
+            val pipelineQueue = (executorService as? ThreadPoolExecutor)?.queue
+            try {
+                if (pipelineQueue != null) {
+                    @Suppress("UnsafeThirdPartyFunctionCall") // InterruptedException is caught below
+                    pipelineQueue.put(crashTask)
+                } else {
+                    // Fallback for non-ThreadPoolExecutor implementations (e.g. tests).
+                    val submitted = executorService.submitSafe("Rum crash handling", sdkCore.internalLogger, crashTask)
+                    if (submitted == null) {
+                        sdkCore.internalLogger.log(
+                            InternalLogger.Level.WARN,
+                            InternalLogger.Target.USER,
+                            { CRASH_REPORTING_REJECTED_WARNING }
+                        )
+                        return
+                    }
+                }
+                val written = latch.await(CRASH_WRITE_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+                if (!written) {
+                    // Pipeline thread did not finish in time — run the crash task directly
+                    // on the crash thread as a best-effort fallback before the process dies.
+                    sdkCore.internalLogger.log(
+                        InternalLogger.Level.WARN,
+                        InternalLogger.Target.USER,
+                        { CRASH_REPORTING_TIMEOUT_WARNING }
+                    )
+                    crashTask.run()
+                }
+            } catch (e: InterruptedException) {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
-                    { CANNOT_WRITE_CRASH_WRITE_CONTEXT_IS_NOT_AVAILABLE }
+                    { CRASH_REPORTING_INTERRUPTED_WARNING },
+                    e
                 )
+                @Suppress("UnsafeThirdPartyFunctionCall") // SecurityException not expected here
+                Thread.currentThread().interrupt()
             }
+        } else {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { CANNOT_WRITE_CRASH_WRITE_CONTEXT_IS_NOT_AVAILABLE }
+            )
+        }
+    }
+
+    internal fun handleEvent(event: RumRawEvent) {
+        if (event is RumRawEvent.AddError && event.isFatal) {
+            handleFatalEvent(event)
         } else if (event is RumRawEvent.TelemetryEventWrapper) {
             telemetryEventHandler.handleEvent(event, writer)
         } else {
@@ -1083,11 +1134,23 @@ internal class DatadogRumMonitor(
         // should be aligned with CoreFeature#DRAIN_WAIT_SECONDS, but not a requirement
         internal const val DRAIN_WAIT_SECONDS = 10L
 
+        // Maximum time the crash thread waits for the pipeline to write the crash event.
+        internal const val CRASH_WRITE_TIMEOUT_MS = 500L
+
         internal const val RUM_DEBUG_RUM_NOT_ENABLED_WARNING =
             "Cannot switch RUM debugging, because RUM feature is not enabled."
 
         internal const val CANNOT_WRITE_CRASH_WRITE_CONTEXT_IS_NOT_AVAILABLE =
             "Cannot write JVM crash, because write context is not available."
+
+        internal const val CRASH_REPORTING_INTERRUPTED_WARNING =
+            "JVM crash reporting was interrupted, crash event may be lost."
+
+        internal const val CRASH_REPORTING_REJECTED_WARNING =
+            "JVM crash reporting was rejected by the executor, crash event may be lost."
+
+        internal const val CRASH_REPORTING_TIMEOUT_WARNING =
+            "JVM crash reporting timed out waiting for the pipeline, retrying on crash thread."
 
         internal const val OPERATION_ERROR_INVALID_NAME =
             "Operation name cannot be an empty or blank string but was \"%s\". Vital event won't be sent."
