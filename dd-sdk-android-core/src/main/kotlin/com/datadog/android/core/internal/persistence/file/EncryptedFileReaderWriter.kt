@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.persistence.file
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.telemetry.TelemetryContext
 import com.datadog.android.security.Encryption
 import java.io.File
 
@@ -22,7 +23,8 @@ internal class EncryptedFileReaderWriter(
     override fun writeData(
         file: File,
         data: ByteArray,
-        append: Boolean
+        append: Boolean,
+        telemetryContext: TelemetryContext
     ): Boolean {
         if (append) {
             internalLogger.log(
@@ -44,18 +46,15 @@ internal class EncryptedFileReaderWriter(
             return false
         }
 
-        return delegate.writeData(
-            file,
-            encryptedData,
-            append
-        )
+        return delegate.writeData(file, encryptedData, append, telemetryContext)
     }
 
     @WorkerThread
     override fun readData(
-        file: File
+        file: File,
+        telemetryContext: TelemetryContext
     ): ByteArray {
-        return encryption.decrypt(delegate.readData(file))
+        return encryption.decrypt(delegate.readData(file, telemetryContext))
     }
 
     companion object {

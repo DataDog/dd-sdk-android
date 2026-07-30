@@ -443,6 +443,7 @@ internal class SdkFeature(
         )
 
         dataStore = DataStoreFileHandler(
+            featureName = featureName,
             executorService = coreFeature.persistenceExecutorService,
             internalLogger = internalLogger,
             dataStoreFileReader = dataStoreFileReader,
@@ -461,6 +462,7 @@ internal class SdkFeature(
             BatchFileReaderWriter.create(internalLogger, coreFeature.localDataEncryption),
             FileReaderWriter.create(internalLogger, coreFeature.localDataEncryption),
             FileMover(internalLogger),
+            wrappedFeature.name,
             internalLogger
         )
         flusher.flush(uploader)
