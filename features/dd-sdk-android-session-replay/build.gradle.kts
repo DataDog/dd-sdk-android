@@ -7,7 +7,6 @@
 
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.detektCustomConfig
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
@@ -135,4 +134,3 @@ publishingConfig(
     "The Session Replay feature to use with the Datadog monitoring " +
         "library for Android applications."
 )
-detektCustomConfig()

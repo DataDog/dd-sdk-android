@@ -151,6 +151,7 @@ datadog:
       - "android.view.ViewPropertyAnimator.x(kotlin.Float)"
       - "android.view.ViewPropertyAnimator.y(kotlin.Float)"
       - "android.view.ViewTreeObserver.OnDrawListener.onDraw()"
+      - "android.view.ViewTreeObserver.OnGlobalLayoutListener(kotlin.Function0)"
       - "android.view.ViewTreeObserver.addOnGlobalLayoutListener()"
       - "android.view.ViewTreeObserver.addOnGlobalLayoutListener(android.view.ViewTreeObserver.OnGlobalLayoutListener)"
       - "android.view.ViewTreeObserver.addOnGlobalLayoutListener(android.view.ViewTreeObserver.OnGlobalLayoutListener?)"

@@ -174,7 +174,9 @@ class ResourceHeadersExtractor private constructor(
             "vary",
             "content-length",
             "server-timing",
-            "x-cache"
+            "x-cache",
+            "cf-cache-status",
+            "x-vercel-cache"
         )
 
         /**

@@ -17,13 +17,13 @@ class TestIdGenerationStrategy(
     private var index: Int = -1
     private val fallbackDelegate = fromName("SECURE_RANDOM")
 
-    override fun generateTraceId(): DDTraceId = if (traceIds == null || traceIds.isEmpty()) {
+    override fun generateTraceId(): DDTraceId = if (traceIds.isNullOrEmpty()) {
         fallbackDelegate.generateTraceId()
     } else {
         DDTraceId.from(traceIds[++index % traceIds.size])
     }
 
-    override fun generateSpanId() = if (spanIds == null || spanIds.isEmpty()) {
+    override fun generateSpanId() = if (spanIds.isNullOrEmpty()) {
         fallbackDelegate.generateSpanId()
     } else {
         spanIds[++index % spanIds.size]

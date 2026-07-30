@@ -27,7 +27,7 @@ internal class ResourceDataStoreManager(
 ) {
     @Suppress("UnsafeThirdPartyFunctionCall") // map is initialized empty
     private val knownResources = Collections.newSetFromMap(ConcurrentHashMap<String, Boolean>())
-    private val storedLastUpdateDateNs = AtomicLong(featureSdkCore.timeProvider.getDeviceElapsedTimeNanos())
+    private val storedLastUpdateTimestampMs = AtomicLong(featureSdkCore.timeProvider.getDeviceTimestampMillis())
     private val isInitialized = AtomicBoolean(false) // has init finished executing its async actions
 
     init {
@@ -40,10 +40,12 @@ internal class ResourceDataStoreManager(
                     return@lambda
                 }
 
-                val lastUpdateDateNs = storedData.lastUpdateDateNs.toLong()
+                val lastUpdateTimestampMs = storedData.lastUpdateDateNs.toLong()
                 val storedHashes = storedData.resourceHashes
 
-                if (didDataStoreExpire(lastUpdateDateNs)) {
+                if (storedEntry.versionCode != DATASTORE_VERSION ||
+                    didDataStoreExpire(lastUpdateTimestampMs)
+                ) {
                     deleteStoredHashesEntry(
                         callback = object : DataStoreWriteCallback {
                             override fun onSuccess() {
@@ -56,7 +58,7 @@ internal class ResourceDataStoreManager(
                         }
                     )
                 } else {
-                    storedLastUpdateDateNs.set(lastUpdateDateNs)
+                    storedLastUpdateTimestampMs.set(lastUpdateTimestampMs)
                     knownResources.addAll(storedHashes)
                     finishedInitializingManager()
                 }
@@ -85,8 +87,14 @@ internal class ResourceDataStoreManager(
     }
 
     private fun writeResourcesToStore() {
+        // Refresh on every write, otherwise the persisted timestamp only reflects when the store
+        // was last loaded, not when it was last used, causing premature expiration on next init.
+        storedLastUpdateTimestampMs.set(featureSdkCore.timeProvider.getDeviceTimestampMillis())
+
         val data = ResourceHashesEntry(
-            lastUpdateDateNs = storedLastUpdateDateNs,
+            // This generated model property keeps its legacy name for persisted-data compatibility.
+            // The datastore version identifies version 0 values as nanoseconds and version 1 as milliseconds.
+            lastUpdateDateNs = storedLastUpdateTimestampMs.get(),
             resourceHashes = knownResources.toList()
         )
 
@@ -95,6 +103,7 @@ internal class ResourceDataStoreManager(
         )?.dataStore?.setValue(
             data = data,
             key = DATASTORE_HASHES_ENTRY_NAME,
+            version = DATASTORE_VERSION,
             serializer = resourceHashesSerializer
         )
     }
@@ -128,14 +137,19 @@ internal class ResourceDataStoreManager(
             callback = callback
         )
 
-    private fun didDataStoreExpire(lastUpdateDate: Long): Boolean =
-        featureSdkCore.timeProvider.getDeviceElapsedTimeNanos() - lastUpdateDate > DATASTORE_EXPIRATION_NS
+    private fun didDataStoreExpire(lastUpdateTimestampMs: Long): Boolean {
+        val currentTimestampMs = featureSdkCore.timeProvider.getDeviceTimestampMillis()
+
+        return lastUpdateTimestampMs <= 0 ||
+            lastUpdateTimestampMs > currentTimestampMs ||
+            currentTimestampMs - lastUpdateTimestampMs > DATASTORE_EXPIRATION_MS
+    }
 
     // endregion
 
     internal companion object {
-        internal const val DATASTORE_EXPIRATION_NS =
-            DateUtils.DAY_IN_MILLIS * 30 * 1000 * 1000 // 30 days in nanoseconds
+        internal const val DATASTORE_EXPIRATION_MS = DateUtils.DAY_IN_MILLIS * 30
         internal const val DATASTORE_HASHES_ENTRY_NAME = "resource-hash-store"
+        internal const val DATASTORE_VERSION = 1
     }
 }
