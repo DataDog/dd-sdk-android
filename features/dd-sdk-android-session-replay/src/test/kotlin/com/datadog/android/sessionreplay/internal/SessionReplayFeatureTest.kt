@@ -20,7 +20,13 @@ import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.NoOpSessionReplayInternalCallback
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_APPLICATION_ID_CONTEXT_KEY
+import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_SESSION_ID_CONTEXT_KEY
+import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_VIEW_ID_CONTEXT_KEY
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentEvent
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentReceiver
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistration
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
 import com.datadog.android.sessionreplay.internal.recorder.NoOpRecorder
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
@@ -32,6 +38,7 @@ import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -141,6 +148,81 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
+    fun `M request embedded capture W RUM view changes { recording active }`() {
+        // Given
+        val fakeRegistration = EmbeddedContentSlotRegistration(FAKE_EMBEDDED_SLOT_ID)
+        EmbeddedContentSlotRegistry.notifySlotChanged(null, fakeRegistration)
+        testedFeature.onInitialize(appContext.mockInstance)
+        val contextReceiver = argumentCaptor<FeatureContextUpdateReceiver>().also {
+            verify(mockSdkCore).setContextUpdateReceiver(it.capture())
+        }.firstValue
+        contextReceiver.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString())
+        )
+        testedFeature.startRecording()
+
+        // When
+        contextReceiver.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString())
+        )
+
+        // Then
+        verify(mockRecorder).requestCapture()
+
+        // Cleanup
+        EmbeddedContentSlotRegistry.notifySlotChanged(fakeRegistration, null)
+    }
+
+    @Test
+    fun `M request embedded capture W first RUM view starts { recording active }`() {
+        // Given
+        val fakeRegistration = EmbeddedContentSlotRegistration(FAKE_EMBEDDED_SLOT_ID)
+        EmbeddedContentSlotRegistry.notifySlotChanged(null, fakeRegistration)
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.startRecording()
+        val contextReceiver = argumentCaptor<FeatureContextUpdateReceiver>().also {
+            verify(mockSdkCore).setContextUpdateReceiver(it.capture())
+        }.firstValue
+
+        // When
+        contextReceiver.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString())
+        )
+
+        // Then
+        verify(mockRecorder).requestCapture()
+
+        // Cleanup
+        EmbeddedContentSlotRegistry.notifySlotChanged(fakeRegistration, null)
+    }
+
+    @Test
+    fun `M not request embedded capture W RUM view changes { recording inactive }`() {
+        // Given
+        val fakeRegistration = EmbeddedContentSlotRegistration(FAKE_EMBEDDED_SLOT_ID)
+        EmbeddedContentSlotRegistry.notifySlotChanged(null, fakeRegistration)
+        testedFeature.onInitialize(appContext.mockInstance)
+        val contextReceiver = argumentCaptor<FeatureContextUpdateReceiver>().also {
+            verify(mockSdkCore).setContextUpdateReceiver(it.capture())
+        }.firstValue
+
+        // When
+        contextReceiver.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString())
+        )
+
+        // Then
+        verify(mockRecorder, never()).requestCapture()
+
+        // Cleanup
+        EmbeddedContentSlotRegistry.notifySlotChanged(fakeRegistration, null)
+    }
+
+    @Test
     fun `M initialize session replay recorder W initialize()`() {
         // Given
         testedFeature = SessionReplayFeature(
@@ -199,9 +281,9 @@ internal class SessionReplayFeatureTest {
         contextReceiver.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
             mapOf(
-                "application_id" to UUID.randomUUID().toString(),
-                "session_id" to UUID.randomUUID().toString(),
-                "view_id" to UUID.randomUUID().toString()
+                RUM_APPLICATION_ID_CONTEXT_KEY to UUID.randomUUID().toString(),
+                RUM_SESSION_ID_CONTEXT_KEY to UUID.randomUUID().toString(),
+                RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString()
             )
         )
         // When
@@ -220,9 +302,12 @@ internal class SessionReplayFeatureTest {
                 batchMetadata = eq(null),
                 eventType = eq(EventType.DEFAULT)
             )
-            assertThat(firstValue.data.toString(Charsets.UTF_8))
-                .contains("\"view_id\":\"$FAKE_EMBEDDED_VIEW_ID\"")
-                .contains("\"slotId\":\"$FAKE_EMBEDDED_SLOT_ID\"")
+            val json = JsonParser.parseString(firstValue.data.toString(Charsets.UTF_8)).asJsonObject
+            assertThat(json[EmbeddedContentReceiver.VIEW_ID_KEY].asString)
+                .isEqualTo(FAKE_EMBEDDED_VIEW_ID)
+            val records = json[EmbeddedContentReceiver.RECORDS_KEY].asJsonArray
+            assertThat(records[0].asJsonObject[EmbeddedContentReceiver.SLOT_ID_KEY].asString)
+                .isEqualTo(FAKE_EMBEDDED_SLOT_ID)
         }
     }
 

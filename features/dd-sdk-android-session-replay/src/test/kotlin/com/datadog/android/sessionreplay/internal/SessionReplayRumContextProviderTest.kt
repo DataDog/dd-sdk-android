@@ -9,6 +9,11 @@ package com.datadog.android.sessionreplay.internal
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.NULL_UUID
+import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_APPLICATION_ID_CONTEXT_KEY
+import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_SESSION_ID_CONTEXT_KEY
+import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_VIEW_ID_CONTEXT_KEY
+import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_VIEW_TIME_OFFSET_CONTEXT_KEY
+import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_VIEW_URL_CONTEXT_KEY
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -32,6 +37,81 @@ internal class SessionReplayRumContextProviderTest {
     private val testedSessionReplayContextProvider = SessionReplayRumContextProvider()
 
     @Test
+    fun `M notify first view W onContextUpdate { new valid RUM view }`() {
+        // Given
+        var notificationCount = 0
+        val testedProvider = SessionReplayRumContextProvider { notificationCount++ }
+        val viewId = UUID.randomUUID().toString()
+
+        // When
+        testedProvider.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(RUM_VIEW_ID_CONTEXT_KEY to viewId)
+        )
+
+        // Then
+        assertThat(notificationCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `M notify view transition W onContextUpdate { valid RUM view changes }`() {
+        // Given
+        var notificationCount = 0
+        val testedProvider = SessionReplayRumContextProvider { notificationCount++ }
+        testedProvider.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString())
+        )
+
+        // When
+        testedProvider.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString())
+        )
+
+        // Then
+        assertThat(notificationCount).isEqualTo(2)
+    }
+
+    @Test
+    fun `M not notify view change W onContextUpdate { same RUM view }`() {
+        // Given
+        var notificationCount = 0
+        val testedProvider = SessionReplayRumContextProvider { notificationCount++ }
+        val viewId = UUID.randomUUID().toString()
+        testedProvider.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(RUM_VIEW_ID_CONTEXT_KEY to viewId)
+        )
+
+        // When
+        testedProvider.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(RUM_VIEW_ID_CONTEXT_KEY to viewId, RUM_VIEW_TIME_OFFSET_CONTEXT_KEY to 10L)
+        )
+
+        // Then
+        assertThat(notificationCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `M not notify view change W onContextUpdate { invalid view }`() {
+        // Given
+        var notificationCount = 0
+        val testedProvider = SessionReplayRumContextProvider { notificationCount++ }
+
+        // When
+        testedProvider.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(RUM_VIEW_ID_CONTEXT_KEY to NULL_UUID)
+        )
+        testedProvider.onContextUpdate(Feature.RUM_FEATURE_NAME, emptyMap())
+
+        // Then
+        assertThat(notificationCount).isZero()
+    }
+
+    @Test
     fun `M provide a valid Rum context W getRumContext()`(
         @Forgery fakeApplicationId: UUID,
         @Forgery fakeSessionId: UUID,
@@ -43,11 +123,11 @@ internal class SessionReplayRumContextProviderTest {
         testedSessionReplayContextProvider.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
             mapOf(
-                "application_id" to fakeApplicationId.toString(),
-                "session_id" to fakeSessionId.toString(),
-                "view_id" to fakeViewId.toString(),
-                "view_timestamp_offset" to fakeViewTimeOffsetMs,
-                "view_url" to fakeViewUrl
+                RUM_APPLICATION_ID_CONTEXT_KEY to fakeApplicationId.toString(),
+                RUM_SESSION_ID_CONTEXT_KEY to fakeSessionId.toString(),
+                RUM_VIEW_ID_CONTEXT_KEY to fakeViewId.toString(),
+                RUM_VIEW_TIME_OFFSET_CONTEXT_KEY to fakeViewTimeOffsetMs,
+                RUM_VIEW_URL_CONTEXT_KEY to fakeViewUrl
             )
         )
 
@@ -74,10 +154,10 @@ internal class SessionReplayRumContextProviderTest {
         testedSessionReplayContextProvider.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
             mapOf(
-                "application_id" to fakeApplicationId.toString(),
-                "session_id" to fakeSessionId.toString(),
-                "view_id" to fakeViewId.toString(),
-                "view_timestamp_offset" to fakeViewTimeOffsetMs
+                RUM_APPLICATION_ID_CONTEXT_KEY to fakeApplicationId.toString(),
+                RUM_SESSION_ID_CONTEXT_KEY to fakeSessionId.toString(),
+                RUM_VIEW_ID_CONTEXT_KEY to fakeViewId.toString(),
+                RUM_VIEW_TIME_OFFSET_CONTEXT_KEY to fakeViewTimeOffsetMs
             )
         )
 
@@ -101,11 +181,11 @@ internal class SessionReplayRumContextProviderTest {
         testedSessionReplayContextProvider.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
             mapOf(
-                "application_id" to fakeApplicationId.toString(),
-                "session_id" to fakeSessionId.toString(),
-                "view_id" to fakeViewId.toString(),
-                "view_timestamp_offset" to fakeViewTimeOffsetMs,
-                "view_url" to forge.anInt()
+                RUM_APPLICATION_ID_CONTEXT_KEY to fakeApplicationId.toString(),
+                RUM_SESSION_ID_CONTEXT_KEY to fakeSessionId.toString(),
+                RUM_VIEW_ID_CONTEXT_KEY to fakeViewId.toString(),
+                RUM_VIEW_TIME_OFFSET_CONTEXT_KEY to fakeViewTimeOffsetMs,
+                RUM_VIEW_URL_CONTEXT_KEY to forge.anInt()
             )
         )
 
@@ -128,10 +208,10 @@ internal class SessionReplayRumContextProviderTest {
             testedSessionReplayContextProvider.onContextUpdate(
                 Feature.RUM_FEATURE_NAME,
                 mapOf(
-                    "application_id" to fakeApplicationId.toString(),
-                    "session_id" to fakeSessionId.toString(),
-                    "view_id" to fakeViewId.toString(),
-                    "view_timestamp_offset" to fakeViewTimeOffsetMs
+                    RUM_APPLICATION_ID_CONTEXT_KEY to fakeApplicationId.toString(),
+                    RUM_SESSION_ID_CONTEXT_KEY to fakeSessionId.toString(),
+                    RUM_VIEW_ID_CONTEXT_KEY to fakeViewId.toString(),
+                    RUM_VIEW_TIME_OFFSET_CONTEXT_KEY to fakeViewTimeOffsetMs
                 )
             )
         }.apply {
@@ -160,10 +240,10 @@ internal class SessionReplayRumContextProviderTest {
         testedSessionReplayContextProvider.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
             mapOf(
-                "application_id" to fakeApplicationId.toString(),
-                "session_id" to fakeSessionId.toString(),
-                "view_id" to fakeViewId.toString(),
-                "view_timestamp_offset" to fakeViewTimeOffsetMs
+                RUM_APPLICATION_ID_CONTEXT_KEY to fakeApplicationId.toString(),
+                RUM_SESSION_ID_CONTEXT_KEY to fakeSessionId.toString(),
+                RUM_VIEW_ID_CONTEXT_KEY to fakeViewId.toString(),
+                RUM_VIEW_TIME_OFFSET_CONTEXT_KEY to fakeViewTimeOffsetMs
             )
         )
 

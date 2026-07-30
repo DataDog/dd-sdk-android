@@ -157,6 +157,46 @@ internal class SessionReplayRecordCallbackTest {
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
+    @Test
+    fun `M share records count W native and embedded records sent`() {
+        // Given
+        val embeddedRecordsCount = 3
+
+        // When
+        testedRecordCallback.onRecordForViewSent(fakeEnrichedRecord)
+        testedRecordCallback.onEmbeddedRecordsForViewSent(
+            fakeEnrichedRecord.viewId,
+            embeddedRecordsCount
+        )
+
+        // Then
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            verify(mockDatadogCore, times(2)).updateFeatureContext(
+                eq(Feature.SESSION_REPLAY_FEATURE_NAME),
+                eq(false),
+                capture()
+            )
+
+            val featureContext = mutableMapOf<String, Any?>()
+            allValues.forEach { it.invoke(featureContext) }
+            val viewMetadata = featureContext[fakeEnrichedRecord.viewId] as? Map<String, Any?>
+            assertThat(viewMetadata?.get(SessionReplayRecordCallback.HAS_REPLAY_KEY))
+                .isEqualTo(true)
+            assertThat(viewMetadata?.get(SessionReplayRecordCallback.VIEW_RECORDS_COUNT_KEY))
+                .isEqualTo(fakeEnrichedRecord.records.size.toLong() + embeddedRecordsCount)
+        }
+    }
+
+    @Test
+    fun `M do nothing W onEmbeddedRecordsForViewSent { empty batch }`() {
+        // When
+        testedRecordCallback.onEmbeddedRecordsForViewSent(fakeEnrichedRecord.viewId, 0)
+
+        // Then
+        verifyNoInteractions(mockDatadogCore)
+    }
+
     private fun Forge.forgeFakeValidEnrichedRecord(): EnrichedRecord {
         return getForgery<EnrichedRecord>()
             .copy(records = aList(size = anInt(min = 1, max = 10)) { getForgery() })

@@ -30,6 +30,18 @@ internal class SessionReplayRecordCallback(
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
+    fun onEmbeddedRecordsForViewSent(viewId: String, recordsCount: Int) {
+        if (recordsCount > 0) {
+            featureSdkCore.updateFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME, useContextThread = false) {
+                val viewMetadata = (it[viewId] as? MutableMap<String, Any?>) ?: mutableMapOf()
+                viewMetadata[HAS_REPLAY_KEY] = true
+                updateRecordsCount(viewMetadata, recordsCount)
+                it[viewId] = viewMetadata
+            }
+        }
+    }
+
     private fun updateRecordsCount(
         viewMetadata: MutableMap<String, Any?>,
         recordsCount: Int

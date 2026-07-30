@@ -27,6 +27,7 @@ import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentEvent
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentReceiver
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
 import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
 import com.datadog.android.sessionreplay.internal.processor.ResourceProcessor
@@ -126,7 +127,9 @@ internal class SessionReplayFeature(
     internal var dataWriter: RecordWriter = NoOpRecordWriter()
     internal val initialized = AtomicBoolean(false)
 
-    private val rumContextProvider = SessionReplayRumContextProvider()
+    private val rumContextProvider = SessionReplayRumContextProvider {
+        onRumViewChanged()
+    }
     private var resourceProcessor: ResourceProcessor? = null
     private var embeddedContentRecordWriter: EmbeddedContentRecordWriter? = null
     private val embeddedContentReceiver = EmbeddedContentReceiver(
@@ -397,7 +400,13 @@ internal class SessionReplayFeature(
 
     private fun createDataWriter(): SessionReplayRecordWriter {
         val recordCallback = SessionReplayRecordCallback(sdkCore)
-        return SessionReplayRecordWriter(sdkCore, recordCallback)
+        return SessionReplayRecordWriter(
+            sdkCore,
+            recordCallback,
+            { viewId, recordsCount ->
+                recordCallback.onEmbeddedRecordsForViewSent(viewId, recordsCount)
+            }
+        )
     }
 
     /**
@@ -409,6 +418,15 @@ internal class SessionReplayFeature(
                 it[SESSION_REPLAY_ENABLED_KEY] = false
             }
             sessionReplayRecorder.stopRecorders()
+        }
+    }
+
+    private fun onRumViewChanged() {
+        if (!isRecording.get()) {
+            return
+        }
+        if (EmbeddedContentSlotRegistry.hasMarkedSlots()) {
+            sessionReplayRecorder.requestCapture()
         }
     }
 
