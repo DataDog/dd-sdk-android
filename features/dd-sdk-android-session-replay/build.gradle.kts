@@ -48,6 +48,7 @@ plugins {
 android {
     defaultConfig {
         consumerProguardFiles("consumer-rules.pro")
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     namespace = "com.datadog.android.sessionreplay"
@@ -73,6 +74,8 @@ dependencies {
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     unmock(libs.robolectric)
+
+    androidTestImplementation(libs.bundles.integrationTests)
 }
 
 unMock {

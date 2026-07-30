@@ -27,6 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.clearInvocations
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.inOrder
@@ -159,6 +160,19 @@ internal class ViewOnDrawInterceptorTest {
     }
 
     @Test
+    fun `M invoke active listener once W requestCapture { multiple decor views }`() {
+        // Given
+        testedInterceptor.intercept(fakeDecorViews, fakeTextAndInputPrivacy, fakeImagePrivacy)
+        clearInvocations(mockOnDrawListener)
+
+        // When
+        testedInterceptor.requestCapture()
+
+        // Then
+        verify(mockOnDrawListener).onDraw()
+    }
+
+    @Test
     fun `M do nothing W intercept() { view tree observer is not alive }`() {
         // Given
         fakeDecorViews.forEach {
@@ -283,7 +297,7 @@ internal class ViewOnDrawInterceptorTest {
     // region Internal
 
     private fun Forge.aMockedDecorViewsList(): List<View> {
-        return aList {
+        return aList(size = 2) {
             mock {
                 val mockViewTreeObserver: ViewTreeObserver = mock()
                 whenever(mockViewTreeObserver.isAlive) doReturn true

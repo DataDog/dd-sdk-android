@@ -18,5 +18,7 @@ internal interface Recorder {
 
     fun resumeRecorders()
 
+    fun requestCapture()
+
     fun stopRecorders()
 }

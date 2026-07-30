@@ -63,6 +63,13 @@ internal class ViewOnDrawInterceptor(
         decorOnDrawListeners.clear()
     }
 
+    fun requestCapture() {
+        // Copy before callbacks because a capture may change the registered listener collection.
+        @Suppress("UnsafeThirdPartyFunctionCall") // WeakHashMap access is confined to the UI thread.
+        val listeners = decorOnDrawListeners.values.toSet()
+        listeners.forEach { it.onDraw() }
+    }
+
     private fun stopInterceptingAndRemove(decorViews: List<View>) {
         decorViews.forEach { decorView ->
             decorOnDrawListeners.remove(decorView)?.let { listener ->

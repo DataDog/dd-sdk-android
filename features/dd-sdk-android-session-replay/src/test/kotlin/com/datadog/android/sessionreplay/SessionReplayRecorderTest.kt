@@ -272,6 +272,27 @@ internal class SessionReplayRecorderTest {
     }
 
     @Test
+    fun `M request capture W requestCapture { recorder resumed }`() {
+        // Given
+        testedSessionReplayRecorder.resumeRecorders()
+
+        // When
+        testedSessionReplayRecorder.requestCapture()
+
+        // Then
+        verify(mockViewOnDrawInterceptor).requestCapture()
+    }
+
+    @Test
+    fun `M not request capture W requestCapture { recorder stopped }`() {
+        // When
+        testedSessionReplayRecorder.requestCapture()
+
+        // Then
+        verify(mockViewOnDrawInterceptor, never()).requestCapture()
+    }
+
+    @Test
     fun `M stop intercepting the active windows and decor view W stopRecorders`() {
         // When
         testedSessionReplayRecorder.stopRecorders()

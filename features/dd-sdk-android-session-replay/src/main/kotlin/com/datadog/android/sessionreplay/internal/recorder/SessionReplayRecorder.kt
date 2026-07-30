@@ -287,6 +287,14 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         }
     }
 
+    override fun requestCapture() {
+        uiHandler.post {
+            if (shouldRecord) {
+                viewOnDrawInterceptor.requestCapture()
+            }
+        }
+    }
+
     override fun stopRecorders() {
         uiHandler.post {
             viewOnDrawInterceptor.stopIntercepting()
