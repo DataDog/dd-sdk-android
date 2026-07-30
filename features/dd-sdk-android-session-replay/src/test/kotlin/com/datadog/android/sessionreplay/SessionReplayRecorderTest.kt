@@ -258,7 +258,7 @@ internal class SessionReplayRecorderTest {
     }
 
     @Test
-    fun `M intercept the active windows and decor view W resumeRecorders`() {
+    fun `M intercept active windows without invalidating native decors W resumeRecorders`() {
         // When
         testedSessionReplayRecorder.resumeRecorders()
 
@@ -269,6 +269,9 @@ internal class SessionReplayRecorderTest {
             textAndInputPrivacy = fakeTextAndInputPrivacy,
             imagePrivacy = fakeImagePrivacy
         )
+        fakeActiveWindowsDecorViews.forEach {
+            verify(it, never()).postInvalidateOnAnimation()
+        }
     }
 
     @Test

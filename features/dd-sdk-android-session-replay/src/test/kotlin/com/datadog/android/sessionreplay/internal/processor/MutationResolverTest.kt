@@ -716,23 +716,18 @@ internal class MutationResolverTest {
 
     // endregion
 
-    // region EmbeddedContent "remove" mutations
+    // region EmbeddedContent remove mutations
 
     @Test
-    fun `M identify the updated wireframes W resolveMutations {EmbeddedContent removed at beginning}`(forge: Forge) {
+    fun `M identify removed wireframes W resolveMutations {EmbeddedContent removed at beginning}`(forge: Forge) {
         // Given
         val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 3, max = 10)) {
             forge.getForgery(MobileSegment.Wireframe.EmbeddedContentWireframe::class.java)
         }
-        val fakeHiddenWireframes = forge.anInt(min = 1, max = fakePrevSnapshot.size - 1)
-        val fakeCurrentSnapshot = fakePrevSnapshot.drop(fakeHiddenWireframes)
-        val expectedUpdates = fakePrevSnapshot.take(fakeHiddenWireframes).map {
-            MobileSegment.WireframeUpdateMutation.EmbeddedContentWireframeUpdate(
-                id = it.id(),
-                slotId = it.slotId,
-                isVisible = false
-            )
-        }
+        val fakeRemovedWireframes = forge.anInt(min = 1, max = fakePrevSnapshot.size - 1)
+        val fakeCurrentSnapshot = fakePrevSnapshot.drop(fakeRemovedWireframes)
+        val expectedRemoves = fakePrevSnapshot.take(fakeRemovedWireframes)
+            .map { MobileSegment.Remove(it.id()) }
 
         // When
         val mutations = testedMutationResolver.resolveMutations(
@@ -742,25 +737,20 @@ internal class MutationResolverTest {
 
         // Then
         assertThat(mutations?.adds).isNullOrEmpty()
-        assertThat(mutations?.removes).isNullOrEmpty()
-        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
+        assertThat(mutations?.removes).isEqualTo(expectedRemoves)
+        assertThat(mutations?.updates).isNullOrEmpty()
     }
 
     @Test
-    fun `M identify the updated wireframes W resolveMutations {EmbeddedContent removed at end}`(forge: Forge) {
+    fun `M identify removed wireframes W resolveMutations {EmbeddedContent removed at end}`(forge: Forge) {
         // Given
         val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 3, max = 10)) {
             forge.getForgery(MobileSegment.Wireframe.EmbeddedContentWireframe::class.java)
         }
-        val fakeHiddenWireframes = forge.anInt(min = 1, max = fakePrevSnapshot.size - 1)
-        val fakeCurrentSnapshot = fakePrevSnapshot.dropLast(fakeHiddenWireframes)
-        val expectedUpdates = fakePrevSnapshot.takeLast(fakeHiddenWireframes).map {
-            MobileSegment.WireframeUpdateMutation.EmbeddedContentWireframeUpdate(
-                id = it.id(),
-                slotId = it.slotId,
-                isVisible = false
-            )
-        }
+        val fakeRemovedWireframes = forge.anInt(min = 1, max = fakePrevSnapshot.size - 1)
+        val fakeCurrentSnapshot = fakePrevSnapshot.dropLast(fakeRemovedWireframes)
+        val expectedRemoves = fakePrevSnapshot.takeLast(fakeRemovedWireframes)
+            .map { MobileSegment.Remove(it.id()) }
 
         // When
         val mutations = testedMutationResolver.resolveMutations(
@@ -770,8 +760,8 @@ internal class MutationResolverTest {
 
         // Then
         assertThat(mutations?.adds).isNullOrEmpty()
-        assertThat(mutations?.removes).isNullOrEmpty()
-        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
+        assertThat(mutations?.removes).isEqualTo(expectedRemoves)
+        assertThat(mutations?.updates).isNullOrEmpty()
     }
 
     // endregion

@@ -150,16 +150,6 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
                             )
                         )
                     }
-                } else if (oldWireframe is MobileSegment.Wireframe.EmbeddedContentWireframe) {
-                    if (oldWireframe.isVisible != false) {
-                        updates.add(
-                            MobileSegment.WireframeUpdateMutation.EmbeddedContentWireframeUpdate(
-                                id = oldWireframe.id,
-                                slotId = oldWireframe.slotId,
-                                isVisible = false
-                            )
-                        )
-                    }
                 } else {
                     // Old element was removed
                     removes.add(MobileSegment.Remove(oldWireframe.id()))

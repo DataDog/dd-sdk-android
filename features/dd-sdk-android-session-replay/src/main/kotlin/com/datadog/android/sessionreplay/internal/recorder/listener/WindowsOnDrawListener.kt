@@ -72,7 +72,8 @@ internal class WindowsOnDrawListener(
                 withinSRBenchmarkSpan(BENCHMARK_SPAN_SNAPSHOT_PRODUCER, isContainer = true) {
                     val recordedDataQueueRefs = RecordedDataQueueRefs(recordedDataQueueHandler)
                     recordedDataQueueRefs.recordedDataQueueItem = item
-                    rootViews.mapNotNull {
+                    snapshotProducer.beginSnapshot()
+                    val snapshotNodes = rootViews.mapNotNull {
                         snapshotProducer.produce(
                             rootView = it,
                             systemInformation = systemInformation,
@@ -82,6 +83,11 @@ internal class WindowsOnDrawListener(
                             activeRumViewUrl = currentViewUrl
                         )
                     }
+                    snapshotProducer.finishSnapshot()?.let {
+                        @Suppress("UnsafeThirdPartyFunctionCall") // Kotlin listOf cannot fail for this local value.
+                        val finishSnapshotNodes = listOf(it)
+                        finishSnapshotNodes + snapshotNodes
+                    } ?: snapshotNodes
                 }
             }
 

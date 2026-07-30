@@ -31,6 +31,7 @@ import com.datadog.android.sessionreplay.internal.processor.ResourceQueueImpl
 import com.datadog.android.sessionreplay.internal.processor.RumContextDataHandler
 import com.datadog.android.sessionreplay.internal.recorder.callback.OnWindowRefreshedCallback
 import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.EmbeddedContentViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.HiddenViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
@@ -138,6 +139,14 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             viewBoundsResolver,
             drawableToColorMapper
         )
+        val viewUtilsInternal = ViewUtilsInternal()
+        val embeddedContentViewMapper = EmbeddedContentViewMapper(
+            viewIdentifierResolver = viewIdentifierResolver,
+            colorStringFormatter = colorStringFormatter,
+            viewBoundsResolver = viewBoundsResolver,
+            drawableToColorMapper = drawableToColorMapper,
+            viewUtilsInternal = viewUtilsInternal
+        )
 
         val bitmapCachesManager = BitmapCachesManager(
             bitmapPool = BitmapPool(),
@@ -180,8 +189,9 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                             viewBoundsResolver = viewBoundsResolver,
                             viewIdentifierResolver = viewIdentifierResolver
                         ),
-                        viewUtilsInternal = ViewUtilsInternal(),
-                        internalLogger = internalLogger
+                        viewUtilsInternal = viewUtilsInternal,
+                        internalLogger = internalLogger,
+                        embeddedContentViewMapper = embeddedContentViewMapper
                     ),
                     optionSelectorDetector = ComposedOptionSelectorDetector(
                         customOptionSelectorDetectors + DefaultOptionSelectorDetector()
@@ -194,7 +204,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                             registry = it,
                             internalLogger = internalLogger
                         )
-                    }
+                    },
+                    embeddedContentViewMapper = embeddedContentViewMapper
                 ),
                 recordedDataQueueHandler = recordedDataQueueHandler,
                 sdkCore = sdkCore,
