@@ -25,13 +25,17 @@ import com.datadog.android.sessionreplay.SessionReplayInternalCallback
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentEvent
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentReceiver
 import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
 import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
+import com.datadog.android.sessionreplay.internal.processor.ResourceProcessor
 import com.datadog.android.sessionreplay.internal.recorder.NoOpRecorder
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.resources.ResourceHashesEntryDeserializer
 import com.datadog.android.sessionreplay.internal.resources.ResourceHashesEntrySerializer
+import com.datadog.android.sessionreplay.internal.storage.EmbeddedContentRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
@@ -121,7 +125,17 @@ internal class SessionReplayFeature(
     internal var sessionReplayRecorder: Recorder = NoOpRecorder()
     internal var dataWriter: RecordWriter = NoOpRecordWriter()
     internal val initialized = AtomicBoolean(false)
+
     private val rumContextProvider = SessionReplayRumContextProvider()
+    private var resourceProcessor: ResourceProcessor? = null
+    private var embeddedContentRecordWriter: EmbeddedContentRecordWriter? = null
+    private val embeddedContentReceiver = EmbeddedContentReceiver(
+        rumContextProvider = rumContextProvider,
+        recordWriter = { embeddedContentRecordWriter },
+        resourceProcessor = { resourceProcessor },
+        isRecording = { isRecording.get() },
+        internalLogger = sdkCore.internalLogger
+    )
 
     // region Feature
 
@@ -144,7 +158,13 @@ internal class SessionReplayFeature(
             resourceHashesDeserializer = ResourceHashesEntryDeserializer(internalLogger = sdkCore.internalLogger)
         )
 
-        dataWriter = createDataWriter()
+        val sessionReplayRecordWriter = createDataWriter()
+        dataWriter = sessionReplayRecordWriter
+        embeddedContentRecordWriter = sessionReplayRecordWriter
+        resourceProcessor = ResourceProcessor(
+            resourceDataStoreManager = resourceDataStoreManager,
+            resourcesWriter = resourcesFeature.dataWriter
+        )
         sdkCore.setContextUpdateReceiver(rumContextProvider)
         sessionReplayRecorder =
             recorderProvider.provideSessionReplayRecorder(
@@ -182,6 +202,8 @@ internal class SessionReplayFeature(
         sessionReplayRecorder.unregisterCallbacks()
         sessionReplayRecorder.stopProcessingRecords()
         dataWriter = NoOpRecordWriter()
+        embeddedContentRecordWriter = null
+        resourceProcessor = null
         sessionReplayRecorder = NoOpRecorder()
         initialized.set(false)
     }
@@ -191,20 +213,29 @@ internal class SessionReplayFeature(
     // region EventReceiver
 
     override fun onReceive(event: Any) {
-        if (event !is Map<*, *>) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName) }
-            )
-            return
+        when (event) {
+            is EmbeddedContentEvent -> {
+                if (checkIfInitialized()) {
+                    sdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)?.withContext {
+                        if (initialized.get()) {
+                            embeddedContentReceiver.receive(event)
+                        }
+                    }
+                }
+            }
+            is Map<*, *> -> {
+                if (checkIfInitialized()) {
+                    handleRumSession(event)
+                }
+            }
+            else -> {
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    { UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName) }
+                )
+            }
         }
-
-        if (!checkIfInitialized()) {
-            return
-        }
-
-        handleRumSession(event)
     }
 
     // endregion
@@ -364,7 +395,7 @@ internal class SessionReplayFeature(
         }
     }
 
-    private fun createDataWriter(): RecordWriter {
+    private fun createDataWriter(): SessionReplayRecordWriter {
         val recordCallback = SessionReplayRecordCallback(sdkCore)
         return SessionReplayRecordWriter(sdkCore, recordCallback)
     }

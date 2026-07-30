@@ -27,6 +27,45 @@ import org.mockito.quality.Strictness
 internal class SessionReplayRumContextTest {
 
     @Test
+    fun `M return true W hasValidApplicationAndSession() { application and session are set }`() {
+        // Given
+        val rumContext = SessionReplayRumContext(
+            applicationId = FAKE_APPLICATION_ID,
+            sessionId = FAKE_SESSION_ID
+        )
+
+        // When
+        val result = rumContext.hasValidApplicationAndSession()
+
+        // Then
+        assertThat(result).isTrue()
+    }
+
+    @Test
+    fun `M return false W hasValidApplicationAndSession() { application is missing }`() {
+        // Given
+        val rumContext = SessionReplayRumContext(sessionId = FAKE_SESSION_ID)
+
+        // When
+        val result = rumContext.hasValidApplicationAndSession()
+
+        // Then
+        assertThat(result).isFalse()
+    }
+
+    @Test
+    fun `M return false W hasValidApplicationAndSession() { session is missing }`() {
+        // Given
+        val rumContext = SessionReplayRumContext(applicationId = FAKE_APPLICATION_ID)
+
+        // When
+        val result = rumContext.hasValidApplicationAndSession()
+
+        // Then
+        assertThat(result).isFalse()
+    }
+
+    @Test
     fun `M return true W isNotValid() { RumContext is not valid }`() {
         // Given
         val rumContext = SessionReplayRumContext()
@@ -40,5 +79,10 @@ internal class SessionReplayRumContextTest {
         @Forgery fakeContext: SessionReplayRumContext
     ) {
         assertThat(fakeContext.isNotValid()).isFalse()
+    }
+
+    private companion object {
+        const val FAKE_APPLICATION_ID = "application-id"
+        const val FAKE_SESSION_ID = "session-id"
     }
 }

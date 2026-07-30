@@ -24,12 +24,16 @@ import java.util.concurrent.TimeUnit
 
 @Suppress("TooManyFunctions")
 internal class RecordedDataProcessor(
-    private val resourceDataStoreManager: ResourceDataStoreManager,
-    private val resourcesWriter: ResourcesWriter,
+    resourceDataStoreManager: ResourceDataStoreManager,
+    resourcesWriter: ResourcesWriter,
     private val writer: RecordWriter,
     private val mutationResolver: MutationResolver,
     private val timeProvider: TimeProvider,
-    private val nodeFlattener: NodeFlattener = NodeFlattener()
+    private val nodeFlattener: NodeFlattener = NodeFlattener(),
+    private val resourceProcessor: ResourceProcessor = ResourceProcessor(
+        resourceDataStoreManager,
+        resourcesWriter
+    )
 ) : Processor {
     private var prevSnapshot: List<MobileSegment.Wireframe> = emptyList()
     private var lastSnapshotTimestamp = 0L
@@ -40,24 +44,7 @@ internal class RecordedDataProcessor(
     override fun processResources(
         item: ResourceRecordedDataQueueItem
     ) {
-        val resourceHash = item.identifier
-        val isKnownResource = resourceDataStoreManager.isPreviouslySentResource(resourceHash)
-
-        if (!isKnownResource) {
-            // the cacheResourceHash method overwrites the datastore entry and we don't want that if we haven't finished
-            // initializing
-            if (resourceDataStoreManager.isReady()) {
-                resourceDataStoreManager.cacheResourceHash(resourceHash)
-            }
-
-            val enrichedResource = EnrichedResource(
-                resource = item.resourceData,
-                filename = resourceHash,
-                mimeType = item.mimeType
-            )
-
-            resourcesWriter.write(enrichedResource)
-        }
+        resourceProcessor.process(item.identifier, item.resourceData, item.mimeType)
     }
 
     @WorkerThread

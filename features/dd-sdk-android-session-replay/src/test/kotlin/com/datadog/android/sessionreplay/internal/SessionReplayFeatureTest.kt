@@ -8,12 +8,19 @@ package com.datadog.android.sessionreplay.internal
 
 import android.app.Application
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
+import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.NoOpSessionReplayInternalCallback
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentEvent
 import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
 import com.datadog.android.sessionreplay.internal.recorder.NoOpRecorder
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
@@ -42,6 +49,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
@@ -159,6 +167,84 @@ internal class SessionReplayFeatureTest {
         // Then
         assertThat(testedFeature.sessionReplayRecorder)
             .isInstanceOf(SessionReplayRecorder::class.java)
+    }
+
+    @Test
+    fun `M route embedded records W onReceive { feature initialized and recording }`() {
+        // Given
+        val mockFeatureScope = mock<FeatureScope>()
+        val mockEventWriteScope = mock<EventWriteScope>()
+        val mockEventBatchWriter = mock<EventBatchWriter>()
+        val mockDatadogContext = mock<DatadogContext>()
+        whenever(mockSdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME))
+            .thenReturn(mockFeatureScope)
+        whenever(mockEventBatchWriter.write(any(), any(), any())).thenReturn(true)
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback(mockEventBatchWriter)
+        }
+        whenever(mockFeatureScope.withContext(eq(emptySet()), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext) -> Unit>(it.arguments.lastIndex)
+            callback(mockDatadogContext)
+        }
+        whenever(mockFeatureScope.withWriteContext(eq(emptySet()), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
+            callback(mockDatadogContext, mockEventWriteScope)
+        }
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.startRecording()
+        val contextReceiver = argumentCaptor<FeatureContextUpdateReceiver>().also {
+            verify(mockSdkCore).setContextUpdateReceiver(it.capture())
+        }.firstValue
+        contextReceiver.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(
+                "application_id" to UUID.randomUUID().toString(),
+                "session_id" to UUID.randomUUID().toString(),
+                "view_id" to UUID.randomUUID().toString()
+            )
+        )
+        // When
+        testedFeature.onReceive(
+            EmbeddedContentEvent.RecordBatch(
+                records = listOf(mapOf(FAKE_RECORD_TYPE_KEY to 10L)),
+                slotId = FAKE_EMBEDDED_SLOT_ID,
+                viewId = FAKE_EMBEDDED_VIEW_ID
+            )
+        )
+
+        // Then
+        argumentCaptor<RawBatchEvent> {
+            verify(mockEventBatchWriter).write(
+                event = capture(),
+                batchMetadata = eq(null),
+                eventType = eq(EventType.DEFAULT)
+            )
+            assertThat(firstValue.data.toString(Charsets.UTF_8))
+                .contains("\"view_id\":\"$FAKE_EMBEDDED_VIEW_ID\"")
+                .contains("\"slotId\":\"$FAKE_EMBEDDED_SLOT_ID\"")
+        }
+    }
+
+    @Test
+    fun `M schedule embedded records W onReceive { feature initialized }`() {
+        // Given
+        val mockFeatureScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME))
+            .thenReturn(mockFeatureScope)
+        testedFeature.onInitialize(appContext.mockInstance)
+        val event = EmbeddedContentEvent.RecordBatch(
+            records = listOf(mapOf(FAKE_RECORD_TYPE_KEY to 10L)),
+            slotId = FAKE_EMBEDDED_SLOT_ID,
+            viewId = FAKE_EMBEDDED_VIEW_ID
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(mockFeatureScope).withContext(eq(emptySet()), any())
+        verify(mockFeatureScope, never()).withWriteContext(any(), any())
     }
 
     @Test
@@ -1344,6 +1430,10 @@ internal class SessionReplayFeatureTest {
     )
 
     companion object {
+        private const val FAKE_EMBEDDED_SLOT_ID = "slot-id"
+        private const val FAKE_RECORD_TYPE_KEY = "type"
+        private const val FAKE_EMBEDDED_VIEW_ID = "embedded-view-id"
+
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
 
         @TestConfigurationsProvider
