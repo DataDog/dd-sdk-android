@@ -11,7 +11,6 @@ import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
 import com.datadog.android.rum.internal.net.verifyReportInstrumentationError
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.StubRequestFinishedInfoMetrics
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -176,11 +175,9 @@ internal class CronetRequestFinishedInfoListenerTest {
     }
 
     @Test
-    fun `M call reportInstrumentationError W onRequestFinished() { empty annotations }`(
-        forge: Forge
-    ) {
+    fun `M call reportInstrumentationError W onRequestFinished() { empty annotations }`() {
         // Given
-        whenever(mockRequestFinishedInfo.annotations).thenReturn(forge.aNullable { emptyList() })
+        whenever(mockRequestFinishedInfo.annotations).thenReturn(mutableListOf())
 
         // When
         testedListener.onRequestFinished(mockRequestFinishedInfo)
