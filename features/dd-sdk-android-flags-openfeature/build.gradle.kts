@@ -6,7 +6,6 @@
 
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.detektCustomConfig
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
@@ -83,4 +82,3 @@ publishingConfig(
     "OpenFeature Provider integration for the Datadog Feature Flags " +
         "library for Android applications."
 )
-detektCustomConfig()

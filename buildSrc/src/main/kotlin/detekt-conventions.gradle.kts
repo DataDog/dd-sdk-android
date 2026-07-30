@@ -1,3 +1,4 @@
+import com.android.build.api.variant.LibraryAndroidComponentsExtension
 import io.gitlab.arturbosch.detekt.Detekt
 
 /*
@@ -14,13 +15,15 @@ dependencies {
     detektPlugins(project(":tools:detekt"))
 }
 
+val detektConfigFiles = listOf(
+    rootProject.file("detekt.yml"),
+    rootProject.file("detekt_custom_safe_calls_android.yml"),
+    rootProject.file("detekt_custom_safe_calls_third_party.yml"),
+    rootProject.file("detekt_custom_unsafe_calls.yml")
+)
+
 detekt {
-    config.setFrom(
-        rootProject.file("detekt.yml"),
-        rootProject.file("detekt_custom_safe_calls_android.yml"),
-        rootProject.file("detekt_custom_safe_calls_third_party.yml"),
-        rootProject.file("detekt_custom_unsafe_calls.yml")
-    )
+    config.setFrom(detektConfigFiles)
     ignoredVariants = listOf("release")
 }
 
@@ -44,4 +47,21 @@ tasks.detekt {
         tasks.named("detektMain"),
         tasks.named("detektTest")
     )
+}
+
+// testFixtures is an Android source set and isn't picked up by the detekt/AGP on AGP 8, this should
+// be able to be deleted in AGP 9 and covered by `detektTest`
+extensions.getByType<LibraryAndroidComponentsExtension>().onVariants { variant ->
+    if (variant.name == "debug") {
+        variant.testFixtures?.let { testFixtures ->
+            val detektTestFixtures = tasks.register<Detekt>("detektTestFixtures") {
+                source(layout.projectDirectory.dir("src/testFixtures/kotlin"))
+                config.setFrom(detektConfigFiles)
+                classpath.setFrom(testFixtures.compileClasspath)
+            }
+            tasks.detekt {
+                dependsOn(detektTestFixtures)
+            }
+        }
+    }
 }

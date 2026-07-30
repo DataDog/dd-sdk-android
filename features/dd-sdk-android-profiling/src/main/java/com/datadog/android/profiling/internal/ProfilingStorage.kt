@@ -30,36 +30,18 @@ internal object ProfilingStorage {
     }
 
     @JvmStatic
-    internal fun addProfilingFlag(appContext: Context, sdkInstanceName: String) {
-        getStorage(appContext).apply {
-            synchronized(this) {
-                val oldValue = getStringSet(KEY_PROFILING_ENABLED, emptySet())
-                val newSet = oldValue + sdkInstanceName
-                putStringSet(KEY_PROFILING_ENABLED, newSet)
-            }
-        }
+    internal fun addProfilingFlag(appContext: Context) {
+        getStorage(appContext).putBoolean(KEY_PROFILING_ENABLED, true)
     }
 
     @JvmStatic
-    internal fun getProfilingEnabledInstanceNames(appContext: Context): Set<String> {
-        return getStorage(appContext).let {
-            synchronized(it) {
-                it.getStringSet(KEY_PROFILING_ENABLED)
-            }
-        }
+    internal fun isProfilingEnabled(appContext: Context): Boolean {
+        return getStorage(appContext).getBoolean(KEY_PROFILING_ENABLED, false)
     }
 
     @JvmStatic
-    internal fun removeProfilingFlag(appContext: Context, sdkInstanceNames: Set<String>) {
-        getStorage(appContext).apply {
-            synchronized(this) {
-                val value = getStringSet(KEY_PROFILING_ENABLED).toMutableSet()
-                val removed = value.removeAll(sdkInstanceNames)
-                if (removed) {
-                    putStringSet(KEY_PROFILING_ENABLED, value)
-                }
-            }
-        }
+    internal fun removeProfilingFlag(appContext: Context) {
+        getStorage(appContext).remove(KEY_PROFILING_ENABLED)
     }
 
     @Suppress("ReturnCount")
