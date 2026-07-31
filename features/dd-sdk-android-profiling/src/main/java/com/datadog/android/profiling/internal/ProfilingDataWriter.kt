@@ -57,10 +57,19 @@ internal class ProfilingDataWriter(
                             eventType = EventType.DEFAULT
                         )
                     }
+                    // TODO RUM-17263: when multiple SDK instances share the same resultFilePath,
+                    // the first writer to reach here deletes the file out from under the others,
+                    // so their reads fail and their profiles are dropped as perfetto_unreadable.
+                    // Deletion ownership needs to move to a single coordinator (read-once-and-fan-out
+                    // bytes, or reference-count across instances) before multi-instance is supported.
                     safeDelete(profilingResult.resultFilePath)
                 }
             }
         }
+    }
+
+    override fun discard(profilingResult: PerfettoResult) {
+        safeDelete(profilingResult.resultFilePath)
     }
 
     private fun buildRawBatchEvent(

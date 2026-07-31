@@ -40,7 +40,6 @@ import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NoOpNetworkInfoProvider
 import com.datadog.android.core.internal.persistence.JsonObjectDeserializer
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
-import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.persistence.file.deleteSafe
 import com.datadog.android.core.internal.persistence.file.existsSafe
@@ -231,7 +230,7 @@ internal class CoreFeature(
 
     @get:WorkerThread
     private val lastViewEventFile: File by lazy { File(storageDir, LAST_RUM_VIEW_EVENT_FILE_NAME) }
-    private val lastViewEventFileWriter: FileWriter<RawBatchEvent> by lazy {
+    private val lastViewEventFileWriter: BatchFileReaderWriter by lazy {
         BatchFileReaderWriter.create(
             internalLogger = internalLogger,
             encryption = localDataEncryption
@@ -387,7 +386,8 @@ internal class CoreFeature(
 
     @WorkerThread
     internal fun writeLastViewEvent(data: ByteArray) {
-        lastViewEventFileWriter.writeData(lastViewEventFile, RawBatchEvent(data), false)
+        val serialized = lastViewEventFileWriter.serializeToBytes(RawBatchEvent(data = data)) ?: return
+        lastViewEventFileWriter.writeBinaryData(lastViewEventFile, serialized, false)
     }
 
     @WorkerThread

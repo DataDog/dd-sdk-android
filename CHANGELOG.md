@@ -1,3 +1,39 @@
+# 3.12.1 / 2026-07-16
+
+* [BUGFIX] Fix R8 failures due to missing `SourceLines` annotation. See [#3642](https://github.com/DataDog/dd-sdk-android/pull/3642)
+
+# 3.12.0 / 2026-07-15
+
+* [FEATURE] Continuous Profiling: capture profiling sessions correlated with RUM, with app-launch, ANR and long-task triggers, cross-feature sampling, quota checks and clock-drift gating. See [#3622](https://github.com/DataDog/dd-sdk-android/pull/3622)
+* [FEATURE] Add `setContinuousSampleRate` API to `ProfilingConfiguration`. See [#3276](https://github.com/DataDog/dd-sdk-android/pull/3276)
+* [FEATURE] Add UK1 site. See [#3595](https://github.com/DataDog/dd-sdk-android/pull/3595)
+* [FEATURE] Add wildcard host pattern matching to `WebViewTracking`. See [#3540](https://github.com/DataDog/dd-sdk-android/pull/3540)
+* [FEATURE] Add wildcard host pattern matching to first-party tracing. See [#3600](https://github.com/DataDog/dd-sdk-android/pull/3600)
+* [FEATURE] Heatmaps: add infrastructure, schemas, RUM and Session Replay integration behind a feature flag. See [#3566](https://github.com/DataDog/dd-sdk-android/pull/3566)
+* [BUGFIX] Fix interop wireframe positioning in Compose windows. See [#3611](https://github.com/DataDog/dd-sdk-android/pull/3611)
+* [BUGFIX] Fix regression of missing tinted backgrounds in Session Replay. See [#3561](https://github.com/DataDog/dd-sdk-android/pull/3561)
+* [BUGFIX] Fix TTFD report during warm start after session expiration. See [#3607](https://github.com/DataDog/dd-sdk-android/pull/3607)
+* [BUGFIX] Fix clock mismatch in `DefaultAppStartTimeProvider` app start time computation. See [#3587](https://github.com/DataDog/dd-sdk-android/pull/3587)
+* [IMPROVEMENT] Add telemetry attributes for TTFD/TTID too large. See [#3612](https://github.com/DataDog/dd-sdk-android/pull/3612)
+* [MAINTENANCE] Reduce CI pipeline time via parallelism and Gradle consolidation. See [#3559](https://github.com/DataDog/dd-sdk-android/pull/3559)
+* [MAINTENANCE] Improve Gradle usage in Gitlab. See [#3583](https://github.com/DataDog/dd-sdk-android/pull/3583)
+* [MAINTENANCE] Cancel stale PR pipeline runs in Gitlab. See [#3584](https://github.com/DataDog/dd-sdk-android/pull/3584)
+* [MAINTENANCE] Disable auto-cancel on `develop` and feature branches. See [#3602](https://github.com/DataDog/dd-sdk-android/pull/3602)
+* [MAINTENANCE] Sign the CI image. See [#3593](https://github.com/DataDog/dd-sdk-android/pull/3593)
+* [MAINTENANCE] Fix R8 missing class error caused by `dd-javac-plugin` annotations. See [#3601](https://github.com/DataDog/dd-sdk-android/pull/3601)
+* [MAINTENANCE] Cleanup ahead of the API 37 support. See [#3582](https://github.com/DataDog/dd-sdk-android/pull/3582)
+* [MAINTENANCE] Bump `latest-api` instrumented test jobs to Android API 37. See [#3594](https://github.com/DataDog/dd-sdk-android/pull/3594)
+* [MAINTENANCE] Remove default `= Time()` from `RumRawEvent` subclasses. See [#3608](https://github.com/DataDog/dd-sdk-android/pull/3608)
+* [MAINTENANCE] Remove unused `BatchFileDataReader`. See [#3619](https://github.com/DataDog/dd-sdk-android/pull/3619)
+* [MAINTENANCE] Remove unused `ByteArrayOutputStreamAssert`. See [#3620](https://github.com/DataDog/dd-sdk-android/pull/3620)
+* [MAINTENANCE] Remove unused consts from `LogsFeature`. See [#3626](https://github.com/DataDog/dd-sdk-android/pull/3626)
+* [MAINTENANCE] Remove the unused `KotlinDSLUtils` from the Gradle build. See [#3552](https://github.com/DataDog/dd-sdk-android/pull/3552)
+* [MAINTENANCE] Split detekt safe calls into two files. See [#3572](https://github.com/DataDog/dd-sdk-android/pull/3572)
+* [MAINTENANCE] Stabilize `MoveDataMigrationOperationTest` under high CPU usage. See [#3614](https://github.com/DataDog/dd-sdk-android/pull/3614)
+* [MAINTENANCE] Fix `RumActionScopeTest` tests failing under high CPU load. See [#3604](https://github.com/DataDog/dd-sdk-android/pull/3604)
+* [MAINTENANCE] Fix `FileMoverTest` flaky test. See [#3590](https://github.com/DataDog/dd-sdk-android/pull/3590)
+* [MAINTENANCE] Fix the Cronet sample crashing when loading `404.png`. See [#3551](https://github.com/DataDog/dd-sdk-android/pull/3551)
+
 # 3.11.0 / 2026-06-16
 
 * [FEATURE] Support `addEvent` for OpenTelemetry spans (logging events). See [#3377](https://github.com/DataDog/dd-sdk-android/pull/3377)

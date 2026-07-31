@@ -405,6 +405,7 @@ datadog:
       - "java.util.WeakHashMap.getOrPut(android.app.Activity?, kotlin.Function0)"
       - "java.util.WeakHashMap.put(android.app.Activity?, android.view.ViewTreeObserver.OnDrawListener?)"
       - "java.util.WeakHashMap.put(android.app.Activity?, com.datadog.android.rum.internal.utils.window.RumWindowCallbackListener?)"
+      - "java.util.WeakHashMap.put(android.view.Window?, kotlin.Any?)"
       - "java.util.WeakHashMap.remove(android.app.Activity?)"
       - "java.util.WeakHashMap.remove(android.view.View?)"
       - "java.util.WeakHashMap.remove(android.view.Window?)"
@@ -418,6 +419,7 @@ datadog:
       - "java.util.zip.Deflater.setInput(kotlin.ByteArray?)"
       # endregion
       # region Kotlin Stdlib
+      - "kotlin.Float.isNaN()"
       - "kotlin.lazy(kotlin.Function0)"
       - "kotlin.lazy(kotlin.LazyThreadSafetyMode, kotlin.Function0)"
       - "kotlin.repeat(kotlin.Int, kotlin.Function1)"
@@ -527,6 +529,7 @@ datadog:
       - "kotlin.collections.List.map(kotlin.Function1)"
       - "kotlin.collections.List.mapIndexed(kotlin.Function2)"
       - "kotlin.collections.List.mapNotNull(kotlin.Function1)"
+      - "kotlin.collections.List.maxByOrNull(kotlin.Function1)"
       - "kotlin.collections.List.maxOrNull()"
       - "kotlin.collections.List.orEmpty()"
       - "kotlin.collections.List.partition(kotlin.Function1)"
@@ -738,6 +741,7 @@ datadog:
       - "kotlin.collections.Set.map(kotlin.Function1)"
       - "kotlin.collections.Set.none(kotlin.Function1)"
       - "kotlin.collections.Set.orEmpty()"
+      - "kotlin.collections.Set.partition(kotlin.Function1)"
       - "kotlin.collections.Set.plus(kotlin.collections.Iterable)"
       - "kotlin.collections.Set.toHashSet()"
       - "kotlin.collections.Set.toSet()"

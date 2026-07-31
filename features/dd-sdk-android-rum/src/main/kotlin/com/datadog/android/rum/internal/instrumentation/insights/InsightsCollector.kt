@@ -97,7 +97,7 @@ interface InsightsCollector {
      */
     fun onSlowFrameRate(rate: Double?)
 
-     /**
+    /**
      * Notifies the collector that a timeseries batch has been sent.
      */
     fun onTimeseries(name: String)

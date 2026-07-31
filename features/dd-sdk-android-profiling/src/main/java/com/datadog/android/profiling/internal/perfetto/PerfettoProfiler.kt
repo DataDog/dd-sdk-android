@@ -27,10 +27,9 @@ import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
 import com.datadog.android.profiling.internal.time.MutableTimeProvider
 import com.datadog.android.profiling.internal.utils.fileSizeSafe
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.function.Consumer
 import kotlin.random.Random
 
@@ -44,8 +43,8 @@ import kotlin.random.Random
  * @param profilingTelemetry shared telemetry helper that buffers metric events until a logger is
  * available and dispatches them through the unified `[Mobile Metric] Profiling Session` envelope.
  * @param anrTriggerRegistrar registrar that owns the system ANR profiling-trigger lifecycle.
- * The profiler passes its internal fan-out listener to it at register time; the listener
- * captures the profiler's `callbackMap` so all SDK instances receive the detection.
+ * The profiler passes its internal listener to it at register time; the listener
+ * captures the profiler's `callback` so the registered SDK instance receives the detection.
  * @param buildSdkVersionProvider Build.VERSION.SDK_INT provider used for the test.
  */
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
@@ -61,8 +60,8 @@ internal class PerfettoProfiler(
     internal var stopSignal: CancellationSignal? = null
     private val resultCallback: Consumer<ProfilingResult>
 
-    // This flag represents which instance of this class is working for.
-    private val runningInstances: AtomicReference<Set<String>> = AtomicReference(emptySet())
+    // Whether a profiling session is currently running.
+    private val isRunning: AtomicBoolean = AtomicBoolean(false)
 
     @Volatile
     private var profilingStartTime = 0L
@@ -88,16 +87,14 @@ internal class PerfettoProfiler(
         }
 
     internal val anrListener = AnrListener { event ->
-        callbackMap.values.forEach { callback ->
-            callback.onAnrDetected(event)
-        }
+        callback?.onAnrDetected(event)
     }
 
     @Volatile
     private var extendLaunchSession = false
 
-    // Map of <InstanceName, ProfilerCallback>
-    private val callbackMap: MutableMap<String, ProfilerCallback> = ConcurrentHashMap()
+    @Volatile
+    private var callback: ProfilerCallback? = null
 
     init {
         resultCallback = Consumer<ProfilingResult> { result ->
@@ -128,7 +125,7 @@ internal class PerfettoProfiler(
             } else {
                 notifyCallbacks { onFailure(startReason) }
             }
-            runningInstances.set(emptySet())
+            isRunning.set(false)
             profilingTelemetry.report(
                 ProfilingTelemetryEvent.SessionEnd(
                     startReason = profilingStartReason.value,
@@ -174,9 +171,8 @@ internal class PerfettoProfiler(
     }
 
     private fun notifyCallbacks(dispatch: ProfilerCallback.() -> Unit) {
-        val running = runningInstances.get()
-        callbackMap.forEach { (key, callback) ->
-            if (running.contains(key)) callback.dispatch()
+        if (isRunning.get()) {
+            callback?.dispatch()
         }
     }
 
@@ -184,13 +180,12 @@ internal class PerfettoProfiler(
         appContext: Context,
         startReason: ProfilingStartReason,
         additionalAttributes: Map<String, String>,
-        sdkInstanceNames: Set<String>,
         durationMs: Int
     ) {
         val effectiveDurationMs =
             if (durationMs > 0) durationMs else getDefaultDurationMs(startReason)
-        // profiling will be launched when no instance is currently running profiling.
-        if (runningInstances.compareAndSet(emptySet(), sdkInstanceNames)) {
+        // profiling will be launched when no session is currently running.
+        if (isRunning.compareAndSet(false, true)) {
             profilingStartTime = timeProvider.getDeviceTimestampMillis()
             profilingStopTime = 0L
             profilingStartReason = startReason
@@ -221,8 +216,8 @@ internal class PerfettoProfiler(
         }
     }
 
-    override fun stop(sdkInstanceName: String) {
-        if (runningInstances.get().contains(sdkInstanceName)) {
+    override fun stop() {
+        if (isRunning.get()) {
             // note: if we call this while another request is being built, stopSignal will be
             // overwritten by that time. Probably need to allow a single profiler instance and stop profiler before
             // starting another request.
@@ -231,28 +226,26 @@ internal class PerfettoProfiler(
         }
     }
 
-    override fun isRunning(sdkInstanceName: String): Boolean {
-        return runningInstances.get().contains(sdkInstanceName)
+    override fun isRunning(): Boolean {
+        return isRunning.get()
     }
 
     override fun registerProfilingCallback(
         appContext: Context,
-        sdkInstanceName: String,
         callback: ProfilerCallback
     ) {
-        synchronized(callbackMap) {
-            callbackMap[sdkInstanceName] = callback
+        synchronized(this) {
+            this.callback = callback
             if (buildSdkVersionProvider.isAtLeastBaklava) {
                 anrTriggerRegistrar.register(appContext, anrListener)
             }
         }
     }
 
-    override fun unregisterProfilingCallback(appContext: Context, sdkInstanceName: String) {
-        synchronized(callbackMap) {
-            callbackMap.remove(sdkInstanceName)
-            // Unregister the ANR triggers only when all the SDK instances have unregistered.
-            if (callbackMap.isEmpty() && buildSdkVersionProvider.isAtLeastBaklava) {
+    override fun unregisterProfilingCallback(appContext: Context) {
+        synchronized(this) {
+            callback = null
+            if (buildSdkVersionProvider.isAtLeastBaklava) {
                 anrTriggerRegistrar.unregister(appContext)
             }
         }

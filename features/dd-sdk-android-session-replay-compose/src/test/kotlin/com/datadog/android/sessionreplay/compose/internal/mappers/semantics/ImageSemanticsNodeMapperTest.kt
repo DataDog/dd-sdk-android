@@ -490,10 +490,10 @@ internal class ImageSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() 
         )
         whenever(mockBitmap.width) doReturn 100
         whenever(mockBitmap.height) doReturn 100
-        whenever(mockSemanticsUtils.resolveInnerBounds(any())) doReturn containerBounds
+        whenever(mockSemanticsUtils.resolveInnerBounds(any(), any())) doReturn containerBounds
         whenever(mockSemanticsUtils.resolveSemanticsPainter(any(), any())) doReturn bitmapInfo
         whenever(mockSemanticsUtils.getImagePrivacyOverride(any())) doReturn null
-        whenever(mockSemanticsUtils.resolveBackgroundInfo(any())) doReturn emptyList()
+        whenever(mockSemanticsUtils.resolveBackgroundInfo(any(), any())) doReturn emptyList()
         whenever(
             mockImageWireframeHelper.createImageWireframeByBitmap(
                 id = any(),
@@ -538,9 +538,11 @@ internal class ImageSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() 
         // Given
         val mockSemanticsNode = mockSemanticsNodeWithBound()
         val containerBounds = rectToBounds(fakeBounds, fakeDensity)
-        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode)) doReturn containerBounds
+        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode, fakeUiContext.windowOffset)) doReturn
+            containerBounds
         whenever(mockSemanticsUtils.resolveSemanticsPainter(eq(mockSemanticsNode), any())) doReturn null
-        whenever(mockSemanticsUtils.resolveBackgroundInfo(mockSemanticsNode)) doReturn emptyList()
+        whenever(mockSemanticsUtils.resolveBackgroundInfo(mockSemanticsNode, fakeUiContext.windowOffset)) doReturn
+            emptyList()
 
         // When
         val result = testedMapper.map(
@@ -567,10 +569,10 @@ internal class ImageSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() 
         )
         whenever(mockBitmap.width) doReturn 100
         whenever(mockBitmap.height) doReturn 100
-        whenever(mockSemanticsUtils.resolveInnerBounds(any())) doReturn containerBounds
+        whenever(mockSemanticsUtils.resolveInnerBounds(any(), any())) doReturn containerBounds
         whenever(mockSemanticsUtils.resolveSemanticsPainter(any(), any())) doReturn bitmapInfo
         whenever(mockSemanticsUtils.getImagePrivacyOverride(any())) doReturn ImagePrivacy.MASK_ALL
-        whenever(mockSemanticsUtils.resolveBackgroundInfo(any())) doReturn emptyList()
+        whenever(mockSemanticsUtils.resolveBackgroundInfo(any(), any())) doReturn emptyList()
         whenever(
             mockImageWireframeHelper.createImageWireframeByBitmap(
                 id = any(),

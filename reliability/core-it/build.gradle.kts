@@ -12,12 +12,14 @@ import com.datadog.gradle.config.kotlinConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
+    id("ktlint")
     // Build
     id("com.android.application")
     kotlin("android")
 
     // Analysis tools
     id("com.github.ben-manes.versions")
+    id("test-pyramid-api-usage")
 }
 
 android {

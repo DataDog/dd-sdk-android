@@ -5,6 +5,7 @@
  */
 package com.datadog.android.utils.forge
 
+import android.util.Pair
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import org.chromium.net.Proxy
@@ -14,24 +15,25 @@ import org.mockito.kotlin.mock
 import java.util.concurrent.Executor
 
 internal class ProxyForgeFactory : ForgeryFactory<Proxy> {
-    override fun getForgery(forge: Forge) = Proxy(
-        forge.anElementFrom(Proxy.HTTP, Proxy.HTTPS),
+    override fun getForgery(forge: Forge) = Proxy.createHttpProxy(
+        forge.anElementFrom(Proxy.SCHEME_HTTP, Proxy.SCHEME_HTTPS),
         forge.aString(),
         forge.anInt(min = 1, max = 65535),
         mock<Executor> {
-            on { execute(any()) } doAnswer {
-                it.getArgument<() -> Unit>(0).invoke()
+            on { execute(any()) } doAnswer { invocation ->
+                invocation.getArgument<() -> Unit>(0).invoke()
             }
         },
-        object : Proxy.Callback() {
+        object : Proxy.HttpConnectCallback() {
 
-            @Deprecated("Deprecated in Java")
-            override fun onBeforeTunnelRequest() = emptyList<Map.Entry<String, String>>()
+            override fun onBeforeRequest(request: Proxy.HttpConnectCallback.Request) {
+                request.proceed(emptyList<Pair<String, String>>())
+            }
 
-            override fun onTunnelHeadersReceived(
-                responseHeaders: List<Map.Entry<String, String>>,
+            override fun onResponseReceived(
+                responseHeaders: List<Pair<String, String>>,
                 statusCode: Int
-            ) = false
+            ): Int = RESPONSE_ACTION_PROCEED
         }
     )
 }

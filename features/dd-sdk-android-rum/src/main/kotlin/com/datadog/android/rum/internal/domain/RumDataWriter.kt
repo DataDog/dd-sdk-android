@@ -17,6 +17,7 @@ import com.datadog.android.core.persistence.serializeToByteArray
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.domain.event.RumEventMeta
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
+import com.datadog.android.rum.internal.domain.scope.DiffThenFullView
 import com.datadog.android.rum.internal.domain.scope.MappedViewEvent
 import com.datadog.android.rum.internal.domain.scope.RumViewUpdateData
 import com.datadog.android.rum.model.ViewEvent
@@ -39,6 +40,7 @@ internal class RumDataWriter(
             is MappedViewEvent -> writeMappedViewEvent(writer, element.viewEvent, eventType)
             is ViewEvent -> writeRawViewEvent(writer, element, eventType)
             is RumViewUpdateData -> writeViewUpdateEvent(writer, element, eventType)
+            is DiffThenFullView -> writeDiffThenFullView(writer, element, eventType)
             else -> writeOtherEvent(writer, element, eventType)
         }
     }
@@ -71,7 +73,8 @@ internal class RumDataWriter(
     private fun writeViewUpdateEvent(
         writer: EventBatchWriter,
         eventData: RumViewUpdateData,
-        eventType: EventType
+        eventType: EventType,
+        writeCrashRecovery: Boolean = true
     ): Boolean {
         val event = eventData.viewUpdate
         val byteArray = eventSerializer.serializeToByteArray(event, sdkCore.internalLogger)
@@ -85,10 +88,34 @@ internal class RumDataWriter(
             ?: EMPTY_BYTE_ARRAY
 
         return writeBatchEvent(writer, RawBatchEvent(data = byteArray, metadata = serializedEventMeta), eventType) {
-            // serialize the full ViewEvent only on successful write, for crash recovery
-            val byteArrayView = eventSerializer.serializeToByteArray(eventData.viewEvent, sdkCore.internalLogger)
-            if (byteArrayView != null) sdkCore.writeLastViewEvent(byteArrayView)
+            if (writeCrashRecovery) {
+                // serialize the full ViewEvent only on successful write, for crash recovery
+                val byteArrayView = eventSerializer.serializeToByteArray(eventData.viewEvent, sdkCore.internalLogger)
+                if (byteArrayView != null) sdkCore.writeLastViewEvent(byteArrayView)
+            }
         }
+    }
+
+    @WorkerThread
+    private fun writeDiffThenFullView(
+        writer: EventBatchWriter,
+        eventData: DiffThenFullView,
+        eventType: EventType
+    ): Boolean {
+        // Write the partial diff first — skip crash-recovery write since the full view below will do it
+        val diffWritten = writeViewUpdateEvent(
+            writer,
+            RumViewUpdateData(eventData.viewUpdate, eventData.viewEvent),
+            eventType,
+            writeCrashRecovery = false
+        )
+        // Only write the full view checkpoint if the diff was persisted
+        if (diffWritten) {
+            writeMappedViewEvent(writer, eventData.viewEvent, eventType)
+        }
+        // Always return diffWritten so prevViewEvent is updated whenever the diff was
+        // persisted, keeping the baseline consistent regardless of full view write outcome
+        return diffWritten
     }
 
     @WorkerThread

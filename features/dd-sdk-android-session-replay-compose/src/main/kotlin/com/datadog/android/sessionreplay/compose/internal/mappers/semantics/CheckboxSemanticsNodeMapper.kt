@@ -38,7 +38,7 @@ internal class CheckboxSemanticsNodeMapper(
         asyncJobStatusCallback: AsyncJobStatusCallback,
         internalLogger: InternalLogger
     ): SemanticsWireframe {
-        val globalBounds = resolveBounds(semanticsNode)
+        val globalBounds = resolveBounds(semanticsNode, parentContext)
 
         val checkableWireframes = if (isCheckboxMasked(parentContext)) {
             listOf(

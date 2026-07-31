@@ -9,6 +9,7 @@ import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 
 plugins {
+    id("ktlint")
     id("org.jetbrains.kotlin.jvm")
     id("com.github.ben-manes.versions")
 }

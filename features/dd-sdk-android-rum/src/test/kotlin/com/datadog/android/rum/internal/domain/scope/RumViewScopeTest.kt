@@ -19,6 +19,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.utils.DdTagsUtils
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.FeatureContextKeys.PROFILER_IS_RUNNING
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
@@ -72,7 +73,6 @@ import com.datadog.android.rum.internal.toError
 import com.datadog.android.rum.internal.toLongTask
 import com.datadog.android.rum.internal.toView
 import com.datadog.android.rum.internal.toVital
-import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.internal.vitals.VitalInfo
 import com.datadog.android.rum.internal.vitals.VitalListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -4271,6 +4271,38 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `M not send RumAnrEvent to profiling W handleEvent(AddError) {ANRException but write fails}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        val throwable = ANRException(Thread.currentThread())
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes,
+            eventTime = fakeEventTime
+        )
+        // The RUM error write does not succeed (e.g. dropped by the errorEventMapper or a storage failure).
+        whenever(mockWriter.write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))) doReturn false
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then — the profile must not reference an ANR error id that RUM never ingested.
+        verify(mockWriter).write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))
+        verify(mockProfilingFeatureScope, never()).sendEvent(isA<ProfilerEvent.RumAnrEvent>())
+    }
+
+    @Test
     fun `M send event W handleEvent(AddError) on active view {throwable_message == blank}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
@@ -6170,6 +6202,25 @@ internal class RumViewScopeTest {
                 )
             )
         }
+    }
+
+    @Test
+    fun `M not send RumLongTaskEvent to profiling W handleEvent(AddLongTask) {write fails}`(
+        @LongForgery(0L, 700_000_000L) durationNs: Long,
+        @StringForgery target: String
+    ) {
+        // Given
+        testedScope.activeActionScope = null
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
+        // The RUM long task write does not succeed (e.g. dropped by the longTaskEventMapper or a storage failure).
+        whenever(mockWriter.write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))) doReturn false
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then — the profile must not reference a long task id that RUM never ingested.
+        verify(mockWriter).write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))
+        verify(mockProfilingFeatureScope, never()).sendEvent(isA<ProfilerEvent.RumLongTaskEvent>())
     }
 
     @Test
@@ -9148,10 +9199,7 @@ internal class RumViewScopeTest {
 
         argumentCaptor<ViewEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(lastValue)
-                .apply {
-                    hasSessionActive(false)
-                }
+            assertThat(lastValue).hasSessionActive(false)
         }
     }
 
@@ -9521,10 +9569,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<ViewEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(firstValue)
-                .apply {
-                    hasDuration(1)
-                }
+            assertThat(firstValue).hasDuration(1)
         }
         if (rawEventData.event !is RumRawEvent.StartView) {
             mockInternalLogger.verifyLog(
@@ -9552,10 +9597,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<ViewEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(firstValue)
-                .apply {
-                    hasDuration(1)
-                }
+            assertThat(firstValue).hasDuration(1)
         }
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
@@ -9591,10 +9633,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<ViewEvent> {
             verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(lastValue)
-                .apply {
-                    hasDuration(durationNs)
-                }
+            assertThat(lastValue).hasDuration(durationNs)
         }
     }
 
@@ -10074,7 +10113,7 @@ internal class RumViewScopeTest {
                 .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasServiceName(fakeDatadogContext.service)
-                .hasDDTags(buildDDTagsString(fakeDatadogContext))
+                .hasDDTags(DdTagsUtils.toDdTagsString(fakeDatadogContext))
 
             val operationsProps = lastValue.vital
 
@@ -10149,7 +10188,7 @@ internal class RumViewScopeTest {
                 .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasServiceName(fakeDatadogContext.service)
-                .hasDDTags(buildDDTagsString(fakeDatadogContext))
+                .hasDDTags(DdTagsUtils.toDdTagsString(fakeDatadogContext))
 
             val operationsProps = lastValue.vital
 
@@ -10221,7 +10260,7 @@ internal class RumViewScopeTest {
                 .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasServiceName(fakeDatadogContext.service)
-                .hasDDTags(buildDDTagsString(fakeDatadogContext))
+                .hasDDTags(DdTagsUtils.toDdTagsString(fakeDatadogContext))
 
             val operationsProps = lastValue.vital
 
@@ -10296,7 +10335,7 @@ internal class RumViewScopeTest {
                 .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasServiceName(fakeDatadogContext.service)
-                .hasDDTags(buildDDTagsString(fakeDatadogContext))
+                .hasDDTags(DdTagsUtils.toDdTagsString(fakeDatadogContext))
 
             val operationsProps = lastValue.vital
 
@@ -10369,7 +10408,7 @@ internal class RumViewScopeTest {
                 .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasServiceName(fakeDatadogContext.service)
-                .hasDDTags(buildDDTagsString(fakeDatadogContext))
+                .hasDDTags(DdTagsUtils.toDdTagsString(fakeDatadogContext))
 
             val operationsProps = lastValue.vital
 
@@ -10446,7 +10485,7 @@ internal class RumViewScopeTest {
                 .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasServiceName(fakeDatadogContext.service)
-                .hasDDTags(buildDDTagsString(fakeDatadogContext))
+                .hasDDTags(DdTagsUtils.toDdTagsString(fakeDatadogContext))
 
             val operationsProps = lastValue.vital
 
@@ -10543,6 +10582,62 @@ internal class RumViewScopeTest {
                 viewName = fakeKey.name
             )
         )
+    }
+
+    @Test
+    fun `M not send RumVitalEvent OPERATION to profiling W handleEvent { StartOperation, write fails }`(
+        @StringForgery fakeName: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeOperationKey = forge.aNullable { anAlphabeticalString() }
+        val event = RumRawEvent.StartOperation(
+            fakeName,
+            operationKey = fakeOperationKey,
+            attributes = emptyMap(),
+            eventTime = fakeEventTime
+        )
+        // The RUM operation vital write does not succeed.
+        whenever(mockWriter.write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))) doReturn false
+
+        // When
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then — the profile must not reference an operation vital id that RUM never ingested.
+        verify(mockProfilingFeatureScope, never()).sendEvent(isA<ProfilerEvent.RumVitalEvent>())
+    }
+
+    @Test
+    fun `M build vital and profiling event from same context W handleEvent { StartOperation }`(
+        @StringForgery fakeName: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeOperationKey = forge.aNullable { anAlphabeticalString() }
+        val event = RumRawEvent.StartOperation(
+            fakeName,
+            operationKey = fakeOperationKey,
+            attributes = emptyMap(),
+            eventTime = fakeEventTime
+        )
+
+        // When
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then — the written vital and the profiling metadata must describe the same RUM context,
+        // so profile/RUM correlation cannot drift if the session/view is renewed mid-write.
+        val schemaEventCaptor = argumentCaptor<VitalOperationStepEvent>()
+        verify(mockWriter).write(eq(mockEventBatchWriter), schemaEventCaptor.capture(), eq(EventType.DEFAULT))
+        val writtenVital = schemaEventCaptor.firstValue
+
+        val profilerEventCaptor = argumentCaptor<ProfilerEvent.RumVitalEvent>()
+        verify(mockProfilingFeatureScope).sendEvent(profilerEventCaptor.capture())
+        val profilerEvent = profilerEventCaptor.firstValue
+
+        assertThat(profilerEvent.rumContext.applicationId).isEqualTo(writtenVital.application.id)
+        assertThat(profilerEvent.rumContext.sessionId).isEqualTo(writtenVital.session.id)
+        assertThat(profilerEvent.rumContext.viewId).isEqualTo(writtenVital.view.id)
+        assertThat(profilerEvent.rumContext.viewName).isEqualTo(writtenVital.view.name)
     }
 
     @Test
@@ -10828,7 +10923,7 @@ internal class RumViewScopeTest {
         @JvmStatic
         fun brokenTimeRawEventData(): List<RumRawEventData> {
             val forge = Forge()
-            Configurator().apply { configure(forge) }
+            Configurator().configure(forge)
             val fakeKey = forge.getForgery<RumScopeKey>()
             val fakeName = forge.anAlphabeticalString()
             val eventTime = Time(0, 0)

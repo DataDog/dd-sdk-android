@@ -14,6 +14,7 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -148,13 +149,14 @@ internal class ConsentAwareFileOrchestratorTest {
 
     @Test
     fun `M return pending writable file W getWritableFile() {consent=PENDING}`(
-        @Forgery file: File
+        @Forgery file: File,
+        @LongForgery(min = 0L) fakeEventSize: Long
     ) {
         // Given
-        whenever(mockPendingOrchestrator.getWritableFile()) doReturn file
+        whenever(mockPendingOrchestrator.getWritableFile(fakeEventSize)) doReturn file
 
         // When
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(fakeEventSize)
 
         // Then
         assertThat(result).isSameAs(file)
@@ -163,17 +165,18 @@ internal class ConsentAwareFileOrchestratorTest {
 
     @Test
     fun `M return pending writable file W getWritableFile() {consent=GRANTED then PENDING}`(
-        @Forgery file: File
+        @Forgery file: File,
+        @LongForgery(min = 0L) fakeEventSize: Long
     ) {
         // Given
         instantiateTestedOrchestrator(TrackingConsent.GRANTED)
         runPendingRunnable()
-        whenever(mockPendingOrchestrator.getWritableFile()) doReturn file
+        whenever(mockPendingOrchestrator.getWritableFile(fakeEventSize)) doReturn file
 
         // When
         testedOrchestrator.onConsentUpdated(TrackingConsent.GRANTED, TrackingConsent.PENDING)
         runPendingRunnable()
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(fakeEventSize)
 
         // Then
         assertThat(result).isSameAs(file)
@@ -182,17 +185,18 @@ internal class ConsentAwareFileOrchestratorTest {
 
     @Test
     fun `M return pending writable file W getWritableFile() {consent=NOT_GRANTED then PENDING}`(
-        @Forgery file: File
+        @Forgery file: File,
+        @LongForgery(min = 0L) fakeEventSize: Long
     ) {
         // Given
         instantiateTestedOrchestrator(TrackingConsent.NOT_GRANTED)
         runPendingRunnable()
-        whenever(mockPendingOrchestrator.getWritableFile()) doReturn file
+        whenever(mockPendingOrchestrator.getWritableFile(fakeEventSize)) doReturn file
 
         // When
         testedOrchestrator.onConsentUpdated(TrackingConsent.NOT_GRANTED, TrackingConsent.PENDING)
         runPendingRunnable()
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(fakeEventSize)
 
         // Then
         assertThat(result).isSameAs(file)
@@ -201,15 +205,16 @@ internal class ConsentAwareFileOrchestratorTest {
 
     @Test
     fun `M return granted writable file W getWritableFile() {consent=GRANTED}`(
-        @Forgery file: File
+        @Forgery file: File,
+        @LongForgery(min = 0L) fakeEventSize: Long
     ) {
         // Given
         instantiateTestedOrchestrator(TrackingConsent.GRANTED)
         runPendingRunnable()
-        whenever(mockGrantedOrchestrator.getWritableFile()) doReturn file
+        whenever(mockGrantedOrchestrator.getWritableFile(fakeEventSize)) doReturn file
 
         // When
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(fakeEventSize)
 
         // Then
         assertThat(result).isSameAs(file)
@@ -218,17 +223,18 @@ internal class ConsentAwareFileOrchestratorTest {
 
     @Test
     fun `M return granted writable file W getWritableFile() {consent=NOT_GRANTED then GRANTED}`(
-        @Forgery file: File
+        @Forgery file: File,
+        @LongForgery(min = 0L) fakeEventSize: Long
     ) {
         // Given
         instantiateTestedOrchestrator(TrackingConsent.NOT_GRANTED)
         runPendingRunnable()
-        whenever(mockGrantedOrchestrator.getWritableFile()) doReturn file
+        whenever(mockGrantedOrchestrator.getWritableFile(fakeEventSize)) doReturn file
 
         // When
         testedOrchestrator.onConsentUpdated(TrackingConsent.NOT_GRANTED, TrackingConsent.GRANTED)
         runPendingRunnable()
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(fakeEventSize)
 
         // Then
         assertThat(result).isSameAs(file)
@@ -237,17 +243,18 @@ internal class ConsentAwareFileOrchestratorTest {
 
     @Test
     fun `M return granted writable file W getWritableFile() {consent=PENDING then GRANTED}`(
-        @Forgery file: File
+        @Forgery file: File,
+        @LongForgery(min = 0L) fakeEventSize: Long
     ) {
         // Given
         instantiateTestedOrchestrator(TrackingConsent.PENDING)
         runPendingRunnable()
-        whenever(mockGrantedOrchestrator.getWritableFile()) doReturn file
+        whenever(mockGrantedOrchestrator.getWritableFile(fakeEventSize)) doReturn file
 
         // When
         testedOrchestrator.onConsentUpdated(TrackingConsent.PENDING, TrackingConsent.GRANTED)
         runPendingRunnable()
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(fakeEventSize)
 
         // Then
         assertThat(result).isSameAs(file)
@@ -255,13 +262,15 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `M return null file W getWritableFile() {consent=NOT_GRANTED}`() {
+    fun `M return null file W getWritableFile() {consent=NOT_GRANTED}`(
+        @LongForgery(min = 0L) fakeEventSize: Long
+    ) {
         // Given
         instantiateTestedOrchestrator(TrackingConsent.NOT_GRANTED)
         runPendingRunnable()
 
         // When
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(fakeEventSize)
 
         // Then
         assertThat(result).isNull()
@@ -269,7 +278,9 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `M return null file W getWritableFile() {consent=GRANTED then NOT_GRANTED}`() {
+    fun `M return null file W getWritableFile() {consent=GRANTED then NOT_GRANTED}`(
+        @LongForgery(min = 0L) fakeEventSize: Long
+    ) {
         // Given
         instantiateTestedOrchestrator(TrackingConsent.GRANTED)
         runPendingRunnable()
@@ -277,7 +288,7 @@ internal class ConsentAwareFileOrchestratorTest {
         // When
         testedOrchestrator.onConsentUpdated(TrackingConsent.GRANTED, TrackingConsent.NOT_GRANTED)
         runPendingRunnable()
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(fakeEventSize)
 
         // Then
         assertThat(result).isNull()
@@ -285,7 +296,9 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `M return null file W getWritableFile() {consent=PENDING then NOT_GRANTED}`() {
+    fun `M return null file W getWritableFile() {consent=PENDING then NOT_GRANTED}`(
+        @LongForgery(min = 0L) fakeEventSize: Long
+    ) {
         // Given
         instantiateTestedOrchestrator(TrackingConsent.PENDING)
         runPendingRunnable()
@@ -293,7 +306,7 @@ internal class ConsentAwareFileOrchestratorTest {
         // When
         testedOrchestrator.onConsentUpdated(TrackingConsent.PENDING, TrackingConsent.NOT_GRANTED)
         runPendingRunnable()
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(fakeEventSize)
 
         // Then
         assertThat(result).isNull()

@@ -11,6 +11,7 @@ import android.content.res.Resources
 import android.util.DisplayMetrics
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewTreeObserver
 import android.view.Window
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.time.TimeProvider
@@ -47,6 +48,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -231,6 +233,33 @@ internal class RecorderWindowCallbackTest {
             InternalLogger.Target.USER,
             RecorderWindowCallback.MOTION_EVENT_WAS_NULL_ERROR_MESSAGE
         )
+    }
+
+    @Test
+    fun `M use absolute coordinates for touch privacy check W onTouchEvent() { ActionDown }`(
+        forge: Forge
+    ) {
+        // Given — the privacy override areas are screen-absolute (built from
+        // getLocationOnScreen()), so the check must use raw/absolute pointer coordinates
+        // rather than event.x/y, which are window-local and only match screen coordinates
+        // for windows positioned at the origin (e.g. not an offset dialog window).
+        val mockEvent: MotionEvent = mock {
+            whenever(it.action).thenReturn(MotionEvent.ACTION_DOWN)
+        }
+        whenever(mockEventUtils.getPointerAbsoluteX(mockEvent, 0))
+            .thenReturn(forge.aFloat(min = 0f, max = 500f))
+        whenever(mockEventUtils.getPointerAbsoluteY(mockEvent, 0))
+            .thenReturn(forge.aFloat(min = 0f, max = 500f))
+
+        // When
+        testedWindowCallback.dispatchTouchEvent(mockEvent)
+
+        // Then
+        verify(mockEventUtils).getPointerAbsoluteX(mockEvent, 0)
+        verify(mockEventUtils).getPointerAbsoluteY(mockEvent, 0)
+        verify(mockEvent, never()).x
+        verify(mockEvent, never()).y
+        verify(mockTouchPrivacyManager).shouldRecordTouch(any())
     }
 
     @Test
@@ -460,6 +489,409 @@ internal class RecorderWindowCallbackTest {
     }
 
     @Test
+    fun `M install RecorderWindowCallback on new dialog window W window focus changed`(forge: Forge) {
+        // Given
+        val mockDialogWindow = mock<Window>()
+        val mockDialogDecorView = mock<View>().also {
+            whenever(it.width).thenReturn(forge.aPositiveInt(strict = true))
+            whenever(it.height).thenReturn(forge.aPositiveInt(strict = true))
+        }
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(listOf(mockDialogDecorView))
+        testedWindowCallback = buildCallbackFor(
+            windowFromDecorView = { view -> if (view == mockDialogDecorView) mockDialogWindow else null }
+        )
+
+        // When
+        testedWindowCallback.onWindowFocusChanged(forge.aBool())
+
+        // Then
+        // Callback installation is posted so the dialog's first focus event passes through
+        // the original callback. Capture and run the Runnable to simulate the post.
+        argumentCaptor<Runnable> {
+            verify(mockDialogDecorView).post(capture())
+            firstValue.run()
+        }
+        verify(mockDialogWindow).callback = any<RecorderWindowCallback>()
+    }
+
+    @Test
+    fun `M skip install W window focus changed {recording stopped before post ran}`(forge: Forge) {
+        // Given
+        val mockDialogWindow = mock<Window>()
+        val mockDialogDecorView = mock<View>().also {
+            whenever(it.width).thenReturn(forge.aPositiveInt(strict = true))
+            whenever(it.height).thenReturn(forge.aPositiveInt(strict = true))
+        }
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(listOf(mockDialogDecorView))
+        testedWindowCallback = buildCallbackFor(
+            windowFromDecorView = { view -> if (view == mockDialogDecorView) mockDialogWindow else null },
+            shouldInstallCallbacks = { false }
+        )
+
+        // When
+        testedWindowCallback.onWindowFocusChanged(forge.aBool())
+        argumentCaptor<Runnable> {
+            verify(mockDialogDecorView).post(capture())
+            firstValue.run()
+        }
+
+        // Then
+        verify(mockDialogWindow, never()).callback = any<RecorderWindowCallback>()
+    }
+
+    @Test
+    fun `M notify onWindowWrapped W window focus changed {new dialog window installed}`(forge: Forge) {
+        // Given
+        val mockDialogWindow = mock<Window>()
+        val mockDialogDecorView = mock<View>().also {
+            whenever(it.width).thenReturn(forge.aPositiveInt(strict = true))
+            whenever(it.height).thenReturn(forge.aPositiveInt(strict = true))
+        }
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(listOf(mockDialogDecorView))
+        val wrappedWindows = mutableListOf<Window>()
+        testedWindowCallback = buildCallbackFor(
+            windowFromDecorView = { view -> if (view == mockDialogDecorView) mockDialogWindow else null },
+            onWindowWrapped = { wrappedWindows.add(it) }
+        )
+
+        // When
+        testedWindowCallback.onWindowFocusChanged(forge.aBool())
+        argumentCaptor<Runnable> {
+            verify(mockDialogDecorView).post(capture())
+            firstValue.run()
+        }
+
+        // Then
+        assertThat(wrappedWindows).containsExactly(mockDialogWindow)
+    }
+
+    @Test
+    fun `M not replace existing RecorderWindowCallback W window focus changed`(forge: Forge) {
+        // Given
+        val mockDialogWindow = mock<Window>().also {
+            whenever(it.callback).thenReturn(mock<RecorderWindowCallback>())
+        }
+        val mockDialogDecorView = mock<View>().also {
+            whenever(it.width).thenReturn(forge.aPositiveInt(strict = true))
+            whenever(it.height).thenReturn(forge.aPositiveInt(strict = true))
+        }
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(listOf(mockDialogDecorView))
+        testedWindowCallback = buildCallbackFor(
+            windowFromDecorView = { view -> if (view == mockDialogDecorView) mockDialogWindow else null }
+        )
+
+        // When
+        testedWindowCallback.onWindowFocusChanged(forge.aBool())
+
+        // Then
+        verify(mockDialogDecorView, never()).post(any())
+        verify(mockDialogWindow, never()).callback = any()
+    }
+
+    @Test
+    fun `M defer install W window focus changed {decorView has zero dimensions}`() {
+        // Given
+        val mockDialogWindow = mock<Window>()
+        val mockViewTreeObserver = mock<ViewTreeObserver>().also {
+            whenever(it.isAlive).thenReturn(true)
+        }
+        val mockDialogDecorView = mock<View>().also {
+            // width/height default to 0
+            whenever(it.viewTreeObserver).thenReturn(mockViewTreeObserver)
+        }
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(listOf(mockDialogDecorView))
+        testedWindowCallback = buildCallbackFor(
+            windowFromDecorView = { view -> if (view == mockDialogDecorView) mockDialogWindow else null }
+        )
+
+        // When
+        testedWindowCallback.onWindowFocusChanged(false)
+
+        // Then
+        verify(mockViewTreeObserver).addOnGlobalLayoutListener(any())
+        verify(mockDialogWindow, never()).callback = any()
+    }
+
+    @Test
+    fun `M install RecorderWindowCallback W global layout fires {decorView was zero-size}`(forge: Forge) {
+        // Given
+        val mockDialogWindow = mock<Window>()
+        val mockViewTreeObserver = mock<ViewTreeObserver>().also {
+            whenever(it.isAlive).thenReturn(true)
+        }
+        val mockDialogDecorView = mock<View>().also {
+            whenever(it.viewTreeObserver).thenReturn(mockViewTreeObserver)
+        }
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(listOf(mockDialogDecorView))
+        testedWindowCallback = buildCallbackFor(
+            windowFromDecorView = { view -> if (view == mockDialogDecorView) mockDialogWindow else null }
+        )
+        testedWindowCallback.onWindowFocusChanged(forge.aBool())
+        val layoutListener = argumentCaptor<ViewTreeObserver.OnGlobalLayoutListener>().let {
+            verify(mockViewTreeObserver).addOnGlobalLayoutListener(it.capture())
+            it.firstValue
+        }
+        val attachStateListener = argumentCaptor<View.OnAttachStateChangeListener>().let {
+            verify(mockDialogDecorView).addOnAttachStateChangeListener(it.capture())
+            it.firstValue
+        }
+
+        // When
+        whenever(mockDialogDecorView.width).thenReturn(forge.aPositiveInt(strict = true))
+        whenever(mockDialogDecorView.height).thenReturn(forge.aPositiveInt(strict = true))
+        layoutListener.onGlobalLayout()
+
+        // Then
+        verify(mockViewTreeObserver).removeOnGlobalLayoutListener(layoutListener)
+        verify(mockDialogDecorView).removeOnAttachStateChangeListener(attachStateListener)
+        argumentCaptor<Runnable> {
+            verify(mockDialogDecorView).post(capture())
+            firstValue.run()
+        }
+        verify(mockDialogWindow).callback = any<RecorderWindowCallback>()
+    }
+
+    @Test
+    fun `M not install RecorderWindowCallback W global layout fires {still zero-size}`(forge: Forge) {
+        // Given
+        val mockDialogWindow = mock<Window>()
+        val mockViewTreeObserver = mock<ViewTreeObserver>().also {
+            whenever(it.isAlive).thenReturn(true)
+        }
+        val mockDialogDecorView = mock<View>().also {
+            whenever(it.viewTreeObserver).thenReturn(mockViewTreeObserver)
+        }
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(listOf(mockDialogDecorView))
+        testedWindowCallback = buildCallbackFor(
+            windowFromDecorView = { view -> if (view == mockDialogDecorView) mockDialogWindow else null }
+        )
+        testedWindowCallback.onWindowFocusChanged(forge.aBool())
+        val layoutListener = argumentCaptor<ViewTreeObserver.OnGlobalLayoutListener>().let {
+            verify(mockViewTreeObserver).addOnGlobalLayoutListener(it.capture())
+            it.firstValue
+        }
+
+        // When
+        // decorView is still not laid out (width/height remain 0)
+        layoutListener.onGlobalLayout()
+
+        // Then
+        verify(mockViewTreeObserver, never()).removeOnGlobalLayoutListener(any())
+        verify(mockDialogDecorView, never()).post(any())
+    }
+
+    @Test
+    fun `M unregister pending listeners W decorView detaches {before ever laying out}`(forge: Forge) {
+        // Given
+        val mockDialogWindow = mock<Window>()
+        val mockViewTreeObserver = mock<ViewTreeObserver>().also {
+            whenever(it.isAlive).thenReturn(true)
+        }
+        val mockDialogDecorView = mock<View>().also {
+            // width/height default to 0, as if dismissed before it ever laid out
+            whenever(it.viewTreeObserver).thenReturn(mockViewTreeObserver)
+        }
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(listOf(mockDialogDecorView))
+        testedWindowCallback = buildCallbackFor(
+            windowFromDecorView = { view -> if (view == mockDialogDecorView) mockDialogWindow else null }
+        )
+        testedWindowCallback.onWindowFocusChanged(forge.aBool())
+        val layoutListener = argumentCaptor<ViewTreeObserver.OnGlobalLayoutListener>().let {
+            verify(mockViewTreeObserver).addOnGlobalLayoutListener(it.capture())
+            it.firstValue
+        }
+        val attachStateListener = argumentCaptor<View.OnAttachStateChangeListener>().let {
+            verify(mockDialogDecorView).addOnAttachStateChangeListener(it.capture())
+            it.firstValue
+        }
+
+        // When
+        attachStateListener.onViewDetachedFromWindow(mockDialogDecorView)
+
+        // Then
+        verify(mockViewTreeObserver).removeOnGlobalLayoutListener(layoutListener)
+        verify(mockDialogDecorView).removeOnAttachStateChangeListener(attachStateListener)
+    }
+
+    @Test
+    fun `M allow a new pending retry W onWindowFocusChanged {after decorView detaches}`(forge: Forge) {
+        // Given
+        val mockDialogWindow = mock<Window>()
+        val mockViewTreeObserver = mock<ViewTreeObserver>().also {
+            whenever(it.isAlive).thenReturn(true)
+        }
+        val mockDialogDecorView = mock<View>().also {
+            whenever(it.viewTreeObserver).thenReturn(mockViewTreeObserver)
+        }
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(listOf(mockDialogDecorView))
+        testedWindowCallback = buildCallbackFor(
+            windowFromDecorView = { view -> if (view == mockDialogDecorView) mockDialogWindow else null }
+        )
+        testedWindowCallback.onWindowFocusChanged(forge.aBool())
+        val attachStateListener = argumentCaptor<View.OnAttachStateChangeListener>().let {
+            verify(mockDialogDecorView).addOnAttachStateChangeListener(it.capture())
+            it.firstValue
+        }
+        attachStateListener.onViewDetachedFromWindow(mockDialogDecorView)
+
+        // When
+        testedWindowCallback.onWindowFocusChanged(forge.aBool())
+
+        // Then
+        verify(mockViewTreeObserver, times(2)).addOnGlobalLayoutListener(any())
+    }
+
+    @Test
+    fun `M register only one listener W window focus changed repeatedly {decorView permanently zero-size}`(
+        forge: Forge
+    ) {
+        // Given
+        val mockDialogWindow = mock<Window>()
+        val mockViewTreeObserver = mock<ViewTreeObserver>().also {
+            whenever(it.isAlive).thenReturn(true)
+        }
+        val mockDialogDecorView = mock<View>().also {
+            whenever(it.viewTreeObserver).thenReturn(mockViewTreeObserver)
+        }
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(listOf(mockDialogDecorView))
+        testedWindowCallback = buildCallbackFor(
+            windowFromDecorView = { view -> if (view == mockDialogDecorView) mockDialogWindow else null }
+        )
+
+        // When
+        repeat(5) { testedWindowCallback.onWindowFocusChanged(forge.aBool()) }
+
+        // Then
+        verify(mockViewTreeObserver, times(1)).addOnGlobalLayoutListener(any())
+    }
+
+    @Test
+    fun `M remove the pending listener W cancelPendingLayoutRetry()`(forge: Forge) {
+        // Given
+        val mockDialogWindow = mock<Window>()
+        val mockViewTreeObserver = mock<ViewTreeObserver>().also {
+            whenever(it.isAlive).thenReturn(true)
+        }
+        val mockDialogDecorView = mock<View>().also {
+            whenever(it.viewTreeObserver).thenReturn(mockViewTreeObserver)
+        }
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(listOf(mockDialogDecorView))
+        testedWindowCallback = buildCallbackFor(
+            windowFromDecorView = { view -> if (view == mockDialogDecorView) mockDialogWindow else null }
+        )
+        testedWindowCallback.onWindowFocusChanged(forge.aBool())
+        val layoutListener = argumentCaptor<ViewTreeObserver.OnGlobalLayoutListener>().let {
+            verify(mockViewTreeObserver).addOnGlobalLayoutListener(it.capture())
+            it.firstValue
+        }
+        val attachStateListener = argumentCaptor<View.OnAttachStateChangeListener>().let {
+            verify(mockDialogDecorView).addOnAttachStateChangeListener(it.capture())
+            it.firstValue
+        }
+
+        // When
+        RecorderWindowCallback.cancelPendingLayoutRetry(mockDialogWindow)
+
+        // Then
+        verify(mockViewTreeObserver).removeOnGlobalLayoutListener(layoutListener)
+        verify(mockDialogDecorView).removeOnAttachStateChangeListener(attachStateListener)
+    }
+
+    @Test
+    fun `M allow a new pending retry W onWindowFocusChanged {after cancelPendingLayoutRetry()}`(forge: Forge) {
+        // Given
+        val mockDialogWindow = mock<Window>()
+        val mockViewTreeObserver = mock<ViewTreeObserver>().also {
+            whenever(it.isAlive).thenReturn(true)
+        }
+        val mockDialogDecorView = mock<View>().also {
+            whenever(it.viewTreeObserver).thenReturn(mockViewTreeObserver)
+        }
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(listOf(mockDialogDecorView))
+        testedWindowCallback = buildCallbackFor(
+            windowFromDecorView = { view -> if (view == mockDialogDecorView) mockDialogWindow else null }
+        )
+        testedWindowCallback.onWindowFocusChanged(forge.aBool())
+        RecorderWindowCallback.cancelPendingLayoutRetry(mockDialogWindow)
+
+        // When
+        testedWindowCallback.onWindowFocusChanged(forge.aBool())
+
+        // Then
+        verify(mockViewTreeObserver, times(2)).addOnGlobalLayoutListener(any())
+    }
+
+    @Test
+    fun `M remove every pending listener W cancelAllPendingLayoutRetries()`(forge: Forge) {
+        // Given
+        val mockDialogWindow = mock<Window>()
+        val mockViewTreeObserver = mock<ViewTreeObserver>().also {
+            whenever(it.isAlive).thenReturn(true)
+        }
+        val mockDialogDecorView = mock<View>().also {
+            whenever(it.viewTreeObserver).thenReturn(mockViewTreeObserver)
+        }
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(listOf(mockDialogDecorView))
+        testedWindowCallback = buildCallbackFor(
+            windowFromDecorView = { view -> if (view == mockDialogDecorView) mockDialogWindow else null }
+        )
+        testedWindowCallback.onWindowFocusChanged(forge.aBool())
+        val layoutListener = argumentCaptor<ViewTreeObserver.OnGlobalLayoutListener>().let {
+            verify(mockViewTreeObserver).addOnGlobalLayoutListener(it.capture())
+            it.firstValue
+        }
+        val attachStateListener = argumentCaptor<View.OnAttachStateChangeListener>().let {
+            verify(mockDialogDecorView).addOnAttachStateChangeListener(it.capture())
+            it.firstValue
+        }
+
+        // When
+        RecorderWindowCallback.cancelAllPendingLayoutRetries()
+
+        // Then
+        verify(mockViewTreeObserver).removeOnGlobalLayoutListener(layoutListener)
+        verify(mockDialogDecorView).removeOnAttachStateChangeListener(attachStateListener)
+    }
+
+    @Test
+    fun `M log warning and skip W window focus changed {windowFromDecorView returns null}`(forge: Forge) {
+        // Given
+        val mockDialogDecorView = mock<View>().also {
+            whenever(it.width).thenReturn(forge.aPositiveInt(strict = true))
+            whenever(it.height).thenReturn(forge.aPositiveInt(strict = true))
+        }
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(listOf(mockDialogDecorView))
+        testedWindowCallback = buildCallbackFor(windowFromDecorView = { null })
+
+        // When
+        testedWindowCallback.onWindowFocusChanged(false)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            RecorderWindowCallback.WINDOW_FROM_DECOR_VIEW_ERROR_MESSAGE_PREFIX +
+                mockDialogDecorView.javaClass.name +
+                RecorderWindowCallback.WINDOW_FROM_DECOR_VIEW_ERROR_MESSAGE_SUFFIX,
+            onlyOnce = true
+        )
+    }
+
+    @Test
     fun `M do nothing W window focus changed {decorViews could not be fetched}`(forge: Forge) {
         // Given
         whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
@@ -576,6 +1008,31 @@ internal class RecorderWindowCallbackTest {
     // endregion
 
     // region Internal
+
+    private fun buildCallbackFor(
+        windowFromDecorView: (View) -> Window? = { null },
+        onWindowWrapped: (Window) -> Unit = {},
+        shouldInstallCallbacks: (Window) -> Boolean = { true }
+    ) = RecorderWindowCallback(
+        appContext = mockContext,
+        recordedDataQueueHandler = mockRecordedDataQueueHandler,
+        wrappedCallback = mockWrappedCallback,
+        timeProvider = mockTimeProvider,
+        rumContextProvider = mockRumContextProvider,
+        viewOnDrawInterceptor = mockViewOnDrawInterceptor,
+        internalLogger = mockInternalLogger,
+        privacy = fakeTextAndInputPrivacy,
+        imagePrivacy = ImagePrivacy.MASK_NONE,
+        touchPrivacyManager = mockTouchPrivacyManager,
+        copyEvent = { it },
+        motionEventUtils = mockEventUtils,
+        motionUpdateThresholdInNs = TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS,
+        flushPositionBufferThresholdInNs = TEST_FLUSH_BUFFER_THRESHOLD_NS,
+        windowInspector = mockWindowInspector,
+        windowFromDecorView = windowFromDecorView,
+        onWindowWrapped = onWindowWrapped,
+        shouldInstallCallbacks = shouldInstallCallbacks
+    )
 
     private fun Forge.touchRecords(
         eventType: MobileSegment.PointerEventType
