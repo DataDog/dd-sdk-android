@@ -346,6 +346,7 @@ val NULL_MAP_VALUE: Object
 fun Int.toHexString(): String
 fun Long.toHexString(): String
 fun java.math.BigInteger.toHexString(): String
+fun guardedProcessStartNs(Long, Long, Long): Long
 fun <T> allowThreadDiskReads(() -> T): T
 fun <T> allowThreadDiskWrites(() -> T): T
 fun StringBuilder.appendIfNotEmpty(String)
@@ -386,14 +387,16 @@ class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProv
     var processImportance: Int
     var createTimeNs: Long
 interface com.datadog.android.rum.startup.RumFirstDrawTimeReporter
+  interface Handle
+    fun unsubscribe()
   interface Callback
     fun onFirstFrameDrawn(Long)
-  fun subscribeToFirstFrameDrawn(android.app.Activity, Callback)
+  fun subscribeToFirstFrameDrawn(android.app.Activity, Callback): Handle
 class com.datadog.android.rum.startup.RumFirstDrawTimeReporterImpl : RumFirstDrawTimeReporter
   constructor(() -> Long, WindowCallbacksRegistry, android.os.Handler, String = "DD/AppLaunch", (String) -> Unit = { message, throwable ->
         Log.w(logTag, message, throwable)
     })
-  override fun subscribeToFirstFrameDrawn(android.app.Activity, RumFirstDrawTimeReporter.Callback)
+  override fun subscribeToFirstFrameDrawn(android.app.Activity, RumFirstDrawTimeReporter.Callback): RumFirstDrawTimeReporter.Handle
 interface com.datadog.android.rum.startup.WindowCallbackListener
   fun onContentChanged()
 interface com.datadog.android.rum.startup.WindowCallbacksRegistry

@@ -15,6 +15,7 @@ import android.os.Process
 import android.os.SystemClock
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.utils.guardedProcessStartNs
 import com.datadog.android.rum.startup.RumFirstDrawTimeReporter
 import com.datadog.android.rum.startup.RumFirstDrawTimeReporterImpl
 import com.datadog.android.rum.startup.WindowCallbacksRegistryImpl
@@ -143,6 +144,7 @@ object AppLaunchPreInitCollector {
 
     private val firstFrameCallbacks = CopyOnWriteArrayList<(Long) -> Unit>()
     private var registeredApplication: Application? = null
+    private var firstFrameHandle: RumFirstDrawTimeReporter.Handle? = null
 
     /** Private flag tracking whether any Activity has been destroyed (process is warm). */
     private var _isFirstActivityForProcess: Boolean = true
@@ -191,6 +193,10 @@ object AppLaunchPreInitCollector {
         override fun onActivityDestroyed(activity: Activity) {
             // Once an Activity is destroyed, subsequent activities are not "first for process"
             _isFirstActivityForProcess = false
+            // If the Activity is destroyed before its first frame fires, cancel the subscription
+            // to release the WindowCallback listener and prevent a memory leak.
+            firstFrameHandle?.unsubscribe()
+            firstFrameHandle = null
         }
     }
 
@@ -216,10 +222,11 @@ object AppLaunchPreInitCollector {
         // Subscribe to first frame drawn — transitions CAPTURING -> COMPLETE
         val handler = handlerFactory()
         val reporter = firstDrawTimeReporterFactory(handler)
-        reporter.subscribeToFirstFrameDrawn(
+        firstFrameHandle = reporter.subscribeToFirstFrameDrawn(
             activity,
             object : RumFirstDrawTimeReporter.Callback {
                 override fun onFirstFrameDrawn(timestampNs: Long) {
+                    firstFrameHandle = null
                     firstFrameNs = timestampNs
                     _state.compareAndSet(State.CAPTURING, State.COMPLETE)
 
@@ -247,14 +254,18 @@ object AppLaunchPreInitCollector {
         if (!buildSdkVersionProvider.isAtLeastN) {
             return DdRumContentProvider.createTimeNs
         }
+        // Uses the elapsedRealtime clock so the result aligns with System.nanoTime() values stored
+        // elsewhere in this collector. See DefaultAppStartTimeProvider for the parallel impl that
+        // uses the uptime clock instead (required when a TimeProvider is available).
         val nowNs = System.nanoTime()
         val nowElapsedMs = SystemClock.elapsedRealtime()
         val diffMs = nowElapsedMs - Process.getStartElapsedRealtime()
         val computed = nowNs - TimeUnit.MILLISECONDS.toNanos(diffMs)
-        val fallback = DdRumContentProvider.createTimeNs
-        val isAfterFallback = computed > fallback
-        val isTooFarBefore = fallback - computed > PROCESS_START_TO_CP_START_DIFF_THRESHOLD_NS
-        return if (isAfterFallback || isTooFarBefore) fallback else computed
+        return guardedProcessStartNs(
+            computed = computed,
+            fallback = DdRumContentProvider.createTimeNs,
+            thresholdNs = PROCESS_START_TO_CP_START_DIFF_THRESHOLD_NS
+        )
     }
 
     // endregion

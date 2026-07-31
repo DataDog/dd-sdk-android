@@ -836,6 +836,10 @@ public final class com/datadog/android/internal/utils/NumberExtKt {
 	public static final fun toHexString (Ljava/math/BigInteger;)Ljava/lang/String;
 }
 
+public final class com/datadog/android/internal/utils/ProcessStartUtilsKt {
+	public static final fun guardedProcessStartNs (JJJ)J
+}
+
 public final class com/datadog/android/internal/utils/StrictModeExtKt {
 	public static final fun allowThreadDiskReads (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
 	public static final fun allowThreadDiskWrites (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
@@ -918,17 +922,21 @@ public final class com/datadog/android/rum/DdRumContentProvider$Companion {
 }
 
 public abstract interface class com/datadog/android/rum/startup/RumFirstDrawTimeReporter {
-	public abstract fun subscribeToFirstFrameDrawn (Landroid/app/Activity;Lcom/datadog/android/rum/startup/RumFirstDrawTimeReporter$Callback;)V
+	public abstract fun subscribeToFirstFrameDrawn (Landroid/app/Activity;Lcom/datadog/android/rum/startup/RumFirstDrawTimeReporter$Callback;)Lcom/datadog/android/rum/startup/RumFirstDrawTimeReporter$Handle;
 }
 
 public abstract interface class com/datadog/android/rum/startup/RumFirstDrawTimeReporter$Callback {
 	public abstract fun onFirstFrameDrawn (J)V
 }
 
+public abstract interface class com/datadog/android/rum/startup/RumFirstDrawTimeReporter$Handle {
+	public abstract fun unsubscribe ()V
+}
+
 public final class com/datadog/android/rum/startup/RumFirstDrawTimeReporterImpl : com/datadog/android/rum/startup/RumFirstDrawTimeReporter {
 	public fun <init> (Lkotlin/jvm/functions/Function0;Lcom/datadog/android/rum/startup/WindowCallbacksRegistry;Landroid/os/Handler;Ljava/lang/String;Lkotlin/jvm/functions/Function2;)V
 	public synthetic fun <init> (Lkotlin/jvm/functions/Function0;Lcom/datadog/android/rum/startup/WindowCallbacksRegistry;Landroid/os/Handler;Ljava/lang/String;Lkotlin/jvm/functions/Function2;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public fun subscribeToFirstFrameDrawn (Landroid/app/Activity;Lcom/datadog/android/rum/startup/RumFirstDrawTimeReporter$Callback;)V
+	public fun subscribeToFirstFrameDrawn (Landroid/app/Activity;Lcom/datadog/android/rum/startup/RumFirstDrawTimeReporter$Callback;)Lcom/datadog/android/rum/startup/RumFirstDrawTimeReporter$Handle;
 }
 
 public abstract interface class com/datadog/android/rum/startup/WindowCallbackListener {

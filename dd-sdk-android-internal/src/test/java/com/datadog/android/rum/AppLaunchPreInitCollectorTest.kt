@@ -674,7 +674,7 @@ internal class AppLaunchPreInitCollectorTest {
                 whenever(reporter.subscribeToFirstFrameDrawn(any(), any())).doAnswer { invocation ->
                     val callback = invocation.getArgument<RumFirstDrawTimeReporter.Callback>(1)
                     callback.onFirstFrameDrawn(System.nanoTime())
-                    Unit
+                    mock<RumFirstDrawTimeReporter.Handle>()
                 }
             }
         }
