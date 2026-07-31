@@ -17,6 +17,22 @@ import android.app.Activity
 interface RumFirstDrawTimeReporter {
 
     /**
+     * An opaque handle returned by [subscribeToFirstFrameDrawn].
+     *
+     * Call [unsubscribe] to cancel the subscription and release all internal listener
+     * registrations, breaking any retain cycles before the Activity is garbage-collected.
+     */
+    interface Handle {
+        /**
+         * Cancels this subscription. Idempotent — safe to call multiple times.
+         *
+         * After this call the [Callback] will never fire, and all internal listener
+         * registrations (WindowCallback, OnAttachStateChange, OnDraw) are removed.
+         */
+        fun unsubscribe()
+    }
+
+    /**
      * Callback invoked when the first frame of an activity's window has been drawn.
      */
     interface Callback {
@@ -32,9 +48,12 @@ interface RumFirstDrawTimeReporter {
      * Subscribes to receive a callback when the first frame of [activity]'s window is drawn.
      *
      * The [callback] is guaranteed to be invoked at most once per subscription.
+     * Callers must store the returned [Handle] and call [Handle.unsubscribe] when the
+     * Activity is destroyed to prevent memory leaks.
      *
      * @param activity The activity whose first frame draw should be observed.
      * @param callback The callback to invoke when the first frame is drawn.
+     * @return A [Handle] that can cancel this subscription.
      */
-    fun subscribeToFirstFrameDrawn(activity: Activity, callback: Callback)
+    fun subscribeToFirstFrameDrawn(activity: Activity, callback: Callback): Handle
 }

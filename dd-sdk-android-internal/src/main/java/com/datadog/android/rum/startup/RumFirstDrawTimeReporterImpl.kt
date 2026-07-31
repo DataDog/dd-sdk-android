@@ -7,14 +7,11 @@
 package com.datadog.android.rum.startup
 
 import android.app.Activity
-import android.app.Application
-import android.os.Bundle
 import android.os.Handler
 import android.os.Message
 import android.util.Log
 import android.view.View
 import android.view.ViewTreeObserver
-import java.lang.ref.WeakReference
 
 /**
  * Default implementation of [RumFirstDrawTimeReporter].
@@ -37,130 +34,102 @@ class RumFirstDrawTimeReporterImpl(
     override fun subscribeToFirstFrameDrawn(
         activity: Activity,
         callback: RumFirstDrawTimeReporter.Callback
-    ) {
-        val window = activity.window
-        val decorView = window.peekDecorView()
-
-        if (decorView == null) {
-            val listener = object : WindowCallbackListener {
-                override fun onContentChanged() {
-                    windowCallbacksRegistry.removeListener(activity, this)
-                    onDecorViewReady(activity, callback)
-                }
-            }
-            windowCallbacksRegistry.addListener(activity, listener)
-            registerDestroyCleanup(activity, listener)
-        } else {
-            onDecorViewReady(activity, callback)
-        }
+    ): RumFirstDrawTimeReporter.Handle {
+        val handle = HandleImpl(activity, callback)
+        handle.init()
+        return handle
     }
 
-    private fun onDecorViewReady(
-        activity: Activity,
-        callback: RumFirstDrawTimeReporter.Callback
-    ) {
-        val window = activity.window
-        val decorView = window.decorView
+    // By implementing all listener interfaces, HandleImpl registers *itself* everywhere.
+    // unsubscribe() then simply removes `this` from each registration point — no external
+    // lifecycle callback needed. This matches the pattern in Aleksandr's PR #3349.
+    private inner class HandleImpl(
+        private val activity: Activity,
+        private val callback: RumFirstDrawTimeReporter.Callback
+    ) : RumFirstDrawTimeReporter.Handle,
+        WindowCallbackListener,
+        View.OnAttachStateChangeListener,
+        ViewTreeObserver.OnDrawListener {
 
-        if (decorView.isAttachedToWindow) {
-            registerOnDrawListener(
-                decorView = decorView,
-                callback = callback
+        @Volatile
+        private var isCancelled = false
+        private var onDrawInvoked = false
+
+        fun init() {
+            val decorView = activity.window.peekDecorView()
+            if (decorView == null) {
+                windowCallbacksRegistry.addListener(activity, this)
+            } else {
+                onDecorViewReady(decorView)
+            }
+        }
+
+        override fun unsubscribe() {
+            if (isCancelled) return
+            isCancelled = true
+            windowCallbacksRegistry.removeListener(activity, this)
+            val decorView = activity.window.peekDecorView()
+            if (decorView != null) {
+                decorView.removeOnAttachStateChangeListener(this)
+                removeOnDrawListener(decorView)
+            }
+        }
+
+        override fun onContentChanged() {
+            windowCallbacksRegistry.removeListener(activity, this)
+            onDecorViewReady(activity.window.decorView)
+        }
+
+        override fun onViewAttachedToWindow(v: View) {
+            registerOnDrawListener(activity.window.decorView)
+            activity.window.decorView.removeOnAttachStateChangeListener(this)
+        }
+
+        override fun onViewDetachedFromWindow(v: View) {}
+
+        override fun onDraw() {
+            if (onDrawInvoked) return
+            onDrawInvoked = true
+
+            val nowNs = timeProviderNs()
+            handler.sendMessageAtFrontOfQueue(
+                Message.obtain(handler, Runnable {
+                    callback.onFirstFrameDrawn(nowNs)
+                }).apply { isAsynchronous = true }
             )
-        } else {
-            val attachListener = object : View.OnAttachStateChangeListener {
-                override fun onViewAttachedToWindow(v: View) {
-                    registerOnDrawListener(
-                        decorView = decorView,
-                        callback = callback
-                    )
-                    decorView.removeOnAttachStateChangeListener(this)
-                }
 
-                override fun onViewDetachedFromWindow(v: View) {
-                }
-            }
-            decorView.addOnAttachStateChangeListener(attachListener)
+            val currentDecorView = activity.window.decorView
+            handler.post { removeOnDrawListener(currentDecorView) }
         }
-    }
 
-    private fun registerOnDrawListener(
-        decorView: View,
-        callback: RumFirstDrawTimeReporter.Callback
-    ) {
-        val listener = object : ViewTreeObserver.OnDrawListener {
-            private var invoked = false
+        private fun onDecorViewReady(decorView: View) {
+            if (isCancelled) return
+            if (decorView.isAttachedToWindow) {
+                registerOnDrawListener(decorView)
+            } else {
+                decorView.addOnAttachStateChangeListener(this)
+            }
+        }
 
-            override fun onDraw() {
-                if (invoked) {
-                    return
-                }
-                invoked = true
-                onFirstDraw(callback)
-
-                handler.post {
-                    if (decorView.viewTreeObserver.isAlive) {
-                        try {
-                            decorView.viewTreeObserver.removeOnDrawListener(this)
-                        } catch (e: IllegalStateException) {
-                            warnLogger("RumTTIDReporterImpl unable to remove onDrawListener from viewTreeObserver", e)
-                        }
-                    }
+        private fun registerOnDrawListener(decorView: View) {
+            if (isCancelled) return
+            if (decorView.viewTreeObserver.isAlive) {
+                try {
+                    decorView.viewTreeObserver.addOnDrawListener(this)
+                } catch (e: IllegalStateException) {
+                    warnLogger("RumFirstDrawTimeReporterImpl unable to add onDrawListener onto viewTreeObserver", e)
                 }
             }
         }
 
-        if (decorView.viewTreeObserver.isAlive) {
-            try {
-                decorView.viewTreeObserver.addOnDrawListener(listener)
-            } catch (e: IllegalStateException) {
-                warnLogger("RumFirstDrawTimeReporterImpl unable to add onDrawListener onto viewTreeObserver", e)
-            }
-        }
-    }
-
-    // WindowCallbacksRegistryImpl stores Activity→WindowCallback in a WeakHashMap, but
-    // WindowCallback holds a strong reference back to the Activity via FixedWindowCallback.delegate
-    // (the Activity is its own Window.Callback). This circular reference prevents GC.
-    // When an Activity is destroyed before setContentView is called (e.g. an interstitial that
-    // just calls startActivity + finish), the listener never fires via onContentChanged, so the
-    // entry is never cleaned up. Registering a lifecycle callback to remove it on destroy breaks
-    // the strong reference and lets GC collect the Activity.
-    private fun registerDestroyCleanup(activity: Activity, listener: WindowCallbackListener) {
-        val application = activity.application ?: return
-        val weakActivity = WeakReference(activity)
-        // WeakReference so this callback (held by Application) does not itself keep the
-        // listener (and through it, the Activity) alive.
-        val weakListener = WeakReference(listener)
-        application.registerActivityLifecycleCallbacks(object : Application.ActivityLifecycleCallbacks {
-            override fun onActivityCreated(a: Activity, b: Bundle?) {}
-            override fun onActivityStarted(a: Activity) {}
-            override fun onActivityResumed(a: Activity) {}
-            override fun onActivityPaused(a: Activity) {}
-            override fun onActivityStopped(a: Activity) {}
-            override fun onActivitySaveInstanceState(a: Activity, b: Bundle) {}
-            override fun onActivityDestroyed(destroyed: Activity) {
-                if (destroyed === weakActivity.get()) {
-                    weakListener.get()?.let { l ->
-                        windowCallbacksRegistry.removeListener(destroyed, l)
-                    }
-                    application.unregisterActivityLifecycleCallbacks(this)
+        private fun removeOnDrawListener(decorView: View) {
+            if (decorView.viewTreeObserver.isAlive) {
+                try {
+                    decorView.viewTreeObserver.removeOnDrawListener(this)
+                } catch (e: IllegalStateException) {
+                    warnLogger("RumTTIDReporterImpl unable to remove onDrawListener from viewTreeObserver", e)
                 }
             }
-        })
-    }
-
-    private fun onFirstDraw(callback: RumFirstDrawTimeReporter.Callback) {
-        val nowNs = timeProviderNs()
-
-        val block = Runnable {
-            callback.onFirstFrameDrawn(nowNs)
         }
-
-        handler.sendMessageAtFrontOfQueue(
-            Message.obtain(handler, block).apply {
-                isAsynchronous = true
-            }
-        )
     }
 }
