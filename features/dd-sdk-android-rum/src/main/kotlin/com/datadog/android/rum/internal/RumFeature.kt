@@ -95,9 +95,9 @@ import com.datadog.android.rum.internal.timeseries.DefaultTimeseriesCollectorFac
 import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollectorFactory
 import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
 import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
-import com.datadog.android.rum.internal.tracking.ReplayableViewTrackingStrategy
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
+import com.datadog.android.rum.internal.tracking.ReplayableViewTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
 import com.datadog.android.rum.internal.vitals.CPUVitalReader

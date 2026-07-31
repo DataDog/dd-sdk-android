@@ -135,5 +135,4 @@ internal class RumAppStartupDetectorImpl(
         pendingScenario = null
         application.unregisterActivityLifecycleCallbacks(this)
     }
-
 }
