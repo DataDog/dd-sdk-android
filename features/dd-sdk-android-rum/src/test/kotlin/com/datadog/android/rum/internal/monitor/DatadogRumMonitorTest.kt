@@ -56,7 +56,6 @@ import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_NAME
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_NAME_CHARACTERS
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_OPERATION_KEY
-import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
 import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesFactory
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
