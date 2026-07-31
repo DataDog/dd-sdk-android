@@ -100,7 +100,7 @@ internal class ANRDetectorRunnableTest {
             assertThat(allThreads.all { !it.crashed }).isTrue()
 
             val anrThread = allThreads.firstOrNull { it.name == Thread.currentThread().name }
-            check(anrThread != null)
+            checkNotNull(anrThread)
             assertThat(anrThread.stack).isEqualTo(anrExceptionCaptor.lastValue.loggableStackTrace())
             assertThat(allThreads.filter { it.name == anrThread.name }).hasSize(1)
             assertThat(allThreads.filterNot { it.name == anrThread.name }).isNotEmpty

@@ -21,7 +21,8 @@ internal class UIContextForgeryFactory : ForgeryFactory<UiContext> {
             imagePrivacy = forge.aValueFrom(ImagePrivacy::class.java),
             textAndInputPrivacy = forge.aValueFrom(TextAndInputPrivacy::class.java),
             isInUserInputLayout = forge.aBool(),
-            imageWireframeHelper = mock()
+            imageWireframeHelper = mock(),
+            windowOffset = forge.getForgery()
         )
     }
 }

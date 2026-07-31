@@ -44,7 +44,10 @@ internal class SemanticsUtils(
     private val reflectionUtils: ReflectionUtils = ReflectionUtils(),
     private val sampler: RateBasedSampler<Unit> = RateBasedSampler(BITMAP_TELEMETRY_SAMPLE_RATE)
 ) {
-    private val backgroundResolver = BackgroundResolver(reflectionUtils, ::resolveInnerBounds)
+    private val backgroundResolver = BackgroundResolver(
+        reflectionUtils,
+        { node, offset -> resolveInnerBounds(node, offset) }
+    )
 
     internal fun findRootSemanticsNode(view: View): SemanticsNode? {
         reflectionUtils.apply {
@@ -58,8 +61,11 @@ internal class SemanticsUtils(
         return null
     }
 
-    internal fun resolveBackgroundInfo(semanticsNode: SemanticsNode): List<BackgroundInfo> =
-        backgroundResolver.resolveBackgroundInfo(semanticsNode)
+    internal fun resolveBackgroundInfo(
+        semanticsNode: SemanticsNode,
+        windowOffset: ComposeWindowOffset = ComposeWindowOffset.NONE
+    ): List<BackgroundInfo> =
+        backgroundResolver.resolveBackgroundInfo(semanticsNode, windowOffset)
 
     internal fun resolveBackgroundColor(semanticsNode: SemanticsNode): Long? =
         backgroundResolver.resolveBackgroundColor(semanticsNode)
@@ -101,7 +107,10 @@ internal class SemanticsUtils(
     internal fun resolveCornerRadius(shape: Shape, currentBounds: GlobalBounds, density: Density): Float =
         backgroundResolver.resolveCornerRadius(shape, currentBounds, density)
 
-    internal fun resolveInnerBounds(semanticsNode: SemanticsNode): GlobalBounds {
+    internal fun resolveInnerBounds(
+        semanticsNode: SemanticsNode,
+        windowOffset: ComposeWindowOffset = ComposeWindowOffset.NONE
+    ): GlobalBounds {
         val offset = semanticsNode.positionInRoot
         // Resolve the measured size.
         // Some semantics node doesn't have InnerLayerCoordinator, so use boundsInRoot as a fallback.
@@ -109,8 +118,10 @@ internal class SemanticsUtils(
         val density = semanticsNode.layoutInfo.density.density
         val width = (size.width / density).toLong()
         val height = (size.height / density).toLong()
-        val x = (offset.x / density).toLong()
-        val y = (offset.y / density).toLong()
+        // positionInRoot is relative to the AndroidComposeView, not the screen — add the host
+        // view's screen offset so bounds line up with the rest of the (screen-absolute) wireframes.
+        val x = (offset.x / density).toLong() + windowOffset.xDp
+        val y = (offset.y / density).toLong() + windowOffset.yDp
         return GlobalBounds(x, y, width, height)
     }
 
@@ -376,7 +387,8 @@ internal class SemanticsUtils(
             text = multiParagraphCapturedText ?: resolveAnnotatedString(layoutInput.text),
             color = modifierColor?.value ?: layoutInput.style.color.value,
             textAlign = layoutInput.style.textAlign,
-            fontSize = layoutInput.style.fontSize.value.toLong(),
+            fontSize = layoutInput.style.fontSize.value
+                .let { if (it.isNaN()) DEFAULT_FONT_SIZE_SP else it.toLong() },
             fontFamily = layoutInput.style.fontFamily,
             textOverflow = textOverflow
         )
@@ -467,6 +479,7 @@ internal class SemanticsUtils(
         private const val OVERFLOW_TYPE_KEY = "overflow.type"
         private const val ERROR_TYPE_KEY = "error.type"
 
+        internal const val DEFAULT_FONT_SIZE_SP = 12L
         internal const val TEXT_OVERFLOW_CLIP = 1
         internal const val TEXT_OVERFLOW_ELLIPSE = 2
         internal const val TEXT_OVERFLOW_VISIBLE = 3

@@ -14,6 +14,7 @@ import com.datadog.gradle.config.publishingConfig
 import com.datadog.gradle.utils.createJsonModelsGenerationTask
 
 plugins {
+    id("ktlint")
     id("com.android.library")
     kotlin("android")
     id("com.github.ben-manes.versions")

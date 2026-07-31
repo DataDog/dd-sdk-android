@@ -68,11 +68,6 @@ internal class AbstractStorage(
         val strategy = resolvePersistenceStrategy(datadogContext)
         val writer = object : EventBatchWriter {
             @WorkerThread
-            override fun currentMetadata(): ByteArray? {
-                return strategy.currentMetadata()
-            }
-
-            @WorkerThread
             override fun write(event: RawBatchEvent, batchMetadata: ByteArray?, eventType: EventType): Boolean {
                 return strategy.write(event, batchMetadata, eventType)
             }

@@ -83,7 +83,7 @@ class EditTextMapper(
 
     companion object {
 
-        internal val SENSITIVE_TEXT_VARIATIONS = arrayOf(
+        internal val SENSITIVE_TEXT_VARIATIONS = intArrayOf(
             InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS,
             InputType.TYPE_TEXT_VARIATION_POSTAL_ADDRESS,
             InputType.TYPE_TEXT_VARIATION_PASSWORD,
@@ -92,7 +92,7 @@ class EditTextMapper(
             InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD
         )
 
-        internal val SENSITIVE_NUMBER_VARIATIONS = arrayOf(
+        internal val SENSITIVE_NUMBER_VARIATIONS = intArrayOf(
             InputType.TYPE_NUMBER_VARIATION_PASSWORD
         )
     }

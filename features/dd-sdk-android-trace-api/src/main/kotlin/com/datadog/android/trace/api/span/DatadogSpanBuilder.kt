@@ -13,7 +13,7 @@ import com.datadog.tools.annotation.NoOpImplementation
  * before initializing it.
  */
 @NoOpImplementation
-@SuppressWarnings("TooManyFunctions")
+@Suppress("TooManyFunctions")
 interface DatadogSpanBuilder {
 
     /**

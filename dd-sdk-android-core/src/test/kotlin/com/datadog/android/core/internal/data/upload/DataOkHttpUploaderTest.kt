@@ -521,7 +521,7 @@ internal class DataOkHttpUploaderTest {
         var statusCode: Int
         do {
             statusCode = forge.anInt(200, 600)
-        } while (statusCode in arrayOf(202, 400, 401, 403, 408, 413, 429, 500, 502, 503, 504, 507))
+        } while (statusCode in intArrayOf(202, 400, 401, 403, 408, 413, 429, 500, 502, 503, 504, 507))
         whenever(mockCall.execute()) doReturn mockResponse(statusCode, message)
 
         // When

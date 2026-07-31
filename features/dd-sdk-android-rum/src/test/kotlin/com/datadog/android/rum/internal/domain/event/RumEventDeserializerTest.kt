@@ -59,14 +59,14 @@ internal class RumEventDeserializerTest {
                     anyOrNull(),
                     anyOrNull()
                 )
-            ).thenAnswer {
-                it.getArgument(0)
+            ).thenAnswer { invocation ->
+                invocation.getArgument(0)
             }
-            whenever(it.validateTags(any())).thenAnswer {
-                it.getArgument(0)
+            whenever(it.validateTags(any())).thenAnswer { invocation ->
+                invocation.getArgument(0)
             }
-            whenever(it.validateTimings(any())).thenAnswer {
-                it.getArgument(0)
+            whenever(it.validateTimings(any())).thenAnswer { invocation ->
+                invocation.getArgument(0)
             }
         }
     )

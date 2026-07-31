@@ -6,7 +6,6 @@
 
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.detektCustomConfig
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
@@ -14,6 +13,7 @@ import com.datadog.gradle.config.publishingConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
+    id("ktlint")
     // Build
     id("com.android.library")
     kotlin("android")
@@ -36,6 +36,8 @@ plugins {
     id("transitiveDependencies")
     id("verificationXml")
     id("binary-compatibility-validator")
+    id("detekt-conventions")
+    id("test-pyramid-api-surface")
 }
 
 android {
@@ -80,4 +82,3 @@ publishingConfig(
     "OpenFeature Provider integration for the Datadog Feature Flags " +
         "library for Android applications."
 )
-detektCustomConfig()

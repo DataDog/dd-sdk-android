@@ -16,16 +16,28 @@ import java.util.Locale
 /**
  * Utility class with the goal to perform host sanitization. Not intended for the public use.
  */
-class HostsSanitizer {
+class HostsSanitizer @JvmOverloads constructor(
+    private val internalLogger: InternalLogger = unboundInternalLogger
+) {
 
     /**
-     * Performs hosts sanitization by comparing them with patterns from pre-defined set.
+     * Sanitizes a list of first-party host entries. Wildcard-free entries are validated as host
+     * names (URLs and IPs are tolerated, with a warning for URLs); entries containing a `*` are
+     * validated as wildcard patterns. Invalid entries are dropped and logged.
      *
-     * @param hosts Hosts to sanitize.
+     * @param hosts Hosts and wildcard patterns to sanitize.
      * @param feature SDK feature requesting the sanitization.
      */
     @InternalApi
     fun sanitizeHosts(
+        hosts: List<String>,
+        feature: String
+    ): List<String> {
+        val (patterns, plainHosts) = hosts.partition { it.contains('*') }
+        return sanitizePlainHosts(plainHosts, feature) + sanitizePatterns(patterns, feature)
+    }
+
+    private fun sanitizePlainHosts(
         hosts: List<String>,
         feature: String
     ): List<String> {
@@ -35,7 +47,7 @@ class HostsSanitizer {
             if (it.matches(validUrlRegex)) {
                 try {
                     val parsedUrl = URL(it)
-                    unboundInternalLogger.log(
+                    internalLogger.log(
                         InternalLogger.Level.WARN,
                         InternalLogger.Target.USER,
                         {
@@ -49,7 +61,7 @@ class HostsSanitizer {
                     )
                     parsedUrl.host
                 } catch (e: MalformedURLException) {
-                    unboundInternalLogger.log(
+                    internalLogger.log(
                         InternalLogger.Level.ERROR,
                         InternalLogger.Target.USER,
                         { ERROR_MALFORMED_URL.format(Locale.US, it, feature) },
@@ -63,7 +75,7 @@ class HostsSanitizer {
                 // special rule exception to accept `localhost` as a valid domain name
                 it
             } else {
-                unboundInternalLogger.log(
+                internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
                     { ERROR_MALFORMED_HOST_IP_ADDRESS.format(Locale.US, it, feature) }
@@ -72,6 +84,10 @@ class HostsSanitizer {
             }
         }
     }
+
+    // Validates entries carrying a '*' as wildcard host patterns.
+    private fun sanitizePatterns(patterns: List<String>, feature: String): List<String> =
+        HostPatternSanitizer(internalLogger).validate(patterns, feature)
 
     internal companion object {
         private const val VALID_IP_REGEX: String =

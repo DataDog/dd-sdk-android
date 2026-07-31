@@ -23,7 +23,7 @@ import com.datadog.tools.annotation.NoOpImplementation
 /**
  * FOR INTERNAL USAGE ONLY.
  */
-@SuppressWarnings("ComplexInterface", "TooManyFunctions")
+@Suppress("ComplexInterface", "TooManyFunctions")
 @NoOpImplementation
 internal interface AdvancedRumMonitor : RumMonitor, AdvancedNetworkRumMonitor {
 

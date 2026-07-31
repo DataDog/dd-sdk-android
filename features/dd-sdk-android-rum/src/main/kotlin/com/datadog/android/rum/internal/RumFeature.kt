@@ -27,7 +27,6 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.feature.event.JvmCrash
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.utils.executeSafe

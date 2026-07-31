@@ -20,7 +20,7 @@ import com.datadog.android.rum.resource.ResourceId
 /**
  * FOR INTERNAL USAGE ONLY.
  */
-@SuppressWarnings("UndocumentedPublicFunction")
+@Suppress("UndocumentedPublicFunction")
 @InternalApi
 interface AdvancedNetworkRumMonitor : RumMonitor {
 
@@ -124,7 +124,7 @@ interface AdvancedNetworkRumMonitor : RumMonitor {
      * @see [stopResource]
      */
     @InternalApi
-    @SuppressWarnings("LongParameterList")
+    @Suppress("LongParameterList")
     fun stopResourceWithError(
         key: ResourceId,
         statusCode: Int?,

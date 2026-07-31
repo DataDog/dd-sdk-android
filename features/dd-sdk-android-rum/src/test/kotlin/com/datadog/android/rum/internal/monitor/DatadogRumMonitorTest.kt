@@ -2655,11 +2655,9 @@ internal class DatadogRumMonitorTest {
         val mockRootScope = mock<RumApplicationScope>().apply {
             whenever(getRumContext()) doReturn forge.getForgery<RumContext>()
             whenever(handleEvent(any(), any(), any(), any())) doAnswer {
-                if (isMethodOccupied) {
-                    throw IllegalStateException(
-                        "Only one thread should" +
-                            " be allowed to enter rootScope at the time."
-                    )
+                check(!isMethodOccupied) {
+                    "Only one thread should" +
+                        " be allowed to enter rootScope at the time."
                 }
                 isMethodOccupied = true
                 Thread.sleep(100)

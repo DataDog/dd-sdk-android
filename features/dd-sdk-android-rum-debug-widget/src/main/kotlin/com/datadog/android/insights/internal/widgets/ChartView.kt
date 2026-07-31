@@ -61,7 +61,7 @@ internal class ChartView @JvmOverloads constructor(
             invalidate()
         }
 
-    private var data = EvictingQueue<Double>(MAX_DATA_POINTS)
+    private val data = EvictingQueue<Double>(MAX_DATA_POINTS)
     private var dataAveraged = listOf<Double>()
     private val textMargin = px(TEXT_MARGIN_DP)
     private var yMin = Double.MAX_VALUE

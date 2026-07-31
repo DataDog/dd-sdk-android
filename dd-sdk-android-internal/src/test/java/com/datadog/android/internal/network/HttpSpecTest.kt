@@ -77,9 +77,11 @@ internal class HttpSpecTest {
         private inline fun <reified C : Any> Any.getDeclaredConstants(): List<Pair<String, C>> {
             val constantType = C::class.javaPrimitiveType ?: C::class.java
             return this::class.java.declaredFields
+                .asSequence()
                 .filter { Modifier.isStatic(it.modifiers) && Modifier.isPublic(it.modifiers) }
                 .filter { it.type == constantType }
                 .map { it.name to it.get(null) as C }
+                .toList()
         }
     }
 }

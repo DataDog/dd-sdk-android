@@ -10,6 +10,7 @@ import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.taskConfig
 
 plugins {
+    id("ktlint")
     id("org.jetbrains.kotlin.jvm")
     id("com.github.ben-manes.versions")
     id("com.android.lint")

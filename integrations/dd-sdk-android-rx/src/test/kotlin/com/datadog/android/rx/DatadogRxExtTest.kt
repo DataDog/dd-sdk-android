@@ -6,7 +6,6 @@
 
 package com.datadog.android.rx
 
-import android.annotation.SuppressLint
 import com.datadog.android.api.SdkCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
@@ -127,13 +126,13 @@ class DatadogRxExtTest {
         )
     }
 
-    @SuppressLint("CheckResult")
     @Test
     fun `M send an error event W exception in the stream {Completable}`() {
         // WHEN
-        CompletableError.error(fakeException).sendErrorToDatadog(mockSdkCore).test()
+        val testObserver = CompletableError.error(fakeException).sendErrorToDatadog(mockSdkCore).test()
 
         // THEN
+        testObserver.assertError(fakeException)
         verify(mockRumMonitor).addError(
             DatadogRumErrorConsumer.REQUEST_ERROR_MESSAGE,
             RumErrorSource.SOURCE,
