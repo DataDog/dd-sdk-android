@@ -93,9 +93,10 @@ class RumFirstDrawTimeReporterImpl(
 
             val nowNs = timeProviderNs()
             handler.sendMessageAtFrontOfQueue(
-                Message.obtain(handler, Runnable {
-                    callback.onFirstFrameDrawn(nowNs)
-                }).apply { isAsynchronous = true }
+                Message.obtain(
+                    handler,
+                    Runnable { callback.onFirstFrameDrawn(nowNs) }
+                ).apply { isAsynchronous = true }
             )
 
             val currentDecorView = activity.window.decorView
