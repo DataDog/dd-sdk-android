@@ -87,6 +87,7 @@ constructor(
 
     // region ReplayableViewTrackingStrategy
 
+    @MainThread
     override fun onLateActivityReady(activity: Activity) {
         onActivityResumed(activity)
     }

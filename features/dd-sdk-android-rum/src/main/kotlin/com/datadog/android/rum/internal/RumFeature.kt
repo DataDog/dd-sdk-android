@@ -131,7 +131,6 @@ import com.datadog.android.rum.timeseries.TimeseriesConfiguration
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
-import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpActionTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy

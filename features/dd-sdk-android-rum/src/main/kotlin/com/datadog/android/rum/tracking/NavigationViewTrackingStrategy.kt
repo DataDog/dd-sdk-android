@@ -91,6 +91,7 @@ class NavigationViewTrackingStrategy(
 
     // region ReplayableViewTrackingStrategy
 
+    @MainThread
     override fun onLateActivityReady(activity: Activity) {
         onActivityStarted(activity)
     }
