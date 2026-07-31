@@ -17,6 +17,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.internal.utils.DdTagsUtils
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
@@ -34,7 +35,6 @@ import com.datadog.android.rum.internal.domain.scope.RumVitalAppLaunchEventHelpe
 import com.datadog.android.rum.internal.domain.scope.toVitalAppLaunchSchemaType
 import com.datadog.android.rum.internal.domain.scope.toVitalAppLaunchStartupType
 import com.datadog.android.rum.internal.toVitalAppLaunch
-import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.utils.forge.Configurator
@@ -1157,7 +1157,7 @@ internal class RumSessionScopeStartupManagerTest {
             hasConnectivityInfo(fakeDatadogContext.networkInfo)
             hasVersion(fakeDatadogContext.version)
             hasServiceName(fakeDatadogContext.service)
-            hasDDTags(buildDDTagsString(fakeDatadogContext))
+            hasDDTags(DdTagsUtils.toDdTagsString(fakeDatadogContext))
                 .apply {
                     if (fakeDatadogContext.featuresContext.containsKey(Feature.PROFILING_FEATURE_NAME)) {
                         hasProfilingStatus(VitalAppLaunchEvent.ProfilingStatus.RUNNING)
@@ -1225,7 +1225,7 @@ internal class RumSessionScopeStartupManagerTest {
             hasConnectivityInfo(fakeDatadogContext.networkInfo)
             hasVersion(fakeDatadogContext.version)
             hasServiceName(fakeDatadogContext.service)
-            hasDDTags(buildDDTagsString(fakeDatadogContext))
+            hasDDTags(DdTagsUtils.toDdTagsString(fakeDatadogContext))
                 .apply {
                     if (fakeDatadogContext.featuresContext.containsKey(Feature.PROFILING_FEATURE_NAME)) {
                         hasProfilingStatus(VitalAppLaunchEvent.ProfilingStatus.RUNNING)

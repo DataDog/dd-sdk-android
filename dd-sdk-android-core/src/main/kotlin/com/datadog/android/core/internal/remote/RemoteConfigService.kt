@@ -14,6 +14,7 @@ import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.mkdirsSafe
 import com.datadog.android.core.internal.remote.model.RemoteConfiguration
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.internal.telemetry.TelemetryContext
 import com.datadog.android.internal.utils.allowThreadDiskReads
 import com.google.gson.JsonParseException
 import okhttp3.HttpUrl
@@ -100,7 +101,8 @@ internal class RemoteConfigServiceImpl(
         val written = fileReaderWriter.writeData(
             file = configFile,
             data = rawConfig.toByteArray(Charsets.UTF_8),
-            append = false
+            append = false,
+            telemetryContext = TelemetryContext(featureName = REMOTE_CONFIG_FEATURE_NAME)
         )
         if (written) {
             cachedConfig = config
@@ -136,7 +138,7 @@ internal class RemoteConfigServiceImpl(
     @Suppress("ReturnCount")
     private fun readConfigFromDisk(): RemoteConfiguration? {
         if (!configFile.existsSafe(internalLogger)) return null
-        val bytes = fileReaderWriter.readData(configFile)
+        val bytes = fileReaderWriter.readData(configFile, TelemetryContext(featureName = REMOTE_CONFIG_FEATURE_NAME))
         if (bytes.isEmpty()) return null
         return try {
             RemoteConfiguration.fromJson(String(bytes, Charsets.UTF_8))
@@ -169,5 +171,6 @@ internal class RemoteConfigServiceImpl(
         internal const val API_VERSION = "v1"
         internal const val SYNC_OPERATION_NAME = "remote config sync"
         internal const val ERROR_PARSE = "Failed to parse remote configuration"
+        internal const val REMOTE_CONFIG_FEATURE_NAME = "remote_config"
     }
 }

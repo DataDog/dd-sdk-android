@@ -109,6 +109,135 @@ internal class SessionReplayRecorderTest {
     }
 
     @Test
+    fun `M also intercept an already-open untracked window W resumeRecorders`(forge: Forge) {
+        // Given
+        val mockDialogWindow: Window = mock()
+        val mockDialogDecorView: View = mock {
+            whenever(it.width).thenReturn(forge.aPositiveInt(strict = true))
+            whenever(it.height).thenReturn(forge.aPositiveInt(strict = true))
+        }
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(fakeActiveWindowsDecorViews + mockDialogDecorView)
+        testedSessionReplayRecorder = buildRecorderWith(
+            windowFromDecorView = { view -> if (view == mockDialogDecorView) mockDialogWindow else null }
+        )
+
+        // When
+        testedSessionReplayRecorder.resumeRecorders()
+
+        // Then
+        verify(mockWindowCallbackInterceptor).intercept(
+            fakeActiveWindows + mockDialogWindow,
+            appContext.mockInstance
+        )
+    }
+
+    @Test
+    fun `M not retry an already-known window W resumeRecorders {resolves to a tracked window}`(forge: Forge) {
+        // Given
+        val mockDecorView: View = mock {
+            whenever(it.width).thenReturn(forge.aPositiveInt(strict = true))
+            whenever(it.height).thenReturn(forge.aPositiveInt(strict = true))
+        }
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(fakeActiveWindowsDecorViews + mockDecorView)
+        testedSessionReplayRecorder = buildRecorderWith(
+            windowFromDecorView = { view -> if (view == mockDecorView) fakeActiveWindows.first() else null }
+        )
+
+        // When
+        testedSessionReplayRecorder.resumeRecorders()
+
+        // Then
+        verify(mockWindowCallbackInterceptor).intercept(fakeActiveWindows, appContext.mockInstance)
+    }
+
+    @Test
+    fun `M not resolve a zero-size untracked window W resumeRecorders`() {
+        // Given
+        val mockDialogWindow: Window = mock()
+        val mockZeroSizeDecorView: View = mock()
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(fakeActiveWindowsDecorViews + mockZeroSizeDecorView)
+        testedSessionReplayRecorder = buildRecorderWith(
+            windowFromDecorView = { view -> if (view == mockZeroSizeDecorView) mockDialogWindow else null }
+        )
+
+        // When
+        testedSessionReplayRecorder.resumeRecorders()
+
+        // Then
+        verify(mockWindowCallbackInterceptor).intercept(fakeActiveWindows, appContext.mockInstance)
+    }
+
+    @Test
+    fun `M not re-include an excluded paused window W resumeRecorders`(forge: Forge) {
+        // Given
+        val mockPausedWindow: Window = mock()
+        val mockPausedDecorView: View = mock {
+            whenever(it.width).thenReturn(forge.aPositiveInt(strict = true))
+            whenever(it.height).thenReturn(forge.aPositiveInt(strict = true))
+        }
+        whenever(mockWindowCallbackInterceptor.isExcluded(mockPausedWindow)).thenReturn(true)
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(fakeActiveWindowsDecorViews + mockPausedDecorView)
+        testedSessionReplayRecorder = buildRecorderWith(
+            windowFromDecorView = { view -> if (view == mockPausedDecorView) mockPausedWindow else null }
+        )
+
+        // When
+        testedSessionReplayRecorder.resumeRecorders()
+
+        // Then
+        verify(mockWindowCallbackInterceptor).intercept(fakeActiveWindows, appContext.mockInstance)
+    }
+
+    @Test
+    fun `M also intercept an already-open untracked window W onWindowsAdded{resumed}`(forge: Forge) {
+        // Given
+        val mockDialogWindow: Window = mock()
+        val mockDialogDecorView: View = mock {
+            whenever(it.width).thenReturn(forge.aPositiveInt(strict = true))
+            whenever(it.height).thenReturn(forge.aPositiveInt(strict = true))
+        }
+        testedSessionReplayRecorder = buildRecorderWith(
+            windowFromDecorView = { view -> if (view == mockDialogDecorView) mockDialogWindow else null }
+        )
+        testedSessionReplayRecorder.resumeRecorders()
+        val fakeAddedWindows = forge.aList { mock<Window>() }
+        val fakeNewDecorViews = fakeAddedWindows.map { mock<View>() }
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(fakeNewDecorViews + mockDialogDecorView)
+
+        // When
+        testedSessionReplayRecorder.onWindowsAdded(fakeAddedWindows)
+
+        // Then
+        verify(mockWindowCallbackInterceptor).intercept(
+            fakeAddedWindows + mockDialogWindow,
+            appContext.mockInstance
+        )
+    }
+
+    private fun buildRecorderWith(windowFromDecorView: (View) -> Window?): SessionReplayRecorder {
+        return SessionReplayRecorder(
+            appContext = appContext.mockInstance,
+            textAndInputPrivacy = fakeTextAndInputPrivacy,
+            imagePrivacy = fakeImagePrivacy,
+            customOptionSelectorDetectors = mock(),
+            windowInspector = mockWindowInspector,
+            windowCallbackInterceptor = mockWindowCallbackInterceptor,
+            sessionReplayLifecycleCallback = mockLifecycleCallback,
+            viewOnDrawInterceptor = mockViewOnDrawInterceptor,
+            recordedDataQueueHandler = mockRecordedDataQueueHandler,
+            resourceResolver = mockResourceResolver,
+            uiHandler = mockUiHandler,
+            internalLogger = mockInternalLogger,
+            windowFromDecorView = windowFromDecorView
+        )
+    }
+
+    @Test
     fun `M register the lifecycle callback W registerCallbacks`() {
         // When
         testedSessionReplayRecorder.registerCallbacks()

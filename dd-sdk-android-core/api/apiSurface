@@ -200,8 +200,8 @@ interface com.datadog.android.api.net.RequestFactory
 interface com.datadog.android.api.storage.DataWriter<T>
   fun write(EventBatchWriter, T, EventType): Boolean
 interface com.datadog.android.api.storage.EventBatchWriter
-  fun currentMetadata(): ByteArray?
   fun write(RawBatchEvent, ByteArray?, EventType): Boolean
+fun EventBatchWriter.write(RawBatchEvent, ByteArray?, EventType, com.datadog.android.internal.telemetry.TelemetryContext): Boolean
 enum com.datadog.android.api.storage.EventType
   - DEFAULT
   - CRASH
@@ -341,12 +341,19 @@ fun java.io.File.lengthSafe(com.datadog.android.api.InternalLogger): Long
 fun java.io.File.readTextSafe(java.nio.charset.Charset = Charsets.UTF_8, com.datadog.android.api.InternalLogger): String?
 fun java.io.File.readBytesSafe(com.datadog.android.api.InternalLogger): ByteArray?
 fun java.io.File.readLinesSafe(java.nio.charset.Charset = Charsets.UTF_8, com.datadog.android.api.InternalLogger): List<String>?
+interface com.datadog.android.core.internal.storage.TelemetryAwareEventBatchWriter : com.datadog.android.api.storage.EventBatchWriter
+  fun write(com.datadog.android.api.storage.RawBatchEvent, ByteArray?, com.datadog.android.api.storage.EventType, com.datadog.android.internal.telemetry.TelemetryContext): Boolean
 fun Collection<ByteArray>.join(ByteArray, ByteArray = ByteArray(0), ByteArray = ByteArray(0), com.datadog.android.api.InternalLogger): ByteArray
 fun java.util.concurrent.Executor.executeSafe(String, com.datadog.android.api.InternalLogger, Runnable)
 fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(String, Long, java.util.concurrent.TimeUnit, com.datadog.android.api.InternalLogger, Runnable): java.util.concurrent.ScheduledFuture<*>?
 fun java.util.concurrent.ExecutorService.submitSafe(String, com.datadog.android.api.InternalLogger, Runnable): java.util.concurrent.Future<*>?
 fun <T> java.util.concurrent.ExecutorService.submitSafe(String, com.datadog.android.api.InternalLogger, java.util.concurrent.Callable<T>): java.util.concurrent.Future<T>?
 fun <T> java.util.concurrent.Future<T>?.getSafe(String, com.datadog.android.api.InternalLogger): T?
+object com.datadog.android.core.internal.utils.DdTagsUtils
+  fun toDdTagsString(com.datadog.android.api.context.DatadogContext): String
+  fun toDdTagsString(Map<String, String>): String
+  fun toDdTagsMap(com.datadog.android.api.context.DatadogContext): Map<String, String>
+  fun toDdTagsMap(String?): Map<String, String>?
 object com.datadog.android.core.internal.utils.JsonSerializer
   fun toJsonElement(Any?): com.google.gson.JsonElement
   fun Map<String, Any?>.safeMapValuesToJson(com.datadog.android.api.InternalLogger): Map<String, com.google.gson.JsonElement>

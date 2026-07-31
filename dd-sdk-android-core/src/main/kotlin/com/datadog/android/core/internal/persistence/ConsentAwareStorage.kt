@@ -23,6 +23,7 @@ import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderW
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.internal.telemetry.TelemetryContext
 import com.datadog.android.privacy.TrackingConsent
 import java.io.File
 import java.util.Locale
@@ -60,6 +61,7 @@ internal class ConsentAwareStorage(
             return AsyncEventWriteScope(executorService, NoOpEventBatchWriter(), writeLock, featureName, internalLogger)
         }
         val writer = FileEventBatchWriter(
+            featureName = featureName,
             fileOrchestrator = orchestrator,
             eventsWriter = batchEventsReaderWriter,
             metadataReaderWriter = batchMetadataReaderWriter,
@@ -83,12 +85,16 @@ internal class ConsentAwareStorage(
         }
 
         val batchId = BatchId.fromFile(batchFile)
+        val telemetryContext = TelemetryContext(featureName = featureName)
         val batchMetadata = if (metaFile == null || !metaFile.existsSafe(internalLogger)) {
             null
         } else {
-            batchMetadataReaderWriter.readData(metaFile)
+            batchMetadataReaderWriter.readData(metaFile, telemetryContext)
         }
-        val batchData = batchEventsReaderWriter.readData(batchFile)
+        val batchData = batchEventsReaderWriter.readData(
+            batchFile,
+            telemetryContext
+        )
 
         return BatchData(id = batchId, data = batchData, metadata = batchMetadata)
     }

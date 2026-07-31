@@ -14,9 +14,11 @@ import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FileReader
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReader
+import com.datadog.android.internal.telemetry.TelemetryContext
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.BeforeEach
@@ -26,7 +28,9 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -67,8 +71,14 @@ internal class DataFlusherTest {
     @Forgery
     lateinit var fakeContext: DatadogContext
 
+    @StringForgery
+    lateinit var fakeFeatureName: String
+
+    private lateinit var fakeTelemetryContext: TelemetryContext
+
     @BeforeEach
     fun `set up`() {
+        fakeTelemetryContext = TelemetryContext(featureName = fakeFeatureName)
         whenever(mockContextProvider.getContext(emptySet())) doReturn fakeContext
 
         testedFlusher = DataFlusher(
@@ -77,6 +87,7 @@ internal class DataFlusherTest {
             mockFileReader,
             mockMetaFileReader,
             mockFileMover,
+            fakeFeatureName,
             mockInternalLogger
         )
     }
@@ -103,14 +114,14 @@ internal class DataFlusherTest {
         whenever(mockFileOrchestrator.getFlushableFiles()).thenReturn(fakeFiles)
         fakeFiles.forEachIndexed { index, file ->
             whenever(
-                mockFileReader.readData(file)
+                mockFileReader.readData(eq(file), any())
             ).thenReturn(fakeBatches[index])
             val fakeMetaFile = fakeMetaFiles[index]
             whenever(
                 mockFileOrchestrator.getMetadataFile(file)
             ).thenReturn(fakeMetaFile)
             if (fakeMetaFile != null) {
-                whenever(mockMetaFileReader.readData(fakeMetaFile)).thenReturn(fakeMeta[index])
+                whenever(mockMetaFileReader.readData(eq(fakeMetaFile), any())).thenReturn(fakeMeta[index])
             }
         }
 
@@ -143,7 +154,7 @@ internal class DataFlusherTest {
         whenever(mockFileOrchestrator.getFlushableFiles()).thenReturn(fakeFiles)
         fakeFiles.forEachIndexed { index, file ->
             whenever(
-                mockFileReader.readData(file)
+                mockFileReader.readData(eq(file), any())
             ).thenReturn(fakeBatches[index])
             whenever(
                 mockFileOrchestrator.getMetadataFile(file)
@@ -179,7 +190,7 @@ internal class DataFlusherTest {
         whenever(mockFileOrchestrator.getFlushableFiles()).thenReturn(fakeFiles)
         fakeFiles.forEachIndexed { index, file ->
             whenever(
-                mockFileReader.readData(file)
+                mockFileReader.readData(eq(file), any())
             ).thenReturn(fakeBatches[index])
             val fakeBatchFile =
                 forge.aNullable { mock<File>().apply { whenever(exists()) doReturn false } }

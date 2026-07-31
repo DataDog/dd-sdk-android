@@ -9,6 +9,7 @@ package com.datadog.android.sample.compose
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -140,9 +141,11 @@ private fun TouchPrivacySample() {
         SampleItem(
             modifier = Modifier.wrapContentSize().weight(1f)
                 .sessionReplayTouchPrivacy(touchPrivacy = TouchPrivacy.SHOW)
-                .clickable {
-                    showClickTimes++
-                },
+                // indication = null: prevents PlatformRipple crash during AnimatedContent transitions on older Compose.
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ) { showClickTimes++ },
             title = "Touch Privacy: Show"
         ) {
             Text(
@@ -156,9 +159,10 @@ private fun TouchPrivacySample() {
         SampleItem(
             modifier = Modifier.wrapContentSize().weight(1f)
                 .sessionReplayTouchPrivacy(touchPrivacy = TouchPrivacy.HIDE)
-                .clickable {
-                    hideClickTimes++
-                },
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ) { hideClickTimes++ },
             title = "Touch Privacy: Hide"
         ) {
             Text(

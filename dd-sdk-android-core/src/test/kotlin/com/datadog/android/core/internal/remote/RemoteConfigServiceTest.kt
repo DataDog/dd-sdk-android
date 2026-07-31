@@ -73,8 +73,8 @@ internal class RemoteConfigServiceTest {
         }
 
         // No cache on disk by default
-        whenever(mockFileReaderWriter.readData(any())).doReturn(ByteArray(0))
-        whenever(mockFileReaderWriter.writeData(any(), any(), any())).doReturn(true)
+        whenever(mockFileReaderWriter.readData(any(), any())).doReturn(ByteArray(0))
+        whenever(mockFileReaderWriter.writeData(any(), any(), any(), any())).doReturn(true)
     }
 
     private fun buildService(): RemoteConfigServiceImpl {
@@ -181,7 +181,8 @@ internal class RemoteConfigServiceTest {
         verify(mockFileReaderWriter).writeData(
             file = any(),
             data = eq(fakeJson.toByteArray(Charsets.UTF_8)),
-            append = eq(false)
+            append = eq(false),
+            telemetryContext = any()
         )
     }
 
@@ -247,7 +248,7 @@ internal class RemoteConfigServiceTest {
 
         // Then
         assertThat(testedService.getCurrentConfig()).isNull()
-        verify(mockFileReaderWriter, never()).writeData(any(), any(), any())
+        verify(mockFileReaderWriter, never()).writeData(any(), any(), any(), any())
     }
 
     // endregion
@@ -274,7 +275,7 @@ internal class RemoteConfigServiceTest {
 
         // Then
         assertThat(testedService.getCurrentConfig()).isNull()
-        verify(mockFileReaderWriter, never()).writeData(any(), any(), any())
+        verify(mockFileReaderWriter, never()).writeData(any(), any(), any(), any())
         verify(mockFetcher).evictCache()
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.ERROR,
@@ -332,7 +333,7 @@ internal class RemoteConfigServiceTest {
 
         // Then
         assertThat(testedService.getCurrentConfig()).isNull()
-        verify(mockFileReaderWriter, never()).writeData(any(), any(), any())
+        verify(mockFileReaderWriter, never()).writeData(any(), any(), any(), any())
         verify(mockFetcher).evictCache()
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.ERROR,
@@ -354,7 +355,7 @@ internal class RemoteConfigServiceTest {
         testedService = buildService()
         val fakeJson = fakeRemoteConfiguration.toJson().toString()
         whenever(mockFetcher.fetch(any())).doReturn(fakeJson)
-        whenever(mockFileReaderWriter.writeData(any(), any(), any())).doReturn(false)
+        whenever(mockFileReaderWriter.writeData(any(), any(), any(), any())).doReturn(false)
 
         // When
         testedService.syncWithRemote()
