@@ -6,7 +6,6 @@
 
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.detektCustomConfig
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
@@ -75,4 +74,3 @@ publishingConfig(
     "The RUM pre-launch module that captures app launch timing data before " +
         "the Datadog SDK is initialized."
 )
-detektCustomConfig()
