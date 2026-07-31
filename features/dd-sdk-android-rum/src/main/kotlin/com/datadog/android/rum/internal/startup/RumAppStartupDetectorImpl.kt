@@ -16,7 +16,6 @@ import com.datadog.android.rum.startup.AppStartupActivityPredicate
 import java.lang.ref.WeakReference
 import java.util.Collections
 import java.util.WeakHashMap
-import kotlin.time.Duration.Companion.seconds
 
 internal class RumAppStartupDetectorImpl(
     private val application: Application,
@@ -54,6 +53,7 @@ internal class RumAppStartupDetectorImpl(
     override fun onActivityDestroyed(activity: Activity) {
         numberOfActivities--
         trackedActivities.remove(activity)
+        listener.onActivityDestroyed(activity)
 
         if (numberOfActivities == 0) {
             isChangingConfigurations = activity.isChangingConfigurations
@@ -102,34 +102,13 @@ internal class RumAppStartupDetectorImpl(
 
         if (isFirstTrackedActivityWithNoPendingStartup) {
             val processStartTime = appStartupTime()
-
-            val gapNs = now.nanoTime - processStartTime.nanoTime
-            val hasSavedInstanceStateBundle = savedInstanceState != null
-            val weakActivity = WeakReference(activity)
-
-            val scenario = if (isFirstActivityForProcess) {
-                if (gapNs > START_GAP_THRESHOLD_NS) {
-                    RumStartupScenario.WarmFirstActivity(
-                        hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                        activity = weakActivity,
-                        appStartActivityOnCreateGapNs = gapNs,
-                        initialTime = now
-                    )
-                } else {
-                    RumStartupScenario.Cold(
-                        hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                        activity = weakActivity,
-                        appStartActivityOnCreateGapNs = gapNs,
-                        initialTime = processStartTime
-                    )
-                }
-            } else {
-                RumStartupScenario.WarmAfterActivityDestroyed(
-                    hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                    activity = weakActivity,
-                    initialTime = now
-                )
-            }
+            val scenario = RumStartupScenario.build(
+                isFirstActivityForProcess = isFirstActivityForProcess,
+                hasSavedInstanceStateBundle = savedInstanceState != null,
+                activity = WeakReference(activity),
+                processStartTime = processStartTime,
+                activityOnCreateTime = now
+            )
 
             pendingScenario = scenario
             listener.onAppStartupDetected(scenario)
@@ -157,7 +136,4 @@ internal class RumAppStartupDetectorImpl(
         application.unregisterActivityLifecycleCallbacks(this)
     }
 
-    companion object {
-        private val START_GAP_THRESHOLD_NS = 10.seconds.inWholeNanoseconds
-    }
 }

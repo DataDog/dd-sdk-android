@@ -195,6 +195,7 @@ internal class RumAppStartupDetectorImplTest {
                 )
             )
         }
+        verify(listener).onActivityDestroyed(activity)
         verifyNoMoreInteractions(listener)
     }
 
@@ -236,6 +237,7 @@ internal class RumAppStartupDetectorImplTest {
                 appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
             )
         )
+        verify(listener).onActivityDestroyed(activity)
         verifyNoMoreInteractions(listener)
     }
 
@@ -342,6 +344,7 @@ internal class RumAppStartupDetectorImplTest {
             )
         }
 
+        verify(listener).onActivityDestroyed(activity)
         verifyNoMoreInteractions(listener)
     }
 
@@ -424,6 +427,8 @@ internal class RumAppStartupDetectorImplTest {
             )
         }
 
+        verify(listener).onActivityDestroyed(activity2)
+        verify(listener).onActivityDestroyed(activity)
         verifyNoMoreInteractions(listener)
     }
 
@@ -478,6 +483,7 @@ internal class RumAppStartupDetectorImplTest {
             )
         )
 
+        verify(listener).onActivityDestroyed(interstitialActivity)
         verifyNoMoreInteractions(listener)
     }
 
@@ -670,6 +676,7 @@ internal class RumAppStartupDetectorImplTest {
             )
         )
 
+        verify(listener).onActivityDestroyed(activity1)
         verifyNoMoreInteractions(listener)
     }
 

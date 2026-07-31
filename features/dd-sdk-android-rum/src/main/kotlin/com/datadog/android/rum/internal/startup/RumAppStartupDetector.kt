@@ -20,6 +20,13 @@ internal interface RumAppStartupDetector {
          */
         fun onAppStartupDetected(scenario: RumStartupScenario)
         fun onNextActivityCreated(pendingScenario: RumStartupScenario, activity: Activity)
+
+        /**
+         * Called when an Activity is destroyed. Listeners that hold per-activity resources
+         * (e.g. a [com.datadog.android.rum.startup.RumFirstDrawTimeReporter.Handle]) should
+         * release them here to avoid memory leaks.
+         */
+        fun onActivityDestroyed(activity: Activity) = Unit
     }
 
     fun destroy()
