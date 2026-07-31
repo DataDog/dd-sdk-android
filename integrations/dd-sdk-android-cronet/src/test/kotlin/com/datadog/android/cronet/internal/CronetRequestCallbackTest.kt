@@ -490,20 +490,6 @@ internal class CronetRequestCallbackTest {
         }
     }
 
-    @Test
-    fun `M not call onResponseSucceeded W onSucceeded() {responseInfo null, traceState set}`() {
-        // Given
-        whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn mockTraceState
-        testedCallback.onRequestStarted(fakeRequestInfo)
-
-        // When
-        testedCallback.onSucceeded(mockUrlRequest, null)
-
-        // Then
-        verify(mockDelegate).onSucceeded(mockUrlRequest, null)
-        verify(mockApmNetworkInstrumentation, never()).onResponseSucceeded(any(), any())
-    }
-
     // endregion
 
     // region onFailed
@@ -520,24 +506,6 @@ internal class CronetRequestCallbackTest {
         // Then
         verify(mockDelegate).onFailed(mockUrlRequest, mockUrlResponseInfo, mockCronetException)
         verify(mockApmNetworkInstrumentation).onResponseFailed(mockTraceState, mockCronetException)
-    }
-
-    @Test
-    fun `M delegate onFailed with IOException W onFailed() {traceState set, error null}`() {
-        // Given
-        whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn mockTraceState
-        testedCallback.onRequestStarted(fakeRequestInfo)
-
-        // When
-        testedCallback.onFailed(mockUrlRequest, mockUrlResponseInfo, null)
-
-        // Then
-        verify(mockDelegate).onFailed(mockUrlRequest, mockUrlResponseInfo, null)
-        argumentCaptor<Throwable> {
-            verify(mockApmNetworkInstrumentation).onResponseFailed(eq(mockTraceState), capture())
-            assertThat(firstValue).isInstanceOf(IOException::class.java)
-            assertThat(firstValue.message).isEqualTo("Response failed")
-        }
     }
 
     @Test

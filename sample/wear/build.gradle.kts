@@ -10,6 +10,7 @@ import com.datadog.gradle.config.configureFlavorForSampleApp
 import com.datadog.gradle.config.java17
 
 plugins {
+    id("ktlint")
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
 }

@@ -90,6 +90,7 @@ data class com.datadog.android.rum.RumConfiguration
     fun setSlowFramesConfiguration(com.datadog.android.rum.configuration.SlowFramesConfiguration?): Builder
     fun trackAnonymousUser(Boolean): Builder
     fun setAppStartupActivityPredicate(com.datadog.android.rum.startup.AppStartupActivityPredicate): Builder
+    fun setTimeseriesConfiguration(com.datadog.android.rum.timeseries.TimeseriesConfiguration?): Builder
     fun build(): RumConfiguration
 enum com.datadog.android.rum.RumErrorSource
   - NETWORK
@@ -225,6 +226,7 @@ interface com.datadog.android.rum.internal.instrumentation.insights.InsightsColl
   fun onCpuVital(Double?)
   fun onMemoryVital(Double?)
   fun onSlowFrameRate(Double?)
+  fun onTimeseries(String)
   fun bindSdkCore(com.datadog.android.api.feature.FeatureSdkCore)
   fun unbindSdkCore(com.datadog.android.api.feature.FeatureSdkCore)
 interface com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
@@ -308,6 +310,13 @@ class com.datadog.android.rum.resource.RumResourceInputStream : java.io.InputStr
   override fun close()
 interface com.datadog.android.rum.startup.AppStartupActivityPredicate
   fun shouldTrackStartup(android.app.Activity): Boolean
+class com.datadog.android.rum.timeseries.TimeseriesConfiguration
+  class Builder
+    fun setBufferSize(Int): Builder
+    fun setIntervalMs(Long): Builder
+    fun build(): TimeseriesConfiguration
+  companion object 
+    val DEFAULT: TimeseriesConfiguration
 open class com.datadog.android.rum.tracking.AcceptAllActivities : ComponentPredicate<android.app.Activity>
   override fun accept(android.app.Activity): Boolean
   override fun getViewName(android.app.Activity): String?
@@ -1733,6 +1742,142 @@ data class com.datadog.android.rum.model.ResourceEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): OperationType
+data class com.datadog.android.rum.model.TimeseriesCpuEvent
+  constructor(Dd, Application, Session, Source, kotlin.Long, kotlin.String? = null, kotlin.String? = null, Timeseries)
+  val type: kotlin.String
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): TimeseriesCpuEvent
+    fun fromJsonObject(com.google.gson.JsonObject): TimeseriesCpuEvent
+  class Dd
+    val formatVersion: kotlin.Long
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Dd
+      fun fromJsonObject(com.google.gson.JsonObject): Dd
+  data class Application
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Application
+      fun fromJsonObject(com.google.gson.JsonObject): Application
+  data class Session
+    constructor(kotlin.String, Type)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Session
+      fun fromJsonObject(com.google.gson.JsonObject): Session
+  data class Timeseries
+    constructor(kotlin.String, kotlin.Long, kotlin.Long, Data)
+    val name: kotlin.String
+    val schema: kotlin.String
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Timeseries
+      fun fromJsonObject(com.google.gson.JsonObject): Timeseries
+  data class Data
+    constructor(kotlin.collections.List<kotlin.Long>, Values)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Data
+      fun fromJsonObject(com.google.gson.JsonObject): Data
+  data class Values
+    constructor(kotlin.collections.List<kotlin.Number>)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Values
+      fun fromJsonObject(com.google.gson.JsonObject): Values
+  enum Source
+    constructor(kotlin.String)
+    - ANDROID
+    - IOS
+    - BROWSER
+    - FLUTTER
+    - REACT_NATIVE
+    - ROKU
+    - UNITY
+    - KOTLIN_MULTIPLATFORM
+    - ELECTRON
+    - RUM_CPP
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Source
+  enum Type
+    constructor(kotlin.String)
+    - USER
+    - SYNTHETICS
+    - CI_TEST
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Type
+data class com.datadog.android.rum.model.TimeseriesMemoryEvent
+  constructor(Dd, Application, Session, Source, kotlin.Long, kotlin.String? = null, kotlin.String? = null, Timeseries)
+  val type: kotlin.String
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): TimeseriesMemoryEvent
+    fun fromJsonObject(com.google.gson.JsonObject): TimeseriesMemoryEvent
+  class Dd
+    val formatVersion: kotlin.Long
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Dd
+      fun fromJsonObject(com.google.gson.JsonObject): Dd
+  data class Application
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Application
+      fun fromJsonObject(com.google.gson.JsonObject): Application
+  data class Session
+    constructor(kotlin.String, Type)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Session
+      fun fromJsonObject(com.google.gson.JsonObject): Session
+  data class Timeseries
+    constructor(kotlin.String, kotlin.Long, kotlin.Long, Data)
+    val name: kotlin.String
+    val schema: kotlin.String
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Timeseries
+      fun fromJsonObject(com.google.gson.JsonObject): Timeseries
+  data class Data
+    constructor(kotlin.collections.List<kotlin.Long>, Values)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Data
+      fun fromJsonObject(com.google.gson.JsonObject): Data
+  data class Values
+    constructor(kotlin.collections.List<kotlin.Number>, kotlin.collections.List<kotlin.Number>)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Values
+      fun fromJsonObject(com.google.gson.JsonObject): Values
+  enum Source
+    constructor(kotlin.String)
+    - ANDROID
+    - IOS
+    - BROWSER
+    - FLUTTER
+    - REACT_NATIVE
+    - ROKU
+    - UNITY
+    - KOTLIN_MULTIPLATFORM
+    - ELECTRON
+    - RUM_CPP
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Source
+  enum Type
+    constructor(kotlin.String)
+    - USER
+    - SYNTHETICS
+    - CI_TEST
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Type
 data class com.datadog.android.rum.model.ViewEvent
   constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, ViewEventSession, ViewEventSource? = null, ViewEventView, Usr? = null, Account? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null, Container? = null, Context? = null, Privacy? = null)
   val type: kotlin.String

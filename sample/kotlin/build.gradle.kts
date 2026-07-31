@@ -17,6 +17,7 @@ import com.datadog.gradle.config.taskConfig
 import com.datadog.gradle.plugin.InstrumentationMode
 
 plugins {
+    id("ktlint")
     id("com.android.application")
     kotlin("android")
     alias(libs.plugins.composeCompilerPlugin)

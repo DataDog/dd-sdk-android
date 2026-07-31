@@ -2541,8 +2541,7 @@ internal class DatadogRumMonitorTest {
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
             appPackageName = fakeApplicationPackageName,
-            heatmapIdentifierRegistry = null
-            insightsCollector = mockInsightsCollector,
+            heatmapIdentifierRegistry = null,
             timeseriesFactory = NoOpTimeseriesFactory()
         )
         testedMonitor.startView(key, name, attributes)

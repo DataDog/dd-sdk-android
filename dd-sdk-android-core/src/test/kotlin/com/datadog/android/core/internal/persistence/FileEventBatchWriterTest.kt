@@ -17,6 +17,7 @@ import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
+import com.datadog.android.internal.telemetry.TelemetryContext
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
@@ -81,9 +82,16 @@ internal class FileEventBatchWriterTest {
     @Forgery
     lateinit var fakeEventType: EventType
 
+    @StringForgery
+    lateinit var fakeFeatureName: String
+
+    private lateinit var fakeTelemetryContext: TelemetryContext
+
     @BeforeEach
     fun `set up`() {
+        fakeTelemetryContext = TelemetryContext(featureName = fakeFeatureName)
         testedWriter = FileEventBatchWriter(
+            featureName = fakeFeatureName,
             fileOrchestrator = mockFileOrchestrator,
             eventsWriter = mockBatchWriter,
             metadataReaderWriter = mockMetaReaderWriter,
@@ -94,7 +102,9 @@ internal class FileEventBatchWriterTest {
         whenever(mockFilePersistenceConfig.maxItemSize) doReturn Long.MAX_VALUE
         whenever(mockFileOrchestrator.getWritableFile(any())) doReturn fakeBatchFile
         whenever(mockFileOrchestrator.getMetadataFile(fakeBatchFile)) doReturn fakeBatchMetadataFile
-        whenever(mockBatchWriter.serializeToBytes(any())) doAnswer { it.getArgument<RawBatchEvent>(0).data }
+        whenever(mockBatchWriter.serializeToBytes(any(), any())) doAnswer {
+            it.getArgument<RawBatchEvent>(0).data
+        }
     }
 
     // region write
@@ -106,9 +116,9 @@ internal class FileEventBatchWriterTest {
     ) {
         // Given
         val serializedMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
-        whenever(mockMetaReaderWriter.readData(fakeBatchMetadataFile)) doReturn serializedMetadata
+        whenever(mockMetaReaderWriter.readData(fakeBatchMetadataFile, fakeTelemetryContext)) doReturn serializedMetadata
         whenever(
-            mockBatchWriter.writeBinaryData(fakeBatchFile, batchEvent.data, true)
+            mockBatchWriter.writeBinaryData(fakeBatchFile, batchEvent.data, true, fakeTelemetryContext)
         ) doReturn true
 
         // When
@@ -117,16 +127,18 @@ internal class FileEventBatchWriterTest {
         // Then
         assertThat(result).isTrue()
 
-        verify(mockBatchWriter).serializeToBytes(batchEvent)
+        verify(mockBatchWriter).serializeToBytes(batchEvent, fakeTelemetryContext)
         verify(mockBatchWriter).writeBinaryData(
             fakeBatchFile,
             batchEvent.data,
-            append = true
+            append = true,
+            fakeTelemetryContext
         )
         verify(mockMetaReaderWriter).writeData(
             fakeBatchMetadataFile,
             serializedMetadata,
-            append = false
+            append = false,
+            fakeTelemetryContext
         )
 
         verifyNoMoreInteractions(
@@ -173,7 +185,8 @@ internal class FileEventBatchWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            NO_BATCH_FILE_AVAILABLE
+            NO_BATCH_FILE_AVAILABLE,
+            additionalProperties = fakeTelemetryContext.asAttributesMap(bytesLost = batchEvent.data.size)
         )
     }
 
@@ -184,7 +197,7 @@ internal class FileEventBatchWriterTest {
     ) {
         // Given
         val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
-        whenever(mockBatchWriter.serializeToBytes(batchEvent)) doReturn null
+        whenever(mockBatchWriter.serializeToBytes(batchEvent, fakeTelemetryContext)) doReturn null
 
         // When
         val result = testedWriter.write(batchEvent, serializedBatchMetadata, fakeEventType)
@@ -213,11 +226,11 @@ internal class FileEventBatchWriterTest {
 
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            ERROR_LARGE_DATA.format(
-                Locale.US,
-                batchEvent.data.size,
-                maxItemSize
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            ERROR_LARGE_DATA,
+            additionalProperties = fakeTelemetryContext.asAttributesMap(
+                bytesLost = batchEvent.data.size,
+                TelemetryContext.TELEMETRY_DATA_LIMIT to maxItemSize.toLong()
             )
         )
     }
@@ -229,7 +242,9 @@ internal class FileEventBatchWriterTest {
     ) {
         // Given
         val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
-        whenever(mockBatchWriter.writeBinaryData(fakeBatchFile, batchEvent.data, true)) doReturn false
+        whenever(
+            mockBatchWriter.writeBinaryData(fakeBatchFile, batchEvent.data, true, fakeTelemetryContext)
+        ) doReturn false
 
         // When
         val result = testedWriter.write(batchEvent, serializedBatchMetadata, fakeEventType)
@@ -248,7 +263,9 @@ internal class FileEventBatchWriterTest {
 
         val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
 
-        whenever(mockBatchWriter.writeBinaryData(fakeBatchFile, batchEvent.data, true)) doReturn true
+        whenever(
+            mockBatchWriter.writeBinaryData(fakeBatchFile, batchEvent.data, true, fakeTelemetryContext)
+        ) doReturn true
 
         // When
         val result = testedWriter.write(batchEvent, serializedBatchMetadata, fakeEventType)
@@ -265,7 +282,9 @@ internal class FileEventBatchWriterTest {
         forge: Forge
     ) {
         // Given
-        whenever(mockBatchWriter.writeBinaryData(fakeBatchFile, batchEvent.data, true)) doReturn true
+        whenever(
+            mockBatchWriter.writeBinaryData(fakeBatchFile, batchEvent.data, true, fakeTelemetryContext)
+        ) doReturn true
 
         // When
         val result = testedWriter.write(batchEvent, forge.aNullable { ByteArray(0) }, fakeEventType)
@@ -273,11 +292,12 @@ internal class FileEventBatchWriterTest {
         // Then
         assertThat(result).isTrue
 
-        verify(mockBatchWriter).serializeToBytes(batchEvent)
+        verify(mockBatchWriter).serializeToBytes(batchEvent, fakeTelemetryContext)
         verify(mockBatchWriter).writeBinaryData(
             fakeBatchFile,
             batchEvent.data,
-            true
+            append = true,
+            fakeTelemetryContext
         )
         verifyNoMoreInteractions(mockBatchWriter)
         verifyNoInteractions(mockMetaReaderWriter)
@@ -310,7 +330,7 @@ internal class FileEventBatchWriterTest {
         // Given
         val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
         whenever(
-            mockBatchWriter.writeBinaryData(fakeBatchFile, batchEvent.data, true)
+            mockBatchWriter.writeBinaryData(fakeBatchFile, batchEvent.data, true, fakeTelemetryContext)
         ) doReturn false
 
         // When
@@ -330,10 +350,15 @@ internal class FileEventBatchWriterTest {
         // Given
         val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
         whenever(
-            mockBatchWriter.writeBinaryData(fakeBatchFile, batchEvent.data, true)
+            mockBatchWriter.writeBinaryData(fakeBatchFile, batchEvent.data, true, fakeTelemetryContext)
         ) doReturn true
         whenever(
-            mockMetaReaderWriter.writeData(fakeBatchMetadataFile, serializedBatchMetadata, false)
+            mockMetaReaderWriter.writeData(
+                fakeBatchMetadataFile,
+                serializedBatchMetadata,
+                false,
+                fakeTelemetryContext
+            )
         ) doReturn false
 
         // When
@@ -364,10 +389,15 @@ internal class FileEventBatchWriterTest {
         // Given
         val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
         whenever(
-            mockBatchWriter.writeBinaryData(fakeBatchFile, batchEvent.data, true)
+            mockBatchWriter.writeBinaryData(fakeBatchFile, batchEvent.data, true, fakeTelemetryContext)
         ) doReturn true
         whenever(
-            mockMetaReaderWriter.writeData(fakeBatchMetadataFile, serializedBatchMetadata, false)
+            mockMetaReaderWriter.writeData(
+                fakeBatchMetadataFile,
+                serializedBatchMetadata,
+                false,
+                fakeTelemetryContext
+            )
         ) doReturn false
 
         // When

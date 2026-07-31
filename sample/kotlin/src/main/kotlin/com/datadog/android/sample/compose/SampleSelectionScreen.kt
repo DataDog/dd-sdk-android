@@ -36,8 +36,23 @@ internal fun SampleSelectionScreen(
     onTabsClicked: () -> Unit,
     onInteropViewClicked: () -> Unit,
     onNav3Clicked: () -> Unit,
-    onBackgroundClicked: () -> Unit
+    onBackgroundClicked: () -> Unit,
+    onNestedDialogsClicked: () -> Unit
 ) {
+    val samples = listOf(
+        "Typography Sample" to onTypographyClicked,
+        "Image Sample" to onImageClicked,
+        "Input Sample" to onInputClicked,
+        "Toggle Buttons Sample" to onToggleClicked,
+        "Tabs Sample" to onTabsClicked,
+        "Selectors Sample" to onSelectorsClicked,
+        "Fine Grained Masking Privacy Sample" to onFgmClicked,
+        "Legacy Sample" to onLegacyClicked,
+        "InteropView" to onInteropViewClicked,
+        "Navigation 3" to onNav3Clicked,
+        "Backgrounds" to onBackgroundClicked,
+        "Nested Dialogs Sample" to onNestedDialogsClicked
+    )
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -47,50 +62,9 @@ internal fun SampleSelectionScreen(
             text = "Jetpack Compose Sample",
             style = MaterialTheme.typography.h6
         )
-        StyledButton(
-            text = "Typography Sample",
-            onClick = onTypographyClicked
-        )
-        StyledButton(
-            text = "Image Sample",
-            onClick = onImageClicked
-        )
-        StyledButton(
-            text = "Input Sample",
-            onClick = onInputClicked
-        )
-        StyledButton(
-            text = "Toggle Buttons Sample",
-            onClick = onToggleClicked
-        )
-        StyledButton(
-            text = "Tabs Sample",
-            onClick = onTabsClicked
-        )
-        StyledButton(
-            text = "Selectors Sample",
-            onClick = onSelectorsClicked
-        )
-        StyledButton(
-            text = "Fine Grained Masking Privacy Sample",
-            onClick = onFgmClicked
-        )
-        StyledButton(
-            text = "Legacy Sample",
-            onClick = onLegacyClicked
-        )
-        StyledButton(
-            text = "InteropView",
-            onClick = onInteropViewClicked
-        )
-        StyledButton(
-            text = "Navigation 3",
-            onClick = onNav3Clicked
-        )
-        StyledButton(
-            text = "Backgrounds",
-            onClick = onBackgroundClicked
-        )
+        samples.forEach { (text, onClick) ->
+            StyledButton(text = text, onClick = onClick)
+        }
     }
 }
 
@@ -145,6 +119,9 @@ internal fun NavGraphBuilder.selectionNavigation(navController: NavHostControlle
             },
             onBackgroundClicked = {
                 navController.navigate(SampleScreen.Background.navigationRoute)
+            },
+            onNestedDialogsClicked = {
+                navController.navigate(SampleScreen.NestedDialogs.navigationRoute)
             }
         )
     }
@@ -185,6 +162,10 @@ internal fun NavGraphBuilder.selectionNavigation(navController: NavHostControlle
         BackgroundSample()
     }
 
+    composable(SampleScreen.NestedDialogs.navigationRoute) {
+        NestedDialogsSample()
+    }
+
     activity(SampleScreen.Legacy.navigationRoute) {
         activityClass = LegacyComposeActivity::class
     }
@@ -210,6 +191,7 @@ internal sealed class SampleScreen(
     object InteropView : SampleScreen("$COMPOSE_ROOT/interop_view")
     object Navigation3 : SampleScreen("$COMPOSE_ROOT/nav3")
     object Background : SampleScreen("$COMPOSE_ROOT/background")
+    object NestedDialogs : SampleScreen("$COMPOSE_ROOT/nested_dialogs")
 
     companion object {
         private const val COMPOSE_ROOT = "compose"
@@ -242,6 +224,8 @@ private fun PreviewSampleSelectionScreen() {
         onNav3Clicked = {
         },
         onBackgroundClicked = {
+        },
+        onNestedDialogsClicked = {
         }
     )
 }

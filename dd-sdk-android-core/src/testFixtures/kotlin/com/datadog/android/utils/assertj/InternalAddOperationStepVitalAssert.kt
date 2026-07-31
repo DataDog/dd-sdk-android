@@ -4,6 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+// detekt's UnusedImports rule false-positives here: the companion `assertThat` shadows the
+// imported one by name, but the actual call below resolves to the import (type mismatch rules
+// out the companion overload) — confirmed by successful compilation.
+@file:Suppress("UnusedImports")
+
 package com.datadog.android.utils.assertj
 
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent

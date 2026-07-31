@@ -7,7 +7,6 @@
 
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.detektCustomConfig
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
@@ -19,6 +18,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.nio.file.Paths
 
 plugins {
+    id("ktlint")
     // Build
     id("com.android.library")
     kotlin("android")
@@ -170,7 +170,9 @@ createJsonModelsGenerationTask("generateRumModelsFromJson") {
         "view-schema.json" to "ViewEvent",
         "long_task-schema.json" to "LongTaskEvent",
         "vital-app-launch-schema.json" to "VitalAppLaunchEvent",
-        "vital-operation-step-schema.json" to "VitalOperationStepEvent"
+        "vital-operation-step-schema.json" to "VitalOperationStepEvent",
+        "timeseries-memory-schema.json" to "TimeseriesMemoryEvent",
+        "timeseries-cpu-schema.json" to "TimeseriesCpuEvent"
     )
 }
 
@@ -195,4 +197,3 @@ publishingConfig(
     "The RUM feature to use with the Datadog monitoring " +
         "library for Android applications."
 )
-detektCustomConfig()

@@ -2103,7 +2103,7 @@ internal class RumSessionScopeTest {
 
         // When
         testedScope.handleEvent(
-            RumRawEvent.StopSession(),
+            RumRawEvent.StopSession(eventTime = currentFakeTime()),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -2232,7 +2232,7 @@ internal class RumSessionScopeTest {
         whenever(mockTimeseriesFactory.create(any(), any(), any())) doReturn secondTimeseries
 
         // When
-        testedScope.handleEvent(RumRawEvent.ResetSession(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(RumRawEvent.ResetSession(eventTime = currentFakeTime()), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         verify(firstTimeseries).onSessionStart()
@@ -2263,7 +2263,7 @@ internal class RumSessionScopeTest {
     @Test
     fun `M not stop timeseries W handleEvent { StopSession, no tracked session }`() {
         // When
-        testedScope.handleEvent(RumRawEvent.StopSession(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(RumRawEvent.StopSession(eventTime = currentFakeTime()), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         verifyNoInteractions(mockTimeseries)

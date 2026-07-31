@@ -235,7 +235,8 @@ internal class RumApplicationScopeTest {
         testedScope.handleEvent(
             RumRawEvent.StartView(
                 key = RumScopeKey.from(viewKey, viewName),
-                attributes = emptyMap()
+                attributes = emptyMap(),
+                eventTime = fakeEventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,
@@ -255,14 +256,15 @@ internal class RumApplicationScopeTest {
         testedScope.handleEvent(
             RumRawEvent.StartView(
                 key = RumScopeKey.from(viewKey, viewName),
-                attributes = emptyMap()
+                attributes = emptyMap(),
+                eventTime = fakeEventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
         )
         testedScope.handleEvent(
-            RumRawEvent.StopSession(),
+            RumRawEvent.StopSession(fakeEventTime),
             fakeDatadogContext,
             mockEventWriteScope,
             mockWriter
@@ -272,7 +274,8 @@ internal class RumApplicationScopeTest {
         testedScope.handleEvent(
             RumRawEvent.StartView(
                 key = RumScopeKey.from(viewKey, viewName),
-                attributes = emptyMap()
+                attributes = emptyMap(),
+                eventTime = fakeEventTime
             ),
             fakeDatadogContext,
             mockEventWriteScope,

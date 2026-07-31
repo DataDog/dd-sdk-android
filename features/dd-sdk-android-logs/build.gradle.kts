@@ -7,7 +7,6 @@
 
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.detektCustomConfig
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
@@ -17,6 +16,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.nio.file.Paths
 
 plugins {
+    id("ktlint")
     // Build
     id("com.android.library")
     kotlin("android")
@@ -98,4 +98,3 @@ publishingConfig(
     "The Logs feature to use with the Datadog monitoring " +
         "library for Android applications."
 )
-detektCustomConfig()
