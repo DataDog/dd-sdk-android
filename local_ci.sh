@@ -108,7 +108,7 @@ if [[ $ANALYSIS == 1 ]]; then
     DEPS_CHANGED=$(git diff --name-only develop... -- 'gradle/libs.versions.toml' '**/build.gradle.kts' || true)
   fi
   if [ -n "$DEPS_CHANGED" ]; then
-    ./gradlew checkDependencyLicenses
+    ./gradlew checkDependencyLicenses --no-configuration-cache
   else
     echo "  No dependency changes"
   fi
