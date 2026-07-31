@@ -166,7 +166,8 @@ analysis:generated-files-check:
   timeout: 30m
   script:
     - !reference [.snippets, setup-gradle]
-    - ./gradlew checkGeneratedFiles
+    # TODO RUM-17809: configuration cache not supported by gradle-dependency-license-plugin; re-enable once fixed
+    - ./gradlew checkGeneratedFiles --no-configuration-cache
 
 analysis:ktlint:
   extends:
