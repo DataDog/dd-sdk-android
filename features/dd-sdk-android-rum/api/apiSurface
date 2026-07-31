@@ -356,10 +356,11 @@ abstract class com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrateg
   override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
   override fun onActivityResumed(android.app.Activity)
   protected fun <T> withSdkCore((com.datadog.android.api.feature.FeatureSdkCore) -> T): T?
-class com.datadog.android.rum.tracking.ActivityViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
+class com.datadog.android.rum.tracking.ActivityViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy, com.datadog.android.rum.internal.tracking.ReplayableViewTrackingStrategy
   constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
   override fun onActivityResumed(android.app.Activity)
   override fun onActivityStopped(android.app.Activity)
+  override fun onLateActivityReady(android.app.Activity)
   override fun equals(Any?): Boolean
   override fun hashCode(): Int
 fun android.os.Bundle?.convertToRumViewAttributes(): Map<String, Any?>
@@ -380,11 +381,12 @@ class com.datadog.android.rum.tracking.MixedViewTrackingStrategy : ActivityLifec
   override fun unregister(android.content.Context?)
   override fun equals(Any?): Boolean
   override fun hashCode(): Int
-class com.datadog.android.rum.tracking.NavigationViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy, androidx.navigation.NavController.OnDestinationChangedListener
+class com.datadog.android.rum.tracking.NavigationViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy, androidx.navigation.NavController.OnDestinationChangedListener, com.datadog.android.rum.internal.tracking.ReplayableViewTrackingStrategy
   constructor(Int, Boolean, ComponentPredicate<androidx.navigation.NavDestination> = AcceptAllNavDestinations())
   override fun onActivityStarted(android.app.Activity)
   override fun onActivityStopped(android.app.Activity)
   override fun onActivityPaused(android.app.Activity)
+  override fun onLateActivityReady(android.app.Activity)
   override fun onDestinationChanged(androidx.navigation.NavController, androidx.navigation.NavDestination, android.os.Bundle?)
   fun startTracking()
   fun stopTracking()

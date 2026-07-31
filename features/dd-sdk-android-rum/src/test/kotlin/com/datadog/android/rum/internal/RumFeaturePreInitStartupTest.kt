@@ -373,7 +373,7 @@ internal class RumFeaturePreInitStartupTest {
 
         // Then — view tracking strategy is primed before startup events so the RUM executor
         // has a StartView in the queue before AppStart/TTID
-        verify(mockNavStrategy).onActivityStarted(mockActivity)
+        verify(mockNavStrategy).onLateActivityReady(mockActivity)
         verify(mockRumMonitor, times(1)).sendAppStartEvent(any())
         verify(mockRumMonitor, times(1)).sendTTIDEvent(any())
     }
@@ -408,7 +408,7 @@ internal class RumFeaturePreInitStartupTest {
         testedFeature.pendingPreLaunchAction?.invoke()
 
         // Then
-        verify(mockActivityStrategy).onActivityResumed(mockActivity)
+        verify(mockActivityStrategy).onLateActivityReady(mockActivity)
         verify(mockRumMonitor, times(1)).sendAppStartEvent(any())
         verify(mockRumMonitor, times(1)).sendTTIDEvent(any())
     }
