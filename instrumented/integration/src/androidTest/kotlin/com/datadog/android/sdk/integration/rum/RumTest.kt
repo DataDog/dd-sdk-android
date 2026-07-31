@@ -58,10 +58,17 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
                     rumPayload
                         .forEach {
                             if (it.isEventRelatedToApplicationLaunch) {
+                                // All ApplicationLaunch full views (initial and closing) are kept.
+                                // reduceViewEvents() retains the highest docVersion per viewId,
+                                // which is the closing view and satisfies the exact docVersion check.
                                 sentLaunchEvents += it
                             } else if (it.isViewUpdateEventRelatedToApplicationLaunch) {
                                 sentLaunchUpdateEvents += it
-                            } else if (it.isViewEvent) {
+                            } else if (it.isViewEvent && !it.isClosingViewEvent && !it.isPeriodicCheckpointFullView) {
+                                // Exclude closing views (is_active=false): they would win in
+                                // reduceViewEvents() and fail the session.is_active=true assertion.
+                                // Exclude periodic checkpoint views (docVersion%4==0, is_active=true):
+                                // they are mid-session snapshots covered by reliability tests.
                                 sentViewEvents += it
                             } else if (it.isViewUpdateEvent) {
                                 sentViewUpdateEvents += it
@@ -143,6 +150,21 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
     private val JsonObject.isViewEvent
         get() = get("type")?.asString == "view"
 
+    private val JsonObject.isClosingViewEvent
+        get() = isViewEvent &&
+            has("view") &&
+            getAsJsonObject("view").has("is_active") &&
+            !getAsJsonObject("view").get("is_active").asBoolean
+
+    // Full ViewEvents emitted as periodic checkpoints (docVersion % FULL_VIEW_EVERY_N_UPDATES == 0, is_active=true).
+    private val JsonObject.isPeriodicCheckpointFullView
+        get() = isViewEvent &&
+            has("_dd") &&
+            has("view") &&
+            getAsJsonObject("view").get("is_active")?.asBoolean != false &&
+            getAsJsonObject("_dd").get("document_version")?.asLong
+                ?.let { it % FULL_VIEW_EVERY_N_UPDATES == 0L } == true
+
     private val JsonObject.isViewUpdateEvent
         get() = get("type")?.asString == "view_update"
 
@@ -210,5 +232,8 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
 
     companion object {
         internal val FINAL_WAIT_MS = TimeUnit.SECONDS.toMillis(60)
+
+        // Keep in sync with RumViewEventWriterImpl.FULL_VIEW_EVERY_N_UPDATES.
+        private const val FULL_VIEW_EVERY_N_UPDATES = 4L
     }
 }

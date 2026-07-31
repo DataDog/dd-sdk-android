@@ -141,7 +141,7 @@ class ManualTrackingRumTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(2)
+            .hasSize(3)
             .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -176,6 +176,12 @@ class ManualTrackingRumTest {
                     hasNoOptionalViewFields()
                 }
                 hasNoOptionalFields()
+            }
+            .hasRumEvent(index = 2) {
+                // Full view checkpoint (closing)
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasViewIsActive(false)
             }
     }
 
@@ -267,7 +273,7 @@ class ManualTrackingRumTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(4)
+            .hasSize(5)
             .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -339,6 +345,12 @@ class ManualTrackingRumTest {
                 }
                 hasNoOptionalFields()
             }
+            .hasRumEvent(index = 4) {
+                // Full view checkpoint (closing)
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasViewIsActive(false)
+            }
     }
 
     @Test
@@ -363,7 +375,7 @@ class ManualTrackingRumTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(5)
+            .hasSize(6)
             .hasRumEvent(index = 0) {
                 // Initial view
                 hasService(stubSdkCore.getDatadogContext().service)
@@ -424,7 +436,7 @@ class ManualTrackingRumTest {
                 hasActionName(actionName2)
             }
             .hasRumViewUpdateEvent(index = 4) {
-                // View updated with second action
+                // View updated with second action (diff part of DiffThenFullView at docVersion=4)
                 application { hasId(fakeApplicationId) }
                 session {
                     hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
@@ -447,6 +459,12 @@ class ManualTrackingRumTest {
                     hasNoOptionalViewFields()
                 }
                 hasNoOptionalFields()
+            }
+            .hasRumEvent(index = 5) {
+                // Full view checkpoint at docVersion=4
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasViewIsActive(true)
             }
     }
 
@@ -471,7 +489,7 @@ class ManualTrackingRumTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(4)
+            .hasSize(5)
             .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -542,6 +560,12 @@ class ManualTrackingRumTest {
                 }
                 hasNoOptionalFields()
             }
+            .hasRumEvent(index = 4) {
+                // Full view checkpoint (closing)
+                hasType("view")
+                hasViewUrl(viewKey)
+                hasViewIsActive(false)
+            }
     }
 
     @RepeatedTest(16)
@@ -567,7 +591,7 @@ class ManualTrackingRumTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(4)
+            .hasSize(5)
             .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -638,6 +662,12 @@ class ManualTrackingRumTest {
                     hasNoOptionalViewFields()
                 }
                 hasNoOptionalFields()
+            }
+            .hasRumEvent(index = 4) {
+                // Full view checkpoint (closing)
+                hasType("view")
+                hasViewUrl(key)
+                hasViewIsActive(false)
             }
     }
 
@@ -666,7 +696,7 @@ class ManualTrackingRumTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(4)
+            .hasSize(5)
             .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -737,6 +767,12 @@ class ManualTrackingRumTest {
                     hasNoOptionalViewFields()
                 }
                 hasNoOptionalFields()
+            }
+            .hasRumEvent(index = 4) {
+                // Full view checkpoint (closing)
+                hasType("view")
+                hasViewUrl(key)
+                hasViewIsActive(false)
             }
     }
 
@@ -820,7 +856,7 @@ class ManualTrackingRumTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(2)
+            .hasSize(3)
             .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -857,6 +893,12 @@ class ManualTrackingRumTest {
                 }
                 hasNoOptionalFields()
             }
+            .hasRumEvent(index = 2) {
+                // Full view checkpoint (closing)
+                hasType("view")
+                hasViewUrl(key)
+                hasViewIsActive(false)
+            }
     }
 
     @OptIn(ExperimentalRumApi::class)
@@ -881,7 +923,7 @@ class ManualTrackingRumTest {
         val expectedSecondViewLoadingTime = TimeUnit.MILLISECONDS.toNanos(100)
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
         assertThat(eventsWritten)
-            .hasSize(3)
+            .hasSize(4)
             .hasRumEvent(index = 0) {
                 hasService(stubSdkCore.getDatadogContext().service)
                 hasApplicationId(fakeApplicationId)
@@ -919,6 +961,7 @@ class ManualTrackingRumTest {
                 hasNoOptionalFields()
             }
             .hasRumViewUpdateEvent(index = 2) {
+                // diff part of DiffThenFullView at docVersion=4
                 application { hasId(fakeApplicationId) }
                 session {
                     hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
@@ -944,6 +987,12 @@ class ManualTrackingRumTest {
                     hasNoOptionalViewFields()
                 }
                 hasNoOptionalFields()
+            }
+            .hasRumEvent(index = 3) {
+                // Full view checkpoint at docVersion=4
+                hasType("view")
+                hasViewUrl(key)
+                hasViewIsActive(true)
             }
     }
 
