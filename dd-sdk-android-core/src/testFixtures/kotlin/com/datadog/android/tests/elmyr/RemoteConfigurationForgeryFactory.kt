@@ -66,7 +66,7 @@ class RemoteConfigurationForgeryFactory : ForgeryFactory<RemoteConfiguration> {
                         aList {
                             RemoteConfiguration.TracedHost(
                                 host = anAlphabeticalString(),
-                                propagatorTypes = aList(size = aPositiveInt(strict = true)) {
+                                propagatorTypes = aList(size = anInt(min = 1, max = 4)) {
                                     aValueFrom(RemoteConfiguration.PropagatorType::class.java)
                                 }
                             )
