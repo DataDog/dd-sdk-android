@@ -17,8 +17,6 @@ class RemoteConfigurationForgeryFactory : ForgeryFactory<RemoteConfiguration> {
             rum = forge.aNullable {
                 RemoteConfiguration.Rum(
                     applicationId = getForgery<UUID>().toString(),
-                    service = aNullable { anAlphabeticalString() },
-                    env = aNullable { anAlphabeticalString() },
                     telemetrySampleRate = aNullable { anInt(min = 0, max = 100) },
                     trackAnonymousUser = aNullable { aBool() },
                     trackUserInteractions = aNullable { aBool() },
@@ -41,7 +39,6 @@ class RemoteConfigurationForgeryFactory : ForgeryFactory<RemoteConfiguration> {
             sessionReplay = forge.aNullable {
                 RemoteConfiguration.SessionReplay(
                     sampleRate = aNullable { anInt(min = 0, max = 100) },
-                    startRecordingImmediately = aNullable { aBool() },
                     textAndInputPrivacy = aNullable {
                         aValueFrom(RemoteConfiguration.TextAndInputPrivacy::class.java)
                     },
@@ -69,14 +66,11 @@ class RemoteConfigurationForgeryFactory : ForgeryFactory<RemoteConfiguration> {
                         aList {
                             RemoteConfiguration.TracedHost(
                                 host = anAlphabeticalString(),
-                                propagatorTypes = aNullable {
-                                    aList { aValueFrom(RemoteConfiguration.TracingHeaderType::class.java) }
+                                propagatorTypes = aList(size = aPositiveInt(strict = true)) {
+                                    aValueFrom(RemoteConfiguration.PropagatorType::class.java)
                                 }
                             )
                         }
-                    },
-                    tracingHeaderTypes = aNullable {
-                        aList { aValueFrom(RemoteConfiguration.TracingHeaderType::class.java) }
                     }
                 )
             }

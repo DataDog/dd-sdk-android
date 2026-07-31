@@ -100,55 +100,6 @@ internal class SessionReplayConfigurationExtTest {
 
     // endregion
 
-    // region startRecordingImmediately
-
-    @Test
-    fun `M override startRecordingImmediately W applyRemoteConfiguration { RC provides true }`() {
-        // Given
-        val baseline = testedConfiguration.copy(startRecordingImmediately = false)
-        val fakeRc = RemoteConfiguration(
-            sessionReplay = RemoteConfiguration.SessionReplay(startRecordingImmediately = true)
-        )
-
-        // When
-        val result = baseline.applyRemoteConfiguration(fakeRc)
-
-        // Then
-        assertThat(result.startRecordingImmediately).isTrue()
-    }
-
-    @Test
-    fun `M override startRecordingImmediately W applyRemoteConfiguration { RC provides false }`() {
-        // Given
-        val baseline = testedConfiguration.copy(startRecordingImmediately = true)
-        val fakeRc = RemoteConfiguration(
-            sessionReplay = RemoteConfiguration.SessionReplay(startRecordingImmediately = false)
-        )
-
-        // When
-        val result = baseline.applyRemoteConfiguration(fakeRc)
-
-        // Then
-        assertThat(result.startRecordingImmediately).isFalse()
-    }
-
-    @Test
-    fun `M keep existing startRecordingImmediately W applyRemoteConfiguration { RC omits it }`() {
-        // Given
-        val fakeRc = RemoteConfiguration(
-            sessionReplay = RemoteConfiguration.SessionReplay(startRecordingImmediately = null)
-        )
-        val expectedValue = testedConfiguration.startRecordingImmediately
-
-        // When
-        val result = testedConfiguration.applyRemoteConfiguration(fakeRc)
-
-        // Then
-        assertThat(result.startRecordingImmediately).isEqualTo(expectedValue)
-    }
-
-    // endregion
-
     // region textAndInputPrivacy
 
     @Test

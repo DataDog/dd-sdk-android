@@ -26,7 +26,6 @@ internal fun SessionReplayConfiguration.applyRemoteConfiguration(
     val sr = rc?.sessionReplay ?: return this
     return copy(
         sampleRate = sr.sampleRate?.toFloat() ?: sampleRate,
-        startRecordingImmediately = sr.startRecordingImmediately ?: startRecordingImmediately,
         textAndInputPrivacy = sr.textAndInputPrivacy?.toSdkPrivacy() ?: textAndInputPrivacy,
         imagePrivacy = sr.imagePrivacy?.toSdkPrivacy() ?: imagePrivacy,
         touchPrivacy = sr.touchPrivacy?.toSdkPrivacy() ?: touchPrivacy
