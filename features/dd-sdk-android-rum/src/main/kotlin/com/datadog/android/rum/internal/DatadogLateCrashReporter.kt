@@ -18,6 +18,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.persistence.Deserializer
+import com.datadog.android.core.internal.utils.DdTagsUtils
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.anr.AndroidTraceParser
@@ -25,13 +26,13 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEventDeserializer
 import com.datadog.android.rum.internal.domain.scope.toErrorSchemaType
 import com.datadog.android.rum.internal.domain.scope.tryFromSource
-import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.google.gson.JsonObject
 import java.io.IOException
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import kotlin.math.abs
 
 internal class DatadogLateCrashReporter(
     private val sdkCore: InternalSdkCore,
@@ -133,7 +134,11 @@ internal class DatadogLateCrashReporter(
                 if (lastViewEvent.session.id == datadogContext.rumSessionId) return@withWriteContext
 
                 val lastFatalAnrSent = sdkCore.lastFatalAnrSent
-                if (anrExitInfo.timestamp == lastFatalAnrSent) return@withWriteContext
+                if (lastFatalAnrSent != null &&
+                    abs(anrExitInfo.timestamp - lastFatalAnrSent) <= FATAL_ANR_DEDUP_TOLERANCE_MS
+                ) {
+                    return@withWriteContext
+                }
 
                 val threadDumps = readThreadsDump(anrExitInfo)
                 if (threadDumps.isEmpty()) return@withWriteContext
@@ -182,14 +187,14 @@ internal class DatadogLateCrashReporter(
         threadDumps: List<ThreadDump>?,
         viewEvent: ViewEvent
     ): ErrorEvent {
-        val connectivity = viewEvent.connectivity?.let {
+        val connectivity = viewEvent.connectivity?.let { viewConnectivity ->
             val connectivityStatus =
-                ErrorEvent.ConnectivityStatus.valueOf(it.status.name)
+                ErrorEvent.ConnectivityStatus.valueOf(viewConnectivity.status.name)
             val connectivityInterfaces =
-                it.interfaces?.map { ErrorEvent.Interface.valueOf(it.name) }
+                viewConnectivity.interfaces?.map { ErrorEvent.Interface.valueOf(it.name) }
             val cellular = ErrorEvent.Cellular(
-                it.cellular?.technology,
-                it.cellular?.carrierName
+                viewConnectivity.cellular?.technology,
+                viewConnectivity.cellular?.carrierName
             )
             ErrorEvent.Connectivity(connectivityStatus, connectivityInterfaces, cellular = cellular)
         }
@@ -285,7 +290,7 @@ internal class DatadogLateCrashReporter(
             featureFlags = viewEvent.featureFlags?.let {
                 ErrorEvent.Context(additionalProperties = it.additionalProperties)
             },
-            ddtags = buildDDTagsString(datadogContext)
+            ddtags = DdTagsUtils.toDdTagsString(datadogContext)
         )
     }
 
@@ -388,5 +393,12 @@ internal class DatadogLateCrashReporter(
         internal const val OPEN_ANR_TRACE_ERROR = "Cannot open trace for the last known exit reason."
 
         internal val VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD = TimeUnit.HOURS.toMillis(4)
+
+        // Profiling reports an ANR via in-session addError using `detectedAtMs` (in-process
+        // detection time), while the next-launch path reads `ApplicationExitInfo.timestamp`
+        // (process death time). These come from different moments and won't match exactly,
+        // so dedup is done with a tolerance window: any marker within this window of the
+        // exit-info timestamp is treated as the same ANR.
+        internal const val FATAL_ANR_DEDUP_TOLERANCE_MS = 10_000L
     }
 }

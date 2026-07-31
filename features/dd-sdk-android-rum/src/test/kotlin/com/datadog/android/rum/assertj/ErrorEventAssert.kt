@@ -691,6 +691,36 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
+    fun hasProfilingStatus(profilingStatus: ErrorEvent.ProfilingStatus?): ErrorEventAssert {
+        assertThat(actual.dd.profiling?.status)
+            .overridingErrorMessage(
+                "Expected RUM event to have profiling status: $profilingStatus" +
+                    " but instead was: ${actual.dd.profiling?.status}"
+            )
+            .isEqualTo(profilingStatus)
+        return this
+    }
+
+    fun hasProfilingClockDrift(expected: Number?): ErrorEventAssert {
+        assertThat(actual.dd.profiling?.clockDrift)
+            .overridingErrorMessage(
+                "Expected RUM event to have profiling clock_drift: $expected" +
+                    " but instead was: ${actual.dd.profiling?.clockDrift}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasNoProfiling(): ErrorEventAssert {
+        assertThat(actual.dd.profiling)
+            .overridingErrorMessage(
+                "Expected RUM event to have no profiling" +
+                    " but instead was: ${actual.dd.profiling}"
+            )
+            .isNull()
+        return this
+    }
+
     companion object {
         internal const val TIMESTAMP_THRESHOLD_MS = 50L
         internal fun assertThat(actual: ErrorEvent): ErrorEventAssert =

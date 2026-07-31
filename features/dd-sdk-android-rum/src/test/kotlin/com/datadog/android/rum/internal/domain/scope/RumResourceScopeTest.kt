@@ -145,7 +145,8 @@ internal class RumResourceScopeTest {
     private var fakeServerOffset: Long = 0L
     private var fakeSampleRate: Float = 0.0f
 
-    private lateinit var fakeEventTime: Time
+    @Forgery
+    lateinit var fakeEventTime: Time
     private var fakeSourceResourceEvent: ResourceEvent.ResourceEventSource? = null
     private var fakeSourceErrorEvent: ErrorEvent.ErrorEventSource? = null
 
@@ -187,7 +188,6 @@ internal class RumResourceScopeTest {
             null
         }
 
-        fakeEventTime = Time()
         val maxLimit = Long.MAX_VALUE - fakeEventTime.timestamp
         val minLimit = -fakeEventTime.timestamp
         fakeServerOffset =
@@ -1115,7 +1115,7 @@ internal class RumResourceScopeTest {
         expectedAttributes.putAll(attributes)
 
         // When
-        mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing)
+        mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing, eventTime = fakeEventTime)
         val resultTiming = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         mockEvent =
             RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
@@ -1194,7 +1194,7 @@ internal class RumResourceScopeTest {
         expectedAttributes.putAll(attributes)
 
         // When
-        mockEvent = RumRawEvent.AddResourceTiming("not_the_$fakeKey", timing)
+        mockEvent = RumRawEvent.AddResourceTiming("not_the_$fakeKey", timing, eventTime = fakeEventTime)
         val resultTiming = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         mockEvent =
             RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
@@ -2545,7 +2545,7 @@ internal class RumResourceScopeTest {
         expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
-        mockEvent = RumRawEvent.WaitForResourceTiming(fakeKey)
+        mockEvent = RumRawEvent.WaitForResourceTiming(fakeKey, eventTime = fakeEventTime)
         val resultWaitForTiming =
             testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         mockEvent =
@@ -2573,7 +2573,7 @@ internal class RumResourceScopeTest {
         expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
-        mockEvent = RumRawEvent.WaitForResourceTiming("not_the_$fakeKey")
+        mockEvent = RumRawEvent.WaitForResourceTiming("not_the_$fakeKey", eventTime = fakeEventTime)
         val resultWaitForTiming =
             testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         mockEvent =
@@ -2645,10 +2645,10 @@ internal class RumResourceScopeTest {
         expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
-        mockEvent = RumRawEvent.WaitForResourceTiming(fakeKey)
+        mockEvent = RumRawEvent.WaitForResourceTiming(fakeKey, eventTime = fakeEventTime)
         val resultWaitForTiming =
             testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-        mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing)
+        mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing, eventTime = fakeEventTime)
         val resultTiming = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         mockEvent =
             RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
@@ -2720,10 +2720,10 @@ internal class RumResourceScopeTest {
         expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
-        mockEvent = RumRawEvent.WaitForResourceTiming(fakeKey)
+        mockEvent = RumRawEvent.WaitForResourceTiming(fakeKey, eventTime = fakeEventTime)
         val resultWaitForTiming =
             testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, eventTime = fakeEventTime)
         val resultStop = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing, timeWithOffset(RESOURCE_DURATION_MS))
         val resultTiming = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -2797,12 +2797,13 @@ internal class RumResourceScopeTest {
                     to forge.getForgery(ResourceTiming::class.java).asTimingsPayload()
             )
 
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
 
         // When
         testedScope
             .handleEvent(
-                RumRawEvent.AddResourceTiming(fakeKey, timing = timing),
+                RumRawEvent.AddResourceTiming(fakeKey, timing = timing, eventTime = fakeEventTime),
                 fakeDatadogContext,
                 mockEventWriteScope,
                 mockWriter
@@ -2828,7 +2829,8 @@ internal class RumResourceScopeTest {
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
             mapOf("_dd.resource_timings" to timing.asTimingsPayload())
 
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
 
         // When
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3006,7 +3008,8 @@ internal class RumResourceScopeTest {
                 RumAttributes.GRAPHQL_VARIABLES to variables
             )
 
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
 
         // When
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3040,7 +3043,8 @@ internal class RumResourceScopeTest {
                 RumAttributes.GRAPHQL_VARIABLES to variables
             )
 
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
 
         // When
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3078,7 +3082,8 @@ internal class RumResourceScopeTest {
                 RumAttributes.GRAPHQL_PAYLOAD to originalPayload
             )
 
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
 
         // When
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3119,7 +3124,8 @@ internal class RumResourceScopeTest {
                 RumAttributes.GRAPHQL_VARIABLES to variables
             )
 
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
 
         // When
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3152,7 +3158,8 @@ internal class RumResourceScopeTest {
                 RumAttributes.GRAPHQL_VARIABLES to variables
             )
 
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
 
         // When
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3189,7 +3196,8 @@ internal class RumResourceScopeTest {
                 RumAttributes.GRAPHQL_VARIABLES to variables
             )
 
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
 
         // When
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3227,7 +3235,8 @@ internal class RumResourceScopeTest {
                 RumAttributes.GRAPHQL_VARIABLES to variables
             )
 
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
 
         // When
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3252,7 +3261,7 @@ internal class RumResourceScopeTest {
         val operationName = forge.aNullable { aString() }
         val variables = forge.aNullable { aString() }
 
-        // Create a payload with multi-byte UTF-8 characters that exceeds the limit
+        // Create a payload with multibyte UTF-8 characters that exceeds the limit
         // Create base payload that's close to but under the byte limit (leave room for emojis)
         val baseSizeBytes = RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES - 150
         val basePayload = forge.aString(size = baseSizeBytes) // 1 byte per char in UTF-8
@@ -3276,7 +3285,8 @@ internal class RumResourceScopeTest {
                 RumAttributes.GRAPHQL_VARIABLES to variables
             )
 
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
 
         // When
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3295,7 +3305,7 @@ internal class RumResourceScopeTest {
             assertThat(actualPayload.toByteArray(Charsets.UTF_8).size)
                 .isLessThanOrEqualTo(RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES)
 
-            // Verify the truncated string is valid UTF-8 (no broken multi-byte sequences)
+            // Verify the truncated string is valid UTF-8 (no broken multibyte sequences)
             assertThat(actualPayload.toByteArray(Charsets.UTF_8).toString(Charsets.UTF_8))
                 .isEqualTo(actualPayload)
 
@@ -3342,7 +3352,8 @@ internal class RumResourceScopeTest {
                 RumAttributes.GRAPHQL_VARIABLES to variables
             )
 
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
 
         // When
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3404,11 +3415,11 @@ internal class RumResourceScopeTest {
         // Miscellaneous Symbols and Pictographs block (4 bytes per char in UTF-8)
         val emojiStart = 0x1F300 // 🌀
         val emojiEnd = 0x1F5FF // 🗿
-        val emoji = (1..5).map {
+        val emoji = (1..5).joinToString("") {
             String(
                 Character.toChars(forge.anInt(min = emojiStart, max = emojiEnd))
             )
-        }.joinToString("")
+        }
         val mixedSuffix = ascii + accented + cjk + emoji
         val originalPayload = basePayload + mixedSuffix.repeat(10) // Repeat to ensure we exceed limit
 
@@ -3420,7 +3431,8 @@ internal class RumResourceScopeTest {
                 RumAttributes.GRAPHQL_VARIABLES to variables
             )
 
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
 
         // When
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3478,7 +3490,8 @@ internal class RumResourceScopeTest {
                 RumAttributes.GRAPHQL_VARIABLES to variables
             )
 
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
 
         // When
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3513,7 +3526,8 @@ internal class RumResourceScopeTest {
                 RumAttributes.GRAPHQL_ERRORS to errorsJson
             )
 
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
 
         // When
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3555,7 +3569,8 @@ internal class RumResourceScopeTest {
                 RumAttributes.GRAPHQL_ERRORS to errorsJson
             )
 
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
 
         // When
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3591,7 +3606,8 @@ internal class RumResourceScopeTest {
                 RumAttributes.GRAPHQL_VARIABLES to variables
             )
 
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
 
         // When
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3623,7 +3639,8 @@ internal class RumResourceScopeTest {
                 RumAttributes.GRAPHQL_ERRORS to ""
             )
 
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
 
         // When
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3655,7 +3672,8 @@ internal class RumResourceScopeTest {
                 RumAttributes.GRAPHQL_ERRORS to "not valid json"
             )
 
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
 
         // When
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3855,9 +3873,8 @@ internal class RumResourceScopeTest {
         // Given
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
 
-        // Wait to ensure duration > 0
-        Thread.sleep(RESOURCE_DURATION_MS)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
 
         // When
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3872,7 +3889,7 @@ internal class RumResourceScopeTest {
 
     private fun mockEvent(): RumRawEvent {
         val event: RumRawEvent = mock()
-        whenever(event.eventTime) doReturn Time()
+        whenever(event.eventTime) doReturn fakeEventTime
         return event
     }
 
@@ -3925,7 +3942,8 @@ internal class RumResourceScopeTest {
                 }
         }
 
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
 
         // When
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3956,7 +3974,8 @@ internal class RumResourceScopeTest {
                 RumAttributes.REQUEST_HEADERS to requestHeaders,
                 RumAttributes.RESPONSE_HEADERS to responseHeaders
             )
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
 
         // When
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3979,7 +3998,8 @@ internal class RumResourceScopeTest {
     ) {
         // Given
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
 
         // When
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -4008,7 +4028,8 @@ internal class RumResourceScopeTest {
                 RumAttributes.REQUEST_HEADERS to requestHeaders,
                 RumAttributes.RESPONSE_HEADERS to responseHeaders
             )
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes, timeWithOffset(RESOURCE_DURATION_MS))
 
         // When
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)

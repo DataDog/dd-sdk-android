@@ -3,17 +3,21 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
+@file:Suppress("StringLiteralDuplication")
 
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.detektCustomConfig
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.publishingConfig
+import com.datadog.gradle.utils.cloneRumEventsFormat
+import com.datadog.gradle.utils.createJsonModelsGenerationTask
+import com.datadog.gradle.utils.createRumSchemaCloneTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
+    id("ktlint")
     // Build
     id("com.android.library")
     kotlin("android")
@@ -30,16 +34,23 @@ plugins {
     // Tests
     id("de.mobilej.unmock")
     id("org.jetbrains.kotlinx.kover")
+    id("unitTest")
 
     // Internal Generation
     id("apiSurface")
     id("transitiveDependencies")
     id("verificationXml")
     id("binary-compatibility-validator")
+    id("detekt-conventions")
+    id("test-pyramid-api-surface")
 }
 
 android {
     namespace = "com.datadog.android.profiling"
+
+    testFixtures {
+        enable = true
+    }
 }
 
 dependencies {
@@ -65,9 +76,12 @@ dependencies {
 
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(testFixtures(project(":dd-sdk-android-internal")))
-    testImplementation(libs.bundles.jUnit5)
-    testImplementation(libs.bundles.testTools)
     unmock(libs.robolectric)
+
+    // Test Fixtures
+    testFixturesImplementation(libs.kotlin)
+    testFixturesImplementation(project(":dd-sdk-android-internal"))
+    testFixturesImplementation(libs.androidXAnnotation)
 }
 
 unMock {
@@ -91,8 +105,25 @@ unMock {
     keepStartingWith("org.json")
 }
 
-apply(from = "clone_profiling_schema.gradle.kts")
-apply(from = "generate_profiling_models.gradle.kts")
+createRumSchemaCloneTask("cloneProfilingSchema") {
+    cloneRumEventsFormat(
+        project = project,
+        subFolder = "schemas/profiling",
+        destinationFolder = "src/main/json/profiling",
+        excludedPrefixes = listOf("browser")
+    )
+}
+
+createJsonModelsGenerationTask("generateProfilingModelsFromJson") {
+    inputDirPath = "src/main/json/profiling/mobile"
+    // watch for changes in the referenced schema
+    extraInputWatchDir = project.layout.projectDirectory.dir("src/main/json/profiling")
+    inputNameMapping = mapOf(
+        "profile-event-schema.json" to "ProfileEvent",
+        "profile-rum-metadata-event-schema.json" to "RumMetadataEvent"
+    )
+    targetPackageName = "com.datadog.android.profiling.model"
+}
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 androidLibraryConfig()
 junitConfig()
@@ -102,4 +133,3 @@ publishingConfig(
     "The Profiling feature to use with the Datadog monitoring " +
         "library for Android applications."
 )
-detektCustomConfig()

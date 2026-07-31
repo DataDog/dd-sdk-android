@@ -6,22 +6,35 @@
 
 package com.datadog.android.profiling.internal
 
+import android.app.Application
 import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
-import com.datadog.android.internal.profiling.ProfilerStopEvent
-import com.datadog.android.internal.profiling.TTIDRumContext
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
+import com.datadog.android.internal.profiling.ProfilerEvent
+import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
+import com.datadog.android.internal.rum.RumSessionConstants
+import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.ProfilingConfiguration
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
+import com.datadog.android.profiling.internal.quota.NoOpQuotaChecker
+import com.datadog.android.profiling.internal.quota.ProfilingQuotaChecker
+import com.datadog.android.profiling.internal.quota.QuotaChecker
+import com.datadog.android.profiling.internal.quota.QuotaResult
+import com.datadog.android.profiling.internal.utils.getProfilingModuleLongVersionCode
 import java.util.Locale
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 @OptIn(ExperimentalProfilingApi::class)
@@ -30,26 +43,49 @@ internal class ProfilingFeature(
     private val sdkCore: FeatureSdkCore,
     private val configuration: ProfilingConfiguration,
     private val profiler: Profiler
-) : StorageBackedFeature, FeatureEventReceiver {
-
-    private var dataWriter: ProfilingWriter = NoOpProfilingWriter()
+) : StorageBackedFeature, FeatureEventReceiver, FeatureContextUpdateReceiver, ProfilerCallback {
 
     @Volatile
-    private var ttidRumContext: TTIDRumContext? = null
+    internal var lastSeenRumSessionId: String? = null
+
+    internal var dataWriter: ProfilingWriter = NoOpProfilingWriter()
+
+    internal val pendingRumEvents = PendingRumEventsBuffer()
+
+    @Volatile
+    private var isLaunchProfilingActive: Boolean = false
 
     @Volatile
     private var perfettoResult: PerfettoResult? = null
 
+    private val isTtidVitalReceived: AtomicBoolean = AtomicBoolean(false)
     private val isTtidProfileSent: AtomicBoolean = AtomicBoolean(false)
+
+    @Volatile
+    internal var quotaChecker: QuotaChecker = NoOpQuotaChecker()
+
+    @Volatile
+    private var quotaExecutor: ExecutorService? = null
 
     private lateinit var appContext: Context
 
+    @Volatile
+    internal var continuousProfilingScheduler: ContinuousProfilingScheduler? = null
+
+    private var processLifecycleMonitor: ProcessLifecycleMonitor? = null
+
+    @Volatile
+    private var lastQuotaResult: QuotaResult? = null
+
     override val requestFactory: RequestFactory = ProfilingRequestFactory(
-        configuration.customEndpointUrl
+        customEndpointUrl = configuration.customEndpointUrl,
+        internalLogger = sdkCore.internalLogger
     )
 
     override val storageConfiguration: FeatureStorageConfiguration
-        get() = FeatureStorageConfiguration.DEFAULT
+        get() = FeatureStorageConfiguration.DEFAULT.copy(
+            maxItemsPerBatch = 1
+        )
 
     override val name: String
         get() = Feature.PROFILING_FEATURE_NAME
@@ -58,55 +94,180 @@ internal class ProfilingFeature(
         this.appContext = appContext
         profiler.apply {
             this.internalLogger = sdkCore.internalLogger
-            registerProfilingCallback(sdkCore.name) { result ->
-                perfettoResult = result
-                tryWriteProfilingEvent()
-                // if profiler stopped before TTID event, still update the status: in such case TTID profiling
-                // is incomplete
-                sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-                    context[PROFILER_IS_RUNNING] = profiler.isRunning(sdkCore.name)
-                }
-            }
+            this.timeProvider.delegate = sdkCore.timeProvider
+            setProfilingPackageVersionCode(
+                appContext.packageManager.getProfilingModuleLongVersionCode(sdkCore.internalLogger)
+            )
+            registerProfilingCallback(appContext, this@ProfilingFeature)
         }
-        setMinimumSampleRate(appContext, configuration.sampleRate)
+        setMinimumSampleRate(appContext, configuration.applicationLaunchSampleRate)
         // Set the profiling flag in SharedPreferences to profile for the next app launch
-        ProfilingStorage.addProfilingFlag(appContext, sdkCore.name)
+        ProfilingStorage.addProfilingFlag(appContext)
+        isLaunchProfilingActive = profiler.isRunning()
         sdkCore.setEventReceiver(name, this)
-        // TODO RUM-13678: we need to update context from the actual profiler start call, not from here
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-            context[PROFILER_IS_RUNNING] = profiler.isRunning(sdkCore.name)
+            context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning()
         }
         dataWriter = createDataWriter(sdkCore)
+
+        val quotaCallFactory = sdkCore.createOkHttpCallFactory {
+            callTimeout(QUOTA_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        }
+        val qExecutor = sdkCore.createSingleThreadExecutorService(QUOTA_EXECUTOR_CONTEXT)
+        quotaExecutor = qExecutor
+        quotaChecker = ProfilingQuotaChecker(
+            callFactory = quotaCallFactory,
+            executor = qExecutor,
+            internalLogger = sdkCore.internalLogger,
+            onResult = ::propagateQuotaResult
+        )
+
+        val scheduler = ContinuousProfilingScheduler(
+            appContext = appContext,
+            profiler = profiler,
+            sdkCore = sdkCore,
+            timeProvider = DefaultTimeProvider(),
+            sampleRate = configuration.continuousSampleRate,
+            onActiveWindowStarted = pendingRumEvents::clear
+        ).apply {
+            start(launchProfilingActive = profiler.isRunning())
+        }
+        continuousProfilingScheduler = scheduler
+
+        sdkCore.setContextUpdateReceiver(this)
+
+        if (appContext is Application) {
+            processLifecycleMonitor = ProcessLifecycleMonitor(ProfilingLifecycleCallback(scheduler)).apply {
+                appContext.registerActivityLifecycleCallbacks(this)
+            }
+        }
     }
 
     override fun onStop() {
+        processLifecycleMonitor?.let { monitor ->
+            (appContext as? Application)?.unregisterActivityLifecycleCallbacks(monitor)
+        }
+        processLifecycleMonitor = null
+        continuousProfilingScheduler?.stop()
         profiler.apply {
-            stop(sdkCore.name)
-            unregisterProfilingCallback(sdkCore.name)
+            stop()
+            unregisterProfilingCallback(appContext)
         }
         sdkCore.removeEventReceiver(name)
+        sdkCore.removeContextUpdateReceiver(this)
+        quotaChecker.reset()
+        quotaChecker = NoOpQuotaChecker()
+        quotaExecutor?.shutdownNow()
+        quotaExecutor = null
+        lastQuotaResult = null
+        lastSeenRumSessionId = null
+        pendingRumEvents.clear()
     }
 
     override fun onReceive(event: Any) {
-        if (event !is ProfilerStopEvent.TTID) {
-            sdkCore.internalLogger.log(
+        when (event) {
+            is ProfilerEvent.TTIDNotTracked -> onTtidEvent()
+
+            is ProfilerEvent.RumVitalEvent -> {
+                if (isRecordingProfile()) {
+                    pendingRumEvents.add(event)
+                }
+
+                if (event.type == ProfilerEvent.RumVitalEvent.Type.TTID) {
+                    onTtidEvent()
+                }
+            }
+
+            is ProfilerEvent.RumLongTaskEvent -> {
+                if (isRecordingProfile()) {
+                    pendingRumEvents.add(event)
+                }
+            }
+
+            is ProfilerEvent.RumAnrEvent -> {
+                if (isRecordingProfile()) {
+                    pendingRumEvents.add(event)
+                }
+            }
+
+            else -> sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
-                { UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName) }
+                {
+                    UNSUPPORTED_EVENT_TYPE.format(
+                        Locale.US,
+                        event::class.java.canonicalName
+                    )
+                }
             )
-            return
         }
+    }
 
-        if (ttidRumContext == null) {
-            ttidRumContext = event.rumContext
-            profiler.stop(sdkCore.name)
+    override fun onSuccess(result: PerfettoResult) {
+        perfettoResult = result
+        tryWriteProfilingEvent()
+        sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
+            context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning()
+        }
+    }
+
+    override fun onFailure(startReason: ProfilingStartReason) {
+        if (startReason == ProfilingStartReason.APPLICATION_LAUNCH) {
+            // Launch profiling ended with error such as rate limiting error.
+            // Unblock the continuous scheduler so it doesn't wait forever.
+            isLaunchProfilingActive = false
+            pendingRumEvents.clear()
+            continuousProfilingScheduler?.onAppLaunchProfilingComplete()
+        } else if (startReason == ProfilingStartReason.CONTINUOUS) {
+            continuousProfilingScheduler?.onActiveWindowEnded()
+        }
+        sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
+            context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning()
+        }
+    }
+
+    override fun onAnrDetected(event: ProfilingAnrDetectedEvent) {
+        // The ANR event should be forwarded to RUM only when profiling is actually running.
+        if (isLaunchProfilingActive || continuousProfilingScheduler?.isActive == true) {
+            sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.sendEvent(event)
+        }
+    }
+
+    private fun onTtidEvent() {
+        if (isTtidVitalReceived.getAndSet(true)) return
+
+        if (continuousProfilingScheduler?.currentSessionSampled != true) {
+            profiler.stop()
             tryWriteProfilingEvent()
             sdkCore.internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
-                { "Profiling stopped with TTID reason" }
+                { LOG_LAUNCH_PROFILING_STOPPED_AT_TTID }
             )
         }
+    }
+
+    override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
+        if (featureName != Feature.RUM_FEATURE_NAME) return
+        val sessionId = context[FeatureContextKeys.RUM_SESSION_ID] as? String
+        if (sessionId == null ||
+            sessionId == RumSessionConstants.EMPTY_RUM_SESSION_ID ||
+            sessionId == lastSeenRumSessionId
+        ) {
+            return
+        }
+        this.lastQuotaResult = null
+        continuousProfilingScheduler?.lastQuotaResult = null
+        val sampleRate = (context[FeatureContextKeys.RUM_SESSION_SAMPLE_RATE] as? Number)?.toFloat()
+            ?: DEFAULT_RUM_SESSION_SAMPLE_RATE
+        lastSeenRumSessionId = sessionId
+        sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.withContext { datadogContext ->
+            quotaChecker.checkAsync(sessionId, datadogContext)
+        }
+        continuousProfilingScheduler?.onRumSessionRenewed(
+            sessionId = sessionId,
+            rumSessionSampleRate = sampleRate
+        )
     }
 
     private fun setMinimumSampleRate(appContext: Context, sampleRate: Float) {
@@ -114,30 +275,125 @@ internal class ProfilingFeature(
         // if old value doesn't exist (we use negative default value in case of absence) or
         // the value is bigger than the sample rate, we update the sample rate.
         if (oldValue !in 0f..sampleRate) {
-            ProfilingStorage.setSampleRate(appContext, configuration.sampleRate)
+            ProfilingStorage.setSampleRate(appContext, configuration.applicationLaunchSampleRate)
         }
     }
 
     @Suppress("ReturnCount")
     private fun tryWriteProfilingEvent() {
-        val perfettoResult = perfettoResult ?: return
-        val ttidRumContext = ttidRumContext ?: return
-        if (perfettoResult.tag != ProfilingStartReason.APPLICATION_LAUNCH.value) return
-        if (!isTtidProfileSent.getAndSet(true)) {
-            dataWriter.write(
-                profilingResult = perfettoResult,
-                ttidRumContext = ttidRumContext
-            )
+        val result = perfettoResult ?: return
+        when (result.startReason) {
+            ProfilingStartReason.APPLICATION_LAUNCH -> {
+                // Wait until both the TTID event and the quota decision have been received before
+                // proceeding — the profiler result, the TTID event and the quota result are all
+                // required. If the quota decision has not arrived yet, hold the buffered result and
+                // return; the quota callback (or the timeout fallback) will re-trigger this write
+                // once it lands. Capture the result once to avoid a re-read race with a concurrent
+                // session renewal resetting it to null.
+                val quotaResult = this.lastQuotaResult ?: return
+                if (isTtidVitalReceived.get() && !isTtidProfileSent.getAndSet(true)) {
+                    isLaunchProfilingActive = false
+                    if (quotaResult.decision == QuotaResult.Decision.DENIED) {
+                        logToUser(
+                            LOG_LAUNCH_PROFILING_DROPPED_QUOTA_DENIED.format(
+                                Locale.US,
+                                quotaResult.reason.rawValue
+                            )
+                        )
+                        dataWriter.discard(result)
+                        pendingRumEvents.clear()
+                    } else {
+                        val (longTasks, anrEvents, vitalEvents) = pendingRumEvents.drain()
+                        dataWriter.write(
+                            profilingResult = result,
+                            longTasks = longTasks,
+                            anrEvents = anrEvents,
+                            vitalEvents = vitalEvents
+                        )
+                    }
+                    // Clear the consumed result so a later quota callback can't re-trigger a write.
+                    perfettoResult = null
+                    continuousProfilingScheduler?.onAppLaunchProfilingComplete()
+                }
+            }
+
+            ProfilingStartReason.CONTINUOUS -> {
+                val scheduler = continuousProfilingScheduler ?: return
+                scheduler.onActiveWindowEnded()
+                val (longTasks, anrEvents, vitalEvents) = pendingRumEvents.drain()
+                dataWriter.write(
+                    profilingResult = result,
+                    longTasks = longTasks,
+                    anrEvents = anrEvents,
+                    vitalEvents = vitalEvents
+                )
+                perfettoResult = null
+                if (longTasks.isEmpty() && anrEvents.isEmpty() && vitalEvents.isEmpty()) {
+                    logToUser(LOG_CONTINUOUS_PROFILING_NOT_UPLOADED_NO_RUM_EVENTS)
+                } else {
+                    logToUser(
+                        LOG_CONTINUOUS_PROFILING_WRITTEN.format(
+                            Locale.US,
+                            longTasks.size,
+                            anrEvents.size
+                        )
+                    )
+                }
+            }
+
+            else -> {
+                // do nothing for the moment
+            }
         }
+    }
+
+    private fun logToUser(message: String) {
+        sdkCore.internalLogger.log(
+            level = InternalLogger.Level.DEBUG,
+            target = InternalLogger.Target.USER,
+            messageBuilder = {
+                message
+            }
+        )
     }
 
     private fun createDataWriter(sdkCore: FeatureSdkCore): ProfilingDataWriter {
         return ProfilingDataWriter(sdkCore)
     }
 
+    internal fun propagateQuotaResult(result: QuotaResult) {
+        this.lastQuotaResult = result
+        continuousProfilingScheduler?.lastQuotaResult = result
+        sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
+            if (result.decision == QuotaResult.Decision.DENIED) {
+                context[FeatureContextKeys.PROFILING_QUOTA_REASON] = result.reason.rawValue
+                context[FeatureContextKeys.PROFILING_QUOTA_SESSION_ID] = lastSeenRumSessionId
+            } else {
+                context.remove(FeatureContextKeys.PROFILING_QUOTA_REASON)
+                context.remove(FeatureContextKeys.PROFILING_QUOTA_SESSION_ID)
+            }
+        }
+        tryWriteProfilingEvent()
+    }
+
+    private fun isRecordingProfile(): Boolean {
+        return isLaunchProfilingActive || continuousProfilingScheduler?.isActive == true
+    }
+
     companion object {
+
+        private const val DEFAULT_RUM_SESSION_SAMPLE_RATE = 0f
         private const val UNSUPPORTED_EVENT_TYPE =
             "Profiling feature received an event of unsupported type=%s."
-        private const val PROFILER_IS_RUNNING = "profiler_is_running"
+        private const val LOG_LAUNCH_PROFILING_STOPPED_AT_TTID =
+            "Launch profiling stopped at TTID."
+        private const val LOG_CONTINUOUS_PROFILING_NOT_UPLOADED_NO_RUM_EVENTS =
+            "Continuous profiling result not uploaded: no pending RUM events."
+        private const val LOG_CONTINUOUS_PROFILING_WRITTEN =
+            "Continuous profiling result written: %d long task(s), %d ANR event(s)."
+        internal const val QUOTA_CHECK_TIMEOUT_MS = 5_000L
+        private const val QUOTA_EXECUTOR_CONTEXT = "dd-profiling-quota"
+        internal const val LOG_LAUNCH_PROFILING_DROPPED_QUOTA_DENIED =
+            "Launch profiling dropped: quota denied (reason=%s)."
     }
 }

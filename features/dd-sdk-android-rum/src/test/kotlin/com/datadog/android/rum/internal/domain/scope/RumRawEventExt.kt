@@ -11,6 +11,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.heatmaps.NativeHeatmapActionData
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.operations.FailureReason
 import com.datadog.tools.unit.forge.aThrowable
@@ -27,7 +28,7 @@ internal fun Forge.interactiveRumRawEvent(): RumRawEvent {
     )
 }
 
-internal fun Forge.startViewEvent(eventTime: Time = Time()): RumRawEvent.StartView {
+internal fun Forge.startViewEvent(eventTime: Time = getForgery()): RumRawEvent.StartView {
     return RumRawEvent.StartView(
         key = getForgery(),
         attributes = exhaustiveAttributes(),
@@ -38,17 +39,23 @@ internal fun Forge.startViewEvent(eventTime: Time = Time()): RumRawEvent.StartVi
 internal fun Forge.stopViewEvent(): RumRawEvent.StopView {
     return RumRawEvent.StopView(
         key = getForgery(),
-        attributes = exhaustiveAttributes()
+        attributes = exhaustiveAttributes(),
+        eventTime = getForgery()
     )
 }
 
-internal fun Forge.startActionEvent(continuous: Boolean? = null, eventTime: Time = Time()): RumRawEvent.StartAction {
+internal fun Forge.startActionEvent(
+    continuous: Boolean? = null,
+    eventTime: Time = getForgery(),
+    nativeHeatmapActionData: NativeHeatmapActionData? = null
+): RumRawEvent.StartAction {
     return RumRawEvent.StartAction(
         type = aValueFrom(RumActionType::class.java),
         name = anAlphabeticalString(),
         waitForStop = continuous ?: aBool(),
-        attributes = exhaustiveAttributes(),
-        eventTime = eventTime
+        nativeHeatmapActionData = nativeHeatmapActionData,
+        eventTime = eventTime,
+        attributes = exhaustiveAttributes()
     )
 }
 
@@ -56,7 +63,8 @@ internal fun Forge.stopActionEvent(): RumRawEvent.StopAction {
     return RumRawEvent.StopAction(
         type = aValueFrom(RumActionType::class.java),
         name = anAlphabeticalString(),
-        attributes = exhaustiveAttributes()
+        attributes = exhaustiveAttributes(),
+        eventTime = getForgery()
     )
 }
 
@@ -65,7 +73,8 @@ internal fun Forge.startResourceEvent(): RumRawEvent.StartResource {
         key = anAlphabeticalString(),
         url = getForgery<URL>().toString(),
         method = aValueFrom(RumResourceMethod::class.java),
-        attributes = exhaustiveAttributes()
+        attributes = exhaustiveAttributes(),
+        eventTime = getForgery()
     )
 }
 
@@ -75,7 +84,8 @@ internal fun Forge.stopResourceEvent(): RumRawEvent.StopResource {
         statusCode = aNullable { aLong(100, 600) },
         size = aNullable { aPositiveLong() },
         kind = aValueFrom(RumResourceKind::class.java),
-        attributes = exhaustiveAttributes()
+        attributes = exhaustiveAttributes(),
+        eventTime = getForgery()
     )
 }
 
@@ -83,7 +93,8 @@ internal fun Forge.startOperationEvent(): RumRawEvent.StartOperation {
     return RumRawEvent.StartOperation(
         name = anAlphabeticalString(),
         operationKey = aNullable { anAlphabeticalString() },
-        attributes = exhaustiveAttributes()
+        attributes = exhaustiveAttributes(),
+        eventTime = getForgery()
     )
 }
 
@@ -91,8 +102,9 @@ internal fun Forge.stopOperationEvent(): RumRawEvent.StopOperation {
     return RumRawEvent.StopOperation(
         name = anAlphabeticalString(),
         operationKey = aNullable { anAlphabeticalString() },
-        failureReason = aNullable { aValueFrom(FailureReason::class.java) },
-        attributes = exhaustiveAttributes()
+        attributes = exhaustiveAttributes(),
+        eventTime = getForgery(),
+        failureReason = aNullable { aValueFrom(FailureReason::class.java) }
     )
 }
 
@@ -103,7 +115,8 @@ internal fun Forge.stopResourceWithErrorEvent(): RumRawEvent.StopResourceWithErr
         source = aValueFrom(RumErrorSource::class.java),
         message = anAlphabeticalString(),
         throwable = aThrowable(),
-        attributes = exhaustiveAttributes()
+        attributes = exhaustiveAttributes(),
+        eventTime = getForgery()
     )
 }
 
@@ -115,7 +128,8 @@ internal fun Forge.stopResourceWithStacktraceEvent(): RumRawEvent.StopResourceWi
         message = anAlphabeticalString(),
         stackTrace = anAlphabeticalString(),
         errorType = aNullable { anAlphabeticalString() },
-        attributes = exhaustiveAttributes()
+        attributes = exhaustiveAttributes(),
+        eventTime = getForgery()
     )
 }
 
@@ -129,23 +143,25 @@ internal fun Forge.addErrorEvent(): RumRawEvent.AddError {
         isFatal = isFatal,
         threads = if (isFatal) aList { getForgery() } else emptyList(),
         timeSinceAppStartNs = if (isFatal) aPositiveLong() else null,
-        attributes = exhaustiveAttributes()
+        attributes = exhaustiveAttributes(),
+        eventTime = getForgery()
     )
 }
 
 internal fun Forge.addViewLoadingTimeEvent(): RumRawEvent.AddViewLoadingTime {
-    return RumRawEvent.AddViewLoadingTime(overwrite = aBool())
+    return RumRawEvent.AddViewLoadingTime(overwrite = aBool(), eventTime = getForgery())
 }
 
 internal fun Forge.addLongTaskEvent(): RumRawEvent.AddLongTask {
     return RumRawEvent.AddLongTask(
         durationNs = aLong(min = 1),
-        target = anAlphabeticalString()
+        target = anAlphabeticalString(),
+        eventTime = getForgery()
     )
 }
 
 internal fun Forge.applicationStartedEvent(): RumRawEvent.ApplicationStarted {
-    val time = Time()
+    val time = getForgery<Time>()
     return RumRawEvent.ApplicationStarted(
         eventTime = time,
         applicationStartupNanos = aLong(min = 0L, max = time.nanoTime)
@@ -153,44 +169,39 @@ internal fun Forge.applicationStartedEvent(): RumRawEvent.ApplicationStarted {
 }
 
 internal fun Forge.sdkInitEvent(): RumRawEvent.SdkInit {
-    val time = Time()
     return RumRawEvent.SdkInit(
         isAppInForeground = aBool(),
-        eventTime = time
+        eventTime = getForgery()
     )
 }
 
 internal fun Forge.updatePerformanceMetricEvent(): RumRawEvent.UpdatePerformanceMetric {
-    val time = Time()
     return RumRawEvent.UpdatePerformanceMetric(
         metric = getForgery(),
         value = aDouble(),
-        eventTime = time
+        eventTime = getForgery()
     )
 }
 
 internal fun Forge.updateExternalRefreshRateEvent(): RumRawEvent.UpdateExternalRefreshRate {
-    val time = Time()
     return RumRawEvent.UpdateExternalRefreshRate(
         frameTimeSeconds = aDouble(),
-        eventTime = time
+        eventTime = getForgery()
     )
 }
 
 internal fun Forge.addFeatureFlagEvaluationEvent(): RumRawEvent.AddFeatureFlagEvaluation {
-    val time = Time()
     return RumRawEvent.AddFeatureFlagEvaluation(
         name = anAlphabeticalString(),
         value = anElementFrom(aString(), anInt(), Any()),
-        eventTime = time
+        eventTime = getForgery()
     )
 }
 
 internal fun Forge.addCustomTimingEvent(): RumRawEvent.AddCustomTiming {
-    val time = Time()
     return RumRawEvent.AddCustomTiming(
         name = anAlphabeticalString(),
-        eventTime = time
+        eventTime = getForgery()
     )
 }
 
@@ -221,22 +232,22 @@ internal fun Forge.invalidBackgroundEvent(): RumRawEvent {
 
 internal fun Forge.anyRumEvent(excluding: List<KClass<out RumRawEvent>> = listOf()): RumRawEvent {
     fun <T : RumRawEvent> strictSameTypePair(key: KClass<T>, value: () -> T) = key to value
-    val allEventsFactories = mapOf<KClass<out RumRawEvent>, () -> RumRawEvent>(
-        strictSameTypePair(RumRawEvent.StartView::class, { startViewEvent() }),
-        strictSameTypePair(RumRawEvent.StopView::class, { stopViewEvent() }),
-        strictSameTypePair(RumRawEvent.StartAction::class, { startActionEvent() }),
-        strictSameTypePair(RumRawEvent.StopAction::class, { stopActionEvent() }),
-        strictSameTypePair(RumRawEvent.StartResource::class, { startResourceEvent() }),
-        strictSameTypePair(RumRawEvent.StopResource::class, { stopResourceEvent() }),
-        strictSameTypePair(RumRawEvent.StopResourceWithError::class, { stopResourceWithErrorEvent() }),
-        strictSameTypePair(RumRawEvent.StopResourceWithStackTrace::class, { stopResourceWithStacktraceEvent() }),
-        strictSameTypePair(RumRawEvent.AddError::class, { addErrorEvent() }),
-        strictSameTypePair(RumRawEvent.AddLongTask::class, { addLongTaskEvent() }),
-        strictSameTypePair(RumRawEvent.AddFeatureFlagEvaluation::class, { addFeatureFlagEvaluationEvent() }),
-        strictSameTypePair(RumRawEvent.AddCustomTiming::class, { addCustomTimingEvent() }),
-        strictSameTypePair(RumRawEvent.UpdatePerformanceMetric::class, { updatePerformanceMetricEvent() }),
-        strictSameTypePair(RumRawEvent.UpdateExternalRefreshRate::class, { updateExternalRefreshRateEvent() }),
-        strictSameTypePair(RumRawEvent.AddViewLoadingTime::class, { addViewLoadingTimeEvent() })
+    val allEventsFactories = mapOf(
+        strictSameTypePair(RumRawEvent.StartView::class) { startViewEvent() },
+        strictSameTypePair(RumRawEvent.StopView::class) { stopViewEvent() },
+        strictSameTypePair(RumRawEvent.StartAction::class) { startActionEvent() },
+        strictSameTypePair(RumRawEvent.StopAction::class) { stopActionEvent() },
+        strictSameTypePair(RumRawEvent.StartResource::class) { startResourceEvent() },
+        strictSameTypePair(RumRawEvent.StopResource::class) { stopResourceEvent() },
+        strictSameTypePair(RumRawEvent.StopResourceWithError::class) { stopResourceWithErrorEvent() },
+        strictSameTypePair(RumRawEvent.StopResourceWithStackTrace::class) { stopResourceWithStacktraceEvent() },
+        strictSameTypePair(RumRawEvent.AddError::class) { addErrorEvent() },
+        strictSameTypePair(RumRawEvent.AddLongTask::class) { addLongTaskEvent() },
+        strictSameTypePair(RumRawEvent.AddFeatureFlagEvaluation::class) { addFeatureFlagEvaluationEvent() },
+        strictSameTypePair(RumRawEvent.AddCustomTiming::class) { addCustomTimingEvent() },
+        strictSameTypePair(RumRawEvent.UpdatePerformanceMetric::class) { updatePerformanceMetricEvent() },
+        strictSameTypePair(RumRawEvent.UpdateExternalRefreshRate::class) { updateExternalRefreshRateEvent() },
+        strictSameTypePair(RumRawEvent.AddViewLoadingTime::class) { addViewLoadingTimeEvent() }
     )
     return this.anElementFrom(
         allEventsFactories
@@ -246,45 +257,9 @@ internal fun Forge.anyRumEvent(excluding: List<KClass<out RumRawEvent>> = listOf
     ).invoke()
 }
 
-internal fun Forge.invalidAppLaunchEvent(): RumRawEvent {
-    return this.anElementFrom(
-        listOf(
-            stopActionEvent(),
-            stopResourceEvent(),
-            stopResourceWithErrorEvent(),
-            stopResourceWithStacktraceEvent()
-        )
-    )
-}
-
-internal fun Forge.silentOrphanEvent(): RumRawEvent {
-    val fakeId = getForgery<UUID>().toString()
-
-    return this.anElementFrom(
-        listOf(
-            RumRawEvent.ApplicationStarted(Time(), aLong()),
-            RumRawEvent.ResetSession(),
-            RumRawEvent.StopView(getForgery(), emptyMap()),
-            RumRawEvent.ActionSent(
-                fakeId,
-                aPositiveInt(),
-                aValueFrom(ActionEvent.ActionEventActionType::class.java),
-                aPositiveLong()
-            ),
-            RumRawEvent.ErrorSent(fakeId),
-            RumRawEvent.LongTaskSent(fakeId),
-            RumRawEvent.ResourceSent(fakeId, getForgery<UUID>().toString(), aPositiveLong()),
-            RumRawEvent.ActionDropped(fakeId),
-            RumRawEvent.ErrorDropped(fakeId),
-            RumRawEvent.LongTaskDropped(fakeId),
-            RumRawEvent.ResourceDropped(fakeId, getForgery<UUID>().toString())
-        )
-    )
-}
-
 internal fun Forge.eventSent(
     viewId: String,
-    eventTime: Time = Time()
+    eventTime: Time = getForgery()
 ): RumRawEvent {
     return this.anElementFrom(
         listOf(

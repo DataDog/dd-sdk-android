@@ -12,6 +12,7 @@ import fr.xgouchet.elmyr.ForgeryFactory
 internal class LongTaskSentForgeryFactory : ForgeryFactory<RumRawEvent.LongTaskSent> {
     override fun getForgery(forge: Forge) = RumRawEvent.LongTaskSent(
         viewId = forge.aString(),
-        isFrozenFrame = forge.aBool()
+        isFrozenFrame = forge.aBool(),
+        eventTime = forge.getForgery()
     )
 }

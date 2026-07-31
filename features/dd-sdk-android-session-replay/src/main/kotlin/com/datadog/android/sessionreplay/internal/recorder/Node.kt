@@ -6,10 +6,12 @@
 
 package com.datadog.android.sessionreplay.internal.recorder
 
+import com.datadog.android.internal.heatmaps.HeatmapIdentifier
 import com.datadog.android.sessionreplay.model.MobileSegment
 
 internal data class Node(
     val wireframes: List<MobileSegment.Wireframe>,
     val children: List<Node> = emptyList(),
-    val parents: List<MobileSegment.Wireframe> = emptyList()
+    val parents: List<MobileSegment.Wireframe> = emptyList(),
+    val heatmapIdentifier: HeatmapIdentifier? = null
 )

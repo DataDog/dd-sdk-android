@@ -13,6 +13,7 @@ import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.utils.DdTagsUtils
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -29,7 +30,6 @@ import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetr
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.toError
 import com.datadog.android.rum.internal.toResource
-import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.internal.utils.hasUserData
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.internal.utils.truncateToUtf8ByteSize
@@ -379,7 +379,7 @@ internal class RumResourceScope(
                 version = datadogContext.version,
                 buildVersion = datadogContext.versionCode.toString(),
                 buildId = datadogContext.appBuildId,
-                ddtags = buildDDTagsString(datadogContext)
+                ddtags = DdTagsUtils.toDdTagsString(datadogContext)
             )
         }
             .onError {
@@ -418,7 +418,7 @@ internal class RumResourceScope(
         }
     }
 
-    @SuppressWarnings("LongMethod")
+    @Suppress("LongMethod")
     private fun sendError(
         message: String,
         source: RumErrorSource,
@@ -539,7 +539,7 @@ internal class RumResourceScope(
                 service = datadogContext.service,
                 version = datadogContext.version,
                 buildVersion = datadogContext.versionCode.toString(),
-                ddtags = buildDDTagsString(datadogContext)
+                ddtags = DdTagsUtils.toDdTagsString(datadogContext)
             )
         }
             .onError {

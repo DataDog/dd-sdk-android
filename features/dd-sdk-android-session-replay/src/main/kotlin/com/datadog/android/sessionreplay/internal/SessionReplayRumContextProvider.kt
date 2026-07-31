@@ -24,7 +24,8 @@ internal class SessionReplayRumContextProvider : RumContextProvider, FeatureCont
                 sessionId = it["session_id"] as? String ?: NULL_UUID,
                 viewId = it["view_id"] as? String ?: NULL_UUID,
                 // TODO RUM-3785 Share this property somehow, defined in RumFeature.VIEW_TIMESTAMP_OFFSET_IN_MS_KEY
-                viewTimeOffsetMs = it["view_timestamp_offset"] as? Long ?: 0L
+                viewTimeOffsetMs = it["view_timestamp_offset"] as? Long ?: 0L,
+                viewUrl = it[RUM_VIEW_URL_CONTEXT_KEY] as? String
             )
         }
     }
@@ -37,5 +38,8 @@ internal class SessionReplayRumContextProvider : RumContextProvider, FeatureCont
 
     companion object {
         val NULL_UUID = UUID(0, 0).toString()
+
+        // Mirrors RumContext.VIEW_URL in the RUM module.
+        internal const val RUM_VIEW_URL_CONTEXT_KEY = "view_url"
     }
 }

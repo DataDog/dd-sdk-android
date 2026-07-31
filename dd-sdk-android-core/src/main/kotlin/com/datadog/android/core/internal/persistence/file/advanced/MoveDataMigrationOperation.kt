@@ -10,7 +10,6 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.utils.retryWithDelay
-import com.datadog.android.internal.time.TimeProvider
 import java.io.File
 import java.util.concurrent.TimeUnit
 
@@ -22,8 +21,7 @@ internal class MoveDataMigrationOperation(
     internal val fromDir: File?,
     internal val toDir: File?,
     internal val fileMover: FileMover,
-    internal val internalLogger: InternalLogger,
-    internal val timeProvider: TimeProvider
+    internal val internalLogger: InternalLogger
 ) : DataMigrationOperation {
 
     @WorkerThread
@@ -41,7 +39,7 @@ internal class MoveDataMigrationOperation(
                 { WARN_NULL_DEST_DIR }
             )
         } else {
-            retryWithDelay(MAX_RETRY, RETRY_DELAY_NS, internalLogger, timeProvider) {
+            retryWithDelay(MAX_RETRY, RETRY_DELAY_NS, internalLogger) {
                 fileMover.moveFiles(fromDir, toDir)
             }
         }

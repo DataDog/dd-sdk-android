@@ -12,6 +12,7 @@ import com.datadog.gradle.config.kotlinConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
+    id("ktlint")
     id("com.android.library")
     kotlin("android")
     id("com.github.ben-manes.versions")
@@ -62,14 +63,10 @@ android {
 
 dependencies {
     implementation(libs.kotlin)
-    implementation(libs.kotlinReflect)
     implementation(libs.bundles.jUnit5)
     implementation(libs.bundles.testTools)
     implementation(libs.gson)
-    implementation(libs.mockitoKotlin)
 
-    testImplementation(libs.bundles.jUnit5)
-    testImplementation(libs.bundles.testTools)
     unmock(libs.robolectric)
 }
 

@@ -21,11 +21,14 @@ import java.io.File
 internal interface FileOrchestrator {
 
     /**
+     * @param eventSize the size (in bytes) of the event about to be written, used to decide
+     * whether an existing batch file has enough room to accommodate it without exceeding the
+     * maximum batch size.
      * @return a File with enough space to write data, or null if no space is available
      * or the disk can't be written to.
      */
     @WorkerThread
-    fun getWritableFile(): File?
+    fun getWritableFile(eventSize: Long): File?
 
     /**
      * @param excludeFiles a set of files to exclude from the readable files

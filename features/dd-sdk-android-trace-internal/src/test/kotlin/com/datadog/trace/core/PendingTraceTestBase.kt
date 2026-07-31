@@ -21,7 +21,7 @@ import kotlin.concurrent.thread
 internal abstract class PendingTraceTestBase : DDCoreSpecification() {
 
     protected val writer = ListWriter()
-    protected val tracer = tracerBuilder().writer(writer).build()
+    protected val tracer: CoreTracer = tracerBuilder().writer(writer).build()
 
     protected lateinit var rootSpan: DDSpan
     protected lateinit var trace: PendingTrace

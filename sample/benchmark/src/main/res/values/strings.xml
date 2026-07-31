@@ -1,3 +1,9 @@
+<!--
+  ~ Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+  ~ This product includes software developed at Datadog (https://www.datadoghq.com/).
+  ~ Copyright 2016-Present Datadog, Inc.
+  -->
+
 <resources>
     <string name="app_name">Benchmark Sample</string>
 
@@ -16,4 +22,9 @@
     <string name="pick_current_date">Pick Current Date</string>
     <string name="button_nav_material">Go to Material component screen</string>
     <string name="button_nav_appcompat">Go to Compat component screen</string>
+    <string name="title_profiling">Profiling</string>
+    <string name="title_profiling_demo">Profiling Demo</string>
+    <string name="profiling_workload_instructions">Tap a button to start a workload. Only one workload can run at a time.</string>
+    <string name="profiling_btn_workload_start">Start %1$s</string>
+    <string name="profiling_btn_workload_stop">Stop %1$s</string>
 </resources>

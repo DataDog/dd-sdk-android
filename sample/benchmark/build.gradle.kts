@@ -13,6 +13,7 @@ import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.plugin.InstrumentationMode
 
 plugins {
+    id("ktlint")
     id("com.android.application")
     kotlin("android")
     alias(libs.plugins.composeCompilerPlugin)
@@ -119,6 +120,7 @@ dependencies {
     implementation(project(":features:dd-sdk-android-session-replay"))
     implementation(project(":features:dd-sdk-android-session-replay-material"))
     implementation(project(":features:dd-sdk-android-session-replay-compose"))
+    implementation(project(":features:dd-sdk-android-profiling"))
     implementation(project(":integrations:dd-sdk-android-compose"))
     implementation(project(":integrations:dd-sdk-android-glide"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))

@@ -21,6 +21,7 @@ import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.heatmaps.CrossPlatformHeatmapActionData
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.ExperimentalRumApi
@@ -48,13 +49,13 @@ import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
+import com.datadog.android.rum.internal.heatmaps.NativeHeatmapActionData
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_NAME
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_NAME_CHARACTERS
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_OPERATION_KEY
-import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
 import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesFactory
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
@@ -147,9 +148,6 @@ internal class DatadogRumMonitorTest {
     lateinit var mockDisplayInfoProvider: InfoProvider<DisplayInfo>
 
     @Mock
-    lateinit var mockRumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter
-
-    @Mock
     private lateinit var mockInsightsCollector: InsightsCollector
 
     @Mock
@@ -202,6 +200,9 @@ internal class DatadogRumMonitorTest {
 
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
+
+    @StringForgery
+    lateinit var fakeApplicationPackageName: String
 
     lateinit var fakeAttributes: Map<String, Any?>
 
@@ -304,6 +305,8 @@ internal class DatadogRumMonitorTest {
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
+            appPackageName = fakeApplicationPackageName,
+            heatmapIdentifierRegistry = null,
             timeseriesFactory = NoOpTimeseriesFactory()
         )
         testedMonitor.rootScope = mockApplicationScope
@@ -337,6 +340,8 @@ internal class DatadogRumMonitorTest {
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
+            appPackageName = fakeApplicationPackageName,
+            heatmapIdentifierRegistry = null,
             timeseriesFactory = NoOpTimeseriesFactory()
         )
 
@@ -413,6 +418,8 @@ internal class DatadogRumMonitorTest {
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
+            appPackageName = fakeApplicationPackageName,
+            heatmapIdentifierRegistry = null,
             timeseriesFactory = NoOpTimeseriesFactory()
         )
         testedMonitor.start()
@@ -457,6 +464,8 @@ internal class DatadogRumMonitorTest {
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
+            appPackageName = fakeApplicationPackageName,
+            heatmapIdentifierRegistry = null,
             timeseriesFactory = NoOpTimeseriesFactory()
         )
         testedMonitor.start()
@@ -516,8 +525,186 @@ internal class DatadogRumMonitorTest {
             assertThat(event.waitForStop).isFalse
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
             assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
+            assertThat(event.nativeHeatmapActionData).isNull()
         }
         verifyNoMoreInteractions(mockWriter)
+    }
+
+    @Test
+    fun `M enqueue StartAction with heatmapData set W addActionWithHeatmap() {heatmapData non-null}`(
+        @Forgery type: RumActionType,
+        @StringForgery name: String,
+        @Forgery fakeHeatmapData: NativeHeatmapActionData
+    ) {
+        // When
+        testedMonitor.addActionWithHeatmap(
+            type = type,
+            name = name,
+            nativeHeatmapActionData = fakeHeatmapData,
+            attributes = fakeAttributes
+        )
+
+        // Then
+        argumentCaptor<RumRawEvent> {
+            verify(mockApplicationScope).handleEvent(
+                capture(),
+                same(fakeDatadogContext),
+                same(mockEventWriteScope),
+                same(mockWriter)
+            )
+
+            val event = firstValue as RumRawEvent.StartAction
+            assertThat(event.type).isEqualTo(type)
+            assertThat(event.name).isEqualTo(name)
+            assertThat(event.waitForStop).isFalse
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.eventTime.timestamp).isEqualTo(eventTimeMs)
+            assertThat(event.nativeHeatmapActionData).isEqualTo(fakeHeatmapData)
+        }
+        verifyNoMoreInteractions(mockWriter)
+    }
+
+    @Test
+    fun `M enqueue StartAction with crossPlatformHeatmapActionData set W addActionWithHeatmapAttributes()`(
+        @Forgery type: RumActionType,
+        @StringForgery name: String,
+        @Forgery fakeHeatmapAttributes: CrossPlatformHeatmapActionData
+    ) {
+        // When
+        testedMonitor.addActionWithHeatmapAttributes(
+            type = type,
+            name = name,
+            crossPlatformHeatmapActionData = fakeHeatmapAttributes,
+            attributes = fakeAttributes
+        )
+
+        // Then
+        argumentCaptor<RumRawEvent> {
+            verify(mockApplicationScope).handleEvent(
+                capture(),
+                same(fakeDatadogContext),
+                same(mockEventWriteScope),
+                same(mockWriter)
+            )
+
+            val event = firstValue as RumRawEvent.StartAction
+            assertThat(event.type).isEqualTo(type)
+            assertThat(event.name).isEqualTo(name)
+            assertThat(event.waitForStop).isFalse
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+            assertThat(event.nativeHeatmapActionData).isNull()
+            assertThat(event.crossPlatformHeatmapActionData).isEqualTo(fakeHeatmapAttributes)
+            assertThat(event.appPackageName).isEqualTo(fakeApplicationPackageName)
+        }
+        verifyNoMoreInteractions(mockWriter)
+    }
+
+    @Test
+    fun `M return current view URL W getCurrentViewUrl()`(
+        @Forgery fakeRumContext: RumContext,
+        @Forgery type: RumActionType,
+        @StringForgery name: String
+    ) {
+        // Given
+        val fakeContextWithSession = fakeRumContext.copy(
+            sessionId = java.util.UUID.randomUUID().toString(),
+            sessionState = RumSessionScope.State.TRACKED
+        )
+        val mockSessionScope = mock<RumSessionScope>()
+        val mockViewScope = mock<RumViewScope>()
+        whenever(mockApplicationScope.activeSession) doReturn mockSessionScope
+        whenever(mockSessionScope.activeView) doReturn mockViewScope
+        whenever(mockViewScope.getRumContext()) doReturn fakeContextWithSession
+        testedMonitor.startAction(type, name, fakeAttributes)
+
+        // When
+        val result = testedMonitor.getCurrentViewUrl()
+
+        // Then
+        assertThat(result).isEqualTo(fakeContextWithSession.viewUrl)
+    }
+
+    @Test
+    fun `M return null W getCurrentViewUrl() { no active session }`(
+        @Forgery fakeRumContext: RumContext,
+        @Forgery type: RumActionType,
+        @StringForgery name: String
+    ) {
+        // Given
+        val primeContext = fakeRumContext.copy(
+            sessionId = java.util.UUID.randomUUID().toString(),
+            sessionState = RumSessionScope.State.TRACKED
+        )
+        val mockSessionScope = mock<RumSessionScope>()
+        val mockViewScope = mock<RumViewScope>()
+        whenever(mockApplicationScope.activeSession) doReturn mockSessionScope
+        whenever(mockSessionScope.activeView) doReturn mockViewScope
+        whenever(mockViewScope.getRumContext()) doReturn primeContext
+        testedMonitor.startAction(type, name, fakeAttributes)
+        whenever(mockApplicationScope.activeSession) doReturn null
+        testedMonitor.startAction(type, name, fakeAttributes)
+
+        // When
+        val result = testedMonitor.getCurrentViewUrl()
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return null W getCurrentViewUrl() { session exists but has NULL_UUID, not yet sampled in }`(
+        @Forgery fakeRumContext: RumContext,
+        @Forgery type: RumActionType,
+        @StringForgery name: String
+    ) {
+        // Given
+        val primeContext = fakeRumContext.copy(
+            sessionId = java.util.UUID.randomUUID().toString(),
+            sessionState = RumSessionScope.State.TRACKED
+        )
+        val mockSessionScope = mock<RumSessionScope>()
+        val mockViewScope = mock<RumViewScope>()
+        whenever(mockApplicationScope.activeSession) doReturn mockSessionScope
+        whenever(mockSessionScope.activeView) doReturn mockViewScope
+        whenever(mockViewScope.getRumContext()) doReturn primeContext
+        testedMonitor.startAction(type, name, fakeAttributes)
+        whenever(mockSessionScope.activeView) doReturn null
+        whenever(mockSessionScope.getRumContext()) doReturn RumContext(sessionId = RumContext.NULL_UUID)
+        testedMonitor.startAction(type, name, fakeAttributes)
+
+        // When
+        val result = testedMonitor.getCurrentViewUrl()
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return null W getCurrentViewUrl() { view stopped with no new view started }`(
+        @Forgery fakeRumContext: RumContext,
+        @Forgery type: RumActionType,
+        @StringForgery name: String
+    ) {
+        // Given
+        val primeContext = fakeRumContext.copy(
+            sessionId = java.util.UUID.randomUUID().toString(),
+            sessionState = RumSessionScope.State.TRACKED
+        )
+        val mockSessionScope = mock<RumSessionScope>()
+        val mockViewScope = mock<RumViewScope>()
+        whenever(mockApplicationScope.activeSession) doReturn mockSessionScope
+        whenever(mockSessionScope.activeView) doReturn mockViewScope
+        whenever(mockViewScope.getRumContext()) doReturn primeContext
+        testedMonitor.startAction(type, name, fakeAttributes)
+        whenever(mockSessionScope.activeView) doReturn null
+        whenever(mockSessionScope.getRumContext()) doReturn primeContext.copy(viewUrl = null)
+        testedMonitor.startAction(type, name, fakeAttributes)
+
+        // When
+        val result = testedMonitor.getCurrentViewUrl()
+
+        // Then
+        assertThat(result).isNull()
     }
 
     @Test
@@ -1991,7 +2178,7 @@ internal class DatadogRumMonitorTest {
         @StringForgery name: String,
         @StringForgery value: String
     ) {
-        val batch = mapOf(name to value)
+        val batch: Map<String, Any> = mapOf(name to value)
         testedMonitor.addFeatureFlagEvaluations(batch)
 
         argumentCaptor<RumRawEvent> {
@@ -2039,6 +2226,8 @@ internal class DatadogRumMonitorTest {
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
+            appPackageName = fakeApplicationPackageName,
+            heatmapIdentifierRegistry = null,
             timeseriesFactory = NoOpTimeseriesFactory()
         )
 
@@ -2080,6 +2269,8 @@ internal class DatadogRumMonitorTest {
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
+            appPackageName = fakeApplicationPackageName,
+            heatmapIdentifierRegistry = null,
             timeseriesFactory = NoOpTimeseriesFactory()
         )
 
@@ -2122,6 +2313,8 @@ internal class DatadogRumMonitorTest {
             rumSessionTypeOverride = null,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
+            appPackageName = fakeApplicationPackageName,
+            heatmapIdentifierRegistry = null,
             timeseriesFactory = NoOpTimeseriesFactory()
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
@@ -2346,6 +2539,8 @@ internal class DatadogRumMonitorTest {
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
+            appPackageName = fakeApplicationPackageName,
+            heatmapIdentifierRegistry = null,
             timeseriesFactory = NoOpTimeseriesFactory()
         )
         testedMonitor.startView(key, name, attributes)
@@ -2474,11 +2669,9 @@ internal class DatadogRumMonitorTest {
         val mockRootScope = mock<RumApplicationScope>().apply {
             whenever(getRumContext()) doReturn forge.getForgery<RumContext>()
             whenever(handleEvent(any(), any(), any(), any())) doAnswer {
-                if (isMethodOccupied) {
-                    throw IllegalStateException(
-                        "Only one thread should" +
-                            " be allowed to enter rootScope at the time."
-                    )
+                check(!isMethodOccupied) {
+                    "Only one thread should" +
+                        " be allowed to enter rootScope at the time."
                 }
                 isMethodOccupied = true
                 Thread.sleep(100)
@@ -2505,17 +2698,20 @@ internal class DatadogRumMonitorTest {
                         throwable = forge.aThrowable(),
                         stacktrace = forge.anAlphaNumericalString(),
                         threads = emptyList(),
-                        attributes = emptyMap()
+                        attributes = emptyMap(),
+                        eventTime = forge.getForgery()
                     ),
                     RumRawEvent.StartAction(
                         type = forge.aValueFrom(RumActionType::class.java),
                         name = forge.anAlphaNumericalString(),
                         waitForStop = forge.aBool(),
-                        attributes = emptyMap()
+                        attributes = emptyMap(),
+                        eventTime = forge.getForgery()
                     ),
                     RumRawEvent.StartView(
                         key = forge.getForgery(),
-                        attributes = emptyMap()
+                        attributes = emptyMap(),
+                        eventTime = forge.getForgery()
                     )
                 )
                 testedMonitor.handleEvent(event)
@@ -3057,7 +3253,7 @@ internal class DatadogRumMonitorTest {
     @Test
     fun `M warn but still emit W startOperation { operation name contains emoji }`() {
         // Like the non-ASCII case above, an emoji must fail the `[\w.@$-]*`
-        // regex. This additionally pins surrogate-pair / multi-byte handling
+        // regex. This additionally pins surrogate-pair / multibyte handling
         // (mirrors iOS PR #2864 / Browser PR #4525, spec test VAL-09).
         val invalidName = "login🔐"
         val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)

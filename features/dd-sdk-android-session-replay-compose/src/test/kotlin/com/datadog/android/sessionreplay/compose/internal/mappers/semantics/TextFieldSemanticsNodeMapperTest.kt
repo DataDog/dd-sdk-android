@@ -108,7 +108,8 @@ internal class TextFieldSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTes
             fakeEditText
         )
         whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(mockSemanticsNode), any())) doReturn fakeTextLayoutInfo
-        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode)) doReturn innerBounds
+        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode, fakeUiContext.windowOffset))
+            .doReturn(innerBounds)
         whenever(mockSemanticsUtils.resolveBackgroundColor(mockSemanticsNode)) doReturn fakeBackgroundColor
         whenever(mockSemanticsUtils.resolveBackgroundShape(mockSemanticsNode)) doReturn mockShape
         whenever(
@@ -191,7 +192,8 @@ internal class TextFieldSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTes
             fakeEditText
         )
         whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(mockSemanticsNode), any())) doReturn fakeTextLayoutInfo
-        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode)) doReturn innerBounds
+        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode, fakeUiContext.windowOffset))
+            .doReturn(innerBounds)
         whenever(mockSemanticsUtils.resolveBackgroundColor(mockSemanticsNode)) doReturn fakeBackgroundColor
         whenever(mockSemanticsUtils.resolveBackgroundShape(mockSemanticsNode)) doReturn mockShape
         whenever(

@@ -6,6 +6,7 @@
 
 package com.datadog.android.webview.internal.rum
 
+import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -58,6 +59,9 @@ internal class WebViewRumEventMapperWithoutSRTest {
     @StringForgery
     lateinit var fakeAnonymousId: String
 
+    @Forgery
+    lateinit var fakeDatadogContext: DatadogContext
+
     lateinit var fakeTags: Map<String, String>
 
     @BeforeEach
@@ -86,7 +90,8 @@ internal class WebViewRumEventMapperWithoutSRTest {
             fakeRumContext,
             fakeServerTimeOffset,
             false,
-            fakeAnonymousId
+            fakeAnonymousId,
+            fakeDatadogContext
         )
 
         // Then
@@ -111,7 +116,8 @@ internal class WebViewRumEventMapperWithoutSRTest {
             fakeRumContext,
             fakeServerTimeOffset,
             false,
-            fakeAnonymousId
+            fakeAnonymousId,
+            fakeDatadogContext
         )
 
         // Then
@@ -136,7 +142,8 @@ internal class WebViewRumEventMapperWithoutSRTest {
             fakeRumContext,
             fakeServerTimeOffset,
             false,
-            fakeAnonymousId
+            fakeAnonymousId,
+            fakeDatadogContext
         )
 
         // Then
@@ -161,7 +168,8 @@ internal class WebViewRumEventMapperWithoutSRTest {
             fakeRumContext,
             fakeServerTimeOffset,
             false,
-            fakeAnonymousId
+            fakeAnonymousId,
+            fakeDatadogContext
         )
 
         // Then
@@ -186,7 +194,8 @@ internal class WebViewRumEventMapperWithoutSRTest {
             fakeRumContext,
             fakeServerTimeOffset,
             false,
-            fakeAnonymousId
+            fakeAnonymousId,
+            fakeDatadogContext
         )
 
         // Then
@@ -214,7 +223,8 @@ internal class WebViewRumEventMapperWithoutSRTest {
             fakeRumContext,
             fakeServerTimeOffset,
             false,
-            fakeAnonymousId
+            fakeAnonymousId,
+            fakeDatadogContext
         )
 
         // Then
@@ -249,7 +259,8 @@ internal class WebViewRumEventMapperWithoutSRTest {
             null,
             fakeServerTimeOffset,
             false,
-            fakeAnonymousId
+            fakeAnonymousId,
+            fakeDatadogContext
         )
 
         // Then
@@ -294,7 +305,8 @@ internal class WebViewRumEventMapperWithoutSRTest {
             null,
             fakeServerTimeOffset,
             false,
-            fakeAnonymousId
+            fakeAnonymousId,
+            fakeDatadogContext
         )
 
         // Then

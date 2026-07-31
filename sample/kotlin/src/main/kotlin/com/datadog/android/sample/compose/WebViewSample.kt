@@ -12,12 +12,19 @@ import android.webkit.WebViewClient
 import android.widget.ImageView
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.sample.R
@@ -32,9 +39,8 @@ private val webViewTrackingHosts = listOf(
 @Composable
 internal fun InteropViewSample() {
     Column {
-        Text(
-            text = "ImageView"
-        )
+        AndroidViewInDialogSample()
+        Text(text = "ImageView")
         AndroidView(
             modifier = Modifier.height(120.dp),
             factory = { context ->
@@ -69,6 +75,30 @@ internal fun InteropViewSample() {
                 webView.loadUrl("https://datadoghq.dev/browser-sdk-test-playground/webview-support/#click_event")
             }
         )
+    }
+}
+
+@Composable
+private fun AndroidViewInDialogSample() {
+    var showDialog by remember { mutableStateOf(false) }
+    Button(onClick = { showDialog = true }) {
+        Text("Open dialog with AndroidView")
+    }
+    if (showDialog) {
+        Dialog(onDismissRequest = { showDialog = false }) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("AndroidView inside a Compose Dialog")
+                AndroidView(
+                    modifier = Modifier.height(120.dp),
+                    factory = { context ->
+                        ImageView(context).apply {
+                            setImageResource(R.drawable.ic_dd_icon_red)
+                        }
+                    },
+                    update = {}
+                )
+            }
+        }
     }
 }
 

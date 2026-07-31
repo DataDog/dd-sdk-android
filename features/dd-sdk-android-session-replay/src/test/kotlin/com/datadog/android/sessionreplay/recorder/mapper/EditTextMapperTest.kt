@@ -273,7 +273,7 @@ internal abstract class EditTextMapperTest :
 
     companion object {
 
-        private val safeTextVariations = arrayOf(
+        private val safeTextVariations = intArrayOf(
             InputType.TYPE_TEXT_VARIATION_NORMAL,
             InputType.TYPE_TEXT_VARIATION_URI,
             InputType.TYPE_TEXT_VARIATION_EMAIL_SUBJECT,
@@ -285,17 +285,17 @@ internal abstract class EditTextMapperTest :
             InputType.TYPE_TEXT_VARIATION_PHONETIC
         )
 
-        private val safeNumberVariations = arrayOf(
+        private val safeNumberVariations = intArrayOf(
             InputType.TYPE_NUMBER_VARIATION_NORMAL
         )
 
-        private val safeDateTimeVariations = arrayOf(
+        private val safeDateTimeVariations = intArrayOf(
             InputType.TYPE_DATETIME_VARIATION_NORMAL,
             InputType.TYPE_DATETIME_VARIATION_DATE,
             InputType.TYPE_DATETIME_VARIATION_TIME
         )
 
-        private val sensitiveTextVariations = arrayOf(
+        private val sensitiveTextVariations = intArrayOf(
             InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS,
             InputType.TYPE_TEXT_VARIATION_POSTAL_ADDRESS,
             InputType.TYPE_TEXT_VARIATION_PASSWORD,
@@ -304,7 +304,7 @@ internal abstract class EditTextMapperTest :
             InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD
         )
 
-        private val sensitiveNumberVariations = arrayOf(
+        private val sensitiveNumberVariations = intArrayOf(
             InputType.TYPE_NUMBER_VARIATION_PASSWORD
         )
 

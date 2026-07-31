@@ -7,15 +7,16 @@
 
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.detektCustomConfig
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.publishingConfig
+import com.datadog.gradle.utils.createJsonModelsGenerationTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.nio.file.Paths
 
 plugins {
+    id("ktlint")
     // Build
     id("com.android.library")
     kotlin("android")
@@ -32,12 +33,15 @@ plugins {
     // Tests
     id("de.mobilej.unmock")
     id("org.jetbrains.kotlinx.kover")
+    id("unitTest")
 
     // Internal Generation
     id("apiSurface")
     id("transitiveDependencies")
     id("verificationXml")
     id("binary-compatibility-validator")
+    id("detekt-conventions")
+    id("test-pyramid-api-surface")
 }
 
 android {
@@ -67,8 +71,6 @@ dependencies {
         }
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
-    testImplementation(libs.bundles.jUnit5)
-    testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttp)
     unmock(libs.robolectric)
 }
@@ -77,7 +79,16 @@ unMock {
     keepStartingWith("org.json")
 }
 
-apply(from = "generate_log_models.gradle.kts")
+createJsonModelsGenerationTask("generateLogModelsFromJson") {
+    inputDirPath = "src/main/json/log"
+    ignoredFiles = listOf(
+        "_common-schema.json"
+    )
+    targetPackageName = "com.datadog.android.log.model"
+    extraInputWatchDir = project.layout.projectDirectory.dir(
+        Paths.get("../dd-sdk-android-rum/src/main/json/rum").toString()
+    )
+}
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 androidLibraryConfig()
 junitConfig()
@@ -87,4 +98,3 @@ publishingConfig(
     "The Logs feature to use with the Datadog monitoring " +
         "library for Android applications."
 )
-detektCustomConfig()

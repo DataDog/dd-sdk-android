@@ -9,7 +9,9 @@ package com.datadog.android.profiling
 import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.annotation.VisibleForTesting
 import com.datadog.android.Datadog
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.internal.time.DefaultTimeProvider
@@ -19,6 +21,9 @@ import com.datadog.android.profiling.internal.ProfilingFeature
 import com.datadog.android.profiling.internal.ProfilingStartReason
 import com.datadog.android.profiling.internal.ProfilingStorage
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
+import com.datadog.android.profiling.internal.time.MutableTimeProvider
+import java.lang.ref.WeakReference
+import java.util.Locale
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -32,8 +37,22 @@ object Profiling {
     internal var profiler: Profiler = NoOpProfiler()
     internal val isProfilerInitialized = AtomicBoolean(false)
 
+    @VisibleForTesting
+    internal var currentRegisteredCore: WeakReference<SdkCore>? = null
+
+    internal const val IS_ALREADY_REGISTERED_WARNING =
+        "Profiling is already enabled and does not support multiple instances. " +
+            "The existing instance will continue to be used."
+
+    internal const val IS_ALREADY_REGISTERED_USER_WARNING =
+        "Profiling is already enabled and does not support multiple instances. " +
+            "The existing instance (registered with SDK core \"%s\") will continue to be used."
+
     /**
      * Enables the profiling feature.
+     *
+     * Profiling supports a single SDK instance. If profiling is already enabled on another active
+     * SDK instance, this call is ignored and a warning is logged.
      *
      * @param configuration Configuration to use for the feature.
      * @param sdkCore SDK instance to register feature in. If not provided, default SDK instance
@@ -47,68 +66,75 @@ object Profiling {
         sdkCore: SdkCore = Datadog.getInstance()
     ) {
         val featureSdkCore = sdkCore as FeatureSdkCore
+        // Serialize the check-and-set so two concurrent enable() calls with different cores cannot
+        // both pass the guard and register competing features against the single shared profiler.
+        synchronized(this) {
+            if (isAlreadyRegistered()) {
+                logAlreadyRegisteredWarning(featureSdkCore.internalLogger)
+                return
+            }
+            initializeProfiler()
+            val profilingFeature = ProfilingFeature(
+                sdkCore = featureSdkCore,
+                configuration = configuration,
+                profiler = profiler
+            )
+            currentRegisteredCore = WeakReference(sdkCore)
+            featureSdkCore.registerFeature(profilingFeature)
+        }
+    }
+
+    /**
+     * Start profiling.
+     *
+     * @param context application context
+     * @param startReason reason to start a profiling session
+     * @param additionalAttributes additional attributes to include in the profiling telemetry
+     */
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    internal fun start(
+        context: Context,
+        startReason: ProfilingStartReason,
+        additionalAttributes: Map<String, String>
+    ) {
         initializeProfiler()
-        val profilingFeature = ProfilingFeature(
-            sdkCore = featureSdkCore,
-            configuration = configuration,
-            profiler = profiler
+        profiler.start(context, startReason, additionalAttributes)
+        ProfilingStorage.removeProfilingFlag(context)
+    }
+
+    /**
+     * Stop profiling.
+     */
+    internal fun stop() {
+        profiler.stop()
+    }
+
+    private fun isAlreadyRegistered() =
+        currentRegisteredCore?.get()?.isCoreActive() == true
+
+    private fun logAlreadyRegisteredWarning(internalLogger: InternalLogger) {
+        val registeredInstanceName = currentRegisteredCore?.get()?.name
+        internalLogger.log(
+            level = InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.USER),
+            messageBuilder = {
+                IS_ALREADY_REGISTERED_USER_WARNING.format(Locale.US, registeredInstanceName)
+            }
         )
-        featureSdkCore.registerFeature(profilingFeature)
-    }
 
-    /**
-     * Start profiling with given SDK instances names.
-     *
-     * @param context application context
-     * @param startReason reason to start a profiling session
-     * @param additionalAttributes additional attributes to include in the profiling telemetry
-     * @param sdkInstanceNames the set of the SDK instances name
-     */
-    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
-    internal fun start(
-        context: Context,
-        startReason: ProfilingStartReason,
-        additionalAttributes: Map<String, String>,
-        sdkInstanceNames: Set<String>
-    ) {
-        initializeProfiler()
-        profiler.start(context, startReason, additionalAttributes, sdkInstanceNames)
-        ProfilingStorage.removeProfilingFlag(context, sdkInstanceNames)
-    }
-
-    /**
-     * Start profiling for a given SDK instance.
-     *
-     * @param context application context
-     * @param startReason reason to start a profiling session
-     * @param additionalAttributes additional attributes to include in the profiling telemetry
-     * @param sdkCore SDK instance to start profiling with. If not provided, default SDK instance.
-     */
-    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
-    internal fun start(
-        context: Context,
-        startReason: ProfilingStartReason,
-        additionalAttributes: Map<String, String>,
-        sdkCore: SdkCore = Datadog.getInstance()
-    ) {
-        start(context, startReason, additionalAttributes, setOf(sdkCore.name))
-    }
-
-    /**
-     * Stop profiling for a given SDK instance.
-     *
-     * @param sdkCore SDK instance to stop profiling. If not provided, default SDK instance.
-     */
-    internal fun stop(sdkCore: SdkCore = Datadog.getInstance()) {
-        profiler.stop(sdkCore.name)
+        internalLogger.log(
+            level = InternalLogger.Level.DEBUG,
+            targets = listOf(InternalLogger.Target.TELEMETRY),
+            messageBuilder = { IS_ALREADY_REGISTERED_WARNING }
+        )
     }
 
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     private fun initializeProfiler() {
         if (!isProfilerInitialized.getAndSet(true)) {
             profiler = PerfettoProfiler(
-                timeProvider = DefaultTimeProvider(),
-                profilingExecutor = Executors.newSingleThreadExecutor()
+                timeProvider = MutableTimeProvider.create(DefaultTimeProvider()),
+                scheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
             )
         }
     }

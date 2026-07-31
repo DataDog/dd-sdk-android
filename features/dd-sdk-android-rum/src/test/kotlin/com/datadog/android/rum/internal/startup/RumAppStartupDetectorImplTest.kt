@@ -986,8 +986,8 @@ internal class RumAppStartupDetectorImplTest {
         val detector = RumAppStartupDetectorImpl(
             application = application,
             buildSdkVersionProvider = buildSdkVersionProvider,
-            appStartupTimeProvider = { Time(0, 0) },
-            timeProvider = {
+            appStartupTime = { Time(0, 0) },
+            currentTime = {
                 Time(
                     timestamp = currentTime.inWholeMilliseconds,
                     nanoTime = currentTime.inWholeNanoseconds

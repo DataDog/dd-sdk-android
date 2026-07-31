@@ -34,6 +34,8 @@ import com.datadog.android.core.internal.time.DefaultAppStartTimeProvider
 import com.datadog.android.core.internal.time.composeTimeInfo
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.getSafe
+import com.datadog.android.core.internal.utils.safeTryWithLock
+import com.datadog.android.core.internal.utils.safeWithLock
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.thread.FlushableExecutorService
@@ -55,7 +57,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.locks.Lock
 
 /**
  * Internal implementation of the [SdkCore] interface.
@@ -231,7 +232,7 @@ internal class DatadogCore(
     ) {
         val runnable = runnable@{
             val feature = features[featureName] ?: return@runnable
-            feature.featureContextLock.writeLock().safeTryWithLock(1, TimeUnit.SECONDS) {
+            feature.featureContextLock.writeLock().safeTryWithLock(1, TimeUnit.SECONDS, internalLogger) {
                 val currentContext = feature.featureContext
                 updateCallback(currentContext)
                 featureContextUpdateReceivers.forEach {
@@ -254,7 +255,7 @@ internal class DatadogCore(
     override fun getFeatureContext(featureName: String, useContextThread: Boolean): Map<String, Any?> {
         val callable = Callable {
             val feature = features[featureName] ?: return@Callable emptyMap()
-            return@Callable feature.featureContextLock.readLock().safeWithLock {
+            return@Callable feature.featureContextLock.readLock().safeWithLock(internalLogger) {
                 // Creating copy here is VERY important - this will make
                 // independent snapshot of the features context which is not affected by the
                 // changes which can be made later by another thread.
@@ -632,63 +633,6 @@ internal class DatadogCore(
         )
     }
 
-    private fun Lock.safeTryWithLock(time: Long, unit: TimeUnit, block: () -> Unit) {
-        val locked = try {
-            // NullPointerException cannot happen, time unit is not null
-            @Suppress("UnsafeThirdPartyFunctionCall")
-            tryLock(time, unit)
-        } catch (e: InterruptedException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                { "Couldn't acquire ${javaClass.simpleName} due to the exception thrown, aborting operation." },
-                e
-            )
-            return
-        }
-        if (!locked) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                {
-                    "Couldn't acquire ${javaClass.simpleName} due to" +
-                        " timeout ($time $unit), aborting operation."
-                }
-            )
-            return
-        }
-        try {
-            block()
-        } finally {
-            if (locked) {
-                // IllegalMonitorStateException cannot happen, we check locked flag
-                @Suppress("UnsafeThirdPartyFunctionCall")
-                unlock()
-            }
-        }
-    }
-
-    private fun <T> Lock.safeWithLock(block: () -> T): T? {
-        try {
-            lock()
-        } catch (e: InterruptedException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                { "Couldn't acquire ${javaClass.simpleName} lock due to the exception thrown, aborting operation." },
-                e
-            )
-            return null
-        }
-        return try {
-            block()
-        } finally {
-            // IllegalMonitorStateException cannot happen, lock() call above succeeded
-            @Suppress("UnsafeThirdPartyFunctionCall")
-            unlock()
-        }
-    }
-
     /**
      * Stops all process for this instance of the Datadog SDK.
      */
@@ -697,8 +641,9 @@ internal class DatadogCore(
             features.remove(it)?.stop()
         }
 
-        if (appContext is Application && processLifecycleMonitor != null) {
-            appContext.unregisterActivityLifecycleCallbacks(processLifecycleMonitor)
+        val lifecycleMonitor = processLifecycleMonitor
+        if (appContext is Application && lifecycleMonitor != null) {
+            appContext.unregisterActivityLifecycleCallbacks(lifecycleMonitor)
         }
 
         contextProvider = NoOpContextProvider()

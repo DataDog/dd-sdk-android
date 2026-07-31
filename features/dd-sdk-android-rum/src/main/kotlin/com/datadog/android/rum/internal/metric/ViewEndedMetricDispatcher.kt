@@ -66,8 +66,9 @@ internal class ViewEndedMetricDispatcher(
         tnsState: ViewInitializationMetricsState
     ): Map<String, Any> = buildMap {
         putNonNull(KEY_DURATION, duration)
-        if (loadingTime != null) {
-            put(KEY_LOADING_TIME, buildMap { put(KEY_VALUE, loadingTime) })
+        val currentLoadingTime = loadingTime
+        if (currentLoadingTime != null) {
+            put(KEY_LOADING_TIME, buildMap { put(KEY_VALUE, currentLoadingTime) })
         }
         put(KEY_VIEW_TYPE, toAttributeValue(viewType))
         put(

@@ -6,7 +6,6 @@
 
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.detektCustomConfig
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
@@ -14,6 +13,7 @@ import com.datadog.gradle.config.publishingConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
+    id("ktlint")
     // Build
     id("com.android.library")
     kotlin("android")
@@ -28,12 +28,15 @@ plugins {
 
     // Tests
     id("org.jetbrains.kotlinx.kover")
+    id("unitTest")
 
     // Internal Generation
     id("apiSurface")
     id("transitiveDependencies")
     id("verificationXml")
     id("binary-compatibility-validator")
+    id("detekt-conventions")
+    id("test-pyramid-api-surface")
 }
 
 android {
@@ -42,14 +45,6 @@ android {
     }
 
     namespace = "com.datadog.android.sessionreplay.material"
-
-    libraryVariants.all {
-        packageLibraryProvider.configure {
-            from("src/main/resources") {
-                include("META-INF/**/verification.properties")
-            }
-        }
-    }
 }
 
 dependencies {
@@ -66,8 +61,6 @@ dependencies {
             )
         }
     }
-    testImplementation(libs.bundles.jUnit5)
-    testImplementation(libs.bundles.testTools)
 }
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
@@ -78,4 +71,3 @@ dependencyUpdateConfig()
 publishingConfig(
     "Session Replay Extension Support for Material UI components."
 )
-detektCustomConfig()

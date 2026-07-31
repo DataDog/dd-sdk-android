@@ -8,25 +8,38 @@ package com.datadog.android.profiling.internal
 
 import android.content.Context
 import com.datadog.android.api.InternalLogger
-import com.datadog.tools.annotation.NoOpImplementation
+import com.datadog.android.profiling.internal.time.MutableTimeProvider
+import java.util.concurrent.ScheduledExecutorService
 
-@NoOpImplementation
 internal interface Profiler {
 
+    val timeProvider: MutableTimeProvider
+
     var internalLogger: InternalLogger?
+
+    val scheduledExecutorService: ScheduledExecutorService
 
     fun start(
         appContext: Context,
         startReason: ProfilingStartReason,
         additionalAttributes: Map<String, String>,
-        sdkInstanceNames: Set<String>
+        durationMs: Int = 0
     )
 
-    fun stop(sdkInstanceName: String)
+    fun stop()
 
-    fun isRunning(sdkInstanceName: String): Boolean
+    fun isRunning(): Boolean
 
-    fun registerProfilingCallback(sdkInstanceName: String, callback: ProfilerCallback)
+    fun registerProfilingCallback(appContext: Context, callback: ProfilerCallback)
 
-    fun unregisterProfilingCallback(sdkInstanceName: String)
+    fun unregisterProfilingCallback(appContext: Context)
+
+    /**
+     * Controls whether an app launch profiling session should extend past the 10-second
+     * TTID threshold. Set to `true` when continuous profiling is enabled for the session
+     * so the launch window merges into the first continuous cycle.
+     */
+    fun setExtendLaunchSession(extend: Boolean)
+
+    fun setProfilingPackageVersionCode(versionCode: Long)
 }

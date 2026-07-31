@@ -9,11 +9,13 @@ package com.datadog.android.sessionreplay.internal.recorder
 import android.app.Application
 import android.os.Handler
 import android.os.Looper
+import android.view.View
 import android.view.Window
 import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
@@ -70,6 +72,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private val internalLogger: InternalLogger
     private val uiHandler: Handler
     private val resourceResolver: ResourceResolver
+    private val windowFromDecorView: (View) -> Window?
     private var shouldRecord = false
 
     @Suppress("LongParameterList")
@@ -89,7 +92,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         sdkCore: FeatureSdkCore,
         resourceDataStoreManager: ResourceDataStoreManager,
         dynamicOptimizationEnabled: Boolean,
-        internalCallback: SessionReplayInternalCallback
+        internalCallback: SessionReplayInternalCallback,
+        heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null
     ) {
         val internalLogger = sdkCore.internalLogger
         val rumContextDataHandler = RumContextDataHandler(
@@ -161,14 +165,14 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             internalLogger = internalLogger,
             onDrawListenerProducer = DefaultOnDrawListenerProducer(
                 snapshotProducer = SnapshotProducer(
-                    DefaultImageWireframeHelper(
+                    imageWireframeHelper = DefaultImageWireframeHelper(
                         logger = internalLogger,
                         resourceResolver = resourceResolver,
                         viewIdentifierResolver = viewIdentifierResolver,
                         viewUtilsInternal = ViewUtilsInternal(),
                         imageTypeResolver = ImageTypeResolver()
                     ),
-                    TreeViewTraversal(
+                    treeViewTraversal = TreeViewTraversal(
                         mappers = mappers,
                         defaultViewMapper = defaultVWM,
                         decorViewMapper = DecorViewMapper(defaultVWM, viewIdentifierResolver),
@@ -179,15 +183,23 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                         viewUtilsInternal = ViewUtilsInternal(),
                         internalLogger = internalLogger
                     ),
-                    ComposedOptionSelectorDetector(
+                    optionSelectorDetector = ComposedOptionSelectorDetector(
                         customOptionSelectorDetectors + DefaultOptionSelectorDetector()
                     ),
-                    touchPrivacyManager,
-                    internalLogger = internalLogger
+                    touchPrivacyManager = touchPrivacyManager,
+                    internalLogger = internalLogger,
+                    heatmapResolver = heatmapIdentifierRegistry?.let {
+                        HeatmapIdentifierResolver(
+                            appPackageName = appContext.packageName,
+                            registry = it,
+                            internalLogger = internalLogger
+                        )
+                    }
                 ),
                 recordedDataQueueHandler = recordedDataQueueHandler,
                 sdkCore = sdkCore,
-                dynamicOptimizationEnabled = dynamicOptimizationEnabled
+                dynamicOptimizationEnabled = dynamicOptimizationEnabled,
+                rumContextProvider = rumContextProvider
             ),
             touchPrivacyManager = touchPrivacyManager
         )
@@ -214,6 +226,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
 
         this.uiHandler = Handler(Looper.getMainLooper())
         this.internalLogger = internalLogger
+        this.windowFromDecorView = { WindowReflectionUtils.getWindowFromDecorView(it, internalLogger) }
     }
 
     @VisibleForTesting
@@ -230,7 +243,10 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         recordedDataQueueHandler: RecordedDataQueueHandler,
         resourceResolver: ResourceResolver,
         uiHandler: Handler,
-        internalLogger: InternalLogger
+        internalLogger: InternalLogger,
+        windowFromDecorView: (View) -> Window? = {
+            WindowReflectionUtils.getWindowFromDecorView(it, internalLogger)
+        }
     ) {
         this.appContext = appContext
         this.textAndInputPrivacy = textAndInputPrivacy
@@ -243,6 +259,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.sessionReplayLifecycleCallback = sessionReplayLifecycleCallback
         this.resourceResolver = resourceResolver
         this.uiHandler = uiHandler
+        this.windowFromDecorView = windowFromDecorView
         this.internalLogger = internalLogger
     }
 
@@ -265,7 +282,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             shouldRecord = true
             val windows = sessionReplayLifecycleCallback.getCurrentWindows()
             val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
-            windowCallbackInterceptor.intercept(windows, appContext)
+            windowCallbackInterceptor.intercept(windows + resolveUntrackedWindows(decorViews, windows), appContext)
             viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
         }
     }
@@ -282,7 +299,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     override fun onWindowsAdded(windows: List<Window>) {
         if (shouldRecord) {
             val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
-            windowCallbackInterceptor.intercept(windows, appContext)
+            windowCallbackInterceptor.intercept(windows + resolveUntrackedWindows(decorViews, windows), appContext)
             viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
         }
     }
@@ -294,5 +311,14 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             windowCallbackInterceptor.stopIntercepting(windows)
             viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
         }
+    }
+
+    // a window already open (e.g. a dialog) isn't reported through the Activity lifecycle
+    private fun resolveUntrackedWindows(decorViews: List<View>, knownWindows: List<Window>): List<Window> {
+        return decorViews
+            .filterNot { it.width == 0 || it.height == 0 }
+            .mapNotNull { windowFromDecorView(it) }
+            .filterNot { it in knownWindows || windowCallbackInterceptor.isExcluded(it) }
+            .distinct()
     }
 }

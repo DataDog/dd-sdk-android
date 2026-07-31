@@ -137,18 +137,12 @@ object Rum {
         return DatadogRumMonitor(
             applicationId = rumFeature.applicationId,
             sdkCore = sdkCore,
+            appPackageName = rumFeature.appContext.packageName,
             sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
             sessionSampler = sessionSampler,
             writer = rumFeature.dataWriter,
             handler = Handler(Looper.getMainLooper()),
-            telemetryEventHandler = TelemetryEventHandler(
-                sdkCore = sdkCore,
-                eventSampler = RateBasedSampler(rumFeature.telemetrySampleRate),
-                sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
-                configurationExtraSampler = RateBasedSampler(
-                    rumFeature.telemetryConfigurationSampleRate
-                )
-            ),
+            telemetryEventHandler = createTelemetryEventHandler(sdkCore, rumFeature, sessionEndedMetricDispatcher),
             firstPartyHostHeaderTypeResolver = sdkCore.firstPartyHostResolver,
             cpuVitalMonitor = rumFeature.cpuVitalMonitor,
             memoryVitalMonitor = rumFeature.memoryVitalMonitor,
@@ -172,9 +166,23 @@ object Rum {
                 )
             },
             insightsCollector = rumFeature.insightsCollector,
+            heatmapIdentifierRegistry = rumFeature.heatmapIdentifierRegistry,
             timeseriesFactory = rumFeature.timeseriesFactory
         )
     }
+
+    private fun createTelemetryEventHandler(
+        sdkCore: InternalSdkCore,
+        rumFeature: RumFeature,
+        sessionEndedMetricDispatcher: SessionEndedMetricDispatcher
+    ) = TelemetryEventHandler(
+        sdkCore = sdkCore,
+        eventSampler = RateBasedSampler(rumFeature.telemetrySampleRate),
+        sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
+        configurationExtraSampler = RateBasedSampler(
+            rumFeature.telemetryConfigurationSampleRate
+        )
+    )
 
     // endregion
 

@@ -59,7 +59,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.concurrent.TimeUnit
 import kotlin.math.max
 import kotlin.math.min
 
@@ -143,6 +142,7 @@ internal class RumApplicationScopeAttributePropagationTest {
     @Mock
     lateinit var mockTimeseries: Timeseries
 
+    @Forgery
     lateinit var fakeEventTime: Time
 
     lateinit var fakeEvent: RumRawEvent
@@ -183,19 +183,14 @@ internal class RumApplicationScopeAttributePropagationTest {
             source = forge.aValueFrom(ViewEvent.ViewEventSource::class.java).toJson().asString
         )
 
-        val fakeOffset = -forge.aLong(1000, 50000)
-        val fakeTimestamp = System.currentTimeMillis() + fakeOffset
-        val fakeNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(fakeOffset)
-        val maxLimit = max(Long.MAX_VALUE - fakeTimestamp, Long.MAX_VALUE)
-        val minLimit = min(-fakeTimestamp, maxLimit)
+        val maxLimit = max(Long.MAX_VALUE - fakeEventTime.timestamp, Long.MAX_VALUE)
+        val minLimit = min(-fakeEventTime.timestamp, maxLimit)
 
         fakeDatadogContext = fakeDatadogContext.copy(
             time = fakeTimeInfoAtScopeStart.copy(
                 serverTimeOffsetMs = forge.aLong(min = minLimit, max = maxLimit)
             )
         )
-        fakeEventTime = Time(fakeTimestamp, fakeNanos)
-
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
             val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventWriteScope)
@@ -228,6 +223,7 @@ internal class RumApplicationScopeAttributePropagationTest {
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
+            heatmapIdentifierRegistry = null,
             timeseriesFactory = mockTimeseriesFactory
         )
     }
