@@ -164,59 +164,6 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `M provide writer W getEventWriteScope()+currentMetadata() {consent=granted, batchMetadata=null}`() {
-        // Given
-        fakeDatadogContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
-        whenever(mockGrantedPersistenceStrategy.currentMetadata()) doReturn null
-        val mockWriteCallback = mock<(EventBatchWriter) -> Unit>()
-        var resultMetadata: ByteArray? = null
-        whenever(mockWriteCallback.invoke(any())) doAnswer {
-            resultMetadata = it.getArgument<EventBatchWriter>(0).currentMetadata()
-        }
-
-        // When
-        testedStorage.getEventWriteScope(fakeDatadogContext)
-            .invoke(mockWriteCallback)
-
-        // Then
-        assertThat(resultMetadata).isNull()
-        verify(mockGrantedPersistenceStrategy).currentMetadata()
-        verifyNoMoreInteractions(
-            mockGrantedPersistenceStrategy,
-            mockPendingPersistenceStrategy,
-            mockInternalLogger
-        )
-    }
-
-    @Test
-    fun `M provide writer W getEventWriteScope()+currentMetadata() {consent=granted, batchMetadata!=null}`(
-        @StringForgery fakeBatchMetadata: String
-    ) {
-        // Given
-        fakeDatadogContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
-        val mockWriteCallback = mock<(EventBatchWriter) -> Unit>()
-        val batchMetadata = fakeBatchMetadata.toByteArray()
-        whenever(mockGrantedPersistenceStrategy.currentMetadata()) doReturn batchMetadata
-        var resultMetadata: ByteArray? = null
-        whenever(mockWriteCallback.invoke(any())) doAnswer {
-            resultMetadata = it.getArgument<EventBatchWriter>(0).currentMetadata()
-        }
-
-        // When
-        testedStorage.getEventWriteScope(fakeDatadogContext)
-            .invoke(mockWriteCallback)
-
-        // Then
-        assertThat(resultMetadata).isEqualTo(batchMetadata)
-        verify(mockGrantedPersistenceStrategy).currentMetadata()
-        verifyNoMoreInteractions(
-            mockGrantedPersistenceStrategy,
-            mockPendingPersistenceStrategy,
-            mockInternalLogger
-        )
-    }
-
-    @Test
     fun `M provide writer W getEventWriteScope()+write() {consent=pending, batchMetadata=null}`(
         @BoolForgery fakeResult: Boolean,
         @Forgery fakeBatchEvent: RawBatchEvent
@@ -275,59 +222,6 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `M provide writer W getEventWriteScope()+currentMetadata() {consent=pending, batchMetadata=null}`() {
-        // Given
-        fakeDatadogContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
-        val mockWriteCallback = mock<(EventBatchWriter) -> Unit>()
-        var resultMetadata: ByteArray? = null
-        whenever(mockWriteCallback.invoke(any())) doAnswer {
-            resultMetadata = it.getArgument<EventBatchWriter>(0).currentMetadata()
-        }
-        whenever(mockPendingPersistenceStrategy.currentMetadata()) doReturn null
-
-        // When
-        testedStorage.getEventWriteScope(fakeDatadogContext)
-            .invoke(mockWriteCallback)
-
-        // Then
-        assertThat(resultMetadata).isNull()
-        verify(mockPendingPersistenceStrategy).currentMetadata()
-        verifyNoMoreInteractions(
-            mockGrantedPersistenceStrategy,
-            mockPendingPersistenceStrategy,
-            mockInternalLogger
-        )
-    }
-
-    @Test
-    fun `M provide writer W getEventWriteScope()+currentMetadata() {consent=pending, batchMetadata!=null}`(
-        @StringForgery fakeBatchMetadata: String
-    ) {
-        // Given
-        fakeDatadogContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
-        val mockWriteCallback = mock<(EventBatchWriter) -> Unit>()
-        val batchMetadata = fakeBatchMetadata.toByteArray()
-        var resultMetadata: ByteArray? = null
-        whenever(mockWriteCallback.invoke(any())) doAnswer {
-            resultMetadata = it.getArgument<EventBatchWriter>(0).currentMetadata()
-        }
-        whenever(mockPendingPersistenceStrategy.currentMetadata()) doReturn batchMetadata
-
-        // When
-        testedStorage.getEventWriteScope(fakeDatadogContext)
-            .invoke(mockWriteCallback)
-
-        // Then
-        assertThat(resultMetadata).isEqualTo(batchMetadata)
-        verify(mockPendingPersistenceStrategy).currentMetadata()
-        verifyNoMoreInteractions(
-            mockGrantedPersistenceStrategy,
-            mockPendingPersistenceStrategy,
-            mockInternalLogger
-        )
-    }
-
-    @Test
     fun `M provide no-op writer W getEventWriteScope()+write() {consent=not_granted}`(
         @Forgery fakeBatchEvent: RawBatchEvent,
         @StringForgery fakeBatchMetadata: String
@@ -348,29 +242,6 @@ internal class AbstractStorageTest {
         // Then
         assertThat(result).isFalse()
         verifyNoInteractions(
-            mockGrantedPersistenceStrategy,
-            mockPendingPersistenceStrategy,
-            mockInternalLogger
-        )
-    }
-
-    @Test
-    fun `M provide no-op writer W getEventWriteScope()+currentMetadata() {consent=not_granted}`() {
-        // Given
-        fakeDatadogContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.NOT_GRANTED)
-        val mockWriteCallback = mock<(EventBatchWriter) -> Unit>()
-        var resultMetadata: ByteArray? = null
-        whenever(mockWriteCallback.invoke(any())) doAnswer {
-            resultMetadata = it.getArgument<EventBatchWriter>(0).currentMetadata()
-        }
-
-        // When
-        testedStorage.getEventWriteScope(fakeDatadogContext)
-            .invoke(mockWriteCallback)
-
-        // Then
-        assertThat(resultMetadata).isNull()
-        verifyNoMoreInteractions(
             mockGrantedPersistenceStrategy,
             mockPendingPersistenceStrategy,
             mockInternalLogger

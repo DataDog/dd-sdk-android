@@ -19,6 +19,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.utils.DdTagsUtils
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.FeatureContextKeys.PROFILER_IS_RUNNING
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
@@ -71,7 +72,6 @@ import com.datadog.android.rum.internal.toError
 import com.datadog.android.rum.internal.toLongTask
 import com.datadog.android.rum.internal.toView
 import com.datadog.android.rum.internal.toVital
-import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.internal.vitals.VitalInfo
 import com.datadog.android.rum.internal.vitals.VitalListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -10122,7 +10122,7 @@ internal class RumViewScopeTest {
                 .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasServiceName(fakeDatadogContext.service)
-                .hasDDTags(buildDDTagsString(fakeDatadogContext))
+                .hasDDTags(DdTagsUtils.toDdTagsString(fakeDatadogContext))
 
             val operationsProps = lastValue.vital
 
@@ -10197,7 +10197,7 @@ internal class RumViewScopeTest {
                 .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasServiceName(fakeDatadogContext.service)
-                .hasDDTags(buildDDTagsString(fakeDatadogContext))
+                .hasDDTags(DdTagsUtils.toDdTagsString(fakeDatadogContext))
 
             val operationsProps = lastValue.vital
 
@@ -10269,7 +10269,7 @@ internal class RumViewScopeTest {
                 .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasServiceName(fakeDatadogContext.service)
-                .hasDDTags(buildDDTagsString(fakeDatadogContext))
+                .hasDDTags(DdTagsUtils.toDdTagsString(fakeDatadogContext))
 
             val operationsProps = lastValue.vital
 
@@ -10344,7 +10344,7 @@ internal class RumViewScopeTest {
                 .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasServiceName(fakeDatadogContext.service)
-                .hasDDTags(buildDDTagsString(fakeDatadogContext))
+                .hasDDTags(DdTagsUtils.toDdTagsString(fakeDatadogContext))
 
             val operationsProps = lastValue.vital
 
@@ -10417,7 +10417,7 @@ internal class RumViewScopeTest {
                 .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasServiceName(fakeDatadogContext.service)
-                .hasDDTags(buildDDTagsString(fakeDatadogContext))
+                .hasDDTags(DdTagsUtils.toDdTagsString(fakeDatadogContext))
 
             val operationsProps = lastValue.vital
 
@@ -10494,7 +10494,7 @@ internal class RumViewScopeTest {
                 .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasServiceName(fakeDatadogContext.service)
-                .hasDDTags(buildDDTagsString(fakeDatadogContext))
+                .hasDDTags(DdTagsUtils.toDdTagsString(fakeDatadogContext))
 
             val operationsProps = lastValue.vital
 

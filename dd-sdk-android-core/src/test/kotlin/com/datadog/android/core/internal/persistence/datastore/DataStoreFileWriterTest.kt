@@ -13,8 +13,10 @@ import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.deleteSafe
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.persistence.Serializer
+import com.datadog.android.internal.telemetry.TelemetryContext
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -27,6 +29,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -77,6 +80,9 @@ internal class DataStoreFileWriterTest {
     @StringForgery
     lateinit var fakeKey: String
 
+    @Forgery
+    lateinit var fakeTelemetryContext: TelemetryContext
+
     private lateinit var fakeDataBytes: ByteArray
 
     @BeforeEach
@@ -115,7 +121,8 @@ internal class DataStoreFileWriterTest {
             serializer = mockSerializer,
             data = fakeDataString,
             callback = mockDataStoreWriteCallback,
-            version = 0
+            version = 0,
+            telemetryContext = fakeTelemetryContext
         )
 
         // Then
@@ -133,7 +140,8 @@ internal class DataStoreFileWriterTest {
             data = fakeDataString,
             serializer = mockSerializer,
             callback = mockDataStoreWriteCallback,
-            version = 0
+            version = 0,
+            telemetryContext = fakeTelemetryContext
         )
 
         // Then
@@ -152,14 +160,16 @@ internal class DataStoreFileWriterTest {
             data = fakeDataString,
             serializer = mockSerializer,
             callback = mockDataStoreWriteCallback,
-            version = 0
+            version = 0,
+            telemetryContext = fakeTelemetryContext
         )
 
         // Then
         verify(mockFileReaderWriter).writeData(
             eq(mockDataStoreFile),
             any(),
-            eq(false)
+            eq(false),
+            anyOrNull()
         )
     }
 

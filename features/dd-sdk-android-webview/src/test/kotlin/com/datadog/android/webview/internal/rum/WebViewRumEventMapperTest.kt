@@ -6,6 +6,8 @@
 
 package com.datadog.android.webview.internal.rum
 
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.core.internal.utils.DdTagsUtils
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -32,6 +34,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import org.assertj.core.api.Assertions.assertThat as mapAssertThat
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -57,6 +60,9 @@ internal class WebViewRumEventMapperTest {
 
     @StringForgery
     lateinit var fakeAnonymousId: String
+
+    @Forgery
+    lateinit var fakeDatadogContext: DatadogContext
 
     lateinit var fakeTags: Map<String, String>
 
@@ -86,7 +92,8 @@ internal class WebViewRumEventMapperTest {
             fakeRumContext,
             fakeServerTimeOffset,
             true,
-            fakeAnonymousId
+            fakeAnonymousId,
+            fakeDatadogContext
         )
 
         // Then
@@ -111,7 +118,8 @@ internal class WebViewRumEventMapperTest {
             fakeRumContext,
             fakeServerTimeOffset,
             true,
-            fakeAnonymousId
+            fakeAnonymousId,
+            fakeDatadogContext
         )
 
         // Then
@@ -136,7 +144,8 @@ internal class WebViewRumEventMapperTest {
             fakeRumContext,
             fakeServerTimeOffset,
             true,
-            fakeAnonymousId
+            fakeAnonymousId,
+            fakeDatadogContext
         )
 
         // Then
@@ -161,7 +170,8 @@ internal class WebViewRumEventMapperTest {
             fakeRumContext,
             fakeServerTimeOffset,
             true,
-            fakeAnonymousId
+            fakeAnonymousId,
+            fakeDatadogContext
         )
 
         // Then
@@ -186,7 +196,8 @@ internal class WebViewRumEventMapperTest {
             fakeRumContext,
             fakeServerTimeOffset,
             true,
-            fakeAnonymousId
+            fakeAnonymousId,
+            fakeDatadogContext
         )
 
         // Then
@@ -214,7 +225,8 @@ internal class WebViewRumEventMapperTest {
             fakeRumContext,
             fakeServerTimeOffset,
             true,
-            fakeAnonymousId
+            fakeAnonymousId,
+            fakeDatadogContext
         )
 
         // Then
@@ -249,7 +261,8 @@ internal class WebViewRumEventMapperTest {
             null,
             fakeServerTimeOffset,
             true,
-            fakeAnonymousId
+            fakeAnonymousId,
+            fakeDatadogContext
         )
 
         // Then
@@ -295,7 +308,8 @@ internal class WebViewRumEventMapperTest {
             null,
             fakeServerTimeOffset,
             true,
-            fakeAnonymousId
+            fakeAnonymousId,
+            fakeDatadogContext
         )
 
         // Then
@@ -344,7 +358,8 @@ internal class WebViewRumEventMapperTest {
             fakeRumContext,
             fakeServerTimeOffset,
             true,
-            fakeAnonymousId
+            fakeAnonymousId,
+            fakeDatadogContext
         )
 
         // Then
@@ -381,7 +396,8 @@ internal class WebViewRumEventMapperTest {
             fakeRumContext,
             fakeServerTimeOffset,
             true,
-            fakeAnonymousId
+            fakeAnonymousId,
+            fakeDatadogContext
         )
 
         // Then
@@ -406,7 +422,8 @@ internal class WebViewRumEventMapperTest {
             fakeRumContext,
             fakeServerTimeOffset,
             true,
-            fakeAnonymousId
+            fakeAnonymousId,
+            fakeDatadogContext
         )
 
         // Then
@@ -438,6 +455,7 @@ internal class WebViewRumEventMapperTest {
             fakeServerTimeOffset,
             true,
             fakeAnonymousId,
+            fakeDatadogContext,
             fakeSampleRate
         )
 
@@ -466,6 +484,7 @@ internal class WebViewRumEventMapperTest {
             fakeServerTimeOffset,
             true,
             fakeAnonymousId,
+            fakeDatadogContext,
             fakeSampleRate
         )
 
@@ -494,12 +513,107 @@ internal class WebViewRumEventMapperTest {
             fakeServerTimeOffset,
             true,
             fakeAnonymousId,
+            fakeDatadogContext,
             traceSampleRate = null
         )
 
         // Then
         val dd = mappedEvent.getAsJsonObject(WebViewRumEventMapper.DD_KEY_NAME)
         assertThat(dd).hasField(WebViewRumEventMapper.RULE_PSR_KEY_NAME, originalRulePsr)
+    }
+
+    @Test
+    fun `M add mobile SDK tags to ddtags W mapEvent() { no ddtags on event }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeViewEvent = forge.getForgery<ViewEvent>()
+        val fakeRumJsonObject = fakeViewEvent.toJson().asJsonObject.apply {
+            remove(WebViewRumEventMapper.DDTAGS_KEY_NAME)
+        }
+        whenever(mockNativeRumViewsCache.resolveLastParentIdForBrowserEvent(fakeViewEvent.date))
+            .thenReturn(fakeResolvedNativeViewId)
+        val expectedTags = DdTagsUtils.toDdTagsString(fakeDatadogContext)
+
+        // When
+        val mappedEvent = testedWebViewRumEventMapper.mapEvent(
+            fakeRumJsonObject,
+            fakeRumContext,
+            fakeServerTimeOffset,
+            true,
+            fakeAnonymousId,
+            fakeDatadogContext
+        )
+
+        // Then
+        assertThat(mappedEvent).hasField(WebViewRumEventMapper.DDTAGS_KEY_NAME, expectedTags)
+    }
+
+    @Test
+    fun `M preserve browser tags and let existing win on conflict W mapEvent() { event already has ddtags }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeBrowserOnlyKey = forge.anAlphabeticalString()
+        val fakeBrowserOnlyValue = forge.anAlphaNumericalString()
+        val fakeViewEvent = forge.getForgery<ViewEvent>()
+        val fakeRumJsonObject = fakeViewEvent.toJson().asJsonObject.apply {
+            addProperty(
+                WebViewRumEventMapper.DDTAGS_KEY_NAME,
+                "$fakeBrowserOnlyKey:$fakeBrowserOnlyValue,sdk_version:browser-sdk-version"
+            )
+        }
+        whenever(mockNativeRumViewsCache.resolveLastParentIdForBrowserEvent(fakeViewEvent.date))
+            .thenReturn(fakeResolvedNativeViewId)
+
+        // When
+        val mappedEvent = testedWebViewRumEventMapper.mapEvent(
+            fakeRumJsonObject,
+            fakeRumContext,
+            fakeServerTimeOffset,
+            true,
+            fakeAnonymousId,
+            fakeDatadogContext
+        )
+
+        // Then
+        val tags = DdTagsUtils.toDdTagsMap(
+            mappedEvent.get(WebViewRumEventMapper.DDTAGS_KEY_NAME).asString
+        )
+        // Browser-only tag preserved; existing sdk_version wins over mobile sdk_version.
+        mapAssertThat(tags)
+            .containsEntry(fakeBrowserOnlyKey, fakeBrowserOnlyValue)
+            .doesNotContainEntry("sdk_version", fakeDatadogContext.sdkVersion)
+            .containsEntry("sdk_version", "browser-sdk-version") // existing value IS present
+    }
+
+    @Test
+    fun `M not crash on non-string ddtags W mapEvent() { ddtags is a number }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeViewEvent = forge.getForgery<ViewEvent>()
+        val fakeRumJsonObject = fakeViewEvent.toJson().asJsonObject.apply {
+            addProperty(WebViewRumEventMapper.DDTAGS_KEY_NAME, 42)
+        }
+        whenever(mockNativeRumViewsCache.resolveLastParentIdForBrowserEvent(fakeViewEvent.date))
+            .thenReturn(fakeResolvedNativeViewId)
+
+        // When
+        val mappedEvent = testedWebViewRumEventMapper.mapEvent(
+            fakeRumJsonObject,
+            fakeRumContext,
+            fakeServerTimeOffset,
+            true,
+            fakeAnonymousId,
+            fakeDatadogContext
+        )
+
+        // Then — no exception thrown; mobile tags are still merged
+        assertThat(mappedEvent).hasField(
+            WebViewRumEventMapper.DDTAGS_KEY_NAME,
+            DdTagsUtils.toDdTagsString(fakeDatadogContext)
+        )
     }
 
     private fun assertMappedEvent(

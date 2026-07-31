@@ -7,6 +7,7 @@
 import com.datadog.gradle.config.kotlinConfig
 
 plugins {
+    id("ktlint")
     id("org.jetbrains.kotlin.jvm")
 }
 

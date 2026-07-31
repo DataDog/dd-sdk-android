@@ -44,7 +44,10 @@ internal class SemanticsUtils(
     private val reflectionUtils: ReflectionUtils = ReflectionUtils(),
     private val sampler: RateBasedSampler<Unit> = RateBasedSampler(BITMAP_TELEMETRY_SAMPLE_RATE)
 ) {
-    private val backgroundResolver = BackgroundResolver(reflectionUtils, ::resolveInnerBounds)
+    private val backgroundResolver = BackgroundResolver(
+        reflectionUtils,
+        { node, offset -> resolveInnerBounds(node, offset) }
+    )
 
     internal fun findRootSemanticsNode(view: View): SemanticsNode? {
         reflectionUtils.apply {
@@ -384,7 +387,8 @@ internal class SemanticsUtils(
             text = multiParagraphCapturedText ?: resolveAnnotatedString(layoutInput.text),
             color = modifierColor?.value ?: layoutInput.style.color.value,
             textAlign = layoutInput.style.textAlign,
-            fontSize = layoutInput.style.fontSize.value.toLong(),
+            fontSize = layoutInput.style.fontSize.value
+                .let { if (it.isNaN()) DEFAULT_FONT_SIZE_SP else it.toLong() },
             fontFamily = layoutInput.style.fontFamily,
             textOverflow = textOverflow
         )
@@ -475,6 +479,7 @@ internal class SemanticsUtils(
         private const val OVERFLOW_TYPE_KEY = "overflow.type"
         private const val ERROR_TYPE_KEY = "error.type"
 
+        internal const val DEFAULT_FONT_SIZE_SP = 12L
         internal const val TEXT_OVERFLOW_CLIP = 1
         internal const val TEXT_OVERFLOW_ELLIPSE = 2
         internal const val TEXT_OVERFLOW_VISIBLE = 3

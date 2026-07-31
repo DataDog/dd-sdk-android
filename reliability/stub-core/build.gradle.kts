@@ -10,6 +10,7 @@ import com.datadog.gradle.config.kotlinConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
+    id("ktlint")
     // Build
     id("com.android.library")
     kotlin("android")
@@ -17,6 +18,7 @@ plugins {
 
     // Analysis tools
     id("com.github.ben-manes.versions")
+    id("test-pyramid-api-usage")
 
     // Tests
     id("de.mobilej.unmock")

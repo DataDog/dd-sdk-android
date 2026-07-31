@@ -37,6 +37,7 @@ import com.datadog.android.core.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.telemetry.TelemetryContext
 import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.ndk.internal.DatadogNdkCrashHandler
 import com.datadog.android.ndk.internal.NoOpNdkCrashHandler
@@ -145,6 +146,9 @@ internal class CoreFeatureTest {
 
     @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL)
     lateinit var fakeVersion: String
+
+    @Forgery
+    lateinit var fakeTelemetryContext: TelemetryContext
 
     @BeforeEach
     fun `set up`() {
@@ -1307,13 +1311,17 @@ internal class CoreFeatureTest {
         val legacyNdkViewEventFile = DatadogNdkCrashHandler.getLastViewEventFile(tempDir)
         legacyNdkViewEventFile.parentFile?.mkdirs()
 
-        BatchFileReaderWriter
-            .create(internalLogger = mock(), encryption = null)
-            .writeData(
-                legacyNdkViewEventFile,
-                RawBatchEvent(fakeViewEvent.toString().toByteArray()),
-                append = false
-            )
+        val fixtureWriter = BatchFileReaderWriter.create(
+            internalLogger = mock(),
+            encryption = null
+        )
+        val fixtureEvent = RawBatchEvent(fakeViewEvent.toString().toByteArray())
+        fixtureWriter.writeBinaryData(
+            legacyNdkViewEventFile,
+            checkNotNull(fixtureWriter.serializeToBytes(fixtureEvent, fakeTelemetryContext)),
+            append = false,
+            fakeTelemetryContext
+        )
 
         // When
         val lastViewEvent = testedFeature.lastViewEvent

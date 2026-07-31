@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.core.internal.utils.DdTagsUtils
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
@@ -15,7 +16,6 @@ import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.toVitalAppLaunch
-import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.internal.utils.hasUserData
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import java.util.UUID
@@ -144,7 +144,7 @@ internal class RumVitalAppLaunchEventHelper(
             connectivity = datadogContext.networkInfo.toAppLaunchVitalConnectivity(),
             version = datadogContext.version,
             service = datadogContext.service,
-            ddtags = buildDDTagsString(datadogContext),
+            ddtags = DdTagsUtils.toDdTagsString(datadogContext),
             vital = VitalAppLaunchEvent.Vital(
                 id = UUID.randomUUID().toString(),
                 name = appLaunchMetric.vitalName(),

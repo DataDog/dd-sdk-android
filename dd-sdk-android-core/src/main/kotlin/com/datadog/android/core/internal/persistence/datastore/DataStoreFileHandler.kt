@@ -13,9 +13,11 @@ import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.persistence.Serializer
+import com.datadog.android.internal.telemetry.TelemetryContext
 import java.util.concurrent.ExecutorService
 
 internal class DataStoreFileHandler(
+    private val featureName: String,
     private val executorService: ExecutorService,
     private val internalLogger: InternalLogger,
     private val dataStoreFileReader: DatastoreFileReader,
@@ -30,7 +32,7 @@ internal class DataStoreFileHandler(
         serializer: Serializer<T>
     ) {
         executorService.executeSafe("dataStoreWrite", internalLogger) {
-            datastoreFileWriter.write(key, data, serializer, callback, version)
+            datastoreFileWriter.write(key, data, serializer, callback, version, TelemetryContext(featureName))
         }
     }
 
@@ -53,7 +55,7 @@ internal class DataStoreFileHandler(
         deserializer: Deserializer<String, T>
     ) {
         executorService.executeSafe("dataStoreRead", internalLogger) {
-            dataStoreFileReader.read(key, deserializer, version, callback)
+            dataStoreFileReader.read(key, deserializer, version, callback, TelemetryContext(featureName))
         }
     }
 }
