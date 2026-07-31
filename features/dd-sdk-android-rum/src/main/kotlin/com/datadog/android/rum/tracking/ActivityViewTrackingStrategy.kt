@@ -16,6 +16,7 @@ import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
 import com.datadog.android.internal.attributes.enrichWithConstantAttribute
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.internal.tracking.ReplayableViewTrackingStrategy
 import com.datadog.android.rum.internal.utils.resolveViewName
 import com.datadog.android.rum.internal.utils.runIfValid
 import java.util.concurrent.ScheduledExecutorService
@@ -37,7 +38,8 @@ constructor(
     internal val componentPredicate: ComponentPredicate<Activity> = AcceptAllActivities()
 ) :
     ActivityLifecycleTrackingStrategy(),
-    ViewTrackingStrategy {
+    ViewTrackingStrategy,
+    ReplayableViewTrackingStrategy {
 
     private val executor: ScheduledExecutorService by lazy {
         sdkCore.createScheduledExecutorService(
@@ -79,6 +81,14 @@ constructor(
                 getRumMonitor()?.stopView(it)
             }
         }
+    }
+
+    // endregion
+
+    // region ReplayableViewTrackingStrategy
+
+    override fun onLateActivityReady(activity: Activity) {
+        onActivityResumed(activity)
     }
 
     // endregion

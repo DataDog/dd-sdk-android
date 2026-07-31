@@ -23,6 +23,7 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.tracking.AndroidXFragmentLifecycleCallbacks
+import com.datadog.android.rum.internal.tracking.ReplayableViewTrackingStrategy
 import com.datadog.android.rum.internal.utils.resolveViewName
 import com.datadog.android.rum.internal.utils.runIfValid
 import java.util.WeakHashMap
@@ -42,7 +43,8 @@ class NavigationViewTrackingStrategy(
 ) :
     ActivityLifecycleTrackingStrategy(),
     ViewTrackingStrategy,
-    NavController.OnDestinationChangedListener {
+    NavController.OnDestinationChangedListener,
+    ReplayableViewTrackingStrategy {
 
     private var startedActivity: Activity? = null
 
@@ -83,6 +85,14 @@ class NavigationViewTrackingStrategy(
         activity.findNavControllerOrNull(navigationViewId)?.currentDestination?.let {
             rumMonitor?.stopView(it)
         }
+    }
+
+    // endregion
+
+    // region ReplayableViewTrackingStrategy
+
+    override fun onLateActivityReady(activity: Activity) {
+        onActivityStarted(activity)
     }
 
     // endregion
