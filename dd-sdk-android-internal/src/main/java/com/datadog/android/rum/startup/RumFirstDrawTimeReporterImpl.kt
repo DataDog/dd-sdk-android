@@ -88,14 +88,16 @@ class RumFirstDrawTimeReporterImpl(
         override fun onViewDetachedFromWindow(v: View) {}
 
         override fun onDraw() {
-            if (onDrawInvoked) return
+            if (onDrawInvoked || isCancelled) return
             onDrawInvoked = true
 
             val nowNs = timeProviderNs()
             handler.sendMessageAtFrontOfQueue(
                 Message.obtain(
                     handler,
-                    Runnable { callback.onFirstFrameDrawn(nowNs) }
+                    Runnable {
+                        if (!isCancelled) callback.onFirstFrameDrawn(nowNs)
+                    }
                 ).apply { isAsynchronous = true }
             )
 

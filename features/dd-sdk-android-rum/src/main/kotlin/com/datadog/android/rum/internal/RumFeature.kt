@@ -827,6 +827,7 @@ internal class RumFeature(
         // GlobalRumMonitor is not yet registered during onInitialize — the real monitor is
         // registered in Rum.enable() after onInitialize returns. Re-get the monitor inside
         // the first-frame callback, which fires after Rum.enable() has completed.
+        val capturedStrategy = viewTrackingStrategy as? ReplayableViewTrackingStrategy
         collector.addFirstFrameCallback { firstFrameNs ->
             val durationNs = firstFrameNs - scenario.initialTime.nanoTime
             sdkCore.internalLogger.log(
@@ -836,6 +837,9 @@ internal class RumFeature(
             )
             val rumMonitor =
                 GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor ?: return@addFirstFrameCallback
+            scenario.activity.get()?.let { activity ->
+                capturedStrategy?.onLateActivityReady(activity)
+            }
             rumMonitor.sendAppStartEvent(scenario)
             rumMonitor.sendTTIDEvent(RumTTIDInfo(scenario = scenario, durationNs = durationNs))
         }
