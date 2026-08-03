@@ -31,6 +31,11 @@ enum class ResolutionReason {
     TARGETING_MATCH,
 
     /**
+     * A traffic split selected the resolved value.
+     */
+    SPLIT,
+
+    /**
      * The resolved value matched a specific evaluation rule.
      */
     RULE_MATCH,

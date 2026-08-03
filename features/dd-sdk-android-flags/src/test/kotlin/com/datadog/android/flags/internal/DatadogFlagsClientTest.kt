@@ -980,6 +980,36 @@ internal class DatadogFlagsClientTest {
     }
 
     @Test
+    fun `M return ResolutionDetails with SPLIT reason W resolve() { flag has SPLIT reason }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.aBool()
+        val fakeFlagValue = !fakeDefaultValue
+        val fakeVariationKey = forge.anAlphabeticalString()
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.BOOLEAN.value,
+            variationValue = fakeFlagValue.toString(),
+            variationKey = fakeVariationKey,
+            reason = "SPLIT"
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        // When
+        val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result.value).isEqualTo(fakeFlagValue)
+        assertThat(result.variant).isEqualTo(fakeVariationKey)
+        assertThat(result.reason).isEqualTo(ResolutionReason.SPLIT)
+        assertThat(result.errorCode).isNull()
+        assertThat(result.errorMessage).isNull()
+    }
+
+    @Test
     fun `M return ResolutionDetails with error W resolve() { type mismatch }`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
