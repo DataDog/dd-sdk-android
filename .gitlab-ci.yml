@@ -30,9 +30,16 @@ variables:
   ORG_GRADLE_PROJECT_gradlePluginProxy: "https://depot-read-api-java.us1.ddbuild.io/magicmirror/magicmirror/@current/"
 
 include:
-  - local: 'ci/pipelines/default-pipeline.yml'
-    rules:
-      - if: '$CI_PIPELINE_KEY == null'
-  - local: 'ci/pipelines/check-release-pipeline.yml'
-    rules:
-      - if: '$CI_PIPELINE_KEY == "check-release"'
+  # TEMPORARY: only rum-fit-test pipeline active for cross-repo CI testing.
+  # Restore the full routing below once testing is complete.
+  - local: 'ci/pipelines/rum-fit-test.yml'
+
+  # - local: 'ci/pipelines/default-pipeline.yml'
+  #   rules:
+  #     - if: '$CI_PIPELINE_KEY == null'
+  # - local: 'ci/pipelines/check-release-pipeline.yml'
+  #   rules:
+  #     - if: '$CI_PIPELINE_KEY == "check-release"'
+  # - local: 'ci/pipelines/rum-fit-test.yml'
+  #   rules:
+  #     - if: '$CI_PIPELINE_KEY == "rum-fit-test"'

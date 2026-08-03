@@ -1,0 +1,25 @@
+# Standalone pipeline for manually testing rum-fit cross-repo CI integration.
+#
+# Trigger via GitLab UI or CLI with CI_PIPELINE_KEY=rum-fit-test.
+# Override RUM_FIT_BRANCH to target a specific rum-fit branch (default: main).
+#
+# Example with CLI:
+#   glab ci run --variables CI_PIPELINE_KEY=rum-fit-test,RUM_FIT_BRANCH=aleksandr-gringauz/external-repo-triggering
+
+variables:
+  RUM_FIT_BRANCH: "main"
+
+stages:
+  - rum-fit
+
+rum-fit:android-tests:
+  stage: rum-fit
+  when: manual
+  trigger:
+    project: DataDog/rum-sdk-integration-test-framework
+    branch: $RUM_FIT_BRANCH
+    strategy: depend
+  variables:
+    CI_PIPELINE_KEY: android-sdk-tests
+    ANDROID_SDK_REF: $CI_COMMIT_SHA
+
