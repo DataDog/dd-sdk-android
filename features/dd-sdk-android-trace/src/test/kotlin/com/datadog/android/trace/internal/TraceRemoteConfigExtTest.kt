@@ -67,14 +67,14 @@ internal class TraceRemoteConfigExtTest {
     // region toSdkHeaderType
 
     @Test
-    fun `M map all RemoteConfiguration TracingHeaderType values W toSdkHeaderType`() {
-        assertThat(RemoteConfiguration.TracingHeaderType.DATADOG.toSdkHeaderType())
+    fun `M map all RemoteConfiguration PropagatorType values W toSdkHeaderType`() {
+        assertThat(RemoteConfiguration.PropagatorType.DATADOG.toSdkHeaderType())
             .isEqualTo(TracingHeaderType.DATADOG)
-        assertThat(RemoteConfiguration.TracingHeaderType.B3.toSdkHeaderType())
+        assertThat(RemoteConfiguration.PropagatorType.B3.toSdkHeaderType())
             .isEqualTo(TracingHeaderType.B3)
-        assertThat(RemoteConfiguration.TracingHeaderType.B3MULTI.toSdkHeaderType())
+        assertThat(RemoteConfiguration.PropagatorType.B3MULTI.toSdkHeaderType())
             .isEqualTo(TracingHeaderType.B3MULTI)
-        assertThat(RemoteConfiguration.TracingHeaderType.TRACECONTEXT.toSdkHeaderType())
+        assertThat(RemoteConfiguration.PropagatorType.TRACECONTEXT.toSdkHeaderType())
             .isEqualTo(TracingHeaderType.TRACECONTEXT)
     }
 
@@ -114,7 +114,7 @@ internal class TraceRemoteConfigExtTest {
             tracedHosts = listOf(
                 RemoteConfiguration.TracedHost(
                     host = fakeRcHost,
-                    propagatorTypes = listOf(RemoteConfiguration.TracingHeaderType.B3)
+                    propagatorTypes = listOf(RemoteConfiguration.PropagatorType.B3)
                 )
             )
         )
@@ -139,8 +139,8 @@ internal class TraceRemoteConfigExtTest {
                 RemoteConfiguration.TracedHost(
                     host = fakeHost,
                     propagatorTypes = listOf(
-                        RemoteConfiguration.TracingHeaderType.B3MULTI,
-                        RemoteConfiguration.TracingHeaderType.TRACECONTEXT
+                        RemoteConfiguration.PropagatorType.B3MULTI,
+                        RemoteConfiguration.PropagatorType.TRACECONTEXT
                     )
                 )
             )
@@ -152,88 +152,6 @@ internal class TraceRemoteConfigExtTest {
         // Then
         assertThat(resolver!!.headerTypesForUrl("https://$fakeHost/path"))
             .containsExactlyInAnyOrder(TracingHeaderType.B3MULTI, TracingHeaderType.TRACECONTEXT)
-    }
-
-    @Test
-    fun `M use global tracingHeaderTypes W buildRcHostResolver { host has no propagatorTypes }`(
-        forge: Forge
-    ) {
-        // Given
-        val fakeHost = forge.aStringMatching("[a-z]+\\.[a-z]{2,3}")
-        val trace = RemoteConfiguration.Trace(
-            tracedHosts = listOf(
-                RemoteConfiguration.TracedHost(host = fakeHost, propagatorTypes = null)
-            ),
-            tracingHeaderTypes = listOf(RemoteConfiguration.TracingHeaderType.B3)
-        )
-
-        // When
-        val resolver = trace.buildRcHostResolver()
-
-        // Then
-        assertThat(resolver!!.headerTypesForUrl("https://$fakeHost/path"))
-            .containsExactly(TracingHeaderType.B3)
-    }
-
-    @Test
-    fun `M use SDK default header types W buildRcHostResolver { no propagatorTypes, no global types }`(
-        forge: Forge
-    ) {
-        // Given
-        val fakeHost = forge.aStringMatching("[a-z]+\\.[a-z]{2,3}")
-        val trace = RemoteConfiguration.Trace(
-            tracedHosts = listOf(
-                RemoteConfiguration.TracedHost(host = fakeHost, propagatorTypes = null)
-            ),
-            tracingHeaderTypes = null
-        )
-
-        // When
-        val resolver = trace.buildRcHostResolver()
-
-        // Then
-        assertThat(resolver!!.headerTypesForUrl("https://$fakeHost/path"))
-            .containsExactlyInAnyOrder(TracingHeaderType.DATADOG, TracingHeaderType.TRACECONTEXT)
-    }
-
-    @Test
-    fun `M use empty header types W buildRcHostResolver { host has explicit empty propagatorTypes }`(
-        forge: Forge
-    ) {
-        // Given — explicit empty propagatorTypes means "trace host with no headers"
-        val fakeHost = forge.aStringMatching("[a-z]+\\.[a-z]{2,3}")
-        val trace = RemoteConfiguration.Trace(
-            tracedHosts = listOf(
-                RemoteConfiguration.TracedHost(host = fakeHost, propagatorTypes = emptyList())
-            ),
-            tracingHeaderTypes = listOf(RemoteConfiguration.TracingHeaderType.B3)
-        )
-
-        // When
-        val resolver = trace.buildRcHostResolver()
-
-        // Then — empty set, not the global fallback
-        assertThat(resolver!!.headerTypesForUrl("https://$fakeHost/path")).isEmpty()
-    }
-
-    @Test
-    fun `M use empty global types W buildRcHostResolver { explicit empty tracingHeaderTypes }`(
-        forge: Forge
-    ) {
-        // Given — explicit empty tracingHeaderTypes means no global fallback
-        val fakeHost = forge.aStringMatching("[a-z]+\\.[a-z]{2,3}")
-        val trace = RemoteConfiguration.Trace(
-            tracedHosts = listOf(
-                RemoteConfiguration.TracedHost(host = fakeHost, propagatorTypes = null)
-            ),
-            tracingHeaderTypes = emptyList()
-        )
-
-        // When
-        val resolver = trace.buildRcHostResolver()
-
-        // Then — empty global types → empty set for host (no SDK default applied)
-        assertThat(resolver!!.headerTypesForUrl("https://$fakeHost/path")).isEmpty()
     }
 
     // endregion

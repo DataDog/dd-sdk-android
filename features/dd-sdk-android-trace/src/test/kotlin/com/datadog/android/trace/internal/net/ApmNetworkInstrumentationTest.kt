@@ -1239,7 +1239,7 @@ internal class ApmNetworkInstrumentationTest {
                 tracedHosts = listOf(
                     RemoteConfiguration.TracedHost(
                         host = fakeRcHost,
-                        propagatorTypes = listOf(RemoteConfiguration.TracingHeaderType.DATADOG)
+                        propagatorTypes = listOf(RemoteConfiguration.PropagatorType.DATADOG)
                     )
                 )
             )
@@ -1304,8 +1304,7 @@ internal class ApmNetworkInstrumentationTest {
             trace = RemoteConfiguration.Trace(
                 sampleRate = null,
                 traceContextInjection = null,
-                tracedHosts = null,
-                tracingHeaderTypes = null
+                tracedHosts = null
             )
         )
         whenever(mockSdkCore.remoteConfiguration) doReturn fakeRc

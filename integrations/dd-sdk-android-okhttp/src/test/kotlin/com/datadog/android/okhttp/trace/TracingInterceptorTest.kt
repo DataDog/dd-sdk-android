@@ -1885,7 +1885,7 @@ internal open class TracingInterceptorTest {
                 tracedHosts = listOf(
                     RemoteConfiguration.TracedHost(
                         host = fakeRcHost,
-                        propagatorTypes = listOf(RemoteConfiguration.TracingHeaderType.DATADOG)
+                        propagatorTypes = listOf(RemoteConfiguration.PropagatorType.DATADOG)
                     )
                 )
             )
@@ -1911,8 +1911,7 @@ internal open class TracingInterceptorTest {
             trace = RemoteConfiguration.Trace(
                 sampleRate = null,
                 traceContextInjection = null,
-                tracedHosts = null,
-                tracingHeaderTypes = null
+                tracedHosts = null
             )
         )
         whenever(rumMonitor.mockSdkCore.remoteConfiguration) doReturn fakeRc

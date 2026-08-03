@@ -40,28 +40,24 @@ fun RemoteConfiguration.Trace.toSdkInjection(): TraceContextInjection? =
     }
 
 /**
- * Maps a remote [RemoteConfiguration.TracingHeaderType] to the SDK [TracingHeaderType].
+ * Maps a remote [RemoteConfiguration.PropagatorType] to the SDK [TracingHeaderType].
  */
 @InternalApi
-fun RemoteConfiguration.TracingHeaderType.toSdkHeaderType(): TracingHeaderType =
+fun RemoteConfiguration.PropagatorType.toSdkHeaderType(): TracingHeaderType =
     when (this) {
-        RemoteConfiguration.TracingHeaderType.DATADOG -> TracingHeaderType.DATADOG
-        RemoteConfiguration.TracingHeaderType.B3 -> TracingHeaderType.B3
-        RemoteConfiguration.TracingHeaderType.B3MULTI -> TracingHeaderType.B3MULTI
-        RemoteConfiguration.TracingHeaderType.TRACECONTEXT -> TracingHeaderType.TRACECONTEXT
+        RemoteConfiguration.PropagatorType.DATADOG -> TracingHeaderType.DATADOG
+        RemoteConfiguration.PropagatorType.B3 -> TracingHeaderType.B3
+        RemoteConfiguration.PropagatorType.B3MULTI -> TracingHeaderType.B3MULTI
+        RemoteConfiguration.PropagatorType.TRACECONTEXT -> TracingHeaderType.TRACECONTEXT
     }
 
 /**
- * Builds a new [DefaultFirstPartyHostHeaderTypeResolver] from the RC `tracedHosts`, mirroring
- * iOS PR #3047 semantics:
+ * Builds a new [DefaultFirstPartyHostHeaderTypeResolver] from the RC `tracedHosts`:
  * - `null` (absent) → returns `null` (caller keeps existing resolver unchanged)
  * - explicit empty list → returns an empty resolver (no first-party requests will be traced)
  * - non-empty list → returns a resolver with RC hosts replacing the developer's hosts
  *
- * For each host the header types are resolved in order:
- * 1. Per-host `propagatorTypes` from the RC payload
- * 2. Global `tracingHeaderTypes` from the RC payload
- * 3. SDK default `{DATADOG, TRACECONTEXT}`
+ * Each host entry carries its own non-empty `propagatorTypes` list (required by the schema).
  */
 @Suppress("ReturnCount")
 @InternalApi
@@ -70,19 +66,8 @@ fun RemoteConfiguration.Trace.buildRcHostResolver(): DefaultFirstPartyHostHeader
     if (rcHosts.isEmpty()) {
         return DefaultFirstPartyHostHeaderTypeResolver(emptyMap())
     }
-    // null (absent) → SDK default; [] (explicit empty) → no global fallback types
-    val globalTypes = tracingHeaderTypes
-        ?.map { it.toSdkHeaderType() }
-        ?.toSet()
-        ?: setOf(TracingHeaderType.DATADOG, TracingHeaderType.TRACECONTEXT)
-
     val newHosts = rcHosts.associate { tracedHost ->
-        // null (absent) → fall back to globalTypes; [] (explicit empty) → no headers for this host
-        val types = tracedHost.propagatorTypes
-            ?.map { it.toSdkHeaderType() }
-            ?.toSet()
-            ?: globalTypes
-        tracedHost.host to types
+        tracedHost.host to tracedHost.propagatorTypes.map { it.toSdkHeaderType() }.toSet()
     }
     // RC hosts come from the server and are already validated — pass directly to the resolver
     // which will lowercase them in its constructor.

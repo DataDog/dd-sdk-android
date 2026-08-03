@@ -12,8 +12,6 @@
           "description": "UUID of the RUM application",
           "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
         },
-        "service": { "type": "string" },
-        "env": { "type": "string" },
         "telemetrySampleRate": { "type": "number", "minimum": 0, "maximum": 100 },
         "trackAnonymousUser": { "type": "boolean" },
         "trackUserInteractions": { "type": "boolean" },
@@ -22,16 +20,12 @@
         "longTask": {
           "type": "object",
           "additionalProperties": false,
-          "description": "Long task detection configuration",
           "properties": {
-            "enabled": {
-              "type": "boolean",
-              "description": "Enables long task detection. Omit to fall back to SDK in-code default."
-            },
+            "enabled": { "type": "boolean" },
             "threshold": {
               "type": "number",
               "minimum": 100,
-              "description": "Minimum main-thread task duration in ms. Only relevant when enabled is true."
+              "description": "Minimum main-thread task duration in milliseconds to report as a long task"
             }
           }
         },
@@ -44,13 +38,8 @@
     },
     "sessionReplay": {
       "type": "object",
-      "additionalProperties": false,
       "properties": {
         "sampleRate": { "type": "number", "minimum": 0, "maximum": 100 },
-        "startRecordingImmediately": {
-          "type": "boolean",
-          "description": "Whether Session Replay starts recording as soon as the SDK initializes"
-        },
         "textAndInputPrivacy": {
           "type": "string",
           "enum": ["mask_sensitive_inputs", "mask_all_inputs", "mask_all"]
@@ -77,24 +66,20 @@
         "traceContextInjection": { "type": "string", "enum": ["all", "sampled"] },
         "tracedHosts": {
           "type": "array",
-          "description": "Per-host distributed tracing configuration",
+          "description": "Per-host distributed tracing configuration. Aligns with browser's allowedTracingUrls model (without regex matching).",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["host"],
+            "required": ["host", "propagatorTypes"],
             "properties": {
               "host": { "type": "string" },
               "propagatorTypes": {
                 "type": "array",
+                "minItems": 1,
                 "items": { "type": "string", "enum": ["datadog", "b3", "b3multi", "tracecontext"] }
               }
             }
           }
-        },
-        "tracingHeaderTypes": {
-          "type": "array",
-          "description": "Tracing header formats injected on requests to all traced hosts",
-          "items": { "type": "string", "enum": ["datadog", "b3", "b3multi", "tracecontext"] }
         }
       }
     }
