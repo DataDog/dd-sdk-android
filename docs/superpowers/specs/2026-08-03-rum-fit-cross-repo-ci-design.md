@@ -66,6 +66,7 @@ android-tests:
     - !reference [.snippets, init]
     - export DD_TAGS="platform:android"
     - !reference [.snippets, setup-ci-visibility]
+    - !reference [.snippets, install-bazel]
     - !reference [.snippets, install-android-sdk-components]
     - !reference [.snippets, write-android-dd-config]
     - bazel test //suites/datadog_rum:android_tests
@@ -73,7 +74,9 @@ android-tests:
         --nocache_test_results
 ```
 
-The emulator is started implicitly by the `boot-android-emulator` step. The Bazel `android_tests` target handles building the APK (via `./gradlew assembleDebug` inside the `debug_apk` genrule) and running the Python pytest suite.
+Bazel is not yet pre-installed on the macOS AMI runner, so an `install-bazel` snippet is added to rum-fit's `.snippets` anchor. It installs Bazelisk (pinned version) as `/usr/local/bin/bazel`; Bazelisk then reads `.bazelversion` (currently `8.7.0`) and downloads the correct Bazel binary on first run. This snippet is called in all macOS jobs that invoke `bazel`. Once the macOS CI image is updated to include Bazel, the snippet is simply removed from those jobs.
+
+The Bazel `android_tests` target handles building the APK (via `./gradlew assembleDebug` inside the `debug_apk` genrule) and running the Python pytest suite.
 
 The `rules:` entry skips this job on bump branch pipelines. After a bump PR merges to main, the job falls through to `when: manual` — no automatic re-run, no loop. The `Rum-Fit-Pipeline:` trailer remains in the bump commit message for git log readability and future extensibility, but is not wired to a CI rule.
 
