@@ -7,7 +7,7 @@
 #   glab ci run --variables CI_PIPELINE_KEY=rum-fit-test,RUM_FIT_BRANCH=aleksandr-gringauz/external-repo-triggering
 
 variables:
-  RUM_FIT_BRANCH: "main"
+  RUM_FIT_BRANCH: "aleksandr-gringauz/external-repo-triggering"
 
 stages:
   - rum-fit
