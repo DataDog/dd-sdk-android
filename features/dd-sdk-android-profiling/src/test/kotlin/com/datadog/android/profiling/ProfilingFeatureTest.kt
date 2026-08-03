@@ -252,54 +252,21 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
-    fun `M set Profiling sample rate W initialize {sample rate not exists}()`() {
+    fun `M set Profiling sample rate W initialize()`(
+        @FloatForgery(min = 0f, max = 100f) fakeStoredSampleRate: Float
+    ) {
         // Given
+        // Whatever was previously stored, only one SDK instance can initialize the feature, so the
+        // configured sample rate always wins.
         whenever(
             mockSharedPreferencesStorage
                 .getFloat("dd_profiling_sample_rate", -1f)
-        ) doReturn (-1f)
+        ) doReturn fakeStoredSampleRate
 
         // When
         testedFeature.onInitialize(mockContext)
 
         // Then
-        verify(mockSharedPreferencesStorage).putFloat(
-            "dd_profiling_sample_rate",
-            fakeConfiguration.applicationLaunchSampleRate
-        )
-    }
-
-    @Test
-    fun `M not set Profiling sample rate W initialize() {smaller sample rate exists}`() {
-        // Given
-        // A non-negative existing rate that is <= the configured rate (the configured rate is
-        // forged in 0f..100f, so subtracting would underflow below the "unset" sentinel).
-        whenever(
-            mockSharedPreferencesStorage
-                .getFloat("dd_profiling_sample_rate", -1f)
-        ) doReturn fakeConfiguration.applicationLaunchSampleRate / 2f
-
-        // When
-        testedFeature.onInitialize(mockContext)
-
-        // Then
-        verify(mockSharedPreferencesStorage, never()).putFloat(
-            "dd_profiling_sample_rate",
-            fakeConfiguration.applicationLaunchSampleRate
-        )
-    }
-
-    @Test
-    fun `M set Profiling sample rate W initialize() {bigger sample rate exists}`() {
-        whenever(
-            mockSharedPreferencesStorage.getFloat("dd_profiling_sample_rate", -1f)
-        ) doReturn fakeConfiguration.applicationLaunchSampleRate + 1f
-
-        // When
-        testedFeature.onInitialize(mockContext)
-
-        // Then
-        // Since the existing value was higher, it should be updated to the configuration value
         verify(mockSharedPreferencesStorage).putFloat(
             "dd_profiling_sample_rate",
             fakeConfiguration.applicationLaunchSampleRate
