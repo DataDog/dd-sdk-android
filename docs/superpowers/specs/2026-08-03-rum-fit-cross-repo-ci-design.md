@@ -54,8 +54,6 @@ android-tests:
   tags: ["macos:sequoia-arm64", "specific:true"]
   timeout: 30m
   rules:
-    - if: '$CI_COMMIT_MESSAGE =~ /Rum-Fit-Pipeline: bump-android-sdk/'
-      when: never
     - if: '$CI_COMMIT_BRANCH =~ /^bump\//'
       when: never
     - when: manual
@@ -77,7 +75,7 @@ android-tests:
 
 The emulator is started implicitly by the `boot-android-emulator` step. The Bazel `android_tests` target handles building the APK (via `./gradlew assembleDebug` inside the `debug_apk` genrule) and running the Python pytest suite.
 
-The two `rules:` entries (commit message trailer + branch name prefix) ensure this job never appears on bump PR pipelines, preserving the ability to add other CI jobs to bump PRs in the future without re-running integration tests.
+The `rules:` entry skips this job on bump branch pipelines. After a bump PR merges to main, the job falls through to `when: manual` — no automatic re-run, no loop. The `Rum-Fit-Pipeline:` trailer remains in the bump commit message for git log readability and future extensibility, but is not wired to a CI rule.
 
 **Restructuring:** The existing content of rum-fit's `.gitlab-ci.yml` (variables, `.snippets`, stages, `ci-image`, `web-tests`, `agentic-upgrade-tests`) moves into `ci/pipelines/default-pipeline.yml`. The root `.gitlab-ci.yml` becomes the router only.
 
@@ -237,7 +235,7 @@ dd-sdk-android commit merges to develop
           → create + auto-merge PR to rum-fit main
   → rum-fit main receives bump commit
   → GitHub → GitLab sync → rum-fit default pipeline triggered
-      → android-tests job: rules match Rum-Fit-Pipeline trailer → when: never (skipped)
+      → android-tests job: branch is main → falls through to when: manual (not triggered automatically)
       → other jobs (lint, etc.) can run normally
   → dd-sdk-android develop pipeline: publish stage proceeds
 ```
