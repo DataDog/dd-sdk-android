@@ -268,6 +268,6 @@ dd-sdk-android commit merges to develop
 
 ## Open Items / Infra Prerequisites
 
-1. **dd-octo-sts policy**: `all.gitlab.pr` policy must be configured for `DataDog/rum-sdk-integration-test-framework` in dd-octo-sts. Coordinate with infra/ops.
+1. **dd-octo-sts policy**: `all.gitlab.pr` is declared in the **target repo's** dd-octo-sts configuration (as in `DataDog/datadog-android`, `DataDog/shopist-android`, etc.). The same policy must be explicitly added to `DataDog/rum-sdk-integration-test-framework`'s dd-octo-sts config to allow the bump job to push branches and create PRs. This is a real infra step — it is not inherited automatically. Coordinate with infra/ops.
 2. **rum-fit default branch**: Confirmed as `main` (verified from `git remote show origin`).
 3. **`.bazelrc` `ci` config**: Confirm that `--config=ci` exists in rum-fit's `.bazelrc` (already used by `web-tests` job).
