@@ -104,6 +104,24 @@ ENV DD_TRACER_FOLDER $PWD/dd-java-agent
 RUN mkdir -p $DD_TRACER_FOLDER
 RUN curl -fsSLo $DD_TRACER_FOLDER/dd-java-agent.jar https://repo1.maven.org/maven2/com/datadoghq/dd-java-agent/$DD_TRACER_VERSION/dd-java-agent-$DD_TRACER_VERSION.jar
 
+# Install GitHub CLI
+ENV GH_CLI_VERSION=2.97.0
+ENV GH_CLI_SHA256_amd64=a2c9b8497e1f85b1ad0dfcb78b5a622e098801b8e461e459e88e1ee12f018112
+ENV GH_CLI_SHA256_arm64=73ea440ecad9c9e284429997ee6f93577bc6f7bc6fba357ef62c53ad8fb641a5
+RUN set -x \
+  && case "${TARGETARCH}" in \
+       amd64) sha256="${GH_CLI_SHA256_amd64}"; arch=amd64 ;; \
+       arm64) sha256="${GH_CLI_SHA256_arm64}"; arch=arm64 ;; \
+     esac \
+  && curl -fsSLo gh.tar.gz \
+        "${GITHUB_RELEASES_BASE}/cli/cli/releases/download/v${GH_CLI_VERSION}/gh_${GH_CLI_VERSION}_linux_${arch}.tar.gz" \
+  && echo "${sha256}  gh.tar.gz" | sha256sum -c \
+  && mkdir gh-cli \
+  && tar -xzf gh.tar.gz -C gh-cli \
+  && mv "$(find gh-cli -type f -name gh)" /usr/local/bin/gh \
+  && rm -rf gh.tar.gz gh-cli \
+  && gh --version
+
 COPY --from=registry.ddbuild.io/dd-octo-sts:v1.8.2 /usr/local/bin/dd-octo-sts /usr/local/bin/dd-octo-sts
 COPY --from=registry.ddbuild.io/commit-headless:v2.0.1 /commit-headless /usr/local/bin/commit-headless
 

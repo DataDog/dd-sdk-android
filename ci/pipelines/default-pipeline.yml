@@ -710,3 +710,34 @@ notify:merge-verification-metadata:
     paths:
       - verification-metadata.xml
 
+notify:github-release:
+  tags: [ "arch:amd64" ]
+  interruptible: false
+  only:
+    - tags
+  image: $CI_IMAGE_DOCKER
+  id_tokens:
+    DDOCTOSTS_ID_TOKEN:
+      aud: dd-octo-sts
+  stage: notify
+  when: on_success
+  needs:
+    - notify:merge-verification-metadata
+  script:
+    - export GITHUB_TOKEN=$(dd-octo-sts token --scope DataDog/dd-sdk-android --policy self.gitlab.release.create-release)
+    - >-
+        if gh release view "$CI_COMMIT_TAG" --repo DataDog/dd-sdk-android >/dev/null 2>&1; then
+          gh release upload "$CI_COMMIT_TAG" --repo DataDog/dd-sdk-android --clobber verification-metadata.xml;
+        else
+          # Extract out the tag's changelog entry
+          start_line=$(grep -Fn "# ${CI_COMMIT_TAG} /" CHANGELOG.md | head -1 | cut -d: -f1 || true);
+          if [ -n "$start_line" ]; then
+            tail -n "+$((start_line + 1))" CHANGELOG.md | sed -n '/^# /q;p' > release-notes.md || true;
+          else
+            echo "No CHANGELOG.md entry found for tag $CI_COMMIT_TAG" >&2;
+            echo "Fill this in" > release-notes.md;
+          fi;
+      
+          gh release create "$CI_COMMIT_TAG" --repo DataDog/dd-sdk-android --draft --verify-tag --title "$CI_COMMIT_TAG" --notes-file release-notes.md verification-metadata.xml;
+        fi
+
