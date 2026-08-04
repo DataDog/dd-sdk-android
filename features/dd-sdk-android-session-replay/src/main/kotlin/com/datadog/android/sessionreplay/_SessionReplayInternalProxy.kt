@@ -17,7 +17,6 @@ import com.datadog.android.lint.InternalApi
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentEvent
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistration
-import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 
 /**
  * This class exposes internal methods that are used by other Datadog modules and cross platform
@@ -69,9 +68,10 @@ class _SessionReplayInternalProxy(private val builder: SessionReplayConfiguratio
             val newRegistration = slotId?.let {
                 EmbeddedContentSlotRegistration(it)
             }
+            previousRegistration?.deactivate()
             view.setTag(R.id.datadog_session_replay_slot_id, slotId)
             view.setTag(R.id.datadog_session_replay_slot_registration, newRegistration)
-            EmbeddedContentSlotRegistry.notifySlotChanged(
+            SessionReplay.registeredFeature()?.notifyEmbeddedContentSlotChanged(
                 previousRegistration = previousRegistration,
                 newRegistration = newRegistration
             )

@@ -26,7 +26,6 @@ import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvide
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentEvent
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentReceiver
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistration
-import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
 import com.datadog.android.sessionreplay.internal.recorder.NoOpRecorder
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
@@ -125,7 +124,7 @@ internal class SessionReplayFeatureTest {
             startRecordingImmediately = true,
             touchPrivacy = fakeConfiguration.touchPrivacy,
             configuredSampleRate = fakeSampleRate
-        ) { _, _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _, _ -> mockRecorder }
     }
 
     @Test
@@ -151,7 +150,7 @@ internal class SessionReplayFeatureTest {
     fun `M request embedded capture W RUM view changes { recording active }`() {
         // Given
         val fakeRegistration = EmbeddedContentSlotRegistration(FAKE_EMBEDDED_SLOT_ID)
-        EmbeddedContentSlotRegistry.notifySlotChanged(null, fakeRegistration)
+        testedFeature.embeddedContentSlotRegistry.notifySlotChanged(null, fakeRegistration)
         testedFeature.onInitialize(appContext.mockInstance)
         val contextReceiver = argumentCaptor<FeatureContextUpdateReceiver>().also {
             verify(mockSdkCore).setContextUpdateReceiver(it.capture())
@@ -172,14 +171,14 @@ internal class SessionReplayFeatureTest {
         verify(mockRecorder).requestCapture()
 
         // Cleanup
-        EmbeddedContentSlotRegistry.notifySlotChanged(fakeRegistration, null)
+        testedFeature.embeddedContentSlotRegistry.notifySlotChanged(fakeRegistration, null)
     }
 
     @Test
     fun `M request embedded capture W first RUM view starts { recording active }`() {
         // Given
         val fakeRegistration = EmbeddedContentSlotRegistration(FAKE_EMBEDDED_SLOT_ID)
-        EmbeddedContentSlotRegistry.notifySlotChanged(null, fakeRegistration)
+        testedFeature.embeddedContentSlotRegistry.notifySlotChanged(null, fakeRegistration)
         testedFeature.onInitialize(appContext.mockInstance)
         testedFeature.startRecording()
         val contextReceiver = argumentCaptor<FeatureContextUpdateReceiver>().also {
@@ -196,14 +195,14 @@ internal class SessionReplayFeatureTest {
         verify(mockRecorder).requestCapture()
 
         // Cleanup
-        EmbeddedContentSlotRegistry.notifySlotChanged(fakeRegistration, null)
+        testedFeature.embeddedContentSlotRegistry.notifySlotChanged(fakeRegistration, null)
     }
 
     @Test
     fun `M not request embedded capture W RUM view changes { recording inactive }`() {
         // Given
         val fakeRegistration = EmbeddedContentSlotRegistration(FAKE_EMBEDDED_SLOT_ID)
-        EmbeddedContentSlotRegistry.notifySlotChanged(null, fakeRegistration)
+        testedFeature.embeddedContentSlotRegistry.notifySlotChanged(null, fakeRegistration)
         testedFeature.onInitialize(appContext.mockInstance)
         val contextReceiver = argumentCaptor<FeatureContextUpdateReceiver>().also {
             verify(mockSdkCore).setContextUpdateReceiver(it.capture())
@@ -219,7 +218,7 @@ internal class SessionReplayFeatureTest {
         verify(mockRecorder, never()).requestCapture()
 
         // Cleanup
-        EmbeddedContentSlotRegistry.notifySlotChanged(fakeRegistration, null)
+        testedFeature.embeddedContentSlotRegistry.notifySlotChanged(fakeRegistration, null)
     }
 
     @Test
@@ -365,7 +364,7 @@ internal class SessionReplayFeatureTest {
             startRecordingImmediately = true,
             touchPrivacy = fakeConfiguration.touchPrivacy,
             configuredSampleRate = fakeSampleRate
-        ) { _, _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _, _ -> mockRecorder }
 
         // When
         testedFeature.onInitialize(appContext.mockInstance)
@@ -890,7 +889,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = true,
             configuredSampleRate = fakeSampleRate
-        ) { _, _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(appContext.mockInstance)
         val rumSessionUpdateBusMessage1 = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
@@ -941,7 +940,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = false,
             configuredSampleRate = fakeSampleRate
-        ) { _, _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(appContext.mockInstance)
         val rumSessionUpdateBusMessage1 = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
@@ -1223,7 +1222,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = scenario.startRecordingImmediately,
             configuredSampleRate = fakeSampleRate
-        ) { _, _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(fakeContext)
         testedFeature.onReceive(event)
 
@@ -1262,7 +1261,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = true,
             configuredSampleRate = fakeSampleRate
-        ) { _, _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(fakeContext)
         testedFeature.onReceive(event)
         testedFeature.onReceive(event)
@@ -1294,7 +1293,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = false,
             configuredSampleRate = fakeSampleRate
-        ) { _, _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(fakeContext)
         testedFeature.manuallyStartRecording()
         testedFeature.onReceive(event)
@@ -1328,7 +1327,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = true,
             configuredSampleRate = fakeSampleRate
-        ) { _, _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(fakeContext)
         testedFeature.onReceive(event)
         testedFeature.manuallyStopRecording()
@@ -1365,7 +1364,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = true,
             configuredSampleRate = fakeSampleRate
-        ) { _, _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(fakeContext)
         testedFeature.onReceive(event1)
 
@@ -1451,7 +1450,7 @@ internal class SessionReplayFeatureTest {
             startRecordingImmediately = true,
             touchPrivacy = fakeConfiguration.touchPrivacy,
             configuredSampleRate = 100f
-        ) { _, _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _, _ -> mockRecorder }
 
         testedFeature.onInitialize(appContext.mockInstance)
         testedFeature.onReceive(

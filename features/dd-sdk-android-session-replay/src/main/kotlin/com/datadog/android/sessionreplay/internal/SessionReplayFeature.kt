@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal
 
 import android.app.Application
 import android.content.Context
+import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
@@ -27,6 +28,7 @@ import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentEvent
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentReceiver
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistration
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
 import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
@@ -66,6 +68,7 @@ internal class SessionReplayFeature(
 ) : StorageBackedFeature, FeatureEventReceiver {
 
     private val currentRumSessionId = AtomicReference<String>()
+    internal val embeddedContentSlotRegistry = EmbeddedContentSlotRegistry()
 
     @Suppress("LongParameterList")
     internal constructor(
@@ -178,7 +181,8 @@ internal class SessionReplayFeature(
                 resourceWriter = resourcesFeature.dataWriter,
                 recordWriter = dataWriter,
                 rumContextProvider = rumContextProvider,
-                application = appContext
+                application = appContext,
+                embeddedContentSlotRegistry = embeddedContentSlotRegistry
             )
         sessionReplayRecorder.registerCallbacks()
         initialized.set(true)
@@ -222,6 +226,14 @@ internal class SessionReplayFeature(
         if (checkIfInitialized()) {
             embeddedContentReceiver.receive(event)
         }
+    }
+
+    @UiThread
+    internal fun notifyEmbeddedContentSlotChanged(
+        previousRegistration: EmbeddedContentSlotRegistration?,
+        newRegistration: EmbeddedContentSlotRegistration?
+    ) {
+        embeddedContentSlotRegistry.notifySlotChanged(previousRegistration, newRegistration)
     }
 
     override fun onReceive(event: Any) {
@@ -426,7 +438,7 @@ internal class SessionReplayFeature(
         if (!isRecording.get()) {
             return
         }
-        if (EmbeddedContentSlotRegistry.hasMarkedSlots()) {
+        if (embeddedContentSlotRegistry.hasMarkedSlots()) {
             sessionReplayRecorder.requestCapture()
         }
     }

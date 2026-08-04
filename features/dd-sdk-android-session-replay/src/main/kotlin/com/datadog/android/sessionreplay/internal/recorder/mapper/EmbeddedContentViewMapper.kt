@@ -10,6 +10,7 @@ import android.view.View
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.R
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistration
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
@@ -27,14 +28,15 @@ internal class EmbeddedContentViewMapper(
     colorStringFormatter: ColorStringFormatter,
     viewBoundsResolver: ViewBoundsResolver,
     drawableToColorMapper: DrawableToColorMapper,
-    private val viewUtilsInternal: ViewUtilsInternal
+    private val viewUtilsInternal: ViewUtilsInternal,
+    private val embeddedContentSlotRegistry: EmbeddedContentSlotRegistry
 ) : BaseWireframeMapper<View>(
     viewIdentifierResolver,
     colorStringFormatter,
     viewBoundsResolver,
     drawableToColorMapper
 ) {
-    private val cache = EmbeddedContentViewCache()
+    private val cache = EmbeddedContentViewCache(embeddedContentSlotRegistry)
     private var isSnapshotActive = false
 
     @UiThread
@@ -42,7 +44,7 @@ internal class EmbeddedContentViewMapper(
 
     @UiThread
     fun beginSnapshot() {
-        isSnapshotActive = !cache.isEmpty() || EmbeddedContentSlotRegistry.hasMarkedSlots()
+        isSnapshotActive = !cache.isEmpty() || embeddedContentSlotRegistry.hasMarkedSlots()
         if (isSnapshotActive) {
             cache.beginSnapshot()
         }
@@ -66,7 +68,9 @@ internal class EmbeddedContentViewMapper(
         asyncJobStatusCallback: AsyncJobStatusCallback,
         internalLogger: InternalLogger
     ): List<MobileSegment.Wireframe> {
-        val slotId = view.sessionReplaySlotId() ?: return emptyList()
+        val registration = view.sessionReplaySlotRegistration() ?: return emptyList()
+        val slotId = registration.slotId
+        embeddedContentSlotRegistry.track(registration)
         isSnapshotActive = true
         val wireframeId = viewIdentifierResolver.resolveChildUniqueIdentifier(
             view,
@@ -124,11 +128,17 @@ internal class EmbeddedContentViewMapper(
         return getTag(R.id.datadog_session_replay_slot_id) as? String
     }
 
+    private fun View.sessionReplaySlotRegistration(): EmbeddedContentSlotRegistration? {
+        return getTag(R.id.datadog_session_replay_slot_registration) as? EmbeddedContentSlotRegistration
+    }
+
     internal companion object {
         internal const val EMBEDDED_CONTENT_KEY_NAME = "embedded_content"
     }
 
-    private class EmbeddedContentViewCache {
+    private class EmbeddedContentViewCache(
+        private val embeddedContentSlotRegistry: EmbeddedContentSlotRegistry
+    ) {
         private data class Entry(
             val wireframeId: Long,
             var lastSeenSnapshot: Long
@@ -158,7 +168,7 @@ internal class EmbeddedContentViewMapper(
             val iterator = entries.entries.iterator()
             while (iterator.hasNext()) {
                 val (slotId, entry) = iterator.next()
-                if (!EmbeddedContentSlotRegistry.isSlotMarked(slotId)) {
+                if (!embeddedContentSlotRegistry.isSlotMarked(slotId)) {
                     iterator.remove()
                 } else if (entry.lastSeenSnapshot != currentSnapshot) {
                     hiddenWireframes += MobileSegment.Wireframe.EmbeddedContentWireframe(

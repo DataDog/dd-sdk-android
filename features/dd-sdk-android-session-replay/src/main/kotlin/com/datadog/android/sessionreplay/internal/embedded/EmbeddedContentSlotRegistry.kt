@@ -9,18 +9,27 @@ package com.datadog.android.sessionreplay.internal.embedded
 import androidx.annotation.AnyThread
 import androidx.annotation.UiThread
 import java.lang.ref.WeakReference
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal class EmbeddedContentSlotRegistration(
     val slotId: String
-)
+) {
+    private val active = AtomicBoolean(true)
 
-internal object EmbeddedContentSlotRegistry {
+    fun deactivate() {
+        active.set(false)
+    }
+
+    fun isActive(): Boolean = active.get()
+}
+
+internal class EmbeddedContentSlotRegistry {
     private val registrations = mutableListOf<WeakReference<EmbeddedContentSlotRegistration>>()
 
     @AnyThread
     fun hasMarkedSlots(): Boolean {
         return synchronized(registrations) {
-            removeGarbageCollectedRegistrations()
+            removeInactiveRegistrations()
             registrations.isNotEmpty()
         }
     }
@@ -28,7 +37,7 @@ internal object EmbeddedContentSlotRegistry {
     @AnyThread
     fun isSlotMarked(slotId: String): Boolean {
         return synchronized(registrations) {
-            removeGarbageCollectedRegistrations()
+            removeInactiveRegistrations()
             registrations.any { it.get()?.slotId == slotId }
         }
     }
@@ -38,20 +47,39 @@ internal object EmbeddedContentSlotRegistry {
         previousRegistration: EmbeddedContentSlotRegistration?,
         newRegistration: EmbeddedContentSlotRegistration?
     ) {
+        previousRegistration?.deactivate()
         synchronized(registrations) {
             registrations.removeAll {
                 val registration = it.get()
-                registration == null || registration === previousRegistration
+                registration == null ||
+                    !registration.isActive() ||
+                    registration === previousRegistration
             }
-            if (newRegistration != null) {
-                @Suppress("UnsafeThirdPartyFunctionCall") // WeakReference construction has no documented exception.
-                val weakRegistration = WeakReference(newRegistration)
-                registrations += weakRegistration
-            }
+            trackRegistration(newRegistration)
         }
     }
 
-    private fun removeGarbageCollectedRegistrations() {
-        registrations.removeAll { it.get() == null }
+    @UiThread
+    fun track(registration: EmbeddedContentSlotRegistration) {
+        synchronized(registrations) {
+            removeInactiveRegistrations()
+            trackRegistration(registration)
+        }
+    }
+
+    private fun trackRegistration(registration: EmbeddedContentSlotRegistration?) {
+        val isAlreadyTracked = registrations.any { it.get() === registration }
+        if (registration != null && registration.isActive() && !isAlreadyTracked) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // WeakReference construction has no documented exception.
+            val weakRegistration = WeakReference(registration)
+            registrations += weakRegistration
+        }
+    }
+
+    private fun removeInactiveRegistrations() {
+        registrations.removeAll {
+            val registration = it.get()
+            registration == null || !registration.isActive()
+        }
     }
 }

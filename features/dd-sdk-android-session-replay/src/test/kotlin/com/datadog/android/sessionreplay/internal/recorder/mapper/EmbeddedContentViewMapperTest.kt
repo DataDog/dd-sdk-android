@@ -63,14 +63,17 @@ internal class EmbeddedContentViewMapperTest : LegacyBaseWireframeMapperTest() {
     lateinit var fakeSlotId: String
 
     private lateinit var fakeSlotRegistration: EmbeddedContentSlotRegistration
+    private lateinit var embeddedContentSlotRegistry: EmbeddedContentSlotRegistry
 
     private var slotId: String? = null
 
     @BeforeEach
     fun `set up`() {
         fakeSlotRegistration = EmbeddedContentSlotRegistration(fakeSlotId)
+        embeddedContentSlotRegistry = EmbeddedContentSlotRegistry()
         slotId = fakeSlotId
         whenever(mockView.getTag(R.id.datadog_session_replay_slot_id)) doAnswer { slotId }
+        whenever(mockView.getTag(R.id.datadog_session_replay_slot_registration)) doReturn fakeSlotRegistration
         whenever(mockViewUtilsInternal.isNotVisible(mockView)) doReturn false
         whenever(
             mockViewIdentifierResolver.resolveChildUniqueIdentifier(
@@ -90,14 +93,14 @@ internal class EmbeddedContentViewMapperTest : LegacyBaseWireframeMapperTest() {
             mockColorStringFormatter,
             mockViewBoundsResolver,
             mockDrawableToColorMapper,
-            mockViewUtilsInternal
+            mockViewUtilsInternal,
+            embeddedContentSlotRegistry
         )
-        EmbeddedContentSlotRegistry.notifySlotChanged(null, fakeSlotRegistration)
     }
 
     @AfterEach
     fun `tear down`() {
-        EmbeddedContentSlotRegistry.notifySlotChanged(fakeSlotRegistration, null)
+        embeddedContentSlotRegistry.notifySlotChanged(fakeSlotRegistration, null)
     }
 
     @Test
@@ -111,6 +114,7 @@ internal class EmbeddedContentViewMapperTest : LegacyBaseWireframeMapperTest() {
         ).single()
 
         // Then
+        assertThat(embeddedContentSlotRegistry.isSlotMarked(fakeSlotId)).isTrue()
         assertThat(wireframe).isEqualTo(
             MobileSegment.Wireframe.EmbeddedContentWireframe(
                 id = fakeWireframeId,
@@ -194,7 +198,7 @@ internal class EmbeddedContentViewMapperTest : LegacyBaseWireframeMapperTest() {
         )
 
         // When
-        EmbeddedContentSlotRegistry.notifySlotChanged(fakeSlotRegistration, null)
+        embeddedContentSlotRegistry.notifySlotChanged(fakeSlotRegistration, null)
         slotId = null
         testedMapper.beginSnapshot()
 
@@ -213,8 +217,10 @@ internal class EmbeddedContentViewMapperTest : LegacyBaseWireframeMapperTest() {
         val fakeSecondRegistration = EmbeddedContentSlotRegistration(fakeSecondSlotId)
         whenever(firstView.getTag(R.id.datadog_session_replay_slot_id)) doReturn fakeFirstSlotId
         whenever(secondView.getTag(R.id.datadog_session_replay_slot_id)) doReturn fakeSecondSlotId
-        EmbeddedContentSlotRegistry.notifySlotChanged(null, fakeFirstRegistration)
-        EmbeddedContentSlotRegistry.notifySlotChanged(null, fakeSecondRegistration)
+        whenever(firstView.getTag(R.id.datadog_session_replay_slot_registration)) doReturn fakeFirstRegistration
+        whenever(secondView.getTag(R.id.datadog_session_replay_slot_registration)) doReturn fakeSecondRegistration
+        embeddedContentSlotRegistry.notifySlotChanged(null, fakeFirstRegistration)
+        embeddedContentSlotRegistry.notifySlotChanged(null, fakeSecondRegistration)
         whenever(
             mockViewIdentifierResolver.resolveChildUniqueIdentifier(firstView, EMBEDDED_CONTENT_KEY_NAME)
         ) doReturn 101L
@@ -280,8 +286,8 @@ internal class EmbeddedContentViewMapperTest : LegacyBaseWireframeMapperTest() {
                 )
             )
         } finally {
-            EmbeddedContentSlotRegistry.notifySlotChanged(fakeFirstRegistration, null)
-            EmbeddedContentSlotRegistry.notifySlotChanged(fakeSecondRegistration, null)
+            embeddedContentSlotRegistry.notifySlotChanged(fakeFirstRegistration, null)
+            embeddedContentSlotRegistry.notifySlotChanged(fakeSecondRegistration, null)
         }
     }
 

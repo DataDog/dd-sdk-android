@@ -25,6 +25,34 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class EmbeddedContentSlotRegistryTest {
 
+    private val testedRegistry = EmbeddedContentSlotRegistry()
+
+    @Test
+    fun `M keep registry state isolated W separate instances`() {
+        // Given
+        val otherRegistry = EmbeddedContentSlotRegistry()
+        val fakeRegistration = EmbeddedContentSlotRegistration(FAKE_SLOT_ID)
+
+        // When
+        testedRegistry.notifySlotChanged(null, fakeRegistration)
+
+        // Then
+        assertThat(testedRegistry.hasMarkedSlots()).isTrue()
+        assertThat(otherRegistry.hasMarkedSlots()).isFalse()
+    }
+
+    @Test
+    fun `M track active registration W track`() {
+        // Given
+        val fakeRegistration = EmbeddedContentSlotRegistration(FAKE_SLOT_ID)
+
+        // When
+        testedRegistry.track(fakeRegistration)
+
+        // Then
+        assertThat(testedRegistry.isSlotMarked(FAKE_SLOT_ID)).isTrue()
+    }
+
     @Test
     fun `M track slot W notifySlotChanged { slot is set }`() {
         // Given
@@ -32,13 +60,13 @@ internal class EmbeddedContentSlotRegistryTest {
 
         try {
             // When
-            EmbeddedContentSlotRegistry.notifySlotChanged(null, fakeRegistration)
+            testedRegistry.notifySlotChanged(null, fakeRegistration)
 
             // Then
-            assertThat(EmbeddedContentSlotRegistry.hasMarkedSlots()).isTrue()
-            assertThat(EmbeddedContentSlotRegistry.isSlotMarked(FAKE_SLOT_ID)).isTrue()
+            assertThat(testedRegistry.hasMarkedSlots()).isTrue()
+            assertThat(testedRegistry.isSlotMarked(FAKE_SLOT_ID)).isTrue()
         } finally {
-            EmbeddedContentSlotRegistry.notifySlotChanged(fakeRegistration, null)
+            testedRegistry.notifySlotChanged(fakeRegistration, null)
         }
     }
 
@@ -46,14 +74,14 @@ internal class EmbeddedContentSlotRegistryTest {
     fun `M stop tracking slot W notifySlotChanged { slot is cleared }`() {
         // Given
         val fakeRegistration = EmbeddedContentSlotRegistration(FAKE_SLOT_ID)
-        EmbeddedContentSlotRegistry.notifySlotChanged(null, fakeRegistration)
+        testedRegistry.notifySlotChanged(null, fakeRegistration)
 
         // When
-        EmbeddedContentSlotRegistry.notifySlotChanged(fakeRegistration, null)
+        testedRegistry.notifySlotChanged(fakeRegistration, null)
 
         // Then
-        assertThat(EmbeddedContentSlotRegistry.hasMarkedSlots()).isFalse()
-        assertThat(EmbeddedContentSlotRegistry.isSlotMarked(FAKE_SLOT_ID)).isFalse()
+        assertThat(testedRegistry.hasMarkedSlots()).isFalse()
+        assertThat(testedRegistry.isSlotMarked(FAKE_SLOT_ID)).isFalse()
     }
 
     @Test
@@ -61,20 +89,20 @@ internal class EmbeddedContentSlotRegistryTest {
         // Given
         val fakeOldRegistration = EmbeddedContentSlotRegistration(FAKE_OLD_SLOT_ID)
         val fakeNewRegistration = EmbeddedContentSlotRegistration(FAKE_NEW_SLOT_ID)
-        EmbeddedContentSlotRegistry.notifySlotChanged(null, fakeOldRegistration)
+        testedRegistry.notifySlotChanged(null, fakeOldRegistration)
 
         try {
             // When
-            EmbeddedContentSlotRegistry.notifySlotChanged(
+            testedRegistry.notifySlotChanged(
                 fakeOldRegistration,
                 fakeNewRegistration
             )
 
             // Then
-            assertThat(EmbeddedContentSlotRegistry.isSlotMarked(FAKE_OLD_SLOT_ID)).isFalse()
-            assertThat(EmbeddedContentSlotRegistry.isSlotMarked(FAKE_NEW_SLOT_ID)).isTrue()
+            assertThat(testedRegistry.isSlotMarked(FAKE_OLD_SLOT_ID)).isFalse()
+            assertThat(testedRegistry.isSlotMarked(FAKE_NEW_SLOT_ID)).isTrue()
         } finally {
-            EmbeddedContentSlotRegistry.notifySlotChanged(fakeNewRegistration, null)
+            testedRegistry.notifySlotChanged(fakeNewRegistration, null)
         }
     }
 
@@ -83,17 +111,17 @@ internal class EmbeddedContentSlotRegistryTest {
         // Given
         val fakeStaleRegistration = EmbeddedContentSlotRegistration(FAKE_SLOT_ID)
         val fakeCurrentRegistration = EmbeddedContentSlotRegistration(FAKE_SLOT_ID)
-        EmbeddedContentSlotRegistry.notifySlotChanged(null, fakeStaleRegistration)
-        EmbeddedContentSlotRegistry.notifySlotChanged(null, fakeCurrentRegistration)
+        testedRegistry.notifySlotChanged(null, fakeStaleRegistration)
+        testedRegistry.notifySlotChanged(null, fakeCurrentRegistration)
 
         try {
             // When
-            EmbeddedContentSlotRegistry.notifySlotChanged(fakeStaleRegistration, null)
+            testedRegistry.notifySlotChanged(fakeStaleRegistration, null)
 
             // Then
-            assertThat(EmbeddedContentSlotRegistry.isSlotMarked(FAKE_SLOT_ID)).isTrue()
+            assertThat(testedRegistry.isSlotMarked(FAKE_SLOT_ID)).isTrue()
         } finally {
-            EmbeddedContentSlotRegistry.notifySlotChanged(fakeCurrentRegistration, null)
+            testedRegistry.notifySlotChanged(fakeCurrentRegistration, null)
         }
     }
 

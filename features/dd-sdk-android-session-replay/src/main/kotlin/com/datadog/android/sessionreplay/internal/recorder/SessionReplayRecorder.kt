@@ -25,6 +25,7 @@ import com.datadog.android.sessionreplay.internal.LifecycleCallback
 import com.datadog.android.sessionreplay.internal.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.processor.MutationResolver
 import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
 import com.datadog.android.sessionreplay.internal.processor.ResourceQueueImpl
@@ -94,6 +95,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         resourceDataStoreManager: ResourceDataStoreManager,
         dynamicOptimizationEnabled: Boolean,
         internalCallback: SessionReplayInternalCallback,
+        embeddedContentSlotRegistry: EmbeddedContentSlotRegistry,
         heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null
     ) {
         val internalLogger = sdkCore.internalLogger
@@ -145,7 +147,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             colorStringFormatter = colorStringFormatter,
             viewBoundsResolver = viewBoundsResolver,
             drawableToColorMapper = drawableToColorMapper,
-            viewUtilsInternal = viewUtilsInternal
+            viewUtilsInternal = viewUtilsInternal,
+            embeddedContentSlotRegistry = embeddedContentSlotRegistry
         )
 
         val bitmapCachesManager = BitmapCachesManager(
