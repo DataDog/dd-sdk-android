@@ -32,6 +32,10 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @ForgeConfiguration(ForgeConfigurator::class)
@@ -116,6 +120,39 @@ internal class ExposureEventsProcessorTest {
 
         // Then
         verify(mockRecordWriter).write(any())
+    }
+
+    @Test
+    fun `M process exposure again W processEvent() { assignment cycles back }`() {
+        // Given
+        val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
+        val flagA = fakeFlag.copy(
+            allocationKey = "allocation-a",
+            variationKey = "variation-a"
+        )
+        val flagB = fakeFlag.copy(
+            allocationKey = "allocation-b",
+            variationKey = "variation-b"
+        )
+
+        // When
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, flagA)
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, flagB)
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, flagA)
+
+        // Then
+        val eventCaptor = argumentCaptor<ExposureEvent>()
+        verify(mockRecordWriter, times(3)).write(eventCaptor.capture())
+        assertThat(eventCaptor.allValues.map { it.allocation.key }).containsExactly(
+            "allocation-a",
+            "allocation-b",
+            "allocation-a"
+        )
+        assertThat(eventCaptor.allValues.map { it.variant.key }).containsExactly(
+            "variation-a",
+            "variation-b",
+            "variation-a"
+        )
     }
 
     @Test
@@ -397,10 +434,10 @@ internal class ExposureEventsProcessorTest {
         testedProcessor.processEvent("flag1", context2, flag1) // Different context
         testedProcessor.processEvent("flag2", context1, flag1) // Different flag key
         testedProcessor.processEvent("flag1", context1, flag2) // Different flag data
-        testedProcessor.processEvent("flag1", context1, flag1) // Duplicate again
+        testedProcessor.processEvent("flag1", context1, flag1) // Assignment changed back
 
         // Then
-        verify(mockRecordWriter, times(4)).write(any())
+        verify(mockRecordWriter, times(5)).write(any())
     }
 
     // endregion
@@ -466,6 +503,48 @@ internal class ExposureEventsProcessorTest {
 
         // Then
         verify(mockRecordWriter, times(totalExpectedWrites)).write(any())
+    }
+
+    @Test
+    fun `M keep cache updates ordered with writes W processEvent() { concurrent assignment changes }`() {
+        // Given
+        val blockingRecordWriter = BlockingRecordWriter()
+        testedProcessor = ExposureEventsProcessor(blockingRecordWriter, mockTimeProvider)
+        val context = EvaluationContext(targetingKey = fakeTargetingKey)
+        val flagA = fakeFlag.copy(
+            allocationKey = "allocation-a",
+            variationKey = "variation-a"
+        )
+        val flagB = fakeFlag.copy(
+            allocationKey = "allocation-b",
+            variationKey = "variation-b"
+        )
+
+        // When
+        val threadA = Thread {
+            testedProcessor.processEvent(fakeFlagKey, context, flagA)
+        }
+        threadA.start()
+        assertThat(blockingRecordWriter.awaitFirstWriteStarted()).isTrue()
+
+        val threadB = Thread {
+            testedProcessor.processEvent(fakeFlagKey, context, flagB)
+        }
+        threadB.start()
+        val secondWriteStartedBeforeFirstCompleted = blockingRecordWriter.awaitSecondWriteStarted()
+        blockingRecordWriter.releaseFirstWrite()
+
+        threadA.join(THREAD_JOIN_TIMEOUT_MS)
+        threadB.join(THREAD_JOIN_TIMEOUT_MS)
+
+        // Then
+        assertThat(threadA.isAlive).isFalse()
+        assertThat(threadB.isAlive).isFalse()
+        assertThat(secondWriteStartedBeforeFirstCompleted).isFalse()
+        assertThat(blockingRecordWriter.completedAllocationKeys).containsExactly(
+            "allocation-a",
+            "allocation-b"
+        )
     }
 
     @Test
@@ -623,4 +702,47 @@ internal class ExposureEventsProcessorTest {
     }
 
     // endregion
+
+    private class BlockingRecordWriter : RecordWriter {
+        val completedAllocationKeys = CopyOnWriteArrayList<String>()
+
+        private val writeCount = AtomicInteger()
+        private val firstWriteStarted = CountDownLatch(1)
+        private val releaseFirstWrite = CountDownLatch(1)
+        private val secondWriteStarted = CountDownLatch(1)
+
+        override fun write(record: ExposureEvent) {
+            when (writeCount.incrementAndGet()) {
+                1 -> {
+                    firstWriteStarted.countDown()
+                    releaseFirstWrite.await(THREAD_JOIN_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+                    completedAllocationKeys.add(record.allocation.key)
+                }
+
+                2 -> {
+                    secondWriteStarted.countDown()
+                    completedAllocationKeys.add(record.allocation.key)
+                }
+
+                else -> completedAllocationKeys.add(record.allocation.key)
+            }
+        }
+
+        fun awaitFirstWriteStarted(): Boolean {
+            return firstWriteStarted.await(THREAD_JOIN_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        }
+
+        fun awaitSecondWriteStarted(): Boolean {
+            return secondWriteStarted.await(CONCURRENT_WRITE_DETECTION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        }
+
+        fun releaseFirstWrite() {
+            releaseFirstWrite.countDown()
+        }
+    }
+
+    companion object {
+        private const val CONCURRENT_WRITE_DETECTION_TIMEOUT_MS = 100L
+        private const val THREAD_JOIN_TIMEOUT_MS = 1_000L
+    }
 }

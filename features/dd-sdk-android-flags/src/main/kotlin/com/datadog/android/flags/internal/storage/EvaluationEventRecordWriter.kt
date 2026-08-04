@@ -10,8 +10,10 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.api.storage.write
 import com.datadog.android.flags.internal.EvaluationEventWriter
 import com.datadog.android.flags.internal.aggregation.EvaluationAggregationStats
+import com.datadog.android.internal.telemetry.TelemetryContext
 
 /**
  * Persists serialized flag evaluation events to SDK Core storage.
@@ -23,7 +25,8 @@ internal class EvaluationEventRecordWriter(private val sdkCore: FeatureSdkCore) 
     override fun writeAll(events: List<EvaluationAggregationStats>) {
         if (events.isEmpty()) return
 
-        sdkCore.getFeature(Feature.FLAGS_EVALUATIONS_FEATURE_NAME)
+        val featureName = Feature.FLAGS_EVALUATIONS_FEATURE_NAME
+        sdkCore.getFeature(featureName)
             ?.withWriteContext { datadogContext, writeScope ->
                 writeScope { batchWriter ->
                     for (event in events) {
@@ -35,7 +38,8 @@ internal class EvaluationEventRecordWriter(private val sdkCore: FeatureSdkCore) 
                         batchWriter.write(
                             event = rawBatchEvent,
                             batchMetadata = null,
-                            eventType = EventType.DEFAULT
+                            eventType = EventType.DEFAULT,
+                            TelemetryContext(featureName)
                         )
                     }
                 }

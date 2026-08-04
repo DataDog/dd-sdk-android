@@ -7,7 +7,10 @@
 package com.datadog.android.core.internal.persistence.tlvformat
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.telemetry.TelemetryContext
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -19,10 +22,6 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.nio.ByteBuffer
@@ -42,6 +41,9 @@ internal class TLVBlockTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Forgery
+    lateinit var fakeTelemetryContext: TelemetryContext
+
     @Test
     fun `M return null W serialize() { empty data }`() {
         // Given
@@ -52,7 +54,7 @@ internal class TLVBlockTest {
         )
 
         // When
-        val block = testedTLVBlock.serialize()
+        val block = testedTLVBlock.serialize(fakeTelemetryContext)
 
         // Then
         assertThat(block).isNull()
@@ -75,7 +77,7 @@ internal class TLVBlockTest {
         )
 
         // When
-        val block = testedTLVBlock.serialize()
+        val block = testedTLVBlock.serialize(fakeTelemetryContext)
 
         // Then
         checkNotNull(block)
@@ -107,18 +109,19 @@ internal class TLVBlockTest {
         )
 
         // When
-        testedTLVBlock.serialize(1)
+        testedTLVBlock.serialize(fakeTelemetryContext, 1)
 
         // Then
-        val stringCaptor = argumentCaptor<() -> String>()
-        verify(mockInternalLogger).log(
-            level = eq(InternalLogger.Level.WARN),
-            target = eq(InternalLogger.Target.MAINTAINER),
-            stringCaptor.capture(),
-            anyOrNull(),
-            anyOrNull(),
-            anyOrNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            TLVBlock.BYTE_LENGTH_EXCEEDED_ERROR,
+            additionalProperties = fakeTelemetryContext.asAttributesMap(
+                bytesLost = fakeByteArray.size + 6,
+                TelemetryContext.TELEMETRY_TLV_SIZE_LIMIT to 1,
+                TelemetryContext.TELEMETRY_TLV_SIZE to fakeByteArray.size + 6,
+                TelemetryContext.TELEMETRY_TLV_TYPE to mockTLVBlockType
+            )
         )
-        assertThat(stringCaptor.firstValue.invoke()).startsWith("DataBlock length exceeds limit")
     }
 }
