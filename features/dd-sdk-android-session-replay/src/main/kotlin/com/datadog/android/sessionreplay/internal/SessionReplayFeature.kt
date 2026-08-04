@@ -30,6 +30,8 @@ import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentReceiv
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
 import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
+import com.datadog.android.sessionreplay.internal.processor.DefaultResourceProcessor
+import com.datadog.android.sessionreplay.internal.processor.NoOpResourceProcessor
 import com.datadog.android.sessionreplay.internal.processor.ResourceProcessor
 import com.datadog.android.sessionreplay.internal.recorder.NoOpRecorder
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
@@ -37,6 +39,7 @@ import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreMan
 import com.datadog.android.sessionreplay.internal.resources.ResourceHashesEntryDeserializer
 import com.datadog.android.sessionreplay.internal.resources.ResourceHashesEntrySerializer
 import com.datadog.android.sessionreplay.internal.storage.EmbeddedContentRecordWriter
+import com.datadog.android.sessionreplay.internal.storage.NoOpEmbeddedContentRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
@@ -130,8 +133,8 @@ internal class SessionReplayFeature(
     private val rumContextProvider = SessionReplayRumContextProvider {
         onRumViewChanged()
     }
-    private var resourceProcessor: ResourceProcessor? = null
-    private var embeddedContentRecordWriter: EmbeddedContentRecordWriter? = null
+    private var resourceProcessor: ResourceProcessor = NoOpResourceProcessor()
+    private var embeddedContentRecordWriter: EmbeddedContentRecordWriter = NoOpEmbeddedContentRecordWriter()
     private val embeddedContentReceiver = EmbeddedContentReceiver(
         rumContextProvider = rumContextProvider,
         recordWriter = { embeddedContentRecordWriter },
@@ -164,7 +167,7 @@ internal class SessionReplayFeature(
         val sessionReplayRecordWriter = createDataWriter()
         dataWriter = sessionReplayRecordWriter
         embeddedContentRecordWriter = sessionReplayRecordWriter
-        resourceProcessor = ResourceProcessor(
+        resourceProcessor = DefaultResourceProcessor(
             resourceDataStoreManager = resourceDataStoreManager,
             resourcesWriter = resourcesFeature.dataWriter
         )
@@ -205,8 +208,8 @@ internal class SessionReplayFeature(
         sessionReplayRecorder.unregisterCallbacks()
         sessionReplayRecorder.stopProcessingRecords()
         dataWriter = NoOpRecordWriter()
-        embeddedContentRecordWriter = null
-        resourceProcessor = null
+        embeddedContentRecordWriter = NoOpEmbeddedContentRecordWriter()
+        resourceProcessor = NoOpResourceProcessor()
         sessionReplayRecorder = NoOpRecorder()
         initialized.set(false)
     }
@@ -215,17 +218,15 @@ internal class SessionReplayFeature(
 
     // region EventReceiver
 
+    internal fun receiveEmbeddedContentEvent(event: EmbeddedContentEvent) {
+        if (checkIfInitialized()) {
+            embeddedContentReceiver.receive(event)
+        }
+    }
+
     override fun onReceive(event: Any) {
         when (event) {
-            is EmbeddedContentEvent -> {
-                if (checkIfInitialized()) {
-                    sdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)?.withContext {
-                        if (initialized.get()) {
-                            embeddedContentReceiver.receive(event)
-                        }
-                    }
-                }
-            }
+            is EmbeddedContentEvent -> receiveEmbeddedContentEvent(event)
             is Map<*, *> -> {
                 if (checkIfInitialized()) {
                     handleRumSession(event)

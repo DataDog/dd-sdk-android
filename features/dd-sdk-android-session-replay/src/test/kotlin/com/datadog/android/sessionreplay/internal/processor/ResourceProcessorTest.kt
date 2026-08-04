@@ -33,7 +33,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class ResourceProcessorTest {
 
-    private lateinit var testedProcessor: ResourceProcessor
+    private lateinit var testedProcessor: DefaultResourceProcessor
 
     @Mock
     lateinit var mockResourceDataStoreManager: ResourceDataStoreManager
@@ -43,7 +43,7 @@ internal class ResourceProcessorTest {
 
     @BeforeEach
     fun `set up`() {
-        testedProcessor = ResourceProcessor(
+        testedProcessor = DefaultResourceProcessor(
             resourceDataStoreManager = mockResourceDataStoreManager,
             resourcesWriter = mockResourcesWriter
         )

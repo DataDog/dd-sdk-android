@@ -30,7 +30,7 @@ internal class RecordedDataProcessor(
     private val mutationResolver: MutationResolver,
     private val timeProvider: TimeProvider,
     private val nodeFlattener: NodeFlattener = NodeFlattener(),
-    private val resourceProcessor: ResourceProcessor = ResourceProcessor(
+    private val resourceProcessor: ResourceProcessor = DefaultResourceProcessor(
         resourceDataStoreManager,
         resourcesWriter
     )

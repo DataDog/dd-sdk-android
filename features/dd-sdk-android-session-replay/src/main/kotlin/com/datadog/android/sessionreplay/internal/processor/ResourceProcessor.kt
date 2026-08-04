@@ -8,13 +8,19 @@ package com.datadog.android.sessionreplay.internal.processor
 
 import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
+import com.datadog.tools.annotation.NoOpImplementation
 
-internal class ResourceProcessor(
+@NoOpImplementation
+internal fun interface ResourceProcessor {
+    fun process(identifier: String, data: ByteArray, mimeType: String?)
+}
+
+internal class DefaultResourceProcessor(
     private val resourceDataStoreManager: ResourceDataStoreManager,
     private val resourcesWriter: ResourcesWriter
-) {
+) : ResourceProcessor {
 
-    fun process(identifier: String, data: ByteArray, mimeType: String?) {
+    override fun process(identifier: String, data: ByteArray, mimeType: String?) {
         if (!resourceDataStoreManager.markResourceAsSentIfNew(identifier)) {
             return
         }

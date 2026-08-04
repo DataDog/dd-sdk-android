@@ -16,8 +16,8 @@ import com.google.gson.JsonObject
 
 internal class EmbeddedContentReceiver(
     private val rumContextProvider: RumContextProvider,
-    private val recordWriter: () -> EmbeddedContentRecordWriter?,
-    private val resourceProcessor: () -> ResourceProcessor?,
+    private val recordWriter: () -> EmbeddedContentRecordWriter,
+    private val resourceProcessor: () -> ResourceProcessor,
     private val isRecording: () -> Boolean,
     private val internalLogger: InternalLogger
 ) {
@@ -70,7 +70,7 @@ internal class EmbeddedContentReceiver(
                     addProperty(VIEW_ID_KEY, event.viewId)
                     add(RECORDS_KEY, records)
                 }
-                recordWriter()?.writeRaw(
+                recordWriter().writeRaw(
                     enrichedRecord.toString().toByteArray(Charsets.UTF_8),
                     event.viewId,
                     records.size()
@@ -78,7 +78,7 @@ internal class EmbeddedContentReceiver(
             }
 
             is EmbeddedContentEvent.Resource -> {
-                resourceProcessor()?.process(event.identifier, event.data, event.mimeType)
+                resourceProcessor().process(event.identifier, event.data, event.mimeType)
             }
         }
     }

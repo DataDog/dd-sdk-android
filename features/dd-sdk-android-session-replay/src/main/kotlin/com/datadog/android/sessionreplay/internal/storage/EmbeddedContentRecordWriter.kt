@@ -6,6 +6,9 @@
 
 package com.datadog.android.sessionreplay.internal.storage
 
+import com.datadog.tools.annotation.NoOpImplementation
+
+@NoOpImplementation
 internal fun interface EmbeddedContentRecordWriter {
     fun writeRaw(record: ByteArray, viewId: String, recordsCount: Int)
 }

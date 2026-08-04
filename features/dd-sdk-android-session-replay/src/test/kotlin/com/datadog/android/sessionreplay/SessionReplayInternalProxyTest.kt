@@ -11,6 +11,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentEvent
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistration
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
@@ -52,6 +53,9 @@ internal class SessionReplayInternalProxyTest {
 
     @Mock
     lateinit var mockFeatureScope: FeatureScope
+
+    @Mock
+    lateinit var mockSessionReplayFeature: SessionReplayFeature
 
     @FloatForgery
     var fakeSampleRate: Float = 0f
@@ -150,6 +154,7 @@ internal class SessionReplayInternalProxyTest {
         val record = mutableMapOf<String, Any?>(FAKE_RECORD_DATA_KEY to nestedData)
         val records = mutableListOf<Map<String, Any?>>(record)
         whenever(mockSdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)) doReturn mockFeatureScope
+        whenever(mockFeatureScope.unwrap<SessionReplayFeature>()) doReturn mockSessionReplayFeature
 
         // When
         _SessionReplayInternalProxy.addEmbeddedContentRecords(
@@ -163,8 +168,8 @@ internal class SessionReplayInternalProxyTest {
         records.clear()
 
         // Then
-        argumentCaptor<Any> {
-            verify(mockFeatureScope).sendEvent(capture())
+        argumentCaptor<EmbeddedContentEvent> {
+            verify(mockSessionReplayFeature).receiveEmbeddedContentEvent(capture())
             val event = firstValue as EmbeddedContentEvent.RecordBatch
             assertThat(event.records).containsExactly(
                 mapOf(FAKE_RECORD_DATA_KEY to mapOf(FAKE_RECORD_VALUE_KEY to 10L))
@@ -180,6 +185,7 @@ internal class SessionReplayInternalProxyTest {
         val resourceData = byteArrayOf(1, 2, 3)
         val expectedResourceData = resourceData.copyOf()
         whenever(mockSdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)) doReturn mockFeatureScope
+        whenever(mockFeatureScope.unwrap<SessionReplayFeature>()) doReturn mockSessionReplayFeature
 
         // When
         _SessionReplayInternalProxy.addEmbeddedContentResource(
@@ -191,8 +197,8 @@ internal class SessionReplayInternalProxyTest {
         resourceData.fill(0)
 
         // Then
-        argumentCaptor<Any> {
-            verify(mockFeatureScope).sendEvent(capture())
+        argumentCaptor<EmbeddedContentEvent> {
+            verify(mockSessionReplayFeature).receiveEmbeddedContentEvent(capture())
             val event = firstValue as EmbeddedContentEvent.Resource
             assertThat(event.identifier).isEqualTo(FAKE_RESOURCE_ID)
             assertThat(event.data).isEqualTo(expectedResourceData)

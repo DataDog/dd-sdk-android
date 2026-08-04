@@ -14,6 +14,7 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.lint.InternalApi
+import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentEvent
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistration
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
@@ -55,7 +56,6 @@ class _SessionReplayInternalProxy(private val builder: SessionReplayConfiguratio
          * embedded-content wireframe from the next capture. Reassigning the current slot identifier
          * has no effect.
          */
-        @JvmStatic
         @UiThread
         fun setEmbeddedContentSlotId(view: View, slotId: String?) {
             val previousSlotId =
@@ -82,9 +82,7 @@ class _SessionReplayInternalProxy(private val builder: SessionReplayConfiguratio
         /**
          * Queues Session Replay records produced by an embedded renderer.
          */
-        @JvmStatic
         @AnyThread
-        @JvmOverloads
         fun addEmbeddedContentRecords(
             records: List<Map<String, Any?>>,
             slotId: String,
@@ -100,9 +98,7 @@ class _SessionReplayInternalProxy(private val builder: SessionReplayConfiguratio
         /**
          * Queues a Session Replay resource produced by an embedded renderer.
          */
-        @JvmStatic
         @AnyThread
-        @JvmOverloads
         fun addEmbeddedContentResource(
             identifier: String,
             resourceData: ByteArray,
@@ -118,7 +114,8 @@ class _SessionReplayInternalProxy(private val builder: SessionReplayConfiguratio
         private fun sendEmbeddedContentEvent(sdkCore: SdkCore, event: EmbeddedContentEvent) {
             (sdkCore as? FeatureSdkCore)
                 ?.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)
-                ?.sendEvent(event)
+                ?.unwrap<SessionReplayFeature>()
+                ?.receiveEmbeddedContentEvent(event)
         }
 
         private fun snapshotRecords(records: List<Map<String, Any?>>): List<Map<String, Any?>> {

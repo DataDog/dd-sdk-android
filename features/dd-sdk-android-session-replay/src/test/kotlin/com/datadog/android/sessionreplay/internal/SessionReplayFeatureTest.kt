@@ -265,10 +265,6 @@ internal class SessionReplayFeatureTest {
             val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
             callback(mockEventBatchWriter)
         }
-        whenever(mockFeatureScope.withContext(eq(emptySet()), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext) -> Unit>(it.arguments.lastIndex)
-            callback(mockDatadogContext)
-        }
         whenever(mockFeatureScope.withWriteContext(eq(emptySet()), any())) doAnswer {
             val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
             callback(mockDatadogContext, mockEventWriteScope)
@@ -309,27 +305,6 @@ internal class SessionReplayFeatureTest {
             assertThat(records[0].asJsonObject[EmbeddedContentReceiver.SLOT_ID_KEY].asString)
                 .isEqualTo(FAKE_EMBEDDED_SLOT_ID)
         }
-    }
-
-    @Test
-    fun `M schedule embedded records W onReceive { feature initialized }`() {
-        // Given
-        val mockFeatureScope = mock<FeatureScope>()
-        whenever(mockSdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME))
-            .thenReturn(mockFeatureScope)
-        testedFeature.onInitialize(appContext.mockInstance)
-        val event = EmbeddedContentEvent.RecordBatch(
-            records = listOf(mapOf(FAKE_RECORD_TYPE_KEY to 10L)),
-            slotId = FAKE_EMBEDDED_SLOT_ID,
-            viewId = FAKE_EMBEDDED_VIEW_ID
-        )
-
-        // When
-        testedFeature.onReceive(event)
-
-        // Then
-        verify(mockFeatureScope).withContext(eq(emptySet()), any())
-        verify(mockFeatureScope, never()).withWriteContext(any(), any())
     }
 
     @Test

@@ -149,19 +149,12 @@ public final class com/datadog/android/sessionreplay/TouchPrivacy : java/lang/En
 public final class com/datadog/android/sessionreplay/_SessionReplayInternalProxy {
 	public static final field Companion Lcom/datadog/android/sessionreplay/_SessionReplayInternalProxy$Companion;
 	public fun <init> (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;)V
-	public static final fun addEmbeddedContentRecords (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;)V
-	public static final fun addEmbeddedContentRecords (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/api/SdkCore;)V
-	public static final fun addEmbeddedContentResource (Ljava/lang/String;[BLjava/lang/String;)V
-	public static final fun addEmbeddedContentResource (Ljava/lang/String;[BLjava/lang/String;Lcom/datadog/android/api/SdkCore;)V
-	public static final fun setEmbeddedContentSlotId (Landroid/view/View;Ljava/lang/String;)V
 	public final fun setInternalCallback (Lcom/datadog/android/sessionreplay/SessionReplayInternalCallback;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
 }
 
 public final class com/datadog/android/sessionreplay/_SessionReplayInternalProxy$Companion {
-	public final fun addEmbeddedContentRecords (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;)V
 	public final fun addEmbeddedContentRecords (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/api/SdkCore;)V
 	public static synthetic fun addEmbeddedContentRecords$default (Lcom/datadog/android/sessionreplay/_SessionReplayInternalProxy$Companion;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
-	public final fun addEmbeddedContentResource (Ljava/lang/String;[BLjava/lang/String;)V
 	public final fun addEmbeddedContentResource (Ljava/lang/String;[BLjava/lang/String;Lcom/datadog/android/api/SdkCore;)V
 	public static synthetic fun addEmbeddedContentResource$default (Lcom/datadog/android/sessionreplay/_SessionReplayInternalProxy$Companion;Ljava/lang/String;[BLjava/lang/String;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
 	public final fun setEmbeddedContentSlotId (Landroid/view/View;Ljava/lang/String;)V
