@@ -18,6 +18,7 @@ import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockType
 import com.datadog.android.core.internal.utils.join
 import com.datadog.android.core.internal.utils.toByteArray
 import com.datadog.android.core.persistence.Serializer
+import com.datadog.android.internal.telemetry.TelemetryContext
 import java.io.File
 
 internal class DatastoreFileWriter(
@@ -33,7 +34,8 @@ internal class DatastoreFileWriter(
         data: T,
         serializer: Serializer<T>,
         callback: DataStoreWriteCallback?,
-        version: Int
+        version: Int,
+        telemetryContext: TelemetryContext
     ) {
         val datastoreFile = dataStoreFileHelper.getDataStoreFile(
             storageDir = storageDir,
@@ -58,7 +60,8 @@ internal class DatastoreFileWriter(
         val result = fileReaderWriter.writeData(
             file = datastoreFile,
             data = dataToWrite,
-            append = false
+            append = false,
+            telemetryContext = telemetryContext
         )
 
         if (result) {
@@ -115,7 +118,7 @@ internal class DatastoreFileWriter(
             internalLogger = internalLogger
         )
 
-        return dataBlock.serialize()
+        return dataBlock.serialize(TelemetryContext(featureName = featureName))
     }
 
     private fun getVersionCodeBlock(version: Int): ByteArray? {
@@ -126,7 +129,7 @@ internal class DatastoreFileWriter(
             internalLogger = internalLogger
         )
 
-        return versionBlock.serialize()
+        return versionBlock.serialize(TelemetryContext(featureName = featureName))
     }
 
     private fun logFailedToSerializeDataError() {

@@ -415,6 +415,7 @@ datadog:
       - "kotlin.lazy(kotlin.Function0)"
       - "kotlin.lazy(kotlin.LazyThreadSafetyMode, kotlin.Function0)"
       - "kotlin.repeat(kotlin.Int, kotlin.Function1)"
+      - "kotlin.runCatching(kotlin.Function0)"
       - "kotlin.synchronized(kotlin.Any, kotlin.Function0)"
       - "kotlin.ReplaceWith.constructor(kotlin.String, kotlin.Array)"
       - "kotlin.Result.failure(kotlin.Throwable)"

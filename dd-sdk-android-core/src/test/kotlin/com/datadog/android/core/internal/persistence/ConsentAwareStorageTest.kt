@@ -20,6 +20,7 @@ import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
+import com.datadog.android.internal.telemetry.TelemetryContext
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
@@ -113,8 +114,11 @@ internal class ConsentAwareStorageTest {
     @IntForgery(min = 0, max = 100)
     var fakePendingBatches: Int = 0
 
+    private lateinit var fakeTelemetryContext: TelemetryContext
+
     @BeforeEach
     fun `set up`() {
+        fakeTelemetryContext = TelemetryContext(featureName = fakeFeatureName)
         whenever(mockPendingOrchestrator.getRootDir()) doReturn File(mockPendingRootParentFile, fakeRootDirName)
         whenever(mockGrantedOrchestrator.getRootDir()) doReturn File(mockGrantedRootParentFile, fakeRootDirName)
         whenever((mockGrantedOrchestrator).decrementAndGetPendingFilesCount())
@@ -260,7 +264,7 @@ internal class ConsentAwareStorageTest {
     ) {
         // Given
         whenever(mockGrantedOrchestrator.getReadableFile(any())) doReturn batchFile
-        whenever(mockBatchReaderWriter.readData(batchFile)) doReturn fakeData
+        whenever(mockBatchReaderWriter.readData(batchFile, fakeTelemetryContext)) doReturn fakeData
 
         val mockMetaFile = mock<File>().apply {
             whenever(exists()) doReturn true
@@ -268,7 +272,7 @@ internal class ConsentAwareStorageTest {
 
         whenever(mockGrantedOrchestrator.getMetadataFile(batchFile)) doReturn mockMetaFile
         val mockMetadata = metadata.toByteArray()
-        whenever(mockMetaReaderWriter.readData(mockMetaFile)) doReturn mockMetadata
+        whenever(mockMetaReaderWriter.readData(mockMetaFile, fakeTelemetryContext)) doReturn mockMetadata
 
         // Whenever
         val batchData = testedStorage.readNextBatch()
@@ -287,7 +291,7 @@ internal class ConsentAwareStorageTest {
     ) {
         // Given
         whenever(mockGrantedOrchestrator.getReadableFile(any())) doReturn batchFile
-        whenever(mockBatchReaderWriter.readData(batchFile)) doReturn fakeData
+        whenever(mockBatchReaderWriter.readData(batchFile, fakeTelemetryContext)) doReturn fakeData
         whenever(mockGrantedOrchestrator.getMetadataFile(batchFile)) doReturn null
 
         // Whenever
@@ -307,7 +311,7 @@ internal class ConsentAwareStorageTest {
     ) {
         // Given
         whenever(mockGrantedOrchestrator.getReadableFile(any())) doReturn batchFile
-        whenever(mockBatchReaderWriter.readData(batchFile)) doReturn fakeData
+        whenever(mockBatchReaderWriter.readData(batchFile, fakeTelemetryContext)) doReturn fakeData
 
         val mockMetaFile = mock<File>().apply {
             whenever(exists()) doReturn false
