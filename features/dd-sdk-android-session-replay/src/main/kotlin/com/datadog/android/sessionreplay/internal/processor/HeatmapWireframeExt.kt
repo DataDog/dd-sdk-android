@@ -10,6 +10,7 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 
 internal fun MobileSegment.Wireframe.permanentId(): String? {
     return when (this) {
+        is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.permanentId
         is MobileSegment.Wireframe.ShapeWireframe -> this.permanentId
         is MobileSegment.Wireframe.TextWireframe -> this.permanentId
         is MobileSegment.Wireframe.ImageWireframe -> this.permanentId
@@ -22,6 +23,7 @@ internal fun MobileSegment.Wireframe.copyWithPermanentId(
     permanentId: String?
 ): MobileSegment.Wireframe {
     return when (this) {
+        is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.copy(permanentId = permanentId)
         is MobileSegment.Wireframe.ShapeWireframe -> this.copy(permanentId = permanentId)
         is MobileSegment.Wireframe.TextWireframe -> this.copy(permanentId = permanentId)
         is MobileSegment.Wireframe.ImageWireframe -> this.copy(permanentId = permanentId)

@@ -12,10 +12,12 @@ import fr.xgouchet.elmyr.ForgeryFactory
 
 internal class WireframeForgeryFactory : ForgeryFactory<MobileSegment.Wireframe> {
     override fun getForgery(forge: Forge): MobileSegment.Wireframe {
-        return when (forge.anInt(min = 0, max = 4)) {
+        return when (forge.anInt(min = 0, max = 5)) {
             0 -> forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>()
             1 -> forge.getForgery<MobileSegment.Wireframe.ImageWireframe>()
             2 -> forge.getForgery<MobileSegment.Wireframe.PlaceholderWireframe>()
+            3 -> forge.getForgery<MobileSegment.Wireframe.EmbeddedContentWireframe>()
+            4 -> forge.getForgery<MobileSegment.Wireframe.WebviewWireframe>()
             else -> forge.getForgery<MobileSegment.Wireframe.TextWireframe>()
         }
     }

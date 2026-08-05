@@ -265,20 +265,371 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$Applica
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Application;
 }
 
+public final class com/datadog/android/sessionreplay/model/MobileSegment$BackgroundGradient {
+	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$BackgroundGradient$Companion;
+	public fun <init> (Ljava/util/List;Lcom/datadog/android/sessionreplay/model/MobileSegment$StartPoint;Lcom/datadog/android/sessionreplay/model/MobileSegment$StartPoint;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component2 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$StartPoint;
+	public final fun component3 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$StartPoint;
+	public final fun copy (Ljava/util/List;Lcom/datadog/android/sessionreplay/model/MobileSegment$StartPoint;Lcom/datadog/android/sessionreplay/model/MobileSegment$StartPoint;)Lcom/datadog/android/sessionreplay/model/MobileSegment$BackgroundGradient;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$BackgroundGradient;Ljava/util/List;Lcom/datadog/android/sessionreplay/model/MobileSegment$StartPoint;Lcom/datadog/android/sessionreplay/model/MobileSegment$StartPoint;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$BackgroundGradient;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$BackgroundGradient;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$BackgroundGradient;
+	public final fun getEndPoint ()Lcom/datadog/android/sessionreplay/model/MobileSegment$StartPoint;
+	public final fun getStartPoint ()Lcom/datadog/android/sessionreplay/model/MobileSegment$StartPoint;
+	public final fun getStops ()Ljava/util/List;
+	public final fun getType ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$BackgroundGradient$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$BackgroundGradient;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$BackgroundGradient;
+}
+
 public final class com/datadog/android/sessionreplay/model/MobileSegment$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment;
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment;
 }
 
-public final class com/datadog/android/sessionreplay/model/MobileSegment$Data {
-	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$Data$Companion;
+public final class com/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation : java/lang/Enum {
+	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation$Companion;
+	public static final field DESTINATIONIN Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation;
+	public static final field DESTINATIONOUT Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation;
+	public static final field PLUSDARKER Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation;
+	public static final field SOURCEOVER Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation;
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation;
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation;
+	public static fun values ()[Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayer {
+	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayer$Companion;
+	public fun <init> (JJJJJLjava/util/List;Ljava/util/List;Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation;)V
+	public synthetic fun <init> (JJJJJLjava/util/List;Ljava/util/List;Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()J
+	public final fun component2 ()J
+	public final fun component3 ()J
+	public final fun component4 ()J
+	public final fun component5 ()J
+	public final fun component6 ()Ljava/util/List;
+	public final fun component7 ()Ljava/util/List;
+	public final fun component8 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation;
+	public final fun copy (JJJJJLjava/util/List;Ljava/util/List;Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayer;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayer;JJJJJLjava/util/List;Ljava/util/List;Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayer;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayer;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayer;
+	public final fun getChildren ()Ljava/util/List;
+	public final fun getCompositeOperation ()Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation;
+	public final fun getHeight ()J
+	public final fun getId ()J
+	public final fun getModifiers ()Ljava/util/List;
+	public final fun getWidth ()J
+	public final fun getX ()J
+	public final fun getY ()J
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayer$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayer;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayer;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerChild {
+	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerChild$Companion;
+	public fun <init> (Lcom/datadog/android/sessionreplay/model/MobileSegment$Type;J)V
+	public final fun component1 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$Type;
+	public final fun component2 ()J
+	public final fun copy (Lcom/datadog/android/sessionreplay/model/MobileSegment$Type;J)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerChild;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerChild;Lcom/datadog/android/sessionreplay/model/MobileSegment$Type;JILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerChild;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerChild;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerChild;
+	public final fun getId ()J
+	public final fun getType ()Lcom/datadog/android/sessionreplay/model/MobileSegment$Type;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerChild$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerChild;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerChild;
+}
+
+public abstract class com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier {
+	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$Companion;
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier;
+	public static final fun fromJsonElement (Lcom/google/gson/JsonElement;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier;
+	public abstract fun toJson ()Lcom/google/gson/JsonElement;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier;
+	public final fun fromJsonElement (Lcom/google/gson/JsonElement;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerBrightnessBiasModifier : com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier {
+	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerBrightnessBiasModifier$Companion;
+	public fun <init> (Ljava/lang/Number;)V
+	public final fun component1 ()Ljava/lang/Number;
+	public final fun copy (Ljava/lang/Number;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerBrightnessBiasModifier;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerBrightnessBiasModifier;Ljava/lang/Number;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerBrightnessBiasModifier;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerBrightnessBiasModifier;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerBrightnessBiasModifier;
+	public final fun getType ()Ljava/lang/String;
+	public final fun getValue ()Ljava/lang/Number;
+	public fun hashCode ()I
+	public fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerBrightnessBiasModifier$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerBrightnessBiasModifier;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerBrightnessBiasModifier;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerClipModifier : com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier {
+	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerClipModifier$Companion;
+	public fun <init> (Ljava/lang/String;Lcom/datadog/android/sessionreplay/model/MobileSegment$FillRule;)V
+	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/sessionreplay/model/MobileSegment$FillRule;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$FillRule;
+	public final fun copy (Ljava/lang/String;Lcom/datadog/android/sessionreplay/model/MobileSegment$FillRule;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerClipModifier;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerClipModifier;Ljava/lang/String;Lcom/datadog/android/sessionreplay/model/MobileSegment$FillRule;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerClipModifier;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerClipModifier;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerClipModifier;
+	public final fun getFillRule ()Lcom/datadog/android/sessionreplay/model/MobileSegment$FillRule;
+	public final fun getPath ()Ljava/lang/String;
+	public final fun getType ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerClipModifier$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerClipModifier;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerClipModifier;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerColorMatrixModifier : com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier {
+	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerColorMatrixModifier$Companion;
 	public fun <init> (Ljava/util/List;)V
 	public final fun component1 ()Ljava/util/List;
-	public final fun copy (Ljava/util/List;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Data;
-	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$Data;Ljava/util/List;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Data;
+	public final fun copy (Ljava/util/List;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerColorMatrixModifier;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerColorMatrixModifier;Ljava/util/List;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerColorMatrixModifier;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerColorMatrixModifier;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerColorMatrixModifier;
+	public final fun getMatrix ()Ljava/util/List;
+	public final fun getType ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerColorMatrixModifier$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerColorMatrixModifier;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerColorMatrixModifier;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerGaussianBlurModifier : com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier {
+	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerGaussianBlurModifier$Companion;
+	public fun <init> (Ljava/lang/Number;)V
+	public final fun component1 ()Ljava/lang/Number;
+	public final fun copy (Ljava/lang/Number;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerGaussianBlurModifier;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerGaussianBlurModifier;Ljava/lang/Number;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerGaussianBlurModifier;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerGaussianBlurModifier;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerGaussianBlurModifier;
+	public final fun getRadius ()Ljava/lang/Number;
+	public final fun getType ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerGaussianBlurModifier$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerGaussianBlurModifier;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerGaussianBlurModifier;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerMaskImageModifier : com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier {
+	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerMaskImageModifier$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerMaskImageModifier;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerMaskImageModifier;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerMaskImageModifier;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerMaskImageModifier;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerMaskImageModifier;
+	public final fun getResourceId ()Ljava/lang/String;
+	public final fun getType ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerMaskImageModifier$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerMaskImageModifier;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerMaskImageModifier;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerOpacityModifier : com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier {
+	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerOpacityModifier$Companion;
+	public fun <init> (Ljava/lang/Number;)V
+	public final fun component1 ()Ljava/lang/Number;
+	public final fun copy (Ljava/lang/Number;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerOpacityModifier;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerOpacityModifier;Ljava/lang/Number;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerOpacityModifier;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerOpacityModifier;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerOpacityModifier;
+	public final fun getType ()Ljava/lang/String;
+	public final fun getValue ()Ljava/lang/Number;
+	public fun hashCode ()I
+	public fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerOpacityModifier$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerOpacityModifier;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerOpacityModifier;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerSaturateModifier : com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier {
+	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerSaturateModifier$Companion;
+	public fun <init> (Ljava/lang/Number;)V
+	public final fun component1 ()Ljava/lang/Number;
+	public final fun copy (Ljava/lang/Number;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerSaturateModifier;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerSaturateModifier;Ljava/lang/Number;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerSaturateModifier;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerSaturateModifier;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerSaturateModifier;
+	public final fun getType ()Ljava/lang/String;
+	public final fun getValue ()Ljava/lang/Number;
+	public fun hashCode ()I
+	public fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerSaturateModifier$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerSaturateModifier;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerSaturateModifier;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerShadowModifier : com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier {
+	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerShadowModifier$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Number;
+	public final fun component3 ()Ljava/lang/Number;
+	public final fun component4 ()Ljava/lang/Number;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerShadowModifier;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerShadowModifier;Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerShadowModifier;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerShadowModifier;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerShadowModifier;
+	public final fun getColor ()Ljava/lang/String;
+	public final fun getOffsetX ()Ljava/lang/Number;
+	public final fun getOffsetY ()Ljava/lang/Number;
+	public final fun getPath ()Ljava/lang/String;
+	public final fun getRadius ()Ljava/lang/Number;
+	public final fun getType ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerShadowModifier$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerShadowModifier;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerModifier$CompositionLayerShadowModifier;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerUpdate {
+	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerUpdate$Companion;
+	public fun <init> (JLjava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/util/List;Ljava/util/List;Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation;)V
+	public synthetic fun <init> (JLjava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/util/List;Ljava/util/List;Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()J
+	public final fun component2 ()Ljava/lang/Long;
+	public final fun component3 ()Ljava/lang/Long;
+	public final fun component4 ()Ljava/lang/Long;
+	public final fun component5 ()Ljava/lang/Long;
+	public final fun component6 ()Ljava/util/List;
+	public final fun component7 ()Ljava/util/List;
+	public final fun component8 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation;
+	public final fun copy (JLjava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/util/List;Ljava/util/List;Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerUpdate;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerUpdate;JLjava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/util/List;Ljava/util/List;Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerUpdate;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerUpdate;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerUpdate;
+	public final fun getChildren ()Ljava/util/List;
+	public final fun getCompositeOperation ()Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation;
+	public final fun getHeight ()Ljava/lang/Long;
+	public final fun getId ()J
+	public final fun getModifiers ()Ljava/util/List;
+	public final fun getWidth ()Ljava/lang/Long;
+	public final fun getX ()Ljava/lang/Long;
+	public final fun getY ()Ljava/lang/Long;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerUpdate$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerUpdate;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayerUpdate;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$CompositionTree {
+	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionTree$Companion;
+	public fun <init> (Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayer;Ljava/util/List;)V
+	public synthetic fun <init> (Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayer;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayer;
+	public final fun component2 ()Ljava/util/List;
+	public final fun copy (Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayer;Ljava/util/List;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionTree;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionTree;Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayer;Ljava/util/List;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionTree;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionTree;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionTree;
+	public final fun getLayers ()Ljava/util/List;
+	public final fun getRoot ()Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayer;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$CompositionTree$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionTree;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionTree;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$Data {
+	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$Data$Companion;
+	public fun <init> (Ljava/util/List;Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionTree;)V
+	public synthetic fun <init> (Ljava/util/List;Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionTree;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component2 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionTree;
+	public final fun copy (Ljava/util/List;Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionTree;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Data;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$Data;Ljava/util/List;Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionTree;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Data;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Data;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Data;
+	public final fun getCompositionTree ()Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionTree;
 	public final fun getWireframes ()Ljava/util/List;
 	public fun hashCode ()I
 	public final fun toJson ()Lcom/google/gson/JsonElement;
@@ -367,6 +718,20 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$Data3$C
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Data3;
 }
 
+public final class com/datadog/android/sessionreplay/model/MobileSegment$FillRule : java/lang/Enum {
+	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$FillRule$Companion;
+	public static final field EVENODD Lcom/datadog/android/sessionreplay/model/MobileSegment$FillRule;
+	public static final field NONZERO Lcom/datadog/android/sessionreplay/model/MobileSegment$FillRule;
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$FillRule;
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$FillRule;
+	public static fun values ()[Lcom/datadog/android/sessionreplay/model/MobileSegment$FillRule;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$FillRule$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$FillRule;
+}
+
 public final class com/datadog/android/sessionreplay/model/MobileSegment$Horizontal : java/lang/Enum {
 	public static final field CENTER Lcom/datadog/android/sessionreplay/model/MobileSegment$Horizontal;
 	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$Horizontal$Companion;
@@ -392,6 +757,35 @@ public abstract class com/datadog/android/sessionreplay/model/MobileSegment$Mobi
 public final class com/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData;
 	public final fun fromJsonElement (Lcom/google/gson/JsonElement;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData$CompositionTreeMutationData : com/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData {
+	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData$CompositionTreeMutationData$Companion;
+	public fun <init> ()V
+	public fun <init> (Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayer;Ljava/util/List;Ljava/util/List;Ljava/util/List;)V
+	public synthetic fun <init> (Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayer;Ljava/util/List;Ljava/util/List;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayer;
+	public final fun component2 ()Ljava/util/List;
+	public final fun component3 ()Ljava/util/List;
+	public final fun component4 ()Ljava/util/List;
+	public final fun copy (Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayer;Ljava/util/List;Ljava/util/List;Ljava/util/List;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData$CompositionTreeMutationData;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData$CompositionTreeMutationData;Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayer;Ljava/util/List;Ljava/util/List;Ljava/util/List;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData$CompositionTreeMutationData;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData$CompositionTreeMutationData;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData$CompositionTreeMutationData;
+	public final fun getAdds ()Ljava/util/List;
+	public final fun getRemoves ()Ljava/util/List;
+	public final fun getRoot ()Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositionLayer;
+	public final fun getSource ()J
+	public final fun getUpdates ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData$CompositionTreeMutationData$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData$CompositionTreeMutationData;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData$CompositionTreeMutationData;
 }
 
 public final class com/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData$MobileMutationData : com/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData {
@@ -560,15 +954,18 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$MobileR
 
 public final class com/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileFullSnapshotRecord : com/datadog/android/sessionreplay/model/MobileSegment$MobileRecord {
 	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileFullSnapshotRecord$Companion;
-	public fun <init> (JLcom/datadog/android/sessionreplay/model/MobileSegment$Data;)V
+	public fun <init> (JLcom/datadog/android/sessionreplay/model/MobileSegment$Data;Ljava/lang/String;)V
+	public synthetic fun <init> (JLcom/datadog/android/sessionreplay/model/MobileSegment$Data;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()J
 	public final fun component2 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$Data;
-	public final fun copy (JLcom/datadog/android/sessionreplay/model/MobileSegment$Data;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileFullSnapshotRecord;
-	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileFullSnapshotRecord;JLcom/datadog/android/sessionreplay/model/MobileSegment$Data;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileFullSnapshotRecord;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (JLcom/datadog/android/sessionreplay/model/MobileSegment$Data;Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileFullSnapshotRecord;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileFullSnapshotRecord;JLcom/datadog/android/sessionreplay/model/MobileSegment$Data;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileFullSnapshotRecord;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileFullSnapshotRecord;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileFullSnapshotRecord;
 	public final fun getData ()Lcom/datadog/android/sessionreplay/model/MobileSegment$Data;
+	public final fun getSlotId ()Ljava/lang/String;
 	public final fun getTimestamp ()J
 	public final fun getType ()J
 	public fun hashCode ()I
@@ -583,15 +980,18 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$MobileR
 
 public final class com/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileIncrementalSnapshotRecord : com/datadog/android/sessionreplay/model/MobileSegment$MobileRecord {
 	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileIncrementalSnapshotRecord$Companion;
-	public fun <init> (JLcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData;)V
+	public fun <init> (JLcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData;Ljava/lang/String;)V
+	public synthetic fun <init> (JLcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()J
 	public final fun component2 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData;
-	public final fun copy (JLcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileIncrementalSnapshotRecord;
-	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileIncrementalSnapshotRecord;JLcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileIncrementalSnapshotRecord;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (JLcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData;Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileIncrementalSnapshotRecord;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileIncrementalSnapshotRecord;JLcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileIncrementalSnapshotRecord;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileIncrementalSnapshotRecord;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileRecord$MobileIncrementalSnapshotRecord;
 	public final fun getData ()Lcom/datadog/android/sessionreplay/model/MobileSegment$MobileIncrementalData;
+	public final fun getSlotId ()Ljava/lang/String;
 	public final fun getTimestamp ()J
 	public final fun getType ()J
 	public fun hashCode ()I
@@ -800,20 +1200,44 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$ShapeBo
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;
 }
 
+public final class com/datadog/android/sessionreplay/model/MobileSegment$ShapeGradientStop {
+	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeGradientStop$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/Number;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Number;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Number;)Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeGradientStop;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeGradientStop;Ljava/lang/String;Ljava/lang/Number;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeGradientStop;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeGradientStop;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeGradientStop;
+	public final fun getColor ()Ljava/lang/String;
+	public final fun getPosition ()Ljava/lang/Number;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$ShapeGradientStop$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeGradientStop;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeGradientStop;
+}
+
 public final class com/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle {
 	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle$Companion;
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Number;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Number;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Lcom/datadog/android/sessionreplay/model/MobileSegment$BackgroundGradient;Ljava/lang/Number;Ljava/lang/Number;)V
+	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/sessionreplay/model/MobileSegment$BackgroundGradient;Ljava/lang/Number;Ljava/lang/Number;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/Number;
+	public final fun component2 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$BackgroundGradient;
 	public final fun component3 ()Ljava/lang/Number;
-	public final fun copy (Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Number;)Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;
-	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Number;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;
+	public final fun component4 ()Ljava/lang/Number;
+	public final fun copy (Ljava/lang/String;Lcom/datadog/android/sessionreplay/model/MobileSegment$BackgroundGradient;Ljava/lang/Number;Ljava/lang/Number;)Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Ljava/lang/String;Lcom/datadog/android/sessionreplay/model/MobileSegment$BackgroundGradient;Ljava/lang/Number;Ljava/lang/Number;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;
 	public final fun getBackgroundColor ()Ljava/lang/String;
+	public final fun getBackgroundGradient ()Lcom/datadog/android/sessionreplay/model/MobileSegment$BackgroundGradient;
 	public final fun getCornerRadius ()Ljava/lang/Number;
 	public final fun getOpacity ()Ljava/lang/Number;
 	public fun hashCode ()I
@@ -842,6 +1266,28 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$Source 
 
 public final class com/datadog/android/sessionreplay/model/MobileSegment$Source$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Source;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$StartPoint {
+	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$StartPoint$Companion;
+	public fun <init> (Ljava/lang/Number;Ljava/lang/Number;)V
+	public final fun component1 ()Ljava/lang/Number;
+	public final fun component2 ()Ljava/lang/Number;
+	public final fun copy (Ljava/lang/Number;Ljava/lang/Number;)Lcom/datadog/android/sessionreplay/model/MobileSegment$StartPoint;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$StartPoint;Ljava/lang/Number;Ljava/lang/Number;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$StartPoint;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$StartPoint;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$StartPoint;
+	public final fun getX ()Ljava/lang/Number;
+	public final fun getY ()Ljava/lang/Number;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$StartPoint$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$StartPoint;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$StartPoint;
 }
 
 public final class com/datadog/android/sessionreplay/model/MobileSegment$TextPosition {
@@ -911,6 +1357,20 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$Truncat
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$TruncationMode;
 }
 
+public final class com/datadog/android/sessionreplay/model/MobileSegment$Type : java/lang/Enum {
+	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$Type$Companion;
+	public static final field LAYER Lcom/datadog/android/sessionreplay/model/MobileSegment$Type;
+	public static final field WIREFRAME Lcom/datadog/android/sessionreplay/model/MobileSegment$Type;
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Type;
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Type;
+	public static fun values ()[Lcom/datadog/android/sessionreplay/model/MobileSegment$Type;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$Type$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Type;
+}
+
 public final class com/datadog/android/sessionreplay/model/MobileSegment$Vertical : java/lang/Enum {
 	public static final field BOTTOM Lcom/datadog/android/sessionreplay/model/MobileSegment$Vertical;
 	public static final field CENTER Lcom/datadog/android/sessionreplay/model/MobileSegment$Vertical;
@@ -956,6 +1416,48 @@ public abstract class com/datadog/android/sessionreplay/model/MobileSegment$Wire
 public final class com/datadog/android/sessionreplay/model/MobileSegment$Wireframe$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe;
 	public final fun fromJsonElement (Lcom/google/gson/JsonElement;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$Wireframe$EmbeddedContentWireframe : com/datadog/android/sessionreplay/model/MobileSegment$Wireframe {
+	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$EmbeddedContentWireframe$Companion;
+	public fun <init> (JJJJJLcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;)V
+	public synthetic fun <init> (JJJJJLcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()J
+	public final fun component10 ()Ljava/lang/Boolean;
+	public final fun component11 ()Ljava/lang/String;
+	public final fun component2 ()J
+	public final fun component3 ()J
+	public final fun component4 ()J
+	public final fun component5 ()J
+	public final fun component6 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;
+	public final fun component7 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;
+	public final fun component8 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;
+	public final fun component9 ()Ljava/lang/String;
+	public final fun copy (JJJJJLcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$EmbeddedContentWireframe;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$EmbeddedContentWireframe;JJJJJLcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$EmbeddedContentWireframe;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$EmbeddedContentWireframe;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$EmbeddedContentWireframe;
+	public final fun getBorder ()Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;
+	public final fun getClip ()Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;
+	public final fun getHeight ()J
+	public final fun getId ()J
+	public final fun getPermanentId ()Ljava/lang/String;
+	public final fun getShapeStyle ()Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;
+	public final fun getSlotId ()Ljava/lang/String;
+	public final fun getType ()Ljava/lang/String;
+	public final fun getWidth ()J
+	public final fun getX ()J
+	public final fun getY ()J
+	public fun hashCode ()I
+	public final fun isVisible ()Ljava/lang/Boolean;
+	public fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$Wireframe$EmbeddedContentWireframe$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$EmbeddedContentWireframe;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$EmbeddedContentWireframe;
 }
 
 public final class com/datadog/android/sessionreplay/model/MobileSegment$Wireframe$ImageWireframe : com/datadog/android/sessionreplay/model/MobileSegment$Wireframe {
@@ -1208,6 +1710,46 @@ public abstract class com/datadog/android/sessionreplay/model/MobileSegment$Wire
 public final class com/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation;
 	public final fun fromJsonElement (Lcom/google/gson/JsonElement;)Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$EmbeddedContentWireframeUpdate : com/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation {
+	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$EmbeddedContentWireframeUpdate$Companion;
+	public fun <init> (JLjava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;Ljava/lang/String;Ljava/lang/Boolean;)V
+	public synthetic fun <init> (JLjava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;Ljava/lang/String;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()J
+	public final fun component10 ()Ljava/lang/Boolean;
+	public final fun component2 ()Ljava/lang/Long;
+	public final fun component3 ()Ljava/lang/Long;
+	public final fun component4 ()Ljava/lang/Long;
+	public final fun component5 ()Ljava/lang/Long;
+	public final fun component6 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;
+	public final fun component7 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;
+	public final fun component8 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;
+	public final fun component9 ()Ljava/lang/String;
+	public final fun copy (JLjava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;Ljava/lang/String;Ljava/lang/Boolean;)Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$EmbeddedContentWireframeUpdate;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$EmbeddedContentWireframeUpdate;JLjava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;Ljava/lang/String;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$EmbeddedContentWireframeUpdate;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$EmbeddedContentWireframeUpdate;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$EmbeddedContentWireframeUpdate;
+	public final fun getBorder ()Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;
+	public final fun getClip ()Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;
+	public final fun getHeight ()Ljava/lang/Long;
+	public final fun getId ()J
+	public final fun getShapeStyle ()Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;
+	public final fun getSlotId ()Ljava/lang/String;
+	public final fun getType ()Ljava/lang/String;
+	public final fun getWidth ()Ljava/lang/Long;
+	public final fun getX ()Ljava/lang/Long;
+	public final fun getY ()Ljava/lang/Long;
+	public fun hashCode ()I
+	public final fun isVisible ()Ljava/lang/Boolean;
+	public fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$EmbeddedContentWireframeUpdate$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$EmbeddedContentWireframeUpdate;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$EmbeddedContentWireframeUpdate;
 }
 
 public final class com/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$ImageWireframeUpdate : com/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation {

@@ -52,7 +52,10 @@ abstract class BaseWireframeMapper<in T : View>(
     ): MobileSegment.ShapeStyle? {
         val color = drawableToColorMapper.mapDrawableToColor(drawable, internalLogger)
         return if (color != null) {
-            MobileSegment.ShapeStyle(colorStringFormatter.formatColorAsHexString(color), viewAlpha)
+            MobileSegment.ShapeStyle(
+                backgroundColor = colorStringFormatter.formatColorAsHexString(color),
+                opacity = viewAlpha
+            )
         } else {
             null
         }

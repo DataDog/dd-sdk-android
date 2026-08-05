@@ -202,6 +202,7 @@ internal class WireframeExtTest {
 
     private fun MobileSegment.Wireframe.testCopy(shapeStyle: MobileSegment.ShapeStyle?): MobileSegment.Wireframe {
         return when (this) {
+            is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.copy(shapeStyle = shapeStyle)
             is MobileSegment.Wireframe.TextWireframe -> this.copy(shapeStyle = shapeStyle)
             is MobileSegment.Wireframe.ShapeWireframe -> this.copy(shapeStyle = shapeStyle)
             is MobileSegment.Wireframe.ImageWireframe -> this.copy(shapeStyle = shapeStyle)

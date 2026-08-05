@@ -11,6 +11,7 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 
 internal fun MobileSegment.Wireframe.copy(clip: MobileSegment.WireframeClip?): MobileSegment.Wireframe {
     return when (this) {
+        is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.copy(clip = clip)
         is MobileSegment.Wireframe.ShapeWireframe -> this.copy(clip = clip)
         is MobileSegment.Wireframe.TextWireframe -> this.copy(clip = clip)
         is MobileSegment.Wireframe.ImageWireframe -> this.copy(clip = clip)

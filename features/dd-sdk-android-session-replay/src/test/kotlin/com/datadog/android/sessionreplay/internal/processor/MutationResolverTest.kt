@@ -168,8 +168,11 @@ internal class MutationResolverTest {
     @Test
     fun `M identify the removed wireframes W resolveMutations`(forge: Forge) {
         // Given
+        // WebviewWireframe is excluded: a removed WebviewWireframe is resolved as a
+        // visibility update rather than a Remove (see the dedicated webview tests below),
+        // which this test isn't exercising.
         val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 2, max = 10)) {
-            forge.getForgery(MobileSegment.Wireframe::class.java)
+            forge.nonWebViewWireframe()
         }
         val fakeRemovedSize = forge.anInt(min = 1, max = fakePrevSnapshot.size)
         val fakeCurrentSnapshot = fakePrevSnapshot.drop(fakeRemovedSize)
@@ -772,12 +775,21 @@ internal class MutationResolverTest {
 
     private fun MobileSegment.Wireframe.id(): Long {
         return when (this) {
+            is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.id
             is MobileSegment.Wireframe.ShapeWireframe -> this.id
             is MobileSegment.Wireframe.TextWireframe -> this.id
             is MobileSegment.Wireframe.ImageWireframe -> this.id
             is MobileSegment.Wireframe.PlaceholderWireframe -> this.id
             is MobileSegment.Wireframe.WebviewWireframe -> this.id
         }
+    }
+
+    private fun Forge.nonWebViewWireframe(): MobileSegment.Wireframe {
+        var wireframe: MobileSegment.Wireframe
+        do {
+            wireframe = getForgery(MobileSegment.Wireframe::class.java)
+        } while (wireframe is MobileSegment.Wireframe.WebviewWireframe)
+        return wireframe
     }
 
     // endregion
@@ -793,6 +805,7 @@ internal class MutationResolverTest {
 
         private fun MobileSegment.Wireframe.id(): Long {
             return when (this) {
+                is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.id
                 is MobileSegment.Wireframe.ShapeWireframe -> this.id
                 is MobileSegment.Wireframe.TextWireframe -> this.id
                 is MobileSegment.Wireframe.ImageWireframe -> this.id

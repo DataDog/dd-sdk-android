@@ -38,7 +38,7 @@ internal open class RadioButtonMapper(
     override fun resolveNotCheckedShapeStyle(view: RadioButton, checkBoxColor: String): MobileSegment.ShapeStyle? {
         return MobileSegment.ShapeStyle(
             backgroundColor = null,
-            view.alpha,
+            opacity = view.alpha,
             cornerRadius = CORNER_RADIUS
         )
     }

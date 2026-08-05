@@ -689,6 +689,7 @@ internal class WireframeUtilsTest {
 
     private fun MobileSegment.Wireframe.clip(): MobileSegment.WireframeClip? {
         return when (this) {
+            is MobileSegment.Wireframe.EmbeddedContentWireframe -> clip?.normalized()
             is MobileSegment.Wireframe.ShapeWireframe -> clip?.normalized()
             is MobileSegment.Wireframe.TextWireframe -> clip?.normalized()
             is MobileSegment.Wireframe.ImageWireframe -> clip?.normalized()
@@ -722,6 +723,10 @@ internal class WireframeUtilsTest {
         shapeStyle: MobileSegment.ShapeStyle?
     ): MobileSegment.Wireframe {
         return when (this) {
+            is MobileSegment.Wireframe.EmbeddedContentWireframe -> copy(
+                shapeStyle = shapeStyle
+            )
+
             is MobileSegment.Wireframe.ShapeWireframe -> copy(
                 shapeStyle = shapeStyle
             )

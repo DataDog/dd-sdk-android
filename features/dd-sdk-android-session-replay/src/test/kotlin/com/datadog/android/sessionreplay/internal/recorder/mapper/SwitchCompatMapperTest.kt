@@ -70,7 +70,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
             border = null,
             shapeStyle = MobileSegment.ShapeStyle(
                 backgroundColor = fakeCurrentTextColorString,
-                mockSwitch.alpha
+                opacity = mockSwitch.alpha
             )
         )
 
@@ -143,7 +143,7 @@ internal class SwitchCompatMapperTest : BaseSwitchCompatMapperTest() {
             border = null,
             shapeStyle = MobileSegment.ShapeStyle(
                 backgroundColor = fakeCurrentTextColorString,
-                mockSwitch.alpha
+                opacity = mockSwitch.alpha
             )
         )
 
