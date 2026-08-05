@@ -211,14 +211,14 @@ internal fun Field.getSafe(target: Any?): Any? {
 internal fun getClassSafe(className: String, isCritical: Boolean = true): Class<*>? {
     return try {
         Class.forName(className)
-    } catch (e: LinkageError) {
-        if (isCritical) {
-            logReflectionException(className, LOG_TYPE_CLASS, LOG_REASON_LINKAGE_ERROR, e)
-        }
-        null
     } catch (e: ExceptionInInitializerError) {
         if (isCritical) {
             logReflectionException(className, LOG_TYPE_CLASS, LOG_REASON_INITIALIZATION_ERROR, e)
+        }
+        null
+    } catch (e: LinkageError) {
+        if (isCritical) {
+            logReflectionException(className, LOG_TYPE_CLASS, LOG_REASON_LINKAGE_ERROR, e)
         }
         null
     } catch (e: ClassNotFoundException) {

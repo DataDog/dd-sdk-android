@@ -39,8 +39,8 @@ internal class DefaultViewBoundsResolverTest {
         val fakeWidth = forge.aPositiveInt()
         val fakeHeight = forge.aPositiveInt()
         val mockView: View = mock {
-            whenever(it.getLocationOnScreen(any())).thenAnswer {
-                val coords = it.arguments[0] as IntArray
+            whenever(it.getLocationOnScreen(any())).thenAnswer { invocation ->
+                val coords = invocation.arguments[0] as IntArray
                 coords[0] = fakeGlobalX
                 coords[1] = fakeGlobalY
                 null

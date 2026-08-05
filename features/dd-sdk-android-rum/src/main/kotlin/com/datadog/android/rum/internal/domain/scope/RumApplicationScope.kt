@@ -226,7 +226,7 @@ internal class RumApplicationScope(
         }
 
         // Confidence telemetry, only end up with one active session
-        if (childScopes.filter { it.isActive() }.size > 1) {
+        if (childScopes.count { it.isActive() } > 1) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.TELEMETRY,

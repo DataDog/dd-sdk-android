@@ -86,10 +86,11 @@ internal class DatadogNdkCrashHandler(
 
     @WorkerThread
     private fun checkAndHandleNdkCrashReport(sdkCore: FeatureSdkCore) {
-        if (lastNdkCrashLog != null) {
+        val ndkCrashLog = lastNdkCrashLog
+        if (ndkCrashLog != null) {
             handleNdkCrashLog(
                 sdkCore,
-                lastNdkCrashLog,
+                ndkCrashLog,
                 lastRumViewEvent
             )
             clearAllReferences()
@@ -153,7 +154,7 @@ internal class DatadogNdkCrashHandler(
         }
     }
 
-    @SuppressWarnings("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught")
     private fun clearCrashLog() {
         if (ndkCrashDataDirectory.existsSafe(internalLogger)) {
             try {

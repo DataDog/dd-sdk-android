@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     `kotlin-dsl`
     alias(libs.plugins.versionsGradlePlugin)
+    alias(libs.plugins.ktlintGradlePlugin)
 }
 
 buildscript {
@@ -41,6 +42,7 @@ dependencies {
     // but since buildSrc leaks to the buildscript, we still have to load plugin artifacts
     // and then it will be classpath conflict. Maybe convention plugins will fix that.
     implementation(libs.kotlinGradlePlugin)
+    implementation(libs.detektGradlePlugin)
     implementation(libs.androidToolsGradlePlugin)
     implementation(libs.versionsGradlePlugin)
     implementation(libs.dokkaGradlePlugin)
@@ -54,6 +56,8 @@ dependencies {
 
     // Verification Metadata XML
     implementation(libs.kotlinXmlBuilder)
+
+    implementation(libs.ktlintGradlePlugin)
 
     // Tests
     testImplementation(libs.jUnit4)
@@ -90,6 +94,13 @@ gradlePlugin {
 
 java.targetCompatibility = JavaVersion.VERSION_17
 java.sourceCompatibility = JavaVersion.VERSION_17
+
+ktlint {
+    version = provider { libs.versions.ktlint.get() }
+    filter {
+        exclude { it.file.invariantSeparatorsPath.contains("/build/generated") }
+    }
+}
 
 tasks.withType<KotlinCompile>().configureEach {
     compilerOptions {

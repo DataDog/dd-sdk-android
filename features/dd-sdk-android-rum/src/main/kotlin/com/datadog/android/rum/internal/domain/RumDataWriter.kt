@@ -7,15 +7,28 @@
 package com.datadog.android.rum.internal.domain
 
 import androidx.annotation.WorkerThread
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.api.storage.write
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.serializeToByteArray
+import com.datadog.android.internal.telemetry.TelemetryContext
 import com.datadog.android.rum.internal.domain.event.RumEventMeta
+import com.datadog.android.rum.model.ActionEvent
+import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.LongTaskEvent
+import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.VitalAppLaunchEvent
+import com.datadog.android.rum.model.VitalOperationStepEvent
+import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
+import com.datadog.android.telemetry.model.TelemetryDebugEvent
+import com.datadog.android.telemetry.model.TelemetryErrorEvent
+import com.datadog.android.telemetry.model.TelemetryUsageEvent
 
 internal class RumDataWriter(
     internal val eventSerializer: Serializer<Any>,
@@ -26,23 +39,21 @@ internal class RumDataWriter(
     // region DataWriter
 
     @WorkerThread
+    @Suppress("ReturnCount")
     override fun write(writer: EventBatchWriter, element: Any, eventType: EventType): Boolean {
-        val byteArray = eventSerializer.serializeToByteArray(
-            element,
-            sdkCore.internalLogger
-        ) ?: return false
+        val byteArray = eventSerializer.serializeToByteArray(element, sdkCore.internalLogger)
+            ?: return false
 
         val batchEvent = if (element is ViewEvent) {
-            val hasAccessibility = element.view.accessibility != null
-
             val eventMeta = RumEventMeta.View(
                 viewId = element.view.id,
                 documentVersion = element.dd.documentVersion,
-                hasAccessibility = hasAccessibility
+                hasAccessibility = element.view.accessibility != null
             )
-            val serializedEventMeta =
-                eventMetaSerializer.serializeToByteArray(eventMeta, sdkCore.internalLogger)
-                    ?: EMPTY_BYTE_ARRAY
+
+            val serializedEventMeta = eventMetaSerializer.serializeToByteArray(eventMeta, sdkCore.internalLogger)
+                ?: EMPTY_BYTE_ARRAY
+
             RawBatchEvent(
                 data = byteArray,
                 metadata = serializedEventMeta
@@ -52,7 +63,12 @@ internal class RumDataWriter(
         }
 
         synchronized(this) {
-            val result = writer.write(batchEvent, null, eventType)
+            val telemetryContext = TelemetryContext(
+                featureName = Feature.RUM_FEATURE_NAME,
+                eventType = resolveEventType(element)
+            )
+
+            val result = writer.write(batchEvent, null, eventType, telemetryContext)
             if (result) {
                 onDataWritten(element, byteArray)
             }
@@ -75,5 +91,22 @@ internal class RumDataWriter(
 
     companion object {
         val EMPTY_BYTE_ARRAY = ByteArray(0)
+
+        private const val UNKNOWN_EVENT_TYPE = "unknown"
+
+        private fun resolveEventType(event: Any): String = when (event) {
+            is ActionEvent -> event.type
+            is ErrorEvent -> event.type
+            is LongTaskEvent -> event.type
+            is ResourceEvent -> event.type
+            is ViewEvent -> event.type
+            is VitalAppLaunchEvent -> event.type
+            is VitalOperationStepEvent -> event.type
+            is TelemetryConfigurationEvent -> event.type
+            is TelemetryDebugEvent -> event.type
+            is TelemetryErrorEvent -> event.type
+            is TelemetryUsageEvent -> event.type
+            else -> UNKNOWN_EVENT_TYPE
+        }
     }
 }

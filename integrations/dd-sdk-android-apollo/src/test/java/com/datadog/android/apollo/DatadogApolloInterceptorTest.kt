@@ -37,7 +37,7 @@ import org.mockito.quality.Strictness
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@Suppress("UnusedFlow")
+@Suppress("UnusedFlow", "IgnoredReturnValue")
 internal class DatadogApolloInterceptorTest {
 
     @Mock

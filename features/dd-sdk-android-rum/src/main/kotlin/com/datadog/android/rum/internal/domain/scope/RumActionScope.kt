@@ -11,6 +11,7 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.internal.utils.DdTagsUtils
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumSessionType
@@ -21,7 +22,6 @@ import com.datadog.android.rum.internal.heatmaps.HeatmapActionResolver
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.toAction
-import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.internal.utils.hasUserData
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.model.ActionEvent
@@ -364,7 +364,7 @@ internal class RumActionScope(
                 version = datadogContext.version,
                 buildVersion = datadogContext.versionCode.toString(),
                 buildId = datadogContext.appBuildId,
-                ddtags = buildDDTagsString(datadogContext)
+                ddtags = DdTagsUtils.toDdTagsString(datadogContext)
             )
         }
             .apply {

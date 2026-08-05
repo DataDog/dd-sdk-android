@@ -8,11 +8,13 @@ package com.datadog.android.core.internal.persistence.file.batch
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.internal.telemetry.TelemetryContext
 import com.datadog.android.security.Encryption
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -27,6 +29,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
@@ -55,11 +58,17 @@ internal class EncryptedBatchReaderWriterTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @StringForgery
+    lateinit var fakeFeatureName: String
+
+    @Forgery
+    lateinit var fakeTelemetryContext: TelemetryContext
+
     private lateinit var testedReaderWriter: EncryptedBatchReaderWriter
 
     @BeforeEach
     fun setUp() {
-        whenever(mockBatchFileReaderWriter.writeData(any(), any(), any())) doReturn true
+        whenever(mockBatchFileReaderWriter.writeBinaryData(any(), any(), any(), any())) doReturn true
 
         whenever(mockEncryption.encrypt(any())) doAnswer {
             val bytes = it.getArgument<ByteArray>(0)
@@ -70,66 +79,82 @@ internal class EncryptedBatchReaderWriterTest {
             decrypt(bytes)
         }
 
-        testedReaderWriter =
-            EncryptedBatchReaderWriter(
-                mockEncryption,
-                mockBatchFileReaderWriter,
-                mockInternalLogger
-            )
+        testedReaderWriter = EncryptedBatchReaderWriter(
+            mockEncryption,
+            mockBatchFileReaderWriter,
+            mockInternalLogger
+        )
     }
 
-    // region BatchFileReaderWriter#writeData tests
+    // region BatchFileReaderWriter#serializeToBytes tests
 
     @Test
-    fun `M encrypt data and return true W writeData()`(
+    fun `M encrypt data and delegate W serializeToBytes()`(
         @Forgery batchEvent: RawBatchEvent,
-        @BoolForgery append: Boolean
+        @StringForgery fakeSerialized: String
     ) {
-        // When
-        val result = testedReaderWriter.writeData(
-            mockFile,
-            batchEvent,
-            append = append
-        )
+        // Given
+        val serializedBytes = fakeSerialized.toByteArray()
         val encryptedData = encrypt(batchEvent.data)
         val encryptedMetadata = encrypt(batchEvent.metadata)
+        whenever(mockBatchFileReaderWriter.serializeToBytes(any(), any())) doReturn serializedBytes
+
+        // When
+        val result = testedReaderWriter.serializeToBytes(batchEvent, fakeTelemetryContext)
 
         // Then
-        assertThat(result).isTrue()
-        verify(mockBatchFileReaderWriter)
-            .writeData(
-                mockFile,
-                RawBatchEvent(data = encryptedData, metadata = encryptedMetadata),
-                append
-            )
-
-        verifyNoInteractions(mockInternalLogger)
+        assertThat(result).isEqualTo(serializedBytes)
+        verify(mockBatchFileReaderWriter).serializeToBytes(
+            RawBatchEvent(data = encryptedData, metadata = encryptedMetadata),
+            fakeTelemetryContext
+        )
     }
 
     @Test
-    fun `M log internal error and return false W writeData() { bad encryption result }`(
-        @Forgery batchEvent: RawBatchEvent,
+    fun `M log error and return null W serializeToBytes() { bad encryption result }`(
+        @Forgery batchEvent: RawBatchEvent
+    ) {
+        // Given
+        // non-empty event data whose encryption yields an empty result
+        val nonEmptyEvent = batchEvent.copy(data = ByteArray(4) { 1 })
+        whenever(mockEncryption.encrypt(nonEmptyEvent.data)) doReturn ByteArray(0)
+
+        // When
+        val result = testedReaderWriter.serializeToBytes(nonEmptyEvent, fakeTelemetryContext)
+
+        // Then
+        assertThat(result).isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            EncryptedBatchReaderWriter.BAD_ENCRYPTION_RESULT_MESSAGE,
+            additionalProperties = fakeTelemetryContext.asAttributesMap(bytesLost = 4)
+        )
+        verifyNoMoreInteractions(mockInternalLogger)
+        verify(mockBatchFileReaderWriter, never()).serializeToBytes(any(), any())
+    }
+
+    // endregion
+
+    // region BatchFileReaderWriter#writeBinaryData tests
+
+    @Test
+    fun `M delegate without re-encrypting W writeBinaryData()`(
+        @StringForgery fakeContent: String,
         @BoolForgery append: Boolean
     ) {
         // Given
-        whenever(mockEncryption.encrypt(batchEvent.data)) doReturn ByteArray(0)
+        val bytes = fakeContent.toByteArray()
+        whenever(
+            mockBatchFileReaderWriter.writeBinaryData(mockFile, bytes, append, fakeTelemetryContext)
+        ) doReturn true
 
         // When
-        val result = testedReaderWriter.writeData(
-            mockFile,
-            batchEvent,
-            append = append
-        )
+        val result = testedReaderWriter.writeBinaryData(mockFile, bytes, append, fakeTelemetryContext)
 
         // Then
-        assertThat(result).isFalse()
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            EncryptedBatchReaderWriter.BAD_ENCRYPTION_RESULT_MESSAGE
-        )
-        verifyNoMoreInteractions(mockInternalLogger)
-        verifyNoInteractions(mockBatchFileReaderWriter)
+        assertThat(result).isTrue()
+        verify(mockBatchFileReaderWriter).writeBinaryData(mockFile, bytes, append, fakeTelemetryContext)
     }
 
     // endregion
@@ -142,11 +167,11 @@ internal class EncryptedBatchReaderWriterTest {
     ) {
         // Given
         whenever(
-            mockBatchFileReaderWriter.readData(mockFile)
+            mockBatchFileReaderWriter.readData(eq(mockFile), any())
         ) doReturn events.map { RawBatchEvent(encrypt(it.data), encrypt(it.metadata)) }
 
         // When
-        val result = testedReaderWriter.readData(mockFile)
+        val result = testedReaderWriter.readData(mockFile, fakeTelemetryContext)
 
         // Then
         assertThat(result).containsExactlyElementsOf(events)
@@ -154,36 +179,57 @@ internal class EncryptedBatchReaderWriterTest {
 
     // endregion
 
-    // region writeData + readData
+    // region serializeToBytes + writeBinaryData + readData
 
     @Test
-    fun `M return valid data W writeData() + readData()`(
+    fun `M return valid data W serializeToBytes() + writeBinaryData() + readData()`(
         @Forgery events: List<RawBatchEvent>
     ) {
         // Given
+        // serializeToBytes returns encryptedEvent.data as placeholder bytes; we map that ByteArray
+        // reference to the full encrypted event so writeBinaryData can store it, and readData
+        // returns the stored encrypted events for EncryptedBatchReaderWriter to decrypt.
+        val encryptedEventByBytes = mutableMapOf<ByteArray, RawBatchEvent>()
         val storage = mutableListOf<RawBatchEvent>()
 
         whenever(
-            mockBatchFileReaderWriter.writeData(
+            mockBatchFileReaderWriter.serializeToBytes(any(), any())
+        ) doAnswer {
+            val encryptedEvent = it.getArgument<RawBatchEvent>(0)
+            val bytes = encryptedEvent.data
+            encryptedEventByBytes[bytes] = encryptedEvent
+            bytes
+        }
+
+        whenever(
+            mockBatchFileReaderWriter.writeBinaryData(
                 eq(mockFile),
                 any(),
-                eq(true)
+                eq(true),
+                any()
             )
         ) doAnswer {
-            storage.add(it.getArgument(1))
+            val bytes = it.getArgument<ByteArray>(1)
+            encryptedEventByBytes[bytes]?.also { event -> storage.add(event) }
             true
         }
 
         whenever(
-            mockBatchFileReaderWriter.readData(mockFile)
-        ) doAnswer { storage }
+            mockBatchFileReaderWriter.readData(eq(mockFile), any())
+        ) doAnswer { storage.toList() }
 
         // When
         var writeResult = true
         events.forEach {
-            writeResult = writeResult && testedReaderWriter.writeData(mockFile, it, true)
+            val bytes = checkNotNull(testedReaderWriter.serializeToBytes(it, fakeTelemetryContext))
+            writeResult = writeResult && testedReaderWriter.writeBinaryData(
+                mockFile,
+                bytes,
+                append = true,
+                fakeTelemetryContext
+            )
         }
-        val readResult = testedReaderWriter.readData(mockFile)
+        val readResult = testedReaderWriter.readData(mockFile, fakeTelemetryContext)
 
         // Then
         assertThat(writeResult).isTrue()

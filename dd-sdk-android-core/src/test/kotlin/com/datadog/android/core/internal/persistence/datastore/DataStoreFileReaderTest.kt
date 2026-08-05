@@ -16,8 +16,10 @@ import com.datadog.android.core.internal.persistence.tlvformat.TLVBlock
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockFileReader
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockType
 import com.datadog.android.core.persistence.datastore.DataStoreContent
+import com.datadog.android.internal.telemetry.TelemetryContext
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -81,9 +83,14 @@ internal class DataStoreFileReaderTest {
     @StringForgery
     lateinit var fakeKey: String
 
+    @Forgery
+    lateinit var fakeTelemetryContext: TelemetryContext
+
     private lateinit var fakeDataBytes: ByteArray
     private lateinit var versionBlock: TLVBlock
     private lateinit var dataBlock: TLVBlock
+
+    @Suppress("DoubleMutabilityForCollection") // must stay mutable: tests add/remove/clear blocks in place
     private lateinit var blocksReturned: ArrayList<TLVBlock>
 
     @BeforeEach
@@ -105,7 +112,7 @@ internal class DataStoreFileReaderTest {
         versionBlock = createVersionBlock(true)
         dataBlock = createDataBlock()
         blocksReturned = arrayListOf(versionBlock, dataBlock)
-        whenever(mockTLVBlockFileReader.read(mockDataStoreFile)).thenReturn(blocksReturned)
+        whenever(mockTLVBlockFileReader.read(mockDataStoreFile, fakeTelemetryContext)).thenReturn(blocksReturned)
 
         testedDatastoreFileReader = DatastoreFileReader(
             dataStoreFileHelper = mockDataStoreFileHelper,
@@ -126,7 +133,8 @@ internal class DataStoreFileReaderTest {
         testedDatastoreFileReader.read(
             key = fakeKey,
             deserializer = mockDeserializer,
-            callback = mockCallback
+            callback = mockCallback,
+            telemetryContext = fakeTelemetryContext
         )
 
         // Then
@@ -151,7 +159,8 @@ internal class DataStoreFileReaderTest {
         testedDatastoreFileReader.read(
             key = fakeKey,
             deserializer = mockDeserializer,
-            callback = mockCallback
+            callback = mockCallback,
+            telemetryContext = fakeTelemetryContext
         )
 
         // Then
@@ -174,7 +183,8 @@ internal class DataStoreFileReaderTest {
             key = fakeKey,
             version = 99,
             callback = mockCallback,
-            deserializer = mockDeserializer
+            deserializer = mockDeserializer,
+            telemetryContext = fakeTelemetryContext
         )
 
         // Then
@@ -197,7 +207,8 @@ internal class DataStoreFileReaderTest {
         testedDatastoreFileReader.read(
             key = fakeKey,
             deserializer = mockDeserializer,
-            callback = mockCallback
+            callback = mockCallback,
+            telemetryContext = fakeTelemetryContext
         )
 
         // Then
@@ -220,7 +231,8 @@ internal class DataStoreFileReaderTest {
         testedDatastoreFileReader.read(
             key = fakeKey,
             deserializer = mockDeserializer,
-            callback = mockCallback
+            callback = mockCallback,
+            telemetryContext = fakeTelemetryContext
         )
 
         // Then
@@ -236,15 +248,17 @@ internal class DataStoreFileReaderTest {
     @Test
     fun `M log unexpectedBlocksOrder error W read() { unexpected block order }`() {
         // Given
-        blocksReturned = arrayListOf(dataBlock, versionBlock)
-        whenever(mockTLVBlockFileReader.read(mockDataStoreFile)).thenReturn(blocksReturned)
+        blocksReturned.clear()
+        blocksReturned.addAll(listOf(dataBlock, versionBlock))
+        whenever(mockTLVBlockFileReader.read(mockDataStoreFile, fakeTelemetryContext)).thenReturn(blocksReturned)
         val mockCallback = mock<DataStoreReadCallback<ByteArray>>()
 
         // When
         testedDatastoreFileReader.read(
             key = fakeKey,
             deserializer = mockDeserializer,
-            callback = mockCallback
+            callback = mockCallback,
+            telemetryContext = fakeTelemetryContext
         )
 
         // Then

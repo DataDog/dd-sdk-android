@@ -252,54 +252,21 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
-    fun `M set Profiling sample rate W initialize {sample rate not exists}()`() {
+    fun `M set Profiling sample rate W initialize()`(
+        @FloatForgery(min = 0f, max = 100f) fakeStoredSampleRate: Float
+    ) {
         // Given
+        // Whatever was previously stored, only one SDK instance can initialize the feature, so the
+        // configured sample rate always wins.
         whenever(
             mockSharedPreferencesStorage
                 .getFloat("dd_profiling_sample_rate", -1f)
-        ) doReturn (-1f)
+        ) doReturn fakeStoredSampleRate
 
         // When
         testedFeature.onInitialize(mockContext)
 
         // Then
-        verify(mockSharedPreferencesStorage).putFloat(
-            "dd_profiling_sample_rate",
-            fakeConfiguration.applicationLaunchSampleRate
-        )
-    }
-
-    @Test
-    fun `M not set Profiling sample rate W initialize() {smaller sample rate exists}`() {
-        // Given
-        // A non-negative existing rate that is <= the configured rate (the configured rate is
-        // forged in 0f..100f, so subtracting would underflow below the "unset" sentinel).
-        whenever(
-            mockSharedPreferencesStorage
-                .getFloat("dd_profiling_sample_rate", -1f)
-        ) doReturn fakeConfiguration.applicationLaunchSampleRate / 2f
-
-        // When
-        testedFeature.onInitialize(mockContext)
-
-        // Then
-        verify(mockSharedPreferencesStorage, never()).putFloat(
-            "dd_profiling_sample_rate",
-            fakeConfiguration.applicationLaunchSampleRate
-        )
-    }
-
-    @Test
-    fun `M set Profiling sample rate W initialize() {bigger sample rate exists}`() {
-        whenever(
-            mockSharedPreferencesStorage.getFloat("dd_profiling_sample_rate", -1f)
-        ) doReturn fakeConfiguration.applicationLaunchSampleRate + 1f
-
-        // When
-        testedFeature.onInitialize(mockContext)
-
-        // Then
-        // Since the existing value was higher, it should be updated to the configuration value
         verify(mockSharedPreferencesStorage).putFloat(
             "dd_profiling_sample_rate",
             fakeConfiguration.applicationLaunchSampleRate
@@ -324,14 +291,14 @@ internal class ProfilingFeatureTest {
         testedFeature.onReceive(fakeTTID)
 
         // Then
-        verify(mockProfiler).stop(fakeInstanceName)
+        verify(mockProfiler).stop()
     }
 
     @Test
     fun `M not stop Profiling W receive TTID event {current session sampled in}`() {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        whenever(mockProfiler.isRunning()) doReturn true
         testedFeature.onInitialize(mockContext)
         testedFeature.dispatchRumSession(UUID.randomUUID().toString(), 100f)
 
@@ -339,28 +306,28 @@ internal class ProfilingFeatureTest {
         testedFeature.onReceive(fakeTTID)
 
         // Then — scheduler takes over, profiler is NOT stopped here
-        verify(mockProfiler, never()).stop(fakeInstanceName)
+        verify(mockProfiler, never()).stop()
     }
 
     @Test
     fun `M stop Profiling W receive TTID event {continuous enabled, no session renewal yet}`() {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        whenever(mockProfiler.isRunning()) doReturn true
         testedFeature.onInitialize(mockContext)
 
         // When
         testedFeature.onReceive(fakeTTID)
 
         // Then
-        verify(mockProfiler).stop(fakeInstanceName)
+        verify(mockProfiler).stop()
     }
 
     @Test
     fun `M stop Profiling W receive TTID event {continuous enabled, session sampled out}`() {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        whenever(mockProfiler.isRunning()) doReturn true
         testedFeature.onInitialize(mockContext)
 
         testedFeature.dispatchRumSession(UUID.randomUUID().toString(), 0f)
@@ -369,7 +336,7 @@ internal class ProfilingFeatureTest {
         testedFeature.onReceive(fakeTTID)
 
         // Then
-        verify(mockProfiler).stop(fakeInstanceName)
+        verify(mockProfiler).stop()
     }
 
     @Test
@@ -396,7 +363,7 @@ internal class ProfilingFeatureTest {
             ),
             mockProfiler
         )
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn false
+        whenever(mockProfiler.isRunning()) doReturn false
         testedFeature.onInitialize(mockContext)
 
         // When
@@ -463,7 +430,7 @@ internal class ProfilingFeatureTest {
     fun `M sample session out W onContextUpdate {session_sample_rate missing from context}`() {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn false
+        whenever(mockProfiler.isRunning()) doReturn false
         testedFeature.onInitialize(mockContext)
         val sessionId = UUID.randomUUID().toString()
 
@@ -486,7 +453,7 @@ internal class ProfilingFeatureTest {
     ) {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn false
+        whenever(mockProfiler.isRunning()) doReturn false
         testedFeature.onInitialize(mockContext)
         val sessionId = UUID.randomUUID().toString()
         val firstSampleRate = forge.aFloat(min = 0.1f, max = 100f)
@@ -538,12 +505,11 @@ internal class ProfilingFeatureTest {
     fun `M start continuous cycle W profiler result received {TTID session unsampled}`() {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        whenever(mockProfiler.isRunning()) doReturn true
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
         verify(mockProfiler).registerProfilingCallback(
             eq(mockContext),
-            eq(fakeInstanceName),
             callbackCaptor.capture()
         )
 
@@ -572,7 +538,6 @@ internal class ProfilingFeatureTest {
             appContext = eq(mockContext),
             startReason = eq(ProfilingStartReason.CONTINUOUS),
             additionalAttributes = any(),
-            sdkInstanceNames = any(),
             durationMs = any()
         )
     }
@@ -581,12 +546,11 @@ internal class ProfilingFeatureTest {
     fun `M start continuous cycle W profiler failure received {APPLICATION_LAUNCH tag}`() {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        whenever(mockProfiler.isRunning()) doReturn true
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
         verify(mockProfiler).registerProfilingCallback(
             eq(mockContext),
-            eq(fakeInstanceName),
             callbackCaptor.capture()
         )
         testedFeature.dispatchRumSession(fakeSessionId, 100f)
@@ -606,7 +570,6 @@ internal class ProfilingFeatureTest {
             appContext = eq(mockContext),
             startReason = eq(ProfilingStartReason.CONTINUOUS),
             additionalAttributes = any(),
-            sdkInstanceNames = any(),
             durationMs = any()
         )
     }
@@ -615,12 +578,11 @@ internal class ProfilingFeatureTest {
     fun `M not start continuous cycle W profiler failure received {CONTINUOUS tag}`() {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn false
+        whenever(mockProfiler.isRunning()) doReturn false
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
         verify(mockProfiler).registerProfilingCallback(
             eq(mockContext),
-            eq(fakeInstanceName),
             callbackCaptor.capture()
         )
 
@@ -632,7 +594,6 @@ internal class ProfilingFeatureTest {
             appContext = any(),
             startReason = any(),
             additionalAttributes = any(),
-            sdkInstanceNames = any(),
             durationMs = any()
         )
     }
@@ -643,13 +604,12 @@ internal class ProfilingFeatureTest {
     ) {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        whenever(mockProfiler.isRunning()) doReturn true
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
         testedFeature.dataWriter = mockDataWriter
         verify(mockProfiler).registerProfilingCallback(
             eq(mockContext),
-            eq(fakeInstanceName),
             callbackCaptor.capture()
         )
 
@@ -684,13 +644,12 @@ internal class ProfilingFeatureTest {
     ) {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        whenever(mockProfiler.isRunning()) doReturn true
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
         testedFeature.dataWriter = mockDataWriter
         verify(mockProfiler).registerProfilingCallback(
             eq(mockContext),
-            eq(fakeInstanceName),
             callbackCaptor.capture()
         )
         // Open the continuous accumulation window
@@ -726,13 +685,12 @@ internal class ProfilingFeatureTest {
     ) {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        whenever(mockProfiler.isRunning()) doReturn true
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
         testedFeature.dataWriter = mockDataWriter
         verify(mockProfiler).registerProfilingCallback(
             eq(mockContext),
-            eq(fakeInstanceName),
             callbackCaptor.capture()
         )
         // Open the continuous accumulation window
@@ -766,12 +724,11 @@ internal class ProfilingFeatureTest {
     fun `M accumulate RUM events in feature lists W continuous active window open`() {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        whenever(mockProfiler.isRunning()) doReturn true
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
         verify(mockProfiler).registerProfilingCallback(
             eq(mockContext),
-            eq(fakeInstanceName),
             callbackCaptor.capture()
         )
         // Close launch window
@@ -813,7 +770,7 @@ internal class ProfilingFeatureTest {
             ),
             mockProfiler
         )
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn false
+        whenever(mockProfiler.isRunning()) doReturn false
         testedFeature.onInitialize(mockContext)
 
         // When
@@ -829,7 +786,7 @@ internal class ProfilingFeatureTest {
     fun `M accumulate vital event W onReceive {launch profiling active}`() {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        whenever(mockProfiler.isRunning()) doReturn true
         testedFeature.onInitialize(mockContext)
 
         // When
@@ -845,12 +802,11 @@ internal class ProfilingFeatureTest {
     ) {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        whenever(mockProfiler.isRunning()) doReturn true
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
         verify(mockProfiler).registerProfilingCallback(
             eq(mockContext),
-            eq(fakeInstanceName),
             callbackCaptor.capture()
         )
         // Close launch window
@@ -890,7 +846,7 @@ internal class ProfilingFeatureTest {
             ),
             mockProfiler
         )
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn false
+        whenever(mockProfiler.isRunning()) doReturn false
         testedFeature.onInitialize(mockContext)
 
         // When
@@ -914,7 +870,7 @@ internal class ProfilingFeatureTest {
             ),
             mockProfiler
         )
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        whenever(mockProfiler.isRunning()) doReturn true
         testedFeature.onInitialize(mockContext)
 
         // When
@@ -923,7 +879,7 @@ internal class ProfilingFeatureTest {
         )
 
         // Then
-        verify(mockProfiler, never()).stop(fakeInstanceName)
+        verify(mockProfiler, never()).stop()
     }
 
     @Test
@@ -940,7 +896,7 @@ internal class ProfilingFeatureTest {
             ),
             mockProfiler
         )
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        whenever(mockProfiler.isRunning()) doReturn true
         testedFeature.onInitialize(mockContext)
 
         // When
@@ -949,7 +905,7 @@ internal class ProfilingFeatureTest {
         )
 
         // Then
-        verify(mockProfiler, never()).stop(fakeInstanceName)
+        verify(mockProfiler, never()).stop()
     }
 
     @Test
@@ -959,13 +915,12 @@ internal class ProfilingFeatureTest {
     ) {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        whenever(mockProfiler.isRunning()) doReturn true
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
         testedFeature.dataWriter = mockDataWriter
         verify(mockProfiler).registerProfilingCallback(
             eq(mockContext),
-            eq(fakeInstanceName),
             callbackCaptor.capture()
         )
         testedFeature.onReceive(
@@ -985,12 +940,11 @@ internal class ProfilingFeatureTest {
     fun `M clear RUM events W new continuous active window starts`() {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        whenever(mockProfiler.isRunning()) doReturn true
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
         verify(mockProfiler).registerProfilingCallback(
             eq(mockContext),
-            eq(fakeInstanceName),
             callbackCaptor.capture()
         )
         // Close launch window
@@ -1047,13 +1001,12 @@ internal class ProfilingFeatureTest {
     ) {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        whenever(mockProfiler.isRunning()) doReturn true
         testedFeature.dataWriter = mockDataWriter
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
         verify(mockProfiler).registerProfilingCallback(
             eq(mockContext),
-            eq(fakeInstanceName),
             callbackCaptor.capture()
         )
         testedFeature.dispatchRumSession(fakeSessionId, 100f)
@@ -1083,13 +1036,12 @@ internal class ProfilingFeatureTest {
     ) {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        whenever(mockProfiler.isRunning()) doReturn true
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
         testedFeature.dataWriter = mockDataWriter
         verify(mockProfiler).registerProfilingCallback(
             eq(mockContext),
-            eq(fakeInstanceName),
             callbackCaptor.capture()
         )
         testedFeature.onReceive(fakeRumLongTaskEvent)
@@ -1116,13 +1068,12 @@ internal class ProfilingFeatureTest {
     ) {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        whenever(mockProfiler.isRunning()) doReturn true
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
         testedFeature.dataWriter = mockDataWriter
         verify(mockProfiler).registerProfilingCallback(
             eq(mockContext),
-            eq(fakeInstanceName),
             callbackCaptor.capture()
         )
         testedFeature.onReceive(fakeRumLongTaskEvent)
@@ -1144,13 +1095,12 @@ internal class ProfilingFeatureTest {
     ) {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        whenever(mockProfiler.isRunning()) doReturn true
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
         testedFeature.dataWriter = mockDataWriter
         verify(mockProfiler).registerProfilingCallback(
             eq(mockContext),
-            eq(fakeInstanceName),
             callbackCaptor.capture()
         )
         testedFeature.onReceive(fakeRumAnrEvent)
@@ -1175,7 +1125,7 @@ internal class ProfilingFeatureTest {
     fun `M not accumulate RUM events W profiler not running {launch profiling not active}`() {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn false
+        whenever(mockProfiler.isRunning()) doReturn false
         testedFeature.onInitialize(mockContext)
 
         // When
@@ -1191,7 +1141,7 @@ internal class ProfilingFeatureTest {
     fun `M clear pending RUM events W app-launch profiling failed`() {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        whenever(mockProfiler.isRunning()) doReturn true
         testedFeature.onInitialize(mockContext)
         testedFeature.onReceive(fakeRumLongTaskEvent)
         testedFeature.onReceive(fakeRumAnrEvent)
@@ -1210,13 +1160,12 @@ internal class ProfilingFeatureTest {
     ) {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        whenever(mockProfiler.isRunning()) doReturn true
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
         testedFeature.dataWriter = mockDataWriter
         verify(mockProfiler).registerProfilingCallback(
             eq(mockContext),
-            eq(fakeInstanceName),
             callbackCaptor.capture()
         )
         testedFeature.onReceive(fakeTTID)
@@ -1240,13 +1189,12 @@ internal class ProfilingFeatureTest {
     ) {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        whenever(mockProfiler.isRunning()) doReturn true
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
         testedFeature.dataWriter = mockDataWriter
         verify(mockProfiler).registerProfilingCallback(
             eq(mockContext),
-            eq(fakeInstanceName),
             callbackCaptor.capture()
         )
         testedFeature.onReceive(fakeRumLongTaskEvent)
@@ -1268,7 +1216,7 @@ internal class ProfilingFeatureTest {
     ) {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        whenever(mockProfiler.isRunning()) doReturn true
         testedFeature.onInitialize(mockContext)
 
         // When
@@ -1284,7 +1232,7 @@ internal class ProfilingFeatureTest {
     ) {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn false
+        whenever(mockProfiler.isRunning()) doReturn false
         testedFeature.onInitialize(mockContext)
 
         // When
@@ -1311,7 +1259,7 @@ internal class ProfilingFeatureTest {
         )
         assertThat(argumentCaptor.firstValue.invoke())
             .isEqualTo("Profiling feature received an event of unsupported type=${String::class.java.canonicalName}.")
-        verify(mockProfiler, never()).stop(fakeInstanceName)
+        verify(mockProfiler, never()).stop()
     }
 
     @Test
@@ -1323,7 +1271,7 @@ internal class ProfilingFeatureTest {
         testedFeature.onStop()
 
         // Then
-        verify(mockProfiler).unregisterProfilingCallback(mockContext, fakeInstanceName)
+        verify(mockProfiler).unregisterProfilingCallback(mockContext)
     }
 
     @Test
@@ -1418,13 +1366,12 @@ internal class ProfilingFeatureTest {
     ) {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        whenever(mockProfiler.isRunning()) doReturn true
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
         testedFeature.dataWriter = mockDataWriter
         verify(mockProfiler).registerProfilingCallback(
             eq(mockContext),
-            eq(fakeInstanceName),
             callbackCaptor.capture()
         )
         testedFeature.propagateQuotaResult(QuotaResult.QUOTA_EXCEEDED)
@@ -1451,13 +1398,12 @@ internal class ProfilingFeatureTest {
     ) {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        whenever(mockProfiler.isRunning()) doReturn true
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
         testedFeature.dataWriter = mockDataWriter
         verify(mockProfiler).registerProfilingCallback(
             eq(mockContext),
-            eq(fakeInstanceName),
             callbackCaptor.capture()
         )
         testedFeature.propagateQuotaResult(QuotaResult(QuotaResult.Decision.ALLOWED, QuotaReason.QUOTA_OK))
@@ -1485,13 +1431,12 @@ internal class ProfilingFeatureTest {
         // Given — no quota decision is ever propagated (e.g. the quota check could not be
         // scheduled). The launch event must still be written (fail open) rather than stalled.
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning(fakeInstanceName)) doReturn true
+        whenever(mockProfiler.isRunning()) doReturn true
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         testedFeature.onInitialize(mockContext)
         testedFeature.dataWriter = mockDataWriter
         verify(mockProfiler).registerProfilingCallback(
             eq(mockContext),
-            eq(fakeInstanceName),
             callbackCaptor.capture()
         )
         testedFeature.onReceive(fakeRumLongTaskEvent)

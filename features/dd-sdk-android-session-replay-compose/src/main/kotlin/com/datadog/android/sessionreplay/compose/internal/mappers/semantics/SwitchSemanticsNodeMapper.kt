@@ -64,7 +64,7 @@ internal class SwitchSemanticsNodeMapper(
                 isDarkBackground = isDarkBackground
             )
 
-            listOfNotNull(trackWireframe, thumbWireframe)
+            listOf(trackWireframe, thumbWireframe)
         }
 
         return SemanticsWireframe(
