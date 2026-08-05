@@ -6,21 +6,22 @@
 
 package com.datadog.tools.detekt.rules
 
-import io.gitlab.arturbosch.detekt.api.Config
-import io.gitlab.arturbosch.detekt.api.Rule
+import dev.detekt.api.Config
+import dev.detekt.api.Rule
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtImportDirective
 import org.jetbrains.kotlin.psi.KtPackageDirective
-import org.jetbrains.kotlin.resolve.BindingContext
 
 /**
  * An abstract Detekt rule keeping track of imports to resolve types found in the code.
  *
  * @param ruleSetConfig the detekt ruleSet configuration
+ * @param description the description of the rule
  */
 abstract class AbstractTypedRule(
-    ruleSetConfig: Config = Config.empty
-) : Rule(ruleSetConfig) {
+    ruleSetConfig: Config,
+    description: String
+) : Rule(ruleSetConfig, description) {
 
     private val imports = mutableMapOf<String, String>()
     private var packageName = ""
@@ -28,9 +29,6 @@ abstract class AbstractTypedRule(
     // region Rule
 
     override fun visitKtFile(file: KtFile) {
-        if (bindingContext == BindingContext.EMPTY) {
-            println("\nMissing BindingContext when checking file:${file.virtualFilePath}")
-        }
         imports.clear()
         super.visitKtFile(file)
     }

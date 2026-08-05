@@ -399,7 +399,7 @@ internal class SessionReplayConfigurationBuilderTest {
 
         testedBuilder.build()
 
-        val expected = String.format(DUPLICATE_MAPPER_DETECTED, ImageView::class.java)
+        val expected = String.format(Locale.US, DUPLICATE_MAPPER_DETECTED, ImageView::class.java)
 
         // Then
         mockLogger.verifyLog(

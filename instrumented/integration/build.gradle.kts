@@ -11,18 +11,17 @@ import com.datadog.gradle.config.taskConfig
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
+    // Applied before the Android plugin on purpose (not under "Analysis tools"): AGP 9 applies
+    // the Kotlin plugin itself, and ktlint-gradle 14.2.0 registers its Android source-set tasks
+    // twice when it comes after the Kotlin plugin.
+    id("ktlint")
+
     // Build
     id("com.android.application")
-    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
-    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
-    id("ktlint")
-    kotlin("android")
     alias(libs.plugins.composeCompilerPlugin)
     id("datadogBuildConfig")
 }
 
-// TODO RUM-18189 Support new AGP DSL
-@Suppress("DEPRECATION")
 android {
 
     compileSdk = AndroidConfig.TARGET_SDK
@@ -49,16 +48,6 @@ android {
 
     testOptions {
         unitTests.isReturnDefaultValues = true
-    }
-
-    sourceSets.named("main") {
-        java.srcDir("src/main/kotlin")
-    }
-    sourceSets.named("test") {
-        java.srcDir("src/test/kotlin")
-    }
-    sourceSets.named("androidTest") {
-        java.srcDir("src/androidTest/kotlin")
     }
 
     compileOptions {
@@ -116,6 +105,10 @@ dependencies {
 
     implementation(libs.gson)
     implementation(libs.kotlin)
+    // androidTest network wrappers use kotlinx.coroutines; declared on main so consistent
+    // resolution aligns the whole module to the SDK's coroutines version (vs the old 1.6.4
+    // pulled transitively via androidx.test), and it lands on the androidTest compile classpath.
+    implementation(libs.coroutinesCore)
     implementation(libs.bundles.androidXSupportBase)
     implementation(libs.elmyr)
     implementation(libs.leakCanaryAndroid)

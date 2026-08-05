@@ -6,12 +6,11 @@
 
 package com.datadog.android.sqldelight
 
+import app.cash.sqldelight.Transacter
 import com.datadog.android.sqldelight.internal.TransactionWithSpanAndWithReturnImpl
 import com.datadog.android.sqldelight.internal.TransactionWithSpanAndWithoutReturnImpl
 import com.datadog.android.sqldelight.internal.withinSpan
 import com.datadog.android.trace.GlobalDatadogTracer
-import com.squareup.sqldelight.Transacter
-import com.squareup.sqldelight.Transacter.Transaction
 
 /**
  * Starts a [Transaction] and runs [body] in that transaction.

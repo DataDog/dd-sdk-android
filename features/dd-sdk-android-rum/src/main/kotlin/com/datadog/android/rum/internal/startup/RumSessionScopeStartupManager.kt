@@ -155,7 +155,6 @@ internal class RumSessionScopeStartupManagerImpl(
         )
 
         sendTTIDEvent(
-            datadogContext = datadogContext,
             writeScope = writeScope,
             writer = writer,
             ttidEvent = ttidEvent,
@@ -297,13 +296,12 @@ internal class RumSessionScopeStartupManagerImpl(
             )
         )
 
-        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
+        sdkCore.newRumEventWriteOperation(writeScope, writer) {
             ttfdEvent
         }.submit()
     }
 
     private fun sendTTIDEvent(
-        datadogContext: DatadogContext,
         writeScope: EventWriteScope,
         writer: DataWriter<Any>,
         ttidEvent: VitalAppLaunchEvent,
@@ -325,7 +323,7 @@ internal class RumSessionScopeStartupManagerImpl(
             return
         }
 
-        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
+        sdkCore.newRumEventWriteOperation(writeScope, writer) {
             ttidEvent
         }.submit()
     }

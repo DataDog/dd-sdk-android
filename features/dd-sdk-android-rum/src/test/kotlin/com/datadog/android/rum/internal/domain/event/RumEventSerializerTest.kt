@@ -953,25 +953,25 @@ internal class RumEventSerializerTest {
                 hasField("configuration") {
                     val configuration = event.telemetry.configuration
                     if (configuration.sessionSampleRate != null) {
-                        hasField("session_sample_rate", configuration.sessionSampleRate!!)
+                        hasField("session_sample_rate", configuration.sessionSampleRate)
                     }
                     if (configuration.telemetrySampleRate != null) {
-                        hasField("telemetry_sample_rate", configuration.telemetrySampleRate!!)
+                        hasField("telemetry_sample_rate", configuration.telemetrySampleRate)
                     }
                     if (configuration.telemetryConfigurationSampleRate != null) {
                         hasField(
                             "telemetry_configuration_sample_rate",
-                            configuration.telemetryConfigurationSampleRate!!
+                            configuration.telemetryConfigurationSampleRate
                         )
                     }
                     if (configuration.traceSampleRate != null) {
-                        hasField("trace_sample_rate", configuration.traceSampleRate!!)
+                        hasField("trace_sample_rate", configuration.traceSampleRate)
                     }
                     if (configuration.premiumSampleRate != null) {
-                        hasField("premium_sample_rate", configuration.premiumSampleRate!!)
+                        hasField("premium_sample_rate", configuration.premiumSampleRate)
                     }
                     if (configuration.replaySampleRate != null) {
-                        hasField("replay_sample_rate", configuration.replaySampleRate!!)
+                        hasField("replay_sample_rate", configuration.replaySampleRate)
                     }
                     if (configuration.sessionReplaySampleRate != null) {
                         hasField(
@@ -995,36 +995,36 @@ internal class RumEventSerializerTest {
                         hasField("use_proxy", configuration.useProxy!!)
                     }
                     if (configuration.useBeforeSend != null) {
-                        hasField("use_before_send", configuration.useBeforeSend!!)
+                        hasField("use_before_send", configuration.useBeforeSend)
                     }
                     if (configuration.silentMultipleInit != null) {
-                        hasField("silent_multiple_init", configuration.silentMultipleInit!!)
+                        hasField("silent_multiple_init", configuration.silentMultipleInit)
                     }
                     if (configuration.trackSessionAcrossSubdomains != null) {
                         hasField(
                             "track_session_across_subdomains",
-                            configuration.trackSessionAcrossSubdomains!!
+                            configuration.trackSessionAcrossSubdomains
                         )
                     }
                     if (configuration.useCrossSiteSessionCookie != null) {
                         hasField(
                             "use_cross_site_session_cookie",
-                            configuration.useCrossSiteSessionCookie!!
+                            configuration.useCrossSiteSessionCookie
                         )
                     }
                     if (configuration.useSecureSessionCookie != null) {
                         hasField(
                             "use_secure_session_cookie",
-                            configuration.useSecureSessionCookie!!
+                            configuration.useSecureSessionCookie
                         )
                     }
                     if (configuration.actionNameAttribute != null) {
-                        hasField("action_name_attribute", configuration.actionNameAttribute!!)
+                        hasField("action_name_attribute", configuration.actionNameAttribute)
                     }
                     if (configuration.useAllowedTracingOrigins != null) {
                         hasField(
                             "use_allowed_tracing_origins",
-                            configuration.useAllowedTracingOrigins!!
+                            configuration.useAllowedTracingOrigins
                         )
                     }
                     if (configuration.defaultPrivacyLevel != null) {
@@ -1033,7 +1033,7 @@ internal class RumEventSerializerTest {
                     if (configuration.useExcludedActivityUrls != null) {
                         hasField(
                             "use_excluded_activity_urls",
-                            configuration.useExcludedActivityUrls!!
+                            configuration.useExcludedActivityUrls
                         )
                     }
                     if (configuration.trackFrustrations != null) {
@@ -1046,21 +1046,21 @@ internal class RumEventSerializerTest {
                         hasField("track_interactions", configuration.trackInteractions!!)
                     }
                     if (configuration.forwardErrorsToLogs != null) {
-                        hasField("forward_errors_to_logs", configuration.forwardErrorsToLogs!!)
+                        hasField("forward_errors_to_logs", configuration.forwardErrorsToLogs)
                     }
                     if (configuration.forwardConsoleLogs != null) {
-                        hasField("forward_console_logs", configuration.forwardConsoleLogs!!)
+                        hasField("forward_console_logs", configuration.forwardConsoleLogs)
                     }
                     if (configuration.forwardReports != null) {
-                        hasField("forward_reports", configuration.forwardReports!!)
+                        hasField("forward_reports", configuration.forwardReports)
                     }
                     if (configuration.useLocalEncryption != null) {
-                        hasField("use_local_encryption", configuration.useLocalEncryption!!)
+                        hasField("use_local_encryption", configuration.useLocalEncryption)
                     }
                     if (configuration.viewTrackingStrategy != null) {
                         hasField(
                             "view_tracking_strategy",
-                            configuration.viewTrackingStrategy!!.toJson()
+                            configuration.viewTrackingStrategy.toJson()
                         )
                     }
                     if (configuration.trackBackgroundEvents != null) {
@@ -1082,7 +1082,7 @@ internal class RumEventSerializerTest {
                         hasField("track_network_requests", configuration.trackNetworkRequests!!)
                     }
                     if (configuration.useTracing != null) {
-                        hasField("use_tracing", configuration.useTracing!!)
+                        hasField("use_tracing", configuration.useTracing)
                     }
                     if (configuration.trackNativeViews != null) {
                         hasField("track_native_views", configuration.trackNativeViews!!)
@@ -1112,13 +1112,13 @@ internal class RumEventSerializerTest {
                         )
                     }
                     if (configuration.batchSize != null) {
-                        hasField("batch_size", configuration.batchSize!!)
+                        hasField("batch_size", configuration.batchSize)
                     }
                     if (configuration.batchUploadFrequency != null) {
-                        hasField("batch_upload_frequency", configuration.batchUploadFrequency!!)
+                        hasField("batch_upload_frequency", configuration.batchUploadFrequency)
                     }
                     if (configuration.isMainProcess != null) {
-                        hasField("is_main_process", configuration.isMainProcess!!)
+                        hasField("is_main_process", configuration.isMainProcess)
                     }
                 }
             }
@@ -1183,7 +1183,7 @@ internal class RumEventSerializerTest {
                 hasField("usage") {
                     when (event.telemetry.usage) {
                         is TelemetryUsageEvent.Usage.AddViewLoadingTime -> {
-                            val usage = event.telemetry.usage as TelemetryUsageEvent.Usage.AddViewLoadingTime
+                            val usage = event.telemetry.usage
                             hasField("no_view", usage.noView)
                             hasField("no_active_view", usage.noActiveView)
                             hasField("overwritten", usage.overwritten)
@@ -1197,30 +1197,28 @@ internal class RumEventSerializerTest {
                 if (event.telemetry.device != null) {
                     hasField("device") {
                         val device = event.telemetry.device
-                        checkNotNull(device)
                         if (device.architecture != null) {
-                            hasField("architecture", device.architecture!!)
+                            hasField("architecture", device.architecture)
                         }
                         if (device.brand != null) {
-                            hasField("brand", device.brand!!)
+                            hasField("brand", device.brand)
                         }
                         if (device.model != null) {
-                            hasField("model", device.model!!)
+                            hasField("model", device.model)
                         }
                     }
                 }
                 if (event.telemetry.os != null) {
                     hasField("os") {
                         val os = event.telemetry.os
-                        checkNotNull(os)
                         if (os.build != null) {
-                            hasField("build", os.build!!)
+                            hasField("build", os.build)
                         }
                         if (os.name != null) {
-                            hasField("name", os.name!!)
+                            hasField("name", os.name)
                         }
                         if (os.version != null) {
-                            hasField("version", os.version!!)
+                            hasField("version", os.version)
                         }
                     }
                 }
@@ -1771,10 +1769,9 @@ internal class RumEventSerializerTest {
         }
         val faultyEvent = event.copy(
             usr = event.usr?.copy(
-                additionalProperties = event.usr?.additionalProperties
-                    ?.toMutableMap()
-                    ?.apply { put(faultyKey, faultyObject) }
-                    .orEmpty()
+                additionalProperties = event.usr.additionalProperties
+                    .toMutableMap()
+                    .apply { put(faultyKey, faultyObject) }
                     .toMutableMap()
             )
         )
@@ -1808,10 +1805,9 @@ internal class RumEventSerializerTest {
         }
         val faultyEvent = event.copy(
             account = event.account?.copy(
-                additionalProperties = event.account?.additionalProperties
-                    ?.toMutableMap()
-                    ?.apply { put(faultyKey, faultyObject) }
-                    .orEmpty()
+                additionalProperties = event.account.additionalProperties
+                    .toMutableMap()
+                    .apply { put(faultyKey, faultyObject) }
                     .toMutableMap()
             )
         )
@@ -1844,10 +1840,9 @@ internal class RumEventSerializerTest {
         }
         val faultyEvent = event.copy(
             context = event.context?.copy(
-                additionalProperties = event.context?.additionalProperties
-                    ?.toMutableMap()
-                    ?.apply { put(faultyKey, faultyObject) }
-                    .orEmpty()
+                additionalProperties = event.context.additionalProperties
+                    .toMutableMap()
+                    .apply { put(faultyKey, faultyObject) }
                     .toMutableMap()
             )
         )
@@ -1878,10 +1873,9 @@ internal class RumEventSerializerTest {
         }
         val faultyEvent = event.copy(
             usr = event.usr?.copy(
-                additionalProperties = event.usr?.additionalProperties
-                    ?.toMutableMap()
-                    ?.apply { put(faultyKey, faultyObject) }
-                    .orEmpty()
+                additionalProperties = event.usr.additionalProperties
+                    .toMutableMap()
+                    .apply { put(faultyKey, faultyObject) }
                     .toMutableMap()
             )
         )
@@ -1915,10 +1909,9 @@ internal class RumEventSerializerTest {
         }
         val faultyEvent = event.copy(
             account = event.account?.copy(
-                additionalProperties = event.account?.additionalProperties
-                    ?.toMutableMap()
-                    ?.apply { put(faultyKey, faultyObject) }
-                    .orEmpty()
+                additionalProperties = event.account.additionalProperties
+                    .toMutableMap()
+                    .apply { put(faultyKey, faultyObject) }
                     .toMutableMap()
             )
         )
@@ -1951,10 +1944,9 @@ internal class RumEventSerializerTest {
         }
         val faultyEvent = event.copy(
             context = event.context?.copy(
-                additionalProperties = event.context?.additionalProperties
-                    ?.toMutableMap()
-                    ?.apply { put(faultyKey, faultyObject) }
-                    .orEmpty()
+                additionalProperties = event.context.additionalProperties
+                    .toMutableMap()
+                    .apply { put(faultyKey, faultyObject) }
                     .toMutableMap()
             )
         )
@@ -1985,10 +1977,9 @@ internal class RumEventSerializerTest {
         }
         val faultyEvent = event.copy(
             usr = event.usr?.copy(
-                additionalProperties = event.usr?.additionalProperties
-                    ?.toMutableMap()
-                    ?.apply { put(faultyKey, faultyObject) }
-                    .orEmpty()
+                additionalProperties = event.usr.additionalProperties
+                    .toMutableMap()
+                    .apply { put(faultyKey, faultyObject) }
                     .toMutableMap()
             )
         )
@@ -2022,10 +2013,9 @@ internal class RumEventSerializerTest {
         }
         val faultyEvent = event.copy(
             account = event.account?.copy(
-                additionalProperties = event.account?.additionalProperties
-                    ?.toMutableMap()
-                    ?.apply { put(faultyKey, faultyObject) }
-                    .orEmpty()
+                additionalProperties = event.account.additionalProperties
+                    .toMutableMap()
+                    .apply { put(faultyKey, faultyObject) }
                     .toMutableMap()
             )
         )
@@ -2058,10 +2048,9 @@ internal class RumEventSerializerTest {
         }
         val faultyEvent = event.copy(
             context = event.context?.copy(
-                additionalProperties = event.context?.additionalProperties
-                    ?.toMutableMap()
-                    ?.apply { put(faultyKey, faultyObject) }
-                    .orEmpty()
+                additionalProperties = event.context.additionalProperties
+                    .toMutableMap()
+                    .apply { put(faultyKey, faultyObject) }
                     .toMutableMap()
             )
         )
@@ -2092,11 +2081,8 @@ internal class RumEventSerializerTest {
         }
         val faultyEvent = event.copy(
             usr = event.usr?.copy(
-                additionalProperties = event.usr?.additionalProperties
-                    ?.toMutableMap()
-                    ?.apply { put(faultyKey, faultyObject) }
-                    .orEmpty()
-                    .toMutableMap()
+                additionalProperties = event.usr.additionalProperties
+                    .apply { put(faultyKey, faultyObject) }
             )
         )
 
@@ -2129,11 +2115,8 @@ internal class RumEventSerializerTest {
         }
         val faultyEvent = event.copy(
             account = event.account?.copy(
-                additionalProperties = event.account?.additionalProperties
-                    ?.toMutableMap()
-                    ?.apply { put(faultyKey, faultyObject) }
-                    .orEmpty()
-                    .toMutableMap()
+                additionalProperties = event.account.additionalProperties
+                    .apply { put(faultyKey, faultyObject) }
             )
         )
 
@@ -2165,11 +2148,8 @@ internal class RumEventSerializerTest {
         }
         val faultyEvent = event.copy(
             context = event.context?.copy(
-                additionalProperties = event.context?.additionalProperties
-                    ?.toMutableMap()
-                    ?.apply { put(faultyKey, faultyObject) }
-                    .orEmpty()
-                    .toMutableMap()
+                additionalProperties = event.context.additionalProperties
+                    .apply { put(faultyKey, faultyObject) }
             )
         )
 
@@ -2199,10 +2179,9 @@ internal class RumEventSerializerTest {
         }
         val faultyEvent = event.copy(
             usr = event.usr?.copy(
-                additionalProperties = event.usr?.additionalProperties
-                    ?.toMutableMap()
-                    ?.apply { put(faultyKey, faultyObject) }
-                    .orEmpty()
+                additionalProperties = event.usr.additionalProperties
+                    .toMutableMap()
+                    .apply { put(faultyKey, faultyObject) }
                     .toMutableMap()
             )
         )
@@ -2236,10 +2215,9 @@ internal class RumEventSerializerTest {
         }
         val faultyEvent = event.copy(
             account = event.account?.copy(
-                additionalProperties = event.account?.additionalProperties
-                    ?.toMutableMap()
-                    ?.apply { put(faultyKey, faultyObject) }
-                    .orEmpty()
+                additionalProperties = event.account.additionalProperties
+                    .toMutableMap()
+                    .apply { put(faultyKey, faultyObject) }
                     .toMutableMap()
             )
         )
@@ -2272,10 +2250,9 @@ internal class RumEventSerializerTest {
         }
         val faultyEvent = event.copy(
             context = event.context?.copy(
-                additionalProperties = event.context?.additionalProperties
-                    ?.toMutableMap()
-                    ?.apply { put(faultyKey, faultyObject) }
-                    .orEmpty()
+                additionalProperties = event.context.additionalProperties
+                    .toMutableMap()
+                    .apply { put(faultyKey, faultyObject) }
                     .toMutableMap()
             )
         )
@@ -2306,10 +2283,9 @@ internal class RumEventSerializerTest {
         }
         val faultyEvent = event.copy(
             usr = event.usr?.copy(
-                additionalProperties = event.usr?.additionalProperties
-                    ?.toMutableMap()
-                    ?.apply { put(faultyKey, faultyObject) }
-                    .orEmpty()
+                additionalProperties = event.usr.additionalProperties
+                    .toMutableMap()
+                    .apply { put(faultyKey, faultyObject) }
                     .toMutableMap()
             )
         )
@@ -2343,10 +2319,9 @@ internal class RumEventSerializerTest {
         }
         val faultyEvent = event.copy(
             account = event.account?.copy(
-                additionalProperties = event.account?.additionalProperties
-                    ?.toMutableMap()
-                    ?.apply { put(faultyKey, faultyObject) }
-                    .orEmpty()
+                additionalProperties = event.account.additionalProperties
+                    .toMutableMap()
+                    .apply { put(faultyKey, faultyObject) }
                     .toMutableMap()
             )
         )
@@ -2379,10 +2354,9 @@ internal class RumEventSerializerTest {
         }
         val faultyEvent = event.copy(
             context = event.context?.copy(
-                additionalProperties = event.context?.additionalProperties
-                    ?.toMutableMap()
-                    ?.apply { put(faultyKey, faultyObject) }
-                    .orEmpty()
+                additionalProperties = event.context.additionalProperties
+                    .toMutableMap()
+                    .apply { put(faultyKey, faultyObject) }
                     .toMutableMap()
             )
         )
@@ -2413,10 +2387,9 @@ internal class RumEventSerializerTest {
         }
         val faultyEvent = event.copy(
             usr = event.usr?.copy(
-                additionalProperties = event.usr?.additionalProperties
-                    ?.toMutableMap()
-                    ?.apply { put(faultyKey, faultyObject) }
-                    .orEmpty()
+                additionalProperties = event.usr.additionalProperties
+                    .toMutableMap()
+                    .apply { put(faultyKey, faultyObject) }
                     .toMutableMap()
             )
         )
@@ -2450,10 +2423,9 @@ internal class RumEventSerializerTest {
         }
         val faultyEvent = event.copy(
             context = event.context?.copy(
-                additionalProperties = event.context?.additionalProperties
-                    ?.toMutableMap()
-                    ?.apply { put(faultyKey, faultyObject) }
-                    .orEmpty()
+                additionalProperties = event.context.additionalProperties
+                    .toMutableMap()
+                    .apply { put(faultyKey, faultyObject) }
                     .toMutableMap()
             )
         )

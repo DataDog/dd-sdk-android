@@ -2415,7 +2415,7 @@ internal class DatadogRumMonitorTest {
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 
         // When
-        testedMonitor.handleEvent(mock())
+        testedMonitor.handleEvent(mock<RumRawEvent.WebViewEvent>())
 
         // Then
         verify(mockExecutorService, never()).execute(any())

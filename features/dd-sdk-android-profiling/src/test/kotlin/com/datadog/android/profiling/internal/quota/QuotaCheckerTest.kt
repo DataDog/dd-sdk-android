@@ -38,6 +38,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.IOException
+import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -213,6 +214,7 @@ internal class QuotaCheckerTest {
         // Then
         val capturedRequest = requestCaptor.firstValue
         val expectedUrl = ProfilingQuotaChecker.QUOTA_URL_TEMPLATE.format(
+            Locale.US,
             fakeDatadogContext.site.intakeEndpoint.removePrefix("https://"),
             fakeSessionId
         )
@@ -430,6 +432,7 @@ internal class QuotaCheckerTest {
                 Request.Builder()
                     .url(
                         ProfilingQuotaChecker.QUOTA_URL_TEMPLATE.format(
+                            Locale.US,
                             fakeDatadogContext.site.intakeEndpoint.removePrefix("https://"),
                             fakeSessionId
                         )

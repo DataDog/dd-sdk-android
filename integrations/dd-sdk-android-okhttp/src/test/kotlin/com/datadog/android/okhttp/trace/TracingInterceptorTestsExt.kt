@@ -37,7 +37,7 @@ internal fun DatadogPropagation.wheneverInjectThenThrow(throwable: Throwable) {
 internal fun DatadogPropagation.wheneverInjectThenValueToHeaders(key: String, value: String) {
     doAnswer { invocation ->
         val carrier = invocation.getArgument<Request.Builder>(1)
-        val setter = invocation.getArgument<(carrier: Request.Builder, key: String, value: String) -> Unit>(2)
+        val setter = invocation.getArgument<(Request.Builder, String, String) -> Unit>(2)
         setter.invoke(carrier, key, value)
     }
         .whenever(this)

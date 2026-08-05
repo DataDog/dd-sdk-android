@@ -8,7 +8,8 @@ import com.android.build.api.variant.ApplicationAndroidComponentsExtension
 import com.android.build.api.variant.HasUnitTest
 import com.android.build.api.variant.LibraryAndroidComponentsExtension
 import com.android.build.api.variant.Variant
-import io.gitlab.arturbosch.detekt.Detekt
+import dev.detekt.gradle.Detekt
+import dev.detekt.gradle.extensions.FailOnSeverity
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.attributes.Usage
 import org.gradle.api.file.RegularFile
@@ -17,12 +18,12 @@ import org.gradle.kotlin.dsl.findByType
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.the
 
-// Applying `io.gitlab.arturbosch.detekt` would also register its own detekt tasks and apply detekt.yml
+// Applying `dev.detekt` would also register its own detekt tasks and apply detekt.yml
 // - unwanted, since this plugin isn't linting, only using Detekt as an engine. All our own task actually needs
 // from the plugin is the engine classpath, so provide that directly via detached configurations instead of applying it.
 val detektVersion = the<VersionCatalogsExtension>().named("libs").findVersion("detekt").get().requiredVersion
 val detektEngineClasspath = configurations.detachedConfiguration(
-    dependencies.create("io.gitlab.arturbosch.detekt:detekt-cli:$detektVersion")
+    dependencies.create("dev.detekt:detekt-cli:$detektVersion")
 )
 val detektPluginClasspath = configurations.detachedConfiguration(
     dependencies.create(project(":tools:detekt"))
@@ -49,12 +50,32 @@ fun configureApiUsageVariant(variant: Variant, bootClasspath: Provider<List<Regu
         // Only `datadog-test-pyramid` matters here - skip Detekt's bundled default rule sets.
         disableDefaultRuleSets = true
 
+        // This plugin deliberately does not apply `dev.detekt`, so the conventions the plugin would put
+        // on every Detekt task are not applied either. These mirror `setDetektTaskDefaults` in the Detekt
+        // plugin and must be kept in sync with it: without them Gradle fails task validation because the
+        // properties have no value. Only the ones this task does not set explicitly are listed.
+        debug = false
+        parallel = false
+        autoCorrect = false
+        ignoreFailures = false
+        failOnSeverity = FailOnSeverity.Error
+        allRules = false
+        noJdk = false
+        multiPlatformEnabled = false
+        basePath = rootProject.projectDir.absolutePath
+
         reports {
+            // outputLocation has to be set even for a disabled report, otherwise Gradle task validation
+            // fails on it; the Detekt plugin normally supplies these conventions. Nothing is written.
+            val unusedReports = layout.buildDirectory.dir("reports/detekt-test-pyramid/unused")
             sarif.required = false
+            sarif.outputLocation = unusedReports.map { it.file("report.sarif") }
             html.required = false
-            xml.required = false
-            txt.required = false
-            md.required = false
+            html.outputLocation = unusedReports.map { it.file("report.html") }
+            checkstyle.required = false
+            checkstyle.outputLocation = unusedReports.map { it.file("report.xml") }
+            markdown.required = false
+            markdown.outputLocation = unusedReports.map { it.file("report.md") }
         }
 
         localState.register(generatedConfigFile)
