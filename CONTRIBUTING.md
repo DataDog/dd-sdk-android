@@ -85,6 +85,25 @@ You can build the SDK using the following Gradle command:
 ./gradlew assembleLibraries
 ```
 
+### Kotlin tooling and SDK compatibility
+
+Android modules use AGP's built-in Kotlin support. Do not apply
+`org.jetbrains.kotlin.android` to these modules.
+
+The [version catalog](gradle/libs.versions.toml) separates `kotlinBuildscript`
+(the compiler and build plugins) from `kotlinRuntime` (the SDK's Kotlin standard
+library dependency). A newer compiler does not require a newer SDK language or
+API level. The shared [Kotlin configuration](build-logic/src/main/kotlin/com/datadog/gradle/config/KotlinConfig.kt)
+keeps both levels at 2.0 by default; build tools can override them independently.
+The API surface plugin also connects the binary compatibility validator to AGP's
+release compilation so `apiDump` continues to update the checked-in JVM signatures.
+
+When changing the toolchain, verify the generated API surfaces, compiler and AAR
+metadata, and resolved production dependencies. Compile a consumer with the
+oldest supported Kotlin toolchain to confirm the SDK's compatibility requirements.
+Use the [agent guide](AGENTS.md#checked-in-generated-files) for the generation and
+validation tasks.
+
 ### Running the tests
 
 The whole project is covered by a set of static analysis tools, linters and tests. To mimic the steps taken by our CI, you can run the `local_ci.sh` script:

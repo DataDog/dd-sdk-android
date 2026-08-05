@@ -4,15 +4,14 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
+    // Applied before the Android plugin on purpose (not under "Analysis tools"): AGP 9 applies
+    // the Kotlin plugin itself, and ktlint-gradle 14.2.0 registers its Android source-set tasks
+    // twice when it comes after the Kotlin plugin.
+    id("ktlint")
+
     // Build
     id("com.android.library")
-    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
-    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
-    id("ktlint")
-    kotlin("android")
     id("datadogBuildConfig")
 
     // Analysis tools
@@ -22,8 +21,6 @@ plugins {
     id("de.mobilej.unmock")
 }
 
-// TODO RUM-18189 Support new AGP DSL
-@Suppress("DEPRECATION")
 android {
     namespace = "com.datadog.android.core.stub"
 }
@@ -33,7 +30,10 @@ dependencies {
     implementation(project(":dd-sdk-android-core"))
     implementation(libs.kotlinRuntime)
 
-    // Testing
+    // Testing — mockito-kotlin/JUnit are used from this module's MAIN source set (it is a test
+    // stub helper), so these belong on `implementation`, not the test classpath.
+    implementation(libs.bundles.jUnit5)
+    implementation(libs.bundles.testTools)
     implementation(project(":tools:unit")) {
         attributes {
             attribute(
@@ -42,8 +42,6 @@ dependencies {
             )
         }
     }
-    implementation(libs.bundles.jUnit5)
-    implementation(libs.bundles.testTools)
     implementation(libs.okHttp)
     implementation(libs.gson)
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
@@ -51,6 +49,6 @@ dependencies {
 
 datadogBuild {
     applyAndroidLibraryConfig()
-    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyKotlinConfig()
     applyJunitConfig()
 }

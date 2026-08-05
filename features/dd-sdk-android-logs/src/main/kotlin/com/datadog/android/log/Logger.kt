@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("FunctionNameMinLength")
+
 package com.datadog.android.log
 
 import androidx.annotation.FloatRange

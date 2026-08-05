@@ -67,8 +67,8 @@ internal class RumSessionScope(
     private val rumSessionTypeOverride: RumSessionType?,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
     insightsCollector: InsightsCollector,
-    private val viewEventMapper: ViewEventMapper,
-    private val viewEventWriteConfig: ViewEventWriteConfig,
+    viewEventMapper: ViewEventMapper,
+    viewEventWriteConfig: ViewEventWriteConfig,
     heatmapIdentifierRegistry: HeatmapIdentifierRegistry?,
     private val timeseriesCollector: TimeseriesCollector = NoOpTimeseriesCollector()
 ) : RumScope {

@@ -136,6 +136,7 @@ class SampleApplication : Application() {
         localServer.init(this)
     }
 
+    @Suppress("OVERRIDE_DEPRECATION")
     override fun onLowMemory() {
         super.onLowMemory()
         GlobalRumMonitor.get().addError(

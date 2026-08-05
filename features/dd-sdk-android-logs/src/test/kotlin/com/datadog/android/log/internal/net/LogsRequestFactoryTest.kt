@@ -48,7 +48,6 @@ internal class LogsRequestFactoryTest {
         )
     }
 
-    @Suppress("NAME_SHADOWING")
     @Test
     fun `M create a proper request W create()`(
         @Forgery batchData: List<RawBatchEvent>,
@@ -89,7 +88,6 @@ internal class LogsRequestFactoryTest {
         )
     }
 
-    @Suppress("NAME_SHADOWING")
     @Test
     fun `M create a proper request W create() { custom endpoint }`(
         @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeEndpoint: String,

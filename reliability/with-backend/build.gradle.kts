@@ -10,10 +10,10 @@ import com.datadog.gradle.config.java17
 plugins {
     // Build
     id("com.android.application")
-    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
-    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
+    // Applied before the Android plugin on purpose (not under "Analysis tools"): AGP 9 applies
+    // the Kotlin plugin itself, and ktlint-gradle 14.2.0 registers its Android source-set tasks
+    // twice when it comes after the Kotlin plugin.
     id("ktlint")
-    kotlin("android")
     kotlin("plugin.serialization")
     id("datadogBuildConfig")
 }
