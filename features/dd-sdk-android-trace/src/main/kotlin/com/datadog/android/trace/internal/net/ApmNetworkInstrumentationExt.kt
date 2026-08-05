@@ -72,7 +72,7 @@ internal fun DatadogSpan.sample(
     }
 }
 
-@SuppressWarnings("UndocumentedPublicFunction")
+@Suppress("UndocumentedPublicFunction")
 @InternalApi
 fun DatadogSpan.finishRumAware(isSampled: Boolean, canSendSpan: Boolean, isDefaultTracer: Boolean) {
     when {
