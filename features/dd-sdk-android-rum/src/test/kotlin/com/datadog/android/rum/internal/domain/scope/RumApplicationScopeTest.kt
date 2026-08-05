@@ -80,7 +80,6 @@ internal class RumApplicationScopeTest {
     @Mock
     lateinit var mockChildScope: RumSessionScope
 
-    @Mock
     lateinit var mockEvent: RumRawEvent
 
     @Mock
@@ -171,6 +170,7 @@ internal class RumApplicationScopeTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        mockEvent = mock<RumRawEvent.WebViewEvent>()
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockSdkCore.time) doReturn fakeTimeInfoAtScopeStart
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger

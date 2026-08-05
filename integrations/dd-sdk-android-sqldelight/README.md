@@ -2,7 +2,9 @@
 
 ## Getting Started 
 
-This integration supports SQLDelight 1.x (`com.squareup.sqldelight`).
+This integration supports SQLDelight 2.x (`app.cash.sqldelight`). Applications
+using SQLDelight 1.x must migrate their driver and generated database code before
+upgrading this integration.
 
 To include the Datadog integration for [SQLDelight][1] in your project, simply add the
 following to your application's `build.gradle.kts` file.

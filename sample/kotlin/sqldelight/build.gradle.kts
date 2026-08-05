@@ -4,10 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
-    // Keep SQLDelight 1.x code generation outside Android's built-in Kotlin plugin.
     id("org.jetbrains.kotlin.jvm")
     id("datadogBuildConfig")
     id("ktlint")
@@ -19,12 +16,14 @@ dependencies {
 }
 
 sqldelight {
-    database("LogsDatabase") {
-        packageName = "com.datadog.android.sample"
-        dialect = "sqlite:3.24"
+    databases {
+        create("LogsDatabase") {
+            packageName.set("com.datadog.android.sample")
+            dialect(libs.sqlDelightSqlite324Dialect)
+        }
     }
 }
 
 datadogBuild {
-    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyKotlinConfig()
 }

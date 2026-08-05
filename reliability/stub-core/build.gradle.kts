@@ -4,8 +4,6 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
     // Apply ktlint before AGP: built-in Kotlin otherwise causes duplicate ktlint tasks.
     id("ktlint")
@@ -30,7 +28,10 @@ dependencies {
     implementation(project(":dd-sdk-android-core"))
     implementation(libs.kotlinRuntime)
 
-    // Testing
+    // Testing — mockito-kotlin/JUnit are used from this module's MAIN source set (it is a test
+    // stub helper), so these belong on `implementation`, not the test classpath.
+    implementation(libs.bundles.jUnit5)
+    implementation(libs.bundles.testTools)
     implementation(project(":tools:unit")) {
         attributes {
             attribute(
@@ -39,8 +40,6 @@ dependencies {
             )
         }
     }
-    implementation(libs.bundles.jUnit5)
-    implementation(libs.bundles.testTools)
     implementation(libs.okHttp)
     implementation(libs.gson)
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
@@ -48,6 +47,6 @@ dependencies {
 
 datadogBuild {
     applyAndroidLibraryConfig()
-    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyKotlinConfig()
     applyJunitConfig()
 }

@@ -2084,7 +2084,6 @@ internal class RumEventSerializerTest {
                 additionalProperties = event.usr.additionalProperties
                     .toMutableMap()
                     .apply { put(faultyKey, faultyObject) }
-                    .toMutableMap()
             )
         )
 
@@ -2120,7 +2119,6 @@ internal class RumEventSerializerTest {
                 additionalProperties = event.account.additionalProperties
                     .toMutableMap()
                     .apply { put(faultyKey, faultyObject) }
-                    .toMutableMap()
             )
         )
 
@@ -2155,7 +2153,6 @@ internal class RumEventSerializerTest {
                 additionalProperties = event.context.additionalProperties
                     .toMutableMap()
                     .apply { put(faultyKey, faultyObject) }
-                    .toMutableMap()
             )
         )
 

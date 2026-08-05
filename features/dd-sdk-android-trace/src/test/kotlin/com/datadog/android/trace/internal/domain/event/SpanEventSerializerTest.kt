@@ -317,8 +317,7 @@ internal class SpanEventSerializerTest {
     ) {
         attributes.filter { it.key.isNotBlank() }
             .forEach {
-                val value = it.value
-                when (value) {
+                when (val value = it.value) {
                     NULL_MAP_VALUE -> doesNotHaveField(it.key)
                     null -> doesNotHaveField(it.key)
                     is Date -> hasField(it.key, value.time.toString())
