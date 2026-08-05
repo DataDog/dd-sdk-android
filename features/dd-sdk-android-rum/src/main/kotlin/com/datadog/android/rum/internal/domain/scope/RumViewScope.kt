@@ -278,7 +278,7 @@ internal open class RumViewScope(
 
         val vitalId = UUID.randomUUID().toString()
         val capturedRumContext = getRumContext()
-        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
+        sdkCore.newRumEventWriteOperation(writeScope, writer) {
             newVitalEvent(
                 vitalId,
                 event,
@@ -311,7 +311,7 @@ internal open class RumViewScope(
 
         val vitalId = UUID.randomUUID().toString()
         val capturedRumContext = getRumContext()
-        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
+        sdkCore.newRumEventWriteOperation(writeScope, writer) {
             newVitalEvent(
                 vitalId,
                 event,
@@ -734,7 +734,7 @@ internal open class RumViewScope(
         pendingResourceCount++
     }
 
-    @Suppress("ComplexMethod", "LongMethod")
+    @Suppress("ComplexMethod", "CyclomaticComplexMethod", "LongMethod")
     @WorkerThread
     private fun onAddError(
         event: RumRawEvent.AddError,
@@ -783,7 +783,7 @@ internal open class RumViewScope(
         }
         // end region
 
-        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer, eventType) {
+        sdkCore.newRumEventWriteOperation(writeScope, writer, eventType) {
             val user = datadogContext.userInfo
             val syntheticsAttribute = if (
                 rumContext.syntheticsTestId.isNullOrBlank() ||
@@ -1222,7 +1222,7 @@ internal open class RumViewScope(
         }
     }
 
-    @Suppress("LongMethod", "ComplexMethod")
+    @Suppress("LongMethod", "ComplexMethod", "CyclomaticComplexMethod")
     internal fun sendViewUpdate(
         event: RumRawEvent,
         datadogContext: DatadogContext,
@@ -1560,7 +1560,7 @@ internal open class RumViewScope(
         )
 
         val longTaskId = UUID.randomUUID().toString()
-        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
+        sdkCore.newRumEventWriteOperation(writeScope, writer) {
             val user = datadogContext.userInfo
             val syntheticsAttribute = if (
                 rumContext.syntheticsTestId.isNullOrBlank() ||

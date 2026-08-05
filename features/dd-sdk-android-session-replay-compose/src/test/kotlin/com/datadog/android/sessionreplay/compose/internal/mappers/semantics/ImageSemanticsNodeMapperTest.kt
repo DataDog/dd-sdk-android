@@ -9,7 +9,6 @@ package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 import android.graphics.Bitmap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.semantics.SemanticsNode
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.BitmapInfo
@@ -53,9 +52,6 @@ internal class ImageSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() 
 
     @Mock
     private lateinit var mockInternalLogger: InternalLogger
-
-    @Mock
-    private lateinit var mockSemanticsNode: SemanticsNode
 
     @Mock
     private lateinit var mockAsyncJobStatusCallback: AsyncJobStatusCallback

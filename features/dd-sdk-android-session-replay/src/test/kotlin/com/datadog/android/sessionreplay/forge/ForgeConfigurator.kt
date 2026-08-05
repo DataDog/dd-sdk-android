@@ -35,6 +35,7 @@ internal class ForgeConfigurator : BaseConfigurator() {
         forge.addFactory(IncrementalSnapshotRecordForgeryFactory())
         forge.addFactory(MetaRecordForgeryFactory())
         forge.addFactory(ViewEndRecordForgeryFactory())
+        forge.addFactory(MobileRecordForgeryFactory())
         forge.addFactory(EnrichedRecordForgeryFactory())
         forge.addFactory(ResourceEventForgeryFactory())
         forge.addFactory(EnrichedResourceForgeryFactory())

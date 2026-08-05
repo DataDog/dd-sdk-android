@@ -229,8 +229,11 @@ internal class SpanEventSerializerTest {
             meta = fakeSpanEvent.meta.copy(
                 account = fakeSpanEvent.meta.account?.copy(
                     additionalProperties = fakeSpanEvent.meta.account
-                        ?.additionalProperties
-                        .orEmpty()
+                        .additionalProperties
+                        // Copy before mutating: `fakeSpanEvent` is the expected value in
+                        // assertJsonMatchesInputSpan below, so injecting the faulty entry in place
+                        // would poison the assertion (only visible when Forge yields a non-null
+                        // account, which is why it failed on the release seed and not on debug).
                         .toMutableMap()
                         .apply { put(faultyKey, faultyObject) }
                 )
@@ -318,8 +321,7 @@ internal class SpanEventSerializerTest {
     ) {
         attributes.filter { it.key.isNotBlank() }
             .forEach {
-                val value = it.value
-                when (value) {
+                when (val value = it.value) {
                     NULL_MAP_VALUE -> doesNotHaveField(it.key)
                     null -> doesNotHaveField(it.key)
                     is Date -> hasField(it.key, value.time.toString())

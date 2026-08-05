@@ -74,7 +74,6 @@ internal class RumViewEventWriterImpl(
         var mappedViewEvent: ViewEvent? = null
 
         sdkCore.newRumEventWriteOperation(
-            datadogContext = datadogContext,
             writeScope = writeScope,
             rumDataWriter = writer,
             eventType = eventType,

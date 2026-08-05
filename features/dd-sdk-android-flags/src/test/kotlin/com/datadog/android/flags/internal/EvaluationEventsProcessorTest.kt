@@ -829,7 +829,7 @@ internal class EvaluationEventsProcessorTest {
         val writeCount = AtomicInteger(0)
         val trackingWriter = object : EvaluationEventWriter {
             override fun writeAll(events: List<EvaluationAggregationStats>) {
-                writeCount.addAndGet(events.sumOf { it.count }.toInt())
+                writeCount.addAndGet(events.sumOf { it.count })
             }
         }
 

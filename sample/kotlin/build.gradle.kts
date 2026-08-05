@@ -14,12 +14,13 @@ import com.datadog.gradle.plugin.InstrumentationMode
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
+    // Applied before the Android plugin on purpose (not under "Analysis tools"): AGP 9 applies
+    // the Kotlin plugin itself, and ktlint-gradle 14.2.0 registers its Android source-set tasks
+    // twice when it comes after the Kotlin plugin.
+    id("ktlint")
+
     // Build
     id("com.android.application")
-    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
-    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
-    id("ktlint")
-    kotlin("android")
     alias(libs.plugins.composeCompilerPlugin)
     alias(libs.plugins.sqlDelightGradlePlugin)
     id("com.google.devtools.ksp")
@@ -28,15 +29,16 @@ plugins {
 }
 
 sqldelight {
-    database("LogsDatabase") {
-        packageName = "com.datadog.android.sample"
-        dialect = "sqlite:3.24"
-        sourceFolders = listOf("sqldelight")
+    databases {
+        create("LogsDatabase") {
+            packageName.set("com.datadog.android.sample")
+            srcDirs("src/main/sqldelight")
+            dialect(libs.sqlDelightSqlite324Dialect)
+        }
     }
 }
 
-// TODO RUM-18189 Support new AGP DSL
-@Suppress("DEPRECATION", "StringLiteralDuplication")
+@Suppress("StringLiteralDuplication")
 android {
     compileSdk = AndroidConfig.TARGET_SDK
     buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
@@ -83,16 +85,6 @@ android {
                 configureFlavorForSampleApp(project, this, project.rootDir)
             }
         }
-    }
-
-    sourceSets.named("main") {
-        java.srcDir("src/main/kotlin")
-    }
-    sourceSets.named("test") {
-        java.srcDir("src/test/kotlin")
-    }
-    sourceSets.named("androidTest") {
-        java.srcDir("src/androidTest/kotlin")
     }
 
     packaging {

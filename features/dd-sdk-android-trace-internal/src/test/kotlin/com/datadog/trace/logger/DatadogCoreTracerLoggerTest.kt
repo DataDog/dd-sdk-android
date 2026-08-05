@@ -45,15 +45,15 @@ internal class DatadogCoreTracerLoggerTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
-    private val fakeArg1 = Object()
-    private val fakeArg2 = Object()
+    private val fakeArg1 = Any()
+    private val fakeArg2 = Any()
     lateinit var fakeArgs: Array<Any>
 
     private lateinit var fakeThrowable: Throwable
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeArgs = forge.aList(size = forge.aSmallInt()) { Object() }.toTypedArray()
+        fakeArgs = forge.aList(size = forge.aSmallInt()) { Any() }.toTypedArray()
         fakeThrowable = forge.getForgery()
         expectedMessage = String.format(Locale.US, "%s: %s", fakeLoggerName, fakeMessage)
         testedLogger =
