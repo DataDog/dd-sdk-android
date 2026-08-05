@@ -1,0 +1,222 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android.sessionreplay.internal.composition
+
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.Test
+
+internal class CapturedIdentityTest {
+
+    @Test
+    fun `M return stable identity W create identity { identical inputs }`() {
+        // Given
+        val factory = factory()
+
+        // When
+        val first = factory.view(factory.window("window"), "view-id")
+        val repeated = factory.view(factory.window("window"), "view-id")
+
+        // Then
+        assertThat(repeated).isSameAs(first)
+    }
+
+    @Test
+    fun `M allocate new identity W create identity { separate factories }`() {
+        // Given
+        val generator = AutoIncrementingCapturedReplayIdGenerator()
+        val scope = RumViewIdentityScope("view")
+        val firstFactory = DefaultCapturedIdentityFactory(scope, generator)
+        val secondFactory = DefaultCapturedIdentityFactory(scope, generator)
+
+        // When
+        val first = firstFactory.window("window")
+        val second = secondFactory.window("window")
+
+        // Then
+        assertThat(second).isNotEqualTo(first)
+        assertThat(second.wireId).isEqualTo(first.wireId + 1)
+    }
+
+    @Test
+    fun `M namespace view identity W view { identical local IDs in different windows }`() {
+        // Given
+        val factory = factory()
+
+        // When
+        val first = factory.view(factory.window("first-window"), "shared-id")
+        val second = factory.view(factory.window("second-window"), "shared-id")
+
+        // Then
+        assertThat(first).isNotEqualTo(second)
+        assertThat(first.wireId).isNotEqualTo(second.wireId)
+    }
+
+    @Test
+    fun `M namespace compose identity W composeNode { identical local IDs in different hosts }`() {
+        // Given
+        val factory = factory()
+        val window = factory.window("window")
+
+        // When
+        val first = factory.composeNode(factory.composeHost(window, "first-host"), "shared-id")
+        val second = factory.composeNode(factory.composeHost(window, "second-host"), "shared-id")
+
+        // Then
+        assertThat(first).isNotEqualTo(second)
+        assertThat(first.wireId).isNotEqualTo(second.wireId)
+    }
+
+    @Test
+    fun `M allocate distinct identity W create identity { identical numeric IDs }`() {
+        // Given
+        val factory = factory()
+        val window = factory.window("42")
+
+        // When
+        val view = factory.view(window, "42")
+        val host = factory.composeHost(window, "42")
+        val layer = factory.layer(window, "42")
+        val wireframe = factory.shapeWireframe(window)
+
+        // Then
+        assertThat(listOf(view, host, layer, wireframe).map { it.wireId }.toSet()).hasSize(4)
+    }
+
+    @Test
+    fun `M isolate identity W create identity { different RUM view scopes }`() {
+        // Given
+        val generator = AutoIncrementingCapturedReplayIdGenerator()
+        val firstFactory = DefaultCapturedIdentityFactory(RumViewIdentityScope("first-view"), generator)
+        val secondFactory = DefaultCapturedIdentityFactory(RumViewIdentityScope("second-view"), generator)
+
+        // When
+        val first = firstFactory.window("window")
+        val second = secondFactory.window("window")
+
+        // Then
+        assertThat(first).isNotEqualTo(second)
+        assertThat(first.wireId).isNotEqualTo(second.wireId)
+    }
+
+    @Test
+    fun `M reject owner W create identity { owner belongs to another scope }`() {
+        // Given
+        val firstFactory = factory("first-view")
+        val secondFactory = factory("second-view")
+
+        // When + Then
+        assertThatThrownBy { secondFactory.view(firstFactory.window("window"), "view") }
+            .isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
+    fun `M create namespaced IDs W create wireframe identities`() {
+        // Given
+        val factory = DefaultCapturedIdentityFactory(
+            scope = RumViewIdentityScope("view"),
+            replayIdGenerator = AutoIncrementingCapturedReplayIdGenerator(initialId = 42)
+        )
+        val layer = factory.layer(factory.window("window"), "layer")
+
+        // When
+        val shape = factory.shapeWireframe(layer)
+        val text = factory.textWireframe(layer)
+        val image = factory.imageWireframe(layer)
+        val placeholder = factory.placeholderWireframe(layer)
+        val embeddedContent = factory.embeddedContentWireframe(layer)
+
+        // Then
+        assertThat(shape.wireId).isEqualTo((1L shl NAMESPACE_SHIFT) or layer.wireId)
+        assertThat(text.wireId).isEqualTo((2L shl NAMESPACE_SHIFT) or layer.wireId)
+        assertThat(image.wireId).isEqualTo((3L shl NAMESPACE_SHIFT) or layer.wireId)
+        assertThat(placeholder.wireId).isEqualTo((4L shl NAMESPACE_SHIFT) or layer.wireId)
+        assertThat(embeddedContent.wireId).isEqualTo((5L shl NAMESPACE_SHIFT) or layer.wireId)
+    }
+
+    @Test
+    fun `M preserve raw slot ID W create webViewWireframe`() {
+        // Given
+        val factory = factory()
+        val layer = factory.layer(factory.window("window"), "layer")
+
+        // When
+        val wireframe = factory.webViewWireframe(layer, slotId = 42)
+
+        // Then
+        assertThat(wireframe.wireId).isEqualTo(42)
+        assertThat(wireframe.wireframeKind).isEqualTo(CapturedWireframeKind.WEB_VIEW)
+    }
+
+    @Test
+    fun `M keep layer IDs outside slot ID range W create identity { any Int slotId }`() {
+        // Given
+        val factory = DefaultCapturedIdentityFactory(
+            scope = RumViewIdentityScope("view"),
+            replayIdGenerator = AutoIncrementingCapturedReplayIdGenerator(initialId = Int.MAX_VALUE - 1L)
+        )
+
+        // When
+        val layerIds = listOf(
+            factory.window("before-max").wireId,
+            factory.window("max").wireId,
+            factory.window("wrapped").wireId,
+            factory.window("min").wireId
+        )
+
+        // Then
+        // A web-view slotId is caller-supplied and preserved verbatim as its wire id (see
+        // `M preserve raw slot ID`), so it may be anywhere in the Int range. Layer ids must never
+        // land in that range, or a colliding slotId could be mistaken for an unrelated layer.
+        assertThat(layerIds).allMatch { it < Int.MIN_VALUE || it > Int.MAX_VALUE.toLong() }
+    }
+
+    @Test
+    fun `M wrap replay IDs W create identity { maximum ID reached }`() {
+        // Given
+        val factory = DefaultCapturedIdentityFactory(
+            scope = RumViewIdentityScope("view"),
+            replayIdGenerator = AutoIncrementingCapturedReplayIdGenerator(initialId = Int.MAX_VALUE - 1L)
+        )
+
+        // When
+        val beforeMax = factory.window("before-max")
+        val max = factory.window("max")
+        val wrapped = factory.window("wrapped")
+
+        // Then
+        assertThat(beforeMax.wireId).isEqualTo(LAYER_ID_OFFSET + (Int.MAX_VALUE - 1L))
+        assertThat(max.wireId).isEqualTo(LAYER_ID_OFFSET + Int.MAX_VALUE.toLong())
+        assertThat(wrapped.wireId).isEqualTo(LAYER_ID_OFFSET)
+    }
+
+    @Test
+    fun `M create player-safe IDs W create identities`() {
+        // Given
+        val factory = factory()
+        val window = factory.window("window")
+
+        // When
+        val identities = List(1_000) { factory.view(window, "view-$it") } +
+            factory.embeddedContentWireframe(window)
+
+        // Then
+        assertThat(identities.map { it.wireId })
+            .allMatch { it in 0..MAX_SAFE_JAVASCRIPT_INTEGER }
+            .doesNotHaveDuplicates()
+    }
+
+    private fun factory(scope: String = "view") = DefaultCapturedIdentityFactory(
+        scope = RumViewIdentityScope(scope),
+        replayIdGenerator = AutoIncrementingCapturedReplayIdGenerator()
+    )
+
+    private companion object {
+        const val NAMESPACE_SHIFT = 32
+        const val MAX_SAFE_JAVASCRIPT_INTEGER = (1L shl 53) - 1
+    }
+}
