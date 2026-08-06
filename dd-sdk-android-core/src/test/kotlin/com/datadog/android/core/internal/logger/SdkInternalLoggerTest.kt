@@ -716,7 +716,7 @@ internal class SdkInternalLoggerTest {
         }
 
         // Then
-        val count = mockingDetails(mockRumFeatureScope).invocations.filter { it.method.name == "sendEvent" }.size
+        val count = mockingDetails(mockRumFeatureScope).invocations.count { it.method.name == "sendEvent" }
         assertThat(count).isCloseTo(expectedCallCount, offset(marginOfError))
     }
 
@@ -792,7 +792,7 @@ internal class SdkInternalLoggerTest {
         }
 
         // Then
-        val count = mockingDetails(mockRumFeatureScope).invocations.filter { it.method.name == "sendEvent" }.size
+        val count = mockingDetails(mockRumFeatureScope).invocations.count { it.method.name == "sendEvent" }
         assertThat(count).isCloseTo(expectedCallCount, offset(marginOfError))
     }
 

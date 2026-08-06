@@ -39,23 +39,21 @@ class DdProfilingContentProvider(
 
     internal fun onStart(context: Context) {
         if (buildSdkVersionProvider.isAtLeastVanillaIceCream) {
-            val instanceNames = ProfilingStorage.getProfilingEnabledInstanceNames(context)
-            if (instanceNames.isNotEmpty()) {
-                sampleProfiling(context, instanceNames)
+            if (ProfilingStorage.isProfilingEnabled(context)) {
+                sampleProfiling(context)
             }
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
-    private fun sampleProfiling(context: Context, instanceNames: Set<String>) {
+    private fun sampleProfiling(context: Context) {
         val appStartInfo = getAppStartInfo(context) ?: return
         val sampleRate = ProfilingStorage.getSampleRate(context)
         if (RateBasedSampler<Unit>(sampleRate).sample(Unit)) {
             Profiling.start(
                 context = context,
                 startReason = ProfilingStartReason.APPLICATION_LAUNCH,
-                additionalAttributes = mapOf(PerfettoProfiler.TELEMETRY_KEY_APP_START_INFO to appStartInfo),
-                sdkInstanceNames = instanceNames
+                additionalAttributes = mapOf(PerfettoProfiler.TELEMETRY_KEY_APP_START_INFO to appStartInfo)
             )
         }
         ProfilingStorage.removeSampleRate(context)

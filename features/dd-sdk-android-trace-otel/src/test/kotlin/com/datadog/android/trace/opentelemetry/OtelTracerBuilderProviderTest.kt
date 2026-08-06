@@ -101,7 +101,7 @@ internal class OtelTracerBuilderProviderTest {
     @Mock
     lateinit var mockTraceWriter: DatadogSpanWriter
 
-    lateinit var fakeRumContext: MutableMap<String, String>
+    lateinit var fakeRumContext: Map<String, String>
 
     @StringForgery(type = StringForgeryType.HEXADECIMAL)
     lateinit var fakeApplicationId: String
@@ -121,7 +121,7 @@ internal class OtelTracerBuilderProviderTest {
         whenever(
             mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
         ) doReturn mockTracingFeatureScope
-        fakeRumContext = mutableMapOf(
+        fakeRumContext = mapOf(
             OtelTracerProvider.RUM_APPLICATION_ID_KEY to fakeApplicationId,
             OtelTracerProvider.RUM_SESSION_ID_KEY to fakeSessionId,
             OtelTracerProvider.RUM_VIEW_ID_KEY to fakeViewId,

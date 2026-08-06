@@ -19,6 +19,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.utils.DdTagsUtils
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.FeatureContextKeys.PROFILER_IS_RUNNING
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
@@ -71,7 +72,6 @@ import com.datadog.android.rum.internal.toError
 import com.datadog.android.rum.internal.toLongTask
 import com.datadog.android.rum.internal.toView
 import com.datadog.android.rum.internal.toVital
-import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.internal.vitals.VitalInfo
 import com.datadog.android.rum.internal.vitals.VitalListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -9185,10 +9185,7 @@ internal class RumViewScopeTest {
 
         argumentCaptor<ViewEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(lastValue)
-                .apply {
-                    hasSessionActive(false)
-                }
+            assertThat(lastValue).hasSessionActive(false)
         }
     }
 
@@ -9558,10 +9555,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<ViewEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(firstValue)
-                .apply {
-                    hasDuration(1)
-                }
+            assertThat(firstValue).hasDuration(1)
         }
         if (rawEventData.event !is RumRawEvent.StartView) {
             mockInternalLogger.verifyLog(
@@ -9589,10 +9583,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<ViewEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(firstValue)
-                .apply {
-                    hasDuration(1)
-                }
+            assertThat(firstValue).hasDuration(1)
         }
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
@@ -9628,10 +9619,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<ViewEvent> {
             verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(lastValue)
-                .apply {
-                    hasDuration(durationNs)
-                }
+            assertThat(lastValue).hasDuration(durationNs)
         }
     }
 
@@ -10092,7 +10080,7 @@ internal class RumViewScopeTest {
                 .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasServiceName(fakeDatadogContext.service)
-                .hasDDTags(buildDDTagsString(fakeDatadogContext))
+                .hasDDTags(DdTagsUtils.toDdTagsString(fakeDatadogContext))
 
             val operationsProps = lastValue.vital
 
@@ -10167,7 +10155,7 @@ internal class RumViewScopeTest {
                 .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasServiceName(fakeDatadogContext.service)
-                .hasDDTags(buildDDTagsString(fakeDatadogContext))
+                .hasDDTags(DdTagsUtils.toDdTagsString(fakeDatadogContext))
 
             val operationsProps = lastValue.vital
 
@@ -10239,7 +10227,7 @@ internal class RumViewScopeTest {
                 .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasServiceName(fakeDatadogContext.service)
-                .hasDDTags(buildDDTagsString(fakeDatadogContext))
+                .hasDDTags(DdTagsUtils.toDdTagsString(fakeDatadogContext))
 
             val operationsProps = lastValue.vital
 
@@ -10314,7 +10302,7 @@ internal class RumViewScopeTest {
                 .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasServiceName(fakeDatadogContext.service)
-                .hasDDTags(buildDDTagsString(fakeDatadogContext))
+                .hasDDTags(DdTagsUtils.toDdTagsString(fakeDatadogContext))
 
             val operationsProps = lastValue.vital
 
@@ -10387,7 +10375,7 @@ internal class RumViewScopeTest {
                 .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasServiceName(fakeDatadogContext.service)
-                .hasDDTags(buildDDTagsString(fakeDatadogContext))
+                .hasDDTags(DdTagsUtils.toDdTagsString(fakeDatadogContext))
 
             val operationsProps = lastValue.vital
 
@@ -10464,7 +10452,7 @@ internal class RumViewScopeTest {
                 .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasBuildId(fakeDatadogContext.appBuildId)
                 .hasServiceName(fakeDatadogContext.service)
-                .hasDDTags(buildDDTagsString(fakeDatadogContext))
+                .hasDDTags(DdTagsUtils.toDdTagsString(fakeDatadogContext))
 
             val operationsProps = lastValue.vital
 
@@ -10893,7 +10881,7 @@ internal class RumViewScopeTest {
         @JvmStatic
         fun brokenTimeRawEventData(): List<RumRawEventData> {
             val forge = Forge()
-            Configurator().apply { configure(forge) }
+            Configurator().configure(forge)
             val fakeKey = forge.getForgery<RumScopeKey>()
             val fakeName = forge.anAlphabeticalString()
             val eventTime = Time(0, 0)

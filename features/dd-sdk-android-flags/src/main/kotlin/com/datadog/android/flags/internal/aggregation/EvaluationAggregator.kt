@@ -18,7 +18,7 @@ import kotlin.concurrent.withLock
  * ensuring exclusive access during [drain].
  */
 internal class EvaluationAggregator(private val maxAggregations: Int) {
-    private var aggregationMap = mutableMapOf<EvaluationAggregationKey, EvaluationAggregationStats>()
+    private val aggregationMap = mutableMapOf<EvaluationAggregationKey, EvaluationAggregationStats>()
 
     private val mapLock = ReentrantLock()
 
@@ -88,14 +88,13 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
     }
 
     /**
-     * Swaps the aggregation map with a fresh one and returns the old map.
-     * Must be called while holding the write lock.
+     * Snapshots the aggregation map and clears it. Must be called while holding the write lock.
      *
-     * @return the old map, or null if empty
+     * @return the snapshotted map, or null if empty
      */
     private fun drainAggregationStats(): Map<EvaluationAggregationKey, EvaluationAggregationStats> = mapLock.withLock {
-        val toDrain = aggregationMap
-        aggregationMap = mutableMapOf()
+        val toDrain = aggregationMap.toMap()
+        aggregationMap.clear()
         toDrain
     }
 }

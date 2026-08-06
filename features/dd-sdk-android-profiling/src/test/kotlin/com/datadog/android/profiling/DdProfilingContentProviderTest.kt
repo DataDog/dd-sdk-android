@@ -20,7 +20,6 @@ import com.datadog.android.profiling.internal.Profiler
 import com.datadog.android.profiling.internal.ProfilingStartReason
 import com.datadog.android.profiling.internal.ProfilingStorage
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companion.TELEMETRY_KEY_APP_START_INFO
-import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.AfterEach
@@ -72,9 +71,6 @@ class DdProfilingContentProviderTest {
     @Mock
     private lateinit var mockSharedPreferencesStorage: SharedPreferencesStorage
 
-    @StringForgery
-    private lateinit var fakeInstanceName: String
-
     @BeforeEach
     fun `set up`() {
         whenever(mockBuildSdkVersionProvider.isAtLeastVanillaIceCream).doReturn(true)
@@ -86,8 +82,8 @@ class DdProfilingContentProviderTest {
 
         whenever(mockSharedPreferencesStorage.getFloat(any(), any())).doReturn(100f)
 
-        whenever(mockSharedPreferencesStorage.getStringSet(any(), any()))
-            .doReturn(setOf(fakeInstanceName))
+        whenever(mockSharedPreferencesStorage.getBoolean(any(), any()))
+            .doReturn(true)
 
         ProfilingStorage.sharedPreferencesStorage = mockSharedPreferencesStorage
         Profiling.profiler = mockProfiler
@@ -119,8 +115,7 @@ class DdProfilingContentProviderTest {
         verify(mockProfiler).start(
             mockContext,
             ProfilingStartReason.APPLICATION_LAUNCH,
-            mapOf(TELEMETRY_KEY_APP_START_INFO to expectedTelemetryValue),
-            setOf(fakeInstanceName)
+            mapOf(TELEMETRY_KEY_APP_START_INFO to expectedTelemetryValue)
         )
     }
 

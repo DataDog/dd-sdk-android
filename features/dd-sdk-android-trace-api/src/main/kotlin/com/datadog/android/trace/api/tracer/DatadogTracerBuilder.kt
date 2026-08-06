@@ -14,7 +14,7 @@ import com.datadog.tools.annotation.NoOpImplementation
  * Builder interface for creating and configuring a [DatadogTracer] instance.
  */
 @NoOpImplementation(publicNoOpImplementation = true)
-@SuppressWarnings("TooManyFunctions")
+@Suppress("TooManyFunctions")
 interface DatadogTracerBuilder {
     /**
      * Constructs and returns an instance of [DatadogTracer] based on the current builder configuration.

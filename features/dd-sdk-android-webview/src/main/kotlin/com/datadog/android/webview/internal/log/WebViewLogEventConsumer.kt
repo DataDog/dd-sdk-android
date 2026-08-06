@@ -115,8 +115,8 @@ internal class WebViewLogEventConsumer(
             LogAttributes.SERVICE to datadogContext.service
         )
         val eventDdTags = try {
-            event.get(DDTAGS_KEY_NAME)?.asString?.let {
-                it.split(DDTAGS_SEPARATOR)
+            event.get(DDTAGS_KEY_NAME)?.asString?.let { ddTags ->
+                ddTags.split(DDTAGS_SEPARATOR)
                     .mapNotNull { tag ->
                         @Suppress("UnsafeThirdPartyFunctionCall") // safe indexOf invocation
                         val splitIndex = tag.indexOf(":")

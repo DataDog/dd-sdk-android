@@ -18,6 +18,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.persistence.Deserializer
+import com.datadog.android.core.internal.utils.DdTagsUtils
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.anr.AndroidTraceParser
@@ -25,7 +26,6 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEventDeserializer
 import com.datadog.android.rum.internal.domain.scope.toErrorSchemaType
 import com.datadog.android.rum.internal.domain.scope.tryFromSource
-import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.google.gson.JsonObject
@@ -187,14 +187,14 @@ internal class DatadogLateCrashReporter(
         threadDumps: List<ThreadDump>?,
         viewEvent: ViewEvent
     ): ErrorEvent {
-        val connectivity = viewEvent.connectivity?.let {
+        val connectivity = viewEvent.connectivity?.let { viewConnectivity ->
             val connectivityStatus =
-                ErrorEvent.ConnectivityStatus.valueOf(it.status.name)
+                ErrorEvent.ConnectivityStatus.valueOf(viewConnectivity.status.name)
             val connectivityInterfaces =
-                it.interfaces?.map { ErrorEvent.Interface.valueOf(it.name) }
+                viewConnectivity.interfaces?.map { ErrorEvent.Interface.valueOf(it.name) }
             val cellular = ErrorEvent.Cellular(
-                it.cellular?.technology,
-                it.cellular?.carrierName
+                viewConnectivity.cellular?.technology,
+                viewConnectivity.cellular?.carrierName
             )
             ErrorEvent.Connectivity(connectivityStatus, connectivityInterfaces, cellular = cellular)
         }
@@ -290,7 +290,7 @@ internal class DatadogLateCrashReporter(
             featureFlags = viewEvent.featureFlags?.let {
                 ErrorEvent.Context(additionalProperties = it.additionalProperties)
             },
-            ddtags = buildDDTagsString(datadogContext)
+            ddtags = DdTagsUtils.toDdTagsString(datadogContext)
         )
     }
 

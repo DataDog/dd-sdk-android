@@ -770,15 +770,6 @@ internal class MutationResolverTest {
 
     // region Internal
 
-    private fun Forge.forgeDifferent(wireframeClip: MobileSegment.WireframeClip?): MobileSegment.WireframeClip {
-        while (true) {
-            val differentClip: MobileSegment.WireframeClip = getForgery()
-            if (differentClip != wireframeClip) {
-                return differentClip
-            }
-        }
-    }
-
     private fun MobileSegment.Wireframe.id(): Long {
         return when (this) {
             is MobileSegment.Wireframe.ShapeWireframe -> this.id

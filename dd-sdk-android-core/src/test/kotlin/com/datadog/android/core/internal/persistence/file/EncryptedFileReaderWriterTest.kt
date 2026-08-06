@@ -7,9 +7,11 @@
 package com.datadog.android.core.internal.persistence.file
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.telemetry.TelemetryContext
 import com.datadog.android.security.Encryption
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -22,6 +24,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -53,11 +56,14 @@ internal class EncryptedFileReaderWriterTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Forgery
+    lateinit var fakeTelemetryContext: TelemetryContext
+
     private lateinit var testedReaderWriter: EncryptedFileReaderWriter
 
     @BeforeEach
     fun setUp() {
-        whenever(mockFileReaderWriterDelegate.writeData(any(), any(), any())) doReturn true
+        whenever(mockFileReaderWriterDelegate.writeData(any(), any(), any(), anyOrNull())) doReturn true
 
         whenever(mockEncryption.encrypt(any())) doAnswer {
             val bytes = it.getArgument<ByteArray>(0)
@@ -85,7 +91,8 @@ internal class EncryptedFileReaderWriterTest {
         val result = testedReaderWriter.writeData(
             mockFile,
             data.toByteArray(),
-            append = false
+            append = false,
+            telemetryContext = fakeTelemetryContext
         )
         val encryptedData = encrypt(data.toByteArray())
 
@@ -93,9 +100,10 @@ internal class EncryptedFileReaderWriterTest {
         assertThat(result).isTrue()
         verify(mockFileReaderWriterDelegate)
             .writeData(
-                mockFile,
-                encryptedData,
-                false
+                eq(mockFile),
+                eq(encryptedData),
+                eq(false),
+                anyOrNull()
             )
 
         verifyNoInteractions(mockInternalLogger)
@@ -112,7 +120,8 @@ internal class EncryptedFileReaderWriterTest {
         val result = testedReaderWriter.writeData(
             mockFile,
             data.toByteArray(),
-            append = false
+            append = false,
+            telemetryContext = fakeTelemetryContext
         )
 
         // Then
@@ -135,7 +144,8 @@ internal class EncryptedFileReaderWriterTest {
         val result = testedReaderWriter.writeData(
             mockFile,
             data.toByteArray(),
-            append = true
+            append = true,
+            telemetryContext = fakeTelemetryContext
         )
 
         // Then
@@ -160,11 +170,11 @@ internal class EncryptedFileReaderWriterTest {
     ) {
         // Given
         whenever(
-            mockFileReaderWriterDelegate.readData(mockFile)
+            mockFileReaderWriterDelegate.readData(mockFile, fakeTelemetryContext)
         ) doReturn encrypt(data.toByteArray())
 
         // When
-        val result = testedReaderWriter.readData(mockFile)
+        val result = testedReaderWriter.readData(mockFile, fakeTelemetryContext)
 
         // Then
         assertThat(result).isEqualTo(data.toByteArray())
@@ -185,7 +195,8 @@ internal class EncryptedFileReaderWriterTest {
             mockFileReaderWriterDelegate.writeData(
                 eq(mockFile),
                 any(),
-                eq(false)
+                eq(false),
+                anyOrNull()
             )
         ) doAnswer {
             storage = it.getArgument(1)
@@ -193,12 +204,12 @@ internal class EncryptedFileReaderWriterTest {
         }
 
         whenever(
-            mockFileReaderWriterDelegate.readData(mockFile)
+            mockFileReaderWriterDelegate.readData(mockFile, fakeTelemetryContext)
         ) doAnswer { storage }
 
         // When
-        val writeResult = testedReaderWriter.writeData(mockFile, data.toByteArray(), false)
-        val readResult = testedReaderWriter.readData(mockFile)
+        val writeResult = testedReaderWriter.writeData(mockFile, data.toByteArray(), false, fakeTelemetryContext)
+        val readResult = testedReaderWriter.readData(mockFile, fakeTelemetryContext)
 
         // Then
         assertThat(writeResult).isTrue()

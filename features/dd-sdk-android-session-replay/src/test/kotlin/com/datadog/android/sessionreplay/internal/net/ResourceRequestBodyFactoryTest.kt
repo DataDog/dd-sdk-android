@@ -254,6 +254,7 @@ internal class ResourceRequestBodyFactoryTest {
         fakeMetadata.addProperty(APPLICATION_ID_KEY, forge.getForgery<UUID>().toString())
         fakeMetadata.addProperty(FILENAME_KEY, forge.getForgery<UUID>().toString())
         return fakeEvent.copy(
+            data = fakeEvent.data,
             metadata = fakeMetadata.toString().toByteArray(Charsets.UTF_8)
         )
     }

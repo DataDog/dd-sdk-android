@@ -380,13 +380,7 @@ internal class DefaultFirstPartyHostHeaderTypeResolverTest {
     @Test
     fun `M return all header types W getAllHeaderTypes() {first party hosts}`() {
         // Given
-        var allUsedHeaderTraces = mutableSetOf<TracingHeaderType>()
-
-        // When
-        for ((_, tracingHeaders) in fakeHosts) {
-            allUsedHeaderTraces =
-                allUsedHeaderTraces.plus(tracingHeaders) as MutableSet<TracingHeaderType>
-        }
+        val allUsedHeaderTraces = fakeHosts.values.flatten().toSet()
 
         // Then
         assertThat(testedDetector.getAllHeaderTypes()).isEqualTo(allUsedHeaderTraces)

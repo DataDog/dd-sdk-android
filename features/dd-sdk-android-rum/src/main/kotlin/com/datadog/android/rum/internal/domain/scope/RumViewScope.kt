@@ -16,6 +16,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.utils.DdTagsUtils
 import com.datadog.android.internal.attributes.LocalAttribute
 import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
@@ -53,7 +54,6 @@ import com.datadog.android.rum.internal.toError
 import com.datadog.android.rum.internal.toLongTask
 import com.datadog.android.rum.internal.toView
 import com.datadog.android.rum.internal.toVital
-import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.internal.utils.hasUserData
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.internal.vitals.VitalInfo
@@ -465,7 +465,7 @@ internal open class RumViewScope(
             buildVersion = datadogContext.versionCode.toString(),
             buildId = datadogContext.appBuildId,
             service = datadogContext.service,
-            ddtags = buildDDTagsString(datadogContext),
+            ddtags = DdTagsUtils.toDdTagsString(datadogContext),
             vital = VitalOperationStepEvent.Vital(
                 id = vitalId,
                 name = name,
@@ -891,7 +891,7 @@ internal open class RumViewScope(
                 service = datadogContext.service,
                 version = datadogContext.version,
                 buildVersion = datadogContext.versionCode.toString(),
-                ddtags = buildDDTagsString(datadogContext)
+                ddtags = DdTagsUtils.toDdTagsString(datadogContext)
             )
         }
             .apply {
@@ -1458,7 +1458,7 @@ internal open class RumViewScope(
                 version = datadogContext.version,
                 buildVersion = datadogContext.versionCode.toString(),
                 buildId = datadogContext.appBuildId,
-                ddtags = buildDDTagsString(datadogContext)
+                ddtags = DdTagsUtils.toDdTagsString(datadogContext)
             ).apply {
                 sessionEndedMetricDispatcher.onViewTracked(sessionId, this)
             }
@@ -1636,7 +1636,7 @@ internal open class RumViewScope(
                 version = datadogContext.version,
                 buildVersion = datadogContext.versionCode.toString(),
                 buildId = datadogContext.appBuildId,
-                ddtags = buildDDTagsString(datadogContext)
+                ddtags = DdTagsUtils.toDdTagsString(datadogContext)
             )
         }
             .apply {

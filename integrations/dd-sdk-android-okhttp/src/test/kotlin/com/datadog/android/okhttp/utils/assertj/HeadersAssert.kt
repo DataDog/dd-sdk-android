@@ -63,9 +63,9 @@ internal class HeadersAssert(actual: Headers) :
 
             val rawActualTags = vendor.substringAfter("dd=")
                 .split(";")
-                .map { it.split(":").let { it[0] to it[1] } }
+                .map { it.split(":").let { parts -> parts[0] to parts[1] } }
                 .groupBy { it.first }
-                .mapValues { it.value.map { it.second } }
+                .mapValues { it.value.map { pair -> pair.second } }
 
             rawActualTags.forEach {
                 assertThat(it.value)

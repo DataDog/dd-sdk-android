@@ -10,8 +10,10 @@ import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.kotlinConfig
 
 plugins {
+    id("ktlint")
     id("com.android.application")
     kotlin("android")
+    alias(libs.plugins.composeCompilerPlugin)
 }
 
 android {
@@ -28,6 +30,7 @@ android {
 
         buildFeatures {
             buildConfig = true
+            compose = true
         }
 
         multiDexEnabled = true
@@ -102,6 +105,9 @@ dependencies {
     implementation(libs.okHttp)
     implementation(libs.cronetPlayServices)
 
+    compileOnly(platform(libs.androidXComposeBom))
+    compileOnly(libs.androidXComposeRuntime)
+
     implementation(libs.gson)
     implementation(libs.kotlin)
     implementation(libs.bundles.androidXSupportBase)
@@ -110,6 +116,11 @@ dependencies {
     implementation(libs.leakCanaryAndroid)
 
     androidTestImplementation(project(":dd-sdk-android-internal"))
+    androidTestImplementation(project(":integrations:dd-sdk-android-compose"))
+    androidTestImplementation(libs.androidXComposeMaterial)
+    androidTestImplementation(libs.androidXComposeUiTestJUnit4)
+    debugImplementation(platform(libs.androidXComposeBom))
+    debugImplementation(libs.androidXComposeUiTestManifest)
     androidTestImplementation(libs.leakCanaryInstrumentation)
     androidTestImplementation(project(":tools:unit")) {
         attributes {

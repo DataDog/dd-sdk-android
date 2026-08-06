@@ -12,10 +12,6 @@ import com.datadog.android.api.storage.RawBatchEvent
 
 internal class NoOpEventBatchWriter : EventBatchWriter {
 
-    override fun currentMetadata(): ByteArray? {
-        return null
-    }
-
     override fun write(
         event: RawBatchEvent,
         batchMetadata: ByteArray?,

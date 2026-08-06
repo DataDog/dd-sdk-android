@@ -125,8 +125,8 @@ internal class MiscUtilsTest {
         val expectedScreenWidth = fakeScreenWidth.toLong().densityNormalized(fakeDensity)
         val expectedScreenHeight = fakeScreenHeight.toLong().densityNormalized(fakeDensity)
         val mockDisplay: Display = mock {
-            whenever(it.getSize(any())).thenAnswer {
-                val point = it.arguments[0] as Point
+            whenever(it.getSize(any())).thenAnswer { invocation ->
+                val point = invocation.arguments[0] as Point
                 point.x = fakeScreenWidth
                 point.y = fakeScreenHeight
                 null

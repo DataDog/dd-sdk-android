@@ -109,6 +109,22 @@ internal class WindowCallbackInterceptorTest {
     }
 
     @Test
+    fun `M not re-wrap an already-intercepted window W intercept() {called again for same window}`() {
+        // Given
+        val mockWindow: Window = mock()
+        testedInterceptor.intercept(listOf(mockWindow), mockActivity)
+        val captor = argumentCaptor<Window.Callback>()
+        verify(mockWindow).callback = captor.capture()
+        whenever(mockWindow.callback).thenReturn(captor.firstValue)
+
+        // When
+        testedInterceptor.intercept(listOf(mockWindow), mockActivity)
+
+        // Then
+        verify(mockWindow, times(1)).callback = any()
+    }
+
+    @Test
     fun `M register the RecorderWindowCallback W intercept{default callback is null}`() {
         // Given
         fakeWindowsList.forEach {
@@ -235,6 +251,119 @@ internal class WindowCallbackInterceptorTest {
             verify(it, times(2)).callback = stopRecordingCaptureTarget.capture()
             assertThat(stopRecordingCaptureTarget.secondValue).isNull()
         }
+    }
+
+    @Test
+    fun `M forbid new callback installs W stopIntercepting()`() {
+        // Given
+        testedInterceptor.intercept(fakeWindowsList, mockActivity)
+        val captor = argumentCaptor<Window.Callback>()
+        verify(fakeWindowsList.first()).callback = captor.capture()
+        val installedCallback = captor.firstValue as RecorderWindowCallback
+
+        // When
+        testedInterceptor.stopIntercepting()
+
+        // Then
+        assertThat(installedCallback.shouldInstallCallbacks(fakeWindowsList.first())).isFalse()
+    }
+
+    @Test
+    fun `M allow new callback installs again W intercept() {after a previous stopIntercepting()}`() {
+        // Given
+        testedInterceptor.intercept(fakeWindowsList, mockActivity)
+        testedInterceptor.stopIntercepting()
+
+        // When
+        testedInterceptor.intercept(fakeWindowsList, mockActivity)
+
+        // Then
+        val captor = argumentCaptor<Window.Callback>()
+        verify(fakeWindowsList.first(), times(2)).callback = captor.capture()
+        val installedCallback = captor.lastValue as RecorderWindowCallback
+        assertThat(installedCallback.shouldInstallCallbacks(fakeWindowsList.first())).isTrue()
+    }
+
+    @Test
+    fun `M exclude window from dynamic install W stopIntercepting(windows) {single window torn down}`() {
+        // Given
+        val pausedWindow: Window = mock()
+        val stillActiveWindow: Window = mock()
+        testedInterceptor.intercept(listOf(pausedWindow, stillActiveWindow), mockActivity)
+        val captor = argumentCaptor<Window.Callback>()
+        verify(stillActiveWindow).callback = captor.capture()
+        val installedCallback = captor.firstValue as RecorderWindowCallback
+
+        // When
+        testedInterceptor.stopIntercepting(listOf(pausedWindow))
+
+        // Then
+        assertThat(installedCallback.shouldInstallCallbacks(pausedWindow)).isFalse()
+        assertThat(installedCallback.shouldInstallCallbacks(stillActiveWindow)).isTrue()
+    }
+
+    @Test
+    fun `M report a window as excluded W stopIntercepting(windows)`() {
+        // Given
+        val mockWindow: Window = mock()
+        testedInterceptor.intercept(listOf(mockWindow), mockActivity)
+
+        // When
+        testedInterceptor.stopIntercepting(listOf(mockWindow))
+
+        // Then
+        assertThat(testedInterceptor.isExcluded(mockWindow)).isTrue()
+    }
+
+    @Test
+    fun `M no longer report a window as excluded W intercept() {after stopIntercepting(windows)}`() {
+        // Given
+        val mockWindow: Window = mock()
+        testedInterceptor.intercept(listOf(mockWindow), mockActivity)
+        testedInterceptor.stopIntercepting(listOf(mockWindow))
+
+        // When
+        testedInterceptor.intercept(listOf(mockWindow), mockActivity)
+
+        // Then
+        assertThat(testedInterceptor.isExcluded(mockWindow)).isFalse()
+    }
+
+    @Test
+    fun `M allow dynamic install again W intercept() {window re-added after stopIntercepting(windows)}`() {
+        // Given
+        val pausedWindow: Window = mock()
+        val stillActiveWindow: Window = mock()
+        testedInterceptor.intercept(listOf(pausedWindow, stillActiveWindow), mockActivity)
+        val captor = argumentCaptor<Window.Callback>()
+        verify(stillActiveWindow).callback = captor.capture()
+        val installedCallback = captor.firstValue as RecorderWindowCallback
+        testedInterceptor.stopIntercepting(listOf(pausedWindow))
+
+        // When
+        testedInterceptor.intercept(listOf(pausedWindow), mockActivity)
+
+        // Then
+        assertThat(installedCallback.shouldInstallCallbacks(pausedWindow)).isTrue()
+    }
+
+    @Test
+    fun `M unwrap dynamically tracked window W trackWrappedWindow() then stopIntercepting()`() {
+        // Given
+        val mockDefaultCallback: Window.Callback = mock()
+        val mockDynamicallyWrappedCallback: RecorderWindowCallback = mock {
+            whenever(it.wrappedCallback).thenReturn(mockDefaultCallback)
+        }
+        val mockDialogWindow: Window = mock {
+            whenever(it.callback).thenReturn(mockDynamicallyWrappedCallback)
+        }
+
+        // When
+        testedInterceptor.trackWrappedWindow(mockDialogWindow)
+        testedInterceptor.stopIntercepting()
+
+        // Then
+        verify(mockDialogWindow).callback = mockDefaultCallback
     }
 
     @Test
