@@ -76,6 +76,7 @@ internal class SessionReplayConfigurationBuilderTest {
         assertThat(sessionReplayConfiguration.customOptionSelectorDetectors).isEmpty()
         assertThat(sessionReplayConfiguration.dynamicOptimizationEnabled).isEqualTo(true)
         assertThat(sessionReplayConfiguration.heatmapsEnabled).isFalse()
+        assertThat(sessionReplayConfiguration.compositionTreeRecordingEnabled).isFalse()
     }
 
     @Test

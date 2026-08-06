@@ -48,4 +48,19 @@ internal class SessionReplayInternalProxyTest {
         assertThat(result).isEqualTo(testedBuilder)
         assertThat(sessionReplayConfiguration.internalCallback).isEqualTo(mockInternalCallback)
     }
+
+    @Test
+    fun `M enable composition tree recording W setCompositionTreeRecordingEnabled`() {
+        // Given
+        testedBuilder = SessionReplayConfiguration.Builder(fakeSampleRate)
+        testedProxy = _SessionReplayInternalProxy(testedBuilder)
+
+        // When
+        val result = testedProxy.setCompositionTreeRecordingEnabled(true)
+        val sessionReplayConfiguration = result.build()
+
+        // Then
+        assertThat(result).isEqualTo(testedBuilder)
+        assertThat(sessionReplayConfiguration.compositionTreeRecordingEnabled).isTrue()
+    }
 }

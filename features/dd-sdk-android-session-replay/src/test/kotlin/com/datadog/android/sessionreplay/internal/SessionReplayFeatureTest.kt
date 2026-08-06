@@ -150,7 +150,8 @@ internal class SessionReplayFeatureTest {
             sampleRate = fakeConfiguration.sampleRate,
             dynamicOptimizationEnabled = fakeConfiguration.dynamicOptimizationEnabled,
             internalCallback = NoOpSessionReplayInternalCallback(),
-            heatmapsEnabled = fakeConfiguration.heatmapsEnabled
+            heatmapsEnabled = fakeConfiguration.heatmapsEnabled,
+            compositionTreeRecordingEnabled = false
         )
 
         // When
@@ -179,7 +180,8 @@ internal class SessionReplayFeatureTest {
             startRecordingImmediately = true,
             dynamicOptimizationEnabled = fakeConfiguration.dynamicOptimizationEnabled,
             internalCallback = NoOpSessionReplayInternalCallback(),
-            heatmapsEnabled = fakeConfiguration.heatmapsEnabled
+            heatmapsEnabled = fakeConfiguration.heatmapsEnabled,
+            compositionTreeRecordingEnabled = false
         )
 
         // When

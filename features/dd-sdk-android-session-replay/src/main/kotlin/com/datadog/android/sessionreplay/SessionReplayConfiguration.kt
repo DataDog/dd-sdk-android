@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay
 
+import android.view.View
 import androidx.annotation.FloatRange
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.SessionReplayRecorder
@@ -30,7 +31,8 @@ data class SessionReplayConfiguration internal constructor(
     internal val dynamicOptimizationEnabled: Boolean,
     internal val systemRequirementsConfiguration: SystemRequirementsConfiguration,
     internal val internalCallback: SessionReplayInternalCallback,
-    internal val heatmapsEnabled: Boolean
+    internal val heatmapsEnabled: Boolean,
+    internal val compositionTreeRecordingEnabled: Boolean
 ) {
 
     /**
@@ -78,6 +80,7 @@ data class SessionReplayConfiguration internal constructor(
         private var systemRequirementsConfiguration = SystemRequirementsConfiguration.NONE
         private var internalCallback: SessionReplayInternalCallback = NoOpSessionReplayInternalCallback()
         private var heatmapsEnabled = false
+        private var compositionTreeRecordingEnabled = false
 
         /**
          * Adds an extension support implementation. This is mostly used when you want to provide
@@ -240,6 +243,27 @@ data class SessionReplayConfiguration internal constructor(
         }
 
         /**
+         * Enables the experimental composition-tree recording pipeline.
+         *
+         * The default recorder builds replay wireframes from semantic information extracted from
+         * Android [View] properties. This pipeline uses the rendered composition tree as its primary
+         * source, preserving its structure and rendering effects to improve replay fidelity in
+         * Android View and Jetpack Compose applications.
+         *
+         * The underlying capture pipeline is not implemented yet: enabling this flag currently
+         * disables Session Replay recording entirely instead of falling back to the default
+         * recorder. Kept internal until the pipeline is functional; see [_SessionReplayInternalProxy].
+         *
+         * Disabled by default.
+         *
+         * @param enabled whether composition-tree recording should be used.
+         */
+        internal fun setCompositionTreeRecordingEnabled(enabled: Boolean): Builder {
+            compositionTreeRecordingEnabled = enabled
+            return this
+        }
+
+        /**
          * Builds a [SessionReplayConfiguration] based on the current state of this Builder.
          */
         fun build(): SessionReplayConfiguration {
@@ -257,7 +281,8 @@ data class SessionReplayConfiguration internal constructor(
                 dynamicOptimizationEnabled = dynamicOptimizationEnabled,
                 systemRequirementsConfiguration = systemRequirementsConfiguration,
                 internalCallback = internalCallback,
-                heatmapsEnabled = heatmapsEnabled
+                heatmapsEnabled = heatmapsEnabled,
+                compositionTreeRecordingEnabled = compositionTreeRecordingEnabled
             )
         }
 
