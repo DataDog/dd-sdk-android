@@ -159,6 +159,11 @@ interface com.datadog.android.api.feature.StorageBackedFeature : Feature
 interface com.datadog.android.api.instrumentation.network.ExtendedRequestInfo
   fun <T> tag(Class<T>): T?
 fun <T> HttpRequestInfo.tag(Class<T>): T?
+class com.datadog.android.api.instrumentation.network.HttpBodySnapshot
+  constructor(ByteArray, String? = null, Boolean = false)
+  fun string(): String
+  companion object 
+    const val DEFAULT_MAX_BODY_BYTES: Long
 interface com.datadog.android.api.instrumentation.network.HttpRequestBody
 interface com.datadog.android.api.instrumentation.network.HttpRequestInfo
   val url: String
@@ -183,6 +188,10 @@ interface com.datadog.android.api.instrumentation.network.HttpResponseInfo
   val request: HttpRequestInfo?
 interface com.datadog.android.api.instrumentation.network.MutableHttpRequestInfo
   fun newBuilder(): HttpRequestInfoBuilder
+interface com.datadog.android.api.instrumentation.network.PeekableBodyInfo
+  fun peekBody(Long): HttpBodySnapshot?
+fun HttpRequestInfo.peekBody(Long = HttpBodySnapshot.DEFAULT_MAX_BODY_BYTES): HttpBodySnapshot?
+fun HttpResponseInfo.peekBody(Long = HttpBodySnapshot.DEFAULT_MAX_BODY_BYTES): HttpBodySnapshot?
 data class com.datadog.android.api.net.Request
   constructor(String, String, String, Map<String, String>, ByteArray, String? = null)
 data class com.datadog.android.api.net.RequestExecutionContext

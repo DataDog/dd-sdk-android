@@ -34,7 +34,7 @@ DEPRECATED enum com.datadog.android.okhttp.TraceContextInjection
   - ALL
   - SAMPLED
 class com.datadog.android.okhttp.internal.OkHttpRequestInfoBuilder : com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
-  constructor(okhttp3.Request.Builder)
+  constructor(okhttp3.Request.Builder, com.datadog.android.api.InternalLogger)
   override fun setUrl(String)
   override fun addHeader(String, String)
   override fun setMethod(String, com.datadog.android.api.instrumentation.network.HttpRequestBody?)

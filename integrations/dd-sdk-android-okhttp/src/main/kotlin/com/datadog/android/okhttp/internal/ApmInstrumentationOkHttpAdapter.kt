@@ -51,7 +51,8 @@ internal class ApmInstrumentationOkHttpAdapter(
             return chain.proceed(request)
         }
 
-        val tracingState = apmNetworkInstrumentation.onRequest(taggedOkHttpRequest.toHttpRequestInfo())
+        val tracingState = apmNetworkInstrumentation
+            .onRequest(taggedOkHttpRequest.toHttpRequestInfo(internalLogger ?: InternalLogger.UNBOUND))
             ?.also { registry.setTracingState(call, it) }
 
         @Suppress("UnsafeThirdPartyFunctionCall") // intercept() allows throwing IOException
