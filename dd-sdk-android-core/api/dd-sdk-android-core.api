@@ -480,6 +480,21 @@ public final class com/datadog/android/api/instrumentation/network/ExtendedReque
 	public static final fun tag (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;Ljava/lang/Class;)Ljava/lang/Object;
 }
 
+public final class com/datadog/android/api/instrumentation/network/HttpBodySnapshot {
+	public static final field Companion Lcom/datadog/android/api/instrumentation/network/HttpBodySnapshot$Companion;
+	public static final field DEFAULT_MAX_BODY_BYTES J
+	public fun <init> ([BLjava/lang/String;Z)V
+	public synthetic fun <init> ([BLjava/lang/String;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getBytes ()[B
+	public final fun getContentType ()Ljava/lang/String;
+	public final fun isTruncated ()Z
+	public final fun string ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/api/instrumentation/network/HttpBodySnapshot$Companion {
+}
+
 public abstract interface class com/datadog/android/api/instrumentation/network/HttpRequestBody {
 }
 
@@ -517,6 +532,17 @@ public abstract interface class com/datadog/android/api/instrumentation/network/
 
 public abstract interface class com/datadog/android/api/instrumentation/network/MutableHttpRequestInfo {
 	public abstract fun newBuilder ()Lcom/datadog/android/api/instrumentation/network/HttpRequestInfoBuilder;
+}
+
+public abstract interface class com/datadog/android/api/instrumentation/network/PeekableBodyInfo {
+	public abstract fun peekBody (J)Lcom/datadog/android/api/instrumentation/network/HttpBodySnapshot;
+}
+
+public final class com/datadog/android/api/instrumentation/network/PeekableBodyInfoKt {
+	public static final fun peekBody (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;J)Lcom/datadog/android/api/instrumentation/network/HttpBodySnapshot;
+	public static final fun peekBody (Lcom/datadog/android/api/instrumentation/network/HttpResponseInfo;J)Lcom/datadog/android/api/instrumentation/network/HttpBodySnapshot;
+	public static synthetic fun peekBody$default (Lcom/datadog/android/api/instrumentation/network/HttpRequestInfo;JILjava/lang/Object;)Lcom/datadog/android/api/instrumentation/network/HttpBodySnapshot;
+	public static synthetic fun peekBody$default (Lcom/datadog/android/api/instrumentation/network/HttpResponseInfo;JILjava/lang/Object;)Lcom/datadog/android/api/instrumentation/network/HttpBodySnapshot;
 }
 
 public final class com/datadog/android/api/net/Request {

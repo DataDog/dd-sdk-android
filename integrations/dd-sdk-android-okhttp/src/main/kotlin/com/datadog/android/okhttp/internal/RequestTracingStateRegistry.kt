@@ -60,7 +60,7 @@ internal class RequestTracingStateRegistry(
 
         requestTracingStateByCall[call] = RequestTracingState(
             requestInfoBuilder = call.request()
-                .toHttpRequestInfo()
+                .toHttpRequestInfo(internalLogger)
                 .newBuilder()
                 .addTag(UUID::class.java, UUID.randomUUID()),
             isDefaultTracer = false
@@ -77,7 +77,7 @@ internal class RequestTracingStateRegistry(
 
     fun restoreUUIDTag(call: Call, request: Request): Request? = update(call) { current ->
         current.copy(
-            requestInfoBuilder = request.toHttpRequestInfo()
+            requestInfoBuilder = request.toHttpRequestInfo(internalLogger)
                 .newBuilder()
                 .restoreUUIDTag(current.createRequestInfo())
         )
