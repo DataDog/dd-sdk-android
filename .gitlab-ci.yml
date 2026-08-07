@@ -36,3 +36,16 @@ include:
   - local: 'ci/pipelines/check-release-pipeline.yml'
     rules:
       - if: '$CI_PIPELINE_KEY == "check-release"'
+
+poc-trigger-rum-fit:
+  stage: verify
+  when: manual
+  allow_failure: true
+  trigger:
+    project: DataDog/rum-sdk-integration-test-framework
+    branch: poc/cross-trigger-test
+    strategy: depend
+  variables:
+    DYNAMIC_BUILD_RENDER_RULES: poc-test
+    UPSTREAM_REPO: DataDog/dd-sdk-android
+    UPSTREAM_COMMIT_SHA: $CI_COMMIT_SHA
