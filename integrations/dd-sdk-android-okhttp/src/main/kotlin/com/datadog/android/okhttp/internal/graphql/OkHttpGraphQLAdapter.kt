@@ -21,8 +21,14 @@ internal class OkHttpGraphQLAdapter(
     private val graphQLExtractor: GraphQLExtractor = GraphQLExtractor()
 ) {
 
-    fun convertHeadersToTag(request: Request, builder: Request.Builder) {
-        val attributes = graphQLExtractor.extractGraphQLAttributes(OkHttpRequestInfo(request))
+    fun convertHeadersToTag(
+        request: Request,
+        builder: Request.Builder,
+        internalLogger: InternalLogger
+    ) {
+        val attributes = graphQLExtractor.extractGraphQLAttributes(
+            OkHttpRequestInfo(request, internalLogger)
+        )
         if (attributes.isEmpty()) return
 
         GraphQLHeaders.entries.forEach { builder.removeHeader(it.headerValue) }

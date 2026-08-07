@@ -122,6 +122,7 @@ open class DatadogInterceptor internal constructor(
     @WorkerThread
     override fun intercept(chain: Interceptor.Chain): Response {
         val sdkCore = sdkCoreReference.get() as? FeatureSdkCore
+        val internalLogger = sdkCore?.internalLogger ?: InternalLogger.UNBOUND
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME)
 
         val originalRequest = chain.request()
@@ -129,13 +130,13 @@ open class DatadogInterceptor internal constructor(
             .apply {
                 @Suppress("UnsafeThirdPartyFunctionCall") // ClassCastException can't happen here.
                 tag(UUID::class.java, UUID.randomUUID())
-                okHttpGraphQLAdapter.convertHeadersToTag(originalRequest, this)
+                okHttpGraphQLAdapter.convertHeadersToTag(originalRequest, this, internalLogger)
             }
             .safeBuild() ?: originalRequest
 
         if (rumFeature != null) {
             val url = request.url.toString()
-            val method = toHttpMethod(request.method, sdkCore.internalLogger)
+            val method = toHttpMethod(request.method, internalLogger)
 
             @Suppress("DEPRECATION")
             val requestId = request.buildResourceId(generateUuid = false)
@@ -147,7 +148,7 @@ open class DatadogInterceptor internal constructor(
             } else {
                 "SDK instance with name=$sdkInstanceName"
             }
-            (sdkCore?.internalLogger ?: InternalLogger.UNBOUND).log(
+            internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
                 { WARN_RUM_DISABLED.format(Locale.US, prefix) }

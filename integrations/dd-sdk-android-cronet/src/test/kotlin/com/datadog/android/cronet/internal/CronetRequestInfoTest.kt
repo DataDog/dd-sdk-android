@@ -6,6 +6,7 @@
 
 package com.datadog.android.cronet.internal
 
+import com.datadog.android.api.instrumentation.network.peekBody
 import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.tests.elmyr.URL_FORGERY_PATTERN
 import com.datadog.android.utils.forge.Configurator
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.Executor
@@ -319,5 +321,27 @@ internal class CronetRequestInfoTest {
 
         // Then
         assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return null W peekBody() { upload data provider is never read by the SDK }`(
+        @LongForgery(min = 1) fakeMaxBytes: Long
+    ) {
+        // Given
+        val requestContext = CronetRequestContext(
+            url = fakeUrl,
+            engine = mockEngine,
+            requestCallback = mockCallback,
+            executor = mockExecutor
+        ).apply { setHttpMethod(fakeMethod) }
+        requestContext.setUploadDataProvider(mockUploadDataProvider, mockExecutor)
+        val requestInfo = requestContext.asCronetRequestInfo()
+
+        // When
+        val result = requestInfo.peekBody(fakeMaxBytes)
+
+        // Then
+        assertThat(result).isNull()
+        verifyNoInteractions(mockUploadDataProvider)
     }
 }
