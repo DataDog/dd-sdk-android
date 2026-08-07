@@ -22,6 +22,7 @@ import com.datadog.android.profiling.assertj.ProfileEventAssert.Companion.assert
 import com.datadog.android.profiling.assertj.RumMetadataEventsAssert.Companion.assertThat
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.domain.ProfilingBatchMetadata
+import com.datadog.android.profiling.internal.perfetto.PerfSampleVerdict
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.model.ProfileEvent
@@ -43,6 +44,7 @@ import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -115,12 +117,11 @@ internal class ProfilingDataWriterTest {
         @Forgery fakeResult: PerfettoResult,
         @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
         @Forgery fakeLongTasks: List<ProfilerEvent.RumLongTaskEvent>,
-        @Forgery fakeAnrs: List<ProfilerEvent.RumAnrEvent>,
-        forge: Forge
+        @Forgery fakeAnrs: List<ProfilerEvent.RumAnrEvent>
     ) {
         // Given
         val file = tmp.resolve(fakeResult.resultFilePath)
-        val fakePerfettoBytes = forge.aString().toByteArray()
+        val fakePerfettoBytes = TRACE_WITH_SAMPLE
         file.writeBytes(fakePerfettoBytes)
         val rumContext = fakeVitals.first().rumContext
 
@@ -281,7 +282,9 @@ internal class ProfilingDataWriterTest {
                 ProfilingTelemetry.KEY_START_REASON to fakeResult.startReason.value,
                 ProfilingDataWriter.KEY_LONG_TASK_COUNT to fakeLongTasks.size,
                 ProfilingDataWriter.KEY_ANR_COUNT to fakeAnrs.size,
-                ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size
+                ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size,
+                ProfilingDataWriter.KEY_PERF_SAMPLE_VERDICT to null,
+                ProfilingTelemetry.KEY_FILE_SIZE to null
             )
         )
         verify(mockInternalLogger).logMetric(
@@ -323,7 +326,9 @@ internal class ProfilingDataWriterTest {
                 ProfilingTelemetry.KEY_START_REASON to fakeResult.startReason.value,
                 ProfilingDataWriter.KEY_LONG_TASK_COUNT to fakeLongTasks.size,
                 ProfilingDataWriter.KEY_ANR_COUNT to fakeAnrs.size,
-                ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size
+                ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size,
+                ProfilingDataWriter.KEY_PERF_SAMPLE_VERDICT to null,
+                ProfilingTelemetry.KEY_FILE_SIZE to null
             )
         )
         verify(mockInternalLogger).logMetric(
@@ -336,13 +341,91 @@ internal class ProfilingDataWriterTest {
     }
 
     @Test
-    fun `M skip writing and report metric W write {no rum events}`(
+    fun `M still write and report the verdict W write {trace has no perf_sample}`(
         @Forgery fakeResult: PerfettoResult,
-        forge: Forge
+        @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
+        @Forgery fakeLongTasks: List<ProfilerEvent.RumLongTaskEvent>,
+        @Forgery fakeAnrs: List<ProfilerEvent.RumAnrEvent>
+    ) {
+        // Given — a well formed trace whose packets carry no perf_sample: an empty profile
+        val file = tmp.resolve(fakeResult.resultFilePath)
+        file.writeBytes(TRACE_WITHOUT_SAMPLE)
+
+        // When
+        testedDataWriterTest.write(
+            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
+            vitalEvents = fakeVitals,
+            anrEvents = fakeAnrs,
+            longTasks = fakeLongTasks
+        )
+
+        // Then — the profile is still uploaded; the verdict and size are reported for comparison
+        // against the count the backend derives on its own
+        verify(mockEventBatchWriter).write(any(), anyOrNull(), any())
+        val expectedProps = mapOf(
+            ProfilingTelemetry.KEY_METRIC_TYPE to ProfilingDataWriter.METRIC_TYPE_PROFILING_WRITE,
+            ProfilingDataWriter.KEY_PROFILING_WRITE to mapOf(
+                ProfilingDataWriter.KEY_DROPPED to false,
+                ProfilingDataWriter.KEY_DROP_REASON to null,
+                ProfilingDataWriter.KEY_CLIENT_CLOCK_DRIFT to 0L,
+                ProfilingTelemetry.KEY_START_REASON to fakeResult.startReason.value,
+                ProfilingDataWriter.KEY_LONG_TASK_COUNT to fakeLongTasks.size,
+                ProfilingDataWriter.KEY_ANR_COUNT to fakeAnrs.size,
+                ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size,
+                ProfilingDataWriter.KEY_PERF_SAMPLE_VERDICT to PerfSampleVerdict.NO_SAMPLES.value,
+                ProfilingTelemetry.KEY_FILE_SIZE to TRACE_WITHOUT_SAMPLE.size.toLong()
+            )
+        )
+        verify(mockInternalLogger).logMetric(
+            any(),
+            eq(expectedProps),
+            eq(MethodCallSamplingRate.ALL.rate),
+            isNull()
+        )
+        assertThat(file.exists()).isFalse()
+    }
+
+    @Test
+    fun `M still write W write {trace cannot be parsed}`(
+        @Forgery fakeResult: PerfettoResult,
+        @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
+        @Forgery fakeLongTasks: List<ProfilerEvent.RumLongTaskEvent>,
+        @Forgery fakeAnrs: List<ProfilerEvent.RumAnrEvent>
+    ) {
+        // Given — only NO_SAMPLES may drop. A trace we could not read is not a trace without samples,
+        // so an unparseable one is still uploaded rather than silently binned.
+        val file = tmp.resolve(fakeResult.resultFilePath)
+        file.writeBytes(byteArrayOf(0x12, 0x02, 0x00, 0x00))
+
+        // When
+        testedDataWriterTest.write(
+            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
+            vitalEvents = fakeVitals,
+            anrEvents = fakeAnrs,
+            longTasks = fakeLongTasks
+        )
+
+        // Then
+        verify(mockEventBatchWriter).write(any(), anyOrNull(), any())
+        val session = capturedProfilingWrite()
+        assertThat(session[ProfilingDataWriter.KEY_PERF_SAMPLE_VERDICT])
+            .isEqualTo(PerfSampleVerdict.MALFORMED.value)
+        assertThat(session[ProfilingDataWriter.KEY_DROPPED]).isEqualTo(false)
+    }
+
+    private fun capturedProfilingWrite(): Map<*, *> {
+        val propsCaptor = argumentCaptor<Map<String, Any?>>()
+        verify(mockInternalLogger).logMetric(any(), propsCaptor.capture(), any(), isNull())
+        return propsCaptor.firstValue[ProfilingDataWriter.KEY_PROFILING_WRITE] as Map<*, *>
+    }
+
+    @Test
+    fun `M skip writing and report metric W write {no rum events}`(
+        @Forgery fakeResult: PerfettoResult
     ) {
         // Given — perfetto file is readable but there's nothing to attach
         val file = tmp.resolve(fakeResult.resultFilePath)
-        file.writeBytes(forge.aString().toByteArray())
+        file.writeBytes(TRACE_WITH_SAMPLE)
 
         // When
         testedDataWriterTest.write(
@@ -363,7 +446,9 @@ internal class ProfilingDataWriterTest {
                 ProfilingTelemetry.KEY_START_REASON to fakeResult.startReason.value,
                 ProfilingDataWriter.KEY_LONG_TASK_COUNT to 0,
                 ProfilingDataWriter.KEY_ANR_COUNT to 0,
-                ProfilingDataWriter.KEY_VITAL_COUNT to 0
+                ProfilingDataWriter.KEY_VITAL_COUNT to 0,
+                ProfilingDataWriter.KEY_PERF_SAMPLE_VERDICT to null,
+                ProfilingTelemetry.KEY_FILE_SIZE to null
             )
         )
         verify(mockInternalLogger).logMetric(
@@ -378,12 +463,11 @@ internal class ProfilingDataWriterTest {
     @Test
     fun `M write the result in a batch W write {only vital events present}`(
         @Forgery fakeResult: PerfettoResult,
-        @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
-        forge: Forge
+        @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>
     ) {
         // Given — RUM context must come from vitals (elvis fallback after long tasks + anrs are empty)
         val file = tmp.resolve(fakeResult.resultFilePath)
-        val fakePerfettoBytes = forge.aString().toByteArray()
+        val fakePerfettoBytes = TRACE_WITH_SAMPLE
         file.writeBytes(fakePerfettoBytes)
         val rumContext = fakeVitals.first().rumContext
         val alignedVitals = fakeVitals.map {
@@ -442,13 +526,12 @@ internal class ProfilingDataWriterTest {
 
     @Test
     fun `M delete result file W write {feature not initialized}`(
-        @Forgery fakeResult: PerfettoResult,
-        forge: Forge
+        @Forgery fakeResult: PerfettoResult
     ) {
         // Given
         whenever(mockSdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)) doReturn null
         val file = File(tmp, "fake_profile.perfetto-stack-sample")
-        file.writeBytes(forge.aString().toByteArray())
+        file.writeBytes(TRACE_WITH_SAMPLE)
 
         // When
         testedDataWriterTest.write(
@@ -466,12 +549,11 @@ internal class ProfilingDataWriterTest {
     @Test
     fun `M delete result file W write {events present}`(
         @Forgery fakeResult: PerfettoResult,
-        @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
-        forge: Forge
+        @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>
     ) {
         // Given
         val file = File(tmp, "fake_profile.perfetto-stack-sample")
-        file.writeBytes(forge.aString().toByteArray())
+        file.writeBytes(TRACE_WITH_SAMPLE)
         val rumContext = fakeVitals.first().rumContext
         val alignedVitals = fakeVitals.map {
             it.copy(
@@ -507,7 +589,7 @@ internal class ProfilingDataWriterTest {
             time = fakeDatadogContext.time.copy(serverTimeOffsetMs = fakeDriftMs)
         )
         val file = tmp.resolve(fakeResult.resultFilePath)
-        file.writeBytes(forge.aString().toByteArray())
+        file.writeBytes(TRACE_WITH_SAMPLE)
 
         // When
         testedDataWriterTest.write(
@@ -530,7 +612,9 @@ internal class ProfilingDataWriterTest {
                 ProfilingTelemetry.KEY_START_REASON to ProfilingStartReason.CONTINUOUS.value,
                 ProfilingDataWriter.KEY_LONG_TASK_COUNT to 0,
                 ProfilingDataWriter.KEY_ANR_COUNT to 0,
-                ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size
+                ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size,
+                ProfilingDataWriter.KEY_PERF_SAMPLE_VERDICT to null,
+                ProfilingTelemetry.KEY_FILE_SIZE to null
             )
         )
         verify(mockInternalLogger).logMetric(
@@ -555,7 +639,7 @@ internal class ProfilingDataWriterTest {
             time = fakeDatadogContext.time.copy(serverTimeOffsetMs = fakeDriftMs)
         )
         val file = tmp.resolve(fakeResult.resultFilePath)
-        file.writeBytes(forge.aString().toByteArray())
+        file.writeBytes(TRACE_WITH_SAMPLE)
 
         // When
         testedDataWriterTest.write(
@@ -578,7 +662,9 @@ internal class ProfilingDataWriterTest {
                 ProfilingTelemetry.KEY_START_REASON to ProfilingStartReason.CONTINUOUS.value,
                 ProfilingDataWriter.KEY_LONG_TASK_COUNT to 0,
                 ProfilingDataWriter.KEY_ANR_COUNT to 0,
-                ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size
+                ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size,
+                ProfilingDataWriter.KEY_PERF_SAMPLE_VERDICT to null,
+                ProfilingTelemetry.KEY_FILE_SIZE to null
             )
         )
         verify(mockInternalLogger).logMetric(
@@ -603,7 +689,7 @@ internal class ProfilingDataWriterTest {
             time = fakeDatadogContext.time.copy(serverTimeOffsetMs = fakeDriftMs)
         )
         val file = tmp.resolve(fakeResult.resultFilePath)
-        file.writeBytes(forge.aString().toByteArray())
+        file.writeBytes(TRACE_WITH_SAMPLE)
 
         // When
         testedDataWriterTest.write(
@@ -626,7 +712,9 @@ internal class ProfilingDataWriterTest {
                 ProfilingTelemetry.KEY_START_REASON to ProfilingStartReason.APPLICATION_LAUNCH.value,
                 ProfilingDataWriter.KEY_LONG_TASK_COUNT to 0,
                 ProfilingDataWriter.KEY_ANR_COUNT to 0,
-                ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size
+                ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size,
+                ProfilingDataWriter.KEY_PERF_SAMPLE_VERDICT to PerfSampleVerdict.HAS_SAMPLES.value,
+                ProfilingTelemetry.KEY_FILE_SIZE to TRACE_WITH_SAMPLE.size.toLong()
             )
         )
         verify(mockInternalLogger).logMetric(
@@ -651,7 +739,7 @@ internal class ProfilingDataWriterTest {
             time = fakeDatadogContext.time.copy(serverTimeOffsetMs = fakeDriftMs)
         )
         val file = tmp.resolve(fakeResult.resultFilePath)
-        file.writeBytes(forge.aString().toByteArray())
+        file.writeBytes(TRACE_WITH_SAMPLE)
 
         // When
         testedDataWriterTest.write(
@@ -674,7 +762,9 @@ internal class ProfilingDataWriterTest {
                 ProfilingTelemetry.KEY_START_REASON to ProfilingStartReason.APPLICATION_LAUNCH.value,
                 ProfilingDataWriter.KEY_LONG_TASK_COUNT to 0,
                 ProfilingDataWriter.KEY_ANR_COUNT to 0,
-                ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size
+                ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size,
+                ProfilingDataWriter.KEY_PERF_SAMPLE_VERDICT to PerfSampleVerdict.HAS_SAMPLES.value,
+                ProfilingTelemetry.KEY_FILE_SIZE to TRACE_WITH_SAMPLE.size.toLong()
             )
         )
         verify(mockInternalLogger).logMetric(
@@ -692,12 +782,11 @@ internal class ProfilingDataWriterTest {
         @Forgery fakeResult: PerfettoResult,
         @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
         @Forgery fakeLongTasks: List<ProfilerEvent.RumLongTaskEvent>,
-        @Forgery fakeAnrs: List<ProfilerEvent.RumAnrEvent>,
-        forge: Forge
+        @Forgery fakeAnrs: List<ProfilerEvent.RumAnrEvent>
     ) {
         // Given
         val file = tmp.resolve(fakeResult.resultFilePath)
-        file.writeBytes(forge.aString().toByteArray())
+        file.writeBytes(TRACE_WITH_SAMPLE)
 
         // When
         testedDataWriterTest.write(
@@ -717,7 +806,9 @@ internal class ProfilingDataWriterTest {
                 ProfilingTelemetry.KEY_START_REASON to fakeResult.startReason.value,
                 ProfilingDataWriter.KEY_LONG_TASK_COUNT to fakeLongTasks.size,
                 ProfilingDataWriter.KEY_ANR_COUNT to fakeAnrs.size,
-                ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size
+                ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size,
+                ProfilingDataWriter.KEY_PERF_SAMPLE_VERDICT to PerfSampleVerdict.HAS_SAMPLES.value,
+                ProfilingTelemetry.KEY_FILE_SIZE to TRACE_WITH_SAMPLE.size.toLong()
             )
         )
         verify(mockInternalLogger).logMetric(
@@ -730,12 +821,11 @@ internal class ProfilingDataWriterTest {
 
     @Test
     fun `M delete result file W discard`(
-        @Forgery fakeResult: PerfettoResult,
-        forge: Forge
+        @Forgery fakeResult: PerfettoResult
     ) {
         // Given
         val file = File(tmp, "fake_profile.perfetto-stack-sample")
-        file.writeBytes(forge.aString().toByteArray())
+        file.writeBytes(TRACE_WITH_SAMPLE)
 
         // When
         testedDataWriterTest.discard(fakeResult.copy(resultFilePath = file.absolutePath))
@@ -765,5 +855,14 @@ internal class ProfilingDataWriterTest {
             isNull()
         )
         verifyNoInteractions(mockEventBatchWriter)
+    }
+
+    private companion object {
+        /** Two wiretype-0 fields and no field 66: what an empty profile looks like on the wire. */
+        private val TRACE_WITHOUT_SAMPLE = byteArrayOf(0x0A, 0x04, 0x08, 0x01, 0x18, 0x02)
+
+        /** Packet tag, length 7, a wiretype-0 field, then field 66 wiretype 2 with a 2-byte payload. */
+        private val TRACE_WITH_SAMPLE =
+            byteArrayOf(0x0A, 0x07, 0x08, 0x01, 0x92.toByte(), 0x04, 0x02, 0xAA.toByte(), 0xBB.toByte())
     }
 }

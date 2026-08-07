@@ -18,6 +18,8 @@ import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.utils.formatIsoUtc
 import com.datadog.android.profiling.internal.domain.ProfilingBatchMetadata
+import com.datadog.android.profiling.internal.perfetto.PerfSampleProbe
+import com.datadog.android.profiling.internal.perfetto.PerfSampleVerdict
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.model.ProfileEvent
@@ -170,12 +172,21 @@ internal class ProfilingDataWriter(
                     startReason = profilingResult.startReason.value,
                     longTaskEvents = longTaskEvents,
                     anrEvents = anrEvents,
-                    vitalEvents = vitalEvents
+                    vitalEvents = vitalEvents,
+                    perfettoBytes = perfettoBytes
                 )
                 RawBatchEvent(data = serializedEvent, metadata = metadata)
             }
         }
     }
+
+    /**
+     * Measured, not acted on: the profile is uploaded either way. Reported with the trace size so the rate
+     * of empty captures can be compared against the count the backend derives independently. Null when
+     * there are no bytes to walk, which is not the same as a capture that holds no sample.
+     */
+    private fun probeForSamples(perfettoBytes: ByteArray?): PerfSampleVerdict? =
+        if (perfettoBytes == null || perfettoBytes.isEmpty()) null else PerfSampleProbe.probe(perfettoBytes)
 
     private fun logWriteResultMetric(
         dropped: Boolean,
@@ -184,7 +195,8 @@ internal class ProfilingDataWriter(
         startReason: String,
         longTaskEvents: List<ProfilerEvent.RumLongTaskEvent>,
         anrEvents: List<ProfilerEvent.RumAnrEvent>,
-        vitalEvents: List<ProfilerEvent.RumVitalEvent>
+        vitalEvents: List<ProfilerEvent.RumVitalEvent>,
+        perfettoBytes: ByteArray? = null
     ) {
         sdkCore.internalLogger.logMetric(
             messageBuilder = { ProfilingTelemetry.TELEMETRY_MSG_PROFILING_SESSION },
@@ -197,7 +209,9 @@ internal class ProfilingDataWriter(
                     ProfilingTelemetry.KEY_START_REASON to startReason,
                     KEY_LONG_TASK_COUNT to longTaskEvents.size,
                     KEY_ANR_COUNT to anrEvents.size,
-                    KEY_VITAL_COUNT to vitalEvents.size
+                    KEY_VITAL_COUNT to vitalEvents.size,
+                    KEY_PERF_SAMPLE_VERDICT to probeForSamples(perfettoBytes)?.value,
+                    ProfilingTelemetry.KEY_FILE_SIZE to perfettoBytes?.size?.toLong()
                 )
             ),
             samplingRate = MethodCallSamplingRate.ALL.rate
@@ -360,6 +374,7 @@ internal class ProfilingDataWriter(
         internal const val DROP_REASON_CLOCK_DRIFT = "clock_drift_exceeded"
         internal const val DROP_REASON_PERFETTO_UNREADABLE = "perfetto_unreadable"
         internal const val DROP_REASON_NO_RUM_CONTEXT = "no_rum_context"
+        internal const val KEY_PERF_SAMPLE_VERDICT = "perf_sample_verdict"
 
         private const val TAG_KEY_SERVICE = "service"
         private const val TAG_KEY_VERSION = "version"
