@@ -7,6 +7,8 @@
 package com.datadog.android.okhttp.internal
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.instrumentation.network.HttpBodySnapshot
+import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.okhttp.internal.OkHttpResponseInfo.Companion.ERROR_PEEK_BODY
 import com.datadog.android.tests.elmyr.exhaustiveAttributes
 import com.datadog.android.utils.verifyLog
@@ -16,18 +18,23 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -35,6 +42,8 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 import java.io.IOException
 
@@ -210,5 +219,269 @@ internal class OkHttpResponseInfoTest {
             ERROR_PEEK_BODY,
             throwable
         )
+    }
+
+    // region peekBody
+
+    @Test
+    fun `M return the payload W peekBody() { body smaller than the limit }`(
+        @StringForgery(size = 64) fakePayload: String
+    ) {
+        // Given
+        val fakeBytes = fakePayload.toByteArray()
+        val fakeResponse = fakeResponse(fakeBytes, CONTENT_TYPE_JSON)
+
+        val testedResponseInfo = OkHttpResponseInfo(fakeResponse, mockInternalLogger)
+
+        // When
+        val result = testedResponseInfo.peekBody(fakeBytes.size + 1L)
+
+        // Then
+        checkNotNull(result)
+        assertThat(result.bytes).isEqualTo(fakeBytes)
+        assertThat(result.isTruncated).isFalse()
+        assertThat(result.contentType).isEqualTo(CONTENT_TYPE_JSON)
+        assertThat(result.string()).isEqualTo(fakePayload)
+    }
+
+    @Test
+    fun `M return the whole payload W peekBody() { body exactly at the limit }`(
+        @StringForgery(size = 64) fakePayload: String
+    ) {
+        // Given
+        val fakeBytes = fakePayload.toByteArray()
+        val fakeResponse = fakeResponse(fakeBytes)
+
+        val testedResponseInfo = OkHttpResponseInfo(fakeResponse, mockInternalLogger)
+
+        // When
+        val result = testedResponseInfo.peekBody(fakeBytes.size.toLong())
+
+        // Then
+        checkNotNull(result)
+        assertThat(result.bytes).isEqualTo(fakeBytes)
+        assertThat(result.isTruncated).isFalse()
+    }
+
+    @Test
+    fun `M truncate the payload W peekBody() { body larger than the limit }`(
+        @StringForgery(size = 512) fakePayload: String,
+        @LongForgery(min = 1, max = 512) fakeLimit: Long
+    ) {
+        // Given
+        val fakeBytes = fakePayload.toByteArray()
+        val fakeResponse = fakeResponse(fakeBytes)
+
+        val testedResponseInfo = OkHttpResponseInfo(fakeResponse, mockInternalLogger)
+
+        // When
+        val result = testedResponseInfo.peekBody(fakeLimit)
+
+        // Then
+        checkNotNull(result)
+        assertThat(result.bytes).isEqualTo(fakeBytes.copyOf(fakeLimit.toInt()))
+        assertThat(result.isTruncated).isTrue()
+    }
+
+    @Test
+    fun `M cap the payload W peekBody() { requested limit exceeds hard maximum }`() {
+        // Given
+        val hardMaximum = HttpBodySnapshot.DEFAULT_MAX_BODY_BYTES.toInt()
+        val fakeResponse = fakeResponse(ByteArray(hardMaximum + 1))
+
+        val testedResponseInfo = OkHttpResponseInfo(fakeResponse, mockInternalLogger)
+
+        // When
+        val result = testedResponseInfo.peekBody(Long.MAX_VALUE)
+
+        // Then
+        checkNotNull(result)
+        assertThat(result.bytes).hasSize(hardMaximum)
+        assertThat(result.isTruncated).isTrue()
+    }
+
+    @Test
+    fun `M leave the body readable W peekBody()`(@StringForgery(size = 64) fakePayload: String) {
+        // Given
+        val fakeBytes = fakePayload.toByteArray()
+        val fakeResponse = fakeResponse(fakeBytes)
+
+        val testedResponseInfo = OkHttpResponseInfo(fakeResponse, mockInternalLogger)
+
+        // When
+        testedResponseInfo.peekBody(HttpBodySnapshot.DEFAULT_MAX_BODY_BYTES)
+
+        // Then
+        assertThat(fakeResponse.body?.string()).isEqualTo(fakePayload)
+    }
+
+    @Test
+    fun `M return null W peekBody() { no body }`() {
+        // Given
+        val stubResponse = mock<Response> { on { body } doReturn null }
+
+        val testedResponseInfo = OkHttpResponseInfo(stubResponse, mockInternalLogger)
+
+        // When
+        val result = testedResponseInfo.peekBody(HttpBodySnapshot.DEFAULT_MAX_BODY_BYTES)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = [Long.MIN_VALUE, -1, 0])
+    fun `M return null W peekBody() { non positive limit }`(
+        fakeLimit: Long,
+        @StringForgery(size = 64) fakePayload: String
+    ) {
+        // Given
+        val fakeResponse = fakeResponse(fakePayload.toByteArray())
+
+        val testedResponseInfo = OkHttpResponseInfo(fakeResponse, mockInternalLogger)
+
+        // When
+        val result = testedResponseInfo.peekBody(fakeLimit)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+        strings = [
+            "text/event-stream",
+            "application/grpc",
+            "application/grpc+proto",
+            "application/grpc+json"
+        ]
+    )
+    fun `M return null W peekBody() { streaming content type }`(
+        fakeContentType: String
+    ) {
+        // Given
+        val stubResponseBody = mock<ResponseBody> {
+            on { contentType() } doReturn fakeContentType.toMediaType()
+        }
+        val mockResponse = mock<Response> {
+            on { body } doReturn stubResponseBody
+            on { header(HttpSpec.Header.WEBSOCKET_ACCEPT_HEADER, null) } doReturn null
+        }
+
+        val testedResponseInfo = OkHttpResponseInfo(mockResponse, mockInternalLogger)
+
+        // When
+        val result = testedResponseInfo.peekBody(HttpBodySnapshot.DEFAULT_MAX_BODY_BYTES)
+
+        // Then
+        assertThat(result).isNull()
+        verify(mockResponse, never()).peekBody(any())
+    }
+
+    @Test
+    fun `M return null W peekBody() { websocket response }`(
+        @StringForgery(type = StringForgeryType.ALPHABETICAL) fakeAcceptKey: String
+    ) {
+        // Given
+        val stubResponseBody = mock<ResponseBody>()
+        val mockResponse = mock<Response> {
+            on { body } doReturn stubResponseBody
+            on { header(HttpSpec.Header.WEBSOCKET_ACCEPT_HEADER, null) } doReturn fakeAcceptKey
+        }
+
+        val testedResponseInfo = OkHttpResponseInfo(mockResponse, mockInternalLogger)
+
+        // When
+        val result = testedResponseInfo.peekBody(HttpBodySnapshot.DEFAULT_MAX_BODY_BYTES)
+
+        // Then
+        assertThat(result).isNull()
+        verify(mockResponse, never()).peekBody(any())
+    }
+
+    @Test
+    fun `M log error and return null W peekBody() { peek throws }`(
+        @StringForgery(size = 64) fakePayload: String
+    ) {
+        // Given
+        val fakeThrowable = IOException("Broken body")
+        val stubResponse = mock<Response> {
+            on { body } doReturn fakePayload.toResponseBody()
+            on { header(HttpSpec.Header.WEBSOCKET_ACCEPT_HEADER, null) } doReturn null
+            on { peekBody(any()) } doThrow fakeThrowable
+        }
+
+        val testedResponseInfo = OkHttpResponseInfo(stubResponse, mockInternalLogger)
+
+        // When
+        val result = testedResponseInfo.peekBody(HttpBodySnapshot.DEFAULT_MAX_BODY_BYTES)
+
+        // Then
+        assertThat(result).isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            ERROR_PEEK_BODY,
+            fakeThrowable
+        )
+    }
+
+    @Test
+    fun `M log error and return null W peekBody() { custom body fails unexpectedly }`(
+        @StringForgery(size = 64) fakePayload: String
+    ) {
+        // Given
+        val fakeThrowable = IllegalArgumentException("Unexpected")
+        val stubResponse = mock<Response> {
+            on { body } doReturn fakePayload.toResponseBody()
+            on { header(HttpSpec.Header.WEBSOCKET_ACCEPT_HEADER, null) } doReturn null
+            on { peekBody(any()) } doThrow fakeThrowable
+        }
+
+        val testedResponseInfo = OkHttpResponseInfo(stubResponse, mockInternalLogger)
+
+        // When
+        val result = testedResponseInfo.peekBody(HttpBodySnapshot.DEFAULT_MAX_BODY_BYTES)
+
+        // Then
+        assertThat(result).isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            ERROR_PEEK_BODY,
+            fakeThrowable
+        )
+    }
+
+    @Test
+    fun `M return an empty snapshot W peekBody() { empty body }`() {
+        // Given
+        val fakeResponse = fakeResponse(ByteArray(0))
+
+        val testedResponseInfo = OkHttpResponseInfo(fakeResponse, mockInternalLogger)
+
+        // When
+        val result = testedResponseInfo.peekBody(HttpBodySnapshot.DEFAULT_MAX_BODY_BYTES)
+
+        // Then
+        checkNotNull(result)
+        assertThat(result.bytes).isEmpty()
+        assertThat(result.isTruncated).isFalse()
+    }
+
+    // endregion
+
+    private fun fakeResponse(payload: ByteArray, contentType: String? = null): Response =
+        Response.Builder()
+            .request(Request.Builder().url(FAKE_URL).build())
+            .protocol(Protocol.HTTP_1_1)
+            .code(HttpSpec.StatusCode.OK)
+            .message("OK")
+            .body(payload.toResponseBody(contentType?.toMediaType()))
+            .build()
+
+    companion object {
+        private const val FAKE_URL = "https://example.com/resource"
+        private const val CONTENT_TYPE_JSON = "application/json; charset=utf-8"
     }
 }
