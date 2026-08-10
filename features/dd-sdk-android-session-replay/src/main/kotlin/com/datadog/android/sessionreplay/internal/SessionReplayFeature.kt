@@ -48,6 +48,7 @@ import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWri
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import java.util.Locale
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
@@ -138,11 +139,13 @@ internal class SessionReplayFeature(
     }
     private var resourceProcessor: ResourceProcessor = NoOpResourceProcessor()
     private var embeddedContentRecordWriter: EmbeddedContentRecordWriter = NoOpEmbeddedContentRecordWriter()
+    private lateinit var embeddedContentExecutor: ExecutorService
     private val embeddedContentReceiver = EmbeddedContentReceiver(
         rumContextProvider = rumContextProvider,
         recordWriter = { embeddedContentRecordWriter },
         resourceProcessor = { resourceProcessor },
         isRecording = { isRecording.get() },
+        executor = { embeddedContentExecutor },
         internalLogger = sdkCore.internalLogger
     )
 
@@ -157,6 +160,9 @@ internal class SessionReplayFeature(
         }
 
         this.appContext = appContext
+        embeddedContentExecutor = sdkCore.createSingleThreadExecutorService(
+            EMBEDDED_CONTENT_EXECUTOR_CONTEXT
+        )
         sdkCore.setEventReceiver(Feature.SESSION_REPLAY_FEATURE_NAME, this)
 
         val resourcesFeature = registerResourceFeature(sdkCore)
@@ -211,6 +217,9 @@ internal class SessionReplayFeature(
         sdkCore.removeContextUpdateReceiver(rumContextProvider)
         sessionReplayRecorder.unregisterCallbacks()
         sessionReplayRecorder.stopProcessingRecords()
+        if (::embeddedContentExecutor.isInitialized) {
+            embeddedContentExecutor.shutdown()
+        }
         dataWriter = NoOpRecordWriter()
         embeddedContentRecordWriter = NoOpEmbeddedContentRecordWriter()
         resourceProcessor = NoOpResourceProcessor()
@@ -460,6 +469,8 @@ internal class SessionReplayFeature(
     // endregion
 
     internal companion object {
+
+        internal const val EMBEDDED_CONTENT_EXECUTOR_CONTEXT = "sr-embedded-content"
 
         /**
          * Session Replay storage configuration with the following parameters:

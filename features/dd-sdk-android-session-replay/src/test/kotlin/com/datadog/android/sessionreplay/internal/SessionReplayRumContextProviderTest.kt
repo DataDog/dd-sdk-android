@@ -54,6 +54,26 @@ internal class SessionReplayRumContextProviderTest {
     }
 
     @Test
+    fun `M publish new context before notifying W onContextUpdate { new valid RUM view }`() {
+        // Given
+        val viewId = UUID.randomUUID().toString()
+        lateinit var testedProvider: SessionReplayRumContextProvider
+        var notifiedViewId: String? = null
+        testedProvider = SessionReplayRumContextProvider {
+            notifiedViewId = testedProvider.getRumContext().viewId
+        }
+
+        // When
+        testedProvider.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(RUM_VIEW_ID_CONTEXT_KEY to viewId)
+        )
+
+        // Then
+        assertThat(notifiedViewId).isEqualTo(viewId)
+    }
+
+    @Test
     fun `M notify view transition W onContextUpdate { valid RUM view changes }`() {
         // Given
         var notificationCount = 0

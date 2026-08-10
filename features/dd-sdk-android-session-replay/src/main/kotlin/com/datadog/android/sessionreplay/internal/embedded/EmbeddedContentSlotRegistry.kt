@@ -27,18 +27,18 @@ internal class EmbeddedContentSlotRegistry {
     private val registrations = mutableListOf<WeakReference<EmbeddedContentSlotRegistration>>()
 
     @AnyThread
-    fun hasMarkedSlots(): Boolean {
-        return synchronized(registrations) {
-            removeInactiveRegistrations()
-            registrations.isNotEmpty()
-        }
-    }
+    fun hasMarkedSlots(): Boolean = activeSlotIds().isNotEmpty()
 
     @AnyThread
-    fun isSlotMarked(slotId: String): Boolean {
+    fun isSlotMarked(slotId: String): Boolean = slotId in activeSlotIds()
+
+    @AnyThread
+    fun activeSlotIds(): Set<String> {
         return synchronized(registrations) {
             removeInactiveRegistrations()
-            registrations.any { it.get()?.slotId == slotId }
+            // The transform only reads a weak reference and immutable slot ID.
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            registrations.mapNotNullTo(mutableSetOf()) { it.get()?.slotId }
         }
     }
 

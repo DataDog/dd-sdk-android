@@ -26,10 +26,12 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.Executor
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -69,6 +71,7 @@ internal class EmbeddedContentReceiverTest {
             recordWriter = { mockRecordWriter },
             resourceProcessor = { mockResourceProcessor },
             isRecording = { isRecording },
+            executor = { Executor(Runnable::run) },
             internalLogger = mockInternalLogger
         )
     }
@@ -131,6 +134,42 @@ internal class EmbeddedContentReceiverTest {
     }
 
     @Test
+    fun `M process records asynchronously W receive { record batch }`() {
+        // Given
+        lateinit var queuedTask: Runnable
+        val replacementRecordWriter = mock<EmbeddedContentRecordWriter>()
+        var currentRecordWriter = mockRecordWriter
+        testedReceiver = EmbeddedContentReceiver(
+            rumContextProvider = mockRumContextProvider,
+            recordWriter = { currentRecordWriter },
+            resourceProcessor = { mockResourceProcessor },
+            isRecording = { isRecording },
+            executor = { Executor { queuedTask = it } },
+            internalLogger = mockInternalLogger
+        )
+
+        // When
+        testedReceiver.receive(
+            EmbeddedContentEvent.RecordBatch(
+                records = listOf(mapOf("type" to 10L)),
+                slotId = FAKE_NATIVE_SLOT_ID,
+                viewId = FAKE_EMBEDDED_VIEW_ID
+            )
+        )
+
+        // Then
+        verifyNoInteractions(mockRecordWriter)
+
+        // When
+        currentRecordWriter = replacementRecordWriter
+        queuedTask.run()
+
+        // Then
+        verify(mockRecordWriter).writeRaw(any(), eq(FAKE_EMBEDDED_VIEW_ID), eq(1))
+        verifyNoInteractions(replacementRecordWriter)
+    }
+
+    @Test
     fun `M write resource W receive { resource }`() {
         // Given
         val resourceData = byteArrayOf(1, 2, 3)
@@ -147,6 +186,38 @@ internal class EmbeddedContentReceiverTest {
         // Then
         verify(mockResourceProcessor).process(FAKE_RESOURCE_ID, resourceData, FAKE_MIME_TYPE)
         verifyNoInteractions(mockRecordWriter)
+    }
+
+    @Test
+    fun `M retain scheduled processor W receive { processor changes before resource processing }`() {
+        // Given
+        lateinit var queuedTask: Runnable
+        val replacementResourceProcessor = mock<ResourceProcessor>()
+        var currentResourceProcessor = mockResourceProcessor
+        val resourceData = byteArrayOf(1, 2, 3)
+        testedReceiver = EmbeddedContentReceiver(
+            rumContextProvider = mockRumContextProvider,
+            recordWriter = { mockRecordWriter },
+            resourceProcessor = { currentResourceProcessor },
+            isRecording = { isRecording },
+            executor = { Executor { queuedTask = it } },
+            internalLogger = mockInternalLogger
+        )
+
+        // When
+        testedReceiver.receive(
+            EmbeddedContentEvent.Resource(
+                identifier = FAKE_RESOURCE_ID,
+                data = resourceData,
+                mimeType = FAKE_MIME_TYPE
+            )
+        )
+        currentResourceProcessor = replacementResourceProcessor
+        queuedTask.run()
+
+        // Then
+        verify(mockResourceProcessor).process(FAKE_RESOURCE_ID, resourceData, FAKE_MIME_TYPE)
+        verifyNoInteractions(replacementResourceProcessor)
     }
 
     @Test

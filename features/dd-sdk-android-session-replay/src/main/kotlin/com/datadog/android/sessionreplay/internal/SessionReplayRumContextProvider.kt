@@ -36,10 +36,10 @@ internal class SessionReplayRumContextProvider(
         if (featureName == Feature.RUM_FEATURE_NAME) {
             val previousViewId = rumContext[RUM_VIEW_ID_CONTEXT_KEY] as? String
             val newViewId = context[RUM_VIEW_ID_CONTEXT_KEY] as? String
+            rumContext = context
             if (newViewId != null && newViewId != NULL_UUID && newViewId != previousViewId) {
                 onRumViewChanged()
             }
-            rumContext = context
         }
     }
 

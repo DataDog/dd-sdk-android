@@ -114,6 +114,9 @@ internal class SessionReplayFeatureTest {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.timeProvider) doReturn mock()
         whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mockExecutorService
+        whenever(mockExecutorService.execute(any())) doAnswer {
+            it.getArgument<Runnable>(0).run()
+        }
 
         testedFeature = SessionReplayFeature(
             sdkCore = mockSdkCore,
@@ -423,6 +426,18 @@ internal class SessionReplayFeatureTest {
 
         // Then
         verify(mockRecorder).stopProcessingRecords()
+    }
+
+    @Test
+    fun `M stop embedded content processing W onStop()`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        verify(mockExecutorService).shutdown()
     }
 
     @Test

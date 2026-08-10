@@ -54,6 +54,22 @@ internal class EmbeddedContentSlotRegistryTest {
     }
 
     @Test
+    fun `M return active slots W activeSlotIds`() {
+        // Given
+        val fakeActiveRegistration = EmbeddedContentSlotRegistration(FAKE_SLOT_ID)
+        val fakeInactiveRegistration = EmbeddedContentSlotRegistration(FAKE_OLD_SLOT_ID)
+        testedRegistry.track(fakeActiveRegistration)
+        testedRegistry.track(fakeInactiveRegistration)
+        fakeInactiveRegistration.deactivate()
+
+        // When
+        val activeSlotIds = testedRegistry.activeSlotIds()
+
+        // Then
+        assertThat(activeSlotIds).containsExactly(FAKE_SLOT_ID)
+    }
+
+    @Test
     fun `M track slot W notifySlotChanged { slot is set }`() {
         // Given
         val fakeRegistration = EmbeddedContentSlotRegistration(FAKE_SLOT_ID)

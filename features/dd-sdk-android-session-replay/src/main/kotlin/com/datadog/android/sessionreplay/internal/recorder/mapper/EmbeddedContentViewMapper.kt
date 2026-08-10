@@ -165,10 +165,11 @@ internal class EmbeddedContentViewMapper(
         @Suppress("UnsafeThirdPartyFunctionCall")
         fun hiddenWireframes(): List<MobileSegment.Wireframe> {
             val hiddenWireframes = mutableListOf<MobileSegment.Wireframe>()
+            val activeSlotIds = embeddedContentSlotRegistry.activeSlotIds()
             val iterator = entries.entries.iterator()
             while (iterator.hasNext()) {
                 val (slotId, entry) = iterator.next()
-                if (!embeddedContentSlotRegistry.isSlotMarked(slotId)) {
+                if (slotId !in activeSlotIds) {
                     iterator.remove()
                 } else if (entry.lastSeenSnapshot != currentSnapshot) {
                     hiddenWireframes += MobileSegment.Wireframe.EmbeddedContentWireframe(
