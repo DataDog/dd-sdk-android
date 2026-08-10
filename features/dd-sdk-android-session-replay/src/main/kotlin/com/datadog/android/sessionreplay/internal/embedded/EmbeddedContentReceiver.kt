@@ -63,7 +63,7 @@ internal class EmbeddedContentReceiver(
                 event.records.forEach { record ->
                     val jsonRecord = JsonSerializer.toJsonElement(record)
                     if (jsonRecord is JsonObject) {
-                        jsonRecord.addProperty(SLOT_ID_KEY, event.slotId)
+                        jsonRecord.addProperty(RECORD_SLOT_ID_KEY, event.slotId)
                         array.add(jsonRecord)
                     } else {
                         logInvalidRecord()
@@ -104,11 +104,14 @@ internal class EmbeddedContentReceiver(
     }
 
     companion object {
+        // Enriched record envelope keys use the storage schema naming convention.
         internal const val APPLICATION_ID_KEY = "application_id"
         internal const val SESSION_ID_KEY = "session_id"
         internal const val VIEW_ID_KEY = "view_id"
         internal const val RECORDS_KEY = "records"
-        internal const val SLOT_ID_KEY = "slotId"
+
+        // Embedded records use the Session Replay record schema naming convention.
+        internal const val RECORD_SLOT_ID_KEY = "slotId"
         internal const val INVALID_EMBEDDED_RECORD_MESSAGE =
             "Session Replay received an invalid embedded content record."
         internal const val PROCESS_EVENT_TASK_NAME = "Embedded Session Replay event processing"

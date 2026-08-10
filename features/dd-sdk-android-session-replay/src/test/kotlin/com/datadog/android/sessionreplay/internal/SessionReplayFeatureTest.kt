@@ -304,7 +304,7 @@ internal class SessionReplayFeatureTest {
             assertThat(json[EmbeddedContentReceiver.VIEW_ID_KEY].asString)
                 .isEqualTo(FAKE_EMBEDDED_VIEW_ID)
             val records = json[EmbeddedContentReceiver.RECORDS_KEY].asJsonArray
-            assertThat(records[0].asJsonObject[EmbeddedContentReceiver.SLOT_ID_KEY].asString)
+            assertThat(records[0].asJsonObject[EmbeddedContentReceiver.RECORD_SLOT_ID_KEY].asString)
                 .isEqualTo(FAKE_EMBEDDED_SLOT_ID)
         }
     }

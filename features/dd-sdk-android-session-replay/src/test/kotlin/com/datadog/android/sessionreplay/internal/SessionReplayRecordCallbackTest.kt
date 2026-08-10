@@ -159,15 +159,15 @@ internal class SessionReplayRecordCallbackTest {
 
     @Suppress("UNCHECKED_CAST")
     @Test
-    fun `M share records count W native and embedded records sent`() {
+    fun `M share records count W native and embedded records sent`(forge: Forge) {
         // Given
-        val embeddedRecordsCount = 3
+        val fakeEmbeddedRecordsCount = forge.anInt(min = 1, max = 10)
 
         // When
         testedRecordCallback.onRecordForViewSent(fakeEnrichedRecord)
         testedRecordCallback.onEmbeddedRecordsForViewSent(
             fakeEnrichedRecord.viewId,
-            embeddedRecordsCount
+            fakeEmbeddedRecordsCount
         )
 
         // Then
@@ -184,7 +184,7 @@ internal class SessionReplayRecordCallbackTest {
             assertThat(viewMetadata?.get(SessionReplayRecordCallback.HAS_REPLAY_KEY))
                 .isEqualTo(true)
             assertThat(viewMetadata?.get(SessionReplayRecordCallback.VIEW_RECORDS_COUNT_KEY))
-                .isEqualTo(fakeEnrichedRecord.records.size.toLong() + embeddedRecordsCount)
+                .isEqualTo(fakeEnrichedRecord.records.size.toLong() + fakeEmbeddedRecordsCount)
         }
     }
 

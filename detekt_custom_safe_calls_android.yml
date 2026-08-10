@@ -131,6 +131,7 @@ datadog:
       - "android.view.View.hashCode()"
       - "android.view.View.onDraw(android.graphics.Canvas)"
       - "android.view.View.performClick()"
+      - "android.view.View.postInvalidateOnAnimation()"
       - "android.view.View.post(java.lang.Runnable?)"
       - "android.view.View.removeOnAttachStateChangeListener(android.view.View.OnAttachStateChangeListener?)"
       - "android.view.View.setOnClickListener(android.view.View.OnClickListener?)"

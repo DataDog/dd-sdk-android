@@ -86,7 +86,7 @@ internal class EmbeddedContentReceiverTest {
                     "type" to 10L,
                     FAKE_FUTURE_FIELD_NAME to FAKE_FUTURE_FIELD_VALUE
                 ),
-                mapOf("type" to 11L, EmbeddedContentReceiver.SLOT_ID_KEY to "stale-slot")
+                mapOf("type" to 11L, EmbeddedContentReceiver.RECORD_SLOT_ID_KEY to "stale-slot")
             ),
             slotId = FAKE_NATIVE_SLOT_ID,
             viewId = FAKE_EMBEDDED_VIEW_ID
@@ -107,12 +107,12 @@ internal class EmbeddedContentReceiverTest {
                 .isEqualTo(FAKE_EMBEDDED_VIEW_ID)
             val records = json[EmbeddedContentReceiver.RECORDS_KEY].asJsonArray
             assertThat(records).hasSize(2)
-            assertThat(records[0].asJsonObject[EmbeddedContentReceiver.SLOT_ID_KEY].asString)
+            assertThat(records[0].asJsonObject[EmbeddedContentReceiver.RECORD_SLOT_ID_KEY].asString)
                 .isEqualTo(FAKE_NATIVE_SLOT_ID)
             assertThat(
                 records[0].asJsonObject[FAKE_FUTURE_FIELD_NAME].asString
             ).isEqualTo(FAKE_FUTURE_FIELD_VALUE)
-            assertThat(records[1].asJsonObject[EmbeddedContentReceiver.SLOT_ID_KEY].asString)
+            assertThat(records[1].asJsonObject[EmbeddedContentReceiver.RECORD_SLOT_ID_KEY].asString)
                 .isEqualTo(FAKE_NATIVE_SLOT_ID)
         }
         verifyNoInteractions(mockResourceProcessor)

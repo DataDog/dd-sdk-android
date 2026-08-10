@@ -75,7 +75,6 @@ class _SessionReplayInternalProxy(private val builder: SessionReplayConfiguratio
                 previousRegistration = previousRegistration,
                 newRegistration = newRegistration
             )
-            @Suppress("UnsafeThirdPartyFunctionCall") // Android documents no exception for scheduling invalidation.
             view.postInvalidateOnAnimation()
         }
 

@@ -79,7 +79,7 @@ internal class EmbeddedContentViewMapper(
         cache.record(slotId, wireframeId)
 
         if (viewUtilsInternal.isNotVisible(view)) {
-            return wireframeList(hiddenWireframe(wireframeId, slotId))
+            return listOf<MobileSegment.Wireframe>(hiddenWireframe(wireframeId, slotId))
         }
 
         val bounds = viewBoundsResolver.resolveViewGlobalBounds(
@@ -90,7 +90,7 @@ internal class EmbeddedContentViewMapper(
             resolveShapeStyle(it, view.alpha, internalLogger)
         }
 
-        return wireframeList(
+        return listOf<MobileSegment.Wireframe>(
             MobileSegment.Wireframe.EmbeddedContentWireframe(
                 id = wireframeId,
                 x = bounds.x,
@@ -102,11 +102,6 @@ internal class EmbeddedContentViewMapper(
                 isVisible = true
             )
         )
-    }
-
-    @Suppress("UnsafeThirdPartyFunctionCall") // Kotlin listOf cannot fail for this local value.
-    private fun wireframeList(wireframe: MobileSegment.Wireframe): List<MobileSegment.Wireframe> {
-        return listOf(wireframe)
     }
 
     private fun hiddenWireframe(
