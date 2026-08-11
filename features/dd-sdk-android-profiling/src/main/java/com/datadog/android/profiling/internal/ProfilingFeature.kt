@@ -100,7 +100,7 @@ internal class ProfilingFeature(
             )
             registerProfilingCallback(appContext, this@ProfilingFeature)
         }
-        setMinimumSampleRate(appContext, configuration.applicationLaunchSampleRate)
+        ProfilingStorage.setSampleRate(appContext, configuration.applicationLaunchSampleRate)
         // Set the profiling flag in SharedPreferences to profile for the next app launch
         ProfilingStorage.addProfilingFlag(appContext)
         isLaunchProfilingActive = profiler.isRunning()
@@ -268,15 +268,6 @@ internal class ProfilingFeature(
             sessionId = sessionId,
             rumSessionSampleRate = sampleRate
         )
-    }
-
-    private fun setMinimumSampleRate(appContext: Context, sampleRate: Float) {
-        val oldValue = ProfilingStorage.getSampleRate(appContext)
-        // if old value doesn't exist (we use negative default value in case of absence) or
-        // the value is bigger than the sample rate, we update the sample rate.
-        if (oldValue !in 0f..sampleRate) {
-            ProfilingStorage.setSampleRate(appContext, configuration.applicationLaunchSampleRate)
-        }
     }
 
     @Suppress("ReturnCount")
