@@ -75,6 +75,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -262,6 +263,31 @@ internal class ProfilingFeatureTest {
         // Then
         verify(mockProfiler).internalLogger = mockInternalLogger
         verify(mockProfiler.timeProvider).delegate = mockTimeProvider
+    }
+
+    @Test
+    fun `M query the package manager once W start() then initialize()`() {
+        // Given a profiler already started by the content provider, before initialization
+        val profiler = PerfettoProfiler(
+            timeProvider = MutableTimeProvider.create(mockTimeProvider),
+            scheduledExecutorService = mockSchedulerExecutor,
+            profilingTelemetry = ProfilingTelemetry(),
+            anrTriggerRegistrar = mockAnrTriggerRegistrar,
+            buildSdkVersionProvider = mockBuildSdkVersionProvider
+        )
+        val feature = ProfilingFeature(
+            sdkCore = mockSdkCore,
+            configuration = fakeConfiguration.copy(continuousSampleRate = 0f),
+            profiler = profiler
+        )
+        profiler.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap())
+
+        // When
+        feature.onInitialize(mockContext)
+
+        // Then
+        verify(mockPackageManager, times(1))
+            .getPackageInfo("com.google.android.profiling", PackageManager.MATCH_APEX)
     }
 
     @Test

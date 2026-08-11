@@ -27,6 +27,8 @@ import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
 import com.datadog.android.profiling.internal.time.MutableTimeProvider
 import com.datadog.android.profiling.internal.utils.fileSizeSafe
+import com.datadog.android.profiling.internal.utils.getProfilingModuleLongVersionCode
+import com.datadog.android.profiling.internal.utils.isProfilingModuleVersionBlocked
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -62,6 +64,14 @@ internal class PerfettoProfiler(
 
     // Whether a profiling session is currently running.
     private val isRunning: AtomicBoolean = AtomicBoolean(false)
+
+    // Whether the blocked system package version was already reported (reported once per process).
+    private val isBlockedReported: AtomicBoolean = AtomicBoolean(false)
+
+    @Volatile
+    private var isPackageVersionResolved = false
+
+    private val packageVersionLock = Any()
 
     @Volatile
     private var profilingStartTime = 0L
@@ -184,6 +194,13 @@ internal class PerfettoProfiler(
     ) {
         val effectiveDurationMs =
             if (durationMs > 0) durationMs else getDefaultDurationMs(startReason)
+        if (isProfilingModuleVersionBlocked(profilingPackageVersionCode(appContext))) {
+            if (isBlockedReported.compareAndSet(false, true)) {
+                profilingTelemetry.report(ProfilingTelemetryEvent.Blocked(startReason.value))
+            }
+            callback?.onFailure(startReason)
+            return
+        }
         // profiling will be launched when no session is currently running.
         if (isRunning.compareAndSet(false, true)) {
             profilingStartTime = timeProvider.getDeviceTimestampMillis()
@@ -255,8 +272,23 @@ internal class PerfettoProfiler(
         this.extendLaunchSession = extend
     }
 
-    override fun setProfilingPackageVersionCode(versionCode: Long) {
-        profilingTelemetry.profilingPackageVersionCode = versionCode
+    override fun resolveProfilingPackageVersionCode(appContext: Context) {
+        profilingPackageVersionCode(appContext)
+    }
+
+    private fun profilingPackageVersionCode(appContext: Context): Long {
+        if (!isPackageVersionResolved) {
+            synchronized(packageVersionLock) {
+                if (!isPackageVersionResolved) {
+                    profilingTelemetry.profilingPackageVersionCode =
+                        appContext.packageManager.getProfilingModuleLongVersionCode(
+                            internalLogger ?: InternalLogger.UNBOUND
+                        )
+                    isPackageVersionResolved = true
+                }
+            }
+        }
+        return profilingTelemetry.profilingPackageVersionCode
     }
 
     private fun resolveStopReason(errorCode: Int): String {
