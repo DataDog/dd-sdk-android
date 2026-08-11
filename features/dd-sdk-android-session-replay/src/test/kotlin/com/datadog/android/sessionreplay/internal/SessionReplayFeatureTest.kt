@@ -8,12 +8,24 @@ package com.datadog.android.sessionreplay.internal
 
 import android.app.Application
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
+import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
+import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.NoOpSessionReplayInternalCallback
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_APPLICATION_ID_CONTEXT_KEY
+import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_SESSION_ID_CONTEXT_KEY
+import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_VIEW_ID_CONTEXT_KEY
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentEvent
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentReceiver
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistration
 import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
 import com.datadog.android.sessionreplay.internal.recorder.NoOpRecorder
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
@@ -25,6 +37,7 @@ import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -42,6 +55,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
@@ -100,6 +114,9 @@ internal class SessionReplayFeatureTest {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.timeProvider) doReturn mock()
         whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mockExecutorService
+        whenever(mockExecutorService.execute(any())) doAnswer {
+            it.getArgument<Runnable>(0).run()
+        }
 
         testedFeature = SessionReplayFeature(
             sdkCore = mockSdkCore,
@@ -110,7 +127,7 @@ internal class SessionReplayFeatureTest {
             startRecordingImmediately = true,
             touchPrivacy = fakeConfiguration.touchPrivacy,
             configuredSampleRate = fakeSampleRate
-        ) { _, _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _, _ -> mockRecorder }
     }
 
     @Test
@@ -130,6 +147,81 @@ internal class SessionReplayFeatureTest {
 
         // Then
         verify(mockSdkCore).setContextUpdateReceiver(any())
+    }
+
+    @Test
+    fun `M request embedded capture W RUM view changes { recording active }`() {
+        // Given
+        val fakeRegistration = EmbeddedContentSlotRegistration(FAKE_EMBEDDED_SLOT_ID)
+        testedFeature.embeddedContentSlotRegistry.notifySlotChanged(null, fakeRegistration)
+        testedFeature.onInitialize(appContext.mockInstance)
+        val contextReceiver = argumentCaptor<FeatureContextUpdateReceiver>().also {
+            verify(mockSdkCore).setContextUpdateReceiver(it.capture())
+        }.firstValue
+        contextReceiver.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString())
+        )
+        testedFeature.startRecording()
+
+        // When
+        contextReceiver.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString())
+        )
+
+        // Then
+        verify(mockRecorder).requestCapture()
+
+        // Cleanup
+        testedFeature.embeddedContentSlotRegistry.notifySlotChanged(fakeRegistration, null)
+    }
+
+    @Test
+    fun `M request embedded capture W first RUM view starts { recording active }`() {
+        // Given
+        val fakeRegistration = EmbeddedContentSlotRegistration(FAKE_EMBEDDED_SLOT_ID)
+        testedFeature.embeddedContentSlotRegistry.notifySlotChanged(null, fakeRegistration)
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.startRecording()
+        val contextReceiver = argumentCaptor<FeatureContextUpdateReceiver>().also {
+            verify(mockSdkCore).setContextUpdateReceiver(it.capture())
+        }.firstValue
+
+        // When
+        contextReceiver.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString())
+        )
+
+        // Then
+        verify(mockRecorder).requestCapture()
+
+        // Cleanup
+        testedFeature.embeddedContentSlotRegistry.notifySlotChanged(fakeRegistration, null)
+    }
+
+    @Test
+    fun `M not request embedded capture W RUM view changes { recording inactive }`() {
+        // Given
+        val fakeRegistration = EmbeddedContentSlotRegistration(FAKE_EMBEDDED_SLOT_ID)
+        testedFeature.embeddedContentSlotRegistry.notifySlotChanged(null, fakeRegistration)
+        testedFeature.onInitialize(appContext.mockInstance)
+        val contextReceiver = argumentCaptor<FeatureContextUpdateReceiver>().also {
+            verify(mockSdkCore).setContextUpdateReceiver(it.capture())
+        }.firstValue
+
+        // When
+        contextReceiver.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString())
+        )
+
+        // Then
+        verify(mockRecorder, never()).requestCapture()
+
+        // Cleanup
+        testedFeature.embeddedContentSlotRegistry.notifySlotChanged(fakeRegistration, null)
     }
 
     @Test
@@ -159,6 +251,62 @@ internal class SessionReplayFeatureTest {
         // Then
         assertThat(testedFeature.sessionReplayRecorder)
             .isInstanceOf(SessionReplayRecorder::class.java)
+    }
+
+    @Test
+    fun `M route embedded records W onReceive { feature initialized and recording }`() {
+        // Given
+        val mockFeatureScope = mock<FeatureScope>()
+        val mockEventWriteScope = mock<EventWriteScope>()
+        val mockEventBatchWriter = mock<EventBatchWriter>()
+        val mockDatadogContext = mock<DatadogContext>()
+        whenever(mockSdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME))
+            .thenReturn(mockFeatureScope)
+        whenever(mockEventBatchWriter.write(any(), any(), any())).thenReturn(true)
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback(mockEventBatchWriter)
+        }
+        whenever(mockFeatureScope.withWriteContext(eq(emptySet()), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
+            callback(mockDatadogContext, mockEventWriteScope)
+        }
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.startRecording()
+        val contextReceiver = argumentCaptor<FeatureContextUpdateReceiver>().also {
+            verify(mockSdkCore).setContextUpdateReceiver(it.capture())
+        }.firstValue
+        contextReceiver.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(
+                RUM_APPLICATION_ID_CONTEXT_KEY to UUID.randomUUID().toString(),
+                RUM_SESSION_ID_CONTEXT_KEY to UUID.randomUUID().toString(),
+                RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString()
+            )
+        )
+        // When
+        testedFeature.onReceive(
+            EmbeddedContentEvent.RecordBatch(
+                records = listOf(mapOf(FAKE_RECORD_TYPE_KEY to 10L)),
+                slotId = FAKE_EMBEDDED_SLOT_ID,
+                viewId = FAKE_EMBEDDED_VIEW_ID
+            )
+        )
+
+        // Then
+        argumentCaptor<RawBatchEvent> {
+            verify(mockEventBatchWriter).write(
+                event = capture(),
+                batchMetadata = eq(null),
+                eventType = eq(EventType.DEFAULT)
+            )
+            val json = JsonParser.parseString(firstValue.data.toString(Charsets.UTF_8)).asJsonObject
+            assertThat(json[EmbeddedContentReceiver.VIEW_ID_KEY].asString)
+                .isEqualTo(FAKE_EMBEDDED_VIEW_ID)
+            val records = json[EmbeddedContentReceiver.RECORDS_KEY].asJsonArray
+            assertThat(records[0].asJsonObject[EmbeddedContentReceiver.RECORD_SLOT_ID_KEY].asString)
+                .isEqualTo(FAKE_EMBEDDED_SLOT_ID)
+        }
     }
 
     @Test
@@ -219,7 +367,7 @@ internal class SessionReplayFeatureTest {
             startRecordingImmediately = true,
             touchPrivacy = fakeConfiguration.touchPrivacy,
             configuredSampleRate = fakeSampleRate
-        ) { _, _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _, _ -> mockRecorder }
 
         // When
         testedFeature.onInitialize(appContext.mockInstance)
@@ -278,6 +426,18 @@ internal class SessionReplayFeatureTest {
 
         // Then
         verify(mockRecorder).stopProcessingRecords()
+    }
+
+    @Test
+    fun `M stop embedded content processing W onStop()`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        verify(mockExecutorService).shutdown()
     }
 
     @Test
@@ -744,7 +904,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = true,
             configuredSampleRate = fakeSampleRate
-        ) { _, _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(appContext.mockInstance)
         val rumSessionUpdateBusMessage1 = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
@@ -795,7 +955,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = false,
             configuredSampleRate = fakeSampleRate
-        ) { _, _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(appContext.mockInstance)
         val rumSessionUpdateBusMessage1 = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
@@ -1077,7 +1237,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = scenario.startRecordingImmediately,
             configuredSampleRate = fakeSampleRate
-        ) { _, _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(fakeContext)
         testedFeature.onReceive(event)
 
@@ -1116,7 +1276,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = true,
             configuredSampleRate = fakeSampleRate
-        ) { _, _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(fakeContext)
         testedFeature.onReceive(event)
         testedFeature.onReceive(event)
@@ -1148,7 +1308,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = false,
             configuredSampleRate = fakeSampleRate
-        ) { _, _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(fakeContext)
         testedFeature.manuallyStartRecording()
         testedFeature.onReceive(event)
@@ -1182,7 +1342,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = true,
             configuredSampleRate = fakeSampleRate
-        ) { _, _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(fakeContext)
         testedFeature.onReceive(event)
         testedFeature.manuallyStopRecording()
@@ -1219,7 +1379,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = true,
             configuredSampleRate = fakeSampleRate
-        ) { _, _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(fakeContext)
         testedFeature.onReceive(event1)
 
@@ -1305,7 +1465,7 @@ internal class SessionReplayFeatureTest {
             startRecordingImmediately = true,
             touchPrivacy = fakeConfiguration.touchPrivacy,
             configuredSampleRate = 100f
-        ) { _, _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _, _ -> mockRecorder }
 
         testedFeature.onInitialize(appContext.mockInstance)
         testedFeature.onReceive(
@@ -1344,6 +1504,10 @@ internal class SessionReplayFeatureTest {
     )
 
     companion object {
+        private const val FAKE_EMBEDDED_SLOT_ID = "slot-id"
+        private const val FAKE_RECORD_TYPE_KEY = "type"
+        private const val FAKE_EMBEDDED_VIEW_ID = "embedded-view-id"
+
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
 
         @TestConfigurationsProvider

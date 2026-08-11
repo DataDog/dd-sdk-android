@@ -25,12 +25,14 @@ import com.datadog.android.sessionreplay.internal.LifecycleCallback
 import com.datadog.android.sessionreplay.internal.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.processor.MutationResolver
 import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
 import com.datadog.android.sessionreplay.internal.processor.ResourceQueueImpl
 import com.datadog.android.sessionreplay.internal.processor.RumContextDataHandler
 import com.datadog.android.sessionreplay.internal.recorder.callback.OnWindowRefreshedCallback
 import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.EmbeddedContentViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.HiddenViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
@@ -93,6 +95,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         resourceDataStoreManager: ResourceDataStoreManager,
         dynamicOptimizationEnabled: Boolean,
         internalCallback: SessionReplayInternalCallback,
+        embeddedContentSlotRegistry: EmbeddedContentSlotRegistry,
         heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null
     ) {
         val internalLogger = sdkCore.internalLogger
@@ -138,6 +141,15 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             viewBoundsResolver,
             drawableToColorMapper
         )
+        val viewUtilsInternal = ViewUtilsInternal()
+        val embeddedContentViewMapper = EmbeddedContentViewMapper(
+            viewIdentifierResolver = viewIdentifierResolver,
+            colorStringFormatter = colorStringFormatter,
+            viewBoundsResolver = viewBoundsResolver,
+            drawableToColorMapper = drawableToColorMapper,
+            viewUtilsInternal = viewUtilsInternal,
+            embeddedContentSlotRegistry = embeddedContentSlotRegistry
+        )
 
         val bitmapCachesManager = BitmapCachesManager(
             bitmapPool = BitmapPool(),
@@ -180,8 +192,9 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                             viewBoundsResolver = viewBoundsResolver,
                             viewIdentifierResolver = viewIdentifierResolver
                         ),
-                        viewUtilsInternal = ViewUtilsInternal(),
-                        internalLogger = internalLogger
+                        viewUtilsInternal = viewUtilsInternal,
+                        internalLogger = internalLogger,
+                        embeddedContentViewMapper = embeddedContentViewMapper
                     ),
                     optionSelectorDetector = ComposedOptionSelectorDetector(
                         customOptionSelectorDetectors + DefaultOptionSelectorDetector()
@@ -194,7 +207,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                             registry = it,
                             internalLogger = internalLogger
                         )
-                    }
+                    },
+                    embeddedContentViewMapper = embeddedContentViewMapper
                 ),
                 recordedDataQueueHandler = recordedDataQueueHandler,
                 sdkCore = sdkCore,
@@ -284,6 +298,14 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
             windowCallbackInterceptor.intercept(windows + resolveUntrackedWindows(decorViews, windows), appContext)
             viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
+        }
+    }
+
+    override fun requestCapture() {
+        uiHandler.post {
+            if (shouldRecord) {
+                viewOnDrawInterceptor.requestCapture()
+            }
         }
     }
 

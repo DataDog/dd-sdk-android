@@ -4,21 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.recorder
+package com.datadog.android.sessionreplay.internal.storage
 
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
-internal interface Recorder {
-    fun registerCallbacks()
-
-    fun unregisterCallbacks()
-
-    fun stopProcessingRecords()
-
-    fun resumeRecorders()
-
-    fun requestCapture()
-
-    fun stopRecorders()
+internal fun interface EmbeddedContentRecordWriter {
+    fun writeRaw(record: ByteArray, viewId: String, recordsCount: Int)
 }

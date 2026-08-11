@@ -230,6 +230,25 @@ internal class WindowsOnDrawListenerTest {
     }
 
     @Test
+    fun `M prepend hidden embedded node W onDraw { embedded view missing from snapshot }`() {
+        // Given
+        val hiddenEmbeddedNode = Node(wireframes = emptyList())
+        whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
+            .thenReturn(fakeSnapshotQueueItem)
+        whenever(mockSnapshotProducer.finishSnapshot()).thenReturn(hiddenEmbeddedNode)
+        fakeSnapshotQueueItem.pendingJobs.set(0)
+
+        // When
+        testedListener.onDraw()
+
+        // Then
+        verify(mockSnapshotProducer).beginSnapshot()
+        verify(mockSnapshotProducer).finishSnapshot()
+        assertThat(fakeSnapshotQueueItem.nodes)
+            .containsExactlyElementsOf(listOf(hiddenEmbeddedNode) + fakeWindowsSnapshots)
+    }
+
+    @Test
     fun `M do nothing W onDraw(){ windows are empty }`() {
         // When
         testedListener = WindowsOnDrawListener(

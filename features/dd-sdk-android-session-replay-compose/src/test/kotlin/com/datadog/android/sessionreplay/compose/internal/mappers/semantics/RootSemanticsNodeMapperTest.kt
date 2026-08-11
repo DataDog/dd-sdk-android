@@ -400,16 +400,18 @@ class RootSemanticsNodeMapperTest {
     }
 
     @Test
-    fun `M call interop callback W semantics node has interop view`(forge: Forge) {
+    fun `M preserve embedded wireframe W semantics node has interop view`(forge: Forge) {
         // Given
         val mockSemanticsNode = mockSemanticsNode(null)
         val mockView = mock<View>()
-        val fakeInteropWireframe = MobileSegment.Wireframe.ShapeWireframe(
+        val fakeInteropWireframe = MobileSegment.Wireframe.EmbeddedContentWireframe(
             id = forge.aLong(),
             x = forge.aLong(min = 0, max = 500),
             y = forge.aLong(min = 0, max = 500),
             width = forge.aLong(min = 1, max = 500),
-            height = forge.aLong(min = 1, max = 500)
+            height = forge.aLong(min = 1, max = 500),
+            slotId = forge.anAlphabeticalString(),
+            isVisible = true
         )
         whenever(mockSemanticsUtils.getInteropView(mockSemanticsNode)) doReturn mockView
         whenever(fakeMappingContext.interopViewCallback.map(mockView, fakeMappingContext))

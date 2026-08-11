@@ -40,7 +40,6 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
-import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -1258,6 +1257,7 @@ internal class RecordedDataProcessorTest {
         // Given
         val fakeByteArray = forge.anAlphaNumericalString().toByteArray()
         val fakeResourceItem = createResourceItem(fakeByteArray, usedContext = initialRecordedQueuedItemContext)
+        whenever(mockResourceDataStoreManager.markResourceAsSentIfNew(fakeIdentifier)).thenReturn(true)
 
         // When
         testedProcessor.processResources(fakeResourceItem)
@@ -1277,46 +1277,14 @@ internal class RecordedDataProcessorTest {
     }
 
     @Test
-    fun `M not store resource in datastore W processResources { resource not previously seen by manager not ready }`(
-        forge: Forge
-    ) {
-        // Given
-        val fakeByteArray = forge.anAlphaNumericalString().toByteArray()
-        val fakeResourceItem = createResourceItem(fakeByteArray, usedContext = initialRecordedQueuedItemContext)
-        whenever(mockResourceDataStoreManager.isReady()).thenReturn(false)
-
-        // When
-        testedProcessor.processResources(fakeResourceItem)
-
-        // Then
-        verify(mockResourceDataStoreManager, never()).cacheResourceHash(fakeIdentifier)
-    }
-
-    @Test
-    fun `M store resource in datastore W processResources { resource not previously seen and manager ready }`(
-        forge: Forge
-    ) {
-        // Given
-        val fakeByteArray = forge.anAlphaNumericalString().toByteArray()
-        val fakeResourceItem = createResourceItem(fakeByteArray, usedContext = initialRecordedQueuedItemContext)
-        whenever(mockResourceDataStoreManager.isReady()).thenReturn(true)
-
-        // When
-        testedProcessor.processResources(fakeResourceItem)
-
-        // Then
-        verify(mockResourceDataStoreManager, times(1)).cacheResourceHash(fakeIdentifier)
-    }
-
-    @Test
     fun `M not write resource data W processResources { resource was previously seen }`(
         @StringForgery fakeString: String
     ) {
         // Given
         val fakeByteArray = fakeString.toByteArray()
         val fakeResourceItem = createResourceItem(fakeByteArray, usedContext = initialRecordedQueuedItemContext)
-        whenever(mockResourceDataStoreManager.isPreviouslySentResource(fakeIdentifier))
-            .thenReturn(true)
+        whenever(mockResourceDataStoreManager.markResourceAsSentIfNew(fakeIdentifier))
+            .thenReturn(false)
 
         // When
         testedProcessor.processResources(fakeResourceItem)

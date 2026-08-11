@@ -258,7 +258,7 @@ internal class SessionReplayRecorderTest {
     }
 
     @Test
-    fun `M intercept the active windows and decor view W resumeRecorders`() {
+    fun `M intercept active windows without invalidating native decors W resumeRecorders`() {
         // When
         testedSessionReplayRecorder.resumeRecorders()
 
@@ -269,6 +269,30 @@ internal class SessionReplayRecorderTest {
             textAndInputPrivacy = fakeTextAndInputPrivacy,
             imagePrivacy = fakeImagePrivacy
         )
+        fakeActiveWindowsDecorViews.forEach {
+            verify(it, never()).postInvalidateOnAnimation()
+        }
+    }
+
+    @Test
+    fun `M request capture W requestCapture { recorder resumed }`() {
+        // Given
+        testedSessionReplayRecorder.resumeRecorders()
+
+        // When
+        testedSessionReplayRecorder.requestCapture()
+
+        // Then
+        verify(mockViewOnDrawInterceptor).requestCapture()
+    }
+
+    @Test
+    fun `M not request capture W requestCapture { recorder stopped }`() {
+        // When
+        testedSessionReplayRecorder.requestCapture()
+
+        // Then
+        verify(mockViewOnDrawInterceptor, never()).requestCapture()
     }
 
     @Test

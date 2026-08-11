@@ -14,19 +14,26 @@ internal class SessionReplayRecordCallback(
     private val featureSdkCore: FeatureSdkCore
 ) : RecordCallback {
 
-    @Suppress("UNCHECKED_CAST")
     override fun onRecordForViewSent(record: EnrichedRecord) {
-        val recordsSize = record.records.size
-        if (recordsSize > 0) {
-            // we are already past the event processing pipeline and this method is called from write stage, we can
-            // update directly from this thread, given we patially mutate context.
-            featureSdkCore.updateFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME, useContextThread = false) {
-                val viewId = record.viewId
-                val viewMetadata = (it[viewId] as? MutableMap<String, Any?>) ?: mutableMapOf()
-                viewMetadata[HAS_REPLAY_KEY] = true
-                updateRecordsCount(viewMetadata, recordsSize)
-                it[viewId] = viewMetadata
-            }
+        updateViewMetadata(record.viewId, record.records.size)
+    }
+
+    fun onEmbeddedRecordsForViewSent(viewId: String, recordsCount: Int) {
+        updateViewMetadata(viewId, recordsCount)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun updateViewMetadata(viewId: String, recordsCount: Int) {
+        if (recordsCount <= 0) {
+            return
+        }
+        // This callback runs inside the synchronized write stage after persistence succeeds.
+        // Update immediately so native and embedded record counts cannot be observed between writes.
+        featureSdkCore.updateFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME, useContextThread = false) {
+            val viewMetadata = (it[viewId] as? MutableMap<String, Any?>) ?: mutableMapOf()
+            viewMetadata[HAS_REPLAY_KEY] = true
+            updateRecordsCount(viewMetadata, recordsCount)
+            it[viewId] = viewMetadata
         }
     }
 
