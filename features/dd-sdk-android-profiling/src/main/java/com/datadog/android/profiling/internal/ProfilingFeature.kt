@@ -93,11 +93,11 @@ internal class ProfilingFeature(
     override fun onInitialize(appContext: Context) {
         this.appContext = appContext
         profiler.apply {
-            this.internalLogger = sdkCore.internalLogger
             this.timeProvider.delegate = sdkCore.timeProvider
             setProfilingPackageVersionCode(
                 appContext.packageManager.getProfilingModuleLongVersionCode(sdkCore.internalLogger)
             )
+            this.internalLogger = sdkCore.internalLogger
             registerProfilingCallback(appContext, this@ProfilingFeature)
         }
         ProfilingStorage.setSampleRate(appContext, configuration.applicationLaunchSampleRate)

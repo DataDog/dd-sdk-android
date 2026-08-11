@@ -16,6 +16,7 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.data.SharedPreferencesStorage
@@ -23,6 +24,7 @@ import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.rum.RumSessionConstants
 import com.datadog.android.internal.sampling.SessionSamplingIdProvider
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.Profiler
@@ -32,11 +34,15 @@ import com.datadog.android.profiling.internal.ProfilingRequestFactory
 import com.datadog.android.profiling.internal.ProfilingStartReason
 import com.datadog.android.profiling.internal.ProfilingStorage
 import com.datadog.android.profiling.internal.ProfilingWriter
+import com.datadog.android.profiling.internal.anr.AnrTriggerRegistrar
+import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.quota.NoOpQuotaChecker
 import com.datadog.android.profiling.internal.quota.QuotaChecker
 import com.datadog.android.profiling.internal.quota.QuotaReason
 import com.datadog.android.profiling.internal.quota.QuotaResult
+import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
+import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
 import com.datadog.android.profiling.internal.time.MutableTimeProvider
 import com.datadog.android.profiling.utils.config.MainLooperTestConfiguration
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -45,6 +51,7 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -141,6 +148,12 @@ internal class ProfilingFeatureTest {
 
     @Mock
     private lateinit var mockPackageManager: PackageManager
+
+    @Mock
+    private lateinit var mockAnrTriggerRegistrar: AnrTriggerRegistrar
+
+    @Mock
+    private lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
 
     @Forgery
     private lateinit var fakeConfiguration: ProfilingConfiguration
@@ -249,6 +262,59 @@ internal class ProfilingFeatureTest {
         // Then
         verify(mockProfiler).internalLogger = mockInternalLogger
         verify(mockProfiler.timeProvider).delegate = mockTimeProvider
+    }
+
+    @Test
+    fun `M report the package version code W initialize() {telemetry reported before init}`(
+        @IntForgery(min = 1, max = 8) fakeErrorCode: Int,
+        @StringForgery fakeErrorMessage: String
+    ) {
+        // Given a profiling session that ended before the SDK was initialized: the profiler has
+        // no logger yet, so its telemetry is buffered and only dispatched on initialization.
+        val profilingTelemetry = ProfilingTelemetry()
+        val profiler = PerfettoProfiler(
+            timeProvider = MutableTimeProvider.create(mockTimeProvider),
+            scheduledExecutorService = mockSchedulerExecutor,
+            profilingTelemetry = profilingTelemetry,
+            anrTriggerRegistrar = mockAnrTriggerRegistrar,
+            buildSdkVersionProvider = mockBuildSdkVersionProvider
+        )
+        profilingTelemetry.report(
+            ProfilingTelemetryEvent.SessionEnd(
+                startReason = ProfilingStartReason.APPLICATION_LAUNCH.value,
+                appStartInfo = null,
+                errorCode = fakeErrorCode,
+                errorMessage = fakeErrorMessage,
+                fileSize = 0L,
+                durationMs = 0L,
+                resultCallbackDelayMs = 0L,
+                clientClockDriftMs = 0L,
+                stopReason = ProfilingTelemetry.STOPPED_REASON_ERROR,
+                bufferSizeKb = 0,
+                samplingFrequencyHz = 0
+            )
+        )
+        val feature = ProfilingFeature(
+            sdkCore = mockSdkCore,
+            // continuous profiling disabled, so initialization doesn't schedule anything
+            configuration = fakeConfiguration.copy(continuousSampleRate = 0f),
+            profiler = profiler
+        )
+
+        // When
+        feature.onInitialize(mockContext)
+
+        // Then
+        val propertiesCaptor = argumentCaptor<Map<String, Any?>>()
+        verify(mockInternalLogger).logMetric(
+            any(),
+            propertiesCaptor.capture(),
+            eq(MethodCallSamplingRate.ALL.rate),
+            isNull()
+        )
+        val profilingConfig = propertiesCaptor.firstValue["profiling_config"] as Map<*, *>
+        assertThat(profilingConfig["profiling_package_version_code"])
+            .isEqualTo(fakeProfilingPackageVersionCode)
     }
 
     @Test
