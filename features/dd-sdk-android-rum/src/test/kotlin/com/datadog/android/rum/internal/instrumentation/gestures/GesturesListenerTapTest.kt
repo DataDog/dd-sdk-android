@@ -151,6 +151,340 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
     }
 
     @Test
+    fun `M send elevated target W onTap {lower child index has higher Z}`(forge: Forge) {
+        // Given
+        val mockEvent: MotionEvent = forge.getForgery()
+        val elevatedTarget: View = mockView(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true,
+            clickable = true,
+            forge = forge
+        ) {
+            whenever(it.z).thenReturn(10f)
+        }
+        val laterTarget: View = mockView(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true,
+            clickable = true,
+            forge = forge
+        ) {
+            whenever(it.z).thenReturn(0f)
+        }
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = false,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(2)
+            whenever(it.getChildAt(0)).thenReturn(elevatedTarget)
+            whenever(it.getChildAt(1)).thenReturn(laterTarget)
+        }
+        whenever(elevatedTarget.parent).thenReturn(mockDecorView as ViewGroup)
+        whenever(laterTarget.parent).thenReturn(mockDecorView as ViewGroup)
+        val expectedResourceName = forge.anAlphabeticalString()
+        mockResourcesForTarget(elevatedTarget, expectedResourceName)
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
+        )
+
+        // When
+        testedListener.onSingleTapUp(mockEvent)
+
+        // Then
+        verifyMonitorCalledWithUserAction(elevatedTarget, "", expectedResourceName)
+    }
+
+    @Test
+    fun `M send target in elevated branch W onTap {leaf in lower branch has higher Z}`(
+        forge: Forge
+    ) {
+        // Given
+        val mockEvent: MotionEvent = forge.getForgery()
+        val elevatedBranchTarget: View = mockView(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true,
+            clickable = true,
+            forge = forge
+        ) {
+            whenever(it.z).thenReturn(0f)
+        }
+        val laterBranchTarget: View = mockView(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true,
+            clickable = true,
+            forge = forge
+        ) {
+            whenever(it.z).thenReturn(100f)
+        }
+        val elevatedBranch: ViewGroup = mockView(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = false,
+            forge = forge
+        ) {
+            whenever(it.z).thenReturn(10f)
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(elevatedBranchTarget)
+        }
+        val laterBranch: ViewGroup = mockView(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = false,
+            forge = forge
+        ) {
+            whenever(it.z).thenReturn(0f)
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(laterBranchTarget)
+        }
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = false,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(2)
+            whenever(it.getChildAt(0)).thenReturn(elevatedBranch)
+            whenever(it.getChildAt(1)).thenReturn(laterBranch)
+        }
+        whenever(elevatedBranch.parent).thenReturn(mockDecorView as ViewGroup)
+        whenever(laterBranch.parent).thenReturn(mockDecorView as ViewGroup)
+        whenever(elevatedBranchTarget.parent).thenReturn(elevatedBranch)
+        whenever(laterBranchTarget.parent).thenReturn(laterBranch)
+        val expectedResourceName = forge.anAlphabeticalString()
+        mockResourcesForTarget(elevatedBranchTarget, expectedResourceName)
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
+        )
+
+        // When
+        testedListener.onSingleTapUp(mockEvent)
+
+        // Then
+        verifyMonitorCalledWithUserAction(elevatedBranchTarget, "", expectedResourceName)
+    }
+
+    @Test
+    fun `M send descendant target W onTap {ancestor has higher Z}`(forge: Forge) {
+        // Given
+        val mockEvent: MotionEvent = forge.getForgery()
+        val descendantTarget: View = mockView(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true,
+            clickable = true,
+            forge = forge
+        ) {
+            whenever(it.z).thenReturn(0f)
+        }
+        val ancestorTarget: ViewGroup = mockView(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true,
+            clickable = true,
+            forge = forge
+        ) {
+            whenever(it.z).thenReturn(10f)
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(descendantTarget)
+        }
+        whenever(descendantTarget.parent).thenReturn(ancestorTarget)
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = false,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(ancestorTarget)
+        }
+        val expectedResourceName = forge.anAlphabeticalString()
+        mockResourcesForTarget(descendantTarget, expectedResourceName)
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
+        )
+
+        // When
+        testedListener.onSingleTapUp(mockEvent)
+
+        // Then
+        verifyMonitorCalledWithUserAction(descendantTarget, "", expectedResourceName)
+    }
+
+    @Test
+    fun `M send later target W onTap {unrelated targets have equal Z}`(forge: Forge) {
+        // Given
+        val mockEvent: MotionEvent = forge.getForgery()
+        val earlierTarget: View = mockView(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true,
+            clickable = true,
+            forge = forge
+        )
+        val laterTarget: View = mockView(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true,
+            clickable = true,
+            forge = forge
+        )
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = false,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(2)
+            whenever(it.getChildAt(0)).thenReturn(earlierTarget)
+            whenever(it.getChildAt(1)).thenReturn(laterTarget)
+        }
+        whenever(earlierTarget.parent).thenReturn(mockDecorView as ViewGroup)
+        whenever(laterTarget.parent).thenReturn(mockDecorView as ViewGroup)
+        whenever((mockDecorView as ViewGroup).indexOfChild(earlierTarget)).thenReturn(0)
+        whenever((mockDecorView as ViewGroup).indexOfChild(laterTarget)).thenReturn(1)
+        val expectedResourceName = forge.anAlphabeticalString()
+        mockResourcesForTarget(laterTarget, expectedResourceName)
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
+        )
+
+        // When
+        testedListener.onSingleTapUp(mockEvent)
+
+        // Then
+        verifyMonitorCalledWithUserAction(laterTarget, "", expectedResourceName)
+    }
+
+    @Test
+    fun `M send target in later branch W onTap {earlier branch has deeper target with equal Z}`(
+        forge: Forge
+    ) {
+        // Given
+        val mockEvent: MotionEvent = forge.getForgery()
+        val earlierBranchTarget: View = mockView(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true,
+            clickable = true,
+            forge = forge
+        )
+        val earlierBranch: ViewGroup = mockView(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = false,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(earlierBranchTarget)
+        }
+        val laterBranchTarget: View = mockView(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true,
+            clickable = true,
+            forge = forge
+        )
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = false,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(2)
+            whenever(it.getChildAt(0)).thenReturn(earlierBranch)
+            whenever(it.getChildAt(1)).thenReturn(laterBranchTarget)
+        }
+        whenever(earlierBranch.parent).thenReturn(mockDecorView as ViewGroup)
+        whenever(earlierBranchTarget.parent).thenReturn(earlierBranch)
+        whenever(laterBranchTarget.parent).thenReturn(mockDecorView as ViewGroup)
+        whenever((mockDecorView as ViewGroup).indexOfChild(earlierBranch)).thenReturn(0)
+        whenever((mockDecorView as ViewGroup).indexOfChild(laterBranchTarget)).thenReturn(1)
+        val expectedResourceName = forge.anAlphabeticalString()
+        mockResourcesForTarget(laterBranchTarget, expectedResourceName)
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
+        )
+
+        // When
+        testedListener.onSingleTapUp(mockEvent)
+
+        // Then
+        verifyMonitorCalledWithUserAction(laterBranchTarget, "", expectedResourceName)
+    }
+
+    @Test
+    fun `M send later target W onTap {unrelated target has non-orderable Z}`(forge: Forge) {
+        // Given
+        val mockEvent: MotionEvent = forge.getForgery()
+        val earlierTarget: View = mockView(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true,
+            clickable = true,
+            forge = forge
+        ) {
+            whenever(it.z).thenReturn(Float.NaN)
+        }
+        val laterTarget: View = mockView(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true,
+            clickable = true,
+            forge = forge
+        ) {
+            whenever(it.z).thenReturn(0f)
+        }
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = false,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(2)
+            whenever(it.getChildAt(0)).thenReturn(earlierTarget)
+            whenever(it.getChildAt(1)).thenReturn(laterTarget)
+        }
+        whenever(earlierTarget.parent).thenReturn(mockDecorView as ViewGroup)
+        whenever(laterTarget.parent).thenReturn(mockDecorView as ViewGroup)
+        whenever((mockDecorView as ViewGroup).indexOfChild(earlierTarget)).thenReturn(0)
+        whenever((mockDecorView as ViewGroup).indexOfChild(laterTarget)).thenReturn(1)
+        val expectedResourceName = forge.anAlphabeticalString()
+        mockResourcesForTarget(laterTarget, expectedResourceName)
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
+        )
+
+        // When
+        testedListener.onSingleTapUp(mockEvent)
+
+        // Then
+        verifyMonitorCalledWithUserAction(laterTarget, "", expectedResourceName)
+    }
+
+    @Test
     fun `onTap dispatches an UserAction if target is ViewGroup and clickable`(forge: Forge) {
         // Given
         val mockEvent: MotionEvent = forge.getForgery()
