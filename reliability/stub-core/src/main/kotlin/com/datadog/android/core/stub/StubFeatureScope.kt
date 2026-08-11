@@ -71,8 +71,15 @@ internal class StubFeatureScope(
         callback(datadogContextProvider())
     }
 
-    override fun getWriteContextSync(withFeatureContexts: Set<String>): Pair<DatadogContext, EventWriteScope>? {
-        return datadogContextProvider() to { it.invoke(eventBatchWriter) }
+    override fun withWriteContextSync(
+        withFeatureContexts: Set<String>,
+        callback: (DatadogContext, EventWriteScope) -> Unit
+    ): Boolean {
+        callback(
+            datadogContextProvider(),
+            { it.invoke(eventBatchWriter) }
+        )
+        return true
     }
 
     override fun sendEvent(event: Any) {

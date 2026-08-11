@@ -565,7 +565,36 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `M provide write context W getWriteContextSync()`(
+    fun `M provide write context W withWriteContextSync(callback)`(
+        @Forgery fakeContext: DatadogContext,
+        @StringForgery fakeWithFeatureContexts: Set<String>,
+        @Mock mockEventWriteScope: EventWriteScope
+    ) {
+        // Given
+        testedFeature.storage = mockStorage
+        val callback = mock<(DatadogContext, EventWriteScope) -> Unit>()
+        whenever(mockContextProvider.getContext(fakeWithFeatureContexts)) doReturn fakeContext
+        whenever(coreFeature.mockInstance.contextExecutorService.submit(any<Callable<Boolean>>())) doAnswer {
+            val result = it.getArgument<Callable<Boolean>>(0).call()
+            mock<Future<Boolean>>().apply {
+                whenever(get()) doReturn result
+            }
+        }
+
+        whenever(
+            mockStorage.getEventWriteScope(fakeContext)
+        ) doReturn mockEventWriteScope
+
+        // When
+        val result = testedFeature.withWriteContextSync(fakeWithFeatureContexts, callback = callback)
+
+        // Then
+        verify(callback).invoke(fakeContext, mockEventWriteScope)
+        assertThat(result).isTrue()
+    }
+
+    @Test
+    fun `M wait for the callback W withWriteContextSync(callback)`(
         @Forgery fakeContext: DatadogContext,
         @StringForgery fakeWithFeatureContexts: Set<String>,
         @Mock mockEventWriteScope: EventWriteScope
@@ -573,89 +602,91 @@ internal class SdkFeatureTest {
         // Given
         testedFeature.storage = mockStorage
         whenever(mockContextProvider.getContext(fakeWithFeatureContexts)) doReturn fakeContext
-        whenever(coreFeature.mockInstance.contextExecutorService.submit(any<Callable<*>>())) doAnswer {
-            val callable = it.getArgument<Callable<Pair<DatadogContext, EventWriteScope>>>(0)
-            mock<Future<*>>().apply {
-                whenever(get()) doAnswer { callable.call() }
+        whenever(mockStorage.getEventWriteScope(fakeContext)) doReturn mockEventWriteScope
+        // the submitted task only runs when the future is awaited, so the callback can only have been
+        // invoked if withWriteContextSync blocked on it
+        whenever(coreFeature.mockInstance.contextExecutorService.submit(any<Callable<Boolean>>())) doAnswer {
+            val submittedTask = it.getArgument<Callable<Boolean>>(0)
+            mock<Future<Boolean>>().apply {
+                whenever(get()) doAnswer { submittedTask.call() }
             }
         }
-
-        whenever(
-            mockStorage.getEventWriteScope(fakeContext)
-        ) doReturn mockEventWriteScope
+        var callbackInvoked = false
 
         // When
-        val writeContext = testedFeature.getWriteContextSync(fakeWithFeatureContexts)
+        testedFeature.withWriteContextSync(fakeWithFeatureContexts) { _, _ -> callbackInvoked = true }
 
         // Then
-        checkNotNull(writeContext)
-        assertThat(writeContext.first).isEqualTo(fakeContext)
-        assertThat(writeContext.second).isEqualTo(mockEventWriteScope)
+        assertThat(callbackInvoked).isTrue()
     }
 
     @Test
-    fun `M provide null write context W getWriteContextSync() { task rejected }`(
-        @Forgery fakeContext: DatadogContext,
-        @Mock mockEventWriteScope: EventWriteScope
+    fun `M not provide write context W withWriteContextSync(callback) { task rejected }`(
+        @StringForgery fakeWithFeatureContexts: Set<String>
     ) {
         // Given
         testedFeature.storage = mockStorage
+        val callback = mock<(DatadogContext, EventWriteScope) -> Unit>()
         whenever(
-            coreFeature.mockInstance.contextExecutorService.submit(any<Callable<*>>())
+            coreFeature.mockInstance.contextExecutorService.submit(any<Callable<Boolean>>())
         ) doThrow RejectedExecutionException()
 
-        whenever(
-            mockStorage.getEventWriteScope(fakeContext)
-        ) doReturn mockEventWriteScope
-
         // When
-        val writeContext = testedFeature.getWriteContextSync()
+        val result = testedFeature.withWriteContextSync(fakeWithFeatureContexts, callback = callback)
 
         // Then
-        assertThat(writeContext).isNull()
+        verifyNoInteractions(callback, mockContextProvider, mockStorage)
+        assertThat(result).isFalse()
     }
 
     @Test
-    fun `M provide null write context W getWriteContextSync() { failed to get task result }`(
-        @Forgery fakeContext: DatadogContext,
-        @Mock mockEventWriteScope: EventWriteScope,
+    fun `M not throw W withWriteContextSync(callback) { failed to get task result }`(
+        @StringForgery fakeWithFeatureContexts: Set<String>,
         forge: Forge
     ) {
         // Given
         testedFeature.storage = mockStorage
+        val callback = mock<(DatadogContext, EventWriteScope) -> Unit>()
         val throwable = forge.anElementFrom(
             CancellationException(),
             ExecutionException(forge.aThrowable()),
             InterruptedException()
         )
-        whenever(coreFeature.mockInstance.contextExecutorService.submit(any<Callable<*>>())) doAnswer {
-            mock<Future<*>>().apply {
+        whenever(coreFeature.mockInstance.contextExecutorService.submit(any<Callable<Boolean>>())) doAnswer {
+            mock<Future<Boolean>>().apply {
                 whenever(get()) doThrow throwable
             }
         }
 
-        whenever(
-            mockStorage.getEventWriteScope(fakeContext)
-        ) doReturn mockEventWriteScope
-
         // When
-        val writeContext = testedFeature.getWriteContextSync()
+        val result = testedFeature.withWriteContextSync(fakeWithFeatureContexts, callback = callback)
 
         // Then
-        assertThat(writeContext).isNull()
+        verifyNoInteractions(callback)
+        assertThat(result).isFalse()
     }
 
     @Test
-    fun `M provide null write context W getWriteContextSync() { CoreFeature is not initialized }`() {
+    fun `M not provide write context W withWriteContextSync(callback) { CoreFeature is not initialized }`(
+        @StringForgery fakeWithFeatureContexts: Set<String>
+    ) {
         // Given
+        testedFeature.storage = mockStorage
+        val callback = mock<(DatadogContext, EventWriteScope) -> Unit>()
         whenever(coreFeature.mockInstance.initialized) doReturn AtomicBoolean(false)
+        whenever(coreFeature.mockInstance.contextExecutorService.submit(any<Callable<Boolean>>())) doAnswer {
+            val taskResult = it.getArgument<Callable<Boolean>>(0).call()
+            mock<Future<Boolean>>().apply {
+                whenever(get()) doReturn taskResult
+            }
+        }
 
         // When
-        val writeContext = testedFeature.getWriteContextSync()
+        val result = testedFeature.withWriteContextSync(fakeWithFeatureContexts, callback = callback)
 
         // Then
-        assertThat(writeContext).isNull()
-        verifyNoInteractions(mockContextProvider, mockStorage)
+        verifyNoInteractions(callback, mockContextProvider, mockStorage)
+        assertThat(result).isFalse()
     }
 
     @Test
