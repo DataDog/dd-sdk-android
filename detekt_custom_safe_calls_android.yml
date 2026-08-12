@@ -140,7 +140,6 @@ datadog:
       - "android.view.ViewGroup.addView(android.view.View?, android.view.ViewGroup.LayoutParams?)"
       - "android.view.ViewGroup.findViewById(kotlin.Int)"
       - "android.view.ViewGroup.getChildAt(kotlin.Int)"
-      - "android.view.ViewGroup.indexOfChild(android.view.View?)"
       - "android.view.ViewGroup.LayoutParams.constructor(kotlin.Int, kotlin.Int)"
       - "android.view.ViewGroup.removeView(android.view.View?)"
       - "android.view.ViewPropertyAnimator.alpha(kotlin.Float)"

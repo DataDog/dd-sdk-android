@@ -147,7 +147,7 @@ internal class GesturesListener(
         @Suppress("UnsafeThirdPartyFunctionCall")
         queue.add(0, decorView)
         var scrollTarget: ViewTarget? = null
-        var tapTarget: LocatedTapTarget? = null
+        val tapTargetSelector = TapTargetSelector()
         var composeViewDetected = false
         while (queue.isNotEmpty()) {
             // removeAt(index) instead of removeFirst here is on purpose, to prevent issues
@@ -165,10 +165,7 @@ internal class GesturesListener(
                 if (isScroll) {
                     scrollTarget = newTarget
                 } else {
-                    tapTarget = selectTapTarget(
-                        tapTarget,
-                        LocatedTapTarget(newTarget, view)
-                    )
+                    tapTargetSelector.considerCandidate(newTarget, view)
                 }
             }
             if (view.isVisible && view is ViewGroup) {
@@ -179,7 +176,7 @@ internal class GesturesListener(
             }
         }
 
-        val target = scrollTarget ?: tapTarget?.target
+        val target = scrollTarget ?: tapTargetSelector.selectedTarget
         if (target == null) {
             val msg = if (composeViewDetected) {
                 MSG_NO_COMPOSE_TARGET
@@ -194,94 +191,6 @@ internal class GesturesListener(
         }
         return target
     }
-
-    private fun selectTapTarget(
-        currentTarget: LocatedTapTarget?,
-        candidateTarget: LocatedTapTarget
-    ): LocatedTapTarget {
-        return when {
-            currentTarget == null -> candidateTarget
-            currentTarget.hostView.isPreferredTapTargetOver(candidateTarget.hostView) -> currentTarget
-            else -> candidateTarget
-        }
-    }
-
-    private fun View.isPreferredTapTargetOver(candidateView: View): Boolean {
-        val currentPath = pathFromRoot()
-        val candidatePath = candidateView.pathFromRoot()
-        val commonPathSize = currentPath.commonPathSizeWith(candidatePath)
-        val viewsAreDisconnected = commonPathSize == 0
-        val currentIsSameOrAncestor = commonPathSize == currentPath.size
-        val candidateIsAncestor = commonPathSize == candidatePath.size
-
-        return when {
-            viewsAreDisconnected -> false
-            // Within the same branch, prefer the deepest clickable view. An ancestor's Z does not
-            // place it in front of its own descendants.
-            currentIsSameOrAncestor -> false
-            candidateIsAncestor -> true
-            else -> currentPath.isBranchDrawnOnTopOf(candidatePath, commonPathSize)
-        }
-    }
-
-    private fun List<View>.commonPathSizeWith(otherPath: List<View>): Int {
-        val maximumCommonPathSize = minOf(size, otherPath.size)
-        var commonPathSize = 0
-        while (
-            commonPathSize < maximumCommonPathSize &&
-            this[commonPathSize] === otherPath[commonPathSize]
-        ) {
-            commonPathSize++
-        }
-        return commonPathSize
-    }
-
-    private fun List<View>.isBranchDrawnOnTopOf(
-        candidatePath: List<View>,
-        commonPathSize: Int
-    ): Boolean {
-        val divergingBranchIndex = commonPathSize
-        val commonParent = this[divergingBranchIndex - 1] as? ViewGroup ?: return false
-        val currentBranch = this[divergingBranchIndex]
-        val candidateBranch = candidatePath[divergingBranchIndex]
-
-        // Target depth and Z within each branch are irrelevant after the paths diverge. Android
-        // draws the two sibling branches as units, so their ordering decides which target is on top.
-        return currentBranch.isDrawnOnTopOf(candidateBranch, commonParent)
-    }
-
-    private fun View.isDrawnOnTopOf(candidateView: View, parent: ViewGroup): Boolean {
-        return when {
-            z > candidateView.z -> true
-            z < candidateView.z -> false
-            // Both comparisons are also false for NaN, matching Android's child-order fallback.
-            else -> parent.isChildDrawnAfter(this, candidateView)
-        }
-    }
-
-    private fun ViewGroup.isChildDrawnAfter(child: View, candidateChild: View): Boolean {
-        val childIndex = indexOfChild(child)
-        val candidateChildIndex = indexOfChild(candidateChild)
-        return childIndex >= 0 && candidateChildIndex >= 0 && childIndex > candidateChildIndex
-    }
-
-    private fun View.pathFromRoot(): List<View> {
-        val path = mutableListOf<View>()
-        var current: View? = this
-        while (current != null) {
-            path += current
-            current = current.parent as? View
-        }
-        // path is backed by mutableListOf, so reverse cannot encounter an immutable implementation.
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        path.reverse()
-        return path
-    }
-
-    private data class LocatedTapTarget(
-        val target: ViewTarget,
-        val hostView: View
-    )
 
     private fun findTargetForScroll(view: View, x: Float, y: Float): ViewTarget? {
         // return bottom-most scrollable element
