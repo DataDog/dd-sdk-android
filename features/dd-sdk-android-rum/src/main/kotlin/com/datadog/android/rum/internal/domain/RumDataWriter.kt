@@ -7,20 +7,34 @@
 package com.datadog.android.rum.internal.domain
 
 import androidx.annotation.WorkerThread
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.api.storage.write
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.serializeToByteArray
+import com.datadog.android.internal.telemetry.TelemetryContext
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.domain.event.RumEventMeta
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
 import com.datadog.android.rum.internal.domain.scope.DiffThenFullView
 import com.datadog.android.rum.internal.domain.scope.MappedViewEvent
 import com.datadog.android.rum.internal.domain.scope.RumViewUpdateData
+import com.datadog.android.rum.model.ActionEvent
+import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.LongTaskEvent
+import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.ViewUpdateEvent
+import com.datadog.android.rum.model.VitalAppLaunchEvent
+import com.datadog.android.rum.model.VitalOperationStepEvent
+import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
+import com.datadog.android.telemetry.model.TelemetryDebugEvent
+import com.datadog.android.telemetry.model.TelemetryErrorEvent
+import com.datadog.android.telemetry.model.TelemetryUsageEvent
 
 internal class RumDataWriter(
     internal val eventMapper: RumEventMapper,
@@ -30,6 +44,7 @@ internal class RumDataWriter(
 ) : DataWriter<Any> {
 
     @WorkerThread
+    @Suppress("ReturnCount")
     override fun write(writer: EventBatchWriter, element: Any, eventType: EventType): Boolean {
         // We support two full-view payload forms:
         // - MappedViewEvent: produced by RumViewEventWriter in the regular runtime pipeline,
@@ -64,7 +79,12 @@ internal class RumDataWriter(
         val serializedEventMeta = eventMetaSerializer.serializeToByteArray(eventMeta, sdkCore.internalLogger)
             ?: EMPTY_BYTE_ARRAY
 
-        return writeBatchEvent(writer, RawBatchEvent(data = byteArray, metadata = serializedEventMeta), eventType) {
+        return writeBatchEvent(
+            writer,
+            RawBatchEvent(data = byteArray, metadata = serializedEventMeta),
+            eventType,
+            event
+        ) {
             sdkCore.writeLastViewEvent(byteArray)
         }
     }
@@ -87,7 +107,12 @@ internal class RumDataWriter(
         val serializedEventMeta = eventMetaSerializer.serializeToByteArray(eventMeta, sdkCore.internalLogger)
             ?: EMPTY_BYTE_ARRAY
 
-        return writeBatchEvent(writer, RawBatchEvent(data = byteArray, metadata = serializedEventMeta), eventType) {
+        return writeBatchEvent(
+            writer,
+            RawBatchEvent(data = byteArray, metadata = serializedEventMeta),
+            eventType,
+            event
+        ) {
             if (writeCrashRecovery) {
                 // serialize the full ViewEvent only on successful write, for crash recovery
                 val byteArrayView = eventSerializer.serializeToByteArray(eventData.viewEvent, sdkCore.internalLogger)
@@ -122,7 +147,7 @@ internal class RumDataWriter(
     private fun writeOtherEvent(writer: EventBatchWriter, event: Any, eventType: EventType): Boolean {
         val mappedElement = eventMapper.map(event) ?: return false
         return eventSerializer.serializeToByteArray(mappedElement, sdkCore.internalLogger)
-            ?.let { writeBatchEvent(writer, RawBatchEvent(data = it), eventType) }
+            ?.let { writeBatchEvent(writer, RawBatchEvent(data = it), eventType, event) }
             ?: false
     }
 
@@ -131,10 +156,15 @@ internal class RumDataWriter(
         writer: EventBatchWriter,
         batchEvent: RawBatchEvent,
         eventType: EventType,
+        element: Any,
         onSuccess: () -> Unit = {}
     ): Boolean {
         return synchronized(this) {
-            val result = writer.write(batchEvent, null, eventType)
+            val telemetryContext = TelemetryContext(
+                featureName = Feature.RUM_FEATURE_NAME,
+                eventType = resolveEventType(element)
+            )
+            val result = writer.write(batchEvent, null, eventType, telemetryContext)
             if (result) onSuccess()
             result
         }
@@ -142,5 +172,23 @@ internal class RumDataWriter(
 
     companion object {
         val EMPTY_BYTE_ARRAY = ByteArray(0)
+
+        private const val UNKNOWN_EVENT_TYPE = "unknown"
+
+        private fun resolveEventType(event: Any): String = when (event) {
+            is ActionEvent -> event.type
+            is ErrorEvent -> event.type
+            is LongTaskEvent -> event.type
+            is ResourceEvent -> event.type
+            is ViewEvent -> event.type
+            is ViewUpdateEvent -> event.type
+            is VitalAppLaunchEvent -> event.type
+            is VitalOperationStepEvent -> event.type
+            is TelemetryConfigurationEvent -> event.type
+            is TelemetryDebugEvent -> event.type
+            is TelemetryErrorEvent -> event.type
+            is TelemetryUsageEvent -> event.type
+            else -> UNKNOWN_EVENT_TYPE
+        }
     }
 }

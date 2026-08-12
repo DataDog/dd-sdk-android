@@ -7,10 +7,11 @@
 package com.datadog.android.rum.internal.domain
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.core.internal.storage.TelemetryAwareEventBatchWriter
 import com.datadog.android.core.persistence.Serializer
+import com.datadog.android.internal.telemetry.TelemetryContext
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.domain.event.RumEventMeta
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
@@ -25,6 +26,10 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.ViewUpdateEvent
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
+import com.datadog.android.telemetry.model.TelemetryDebugEvent
+import com.datadog.android.telemetry.model.TelemetryErrorEvent
+import com.datadog.android.telemetry.model.TelemetryUsageEvent
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -43,6 +48,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -80,7 +86,7 @@ internal class RumDataWriterTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
-    lateinit var mockEventBatchWriter: EventBatchWriter
+    lateinit var mockEventBatchWriter: TelemetryAwareEventBatchWriter
 
     @StringForgery
     lateinit var fakeSerializedEvent: String
@@ -96,9 +102,17 @@ internal class RumDataWriterTest {
 
         whenever(
             mockEventBatchWriter.write(
-                RawBatchEvent(data = fakeSerializedData),
-                null,
-                fakeEventType
+                any<RawBatchEvent>(),
+                anyOrNull<ByteArray>(),
+                any<EventType>(),
+                any<TelemetryContext>()
+            )
+        ) doReturn true
+        whenever(
+            mockEventBatchWriter.write(
+                any<RawBatchEvent>(),
+                anyOrNull<ByteArray>(),
+                any<EventType>()
             )
         ) doReturn true
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
@@ -134,11 +148,78 @@ internal class RumDataWriterTest {
         // Then
         assertThat(result).isTrue
 
+        val captor = argumentCaptor<RawBatchEvent>()
         verify(mockEventBatchWriter).write(
-            RawBatchEvent(data = fakeSerializedData),
-            null,
-            fakeEventType
+            captor.capture(),
+            anyOrNull<ByteArray>(),
+            any<EventType>(),
+            any<TelemetryContext>()
         )
+        assertThat(captor.firstValue.data).isEqualTo(fakeSerializedData)
+    }
+
+    @Test
+    fun `M resolve event type W write() { telemetry models }`(forge: Forge) {
+        // Given
+        val fakeConfigurationEvent = forge.getForgery(TelemetryConfigurationEvent::class.java)
+        val fakeDebugEvent = forge.getForgery(TelemetryDebugEvent::class.java)
+        val fakeErrorEvent = forge.getForgery(TelemetryErrorEvent::class.java)
+        val fakeUsageEvent = forge.getForgery(TelemetryUsageEvent::class.java)
+        val fakeEvents = listOf<Any>(
+            fakeConfigurationEvent,
+            fakeDebugEvent,
+            fakeErrorEvent,
+            fakeUsageEvent
+        )
+        val expectedEventTypes = listOf(
+            fakeConfigurationEvent.type,
+            fakeDebugEvent.type,
+            fakeErrorEvent.type,
+            fakeUsageEvent.type
+        )
+        fakeEvents.forEach {
+            whenever(mockEventMapper.map(it)) doReturn it
+            whenever(mockEventSerializer.serialize(it)) doReturn fakeSerializedEvent
+        }
+
+        // When
+        fakeEvents.forEach {
+            testedWriter.write(mockEventBatchWriter, it, fakeEventType)
+        }
+
+        // Then
+        val captor = argumentCaptor<TelemetryContext>()
+        verify(mockEventBatchWriter, times(fakeEvents.size)).write(
+            any(),
+            anyOrNull<ByteArray>(),
+            any<EventType>(),
+            captor.capture()
+        )
+        assertThat(captor.allValues.map { it.eventType })
+            .containsExactlyElementsOf(expectedEventTypes)
+    }
+
+    @Test
+    fun `M resolve unknown event type W write() { event class has no type property }`(
+        @StringForgery fakeValue: String
+    ) {
+        // Given
+        val fakeEvent = FakeEventWithoutType(fakeValue)
+        whenever(mockEventMapper.map(fakeEvent)) doReturn fakeEvent
+        whenever(mockEventSerializer.serialize(fakeEvent)) doReturn fakeSerializedEvent
+
+        // When
+        testedWriter.write(mockEventBatchWriter, fakeEvent, fakeEventType)
+
+        // Then
+        val captor = argumentCaptor<TelemetryContext>()
+        verify(mockEventBatchWriter).write(
+            any(),
+            anyOrNull<ByteArray>(),
+            any<EventType>(),
+            captor.capture()
+        )
+        assertThat(captor.firstValue.eventType).isEqualTo("unknown")
     }
 
     @Test
@@ -161,14 +242,15 @@ internal class RumDataWriterTest {
         testedWriter.write(mockEventBatchWriter, fakeViewEvent, fakeEventType)
 
         // Then
+        val captor = argumentCaptor<RawBatchEvent>()
         verify(mockEventBatchWriter).write(
-            RawBatchEvent(
-                data = fakeSerializedData,
-                metadata = fakeSerializedViewEventMeta.toByteArray(Charsets.UTF_8)
-            ),
-            null,
-            fakeEventType
+            captor.capture(),
+            anyOrNull<ByteArray>(),
+            any<EventType>(),
+            any<TelemetryContext>()
         )
+        assertThat(captor.firstValue.data).isEqualTo(fakeSerializedData)
+        assertThat(captor.firstValue.metadata).isEqualTo(fakeSerializedViewEventMeta.toByteArray(Charsets.UTF_8))
     }
 
     @Test
@@ -193,12 +275,15 @@ internal class RumDataWriterTest {
         whenever(mockEventMetaSerializer.serialize(eventMeta)) doReturn fakeSerializedViewEventMeta
         whenever(
             mockEventBatchWriter.write(
-                RawBatchEvent(
-                    data = fakeMappedSerializedData,
-                    metadata = fakeSerializedViewEventMeta.toByteArray(Charsets.UTF_8)
+                eq(
+                    RawBatchEvent(
+                        data = fakeMappedSerializedData,
+                        metadata = fakeSerializedViewEventMeta.toByteArray(Charsets.UTF_8)
+                    )
                 ),
-                null,
-                fakeEventType
+                anyOrNull<ByteArray>(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
             )
         ) doReturn true
 
@@ -229,12 +314,15 @@ internal class RumDataWriterTest {
         whenever(mockEventMetaSerializer.serialize(eventMeta)) doReturn fakeSerializedViewEventMeta
         whenever(
             mockEventBatchWriter.write(
-                RawBatchEvent(
-                    data = fakeMappedSerializedData,
-                    metadata = fakeSerializedViewEventMeta.toByteArray(Charsets.UTF_8)
+                eq(
+                    RawBatchEvent(
+                        data = fakeMappedSerializedData,
+                        metadata = fakeSerializedViewEventMeta.toByteArray(Charsets.UTF_8)
+                    )
                 ),
-                null,
-                fakeEventType
+                anyOrNull<ByteArray>(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
             )
         ) doReturn true
 
@@ -266,11 +354,15 @@ internal class RumDataWriterTest {
         testedWriter.write(mockEventBatchWriter, fakeViewEvent, fakeEventType)
 
         // Then
+        val captor = argumentCaptor<RawBatchEvent>()
         verify(mockEventBatchWriter).write(
-            RawBatchEvent(data = fakeSerializedData),
-            null,
-            fakeEventType
+            captor.capture(),
+            anyOrNull<ByteArray>(),
+            any<EventType>(),
+            any<TelemetryContext>()
         )
+        assertThat(captor.firstValue.data).isEqualTo(fakeSerializedData)
+        assertThat(captor.firstValue.metadata).isEmpty()
     }
 
     @Test
@@ -313,7 +405,14 @@ internal class RumDataWriterTest {
 
         whenever(mockEventMapper.map(fakeEvent)) doReturn fakeEvent
         whenever(mockEventSerializer.serialize(fakeEvent)) doReturn fakeSerializedEvent
-        whenever(mockEventBatchWriter.write(RawBatchEvent(fakeSerializedData), null, fakeEventType)) doReturn false
+        whenever(
+            mockEventBatchWriter.write(
+                any<RawBatchEvent>(),
+                anyOrNull<ByteArray>(),
+                any<EventType>(),
+                any<TelemetryContext>()
+            )
+        ) doReturn false
 
         // When
         val result = testedWriter.write(mockEventBatchWriter, fakeEvent, fakeEventType)
@@ -340,12 +439,15 @@ internal class RumDataWriterTest {
         whenever(mockEventMetaSerializer.serialize(eventMeta)) doReturn fakeSerializedMeta
         whenever(
             mockEventBatchWriter.write(
-                RawBatchEvent(
-                    data = fakeSerializedData,
-                    metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)
+                eq(
+                    RawBatchEvent(
+                        data = fakeSerializedData,
+                        metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)
+                    )
                 ),
-                null,
-                fakeEventType
+                anyOrNull<ByteArray>(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
             )
         ) doReturn true
 
@@ -372,12 +474,15 @@ internal class RumDataWriterTest {
         whenever(mockEventMetaSerializer.serialize(eventMeta)) doReturn fakeSerializedMeta
         whenever(
             mockEventBatchWriter.write(
-                RawBatchEvent(
-                    data = fakeSerializedData,
-                    metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)
+                eq(
+                    RawBatchEvent(
+                        data = fakeSerializedData,
+                        metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)
+                    )
                 ),
-                null,
-                fakeEventType
+                anyOrNull<ByteArray>(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
             )
         ) doReturn false
 
@@ -413,12 +518,15 @@ internal class RumDataWriterTest {
         whenever(mockEventMetaSerializer.serialize(eventMeta)) doReturn fakeSerializedMeta
         whenever(
             mockEventBatchWriter.write(
-                RawBatchEvent(
-                    data = fakeDiffSerializedData,
-                    metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)
+                eq(
+                    RawBatchEvent(
+                        data = fakeDiffSerializedData,
+                        metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)
+                    )
                 ),
-                null,
-                fakeEventType
+                anyOrNull<ByteArray>(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
             )
         ) doReturn true
 
@@ -451,12 +559,15 @@ internal class RumDataWriterTest {
         whenever(mockEventMetaSerializer.serialize(eventMeta)) doReturn fakeSerializedMeta
         whenever(
             mockEventBatchWriter.write(
-                RawBatchEvent(
-                    data = fakeDiffSerializedData,
-                    metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)
+                eq(
+                    RawBatchEvent(
+                        data = fakeDiffSerializedData,
+                        metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)
+                    )
                 ),
-                null,
-                fakeEventType
+                anyOrNull<ByteArray>(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
             )
         ) doReturn false
 
@@ -502,12 +613,15 @@ internal class RumDataWriterTest {
         whenever(mockEventMetaSerializer.serialize(eventMeta)) doReturn fakeSerializedMeta
         whenever(
             mockEventBatchWriter.write(
-                RawBatchEvent(
-                    data = fakeSerializedData,
-                    metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)
+                eq(
+                    RawBatchEvent(
+                        data = fakeSerializedData,
+                        metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)
+                    )
                 ),
-                null,
-                fakeEventType
+                anyOrNull<ByteArray>(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
             )
         ) doReturn false
 
@@ -563,9 +677,10 @@ internal class RumDataWriterTest {
         whenever(mockEventMetaSerializer.serialize(eventMeta)) doThrow forge.aThrowable()
         whenever(
             mockEventBatchWriter.write(
-                RawBatchEvent(data = fakeDiffSerializedData),
-                null,
-                fakeEventType
+                eq(RawBatchEvent(data = fakeDiffSerializedData)),
+                anyOrNull<ByteArray>(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
             )
         ) doReturn true
 
@@ -574,9 +689,10 @@ internal class RumDataWriterTest {
 
         // Then
         verify(mockEventBatchWriter).write(
-            RawBatchEvent(data = fakeDiffSerializedData),
-            null,
-            fakeEventType
+            eq(RawBatchEvent(data = fakeDiffSerializedData)),
+            anyOrNull<ByteArray>(),
+            eq(fakeEventType),
+            any<TelemetryContext>()
         )
     }
 
@@ -603,12 +719,15 @@ internal class RumDataWriterTest {
         whenever(mockEventMetaSerializer.serialize(eventMeta)) doReturn fakeSerializedMeta
         whenever(
             mockEventBatchWriter.write(
-                RawBatchEvent(
-                    data = fakeDiffSerializedData,
-                    metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)
+                eq(
+                    RawBatchEvent(
+                        data = fakeDiffSerializedData,
+                        metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)
+                    )
                 ),
-                null,
-                fakeEventType
+                anyOrNull<ByteArray>(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
             )
         ) doReturn true
 
@@ -655,22 +774,28 @@ internal class RumDataWriterTest {
         whenever(mockEventMetaSerializer.serialize(fullMeta)) doReturn fakeFullMeta
         whenever(
             mockEventBatchWriter.write(
-                RawBatchEvent(
-                    data = fakeDiffBytes,
-                    metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)
+                eq(
+                    RawBatchEvent(
+                        data = fakeDiffBytes,
+                        metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)
+                    )
                 ),
-                null,
-                fakeEventType
+                anyOrNull<ByteArray>(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
             )
         ) doReturn true
         whenever(
             mockEventBatchWriter.write(
-                RawBatchEvent(
-                    data = fakeFullBytes,
-                    metadata = fakeFullMeta.toByteArray(Charsets.UTF_8)
+                eq(
+                    RawBatchEvent(
+                        data = fakeFullBytes,
+                        metadata = fakeFullMeta.toByteArray(Charsets.UTF_8)
+                    )
                 ),
-                null,
-                fakeEventType
+                anyOrNull<ByteArray>(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
             )
         ) doReturn true
 
@@ -680,7 +805,10 @@ internal class RumDataWriterTest {
         // Then
         assertThat(result).isTrue()
         val captor = argumentCaptor<RawBatchEvent>()
-        verify(mockEventBatchWriter, times(2)).write(captor.capture(), isNull(), eq(fakeEventType))
+        verify(
+            mockEventBatchWriter,
+            times(2)
+        ).write(captor.capture(), isNull(), eq(fakeEventType), any<TelemetryContext>())
         // diff is written first, then the full view
         assertThat(captor.firstValue.data).isEqualTo(fakeDiffBytes)
         assertThat(captor.secondValue.data).isEqualTo(fakeFullBytes)
@@ -718,22 +846,28 @@ internal class RumDataWriterTest {
         whenever(mockEventMetaSerializer.serialize(fullMeta)) doReturn fakeFullMeta
         whenever(
             mockEventBatchWriter.write(
-                RawBatchEvent(
-                    data = fakeDiffBytes,
-                    metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)
+                eq(
+                    RawBatchEvent(
+                        data = fakeDiffBytes,
+                        metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)
+                    )
                 ),
-                null,
-                fakeEventType
+                anyOrNull<ByteArray>(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
             )
         ) doReturn true
         whenever(
             mockEventBatchWriter.write(
-                RawBatchEvent(
-                    data = fakeFullBytes,
-                    metadata = fakeFullMeta.toByteArray(Charsets.UTF_8)
+                eq(
+                    RawBatchEvent(
+                        data = fakeFullBytes,
+                        metadata = fakeFullMeta.toByteArray(Charsets.UTF_8)
+                    )
                 ),
-                null,
-                fakeEventType
+                anyOrNull<ByteArray>(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
             )
         ) doReturn true
 
@@ -776,16 +910,18 @@ internal class RumDataWriterTest {
         whenever(mockEventMetaSerializer.serialize(fullMeta)) doReturn fakeFullMeta
         whenever(
             mockEventBatchWriter.write(
-                RawBatchEvent(data = fakeDiffBytes, metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)),
-                null,
-                fakeEventType
+                eq(RawBatchEvent(data = fakeDiffBytes, metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8))),
+                anyOrNull<ByteArray>(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
             )
         ) doReturn true
         whenever(
             mockEventBatchWriter.write(
-                RawBatchEvent(data = fakeFullBytes, metadata = fakeFullMeta.toByteArray(Charsets.UTF_8)),
-                null,
-                fakeEventType
+                eq(RawBatchEvent(data = fakeFullBytes, metadata = fakeFullMeta.toByteArray(Charsets.UTF_8))),
+                anyOrNull<ByteArray>(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
             )
         ) doReturn true
 
@@ -828,16 +964,18 @@ internal class RumDataWriterTest {
         whenever(mockEventMetaSerializer.serialize(fullMeta)) doReturn fakeFullMeta
         whenever(
             mockEventBatchWriter.write(
-                RawBatchEvent(data = fakeDiffBytes, metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)),
-                null,
-                fakeEventType
+                eq(RawBatchEvent(data = fakeDiffBytes, metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8))),
+                anyOrNull<ByteArray>(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
             )
         ) doReturn true
         whenever(
             mockEventBatchWriter.write(
-                RawBatchEvent(data = fakeFullBytes, metadata = fakeFullMeta.toByteArray(Charsets.UTF_8)),
-                null,
-                fakeEventType
+                eq(RawBatchEvent(data = fakeFullBytes, metadata = fakeFullMeta.toByteArray(Charsets.UTF_8))),
+                anyOrNull<ByteArray>(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
             )
         ) doReturn false
 
@@ -871,9 +1009,10 @@ internal class RumDataWriterTest {
         whenever(mockEventMetaSerializer.serialize(diffMeta)) doReturn fakeSerializedMeta
         whenever(
             mockEventBatchWriter.write(
-                RawBatchEvent(data = fakeDiffBytes, metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)),
-                null,
-                fakeEventType
+                eq(RawBatchEvent(data = fakeDiffBytes, metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8))),
+                anyOrNull<ByteArray>(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
             )
         ) doReturn false
 
@@ -881,7 +1020,7 @@ internal class RumDataWriterTest {
         testedWriter.write(mockEventBatchWriter, fakeData, fakeEventType)
 
         // Then — only one batch write (the diff); full view batch write never attempted
-        verify(mockEventBatchWriter, times(1)).write(any(), isNull(), any())
+        verify(mockEventBatchWriter, times(1)).write(any(), isNull(), any(), any<TelemetryContext>())
     }
 
     @Test
@@ -906,9 +1045,10 @@ internal class RumDataWriterTest {
         whenever(mockEventMetaSerializer.serialize(diffMeta)) doReturn fakeSerializedMeta
         whenever(
             mockEventBatchWriter.write(
-                RawBatchEvent(data = fakeDiffBytes, metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)),
-                null,
-                fakeEventType
+                eq(RawBatchEvent(data = fakeDiffBytes, metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8))),
+                anyOrNull<ByteArray>(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
             )
         ) doReturn false
 
@@ -941,9 +1081,10 @@ internal class RumDataWriterTest {
         whenever(mockEventMetaSerializer.serialize(diffMeta)) doReturn fakeSerializedMeta
         whenever(
             mockEventBatchWriter.write(
-                RawBatchEvent(data = fakeDiffBytes, metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)),
-                null,
-                fakeEventType
+                eq(RawBatchEvent(data = fakeDiffBytes, metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8))),
+                anyOrNull<ByteArray>(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
             )
         ) doReturn false
 
@@ -1047,3 +1188,5 @@ internal class RumDataWriterTest {
         }
     }
 }
+
+private data class FakeEventWithoutType(val value: String)

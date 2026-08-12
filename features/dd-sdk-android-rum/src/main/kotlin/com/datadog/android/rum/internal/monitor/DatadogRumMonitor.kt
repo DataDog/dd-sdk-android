@@ -955,26 +955,26 @@ internal class DatadogRumMonitor(
 
     internal fun handleEvent(event: RumRawEvent) {
         if (event is RumRawEvent.AddError && event.isFatal) {
-            synchronized(rootScope) {
-                // TODO RUM-9852 Implement better passthrough mechanism for the JVM crash scenario
-                val writeContext = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
-                    ?.getWriteContextSync(withFeatureContexts = setOf(Feature.SESSION_REPLAY_FEATURE_NAME))
-                if (writeContext != null) {
-                    val (datadogContext, eventWriteScope) = writeContext
-                    @Suppress("ThreadSafety") // Crash handling, can't delegate to another thread
-                    rootScope.handleEvent(event, datadogContext, eventWriteScope, writer)
-                    val rumContext = currentRumContext()
-                    sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
-                        it.clear()
-                        rumContext?.toMap()?.let(it::putAll)
+            val handled = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+                ?.withWriteContextSync(
+                    withFeatureContexts = setOf(Feature.SESSION_REPLAY_FEATURE_NAME)
+                ) { datadogContext, eventWriteScope ->
+                    synchronized(rootScope) {
+                        @Suppress("ThreadSafety") // Crash handling, can't delegate to another thread
+                        rootScope.handleEvent(event, datadogContext, eventWriteScope, writer)
+                        val rumContext = currentRumContext()
+                        sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME, useContextThread = false) {
+                            it.clear()
+                            rumContext?.toMap()?.let(it::putAll)
+                        }
                     }
-                } else {
-                    sdkCore.internalLogger.log(
-                        InternalLogger.Level.WARN,
-                        InternalLogger.Target.USER,
-                        { CANNOT_WRITE_CRASH_WRITE_CONTEXT_IS_NOT_AVAILABLE }
-                    )
                 }
+            if (handled != true) {
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    { CANNOT_WRITE_CRASH_WRITE_CONTEXT_IS_NOT_AVAILABLE }
+                )
             }
         } else if (event is RumRawEvent.TelemetryEventWrapper) {
             telemetryEventHandler.handleEvent(event, writer)

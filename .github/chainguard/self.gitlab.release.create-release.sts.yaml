@@ -1,0 +1,12 @@
+issuer: https://gitlab.ddbuild.io
+
+subject_pattern: "project_path:DataDog/dd-sdk-android:ref_type:tag:ref:[0-9]+\\.[0-9]+\\.[0-9]+.*"
+
+claim_pattern:
+  ci_config_ref_uri: 'gitlab\.ddbuild\.io/DataDog/dd-sdk-android//\.gitlab-ci\.yml@refs/tags/.*'
+  pipeline_source: "push"
+  project_path: "DataDog/dd-sdk-android"
+  ref_path: 'refs/tags/[0-9]+\.[0-9]+\.[0-9]+.*'
+
+permissions:
+  contents: write
