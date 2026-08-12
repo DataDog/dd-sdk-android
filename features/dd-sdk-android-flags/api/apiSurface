@@ -61,6 +61,7 @@ enum com.datadog.android.flags.model.ResolutionReason
   - STATIC
   - DEFAULT
   - TARGETING_MATCH
+  - SPLIT
   - RULE_MATCH
   - PREREQUISITE_FAILED
   - ERROR

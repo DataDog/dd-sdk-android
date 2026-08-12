@@ -7,22 +7,25 @@
 package com.datadog.android.core.internal.persistence.file
 
 import androidx.annotation.WorkerThread
+import com.datadog.android.internal.telemetry.TelemetryContext
 import java.io.File
 
 internal interface FileWriter<T> {
 
     /**
      * Writes data as a [T] into a file.
-     * @type T type of the data to write
+     * @typeParam T type of the data to write
      * @param file the file to write to
      * @param data the data to write
      * @param append whether to append data at the end of the file or overwrite
+     * @param telemetryContext optional telemetry metadata for dropped-event diagnostics
      * @return whether the write operation was successful
      */
     @WorkerThread
     fun writeData(
         file: File,
         data: T,
-        append: Boolean
+        append: Boolean,
+        telemetryContext: TelemetryContext
     ): Boolean
 }
