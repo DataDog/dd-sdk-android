@@ -41,7 +41,7 @@ internal class NoOpProfiler : Profiler {
 
     override fun setExtendLaunchSession(extend: Boolean) = Unit
 
-    override fun setProfilingPackageVersionCode(versionCode: Long) = Unit
+    override fun resolveProfilingPackageVersionCode(appContext: Context) = Unit
 
     class NoOpScheduledExecutorService : ScheduledExecutorService {
         override fun schedule(

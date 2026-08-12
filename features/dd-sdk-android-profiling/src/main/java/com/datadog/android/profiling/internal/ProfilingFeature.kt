@@ -31,7 +31,6 @@ import com.datadog.android.profiling.internal.quota.NoOpQuotaChecker
 import com.datadog.android.profiling.internal.quota.ProfilingQuotaChecker
 import com.datadog.android.profiling.internal.quota.QuotaChecker
 import com.datadog.android.profiling.internal.quota.QuotaResult
-import com.datadog.android.profiling.internal.utils.getProfilingModuleLongVersionCode
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
@@ -93,11 +92,9 @@ internal class ProfilingFeature(
     override fun onInitialize(appContext: Context) {
         this.appContext = appContext
         profiler.apply {
-            this.internalLogger = sdkCore.internalLogger
             this.timeProvider.delegate = sdkCore.timeProvider
-            setProfilingPackageVersionCode(
-                appContext.packageManager.getProfilingModuleLongVersionCode(sdkCore.internalLogger)
-            )
+            resolveProfilingPackageVersionCode(appContext)
+            this.internalLogger = sdkCore.internalLogger
             registerProfilingCallback(appContext, this@ProfilingFeature)
         }
         ProfilingStorage.setSampleRate(appContext, configuration.applicationLaunchSampleRate)

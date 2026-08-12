@@ -7,6 +7,8 @@
 package com.datadog.android.profiling.internal
 
 import android.content.Context
+import android.content.pm.PackageInfo
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.CancellationSignal
 import android.os.ProfilingManager
@@ -44,7 +46,9 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
@@ -58,6 +62,7 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
@@ -75,6 +80,9 @@ class PerfettoProfilerTest {
 
     @Mock
     private lateinit var mockService: ProfilingManager
+
+    @Mock
+    private lateinit var mockPackageManager: PackageManager
 
     @Mock
     private lateinit var mockInternalLogger: InternalLogger
@@ -109,6 +117,8 @@ class PerfettoProfilerTest {
     @BeforeEach
     fun `set up`() {
         whenever(mockContext.getSystemService(ProfilingManager::class.java)).doReturn(mockService)
+        whenever(mockContext.packageManager) doReturn mockPackageManager
+        stubProfilingModuleVersionCode(fakeProfilingPackageLongVersionCode)
         // ANR registration is only delegated on BAKLAVA+; opt-in for tests.
         whenever(mockBuildSdkVersionProvider.isAtLeastBaklava) doReturn true
         testedProfiler = PerfettoProfiler(
@@ -1086,6 +1096,187 @@ class PerfettoProfilerTest {
     }
 
     // endregion
+
+    // region blocked profiling module version
+
+    @Test
+    fun `M not request profiling W start() {blocked profiling module version}`() {
+        // Given
+        stubProfilingModuleVersionCode(BLOCKED_VERSION_CODE)
+
+        // When
+        testedProfiler.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap())
+
+        // Then
+        verify(mockService, never()).requestProfiling(any(), any(), any(), any(), any(), any())
+        assertThat(testedProfiler.isRunning()).isFalse()
+    }
+
+    @Test
+    fun `M notify failure W start() {blocked profiling module version}`() {
+        // Given
+        stubProfilingModuleVersionCode(BLOCKED_VERSION_CODE)
+
+        // When
+        testedProfiler.start(mockContext, ProfilingStartReason.CONTINUOUS, emptyMap())
+
+        // Then no result callback will ever fire, so the caller must be told the window is over.
+        verify(mockProfilerCallback).onFailure(ProfilingStartReason.CONTINUOUS)
+        verifyNoMoreInteractions(mockProfilerCallback)
+    }
+
+    @Test
+    fun `M report blocked telemetry W start() {blocked profiling module version}`() {
+        // Given
+        stubProfilingModuleVersionCode(BLOCKED_VERSION_CODE)
+
+        // When
+        testedProfiler.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap())
+
+        // Then
+        val messageCaptor = argumentCaptor<() -> String>()
+        val expectedProps = mapOf(
+            "metric_type" to "profiling blocked",
+            "profiling_session" to mapOf(
+                "start_reason" to ProfilingStartReason.APPLICATION_LAUNCH.value
+            ),
+            "profiling_config" to mapOf(
+                "profiling_package_version_code" to BLOCKED_VERSION_CODE
+            )
+        )
+        verify(mockInternalLogger).logMetric(
+            messageCaptor.capture(),
+            eq(expectedProps),
+            eq(MethodCallSamplingRate.ALL.rate),
+            isNull()
+        )
+        assertThat(messageCaptor.firstValue.invoke()).isEqualTo("[Mobile Metric] Profiling Session")
+    }
+
+    @Test
+    fun `M report blocked telemetry only once W start() {blocked version, several calls}`(
+        forge: Forge
+    ) {
+        // Given
+        stubProfilingModuleVersionCode(BLOCKED_VERSION_CODE)
+
+        // When
+        repeat(forge.anInt(min = 2, max = 5)) {
+            testedProfiler.start(mockContext, ProfilingStartReason.CONTINUOUS, emptyMap())
+        }
+
+        // Then
+        verify(mockInternalLogger).logMetric(any(), any(), any(), anyOrNull())
+    }
+
+    @Test
+    fun `M report blocked telemetry with version code W start() {blocked version, before init}`() {
+        // Given a profiler started from the content provider, before the SDK is initialized:
+        // no logger is attached yet and the version code was never pushed by the feature.
+        val profiler = PerfettoProfiler(
+            timeProvider = stubTimeProvider,
+            scheduledExecutorService = mockExecutorService,
+            anrTriggerRegistrar = mockAnrRegistrar,
+            buildSdkVersionProvider = mockBuildSdkVersionProvider,
+            profilingTelemetry = ProfilingTelemetry()
+        )
+        stubProfilingModuleVersionCode(BLOCKED_VERSION_CODE)
+
+        // When
+        profiler.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap())
+        profiler.internalLogger = mockInternalLogger
+
+        // Then
+        val propertiesCaptor = argumentCaptor<Map<String, Any?>>()
+        verify(mockInternalLogger).logMetric(
+            any(),
+            propertiesCaptor.capture(),
+            eq(MethodCallSamplingRate.ALL.rate),
+            isNull()
+        )
+        val profilingConfig = propertiesCaptor.firstValue["profiling_config"] as Map<*, *>
+        assertThat(profilingConfig["profiling_package_version_code"])
+            .isEqualTo(BLOCKED_VERSION_CODE)
+    }
+
+    @Test
+    fun `M request profiling W start() {profiling module version is not blocked}`() {
+        // Given
+        stubProfilingModuleVersionCode(fakeProfilingPackageLongVersionCode)
+
+        // When
+        testedProfiler.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap())
+
+        // Then
+        verify(mockService).requestProfiling(any(), any(), any(), any(), any(), any())
+    }
+
+    // endregion
+
+    // region profiling module version resolution
+
+    @Test
+    fun `M query the package manager once W resolveProfilingPackageVersionCode() {concurrent}`() {
+        // Given a lookup that is already in flight when a second caller arrives: the profiler is
+        // shared between the content provider, the scheduler executor and the SDK initialization.
+        val lookupStarted = CountDownLatch(1)
+        val releaseLookup = CountDownLatch(1)
+        val mockPackageInfo = mock<PackageInfo> {
+            on { longVersionCode } doReturn fakeProfilingPackageLongVersionCode
+        }
+        whenever(
+            mockPackageManager.getPackageInfo(
+                "com.google.android.profiling",
+                PackageManager.MATCH_APEX
+            )
+        ) doAnswer {
+            lookupStarted.countDown()
+            releaseLookup.await(LATCH_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            mockPackageInfo
+        }
+        val firstCaller = Thread { testedProfiler.resolveProfilingPackageVersionCode(mockContext) }
+        val secondCaller = Thread { testedProfiler.resolveProfilingPackageVersionCode(mockContext) }
+
+        // When
+        firstCaller.start()
+        check(lookupStarted.await(LATCH_TIMEOUT_SECONDS, TimeUnit.SECONDS)) { "lookup never started" }
+        secondCaller.start()
+        Thread.sleep(CONTENTION_WINDOW_MS)
+        releaseLookup.countDown()
+        firstCaller.join(JOIN_TIMEOUT_MS)
+        secondCaller.join(JOIN_TIMEOUT_MS)
+
+        // Then
+        verify(mockPackageManager)
+            .getPackageInfo("com.google.android.profiling", PackageManager.MATCH_APEX)
+        assertThat(testedProfiler.profilingTelemetry.profilingPackageVersionCode)
+            .isEqualTo(fakeProfilingPackageLongVersionCode)
+    }
+
+    // endregion
+
+    private fun stubProfilingModuleVersionCode(versionCode: Long) {
+        val mockPackageInfo = mock<PackageInfo> {
+            on { longVersionCode } doReturn versionCode
+        }
+        whenever(
+            mockPackageManager.getPackageInfo(
+                "com.google.android.profiling",
+                PackageManager.MATCH_APEX
+            )
+        ) doReturn mockPackageInfo
+    }
+
+    companion object {
+        // Version of the profiling system package known to produce empty profiles.
+        private const val BLOCKED_VERSION_CODE = 370546200L
+
+        private const val LATCH_TIMEOUT_SECONDS = 5L
+        private const val JOIN_TIMEOUT_MS = 5000L
+
+        // Time left to the second caller to reach the lookup while the first one holds it.
+        private const val CONTENTION_WINDOW_MS = 200L
+    }
 
     private class StubTimeProvider : MutableTimeProvider {
         // not really used
