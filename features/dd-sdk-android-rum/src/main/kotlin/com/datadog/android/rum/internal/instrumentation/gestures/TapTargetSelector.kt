@@ -6,20 +6,13 @@
 
 package com.datadog.android.rum.internal.instrumentation.gestures
 
-import android.os.Build
 import android.view.View
 import android.view.ViewGroup
-import androidx.annotation.RequiresApi
-import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.tracking.ViewTarget
-import java.util.IdentityHashMap
 
-internal class TapTargetSelector(
-    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
-) {
+internal class TapTargetSelector {
 
     private var selectedHostedTarget: HostedTapTarget? = null
-    private val drawingOrderCache = DrawingOrderCache()
 
     val selectedTarget: ViewTarget?
         get() = selectedHostedTarget?.target
@@ -82,30 +75,15 @@ internal class TapTargetSelector(
         return when {
             z > candidateView.z -> true
             z < candidateView.z -> false
-            // Both comparisons are also false for NaN, matching Android's child-order fallback.
-            else -> parent.isChildDrawnAfter(this, candidateView)
+            // Both comparisons are also false for NaN, so fall back to child index order.
+            else -> parent.isLaterChild(this, candidateView)
         }
     }
 
-    // Both indices are validated before accessing drawingRanks, so the array reads cannot fail.
-    @Suppress("UnsafeThirdPartyFunctionCall")
-    private fun ViewGroup.isChildDrawnAfter(child: View, candidateChild: View): Boolean {
+    private fun ViewGroup.isLaterChild(child: View, candidateChild: View): Boolean {
         val childIndex = childIndexOf(child)
         val candidateChildIndex = childIndexOf(candidateChild)
-        return if (childIndex != null && candidateChildIndex != null) {
-            val drawingRanks = drawingOrderCache.getOrCompute(this) { childDrawingRanks() }
-            if (
-                drawingRanks != null &&
-                childIndex in drawingRanks.indices &&
-                candidateChildIndex in drawingRanks.indices
-            ) {
-                drawingRanks[childIndex] > drawingRanks[candidateChildIndex]
-            } else {
-                childIndex > candidateChildIndex
-            }
-        } else {
-            false
-        }
+        return childIndex != null && candidateChildIndex != null && childIndex > candidateChildIndex
     }
 
     // indexOfChild is overridable, so exceptions from a custom ViewGroup are contained here.
@@ -114,41 +92,6 @@ internal class TapTargetSelector(
         return try {
             val childIndex = indexOfChild(child)
             if (childIndex >= 0) childIndex else null
-        } catch (_: Exception) {
-            null
-        }
-    }
-
-    // childCount cannot be negative, and every index is checked before accessing drawingRanks.
-    @Suppress("UnsafeThirdPartyFunctionCall")
-    private fun ViewGroup.childDrawingRanks(): IntArray? {
-        // Android only exposes child drawing order publicly from API 29.
-        if (!buildSdkVersionProvider.isAtLeastQ) return null
-
-        val drawingRanks = IntArray(childCount)
-        var drawingPosition = 0
-        var orderIsValid = true
-        while (drawingPosition < childCount && orderIsValid) {
-            val childIndex = childIndexAtDrawingPosition(drawingPosition)
-            val childIndexIsValid = childIndex != null &&
-                childIndex in drawingRanks.indices &&
-                drawingRanks[childIndex] == UNRANKED_CHILD
-            if (childIndexIsValid && childIndex != null) {
-                drawingRanks[childIndex] = drawingPosition + 1
-            } else {
-                orderIsValid = false
-            }
-            drawingPosition++
-        }
-        return if (orderIsValid) drawingRanks else null
-    }
-
-    @RequiresApi(Build.VERSION_CODES.Q)
-    // A custom ViewGroup may throw from getChildDrawingOrder; the exception is contained here.
-    @Suppress("UnsafeThirdPartyFunctionCall")
-    private fun ViewGroup.childIndexAtDrawingPosition(drawingPosition: Int): Int? {
-        return try {
-            getChildDrawingOrder(drawingPosition)
         } catch (_: Exception) {
             null
         }
@@ -171,31 +114,4 @@ internal class TapTargetSelector(
         val target: ViewTarget,
         val hostView: View
     )
-
-    private data class CachedDrawingRanks(val value: IntArray?)
-
-    private class DrawingOrderCache {
-
-        private val drawingRanksByParent = IdentityHashMap<ViewGroup, CachedDrawingRanks>()
-
-        // The map and non-null value wrapper are private to one traversal, so lookups cannot observe
-        // concurrent mutation or a stored null. computeDrawingRanks handles platform callback failures.
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        fun getOrCompute(
-            parent: ViewGroup,
-            computeDrawingRanks: () -> IntArray?
-        ): IntArray? {
-            val cachedRanks = drawingRanksByParent[parent]
-            if (cachedRanks != null) return cachedRanks.value
-
-            val computedRanks = CachedDrawingRanks(computeDrawingRanks())
-            drawingRanksByParent[parent] = computedRanks
-            return computedRanks.value
-        }
-    }
-
-    private companion object {
-
-        private const val UNRANKED_CHILD = 0
-    }
 }
