@@ -201,6 +201,122 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
     }
 
     @Test
+    fun `M send Compose target W onTap {Compose host has higher Z than later native target}`(
+        forge: Forge
+    ) {
+        // Given
+        val mockEvent: MotionEvent = forge.getForgery()
+        val composeHost: ComposeView = mockView(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true,
+            forge = forge
+        ) {
+            whenever(it.z).thenReturn(10f)
+        }
+        val nativeTarget: View = mockView(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true,
+            clickable = true,
+            forge = forge
+        ) {
+            whenever(it.z).thenReturn(0f)
+        }
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = false,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(2)
+            whenever(it.getChildAt(0)).thenReturn(composeHost)
+            whenever(it.getChildAt(1)).thenReturn(nativeTarget)
+        }
+        whenever(composeHost.parent).thenReturn(mockDecorView as ViewGroup)
+        whenever(nativeTarget.parent).thenReturn(mockDecorView as ViewGroup)
+        val expectedTargetName = forge.anAlphabeticalString()
+        val composeActionTrackingStrategy: ActionTrackingStrategy = mock {
+            whenever(it.findTargetForTap(composeHost, mockEvent.x, mockEvent.y))
+                .thenReturn(ViewTarget(node = Node(expectedTargetName)))
+        }
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger,
+            composeActionTrackingStrategy = composeActionTrackingStrategy
+        )
+
+        // When
+        testedListener.onSingleTapUp(mockEvent)
+
+        // Then
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor).addActionWithHeatmap(
+            eq(RumActionType.TAP),
+            eq(expectedTargetName),
+            isNull(),
+            eq(emptyMap())
+        )
+    }
+
+    @Test
+    fun `M send native target W onTap {native target has higher Z than later Compose host}`(
+        forge: Forge
+    ) {
+        // Given
+        val mockEvent: MotionEvent = forge.getForgery()
+        val nativeTarget: View = mockView(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true,
+            clickable = true,
+            forge = forge
+        ) {
+            whenever(it.z).thenReturn(10f)
+        }
+        val composeHost: ComposeView = mockView(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true,
+            forge = forge
+        ) {
+            whenever(it.z).thenReturn(0f)
+        }
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = false,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(2)
+            whenever(it.getChildAt(0)).thenReturn(nativeTarget)
+            whenever(it.getChildAt(1)).thenReturn(composeHost)
+        }
+        whenever(nativeTarget.parent).thenReturn(mockDecorView as ViewGroup)
+        whenever(composeHost.parent).thenReturn(mockDecorView as ViewGroup)
+        val expectedResourceName = forge.anAlphabeticalString()
+        mockResourcesForTarget(nativeTarget, expectedResourceName)
+        val composeActionTrackingStrategy: ActionTrackingStrategy = mock {
+            whenever(it.findTargetForTap(composeHost, mockEvent.x, mockEvent.y))
+                .thenReturn(ViewTarget(node = Node(forge.anAlphabeticalString())))
+        }
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger,
+            composeActionTrackingStrategy = composeActionTrackingStrategy
+        )
+
+        // When
+        testedListener.onSingleTapUp(mockEvent)
+
+        // Then
+        verifyMonitorCalledWithUserAction(nativeTarget, "", expectedResourceName)
+    }
+
+    @Test
     fun `M send target in elevated branch W onTap {leaf in lower branch has higher Z}`(
         forge: Forge
     ) {

@@ -146,7 +146,8 @@ internal class GesturesListener(
         // Index 0 is always safe
         @Suppress("UnsafeThirdPartyFunctionCall")
         queue.add(0, decorView)
-        var target: ViewTarget? = null
+        var scrollTarget: ViewTarget? = null
+        var tapTarget: LocatedTapTarget? = null
         var composeViewDetected = false
         while (queue.isNotEmpty()) {
             // removeAt(index) instead of removeFirst here is on purpose, to prevent issues
@@ -161,7 +162,14 @@ internal class GesturesListener(
                 findTargetForTap(view, x, y)
             }
             if (newTarget != null) {
-                target = if (isScroll) newTarget else selectTapTarget(target, newTarget)
+                if (isScroll) {
+                    scrollTarget = newTarget
+                } else {
+                    tapTarget = selectTapTarget(
+                        tapTarget,
+                        LocatedTapTarget(newTarget, view)
+                    )
+                }
             }
             if (view.isVisible && view is ViewGroup) {
                 for (i in 0 until view.childCount) {
@@ -171,6 +179,7 @@ internal class GesturesListener(
             }
         }
 
+        val target = scrollTarget ?: tapTarget?.target
         if (target == null) {
             val msg = if (composeViewDetected) {
                 MSG_NO_COMPOSE_TARGET
@@ -186,17 +195,14 @@ internal class GesturesListener(
         return target
     }
 
-    private fun selectTapTarget(currentTarget: ViewTarget?, candidateTarget: ViewTarget): ViewTarget {
-        val currentView = currentTarget?.viewRef?.get()
-        val candidateView = candidateTarget.viewRef.get()
-        if (currentTarget == null || currentView == null || candidateView == null) {
-            return candidateTarget
-        }
-
-        return if (currentView.isPreferredTapTargetOver(candidateView)) {
-            currentTarget
-        } else {
-            candidateTarget
+    private fun selectTapTarget(
+        currentTarget: LocatedTapTarget?,
+        candidateTarget: LocatedTapTarget
+    ): LocatedTapTarget {
+        return when {
+            currentTarget == null -> candidateTarget
+            currentTarget.hostView.isPreferredTapTargetOver(candidateTarget.hostView) -> currentTarget
+            else -> candidateTarget
         }
     }
 
@@ -271,6 +277,11 @@ internal class GesturesListener(
         path.reverse()
         return path
     }
+
+    private data class LocatedTapTarget(
+        val target: ViewTarget,
+        val hostView: View
+    )
 
     private fun findTargetForScroll(view: View, x: Float, y: Float): ViewTarget? {
         // return bottom-most scrollable element
