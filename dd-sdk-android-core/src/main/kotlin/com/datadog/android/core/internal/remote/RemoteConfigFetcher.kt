@@ -22,14 +22,26 @@ import java.io.IOException
  */
 @NoOpImplementation
 internal interface RemoteConfigFetcher {
+
+    /**
+     * The outcome of a genuinely new (non-304) fetch: a fresh body along with the CDN metadata
+     * needed to track sync/apply telemetry for the version it belongs to.
+     */
+    data class FetchResult(
+        val body: String,
+        val versionId: String?,
+        val lastModified: Long?
+    )
+
     /**
      * Fetches the remote configuration document from the given URL.
      *
      * @param url the CDN URL to fetch from.
-     * @return the raw JSON response body, or null if the fetch failed.
+     * @return the fetch result if a new (non-304) version was downloaded, or null if the fetch
+     * failed or the cached version is still up to date (conditional GET resolved to a 304).
      */
     @WorkerThread
-    fun fetch(url: HttpUrl): String?
+    fun fetch(url: HttpUrl): FetchResult?
 
     /**
      * Releases any resources held by this fetcher (e.g. HTTP cache).
@@ -59,7 +71,7 @@ internal class RemoteConfigNetworkFetcher(
 
     @WorkerThread
     @Suppress("TooGenericExceptionCaught")
-    override fun fetch(url: HttpUrl): String? {
+    override fun fetch(url: HttpUrl): RemoteConfigFetcher.FetchResult? {
         @Suppress("UnsafeThirdPartyFunctionCall") // safe: url is a valid HttpUrl, get() has no preconditions
         val request = Request.Builder()
             .url(url)
@@ -118,8 +130,16 @@ internal class RemoteConfigNetworkFetcher(
         }
     }
 
-    private fun handleResponse(response: Response, url: HttpUrl): String? {
+    private fun handleResponse(response: Response, url: HttpUrl): RemoteConfigFetcher.FetchResult? {
         return if (response.isSuccessful) {
+            // OkHttp's cache resolves a 304 revalidation transparently: the final response is a
+            // successful 200 with the previously cached body, but networkResponse still reflects
+            // the raw 304 exchange. Nothing new was downloaded, so there is no metadata to persist.
+            if (response.networkResponse?.code != HTTP_OK) {
+                @Suppress("UnsafeThirdPartyFunctionCall") // safe: wrapped in outer try-catch
+                response.body?.close()
+                return null
+            }
             @Suppress("UnsafeThirdPartyFunctionCall") // safe: wrapped in outer try-catch
             val body = response.body?.use { it.string() }
             if (body.isNullOrEmpty()) {
@@ -134,7 +154,13 @@ internal class RemoteConfigNetworkFetcher(
                 evictCache()
                 null
             } else {
-                body
+                @Suppress("UnsafeThirdPartyFunctionCall") // safe: wrapped in outer try-catch
+                val lastModified = response.headers.getDate(HEADER_LAST_MODIFIED)?.time
+                RemoteConfigFetcher.FetchResult(
+                    body = body,
+                    versionId = response.header(HEADER_VERSION_ID),
+                    lastModified = lastModified
+                )
             }
         } else {
             internalLogger.log(
@@ -161,6 +187,9 @@ internal class RemoteConfigNetworkFetcher(
         internal const val ATTR_RESPONSE_CODE = "response_code"
         internal const val ATTR_URL = "url"
         internal const val HTTP_CACHE_DIR_NAME = "rc-http-cache"
+        internal const val HTTP_OK = 200
+        internal const val HEADER_VERSION_ID = "x-amz-version-id"
+        internal const val HEADER_LAST_MODIFIED = "last-modified"
 
         // One RC entry is ~1.4 KB (437-byte body + headers + journal). 50 KB gives ~35x headroom
         // to accommodate future schema growth without revisiting this value.

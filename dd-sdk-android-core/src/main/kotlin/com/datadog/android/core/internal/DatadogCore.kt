@@ -35,6 +35,7 @@ import com.datadog.android.core.internal.remote.RemoteConfigLifecycleCallback
 import com.datadog.android.core.internal.remote.RemoteConfigNetworkFetcher
 import com.datadog.android.core.internal.remote.RemoteConfigService
 import com.datadog.android.core.internal.remote.RemoteConfigServiceImpl
+import com.datadog.android.core.internal.remote.model.RemoteConfigSyncMetadata
 import com.datadog.android.core.internal.remote.model.RemoteConfiguration
 import com.datadog.android.core.internal.time.DefaultAppStartTimeProvider
 import com.datadog.android.core.internal.time.composeTimeInfo
@@ -448,6 +449,9 @@ internal class DatadogCore(
     override val remoteConfiguration: RemoteConfiguration?
         get() = remoteConfigService?.getCurrentConfig()
 
+    override val remoteConfigurationSyncMetadata: RemoteConfigSyncMetadata?
+        get() = remoteConfigService?.getSyncMetadata()
+
     // endregion
 
     // region Internal
@@ -530,7 +534,8 @@ internal class DatadogCore(
             fetcher = fetcher,
             storageDir = coreFeature.storageDir,
             executor = coreFeature.uploadExecutorService,
-            internalLogger = internalLogger
+            internalLogger = internalLogger,
+            timeProvider = coreFeature.timeProvider
         )
         remoteConfigService?.syncWithRemote()
 
@@ -761,14 +766,15 @@ internal class DatadogCore(
         internal val CONFIGURATION_TELEMETRY_DELAY_MS = TimeUnit.SECONDS.toMillis(5)
 
         internal val DEFAULT_REMOTE_CONFIG_SERVICE_FACTORY =
-            RemoteConfigService.Factory { id, endpoint, fetcher, storageDir, executor, logger ->
+            RemoteConfigService.Factory { id, endpoint, fetcher, storageDir, executor, logger, timeProvider ->
                 RemoteConfigServiceImpl(
                     remoteConfigurationId = id,
                     remoteConfigurationEndpoint = endpoint,
                     fetcher = fetcher,
                     storageDir = storageDir,
                     executor = executor,
-                    internalLogger = logger
+                    internalLogger = logger,
+                    timeProvider = timeProvider
                 )
             }
     }
