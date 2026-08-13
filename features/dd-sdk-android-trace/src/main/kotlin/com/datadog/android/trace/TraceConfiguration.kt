@@ -27,7 +27,7 @@ data class TraceConfiguration internal constructor(
         private var customEndpointUrl: String? = null
         private var spanEventMapper: SpanEventMapper = NoOpSpanEventMapper()
         private var networkInfoEnabled: Boolean = true
-        private var statsComputationEnabled: Boolean = false
+        private var statsComputationEnabled: Boolean = true
         private var customStatsEndpointUrl: String? = null
 
         /**
