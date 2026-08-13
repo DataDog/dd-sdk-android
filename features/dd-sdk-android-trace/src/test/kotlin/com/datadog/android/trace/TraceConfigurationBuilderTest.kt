@@ -60,7 +60,7 @@ internal class TraceConfigurationBuilderTest {
         assertThat(traceConfiguration.eventMapper)
             .isInstanceOf(NoOpSpanEventMapper::class.java)
         assertThat(traceConfiguration.networkInfoEnabled).isTrue()
-        assertThat(traceConfiguration.statsComputationEnabled).isFalse()
+        assertThat(traceConfiguration.statsComputationEnabled).isTrue()
         assertThat(traceConfiguration.customStatsEndpointUrl).isNull()
     }
 
