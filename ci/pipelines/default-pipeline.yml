@@ -244,6 +244,9 @@ test:kover:
   timeout: 1h
   variables:
     GRADLE_CACHE_CLEANUP: "true"
+  id_tokens:
+    DD_STS_OIDC_TOKEN:
+      aud: dd-sts
   cache:
     key: $CI_COMMIT_REF_SLUG
     paths:
@@ -254,17 +257,13 @@ test:kover:
     - !reference [.snippets, source-secrets]
     - !reference [.snippets, setup-gradle]
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
-    - export DD_API_KEY=$(get_secret $DD_ANDROID_SECRET__API_KEY)
-    - export DD_APP_KEY=$(get_secret $DD_ANDROID_SECRET__APP_KEY)
-    - CODECOV_TOKEN=$(get_secret $DD_ANDROID_SECRET__CODECOV_TOKEN)
     - >-
         DD_TAGS="test.configuration.variant:release" ./gradlew
         :dd-sdk-android-core:koverXmlReportRelease
         :dd-sdk-android-internal:koverXmlReportRelease
         :koverReportFeatures
         :koverReportIntegrations
-    - bash <(cat ./ci/scripts/codecov.sh) -t $CODECOV_TOKEN
-    - datadog-ci coverage upload . || true
+    - dd-sts exchange --policy dd-sdk-android -- datadog-ci coverage upload . || true
   artifacts:
     when: always
     expire_in: 1 week
