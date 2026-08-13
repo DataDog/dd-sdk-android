@@ -416,17 +416,17 @@ public abstract interface class com/datadog/android/api/feature/FeatureEventRece
 
 public abstract interface class com/datadog/android/api/feature/FeatureScope {
 	public abstract fun getDataStore ()Lcom/datadog/android/api/storage/datastore/DataStoreHandler;
-	public abstract fun getWriteContextSync (Ljava/util/Set;)Lkotlin/Pair;
 	public abstract fun sendEvent (Ljava/lang/Object;)V
 	public abstract fun unwrap ()Lcom/datadog/android/api/feature/Feature;
 	public abstract fun withContext (Ljava/util/Set;Lkotlin/jvm/functions/Function1;)V
 	public abstract fun withWriteContext (Ljava/util/Set;Lkotlin/jvm/functions/Function2;)V
+	public abstract fun withWriteContextSync (Ljava/util/Set;Lkotlin/jvm/functions/Function2;)Z
 }
 
 public final class com/datadog/android/api/feature/FeatureScope$DefaultImpls {
-	public static synthetic fun getWriteContextSync$default (Lcom/datadog/android/api/feature/FeatureScope;Ljava/util/Set;ILjava/lang/Object;)Lkotlin/Pair;
 	public static synthetic fun withContext$default (Lcom/datadog/android/api/feature/FeatureScope;Ljava/util/Set;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
 	public static synthetic fun withWriteContext$default (Lcom/datadog/android/api/feature/FeatureScope;Ljava/util/Set;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)V
+	public static synthetic fun withWriteContextSync$default (Lcom/datadog/android/api/feature/FeatureScope;Ljava/util/Set;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Z
 }
 
 public final class com/datadog/android/api/feature/FeatureScopeExtKt {
