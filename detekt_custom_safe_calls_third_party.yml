@@ -1013,6 +1013,7 @@ datadog:
       - "kotlin.comparisons.maxOf(kotlin.Float, kotlin.Float)"
       - "kotlin.comparisons.maxOf(kotlin.Long, kotlin.Long)"
       - "kotlin.comparisons.minOf(kotlin.Float, kotlin.Float)"
+      - "kotlin.comparisons.minOf(kotlin.Int, kotlin.Int)"
       - "kotlin.comparisons.minOf(kotlin.Long, kotlin.Long)"
       - "kotlin.ranges.IntRange.all(kotlin.Function1)"
       - "kotlin.ranges.IntRange.map(kotlin.Function1)"

@@ -215,22 +215,24 @@ internal class SdkFeature(
         )
     }
 
-    override fun getWriteContextSync(
-        withFeatureContexts: Set<String>
-    ): Pair<DatadogContext, EventWriteScope>? {
-        val operationName = "getWriteContextSync-${wrappedFeature.name}"
+    override fun withWriteContextSync(
+        withFeatureContexts: Set<String>,
+        callback: (DatadogContext, EventWriteScope) -> Unit
+    ): Boolean {
+        val operationName = "withWriteContextSync-${wrappedFeature.name}"
         return coreFeature.contextExecutorService
             .submitSafe(
                 operationName,
                 internalLogger,
                 Callable {
-                    if (!coreFeature.initialized.get()) return@Callable null
+                    if (!coreFeature.initialized.get()) return@Callable false
                     val context = contextProvider.getContext(withFeatureContexts)
                     val eventBatchWriteScope = storage.getEventWriteScope(context)
-                    context to eventBatchWriteScope
+                    callback(context, eventBatchWriteScope)
+                    true
                 }
             )
-            ?.getSafe(operationName, internalLogger)
+            ?.getSafe(operationName, internalLogger) ?: false
     }
 
     override fun sendEvent(event: Any) {
