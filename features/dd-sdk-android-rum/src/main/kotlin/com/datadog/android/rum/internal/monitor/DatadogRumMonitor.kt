@@ -1005,7 +1005,7 @@ internal class DatadogRumMonitor(
                                 }
                             }
                         )
-                        val rumContext = future.getSafe("Rum get context", sdkCore.internalLogger)
+                        val rumContext = future?.getSafe("Rum get context", sdkCore.internalLogger)
                         // we are on the context thread already, so useContextThread=false
                         sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME, useContextThread = false) {
                             it.clear()

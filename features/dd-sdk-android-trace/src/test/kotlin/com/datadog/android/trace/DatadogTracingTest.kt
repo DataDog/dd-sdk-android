@@ -14,11 +14,14 @@ import com.datadog.android.trace.DatadogTracing.ErrorMessages.TRACING_NOT_ENABLE
 import com.datadog.android.trace.DatadogTracing.ErrorMessages.WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE
 import com.datadog.android.trace.DatadogTracing.ErrorMessages.buildWrongWrapperMessage
 import com.datadog.android.trace.api.span.DatadogSpanWriter
+import com.datadog.android.trace.internal.ClientStatsFeature
 import com.datadog.android.trace.internal.DatadogSpanWriterWrapper
 import com.datadog.android.trace.internal.DatadogTracerAdapter
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.getFieldValue
+import com.datadog.trace.common.metrics.MetricsAggregator
+import com.datadog.trace.common.metrics.NoOpMetricsAggregator
 import com.datadog.trace.common.writer.NoOpWriter
 import com.datadog.trace.common.writer.Writer
 import com.datadog.trace.core.CoreTracer
@@ -44,7 +47,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-class DatadogTracingTest {
+internal class DatadogTracingTest {
 
     @Mock
     lateinit var mockSdkCore: FeatureSdkCore
@@ -58,7 +61,13 @@ class DatadogTracingTest {
     lateinit var mockTracingFeature: FeatureScope
 
     @Mock
+    lateinit var mockStatsFeature: FeatureScope
+
+    @Mock
     lateinit var mockTracingFeatureScope: StubTracingFeature
+
+    @Mock
+    lateinit var mockStatsFeatureScope: ClientStatsFeature
 
     lateinit var fakeServiceName: String
 
@@ -73,6 +82,9 @@ class DatadogTracingTest {
         whenever(mockTracingFeature.unwrap<Feature>()) doReturn mockTracingFeatureScope
         whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mockTracingFeature
         whenever(mockTracingFeatureScope.getCoreTracerWriter()) doReturn writerWrapperMock
+        whenever(mockSdkCore.getFeature(Feature.TRACING_CLIENT_STATS_FEATURE_NAME)) doReturn mockStatsFeature
+        whenever(mockStatsFeature.unwrap<Feature>()) doReturn mockStatsFeatureScope
+        whenever(mockStatsFeatureScope.aggregator) doReturn mock()
     }
 
     @Test
@@ -156,5 +168,44 @@ class DatadogTracingTest {
             InternalLogger.Target.USER,
             TRACING_NOT_ENABLED_ERROR_MESSAGE
         )
+    }
+
+    @Test
+    fun `M use a NoOpMetricsAggregator W build { TracingFeature not enabled }`() {
+        // Given
+        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
+
+        // When
+        val tracer = DatadogTracing.newTracerBuilder(mockSdkCore).build() as DatadogTracerAdapter
+
+        // Then
+        val coreTracer = tracer.delegate as CoreTracer
+        val aggregator: MetricsAggregator = coreTracer.getFieldValue("metricsAggregator")
+        assertThat(aggregator).isInstanceOf(NoOpMetricsAggregator::class.java)
+    }
+
+    @Test
+    fun `M use a NoOpMetricsAggregator W build { ClientStatsFeature not enabled }`() {
+        // Given
+        whenever(mockSdkCore.getFeature(Feature.TRACING_CLIENT_STATS_FEATURE_NAME)) doReturn null
+
+        // When
+        val tracer = DatadogTracing.newTracerBuilder(mockSdkCore).build() as DatadogTracerAdapter
+
+        // Then
+        val coreTracer = tracer.delegate as CoreTracer
+        val aggregator: MetricsAggregator = coreTracer.getFieldValue("metricsAggregator")
+        assertThat(aggregator).isInstanceOf(NoOpMetricsAggregator::class.java)
+    }
+
+    @Test
+    fun `M use stats feature's MetricAggregator W build `() {
+        // When
+        val tracer = DatadogTracing.newTracerBuilder(mockSdkCore).build() as DatadogTracerAdapter
+
+        // Then
+        val coreTracer = tracer.delegate as CoreTracer
+        val aggregator: MetricsAggregator = coreTracer.getFieldValue("metricsAggregator")
+        assertThat(aggregator).isSameAs(mockStatsFeatureScope.aggregator)
     }
 }

@@ -200,6 +200,10 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
 
     override fun getDatadogContext(withFeatureContexts: Set<String>): DatadogContext? = null
 
+    override fun flushContextThread() {}
+
+    override fun flushStoredData() {}
+
     // endregion
 
     class NoOpExecutorService : ExecutorService {

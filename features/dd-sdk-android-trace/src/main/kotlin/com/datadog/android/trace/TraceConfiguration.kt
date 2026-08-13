@@ -15,7 +15,9 @@ import com.datadog.android.trace.event.SpanEventMapper
 data class TraceConfiguration internal constructor(
     internal val customEndpointUrl: String?,
     internal val eventMapper: SpanEventMapper,
-    internal val networkInfoEnabled: Boolean
+    internal val networkInfoEnabled: Boolean,
+    internal val statsComputationEnabled: Boolean,
+    internal val customStatsEndpointUrl: String?
 ) {
 
     /**
@@ -25,6 +27,8 @@ data class TraceConfiguration internal constructor(
         private var customEndpointUrl: String? = null
         private var spanEventMapper: SpanEventMapper = NoOpSpanEventMapper()
         private var networkInfoEnabled: Boolean = true
+        private var statsComputationEnabled: Boolean = false
+        private var customStatsEndpointUrl: String? = null
 
         /**
          * Let the Tracing feature target a custom server.
@@ -57,13 +61,39 @@ data class TraceConfiguration internal constructor(
         }
 
         /**
+         * Enables client-side stats computation for APM.
+         *
+         * When enabled, the SDK computes trace statistics (hit counts, error rates, latency distributions)
+         * locally on all finished spans — including sampled-out ones.
+         *
+         * @param enabled false by default
+         */
+        @ExperimentalTraceApi
+        fun setStatsComputationEnabled(enabled: Boolean): Builder {
+            statsComputationEnabled = enabled
+            return this
+        }
+
+        /**
+         * Let the Tracing client-side stats feature target a custom server.
+         * The provided url should be the full endpoint url, e.g.: https://example.com/stats/upload
+         */
+        @ExperimentalTraceApi
+        fun useCustomStatsEndpoint(endpoint: String): Builder {
+            customStatsEndpointUrl = endpoint
+            return this
+        }
+
+        /**
          * Builds a [TraceConfiguration] based on the current state of this Builder.
          */
         fun build(): TraceConfiguration {
             return TraceConfiguration(
                 customEndpointUrl = customEndpointUrl,
                 eventMapper = spanEventMapper,
-                networkInfoEnabled = networkInfoEnabled
+                networkInfoEnabled = networkInfoEnabled,
+                statsComputationEnabled = statsComputationEnabled,
+                customStatsEndpointUrl = customStatsEndpointUrl
             )
         }
     }

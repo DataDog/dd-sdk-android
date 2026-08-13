@@ -6,7 +6,9 @@
 
 package com.datadog.android.trace
 
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.trace.internal.ClientStatsFeature
 import com.datadog.android.trace.internal.TracingFeature
 import com.datadog.android.trace.internal.net.TracesRequestFactory
 import com.datadog.android.utils.forge.Configurator
@@ -25,6 +27,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -46,12 +49,15 @@ internal class TraceTest {
     }
 
     @Test
-    fun `M register traces feature W enable()`(
+    fun `M register traces features W enable() { statsComputationEnabled = false }`(
         @StringForgery fakePackageName: String,
         @Forgery fakeTraceConfiguration: TraceConfiguration
     ) {
+        // Given
+        val config = fakeTraceConfiguration.copy(statsComputationEnabled = false)
+
         // When
-        Trace.enable(fakeTraceConfiguration, mockSdkCore)
+        Trace.enable(config, mockSdkCore)
 
         // Then
         argumentCaptor<TracingFeature> {
@@ -60,9 +66,38 @@ internal class TraceTest {
             lastValue.onInitialize(
                 appContext = mock { whenever(it.packageName) doReturn fakePackageName }
             )
-            assertThat(lastValue.spanEventMapper).isEqualTo(fakeTraceConfiguration.eventMapper)
+            assertThat(lastValue.spanEventMapper).isEqualTo(config.eventMapper)
             assertThat((lastValue.requestFactory as TracesRequestFactory).customEndpointUrl)
-                .isEqualTo(fakeTraceConfiguration.customEndpointUrl)
+                .isEqualTo(config.customEndpointUrl)
+        }
+    }
+
+    @Test
+    fun `M register traces features W enable() { statsComputationEnabled = true }`(
+        @StringForgery fakePackageName: String,
+        @Forgery fakeTraceConfiguration: TraceConfiguration
+    ) {
+        // Given
+        val config = fakeTraceConfiguration.copy(statsComputationEnabled = true)
+
+        // When
+        Trace.enable(config, mockSdkCore)
+
+        // Then
+        argumentCaptor<Feature> {
+            verify(mockSdkCore, times(2)).registerFeature(capture())
+
+            val tracingFeature = allValues.filterIsInstance<TracingFeature>().first()
+            tracingFeature.onInitialize(
+                appContext = mock { whenever(it.packageName) doReturn fakePackageName }
+            )
+            assertThat(tracingFeature.spanEventMapper).isEqualTo(config.eventMapper)
+            assertThat((tracingFeature.requestFactory as TracesRequestFactory).customEndpointUrl)
+                .isEqualTo(config.customEndpointUrl)
+
+            val statsFeature = allValues.filterIsInstance<ClientStatsFeature>().first()
+            assertThat(statsFeature.requestFactory.customStatsEndpointUrl)
+                .isEqualTo(config.customStatsEndpointUrl)
         }
     }
 }

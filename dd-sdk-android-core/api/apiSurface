@@ -118,6 +118,7 @@ interface com.datadog.android.api.feature.Feature
     const val FLAGS_FEATURE_NAME: String
     const val FLAGS_EVALUATIONS_FEATURE_NAME: String
     const val TRACING_FEATURE_NAME: String
+    const val TRACING_CLIENT_STATS_FEATURE_NAME: String
     const val SESSION_REPLAY_FEATURE_NAME: String
     const val SESSION_REPLAY_RESOURCES_FEATURE_NAME: String
     const val NDK_CRASH_REPORTS_FEATURE_NAME: String
@@ -243,6 +244,8 @@ interface com.datadog.android.core.InternalSdkCore : com.datadog.android.api.fea
   fun getPersistenceExecutorService(): java.util.concurrent.ExecutorService
   fun getAllFeatures(): List<com.datadog.android.api.feature.FeatureScope>
   fun getDatadogContext(Set<String> = emptySet()): com.datadog.android.api.context.DatadogContext?
+  fun flushContextThread()
+  fun flushStoredData()
 class com.datadog.android.core.SdkReference
   constructor(String? = null, (com.datadog.android.api.SdkCore) -> Unit = {})
   fun get(): com.datadog.android.api.SdkCore?
@@ -346,7 +349,8 @@ fun java.util.concurrent.Executor.executeSafe(String, com.datadog.android.api.In
 fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(String, Long, java.util.concurrent.TimeUnit, com.datadog.android.api.InternalLogger, Runnable): java.util.concurrent.ScheduledFuture<*>?
 fun java.util.concurrent.ExecutorService.submitSafe(String, com.datadog.android.api.InternalLogger, Runnable): java.util.concurrent.Future<*>?
 fun <T> java.util.concurrent.ExecutorService.submitSafe(String, com.datadog.android.api.InternalLogger, java.util.concurrent.Callable<T>): java.util.concurrent.Future<T>?
-fun <T> java.util.concurrent.Future<T>?.getSafe(String, com.datadog.android.api.InternalLogger): T?
+fun <T> java.util.concurrent.Future<T>.getSafe(String, com.datadog.android.api.InternalLogger): T?
+fun <T> java.util.concurrent.Future<T>.getSafe(String, Long, java.util.concurrent.TimeUnit, com.datadog.android.api.InternalLogger): T?
 object com.datadog.android.core.internal.utils.DdTagsUtils
   fun toDdTagsString(com.datadog.android.api.context.DatadogContext): String
   fun toDdTagsString(Map<String, String>): String

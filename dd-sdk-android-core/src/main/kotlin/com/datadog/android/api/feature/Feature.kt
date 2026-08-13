@@ -60,6 +60,11 @@ interface Feature {
         const val TRACING_FEATURE_NAME: String = "tracing"
 
         /**
+         * Tracing Client Stats feature name.
+         */
+        const val TRACING_CLIENT_STATS_FEATURE_NAME: String = "tracing-client-stats"
+
+        /**
          * Session Replay feature name.
          */
         const val SESSION_REPLAY_FEATURE_NAME: String = "session-replay"

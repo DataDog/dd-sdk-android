@@ -341,6 +341,7 @@ internal class TelemetryEventHandler(
         val tracerApi = resolveTracerApi(traceContext)
         val openTelemetryApiVersion = resolveOpenTelemetryApiVersion(tracerApi, traceContext)
         val useTracing = (traceFeature != null && tracerApi != null)
+        val useClientSideStats = sdkCore.getFeature(Feature.TRACING_CLIENT_STATS_FEATURE_NAME) != null
 
         val okhttpInterceptorSampleRate = traceContext[OKHTTP_INTERCEPTOR_SAMPLE_RATE] as? Float?
         val tracingHeaderTypes =
@@ -410,7 +411,8 @@ internal class TelemetryEventHandler(
                     numberOfDisplays = datadogContext.deviceInfo.numberOfDisplays?.toLong(),
                     traceSampleRate = okhttpInterceptorSampleRate?.toLong(),
                     selectedTracingPropagators = tracingHeaderTypes?.toSelectedTracingPropagators(),
-                    trackResourceHeaders = trackResourceHeaders
+                    trackResourceHeaders = trackResourceHeaders,
+                    useClientSideStats = useClientSideStats
                 )
             )
         )
