@@ -8,8 +8,6 @@ package com.datadog.android.rum.internal.instrumentation.gestures
 
 import android.view.View
 import android.view.ViewGroup
-import com.datadog.android.rum.tracking.Node
-import com.datadog.android.rum.tracking.ViewTarget
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -27,7 +25,29 @@ import org.mockito.quality.Strictness
 internal class TapTargetSelectorTest {
 
     @Test
-    fun `M select later target W considerCandidate {drawing order callback differs from child order}`() {
+    fun `M prefer candidate host W shouldSelectCandidate {candidate has higher Z}`() {
+        // Given
+        val parent: ViewGroup = mock()
+        val currentHost: View = mock {
+            whenever(it.parent).thenReturn(parent)
+            whenever(it.z).thenReturn(0f)
+        }
+        val candidateHost: View = mock {
+            whenever(it.parent).thenReturn(parent)
+            whenever(it.z).thenReturn(10f)
+        }
+        val testedSelector = TapTargetSelector()
+
+        // When
+        val result = testedSelector.shouldSelectCandidate(currentHost, candidateHost)
+
+        // Then
+        assertThat(result).isTrue()
+        verify(parent, never()).indexOfChild(any())
+    }
+
+    @Test
+    fun `M prefer later host W shouldSelectCandidate {drawing order callback differs from child order}`() {
         // Given
         val parent: ViewGroup = mock()
         val earlierHost: View = mock { whenever(it.parent).thenReturn(parent) }
@@ -36,34 +56,30 @@ internal class TapTargetSelectorTest {
         whenever(parent.indexOfChild(laterHost)).thenReturn(1)
         whenever(parent.getChildDrawingOrder(0)).thenReturn(1)
         whenever(parent.getChildDrawingOrder(1)).thenReturn(0)
-        val laterTarget = ViewTarget(node = Node("later"))
         val testedSelector = TapTargetSelector()
 
         // When
-        testedSelector.considerCandidate(ViewTarget(node = Node("earlier")), earlierHost)
-        testedSelector.considerCandidate(laterTarget, laterHost)
+        val result = testedSelector.shouldSelectCandidate(earlierHost, laterHost)
 
         // Then
-        assertThat(testedSelector.selectedTarget).isSameAs(laterTarget)
+        assertThat(result).isTrue()
         verify(parent, never()).getChildDrawingOrder(any())
     }
 
     @Test
-    fun `M select later target W considerCandidate {parent throws while resolving child index}`() {
+    fun `M prefer later host W shouldSelectCandidate {parent throws while resolving child index}`() {
         // Given
         val parent: ViewGroup = mock()
         val earlierHost: View = mock { whenever(it.parent).thenReturn(parent) }
         val laterHost: View = mock { whenever(it.parent).thenReturn(parent) }
         whenever(parent.indexOfChild(earlierHost)).thenThrow(IllegalStateException())
         whenever(parent.indexOfChild(laterHost)).thenReturn(1)
-        val laterTarget = ViewTarget(node = Node("later"))
         val testedSelector = TapTargetSelector()
 
         // When
-        testedSelector.considerCandidate(ViewTarget(node = Node("earlier")), earlierHost)
-        testedSelector.considerCandidate(laterTarget, laterHost)
+        val result = testedSelector.shouldSelectCandidate(earlierHost, laterHost)
 
         // Then
-        assertThat(testedSelector.selectedTarget).isSameAs(laterTarget)
+        assertThat(result).isTrue()
     }
 }

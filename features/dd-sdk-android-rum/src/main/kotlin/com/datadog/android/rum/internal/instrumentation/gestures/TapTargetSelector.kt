@@ -8,23 +8,11 @@ package com.datadog.android.rum.internal.instrumentation.gestures
 
 import android.view.View
 import android.view.ViewGroup
-import com.datadog.android.rum.tracking.ViewTarget
 
 internal class TapTargetSelector {
 
-    private var selectedHostedTarget: HostedTapTarget? = null
-
-    val selectedTarget: ViewTarget?
-        get() = selectedHostedTarget?.target
-
-    fun considerCandidate(target: ViewTarget, hostView: View) {
-        val candidateTarget = HostedTapTarget(target, hostView)
-        val currentTarget = selectedHostedTarget
-        selectedHostedTarget = when {
-            currentTarget == null -> candidateTarget
-            currentTarget.hostView.isPreferredOver(candidateTarget.hostView) -> currentTarget
-            else -> candidateTarget
-        }
+    fun shouldSelectCandidate(currentHostView: View?, candidateHostView: View): Boolean {
+        return currentHostView == null || !currentHostView.isPreferredOver(candidateHostView)
     }
 
     private fun View.isPreferredOver(candidateView: View): Boolean {
@@ -109,9 +97,4 @@ internal class TapTargetSelector {
         path.reverse()
         return path
     }
-
-    private data class HostedTapTarget(
-        val target: ViewTarget,
-        val hostView: View
-    )
 }
