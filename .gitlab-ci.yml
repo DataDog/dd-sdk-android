@@ -30,9 +30,12 @@ variables:
   ORG_GRADLE_PROJECT_gradlePluginProxy: "https://depot-read-api-java.us1.ddbuild.io/magicmirror/magicmirror/@current/"
 
 include:
-  - local: 'ci/pipelines/default-pipeline.yml'
-    rules:
-      - if: '$CI_PIPELINE_KEY == null'
-  - local: 'ci/pipelines/check-release-pipeline.yml'
-    rules:
-      - if: '$CI_PIPELINE_KEY == "check-release"'
+  # Temporarily disabled while testing macOS runner docker/tart availability on
+  # aleksandr-gringauz/test-docker-tart. Restore before merging to develop.
+  # - local: 'ci/pipelines/default-pipeline.yml'
+  #   rules:
+  #     - if: '$CI_PIPELINE_KEY == null'
+  # - local: 'ci/pipelines/check-release-pipeline.yml'
+  #   rules:
+  #     - if: '$CI_PIPELINE_KEY == "check-release"'
+  - local: 'ci/pipelines/test-docker-tart-pipeline.yml'

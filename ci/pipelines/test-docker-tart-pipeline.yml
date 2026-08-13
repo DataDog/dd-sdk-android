@@ -1,0 +1,15 @@
+include:
+  - 'https://gitlab-templates.ddbuild.io/slack-notifier/v3-sdm/template.yml'
+
+stages:
+  - test
+
+test-docker-tart:check-versions:
+  tags: [ "macos:sonoma", "specific:true" ]
+  stage: test
+  script:
+    - echo "--- docker version ---"
+    - docker --version || echo "docker check failed, continuing"
+    - echo "--- tart version ---"
+    - tart --version || echo "tart check failed, continuing"
+    - exit 0
