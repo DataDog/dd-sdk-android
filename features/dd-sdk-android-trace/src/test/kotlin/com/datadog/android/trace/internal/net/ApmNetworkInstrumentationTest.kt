@@ -34,6 +34,7 @@ import com.datadog.android.trace.internal.ApmNetworkInstrumentation
 import com.datadog.android.trace.internal.DatadogPropagationHelper
 import com.datadog.android.trace.internal.ParentContextSource
 import com.datadog.android.trace.internal._TraceInternalProxy
+import com.datadog.android.trace.internal.domain.event.FORCE_DROP_SPAN
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
@@ -727,7 +728,12 @@ internal class ApmNetworkInstrumentationTest {
             testedInstrumentation.onResponseSucceeded(traceState, mockResponseInfo)
 
             // Then
-            if (fakeIsSampled) verify(mockSpan).finish() else verify(mockSpan).drop()
+            if (fakeIsSampled) {
+                verify(mockSpan, never()).setTag(eq(FORCE_DROP_SPAN), any<Boolean>())
+            } else {
+                verify(mockSpan).setTag(FORCE_DROP_SPAN, true)
+            }
+            verify(mockSpan).finish()
         }
     }
 
@@ -794,7 +800,7 @@ internal class ApmNetworkInstrumentationTest {
     }
 
     @Test
-    fun `M not set error tags W onResponseFailed() {not sampled}`(
+    fun `M set isError but not verbose tags W onResponseFailed() {not sampled}`(
         @Forgery fakeThrowable: Throwable
     ) {
         // Given
@@ -804,8 +810,9 @@ internal class ApmNetworkInstrumentationTest {
             // When
             testedInstrumentation.onResponseFailed(traceState, fakeThrowable)
 
-            // Then
-            verify(mockSpan, never()).isError = true
+            // Then — isError must be set so the APM stats counts this as an error,
+            // but verbose payload tags are omitted for unsampled spans
+            verify(mockSpan).isError = true
             verify(mockSpan, never()).setTag(eq(Tags.KEY_ERROR_MSG), any<String>())
             verify(mockSpan, never()).setTag(eq(Tags.KEY_ERROR_TYPE), any<String>())
             verify(mockSpan, never()).setTag(eq(Tags.KEY_ERROR_STACK), any<String>())
@@ -827,7 +834,63 @@ internal class ApmNetworkInstrumentationTest {
             testedInstrumentation.onResponseFailed(traceState, fakeThrowable)
 
             // Then
-            if (fakeIsSampled) verify(mockSpan).finish() else verify(mockSpan).drop()
+            if (fakeIsSampled) {
+                verify(mockSpan, never()).setTag(eq(FORCE_DROP_SPAN), any<Boolean>())
+            } else {
+                verify(mockSpan).setTag(FORCE_DROP_SPAN, true)
+            }
+            verify(mockSpan).finish()
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M finish or drop span W onResponseSucceeded() {custom tracer}`(
+        fakeIsSampled: Boolean,
+        @IntForgery(min = 200, max = 299) fakeStatusCode: Int
+    ) {
+        // Given
+        whenever(mockResponseInfo.statusCode) doReturn fakeStatusCode
+        val traceState = createTraceState(isSampled = fakeIsSampled, isDefaultTracer = false)
+
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            testedInstrumentation.onResponseSucceeded(traceState, mockResponseInfo)
+
+            // Then — custom tracers must call drop() directly; FORCE_DROP_SPAN is SDK-internal
+            verify(mockSpan, never()).setTag(eq(FORCE_DROP_SPAN), any<Boolean>())
+            if (fakeIsSampled) {
+                verify(mockSpan).finish()
+                verify(mockSpan, never()).drop()
+            } else {
+                verify(mockSpan, never()).finish()
+                verify(mockSpan).drop()
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M finish or drop span W onResponseFailed() {custom tracer}`(
+        fakeIsSampled: Boolean,
+        @Forgery fakeThrowable: Throwable
+    ) {
+        // Given
+        val traceState = createTraceState(isSampled = fakeIsSampled, isDefaultTracer = false)
+
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            testedInstrumentation.onResponseFailed(traceState, fakeThrowable)
+
+            // Then — custom tracers must call drop() directly; FORCE_DROP_SPAN is SDK-internal
+            verify(mockSpan, never()).setTag(eq(FORCE_DROP_SPAN), any<Boolean>())
+            if (fakeIsSampled) {
+                verify(mockSpan).finish()
+                verify(mockSpan, never()).drop()
+            } else {
+                verify(mockSpan, never()).finish()
+                verify(mockSpan).drop()
+            }
         }
     }
 
@@ -854,25 +917,6 @@ internal class ApmNetworkInstrumentationTest {
             // Then
             verify(mockSpan).drop()
             verify(mockSpan, never()).finish()
-        }
-    }
-
-    @Test
-    fun `M finish span W onResponseSucceeded() {APP_LEVEL, canSendSpan=true, RUM enabled, sampled}`(
-        @IntForgery(min = 200, max = 299) fakeStatusCode: Int
-    ) {
-        // Given - canSendSpan=true is set in setUp
-        whenever(mockResponseInfo.statusCode) doReturn fakeStatusCode
-
-        val traceState = createTraceState()
-
-        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
-            // When
-            testedInstrumentation.onResponseSucceeded(traceState, mockResponseInfo)
-
-            // Then
-            verify(mockSpan).finish()
-            verify(mockSpan, never()).drop()
         }
     }
 
@@ -915,23 +959,6 @@ internal class ApmNetworkInstrumentationTest {
             // Then
             verify(mockSpan).drop()
             verify(mockSpan, never()).finish()
-        }
-    }
-
-    @Test
-    fun `M finish span W onResponseFailed() {APP_LEVEL, canSendSpan=true, RUM enabled, sampled}`(
-        @Forgery fakeThrowable: Throwable
-    ) {
-        // Given - canSendSpan=true is set in setUp
-        val traceState = createTraceState()
-
-        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
-            // When
-            testedInstrumentation.onResponseFailed(traceState, fakeThrowable)
-
-            // Then
-            verify(mockSpan).finish()
-            verify(mockSpan, never()).drop()
         }
     }
 
@@ -991,7 +1018,12 @@ internal class ApmNetworkInstrumentationTest {
             testedInstrumentation.onResponseSucceeded(traceState, mockResponseInfo)
 
             // Then
-            if (fakeIsSampled) verify(mockSpan).finish() else verify(mockSpan).drop()
+            if (fakeIsSampled) {
+                verify(mockSpan, never()).setTag(eq(FORCE_DROP_SPAN), any<Boolean>())
+            } else {
+                verify(mockSpan).setTag(FORCE_DROP_SPAN, true)
+            }
+            verify(mockSpan).finish()
         }
     }
 
@@ -1010,7 +1042,12 @@ internal class ApmNetworkInstrumentationTest {
             testedInstrumentation.onResponseFailed(traceState, fakeThrowable)
 
             // Then
-            if (fakeIsSampled) verify(mockSpan).finish() else verify(mockSpan).drop()
+            if (fakeIsSampled) {
+                verify(mockSpan, never()).setTag(eq(FORCE_DROP_SPAN), any<Boolean>())
+            } else {
+                verify(mockSpan).setTag(FORCE_DROP_SPAN, true)
+            }
+            verify(mockSpan).finish()
         }
     }
 
@@ -1156,11 +1193,12 @@ internal class ApmNetworkInstrumentationTest {
 
     // endregion
 
-    private fun createTraceState(isSampled: Boolean = true) = RequestTracingState(
+    private fun createTraceState(isSampled: Boolean = true, isDefaultTracer: Boolean = true) = RequestTracingState(
         requestInfoBuilder = mockRequestBuilder,
         isSampled = isSampled,
         span = mockSpan,
-        sampleRate = fakeSampleRate
+        sampleRate = fakeSampleRate,
+        isDefaultTracer = isDefaultTracer
     )
 
     private fun createInstrumentation(
