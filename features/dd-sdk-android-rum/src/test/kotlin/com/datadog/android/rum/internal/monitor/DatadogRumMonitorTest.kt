@@ -56,7 +56,7 @@ import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_NAME
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_NAME_CHARACTERS
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_OPERATION_KEY
-import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesFactory
+import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollectorFactory
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -307,7 +307,7 @@ internal class DatadogRumMonitorTest {
             insightsCollector = mockInsightsCollector,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
-            timeseriesFactory = NoOpTimeseriesFactory()
+            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
         )
         testedMonitor.rootScope = mockApplicationScope
     }
@@ -342,7 +342,7 @@ internal class DatadogRumMonitorTest {
             insightsCollector = mockInsightsCollector,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
-            timeseriesFactory = NoOpTimeseriesFactory()
+            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
         )
 
         // When
@@ -420,7 +420,7 @@ internal class DatadogRumMonitorTest {
             insightsCollector = mockInsightsCollector,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
-            timeseriesFactory = NoOpTimeseriesFactory()
+            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -466,7 +466,7 @@ internal class DatadogRumMonitorTest {
             insightsCollector = mockInsightsCollector,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
-            timeseriesFactory = NoOpTimeseriesFactory()
+            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -2228,7 +2228,7 @@ internal class DatadogRumMonitorTest {
             insightsCollector = mockInsightsCollector,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
-            timeseriesFactory = NoOpTimeseriesFactory()
+            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
         )
 
         // When
@@ -2271,7 +2271,7 @@ internal class DatadogRumMonitorTest {
             insightsCollector = mockInsightsCollector,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
-            timeseriesFactory = NoOpTimeseriesFactory()
+            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
         )
 
         // When
@@ -2315,7 +2315,7 @@ internal class DatadogRumMonitorTest {
             insightsCollector = mockInsightsCollector,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
-            timeseriesFactory = NoOpTimeseriesFactory()
+            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 
@@ -2541,7 +2541,7 @@ internal class DatadogRumMonitorTest {
             insightsCollector = mockInsightsCollector,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
-            timeseriesFactory = NoOpTimeseriesFactory()
+            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
         )
         testedMonitor.startView(key, name, attributes)
         // When

@@ -10,7 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.rum.RumSessionType
 import java.util.concurrent.ScheduledExecutorService
 
-internal class RumSessionScopeTimeseriesFactory(
+internal class DefaultTimeseriesCollectorFactory(
     private val internalLogger: InternalLogger,
     private val collectInBackground: Boolean,
     private val scheduledExecutorService: ScheduledExecutorService,
@@ -19,10 +19,10 @@ internal class RumSessionScopeTimeseriesFactory(
         sessionId: String,
         sessionType: RumSessionType
     ) -> List<Pipeline<*>>
-) : Timeseries.Factory {
+) : TimeseriesCollector.Factory {
 
     override fun create(applicationId: String, sessionId: String, sessionType: RumSessionType) =
-        RumSessionScopeTimeseries(
+        DefaultTimeseriesCollector(
             internalLogger = internalLogger,
             collectInBackground = collectInBackground,
             scheduledExecutorService = scheduledExecutorService,

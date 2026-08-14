@@ -92,10 +92,10 @@ import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.rum.internal.timeseries.Buffer
-import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesFactory
+import com.datadog.android.rum.internal.timeseries.DefaultTimeseriesCollectorFactory
+import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollectorFactory
 import com.datadog.android.rum.internal.timeseries.Pipeline
-import com.datadog.android.rum.internal.timeseries.RumSessionScopeTimeseriesFactory
-import com.datadog.android.rum.internal.timeseries.Timeseries
+import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
 import com.datadog.android.rum.internal.timeseries.provider.CpuDatapointReader
 import com.datadog.android.rum.internal.timeseries.provider.VitalReaderWrapper
 import com.datadog.android.rum.internal.timeseries.serializer.CpuEventSerializer
@@ -200,7 +200,7 @@ internal class RumFeature(
     internal val rumContextUpdateReceivers = mutableSetOf<FeatureContextUpdateReceiver>()
     internal var insightsCollector: InsightsCollector = NoOpInsightsCollector()
     override val heatmapIdentifierRegistry: HeatmapIdentifierRegistry = HeatmapIdentifierRegistry.create()
-    internal var timeseriesFactory: Timeseries.Factory = NoOpTimeseriesFactory()
+    internal var timeseriesCollectorFactory: TimeseriesCollector.Factory = NoOpTimeseriesCollectorFactory()
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
     internal var rumAppStartupDetector: RumAppStartupDetector? = null
@@ -303,7 +303,7 @@ internal class RumFeature(
         sessionListener = configuration.sessionListener
 
         configuration.timeseriesConfiguration?.let { configuration ->
-            timeseriesFactory = createTimeseriesCollectingFactory(
+            timeseriesCollectorFactory = createTimeseriesCollectingFactory(
                 configuration,
                 appContext.readTotalRamBytes(sdkCore.internalLogger) ?: 0L,
                 insightsCollector
@@ -375,8 +375,8 @@ internal class RumFeature(
 
         unregisterTrackingStrategies(appContext)
 
-        timeseriesFactory = NoOpTimeseriesFactory()
-        (GlobalRumMonitor.get(sdkCore) as? DatadogRumMonitor)?.stopActiveTimeseries()
+        timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
+        (GlobalRumMonitor.get(sdkCore) as? DatadogRumMonitor)?.stopTimeseries()
 
         dataWriter = NoOpDataWriter()
 
@@ -457,7 +457,7 @@ internal class RumFeature(
         configuration: TimeseriesConfiguration,
         totalRamBytes: Long,
         insightsCollector: InsightsCollector
-    ): Timeseries.Factory = RumSessionScopeTimeseriesFactory(
+    ): TimeseriesCollector.Factory = DefaultTimeseriesCollectorFactory(
         internalLogger = sdkCore.internalLogger,
         collectInBackground = configuration.collectInBackground,
         scheduledExecutorService = vitalExecutorService,

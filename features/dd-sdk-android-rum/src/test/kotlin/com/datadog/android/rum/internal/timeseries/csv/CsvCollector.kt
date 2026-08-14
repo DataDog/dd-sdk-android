@@ -11,21 +11,21 @@ import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.scope.RumViewType
 import com.datadog.android.rum.internal.timeseries.Buffer
-import com.datadog.android.rum.internal.timeseries.Timeseries
+import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
 import com.datadog.android.rum.internal.timeseries.serializer.CpuEventSerializer
 import com.datadog.android.rum.internal.timeseries.serializer.JsonSerializer
 import com.datadog.android.rum.internal.timeseries.serializer.MemoryEventSerializer
 import com.google.gson.JsonObject
 
 /**
- * A test-only [Timeseries] that mirrors the wiring done by `RumSessionScopeTimeseriesFactory`,
+ * A test-only [TimeseriesCollector] that mirrors the wiring done by `DefaultTimeseriesCollectorFactory`,
  * but pulls samples from CSV-backed readers instead of `VitalReaderWrapper` and drives the
  * pipelines synchronously (no executor) so callers can assert on every emitted JSON.
  */
-internal class CsvTimeseries(
+internal class CsvCollector(
     private val pipelines: List<Triple<CSVReader, Buffer<Double>, JsonSerializer<Double>>>,
     private val datadogContext: DatadogContext
-) : Timeseries {
+) : TimeseriesCollector {
 
     private val emitted = mutableListOf<JsonObject>()
 
@@ -58,7 +58,7 @@ internal class CsvTimeseries(
     companion object {
 
         /**
-         * Builds a [CsvTimeseries] with the same shape as `RumSessionScopeTimeseriesFactory`:
+         * Builds a [CsvCollector] with the same shape as `DefaultTimeseriesCollectorFactory`:
          * a memory pipeline followed by a CPU pipeline, each backed by [CSVReader] and the
          * production [MemoryEventSerializer] / [CpuEventSerializer].
          */
@@ -72,7 +72,7 @@ internal class CsvTimeseries(
             bufferSize: Int,
             timeProvider: TimeProvider,
             datadogContext: DatadogContext
-        ) = CsvTimeseries(
+        ) = CsvCollector(
             datadogContext = datadogContext,
             pipelines = listOf(
                 Triple(

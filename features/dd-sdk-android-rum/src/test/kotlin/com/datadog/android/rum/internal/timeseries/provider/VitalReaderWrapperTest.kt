@@ -4,10 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.timeseries
+package com.datadog.android.rum.internal.timeseries.provider
 
 import com.datadog.android.internal.time.TimeProvider
-import com.datadog.android.rum.internal.timeseries.provider.VitalReaderWrapper
 import com.datadog.android.rum.internal.vitals.VitalReader
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.DoubleForgery
@@ -34,7 +33,7 @@ import java.util.concurrent.TimeUnit
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class VitalReaderDataPointsReaderTest {
+internal class VitalReaderWrapperTest {
 
     @LongForgery(min = 1L)
     var fakeTimestamp: Long = 0L
