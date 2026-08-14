@@ -18,7 +18,7 @@ import com.datadog.android.rum.internal.timeseries.serializer.MemoryEventSeriali
 import com.google.gson.JsonObject
 
 /**
- * A test-only [Timeseries] that mirrors the wiring done by `DefaultTimeseriesCollectorFactory`,
+ * A test-only [TimeseriesCollector] that mirrors the wiring done by `DefaultTimeseriesCollectorFactory`,
  * but pulls samples from CSV-backed readers instead of `VitalReaderWrapper` and drives the
  * pipelines synchronously (no executor) so callers can assert on every emitted JSON.
  */
