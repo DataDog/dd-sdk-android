@@ -40,7 +40,7 @@ import java.util.UUID
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class TimeseriesEndToEndTest {
+internal class TimeseriesCollectorEndToEndTest {
 
     @Mock
     lateinit var mockTimeProvider: TimeProvider
@@ -56,7 +56,7 @@ internal class TimeseriesEndToEndTest {
         whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn FIXED_DATE_MS
 
         csvContent = loadResource("fixtures/timeseries/input_memory_cpu.csv")
-        val testedTimeseries = CsvTimeseries.create(
+        val testedTimeseries = CsvCollector.create(
             csvContent = csvContent,
             sessionId = SESSION_ID,
             applicationId = APPLICATION_ID,

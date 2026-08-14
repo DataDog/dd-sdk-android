@@ -56,8 +56,8 @@ import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.startup.RumAppStartupDetector
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
-import com.datadog.android.rum.internal.timeseries.RumSessionScopeTimeseries
-import com.datadog.android.rum.internal.timeseries.Timeseries
+import com.datadog.android.rum.internal.timeseries.DefaultTimeseriesCollector
+import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
@@ -869,7 +869,7 @@ internal class RumFeatureTest {
         var writerAtFlushTime: DataWriter<Any>? = null
         doAnswer {
             writerAtFlushTime = testedFeature.dataWriter
-        }.whenever(mockDatadogMonitor).stopActiveTimeseries()
+        }.whenever(mockDatadogMonitor).stopTimeseries()
 
         // When
         testedFeature.onStop()
@@ -904,7 +904,7 @@ internal class RumFeatureTest {
         val timeseries = createTimeseries(totalRamBytes = 0L, sessionId = fakeSessionId)
 
         // Then: only the CPU pipeline is created; the memory pipeline is skipped.
-        check(timeseries is RumSessionScopeTimeseries)
+        check(timeseries is DefaultTimeseriesCollector)
         assertThat(timeseries.pipelines).hasSize(1)
     }
 
@@ -917,7 +917,7 @@ internal class RumFeatureTest {
         val timeseries = createTimeseries(totalRamBytes = fakeTotalRamBytes, sessionId = fakeSessionId)
 
         // Then: both the CPU and memory pipelines are created.
-        check(timeseries is RumSessionScopeTimeseries)
+        check(timeseries is DefaultTimeseriesCollector)
         assertThat(timeseries.pipelines).hasSize(2)
     }
 
@@ -1918,7 +1918,7 @@ internal class RumFeatureTest {
     // Builds a timeseries collector for the given total device RAM (in bytes), bypassing the
     // ActivityManager read so the skip/collect/log behavior can be exercised deterministically.
     @OptIn(ExperimentalRumApi::class)
-    private fun createTimeseries(totalRamBytes: Long, sessionId: String): Timeseries =
+    private fun createTimeseries(totalRamBytes: Long, sessionId: String): TimeseriesCollector =
         testedFeature
             .createTimeseriesCollectingFactory(
                 TimeseriesConfiguration.Builder().build(),

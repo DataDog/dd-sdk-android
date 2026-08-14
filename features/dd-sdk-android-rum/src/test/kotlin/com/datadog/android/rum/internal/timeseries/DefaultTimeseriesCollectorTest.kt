@@ -55,9 +55,9 @@ import java.util.concurrent.TimeUnit
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class RumSessionScopeTimeseriesTest {
+internal class DefaultTimeseriesCollectorTest {
 
-    private lateinit var testedTimeseries: RumSessionScopeTimeseries
+    private lateinit var testedTimeseries: DefaultTimeseriesCollector
 
     @Mock
     lateinit var mockDataWriter: DataWriter<Any>
@@ -127,7 +127,7 @@ internal class RumSessionScopeTimeseriesTest {
         pipelineA = Pipeline(mockSdkCore, mockReaderA, bufferA, mockSerializerA, mockDataWriter, mockInternalLogger)
         pipelineB = Pipeline(mockSdkCore, mockReaderB, bufferB, mockSerializerB, mockDataWriter, mockInternalLogger)
 
-        testedTimeseries = RumSessionScopeTimeseries(
+        testedTimeseries = DefaultTimeseriesCollector(
             pipelines = listOf(pipelineA, pipelineB),
             internalLogger = mockInternalLogger,
             collectInBackground = false,
@@ -379,7 +379,7 @@ internal class RumSessionScopeTimeseriesTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            RumSessionScopeTimeseries.ERROR_SAMPLING_FAILED,
+            DefaultTimeseriesCollector.ERROR_SAMPLING_FAILED,
             fakeError
         )
     }
@@ -387,7 +387,7 @@ internal class RumSessionScopeTimeseriesTest {
     @Test
     fun `M log error and reschedule W sample tick { buffer drain throws }`(forge: Forge) {
         // Given — drain() throws outside Pipeline's own try/catch, so it must be
-        // caught by RumSessionScopeTimeseries' sampling try/catch instead.
+        // caught by DefaultTimeseriesCollector' sampling try/catch instead.
         val fakeError = RuntimeException("drain failure")
         val mockBuffer = mock<Buffer<Double>>()
         whenever(mockBuffer.isFull()) doReturn true
@@ -395,7 +395,7 @@ internal class RumSessionScopeTimeseriesTest {
         whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
         val pipeline =
             Pipeline(mockSdkCore, mockReaderA, mockBuffer, mockSerializerA, mockDataWriter, mockInternalLogger)
-        val timeseries = RumSessionScopeTimeseries(
+        val timeseries = DefaultTimeseriesCollector(
             pipelines = listOf(pipeline),
             internalLogger = mockInternalLogger,
             collectInBackground = false,
@@ -412,7 +412,7 @@ internal class RumSessionScopeTimeseriesTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            RumSessionScopeTimeseries.ERROR_SAMPLING_FAILED,
+            DefaultTimeseriesCollector.ERROR_SAMPLING_FAILED,
             fakeError
         )
         verify(mockExecutor, times(2))
@@ -434,7 +434,7 @@ internal class RumSessionScopeTimeseriesTest {
 
         // Then
         // times(1) default on verifyLog also confirms this is the only ERROR log with that
-        // throwable — i.e. RumSessionScopeTimeseries' own sampling catch never fired here.
+        // throwable — i.e. DefaultTimeseriesCollector' own sampling catch never fired here.
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
@@ -463,7 +463,7 @@ internal class RumSessionScopeTimeseriesTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            RumSessionScopeTimeseries.ERROR_SAMPLING_FAILED,
+            DefaultTimeseriesCollector.ERROR_SAMPLING_FAILED,
             fakeError
         )
         verify(mockExecutor, times(fakeBufferSize + 1))
@@ -512,7 +512,7 @@ internal class RumSessionScopeTimeseriesTest {
     fun `M sample W sample tick { background, collectInBackground = true }`(forge: Forge) {
         // Given
         whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
-        val bgTimeseries = RumSessionScopeTimeseries(
+        val bgTimeseries = DefaultTimeseriesCollector(
             pipelines = listOf(pipelineA, pipelineB),
             internalLogger = mockInternalLogger,
             collectInBackground = true,

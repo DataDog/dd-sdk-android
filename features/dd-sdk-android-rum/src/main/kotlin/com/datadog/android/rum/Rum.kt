@@ -167,7 +167,7 @@ object Rum {
             },
             insightsCollector = rumFeature.insightsCollector,
             heatmapIdentifierRegistry = rumFeature.heatmapIdentifierRegistry,
-            timeseriesFactory = rumFeature.timeseriesFactory
+            timeseriesCollectorFactory = rumFeature.timeseriesCollectorFactory
         )
     }
 

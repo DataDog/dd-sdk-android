@@ -36,7 +36,7 @@ import java.util.concurrent.ScheduledExecutorService
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class RumSessionScopeTimeseriesFactoryTest {
+internal class DefaultTimeseriesCollectorFactoryTest {
 
     @Mock
     lateinit var mockSdkCore: FeatureSdkCore
@@ -51,7 +51,7 @@ internal class RumSessionScopeTimeseriesFactoryTest {
     lateinit var mockExecutor: ScheduledExecutorService
 
     @Test
-    fun `M build RumSessionScopeTimeseries with provided pipelines W create()`(
+    fun `M build DefaultTimeseriesCollector with provided pipelines W create()`(
         @StringForgery fakeSessionId: String,
         @StringForgery fakeApplicationId: String
     ) {
@@ -64,7 +64,7 @@ internal class RumSessionScopeTimeseriesFactoryTest {
                 whenever(this(fakeSessionId, fakeApplicationId, fakeSessionType))
                     .thenReturn(listOf(pipelineA, pipelineB))
             }
-        val testedFactory = RumSessionScopeTimeseriesFactory(
+        val testedFactory = DefaultTimeseriesCollectorFactory(
             internalLogger = mockInternalLogger,
             collectInBackground = false,
             scheduledExecutorService = mockExecutor,
@@ -86,7 +86,7 @@ internal class RumSessionScopeTimeseriesFactoryTest {
     ) {
         // Given
         val emptyProvider: (String, String, RumSessionType) -> List<Pipeline<*>> = { _, _, _ -> emptyList() }
-        val testedFactory = RumSessionScopeTimeseriesFactory(
+        val testedFactory = DefaultTimeseriesCollectorFactory(
             internalLogger = mockInternalLogger,
             collectInBackground = true,
             scheduledExecutorService = mockExecutor,

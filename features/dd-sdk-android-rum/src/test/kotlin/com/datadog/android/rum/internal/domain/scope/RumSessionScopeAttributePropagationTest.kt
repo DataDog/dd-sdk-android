@@ -26,7 +26,7 @@ import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
-import com.datadog.android.rum.internal.timeseries.Timeseries
+import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -130,10 +130,10 @@ internal class RumSessionScopeAttributePropagationTest {
     lateinit var mockSessionSampler: Sampler<String>
 
     @Mock
-    lateinit var mockTimeseriesFactory: Timeseries.Factory
+    lateinit var mockCollectorFactory: TimeseriesCollector.Factory
 
     @Mock
-    lateinit var mockTimeseries: Timeseries
+    lateinit var mockCollector: TimeseriesCollector
 
     lateinit var fakeParentAttributes: Map<String, Any?>
 
@@ -171,7 +171,7 @@ internal class RumSessionScopeAttributePropagationTest {
         fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
         whenever(mockSessionSampler.getSampleRate()).thenReturn(fakeSampleRate)
         whenever(mockSessionSampler.sample(any())).thenReturn(true)
-        whenever(mockTimeseriesFactory.create(any(), any(), any())) doReturn mockTimeseries
+        whenever(mockCollectorFactory.create(any(), any(), any())) doReturn mockCollector
         testedScope = RumSessionScope(
             parentScope = mockParentScope,
             sdkCore = mockSdkCore,
@@ -198,7 +198,7 @@ internal class RumSessionScopeAttributePropagationTest {
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
             heatmapIdentifierRegistry = null,
-            timeseriesFactory = mockTimeseriesFactory
+            timeseriesCollectorFactory = mockCollectorFactory
         )
     }
 
