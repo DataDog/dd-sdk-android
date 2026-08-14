@@ -47,6 +47,11 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -116,7 +121,6 @@ internal class PipelineTest {
             buffer = buffer,
             eventFactory = mockEventFactory,
             dataWriter = mockDataWriter,
-            rumContext = fakeRumContext,
             insightsCollector = mockInsightsCollector
         )
     }
@@ -139,7 +143,7 @@ internal class PipelineTest {
         whenever(mockReader.read()) doReturn fakePoint
 
         // When
-        testedPipeline.execute()
+        testedPipeline.execute(fakeRumContext)
 
         // Then
         assertThat(buffer.drain()).containsExactly(fakePoint)
@@ -151,10 +155,33 @@ internal class PipelineTest {
         whenever(mockReader.read()) doReturn null
 
         // When
-        testedPipeline.execute()
+        testedPipeline.execute(fakeRumContext)
 
         // Then
         assertThat(buffer.drain()).isEmpty()
+    }
+
+    @Test
+    fun `M not hold the lock while reading W execute()`(forge: Forge) {
+        // Given — a concurrent flush() races the reader and must not wait for the read to finish
+        var flushedWhileReading = false
+        whenever(mockReader.read()) doAnswer {
+            val flushed = CountDownLatch(1)
+            Thread {
+                testedPipeline.flush(fakeRumContext)
+                flushed.countDown()
+            }.start()
+            flushedWhileReading = flushed.await(CONCURRENT_FLUSH_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            forge.getForgery<DataPoint<Double>>()
+        }
+
+        // When
+        testedPipeline.execute(fakeRumContext)
+
+        // Then
+        assertThat(flushedWhileReading)
+            .describedAs("flush() completed while reader.read() was still running")
+            .isTrue()
     }
 
     // endregion
@@ -170,10 +197,10 @@ internal class PipelineTest {
         whenever(mockReader.read()) doReturn fakePoint
         whenever(mockEventFactory.create(any(), any(), any())) doReturn fakeJson
         whenever(mockEventFactory.eventName) doReturn fakeTimeseriesName
-        repeat(fakeBufferSize - 1) { testedPipeline.execute() }
+        repeat(fakeBufferSize - 1) { testedPipeline.execute(fakeRumContext) }
 
         // When
-        testedPipeline.execute()
+        testedPipeline.execute(fakeRumContext)
 
         // Then
         verify(mockDataWriter).write(mockEventBatchWriter, fakeJson, EventType.DEFAULT)
@@ -187,7 +214,7 @@ internal class PipelineTest {
         whenever(mockReader.read()) doReturn forge.getForgery<DataPoint<Double>>()
 
         // When
-        repeat(fakeBufferSize - 1) { testedPipeline.execute() }
+        repeat(fakeBufferSize - 1) { testedPipeline.execute(fakeRumContext) }
 
         // Then
         verifyNoInteractions(mockDataWriter)
@@ -199,10 +226,10 @@ internal class PipelineTest {
         // Given
         whenever(mockReader.read()) doReturn forge.getForgery<DataPoint<Double>>()
         whenever(mockEventFactory.create(any(), any(), any())) doReturn null
-        repeat(fakeBufferSize - 1) { testedPipeline.execute() }
+        repeat(fakeBufferSize - 1) { testedPipeline.execute(fakeRumContext) }
 
         // When
-        testedPipeline.execute()
+        testedPipeline.execute(fakeRumContext)
 
         // Then
         verifyNoInteractions(mockDataWriter)
@@ -223,10 +250,10 @@ internal class PipelineTest {
         whenever(mockEventFactory.create(any(), any(), any())) doReturn fakeJson
         whenever(mockEventFactory.eventName) doReturn fakeTimeseriesName
         val sampleCount = fakeBufferSize - 1
-        repeat(sampleCount) { testedPipeline.execute() }
+        repeat(sampleCount) { testedPipeline.execute(fakeRumContext) }
 
         // When
-        testedPipeline.flush()
+        testedPipeline.flush(fakeRumContext)
 
         // Then
         val captor = argumentCaptor<List<DataPoint<Double>>>()
@@ -244,10 +271,10 @@ internal class PipelineTest {
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer { Unit }
         whenever(mockEventFactory.create(any(), any(), any())) doReturn fakeTimeseriesJson("view.cpu")
         whenever(mockReader.read()) doReturn fakePoint
-        testedPipeline.execute()
+        testedPipeline.execute(fakeRumContext)
 
         // When
-        testedPipeline.flush()
+        testedPipeline.flush(fakeRumContext)
 
         // Then
         assertThat(buffer.drain()).isEmpty()
@@ -267,12 +294,12 @@ internal class PipelineTest {
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer { Unit }
         whenever(mockEventFactory.create(any(), any(), any())) doReturn fakeTimeseriesJson("view.cpu")
         whenever(mockReader.read()) doReturn fakePoint
-        testedPipeline.execute()
-        testedPipeline.flush()
+        testedPipeline.execute(fakeRumContext)
+        testedPipeline.flush(fakeRumContext)
         whenever(mockReader.read()) doReturn fakeNextPoint
 
         // When
-        testedPipeline.execute()
+        testedPipeline.execute(fakeRumContext)
         verify(mockRumFeatureScope).withWriteContext(any(), callbackCaptor.capture())
         callbackCaptor.firstValue.invoke(mockDatadogContext, mockEventWriteScope)
 
@@ -288,10 +315,10 @@ internal class PipelineTest {
         // Given
         whenever(mockReader.read()) doReturn forge.getForgery<DataPoint<Double>>()
         whenever(mockEventFactory.create(any(), any(), any())) doReturn fakeTimeseriesJson("view.cpu")
-        testedPipeline.execute()
+        testedPipeline.execute(fakeRumContext)
 
         // When
-        testedPipeline.flush()
+        testedPipeline.flush(fakeRumContext)
 
         // Then
         verify(mockEventFactory).create(eq(mockDatadogContext), eq(fakeRumContext), any())
@@ -302,10 +329,10 @@ internal class PipelineTest {
         // Given
         whenever(mockReader.read()) doReturn forge.getForgery<DataPoint<Double>>()
         whenever(mockEventFactory.create(any(), any(), any())) doReturn fakeTimeseriesJson("view.cpu")
-        testedPipeline.execute()
+        testedPipeline.execute(fakeRumContext)
 
         // When
-        testedPipeline.flush()
+        testedPipeline.flush(fakeRumContext)
 
         // Then
         verify(mockRumFeatureScope).withWriteContext(
@@ -317,7 +344,7 @@ internal class PipelineTest {
     @Test
     fun `M not write W flush() { buffer empty }`() {
         // When
-        testedPipeline.flush()
+        testedPipeline.flush(fakeRumContext)
 
         // Then
         verifyNoInteractions(mockDataWriter)
@@ -330,10 +357,10 @@ internal class PipelineTest {
         val fakeThrowable = forge.aThrowable()
         whenever(mockReader.read()) doReturn forge.getForgery<DataPoint<Double>>()
         whenever(mockEventFactory.create(any(), any(), any())) doThrow fakeThrowable
-        testedPipeline.execute()
+        testedPipeline.execute(fakeRumContext)
 
         // When
-        testedPipeline.flush()
+        testedPipeline.flush(fakeRumContext)
 
         // Then
         mockInternalLogger.verifyLog(
@@ -356,10 +383,10 @@ internal class PipelineTest {
         whenever(mockEventFactory.create(any(), any(), any())) doReturn fakeJson
         whenever(mockDataWriter.write(any(), any(), any())) doThrow fakeThrowable
         whenever(mockEventWriteScope.invoke(any())) doAnswer { Unit }
-        testedPipeline.execute()
+        testedPipeline.execute(fakeRumContext)
 
         // When
-        testedPipeline.flush()
+        testedPipeline.flush(fakeRumContext)
         verify(mockEventWriteScope).invoke(writeBlockCaptor.capture())
         writeBlockCaptor.firstValue.invoke(mockEventBatchWriter)
 
@@ -380,10 +407,10 @@ internal class PipelineTest {
         whenever(mockReader.read()) doReturn forge.getForgery<DataPoint<Double>>()
         whenever(mockEventFactory.create(any(), any(), any())) doReturn fakeJson
         whenever(mockDataWriter.write(any(), any(), any())) doReturn false
-        testedPipeline.execute()
+        testedPipeline.execute(fakeRumContext)
 
         // When
-        testedPipeline.flush()
+        testedPipeline.flush(fakeRumContext)
 
         // Then
         verify(mockDataWriter).write(mockEventBatchWriter, fakeJson, EventType.DEFAULT)
@@ -392,9 +419,124 @@ internal class PipelineTest {
 
     // endregion
 
+    // region concurrency
+
+    @Test
+    fun `M not lose or duplicate points W execute() { concurrent samplers }`() {
+        // Given — every read() yields a unique point, every drained batch is recorded
+        val counter = AtomicLong()
+        val batches = CopyOnWriteArrayList<List<DataPoint<Double>>>()
+        stubUniqueReads(counter)
+        stubBatchRecording(batches)
+
+        // When
+        runConcurrently { testedPipeline.execute(fakeRumContext) }
+        val batchesBeforeFlush = batches.toList()
+        testedPipeline.flush(fakeRumContext)
+
+        // Then
+        assertThat(batchesBeforeFlush.map { it.size })
+            .describedAs("batches drained by execute() are always exactly one buffer worth")
+            .containsOnly(fakeBufferSize)
+        assertThat(batches.flatten().map { it.timestampNs }.sorted())
+            .isEqualTo((1L..counter.get()).toList())
+    }
+
+    @Test
+    fun `M not lose or duplicate points W execute() and flush() { concurrent }`() {
+        // Given
+        val counter = AtomicLong()
+        val batches = CopyOnWriteArrayList<List<DataPoint<Double>>>()
+        stubUniqueReads(counter)
+        stubBatchRecording(batches)
+
+        // When — one thread keeps flushing while the others keep sampling
+        runConcurrently { threadIndex ->
+            if (threadIndex == 0) {
+                testedPipeline.flush(fakeRumContext)
+            } else {
+                testedPipeline.execute(fakeRumContext)
+            }
+        }
+        testedPipeline.flush(fakeRumContext)
+
+        // Then
+        assertThat(batches.flatten().map { it.timestampNs }.sorted())
+            .isEqualTo((1L..counter.get()).toList())
+    }
+
+    @Test
+    fun `M eventually capture point W flush() races execute() { flush between read() and add() }`(
+        forge: Forge
+    ) {
+        // Given — reader.read() blocks until released, forcing execute() to sit between
+        // its (unsynchronized) read() and the synchronized buffer add()
+        val readStarted = CountDownLatch(1)
+        val releaseRead = CountDownLatch(1)
+        val fakePoint = forge.getForgery<DataPoint<Double>>()
+        whenever(mockReader.read()) doAnswer {
+            readStarted.countDown()
+            releaseRead.await(CONCURRENT_FLUSH_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            fakePoint
+        }
+        val batches = CopyOnWriteArrayList<List<DataPoint<Double>>>()
+        stubBatchRecording(batches)
+        val executor = Executors.newSingleThreadExecutor()
+
+        // When
+        executor.execute { testedPipeline.execute(fakeRumContext) }
+        readStarted.await(CONCURRENT_FLUSH_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        testedPipeline.flush(fakeRumContext) // races execute(): read() is in flight, not yet added
+        releaseRead.countDown()
+        executor.shutdown()
+        check(executor.awaitTermination(CONCURRENT_FLUSH_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+            "execute() did not complete in time"
+        }
+        testedPipeline.flush(fakeRumContext) // point survives for the next flush
+
+        // Then
+        assertThat(batches.flatten()).containsExactly(fakePoint)
+    }
+
+    // endregion
+
+    private fun stubUniqueReads(counter: AtomicLong) {
+        whenever(mockReader.read()) doAnswer { DataPoint(counter.incrementAndGet(), 0.0) }
+    }
+
+    private fun stubBatchRecording(batches: MutableList<List<DataPoint<Double>>>) {
+        whenever(mockEventFactory.create(any(), any(), any())) doAnswer { invocation ->
+            batches.add(invocation.getArgument(2))
+            fakeTimeseriesJson("view.cpu")
+        }
+    }
+
+    private fun runConcurrently(task: (threadIndex: Int) -> Unit) {
+        val executor = Executors.newFixedThreadPool(CONCURRENT_THREADS)
+        val start = CountDownLatch(1)
+        val done = CountDownLatch(CONCURRENT_THREADS)
+        repeat(CONCURRENT_THREADS) { threadIndex ->
+            executor.execute {
+                start.await()
+                repeat(ITERATIONS_PER_THREAD) { task(threadIndex) }
+                done.countDown()
+            }
+        }
+        start.countDown()
+        val finished = done.await(CONCURRENT_FLUSH_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        executor.shutdownNow()
+        check(finished) { "concurrent tasks did not complete in time" }
+    }
+
     // Pipeline forwards whatever the event factory returns without inspecting it, so the shape
     // only needs to be a distinct non-null object per name.
     private fun fakeTimeseriesJson(name: String): JsonObject = JsonObject().apply {
         addProperty("name", name)
+    }
+
+    private companion object {
+        const val CONCURRENT_FLUSH_TIMEOUT_MS = 2000L
+        const val CONCURRENT_THREADS = 4
+        const val ITERATIONS_PER_THREAD = 200
     }
 }

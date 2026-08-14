@@ -16,7 +16,6 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
-import com.datadog.android.rum.internal.domain.scope.RumViewType
 import com.datadog.android.rum.internal.timeseries.Buffer
 import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
 import com.datadog.android.rum.internal.timeseries.factory.CpuEventFactory
@@ -66,7 +65,7 @@ internal class CsvCollector(
 
     override fun onSessionStop() = Unit
 
-    override fun onViewTypeUpdate(newViewType: RumViewType) = Unit
+    override fun onRumContextUpdate(newRumContext: RumContext) = Unit
 
     companion object {
 

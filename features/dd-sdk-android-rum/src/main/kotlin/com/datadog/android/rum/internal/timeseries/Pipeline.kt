@@ -27,21 +27,25 @@ internal class Pipeline<T : Any>(
     private val buffer: Buffer<T>,
     private val eventFactory: EventFactory<T, *>,
     private val dataWriter: DataWriter<Any>,
-    private val rumContext: RumContext,
     private val insightsCollector: InsightsCollector = NoOpInsightsCollector()
 ) {
     val intervalMs: Long get() = reader.intervalMs
 
     @WorkerThread
-    fun execute() {
-        reader.read()?.let(buffer::add)
-        if (buffer.isFull()) drainAndWrite()
+    fun execute(rumContext: RumContext) {
+        // reader.read() may hit the filesystem (/proc); kept outside the lock so a concurrent
+        // flush() waits only for the buffer and never for I/O.
+        val dataPoint = reader.read()
+        synchronized(this) {
+            dataPoint?.let(buffer::add)
+            if (buffer.isFull()) drainAndWrite(rumContext)
+        }
     }
 
     @WorkerThread
-    fun flush() = drainAndWrite()
+    fun flush(rumContext: RumContext) = synchronized(this) { drainAndWrite(rumContext) }
 
-    private fun drainAndWrite() {
+    private fun drainAndWrite(rumContext: RumContext) {
         val dataPoints = buffer.drain().ifEmpty { return }
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.withWriteContext(

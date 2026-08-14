@@ -8,14 +8,13 @@ package com.datadog.android.rum.internal.timeseries
 
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.scope.RumViewType
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
 internal interface TimeseriesCollector {
     fun onSessionStart()
     fun onSessionStop()
-    fun onViewTypeUpdate(newViewType: RumViewType)
+    fun onRumContextUpdate(newRumContext: RumContext)
 
     @NoOpImplementation
     interface Factory {

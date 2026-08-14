@@ -2971,6 +2971,23 @@ internal class DatadogRumMonitorTest {
 
     // endregion
 
+    // region timeseries
+
+    @Test
+    fun `M stop the active session timeseries W stopTimeseries()`() {
+        // Given
+        val mockSessionScope = mock<RumSessionScope>()
+        whenever(mockApplicationScope.activeSession) doReturn mockSessionScope
+
+        // When
+        testedMonitor.stopTimeseries()
+
+        // Then
+        verify(mockSessionScope).stopTimeseries()
+    }
+
+    // endregion
+
     @OptIn(ExperimentalRumApi::class)
     @Test
     fun `M produce StartOperation event W startOperation`(

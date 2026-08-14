@@ -1958,9 +1958,9 @@ internal class RumSessionScopeTest {
         // Then — one timeseries per tracked session, updates go to the live one only
         verify(mockTimeseriesCollectorFactory, times(2)).create(any(), any())
         verify(firstTimeseriesCollector).onSessionStop()
-        verify(firstTimeseriesCollector, times(1)).onViewTypeUpdate(fakeViewContext.viewType)
+        verify(firstTimeseriesCollector, times(1)).onRumContextUpdate(fakeViewContext)
         verify(secondTimeseriesCollector).onSessionStart()
-        verify(secondTimeseriesCollector).onViewTypeUpdate(fakeViewContext.viewType)
+        verify(secondTimeseriesCollector).onRumContextUpdate(fakeViewContext)
     }
 
     @Test
@@ -2018,14 +2018,14 @@ internal class RumSessionScopeTest {
         // When
         testedScope.handleEvent(forge.addErrorEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
-        // Then — the session scope view type, once per handled event
-        val viewTypeCaptor = argumentCaptor<RumViewType>()
-        verify(mockTimeseriesCollector, times(2)).onViewTypeUpdate(viewTypeCaptor.capture())
-        assertThat(viewTypeCaptor.allValues).containsOnly(testedScope.getRumContext().viewType)
+        // Then — the session scope context, once per handled event
+        val rumContextCaptor = argumentCaptor<RumContext>()
+        verify(mockTimeseriesCollector, times(2)).onRumContextUpdate(rumContextCaptor.capture())
+        assertThat(rumContextCaptor.allValues).containsOnly(testedScope.getRumContext())
     }
 
     @Test
-    fun `M pass active view type W onViewTypeUpdate() { StartView creates a foreground view }`(forge: Forge) {
+    fun `M pass active view context W onRumContextUpdate() { StartView creates a foreground view }`(forge: Forge) {
         // Given — a real view manager child scope, so the context comes from an actual RumViewScope
         initializeTestedScope(
             withMockChildScope = false,
@@ -2042,9 +2042,12 @@ internal class RumSessionScopeTest {
         )
 
         // Then
-        val viewTypeCaptor = argumentCaptor<RumViewType>()
-        verify(mockTimeseriesCollector).onViewTypeUpdate(viewTypeCaptor.capture())
-        assertThat(viewTypeCaptor.firstValue).isEqualTo(RumViewType.FOREGROUND)
+        val rumContextCaptor = argumentCaptor<RumContext>()
+        verify(mockTimeseriesCollector).onRumContextUpdate(rumContextCaptor.capture())
+        assertThat(rumContextCaptor.firstValue.viewType).isEqualTo(RumViewType.FOREGROUND)
+        assertThat(rumContextCaptor.firstValue.viewName).isEqualTo(fakeStartViewEvent.key.name)
+        assertThat(rumContextCaptor.firstValue.viewId).isNotNull
+        assertThat(rumContextCaptor.firstValue.sessionId).isEqualTo(testedScope.sessionId)
     }
 
     @Test
