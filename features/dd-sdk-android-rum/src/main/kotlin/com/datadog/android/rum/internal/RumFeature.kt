@@ -91,15 +91,9 @@ import com.datadog.android.rum.internal.startup.RumAppStartupDetector
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
-import com.datadog.android.rum.internal.timeseries.Buffer
 import com.datadog.android.rum.internal.timeseries.DefaultTimeseriesCollectorFactory
 import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollectorFactory
-import com.datadog.android.rum.internal.timeseries.Pipeline
 import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
-import com.datadog.android.rum.internal.timeseries.provider.CpuDatapointReader
-import com.datadog.android.rum.internal.timeseries.provider.VitalReaderWrapper
-import com.datadog.android.rum.internal.timeseries.serializer.CpuEventSerializer
-import com.datadog.android.rum.internal.timeseries.serializer.MemoryEventSerializer
 import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
@@ -302,11 +296,16 @@ internal class RumFeature(
 
         sessionListener = configuration.sessionListener
 
-        configuration.timeseriesConfiguration?.let { configuration ->
-            timeseriesCollectorFactory = createTimeseriesCollectingFactory(
-                configuration,
-                appContext.readTotalRamBytes(sdkCore.internalLogger) ?: 0L,
-                insightsCollector
+        configuration.timeseriesConfiguration?.let { timeseriesConfiguration ->
+            timeseriesCollectorFactory = DefaultTimeseriesCollectorFactory(
+                sdkCore = sdkCore,
+                dataWriter = dataWriter,
+                insightsCollector = insightsCollector,
+                configuration = timeseriesConfiguration,
+                scheduledExecutorService = vitalExecutorService,
+                totalRamBytes = appContext.readTotalRamBytes(sdkCore.internalLogger) ?: 0L,
+                batteryInfoProvider = batteryInfoProvider,
+                displayInfoProvider = displayInfoProvider
             )
         }
 
@@ -451,67 +450,6 @@ internal class RumFeature(
             sdkCore = sdkCore
         )
     }
-
-    @Suppress("LongMethod")
-    internal fun createTimeseriesCollectingFactory(
-        configuration: TimeseriesConfiguration,
-        totalRamBytes: Long,
-        insightsCollector: InsightsCollector
-    ): TimeseriesCollector.Factory = DefaultTimeseriesCollectorFactory(
-        internalLogger = sdkCore.internalLogger,
-        scheduledExecutorService = vitalExecutorService,
-        pipelinesProvider = { applicationId, sessionId, sessionType ->
-            listOfNotNull(
-                Pipeline(
-                    sdkCore = sdkCore,
-                    reader = CpuDatapointReader(
-                        cpuStatReader = CpuStatReader(internalLogger = sdkCore.internalLogger),
-                        cpuTimeProvider = sdkCore.timeProvider,
-                        intervalMs = configuration.intervalMs
-                    ),
-                    buffer = Buffer(configuration.bufferSize),
-                    serializer = CpuEventSerializer(
-                        sessionId = sessionId,
-                        applicationId = applicationId,
-                        sessionType = sessionType,
-                        timeProvider = sdkCore.timeProvider
-                    ),
-                    dataWriter = dataWriter,
-                    internalLogger = sdkCore.internalLogger,
-                    insightsCollector = insightsCollector
-                ),
-                if (totalRamBytes > 0L) {
-                    Pipeline(
-                        sdkCore = sdkCore,
-                        reader = VitalReaderWrapper(
-                            vitalReader = MemoryVitalReader(internalLogger = sdkCore.internalLogger),
-                            timeProvider = sdkCore.timeProvider,
-                            intervalMs = configuration.intervalMs
-                        ),
-                        buffer = Buffer(configuration.bufferSize),
-                        serializer = MemoryEventSerializer(
-                            sessionId = sessionId,
-                            applicationId = applicationId,
-                            sessionType = sessionType,
-                            totalRamBytes = totalRamBytes,
-                            timeProvider = sdkCore.timeProvider
-                        ),
-                        dataWriter = dataWriter,
-                        internalLogger = sdkCore.internalLogger,
-                        insightsCollector = insightsCollector
-                    )
-                } else {
-                    sdkCore.internalLogger.log(
-                        InternalLogger.Level.WARN,
-                        InternalLogger.Target.USER,
-                        { MEMORY_TIMESERIES_DISABLED_MESSAGE },
-                        onlyOnce = true
-                    )
-                    null
-                }
-            )
-        }
-    )
 
     // region FeatureEventReceiver
 
@@ -974,8 +912,6 @@ internal class RumFeature(
             "Slow frames monitoring enabled."
         internal const val SLOW_FRAMES_MONITORING_DISABLED_MESSAGE =
             "Slow frames monitoring disabled."
-        internal const val MEMORY_TIMESERIES_DISABLED_MESSAGE =
-            "Unable to read total device memory; memory timeseries collection is disabled."
         internal const val RUM_FEATURE_NOT_YET_INITIALIZED =
             "RUM feature is not initialized yet, you need to register it with a" +
                 " SDK instance by calling SdkCore#registerFeature method."

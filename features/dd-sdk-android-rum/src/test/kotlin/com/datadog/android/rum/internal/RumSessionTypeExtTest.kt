@@ -11,8 +11,8 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
-import com.datadog.android.rum.model.TimeseriesCpuEvent
-import com.datadog.android.rum.model.TimeseriesMemoryEvent
+import com.datadog.android.rum.model.TimeseriesCpuEvent.TimeseriesCpuEventSessionType
+import com.datadog.android.rum.model.TimeseriesMemoryEvent.TimeseriesMemoryEventSessionType
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
@@ -75,14 +75,17 @@ internal class RumSessionTypeExtTest {
     @MethodSource("toTimeseriesMemorySessionTypeMappings")
     fun `M map session type W toTimeseriesMemorySessionType()`(
         input: RumSessionType,
-        expected: TimeseriesMemoryEvent.Type
+        expected: TimeseriesMemoryEventSessionType
     ) {
         assertThat(input.toTimeseriesMemorySessionType()).isEqualTo(expected)
     }
 
     @ParameterizedTest
     @MethodSource("toTimeseriesCpuSessionTypeMappings")
-    fun `M map session type W toTimeseriesCpuSessionType()`(input: RumSessionType, expected: TimeseriesCpuEvent.Type) {
+    fun `M map session type W toTimeseriesCpuSessionType()`(
+        input: RumSessionType,
+        expected: TimeseriesCpuEventSessionType
+    ) {
         assertThat(input.toTimeseriesCpuSessionType()).isEqualTo(expected)
     }
 
@@ -144,14 +147,14 @@ internal class RumSessionTypeExtTest {
 
         @JvmStatic
         fun toTimeseriesMemorySessionTypeMappings(): List<Arguments> = listOf(
-            Arguments.of(RumSessionType.USER, TimeseriesMemoryEvent.Type.USER),
-            Arguments.of(RumSessionType.SYNTHETICS, TimeseriesMemoryEvent.Type.SYNTHETICS)
+            Arguments.of(RumSessionType.USER, TimeseriesMemoryEventSessionType.USER),
+            Arguments.of(RumSessionType.SYNTHETICS, TimeseriesMemoryEventSessionType.SYNTHETICS)
         )
 
         @JvmStatic
         fun toTimeseriesCpuSessionTypeMappings(): List<Arguments> = listOf(
-            Arguments.of(RumSessionType.USER, TimeseriesCpuEvent.Type.USER),
-            Arguments.of(RumSessionType.SYNTHETICS, TimeseriesCpuEvent.Type.SYNTHETICS)
+            Arguments.of(RumSessionType.USER, TimeseriesCpuEventSessionType.USER),
+            Arguments.of(RumSessionType.SYNTHETICS, TimeseriesCpuEventSessionType.SYNTHETICS)
         )
     }
 }

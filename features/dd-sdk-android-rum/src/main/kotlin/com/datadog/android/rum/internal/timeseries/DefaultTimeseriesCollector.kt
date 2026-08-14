@@ -9,73 +9,53 @@ package com.datadog.android.rum.internal.timeseries
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.scheduleSafe
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumViewType
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
-/**
- * Per-session timeseries collector.
- *
- * Lifecycle:
- *  - Each instance is single-use: exactly one [onSessionStart] followed by exactly one [onSessionStop].
- *    Duplicate calls are no-ops, and `RumSessionScope` builds a fresh instance per session.
- *  - [onViewTypeUpdate] is only meaningful between those two calls.
- *
- * Foreground gating:
- *  - Sampling only runs while the app is in the foreground, so [onSessionStart] starts a sampling
- *    chain only when the session begins on a foreground view.
- *  - Leaving the foreground schedules a deferred suspension which flushes whatever is buffered, so
- *    the pending batch reaches the writer instead of being dropped when the app is backgrounded.
- *  - Returning to the foreground cancels a suspension that has not fired yet, or starts a fresh
- *    sampling generation if it already did.
- *
- * Threading:
- *  - [onSessionStart] / [onSessionStop] / [onViewTypeUpdate] are called from the RUM event-handler thread.
- *  - Sampling and suspension tasks run on a [scheduledExecutorService] shared with other RUM
- *    components (owned by the SDK core); the instance neither owns nor shuts it down.
- *  - Access to a [Pipeline] is serialized on the pipeline instance, so a flush from the suspension
- *    task cannot interleave with a sampling tick.
- *  - Duplicate-chain prevention: each sampling chain carries a generation number. When a new
- *    generation starts, in-flight or queued ticks from the previous one self-terminate on their
- *    first check.
- */
 internal class DefaultTimeseriesCollector(
     private val internalLogger: InternalLogger,
     internal val pipelines: List<Pipeline<*>>,
     internal val scheduledExecutorService: ScheduledExecutorService,
-    @Volatile private var currentViewType: RumViewType?
+    @Volatile private var rumContext: RumContext
 ) : TimeseriesCollector {
-
     private val state = State()
+
+    // Batches are attributed to the view they are sent from, but a flush can happen once the app
+    // already left the foreground, where there is no view to attribute to. Keep the last foreground
+    // context so those batches stay attached to the view they were sent from.
+    @Volatile
+    private var lastForegroundRumContext: RumContext = rumContext
 
     @Volatile
     private var recentSuspension: ScheduledFuture<*>? = null
 
     // region PUBLIC API
-
     @WorkerThread
     override fun onSessionStart() {
-        state.set(isActive = currentViewType.isForeground)?.let { generation -> scheduleSampling(generation) }
+        state.set(isActive = rumContext.viewType.isForeground)?.let { generation -> scheduleSampling(generation) }
     }
 
     @WorkerThread
     override fun onSessionStop() {
         cancelSuspension()
         if (state.set(false) != null) {
-            flushPipelines()
+            flushPipelines(lastForegroundRumContext)
         }
     }
 
     @WorkerThread
-    override fun onViewTypeUpdate(newViewType: RumViewType) {
-        val oldViewType = currentViewType
-        if (newViewType == oldViewType) return
+    override fun onRumContextUpdate(newRumContext: RumContext) {
+        val oldViewType = rumContext.viewType
+        val newViewType = newRumContext.viewType
 
         val isEnterForeground = !oldViewType.isForeground && newViewType.isForeground
         val isLeaveForeground = oldViewType.isForeground && !newViewType.isForeground
 
-        currentViewType = newViewType
+        rumContext = newRumContext
+        if (newViewType.isForeground) lastForegroundRumContext = newRumContext
 
         if (isLeaveForeground) {
             scheduleStop(state.currentGeneration)
@@ -86,7 +66,7 @@ internal class DefaultTimeseriesCollector(
 
     // endregion
 
-    // region SAMPLING
+    //region SAMPLING
 
     private fun scheduleSampling(generation: Int) {
         cancelSuspension()
@@ -105,10 +85,9 @@ internal class DefaultTimeseriesCollector(
         ) {
             if (!state.isGenerationActive(generation)) return@scheduleSafe
             try {
-                // The chain stays alive during the suspension delay, so a tick landing while the
-                // app is already out of the foreground must skip the sample but keep the chain.
-                if (currentViewType.isForeground) {
-                    synchronized(pipeline) { pipeline.execute() }
+                val currentRumContext = rumContext
+                if (currentRumContext.viewType.isForeground) {
+                    pipeline.execute(currentRumContext)
                 }
             } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
                 internalLogger.log(
@@ -124,10 +103,10 @@ internal class DefaultTimeseriesCollector(
     }
 
     @WorkerThread
-    private fun flushPipelines() {
+    private fun flushPipelines(rumContext: RumContext) {
         pipelines.forEach { pipeline ->
             try {
-                synchronized(pipeline, pipeline::flush)
+                pipeline.flush(rumContext)
             } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
                 internalLogger.log(
                     level = InternalLogger.Level.ERROR,
@@ -150,8 +129,8 @@ internal class DefaultTimeseriesCollector(
             TimeUnit.MILLISECONDS,
             internalLogger
         ) {
-            if (!currentViewType.isForeground && state.stopGeneration(stopRequestGeneration)) {
-                flushPipelines()
+            if (!rumContext.viewType.isForeground && state.stopGeneration(stopRequestGeneration)) {
+                flushPipelines(lastForegroundRumContext)
             }
         }
     }

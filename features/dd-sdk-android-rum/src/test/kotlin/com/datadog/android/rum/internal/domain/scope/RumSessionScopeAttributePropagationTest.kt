@@ -26,7 +26,6 @@ import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
-import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -129,12 +128,6 @@ internal class RumSessionScopeAttributePropagationTest {
     @Mock
     lateinit var mockSessionSampler: Sampler<String>
 
-    @Mock
-    lateinit var mockCollectorFactory: TimeseriesCollector.Factory
-
-    @Mock
-    lateinit var mockCollector: TimeseriesCollector
-
     lateinit var fakeParentAttributes: Map<String, Any?>
 
     @Forgery
@@ -171,7 +164,6 @@ internal class RumSessionScopeAttributePropagationTest {
         fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
         whenever(mockSessionSampler.getSampleRate()).thenReturn(fakeSampleRate)
         whenever(mockSessionSampler.sample(any())).thenReturn(true)
-        whenever(mockCollectorFactory.create(any(), any(), any(), any())) doReturn mockCollector
         testedScope = RumSessionScope(
             parentScope = mockParentScope,
             sdkCore = mockSdkCore,
@@ -197,8 +189,7 @@ internal class RumSessionScopeAttributePropagationTest {
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
-            heatmapIdentifierRegistry = null,
-            timeseriesCollectorFactory = mockCollectorFactory
+            heatmapIdentifierRegistry = null
         )
     }
 

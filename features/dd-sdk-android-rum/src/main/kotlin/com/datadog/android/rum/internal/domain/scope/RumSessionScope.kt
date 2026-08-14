@@ -201,7 +201,11 @@ internal class RumSessionScope(
             }
         }
 
-        timeseriesCollector.onViewTypeUpdate(getActiveRumContext().viewType)
+        // getActiveRumContext() copies the whole context chain, so it is only built when there is a
+        // collector to feed: timeseries collection is opt-in and this runs on every RUM event.
+        if (timeseriesCollector !is NoOpTimeseriesCollector) {
+            timeseriesCollector.onRumContextUpdate(getActiveRumContext())
+        }
 
         return if (isSessionComplete()) {
             null
@@ -234,11 +238,11 @@ internal class RumSessionScope(
     }
 
     private fun startTimeseries() {
+        val rumContext = getActiveRumContext()
         timeseriesCollector = timeseriesCollectorFactory.create(
-            sessionId = sessionId,
-            applicationId = parentScope.getRumContext().applicationId,
-            sessionType = getRumContext().resolveSessionType(rumSessionTypeOverride),
-            viewType = getActiveRumContext().viewType
+            rumContext = rumContext,
+            sessionType = rumContext.resolveSessionType(rumSessionTypeOverride),
+            customAttributes = ::getCustomAttributes
         )
         timeseriesCollector.onSessionStart()
     }

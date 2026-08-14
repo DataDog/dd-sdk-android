@@ -15,13 +15,15 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumViewType
+import com.datadog.android.rum.internal.timeseries.factory.EventFactory
 import com.datadog.android.rum.internal.timeseries.provider.DataPointsReader
-import com.datadog.android.rum.internal.timeseries.serializer.JsonSerializer
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -49,6 +51,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.UUID
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -82,6 +85,9 @@ internal class DefaultTimeseriesCollectorTest {
     lateinit var mockEventBatchWriter: EventBatchWriter
 
     @Mock
+    lateinit var mockDatadogContext: DatadogContext
+
+    @Mock
     lateinit var mockExecutor: ScheduledExecutorService
 
     @Mock
@@ -94,10 +100,10 @@ internal class DefaultTimeseriesCollectorTest {
     lateinit var mockReaderB: DataPointsReader<Double>
 
     @Mock
-    lateinit var mockSerializerA: JsonSerializer<Double>
+    lateinit var mockEventFactoryA: EventFactory<Double, JsonObject>
 
     @Mock
-    lateinit var mockSerializerB: JsonSerializer<Double>
+    lateinit var mockEventFactoryB: EventFactory<Double, JsonObject>
 
     private lateinit var bufferA: Buffer<Double>
     private lateinit var bufferB: Buffer<Double>
@@ -114,6 +120,27 @@ internal class DefaultTimeseriesCollectorTest {
     @IntForgery(min = 2, max = 16)
     var fakeBufferSize: Int = 0
 
+    @Forgery
+    lateinit var fakeRumContext: RumContext
+
+    private fun fakeRumContextOf(viewType: RumViewType) = fakeRumContext.copy(viewType = viewType)
+
+    private fun createTimeseries(
+        initialViewType: RumViewType,
+        pipelines: List<Pipeline<*>> = listOf(pipelineA, pipelineB)
+    ) = DefaultTimeseriesCollector(
+        pipelines = pipelines,
+        internalLogger = mockInternalLogger,
+        scheduledExecutorService = mockExecutor,
+        rumContext = fakeRumContextOf(initialViewType)
+    )
+
+    // Single foreground pipeline wired to reader/event factory A, with a buffer the test controls.
+    private fun createTimeseriesWithBuffer(buffer: Buffer<Double>) = createTimeseries(
+        RumViewType.FOREGROUND,
+        listOf(Pipeline(mockSdkCore, mockReaderA, buffer, mockEventFactoryA, mockDataWriter, { emptyMap() }))
+    )
+
     @BeforeEach
     fun `set up`() {
         whenever(mockReaderA.intervalMs) doReturn fakeIntervalAMs
@@ -123,22 +150,33 @@ internal class DefaultTimeseriesCollectorTest {
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer { inv ->
             inv.getArgument<(DatadogContext, EventWriteScope) -> Unit>(inv.arguments.lastIndex)
-                .invoke(mock(), mockEventWriteScope)
+                .invoke(mockDatadogContext, mockEventWriteScope)
         }
         whenever(mockEventWriteScope.invoke(any())) doAnswer { inv ->
             inv.getArgument<(EventBatchWriter) -> Unit>(0).invoke(mockEventBatchWriter)
         }
+        whenever(mockEventFactoryA.eventName) doReturn ""
+        whenever(mockEventFactoryB.eventName) doReturn ""
 
         bufferA = Buffer(fakeBufferSize)
         bufferB = Buffer(fakeBufferSize)
-        pipelineA = Pipeline(mockSdkCore, mockReaderA, bufferA, mockSerializerA, mockDataWriter, mockInternalLogger)
-        pipelineB = Pipeline(mockSdkCore, mockReaderB, bufferB, mockSerializerB, mockDataWriter, mockInternalLogger)
+        pipelineA = Pipeline(mockSdkCore, mockReaderA, bufferA, mockEventFactoryA, mockDataWriter, { emptyMap() })
+        pipelineB = Pipeline(mockSdkCore, mockReaderB, bufferB, mockEventFactoryB, mockDataWriter, { emptyMap() })
 
-        testedTimeseries = createCollector(RumViewType.FOREGROUND)
+        testedTimeseries = createTimeseries(RumViewType.FOREGROUND)
     }
 
-    @Test
-    fun `M schedule one runnable per pipeline W onSessionStart()`() {
+    @ParameterizedTest
+    @EnumSource(
+        value = RumViewType::class,
+        names = ["FOREGROUND", "APPLICATION_LAUNCH"]
+    )
+    fun `M schedule one runnable per pipeline W onSessionStart() { initial view is foreground }`(
+        initialViewType: RumViewType
+    ) {
+        // Given
+        testedTimeseries = createTimeseries(initialViewType)
+
         // When
         testedTimeseries.onSessionStart()
 
@@ -147,13 +185,55 @@ internal class DefaultTimeseriesCollectorTest {
         verify(mockExecutor).schedule(any<Runnable>(), eq(fakeIntervalBMs), eq(TimeUnit.MILLISECONDS))
     }
 
-    @Test
-    fun `M not write events W onSessionStop() { never started }`() {
+    @ParameterizedTest
+    @EnumSource(
+        value = RumViewType::class,
+        names = ["NONE", "BACKGROUND"]
+    )
+    fun `M not schedule W onSessionStart() { initial view is not foreground }`(
+        initialViewType: RumViewType
+    ) {
+        // Given
+        testedTimeseries = createTimeseries(initialViewType)
+
         // When
-        testedTimeseries.onSessionStop()
+        testedTimeseries.onSessionStart()
 
         // Then
-        verify(mockDataWriter, never()).write(any(), any(), any())
+        verify(mockExecutor, never()).schedule(any<Runnable>(), any(), any())
+    }
+
+    @Test
+    fun `M not schedule W onRumContextUpdate() { none to background }`() {
+        // Given
+        testedTimeseries = createTimeseries(RumViewType.NONE)
+        testedTimeseries.onSessionStart()
+
+        // When
+        testedTimeseries.onRumContextUpdate(fakeRumContextOf(RumViewType.BACKGROUND))
+
+        // Then — neither a sampling chain nor a suspend: the app never left the foreground
+        verify(mockExecutor, never()).schedule(any<Runnable>(), any(), any())
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = RumViewType::class,
+        names = ["FOREGROUND", "APPLICATION_LAUNCH"]
+    )
+    fun `M resume scheduling W onRumContextUpdate() { none to foreground }`(
+        foregroundViewType: RumViewType
+    ) {
+        // Given
+        testedTimeseries = createTimeseries(RumViewType.NONE)
+        testedTimeseries.onSessionStart()
+
+        // When
+        testedTimeseries.onRumContextUpdate(fakeRumContextOf(foregroundViewType))
+
+        // Then
+        verify(mockExecutor).schedule(any<Runnable>(), eq(fakeIntervalAMs), eq(TimeUnit.MILLISECONDS))
+        verify(mockExecutor).schedule(any<Runnable>(), eq(fakeIntervalBMs), eq(TimeUnit.MILLISECONDS))
     }
 
     @Test
@@ -170,7 +250,7 @@ internal class DefaultTimeseriesCollectorTest {
     }
 
     @Test
-    fun `M not write events W onSessionStart()+onSessionStop() { buffers empty }`() {
+    fun `M not write events W onSessionStop() { nothing sampled }`() {
         // Given
         testedTimeseries.onSessionStart()
 
@@ -182,39 +262,40 @@ internal class DefaultTimeseriesCollectorTest {
     }
 
     @Test
-    fun `M log error and continue W onSessionStop() { serializer throws on pipelineA }`(forge: Forge) {
-        // Given
-        val fakeError = RuntimeException("serializer failure")
+    fun `M log error and flush remaining pipelines W onSessionStop() { pipeline flush throws }`(forge: Forge) {
+        // Given — drain() throws outside Pipeline's own try/catch, so the failure surfaces in
+        // DefaultTimeseriesCollector.flushPipelines() and must not skip the remaining pipelines.
+        val fakeError = RuntimeException("drain failure")
         val fakeJson = JsonObject().apply { addProperty("k", "v") }
-        whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
+        val mockBuffer = mock<Buffer<Double>>()
+        whenever(mockBuffer.drain()) doThrow fakeError
         whenever(mockReaderB.read()) doReturn forge.getForgery<DataPoint<Double>>()
-        whenever(mockSerializerA.serialize(any(), any())) doThrow fakeError
-        whenever(mockSerializerB.serialize(any(), any())) doReturn fakeJson
+        whenever(mockEventFactoryB.create(any(), any(), any(), any())) doReturn fakeJson
+        val failingPipeline =
+            Pipeline(mockSdkCore, mockReaderA, mockBuffer, mockEventFactoryA, mockDataWriter, { emptyMap() })
+        testedTimeseries = createTimeseries(RumViewType.FOREGROUND, listOf(failingPipeline, pipelineB))
         testedTimeseries.onSessionStart()
-        val runnableA = captureScheduledRunnableForInterval(fakeIntervalAMs)
-        val runnableB = captureScheduledRunnableForInterval(fakeIntervalBMs)
-        runnableA.run()
-        runnableB.run()
+        captureScheduledRunnableForInterval(fakeIntervalBMs).run() // buffers one sample for pipeline B
 
         // When
         testedTimeseries.onSessionStop()
 
-        // Then — error logged for pipelineA, pipelineB still flushed
+        // Then
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            "Timeseries serialization failed",
+            DefaultTimeseriesCollector.ERROR_FLUSH_FAILED,
             fakeError
         )
         verify(mockDataWriter).write(any(), eq(fakeJson), eq(EventType.DEFAULT))
     }
 
     @Test
-    fun `M flush partial buffer W onSessionStop() { buffer below batch size }`(forge: Forge) {
+    fun `M flush partial buffer W onSessionStop() { buffer below capacity }`(forge: Forge) {
         // Given
         val fakeJson = JsonObject().apply { addProperty("k", "v") }
         whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
-        whenever(mockSerializerA.serialize(any(), any())) doReturn fakeJson
+        whenever(mockEventFactoryA.create(any(), any(), any(), any())) doReturn fakeJson
         testedTimeseries.onSessionStart()
         val runnableA = captureScheduledRunnableForInterval(fakeIntervalAMs)
         runnableA.run()
@@ -223,18 +304,18 @@ internal class DefaultTimeseriesCollectorTest {
         testedTimeseries.onSessionStop()
 
         // Then
-        verify(mockSerializerA).serialize(any(), any())
+        verify(mockEventFactoryA).create(any(), any(), any(), any())
         verify(mockDataWriter).write(any(), eq(fakeJson), eq(EventType.DEFAULT))
     }
 
     @Test
-    fun `M flush batch W sample tick fills buffer { single pipeline }`(forge: Forge) {
+    fun `M write batch W sample tick { buffer reaches capacity }`(forge: Forge) {
         // Given
-        val element = forge.getForgery<DataPoint<Double>>()
-        val dataPoints = List(fakeBufferSize) { element }
+        val fakePoint = forge.getForgery<DataPoint<Double>>()
+        val fakeDataPoints = List(fakeBufferSize) { fakePoint }
         val fakeJson = JsonObject().apply { addProperty("a", "1") }
-        whenever(mockReaderA.read()) doReturn element
-        whenever(mockSerializerA.serialize(any(), eq(dataPoints))) doReturn fakeJson
+        whenever(mockReaderA.read()) doReturn fakePoint
+        whenever(mockEventFactoryA.create(any(), any(), eq(fakeDataPoints), any())) doReturn fakeJson
 
         testedTimeseries.onSessionStart()
         val runnableA = captureScheduledRunnableForInterval(fakeIntervalAMs)
@@ -243,7 +324,12 @@ internal class DefaultTimeseriesCollectorTest {
         repeat(fakeBufferSize) { runnableA.run() }
 
         // Then
-        verify(mockSerializerA).serialize(any(), any())
+        verify(mockEventFactoryA).create(
+            eq(mockDatadogContext),
+            eq(fakeRumContextOf(RumViewType.FOREGROUND)),
+            eq(fakeDataPoints),
+            any()
+        )
         verify(mockDataWriter).write(any(), eq(fakeJson), eq(EventType.DEFAULT))
     }
 
@@ -270,26 +356,10 @@ internal class DefaultTimeseriesCollectorTest {
         val runnableA = captureScheduledRunnableForInterval(fakeIntervalAMs)
 
         // When
-        runnableA.run()
+        repeat(fakeBufferSize - 1) { runnableA.run() }
 
         // Then
-        verify(mockSerializerA, never()).serialize(any(), any())
-        verify(mockDataWriter, never()).write(any(), any(), any())
-    }
-
-    @Test
-    fun `M skip writer W sample tick { serializer returns null }`(forge: Forge) {
-        // Given - fill the buffer so Pipeline.drain() reaches the serializer; serializer returns null
-        whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
-        whenever(mockSerializerA.serialize(any(), any())) doReturn null
-        testedTimeseries.onSessionStart()
-        val runnableA = captureScheduledRunnableForInterval(fakeIntervalAMs)
-
-        // When
-        repeat(fakeBufferSize) { runnableA.run() }
-
-        // Then
-        verify(mockSerializerA).serialize(any(), any())
+        verify(mockEventFactoryA, never()).create(any(), any(), any(), any())
         verify(mockDataWriter, never()).write(any(), any(), any())
     }
 
@@ -313,17 +383,22 @@ internal class DefaultTimeseriesCollectorTest {
     }
 
     @Test
-    fun `M not throw W onSessionStop() { called twice }`() {
+    fun `M flush only once W onSessionStop() { called twice }`() {
         // Given
+        val mockBuffer = mock<Buffer<Double>>()
+        testedTimeseries = createTimeseriesWithBuffer(mockBuffer)
         testedTimeseries.onSessionStart()
 
-        // When + Then — must not throw
+        // When
         testedTimeseries.onSessionStop()
         testedTimeseries.onSessionStop()
+
+        // Then — the second call sees the state already STOPPED and never reaches the pipelines
+        verify(mockBuffer).drain()
     }
 
     @Test
-    fun `M continue scheduling W sample tick { reader throws }`() {
+    fun `M log error and reschedule W sample tick { reader throws }`() {
         // Given
         val fakeError = RuntimeException("reader failure")
         whenever(mockReaderA.read()) doThrow fakeError
@@ -333,48 +408,28 @@ internal class DefaultTimeseriesCollectorTest {
         // When
         runnableA.run()
 
-        // Then — 1 from start() + 1 rescheduled via finally after exception
-        verify(mockExecutor, times(2))
-            .schedule(
-                any<Runnable>(),
-                eq(fakeIntervalAMs),
-                eq(TimeUnit.MILLISECONDS)
-            )
-    }
-
-    @Test
-    fun `M log error W sample tick { reader throws }`() {
-        // Given
-        val fakeError = RuntimeException("reader failure")
-        whenever(mockReaderA.read()) doThrow fakeError
-        testedTimeseries.onSessionStart()
-        val runnableA = captureScheduledRunnableForInterval(fakeIntervalAMs)
-
-        // When
-        runnableA.run()
-
-        // Then
+        // Then — 1 schedule from start() + 1 rescheduled via finally after the exception
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             DefaultTimeseriesCollector.ERROR_SAMPLING_FAILED,
             fakeError
         )
+        verify(mockExecutor, times(2))
+            .schedule(any<Runnable>(), eq(fakeIntervalAMs), eq(TimeUnit.MILLISECONDS))
     }
 
     @Test
     fun `M log error and reschedule W sample tick { buffer drain throws }`(forge: Forge) {
         // Given — drain() throws outside Pipeline's own try/catch, so it must be
-        // caught by DefaultTimeseriesCollector' sampling try/catch instead.
+        // caught by DefaultTimeseriesCollector's sampling try/catch instead.
         val fakeError = RuntimeException("drain failure")
         val mockBuffer = mock<Buffer<Double>>()
         whenever(mockBuffer.isFull()) doReturn true
         whenever(mockBuffer.drain()) doThrow fakeError
         whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
-        val pipeline =
-            Pipeline(mockSdkCore, mockReaderA, mockBuffer, mockSerializerA, mockDataWriter, mockInternalLogger)
-        val timeseries = createCollector(RumViewType.FOREGROUND, listOf(pipeline))
-        timeseries.onSessionStart()
+        testedTimeseries = createTimeseriesWithBuffer(mockBuffer)
+        testedTimeseries.onSessionStart()
         val runnableA = captureScheduledRunnableForInterval(fakeIntervalAMs)
 
         // When
@@ -392,12 +447,12 @@ internal class DefaultTimeseriesCollectorTest {
     }
 
     @Test
-    fun `M log error and reschedule W sample tick { serializer throws }`(forge: Forge) {
-        // Given — serializer throws inside Pipeline's own try/catch: Pipeline logs it itself
+    fun `M log error and reschedule W sample tick { event factory throws }`(forge: Forge) {
+        // Given — event factory throws inside Pipeline's own try/catch: Pipeline logs it itself
         // and the tick completes normally, so the sampling chain reschedules as usual.
-        val fakeError = RuntimeException("serializer failure")
+        val fakeError = RuntimeException("event factory failure")
         whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
-        whenever(mockSerializerA.serialize(any(), any())) doThrow fakeError
+        whenever(mockEventFactoryA.create(any(), any(), any(), any())) doThrow fakeError
         testedTimeseries.onSessionStart()
         val runnableA = captureScheduledRunnableForInterval(fakeIntervalAMs)
 
@@ -405,12 +460,12 @@ internal class DefaultTimeseriesCollectorTest {
         repeat(fakeBufferSize) { runnableA.run() }
 
         // Then
-        // times(1) default on verifyLog also confirms this is the only ERROR log with that
-        // throwable — i.e. DefaultTimeseriesCollector' own sampling catch never fired here.
+        // verifyLog matches on `same(fakeError)`, so its default times(1) also proves the
+        // collector's own sampling catch never logged the same throwable a second time.
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            "Timeseries serialization failed",
+            "Timeseries event creation failed",
             fakeError
         )
         verify(mockDataWriter, never()).write(any(), any(), any())
@@ -443,8 +498,9 @@ internal class DefaultTimeseriesCollectorTest {
     }
 
     @Test
-    fun `M not reschedule W stopped { sample tick skips try block }`() {
+    fun `M not sample nor reschedule W sample tick { session stopped }`(forge: Forge) {
         // Given
+        whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
         testedTimeseries.onSessionStart()
         val runnableA = captureScheduledRunnableForInterval(fakeIntervalAMs)
         testedTimeseries.onSessionStop()
@@ -452,7 +508,8 @@ internal class DefaultTimeseriesCollectorTest {
         // When
         runnableA.run()
 
-        // Then — no additional schedule after the one from start()
+        // Then — sample skipped AND no additional schedule after the one from start()
+        verify(mockReaderA, never()).read()
         verify(mockExecutor).schedule(
             any<Runnable>(),
             eq(fakeIntervalAMs),
@@ -461,139 +518,48 @@ internal class DefaultTimeseriesCollectorTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = RumViewType::class, names = ["NONE", "BACKGROUND"])
-    fun `M not schedule W onSessionStart() { initial view is not foreground }`(
-        initialViewType: RumViewType
-    ) {
-        // Given
-        val timeseries = createCollector(initialViewType)
-
-        // When
-        timeseries.onSessionStart()
-
-        // Then
-        verify(mockExecutor, never()).schedule(any<Runnable>(), any(), any())
-    }
-
-    @ParameterizedTest
-    @EnumSource(value = RumViewType::class, names = ["FOREGROUND", "APPLICATION_LAUNCH"])
-    fun `M neither flush nor schedule suspend W onViewTypeUpdate() { stays foreground }`(
+    @EnumSource(
+        value = RumViewType::class,
+        names = ["FOREGROUND", "APPLICATION_LAUNCH"]
+    )
+    fun `M neither flush nor schedule suspend W onRumContextUpdate() { stays foreground }`(
         nextViewType: RumViewType,
         forge: Forge
     ) {
         // Given
+        val fakeNextContext = fakeRumContextOf(nextViewType).copy(viewId = forge.getForgery<UUID>().toString())
         whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
         testedTimeseries.onSessionStart()
         captureScheduledRunnableForInterval(fakeIntervalAMs).run() // buffers one sample for pipeline A
 
         // When
-        testedTimeseries.onViewTypeUpdate(nextViewType)
+        testedTimeseries.onRumContextUpdate(fakeNextContext)
 
         // Then — no suspend is even scheduled, so nothing can flush later either
         verify(mockExecutor, never())
             .schedule(any<Runnable>(), eq(DefaultTimeseriesCollector.SUSPEND_DELAY_MS), eq(TimeUnit.MILLISECONDS))
-        verifyNoInteractions(mockSerializerA)
+        verifyNoInteractions(mockEventFactoryA)
         verifyNoInteractions(mockDataWriter)
     }
 
     @Test
-    fun `M not flush W onViewTypeUpdate() { suspend not fired yet }`(forge: Forge) {
+    fun `M use updated context W sample tick fills buffer { foreground view changed }`(forge: Forge) {
         // Given
-        whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
+        val fakePoint = forge.getForgery<DataPoint<Double>>()
+        val fakeNextContext = fakeRumContextOf(RumViewType.FOREGROUND).copy(
+            viewId = forge.getForgery<UUID>().toString()
+        )
+        whenever(mockReaderA.read()) doReturn fakePoint
+        whenever(mockEventFactoryA.create(any(), eq(fakeNextContext), any(), any())) doReturn JsonObject()
         testedTimeseries.onSessionStart()
-        captureScheduledRunnableForInterval(fakeIntervalAMs).run() // buffers one sample for pipeline A
-
-        // When — leaving the foreground only schedules the suspend, it does not flush inline
-        testedTimeseries.onViewTypeUpdate(RumViewType.BACKGROUND)
-
-        // Then
-        verify(mockExecutor)
-            .schedule(any<Runnable>(), eq(DefaultTimeseriesCollector.SUSPEND_DELAY_MS), eq(TimeUnit.MILLISECONDS))
-        verifyNoInteractions(mockSerializerA)
-        verifyNoInteractions(mockDataWriter)
-    }
-
-    @ParameterizedTest
-    @EnumSource(value = RumViewType::class, names = ["NONE", "BACKGROUND"])
-    fun `M flush partial buffer W pending suspend fires { left foreground }`(
-        nextViewType: RumViewType,
-        forge: Forge
-    ) {
-        // Given
-        val fakeSample = forge.getForgery<DataPoint<Double>>()
-        val fakeJson = JsonObject().apply { addProperty("fake-key", "fake-value") }
-        whenever(mockReaderA.read()) doReturn fakeSample
-        whenever(mockSerializerA.serialize(any(), eq(listOf(fakeSample)))) doReturn fakeJson
-        testedTimeseries.onSessionStart()
-        captureScheduledRunnableForInterval(fakeIntervalAMs).run() // buffers one sample for pipeline A
-        testedTimeseries.onViewTypeUpdate(nextViewType)
-
-        // When
-        runScheduledSuspend()
-
-        // Then — the batch buffered while in the foreground still reaches the writer
-        verify(mockSerializerA).serialize(any(), eq(listOf(fakeSample)))
-        verify(mockDataWriter).write(mockEventBatchWriter, fakeJson, EventType.DEFAULT)
-        // pipeline B never sampled, so its empty buffer must not produce an event
-        verify(mockSerializerB, never()).serialize(any(), any())
-    }
-
-    @ParameterizedTest
-    @EnumSource(value = RumViewType::class, names = ["NONE", "BACKGROUND"])
-    fun `M flush W onSessionStop() { left foreground, suspend pending }`(
-        nextViewType: RumViewType,
-        forge: Forge
-    ) {
-        // Given
-        val fakeSample = forge.getForgery<DataPoint<Double>>()
-        whenever(mockReaderA.read()) doReturn fakeSample
-        whenever(mockSerializerA.serialize(any(), any())) doReturn JsonObject()
-        testedTimeseries.onSessionStart()
-        captureScheduledRunnableForInterval(fakeIntervalAMs).run() // buffers one sample for pipeline A
-        testedTimeseries.onViewTypeUpdate(nextViewType)
-
-        // When — the session is stopped before the pending suspend had a chance to flush
-        testedTimeseries.onSessionStop()
-
-        // Then
-        verify(mockSerializerA).serialize(any(), eq(listOf(fakeSample)))
-    }
-
-    @Test
-    fun `M not flush twice W pending suspend fires { session already stopped }`() {
-        // Given
-        val mockBuffer = mock<Buffer<Double>>()
-        val pipeline =
-            Pipeline(mockSdkCore, mockReaderA, mockBuffer, mockSerializerA, mockDataWriter, mockInternalLogger)
-        val timeseries = createCollector(RumViewType.FOREGROUND, listOf(pipeline))
-        timeseries.onSessionStart()
-        timeseries.onViewTypeUpdate(RumViewType.BACKGROUND)
-        timeseries.onSessionStop() // drains the buffer synchronously
-
-        // When
-        runScheduledSuspend()
-
-        // Then — the pending suspend targets a stale generation and must not drain again
-        verify(mockBuffer).drain()
-    }
-
-    @ParameterizedTest
-    @EnumSource(value = RumViewType::class, names = ["NONE", "BACKGROUND"])
-    fun `M skip sample and reschedule W sample tick { foreground exit is pending }`(
-        nextViewType: RumViewType
-    ) {
-        // Given
-        testedTimeseries.onSessionStart()
+        testedTimeseries.onRumContextUpdate(fakeNextContext)
         val runnableA = captureScheduledRunnableForInterval(fakeIntervalAMs)
-        testedTimeseries.onViewTypeUpdate(nextViewType)
 
-        // When — the suspend has not fired yet, so the chain is still alive
-        runnableA.run()
+        // When
+        repeat(fakeBufferSize) { runnableA.run() }
 
         // Then
-        verify(mockReaderA, never()).read()
-        verify(mockExecutor, times(2))
-            .schedule(any<Runnable>(), eq(fakeIntervalAMs), eq(TimeUnit.MILLISECONDS))
+        verify(mockEventFactoryA).create(any(), eq(fakeNextContext), eq(List(fakeBufferSize) { fakePoint }), any())
     }
 
     @Test
@@ -601,7 +567,7 @@ internal class DefaultTimeseriesCollectorTest {
         // Given
         whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
         testedTimeseries.onSessionStart()
-        testedTimeseries.onViewTypeUpdate(RumViewType.BACKGROUND)
+        testedTimeseries.onRumContextUpdate(fakeRumContextOf(RumViewType.BACKGROUND))
         runScheduledSuspend()
         val runnableA = captureScheduledRunnableForInterval(fakeIntervalAMs)
 
@@ -617,28 +583,156 @@ internal class DefaultTimeseriesCollectorTest {
         )
     }
 
-    @Test
-    fun `M cancel pending suspend W onViewTypeUpdate() { foreground re-entered }`() {
+    @ParameterizedTest
+    @EnumSource(
+        value = RumViewType::class,
+        names = ["NONE", "BACKGROUND"]
+    )
+    fun `M flush partial buffer with last foreground context W pending suspend fires { left foreground }`(
+        nextViewType: RumViewType,
+        forge: Forge
+    ) {
         // Given
+        val fakeSample = forge.getForgery<DataPoint<Double>>()
+        val fakeJson = JsonObject().apply { addProperty("k", "v") }
+        whenever(mockReaderA.read()) doReturn fakeSample
+        whenever(
+            mockEventFactoryA.create(
+                eq(mockDatadogContext),
+                eq(fakeRumContextOf(RumViewType.FOREGROUND)),
+                eq(listOf(fakeSample)),
+                any()
+            )
+        ) doReturn fakeJson
         testedTimeseries.onSessionStart()
-        testedTimeseries.onViewTypeUpdate(RumViewType.NONE)
+        captureScheduledRunnableForInterval(fakeIntervalAMs).run() // buffers one sample for pipeline A
+        testedTimeseries.onRumContextUpdate(fakeRumContextOf(nextViewType))
 
         // When
-        testedTimeseries.onViewTypeUpdate(RumViewType.FOREGROUND)
+        runScheduledSuspend()
+
+        // Then — the batch is stamped with the view the user was looking at, not the new one
+        verify(mockEventFactoryA).create(
+            eq(mockDatadogContext),
+            eq(fakeRumContextOf(RumViewType.FOREGROUND)),
+            eq(listOf(fakeSample)),
+            any()
+        )
+        verify(mockDataWriter).write(mockEventBatchWriter, fakeJson, EventType.DEFAULT)
+        verify(mockEventFactoryB, never()).create(any(), any(), any(), any())
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = RumViewType::class,
+        names = ["NONE", "BACKGROUND"]
+    )
+    fun `M flush with last foreground context W onSessionStop() { left foreground, suspend pending }`(
+        nextViewType: RumViewType,
+        forge: Forge
+    ) {
+        // Given
+        val fakeSample = forge.getForgery<DataPoint<Double>>()
+        whenever(mockReaderA.read()) doReturn fakeSample
+        whenever(mockEventFactoryA.create(any(), any(), any(), any())) doReturn JsonObject()
+        testedTimeseries.onSessionStart()
+        captureScheduledRunnableForInterval(fakeIntervalAMs).run() // buffers one sample for pipeline A
+        testedTimeseries.onRumContextUpdate(fakeRumContextOf(nextViewType))
+
+        // When — the session is stopped before the pending suspend had a chance to flush
+        testedTimeseries.onSessionStop()
+
+        // Then — same attribution as the suspend path, not the background context
+        verify(mockEventFactoryA).create(
+            eq(mockDatadogContext),
+            eq(fakeRumContextOf(RumViewType.FOREGROUND)),
+            eq(listOf(fakeSample)),
+            any()
+        )
+    }
+
+    @Test
+    fun `M not flush W onRumContextUpdate() { suspend not fired yet }`(forge: Forge) {
+        // Given
+        whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
+        testedTimeseries.onSessionStart()
+        captureScheduledRunnableForInterval(fakeIntervalAMs).run() // buffers one sample for pipeline A
+
+        // When — leaving the foreground only schedules the suspend, it does not flush inline
+        testedTimeseries.onRumContextUpdate(fakeRumContextOf(RumViewType.BACKGROUND))
+
+        // Then
+        verify(mockExecutor)
+            .schedule(any<Runnable>(), eq(DefaultTimeseriesCollector.SUSPEND_DELAY_MS), eq(TimeUnit.MILLISECONDS))
+        verifyNoInteractions(mockEventFactoryA)
+        verifyNoInteractions(mockDataWriter)
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = RumViewType::class,
+        names = ["NONE", "BACKGROUND"]
+    )
+    fun `M skip sample and reschedule W sample tick { foreground exit is pending }`(
+        nextViewType: RumViewType
+    ) {
+        // Given
+        testedTimeseries.onSessionStart()
+        val runnableA = captureScheduledRunnableForInterval(fakeIntervalAMs)
+        testedTimeseries.onRumContextUpdate(fakeRumContextOf(nextViewType))
+
+        // When
+        runnableA.run()
+
+        // Then
+        verify(mockReaderA, never()).read()
+        verify(mockExecutor, times(2))
+            .schedule(any<Runnable>(), eq(fakeIntervalAMs), eq(TimeUnit.MILLISECONDS))
+    }
+
+    @Test
+    fun `M keep sampling chain W stale suspend fires { foreground re-entered then left }`() {
+        // Given
+        testedTimeseries.onSessionStart()
+        testedTimeseries.onRumContextUpdate(fakeRumContextOf(RumViewType.NONE))
+        val staleSuspend = captureScheduledSuspendRunnable()
+        testedTimeseries.onRumContextUpdate(fakeRumContextOf(RumViewType.FOREGROUND))
+        val currentRunnableA = captureLastScheduledRunnableForInterval(fakeIntervalAMs)
+        testedTimeseries.onRumContextUpdate(fakeRumContextOf(RumViewType.BACKGROUND))
+
+        // When
+        staleSuspend.run()
+        currentRunnableA.run()
+
+        // Then
+        verify(mockDataWriter, never()).write(any(), any(), any())
+        verify(mockReaderA, never()).read()
+        verify(mockExecutor, times(3))
+            .schedule(any<Runnable>(), eq(fakeIntervalAMs), eq(TimeUnit.MILLISECONDS))
+    }
+
+    @Test
+    fun `M cancel pending suspend W onRumContextUpdate() { foreground re-entered }`() {
+        // Given
+        testedTimeseries.onSessionStart()
+        testedTimeseries.onRumContextUpdate(fakeRumContextOf(RumViewType.NONE))
+
+        // When
+        testedTimeseries.onRumContextUpdate(fakeRumContextOf(RumViewType.FOREGROUND))
 
         // Then
         verify(mockScheduledFuture).cancel(false)
     }
 
     @Test
-    fun `M schedule suspend once W onViewTypeUpdate() { repeated non-foreground updates }`() {
+    fun `M schedule suspend once W onRumContextUpdate() { repeated non-foreground updates }`() {
         // Given
         testedTimeseries.onSessionStart()
 
         // When
-        testedTimeseries.onViewTypeUpdate(RumViewType.NONE)
-        testedTimeseries.onViewTypeUpdate(RumViewType.BACKGROUND)
-        testedTimeseries.onViewTypeUpdate(RumViewType.NONE)
+        testedTimeseries.onRumContextUpdate(fakeRumContextOf(RumViewType.NONE))
+        testedTimeseries.onRumContextUpdate(fakeRumContextOf(RumViewType.BACKGROUND))
+        testedTimeseries.onRumContextUpdate(fakeRumContextOf(RumViewType.NONE))
 
         // Then
         verify(mockExecutor).schedule(
@@ -649,38 +743,33 @@ internal class DefaultTimeseriesCollectorTest {
     }
 
     @Test
-    fun `M keep sampling chain W stale suspend fires { foreground re-entered then left }`() {
+    fun `M not flush twice W pending suspend fires { session already stopped }`() {
         // Given
+        val mockBuffer = mock<Buffer<Double>>()
+        testedTimeseries = createTimeseriesWithBuffer(mockBuffer)
         testedTimeseries.onSessionStart()
-        testedTimeseries.onViewTypeUpdate(RumViewType.NONE)
-        val staleSuspend = captureScheduledSuspendRunnable()
-        testedTimeseries.onViewTypeUpdate(RumViewType.FOREGROUND)
-        val currentRunnableA = captureLastScheduledRunnableForInterval(fakeIntervalAMs)
-        testedTimeseries.onViewTypeUpdate(RumViewType.BACKGROUND)
+        testedTimeseries.onRumContextUpdate(fakeRumContextOf(RumViewType.BACKGROUND))
+        testedTimeseries.onSessionStop() // drains the buffer synchronously
 
-        // When — the suspend from the first exit fires against a generation that moved on
-        staleSuspend.run()
-        currentRunnableA.run()
+        // When
+        runScheduledSuspend()
 
-        // Then — nothing flushed, and the live chain keeps rescheduling
-        verify(mockDataWriter, never()).write(any(), any(), any())
-        verify(mockReaderA, never()).read()
-        verify(mockExecutor, times(3))
-            .schedule(any<Runnable>(), eq(fakeIntervalAMs), eq(TimeUnit.MILLISECONDS))
+        // Then — the pending suspend loses the CAS against STOPPED and does nothing
+        verify(mockBuffer).drain()
     }
 
     @Test
-    fun `M resume scheduling W onViewTypeUpdate() { background to foreground }`() {
+    fun `M resume scheduling W onRumContextUpdate() { background to foreground }`() {
         // Given — the deferred suspend fired, so the next tick dies without rescheduling
         testedTimeseries.onSessionStart()
-        testedTimeseries.onViewTypeUpdate(RumViewType.BACKGROUND)
+        testedTimeseries.onRumContextUpdate(fakeRumContextOf(RumViewType.BACKGROUND))
         runScheduledSuspend()
         captureScheduledRunnableForInterval(fakeIntervalAMs).run()
         verify(mockExecutor, times(1))
             .schedule(any<Runnable>(), eq(fakeIntervalAMs), eq(TimeUnit.MILLISECONDS))
 
         // When — app returns to foreground
-        testedTimeseries.onViewTypeUpdate(RumViewType.FOREGROUND)
+        testedTimeseries.onRumContextUpdate(fakeRumContextOf(RumViewType.FOREGROUND))
 
         // Then — scheduling resumed, one new schedule per pipeline
         verify(mockExecutor, times(2))
@@ -692,34 +781,25 @@ internal class DefaultTimeseriesCollectorTest {
     @Test
     fun `M not sample nor reschedule W stale tick fires { new generation is running }`() {
         // Regression: a tick from the generation that was alive before the suspend must
-        // self-terminate on the generation check, even though the state is running again.
+        // self-terminate on the generation check, even though the state is RUNNING again.
         //
         // Given
         testedTimeseries.onSessionStart()
-        testedTimeseries.onViewTypeUpdate(RumViewType.BACKGROUND)
+        testedTimeseries.onRumContextUpdate(fakeRumContextOf(RumViewType.BACKGROUND))
         runScheduledSuspend()
         val staleRunnableB = captureScheduledRunnableForInterval(fakeIntervalBMs)
-        // Resume: a fresh generation is running; A and B each get a new schedule
-        testedTimeseries.onViewTypeUpdate(RumViewType.FOREGROUND)
+        // Resume: state = RUNNING, generation = 2; A and B each get a fresh schedule
+        testedTimeseries.onRumContextUpdate(fakeRumContextOf(RumViewType.FOREGROUND))
 
-        // When — B's stale tick fires
+        // When — B's stale generation-1 tick fires while state is RUNNING
         staleRunnableB.run()
 
         // Then — stale tick neither samples nor produces an extra schedule
         verify(mockReaderB, never()).read()
+        // B schedules: 1 from start() + 1 from the resume = 2; the stale tick adds nothing
         verify(mockExecutor, times(2))
             .schedule(any<Runnable>(), eq(fakeIntervalBMs), eq(TimeUnit.MILLISECONDS))
     }
-
-    private fun createCollector(
-        initialViewType: RumViewType,
-        pipelines: List<Pipeline<*>> = listOf(pipelineA, pipelineB)
-    ) = DefaultTimeseriesCollector(
-        pipelines = pipelines,
-        internalLogger = mockInternalLogger,
-        scheduledExecutorService = mockExecutor,
-        currentViewType = initialViewType
-    )
 
     private fun runScheduledSuspend() {
         captureScheduledSuspendRunnable().run()
@@ -732,15 +812,15 @@ internal class DefaultTimeseriesCollectorTest {
         return captor.lastValue
     }
 
-    private fun captureLastScheduledRunnableForInterval(intervalMs: Long): Runnable {
-        val captor = argumentCaptor<Runnable>()
-        verify(mockExecutor, atLeastOnce()).schedule(captor.capture(), eq(intervalMs), eq(TimeUnit.MILLISECONDS))
-        return captor.lastValue
-    }
-
     private fun captureScheduledRunnableForInterval(intervalMs: Long): Runnable {
         val captor = argumentCaptor<Runnable>()
         verify(mockExecutor).schedule(captor.capture(), eq(intervalMs), eq(TimeUnit.MILLISECONDS))
         return captor.firstValue
+    }
+
+    private fun captureLastScheduledRunnableForInterval(intervalMs: Long): Runnable {
+        val captor = argumentCaptor<Runnable>()
+        verify(mockExecutor, atLeastOnce()).schedule(captor.capture(), eq(intervalMs), eq(TimeUnit.MILLISECONDS))
+        return captor.lastValue
     }
 }

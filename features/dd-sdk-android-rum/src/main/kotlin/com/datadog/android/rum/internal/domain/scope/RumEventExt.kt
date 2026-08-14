@@ -8,19 +8,26 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.context.DeviceInfo
 import com.datadog.android.api.context.DeviceType
 import com.datadog.android.api.context.NetworkInfo
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.RumErrorSourceType
+import com.datadog.android.rum.internal.domain.battery.BatteryInfo
+import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.TimeseriesCpuEvent
+import com.datadog.android.rum.model.TimeseriesMemoryEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
@@ -426,6 +433,80 @@ internal fun NetworkInfo.toAppLaunchVitalConnectivity(): VitalAppLaunchEvent.Con
     )
 }
 
+internal fun NetworkInfo.toTimeseriesCpuConnectivity(): TimeseriesCpuEvent.Connectivity {
+    val status = if (isConnected()) {
+        TimeseriesCpuEvent.Status.CONNECTED
+    } else {
+        TimeseriesCpuEvent.Status.NOT_CONNECTED
+    }
+    val interfaces = when (connectivity) {
+        NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(TimeseriesCpuEvent.Interface.ETHERNET)
+        NetworkInfo.Connectivity.NETWORK_WIFI -> listOf(TimeseriesCpuEvent.Interface.WIFI)
+        NetworkInfo.Connectivity.NETWORK_WIMAX -> listOf(TimeseriesCpuEvent.Interface.WIMAX)
+        NetworkInfo.Connectivity.NETWORK_BLUETOOTH -> listOf(TimeseriesCpuEvent.Interface.BLUETOOTH)
+        NetworkInfo.Connectivity.NETWORK_2G,
+        NetworkInfo.Connectivity.NETWORK_3G,
+        NetworkInfo.Connectivity.NETWORK_4G,
+        NetworkInfo.Connectivity.NETWORK_5G,
+        NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
+        NetworkInfo.Connectivity.NETWORK_CELLULAR -> listOf(TimeseriesCpuEvent.Interface.CELLULAR)
+
+        NetworkInfo.Connectivity.NETWORK_OTHER -> listOf(TimeseriesCpuEvent.Interface.OTHER)
+        NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
+    }
+
+    val cellular = if (cellularTechnology != null || carrierName != null) {
+        TimeseriesCpuEvent.Cellular(
+            technology = cellularTechnology,
+            carrierName = carrierName
+        )
+    } else {
+        null
+    }
+    return TimeseriesCpuEvent.Connectivity(
+        status,
+        interfaces,
+        cellular = cellular
+    )
+}
+
+internal fun NetworkInfo.toTimeseriesMemoryConnectivity(): TimeseriesMemoryEvent.Connectivity {
+    val status = if (isConnected()) {
+        TimeseriesMemoryEvent.Status.CONNECTED
+    } else {
+        TimeseriesMemoryEvent.Status.NOT_CONNECTED
+    }
+    val interfaces = when (connectivity) {
+        NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(TimeseriesMemoryEvent.Interface.ETHERNET)
+        NetworkInfo.Connectivity.NETWORK_WIFI -> listOf(TimeseriesMemoryEvent.Interface.WIFI)
+        NetworkInfo.Connectivity.NETWORK_WIMAX -> listOf(TimeseriesMemoryEvent.Interface.WIMAX)
+        NetworkInfo.Connectivity.NETWORK_BLUETOOTH -> listOf(TimeseriesMemoryEvent.Interface.BLUETOOTH)
+        NetworkInfo.Connectivity.NETWORK_2G,
+        NetworkInfo.Connectivity.NETWORK_3G,
+        NetworkInfo.Connectivity.NETWORK_4G,
+        NetworkInfo.Connectivity.NETWORK_5G,
+        NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
+        NetworkInfo.Connectivity.NETWORK_CELLULAR -> listOf(TimeseriesMemoryEvent.Interface.CELLULAR)
+
+        NetworkInfo.Connectivity.NETWORK_OTHER -> listOf(TimeseriesMemoryEvent.Interface.OTHER)
+        NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
+    }
+
+    val cellular = if (cellularTechnology != null || carrierName != null) {
+        TimeseriesMemoryEvent.Cellular(
+            technology = cellularTechnology,
+            carrierName = carrierName
+        )
+    } else {
+        null
+    }
+    return TimeseriesMemoryEvent.Connectivity(
+        status,
+        interfaces,
+        cellular = cellular
+    )
+}
+
 internal fun NetworkInfo.isConnected(): Boolean {
     return connectivity != NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
 }
@@ -516,6 +597,94 @@ internal fun DeviceType.toVitalAppLaunchSchemaType(): VitalAppLaunchEvent.Device
         DeviceType.BOT -> VitalAppLaunchEvent.DeviceType.BOT
         DeviceType.OTHER -> VitalAppLaunchEvent.DeviceType.OTHER
     }
+}
+
+internal fun DeviceType.toTimeseriesCpuSchemaType(): TimeseriesCpuEvent.DeviceType {
+    return when (this) {
+        DeviceType.MOBILE -> TimeseriesCpuEvent.DeviceType.MOBILE
+        DeviceType.TABLET -> TimeseriesCpuEvent.DeviceType.TABLET
+        DeviceType.TV -> TimeseriesCpuEvent.DeviceType.TV
+        DeviceType.DESKTOP -> TimeseriesCpuEvent.DeviceType.DESKTOP
+        DeviceType.GAMING_CONSOLE -> TimeseriesCpuEvent.DeviceType.GAMING_CONSOLE
+        DeviceType.BOT -> TimeseriesCpuEvent.DeviceType.BOT
+        DeviceType.OTHER -> TimeseriesCpuEvent.DeviceType.OTHER
+    }
+}
+
+internal fun DeviceType.toTimeseriesMemorySchemaType(): TimeseriesMemoryEvent.DeviceType {
+    return when (this) {
+        DeviceType.MOBILE -> TimeseriesMemoryEvent.DeviceType.MOBILE
+        DeviceType.TABLET -> TimeseriesMemoryEvent.DeviceType.TABLET
+        DeviceType.TV -> TimeseriesMemoryEvent.DeviceType.TV
+        DeviceType.DESKTOP -> TimeseriesMemoryEvent.DeviceType.DESKTOP
+        DeviceType.GAMING_CONSOLE -> TimeseriesMemoryEvent.DeviceType.GAMING_CONSOLE
+        DeviceType.BOT -> TimeseriesMemoryEvent.DeviceType.BOT
+        DeviceType.OTHER -> TimeseriesMemoryEvent.DeviceType.OTHER
+    }
+}
+
+internal fun DeviceInfo.toTimeseriesCpuDevice(
+    batteryInfo: BatteryInfo,
+    displayInfo: DisplayInfo
+) = TimeseriesCpuEvent.Device(
+    type = deviceType.toTimeseriesCpuSchemaType(),
+    name = deviceName,
+    model = deviceModel,
+    brand = deviceBrand,
+    architecture = architecture,
+    locales = localeInfo.locales,
+    timeZone = localeInfo.timeZone,
+    batteryLevel = batteryInfo.batteryLevel,
+    powerSavingMode = batteryInfo.lowPowerMode,
+    brightnessLevel = displayInfo.screenBrightness,
+    logicalCpuCount = logicalCpuCount,
+    totalRam = totalRam,
+    isLowRam = isLowRam
+)
+
+internal fun DeviceInfo.toTimeseriesMemoryDevice(
+    batteryInfo: BatteryInfo,
+    displayInfo: DisplayInfo
+) = TimeseriesMemoryEvent.Device(
+    type = deviceType.toTimeseriesMemorySchemaType(),
+    name = deviceName,
+    model = deviceModel,
+    brand = deviceBrand,
+    architecture = architecture,
+    locales = localeInfo.locales,
+    timeZone = localeInfo.timeZone,
+    batteryLevel = batteryInfo.batteryLevel,
+    powerSavingMode = batteryInfo.lowPowerMode,
+    brightnessLevel = displayInfo.screenBrightness,
+    logicalCpuCount = logicalCpuCount,
+    totalRam = totalRam,
+    isLowRam = isLowRam
+)
+
+internal fun DeviceInfo.toTimeseriesCpuOs() = TimeseriesCpuEvent.Os(
+    name = osName,
+    version = osVersion,
+    versionMajor = osMajorVersion
+)
+
+internal fun DeviceInfo.toTimeseriesMemoryOs() = TimeseriesMemoryEvent.Os(
+    name = osName,
+    version = osVersion,
+    versionMajor = osMajorVersion
+)
+
+// endregion
+
+// region Feature context sample rates
+
+internal fun DatadogContext.resolveSessionReplaySampleRate(): Long? {
+    val srContext = featuresContext[Feature.SESSION_REPLAY_FEATURE_NAME]
+    return srContext?.get(RumViewScope.SESSION_REPLAY_SAMPLE_RATE_KEY) as? Long
+}
+
+internal fun DatadogContext.resolveTraceSampleRate(): Float? {
+    val tracingContext = featuresContext[Feature.TRACING_FEATURE_NAME]
+    return tracingContext?.get(RumViewScope.TRACE_SAMPLE_RATE) as? Float
 }
 
 // endregion
@@ -641,6 +810,40 @@ internal fun VitalAppLaunchEvent.VitalAppLaunchEventSource.Companion.tryFromSour
     }
 }
 
+internal fun TimeseriesCpuEvent.Source.Companion.tryFromSource(
+    source: String,
+    internalLogger: InternalLogger
+): TimeseriesCpuEvent.Source? {
+    return try {
+        fromJson(source)
+    } catch (e: NoSuchElementException) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            { UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source) },
+            e
+        )
+        null
+    }
+}
+
+internal fun TimeseriesMemoryEvent.Source.Companion.tryFromSource(
+    source: String,
+    internalLogger: InternalLogger
+): TimeseriesMemoryEvent.Source? {
+    return try {
+        fromJson(source)
+    } catch (e: NoSuchElementException) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            { UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source) },
+            e
+        )
+        null
+    }
+}
+
 internal const val UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT = "You are using an unknown " +
     "source %s for your events"
 
@@ -710,6 +913,33 @@ internal fun RumSessionScope.StartReason.toLongTaskSessionPrecondition(): LongTa
         RumSessionScope.StartReason.PREWARM -> LongTaskEvent.SessionPrecondition.PREWARM
         RumSessionScope.StartReason.FROM_NON_INTERACTIVE_SESSION ->
             LongTaskEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
+    }
+}
+
+internal fun RumSessionScope.StartReason.toTimeseriesCpuSessionPrecondition(): TimeseriesCpuEvent.SessionPrecondition {
+    return when (this) {
+        RumSessionScope.StartReason.USER_APP_LAUNCH -> TimeseriesCpuEvent.SessionPrecondition.USER_APP_LAUNCH
+        RumSessionScope.StartReason.INACTIVITY_TIMEOUT -> TimeseriesCpuEvent.SessionPrecondition.INACTIVITY_TIMEOUT
+        RumSessionScope.StartReason.MAX_DURATION -> TimeseriesCpuEvent.SessionPrecondition.MAX_DURATION
+        RumSessionScope.StartReason.EXPLICIT_STOP -> TimeseriesCpuEvent.SessionPrecondition.EXPLICIT_STOP
+        RumSessionScope.StartReason.BACKGROUND_LAUNCH -> TimeseriesCpuEvent.SessionPrecondition.BACKGROUND_LAUNCH
+        RumSessionScope.StartReason.PREWARM -> TimeseriesCpuEvent.SessionPrecondition.PREWARM
+        RumSessionScope.StartReason.FROM_NON_INTERACTIVE_SESSION ->
+            TimeseriesCpuEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
+    }
+}
+
+internal fun RumSessionScope.StartReason.toTimeseriesMemorySessionPrecondition():
+    TimeseriesMemoryEvent.SessionPrecondition {
+    return when (this) {
+        RumSessionScope.StartReason.USER_APP_LAUNCH -> TimeseriesMemoryEvent.SessionPrecondition.USER_APP_LAUNCH
+        RumSessionScope.StartReason.INACTIVITY_TIMEOUT -> TimeseriesMemoryEvent.SessionPrecondition.INACTIVITY_TIMEOUT
+        RumSessionScope.StartReason.MAX_DURATION -> TimeseriesMemoryEvent.SessionPrecondition.MAX_DURATION
+        RumSessionScope.StartReason.EXPLICIT_STOP -> TimeseriesMemoryEvent.SessionPrecondition.EXPLICIT_STOP
+        RumSessionScope.StartReason.BACKGROUND_LAUNCH -> TimeseriesMemoryEvent.SessionPrecondition.BACKGROUND_LAUNCH
+        RumSessionScope.StartReason.PREWARM -> TimeseriesMemoryEvent.SessionPrecondition.PREWARM
+        RumSessionScope.StartReason.FROM_NON_INTERACTIVE_SESSION ->
+            TimeseriesMemoryEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
     }
 }
 

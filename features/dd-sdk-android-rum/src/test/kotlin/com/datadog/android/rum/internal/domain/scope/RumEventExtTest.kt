@@ -17,6 +17,8 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.TimeseriesCpuEvent
+import com.datadog.android.rum.model.TimeseriesMemoryEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -1039,6 +1041,86 @@ internal class RumEventExtTest {
         )
     }
 
+    @ParameterizedTest
+    @EnumSource(NetworkInfo.Connectivity::class)
+    fun `M return connectivity W toTimeseriesCpuConnectivity()`(
+        connectivity: NetworkInfo.Connectivity,
+        @Forgery fakeNetworkInfo: NetworkInfo,
+        @StringForgery fakeCarrierName: String,
+        @StringForgery fakeCellularTechnology: String
+    ) {
+        // Given
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = connectivity,
+            carrierName = fakeCarrierName,
+            cellularTechnology = fakeCellularTechnology
+        )
+
+        // When
+        val result = networkInfo.toTimeseriesCpuConnectivity()
+
+        // Then
+        assertThat(result.status.name).isEqualTo(expectedStatusName(connectivity))
+        assertThat(result.interfaces?.map { it.name })
+            .isEqualTo(EXPECTED_INTERFACE_NAMES.getValue(connectivity))
+        assertThat(result.cellular)
+            .isEqualTo(TimeseriesCpuEvent.Cellular(fakeCellularTechnology, fakeCarrierName))
+    }
+
+    @Test
+    fun `M return null cellular W toTimeseriesCpuConnectivity() {no carrier info}`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
+        // Given
+        val networkInfo = fakeNetworkInfo.copy(carrierName = null, cellularTechnology = null)
+
+        // When
+        val result = networkInfo.toTimeseriesCpuConnectivity()
+
+        // Then
+        assertThat(result.cellular).isNull()
+    }
+
+    @ParameterizedTest
+    @EnumSource(NetworkInfo.Connectivity::class)
+    fun `M return connectivity W toTimeseriesMemoryConnectivity()`(
+        connectivity: NetworkInfo.Connectivity,
+        @Forgery fakeNetworkInfo: NetworkInfo,
+        @StringForgery fakeCarrierName: String,
+        @StringForgery fakeCellularTechnology: String
+    ) {
+        // Given
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = connectivity,
+            carrierName = fakeCarrierName,
+            cellularTechnology = fakeCellularTechnology
+        )
+
+        // When
+        val result = networkInfo.toTimeseriesMemoryConnectivity()
+
+        // Then
+        assertThat(result.status.name).isEqualTo(expectedStatusName(connectivity))
+        assertThat(result.interfaces?.map { it.name })
+            .isEqualTo(EXPECTED_INTERFACE_NAMES.getValue(connectivity))
+        assertThat(result.cellular)
+            .isEqualTo(TimeseriesMemoryEvent.Cellular(fakeCellularTechnology, fakeCarrierName))
+    }
+
+    @Test
+    fun `M return null cellular W toTimeseriesMemoryConnectivity() {no carrier info}`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
+        // Given
+        val networkInfo = fakeNetworkInfo.copy(carrierName = null, cellularTechnology = null)
+
+        // When
+        val result = networkInfo.toTimeseriesMemoryConnectivity()
+
+        // Then
+        assertThat(result.cellular).isNull()
+    }
+
     // endregion
 
     // region device type conversion
@@ -1103,5 +1185,58 @@ internal class RumEventExtTest {
         assertThat(schemaDeviceType.name).isEqualTo(deviceType.name)
     }
 
+    @ParameterizedTest
+    @EnumSource(DeviceType::class)
+    fun `M return schema device type W toTimeseriesCpuSchemaType()`(
+        deviceType: DeviceType
+    ) {
+        // When
+        val schemaDeviceType = deviceType.toTimeseriesCpuSchemaType()
+
+        // Then
+        assertThat(schemaDeviceType.name).isEqualTo(deviceType.name)
+    }
+
+    @ParameterizedTest
+    @EnumSource(DeviceType::class)
+    fun `M return schema device type W toTimeseriesMemorySchemaType()`(
+        deviceType: DeviceType
+    ) {
+        // When
+        val schemaDeviceType = deviceType.toTimeseriesMemorySchemaType()
+
+        // Then
+        assertThat(schemaDeviceType.name).isEqualTo(deviceType.name)
+    }
+
     // endregion
+
+    companion object {
+
+        // Interface enums are generated per event type but share their names, so a single
+        // name-based table covers both timeseries schemas. getValue() fails loudly if a new
+        // Connectivity value is added without updating the mapping.
+        private val EXPECTED_INTERFACE_NAMES = mapOf(
+            NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED to emptyList<String>(),
+            NetworkInfo.Connectivity.NETWORK_ETHERNET to listOf("ETHERNET"),
+            NetworkInfo.Connectivity.NETWORK_WIFI to listOf("WIFI"),
+            NetworkInfo.Connectivity.NETWORK_WIMAX to listOf("WIMAX"),
+            NetworkInfo.Connectivity.NETWORK_BLUETOOTH to listOf("BLUETOOTH"),
+            NetworkInfo.Connectivity.NETWORK_2G to listOf("CELLULAR"),
+            NetworkInfo.Connectivity.NETWORK_3G to listOf("CELLULAR"),
+            NetworkInfo.Connectivity.NETWORK_4G to listOf("CELLULAR"),
+            NetworkInfo.Connectivity.NETWORK_5G to listOf("CELLULAR"),
+            NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER to listOf("CELLULAR"),
+            NetworkInfo.Connectivity.NETWORK_CELLULAR to listOf("CELLULAR"),
+            NetworkInfo.Connectivity.NETWORK_OTHER to listOf("OTHER")
+        )
+
+        private fun expectedStatusName(connectivity: NetworkInfo.Connectivity): String {
+            return if (connectivity == NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED) {
+                "NOT_CONNECTED"
+            } else {
+                "CONNECTED"
+            }
+        }
+    }
 }

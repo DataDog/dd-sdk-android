@@ -412,20 +412,16 @@ data class RumConfiguration internal constructor(
         }
 
         /**
-         * Enables memory and CPU timeseries collection.
+         * Enables device timeseries collection.
          *
-         * When enabled, the SDK samples device memory (RSS) and CPU usage at
-         * [TimeseriesConfiguration.intervalMs] (default 1 second) and emits a batched
-         * timeseries event every [TimeseriesConfiguration.bufferSize] samples (default 30).
-         * Sampling runs on the shared RUM vitals background executor.
+         * By default, all supported timeseries types are collected. Use
+         * [TimeseriesConfiguration.Builder.collectOnly] to restrict collection to specific types.
          *
-         * To disable, pass null.
-         *
-         * @param configuration optional fine-tuning of sampling interval and batch size.
+         * @param configuration configuration for timeseries collection.
          */
         @ExperimentalRumApi
         fun setTimeseriesConfiguration(
-            configuration: TimeseriesConfiguration?
+            configuration: TimeseriesConfiguration
         ): Builder {
             rumConfig = rumConfig.copy(timeseriesConfiguration = configuration)
             return this

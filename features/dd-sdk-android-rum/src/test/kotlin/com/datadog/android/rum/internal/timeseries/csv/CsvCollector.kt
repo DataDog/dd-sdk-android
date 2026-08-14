@@ -6,25 +6,36 @@
 
 package com.datadog.android.rum.internal.timeseries.csv
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.internal.domain.scope.RumViewType
+import com.datadog.android.rum.internal.domain.InfoData
+import com.datadog.android.rum.internal.domain.InfoProvider
+import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.battery.BatteryInfo
+import com.datadog.android.rum.internal.domain.display.DisplayInfo
+import com.datadog.android.rum.internal.domain.event.RumEventSerializer
 import com.datadog.android.rum.internal.timeseries.Buffer
 import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
-import com.datadog.android.rum.internal.timeseries.serializer.CpuEventSerializer
-import com.datadog.android.rum.internal.timeseries.serializer.JsonSerializer
-import com.datadog.android.rum.internal.timeseries.serializer.MemoryEventSerializer
+import com.datadog.android.rum.internal.timeseries.factory.CpuEventFactory
+import com.datadog.android.rum.internal.timeseries.factory.EventFactory
+import com.datadog.android.rum.internal.timeseries.factory.MemoryEventFactory
 import com.google.gson.JsonObject
+import com.google.gson.JsonParser
+import fr.xgouchet.elmyr.Forge
 
 /**
- * A test-only [Timeseries] that mirrors the wiring done by `DefaultTimeseriesCollectorFactory`,
+ * A test-only [TimeseriesCollector] that mirrors the wiring done by `DefaultTimeseriesFactory`,
  * but pulls samples from CSV-backed readers instead of `VitalReaderWrapper` and drives the
  * pipelines synchronously (no executor) so callers can assert on every emitted JSON.
  */
 internal class CsvCollector(
-    private val pipelines: List<Triple<CSVReader, Buffer<Double>, JsonSerializer<Double>>>,
-    private val datadogContext: DatadogContext
+    private val pipelines: List<Triple<CSVReader, Buffer<Double>, EventFactory<Double, *>>>,
+    private val datadogContext: DatadogContext,
+    private val rumContext: RumContext,
+    private val customAttributes: Map<String, Any?>,
+    private val eventSerializer: RumEventSerializer
 ) : TimeseriesCollector {
 
     private val emitted = mutableListOf<JsonObject>()
@@ -33,73 +44,92 @@ internal class CsvCollector(
     val captured: List<JsonObject> get() = emitted.toList()
 
     /**
-     * Walks each (reader, buffer, serializer) triple synchronously: samples until the reader is
+     * Walks each (reader, buffer, factory) triple synchronously: samples until the reader is
      * exhausted, flushing whenever the buffer is full, then emitting any final remainder.
      */
     override fun onSessionStart() {
-        for ((reader, buffer, serializer) in pipelines) {
+        for ((reader, buffer, eventFactory) in pipelines) {
             while (reader.hasNext()) {
                 buffer.add(reader.read())
-                if (buffer.isFull()) flush(buffer, serializer)
+                if (buffer.isFull()) flush(buffer, eventFactory)
             }
-            flush(buffer, serializer)
+            flush(buffer, eventFactory)
         }
     }
 
-    private fun flush(buffer: Buffer<Double>, serializer: JsonSerializer<Double>) = buffer.drain()
+    private fun flush(buffer: Buffer<Double>, eventFactory: EventFactory<Double, *>) = buffer.drain()
         .takeIf { it.isNotEmpty() }
-        ?.let { serializer.serialize(datadogContext, it) }
-        ?.let(emitted::add)
+        ?.let { eventFactory.create(datadogContext, rumContext, it, customAttributes) }
+        ?.let(eventSerializer::serialize)
+        ?.let(JsonParser::parseString)
+        ?.let { emitted.add(it.asJsonObject) }
 
     override fun onSessionStop() = Unit
 
-    override fun onViewTypeUpdate(newViewType: RumViewType) = Unit
+    override fun onRumContextUpdate(newRumContext: RumContext) = Unit
 
     companion object {
 
         /**
-         * Builds a [CsvCollector] with the same shape as `DefaultTimeseriesCollectorFactory`:
+         * Builds a [CsvCollector] with the same shape as `DefaultTimeseriesFactory`:
          * a memory pipeline followed by a CPU pipeline, each backed by [CSVReader] and the
-         * production [MemoryEventSerializer] / [CpuEventSerializer].
+         * production [MemoryEventFactory] / [CpuEventFactory].
          */
-        @Suppress("LongParameterList")
         fun create(
             csvContent: String,
-            sessionId: String,
-            applicationId: String,
             sessionType: RumSessionType,
             totalRamBytes: Long,
             bufferSize: Int,
             timeProvider: TimeProvider,
-            datadogContext: DatadogContext
-        ) = CsvCollector(
-            datadogContext = datadogContext,
-            pipelines = listOf(
-                Triple(
-                    CSVReader(csvContent, METRIC_MEMORY_USAGE, timeProvider),
-                    Buffer(bufferSize),
-                    MemoryEventSerializer(
-                        sessionId = sessionId,
-                        applicationId = applicationId,
-                        sessionType = sessionType,
-                        totalRamBytes = totalRamBytes,
-                        timeProvider = timeProvider
-                    )
-                ),
-                Triple(
-                    CSVReader(csvContent, METRIC_CPU_USAGE, timeProvider),
-                    Buffer(bufferSize),
-                    CpuEventSerializer(
-                        sessionId = sessionId,
-                        applicationId = applicationId,
-                        sessionType = sessionType,
-                        timeProvider = timeProvider
+            forge: Forge,
+            internalLogger: InternalLogger
+        ): CsvCollector {
+            val rumContext = forge.getForgery<RumContext>()
+            val datadogContext = forge.getForgery<DatadogContext>()
+            val batteryInfo = forge.getForgery<BatteryInfo>()
+            val displayInfo = forge.getForgery<DisplayInfo>()
+
+            return CsvCollector(
+                datadogContext = datadogContext,
+                rumContext = rumContext,
+                customAttributes = CUSTOM_ATTRIBUTES,
+                eventSerializer = RumEventSerializer(internalLogger),
+                pipelines = listOf(
+                    Triple(
+                        CSVReader(csvContent, METRIC_MEMORY_USAGE, timeProvider),
+                        Buffer(bufferSize),
+                        MemoryEventFactory(
+                            sessionType = sessionType,
+                            totalRamBytes = totalRamBytes,
+                            timeProvider = timeProvider,
+                            batteryInfoProvider = FixedInfoProvider(batteryInfo),
+                            displayInfoProvider = FixedInfoProvider(displayInfo),
+                            internalLogger = internalLogger
+                        )
+                    ),
+                    Triple(
+                        CSVReader(csvContent, METRIC_CPU_USAGE, timeProvider),
+                        Buffer(bufferSize),
+                        CpuEventFactory(
+                            sessionType = sessionType,
+                            timeProvider = timeProvider,
+                            batteryInfoProvider = FixedInfoProvider(batteryInfo),
+                            displayInfoProvider = FixedInfoProvider(displayInfo),
+                            internalLogger = internalLogger
+                        )
                     )
                 )
             )
-        )
+        }
+
+        private class FixedInfoProvider<T : InfoData>(private val state: T) : InfoProvider<T> {
+            override fun getState(): T = state
+            override fun cleanup() = Unit
+        }
 
         const val METRIC_MEMORY_USAGE: String = "memory_usage"
         const val METRIC_CPU_USAGE: String = "cpu_usage"
+
+        private val CUSTOM_ATTRIBUTES = mapOf<String, Any?>("fake-attribute-key" to "fake-attribute-value")
     }
 }

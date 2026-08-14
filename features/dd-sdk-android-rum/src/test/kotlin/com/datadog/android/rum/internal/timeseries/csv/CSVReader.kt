@@ -29,9 +29,6 @@ internal class CSVReader(
 
     fun hasNext(): Boolean = index < samples.size
 
-    /** Total number of samples available for the metric. */
-    val size: Int get() = samples.size
-
     override fun read(): DataPoint<Double> {
         check(hasNext()) { "CSVReader exhausted" }
         return samples[index++]

@@ -92,7 +92,7 @@ internal class CpuStatReaderTest {
     }
 
     @Test
-    fun `M use default stat file W init()`() {
+    fun `M use default stat file W init() {no file provided}`() {
         // When
         val reader = CpuStatReader(internalLogger = mock())
 
@@ -113,18 +113,18 @@ internal class CpuStatReaderTest {
     }
 
     @Test
-    fun `M read utime W readUserTime() {multiple times}`(@IntForgery(1) utimes: List<Int>) {
+    fun `M read utime W readUserTime() {multiple times}`(@IntForgery(1) fakeUtimes: List<Int>) {
         // Given
         val results = mutableListOf<Double?>()
 
         // When
-        utimes.forEach { utime ->
+        fakeUtimes.forEach { utime ->
             fakeFile.writeText(generateStatContent(utime))
             results.add(testedReader.readUserTime())
         }
 
         // Then
-        assertThat(results).isEqualTo(utimes.map { it.toDouble() })
+        assertThat(results).isEqualTo(fakeUtimes.map { it.toDouble() })
     }
 
     @Test

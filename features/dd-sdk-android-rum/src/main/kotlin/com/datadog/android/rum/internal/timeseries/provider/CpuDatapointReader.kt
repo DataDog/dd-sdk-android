@@ -22,20 +22,24 @@ import com.datadog.android.rum.internal.vitals.CpuStatReader
  */
 internal class CpuDatapointReader(
     private val cpuStatReader: CpuStatReader,
-    private val cpuTimeProvider: TimeProvider,
+    private val timeProvider: TimeProvider,
     override val intervalMs: Long,
     private val availableProcessors: Int = Runtime.getRuntime().availableProcessors()
-) : DataPointsReader<Double>(cpuTimeProvider) {
+) : DataPointsReader<Double>(timeProvider) {
 
     private var lastUtime: Double? = null
     private var lastNs: Long? = null
 
     @WorkerThread
     override fun readValue() = cpuStatReader.readActiveTime()?.let { currentCpuTicks ->
-        val nowNs = cpuTimeProvider.getDeviceElapsedTimeNanos()
+        val nowNs = timeProvider.getDeviceElapsedTimeNanos()
         val (prevCpuTicks, prevNs) = updateValues(currentCpuTicks, nowNs)
         if (prevCpuTicks == null || prevNs == null) return null
         val elapsedMs = ((nowNs - prevNs) / NS_PER_MS).coerceAtLeast(1L)
+        // Sampling is suspended while the app is not in the foreground, so a gap much longer than
+        // the sampling interval means this delta spans that pause and would smear background CPU
+        // time over the first foreground sample. Drop it; the read above already re-baselined.
+        if (elapsedMs > intervalMs * MAX_GAP_FACTOR) return null
         val corePercent = (currentCpuTicks - prevCpuTicks) * MS_PER_SECOND / elapsedMs
         (corePercent / availableProcessors.coerceAtLeast(1)).coerceIn(0.0, MAX_CPU_PERCENT)
     }
@@ -55,5 +59,8 @@ internal class CpuDatapointReader(
         private const val MS_PER_SECOND = 1000.0
         private const val NS_PER_MS = 1_000_000L
         private const val MAX_CPU_PERCENT = 100.0
+
+        // How many sampling intervals a delta may span before it is treated as a gap.
+        internal const val MAX_GAP_FACTOR = 2
     }
 }
