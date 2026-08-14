@@ -8,6 +8,7 @@ import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.depotProxied
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.kotlinConfig
+import org.gradle.api.artifacts.ModuleDependency
 
 plugins {
     id("ktlint")
@@ -134,6 +135,11 @@ dependencies {
     androidTestImplementation(libs.bundles.integrationTests)
     androidTestImplementation(libs.okHttpMock)
     androidTestImplementation(project(":features:dd-sdk-android-trace-internal"))
+    androidTestImplementation(
+        (testFixtures(project(":features:dd-sdk-android-rum")) as ModuleDependency).apply {
+            exclude(mapOf("group" to "dd-sdk-android-timeseries.tools", "module" to "unit"))
+        }
+    )
     androidTestImplementation(testFixtures(project(":features:dd-sdk-android-trace")))
     if (project.hasProperty(com.datadog.gradle.Properties.USE_API21_JAVA_BACKPORT)) {
         // this is needed to make AssertJ working on APIs <24

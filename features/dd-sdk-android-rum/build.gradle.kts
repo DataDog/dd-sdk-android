@@ -105,7 +105,9 @@ dependencies {
             )
         }
     }
+    testFixturesImplementation(libs.gson)
     testFixturesImplementation(libs.kotlin)
+    testFixturesImplementation(libs.jUnit4)
     testFixturesImplementation(libs.bundles.jUnit5)
     testFixturesImplementation(libs.okHttp)
     testFixturesImplementation(libs.bundles.testTools)
