@@ -171,7 +171,7 @@ internal class RumSessionScopeAttributePropagationTest {
         fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
         whenever(mockSessionSampler.getSampleRate()).thenReturn(fakeSampleRate)
         whenever(mockSessionSampler.sample(any())).thenReturn(true)
-        whenever(mockCollectorFactory.create(any(), any(), any())) doReturn mockCollector
+        whenever(mockCollectorFactory.create(any(), any(), any(), any())) doReturn mockCollector
         testedScope = RumSessionScope(
             parentScope = mockParentScope,
             sdkCore = mockSdkCore,

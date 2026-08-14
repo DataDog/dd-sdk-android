@@ -185,7 +185,7 @@ internal class RumApplicationScopeTest {
 
         whenever(mockSessionSampler.getSampleRate()).thenReturn(fakeSampleRate)
         whenever(mockSessionSampler.sample(any())).thenReturn(true)
-        whenever(mockCollectorFactory.create(any(), any(), any())) doReturn mockCollector
+        whenever(mockCollectorFactory.create(any(), any(), any(), any())) doReturn mockCollector
 
         testedScope = RumApplicationScope(
             applicationId = fakeApplicationId,
@@ -243,7 +243,7 @@ internal class RumApplicationScopeTest {
         )
 
         // Then - the child session uses the same factory we gave to the application scope
-        verify(mockCollectorFactory).create(eq(fakeApplicationId), any(), any())
+        verify(mockCollectorFactory).create(eq(fakeApplicationId), any(), any(), any())
     }
 
     @Test
@@ -282,7 +282,7 @@ internal class RumApplicationScopeTest {
         )
 
         // Then - factory.create is invoked once per tracked session (initial + new)
-        verify(mockCollectorFactory, times(2)).create(eq(fakeApplicationId), any(), any())
+        verify(mockCollectorFactory, times(2)).create(eq(fakeApplicationId), any(), any(), any())
     }
 
     @Test

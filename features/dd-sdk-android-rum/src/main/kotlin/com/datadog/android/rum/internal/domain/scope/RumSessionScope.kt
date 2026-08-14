@@ -237,7 +237,8 @@ internal class RumSessionScope(
         timeseriesCollector = timeseriesCollectorFactory.create(
             sessionId = sessionId,
             applicationId = parentScope.getRumContext().applicationId,
-            sessionType = getRumContext().resolveSessionType(rumSessionTypeOverride)
+            sessionType = getRumContext().resolveSessionType(rumSessionTypeOverride),
+            viewType = getActiveRumContext().viewType
         )
         timeseriesCollector.onSessionStart()
     }

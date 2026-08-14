@@ -63,22 +63,4 @@ internal class TimeseriesConfigurationTest {
         assertThat(config.bufferSize).isEqualTo(fakeBufferSize)
         assertThat(config.intervalMs).isEqualTo(fakeIntervalMs)
     }
-
-    @Test
-    fun `M default collectInBackground to false W built with no args`() {
-        // When
-        val config = TimeseriesConfiguration.Builder().build()
-
-        // Then
-        assertThat(config.collectInBackground).isFalse()
-    }
-
-    @Test
-    fun `M store collectInBackground W setCollectInBackground true`() {
-        // When
-        val config = TimeseriesConfiguration.Builder().collectInBackground(true).build()
-
-        // Then
-        assertThat(config.collectInBackground).isTrue()
-    }
 }

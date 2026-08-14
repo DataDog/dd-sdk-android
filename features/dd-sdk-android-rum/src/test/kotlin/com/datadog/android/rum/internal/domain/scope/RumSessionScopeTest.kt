@@ -230,7 +230,7 @@ internal class RumSessionScopeTest {
         whenever(mockDisplayInfoProvider.getState()) doReturn fakeDisplayInfo
         whenever(mockSessionSampler.sample(any())).thenReturn(true)
         whenever(mockSessionSampler.getSampleRate()).thenReturn(100f)
-        whenever(mockCollectorFactory.create(any(), any(), any())) doReturn mockCollector
+        whenever(mockCollectorFactory.create(any(), any(), any(), any())) doReturn mockCollector
 
         fakeParentAttributes = forge.exhaustiveAttributes()
         whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes
@@ -1870,9 +1870,10 @@ internal class RumSessionScopeTest {
 
         // Then
         verify(mockCollectorFactory).create(
-            fakeParentContext.applicationId,
-            testedScope.sessionId,
-            fakeRumSessionType ?: RumSessionType.USER
+            eq(fakeParentContext.applicationId),
+            eq(testedScope.sessionId),
+            eq(fakeRumSessionType ?: RumSessionType.USER),
+            any()
         )
         verify(mockCollector).onSessionStart()
     }
@@ -1889,9 +1890,10 @@ internal class RumSessionScopeTest {
 
         // Then
         verify(mockCollectorFactory).create(
-            fakeParentContext.applicationId,
-            testedScope.sessionId,
-            RumSessionType.USER
+            eq(fakeParentContext.applicationId),
+            eq(testedScope.sessionId),
+            eq(RumSessionType.USER),
+            any()
         )
     }
 
@@ -1911,9 +1913,10 @@ internal class RumSessionScopeTest {
 
         // Then
         verify(mockCollectorFactory).create(
-            fakeParentContext.applicationId,
-            testedScope.sessionId,
-            RumSessionType.SYNTHETICS
+            eq(fakeParentContext.applicationId),
+            eq(testedScope.sessionId),
+            eq(RumSessionType.SYNTHETICS),
+            any()
         )
     }
 
@@ -1934,9 +1937,10 @@ internal class RumSessionScopeTest {
 
         // Then
         verify(mockCollectorFactory).create(
-            fakeParentContext.applicationId,
-            testedScope.sessionId,
-            expectedSessionType
+            eq(fakeParentContext.applicationId),
+            eq(testedScope.sessionId),
+            eq(expectedSessionType),
+            any()
         )
     }
 
@@ -1954,7 +1958,7 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        verify(mockCollectorFactory).create(any(), any(), eq(expectedSessionType))
+        verify(mockCollectorFactory).create(any(), any(), eq(expectedSessionType), any())
     }
 
     @Test
@@ -1971,7 +1975,7 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        verify(mockCollectorFactory).create(any(), any(), eq(RumSessionType.USER))
+        verify(mockCollectorFactory).create(any(), any(), eq(RumSessionType.USER), any())
     }
 
     @Test
@@ -1988,7 +1992,7 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        verify(mockCollectorFactory).create(any(), any(), eq(RumSessionType.USER))
+        verify(mockCollectorFactory).create(any(), any(), eq(RumSessionType.USER), any())
     }
 
     @Test
@@ -2005,7 +2009,7 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        verify(mockCollectorFactory).create(any(), any(), eq(RumSessionType.USER))
+        verify(mockCollectorFactory).create(any(), any(), eq(RumSessionType.USER), any())
     }
 
     @Test
@@ -2022,7 +2026,7 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        verify(mockCollectorFactory).create(any(), any(), eq(RumSessionType.USER))
+        verify(mockCollectorFactory).create(any(), any(), eq(RumSessionType.USER), any())
     }
 
     @Test
@@ -2040,7 +2044,7 @@ internal class RumSessionScopeTest {
         )
 
         // Then
-        verify(mockCollectorFactory, never()).create(any(), any(), any())
+        verify(mockCollectorFactory, never()).create(any(), any(), any(), any())
         verify(mockCollector, never()).onSessionStart()
     }
 
@@ -2066,7 +2070,7 @@ internal class RumSessionScopeTest {
 
         // Then
         verify(mockCollector).onSessionStop()
-        verify(mockCollectorFactory, times(2)).create(any(), any(), any())
+        verify(mockCollectorFactory, times(2)).create(any(), any(), any(), any())
         verify(mockCollector, times(2)).onSessionStart()
     }
 
@@ -2229,7 +2233,7 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
         val firstCollector = mockCollector
         val secondCollector: TimeseriesCollector = mock()
-        whenever(mockCollectorFactory.create(any(), any(), any())) doReturn secondCollector
+        whenever(mockCollectorFactory.create(any(), any(), any(), any())) doReturn secondCollector
 
         // When
         testedScope.handleEvent(
@@ -2252,7 +2256,7 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
         val firstCollector = mockCollector
         val secondCollector: TimeseriesCollector = mock()
-        whenever(mockCollectorFactory.create(any(), any(), any())) doReturn secondCollector
+        whenever(mockCollectorFactory.create(any(), any(), any(), any())) doReturn secondCollector
         advanceTimeByMs(TEST_INACTIVITY_MS)
         testedScope.handleEvent(mock(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 

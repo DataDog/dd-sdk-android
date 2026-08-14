@@ -50,6 +50,7 @@ import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilitySn
 import com.datadog.android.rum.internal.domain.battery.DefaultBatteryInfoProvider
 import com.datadog.android.rum.internal.domain.display.DefaultDisplayInfoProvider
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
+import com.datadog.android.rum.internal.domain.scope.RumViewType
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
@@ -1925,7 +1926,7 @@ internal class RumFeatureTest {
                 totalRamBytes,
                 testedFeature.configuration.insightsCollector
             )
-            .create(fakeApplicationId.toString(), sessionId, RumSessionType.USER)
+            .create(fakeApplicationId.toString(), sessionId, RumSessionType.USER, RumViewType.FOREGROUND)
 
     private fun Forge.anApplicationExitInfoList(
         mustInclude: Int? = null

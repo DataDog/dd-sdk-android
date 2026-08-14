@@ -18,6 +18,11 @@ internal interface TimeseriesCollector {
 
     @NoOpImplementation
     interface Factory {
-        fun create(applicationId: String, sessionId: String, sessionType: RumSessionType): TimeseriesCollector
+        fun create(
+            applicationId: String,
+            sessionId: String,
+            sessionType: RumSessionType,
+            viewType: RumViewType?
+        ): TimeseriesCollector
     }
 }

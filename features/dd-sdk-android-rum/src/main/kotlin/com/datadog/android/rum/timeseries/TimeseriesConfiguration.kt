@@ -18,8 +18,7 @@ import com.datadog.android.rum.timeseries.TimeseriesConfiguration.Companion.MIN_
  */
 class TimeseriesConfiguration internal constructor(
     internal val bufferSize: Int,
-    internal val intervalMs: Long,
-    internal val collectInBackground: Boolean
+    internal val intervalMs: Long
 ) {
 
     /**
@@ -30,7 +29,6 @@ class TimeseriesConfiguration internal constructor(
 
         private var bufferSize: Int = DEFAULT_BUFFER_SIZE
         private var intervalMs: Long = DEFAULT_INTERVAL_MS
-        private var collectInBackground: Boolean = false
 
         /**
          * Sets the number of samples accumulated per pipeline before sending a batch event.
@@ -54,19 +52,10 @@ class TimeseriesConfiguration internal constructor(
             this.intervalMs = if (intervalMs >= MIN_INTERVAL_MS) intervalMs else DEFAULT_INTERVAL_MS
         }
 
-        /**
-         * Sets whether to keep sampling timeseries when the app is in background.
-         * Defaults to `false`.
-         */
-        internal fun collectInBackground(collectInBackground: Boolean): Builder = apply {
-            this.collectInBackground = collectInBackground
-        }
-
         /** Builds a [TimeseriesConfiguration] from the current builder state. */
         fun build(): TimeseriesConfiguration = TimeseriesConfiguration(
             bufferSize = bufferSize,
-            intervalMs = intervalMs,
-            collectInBackground = collectInBackground
+            intervalMs = intervalMs
         )
     }
 

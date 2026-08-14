@@ -8,11 +8,11 @@ package com.datadog.android.rum.internal.timeseries
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.internal.domain.scope.RumViewType
 import java.util.concurrent.ScheduledExecutorService
 
 internal class DefaultTimeseriesCollectorFactory(
     private val internalLogger: InternalLogger,
-    private val collectInBackground: Boolean,
     private val scheduledExecutorService: ScheduledExecutorService,
     private val pipelinesProvider: (
         applicationId: String,
@@ -21,11 +21,15 @@ internal class DefaultTimeseriesCollectorFactory(
     ) -> List<Pipeline<*>>
 ) : TimeseriesCollector.Factory {
 
-    override fun create(applicationId: String, sessionId: String, sessionType: RumSessionType) =
-        DefaultTimeseriesCollector(
-            internalLogger = internalLogger,
-            collectInBackground = collectInBackground,
-            scheduledExecutorService = scheduledExecutorService,
-            pipelines = pipelinesProvider(applicationId, sessionId, sessionType)
-        )
+    override fun create(
+        applicationId: String,
+        sessionId: String,
+        sessionType: RumSessionType,
+        viewType: RumViewType?
+    ) = DefaultTimeseriesCollector(
+        internalLogger = internalLogger,
+        scheduledExecutorService = scheduledExecutorService,
+        currentViewType = viewType,
+        pipelines = pipelinesProvider(applicationId, sessionId, sessionType)
+    )
 }

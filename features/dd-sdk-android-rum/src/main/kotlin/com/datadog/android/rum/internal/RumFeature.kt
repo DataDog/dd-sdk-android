@@ -459,7 +459,6 @@ internal class RumFeature(
         insightsCollector: InsightsCollector
     ): TimeseriesCollector.Factory = DefaultTimeseriesCollectorFactory(
         internalLogger = sdkCore.internalLogger,
-        collectInBackground = configuration.collectInBackground,
         scheduledExecutorService = vitalExecutorService,
         pipelinesProvider = { applicationId, sessionId, sessionType ->
             listOfNotNull(
