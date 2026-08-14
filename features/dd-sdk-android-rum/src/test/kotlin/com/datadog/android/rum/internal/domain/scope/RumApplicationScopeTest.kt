@@ -22,6 +22,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.InfoProvider
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
@@ -185,7 +186,7 @@ internal class RumApplicationScopeTest {
 
         whenever(mockSessionSampler.getSampleRate()).thenReturn(fakeSampleRate)
         whenever(mockSessionSampler.sample(any())).thenReturn(true)
-        whenever(mockTimeseriesCollectorFactory.create(any(), any(), any())) doReturn mockTimeseriesCollector
+        whenever(mockTimeseriesCollectorFactory.create(any(), any())) doReturn mockTimeseriesCollector
 
         testedScope = RumApplicationScope(
             applicationId = fakeApplicationId,
@@ -226,42 +227,17 @@ internal class RumApplicationScopeTest {
     }
 
     @Test
-    fun `M propagate timeseriesFactory to initial child session scope W handleEvent { startView }`(
+    fun `M propagate timeseriesFactory to every child session W handleEvent { startView, stop, startView }`(
         @StringForgery viewKey: String,
         @StringForgery viewName: String
     ) {
-        // When - delegating an interactive event triggers renewSession on the child session
-        testedScope.handleEvent(
-            RumRawEvent.StartView(
-                key = RumScopeKey.from(viewKey, viewName),
-                attributes = emptyMap(),
-                eventTime = fakeEventTime
-            ),
-            fakeDatadogContext,
-            mockEventWriteScope,
-            mockWriter
+        // Given - the initial child session, renewed by an interactive event
+        val fakeStartViewEvent = RumRawEvent.StartView(
+            key = RumScopeKey.from(viewKey, viewName),
+            attributes = emptyMap(),
+            eventTime = fakeEventTime
         )
-
-        // Then - the child session uses the same factory we gave to the application scope
-        verify(mockTimeseriesCollectorFactory).create(eq(fakeApplicationId), any(), any())
-    }
-
-    @Test
-    fun `M propagate timeseriesFactory to a new child session W handleEvent { stop+startView }`(
-        @StringForgery viewKey: String,
-        @StringForgery viewName: String
-    ) {
-        // Given - first session that already used the factory
-        testedScope.handleEvent(
-            RumRawEvent.StartView(
-                key = RumScopeKey.from(viewKey, viewName),
-                attributes = emptyMap(),
-                eventTime = fakeEventTime
-            ),
-            fakeDatadogContext,
-            mockEventWriteScope,
-            mockWriter
-        )
+        testedScope.handleEvent(fakeStartViewEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         testedScope.handleEvent(
             RumRawEvent.StopSession(fakeEventTime),
             fakeDatadogContext,
@@ -269,20 +245,16 @@ internal class RumApplicationScopeTest {
             mockWriter
         )
 
-        // When - a brand new session is started; the application scope must reuse the factory
-        testedScope.handleEvent(
-            RumRawEvent.StartView(
-                key = RumScopeKey.from(viewKey, viewName),
-                attributes = emptyMap(),
-                eventTime = fakeEventTime
-            ),
-            fakeDatadogContext,
-            mockEventWriteScope,
-            mockWriter
-        )
+        // When - a brand new child session scope is created by the application scope
+        testedScope.handleEvent(fakeStartViewEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
-        // Then - factory.create is invoked once per tracked session (initial + new)
-        verify(mockTimeseriesCollectorFactory, times(2)).create(eq(fakeApplicationId), any(), any())
+        // Then - both the initial and the new child session use the factory we gave the application scope
+        val rumContextCaptor = argumentCaptor<RumContext>()
+        verify(mockTimeseriesCollectorFactory, times(2)).create(any(), rumContextCaptor.capture())
+        assertThat(rumContextCaptor.allValues.map { it.applicationId })
+            .containsOnly(fakeApplicationId)
+        assertThat(rumContextCaptor.firstValue.sessionId)
+            .isNotEqualTo(rumContextCaptor.secondValue.sessionId)
     }
 
     @Test

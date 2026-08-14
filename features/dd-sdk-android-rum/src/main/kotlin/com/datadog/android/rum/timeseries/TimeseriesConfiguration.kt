@@ -5,11 +5,7 @@
  */
 package com.datadog.android.rum.timeseries
 
-import androidx.annotation.IntRange
 import com.datadog.android.rum.ExperimentalRumApi
-import com.datadog.android.rum.timeseries.TimeseriesConfiguration.Companion.DEFAULT_BUFFER_SIZE
-import com.datadog.android.rum.timeseries.TimeseriesConfiguration.Companion.DEFAULT_INTERVAL_MS
-import com.datadog.android.rum.timeseries.TimeseriesConfiguration.Companion.MIN_INTERVAL_MS
 
 /**
  * Configuration for memory and CPU timeseries collection.
@@ -17,8 +13,7 @@ import com.datadog.android.rum.timeseries.TimeseriesConfiguration.Companion.MIN_
  * Use [Builder] to create an instance.
  */
 class TimeseriesConfiguration internal constructor(
-    internal val bufferSize: Int,
-    internal val intervalMs: Long,
+    internal val enabledTypes: Set<TimeseriesType>,
     internal val collectInBackground: Boolean
 ) {
 
@@ -28,30 +23,22 @@ class TimeseriesConfiguration internal constructor(
     @ExperimentalRumApi
     class Builder {
 
-        private var bufferSize: Int = DEFAULT_BUFFER_SIZE
-        private var intervalMs: Long = DEFAULT_INTERVAL_MS
+        @Suppress("UnsafeThirdPartyFunctionCall") // Kotlin Array.toSet() is safe for enum values.
+        private var enabledTypes: Set<TimeseriesType> = TimeseriesType.values().toSet()
+
         private var collectInBackground: Boolean = false
 
         /**
-         * Sets the number of samples accumulated per pipeline before sending a batch event.
-         * Must be > 0; out-of-range values fall back to [DEFAULT_BUFFER_SIZE].
-         * Defaults to [DEFAULT_BUFFER_SIZE] (≈120 seconds at the default 1 s interval).
+         * Restricts collection to the provided timeseries types.
+         *
+         * By default, all supported timeseries types are collected.
+         * Passing an empty array disables collection of every timeseries type.
+         *
+         * @param types the timeseries types to collect.
          */
-        fun setBufferSize(
-            @IntRange(from = 1, to = Int.MAX_VALUE.toLong()) bufferSize: Int
-        ): Builder = apply {
-            this.bufferSize = if (bufferSize > 0) bufferSize else DEFAULT_BUFFER_SIZE
-        }
-
-        /**
-         * Sets the sampling interval in milliseconds.
-         * Must be ≥ [MIN_INTERVAL_MS]; out-of-range values fall back to [DEFAULT_INTERVAL_MS].
-         * Defaults to [DEFAULT_INTERVAL_MS].
-         */
-        fun setIntervalMs(
-            @IntRange(from = MIN_INTERVAL_MS, to = Long.MAX_VALUE) intervalMs: Long
-        ): Builder = apply {
-            this.intervalMs = if (intervalMs >= MIN_INTERVAL_MS) intervalMs else DEFAULT_INTERVAL_MS
+        fun collectOnly(vararg types: TimeseriesType): Builder = apply {
+            @Suppress("UnsafeThirdPartyFunctionCall") // Kotlin Array.toSet() is safe for enum values.
+            enabledTypes = types.toSet()
         }
 
         /**
@@ -64,8 +51,7 @@ class TimeseriesConfiguration internal constructor(
 
         /** Builds a [TimeseriesConfiguration] from the current builder state. */
         fun build(): TimeseriesConfiguration = TimeseriesConfiguration(
-            bufferSize = bufferSize,
-            intervalMs = intervalMs,
+            enabledTypes = enabledTypes,
             collectInBackground = collectInBackground
         )
     }
@@ -81,8 +67,5 @@ class TimeseriesConfiguration internal constructor(
 
         /** Default sampling interval in milliseconds. */
         internal const val DEFAULT_INTERVAL_MS: Long = 1000L
-
-        /** Minimum allowed sampling interval in milliseconds. */
-        internal const val MIN_INTERVAL_MS: Long = 100L
     }
 }

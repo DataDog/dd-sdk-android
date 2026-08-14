@@ -50,35 +50,35 @@ internal class CpuDatapointReaderTest {
     val mockCpuStatReader: CpuStatReader = mock()
 
     val mockTimeProvider: TimeProvider = mock<TimeProvider> {
-        on { getDeviceTimestampMillis() } doAnswer { fakeStartTimestampMs }
+        on { getServerTimestampMillis() } doAnswer { fakeStartTimestampMs }
         on { getDeviceElapsedTimeNanos() } doAnswer { fakeStartTimestampMs * NS_PER_MS }
     }
 
     private fun buildReader(availableProcessors: Int = 1) = CpuDatapointReader(
         cpuStatReader = mockCpuStatReader,
-        cpuTimeProvider = mockTimeProvider,
+        timeProvider = mockTimeProvider,
         intervalMs = fakeIntervalMs,
         availableProcessors = availableProcessors
     )
 
     /**
-     * Primes the reader with [firstTicks] (returns null — no baseline yet), advances the clock
-     * by [elapsedMs], then returns the second sample built from [secondTicks] (or `null` to
+     * Primes the reader with [fakeBaselineTicks] (returns null — no baseline yet), advances the
+     * clock by [elapsedMs], then returns the second sample built from [secondTicks] (or `null` to
      * simulate the stat read failing between samples). Elapsed time is stubbed as a sequence so
      * the prime read sees the start instant and the second read sees start + [elapsedMs].
      */
     private fun readSecondSample(
         elapsedMs: Long,
         secondTicks: Double?,
-        availableProcessors: Int = 1,
-        firstTicks: Double = fakeBaselineTicks.toDouble()
+        availableProcessors: Int = 1
     ): DataPoint<Double>? {
         whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).doReturn(
             fakeStartTimestampMs * NS_PER_MS,
             (fakeStartTimestampMs + elapsedMs) * NS_PER_MS
         )
-        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn (fakeStartTimestampMs + elapsedMs)
-        whenever(mockCpuStatReader.readActiveTime()).doReturnConsecutively(listOf(firstTicks, secondTicks))
+        whenever(mockTimeProvider.getServerTimestampMillis()) doReturn (fakeStartTimestampMs + elapsedMs)
+        whenever(mockCpuStatReader.readActiveTime())
+            .doReturnConsecutively(listOf(fakeBaselineTicks.toDouble(), secondTicks))
         return buildReader(availableProcessors).run {
             read()
             read()
@@ -182,7 +182,7 @@ internal class CpuDatapointReaderTest {
 
     @Test
     fun `M normalise by core count W read() {multi-core usage}`(
-        @IntForgery(min = 1, max = 8) fakeCoreCount: Int,
+        @IntForgery(min = 2, max = 8) fakeCoreCount: Int,
         @LongForgery(min = 500L, max = 5000L) fakeElapsedMs: Long,
         @DoubleForgery(min = 1.0, max = 50.0) fakePerCorePct: Double
     ) {

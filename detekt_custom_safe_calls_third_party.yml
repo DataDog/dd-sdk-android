@@ -761,6 +761,8 @@ datadog:
       - "kotlin.collections.listOf(com.datadog.android.rum.model.ErrorEvent.Interface)"
       - "kotlin.collections.listOf(com.datadog.android.rum.model.LongTaskEvent.Interface)"
       - "kotlin.collections.listOf(com.datadog.android.rum.model.ResourceEvent.Interface)"
+      - "kotlin.collections.listOf(com.datadog.android.rum.model.TimeseriesCpuEvent.Interface)"
+      - "kotlin.collections.listOf(com.datadog.android.rum.model.TimeseriesMemoryEvent.Interface)"
       - "kotlin.collections.listOf(com.datadog.android.rum.model.ViewEvent.Interface)"
       - "kotlin.collections.listOf(com.datadog.android.rum.model.VitalAppLaunchEvent.Interface)"
       - "kotlin.collections.listOf(com.datadog.android.rum.model.VitalOperationStepEvent.Interface)"

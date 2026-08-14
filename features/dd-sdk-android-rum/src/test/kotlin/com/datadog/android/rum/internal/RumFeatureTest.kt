@@ -33,10 +33,8 @@ import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.RumFeatureAssert
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
-import com.datadog.android.rum.internal.RumFeature.Companion.MEMORY_TIMESERIES_DISABLED_MESSAGE
 import com.datadog.android.rum.internal.RumFeature.Companion.SLOW_FRAMES_MONITORING_DISABLED_MESSAGE
 import com.datadog.android.rum.internal.RumFeature.Companion.SLOW_FRAMES_MONITORING_ENABLED_MESSAGE
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
@@ -50,14 +48,14 @@ import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilitySn
 import com.datadog.android.rum.internal.domain.battery.DefaultBatteryInfoProvider
 import com.datadog.android.rum.internal.domain.display.DefaultDisplayInfoProvider
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.startup.RumAppStartupDetector
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
-import com.datadog.android.rum.internal.timeseries.DefaultTimeseriesCollector
-import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
+import com.datadog.android.rum.internal.timeseries.DefaultTimeseriesCollectorFactory
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
@@ -859,66 +857,77 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `M flush timeseries before resetting writer W onStop()`() {
+    fun `M stop active timeseries before resetting writer W onStop()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
-        val mockDatadogMonitor = mock<DatadogRumMonitor>()
+        val stubDatadogMonitor = mock<DatadogRumMonitor>()
         GlobalRumMonitor.clear()
-        GlobalRumMonitor.registerIfAbsent(mockDatadogMonitor, mockSdkCore)
+        GlobalRumMonitor.registerIfAbsent(stubDatadogMonitor, mockSdkCore)
 
-        var writerAtFlushTime: DataWriter<Any>? = null
+        var writerAtStopTime: DataWriter<Any>? = null
         doAnswer {
-            writerAtFlushTime = testedFeature.dataWriter
-        }.whenever(mockDatadogMonitor).stopTimeseries()
+            writerAtStopTime = testedFeature.dataWriter
+        }.whenever(stubDatadogMonitor).stopTimeseries()
 
         // When
         testedFeature.onStop()
 
-        // Then
-        assertThat(writerAtFlushTime).isNotNull
-        assertThat(writerAtFlushTime).isNotInstanceOf(NoOpDataWriter::class.java)
+        // Then — the last timeseries batch must still reach the real writer
+        assertThat(writerAtStopTime).isNotNull
+        assertThat(writerAtStopTime).isNotInstanceOf(NoOpDataWriter::class.java)
         assertThat(testedFeature.dataWriter).isInstanceOf(NoOpDataWriter::class.java)
     }
 
     @Test
-    fun `M log USER message W timeseries create() { total RAM unavailable }`(
-        @StringForgery fakeSessionId: String
-    ) {
-        // When
-        createTimeseries(totalRamBytes = 0L, sessionId = fakeSessionId)
-
-        // Then
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            MEMORY_TIMESERIES_DISABLED_MESSAGE,
-            onlyOnce = true
-        )
-    }
-
-    @Test
-    fun `M not collect memory W timeseries create() { total RAM unavailable }`(
-        @StringForgery fakeSessionId: String
-    ) {
-        // When
-        val timeseries = createTimeseries(totalRamBytes = 0L, sessionId = fakeSessionId)
-
-        // Then: only the CPU pipeline is created; the memory pipeline is skipped.
-        check(timeseries is DefaultTimeseriesCollector)
-        assertThat(timeseries.pipelines).hasSize(1)
-    }
-
-    @Test
-    fun `M collect memory W timeseries create() { total RAM available }`(
-        @StringForgery fakeSessionId: String,
+    @OptIn(ExperimentalRumApi::class)
+    fun `M wire timeseries factory W initialize { timeseries enabled }`(
         @LongForgery(min = 1L) fakeTotalRamBytes: Long
     ) {
-        // When
-        val timeseries = createTimeseries(totalRamBytes = fakeTotalRamBytes, sessionId = fakeSessionId)
+        // Given
+        fakeConfiguration = fakeConfiguration.copy(
+            timeseriesConfiguration = TimeseriesConfiguration.Builder().build()
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+        val stubActivityManager = mock<ActivityManager>()
+        doAnswer { invocation ->
+            invocation.getArgument<ActivityManager.MemoryInfo>(0).totalMem = fakeTotalRamBytes
+            null
+        }.whenever(stubActivityManager).getMemoryInfo(any())
+        whenever(
+            appContext.mockInstance.getSystemService(Context.ACTIVITY_SERVICE)
+        ) doReturn stubActivityManager
 
-        // Then: both the CPU and memory pipelines are created.
-        check(timeseries is DefaultTimeseriesCollector)
-        assertThat(timeseries.pipelines).hasSize(2)
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        val timeseriesFactory = testedFeature.timeseriesCollectorFactory
+        check(timeseriesFactory is DefaultTimeseriesCollectorFactory)
+        assertThat(timeseriesFactory.getFieldValue<DataWriter<*>, DefaultTimeseriesCollectorFactory>("dataWriter"))
+            .isSameAs(testedFeature.dataWriter)
+        assertThat(
+            timeseriesFactory.getFieldValue<InsightsCollector, DefaultTimeseriesCollectorFactory>("insightsCollector")
+        )
+            .isSameAs(testedFeature.insightsCollector)
+        assertThat(
+            timeseriesFactory
+                .getFieldValue<ScheduledExecutorService, DefaultTimeseriesCollectorFactory>("scheduledExecutorService")
+        ).isSameAs(testedFeature.vitalExecutorService)
+        assertThat(timeseriesFactory.getFieldValue<Long, DefaultTimeseriesCollectorFactory>("totalRamBytes"))
+            .isEqualTo(fakeTotalRamBytes)
+        assertThat(
+            timeseriesFactory.getFieldValue<InfoProvider<*>, DefaultTimeseriesCollectorFactory>("batteryInfoProvider")
+        )
+            .isSameAs(testedFeature.batteryInfoProvider)
+        assertThat(
+            timeseriesFactory.getFieldValue<InfoProvider<*>, DefaultTimeseriesCollectorFactory>("displayInfoProvider")
+        )
+            .isSameAs(testedFeature.displayInfoProvider)
     }
 
     @Test
@@ -1914,18 +1923,6 @@ internal class RumFeatureTest {
             message
         )
     }
-
-    // Builds a timeseries collector for the given total device RAM (in bytes), bypassing the
-    // ActivityManager read so the skip/collect/log behavior can be exercised deterministically.
-    @OptIn(ExperimentalRumApi::class)
-    private fun createTimeseries(totalRamBytes: Long, sessionId: String): TimeseriesCollector =
-        testedFeature
-            .createTimeseriesCollectingFactory(
-                TimeseriesConfiguration.Builder().build(),
-                totalRamBytes,
-                testedFeature.configuration.insightsCollector
-            )
-            .create(fakeApplicationId.toString(), sessionId, RumSessionType.USER)
 
     private fun Forge.anApplicationExitInfoList(
         mustInclude: Int? = null

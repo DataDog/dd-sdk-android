@@ -14,21 +14,20 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventType
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.instrumentation.insights.NoOpInsightsCollector
+import com.datadog.android.rum.internal.timeseries.factory.EventFactory
 import com.datadog.android.rum.internal.timeseries.provider.DataPointsReader
-import com.datadog.android.rum.internal.timeseries.serializer.JsonSerializer
-import com.datadog.android.rum.internal.timeseries.serializer.TimeseriesAttributes
-import com.google.gson.JsonObject
 
 @Suppress("LongParameterList")
 internal class Pipeline<T : Any>(
     private val sdkCore: FeatureSdkCore,
     private val reader: DataPointsReader<T>,
     private val buffer: Buffer<T>,
-    private val serializer: JsonSerializer<T>,
+    private val eventFactory: EventFactory<T, *>,
     private val dataWriter: DataWriter<Any>,
-    private val internalLogger: InternalLogger,
+    private val rumContext: RumContext,
     private val insightsCollector: InsightsCollector = NoOpInsightsCollector()
 ) {
     val intervalMs: Long get() = reader.intervalMs
@@ -36,22 +35,29 @@ internal class Pipeline<T : Any>(
     @WorkerThread
     fun execute() {
         reader.read()?.let(buffer::add)
-        if (buffer.isFull()) flush()
+        if (buffer.isFull()) drainAndWrite()
     }
 
     @WorkerThread
-    fun flush() {
+    fun flush() = drainAndWrite()
+
+    private fun drainAndWrite() {
         val dataPoints = buffer.drain().ifEmpty { return }
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
-            ?.withWriteContext { datadogContext: DatadogContext, writeScope: EventWriteScope ->
-                val json = safeCall(ERROR_SERIALIZATION_FAILED) {
-                    serializer.serialize(datadogContext, dataPoints)
+            ?.withWriteContext(
+                withFeatureContexts = setOf(
+                    Feature.SESSION_REPLAY_FEATURE_NAME,
+                    Feature.TRACING_FEATURE_NAME
+                )
+            ) { datadogContext: DatadogContext, writeScope: EventWriteScope ->
+                val event = safeCall(ERROR_EVENT_CREATION_FAILED) {
+                    eventFactory.create(datadogContext, rumContext, dataPoints)
                 } ?: return@withWriteContext
 
                 writeScope { batchWriter ->
                     safeCall(ERROR_FLUSH_FAILED) {
-                        if (dataWriter.write(batchWriter, json, EventType.DEFAULT)) {
-                            insightsCollector.onTimeseries(json.timeseriesName)
+                        if (dataWriter.write(batchWriter, event, EventType.DEFAULT)) {
+                            insightsCollector.onTimeseries(eventFactory.eventName)
                         }
                     }
                 }
@@ -61,7 +67,7 @@ internal class Pipeline<T : Any>(
     private inline fun <R> safeCall(message: String, block: () -> R): R? = try {
         block()
     } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
-        internalLogger.log(
+        sdkCore.internalLogger.log(
             level = InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             messageBuilder = { message },
@@ -72,10 +78,6 @@ internal class Pipeline<T : Any>(
 
     private companion object {
         private const val ERROR_FLUSH_FAILED = "Timeseries flush failed"
-        private const val ERROR_SERIALIZATION_FAILED = "Timeseries serialization failed"
-        private val JsonObject.timeseriesName: String
-            get() = getAsJsonObject(TimeseriesAttributes.KEY_TIMESERIES)
-                ?.get(TimeseriesAttributes.KEY_NAME)
-                ?.asString.orEmpty()
+        private const val ERROR_EVENT_CREATION_FAILED = "Timeseries event creation failed"
     }
 }

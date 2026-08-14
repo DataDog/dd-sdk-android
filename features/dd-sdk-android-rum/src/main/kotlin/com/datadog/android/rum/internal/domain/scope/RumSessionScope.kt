@@ -234,10 +234,10 @@ internal class RumSessionScope(
     }
 
     private fun startTimeseries() {
+        val rumContext = getActiveRumContext()
         timeseriesCollector = timeseriesCollectorFactory.create(
-            sessionId = sessionId,
-            applicationId = parentScope.getRumContext().applicationId,
-            sessionType = getRumContext().resolveSessionType(rumSessionTypeOverride)
+            rumContext = rumContext,
+            sessionType = rumContext.resolveSessionType(rumSessionTypeOverride)
         )
         timeseriesCollector.onSessionStart()
     }

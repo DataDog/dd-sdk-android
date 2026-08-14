@@ -22,6 +22,8 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.TimeseriesCpuEvent
+import com.datadog.android.rum.model.TimeseriesMemoryEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
@@ -106,6 +108,8 @@ internal class RumDataWriter(
             is TelemetryDebugEvent -> event.type
             is TelemetryErrorEvent -> event.type
             is TelemetryUsageEvent -> event.type
+            is TimeseriesCpuEvent -> event.type
+            is TimeseriesMemoryEvent -> event.type
             else -> UNKNOWN_EVENT_TYPE
         }
     }

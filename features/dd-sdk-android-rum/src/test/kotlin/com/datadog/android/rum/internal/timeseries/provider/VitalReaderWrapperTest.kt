@@ -38,19 +38,19 @@ internal class VitalReaderWrapperTest {
     @LongForgery(min = 1L)
     var fakeTimestamp: Long = 0L
 
+    @LongForgery(min = 1L)
+    var fakeIntervalMs: Long = 0L
+
     @Mock
     lateinit var mockTimeProvider: TimeProvider
 
     @BeforeEach
     fun `set up`() {
-        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeTimestamp
+        whenever(mockTimeProvider.getServerTimestampMillis()) doReturn fakeTimestamp
     }
 
     @Test
-    fun `M return sample W read() { reader has value }`(
-        @DoubleForgery(min = 0.001) fakeValue: Double,
-        @LongForgery(min = 1L) fakeIntervalMs: Long
-    ) {
+    fun `M return sample W read() { reader has value }`(@DoubleForgery fakeValue: Double) {
         // Given
         val mockVitalReader: VitalReader = mock {
             on { readVitalData() } doReturn fakeValue
@@ -67,7 +67,7 @@ internal class VitalReaderWrapperTest {
     }
 
     @Test
-    fun `M return null W read() { reader has no value }`(@LongForgery(min = 1L) fakeIntervalMs: Long) {
+    fun `M return null W read() { reader has no value }`() {
         // Given
         val mockVitalReader: VitalReader = mock {
             on { readVitalData() } doReturn null
@@ -79,15 +79,5 @@ internal class VitalReaderWrapperTest {
 
         // Then
         assertThat(result).isNull()
-    }
-
-    @Test
-    fun `M expose intervalMs W intervalMs { construction value }`(@LongForgery(min = 1L) fakeIntervalMs: Long) {
-        // Given
-        val mockVitalReader: VitalReader = mock()
-        val testedReader = VitalReaderWrapper(mockVitalReader, mockTimeProvider, fakeIntervalMs)
-
-        // When / Then
-        assertThat(testedReader.intervalMs).isEqualTo(fakeIntervalMs)
     }
 }
