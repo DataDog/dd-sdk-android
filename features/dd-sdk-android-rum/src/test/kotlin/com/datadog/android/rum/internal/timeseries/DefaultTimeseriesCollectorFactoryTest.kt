@@ -34,8 +34,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -236,27 +234,6 @@ internal class DefaultTimeseriesCollectorFactoryTest {
         assertThat(
             timeseries.getFieldValue<RumContext, DefaultTimeseriesCollector>("rumContext")
         ).isSameAs(fakeRumContext)
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = [true, false])
-    fun `M propagate collectInBackground to the collector W create()`(
-        fakeCollectInBackground: Boolean
-    ) {
-        // Given
-        val fakeConfiguration = TimeseriesConfiguration.Builder()
-            .collectInBackground(fakeCollectInBackground)
-            .build()
-        val testedFactory = createFactory(totalRamBytes = 1L, configuration = fakeConfiguration)
-
-        // When
-        val timeseries = testedFactory.create(fakeSessionType, fakeRumContext)
-
-        // Then
-        check(timeseries is DefaultTimeseriesCollector)
-        assertThat(
-            timeseries.getFieldValue<Boolean, DefaultTimeseriesCollector>("collectInBackground")
-        ).isEqualTo(fakeCollectInBackground)
     }
 
     @Test

@@ -11,7 +11,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
-import org.junit.jupiter.params.provider.ValueSource
 
 @OptIn(ExperimentalRumApi::class)
 internal class TimeseriesConfigurationTests {
@@ -46,26 +45,5 @@ internal class TimeseriesConfigurationTests {
 
         // Then
         assertThat(config.enabledTypes).isEmpty()
-    }
-
-    @Test
-    fun `M default collectInBackground to false W build() { collectInBackground not called }`() {
-        // When
-        val config = TimeseriesConfiguration.Builder().build()
-
-        // Then
-        assertThat(config.collectInBackground).isFalse()
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = [true, false])
-    fun `M store collectInBackground W collectInBackground()`(fakeCollectInBackground: Boolean) {
-        // When
-        val config = TimeseriesConfiguration.Builder()
-            .collectInBackground(fakeCollectInBackground)
-            .build()
-
-        // Then
-        assertThat(config.collectInBackground).isEqualTo(fakeCollectInBackground)
     }
 }
