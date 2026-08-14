@@ -36,12 +36,12 @@ import java.util.concurrent.atomic.AtomicReference
  *    When [startSampling] starts a new generation, any in-flight or queued ticks from the
  *    previous generation self-terminate on their first check.
  */
-internal class RumSessionScopeTimeseries(
+internal class DefaultTimeseriesCollector(
     private val internalLogger: InternalLogger,
     internal val pipelines: List<Pipeline<*>>,
     private val collectInBackground: Boolean,
     internal val scheduledExecutorService: ScheduledExecutorService
-) : Timeseries {
+) : TimeseriesCollector {
 
     private enum class State { IDLE, RUNNING, SUSPENDED, STOPPED }
     private val state = AtomicReference(State.IDLE)

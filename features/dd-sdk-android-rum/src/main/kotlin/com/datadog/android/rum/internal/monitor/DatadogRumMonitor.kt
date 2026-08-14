@@ -66,7 +66,7 @@ import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
-import com.datadog.android.rum.internal.timeseries.Timeseries
+import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -111,7 +111,7 @@ internal class DatadogRumMonitor(
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
     insightsCollector: InsightsCollector,
     heatmapIdentifierRegistry: HeatmapIdentifierRegistry?,
-    timeseriesFactory: Timeseries.Factory
+    timeseriesCollectorFactory: TimeseriesCollector.Factory
 ) : RumMonitor, AdvancedRumMonitor {
 
     @Volatile private var cachedViewUrl: String? = null
@@ -138,7 +138,7 @@ internal class DatadogRumMonitor(
         rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
         insightsCollector = insightsCollector,
         heatmapIdentifierRegistry = heatmapIdentifierRegistry,
-        timeseriesFactory = timeseriesFactory
+        timeseriesCollectorFactory = timeseriesCollectorFactory
     )
 
     internal var debugListener: RumDebugListener? = null
@@ -935,7 +935,7 @@ internal class DatadogRumMonitor(
      * de-initializes and shuts down its context executor before the async write task fires, the
      * write is silently skipped regardless.
      */
-    internal fun stopActiveTimeseries() {
+    internal fun stopTimeseries() {
         synchronized(rootScope) {
             rootScope.activeSession?.stopTimeseries()
         }

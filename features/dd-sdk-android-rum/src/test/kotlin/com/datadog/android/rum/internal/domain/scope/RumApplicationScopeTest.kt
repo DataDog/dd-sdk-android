@@ -30,7 +30,7 @@ import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
-import com.datadog.android.rum.internal.timeseries.Timeseries
+import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -139,10 +139,10 @@ internal class RumApplicationScopeTest {
     lateinit var mockSessionSampler: Sampler<String>
 
     @Mock
-    lateinit var mockTimeseriesFactory: Timeseries.Factory
+    lateinit var mockTimeseriesCollectorFactory: TimeseriesCollector.Factory
 
     @Mock
-    lateinit var mockTimeseries: Timeseries
+    lateinit var mockTimeseriesCollector: TimeseriesCollector
 
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
@@ -185,7 +185,7 @@ internal class RumApplicationScopeTest {
 
         whenever(mockSessionSampler.getSampleRate()).thenReturn(fakeSampleRate)
         whenever(mockSessionSampler.sample(any())).thenReturn(true)
-        whenever(mockTimeseriesFactory.create(any(), any(), any())) doReturn mockTimeseries
+        whenever(mockTimeseriesCollectorFactory.create(any(), any(), any())) doReturn mockTimeseriesCollector
 
         testedScope = RumApplicationScope(
             applicationId = fakeApplicationId,
@@ -209,7 +209,7 @@ internal class RumApplicationScopeTest {
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
             heatmapIdentifierRegistry = null,
-            timeseriesFactory = mockTimeseriesFactory
+            timeseriesCollectorFactory = mockTimeseriesCollectorFactory
         )
     }
 
@@ -243,7 +243,7 @@ internal class RumApplicationScopeTest {
         )
 
         // Then - the child session uses the same factory we gave to the application scope
-        verify(mockTimeseriesFactory).create(eq(fakeApplicationId), any(), any())
+        verify(mockTimeseriesCollectorFactory).create(eq(fakeApplicationId), any(), any())
     }
 
     @Test
@@ -282,7 +282,7 @@ internal class RumApplicationScopeTest {
         )
 
         // Then - factory.create is invoked once per tracked session (initial + new)
-        verify(mockTimeseriesFactory, times(2)).create(eq(fakeApplicationId), any(), any())
+        verify(mockTimeseriesCollectorFactory, times(2)).create(eq(fakeApplicationId), any(), any())
     }
 
     @Test

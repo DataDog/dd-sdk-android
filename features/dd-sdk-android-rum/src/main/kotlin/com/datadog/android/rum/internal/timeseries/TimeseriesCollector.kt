@@ -11,13 +11,13 @@ import com.datadog.android.rum.internal.domain.scope.RumViewType
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
-internal interface Timeseries {
+internal interface TimeseriesCollector {
     fun onSessionStart()
     fun onSessionStop()
     fun onViewTypeUpdate(newViewType: RumViewType)
 
     @NoOpImplementation
     interface Factory {
-        fun create(applicationId: String, sessionId: String, sessionType: RumSessionType): Timeseries
+        fun create(applicationId: String, sessionId: String, sessionType: RumSessionType): TimeseriesCollector
     }
 }

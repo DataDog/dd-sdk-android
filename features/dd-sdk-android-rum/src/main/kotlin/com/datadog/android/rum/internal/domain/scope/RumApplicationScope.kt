@@ -30,7 +30,7 @@ import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollect
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
-import com.datadog.android.rum.internal.timeseries.Timeseries
+import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -59,7 +59,7 @@ internal class RumApplicationScope(
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
     private val insightsCollector: InsightsCollector,
     private val heatmapIdentifierRegistry: HeatmapIdentifierRegistry?,
-    private val timeseriesFactory: Timeseries.Factory
+    private val timeseriesCollectorFactory: TimeseriesCollector.Factory
 ) : RumScope, RumViewChangedListener {
 
     override val parentScope: RumScope? = null
@@ -91,7 +91,7 @@ internal class RumApplicationScope(
             rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
             insightsCollector = insightsCollector,
             heatmapIdentifierRegistry = heatmapIdentifierRegistry,
-            timeseriesFactory = timeseriesFactory
+            timeseriesCollectorFactory = timeseriesCollectorFactory
         )
     )
 
@@ -215,7 +215,7 @@ internal class RumApplicationScope(
             rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
             insightsCollector = insightsCollector,
             heatmapIdentifierRegistry = heatmapIdentifierRegistry,
-            timeseriesFactory = timeseriesFactory
+            timeseriesCollectorFactory = timeseriesCollectorFactory
         )
         childScopes.add(newSession)
         if (event !is RumRawEvent.StartView) {
