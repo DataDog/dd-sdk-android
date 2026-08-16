@@ -322,7 +322,6 @@ internal class NodeFlattenerTest {
 
     private fun MobileSegment.Wireframe.copy(id: Long): MobileSegment.Wireframe {
         return when (this) {
-            is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.copy(id = id)
             is MobileSegment.Wireframe.ShapeWireframe ->
                 this.copy(id = id)
             is MobileSegment.Wireframe.TextWireframe ->
@@ -372,14 +371,6 @@ internal class NodeFlattenerTest {
 
     private fun Forge.forgeWireframe(id: Long, x: Long, y: Long, width: Long, height: Long): MobileSegment.Wireframe {
         return when (val fakeWireframe = getForgery<MobileSegment.Wireframe>()) {
-            is MobileSegment.Wireframe.EmbeddedContentWireframe -> fakeWireframe.copy(
-                id = id,
-                x = x,
-                y = y,
-                width = width,
-                height = height,
-                clip = null
-            )
             is MobileSegment.Wireframe.ShapeWireframe -> fakeWireframe.copy(
                 id = id,
                 x = x,
@@ -425,8 +416,6 @@ internal class NodeFlattenerTest {
 
     private fun MobileSegment.Wireframe.bounds(): Bounds {
         return when (this) {
-            is MobileSegment.Wireframe.EmbeddedContentWireframe ->
-                Bounds(this.x, this.y, this.width, this.height)
             is MobileSegment.Wireframe.ShapeWireframe ->
                 Bounds(this.x, this.y, this.width, this.height)
             is MobileSegment.Wireframe.TextWireframe ->
@@ -442,7 +431,6 @@ internal class NodeFlattenerTest {
 
     private fun MobileSegment.Wireframe.clip(): MobileSegment.WireframeClip? {
         return when (this) {
-            is MobileSegment.Wireframe.EmbeddedContentWireframe -> clip
             is MobileSegment.Wireframe.ShapeWireframe ->
                 clip
             is MobileSegment.Wireframe.TextWireframe ->
@@ -460,7 +448,6 @@ internal class NodeFlattenerTest {
 
     private fun MobileSegment.Wireframe.id(): Long {
         return when (this) {
-            is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.id
             is MobileSegment.Wireframe.ShapeWireframe -> this.id
             is MobileSegment.Wireframe.TextWireframe -> this.id
             is MobileSegment.Wireframe.ImageWireframe -> this.id

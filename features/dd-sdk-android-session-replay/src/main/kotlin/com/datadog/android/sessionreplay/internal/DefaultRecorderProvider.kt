@@ -81,6 +81,7 @@ internal class DefaultRecorderProvider(
         rumContextProvider: RumContextProvider,
         application: Application
     ): Recorder {
+        val heatmapIdentifierRegistry = if (heatmapsEnabled) LazyHeatmapIdentifierRegistry(sdkCore) else null
         return CapturePipelineSelector(
             compositionEnabled = compositionTreeRecordingEnabled,
             compositionFactory = compositionPipelineFactory,
@@ -101,11 +102,7 @@ internal class DefaultRecorderProvider(
                     sdkCore = sdkCore,
                     dynamicOptimizationEnabled = dynamicOptimizationEnabled,
                     internalCallback = internalCallback,
-                    heatmapIdentifierRegistry = if (heatmapsEnabled) {
-                        LazyHeatmapIdentifierRegistry(sdkCore)
-                    } else {
-                        null
-                    }
+                    heatmapIdentifierRegistry = heatmapIdentifierRegistry
                 )
             }
         ).create()

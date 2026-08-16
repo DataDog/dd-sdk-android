@@ -12,7 +12,6 @@ internal object BoundsUtils {
 
     internal fun resolveBounds(wireframe: MobileSegment.Wireframe): WireframeBounds {
         return when (wireframe) {
-            is MobileSegment.Wireframe.EmbeddedContentWireframe -> wireframe.bounds()
             is MobileSegment.Wireframe.ShapeWireframe -> wireframe.bounds()
             is MobileSegment.Wireframe.TextWireframe -> wireframe.bounds()
             is MobileSegment.Wireframe.ImageWireframe -> wireframe.bounds()
@@ -32,10 +31,6 @@ internal object BoundsUtils {
     }
 
     private fun MobileSegment.Wireframe.ShapeWireframe.bounds(): WireframeBounds {
-        return resolveBounds(x, y, width, height, clip)
-    }
-
-    private fun MobileSegment.Wireframe.EmbeddedContentWireframe.bounds(): WireframeBounds {
         return resolveBounds(x, y, width, height, clip)
     }
 

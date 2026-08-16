@@ -24,7 +24,6 @@ internal enum class CapturedWireframeKind(internal val wireIdNamespace: Long) {
     TEXT(2),
     IMAGE(IMAGE_WIREFRAME_NAMESPACE),
     PLACEHOLDER(PLACEHOLDER_WIREFRAME_NAMESPACE),
-    EMBEDDED_CONTENT(EMBEDDED_CONTENT_WIREFRAME_NAMESPACE),
 
     /**
      * Deliberately namespace `0`, i.e. unshifted: the wire id for a web-view wireframe must equal
@@ -91,8 +90,6 @@ internal interface CapturedIdentityFactory {
 
     fun placeholderWireframe(owner: CapturedIdentity): CapturedIdentity
 
-    fun embeddedContentWireframe(owner: CapturedIdentity): CapturedIdentity
-
     fun webViewWireframe(owner: CapturedIdentity, slotId: Long): CapturedIdentity
 }
 
@@ -140,9 +137,6 @@ internal class DefaultCapturedIdentityFactory(
 
     override fun placeholderWireframe(owner: CapturedIdentity): CapturedIdentity =
         createNamespacedWireframeIdentity(owner, CapturedWireframeKind.PLACEHOLDER)
-
-    override fun embeddedContentWireframe(owner: CapturedIdentity): CapturedIdentity =
-        createNamespacedWireframeIdentity(owner, CapturedWireframeKind.EMBEDDED_CONTENT)
 
     override fun webViewWireframe(owner: CapturedIdentity, slotId: Long): CapturedIdentity {
         requireLayerOwner(owner)
@@ -246,7 +240,6 @@ internal class DefaultCapturedIdentityFactory(
 
 private const val IMAGE_WIREFRAME_NAMESPACE = 3L
 private const val PLACEHOLDER_WIREFRAME_NAMESPACE = 4L
-private const val EMBEDDED_CONTENT_WIREFRAME_NAMESPACE = 5L
 
 /**
  * Added to every raw layer replay id so that layer wire ids always land above the Int range

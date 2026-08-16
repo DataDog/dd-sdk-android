@@ -73,7 +73,6 @@ internal class WireframeUtils(private val boundsUtils: BoundsUtils = BoundsUtils
 
     private fun MobileSegment.Wireframe.clip(): MobileSegment.WireframeClip? {
         return when (this) {
-            is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.clip
             is MobileSegment.Wireframe.ShapeWireframe -> this.clip
             is MobileSegment.Wireframe.TextWireframe -> this.clip
             is MobileSegment.Wireframe.ImageWireframe -> this.clip

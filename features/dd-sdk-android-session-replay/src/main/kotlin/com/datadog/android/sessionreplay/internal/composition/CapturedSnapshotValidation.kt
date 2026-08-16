@@ -53,11 +53,12 @@ internal class CapturedSnapshotValidation(
     }
 
     private fun validateDefinitions(layers: List<CapturedLayer>) {
-        val identities = layers.map { it.identity } + if (validateWireframeDefinitions) {
+        val wireframeIdentities = if (validateWireframeDefinitions) {
             snapshot.wireframes.map { it.identity }
         } else {
             emptyList()
         }
+        val identities = layers.map { it.identity } + wireframeIdentities
         validateIdentityDefinitions(identities)
         layers.forEach(::validateLayer)
         if (validateWireframeDefinitions) snapshot.wireframes.forEach(::validateWireframe)
@@ -378,7 +379,6 @@ internal class CapturedSnapshotValidation(
 
     private val CapturedWireframe.isHiddenSlot: Boolean
         get() = when (this) {
-            is CapturedWireframe.EmbeddedContent -> isVisible == false
             is CapturedWireframe.WebView -> isVisible == false
             else -> false
         }
@@ -404,7 +404,6 @@ internal class CapturedSnapshotValidation(
             is CapturedWireframe.Pixel -> CapturedWireframeKind.IMAGE
             is CapturedWireframe.PrivacyPlaceholder -> CapturedWireframeKind.PLACEHOLDER
             is CapturedWireframe.WebView -> CapturedWireframeKind.WEB_VIEW
-            is CapturedWireframe.EmbeddedContent -> CapturedWireframeKind.EMBEDDED_CONTENT
         }
 
     private val CapturedWireframe.style: CapturedShapeStyle?
@@ -412,7 +411,6 @@ internal class CapturedSnapshotValidation(
             is CapturedWireframe.Shape -> style
             is CapturedWireframe.Text -> style
             is CapturedWireframe.WebView -> style
-            is CapturedWireframe.EmbeddedContent -> style
             is CapturedWireframe.Pixel -> style
             is CapturedWireframe.PrivacyPlaceholder -> null
         }

@@ -338,13 +338,6 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
       companion object 
         fun fromJson(kotlin.String): WebviewWireframe
         fun fromJsonObject(com.google.gson.JsonObject): WebviewWireframe
-    data class EmbeddedContentWireframe : Wireframe
-      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null, kotlin.String, kotlin.Boolean? = null, kotlin.String? = null)
-      val type: kotlin.String
-      override fun toJson(): com.google.gson.JsonElement
-      companion object 
-        fun fromJson(kotlin.String): EmbeddedContentWireframe
-        fun fromJsonObject(com.google.gson.JsonObject): EmbeddedContentWireframe
     companion object 
       fun fromJson(kotlin.String): Wireframe
       fun fromJsonElement(com.google.gson.JsonElement): Wireframe
@@ -403,13 +396,6 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
       companion object 
         fun fromJson(kotlin.String): WebviewWireframeUpdate
         fun fromJsonObject(com.google.gson.JsonObject): WebviewWireframeUpdate
-    data class EmbeddedContentWireframeUpdate : WireframeUpdateMutation
-      constructor(kotlin.Long, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null, kotlin.String, kotlin.Boolean? = null)
-      val type: kotlin.String
-      override fun toJson(): com.google.gson.JsonElement
-      companion object 
-        fun fromJson(kotlin.String): EmbeddedContentWireframeUpdate
-        fun fromJsonObject(com.google.gson.JsonObject): EmbeddedContentWireframeUpdate
     companion object 
       fun fromJson(kotlin.String): WireframeUpdateMutation
       fun fromJsonElement(com.google.gson.JsonElement): WireframeUpdateMutation

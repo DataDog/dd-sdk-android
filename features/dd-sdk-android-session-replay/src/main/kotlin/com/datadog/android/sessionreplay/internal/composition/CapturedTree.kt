@@ -88,17 +88,6 @@ internal sealed interface CapturedWireframe {
         override val permanentId: String? = null
     ) : CapturedWireframe
 
-    data class EmbeddedContent(
-        override val identity: CapturedIdentity,
-        override val bounds: CapturedBounds,
-        override val clip: CapturedClip? = null,
-        val style: CapturedShapeStyle? = null,
-        val border: CapturedShapeBorder? = null,
-        val slotId: String,
-        val isVisible: Boolean? = null,
-        override val permanentId: String? = null
-    ) : CapturedWireframe
-
     data class Pixel(
         override val identity: CapturedIdentity,
         override val bounds: CapturedBounds,

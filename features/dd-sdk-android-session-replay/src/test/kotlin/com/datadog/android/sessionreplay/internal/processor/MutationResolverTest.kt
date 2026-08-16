@@ -775,7 +775,6 @@ internal class MutationResolverTest {
 
     private fun MobileSegment.Wireframe.id(): Long {
         return when (this) {
-            is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.id
             is MobileSegment.Wireframe.ShapeWireframe -> this.id
             is MobileSegment.Wireframe.TextWireframe -> this.id
             is MobileSegment.Wireframe.ImageWireframe -> this.id
@@ -805,7 +804,6 @@ internal class MutationResolverTest {
 
         private fun MobileSegment.Wireframe.id(): Long {
             return when (this) {
-                is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.id
                 is MobileSegment.Wireframe.ShapeWireframe -> this.id
                 is MobileSegment.Wireframe.TextWireframe -> this.id
                 is MobileSegment.Wireframe.ImageWireframe -> this.id

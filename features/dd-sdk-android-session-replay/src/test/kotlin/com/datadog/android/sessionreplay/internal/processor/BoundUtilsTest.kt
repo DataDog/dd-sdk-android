@@ -143,7 +143,6 @@ internal class BoundUtilsTest {
 
     private fun MobileSegment.Wireframe.x(): Long {
         return when (this) {
-            is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.x
             is MobileSegment.Wireframe.ShapeWireframe -> this.x
             is MobileSegment.Wireframe.TextWireframe -> this.x
             is MobileSegment.Wireframe.ImageWireframe -> this.x
@@ -154,7 +153,6 @@ internal class BoundUtilsTest {
 
     private fun MobileSegment.Wireframe.y(): Long {
         return when (this) {
-            is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.y
             is MobileSegment.Wireframe.ShapeWireframe -> this.y
             is MobileSegment.Wireframe.TextWireframe -> this.y
             is MobileSegment.Wireframe.ImageWireframe -> this.y
@@ -165,7 +163,6 @@ internal class BoundUtilsTest {
 
     private fun MobileSegment.Wireframe.width(): Long {
         return when (this) {
-            is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.width
             is MobileSegment.Wireframe.ShapeWireframe -> this.width
             is MobileSegment.Wireframe.TextWireframe -> this.width
             is MobileSegment.Wireframe.ImageWireframe -> this.width
@@ -176,7 +173,6 @@ internal class BoundUtilsTest {
 
     private fun MobileSegment.Wireframe.height(): Long {
         return when (this) {
-            is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.height
             is MobileSegment.Wireframe.ShapeWireframe -> this.height
             is MobileSegment.Wireframe.TextWireframe -> this.height
             is MobileSegment.Wireframe.ImageWireframe -> this.height
@@ -193,8 +189,6 @@ internal class BoundUtilsTest {
         height: Long
     ): MobileSegment.Wireframe {
         return when (this) {
-            is MobileSegment.Wireframe.EmbeddedContentWireframe ->
-                this.copy(clip = clip, x = x, y = y, width = width, height = height)
             is MobileSegment.Wireframe.ShapeWireframe ->
                 this.copy(clip = clip, x = x, y = y, width = width, height = height)
             is MobileSegment.Wireframe.TextWireframe ->

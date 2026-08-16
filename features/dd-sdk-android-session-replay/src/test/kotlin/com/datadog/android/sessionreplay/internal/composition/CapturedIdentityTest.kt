@@ -128,14 +128,12 @@ internal class CapturedIdentityTest {
         val text = factory.textWireframe(layer)
         val image = factory.imageWireframe(layer)
         val placeholder = factory.placeholderWireframe(layer)
-        val embeddedContent = factory.embeddedContentWireframe(layer)
 
         // Then
         assertThat(shape.wireId).isEqualTo((1L shl NAMESPACE_SHIFT) or layer.wireId)
         assertThat(text.wireId).isEqualTo((2L shl NAMESPACE_SHIFT) or layer.wireId)
         assertThat(image.wireId).isEqualTo((3L shl NAMESPACE_SHIFT) or layer.wireId)
         assertThat(placeholder.wireId).isEqualTo((4L shl NAMESPACE_SHIFT) or layer.wireId)
-        assertThat(embeddedContent.wireId).isEqualTo((5L shl NAMESPACE_SHIFT) or layer.wireId)
     }
 
     @Test
@@ -202,7 +200,7 @@ internal class CapturedIdentityTest {
 
         // When
         val identities = List(1_000) { factory.view(window, "view-$it") } +
-            factory.embeddedContentWireframe(window)
+            factory.placeholderWireframe(window)
 
         // Then
         assertThat(identities.map { it.wireId })

@@ -637,23 +637,16 @@ internal class CapturedTreeValidatorTest {
         // Given
         val tree = compositionTestTree()
         val webViewIdentity = tree.factory.webViewWireframe(tree.layer.identity, 42)
-        val embeddedIdentity = tree.factory.embeddedContentWireframe(tree.layer.identity)
         val hiddenWebView = CapturedWireframe.WebView(
             identity = webViewIdentity,
             bounds = CapturedBounds(0, 0, 0, 0),
-            isVisible = false
-        )
-        val hiddenEmbeddedContent = CapturedWireframe.EmbeddedContent(
-            identity = embeddedIdentity,
-            bounds = CapturedBounds(0, 0, 0, 0),
-            slotId = "embedded-slot",
             isVisible = false
         )
 
         // When
         val result = testedValidator.validate(
             tree.snapshot.copy(
-                wireframes = listOf(tree.wireframe, hiddenWebView, hiddenEmbeddedContent)
+                wireframes = listOf(tree.wireframe, hiddenWebView)
             )
         )
 
@@ -665,17 +658,16 @@ internal class CapturedTreeValidatorTest {
     fun `M report unreferenced wireframe W validate { visible slot wireframe }`() {
         // Given
         val tree = compositionTestTree()
-        val identity = tree.factory.embeddedContentWireframe(tree.layer.identity)
-        val visibleEmbeddedContent = CapturedWireframe.EmbeddedContent(
+        val identity = tree.factory.webViewWireframe(tree.layer.identity, 42)
+        val visibleWebView = CapturedWireframe.WebView(
             identity = identity,
             bounds = CapturedBounds(0, 0, 10, 10),
-            slotId = "embedded-slot",
             isVisible = true
         )
 
         // When
         val result = testedValidator.validate(
-            tree.snapshot.copy(wireframes = listOf(tree.wireframe, visibleEmbeddedContent))
+            tree.snapshot.copy(wireframes = listOf(tree.wireframe, visibleWebView))
         )
 
         // Then

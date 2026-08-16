@@ -152,20 +152,23 @@ internal class CapturedMutationValidation(
         )
     }
 
-    private fun CapturedLayer.apply(update: CapturedLayerUpdate): CapturedLayer = copy(
-        bounds = bounds.copy(
-            x = update.x.valueOr(bounds.x),
-            y = update.y.valueOr(bounds.y),
-            width = update.width.valueOr(bounds.width),
-            height = update.height.valueOr(bounds.height)
-        ),
-        children = update.children.valueOr(children),
-        modifiers = update.modifiers.valueOr(modifiers),
-        compositeOperation = when (val operation = update.compositeOperation) {
+    private fun CapturedLayer.apply(update: CapturedLayerUpdate): CapturedLayer {
+        val effectiveCompositeOperation = when (val operation = update.compositeOperation) {
             is CapturedChange.Set -> operation.value
             CapturedChange.Unchanged -> compositeOperation
         }
-    )
+        return copy(
+            bounds = bounds.copy(
+                x = update.x.valueOr(bounds.x),
+                y = update.y.valueOr(bounds.y),
+                width = update.width.valueOr(bounds.width),
+                height = update.height.valueOr(bounds.height)
+            ),
+            children = update.children.valueOr(children),
+            modifiers = update.modifiers.valueOr(modifiers),
+            compositeOperation = effectiveCompositeOperation
+        )
+    }
 
     private fun <T> CapturedChange<List<T>>.valueOrEmpty(): List<T> =
         (this as? CapturedChange.Set)?.value.orEmpty()

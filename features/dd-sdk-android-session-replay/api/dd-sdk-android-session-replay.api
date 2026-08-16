@@ -1419,48 +1419,6 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$Wirefra
 	public final fun fromJsonElement (Lcom/google/gson/JsonElement;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe;
 }
 
-public final class com/datadog/android/sessionreplay/model/MobileSegment$Wireframe$EmbeddedContentWireframe : com/datadog/android/sessionreplay/model/MobileSegment$Wireframe {
-	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$EmbeddedContentWireframe$Companion;
-	public fun <init> (JJJJJLcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;)V
-	public synthetic fun <init> (JJJJJLcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()J
-	public final fun component10 ()Ljava/lang/Boolean;
-	public final fun component11 ()Ljava/lang/String;
-	public final fun component2 ()J
-	public final fun component3 ()J
-	public final fun component4 ()J
-	public final fun component5 ()J
-	public final fun component6 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;
-	public final fun component7 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;
-	public final fun component8 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;
-	public final fun component9 ()Ljava/lang/String;
-	public final fun copy (JJJJJLcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$EmbeddedContentWireframe;
-	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$EmbeddedContentWireframe;JJJJJLcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$EmbeddedContentWireframe;
-	public fun equals (Ljava/lang/Object;)Z
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$EmbeddedContentWireframe;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$EmbeddedContentWireframe;
-	public final fun getBorder ()Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;
-	public final fun getClip ()Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;
-	public final fun getHeight ()J
-	public final fun getId ()J
-	public final fun getPermanentId ()Ljava/lang/String;
-	public final fun getShapeStyle ()Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;
-	public final fun getSlotId ()Ljava/lang/String;
-	public final fun getType ()Ljava/lang/String;
-	public final fun getWidth ()J
-	public final fun getX ()J
-	public final fun getY ()J
-	public fun hashCode ()I
-	public final fun isVisible ()Ljava/lang/Boolean;
-	public fun toJson ()Lcom/google/gson/JsonElement;
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/sessionreplay/model/MobileSegment$Wireframe$EmbeddedContentWireframe$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$EmbeddedContentWireframe;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$EmbeddedContentWireframe;
-}
-
 public final class com/datadog/android/sessionreplay/model/MobileSegment$Wireframe$ImageWireframe : com/datadog/android/sessionreplay/model/MobileSegment$Wireframe {
 	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$Wireframe$ImageWireframe$Companion;
 	public fun <init> (JJJJJLcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;)V
@@ -1711,46 +1669,6 @@ public abstract class com/datadog/android/sessionreplay/model/MobileSegment$Wire
 public final class com/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation;
 	public final fun fromJsonElement (Lcom/google/gson/JsonElement;)Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation;
-}
-
-public final class com/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$EmbeddedContentWireframeUpdate : com/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation {
-	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$EmbeddedContentWireframeUpdate$Companion;
-	public fun <init> (JLjava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;Ljava/lang/String;Ljava/lang/Boolean;)V
-	public synthetic fun <init> (JLjava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;Ljava/lang/String;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()J
-	public final fun component10 ()Ljava/lang/Boolean;
-	public final fun component2 ()Ljava/lang/Long;
-	public final fun component3 ()Ljava/lang/Long;
-	public final fun component4 ()Ljava/lang/Long;
-	public final fun component5 ()Ljava/lang/Long;
-	public final fun component6 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;
-	public final fun component7 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;
-	public final fun component8 ()Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;
-	public final fun component9 ()Ljava/lang/String;
-	public final fun copy (JLjava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;Ljava/lang/String;Ljava/lang/Boolean;)Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$EmbeddedContentWireframeUpdate;
-	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$EmbeddedContentWireframeUpdate;JLjava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;Ljava/lang/String;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$EmbeddedContentWireframeUpdate;
-	public fun equals (Ljava/lang/Object;)Z
-	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$EmbeddedContentWireframeUpdate;
-	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$EmbeddedContentWireframeUpdate;
-	public final fun getBorder ()Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeBorder;
-	public final fun getClip ()Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeClip;
-	public final fun getHeight ()Ljava/lang/Long;
-	public final fun getId ()J
-	public final fun getShapeStyle ()Lcom/datadog/android/sessionreplay/model/MobileSegment$ShapeStyle;
-	public final fun getSlotId ()Ljava/lang/String;
-	public final fun getType ()Ljava/lang/String;
-	public final fun getWidth ()Ljava/lang/Long;
-	public final fun getX ()Ljava/lang/Long;
-	public final fun getY ()Ljava/lang/Long;
-	public fun hashCode ()I
-	public final fun isVisible ()Ljava/lang/Boolean;
-	public fun toJson ()Lcom/google/gson/JsonElement;
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$EmbeddedContentWireframeUpdate$Companion {
-	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$EmbeddedContentWireframeUpdate;
-	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$EmbeddedContentWireframeUpdate;
 }
 
 public final class com/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation$ImageWireframeUpdate : com/datadog/android/sessionreplay/model/MobileSegment$WireframeUpdateMutation {
