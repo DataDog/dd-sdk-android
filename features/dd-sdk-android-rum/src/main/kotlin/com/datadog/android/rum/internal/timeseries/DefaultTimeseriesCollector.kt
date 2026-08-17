@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.timeseries
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.scheduleSafe
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumViewType
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -24,11 +25,11 @@ import java.util.concurrent.atomic.AtomicReference
  *  - After [onSessionStop], the instance must not be restarted; create a new instance.
  *
  * Background sampling:
- *  - When [collectInBackground] is `false`, [onViewTypeUpdate] pauses sampling on leaving foreground
+ *  - When [collectInBackground] is `false`, [onRumContextUpdate] pauses sampling on leaving foreground
  *    and resumes it on returning to foreground.
  *
  * Threading:
- *  - [onSessionStart] / [onSessionStop] / [onViewTypeUpdate] are called from the RUM event-handler thread.
+ *  - [onSessionStart] / [onSessionStop] / [onRumContextUpdate] are called from the RUM event-handler thread.
  *  - Sampling tasks run on a [scheduledExecutorService] shared with other RUM components
  *    (owned by the SDK core); the instance neither owns nor shuts it down.
  *  - [Pipeline] is responsible for its own thread safety via internal synchronization.
@@ -40,7 +41,10 @@ internal class DefaultTimeseriesCollector(
     private val internalLogger: InternalLogger,
     internal val pipelines: List<Pipeline<*>>,
     private val collectInBackground: Boolean,
-    internal val scheduledExecutorService: ScheduledExecutorService
+    internal val scheduledExecutorService: ScheduledExecutorService,
+    // Read by the sampling ticks so every batch is attributed to the view that was active when it
+    // was drained, not to the one active when the collector was created.
+    @Volatile private var rumContext: RumContext
 ) : TimeseriesCollector {
 
     private enum class State { IDLE, RUNNING, SUSPENDED, STOPPED }
@@ -48,9 +52,6 @@ internal class DefaultTimeseriesCollector(
 
     // Incremented on every start/resume. Ticks carrying a stale generation self-terminate.
     private val currentGeneration = AtomicInteger(0)
-
-    @Volatile
-    private var currentViewType: RumViewType? = null
 
     @WorkerThread
     override fun onSessionStart() {
@@ -64,7 +65,7 @@ internal class DefaultTimeseriesCollector(
         if (state.getAndSet(State.STOPPED) != State.STOPPED) {
             pipelines.forEach { pipeline ->
                 try {
-                    synchronized(pipeline, pipeline::flush)
+                    pipeline.flush(rumContext)
                 } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
                     internalLogger.log(
                         level = InternalLogger.Level.ERROR,
@@ -78,10 +79,13 @@ internal class DefaultTimeseriesCollector(
     }
 
     @WorkerThread
-    override fun onViewTypeUpdate(newViewType: RumViewType) {
-        if (newViewType == currentViewType) return
-        val isEnterForeground = !currentViewType.isForeground && newViewType.isForeground
-        currentViewType = newViewType
+    override fun onRumContextUpdate(newRumContext: RumContext) {
+        val oldViewType = rumContext.viewType
+        val newViewType = newRumContext.viewType
+        val isEnterForeground = !oldViewType.isForeground && newViewType.isForeground
+
+        rumContext = newRumContext
+
         if (!collectInBackground) {
             if (isEnterForeground && state.compareAndSet(State.SUSPENDED, State.RUNNING)) {
                 startSampling()
@@ -105,9 +109,7 @@ internal class DefaultTimeseriesCollector(
         ) {
             if (!isActive(generation)) return@scheduleSafe
             try {
-                synchronized(pipeline) {
-                    if (isActive(generation)) pipeline.execute()
-                }
+                pipeline.execute(rumContext)
             } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
                 internalLogger.log(
                     level = InternalLogger.Level.ERROR,

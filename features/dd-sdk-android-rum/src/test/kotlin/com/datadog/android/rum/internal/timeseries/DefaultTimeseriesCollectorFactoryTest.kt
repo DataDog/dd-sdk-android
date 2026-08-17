@@ -221,7 +221,7 @@ internal class DefaultTimeseriesCollectorFactoryTest {
     }
 
     @Test
-    fun `M propagate executor to the collector and rum context to the pipelines W create()`(
+    fun `M propagate executor and rum context to the collector W create()`(
         @LongForgery(min = 1L) fakeTotalRamBytes: Long
     ) {
         // Given
@@ -234,8 +234,8 @@ internal class DefaultTimeseriesCollectorFactoryTest {
         check(timeseries is DefaultTimeseriesCollector)
         assertThat(timeseries.scheduledExecutorService).isSameAs(mockExecutor)
         assertThat(
-            timeseries.pipelines.map { it.getFieldValue<RumContext, Pipeline<*>>("rumContext") }
-        ).containsOnly(fakeRumContext)
+            timeseries.getFieldValue<RumContext, DefaultTimeseriesCollector>("rumContext")
+        ).isSameAs(fakeRumContext)
     }
 
     @ParameterizedTest

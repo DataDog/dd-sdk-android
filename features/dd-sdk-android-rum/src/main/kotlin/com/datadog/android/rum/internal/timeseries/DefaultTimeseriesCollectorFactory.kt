@@ -44,12 +44,12 @@ internal class DefaultTimeseriesCollectorFactory(
         val pipelines = mutableListOf<Pipeline<*>>()
 
         if (TimeseriesType.CPU in configuration.enabledTypes) {
-            pipelines += createCpuPipeline(sessionType, rumContext)
+            pipelines += createCpuPipeline(sessionType)
         }
 
         if (TimeseriesType.MEMORY in configuration.enabledTypes) {
             if (totalRamBytes > 0L) {
-                pipelines += createMemoryPipeline(sessionType, rumContext)
+                pipelines += createMemoryPipeline(sessionType)
             } else {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
@@ -64,14 +64,12 @@ internal class DefaultTimeseriesCollectorFactory(
             internalLogger = sdkCore.internalLogger,
             collectInBackground = configuration.collectInBackground,
             scheduledExecutorService = scheduledExecutorService,
+            rumContext = rumContext,
             pipelines = pipelines
         )
     }
 
-    private fun createMemoryPipeline(
-        sessionType: RumSessionType,
-        rumContext: RumContext
-    ) = Pipeline(
+    private fun createMemoryPipeline(sessionType: RumSessionType) = Pipeline(
         sdkCore = sdkCore,
         reader = VitalReaderWrapper(
             vitalReader = MemoryVitalReader(internalLogger = sdkCore.internalLogger),
@@ -88,14 +86,10 @@ internal class DefaultTimeseriesCollectorFactory(
             internalLogger = sdkCore.internalLogger
         ),
         dataWriter = dataWriter,
-        rumContext = rumContext,
         insightsCollector = insightsCollector
     )
 
-    private fun createCpuPipeline(
-        sessionType: RumSessionType,
-        rumContext: RumContext
-    ) = Pipeline(
+    private fun createCpuPipeline(sessionType: RumSessionType) = Pipeline(
         sdkCore = sdkCore,
         reader = CpuDatapointReader(
             cpuStatReader = CpuStatReader(internalLogger = sdkCore.internalLogger),
@@ -111,7 +105,6 @@ internal class DefaultTimeseriesCollectorFactory(
             internalLogger = sdkCore.internalLogger
         ),
         dataWriter = dataWriter,
-        rumContext = rumContext,
         insightsCollector = insightsCollector
     )
 
