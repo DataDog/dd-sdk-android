@@ -23,7 +23,6 @@ class TimeseriesConfiguration internal constructor(
     @ExperimentalRumApi
     class Builder {
 
-        @Suppress("UnsafeThirdPartyFunctionCall") // Kotlin Array.toSet() is safe for enum values.
         private var enabledTypes: Set<TimeseriesType> = TimeseriesType.values().toSet()
 
         private var collectInBackground: Boolean = false
@@ -37,7 +36,6 @@ class TimeseriesConfiguration internal constructor(
          * @param types the timeseries types to collect.
          */
         fun collectOnly(vararg types: TimeseriesType): Builder = apply {
-            @Suppress("UnsafeThirdPartyFunctionCall") // Kotlin Array.toSet() is safe for enum values.
             enabledTypes = types.toSet()
         }
 
