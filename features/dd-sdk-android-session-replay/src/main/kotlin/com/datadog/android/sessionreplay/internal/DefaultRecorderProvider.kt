@@ -21,17 +21,37 @@ import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.widget.ActionBarContainer
 import androidx.appcompat.widget.SwitchCompat
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.SessionReplayInternalCallback
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.internal.composition.ActiveWindowSource
+import com.datadog.android.sessionreplay.internal.composition.AndroidSnapshotCaptureLifecycle
 import com.datadog.android.sessionreplay.internal.composition.CapturePipelineSelector
+import com.datadog.android.sessionreplay.internal.composition.CaptureSkippedFrameNotifier
+import com.datadog.android.sessionreplay.internal.composition.CaptureTimeBudget
+import com.datadog.android.sessionreplay.internal.composition.CapturedSnapshotProducer
 import com.datadog.android.sessionreplay.internal.composition.CompositionCapturePipeline
+import com.datadog.android.sessionreplay.internal.composition.CompositionChangeListener
+import com.datadog.android.sessionreplay.internal.composition.CompositionChangeset
+import com.datadog.android.sessionreplay.internal.composition.CompositionViewOnDrawInterceptor
+import com.datadog.android.sessionreplay.internal.composition.DefaultSnapshotCompletionProcessor
+import com.datadog.android.sessionreplay.internal.composition.HandlerCaptureMainThreadExecutor
+import com.datadog.android.sessionreplay.internal.composition.HandlerCaptureTaskScheduler
+import com.datadog.android.sessionreplay.internal.composition.ImmediateCapturedSnapshotProcessor
+import com.datadog.android.sessionreplay.internal.composition.ScheduledExecutorCaptureTaskScheduler
+import com.datadog.android.sessionreplay.internal.composition.SnapshotCaptureOrchestrator
+import com.datadog.android.sessionreplay.internal.composition.SnapshotCompletionQueue
+import com.datadog.android.sessionreplay.internal.composition.TimeBankCaptureTimeBudget
+import com.datadog.android.sessionreplay.internal.composition.TimeProviderCaptureTimeProvider
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
+import com.datadog.android.sessionreplay.internal.recorder.RecordingTimeBank
 import com.datadog.android.sessionreplay.internal.recorder.SessionReplayRecorder
+import com.datadog.android.sessionreplay.internal.recorder.TimeBank
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ActionBarContainerMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ButtonMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.CheckBoxMapper
@@ -72,7 +92,11 @@ internal class DefaultRecorderProvider(
     private val internalCallback: SessionReplayInternalCallback,
     private val heatmapsEnabled: Boolean,
     private val compositionTreeRecordingEnabled: Boolean,
-    private val compositionPipelineFactory: () -> Recorder = { CompositionCapturePipeline() }
+    private val compositionPipelineFactory: (() -> Recorder)? = null,
+    private val compositionSnapshotProducerFactory: (ActiveWindowSource) -> CapturedSnapshotProducer = {
+        CapturedSnapshotProducer { _, _ -> null }
+    },
+    private val recordingTimeBankFactory: () -> TimeBank = { RecordingTimeBank() }
 ) : RecorderProvider {
 
     override fun provideSessionReplayRecorder(
@@ -83,10 +107,23 @@ internal class DefaultRecorderProvider(
         application: Application,
         embeddedContentSlotRegistry: EmbeddedContentSlotRegistry
     ): Recorder {
+        if (heatmapsEnabled && compositionTreeRecordingEnabled) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { HEATMAPS_UNSUPPORTED_WITH_COMPOSITION_RECORDING_MESSAGE }
+            )
+        }
         val heatmapIdentifierRegistry = if (heatmapsEnabled) LazyHeatmapIdentifierRegistry(sdkCore) else null
         return CapturePipelineSelector(
             compositionEnabled = compositionTreeRecordingEnabled,
-            compositionFactory = compositionPipelineFactory,
+            compositionFactory = {
+                compositionPipelineFactory?.invoke() ?: createCompositionPipeline(
+                    recordWriter,
+                    rumContextProvider,
+                    application
+                )
+            },
             legacyFactory = {
                 SessionReplayRecorder(
                     application,
@@ -109,6 +146,64 @@ internal class DefaultRecorderProvider(
                 )
             }
         ).create()
+    }
+
+    private fun createCompositionPipeline(
+        recordWriter: RecordWriter,
+        rumContextProvider: RumContextProvider,
+        application: Application
+    ): Recorder {
+        val internalLogger = sdkCore.internalLogger
+        val timeProvider = TimeProviderCaptureTimeProvider(sdkCore.timeProvider)
+        val skippedFrameNotifier = CaptureSkippedFrameNotifier(sdkCore)
+        val windowSource = ActiveWindowSource()
+        val completionQueue = SnapshotCompletionQueue(
+            executorService = sdkCore.createSingleThreadExecutorService("sr-composition-processing"),
+            processor = DefaultSnapshotCompletionProcessor(
+                rumContextProvider = rumContextProvider,
+                recordWriter = recordWriter,
+                internalLogger = internalLogger
+            ),
+            internalLogger = internalLogger
+        )
+        val orchestrator = SnapshotCaptureOrchestrator(
+            producer = compositionSnapshotProducerFactory(windowSource),
+            processor = ImmediateCapturedSnapshotProcessor(),
+            consumer = completionQueue,
+            timeProvider = timeProvider,
+            captureScheduler = HandlerCaptureTaskScheduler(),
+            mainThreadExecutor = HandlerCaptureMainThreadExecutor(),
+            expiryScheduler = ScheduledExecutorCaptureTaskScheduler(
+                executorService = sdkCore.createScheduledExecutorService("sr-composition-expiry"),
+                internalLogger = internalLogger
+            ),
+            timeBudget = if (dynamicOptimizationEnabled) {
+                TimeBankCaptureTimeBudget(
+                    recordingTimeBankFactory(),
+                    skippedFrameNotifier::notifySkippedFrame
+                )
+            } else {
+                CaptureTimeBudget.UNLIMITED
+            },
+            internalLogger = internalLogger
+        )
+        val interceptor = CompositionViewOnDrawInterceptor(
+            windowSource = windowSource,
+            onWindowsChanged = CompositionChangeListener { windows ->
+                orchestrator.requestCapture(CompositionChangeset.of(windows))
+            },
+            internalLogger = internalLogger
+        )
+        return CompositionCapturePipeline(
+            orchestrator = orchestrator,
+            lifecycle = AndroidSnapshotCaptureLifecycle(
+                application = application,
+                interceptor = interceptor,
+                internalLogger = internalLogger,
+                currentActivity = internalCallback.getCurrentActivity()
+            ),
+            completionQueue = completionQueue
+        )
     }
 
     @Suppress("LongMethod")
@@ -267,5 +362,11 @@ internal class DefaultRecorderProvider(
         } else {
             null
         }
+    }
+
+    internal companion object {
+        internal const val HEATMAPS_UNSUPPORTED_WITH_COMPOSITION_RECORDING_MESSAGE = "Heatmaps are not " +
+            "supported by the composition-tree recording pipeline yet. No heatmap data will be recorded " +
+            "for this session."
     }
 }

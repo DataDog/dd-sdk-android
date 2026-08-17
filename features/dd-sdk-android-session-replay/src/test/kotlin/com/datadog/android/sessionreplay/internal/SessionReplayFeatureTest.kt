@@ -71,6 +71,7 @@ import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.stream.Stream
 
@@ -103,6 +104,9 @@ internal class SessionReplayFeatureTest {
     @Mock
     lateinit var mockExecutorService: ExecutorService
 
+    @Mock
+    lateinit var mockScheduledExecutorService: ScheduledExecutorService
+
     private lateinit var fakeSessionId: String
 
     private var fakeSampleRate: Float = 75f
@@ -117,6 +121,7 @@ internal class SessionReplayFeatureTest {
         whenever(mockExecutorService.execute(any())) doAnswer {
             it.getArgument<Runnable>(0).run()
         }
+        whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn mockScheduledExecutorService
 
         testedFeature = SessionReplayFeature(
             sdkCore = mockSdkCore,

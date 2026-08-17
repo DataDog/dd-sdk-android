@@ -17,19 +17,37 @@ internal class CapturePipelineSelector(
 }
 
 /**
- * Lifecycle entry point for the composition capture pipeline. Traversal and capture are added by
- * later workstreams; keeping this recorder isolated prevents legacy state from crossing pipelines.
+ * Lifecycle entry point for the composition capture pipeline. Platform callback wiring and
+ * traversal are added by later workstreams; keeping this recorder and its orchestration isolated
+ * prevents legacy state from crossing pipelines.
  */
-internal class CompositionCapturePipeline : Recorder {
-    override fun registerCallbacks() = Unit
+internal class CompositionCapturePipeline(
+    private val orchestrator: SnapshotCaptureOrchestrator,
+    private val lifecycle: CompositionCaptureLifecycle,
+    private val completionQueue: SnapshotCompletionQueue
+) : Recorder {
+    override fun registerCallbacks() {
+        lifecycle.registerCallbacks()
+    }
 
-    override fun unregisterCallbacks() = Unit
+    override fun unregisterCallbacks() {
+        lifecycle.unregisterCallbacks()
+    }
 
-    override fun stopProcessingRecords() = Unit
+    override fun stopProcessingRecords() {
+        orchestrator.shutdown()
+        completionQueue.stop()
+    }
 
-    override fun resumeRecorders() = Unit
+    override fun resumeRecorders() {
+        orchestrator.start()
+        lifecycle.start()
+    }
 
     override fun requestCapture(slotIds: Set<String>) = Unit
 
-    override fun stopRecorders() = Unit
+    override fun stopRecorders() {
+        lifecycle.stop()
+        orchestrator.stop()
+    }
 }

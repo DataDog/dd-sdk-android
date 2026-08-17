@@ -117,6 +117,32 @@ internal class CompositionCapturePipelineTest {
         assertThat(second.callbacksRegistered).isFalse()
     }
 
+    @Test
+    fun `M delegate recording lifecycle W composition pipeline is orchestrated`() {
+        // Given
+        val orchestrator = mock<SnapshotCaptureOrchestrator>()
+        val lifecycle = mock<CompositionCaptureLifecycle>()
+        val completionQueue = mock<SnapshotCompletionQueue>()
+        val pipeline = CompositionCapturePipeline(orchestrator, lifecycle, completionQueue)
+
+        // When
+        pipeline.registerCallbacks()
+        pipeline.resumeRecorders()
+        pipeline.stopRecorders()
+        pipeline.stopProcessingRecords()
+        pipeline.unregisterCallbacks()
+
+        // Then
+        verify(lifecycle).registerCallbacks()
+        verify(orchestrator).start()
+        verify(lifecycle).start()
+        verify(lifecycle).stop()
+        verify(orchestrator).stop()
+        verify(orchestrator).shutdown()
+        verify(completionQueue).stop()
+        verify(lifecycle).unregisterCallbacks()
+    }
+
     private class StatefulRecorder : Recorder {
         var callbacksRegistered = false
 
