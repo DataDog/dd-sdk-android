@@ -16,6 +16,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.internal.remote.model.RemoteConfigSyncMetadata
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.attributes.LocalAttribute
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
@@ -761,6 +762,52 @@ internal class TelemetryEventHandlerTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
             assertThat(firstValue).hasTrackResourceHeaders(
                 TelemetryConfigurationEvent.TrackResourceHeaders.CUSTOM
+            )
+        }
+    }
+
+    @Test
+    fun `M omit remoteConfiguration W handleEvent() { configuration, no sync metadata }`(
+        @Forgery fakeConfiguration: InternalTelemetryEvent.Configuration
+    ) {
+        // Given
+        whenever(mockSdkCore.remoteConfigurationSyncMetadata) doReturn null
+        val configRawEvent = RumRawEvent.TelemetryEventWrapper(fakeConfiguration, eventTime = fakeEventTime)
+
+        // When
+        testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
+
+        // Then
+        argumentCaptor<TelemetryConfigurationEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            assertThat(firstValue).hasRemoteConfiguration(null)
+        }
+    }
+
+    @Test
+    fun `M set remoteConfiguration W handleEvent() { configuration, sync metadata available }`(
+        @Forgery fakeConfiguration: InternalTelemetryEvent.Configuration,
+        @Forgery fakeSyncMetadata: RemoteConfigSyncMetadata
+    ) {
+        // Given
+        whenever(mockSdkCore.remoteConfigurationSyncMetadata) doReturn fakeSyncMetadata
+        val configRawEvent = RumRawEvent.TelemetryEventWrapper(fakeConfiguration, eventTime = fakeEventTime)
+
+        // When
+        testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
+
+        // Then
+        argumentCaptor<TelemetryConfigurationEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            assertThat(firstValue).hasRemoteConfiguration(
+                TelemetryConfigurationEvent.RemoteConfiguration(
+                    configId = fakeSyncMetadata.configId,
+                    versionId = fakeSyncMetadata.versionId,
+                    lastModified = fakeSyncMetadata.lastModified,
+                    lastSynced = fakeSyncMetadata.lastSynced,
+                    firstApplied = fakeSyncMetadata.firstApplied,
+                    syncId = fakeSyncMetadata.syncId
+                )
             )
         }
     }

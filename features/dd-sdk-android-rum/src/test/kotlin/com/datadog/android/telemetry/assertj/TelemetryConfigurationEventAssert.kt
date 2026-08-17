@@ -222,6 +222,18 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         return this
     }
 
+    fun hasRemoteConfiguration(
+        expected: TelemetryConfigurationEvent.RemoteConfiguration?
+    ): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.remoteConfiguration)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.configuration.remoteConfiguration $expected " +
+                    "but was ${actual.telemetry.configuration.remoteConfiguration}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasTrackLongTasks(expected: Boolean?): TelemetryConfigurationEventAssert {
         assertThat(actual.telemetry.configuration.trackNativeLongTasks)
             .overridingErrorMessage(

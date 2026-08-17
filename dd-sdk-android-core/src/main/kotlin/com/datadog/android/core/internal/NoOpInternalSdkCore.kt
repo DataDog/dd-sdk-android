@@ -19,6 +19,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.logger.SdkInternalLogger
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.remote.model.RemoteConfigSyncMetadata
 import com.datadog.android.core.internal.remote.model.RemoteConfiguration
 import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.internal.time.TimeProvider
@@ -87,6 +88,8 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
     override val appUptimeNs: Long
         get() = 0
     override val remoteConfiguration: RemoteConfiguration?
+        get() = null
+    override val remoteConfigurationSyncMetadata: RemoteConfigSyncMetadata?
         get() = null
 
     // endregion

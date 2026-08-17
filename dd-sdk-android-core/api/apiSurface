@@ -238,6 +238,7 @@ interface com.datadog.android.core.InternalSdkCore : com.datadog.android.api.fea
   val appStartTimeNs: Long
   val appUptimeNs: Long
   val remoteConfiguration: com.datadog.android.core.internal.remote.model.RemoteConfiguration?
+  val remoteConfigurationSyncMetadata: com.datadog.android.core.internal.remote.model.RemoteConfigSyncMetadata?
   fun writeLastViewEvent(ByteArray)
   fun deleteLastViewEvent()
   fun writeLastFatalAnrSent(Long)
@@ -341,6 +342,11 @@ fun java.io.File.lengthSafe(com.datadog.android.api.InternalLogger): Long
 fun java.io.File.readTextSafe(java.nio.charset.Charset = Charsets.UTF_8, com.datadog.android.api.InternalLogger): String?
 fun java.io.File.readBytesSafe(com.datadog.android.api.InternalLogger): ByteArray?
 fun java.io.File.readLinesSafe(java.nio.charset.Charset = Charsets.UTF_8, com.datadog.android.api.InternalLogger): List<String>?
+data class com.datadog.android.core.internal.remote.model.RemoteConfigSyncMetadata
+  constructor(String, String?, Long?, Long, Long?, String)
+  fun toJsonString(): String
+  companion object 
+    fun fromJson(String): RemoteConfigSyncMetadata
 interface com.datadog.android.core.internal.storage.TelemetryAwareEventBatchWriter : com.datadog.android.api.storage.EventBatchWriter
   fun write(com.datadog.android.api.storage.RawBatchEvent, ByteArray?, com.datadog.android.api.storage.EventType, com.datadog.android.internal.telemetry.TelemetryContext): Boolean
 fun Collection<ByteArray>.join(ByteArray, ByteArray = ByteArray(0), ByteArray = ByteArray(0), com.datadog.android.api.InternalLogger): ByteArray

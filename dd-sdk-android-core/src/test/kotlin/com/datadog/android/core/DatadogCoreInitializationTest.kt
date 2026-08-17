@@ -110,7 +110,7 @@ internal class DatadogCoreInitializationTest {
         }
 
         mockExecutorServiceFactory = FlushableExecutorService.Factory { _, _, _, _ -> mockPersistenceExecutorService }
-        mockRemoteConfigServiceFactory = RemoteConfigService.Factory { _, _, _, _, _, _ -> mockRemoteConfigService }
+        mockRemoteConfigServiceFactory = RemoteConfigService.Factory { _, _, _, _, _, _, _ -> mockRemoteConfigService }
     }
 
     @AfterEach
@@ -792,7 +792,7 @@ internal class DatadogCoreInitializationTest {
             fakeInstanceId,
             fakeInstanceName,
             executorServiceFactory = mockExecutorServiceFactory,
-            remoteConfigServiceFactory = { _, _, fetcher, _, _, _ ->
+            remoteConfigServiceFactory = { _, _, fetcher, _, _, _, _ ->
                 capturedFetcher = fetcher
                 mockRemoteConfigService
             }

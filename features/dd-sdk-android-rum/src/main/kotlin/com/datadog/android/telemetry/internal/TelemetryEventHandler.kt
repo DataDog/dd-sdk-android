@@ -351,6 +351,18 @@ internal class TelemetryEventHandler(
         val tnsTimeBasedThreshold = (rumConfig?.initialResourceIdentifier as? TimeBasedInitialResourceIdentifier)
             ?.timeThresholdInMilliseconds
 
+        val remoteConfigSyncMetadata = sdkCore.remoteConfigurationSyncMetadata
+        val remoteConfiguration = remoteConfigSyncMetadata?.let {
+            TelemetryConfigurationEvent.RemoteConfiguration(
+                configId = it.configId,
+                versionId = it.versionId,
+                lastModified = it.lastModified,
+                lastSynced = it.lastSynced,
+                firstApplied = it.firstApplied,
+                syncId = it.syncId
+            )
+        }
+
         return TelemetryConfigurationEvent(
             dd = TelemetryConfigurationEvent.Dd(),
             date = timestamp,
@@ -410,7 +422,8 @@ internal class TelemetryEventHandler(
                     numberOfDisplays = datadogContext.deviceInfo.numberOfDisplays?.toLong(),
                     traceSampleRate = okhttpInterceptorSampleRate?.toLong(),
                     selectedTracingPropagators = tracingHeaderTypes?.toSelectedTracingPropagators(),
-                    trackResourceHeaders = trackResourceHeaders
+                    trackResourceHeaders = trackResourceHeaders,
+                    remoteConfiguration = remoteConfiguration
                 )
             )
         )
