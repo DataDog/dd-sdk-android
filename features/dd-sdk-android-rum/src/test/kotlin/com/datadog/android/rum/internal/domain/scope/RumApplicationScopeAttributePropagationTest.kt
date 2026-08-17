@@ -27,7 +27,7 @@ import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollect
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
-import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
+import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollectorFactory
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -136,12 +136,6 @@ internal class RumApplicationScopeAttributePropagationTest {
     @Mock
     lateinit var mockSessionSampler: Sampler<String>
 
-    @Mock
-    lateinit var mockTimeseriesCollectorFactory: TimeseriesCollector.Factory
-
-    @Mock
-    lateinit var mockTimeseriesCollector: TimeseriesCollector
-
     @Forgery
     lateinit var fakeEventTime: Time
 
@@ -201,7 +195,6 @@ internal class RumApplicationScopeAttributePropagationTest {
         fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
         whenever(mockSessionSampler.getSampleRate()).thenReturn(fakeSampleRate)
         whenever(mockSessionSampler.sample(any())).thenReturn(true)
-        whenever(mockTimeseriesCollectorFactory.create(any(), any(), any())) doReturn mockTimeseriesCollector
         testedScope = RumApplicationScope(
             applicationId = fakeApplicationId,
             sdkCore = rumMonitor.mockSdkCore,
@@ -224,7 +217,7 @@ internal class RumApplicationScopeAttributePropagationTest {
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
             heatmapIdentifierRegistry = null,
-            timeseriesCollectorFactory = mockTimeseriesCollectorFactory
+            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
         )
     }
 

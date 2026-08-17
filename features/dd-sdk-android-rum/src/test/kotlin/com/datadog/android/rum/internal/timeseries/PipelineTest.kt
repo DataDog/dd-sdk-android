@@ -15,15 +15,16 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
+import com.datadog.android.rum.internal.timeseries.factory.EventFactory
 import com.datadog.android.rum.internal.timeseries.provider.DataPointsReader
-import com.datadog.android.rum.internal.timeseries.serializer.JsonSerializer
-import com.datadog.android.rum.internal.timeseries.serializer.TimeseriesAttributes
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.forge.aThrowable
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -55,11 +56,14 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class PipelineTest {
 
+    @Forgery
+    lateinit var fakeRumContext: RumContext
+
     @Mock
     lateinit var mockReader: DataPointsReader<Double>
 
     @Mock
-    lateinit var mockSerializer: JsonSerializer<Double>
+    lateinit var mockEventFactory: EventFactory<Double, JsonObject>
 
     @Mock
     lateinit var mockSdkCore: FeatureSdkCore
@@ -93,6 +97,7 @@ internal class PipelineTest {
 
     @BeforeEach
     fun `set up`() {
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
             it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
@@ -102,15 +107,16 @@ internal class PipelineTest {
             it.getArgument<(EventBatchWriter) -> Unit>(0).invoke(mockEventBatchWriter)
         }
         whenever(mockDataWriter.write(any(), any(), any())) doReturn true
+        whenever(mockEventFactory.eventName) doReturn "view.cpu"
 
         buffer = Buffer(fakeBufferSize)
         testedPipeline = Pipeline(
             sdkCore = mockSdkCore,
             reader = mockReader,
             buffer = buffer,
-            serializer = mockSerializer,
+            eventFactory = mockEventFactory,
             dataWriter = mockDataWriter,
-            internalLogger = mockInternalLogger,
+            rumContext = fakeRumContext,
             insightsCollector = mockInsightsCollector
         )
     }
@@ -162,7 +168,8 @@ internal class PipelineTest {
         val fakeTimeseriesName = "view.cpu"
         val fakeJson = fakeTimeseriesJson(fakeTimeseriesName)
         whenever(mockReader.read()) doReturn fakePoint
-        whenever(mockSerializer.serialize(any(), any())) doReturn fakeJson
+        whenever(mockEventFactory.create(any(), any(), any())) doReturn fakeJson
+        whenever(mockEventFactory.eventName) doReturn fakeTimeseriesName
         repeat(fakeBufferSize - 1) { testedPipeline.execute() }
 
         // When
@@ -188,10 +195,10 @@ internal class PipelineTest {
     }
 
     @Test
-    fun `M not flush W execute() { serializer returns null }`(forge: Forge) {
+    fun `M not flush W execute() { event factory returns null }`(forge: Forge) {
         // Given
         whenever(mockReader.read()) doReturn forge.getForgery<DataPoint<Double>>()
-        whenever(mockSerializer.serialize(any(), any())) doReturn null
+        whenever(mockEventFactory.create(any(), any(), any())) doReturn null
         repeat(fakeBufferSize - 1) { testedPipeline.execute() }
 
         // When
@@ -213,7 +220,8 @@ internal class PipelineTest {
         val fakeTimeseriesName = "view.memory"
         val fakeJson = fakeTimeseriesJson(fakeTimeseriesName)
         whenever(mockReader.read()) doReturn fakePoint
-        whenever(mockSerializer.serialize(any(), any())) doReturn fakeJson
+        whenever(mockEventFactory.create(any(), any(), any())) doReturn fakeJson
+        whenever(mockEventFactory.eventName) doReturn fakeTimeseriesName
         val sampleCount = fakeBufferSize - 1
         repeat(sampleCount) { testedPipeline.execute() }
 
@@ -222,7 +230,7 @@ internal class PipelineTest {
 
         // Then
         val captor = argumentCaptor<List<DataPoint<Double>>>()
-        verify(mockSerializer).serialize(any(), captor.capture())
+        verify(mockEventFactory).create(any(), eq(fakeRumContext), captor.capture())
         assertThat(captor.firstValue).hasSize(sampleCount).allMatch { it == fakePoint }
         verify(mockDataWriter).write(mockEventBatchWriter, fakeJson, EventType.DEFAULT)
         verify(mockInsightsCollector).onTimeseries(fakeTimeseriesName)
@@ -234,7 +242,7 @@ internal class PipelineTest {
         // Given
         val fakePoint = forge.getForgery<DataPoint<Double>>()
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer { Unit }
-        whenever(mockSerializer.serialize(any(), any())) doReturn fakeTimeseriesJson("view.cpu")
+        whenever(mockEventFactory.create(any(), any(), any())) doReturn fakeTimeseriesJson("view.cpu")
         whenever(mockReader.read()) doReturn fakePoint
         testedPipeline.execute()
 
@@ -243,13 +251,13 @@ internal class PipelineTest {
 
         // Then
         assertThat(buffer.drain()).isEmpty()
-        verifyNoInteractions(mockSerializer)
+        verifyNoInteractions(mockEventFactory)
         verifyNoInteractions(mockDataWriter)
         verifyNoInteractions(mockInsightsCollector)
     }
 
     @Test
-    fun `M pass only pre-flush points to serializer W execute() { point added before write context callback invoked }`(
+    fun `M pass pre-flush points to event factory W execute() { point added before callback }`(
         forge: Forge
     ) {
         // Given
@@ -257,7 +265,7 @@ internal class PipelineTest {
         val fakeNextPoint = forge.getForgery<DataPoint<Double>>()
         val callbackCaptor = argumentCaptor<(DatadogContext, EventWriteScope) -> Unit>()
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer { Unit }
-        whenever(mockSerializer.serialize(any(), any())) doReturn fakeTimeseriesJson("view.cpu")
+        whenever(mockEventFactory.create(any(), any(), any())) doReturn fakeTimeseriesJson("view.cpu")
         whenever(mockReader.read()) doReturn fakePoint
         testedPipeline.execute()
         testedPipeline.flush()
@@ -270,23 +278,40 @@ internal class PipelineTest {
 
         // Then
         val dataPointsCaptor = argumentCaptor<List<DataPoint<Double>>>()
-        verify(mockSerializer).serialize(eq(mockDatadogContext), dataPointsCaptor.capture())
+        verify(mockEventFactory).create(eq(mockDatadogContext), eq(fakeRumContext), dataPointsCaptor.capture())
         assertThat(dataPointsCaptor.firstValue).containsExactly(fakePoint)
         assertThat(buffer.drain()).containsExactly(fakeNextPoint)
     }
 
     @Test
-    fun `M pass datadogContext from withWriteContext W flush()`(forge: Forge) {
+    fun `M pass contexts to event factory W flush()`(forge: Forge) {
         // Given
         whenever(mockReader.read()) doReturn forge.getForgery<DataPoint<Double>>()
-        whenever(mockSerializer.serialize(any(), any())) doReturn fakeTimeseriesJson("view.cpu")
+        whenever(mockEventFactory.create(any(), any(), any())) doReturn fakeTimeseriesJson("view.cpu")
         testedPipeline.execute()
 
         // When
         testedPipeline.flush()
 
         // Then
-        verify(mockSerializer).serialize(eq(mockDatadogContext), any())
+        verify(mockEventFactory).create(eq(mockDatadogContext), eq(fakeRumContext), any())
+    }
+
+    @Test
+    fun `M request event creation feature contexts W flush()`(forge: Forge) {
+        // Given
+        whenever(mockReader.read()) doReturn forge.getForgery<DataPoint<Double>>()
+        whenever(mockEventFactory.create(any(), any(), any())) doReturn fakeTimeseriesJson("view.cpu")
+        testedPipeline.execute()
+
+        // When
+        testedPipeline.flush()
+
+        // Then
+        verify(mockRumFeatureScope).withWriteContext(
+            eq(setOf(Feature.SESSION_REPLAY_FEATURE_NAME, Feature.TRACING_FEATURE_NAME)),
+            any()
+        )
     }
 
     @Test
@@ -300,11 +325,11 @@ internal class PipelineTest {
     }
 
     @Test
-    fun `M log error W flush() { serializer throws }`(forge: Forge) {
+    fun `M log error W flush() { event factory throws }`(forge: Forge) {
         // Given
         val fakeThrowable = forge.aThrowable()
         whenever(mockReader.read()) doReturn forge.getForgery<DataPoint<Double>>()
-        whenever(mockSerializer.serialize(any(), any())) doThrow fakeThrowable
+        whenever(mockEventFactory.create(any(), any(), any())) doThrow fakeThrowable
         testedPipeline.execute()
 
         // When
@@ -314,7 +339,7 @@ internal class PipelineTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            message = "Timeseries serialization failed",
+            message = "Timeseries event creation failed",
             throwable = fakeThrowable
         )
         verifyNoInteractions(mockDataWriter)
@@ -328,7 +353,7 @@ internal class PipelineTest {
         val fakeJson = fakeTimeseriesJson("view.cpu")
         val writeBlockCaptor = argumentCaptor<(EventBatchWriter) -> Unit>()
         whenever(mockReader.read()) doReturn forge.getForgery<DataPoint<Double>>()
-        whenever(mockSerializer.serialize(any(), any())) doReturn fakeJson
+        whenever(mockEventFactory.create(any(), any(), any())) doReturn fakeJson
         whenever(mockDataWriter.write(any(), any(), any())) doThrow fakeThrowable
         whenever(mockEventWriteScope.invoke(any())) doAnswer { Unit }
         testedPipeline.execute()
@@ -353,7 +378,7 @@ internal class PipelineTest {
         // Given
         val fakeJson = fakeTimeseriesJson("view.cpu")
         whenever(mockReader.read()) doReturn forge.getForgery<DataPoint<Double>>()
-        whenever(mockSerializer.serialize(any(), any())) doReturn fakeJson
+        whenever(mockEventFactory.create(any(), any(), any())) doReturn fakeJson
         whenever(mockDataWriter.write(any(), any(), any())) doReturn false
         testedPipeline.execute()
 
@@ -367,12 +392,9 @@ internal class PipelineTest {
 
     // endregion
 
+    // Pipeline forwards whatever the event factory returns without inspecting it, so the shape
+    // only needs to be a distinct non-null object per name.
     private fun fakeTimeseriesJson(name: String): JsonObject = JsonObject().apply {
-        add(
-            TimeseriesAttributes.KEY_TIMESERIES,
-            JsonObject().apply {
-                addProperty("name", name)
-            }
-        )
+        addProperty("name", name)
     }
 }

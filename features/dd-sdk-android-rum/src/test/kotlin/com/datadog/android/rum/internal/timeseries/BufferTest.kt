@@ -69,7 +69,7 @@ internal class BufferTest {
     }
 
     @Test
-    fun `M return null W drain() { buffer is empty }`(@IntForgery(min = 1, max = 256) fakeSize: Int) {
+    fun `M return empty list W drain() { buffer is empty }`(@IntForgery(min = 1, max = 256) fakeSize: Int) {
         // Given
         val testedBuffer = Buffer<Double>(fakeSize)
 
@@ -100,19 +100,20 @@ internal class BufferTest {
     }
 
     @Test
-    fun `M return immutable snapshot W drain() { caller cannot affect internal state }`(
-        @IntForgery(min = 1, max = 16) fakeSize: Int,
+    fun `M return a detached copy W drain() { buffer is reused afterwards }`(
+        @IntForgery(min = 2, max = 16) fakeSize: Int,
         forge: Forge
     ) {
         // Given
         val testedBuffer = Buffer<Double>(fakeSize)
-        repeat(fakeSize) { testedBuffer.add(forge.getForgery<DataPoint<Double>>()) }
+        val fakePoints = (0 until fakeSize).map { forge.getForgery<DataPoint<Double>>() }
+        fakePoints.forEach { testedBuffer.add(it) }
         val drained = testedBuffer.drain()
 
-        // When - the buffer should be cleared after drain
+        // When
         testedBuffer.add(forge.getForgery<DataPoint<Double>>())
 
-        // Then - drained list size unchanged regardless of further mutations
-        assertThat(drained).hasSize(fakeSize)
+        // Then
+        assertThat(drained).containsExactlyElementsOf(fakePoints)
     }
 }

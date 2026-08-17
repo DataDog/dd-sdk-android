@@ -22,7 +22,7 @@ internal abstract class DataPointsReader<T : Any>(private val timeProvider: Time
     open fun read(): DataPoint<T>? = readValue()?.let { value ->
         DataPoint(
             value = value,
-            timestampNs = TimeUnit.MILLISECONDS.toNanos(timeProvider.getDeviceTimestampMillis())
+            timestampNs = TimeUnit.MILLISECONDS.toNanos(timeProvider.getServerTimestampMillis())
         )
     }
 }

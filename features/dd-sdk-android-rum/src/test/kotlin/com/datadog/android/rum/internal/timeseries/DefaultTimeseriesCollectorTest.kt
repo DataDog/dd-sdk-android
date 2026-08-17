@@ -15,13 +15,15 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumViewType
+import com.datadog.android.rum.internal.timeseries.factory.EventFactory
 import com.datadog.android.rum.internal.timeseries.provider.DataPointsReader
-import com.datadog.android.rum.internal.timeseries.serializer.JsonSerializer
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -87,10 +89,13 @@ internal class DefaultTimeseriesCollectorTest {
     lateinit var mockReaderB: DataPointsReader<Double>
 
     @Mock
-    lateinit var mockSerializerA: JsonSerializer<Double>
+    lateinit var mockEventFactoryA: EventFactory<Double, Any>
 
     @Mock
-    lateinit var mockSerializerB: JsonSerializer<Double>
+    lateinit var mockEventFactoryB: EventFactory<Double, Any>
+
+    @Forgery
+    lateinit var fakeRumContext: RumContext
 
     private lateinit var bufferA: Buffer<Double>
     private lateinit var bufferB: Buffer<Double>
@@ -124,8 +129,8 @@ internal class DefaultTimeseriesCollectorTest {
 
         bufferA = Buffer(fakeBufferSize)
         bufferB = Buffer(fakeBufferSize)
-        pipelineA = Pipeline(mockSdkCore, mockReaderA, bufferA, mockSerializerA, mockDataWriter, mockInternalLogger)
-        pipelineB = Pipeline(mockSdkCore, mockReaderB, bufferB, mockSerializerB, mockDataWriter, mockInternalLogger)
+        pipelineA = createPipeline(mockReaderA, bufferA, mockEventFactoryA)
+        pipelineB = createPipeline(mockReaderB, bufferB, mockEventFactoryB)
 
         testedTimeseriesCollector = DefaultTimeseriesCollector(
             pipelines = listOf(pipelineA, pipelineB),
@@ -182,14 +187,14 @@ internal class DefaultTimeseriesCollectorTest {
     }
 
     @Test
-    fun `M log error and continue W onSessionStop() { serializer throws on pipelineA }`(forge: Forge) {
+    fun `M log error and continue W onSessionStop() { event factory throws on pipelineA }`(forge: Forge) {
         // Given
         val fakeError = RuntimeException("serializer failure")
         val fakeJson = JsonObject().apply { addProperty("k", "v") }
         whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
         whenever(mockReaderB.read()) doReturn forge.getForgery<DataPoint<Double>>()
-        whenever(mockSerializerA.serialize(any(), any())) doThrow fakeError
-        whenever(mockSerializerB.serialize(any(), any())) doReturn fakeJson
+        whenever(mockEventFactoryA.create(any(), any(), any())) doThrow fakeError
+        whenever(mockEventFactoryB.create(any(), any(), any())) doReturn fakeJson
         testedTimeseriesCollector.onSessionStart()
         val runnableA = captureScheduledRunnableForInterval(fakeIntervalAMs)
         val runnableB = captureScheduledRunnableForInterval(fakeIntervalBMs)
@@ -203,7 +208,7 @@ internal class DefaultTimeseriesCollectorTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            "Timeseries serialization failed",
+            "Timeseries event creation failed",
             fakeError
         )
         verify(mockDataWriter).write(any(), eq(fakeJson), eq(EventType.DEFAULT))
@@ -214,7 +219,7 @@ internal class DefaultTimeseriesCollectorTest {
         // Given
         val fakeJson = JsonObject().apply { addProperty("k", "v") }
         whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
-        whenever(mockSerializerA.serialize(any(), any())) doReturn fakeJson
+        whenever(mockEventFactoryA.create(any(), any(), any())) doReturn fakeJson
         testedTimeseriesCollector.onSessionStart()
         val runnableA = captureScheduledRunnableForInterval(fakeIntervalAMs)
         runnableA.run()
@@ -223,7 +228,7 @@ internal class DefaultTimeseriesCollectorTest {
         testedTimeseriesCollector.onSessionStop()
 
         // Then
-        verify(mockSerializerA).serialize(any(), any())
+        verify(mockEventFactoryA).create(any(), any(), any())
         verify(mockDataWriter).write(any(), eq(fakeJson), eq(EventType.DEFAULT))
     }
 
@@ -234,7 +239,7 @@ internal class DefaultTimeseriesCollectorTest {
         val dataPoints = List(fakeBufferSize) { element }
         val fakeJson = JsonObject().apply { addProperty("a", "1") }
         whenever(mockReaderA.read()) doReturn element
-        whenever(mockSerializerA.serialize(any(), eq(dataPoints))) doReturn fakeJson
+        whenever(mockEventFactoryA.create(any(), any(), eq(dataPoints))) doReturn fakeJson
 
         testedTimeseriesCollector.onSessionStart()
         val runnableA = captureScheduledRunnableForInterval(fakeIntervalAMs)
@@ -243,7 +248,7 @@ internal class DefaultTimeseriesCollectorTest {
         repeat(fakeBufferSize) { runnableA.run() }
 
         // Then
-        verify(mockSerializerA).serialize(any(), any())
+        verify(mockEventFactoryA).create(any(), any(), any())
         verify(mockDataWriter).write(any(), eq(fakeJson), eq(EventType.DEFAULT))
     }
 
@@ -273,15 +278,15 @@ internal class DefaultTimeseriesCollectorTest {
         runnableA.run()
 
         // Then
-        verify(mockSerializerA, never()).serialize(any(), any())
+        verify(mockEventFactoryA, never()).create(any(), any(), any())
         verify(mockDataWriter, never()).write(any(), any(), any())
     }
 
     @Test
-    fun `M skip writer W sample tick { serializer returns null }`(forge: Forge) {
+    fun `M skip writer W sample tick { event factory returns null }`(forge: Forge) {
         // Given - fill the buffer so Pipeline.drain() reaches the serializer; serializer returns null
         whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
-        whenever(mockSerializerA.serialize(any(), any())) doReturn null
+        whenever(mockEventFactoryA.create(any(), any(), any())) doReturn null
         testedTimeseriesCollector.onSessionStart()
         val runnableA = captureScheduledRunnableForInterval(fakeIntervalAMs)
 
@@ -289,7 +294,7 @@ internal class DefaultTimeseriesCollectorTest {
         repeat(fakeBufferSize) { runnableA.run() }
 
         // Then
-        verify(mockSerializerA).serialize(any(), any())
+        verify(mockEventFactoryA).create(any(), any(), any())
         verify(mockDataWriter, never()).write(any(), any(), any())
     }
 
@@ -393,8 +398,7 @@ internal class DefaultTimeseriesCollectorTest {
         whenever(mockBuffer.isFull()) doReturn true
         whenever(mockBuffer.drain()) doThrow fakeError
         whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
-        val pipeline =
-            Pipeline(mockSdkCore, mockReaderA, mockBuffer, mockSerializerA, mockDataWriter, mockInternalLogger)
+        val pipeline = createPipeline(mockReaderA, mockBuffer, mockEventFactoryA)
         val timeseries = DefaultTimeseriesCollector(
             pipelines = listOf(pipeline),
             internalLogger = mockInternalLogger,
@@ -420,12 +424,12 @@ internal class DefaultTimeseriesCollectorTest {
     }
 
     @Test
-    fun `M log error and reschedule W sample tick { serializer throws }`(forge: Forge) {
+    fun `M log error and reschedule W sample tick { event factory throws }`(forge: Forge) {
         // Given — serializer throws inside Pipeline's own try/catch: Pipeline logs it itself
         // and the tick completes normally, so the sampling chain reschedules as usual.
         val fakeError = RuntimeException("serializer failure")
         whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
-        whenever(mockSerializerA.serialize(any(), any())) doThrow fakeError
+        whenever(mockEventFactoryA.create(any(), any(), any())) doThrow fakeError
         testedTimeseriesCollector.onSessionStart()
         val runnableA = captureScheduledRunnableForInterval(fakeIntervalAMs)
 
@@ -438,7 +442,7 @@ internal class DefaultTimeseriesCollectorTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            "Timeseries serialization failed",
+            "Timeseries event creation failed",
             fakeError
         )
         verify(mockDataWriter, never()).write(any(), any(), any())
@@ -596,6 +600,19 @@ internal class DefaultTimeseriesCollectorTest {
         verify(mockExecutor, times(2))
             .schedule(any<Runnable>(), eq(fakeIntervalBMs), eq(TimeUnit.MILLISECONDS))
     }
+
+    private fun createPipeline(
+        reader: DataPointsReader<Double>,
+        buffer: Buffer<Double>,
+        eventFactory: EventFactory<Double, Any>
+    ) = Pipeline(
+        sdkCore = mockSdkCore,
+        reader = reader,
+        buffer = buffer,
+        eventFactory = eventFactory,
+        dataWriter = mockDataWriter,
+        rumContext = fakeRumContext
+    )
 
     private fun captureScheduledRunnableForInterval(intervalMs: Long): Runnable {
         val captor = argumentCaptor<Runnable>()
