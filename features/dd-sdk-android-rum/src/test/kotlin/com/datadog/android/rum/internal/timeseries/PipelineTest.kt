@@ -19,7 +19,6 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.timeseries.factory.EventFactory
 import com.datadog.android.rum.internal.timeseries.provider.DataPointsReader
-import com.datadog.android.rum.internal.timeseries.serializer.TimeseriesAttributes
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.forge.aThrowable
@@ -393,12 +392,9 @@ internal class PipelineTest {
 
     // endregion
 
+    // Pipeline forwards whatever the event factory returns without inspecting it, so the shape
+    // only needs to be a distinct non-null object per name.
     private fun fakeTimeseriesJson(name: String): JsonObject = JsonObject().apply {
-        add(
-            TimeseriesAttributes.KEY_TIMESERIES,
-            JsonObject().apply {
-                addProperty(TimeseriesAttributes.KEY_NAME, name)
-            }
-        )
+        addProperty("name", name)
     }
 }
