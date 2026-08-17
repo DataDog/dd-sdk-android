@@ -6,115 +6,244 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
+import com.datadog.android.utils.verifyLog
+import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.quality.Strictness
 
+@Extensions(
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class)
+)
+@MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(ForgeConfigurator::class)
 internal class CompositionCapturePipelineTest {
+
+    @Mock
+    lateinit var mockLegacyRecorder: Recorder
+
+    @Mock
+    lateinit var mockCompositionRecorder: Recorder
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
 
     @Test
     fun `M select only legacy pipeline W create { flag disabled }`() {
         // Given
-        val legacy = mock<Recorder>()
-        var legacyConstructions = 0
         var compositionConstructions = 0
-        val selector = CapturePipelineSelector(
+        val testedSelector = CapturePipelineSelector(
             compositionEnabled = false,
-            legacyFactory = {
-                legacyConstructions++
-                legacy
-            },
+            legacyFactory = { mockLegacyRecorder },
             compositionFactory = {
                 compositionConstructions++
-                mock()
+                mockCompositionRecorder
             }
         )
 
         // When
-        val result = selector.create()
+        val result = testedSelector.create()
 
         // Then
-        assertThat(result).isSameAs(legacy)
-        assertThat(legacyConstructions).isEqualTo(1)
+        assertThat(result).isSameAs(mockLegacyRecorder)
         assertThat(compositionConstructions).isZero()
+        verifyNoInteractions(mockCompositionRecorder)
     }
 
     @Test
     fun `M select only composition pipeline W create { flag enabled }`() {
         // Given
-        val composition = mock<Recorder>()
         var legacyConstructions = 0
-        var compositionConstructions = 0
-        val selector = CapturePipelineSelector(
+        val testedSelector = CapturePipelineSelector(
             compositionEnabled = true,
             legacyFactory = {
                 legacyConstructions++
-                mock()
+                mockLegacyRecorder
             },
-            compositionFactory = {
-                compositionConstructions++
-                composition
-            }
+            compositionFactory = { mockCompositionRecorder }
         )
 
         // When
-        val result = selector.create()
+        val result = testedSelector.create()
 
         // Then
-        assertThat(result).isSameAs(composition)
+        assertThat(result).isSameAs(mockCompositionRecorder)
         assertThat(legacyConstructions).isZero()
-        assertThat(compositionConstructions).isEqualTo(1)
+        verifyNoInteractions(mockLegacyRecorder)
     }
 
     @Test
-    fun `M keep recording cycle on selected pipeline W invoke recorder lifecycle`() {
+    fun `M keep recording cycle on selected pipeline W invoke recorder lifecycle`(
+        @IntForgery(min = 1, max = 5) fakeRecordingCycles: Int
+    ) {
         // Given
-        val legacy = mock<Recorder>()
         var compositionConstructions = 0
-        val recorder = CapturePipelineSelector(
+        val testedRecorder = CapturePipelineSelector(
             compositionEnabled = false,
-            legacyFactory = { legacy },
+            legacyFactory = { mockLegacyRecorder },
             compositionFactory = {
                 compositionConstructions++
-                mock()
+                mockCompositionRecorder
             }
         ).create()
 
         // When
-        recorder.registerCallbacks()
-        recorder.stopProcessingRecords()
-        recorder.resumeRecorders()
-        recorder.stopRecorders()
-        recorder.unregisterCallbacks()
+        repeat(fakeRecordingCycles) {
+            testedRecorder.registerCallbacks()
+            testedRecorder.stopProcessingRecords()
+            testedRecorder.resumeRecorders()
+            testedRecorder.stopRecorders()
+            testedRecorder.unregisterCallbacks()
+        }
 
         // Then
-        verify(legacy).registerCallbacks()
-        verify(legacy).stopProcessingRecords()
-        verify(legacy).resumeRecorders()
-        verify(legacy).stopRecorders()
-        verify(legacy).unregisterCallbacks()
+        verify(mockLegacyRecorder, times(fakeRecordingCycles)).registerCallbacks()
+        verify(mockLegacyRecorder, times(fakeRecordingCycles)).stopProcessingRecords()
+        verify(mockLegacyRecorder, times(fakeRecordingCycles)).resumeRecorders()
+        verify(mockLegacyRecorder, times(fakeRecordingCycles)).stopRecorders()
+        verify(mockLegacyRecorder, times(fakeRecordingCycles)).unregisterCallbacks()
         assertThat(compositionConstructions).isZero()
     }
 
     @Test
-    fun `M keep composition state isolated W create multiple pipelines`() {
+    fun `M keep composition state isolated W create multiple pipelines`(
+        @IntForgery(min = 2, max = 5) fakePipelineCount: Int
+    ) {
         // Given
-        val selector = CapturePipelineSelector(
+        val testedSelector = CapturePipelineSelector(
             compositionEnabled = true,
             legacyFactory = { mock() },
             compositionFactory = { StatefulRecorder() }
         )
-        val first = selector.create() as StatefulRecorder
-        val second = selector.create() as StatefulRecorder
+        val recorders = List(fakePipelineCount) { testedSelector.create() as StatefulRecorder }
 
         // When
-        first.registerCallbacks()
+        recorders.first().registerCallbacks()
 
         // Then
-        assertThat(first.callbacksRegistered).isTrue()
-        assertThat(second.callbacksRegistered).isFalse()
+        assertThat(recorders.first().callbacksRegistered).isTrue()
+        assertThat(recorders.drop(1)).allMatch { !it.callbacksRegistered }
+    }
+
+    @Test
+    fun `M delegate recording lifecycle W composition pipeline is orchestrated`() {
+        // Given
+        val mockOrchestrator = mock<SnapshotCaptureOrchestrator>()
+        val mockLifecycle = mock<CompositionCaptureLifecycle>()
+        val mockCompletionQueue = mock<SnapshotCompletionQueue>()
+        val testedPipeline = CompositionCapturePipeline(
+            mockOrchestrator,
+            mockLifecycle,
+            mockCompletionQueue,
+            mockInternalLogger
+        )
+
+        // When
+        testedPipeline.registerCallbacks()
+        testedPipeline.resumeRecorders()
+        testedPipeline.stopRecorders()
+        testedPipeline.stopProcessingRecords()
+        testedPipeline.unregisterCallbacks()
+
+        // Then
+        inOrder(mockOrchestrator, mockLifecycle, mockCompletionQueue) {
+            verify(mockLifecycle).registerCallbacks()
+            verify(mockOrchestrator).start()
+            verify(mockLifecycle).start()
+            verify(mockLifecycle).stop()
+            verify(mockOrchestrator).stop()
+            verify(mockOrchestrator).shutdown()
+            verify(mockCompletionQueue).stop()
+            verify(mockLifecycle).unregisterCallbacks()
+        }
+    }
+
+    @Test
+    fun `M warn the user W requestCapture { embedded content slots requested }`(
+        @StringForgery fakeSlotIds: Set<String>
+    ) {
+        // Given
+        val mockOrchestrator = mock<SnapshotCaptureOrchestrator>()
+        val mockLifecycle = mock<CompositionCaptureLifecycle>()
+        val mockCompletionQueue = mock<SnapshotCompletionQueue>()
+        val testedPipeline = CompositionCapturePipeline(
+            mockOrchestrator,
+            mockLifecycle,
+            mockCompletionQueue,
+            mockInternalLogger
+        )
+
+        // When
+        testedPipeline.requestCapture(fakeSlotIds)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            CompositionCapturePipeline.EMBEDDED_CONTENT_UNSUPPORTED_WITH_COMPOSITION_RECORDING_MESSAGE,
+            onlyOnce = true
+        )
+        verifyNoInteractions(mockOrchestrator, mockLifecycle, mockCompletionQueue)
+    }
+
+    @Test
+    fun `M delegate warning deduplication to the logger W requestCapture { repeated requests }`(
+        @StringForgery fakeSlotIds: Set<String>,
+        @IntForgery(min = 2, max = 10) fakeRequestCount: Int
+    ) {
+        // Given
+        val testedPipeline = CompositionCapturePipeline(
+            mock<SnapshotCaptureOrchestrator>(),
+            mock<CompositionCaptureLifecycle>(),
+            mock<SnapshotCompletionQueue>(),
+            mockInternalLogger
+        )
+
+        // When
+        repeat(fakeRequestCount) { testedPipeline.requestCapture(fakeSlotIds) }
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            CompositionCapturePipeline.EMBEDDED_CONTENT_UNSUPPORTED_WITH_COMPOSITION_RECORDING_MESSAGE,
+            onlyOnce = true,
+            mode = times(fakeRequestCount)
+        )
+    }
+
+    @Test
+    fun `M not warn the user W requestCapture { no embedded content slots }`() {
+        // Given
+        val testedPipeline = CompositionCapturePipeline(
+            mock<SnapshotCaptureOrchestrator>(),
+            mock<CompositionCaptureLifecycle>(),
+            mock<SnapshotCompletionQueue>(),
+            mockInternalLogger
+        )
+
+        // When
+        testedPipeline.requestCapture(emptySet())
+
+        // Then
+        verifyNoInteractions(mockInternalLogger)
     }
 
     private class StatefulRecorder : Recorder {

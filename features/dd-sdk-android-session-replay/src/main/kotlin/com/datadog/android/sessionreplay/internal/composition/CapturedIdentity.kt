@@ -104,7 +104,7 @@ internal interface CapturedIdentityFactory {
 
 internal class DefaultCapturedIdentityFactory(
     override val scope: RumViewIdentityScope,
-    private val replayIdGenerator: CapturedReplayIdGenerator = SHARED_REPLAY_ID_GENERATOR,
+    private val replayIdGenerator: CapturedReplayIdGenerator = AutoIncrementingCapturedReplayIdGenerator(),
     private val internalLogger: InternalLogger = InternalLogger.UNBOUND
 ) : CapturedIdentityFactory {
 
@@ -255,7 +255,6 @@ internal class DefaultCapturedIdentityFactory(
     private companion object {
         const val SCREEN_ROOT_LOCAL_ID = "screen"
         const val NAMESPACE_SHIFT = 32
-        val SHARED_REPLAY_ID_GENERATOR = AutoIncrementingCapturedReplayIdGenerator()
     }
 }
 

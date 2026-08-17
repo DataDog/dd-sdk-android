@@ -6,8 +6,41 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+/**
+ * Discovers roots and synchronously inspects Android/Compose state on the main thread. Concrete
+ * walkers must use [CaptureGenerationContext.shouldContinue] between bounded operations and may
+ * return a contract-provided placeholder or cached resource before the deadline. [changeset]
+ * identifies what triggered this generation so a walker may skip untouched subtrees; an empty
+ * changeset means the trigger carried no such information and everything should be considered
+ * changed.
+ */
 internal fun interface CapturedSnapshotProducer {
-    fun capture(): CapturedFullSnapshot?
+    fun capture(context: CaptureGenerationContext, changeset: CaptureChangeset): CapturedFullSnapshot?
+}
+
+/** Stands in for the traversal implementation until it lands; captures nothing. */
+internal class NoOpCapturedSnapshotProducer : CapturedSnapshotProducer {
+    override fun capture(context: CaptureGenerationContext, changeset: CaptureChangeset): CapturedFullSnapshot? =
+        null
+}
+
+/**
+ * What changed since the previous generation drained this changeset. Implementations merge with
+ * [mergedWith] so signals arriving while a generation is active, or while a scheduled capture is
+ * denied admission, accumulate instead of being dropped.
+ */
+internal interface CaptureChangeset {
+    fun isEmpty(): Boolean
+    fun mergedWith(other: CaptureChangeset): CaptureChangeset
+
+    companion object {
+        val EMPTY: CaptureChangeset = EmptyCaptureChangeset()
+    }
+}
+
+private class EmptyCaptureChangeset : CaptureChangeset {
+    override fun isEmpty(): Boolean = true
+    override fun mergedWith(other: CaptureChangeset): CaptureChangeset = other
 }
 
 internal data class CapturedBounds(
@@ -114,8 +147,12 @@ internal sealed interface PixelResource {
         val mimeType: String? = null
     ) : PixelResource
 
-    object Unresolved : PixelResource
+    companion object {
+        val Unresolved: PixelResource = UnresolvedPixelResource()
+    }
 }
+
+private class UnresolvedPixelResource : PixelResource
 
 internal data class CapturedClip(
     val top: Long? = null,
