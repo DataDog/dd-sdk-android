@@ -25,13 +25,14 @@ internal class CapturedTreeWireMapperTest {
         // Then
         val record = (result as CaptureWireMappingResult.Success).value
         assertThat(record.timestamp).isEqualTo(tree.snapshot.timestamp)
+        val bounds = (tree.wireframe as CapturedWireframe.Shape).bounds
         assertThat(record.data.wireframes.single()).isEqualTo(
             MobileSegment.Wireframe.ShapeWireframe(
                 id = tree.wireframeIdentity.wireId,
-                x = 1,
-                y = 2,
-                width = 3,
-                height = 4
+                x = bounds.x,
+                y = bounds.y,
+                width = bounds.width,
+                height = bounds.height
             )
         )
         assertThat(record.data.compositionTree?.root?.id).isEqualTo(tree.root.identity.wireId)
@@ -176,17 +177,19 @@ internal class CapturedTreeWireMapperTest {
                 CapturedChild.Wireframe(placeholderIdentity)
             )
         )
+        val pixelBounds = CapturedBounds(1, 2, 3, 4)
+        val placeholderBounds = CapturedBounds(5, 6, 7, 8)
         val snapshot = tree.snapshot.copy(
             layers = listOf(layer),
             wireframes = listOf(
                 CapturedWireframe.Pixel(
                     identity = pixelIdentity,
-                    bounds = CapturedBounds(1, 2, 3, 4),
+                    bounds = pixelBounds,
                     resource = PixelResource.Resolved("resource", "image/webp")
                 ),
                 CapturedWireframe.PrivacyPlaceholder(
                     identity = placeholderIdentity,
-                    bounds = CapturedBounds(5, 6, 7, 8),
+                    bounds = placeholderBounds,
                     label = "Image"
                 )
             )
@@ -200,19 +203,19 @@ internal class CapturedTreeWireMapperTest {
         assertThat(wireframes).containsExactly(
             MobileSegment.Wireframe.ImageWireframe(
                 id = pixelIdentity.wireId,
-                x = 1,
-                y = 2,
-                width = 3,
-                height = 4,
+                x = pixelBounds.x,
+                y = pixelBounds.y,
+                width = pixelBounds.width,
+                height = pixelBounds.height,
                 resourceId = "resource",
                 mimeType = "image/webp"
             ),
             MobileSegment.Wireframe.PlaceholderWireframe(
                 id = placeholderIdentity.wireId,
-                x = 5,
-                y = 6,
-                width = 7,
-                height = 8,
+                x = placeholderBounds.x,
+                y = placeholderBounds.y,
+                width = placeholderBounds.width,
+                height = placeholderBounds.height,
                 label = "Image"
             )
         )

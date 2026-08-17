@@ -6,27 +6,57 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.LongForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
+import org.mockito.kotlin.verify
+import org.mockito.quality.Strictness
 
+@Extensions(
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class)
+)
+@MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(ForgeConfigurator::class)
 internal class CapturedIdentityTest {
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @Test
-    fun `M return stable identity W create identity { identical inputs }`() {
+    fun `M return stable identity W create identity { identical inputs }`(
+        @StringForgery fakeWindowId: String,
+        @StringForgery fakeViewId: String
+    ) {
         // Given
         val factory = factory()
 
         // When
-        val first = factory.view(factory.window("window"), "view-id")
-        val repeated = factory.view(factory.window("window"), "view-id")
+        val first = factory.view(factory.window(fakeWindowId), fakeViewId)
+        val repeated = factory.view(factory.window(fakeWindowId), fakeViewId)
 
         // Then
         assertThat(repeated).isSameAs(first)
     }
 
     @Test
-    fun `M allocate new identity W create identity { separate factories }`() {
+    fun `M allocate new identity W create identity { separate factories }`(
+        @StringForgery fakeWindowId: String
+    ) {
         // Given
         val generator = AutoIncrementingCapturedReplayIdGenerator()
         val scope = RumViewIdentityScope("view")
@@ -34,8 +64,8 @@ internal class CapturedIdentityTest {
         val secondFactory = DefaultCapturedIdentityFactory(scope, generator)
 
         // When
-        val first = firstFactory.window("window")
-        val second = secondFactory.window("window")
+        val first = firstFactory.window(fakeWindowId)
+        val second = secondFactory.window(fakeWindowId)
 
         // Then
         assertThat(second).isNotEqualTo(first)
@@ -104,22 +134,34 @@ internal class CapturedIdentityTest {
     }
 
     @Test
-    fun `M reject owner W create identity { owner belongs to another scope }`() {
+    fun `M log warning and still create identity W create identity { owner belongs to another scope }`() {
         // Given
         val firstFactory = factory("first-view")
         val secondFactory = factory("second-view")
 
-        // When + Then
-        assertThatThrownBy { secondFactory.view(firstFactory.window("window"), "view") }
-            .isInstanceOf(IllegalArgumentException::class.java)
+        // When
+        val view = secondFactory.view(firstFactory.window("window"), "view")
+
+        // Then
+        assertThat(view).isNotNull()
+        verify(mockInternalLogger).log(
+            level = eq(InternalLogger.Level.WARN),
+            target = eq(InternalLogger.Target.MAINTAINER),
+            messageBuilder = any(),
+            throwable = isNull(),
+            onlyOnce = eq(false),
+            additionalProperties = isNull()
+        )
     }
 
     @Test
-    fun `M create namespaced IDs W create wireframe identities`() {
+    fun `M create namespaced IDs W create wireframe identities`(
+        @LongForgery(min = 0, max = Int.MAX_VALUE.toLong()) fakeInitialId: Long
+    ) {
         // Given
         val factory = DefaultCapturedIdentityFactory(
             scope = RumViewIdentityScope("view"),
-            replayIdGenerator = AutoIncrementingCapturedReplayIdGenerator(initialId = 42)
+            replayIdGenerator = AutoIncrementingCapturedReplayIdGenerator(initialId = fakeInitialId)
         )
         val layer = factory.layer(factory.window("window"), "layer")
 
@@ -137,16 +179,18 @@ internal class CapturedIdentityTest {
     }
 
     @Test
-    fun `M preserve raw slot ID W create webViewWireframe`() {
+    fun `M preserve raw slot ID W create webViewWireframe`(
+        @IntForgery fakeSlotId: Int
+    ) {
         // Given
         val factory = factory()
         val layer = factory.layer(factory.window("window"), "layer")
 
         // When
-        val wireframe = factory.webViewWireframe(layer, slotId = 42)
+        val wireframe = factory.webViewWireframe(layer, slotId = fakeSlotId.toLong())
 
         // Then
-        assertThat(wireframe.wireId).isEqualTo(42)
+        assertThat(wireframe.wireId).isEqualTo(fakeSlotId.toLong())
         assertThat(wireframe.wireframeKind).isEqualTo(CapturedWireframeKind.WEB_VIEW)
     }
 
@@ -210,7 +254,8 @@ internal class CapturedIdentityTest {
 
     private fun factory(scope: String = "view") = DefaultCapturedIdentityFactory(
         scope = RumViewIdentityScope(scope),
-        replayIdGenerator = AutoIncrementingCapturedReplayIdGenerator()
+        replayIdGenerator = AutoIncrementingCapturedReplayIdGenerator(),
+        internalLogger = mockInternalLogger
     )
 
     private companion object {

@@ -6,9 +6,16 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 
+@ExtendWith(ForgeExtension::class)
+@ForgeConfiguration(ForgeConfigurator::class)
 internal class CapturedTreeValidatorTest {
 
     private val testedValidator = DefaultCapturedTreeValidator()
@@ -633,10 +640,12 @@ internal class CapturedTreeValidatorTest {
     }
 
     @Test
-    fun `M return valid W validate { unreferenced hidden slot wireframes }`() {
+    fun `M return valid W validate { unreferenced hidden slot wireframes }`(
+        @IntForgery fakeSlotId: Int
+    ) {
         // Given
         val tree = compositionTestTree()
-        val webViewIdentity = tree.factory.webViewWireframe(tree.layer.identity, 42)
+        val webViewIdentity = tree.factory.webViewWireframe(tree.layer.identity, fakeSlotId.toLong())
         val hiddenWebView = CapturedWireframe.WebView(
             identity = webViewIdentity,
             bounds = CapturedBounds(0, 0, 0, 0),
@@ -655,10 +664,12 @@ internal class CapturedTreeValidatorTest {
     }
 
     @Test
-    fun `M report unreferenced wireframe W validate { visible slot wireframe }`() {
+    fun `M report unreferenced wireframe W validate { visible slot wireframe }`(
+        @IntForgery fakeSlotId: Int
+    ) {
         // Given
         val tree = compositionTestTree()
-        val identity = tree.factory.webViewWireframe(tree.layer.identity, 42)
+        val identity = tree.factory.webViewWireframe(tree.layer.identity, fakeSlotId.toLong())
         val visibleWebView = CapturedWireframe.WebView(
             identity = identity,
             bounds = CapturedBounds(0, 0, 10, 10),

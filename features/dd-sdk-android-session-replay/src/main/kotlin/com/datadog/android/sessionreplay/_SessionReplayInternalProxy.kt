@@ -35,17 +35,4 @@ class _SessionReplayInternalProxy(private val builder: SessionReplayConfiguratio
     ): SessionReplayConfiguration.Builder {
         return builder.setInternalCallback(internalCallback)
     }
-
-    /**
-     * Enables the experimental composition-tree recording pipeline.
-     *
-     * The underlying capture pipeline is not implemented yet: enabling this flag currently
-     * disables Session Replay recording entirely instead of falling back to the default recorder.
-     *
-     * @param enabled whether composition-tree recording should be used.
-     * @return [SessionReplayConfiguration.Builder] instance.
-     */
-    fun setCompositionTreeRecordingEnabled(enabled: Boolean): SessionReplayConfiguration.Builder {
-        return builder.setCompositionTreeRecordingEnabled(enabled)
-    }
 }

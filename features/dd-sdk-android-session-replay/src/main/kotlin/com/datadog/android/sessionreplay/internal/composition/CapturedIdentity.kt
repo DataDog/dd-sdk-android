@@ -6,6 +6,8 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import com.datadog.android.api.InternalLogger
+
 internal data class RumViewIdentityScope(val value: String)
 
 internal enum class CapturedIdentityKind {
@@ -18,13 +20,14 @@ internal enum class CapturedIdentityKind {
     WIREFRAME
 }
 
+private const val WEB_VIEW_WIREFRAME_NAMESPACE = 0L
+private const val SHAPE_WIREFRAME_NAMESPACE = 1L
+private const val TEXT_WIREFRAME_NAMESPACE = 2L
+private const val IMAGE_WIREFRAME_NAMESPACE = 3L
+private const val PLACEHOLDER_WIREFRAME_NAMESPACE = 4L
+
 /** Matches the wireframe identifier namespaces used by the iOS Core Animation pipeline. */
 internal enum class CapturedWireframeKind(internal val wireIdNamespace: Long) {
-    SHAPE(1),
-    TEXT(2),
-    IMAGE(IMAGE_WIREFRAME_NAMESPACE),
-    PLACEHOLDER(PLACEHOLDER_WIREFRAME_NAMESPACE),
-
     /**
      * Deliberately namespace `0`, i.e. unshifted: the wire id for a web-view wireframe must equal
      * its `slotId` verbatim (not `slotId` shifted into a namespace), matching the pre-existing
@@ -37,7 +40,11 @@ internal enum class CapturedWireframeKind(internal val wireIdNamespace: Long) {
      * `Int` range; a residual, validation-caught collision remains possible only between two
      * web-view wireframes with a colliding `slotId` in the same view scope.
      */
-    WEB_VIEW(0)
+    WEB_VIEW(WEB_VIEW_WIREFRAME_NAMESPACE),
+    SHAPE(SHAPE_WIREFRAME_NAMESPACE),
+    TEXT(TEXT_WIREFRAME_NAMESPACE),
+    IMAGE(IMAGE_WIREFRAME_NAMESPACE),
+    PLACEHOLDER(PLACEHOLDER_WIREFRAME_NAMESPACE)
 }
 
 internal data class CapturedIdentity internal constructor(
@@ -47,7 +54,9 @@ internal data class CapturedIdentity internal constructor(
     val namespace: List<String>,
     val localId: String,
     val wireId: Long
-)
+) {
+    fun path(): List<String> = namespace + kind.name + localId
+}
 
 internal fun interface CapturedReplayIdGenerator {
     fun next(): Long
@@ -95,7 +104,8 @@ internal interface CapturedIdentityFactory {
 
 internal class DefaultCapturedIdentityFactory(
     override val scope: RumViewIdentityScope,
-    private val replayIdGenerator: CapturedReplayIdGenerator = SHARED_REPLAY_ID_GENERATOR
+    private val replayIdGenerator: CapturedReplayIdGenerator = SHARED_REPLAY_ID_GENERATOR,
+    private val internalLogger: InternalLogger = InternalLogger.UNBOUND
 ) : CapturedIdentityFactory {
 
     private val identities = mutableMapOf<IdentityKey, CapturedIdentity>()
@@ -107,22 +117,22 @@ internal class DefaultCapturedIdentityFactory(
         createLayerIdentity(CapturedIdentityKind.WINDOW, emptyList(), windowId)
 
     override fun view(window: CapturedIdentity, viewId: String): CapturedIdentity {
-        requireOwner(window, CapturedIdentityKind.WINDOW)
+        validateOwner(window, CapturedIdentityKind.WINDOW)
         return createLayerIdentity(CapturedIdentityKind.VIEW, window.path(), viewId)
     }
 
     override fun composeHost(window: CapturedIdentity, hostId: String): CapturedIdentity {
-        requireOwner(window, CapturedIdentityKind.WINDOW)
+        validateOwner(window, CapturedIdentityKind.WINDOW)
         return createLayerIdentity(CapturedIdentityKind.COMPOSE_HOST, window.path(), hostId)
     }
 
     override fun composeNode(host: CapturedIdentity, nodeId: String): CapturedIdentity {
-        requireOwner(host, CapturedIdentityKind.COMPOSE_HOST)
+        validateOwner(host, CapturedIdentityKind.COMPOSE_HOST)
         return createLayerIdentity(CapturedIdentityKind.COMPOSE_NODE, host.path(), nodeId)
     }
 
     override fun layer(owner: CapturedIdentity, layerId: String): CapturedIdentity {
-        requireLayerOwner(owner)
+        validateLayerOwner(owner)
         return createLayerIdentity(CapturedIdentityKind.LAYER, owner.path(), layerId)
     }
 
@@ -139,7 +149,7 @@ internal class DefaultCapturedIdentityFactory(
         createNamespacedWireframeIdentity(owner, CapturedWireframeKind.PLACEHOLDER)
 
     override fun webViewWireframe(owner: CapturedIdentity, slotId: Long): CapturedIdentity {
-        requireLayerOwner(owner)
+        validateLayerOwner(owner)
         return createIdentity(
             kind = CapturedIdentityKind.WIREFRAME,
             wireframeKind = CapturedWireframeKind.WEB_VIEW,
@@ -168,7 +178,7 @@ internal class DefaultCapturedIdentityFactory(
         owner: CapturedIdentity,
         wireframeKind: CapturedWireframeKind
     ): CapturedIdentity {
-        requireLayerOwner(owner)
+        validateLayerOwner(owner)
         return createIdentity(
             kind = CapturedIdentityKind.WIREFRAME,
             wireframeKind = wireframeKind,
@@ -201,28 +211,39 @@ internal class DefaultCapturedIdentityFactory(
         ).also { identities[key] = it }
     }
 
-    @Suppress("RequireInternal", "UnsafeThirdPartyFunctionCall")
-    private fun requireLayerOwner(owner: CapturedIdentity) {
-        requireOwner(owner)
-        require(owner.kind != CapturedIdentityKind.WIREFRAME) {
-            "Identity owner must be a captured layer."
+    // These checks guard against programmer-only misuse of the internal identity factory. They
+    // must never throw: a bug tripping them would otherwise crash the host application, so any
+    // violation is reported to the maintainer telemetry instead and construction proceeds.
+    private fun validateLayerOwner(owner: CapturedIdentity) {
+        validateOwner(owner)
+        if (owner.kind == CapturedIdentityKind.WIREFRAME) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                { "Identity owner must be a captured layer." }
+            )
         }
     }
 
-    // These checks guard programmer-only misuse of the internal identity factory.
-    @Suppress("RequireInternal", "UnsafeThirdPartyFunctionCall")
-    private fun requireOwner(
+    private fun validateOwner(
         owner: CapturedIdentity,
         expectedKind: CapturedIdentityKind? = null
     ) {
-        require(owner.scope == scope) { "Identity owner belongs to a different RUM view scope." }
-        require(expectedKind == null || owner.kind == expectedKind) {
-            "Identity owner must be a $expectedKind."
+        if (owner.scope != scope) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                { "Identity owner belongs to a different RUM view scope." }
+            )
+        }
+        if (expectedKind != null && owner.kind != expectedKind) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                { "Identity owner must be a $expectedKind." }
+            )
         }
     }
-
-    private fun CapturedIdentity.path(): List<String> =
-        namespace + kind.name + localId
 
     private data class IdentityKey(
         val kind: CapturedIdentityKind,
@@ -237,9 +258,6 @@ internal class DefaultCapturedIdentityFactory(
         val SHARED_REPLAY_ID_GENERATOR = AutoIncrementingCapturedReplayIdGenerator()
     }
 }
-
-private const val IMAGE_WIREFRAME_NAMESPACE = 3L
-private const val PLACEHOLDER_WIREFRAME_NAMESPACE = 4L
 
 /**
  * Added to every raw layer replay id so that layer wire ids always land above the Int range

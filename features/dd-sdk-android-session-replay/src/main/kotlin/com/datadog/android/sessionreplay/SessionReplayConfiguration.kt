@@ -250,15 +250,12 @@ data class SessionReplayConfiguration internal constructor(
          * source, preserving its structure and rendering effects to improve replay fidelity in
          * Android View and Jetpack Compose applications.
          *
-         * The underlying capture pipeline is not implemented yet: enabling this flag currently
-         * disables Session Replay recording entirely instead of falling back to the default
-         * recorder. Kept internal until the pipeline is functional; see [_SessionReplayInternalProxy].
-         *
          * Disabled by default.
          *
          * @param enabled whether composition-tree recording should be used.
          */
-        internal fun setCompositionTreeRecordingEnabled(enabled: Boolean): Builder {
+        @ExperimentalSessionReplayApi
+        fun setCompositionTreeRecordingEnabled(enabled: Boolean): Builder {
             compositionTreeRecordingEnabled = enabled
             return this
         }

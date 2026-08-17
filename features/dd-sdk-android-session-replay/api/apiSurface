@@ -1,3 +1,4 @@
+annotation com.datadog.android.sessionreplay.ExperimentalSessionReplayApi
 interface com.datadog.android.sessionreplay.ExtensionSupport
   fun name(): String
   fun getCustomViewMappers(): List<MapperTypeWrapper<*>>
@@ -48,6 +49,7 @@ data class com.datadog.android.sessionreplay.SessionReplayConfiguration
     fun setDynamicOptimizationEnabled(Boolean): Builder
     fun setSystemRequirements(SystemRequirementsConfiguration): Builder
     fun setHeatmapsEnabled(Boolean): Builder
+    fun setCompositionTreeRecordingEnabled(Boolean): Builder
     fun build(): SessionReplayConfiguration
 interface com.datadog.android.sessionreplay.SessionReplayInternalCallback
   fun getCurrentActivity(): android.app.Activity?
@@ -77,7 +79,6 @@ enum com.datadog.android.sessionreplay.TouchPrivacy : PrivacyLevel
 class com.datadog.android.sessionreplay._SessionReplayInternalProxy
   constructor(SessionReplayConfiguration.Builder)
   fun setInternalCallback(SessionReplayInternalCallback): SessionReplayConfiguration.Builder
-  fun setCompositionTreeRecordingEnabled(Boolean): SessionReplayConfiguration.Builder
 class com.datadog.android.sessionreplay.internal.TouchPrivacyManager
   constructor(com.datadog.android.sessionreplay.TouchPrivacy)
   fun addTouchOverrideArea(android.graphics.Rect, com.datadog.android.sessionreplay.TouchPrivacy)

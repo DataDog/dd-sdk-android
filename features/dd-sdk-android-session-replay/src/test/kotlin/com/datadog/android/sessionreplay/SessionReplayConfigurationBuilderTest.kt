@@ -91,6 +91,18 @@ internal class SessionReplayConfigurationBuilderTest {
     }
 
     @Test
+    @OptIn(ExperimentalSessionReplayApi::class)
+    fun `M set compositionTreeRecordingEnabled to true W setCompositionTreeRecordingEnabled()`() {
+        // When
+        val sessionReplayConfiguration = testedBuilder
+            .setCompositionTreeRecordingEnabled(true)
+            .build()
+
+        // Then
+        assertThat(sessionReplayConfiguration.compositionTreeRecordingEnabled).isTrue()
+    }
+
+    @Test
     fun `M build config with custom site W useCustomEndpoint() and build()`(
         @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") sessionReplayUrl: String
     ) {

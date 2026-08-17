@@ -151,6 +151,8 @@ internal class SessionReplayFeatureTest {
             dynamicOptimizationEnabled = fakeConfiguration.dynamicOptimizationEnabled,
             internalCallback = NoOpSessionReplayInternalCallback(),
             heatmapsEnabled = fakeConfiguration.heatmapsEnabled,
+            // The default (legacy) recorder is only selected when composition-tree recording is
+            // disabled; this test asserts on that recorder type, so the flag must stay false.
             compositionTreeRecordingEnabled = false
         )
 
@@ -181,7 +183,7 @@ internal class SessionReplayFeatureTest {
             dynamicOptimizationEnabled = fakeConfiguration.dynamicOptimizationEnabled,
             internalCallback = NoOpSessionReplayInternalCallback(),
             heatmapsEnabled = fakeConfiguration.heatmapsEnabled,
-            compositionTreeRecordingEnabled = false
+            compositionTreeRecordingEnabled = fakeConfiguration.compositionTreeRecordingEnabled
         )
 
         // When
