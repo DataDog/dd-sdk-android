@@ -15,6 +15,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.Window
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator

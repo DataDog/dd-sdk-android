@@ -6,8 +6,16 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
+import com.datadog.android.internal.sessionreplay.composition.CapturedChild
+import com.datadog.android.internal.sessionreplay.composition.CapturedClip
+import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
+import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
+import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMappingContext
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
+import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeResult
 import kotlin.math.max
 import kotlin.math.min
 
@@ -76,6 +84,16 @@ internal class CapturedNativeSnapshotBuilder(
                 addWireframes(view, window.screenDensity, identityFactory, clip, children, wireframes)
             }
             val childClip = clip.intersectOptional(view.childPaddingClip)
+            view.composition?.let { composition ->
+                addComposition(
+                    composition,
+                    childClip.intersectWith(view.bounds),
+                    children,
+                    layers,
+                    wireframes,
+                    generation
+                )
+            }
             @Suppress("UnsafeThirdPartyFunctionCall") // Unbounded worker-owned deque.
             stack.addLast(PendingLayer(index, view, children, childClip))
         }
@@ -86,6 +104,26 @@ internal class CapturedNativeSnapshotBuilder(
         if (!generation.isActive()) return null
         @Suppress("UnsafeThirdPartyFunctionCall") // Non-empty input contributes at least its root layer.
         return CapturedWindow(layers.last(), layers, wireframes)
+    }
+
+    @Suppress("LongParameterList", "UnsafeThirdPartyFunctionCall") // Appends only owned decomposition values.
+    private fun addComposition(
+        composition: CompositionHostDecomposeResult,
+        clip: ClipBounds,
+        children: MutableList<CapturedChild>,
+        layers: MutableList<CapturedLayer>,
+        wireframes: MutableList<CapturedWireframe>,
+        generation: CaptureGenerationContext
+    ) {
+        for (layer in composition.nodes) {
+            if (!generation.isActive()) return
+            layers += layer
+        }
+        for (wireframe in composition.wireframes) {
+            if (!generation.isActive()) return
+            wireframes += wireframe.withClip(clip.clip(wireframe.bounds))
+        }
+        children += composition.rootChildren
     }
 
     private fun addWireframes(
@@ -114,7 +152,7 @@ internal class CapturedNativeSnapshotBuilder(
         val modifiers = if (view.alpha == 1.0) emptyList() else listOf(CapturedModifier.Opacity(view.alpha))
         val layer = CapturedLayer(
             identity = view.identity,
-            kind = if (view.parentIndex < 0) CapturedLayerKind.WINDOW_ROOT else CapturedLayerKind.NATIVE_VIEW,
+            kind = view.kind,
             bounds = view.bounds,
             children = pending.children,
             modifiers = modifiers
@@ -133,12 +171,24 @@ internal class CapturedNativeSnapshotBuilder(
     )
 }
 
-private fun CapturedWireframe.withClip(clip: CapturedClip?): CapturedWireframe = when (this) {
-    is CapturedWireframe.Shape -> copy(clip = clip)
-    is CapturedWireframe.Text -> copy(clip = clip)
-    is CapturedWireframe.WebView -> copy(clip = clip)
-    is CapturedWireframe.Pixel -> copy(clip = clip)
-    is CapturedWireframe.PrivacyPlaceholder -> copy(clip = clip)
+private fun CapturedWireframe.withClip(clip: CapturedClip?): CapturedWireframe {
+    val combinedClip = when {
+        clip == null -> this.clip
+        this.clip == null -> clip
+        else -> CapturedClip(
+            top = max(this.clip?.top ?: 0, clip.top ?: 0).takeIf { it > 0 },
+            bottom = max(this.clip?.bottom ?: 0, clip.bottom ?: 0).takeIf { it > 0 },
+            left = max(this.clip?.left ?: 0, clip.left ?: 0).takeIf { it > 0 },
+            right = max(this.clip?.right ?: 0, clip.right ?: 0).takeIf { it > 0 }
+        )
+    }
+    return when (this) {
+        is CapturedWireframe.Shape -> copy(clip = combinedClip)
+        is CapturedWireframe.Text -> copy(clip = combinedClip)
+        is CapturedWireframe.WebView -> copy(clip = combinedClip)
+        is CapturedWireframe.Pixel -> copy(clip = combinedClip)
+        is CapturedWireframe.PrivacyPlaceholder -> copy(clip = combinedClip)
+    }
 }
 
 /**

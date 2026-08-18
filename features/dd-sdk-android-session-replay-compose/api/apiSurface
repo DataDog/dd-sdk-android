@@ -2,6 +2,7 @@ class com.datadog.android.sessionreplay.compose.ComposeExtensionSupport : com.da
   override fun getCustomViewMappers(): List<com.datadog.android.sessionreplay.MapperTypeWrapper<*>>
   override fun getOptionSelectorDetectors(): List<com.datadog.android.sessionreplay.recorder.OptionSelectorDetector>
   override fun getCustomDrawableMapper(): List<com.datadog.android.sessionreplay.utils.DrawableToColorMapper>
+  override fun getCompositionHostDecomposer(): com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposer
   override fun name(): String
 annotation com.datadog.android.sessionreplay.compose.ExperimentalSessionReplayApi
 fun androidx.compose.ui.Modifier.sessionReplayHide(Boolean): androidx.compose.ui.Modifier

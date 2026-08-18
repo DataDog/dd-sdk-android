@@ -7,6 +7,13 @@
 package com.datadog.android.sessionreplay.internal.composition
 
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
+import com.datadog.android.internal.sessionreplay.composition.CapturedChild
+import com.datadog.android.internal.sessionreplay.composition.CapturedCompositeOperation
+import com.datadog.android.internal.sessionreplay.composition.CapturedFillRule
+import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.internal.sessionreplay.composition.PixelResource
 import com.datadog.android.sessionreplay.model.MobileSegment
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery

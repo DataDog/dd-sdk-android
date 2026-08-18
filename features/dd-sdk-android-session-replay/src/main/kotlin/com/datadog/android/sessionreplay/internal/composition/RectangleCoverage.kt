@@ -6,6 +6,8 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
+
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import kotlin.math.max
 import kotlin.math.min

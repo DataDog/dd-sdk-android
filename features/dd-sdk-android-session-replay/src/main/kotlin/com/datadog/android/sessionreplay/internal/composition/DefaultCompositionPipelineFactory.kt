@@ -24,6 +24,7 @@ import com.datadog.android.sessionreplay.internal.recorder.RecordingTimeBank
 import com.datadog.android.sessionreplay.internal.recorder.TimeBank
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
+import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposer
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 
 /**
@@ -34,6 +35,7 @@ internal class DefaultCompositionPipelineFactory(
     private val sdkCore: FeatureSdkCore,
     private val internalCallback: SessionReplayInternalCallback,
     private val touchPrivacyManager: TouchPrivacyManager,
+    private val compositionHostDecomposer: CompositionHostDecomposer? = null,
     private val dynamicOptimizationEnabled: Boolean,
     private val customDrawableMappers: List<DrawableToColorMapper> = emptyList(),
     private val snapshotProducerFactory: (ActiveWindowSource, RumContextProvider) -> CapturedSnapshotProducer = {
@@ -46,7 +48,8 @@ internal class DefaultCompositionPipelineFactory(
             timeProvider = sdkCore.timeProvider,
             traversal = AndroidWindowTraversal(
                 mapperRegistry = builtInCapturedMappers(sdkCore.internalLogger, customDrawableMappers),
-                internalLogger = sdkCore.internalLogger
+                internalLogger = sdkCore.internalLogger,
+                composeHostDecomposer = compositionHostDecomposer
             ),
             touchPrivacyManager = touchPrivacyManager
         )
