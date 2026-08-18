@@ -267,15 +267,15 @@ internal class DatadogDataConstraintsTest {
     }
 
     @Test
-    fun `ignore attribute if adding more than 128`(forge: Forge) {
-        val attributes = forge.aList(202) { anAlphabeticalString() to anInt() }.toMap()
-        val firstAttributes = attributes.toList().take(128).toMap()
+    fun `ignore attribute if adding more than 2048`(forge: Forge) {
+        val attributes = forge.aList(2122) { anAlphabeticalString() to anInt() }.toMap()
+        val firstAttributes = attributes.toList().take(2048).toMap()
 
         val result = testedConstraints.validateAttributes(attributes)
 
-        val discardedCount = attributes.size - 128
+        val discardedCount = attributes.size - 2048
         assertThat(result)
-            .hasSize(128)
+            .hasSize(2048)
             .containsAllEntriesOf(firstAttributes)
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
@@ -286,8 +286,8 @@ internal class DatadogDataConstraintsTest {
 
     @Test
     fun `M use a custom error format W validateAttributes`(forge: Forge) {
-        val attributes = forge.aList(202) { anAlphabeticalString() to anInt() }.toMap()
-        val firstAttributes = attributes.toList().take(128).toMap()
+        val attributes = forge.aList(2122) { anAlphabeticalString() to anInt() }.toMap()
+        val firstAttributes = attributes.toList().take(2048).toMap()
         val fakeAttributesGroup = forge
             .aList(size = 10) { forge.anAlphabeticalString() }
             .joinToString(".")
@@ -296,9 +296,9 @@ internal class DatadogDataConstraintsTest {
             attributesGroupName = fakeAttributesGroup
         )
 
-        val discardedCount = attributes.size - 128
+        val discardedCount = attributes.size - 2048
         assertThat(result)
-            .hasSize(128)
+            .hasSize(2048)
             .containsAllEntriesOf(firstAttributes)
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
