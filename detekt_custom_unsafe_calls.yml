@@ -271,6 +271,9 @@ datadog:
       # endregion
       # region Gson
       - "com.google.gson.JsonParser.parseString(kotlin.String?):com.google.gson.JsonParseException"
+      - "com.google.gson.JsonElement.getAsString():java.lang.IllegalStateException"
+      - "com.google.gson.JsonElement.getAsLong():java.lang.IllegalStateException,java.lang.NumberFormatException"
+      - "com.google.gson.JsonElement.getAsJsonObject():java.lang.IllegalStateException"
       # endregion
       # region Kronos
       - "com.lyft.kronos.KronosClock.syncInBackground():java.lang.IllegalStateException"
