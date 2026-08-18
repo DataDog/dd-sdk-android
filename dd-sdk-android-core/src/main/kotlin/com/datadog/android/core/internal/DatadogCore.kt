@@ -530,7 +530,8 @@ internal class DatadogCore(
             fetcher = fetcher,
             storageDir = coreFeature.storageDir,
             executor = coreFeature.uploadExecutorService,
-            internalLogger = internalLogger
+            internalLogger = internalLogger,
+            timeProvider = coreFeature.timeProvider
         )
         remoteConfigService?.syncWithRemote()
 
@@ -761,14 +762,15 @@ internal class DatadogCore(
         internal val CONFIGURATION_TELEMETRY_DELAY_MS = TimeUnit.SECONDS.toMillis(5)
 
         internal val DEFAULT_REMOTE_CONFIG_SERVICE_FACTORY =
-            RemoteConfigService.Factory { id, endpoint, fetcher, storageDir, executor, logger ->
+            RemoteConfigService.Factory { id, endpoint, fetcher, storageDir, executor, logger, timeProvider ->
                 RemoteConfigServiceImpl(
                     remoteConfigurationId = id,
                     remoteConfigurationEndpoint = endpoint,
                     fetcher = fetcher,
                     storageDir = storageDir,
                     executor = executor,
-                    internalLogger = logger
+                    internalLogger = logger,
+                    timeProvider = timeProvider
                 )
             }
     }
