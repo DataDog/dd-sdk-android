@@ -12,10 +12,12 @@ import androidx.compose.ui.platform.AndroidComposeView
 import androidx.compose.ui.platform.ComposeView
 import com.datadog.android.sessionreplay.ExtensionSupport
 import com.datadog.android.sessionreplay.MapperTypeWrapper
+import com.datadog.android.sessionreplay.compose.internal.granular.GranularComposeDecomposer
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.AndroidComposeViewMapper
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.ComposeViewMapper
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.RootSemanticsNodeMapper
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
+import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposer
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver
@@ -35,6 +37,7 @@ class ComposeExtensionSupport : ExtensionSupport {
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver
     private val drawableToColorMapper: DrawableToColorMapper = DrawableToColorMapper.getDefault()
     private val rootSemanticsNodeMapper = RootSemanticsNodeMapper(colorStringFormatter)
+    private val granularComposeDecomposer = GranularComposeDecomposer(colorStringFormatter = colorStringFormatter)
 
     override fun getCustomViewMappers(): List<MapperTypeWrapper<*>> {
         return listOf(
@@ -68,6 +71,8 @@ class ComposeExtensionSupport : ExtensionSupport {
     override fun getCustomDrawableMapper(): List<DrawableToColorMapper> {
         return emptyList()
     }
+
+    override fun getCompositionHostDecomposer(): CompositionHostDecomposer = granularComposeDecomposer
 
     override fun name(): String =
         COMPOSE_EXTENSION_SUPPORT_NAME

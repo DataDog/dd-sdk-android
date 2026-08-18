@@ -8,7 +8,7 @@ package com.datadog.android.sessionreplay.internal.composition.mapper
 
 import android.view.View
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.sessionreplay.internal.composition.CapturedShapeStyle
+import com.datadog.android.internal.sessionreplay.composition.CapturedShapeStyle
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
@@ -23,6 +23,7 @@ internal class CapturedBackgroundShapeStyleResolver(
     private val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter,
     private val drawableToColorMapper: DrawableToColorMapper = DrawableToColorMapper.getDefault()
 ) {
+    @Suppress("ReturnCount")
     fun resolve(view: View, internalLogger: InternalLogger): CapturedShapeStyle? {
         val color = view.background?.let { drawableToColorMapper.mapDrawableToColor(it, internalLogger) }
             ?: return null

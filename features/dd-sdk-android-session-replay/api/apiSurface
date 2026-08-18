@@ -4,6 +4,7 @@ interface com.datadog.android.sessionreplay.ExtensionSupport
   fun getCustomViewMappers(): List<MapperTypeWrapper<*>>
   fun getOptionSelectorDetectors(): List<com.datadog.android.sessionreplay.recorder.OptionSelectorDetector>
   fun getCustomDrawableMapper(): List<com.datadog.android.sessionreplay.utils.DrawableToColorMapper>
+  fun getCompositionHostDecomposer(): com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposer?
 enum com.datadog.android.sessionreplay.ImagePrivacy : PrivacyLevel
   - MASK_NONE
   - MASK_LARGE_ONLY
@@ -99,6 +100,15 @@ interface com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
   fun isOptionSelector(android.view.ViewGroup): Boolean
 data class com.datadog.android.sessionreplay.recorder.SystemInformation
   constructor(com.datadog.android.sessionreplay.utils.GlobalBounds, Int = Configuration.ORIENTATION_UNDEFINED, Float, String? = null)
+interface com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposer
+  fun canDecompose(android.view.View): Boolean
+  fun decompose(android.view.View, CompositionHostDecomposeRequest): CompositionHostDecomposeResult?
+class com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeRequest
+  constructor(com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory, com.datadog.android.internal.sessionreplay.composition.CapturedIdentity, Float, (android.view.View, com.datadog.android.internal.sessionreplay.composition.CapturedIdentity) -> CompositionNativeSubtree?)
+class com.datadog.android.sessionreplay.recorder.composition.CompositionNativeSubtree
+  constructor(com.datadog.android.internal.sessionreplay.composition.CapturedLayer, List<com.datadog.android.internal.sessionreplay.composition.CapturedLayer>, List<com.datadog.android.internal.sessionreplay.composition.CapturedWireframe>)
+class com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeResult
+  constructor(List<com.datadog.android.internal.sessionreplay.composition.CapturedChild>, List<com.datadog.android.internal.sessionreplay.composition.CapturedLayer>, List<com.datadog.android.internal.sessionreplay.composition.CapturedWireframe>)
 abstract class com.datadog.android.sessionreplay.recorder.mapper.BaseAsyncBackgroundWireframeMapper<T: android.view.View> : BaseWireframeMapper<T>
   constructor(com.datadog.android.sessionreplay.utils.ViewIdentifierResolver, com.datadog.android.sessionreplay.utils.ColorStringFormatter, com.datadog.android.sessionreplay.utils.ViewBoundsResolver, com.datadog.android.sessionreplay.utils.DrawableToColorMapper)
   override fun map(T, com.datadog.android.sessionreplay.recorder.MappingContext, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback, com.datadog.android.api.InternalLogger): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>

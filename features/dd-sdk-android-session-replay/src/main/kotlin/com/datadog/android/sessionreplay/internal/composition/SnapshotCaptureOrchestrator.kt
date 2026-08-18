@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
 import java.util.concurrent.TimeUnit
 
@@ -75,10 +76,12 @@ internal class SnapshotCaptureOrchestrator(
             ++captureScheduleId
         }
         captureScheduler.schedule(captureDelayNs) {
+            @Suppress("ThreadSafety") // mainThreadExecutor posts this block onto the main thread.
             mainThreadExecutor.execute { beginCapture(scheduleId) }
         }
     }
 
+    @MainThread
     private fun beginCapture(scheduleId: Long) {
         val active = createActiveGeneration(scheduleId) ?: return
 
@@ -228,6 +231,7 @@ internal class SnapshotCaptureOrchestrator(
 }
 
 /** The producer walks live application/Compose state and can throw for reasons outside our control. */
+@MainThread
 @Suppress("TooGenericExceptionCaught")
 private fun safeCapture(
     producer: CapturedSnapshotProducer,

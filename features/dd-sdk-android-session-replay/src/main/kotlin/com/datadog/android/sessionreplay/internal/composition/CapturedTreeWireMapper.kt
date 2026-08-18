@@ -8,6 +8,23 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import com.datadog.android.internal.sessionreplay.composition.CapturedBackgroundGradient
+import com.datadog.android.internal.sessionreplay.composition.CapturedChild
+import com.datadog.android.internal.sessionreplay.composition.CapturedClip
+import com.datadog.android.internal.sessionreplay.composition.CapturedCompositeOperation
+import com.datadog.android.internal.sessionreplay.composition.CapturedFillRule
+import com.datadog.android.internal.sessionreplay.composition.CapturedHorizontalAlignment
+import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
+import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
+import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
+import com.datadog.android.internal.sessionreplay.composition.CapturedShapeBorder
+import com.datadog.android.internal.sessionreplay.composition.CapturedShapeStyle
+import com.datadog.android.internal.sessionreplay.composition.CapturedTextPosition
+import com.datadog.android.internal.sessionreplay.composition.CapturedTextStyle
+import com.datadog.android.internal.sessionreplay.composition.CapturedTruncationMode
+import com.datadog.android.internal.sessionreplay.composition.CapturedVerticalAlignment
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.internal.sessionreplay.composition.PixelResource
 import com.datadog.android.sessionreplay.model.MobileSegment
 
 internal sealed interface CaptureWireMappingResult<out T> {

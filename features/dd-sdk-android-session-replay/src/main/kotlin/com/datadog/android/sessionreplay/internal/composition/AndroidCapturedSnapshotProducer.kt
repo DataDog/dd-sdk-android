@@ -8,6 +8,11 @@ package com.datadog.android.sessionreplay.internal.composition
 
 import android.view.View
 import androidx.annotation.MainThread
+import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
+import com.datadog.android.internal.sessionreplay.composition.CapturedChild
+import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
+import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
@@ -29,6 +34,7 @@ internal class AndroidCapturedSnapshotProducer(
 ) : CapturedSnapshotProducer {
 
     @MainThread
+    @Suppress("ReturnCount")
     override fun capture(context: CaptureGenerationContext, changeset: CaptureChangeset): CapturedFullSnapshot? {
         val rumViewScope = scopeProvider.currentScope() ?: return null
         val identityFactory = DefaultCapturedIdentityFactory(rumViewScope.scope)

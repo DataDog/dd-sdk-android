@@ -11,12 +11,23 @@ import android.util.DisplayMetrics
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewStub
+import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
+import com.datadog.android.internal.sessionreplay.composition.CapturedChild
+import com.datadog.android.internal.sessionreplay.composition.CapturedClip
+import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
+import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
+import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
+import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeRequest
+import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeResult
+import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposer
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
@@ -113,12 +124,16 @@ internal class AndroidWindowTraversalTest {
 
     private fun traversal(
         fallback: CapturedViewMapper<View> = noOpFallback,
-        typedMappers: List<CapturedMapperTypeWrapper<*>> = emptyList()
+        typedMappers: List<CapturedMapperTypeWrapper<*>> = emptyList(),
+        composeHostDecomposer: CompositionHostDecomposer? = null,
+        isComposeHost: (View) -> Boolean = { false }
     ) = AndroidWindowTraversal(
         mapperRegistry = CapturedViewMapperRegistry(typedMappers, fallback, mock()),
         viewIdentifierResolver = mockViewIdentifierResolver,
         viewBoundsResolver = mockViewBoundsResolver,
-        viewUtilsInternal = ViewUtilsInternal()
+        viewUtilsInternal = ViewUtilsInternal(),
+        composeHostDecomposer = composeHostDecomposer,
+        isComposeHost = isComposeHost
     )
 
     @Test
@@ -288,4 +303,139 @@ internal class AndroidWindowTraversalTest {
         // Then
         assertThat(result).isEqualTo(WindowWalkResult.Aborted)
     }
+
+    @Test
+    fun `M invoke the decomposer and splice its result W visit { compose host }`(
+        @Forgery fakeRootBounds: GlobalBounds,
+        @Forgery fakeHostBounds: GlobalBounds
+    ) {
+        // Given
+        val root = mockViewGroup(fakeRootBounds)
+        val composeHost = mockView(fakeHostBounds)
+        whenever(root.childCount).thenReturn(1)
+        whenever(root.getChildAt(0)).thenReturn(composeHost)
+        val windowIdentity = identityFactory.window("window")
+
+        var capturedHostIdentity: CapturedIdentity? = null
+        val decomposer = object : CompositionHostDecomposer {
+            override fun canDecompose(view: View) = view === composeHost
+            override fun decompose(
+                view: View,
+                request: CompositionHostDecomposeRequest
+            ): CompositionHostDecomposeResult {
+                capturedHostIdentity = request.hostIdentity
+                val nodeIdentity = request.identityFactory.composeNode(request.hostIdentity, "node")
+                val wireframeIdentity = request.identityFactory.shapeWireframe(nodeIdentity)
+                val wireframe = CapturedWireframe.Shape(
+                    identity = wireframeIdentity,
+                    bounds = fakeHostBounds.toCapturedBounds()
+                )
+                val node = CapturedLayer(
+                    identity = nodeIdentity,
+                    kind = CapturedLayerKind.COMPOSE_NODE,
+                    bounds = fakeHostBounds.toCapturedBounds(),
+                    children = listOf(CapturedChild.Wireframe(wireframeIdentity))
+                )
+                return CompositionHostDecomposeResult(
+                    rootChildren = listOf(CapturedChild.Layer(nodeIdentity)),
+                    nodes = listOf(node),
+                    wireframes = listOf(wireframe)
+                )
+            }
+        }
+
+        // When
+        val result = traversal(
+            composeHostDecomposer = decomposer,
+            isComposeHost = { it === composeHost }
+        ).traverseWindow(root, windowIdentity, identityFactory, fakeContext)
+
+        // Then
+        val present = result as WindowWalkResult.Present
+        val hostLayer = present.layers.first { it.kind == CapturedLayerKind.COMPOSE_HOST }
+        val nodeLayer = present.layers.first { it.kind == CapturedLayerKind.COMPOSE_NODE }
+        assertThat(capturedHostIdentity).isEqualTo(hostLayer.identity)
+        assertThat(hostLayer.children).containsExactly(CapturedChild.Layer(nodeLayer.identity))
+        assertThat(present.wireframes).hasSize(1)
+        assertThat(present.layers).hasSize(3) // root + compose host + compose node
+    }
+
+    @Test
+    fun `M fall back to the mapper W visit { compose host, decomposer cannot decompose }`(
+        @Forgery fakeRootBounds: GlobalBounds,
+        @Forgery fakeHostBounds: GlobalBounds
+    ) {
+        // Given
+        val root = mockViewGroup(fakeRootBounds)
+        val composeHost = mockView(fakeHostBounds)
+        whenever(root.childCount).thenReturn(1)
+        whenever(root.getChildAt(0)).thenReturn(composeHost)
+        val windowIdentity = identityFactory.window("window")
+        val decomposer: CompositionHostDecomposer = mock()
+        whenever(decomposer.canDecompose(composeHost)).thenReturn(false)
+
+        // When
+        val result = traversal(
+            fallback = markerMapper,
+            composeHostDecomposer = decomposer,
+            isComposeHost = { it === composeHost }
+        ).traverseWindow(root, windowIdentity, identityFactory, fakeContext)
+
+        // Then - the host's layer keeps kind COMPOSE_HOST (its identity was already minted as one
+        // via composeHost(), which the layer's kind must stay consistent with), but its content is
+        // mapped by the fallback mapper like any other unmapped View - never as a Compose subtree -
+        // in addition to the window root's own fallback-mapped wireframe.
+        val present = result as WindowWalkResult.Present
+        assertThat(present.wireframes).hasSize(2)
+        assertThat(present.wireframes.map { it.bounds.x }).contains(fakeHostBounds.x)
+        val hostLayer = present.layers.first { it.kind == CapturedLayerKind.COMPOSE_HOST }
+        assertThat(hostLayer.children).hasSize(1)
+    }
+
+    @Test
+    fun `M splice the native handoff subtree W decomposer hands back an interop view`(
+        @Forgery fakeRootBounds: GlobalBounds,
+        @Forgery fakeHostBounds: GlobalBounds,
+        @Forgery fakeInteropBounds: GlobalBounds
+    ) {
+        // Given
+        val root = mockViewGroup(fakeRootBounds)
+        val composeHost = mockView(fakeHostBounds)
+        val interopView = mockView(fakeInteropBounds)
+        whenever(root.childCount).thenReturn(1)
+        whenever(root.getChildAt(0)).thenReturn(composeHost)
+        val windowIdentity = identityFactory.window("window")
+
+        val decomposer = object : CompositionHostDecomposer {
+            override fun canDecompose(view: View) = view === composeHost
+            override fun decompose(
+                view: View,
+                request: CompositionHostDecomposeRequest
+            ): CompositionHostDecomposeResult? {
+                val childIdentity = request.identityFactory.composeNode(request.hostIdentity, "interop")
+                val subtree = request.nativeViewHandoff(interopView, childIdentity) ?: return null
+                return CompositionHostDecomposeResult(
+                    rootChildren = listOf(CapturedChild.Layer(subtree.rootLayer.identity)),
+                    nodes = subtree.layers,
+                    wireframes = subtree.wireframes
+                )
+            }
+        }
+
+        // When
+        val result = traversal(
+            fallback = markerMapper,
+            composeHostDecomposer = decomposer,
+            isComposeHost = { it === composeHost }
+        ).traverseWindow(root, windowIdentity, identityFactory, fakeContext)
+
+        // Then
+        val present = result as WindowWalkResult.Present
+        val interopLayer = present.layers.first { it.kind == CapturedLayerKind.NATIVE_VIEW }
+        assertThat(interopLayer.bounds.x).isEqualTo(fakeInteropBounds.x)
+        val interopWireframe = present.wireframes.first { it.bounds.x == fakeInteropBounds.x }
+        assertThat(interopWireframe.identity).isEqualTo(interopLayer.children.single().identity)
+    }
+
+    private fun GlobalBounds.toCapturedBounds() = CapturedBounds(x, y, width, height)
 }

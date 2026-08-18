@@ -75,6 +75,7 @@ import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
+import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposer
 import com.datadog.android.sessionreplay.recorder.mapper.EditTextMapper
 import com.datadog.android.sessionreplay.recorder.mapper.ImageViewMapper
 import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
@@ -100,6 +101,7 @@ internal class DefaultRecorderProvider(
     private val internalCallback: SessionReplayInternalCallback,
     private val heatmapsEnabled: Boolean,
     private val compositionTreeRecordingEnabled: Boolean,
+    private val compositionHostDecomposer: CompositionHostDecomposer? = null,
     private val compositionPipelineFactory: (() -> Recorder)? = null,
     private val compositionSnapshotProducerFactory: (
         (ActiveWindowSource, RumContextProvider) -> CapturedSnapshotProducer
@@ -206,12 +208,7 @@ internal class DefaultRecorderProvider(
     ): SnapshotCaptureOrchestrator {
         val skippedFrameNotifier = CaptureSkippedFrameNotifier(sdkCore)
         val producer = compositionSnapshotProducerFactory?.invoke(windowSource, rumContextProvider)
-            ?: AndroidCapturedSnapshotProducer(
-                windowSource = windowSource,
-                scopeProvider = DefaultRumViewScopeProvider(rumContextProvider),
-                timeProvider = sdkCore.timeProvider,
-                traversal = AndroidWindowTraversal(mapperRegistry = builtInCapturedMappers())
-            )
+            ?: defaultCompositionSnapshotProducer(windowSource, rumContextProvider)
         return SnapshotCaptureOrchestrator(
             producer = producer,
             processor = ImmediateCapturedSnapshotProcessor(),
@@ -234,6 +231,19 @@ internal class DefaultRecorderProvider(
             internalLogger = internalLogger
         )
     }
+
+    private fun defaultCompositionSnapshotProducer(
+        windowSource: ActiveWindowSource,
+        rumContextProvider: RumContextProvider
+    ): AndroidCapturedSnapshotProducer = AndroidCapturedSnapshotProducer(
+        windowSource = windowSource,
+        scopeProvider = DefaultRumViewScopeProvider(rumContextProvider),
+        timeProvider = sdkCore.timeProvider,
+        traversal = AndroidWindowTraversal(
+            mapperRegistry = builtInCapturedMappers(),
+            composeHostDecomposer = compositionHostDecomposer
+        )
+    )
 
     private fun builtInCapturedMappers(): CapturedViewMapperRegistry {
         val internalLogger = sdkCore.internalLogger

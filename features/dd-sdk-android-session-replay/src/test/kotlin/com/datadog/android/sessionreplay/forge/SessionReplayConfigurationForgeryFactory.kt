@@ -37,7 +37,8 @@ class SessionReplayConfigurationForgeryFactory : ForgeryFactory<SessionReplayCon
                 .setMinCPUCoreNumber(forge.aSmallInt())
                 .build(),
             heatmapsEnabled = forge.aBool(),
-            compositionTreeRecordingEnabled = forge.aBool()
+            compositionTreeRecordingEnabled = forge.aBool(),
+            compositionHostDecomposer = forge.aNullable { mock() }
         )
     }
 }
