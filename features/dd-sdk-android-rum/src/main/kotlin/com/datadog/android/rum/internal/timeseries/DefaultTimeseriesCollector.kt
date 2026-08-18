@@ -12,7 +12,6 @@ import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumViewType
 import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
 internal class DefaultTimeseriesCollector(
@@ -29,19 +28,15 @@ internal class DefaultTimeseriesCollector(
     @Volatile
     private var lastForegroundRumContext: RumContext = rumContext
 
-    @Volatile
-    private var recentSuspension: ScheduledFuture<*>? = null
-
     // region PUBLIC API
     @WorkerThread
     override fun onSessionStart() {
-        state.set(isActive = rumContext.viewType.isForeground)?.let { generation -> scheduleSampling(generation) }
+        state.setActive(isActive = rumContext.viewType.isForeground)?.let { generation -> scheduleSampling(generation) }
     }
 
     @WorkerThread
     override fun onSessionStop() {
-        cancelSuspension()
-        if (state.set(false) != null) {
+        if (state.setActive(false) != null) {
             flushPipelines(lastForegroundRumContext)
         }
     }
@@ -58,7 +53,7 @@ internal class DefaultTimeseriesCollector(
         if (newViewType.isForeground) lastForegroundRumContext = newRumContext
 
         if (isLeaveForeground) {
-            scheduleStop(state.currentGeneration)
+            scheduleStop(state.currentGeneration, lastForegroundRumContext)
         } else if (isEnterForeground) {
             scheduleSampling(generation = state.startGeneration())
         }
@@ -69,7 +64,6 @@ internal class DefaultTimeseriesCollector(
     //region SAMPLING
 
     private fun scheduleSampling(generation: Int) {
-        cancelSuspension()
         pipelines.forEach { pipeline -> scheduledExecutorService.schedulePipeline(pipeline, generation) }
     }
 
@@ -122,22 +116,17 @@ internal class DefaultTimeseriesCollector(
 
     // region SUSPENSION
 
-    private fun scheduleStop(stopRequestGeneration: Int) {
-        recentSuspension = scheduledExecutorService.scheduleSafe(
+    private fun scheduleStop(stopRequestGeneration: Int, rumContextSnapshot: RumContext) {
+        scheduledExecutorService.scheduleSafe(
             SUSPEND_OPERATION_NAME,
             SUSPEND_DELAY_MS,
             TimeUnit.MILLISECONDS,
             internalLogger
         ) {
             if (!rumContext.viewType.isForeground && state.stopGeneration(stopRequestGeneration)) {
-                flushPipelines(lastForegroundRumContext)
+                flushPipelines(rumContextSnapshot)
             }
         }
-    }
-
-    private fun cancelSuspension() {
-        recentSuspension?.cancel(false)
-        recentSuspension = null
     }
 
     // endregion
@@ -188,11 +177,11 @@ internal class DefaultTimeseriesCollector(
              * Returns true when this call is the one that deactivated it.
              */
             fun stopGeneration(generation: Int): Boolean = synchronized(this) {
-                currentGeneration == generation && set(false) != null
+                currentGeneration == generation && setActive(false) != null
             }
 
             /** Returns the new generation if this call changed the state, null otherwise. */
-            fun set(isActive: Boolean): Int? = synchronized(this) {
+            fun setActive(isActive: Boolean): Int? = synchronized(this) {
                 if (isActive == active) {
                     null
                 } else {

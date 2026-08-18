@@ -21,6 +21,7 @@ import com.datadog.android.rum.internal.timeseries.factory.EventFactory
 import com.datadog.android.rum.internal.timeseries.provider.DataPointsReader
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
+import com.datadog.tools.unit.setFieldValue
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -53,7 +54,6 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.UUID
 import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
 @Extensions(
@@ -91,9 +91,6 @@ internal class DefaultTimeseriesCollectorTest {
     lateinit var mockExecutor: ScheduledExecutorService
 
     @Mock
-    lateinit var mockScheduledFuture: ScheduledFuture<*>
-
-    @Mock
     lateinit var mockReaderA: DataPointsReader<Double>
 
     @Mock
@@ -128,11 +125,16 @@ internal class DefaultTimeseriesCollectorTest {
     private fun createTimeseries(
         initialViewType: RumViewType,
         pipelines: List<Pipeline<*>> = listOf(pipelineA, pipelineB)
+    ) = createTimeseries(fakeRumContextOf(initialViewType), pipelines)
+
+    private fun createTimeseries(
+        initialRumContext: RumContext,
+        pipelines: List<Pipeline<*>> = listOf(pipelineA, pipelineB)
     ) = DefaultTimeseriesCollector(
         pipelines = pipelines,
         internalLogger = mockInternalLogger,
         scheduledExecutorService = mockExecutor,
-        rumContext = fakeRumContextOf(initialViewType)
+        rumContext = initialRumContext
     )
 
     // Single foreground pipeline wired to reader/event factory A, with a buffer the test controls.
@@ -145,7 +147,6 @@ internal class DefaultTimeseriesCollectorTest {
     fun `set up`() {
         whenever(mockReaderA.intervalMs) doReturn fakeIntervalAMs
         whenever(mockReaderB.intervalMs) doReturn fakeIntervalBMs
-        whenever(mockExecutor.schedule(any<Runnable>(), any(), any())) doReturn mockScheduledFuture
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer { inv ->
@@ -619,6 +620,28 @@ internal class DefaultTimeseriesCollectorTest {
         verify(mockEventFactoryB, never()).create(any(), any(), any())
     }
 
+    @Test
+    fun `M flush with the context captured on leaving foreground W suspend fires { newer view }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeForegroundContext = fakeRumContextOf(RumViewType.FOREGROUND)
+        val mockPipeline = mock<Pipeline<Double>>()
+        val testedCollector = createTimeseries(fakeForegroundContext, listOf(mockPipeline))
+        testedCollector.onSessionStart()
+
+        // When
+        testedCollector.onRumContextUpdate(fakeRumContextOf(RumViewType.BACKGROUND))
+        testedCollector.setFieldValue(
+            "lastForegroundRumContext",
+            fakeForegroundContext.copy(viewId = forge.getForgery<UUID>().toString())
+        )
+        runScheduledSuspend()
+
+        // Then
+        verify(mockPipeline).flush(fakeForegroundContext)
+    }
+
     @ParameterizedTest
     @EnumSource(
         value = RumViewType::class,
@@ -708,16 +731,20 @@ internal class DefaultTimeseriesCollectorTest {
     }
 
     @Test
-    fun `M cancel pending suspend W onRumContextUpdate() { foreground re-entered }`() {
+    fun `M not flush W stale suspend fires { foreground re-entered }`() {
         // Given
+        val mockBuffer = mock<Buffer<Double>>()
+        testedTimeseriesCollector = createTimeseriesWithBuffer(mockBuffer)
         testedTimeseriesCollector.onSessionStart()
         testedTimeseriesCollector.onRumContextUpdate(fakeRumContextOf(RumViewType.NONE))
-
-        // When
+        val staleSuspend = captureScheduledSuspendRunnable()
         testedTimeseriesCollector.onRumContextUpdate(fakeRumContextOf(RumViewType.FOREGROUND))
 
+        // When
+        staleSuspend.run()
+
         // Then
-        verify(mockScheduledFuture).cancel(false)
+        verify(mockBuffer, never()).drain()
     }
 
     @Test
