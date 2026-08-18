@@ -62,7 +62,6 @@ internal class DefaultTimeseriesCollectorFactory(
 
         return DefaultTimeseriesCollector(
             internalLogger = sdkCore.internalLogger,
-            collectInBackground = configuration.collectInBackground,
             scheduledExecutorService = scheduledExecutorService,
             rumContext = rumContext,
             pipelines = pipelines

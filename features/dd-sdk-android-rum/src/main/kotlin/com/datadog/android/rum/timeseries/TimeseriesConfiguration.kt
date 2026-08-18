@@ -13,8 +13,7 @@ import com.datadog.android.rum.ExperimentalRumApi
  * Use [Builder] to create an instance.
  */
 class TimeseriesConfiguration internal constructor(
-    internal val enabledTypes: Set<TimeseriesType>,
-    internal val collectInBackground: Boolean
+    internal val enabledTypes: Set<TimeseriesType>
 ) {
 
     /**
@@ -24,8 +23,6 @@ class TimeseriesConfiguration internal constructor(
     class Builder {
 
         private var enabledTypes: Set<TimeseriesType> = TimeseriesType.values().toSet()
-
-        private var collectInBackground: Boolean = false
 
         /**
          * Restricts collection to the provided timeseries types.
@@ -39,18 +36,9 @@ class TimeseriesConfiguration internal constructor(
             enabledTypes = types.toSet()
         }
 
-        /**
-         * Sets whether to keep sampling timeseries when the app is in background.
-         * Defaults to `false`.
-         */
-        internal fun collectInBackground(collectInBackground: Boolean): Builder = apply {
-            this.collectInBackground = collectInBackground
-        }
-
         /** Builds a [TimeseriesConfiguration] from the current builder state. */
         fun build(): TimeseriesConfiguration = TimeseriesConfiguration(
-            enabledTypes = enabledTypes,
-            collectInBackground = collectInBackground
+            enabledTypes = enabledTypes
         )
     }
 

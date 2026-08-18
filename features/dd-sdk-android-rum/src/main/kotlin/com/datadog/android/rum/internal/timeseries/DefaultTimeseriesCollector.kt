@@ -13,68 +13,31 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumViewType
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicReference
 
-/**
- * Per-session timeseries collector.
- *
- * Lifecycle invariants (enforced by [onSessionStart]/[onSessionStop] idempotency):
- *  - Each instance is single-use: exactly one [onSessionStart] followed by exactly one [onSessionStop].
- *  - Multiple [onSessionStart] / [onSessionStop] calls are safe — duplicate calls are no-ops.
- *  - After [onSessionStop], the instance must not be restarted; create a new instance.
- *
- * Background sampling:
- *  - When [collectInBackground] is `false`, [onRumContextUpdate] pauses sampling on leaving foreground
- *    and resumes it on returning to foreground.
- *
- * Threading:
- *  - [onSessionStart] / [onSessionStop] / [onRumContextUpdate] are called from the RUM event-handler thread.
- *  - Sampling tasks run on a [scheduledExecutorService] shared with other RUM components
- *    (owned by the SDK core); the instance neither owns nor shuts it down.
- *  - [Pipeline] is responsible for its own thread safety via internal synchronization.
- *  - Duplicate-chain prevention: each sampling chain carries a generation number.
- *    When [startSampling] starts a new generation, any in-flight or queued ticks from the
- *    previous generation self-terminate on their first check.
- */
 internal class DefaultTimeseriesCollector(
     private val internalLogger: InternalLogger,
     internal val pipelines: List<Pipeline<*>>,
-    private val collectInBackground: Boolean,
     internal val scheduledExecutorService: ScheduledExecutorService,
-    // Read by the sampling ticks so every batch is attributed to the view that was active when it
-    // was drained, not to the one active when the collector was created.
     @Volatile private var rumContext: RumContext
 ) : TimeseriesCollector {
+    private val state = State()
 
-    private enum class State { IDLE, RUNNING, SUSPENDED, STOPPED }
-    private val state = AtomicReference(State.IDLE)
+    // Batches are attributed to the view they are sent from, but a flush can happen once the app
+    // already left the foreground, where there is no view to attribute to. Keep the last foreground
+    // context so those batches stay attached to the view they were sent from.
+    @Volatile
+    private var lastForegroundRumContext: RumContext = rumContext
 
-    // Incremented on every start/resume. Ticks carrying a stale generation self-terminate.
-    private val currentGeneration = AtomicInteger(0)
-
+    // region PUBLIC API
     @WorkerThread
     override fun onSessionStart() {
-        if (state.compareAndSet(State.IDLE, State.RUNNING)) {
-            startSampling()
-        }
+        state.setActive(isActive = rumContext.viewType.isForeground)?.let { generation -> scheduleSampling(generation) }
     }
 
     @WorkerThread
     override fun onSessionStop() {
-        if (state.getAndSet(State.STOPPED) != State.STOPPED) {
-            pipelines.forEach { pipeline ->
-                try {
-                    pipeline.flush(rumContext)
-                } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
-                    internalLogger.log(
-                        level = InternalLogger.Level.ERROR,
-                        targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                        messageBuilder = { ERROR_FLUSH_FAILED },
-                        throwable = t
-                    )
-                }
-            }
+        if (state.setActive(false) != null) {
+            flushPipelines(lastForegroundRumContext)
         }
     }
 
@@ -82,34 +45,44 @@ internal class DefaultTimeseriesCollector(
     override fun onRumContextUpdate(newRumContext: RumContext) {
         val oldViewType = rumContext.viewType
         val newViewType = newRumContext.viewType
+
         val isEnterForeground = !oldViewType.isForeground && newViewType.isForeground
+        val isLeaveForeground = oldViewType.isForeground && !newViewType.isForeground
 
         rumContext = newRumContext
+        if (newViewType.isForeground) lastForegroundRumContext = newRumContext
 
-        if (!collectInBackground) {
-            if (isEnterForeground && state.compareAndSet(State.SUSPENDED, State.RUNNING)) {
-                startSampling()
-            } else if (!newViewType.isForeground) {
-                state.compareAndSet(State.RUNNING, State.SUSPENDED)
-            }
+        if (isLeaveForeground) {
+            scheduleStop(state.currentGeneration, lastForegroundRumContext)
+        } else if (isEnterForeground) {
+            scheduleSampling(generation = state.startGeneration())
         }
     }
 
-    private fun startSampling() {
-        val generation = currentGeneration.incrementAndGet()
-        pipelines.forEach { schedulePipeline(it, generation) }
+    // endregion
+
+    //region SAMPLING
+
+    private fun scheduleSampling(generation: Int) {
+        pipelines.forEach { pipeline -> scheduledExecutorService.schedulePipeline(pipeline, generation) }
     }
 
-    private fun schedulePipeline(pipeline: Pipeline<*>, generation: Int) {
-        scheduledExecutorService.scheduleSafe(
-            OPERATION_NAME,
+    private fun ScheduledExecutorService.schedulePipeline(
+        pipeline: Pipeline<*>,
+        generation: Int
+    ) {
+        scheduleSafe(
+            TIMESERIES_OPERATION_NAME,
             pipeline.intervalMs,
             TimeUnit.MILLISECONDS,
             internalLogger
         ) {
-            if (!isActive(generation)) return@scheduleSafe
+            if (!state.isGenerationActive(generation)) return@scheduleSafe
             try {
-                pipeline.execute(rumContext)
+                val currentRumContext = rumContext
+                if (currentRumContext.viewType.isForeground) {
+                    pipeline.execute(currentRumContext)
+                }
             } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
                 internalLogger.log(
                     level = InternalLogger.Level.ERROR,
@@ -118,18 +91,57 @@ internal class DefaultTimeseriesCollector(
                     throwable = t
                 )
             } finally {
-                if (isActive(generation)) schedulePipeline(pipeline, generation)
+                if (state.isGenerationActive(generation)) schedulePipeline(pipeline, generation)
             }
         }
     }
 
-    private fun isActive(generation: Int): Boolean =
-        state.get() == State.RUNNING && currentGeneration.get() == generation
+    @WorkerThread
+    private fun flushPipelines(rumContext: RumContext) {
+        pipelines.forEach { pipeline ->
+            try {
+                pipeline.flush(rumContext)
+            } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
+                internalLogger.log(
+                    level = InternalLogger.Level.ERROR,
+                    targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                    messageBuilder = { ERROR_FLUSH_FAILED },
+                    throwable = t
+                )
+            }
+        }
+    }
+
+    // endregion
+
+    // region SUSPENSION
+
+    private fun scheduleStop(stopRequestGeneration: Int, rumContextSnapshot: RumContext) {
+        scheduledExecutorService.scheduleSafe(
+            SUSPEND_OPERATION_NAME,
+            SUSPEND_DELAY_MS,
+            TimeUnit.MILLISECONDS,
+            internalLogger
+        ) {
+            if (!rumContext.viewType.isForeground && state.stopGeneration(stopRequestGeneration)) {
+                flushPipelines(rumContextSnapshot)
+            }
+        }
+    }
+
+    // endregion
 
     internal companion object {
-        const val OPERATION_NAME = "Timeseries sampling"
+        const val TIMESERIES_OPERATION_NAME = "Timeseries sampling"
+        const val SUSPEND_OPERATION_NAME = "Timeseries suspend"
         const val ERROR_SAMPLING_FAILED = "Timeseries sampling iteration failed; rescheduling next sample."
-        const val ERROR_FLUSH_FAILED = "Timeseries flush on session stop failed."
+        const val ERROR_FLUSH_FAILED = "Timeseries flush failed."
+
+        // Matches ActivityViewTrackingStrategy.STOP_VIEW_DELAY_MS, which guards the same race:
+        // an Activity-to-Activity transition leaves no active view for a moment when the tracking
+        // strategy stops the view on pause rather than on stop.
+        const val SUSPEND_DELAY_MS = 200L
+
         val RumViewType?.isForeground: Boolean
             get() = when (this) {
                 RumViewType.FOREGROUND, RumViewType.APPLICATION_LAUNCH -> true
@@ -137,5 +149,46 @@ internal class DefaultTimeseriesCollector(
                 RumViewType.NONE -> false
                 null -> false
             }
+
+        private class State {
+            // Written under the monitor only, but read outside of it, hence @Volatile: a stale
+            // generation would make the guards below reject a live sampling chain or flush.
+            @Volatile
+            var currentGeneration: Int = 0
+                private set
+
+            private var active: Boolean = false
+
+            fun isGenerationActive(generation: Int): Boolean = synchronized(this) {
+                currentGeneration == generation && active
+            }
+
+            /**
+             * Always starts a fresh generation, so that a suspension pending on the previous one
+             * can no longer stop the sampling chain. Returns the new generation.
+             */
+            fun startGeneration(): Int = synchronized(this) {
+                active = true
+                ++currentGeneration
+            }
+
+            /**
+             * Deactivates [generation] if it is still the current one.
+             * Returns true when this call is the one that deactivated it.
+             */
+            fun stopGeneration(generation: Int): Boolean = synchronized(this) {
+                currentGeneration == generation && setActive(false) != null
+            }
+
+            /** Returns the new generation if this call changed the state, null otherwise. */
+            fun setActive(isActive: Boolean): Int? = synchronized(this) {
+                if (isActive == active) {
+                    null
+                } else {
+                    active = isActive
+                    ++currentGeneration
+                }
+            }
+        }
     }
 }
