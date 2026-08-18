@@ -16,6 +16,7 @@ internal class WireframeForgeryFactory : ForgeryFactory<MobileSegment.Wireframe>
             0 -> forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>()
             1 -> forge.getForgery<MobileSegment.Wireframe.ImageWireframe>()
             2 -> forge.getForgery<MobileSegment.Wireframe.PlaceholderWireframe>()
+            3 -> forge.getForgery<MobileSegment.Wireframe.WebviewWireframe>()
             else -> forge.getForgery<MobileSegment.Wireframe.TextWireframe>()
         }
     }

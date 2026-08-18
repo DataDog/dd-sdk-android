@@ -224,7 +224,7 @@ internal open class SwitchCompatMapper(
     private fun resolveTrackShapeStyle(view: SwitchCompat, checkBoxColor: String): MobileSegment.ShapeStyle {
         return MobileSegment.ShapeStyle(
             backgroundColor = checkBoxColor,
-            view.alpha
+            opacity = view.alpha
         )
     }
 

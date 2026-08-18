@@ -142,16 +142,16 @@ internal class RecordedDataProcessor(
         if (fullSnapshotRequired) {
             records.add(
                 MobileSegment.MobileRecord.MobileFullSnapshotRecord(
-                    timestamp,
-                    MobileSegment.Data(wireframes)
+                    timestamp = timestamp,
+                    data = MobileSegment.Data(wireframes)
                 )
             )
         } else {
             mutationResolver.resolveMutations(prevSnapshot, wireframes)?.let {
                 records.add(
                     MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord(
-                        timestamp,
-                        it
+                        timestamp = timestamp,
+                        data = it
                     )
                 )
             }

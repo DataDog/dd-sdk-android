@@ -76,6 +76,7 @@ internal class SessionReplayConfigurationBuilderTest {
         assertThat(sessionReplayConfiguration.customOptionSelectorDetectors).isEmpty()
         assertThat(sessionReplayConfiguration.dynamicOptimizationEnabled).isEqualTo(true)
         assertThat(sessionReplayConfiguration.heatmapsEnabled).isFalse()
+        assertThat(sessionReplayConfiguration.compositionTreeRecordingEnabled).isFalse()
     }
 
     @Test
@@ -87,6 +88,18 @@ internal class SessionReplayConfigurationBuilderTest {
 
         // Then
         assertThat(sessionReplayConfiguration.heatmapsEnabled).isTrue()
+    }
+
+    @Test
+    @OptIn(ExperimentalSessionReplayApi::class)
+    fun `M set compositionTreeRecordingEnabled to true W setCompositionTreeRecordingEnabled()`() {
+        // When
+        val sessionReplayConfiguration = testedBuilder
+            .setCompositionTreeRecordingEnabled(true)
+            .build()
+
+        // Then
+        assertThat(sessionReplayConfiguration.compositionTreeRecordingEnabled).isTrue()
     }
 
     @Test

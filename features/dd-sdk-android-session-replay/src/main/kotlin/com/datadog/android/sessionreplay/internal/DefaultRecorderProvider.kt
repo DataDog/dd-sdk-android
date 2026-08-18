@@ -27,6 +27,8 @@ import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.SessionReplayInternalCallback
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.internal.composition.CapturePipelineSelector
+import com.datadog.android.sessionreplay.internal.composition.CompositionCapturePipeline
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.datadog.android.sessionreplay.internal.recorder.SessionReplayRecorder
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ActionBarContainerMapper
@@ -67,7 +69,9 @@ internal class DefaultRecorderProvider(
     private val customDrawableMappers: List<DrawableToColorMapper>,
     private val dynamicOptimizationEnabled: Boolean,
     private val internalCallback: SessionReplayInternalCallback,
-    private val heatmapsEnabled: Boolean
+    private val heatmapsEnabled: Boolean,
+    private val compositionTreeRecordingEnabled: Boolean,
+    private val compositionPipelineFactory: () -> Recorder = { CompositionCapturePipeline() }
 ) : RecorderProvider {
 
     override fun provideSessionReplayRecorder(
@@ -77,24 +81,31 @@ internal class DefaultRecorderProvider(
         rumContextProvider: RumContextProvider,
         application: Application
     ): Recorder {
-        return SessionReplayRecorder(
-            application,
-            resourceDataStoreManager = resourceDataStoreManager,
-            resourcesWriter = resourceWriter,
-            rumContextProvider = rumContextProvider,
-            imagePrivacy = imagePrivacy,
-            touchPrivacyManager = touchPrivacyManager,
-            textAndInputPrivacy = textAndInputPrivacy,
-            recordWriter = recordWriter,
-            timeProvider = sdkCore.timeProvider,
-            mappers = customMappers + builtInMappers(),
-            customOptionSelectorDetectors = customOptionSelectorDetectors,
-            customDrawableMappers = customDrawableMappers,
-            sdkCore = sdkCore,
-            dynamicOptimizationEnabled = dynamicOptimizationEnabled,
-            internalCallback = internalCallback,
-            heatmapIdentifierRegistry = if (heatmapsEnabled) LazyHeatmapIdentifierRegistry(sdkCore) else null
-        )
+        val heatmapIdentifierRegistry = if (heatmapsEnabled) LazyHeatmapIdentifierRegistry(sdkCore) else null
+        return CapturePipelineSelector(
+            compositionEnabled = compositionTreeRecordingEnabled,
+            compositionFactory = compositionPipelineFactory,
+            legacyFactory = {
+                SessionReplayRecorder(
+                    application,
+                    resourceDataStoreManager = resourceDataStoreManager,
+                    resourcesWriter = resourceWriter,
+                    rumContextProvider = rumContextProvider,
+                    imagePrivacy = imagePrivacy,
+                    touchPrivacyManager = touchPrivacyManager,
+                    textAndInputPrivacy = textAndInputPrivacy,
+                    recordWriter = recordWriter,
+                    timeProvider = sdkCore.timeProvider,
+                    mappers = customMappers + builtInMappers(),
+                    customOptionSelectorDetectors = customOptionSelectorDetectors,
+                    customDrawableMappers = customDrawableMappers,
+                    sdkCore = sdkCore,
+                    dynamicOptimizationEnabled = dynamicOptimizationEnabled,
+                    internalCallback = internalCallback,
+                    heatmapIdentifierRegistry = heatmapIdentifierRegistry
+                )
+            }
+        ).create()
     }
 
     @Suppress("LongMethod")
