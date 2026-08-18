@@ -88,7 +88,8 @@ internal class RemoteConfigServiceImpl(
 
     @WorkerThread
     private fun fetchAndCache() {
-        val rawConfig = fetcher.fetch(configUrl) ?: return
+        val fetchResult = fetcher.fetch(configUrl) ?: return
+        val rawConfig = fetchResult.body
         val config = parseConfig(rawConfig)
         if (config == null) {
             // Evict the bad response from the HTTP cache so the next syncWithRemote()

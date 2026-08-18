@@ -78,7 +78,38 @@ internal class RemoteConfigFetcherTest {
     // region fetch() - Success
 
     @Test
-    fun `M return response body W fetch() { successful 2xx response }`(
+    fun `M return FetchResult with CDN headers W fetch() { 200 with x-amz-version-id and Last-Modified }`(
+        @StringForgery fakeBody: String,
+        @StringForgery fakeVersionId: String
+    ) {
+        // Given
+        val fakeLastModifiedMs = 1_700_000_000_000L
+        val fakeRequest = Request.Builder().url(fakeUrl).build()
+        val fakeResponse = Response.Builder()
+            .request(fakeRequest)
+            .protocol(Protocol.HTTP_1_1)
+            .code(200)
+            .message("OK")
+            .header("x-amz-version-id", fakeVersionId)
+            .header("Last-Modified", "Tue, 14 Nov 2023 22:13:20 GMT") // = 1_700_000_000_000L
+            .body(fakeBody.toResponseBody("application/json".toMediaType()))
+            .networkResponse(genuineFetchNetworkResponse(fakeRequest))
+            .build()
+        whenever(mockCallFactory.newCall(isA())).doReturn(mockCall)
+        whenever(mockCall.execute()).doReturn(fakeResponse)
+
+        // When
+        val result = testedFetcher.fetch(fakeUrl.toHttpUrl())
+
+        // Then
+        assertThat(result).isNotNull()
+        assertThat(result!!.body).isEqualTo(fakeBody)
+        assertThat(result.versionId).isEqualTo(fakeVersionId)
+        assertThat(result.lastModified).isEqualTo(fakeLastModifiedMs)
+    }
+
+    @Test
+    fun `M return FetchResult with null CDN headers W fetch() { 200 without optional headers }`(
         @StringForgery fakeBody: String
     ) {
         // Given
@@ -89,6 +120,7 @@ internal class RemoteConfigFetcherTest {
             .code(200)
             .message("OK")
             .body(fakeBody.toResponseBody("application/json".toMediaType()))
+            .networkResponse(genuineFetchNetworkResponse(fakeRequest))
             .build()
         whenever(mockCallFactory.newCall(isA())).doReturn(mockCall)
         whenever(mockCall.execute()).doReturn(fakeResponse)
@@ -97,7 +129,66 @@ internal class RemoteConfigFetcherTest {
         val result = testedFetcher.fetch(fakeUrl.toHttpUrl())
 
         // Then
-        assertThat(result).isEqualTo(fakeBody)
+        assertThat(result).isNotNull()
+        assertThat(result!!.body).isEqualTo(fakeBody)
+        assertThat(result.versionId).isNull()
+        assertThat(result.lastModified).isNull()
+    }
+
+    @Test
+    fun `M return null W fetch() { fresh cache hit, no network request }`(
+        @StringForgery fakeBody: String
+    ) {
+        // Given — within Cache-Control max-age OkHttp serves the cached body without hitting the
+        // network at all, so networkResponse is null. Nothing new was downloaded.
+        val fakeRequest = Request.Builder().url(fakeUrl).build()
+        val fakeResponse = Response.Builder()
+            .request(fakeRequest)
+            .protocol(Protocol.HTTP_1_1)
+            .code(200)
+            .message("OK")
+            .body(fakeBody.toResponseBody("application/json".toMediaType()))
+            // no networkResponse — this is what a fresh cache hit looks like
+            .build()
+        whenever(mockCallFactory.newCall(isA())).doReturn(mockCall)
+        whenever(mockCall.execute()).doReturn(fakeResponse)
+
+        // When
+        val result = testedFetcher.fetch(fakeUrl.toHttpUrl())
+
+        // Then — no new version was downloaded; the service must not touch sync metadata
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return null W fetch() { 304 response via OkHttp cache }`(
+        @StringForgery fakeBody: String
+    ) {
+        // Given — OkHttp represents a 304 revalidation as a 200 with the cached body,
+        // but networkResponse.code reflects the raw 304 exchange.
+        val fakeRequest = Request.Builder().url(fakeUrl).build()
+        val fakeNetworkResponse = Response.Builder()
+            .request(fakeRequest)
+            .protocol(Protocol.HTTP_1_1)
+            .code(304)
+            .message("Not Modified")
+            .build()
+        val fakeResponse = Response.Builder()
+            .request(fakeRequest)
+            .protocol(Protocol.HTTP_1_1)
+            .code(200)
+            .message("OK")
+            .body(fakeBody.toResponseBody("application/json".toMediaType()))
+            .networkResponse(fakeNetworkResponse)
+            .build()
+        whenever(mockCallFactory.newCall(isA())).doReturn(mockCall)
+        whenever(mockCall.execute()).doReturn(fakeResponse)
+
+        // When
+        val result = testedFetcher.fetch(fakeUrl.toHttpUrl())
+
+        // Then — 304 means no new data; return null so the service skips metadata update
+        assertThat(result).isNull()
     }
 
     @Test
@@ -110,6 +201,7 @@ internal class RemoteConfigFetcherTest {
             .code(200)
             .message("OK")
             .body("".toResponseBody("application/json".toMediaType()))
+            .networkResponse(genuineFetchNetworkResponse(fakeRequest))
             .build()
         whenever(mockCallFactory.newCall(isA())).doReturn(mockCall)
         whenever(mockCall.execute()).doReturn(fakeResponse)
@@ -304,6 +396,23 @@ internal class RemoteConfigFetcherTest {
             message = RemoteConfigNetworkFetcher.ERROR_EVICT_CACHE,
             throwableClass = IOException::class.java
         )
+    }
+
+    // endregion
+
+    // region Helpers
+
+    /**
+     * A networkResponse with code 200, marking the outer response as a genuine (non-cached) fetch.
+     * OkHttp leaves networkResponse null for a fresh cache hit and sets it to 304 for a revalidation.
+     */
+    private fun genuineFetchNetworkResponse(request: Request): Response {
+        return Response.Builder()
+            .request(request)
+            .protocol(Protocol.HTTP_1_1)
+            .code(200)
+            .message("OK")
+            .build()
     }
 
     // endregion

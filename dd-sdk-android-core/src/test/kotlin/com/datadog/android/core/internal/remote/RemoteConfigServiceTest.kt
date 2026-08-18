@@ -169,7 +169,9 @@ internal class RemoteConfigServiceTest {
         // Given
         testedService = buildService()
         val fakeJson = fakeRemoteConfiguration.toJson().toString()
-        whenever(mockFetcher.fetch(any())).doReturn(fakeJson)
+        whenever(mockFetcher.fetch(any())).doReturn(
+            RemoteConfigFetcher.FetchResult(body = fakeJson, versionId = null, lastModified = null)
+        )
 
         // When
         testedService.syncWithRemote()
@@ -196,7 +198,13 @@ internal class RemoteConfigServiceTest {
             .addPathSegment("v1")
             .addPathSegment("$fakeRemoteConfigurationId.json")
             .build()
-        whenever(mockFetcher.fetch(expectedUrl)).doReturn(fakeRemoteConfiguration.toJson().toString())
+        whenever(mockFetcher.fetch(expectedUrl)).doReturn(
+            RemoteConfigFetcher.FetchResult(
+                body = fakeRemoteConfiguration.toJson().toString(),
+                versionId = null,
+                lastModified = null
+            )
+        )
 
         // When
         testedService.syncWithRemote()
@@ -213,7 +221,9 @@ internal class RemoteConfigServiceTest {
         val nonExistentStorageDir = File(fakeStorageDir, "not-yet-created")
         assertThat(nonExistentStorageDir).doesNotExist()
         val fakeJson = fakeRemoteConfiguration.toJson().toString()
-        whenever(mockFetcher.fetch(any())).doReturn(fakeJson)
+        whenever(mockFetcher.fetch(any())).doReturn(
+            RemoteConfigFetcher.FetchResult(body = fakeJson, versionId = null, lastModified = null)
+        )
         testedService = RemoteConfigServiceImpl(
             remoteConfigurationId = fakeRemoteConfigurationId,
             remoteConfigurationEndpoint = fakeEndpoint,
@@ -268,7 +278,9 @@ internal class RemoteConfigServiceTest {
               }
             }
         """.trimIndent()
-        whenever(mockFetcher.fetch(any())).doReturn(fakeJson)
+        whenever(mockFetcher.fetch(any())).doReturn(
+            RemoteConfigFetcher.FetchResult(body = fakeJson, versionId = null, lastModified = null)
+        )
 
         // When
         testedService.syncWithRemote()
@@ -326,7 +338,9 @@ internal class RemoteConfigServiceTest {
     fun `M not update cache or disk W syncWithRemote() { invalid JSON response }`() {
         // Given
         testedService = buildService()
-        whenever(mockFetcher.fetch(any())).doReturn("not-valid-json{{{")
+        whenever(mockFetcher.fetch(any())).doReturn(
+            RemoteConfigFetcher.FetchResult(body = "not-valid-json{{{", versionId = null, lastModified = null)
+        )
 
         // When
         testedService.syncWithRemote()
@@ -354,7 +368,9 @@ internal class RemoteConfigServiceTest {
         // Given
         testedService = buildService()
         val fakeJson = fakeRemoteConfiguration.toJson().toString()
-        whenever(mockFetcher.fetch(any())).doReturn(fakeJson)
+        whenever(mockFetcher.fetch(any())).doReturn(
+            RemoteConfigFetcher.FetchResult(body = fakeJson, versionId = null, lastModified = null)
+        )
         whenever(mockFileReaderWriter.writeData(any(), any(), any(), any())).doReturn(false)
 
         // When
