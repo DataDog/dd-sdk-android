@@ -203,6 +203,126 @@ object com.datadog.android.internal.sampling.DeterministicSampling
   fun combinedSampleRate(Float, Float): Float
 object com.datadog.android.internal.sampling.SessionSamplingIdProvider
   fun provideId(String): ULong
+data class com.datadog.android.internal.sessionreplay.composition.CapturedBounds
+  constructor(Long, Long, Long, Long)
+enum com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
+  - SYNTHETIC_SCREEN_ROOT
+  - WINDOW_ROOT
+  - NATIVE_VIEW
+  - COMPOSE_HOST
+  - COMPOSE_NODE
+  - COMPOSITION_LAYER
+data class com.datadog.android.internal.sessionreplay.composition.CapturedLayer
+  constructor(CapturedIdentity, CapturedLayerKind, CapturedBounds, List<CapturedChild>, List<CapturedModifier> = emptyList(), CapturedCompositeOperation? = null)
+sealed interface com.datadog.android.internal.sessionreplay.composition.CapturedChild
+  val identity: CapturedIdentity
+  data class Layer : CapturedChild
+    constructor(CapturedIdentity)
+  data class Wireframe : CapturedChild
+    constructor(CapturedIdentity)
+sealed interface com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+  val identity: CapturedIdentity
+  val bounds: CapturedBounds
+  val clip: CapturedClip?
+  val permanentId: String?
+  data class Shape : CapturedWireframe
+    constructor(CapturedIdentity, CapturedBounds, CapturedClip? = null, CapturedShapeStyle? = null, CapturedShapeBorder? = null, String? = null)
+  data class Text : CapturedWireframe
+    constructor(CapturedIdentity, CapturedBounds, CapturedClip? = null, CapturedShapeStyle? = null, CapturedShapeBorder? = null, String, CapturedTextStyle, CapturedTextPosition? = null, String? = null)
+  data class WebView : CapturedWireframe
+    constructor(CapturedIdentity, CapturedBounds, CapturedClip? = null, CapturedShapeStyle? = null, CapturedShapeBorder? = null, Boolean? = null, String? = null)
+  data class Pixel : CapturedWireframe
+    constructor(CapturedIdentity, CapturedBounds, CapturedClip? = null, CapturedShapeStyle? = null, CapturedShapeBorder? = null, PixelResource, Boolean? = null, String? = null)
+  data class PrivacyPlaceholder : CapturedWireframe
+    constructor(CapturedIdentity, CapturedBounds, CapturedClip? = null, String? = null, String? = null)
+sealed interface com.datadog.android.internal.sessionreplay.composition.PixelResource
+  data class Resolved : PixelResource
+    constructor(String, String? = null)
+  object Unresolved : PixelResource
+data class com.datadog.android.internal.sessionreplay.composition.CapturedClip
+  constructor(Long? = null, Long? = null, Long? = null, Long? = null)
+data class com.datadog.android.internal.sessionreplay.composition.CapturedShapeStyle
+  constructor(String? = null, CapturedBackgroundGradient? = null, Number? = null, Number? = null)
+data class com.datadog.android.internal.sessionreplay.composition.CapturedBackgroundGradient
+  constructor(List<CapturedGradientStop>, CapturedPoint, CapturedPoint)
+data class com.datadog.android.internal.sessionreplay.composition.CapturedGradientStop
+  constructor(String, Double)
+data class com.datadog.android.internal.sessionreplay.composition.CapturedPoint
+  constructor(Double, Double)
+data class com.datadog.android.internal.sessionreplay.composition.CapturedShapeBorder
+  constructor(String, Long)
+data class com.datadog.android.internal.sessionreplay.composition.CapturedTextStyle
+  constructor(String, Long, String, CapturedTruncationMode? = null)
+enum com.datadog.android.internal.sessionreplay.composition.CapturedTruncationMode
+  - CLIP
+  - HEAD
+  - TAIL
+  - MIDDLE
+data class com.datadog.android.internal.sessionreplay.composition.CapturedTextPosition
+  constructor(CapturedPadding? = null, CapturedAlignment? = null)
+data class com.datadog.android.internal.sessionreplay.composition.CapturedPadding
+  constructor(Long? = null, Long? = null, Long? = null, Long? = null)
+data class com.datadog.android.internal.sessionreplay.composition.CapturedAlignment
+  constructor(CapturedHorizontalAlignment? = null, CapturedVerticalAlignment? = null)
+enum com.datadog.android.internal.sessionreplay.composition.CapturedHorizontalAlignment
+  - LEFT
+  - CENTER
+  - RIGHT
+enum com.datadog.android.internal.sessionreplay.composition.CapturedVerticalAlignment
+  - TOP
+  - CENTER
+  - BOTTOM
+sealed interface com.datadog.android.internal.sessionreplay.composition.CapturedModifier
+  data class Clip : CapturedModifier
+    constructor(String, CapturedFillRule? = null)
+  data class Opacity : CapturedModifier
+    constructor(Double)
+  data class ColorMatrix : CapturedModifier
+    constructor(List<Double>)
+  data class GaussianBlur : CapturedModifier
+    constructor(Double)
+  data class Shadow : CapturedModifier
+    constructor(String, Double, Double, Double, String? = null)
+  data class BrightnessBias : CapturedModifier
+    constructor(Double)
+  data class Saturate : CapturedModifier
+    constructor(Double)
+  data class MaskImage : CapturedModifier
+    constructor(String)
+enum com.datadog.android.internal.sessionreplay.composition.CapturedFillRule
+  - NON_ZERO
+  - EVEN_ODD
+enum com.datadog.android.internal.sessionreplay.composition.CapturedCompositeOperation
+  - SOURCE_OVER
+  - DESTINATION_IN
+  - DESTINATION_OUT
+  - PLUS_DARKER
+data class com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
+  constructor(String)
+enum com.datadog.android.internal.sessionreplay.composition.CapturedIdentityKind
+  - SCREEN_ROOT
+  - WINDOW
+  - VIEW
+  - COMPOSE_HOST
+  - COMPOSE_NODE
+  - LAYER
+  - WIREFRAME
+enum com.datadog.android.internal.sessionreplay.composition.CapturedWireframeKind
+  constructor(Long)
+  - WEB_VIEW
+  - SHAPE
+  - TEXT
+  - IMAGE
+  - PLACEHOLDER
+data class com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
+  constructor(RumViewIdentityScope, CapturedIdentityKind, CapturedWireframeKind?, List<String>, String, Long)
+  fun path(): List<String>
+interface com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory
+  fun composeHost(CapturedIdentity, String): CapturedIdentity
+  fun composeNode(CapturedIdentity, String): CapturedIdentity
+  fun shapeWireframe(CapturedIdentity): CapturedIdentity
+  fun textWireframe(CapturedIdentity): CapturedIdentity
+  fun placeholderWireframe(CapturedIdentity): CapturedIdentity
 interface com.datadog.android.internal.system.BuildSdkVersionProvider
   val version: Int
   val isAtLeastN: Boolean

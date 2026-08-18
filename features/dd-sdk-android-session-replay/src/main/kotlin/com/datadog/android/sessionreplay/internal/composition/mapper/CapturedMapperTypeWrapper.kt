@@ -12,7 +12,7 @@ internal class CapturedMapperTypeWrapper<T : View>(
     private val type: Class<T>,
     private val mapper: CapturedViewMapper<T>
 ) {
-    // view::class.java is a non-null Kotlin type, so it can't be the null that would make this throw
+    // isAssignableFrom can only throw on a null argument, and view::class.java is never null.
     @Suppress("UnsafeThirdPartyFunctionCall")
     fun supportsView(view: View): Boolean = type.isAssignableFrom(view::class.java)
 

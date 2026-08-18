@@ -6,6 +6,20 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import com.datadog.android.internal.sessionreplay.composition.CapturedChild
+import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
+import com.datadog.android.internal.sessionreplay.composition.CapturedIdentityKind
+import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
+import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
+import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
+import com.datadog.android.internal.sessionreplay.composition.CapturedShapeBorder
+import com.datadog.android.internal.sessionreplay.composition.CapturedShapeStyle
+import com.datadog.android.internal.sessionreplay.composition.CapturedTextStyle
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframeKind
+import com.datadog.android.internal.sessionreplay.composition.PixelResource
+import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
+
 @Suppress("TooManyFunctions") // Each function validates one independent snapshot invariant.
 internal class CapturedSnapshotValidation(
     private val snapshot: CapturedFullSnapshot,
@@ -311,9 +325,11 @@ internal class CapturedSnapshotValidation(
     @Suppress("UnsafeThirdPartyFunctionCall")
     private fun validateStyle(style: CapturedShapeStyle?, identity: CapturedIdentity) {
         if (style == null) return
-        val valid = (style.opacity == null || style.opacity.toDouble() in 0.0..1.0) &&
+        val opacity = style.opacity
+        val backgroundColor = style.backgroundColor
+        val valid = (opacity == null || opacity.toDouble() in 0.0..1.0) &&
             style.cornerRadius.isFiniteOrNull() &&
-            (style.backgroundColor == null || HEX_COLOR.matches(style.backgroundColor))
+            (backgroundColor == null || HEX_COLOR.matches(backgroundColor))
         if (!valid) failures += validationFailure(CaptureValidationErrorCode.INVALID_STYLE, identity)
     }
 

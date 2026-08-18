@@ -49,6 +49,7 @@ import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
+import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposer
 import com.datadog.android.sessionreplay.recorder.mapper.EditTextMapper
 import com.datadog.android.sessionreplay.recorder.mapper.ImageViewMapper
 import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
@@ -74,10 +75,12 @@ internal class DefaultRecorderProvider(
     private val internalCallback: SessionReplayInternalCallback,
     private val heatmapsEnabled: Boolean,
     private val compositionTreeRecordingEnabled: Boolean,
+    private val compositionHostDecomposer: CompositionHostDecomposer? = null,
     private val compositionPipelineFactory: CompositionPipelineFactory = DefaultCompositionPipelineFactory(
         sdkCore = sdkCore,
         internalCallback = internalCallback,
         touchPrivacyManager = touchPrivacyManager,
+        compositionHostDecomposer = compositionHostDecomposer,
         dynamicOptimizationEnabled = dynamicOptimizationEnabled
     )
 ) : RecorderProvider {

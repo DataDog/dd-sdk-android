@@ -23,6 +23,7 @@ import com.datadog.android.sessionreplay.internal.recorder.RecordingTimeBank
 import com.datadog.android.sessionreplay.internal.recorder.TimeBank
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
+import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposer
 
 /**
  * Wires every collaborator scoped to one composition recording session: the orchestrator and its
@@ -32,6 +33,7 @@ internal class DefaultCompositionPipelineFactory(
     private val sdkCore: FeatureSdkCore,
     private val internalCallback: SessionReplayInternalCallback,
     private val touchPrivacyManager: TouchPrivacyManager,
+    private val compositionHostDecomposer: CompositionHostDecomposer? = null,
     private val dynamicOptimizationEnabled: Boolean,
     private val snapshotProducerFactory: (ActiveWindowSource, RumContextProvider) -> CapturedSnapshotProducer = {
             windowSource,
@@ -44,7 +46,8 @@ internal class DefaultCompositionPipelineFactory(
             traversal = AndroidWindowTraversal(
                 mapperRegistry = builtInCapturedMappers(sdkCore.internalLogger),
                 touchPrivacyManager = touchPrivacyManager,
-                internalLogger = sdkCore.internalLogger
+                internalLogger = sdkCore.internalLogger,
+                composeHostDecomposer = compositionHostDecomposer
             ),
             touchPrivacyManager = touchPrivacyManager
         )

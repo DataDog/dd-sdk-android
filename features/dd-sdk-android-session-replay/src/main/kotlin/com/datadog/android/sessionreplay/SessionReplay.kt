@@ -62,7 +62,8 @@ object SessionReplay {
                     dynamicOptimizationEnabled = sessionReplayConfiguration.dynamicOptimizationEnabled,
                     internalCallback = sessionReplayConfiguration.internalCallback,
                     heatmapsEnabled = sessionReplayConfiguration.heatmapsEnabled,
-                    compositionTreeRecordingEnabled = sessionReplayConfiguration.compositionTreeRecordingEnabled
+                    compositionTreeRecordingEnabled = sessionReplayConfiguration.compositionTreeRecordingEnabled,
+                    compositionHostDecomposer = sessionReplayConfiguration.compositionHostDecomposer
                 )
 
                 if (isAlreadyRegistered()) {

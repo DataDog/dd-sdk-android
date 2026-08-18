@@ -7,6 +7,10 @@
 package com.datadog.android.sessionreplay.internal.composition
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
+import com.datadog.android.internal.sessionreplay.composition.CapturedIdentityKind
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframeKind
+import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 
 /**
  * Added to every raw layer replay id so that layer wire ids always land above the Int range

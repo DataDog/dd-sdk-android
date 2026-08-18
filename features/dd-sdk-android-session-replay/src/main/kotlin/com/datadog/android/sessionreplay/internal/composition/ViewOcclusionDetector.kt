@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.composition
 import android.view.View
 import android.view.ViewGroup
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
@@ -43,6 +44,7 @@ internal class ViewOcclusionDetector(
                 occluded.add(i)
             }
             if (isFullyOpaqueCovering(child)) {
+                @Suppress("UnsafeThirdPartyFunctionCall") // plain ArrayList-backed add, cannot throw
                 coveringBoundsAbove.add(childBounds)
             }
         }

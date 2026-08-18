@@ -10,11 +10,13 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.SessionReplayConfiguration.Builder.Companion.DUPLICATE_COMPOSITION_HOST_DECOMPOSER_DETECTED
 import com.datadog.android.sessionreplay.SessionReplayConfiguration.Builder.Companion.DUPLICATE_EXTENSION_DETECTED
 import com.datadog.android.sessionreplay.SessionReplayConfiguration.Builder.Companion.DUPLICATE_MAPPER_DETECTED
 import com.datadog.android.sessionreplay.SessionReplayConfiguration.Builder.Companion.SAMPLE_IN_ALL_SESSIONS
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
+import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposer
 import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.utils.verifyLog
@@ -419,6 +421,72 @@ internal class SessionReplayConfigurationBuilderTest {
             target = InternalLogger.Target.MAINTAINER,
             level = InternalLogger.Level.WARN,
             message = expected
+        )
+    }
+
+    @Test
+    fun `M use it W addExtensionSupport { composition host decomposer }`(
+        @Mock mockExtension: ExtensionSupport,
+        @Mock mockDecomposer: CompositionHostDecomposer
+    ) {
+        // Given
+        whenever(mockExtension.getCompositionHostDecomposer()).thenReturn(mockDecomposer)
+
+        // When
+        testedBuilder.addExtensionSupport(mockExtension)
+        val config = testedBuilder.build()
+
+        // Then
+        assertThat(config.compositionHostDecomposer).isSameAs(mockDecomposer)
+    }
+
+    @Test
+    fun `M take first value W addExtensionSupport { duplicate composition host decomposers }`(
+        @Mock mockFirstExtension: ExtensionSupport,
+        @Mock mockSecondExtension: ExtensionSupport,
+        @Mock mockFirstDecomposer: CompositionHostDecomposer,
+        @Mock mockSecondDecomposer: CompositionHostDecomposer
+    ) {
+        // Given
+        whenever(mockFirstExtension.name()).thenReturn("firstExtension")
+        whenever(mockSecondExtension.name()).thenReturn("secondExtension")
+        whenever(mockFirstExtension.getCompositionHostDecomposer()).thenReturn(mockFirstDecomposer)
+        whenever(mockSecondExtension.getCompositionHostDecomposer()).thenReturn(mockSecondDecomposer)
+
+        // When
+        testedBuilder.addExtensionSupport(mockFirstExtension)
+        testedBuilder.addExtensionSupport(mockSecondExtension)
+        val config = testedBuilder.build()
+
+        // Then
+        assertThat(config.compositionHostDecomposer).isSameAs(mockFirstDecomposer)
+    }
+
+    @Test
+    fun `M warn W addExtensionSupport { duplicate composition host decomposers }`(
+        @Mock mockFirstExtension: ExtensionSupport,
+        @Mock mockSecondExtension: ExtensionSupport,
+        @Mock mockFirstDecomposer: CompositionHostDecomposer,
+        @Mock mockSecondDecomposer: CompositionHostDecomposer,
+        @Mock mockLogger: InternalLogger
+    ) {
+        // Given
+        testedBuilder = SessionReplayConfiguration.Builder(100f, mockLogger)
+        whenever(mockFirstExtension.name()).thenReturn("firstExtension")
+        whenever(mockSecondExtension.name()).thenReturn("secondExtension")
+        whenever(mockFirstExtension.getCompositionHostDecomposer()).thenReturn(mockFirstDecomposer)
+        whenever(mockSecondExtension.getCompositionHostDecomposer()).thenReturn(mockSecondDecomposer)
+
+        // When
+        testedBuilder.addExtensionSupport(mockFirstExtension)
+        testedBuilder.addExtensionSupport(mockSecondExtension)
+        testedBuilder.build()
+
+        // Then
+        mockLogger.verifyLog(
+            target = InternalLogger.Target.MAINTAINER,
+            level = InternalLogger.Level.WARN,
+            message = DUPLICATE_COMPOSITION_HOST_DECOMPOSER_DETECTED
         )
     }
 

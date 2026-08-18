@@ -9,6 +9,11 @@ package com.datadog.android.sessionreplay.internal.composition
 import android.view.View
 import androidx.annotation.MainThread
 import androidx.annotation.UiThread
+import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
+import com.datadog.android.internal.sessionreplay.composition.CapturedChild
+import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
+import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver

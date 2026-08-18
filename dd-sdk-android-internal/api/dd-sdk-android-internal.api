@@ -484,6 +484,605 @@ public final class com/datadog/android/internal/sampling/SessionSamplingIdProvid
 	public final fun provideId-I7RO_PI (Ljava/lang/String;)J
 }
 
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedAlignment {
+	public fun <init> ()V
+	public fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CapturedHorizontalAlignment;Lcom/datadog/android/internal/sessionreplay/composition/CapturedVerticalAlignment;)V
+	public synthetic fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CapturedHorizontalAlignment;Lcom/datadog/android/internal/sessionreplay/composition/CapturedVerticalAlignment;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedHorizontalAlignment;
+	public final fun component2 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedVerticalAlignment;
+	public final fun copy (Lcom/datadog/android/internal/sessionreplay/composition/CapturedHorizontalAlignment;Lcom/datadog/android/internal/sessionreplay/composition/CapturedVerticalAlignment;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedAlignment;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedAlignment;Lcom/datadog/android/internal/sessionreplay/composition/CapturedHorizontalAlignment;Lcom/datadog/android/internal/sessionreplay/composition/CapturedVerticalAlignment;ILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedAlignment;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getHorizontal ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedHorizontalAlignment;
+	public final fun getVertical ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedVerticalAlignment;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedBackgroundGradient {
+	public fun <init> (Ljava/util/List;Lcom/datadog/android/internal/sessionreplay/composition/CapturedPoint;Lcom/datadog/android/internal/sessionreplay/composition/CapturedPoint;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component2 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedPoint;
+	public final fun component3 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedPoint;
+	public final fun copy (Ljava/util/List;Lcom/datadog/android/internal/sessionreplay/composition/CapturedPoint;Lcom/datadog/android/internal/sessionreplay/composition/CapturedPoint;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedBackgroundGradient;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedBackgroundGradient;Ljava/util/List;Lcom/datadog/android/internal/sessionreplay/composition/CapturedPoint;Lcom/datadog/android/internal/sessionreplay/composition/CapturedPoint;ILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedBackgroundGradient;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEndPoint ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedPoint;
+	public final fun getStartPoint ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedPoint;
+	public final fun getStops ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedBounds {
+	public fun <init> (JJJJ)V
+	public final fun component1 ()J
+	public final fun component2 ()J
+	public final fun component3 ()J
+	public final fun component4 ()J
+	public final fun copy (JJJJ)Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;JJJJILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getHeight ()J
+	public final fun getWidth ()J
+	public final fun getX ()J
+	public final fun getY ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/datadog/android/internal/sessionreplay/composition/CapturedChild {
+	public abstract fun getIdentity ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedChild$Layer : com/datadog/android/internal/sessionreplay/composition/CapturedChild {
+	public fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;)V
+	public final fun component1 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public final fun copy (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedChild$Layer;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedChild$Layer;Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;ILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedChild$Layer;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getIdentity ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedChild$Wireframe : com/datadog/android/internal/sessionreplay/composition/CapturedChild {
+	public fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;)V
+	public final fun component1 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public final fun copy (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedChild$Wireframe;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedChild$Wireframe;Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;ILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedChild$Wireframe;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getIdentity ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedClip {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;)V
+	public synthetic fun <init> (Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/Long;
+	public final fun component2 ()Ljava/lang/Long;
+	public final fun component3 ()Ljava/lang/Long;
+	public final fun component4 ()Ljava/lang/Long;
+	public final fun copy (Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;ILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBottom ()Ljava/lang/Long;
+	public final fun getLeft ()Ljava/lang/Long;
+	public final fun getRight ()Ljava/lang/Long;
+	public final fun getTop ()Ljava/lang/Long;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedCompositeOperation : java/lang/Enum {
+	public static final field DESTINATION_IN Lcom/datadog/android/internal/sessionreplay/composition/CapturedCompositeOperation;
+	public static final field DESTINATION_OUT Lcom/datadog/android/internal/sessionreplay/composition/CapturedCompositeOperation;
+	public static final field PLUS_DARKER Lcom/datadog/android/internal/sessionreplay/composition/CapturedCompositeOperation;
+	public static final field SOURCE_OVER Lcom/datadog/android/internal/sessionreplay/composition/CapturedCompositeOperation;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedCompositeOperation;
+	public static fun values ()[Lcom/datadog/android/internal/sessionreplay/composition/CapturedCompositeOperation;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedFillRule : java/lang/Enum {
+	public static final field EVEN_ODD Lcom/datadog/android/internal/sessionreplay/composition/CapturedFillRule;
+	public static final field NON_ZERO Lcom/datadog/android/internal/sessionreplay/composition/CapturedFillRule;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedFillRule;
+	public static fun values ()[Lcom/datadog/android/internal/sessionreplay/composition/CapturedFillRule;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedGradientStop {
+	public fun <init> (Ljava/lang/String;D)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()D
+	public final fun copy (Ljava/lang/String;D)Lcom/datadog/android/internal/sessionreplay/composition/CapturedGradientStop;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedGradientStop;Ljava/lang/String;DILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedGradientStop;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getColor ()Ljava/lang/String;
+	public final fun getOffset ()D
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedHorizontalAlignment : java/lang/Enum {
+	public static final field CENTER Lcom/datadog/android/internal/sessionreplay/composition/CapturedHorizontalAlignment;
+	public static final field LEFT Lcom/datadog/android/internal/sessionreplay/composition/CapturedHorizontalAlignment;
+	public static final field RIGHT Lcom/datadog/android/internal/sessionreplay/composition/CapturedHorizontalAlignment;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedHorizontalAlignment;
+	public static fun values ()[Lcom/datadog/android/internal/sessionreplay/composition/CapturedHorizontalAlignment;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedIdentity {
+	public fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/RumViewIdentityScope;Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentityKind;Lcom/datadog/android/internal/sessionreplay/composition/CapturedWireframeKind;Ljava/util/List;Ljava/lang/String;J)V
+	public final fun component1 ()Lcom/datadog/android/internal/sessionreplay/composition/RumViewIdentityScope;
+	public final fun component2 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentityKind;
+	public final fun component3 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedWireframeKind;
+	public final fun component4 ()Ljava/util/List;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()J
+	public final fun copy (Lcom/datadog/android/internal/sessionreplay/composition/RumViewIdentityScope;Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentityKind;Lcom/datadog/android/internal/sessionreplay/composition/CapturedWireframeKind;Ljava/util/List;Ljava/lang/String;J)Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/RumViewIdentityScope;Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentityKind;Lcom/datadog/android/internal/sessionreplay/composition/CapturedWireframeKind;Ljava/util/List;Ljava/lang/String;JILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getKind ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentityKind;
+	public final fun getLocalId ()Ljava/lang/String;
+	public final fun getNamespace ()Ljava/util/List;
+	public final fun getScope ()Lcom/datadog/android/internal/sessionreplay/composition/RumViewIdentityScope;
+	public final fun getWireId ()J
+	public final fun getWireframeKind ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedWireframeKind;
+	public fun hashCode ()I
+	public final fun path ()Ljava/util/List;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedIdentityKind : java/lang/Enum {
+	public static final field COMPOSE_HOST Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentityKind;
+	public static final field COMPOSE_NODE Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentityKind;
+	public static final field LAYER Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentityKind;
+	public static final field SCREEN_ROOT Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentityKind;
+	public static final field VIEW Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentityKind;
+	public static final field WINDOW Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentityKind;
+	public static final field WIREFRAME Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentityKind;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentityKind;
+	public static fun values ()[Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentityKind;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedLayer {
+	public fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedLayerKind;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;Ljava/util/List;Ljava/util/List;Lcom/datadog/android/internal/sessionreplay/composition/CapturedCompositeOperation;)V
+	public synthetic fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedLayerKind;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;Ljava/util/List;Ljava/util/List;Lcom/datadog/android/internal/sessionreplay/composition/CapturedCompositeOperation;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public final fun component2 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedLayerKind;
+	public final fun component3 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;
+	public final fun component4 ()Ljava/util/List;
+	public final fun component5 ()Ljava/util/List;
+	public final fun component6 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedCompositeOperation;
+	public final fun copy (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedLayerKind;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;Ljava/util/List;Ljava/util/List;Lcom/datadog/android/internal/sessionreplay/composition/CapturedCompositeOperation;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedLayer;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedLayer;Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedLayerKind;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;Ljava/util/List;Ljava/util/List;Lcom/datadog/android/internal/sessionreplay/composition/CapturedCompositeOperation;ILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedLayer;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBounds ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;
+	public final fun getChildren ()Ljava/util/List;
+	public final fun getCompositeOperation ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedCompositeOperation;
+	public final fun getIdentity ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public final fun getKind ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedLayerKind;
+	public final fun getModifiers ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedLayerKind : java/lang/Enum {
+	public static final field COMPOSE_HOST Lcom/datadog/android/internal/sessionreplay/composition/CapturedLayerKind;
+	public static final field COMPOSE_NODE Lcom/datadog/android/internal/sessionreplay/composition/CapturedLayerKind;
+	public static final field COMPOSITION_LAYER Lcom/datadog/android/internal/sessionreplay/composition/CapturedLayerKind;
+	public static final field NATIVE_VIEW Lcom/datadog/android/internal/sessionreplay/composition/CapturedLayerKind;
+	public static final field SYNTHETIC_SCREEN_ROOT Lcom/datadog/android/internal/sessionreplay/composition/CapturedLayerKind;
+	public static final field WINDOW_ROOT Lcom/datadog/android/internal/sessionreplay/composition/CapturedLayerKind;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedLayerKind;
+	public static fun values ()[Lcom/datadog/android/internal/sessionreplay/composition/CapturedLayerKind;
+}
+
+public abstract interface class com/datadog/android/internal/sessionreplay/composition/CapturedModifier {
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedModifier$BrightnessBias : com/datadog/android/internal/sessionreplay/composition/CapturedModifier {
+	public fun <init> (D)V
+	public final fun component1 ()D
+	public final fun copy (D)Lcom/datadog/android/internal/sessionreplay/composition/CapturedModifier$BrightnessBias;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedModifier$BrightnessBias;DILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedModifier$BrightnessBias;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getValue ()D
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedModifier$Clip : com/datadog/android/internal/sessionreplay/composition/CapturedModifier {
+	public fun <init> (Ljava/lang/String;Lcom/datadog/android/internal/sessionreplay/composition/CapturedFillRule;)V
+	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/internal/sessionreplay/composition/CapturedFillRule;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedFillRule;
+	public final fun copy (Ljava/lang/String;Lcom/datadog/android/internal/sessionreplay/composition/CapturedFillRule;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedModifier$Clip;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedModifier$Clip;Ljava/lang/String;Lcom/datadog/android/internal/sessionreplay/composition/CapturedFillRule;ILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedModifier$Clip;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFillRule ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedFillRule;
+	public final fun getPath ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedModifier$ColorMatrix : com/datadog/android/internal/sessionreplay/composition/CapturedModifier {
+	public fun <init> (Ljava/util/List;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedModifier$ColorMatrix;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedModifier$ColorMatrix;Ljava/util/List;ILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedModifier$ColorMatrix;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getValues ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedModifier$GaussianBlur : com/datadog/android/internal/sessionreplay/composition/CapturedModifier {
+	public fun <init> (D)V
+	public final fun component1 ()D
+	public final fun copy (D)Lcom/datadog/android/internal/sessionreplay/composition/CapturedModifier$GaussianBlur;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedModifier$GaussianBlur;DILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedModifier$GaussianBlur;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getRadius ()D
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedModifier$MaskImage : com/datadog/android/internal/sessionreplay/composition/CapturedModifier {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedModifier$MaskImage;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedModifier$MaskImage;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedModifier$MaskImage;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getResourceId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedModifier$Opacity : com/datadog/android/internal/sessionreplay/composition/CapturedModifier {
+	public fun <init> (D)V
+	public final fun component1 ()D
+	public final fun copy (D)Lcom/datadog/android/internal/sessionreplay/composition/CapturedModifier$Opacity;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedModifier$Opacity;DILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedModifier$Opacity;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getValue ()D
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedModifier$Saturate : com/datadog/android/internal/sessionreplay/composition/CapturedModifier {
+	public fun <init> (D)V
+	public final fun component1 ()D
+	public final fun copy (D)Lcom/datadog/android/internal/sessionreplay/composition/CapturedModifier$Saturate;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedModifier$Saturate;DILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedModifier$Saturate;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getValue ()D
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedModifier$Shadow : com/datadog/android/internal/sessionreplay/composition/CapturedModifier {
+	public fun <init> (Ljava/lang/String;DDDLjava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;DDDLjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()D
+	public final fun component3 ()D
+	public final fun component4 ()D
+	public final fun component5 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;DDDLjava/lang/String;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedModifier$Shadow;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedModifier$Shadow;Ljava/lang/String;DDDLjava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedModifier$Shadow;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getColor ()Ljava/lang/String;
+	public final fun getOffsetX ()D
+	public final fun getOffsetY ()D
+	public final fun getPath ()Ljava/lang/String;
+	public final fun getRadius ()D
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedPadding {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;)V
+	public synthetic fun <init> (Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/Long;
+	public final fun component2 ()Ljava/lang/Long;
+	public final fun component3 ()Ljava/lang/Long;
+	public final fun component4 ()Ljava/lang/Long;
+	public final fun copy (Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedPadding;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedPadding;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;ILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedPadding;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBottom ()Ljava/lang/Long;
+	public final fun getLeft ()Ljava/lang/Long;
+	public final fun getRight ()Ljava/lang/Long;
+	public final fun getTop ()Ljava/lang/Long;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedPoint {
+	public fun <init> (DD)V
+	public final fun component1 ()D
+	public final fun component2 ()D
+	public final fun copy (DD)Lcom/datadog/android/internal/sessionreplay/composition/CapturedPoint;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedPoint;DDILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedPoint;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getX ()D
+	public final fun getY ()D
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder {
+	public fun <init> (Ljava/lang/String;J)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()J
+	public final fun copy (Ljava/lang/String;J)Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder;Ljava/lang/String;JILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getColor ()Ljava/lang/String;
+	public final fun getWidth ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBackgroundGradient;Ljava/lang/Number;Ljava/lang/Number;)V
+	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBackgroundGradient;Ljava/lang/Number;Ljava/lang/Number;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedBackgroundGradient;
+	public final fun component3 ()Ljava/lang/Number;
+	public final fun component4 ()Ljava/lang/Number;
+	public final fun copy (Ljava/lang/String;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBackgroundGradient;Ljava/lang/Number;Ljava/lang/Number;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle;Ljava/lang/String;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBackgroundGradient;Ljava/lang/Number;Ljava/lang/Number;ILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBackgroundColor ()Ljava/lang/String;
+	public final fun getBackgroundGradient ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedBackgroundGradient;
+	public final fun getCornerRadius ()Ljava/lang/Number;
+	public final fun getOpacity ()Ljava/lang/Number;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedTextPosition {
+	public fun <init> ()V
+	public fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CapturedPadding;Lcom/datadog/android/internal/sessionreplay/composition/CapturedAlignment;)V
+	public synthetic fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CapturedPadding;Lcom/datadog/android/internal/sessionreplay/composition/CapturedAlignment;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedPadding;
+	public final fun component2 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedAlignment;
+	public final fun copy (Lcom/datadog/android/internal/sessionreplay/composition/CapturedPadding;Lcom/datadog/android/internal/sessionreplay/composition/CapturedAlignment;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedTextPosition;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedTextPosition;Lcom/datadog/android/internal/sessionreplay/composition/CapturedPadding;Lcom/datadog/android/internal/sessionreplay/composition/CapturedAlignment;ILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedTextPosition;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAlignment ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedAlignment;
+	public final fun getPadding ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedPadding;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedTextStyle {
+	public fun <init> (Ljava/lang/String;JLjava/lang/String;Lcom/datadog/android/internal/sessionreplay/composition/CapturedTruncationMode;)V
+	public synthetic fun <init> (Ljava/lang/String;JLjava/lang/String;Lcom/datadog/android/internal/sessionreplay/composition/CapturedTruncationMode;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()J
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedTruncationMode;
+	public final fun copy (Ljava/lang/String;JLjava/lang/String;Lcom/datadog/android/internal/sessionreplay/composition/CapturedTruncationMode;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedTextStyle;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedTextStyle;Ljava/lang/String;JLjava/lang/String;Lcom/datadog/android/internal/sessionreplay/composition/CapturedTruncationMode;ILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedTextStyle;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getColor ()Ljava/lang/String;
+	public final fun getFamily ()Ljava/lang/String;
+	public final fun getSize ()J
+	public final fun getTruncationMode ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedTruncationMode;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedTruncationMode : java/lang/Enum {
+	public static final field CLIP Lcom/datadog/android/internal/sessionreplay/composition/CapturedTruncationMode;
+	public static final field HEAD Lcom/datadog/android/internal/sessionreplay/composition/CapturedTruncationMode;
+	public static final field MIDDLE Lcom/datadog/android/internal/sessionreplay/composition/CapturedTruncationMode;
+	public static final field TAIL Lcom/datadog/android/internal/sessionreplay/composition/CapturedTruncationMode;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedTruncationMode;
+	public static fun values ()[Lcom/datadog/android/internal/sessionreplay/composition/CapturedTruncationMode;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedVerticalAlignment : java/lang/Enum {
+	public static final field BOTTOM Lcom/datadog/android/internal/sessionreplay/composition/CapturedVerticalAlignment;
+	public static final field CENTER Lcom/datadog/android/internal/sessionreplay/composition/CapturedVerticalAlignment;
+	public static final field TOP Lcom/datadog/android/internal/sessionreplay/composition/CapturedVerticalAlignment;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedVerticalAlignment;
+	public static fun values ()[Lcom/datadog/android/internal/sessionreplay/composition/CapturedVerticalAlignment;
+}
+
+public abstract interface class com/datadog/android/internal/sessionreplay/composition/CapturedWireframe {
+	public abstract fun getBounds ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;
+	public abstract fun getClip ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;
+	public abstract fun getIdentity ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public abstract fun getPermanentId ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedWireframe$Pixel : com/datadog/android/internal/sessionreplay/composition/CapturedWireframe {
+	public fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder;Lcom/datadog/android/internal/sessionreplay/composition/PixelResource;Ljava/lang/Boolean;Ljava/lang/String;)V
+	public synthetic fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder;Lcom/datadog/android/internal/sessionreplay/composition/PixelResource;Ljava/lang/Boolean;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public final fun component2 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;
+	public final fun component3 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;
+	public final fun component4 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle;
+	public final fun component5 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder;
+	public final fun component6 ()Lcom/datadog/android/internal/sessionreplay/composition/PixelResource;
+	public final fun component7 ()Ljava/lang/Boolean;
+	public final fun component8 ()Ljava/lang/String;
+	public final fun copy (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder;Lcom/datadog/android/internal/sessionreplay/composition/PixelResource;Ljava/lang/Boolean;Ljava/lang/String;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedWireframe$Pixel;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedWireframe$Pixel;Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder;Lcom/datadog/android/internal/sessionreplay/composition/PixelResource;Ljava/lang/Boolean;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedWireframe$Pixel;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBorder ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder;
+	public fun getBounds ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;
+	public fun getClip ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;
+	public fun getIdentity ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public fun getPermanentId ()Ljava/lang/String;
+	public final fun getResource ()Lcom/datadog/android/internal/sessionreplay/composition/PixelResource;
+	public final fun getStyle ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle;
+	public fun hashCode ()I
+	public final fun isEmpty ()Ljava/lang/Boolean;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedWireframe$PrivacyPlaceholder : com/datadog/android/internal/sessionreplay/composition/CapturedWireframe {
+	public fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public final fun component2 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;
+	public final fun component3 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun copy (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedWireframe$PrivacyPlaceholder;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedWireframe$PrivacyPlaceholder;Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedWireframe$PrivacyPlaceholder;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getBounds ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;
+	public fun getClip ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;
+	public fun getIdentity ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public final fun getLabel ()Ljava/lang/String;
+	public fun getPermanentId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedWireframe$Shape : com/datadog/android/internal/sessionreplay/composition/CapturedWireframe {
+	public fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder;Ljava/lang/String;)V
+	public synthetic fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public final fun component2 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;
+	public final fun component3 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;
+	public final fun component4 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle;
+	public final fun component5 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun copy (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder;Ljava/lang/String;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedWireframe$Shape;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedWireframe$Shape;Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedWireframe$Shape;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBorder ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder;
+	public fun getBounds ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;
+	public fun getClip ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;
+	public fun getIdentity ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public fun getPermanentId ()Ljava/lang/String;
+	public final fun getStyle ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedWireframe$Text : com/datadog/android/internal/sessionreplay/composition/CapturedWireframe {
+	public fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder;Ljava/lang/String;Lcom/datadog/android/internal/sessionreplay/composition/CapturedTextStyle;Lcom/datadog/android/internal/sessionreplay/composition/CapturedTextPosition;Ljava/lang/String;)V
+	public synthetic fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder;Ljava/lang/String;Lcom/datadog/android/internal/sessionreplay/composition/CapturedTextStyle;Lcom/datadog/android/internal/sessionreplay/composition/CapturedTextPosition;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public final fun component2 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;
+	public final fun component3 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;
+	public final fun component4 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle;
+	public final fun component5 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun component7 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedTextStyle;
+	public final fun component8 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedTextPosition;
+	public final fun component9 ()Ljava/lang/String;
+	public final fun copy (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder;Ljava/lang/String;Lcom/datadog/android/internal/sessionreplay/composition/CapturedTextStyle;Lcom/datadog/android/internal/sessionreplay/composition/CapturedTextPosition;Ljava/lang/String;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedWireframe$Text;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedWireframe$Text;Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder;Ljava/lang/String;Lcom/datadog/android/internal/sessionreplay/composition/CapturedTextStyle;Lcom/datadog/android/internal/sessionreplay/composition/CapturedTextPosition;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedWireframe$Text;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBorder ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder;
+	public fun getBounds ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;
+	public fun getClip ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;
+	public fun getIdentity ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public fun getPermanentId ()Ljava/lang/String;
+	public final fun getStyle ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle;
+	public final fun getText ()Ljava/lang/String;
+	public final fun getTextPosition ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedTextPosition;
+	public final fun getTextStyle ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedTextStyle;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedWireframe$WebView : com/datadog/android/internal/sessionreplay/composition/CapturedWireframe {
+	public fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder;Ljava/lang/Boolean;Ljava/lang/String;)V
+	public synthetic fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder;Ljava/lang/Boolean;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public final fun component2 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;
+	public final fun component3 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;
+	public final fun component4 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle;
+	public final fun component5 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder;
+	public final fun component6 ()Ljava/lang/Boolean;
+	public final fun component7 ()Ljava/lang/String;
+	public final fun copy (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder;Ljava/lang/Boolean;Ljava/lang/String;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedWireframe$WebView;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/CapturedWireframe$WebView;Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle;Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder;Ljava/lang/Boolean;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedWireframe$WebView;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBorder ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeBorder;
+	public fun getBounds ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;
+	public fun getClip ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedClip;
+	public fun getIdentity ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public fun getPermanentId ()Ljava/lang/String;
+	public final fun getStyle ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedShapeStyle;
+	public fun hashCode ()I
+	public final fun isVisible ()Ljava/lang/Boolean;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/CapturedWireframeKind : java/lang/Enum {
+	public static final field IMAGE Lcom/datadog/android/internal/sessionreplay/composition/CapturedWireframeKind;
+	public static final field PLACEHOLDER Lcom/datadog/android/internal/sessionreplay/composition/CapturedWireframeKind;
+	public static final field SHAPE Lcom/datadog/android/internal/sessionreplay/composition/CapturedWireframeKind;
+	public static final field TEXT Lcom/datadog/android/internal/sessionreplay/composition/CapturedWireframeKind;
+	public static final field WEB_VIEW Lcom/datadog/android/internal/sessionreplay/composition/CapturedWireframeKind;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public final fun getWireIdNamespace ()J
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedWireframeKind;
+	public static fun values ()[Lcom/datadog/android/internal/sessionreplay/composition/CapturedWireframeKind;
+}
+
+public abstract interface class com/datadog/android/internal/sessionreplay/composition/CompositionIdentityFactory {
+	public abstract fun composeHost (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Ljava/lang/String;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public abstract fun composeNode (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Ljava/lang/String;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public abstract fun placeholderWireframe (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public abstract fun shapeWireframe (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public abstract fun textWireframe (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+}
+
+public abstract interface class com/datadog/android/internal/sessionreplay/composition/PixelResource {
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/PixelResource$Resolved : com/datadog/android/internal/sessionreplay/composition/PixelResource {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/internal/sessionreplay/composition/PixelResource$Resolved;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/PixelResource$Resolved;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/PixelResource$Resolved;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMimeType ()Ljava/lang/String;
+	public final fun getResourceId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/PixelResource$Unresolved : com/datadog/android/internal/sessionreplay/composition/PixelResource {
+	public static final field INSTANCE Lcom/datadog/android/internal/sessionreplay/composition/PixelResource$Unresolved;
+}
+
+public final class com/datadog/android/internal/sessionreplay/composition/RumViewIdentityScope {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lcom/datadog/android/internal/sessionreplay/composition/RumViewIdentityScope;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/sessionreplay/composition/RumViewIdentityScope;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/internal/sessionreplay/composition/RumViewIdentityScope;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getValue ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public abstract interface class com/datadog/android/internal/system/BuildSdkVersionProvider {
 	public static final field Companion Lcom/datadog/android/internal/system/BuildSdkVersionProvider$Companion;
 	public abstract fun getVersion ()I
