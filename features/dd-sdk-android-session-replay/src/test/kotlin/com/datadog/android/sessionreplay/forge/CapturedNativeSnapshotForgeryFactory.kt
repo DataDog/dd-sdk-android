@@ -6,16 +6,16 @@
 
 package com.datadog.android.sessionreplay.forge
 
-import com.datadog.android.sessionreplay.internal.composition.CapturedBounds
-import com.datadog.android.sessionreplay.internal.composition.CapturedChild
-import com.datadog.android.sessionreplay.internal.composition.CapturedLayer
-import com.datadog.android.sessionreplay.internal.composition.CapturedLayerKind
+import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
+import com.datadog.android.internal.sessionreplay.composition.CapturedChild
+import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
+import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
+import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.internal.composition.CapturedNativeSnapshot
 import com.datadog.android.sessionreplay.internal.composition.CapturedNativeView
 import com.datadog.android.sessionreplay.internal.composition.CapturedNativeWindow
 import com.datadog.android.sessionreplay.internal.composition.CapturedWindow
 import com.datadog.android.sessionreplay.internal.composition.DefaultCapturedIdentityFactory
-import com.datadog.android.sessionreplay.internal.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedBackgroundColor
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMappingContext
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewData
@@ -42,7 +42,8 @@ internal class CapturedNativeWindowForgeryFactory : ForgeryFactory<CapturedNativ
         val children = forge.aList(size = forge.anInt(min = 1, max = 10)) {
             forge.getForgery<CapturedNativeView>().copy(
                 identity = factory.view(root.identity, forge.anAlphabeticalString()),
-                parentIndex = 0
+                parentIndex = 0,
+                kind = CapturedLayerKind.NATIVE_VIEW
             )
         }
         return CapturedNativeWindow(forge.aFloat(min = 0.75f, max = 4f), listOf(root) + children)

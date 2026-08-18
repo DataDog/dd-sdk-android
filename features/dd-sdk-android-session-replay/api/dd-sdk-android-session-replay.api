@@ -2,10 +2,15 @@ public abstract interface annotation class com/datadog/android/sessionreplay/Exp
 }
 
 public abstract interface class com/datadog/android/sessionreplay/ExtensionSupport {
+	public abstract fun getCompositionHostDecomposer ()Lcom/datadog/android/sessionreplay/recorder/composition/CompositionHostDecomposer;
 	public abstract fun getCustomDrawableMapper ()Ljava/util/List;
 	public abstract fun getCustomViewMappers ()Ljava/util/List;
 	public abstract fun getOptionSelectorDetectors ()Ljava/util/List;
 	public abstract fun name ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/sessionreplay/ExtensionSupport$DefaultImpls {
+	public static fun getCompositionHostDecomposer (Lcom/datadog/android/sessionreplay/ExtensionSupport;)Lcom/datadog/android/sessionreplay/recorder/composition/CompositionHostDecomposer;
 }
 
 public final class com/datadog/android/sessionreplay/ImagePrivacy : java/lang/Enum, com/datadog/android/sessionreplay/PrivacyLevel {
@@ -69,8 +74,8 @@ public final class com/datadog/android/sessionreplay/SessionReplay {
 }
 
 public final class com/datadog/android/sessionreplay/SessionReplayConfiguration {
-	public final fun copy (Ljava/lang/String;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Ljava/util/List;Ljava/util/List;Ljava/util/List;FLcom/datadog/android/sessionreplay/ImagePrivacy;ZLcom/datadog/android/sessionreplay/TouchPrivacy;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;ZLcom/datadog/android/sessionreplay/SystemRequirementsConfiguration;Lcom/datadog/android/sessionreplay/SessionReplayInternalCallback;ZZ)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
-	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;Ljava/lang/String;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Ljava/util/List;Ljava/util/List;Ljava/util/List;FLcom/datadog/android/sessionreplay/ImagePrivacy;ZLcom/datadog/android/sessionreplay/TouchPrivacy;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;ZLcom/datadog/android/sessionreplay/SystemRequirementsConfiguration;Lcom/datadog/android/sessionreplay/SessionReplayInternalCallback;ZZILjava/lang/Object;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
+	public final fun copy (Ljava/lang/String;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Ljava/util/List;Ljava/util/List;Ljava/util/List;FLcom/datadog/android/sessionreplay/ImagePrivacy;ZLcom/datadog/android/sessionreplay/TouchPrivacy;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;ZLcom/datadog/android/sessionreplay/SystemRequirementsConfiguration;Lcom/datadog/android/sessionreplay/SessionReplayInternalCallback;ZZLcom/datadog/android/sessionreplay/recorder/composition/CompositionHostDecomposer;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;Ljava/lang/String;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Ljava/util/List;Ljava/util/List;Ljava/util/List;FLcom/datadog/android/sessionreplay/ImagePrivacy;ZLcom/datadog/android/sessionreplay/TouchPrivacy;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;ZLcom/datadog/android/sessionreplay/SystemRequirementsConfiguration;Lcom/datadog/android/sessionreplay/SessionReplayInternalCallback;ZZLcom/datadog/android/sessionreplay/recorder/composition/CompositionHostDecomposer;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -2092,6 +2097,33 @@ public final class com/datadog/android/sessionreplay/recorder/SystemInformation 
 	public final fun getThemeColor ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/sessionreplay/recorder/composition/CompositionHostDecomposeRequest {
+	public fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CompositionIdentityFactory;Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;FLkotlin/jvm/functions/Function2;)V
+	public final fun getHostIdentity ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public final fun getIdentityFactory ()Lcom/datadog/android/internal/sessionreplay/composition/CompositionIdentityFactory;
+	public final fun getNativeViewHandoff ()Lkotlin/jvm/functions/Function2;
+	public final fun getScreenDensity ()F
+}
+
+public final class com/datadog/android/sessionreplay/recorder/composition/CompositionHostDecomposeResult {
+	public fun <init> (Ljava/util/List;Ljava/util/List;Ljava/util/List;)V
+	public final fun getNodes ()Ljava/util/List;
+	public final fun getRootChildren ()Ljava/util/List;
+	public final fun getWireframes ()Ljava/util/List;
+}
+
+public abstract interface class com/datadog/android/sessionreplay/recorder/composition/CompositionHostDecomposer {
+	public abstract fun canDecompose (Landroid/view/View;)Z
+	public abstract fun decompose (Landroid/view/View;Lcom/datadog/android/sessionreplay/recorder/composition/CompositionHostDecomposeRequest;)Lcom/datadog/android/sessionreplay/recorder/composition/CompositionHostDecomposeResult;
+}
+
+public final class com/datadog/android/sessionreplay/recorder/composition/CompositionNativeSubtree {
+	public fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CapturedLayer;Ljava/util/List;Ljava/util/List;)V
+	public final fun getLayers ()Ljava/util/List;
+	public final fun getRootLayer ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedLayer;
+	public final fun getWireframes ()Ljava/util/List;
 }
 
 public abstract class com/datadog/android/sessionreplay/recorder/mapper/BaseAsyncBackgroundWireframeMapper : com/datadog/android/sessionreplay/recorder/mapper/BaseWireframeMapper {

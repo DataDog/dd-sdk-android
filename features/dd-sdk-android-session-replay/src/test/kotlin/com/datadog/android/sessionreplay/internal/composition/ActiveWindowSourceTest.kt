@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.composition
 
 import android.graphics.Rect
 import android.view.View
+import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.TouchPrivacy
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

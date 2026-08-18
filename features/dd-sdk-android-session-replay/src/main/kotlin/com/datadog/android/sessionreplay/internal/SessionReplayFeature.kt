@@ -47,6 +47,7 @@ import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
+import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposer
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import java.util.Locale
 import java.util.concurrent.ExecutorService
@@ -89,7 +90,8 @@ internal class SessionReplayFeature(
         dynamicOptimizationEnabled: Boolean,
         internalCallback: SessionReplayInternalCallback,
         heatmapsEnabled: Boolean,
-        compositionTreeRecordingEnabled: Boolean
+        compositionTreeRecordingEnabled: Boolean,
+        compositionHostDecomposer: CompositionHostDecomposer? = null
     ) : this(
         sdkCore,
         customEndpointUrl,
@@ -110,7 +112,8 @@ internal class SessionReplayFeature(
             dynamicOptimizationEnabled,
             internalCallback,
             heatmapsEnabled,
-            compositionTreeRecordingEnabled
+            compositionTreeRecordingEnabled,
+            compositionHostDecomposer
         )
     )
 

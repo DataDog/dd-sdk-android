@@ -15,6 +15,8 @@ import android.view.ViewGroup
 import android.widget.TextView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayInternalCallback
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
@@ -22,10 +24,8 @@ import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.AndroidCapturedSnapshotProducer
 import com.datadog.android.sessionreplay.internal.composition.AndroidWindowTraversal
 import com.datadog.android.sessionreplay.internal.composition.CaptureGenerationContext
-import com.datadog.android.sessionreplay.internal.composition.CapturedWireframe
 import com.datadog.android.sessionreplay.internal.composition.CompositionPipelineFactory
 import com.datadog.android.sessionreplay.internal.composition.DefaultCapturedIdentityFactory
-import com.datadog.android.sessionreplay.internal.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.internal.composition.WindowWalkResult
 import com.datadog.android.sessionreplay.internal.composition.buildWindow
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry

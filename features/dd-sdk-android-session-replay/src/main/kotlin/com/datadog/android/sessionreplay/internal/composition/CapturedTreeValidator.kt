@@ -6,6 +6,8 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
+
 internal enum class CaptureValidationErrorCode {
     MISSING_ROOT,
     INVALID_ROOT,

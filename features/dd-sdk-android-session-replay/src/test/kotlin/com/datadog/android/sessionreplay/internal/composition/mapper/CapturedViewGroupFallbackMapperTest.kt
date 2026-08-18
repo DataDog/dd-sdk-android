@@ -9,10 +9,10 @@ package com.datadog.android.sessionreplay.internal.composition.mapper
 import android.graphics.drawable.Drawable
 import android.view.View
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.composition.CapturedWireframe
 import com.datadog.android.sessionreplay.internal.composition.DefaultCapturedIdentityFactory
-import com.datadog.android.sessionreplay.internal.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.GlobalBounds

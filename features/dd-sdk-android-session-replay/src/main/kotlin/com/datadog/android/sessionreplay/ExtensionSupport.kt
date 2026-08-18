@@ -7,7 +7,9 @@
 package com.datadog.android.sessionreplay
 
 import android.view.View
+import com.datadog.android.lint.InternalApi
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
+import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposer
 import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 
@@ -43,4 +45,19 @@ interface ExtensionSupport {
      * @return a list of custom [DrawableToColorMapper] implementation.
      */
     fun getCustomDrawableMapper(): List<DrawableToColorMapper>
+
+    /**
+     * SDK-internal hook for the experimental composition-tree pipeline: implement this to provide
+     * a [CompositionHostDecomposer] able to decompose a Compose host view into a composition
+     * subtree, instead of the host falling through to the generic native-View fallback mapper. Not
+     * part of the extension surface end users are expected to implement - the only real
+     * implementation is `com.datadog.android.sessionreplay.compose.ComposeExtensionSupport`. Marked
+     * [InternalApi]: [CompositionHostDecomposer] is public only because Kotlin's `internal`
+     * visibility can't cross the Gradle module boundary to the optional Compose artifact that
+     * implements it, not because it's meant for outside use - implementing it yourself couples you
+     * to an internal capture model that can change in any release without notice.
+     * @return a decomposer, or null if this extension doesn't provide one.
+     */
+    @InternalApi
+    fun getCompositionHostDecomposer(): CompositionHostDecomposer? = null
 }

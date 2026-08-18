@@ -6,6 +6,12 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
+import com.datadog.android.internal.sessionreplay.composition.CapturedChild
+import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
+import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewData
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
 import com.datadog.android.sessionreplay.utils.GlobalBounds

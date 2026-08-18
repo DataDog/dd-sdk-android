@@ -6,6 +6,20 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import com.datadog.android.internal.sessionreplay.composition.CapturedChild
+import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
+import com.datadog.android.internal.sessionreplay.composition.CapturedIdentityKind
+import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
+import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
+import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
+import com.datadog.android.internal.sessionreplay.composition.CapturedShapeBorder
+import com.datadog.android.internal.sessionreplay.composition.CapturedShapeStyle
+import com.datadog.android.internal.sessionreplay.composition.CapturedTextStyle
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframeKind
+import com.datadog.android.internal.sessionreplay.composition.PixelResource
+import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
+
 @Suppress("TooManyFunctions") // Each function validates one independent snapshot invariant.
 internal class CapturedSnapshotValidation(
     private val snapshot: CapturedFullSnapshot,
@@ -92,7 +106,7 @@ internal class CapturedSnapshotValidation(
         if (layer.identity.scope != snapshot.scope) {
             failures += validationFailure(CaptureValidationErrorCode.WRONG_IDENTITY_SCOPE, layer.identity)
         }
-        if (layer.identity.kind != layer.kind.identityKind || layer.identity.wireframeKind != null) {
+        if (!layer.hasMatchingIdentityKind || layer.identity.wireframeKind != null) {
             failures += validationFailure(CaptureValidationErrorCode.IDENTITY_KIND_MISMATCH, layer.identity)
         }
         if (layer.bounds.width < 0 || layer.bounds.height < 0) {
@@ -311,9 +325,11 @@ internal class CapturedSnapshotValidation(
     @Suppress("UnsafeThirdPartyFunctionCall")
     private fun validateStyle(style: CapturedShapeStyle?, identity: CapturedIdentity) {
         if (style == null) return
-        val valid = (style.opacity == null || style.opacity.toDouble() in 0.0..1.0) &&
+        val opacity = style.opacity
+        val backgroundColor = style.backgroundColor
+        val valid = (opacity == null || opacity.toDouble() in 0.0..1.0) &&
             style.cornerRadius.isFiniteOrNull() &&
-            (style.backgroundColor == null || HEX_COLOR.matches(style.backgroundColor))
+            (backgroundColor == null || HEX_COLOR.matches(backgroundColor))
         if (!valid) failures += validationFailure(CaptureValidationErrorCode.INVALID_STYLE, identity)
     }
 
@@ -404,6 +420,11 @@ internal class CapturedSnapshotValidation(
     private fun MutableMap<Long, Int>.increment(id: Long) {
         this[id] = (this[id] ?: 0) + 1
     }
+
+    // A Compose AndroidView handoff keeps its semantics-node identity while capturing native content.
+    private val CapturedLayer.hasMatchingIdentityKind: Boolean
+        get() = identity.kind == kind.identityKind ||
+            (kind == CapturedLayerKind.NATIVE_VIEW && identity.kind == CapturedIdentityKind.COMPOSE_NODE)
 
     private val CapturedLayerKind.identityKind: CapturedIdentityKind
         get() = when (this) {

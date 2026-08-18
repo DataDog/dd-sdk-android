@@ -16,6 +16,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.view.Window
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
