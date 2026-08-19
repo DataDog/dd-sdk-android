@@ -677,6 +677,7 @@ public abstract interface class com/datadog/android/core/InternalSdkCore : com/d
 	public abstract fun getNetworkInfo ()Lcom/datadog/android/api/context/NetworkInfo;
 	public abstract fun getPersistenceExecutorService ()Ljava/util/concurrent/ExecutorService;
 	public abstract fun getRemoteConfiguration ()Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration;
+	public abstract fun getRemoteConfigurationSyncMetadata ()Lcom/datadog/android/core/internal/remote/model/RemoteConfigSyncMetadata;
 	public abstract fun getRootStorageDir ()Ljava/io/File;
 	public abstract fun getTrackingConsent ()Lcom/datadog/android/privacy/TrackingConsent;
 	public abstract fun isDeveloperModeEnabled ()Z

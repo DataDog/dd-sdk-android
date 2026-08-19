@@ -239,6 +239,7 @@ interface com.datadog.android.core.InternalSdkCore : com.datadog.android.api.fea
   val appStartTimeNs: Long
   val appUptimeNs: Long
   val remoteConfiguration: com.datadog.android.core.internal.remote.model.RemoteConfiguration?
+  val remoteConfigurationSyncMetadata: com.datadog.android.core.internal.remote.model.RemoteConfigSyncMetadata?
   fun writeLastViewEvent(ByteArray)
   fun deleteLastViewEvent()
   fun writeLastFatalAnrSent(Long)
