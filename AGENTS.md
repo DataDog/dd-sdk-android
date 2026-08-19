@@ -115,7 +115,6 @@ Some modules generate Kotlin data classes from JSON schemas at build time (e.g. 
 # Commits
 
 - Default branch for PRs: **`develop`**
-- All commits must be **GPG-signed** (repo policy).
 - Commit title format: `RUM-XXXXX: <short description>` (ticket number prefix required)
 - Each commit must reference the ticket number in the title.
 
