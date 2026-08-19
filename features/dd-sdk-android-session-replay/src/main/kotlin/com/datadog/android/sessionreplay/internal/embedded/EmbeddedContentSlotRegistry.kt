@@ -26,6 +26,55 @@ internal class EmbeddedContentSlotRegistration(
 internal class EmbeddedContentSlotRegistry {
     private val registrations = mutableListOf<WeakReference<EmbeddedContentSlotRegistration>>()
 
+    /** The placeholder wireframe standing in for each slot, keyed by slot ID. */
+    private val placeholders = mutableMapOf<String, Placeholder>()
+    private val placeholderListeners = mutableListOf<(String) -> Unit>()
+
+    internal data class Placeholder(val viewId: String, val timestamp: Long)
+
+    @AnyThread
+    fun placeholder(slotId: String): Placeholder? = synchronized(placeholders) {
+        placeholders[slotId]
+    }
+
+    /**
+     * Records the placeholders a snapshot written for [viewId] at [timestamp] carries, as [slotIds].
+     *
+     * [slotIds] is the complete set drawn at that moment, not an addition to it, so a slot absent
+     * from it has no placeholder any more. A repeat in the same view keeps the original timestamp —
+     * the first placeholder in a view is the one records have to follow — so listeners fire only for
+     * a slot's first placeholder in a view.
+     */
+    @AnyThread
+    fun onPlaceholdersWritten(viewId: String, timestamp: Long, slotIds: Set<String>) {
+        val newlyPlaced = synchronized(placeholders) {
+            placeholders.keys.retainAll(slotIds)
+            slotIds.filter { slotId ->
+                val known = placeholders[slotId]
+                if (known?.viewId == viewId) {
+                    false
+                } else {
+                    placeholders[slotId] = Placeholder(viewId, timestamp)
+                    true
+                }
+            }
+        }
+        if (newlyPlaced.isEmpty()) {
+            return
+        }
+        val listeners = synchronized(placeholders) {
+            placeholderListeners.toList()
+        }
+        newlyPlaced.forEach { slotId -> listeners.forEach { it(slotId) } }
+    }
+
+    @AnyThread
+    fun addPlaceholderListener(listener: (String) -> Unit) {
+        synchronized(placeholders) {
+            placeholderListeners.add(listener)
+        }
+    }
+
     @AnyThread
     fun hasMarkedSlots(): Boolean = activeSlotIds().isNotEmpty()
 
@@ -36,8 +85,6 @@ internal class EmbeddedContentSlotRegistry {
     fun activeSlotIds(): Set<String> {
         return synchronized(registrations) {
             removeInactiveRegistrations()
-            // The transform only reads a weak reference and immutable slot ID.
-            @Suppress("UnsafeThirdPartyFunctionCall")
             registrations.mapNotNullTo(mutableSetOf()) { it.get()?.slotId }
         }
     }
@@ -70,9 +117,7 @@ internal class EmbeddedContentSlotRegistry {
     private fun trackRegistration(registration: EmbeddedContentSlotRegistration?) {
         val isAlreadyTracked = registrations.any { it.get() === registration }
         if (registration != null && registration.isActive() && !isAlreadyTracked) {
-            @Suppress("UnsafeThirdPartyFunctionCall") // WeakReference construction has no documented exception.
-            val weakRegistration = WeakReference(registration)
-            registrations += weakRegistration
+            registrations += WeakReference(registration)
         }
     }
 

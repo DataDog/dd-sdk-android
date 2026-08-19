@@ -33,8 +33,10 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.clearInvocations
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -92,6 +94,12 @@ internal class SessionReplayRecorderTest {
             it.getArgument<Runnable>(0).run()
             true
         }
+        whenever(mockUiHandler.postDelayed(any(), any())).then {
+            it.getArgument<Runnable>(0).run()
+            true
+        }
+        whenever(mockViewOnDrawInterceptor.requestCapture())
+            .thenReturn(ViewOnDrawInterceptor.CaptureRequestResult.CAPTURED)
         testedSessionReplayRecorder = SessionReplayRecorder(
             appContext = appContext.mockInstance,
             textAndInputPrivacy = fakeTextAndInputPrivacy,
@@ -284,6 +292,63 @@ internal class SessionReplayRecorderTest {
 
         // Then
         verify(mockViewOnDrawInterceptor).requestCapture()
+    }
+
+    @Test
+    fun `M intercept the current windows W requestCapture { nothing intercepted yet }`() {
+        // Given
+        testedSessionReplayRecorder.resumeRecorders()
+        clearInvocations(mockViewOnDrawInterceptor)
+        whenever(mockViewOnDrawInterceptor.requestCapture()).thenReturn(
+            ViewOnDrawInterceptor.CaptureRequestResult.NOT_INTERCEPTING,
+            ViewOnDrawInterceptor.CaptureRequestResult.CAPTURED
+        )
+
+        // When
+        testedSessionReplayRecorder.requestCapture()
+
+        // Then
+        verify(mockViewOnDrawInterceptor).intercept(
+            decorViews = fakeActiveWindowsDecorViews,
+            textAndInputPrivacy = fakeTextAndInputPrivacy,
+            imagePrivacy = fakeImagePrivacy
+        )
+        verify(mockViewOnDrawInterceptor, times(2)).requestCapture()
+    }
+
+    @Test
+    fun `M retry W requestCapture { no snapshot taken }`() {
+        // Given
+        // A capture request is a standing obligation: the placeholder it produces has to reach the
+        // player, so it is not dropped just because the recorder could not serve it right away.
+        testedSessionReplayRecorder.resumeRecorders()
+        clearInvocations(mockViewOnDrawInterceptor)
+        whenever(mockViewOnDrawInterceptor.requestCapture())
+            .thenReturn(ViewOnDrawInterceptor.CaptureRequestResult.NOT_CAPTURED)
+
+        // When
+        testedSessionReplayRecorder.requestCapture()
+
+        // Then
+        verify(mockViewOnDrawInterceptor, times(SessionReplayRecorder.MAX_CAPTURE_ATTEMPTS + 1))
+            .requestCapture()
+    }
+
+    @Test
+    fun `M stop retrying W requestCapture { snapshot taken on the retry }`() {
+        // Given
+        testedSessionReplayRecorder.resumeRecorders()
+        clearInvocations(mockViewOnDrawInterceptor)
+        whenever(mockViewOnDrawInterceptor.requestCapture()).thenReturn(
+            ViewOnDrawInterceptor.CaptureRequestResult.NOT_CAPTURED,
+            ViewOnDrawInterceptor.CaptureRequestResult.CAPTURED
+        )
+
+        // When
+        testedSessionReplayRecorder.requestCapture()
+
+        // Then
+        verify(mockViewOnDrawInterceptor, times(2)).requestCapture()
     }
 
     @Test

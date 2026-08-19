@@ -18,7 +18,7 @@ internal class SessionReplayRecordWriter(
     private val recordCallback: RecordCallback,
     private val onEmbeddedRecordWritten: (String, Int) -> Unit = { _, _ -> }
 ) : RecordWriter, EmbeddedContentRecordWriter {
-    override fun write(record: EnrichedRecord) {
+    override fun write(record: EnrichedRecord, onSuccess: () -> Unit) {
         sdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)
             ?.withWriteContext { _, writeScope ->
                 writeScope {
@@ -32,6 +32,10 @@ internal class SessionReplayRecordWriter(
                         )
                         if (success) {
                             updateViewSent(record)
+                            // Runs while this monitor is held, so whatever the callback does must
+                            // not write back through this writer synchronously.
+                            @Suppress("UnsafeThirdPartyFunctionCall") // Callback is internal.
+                            onSuccess()
                         }
                     }
                 }

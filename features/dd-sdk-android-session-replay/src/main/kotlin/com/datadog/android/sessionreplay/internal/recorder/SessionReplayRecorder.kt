@@ -59,6 +59,7 @@ import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
 
@@ -76,6 +77,9 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private val resourceResolver: ResourceResolver
     private val windowFromDecorView: (View) -> Window?
     private var shouldRecord = false
+
+    /** Whether a capture has been asked for and not yet taken — see [requestCapture]. */
+    private val captureRequested = AtomicBoolean(false)
 
     @Suppress("LongParameterList")
     constructor(
@@ -110,7 +114,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             resourcesWriter,
             recordWriter,
             MutationResolver(internalLogger),
-            timeProvider
+            timeProvider,
+            embeddedContentSlotRegistry
         )
 
         this.appContext = appContext
@@ -294,18 +299,56 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     override fun resumeRecorders() {
         uiHandler.post {
             shouldRecord = true
-            val windows = sessionReplayLifecycleCallback.getCurrentWindows()
-            val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
-            windowCallbackInterceptor.intercept(windows + resolveUntrackedWindows(decorViews, windows), appContext)
-            viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
+            @Suppress("ThreadSafety") // handler posts to the main looper
+            interceptCurrentWindows(sessionReplayLifecycleCallback.getCurrentWindows())
         }
     }
 
+    /**
+     * A capture request is a standing obligation rather than a single attempt: the placeholder
+     * wireframe it produces has to reach the player before the embedded records that composite into
+     * it, and records are replayed in timestamp order, not write order. Dropping the request because
+     * the recorder cannot serve it yet would leave those records waiting on a placeholder that never
+     * arrives, so it survives until a capture actually happens.
+     */
     override fun requestCapture() {
+        captureRequested.set(true)
         uiHandler.post {
-            if (shouldRecord) {
-                viewOnDrawInterceptor.requestCapture()
+            @Suppress("ThreadSafety") // handler posts to the main looper
+            performRequestedCapture(attempt = 0)
+        }
+    }
+
+    @MainThread
+    private fun performRequestedCapture(attempt: Int) {
+        if (!shouldRecord || !captureRequested.get()) {
+            return
+        }
+        when (viewOnDrawInterceptor.requestCapture()) {
+            ViewOnDrawInterceptor.CaptureRequestResult.CAPTURED -> {
+                captureRequested.set(false)
+                return
             }
+
+            ViewOnDrawInterceptor.CaptureRequestResult.NOT_INTERCEPTING -> {
+                // The request arrived before this activity's window existed. Intercepting registers
+                // the listeners and serves the request itself.
+                interceptCurrentWindows(sessionReplayLifecycleCallback.getCurrentWindows())
+            }
+
+            // Either no window survived, or the queue refused the item. Neither clears within this
+            // frame, so the request is given a few further chances rather than being left to
+            // whatever draw or batch happens to come along next.
+            ViewOnDrawInterceptor.CaptureRequestResult.NOT_CAPTURED -> Unit
+        }
+        if (captureRequested.get() && attempt < MAX_CAPTURE_ATTEMPTS) {
+            uiHandler.postDelayed(
+                {
+                    @Suppress("ThreadSafety") // handler posts to the main looper
+                    performRequestedCapture(attempt + 1)
+                },
+                CAPTURE_RETRY_DELAY_IN_MS
+            )
         }
     }
 
@@ -320,9 +363,25 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     @MainThread
     override fun onWindowsAdded(windows: List<Window>) {
         if (shouldRecord) {
-            val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
-            windowCallbackInterceptor.intercept(windows + resolveUntrackedWindows(decorViews, windows), appContext)
-            viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
+            interceptCurrentWindows(windows)
+        }
+    }
+
+    /**
+     * Starts intercepting every window currently open, [windows] included. Any standing capture
+     * request is then served explicitly: intercepting does take a snapshot of its own, but that one
+     * goes through the debouncer, which is free to drop it. The request is cleared only once a
+     * snapshot has in fact been taken, otherwise it stays pending for whichever window comes next.
+     */
+    @MainThread
+    private fun interceptCurrentWindows(windows: List<Window>) {
+        val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
+        windowCallbackInterceptor.intercept(windows + resolveUntrackedWindows(decorViews, windows), appContext)
+        viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
+        if (captureRequested.get() &&
+            viewOnDrawInterceptor.requestCapture() == ViewOnDrawInterceptor.CaptureRequestResult.CAPTURED
+        ) {
+            captureRequested.set(false)
         }
     }
 
@@ -342,5 +401,14 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             .mapNotNull { windowFromDecorView(it) }
             .filterNot { it in knownWindows || windowCallbackInterceptor.isExcluded(it) }
             .distinct()
+    }
+
+    internal companion object {
+        // A saturated queue, or a window in the middle of being replaced, clears within a frame or
+        // two; past that, retrying is unlikely to be what makes the difference.
+        internal const val MAX_CAPTURE_ATTEMPTS: Int = 4
+
+        // one frame time
+        internal const val CAPTURE_RETRY_DELAY_IN_MS: Long = 64
     }
 }

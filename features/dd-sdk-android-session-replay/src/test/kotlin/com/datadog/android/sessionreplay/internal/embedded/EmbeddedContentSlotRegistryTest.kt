@@ -141,9 +141,166 @@ internal class EmbeddedContentSlotRegistryTest {
         }
     }
 
+    // region placeholders
+
+    @Test
+    fun `M report placeholder W onPlaceholdersWritten`() {
+        // When
+        testedRegistry.onPlaceholdersWritten(FAKE_VIEW_ID, FAKE_TIMESTAMP, setOf(FAKE_SLOT_ID))
+
+        // Then
+        assertThat(testedRegistry.placeholder(FAKE_SLOT_ID))
+            .isEqualTo(EmbeddedContentSlotRegistry.Placeholder(FAKE_VIEW_ID, FAKE_TIMESTAMP))
+    }
+
+    @Test
+    fun `M report no placeholder W placeholder { slot never drawn }`() {
+        // When
+        testedRegistry.onPlaceholdersWritten(FAKE_VIEW_ID, FAKE_TIMESTAMP, setOf(FAKE_SLOT_ID))
+
+        // Then
+        assertThat(testedRegistry.placeholder(FAKE_OLD_SLOT_ID)).isNull()
+    }
+
+    @Test
+    fun `M keep first timestamp W onPlaceholdersWritten { drawn again in same view }`() {
+        // Given
+        testedRegistry.onPlaceholdersWritten(FAKE_VIEW_ID, FAKE_TIMESTAMP, setOf(FAKE_SLOT_ID))
+
+        // When
+        testedRegistry.onPlaceholdersWritten(FAKE_VIEW_ID, FAKE_LATER_TIMESTAMP, setOf(FAKE_SLOT_ID))
+
+        // Then
+        assertThat(testedRegistry.placeholder(FAKE_SLOT_ID)?.timestamp).isEqualTo(FAKE_TIMESTAMP)
+    }
+
+    @Test
+    fun `M replace placeholder W onPlaceholdersWritten { drawn in a new view }`() {
+        // Given
+        testedRegistry.onPlaceholdersWritten(FAKE_VIEW_ID, FAKE_TIMESTAMP, setOf(FAKE_SLOT_ID))
+
+        // When
+        testedRegistry.onPlaceholdersWritten(FAKE_NEW_VIEW_ID, FAKE_LATER_TIMESTAMP, setOf(FAKE_SLOT_ID))
+
+        // Then
+        assertThat(testedRegistry.placeholder(FAKE_SLOT_ID))
+            .isEqualTo(EmbeddedContentSlotRegistry.Placeholder(FAKE_NEW_VIEW_ID, FAKE_LATER_TIMESTAMP))
+    }
+
+    @Test
+    fun `M drop placeholder W onPlaceholdersWritten { slot no longer drawn }`() {
+        // Given
+        testedRegistry.onPlaceholdersWritten(
+            FAKE_VIEW_ID,
+            FAKE_TIMESTAMP,
+            setOf(FAKE_SLOT_ID, FAKE_OLD_SLOT_ID)
+        )
+
+        // When
+        testedRegistry.onPlaceholdersWritten(FAKE_VIEW_ID, FAKE_LATER_TIMESTAMP, setOf(FAKE_SLOT_ID))
+
+        // Then
+        assertThat(testedRegistry.placeholder(FAKE_OLD_SLOT_ID)).isNull()
+        assertThat(testedRegistry.placeholder(FAKE_SLOT_ID)?.timestamp).isEqualTo(FAKE_TIMESTAMP)
+    }
+
+    @Test
+    fun `M drop every placeholder W onPlaceholdersWritten { nothing drawn }`() {
+        // Given
+        testedRegistry.onPlaceholdersWritten(FAKE_VIEW_ID, FAKE_TIMESTAMP, setOf(FAKE_SLOT_ID))
+
+        // When
+        testedRegistry.onPlaceholdersWritten(FAKE_VIEW_ID, FAKE_LATER_TIMESTAMP, emptySet())
+
+        // Then
+        assertThat(testedRegistry.placeholder(FAKE_SLOT_ID)).isNull()
+    }
+
+    @Test
+    fun `M notify listener W onPlaceholdersWritten { first placeholder in view }`() {
+        // Given
+        val notified = mutableListOf<String>()
+        testedRegistry.addPlaceholderListener { notified.add(it) }
+
+        // When
+        testedRegistry.onPlaceholdersWritten(
+            FAKE_VIEW_ID,
+            FAKE_TIMESTAMP,
+            setOf(FAKE_SLOT_ID, FAKE_OLD_SLOT_ID)
+        )
+
+        // Then
+        assertThat(notified).containsExactlyInAnyOrder(FAKE_SLOT_ID, FAKE_OLD_SLOT_ID)
+    }
+
+    @Test
+    fun `M not notify listener W onPlaceholdersWritten { drawn again in same view }`() {
+        // Given
+        val notified = mutableListOf<String>()
+        testedRegistry.onPlaceholdersWritten(FAKE_VIEW_ID, FAKE_TIMESTAMP, setOf(FAKE_SLOT_ID))
+        testedRegistry.addPlaceholderListener { notified.add(it) }
+
+        // When
+        testedRegistry.onPlaceholdersWritten(FAKE_VIEW_ID, FAKE_LATER_TIMESTAMP, setOf(FAKE_SLOT_ID))
+
+        // Then
+        assertThat(notified).isEmpty()
+    }
+
+    @Test
+    fun `M notify listener W onPlaceholdersWritten { slot drawn again after being dropped }`() {
+        // Given
+        val notified = mutableListOf<String>()
+        testedRegistry.onPlaceholdersWritten(FAKE_VIEW_ID, FAKE_TIMESTAMP, setOf(FAKE_SLOT_ID))
+        testedRegistry.onPlaceholdersWritten(FAKE_VIEW_ID, FAKE_LATER_TIMESTAMP, emptySet())
+        testedRegistry.addPlaceholderListener { notified.add(it) }
+
+        // When
+        testedRegistry.onPlaceholdersWritten(FAKE_VIEW_ID, FAKE_LATEST_TIMESTAMP, setOf(FAKE_SLOT_ID))
+
+        // Then
+        assertThat(notified).containsExactly(FAKE_SLOT_ID)
+        assertThat(testedRegistry.placeholder(FAKE_SLOT_ID)?.timestamp).isEqualTo(FAKE_LATEST_TIMESTAMP)
+    }
+
+    @Test
+    fun `M notify every listener W onPlaceholdersWritten { several listeners }`() {
+        // Given
+        val firstNotified = mutableListOf<String>()
+        val secondNotified = mutableListOf<String>()
+        testedRegistry.addPlaceholderListener { firstNotified.add(it) }
+        testedRegistry.addPlaceholderListener { secondNotified.add(it) }
+
+        // When
+        testedRegistry.onPlaceholdersWritten(FAKE_VIEW_ID, FAKE_TIMESTAMP, setOf(FAKE_SLOT_ID))
+
+        // Then
+        assertThat(firstNotified).containsExactly(FAKE_SLOT_ID)
+        assertThat(secondNotified).containsExactly(FAKE_SLOT_ID)
+    }
+
+    @Test
+    fun `M keep placeholders isolated W separate instances`() {
+        // Given
+        val otherRegistry = EmbeddedContentSlotRegistry()
+
+        // When
+        testedRegistry.onPlaceholdersWritten(FAKE_VIEW_ID, FAKE_TIMESTAMP, setOf(FAKE_SLOT_ID))
+
+        // Then
+        assertThat(otherRegistry.placeholder(FAKE_SLOT_ID)).isNull()
+    }
+
+    // endregion
+
     private companion object {
         const val FAKE_SLOT_ID = "slot-id"
         const val FAKE_OLD_SLOT_ID = "old-slot"
         const val FAKE_NEW_SLOT_ID = "new-slot"
+        const val FAKE_VIEW_ID = "view-id"
+        const val FAKE_NEW_VIEW_ID = "new-view-id"
+        const val FAKE_TIMESTAMP = 1_000L
+        const val FAKE_LATER_TIMESTAMP = 2_000L
+        const val FAKE_LATEST_TIMESTAMP = 3_000L
     }
 }

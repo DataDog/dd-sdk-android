@@ -146,6 +146,8 @@ internal class SessionReplayFeature(
         resourceProcessor = { resourceProcessor },
         isRecording = { isRecording.get() },
         executor = { embeddedContentExecutor },
+        requestCapture = { sessionReplayRecorder.requestCapture() },
+        embeddedContentSlotRegistry = embeddedContentSlotRegistry,
         internalLogger = sdkCore.internalLogger
     )
 
