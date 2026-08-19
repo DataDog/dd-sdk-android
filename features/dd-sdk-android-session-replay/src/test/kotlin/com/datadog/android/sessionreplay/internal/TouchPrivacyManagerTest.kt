@@ -22,6 +22,8 @@ import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.Random
+import java.util.concurrent.CopyOnWriteArrayList
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -153,5 +155,50 @@ internal class TouchPrivacyManagerTest {
 
         // Then
         assertThat(testedManager.shouldRecordTouch(touchLocation)).isFalse()
+    }
+
+    @Test
+    fun `M not throw W updateCurrentTouchOverrideAreas() { concurrent addTouchOverrideArea }`(
+        forge: Forge
+    ) {
+        // Given
+        // Each recorded window runs the snapshot pipeline on the Looper thread its view
+        // hierarchy is attached to, so a traversal writing overrides can run concurrently
+        // with the copy-and-clear swap performed at the end of another window's snapshot.
+        val fakePrivacyOverride = forge.aValueFrom(TouchPrivacy::class.java)
+        val fakeOrigin = forge.anInt(min = 0, max = 1000)
+        val iterations = 10_000
+        val errors = CopyOnWriteArrayList<Throwable>()
+
+        // When
+        listOf(
+            Thread {
+                repeat(iterations) {
+                    try {
+                        testedManager.addTouchOverrideArea(
+                            Rect(fakeOrigin + it, fakeOrigin + it, fakeOrigin + it + 1, fakeOrigin + it + 1),
+                            fakePrivacyOverride
+                        )
+                    } catch (e: Throwable) {
+                        errors.add(e)
+                    }
+                }
+            },
+            Thread {
+                repeat(iterations) {
+                    try {
+                        testedManager.updateCurrentTouchOverrideAreas()
+                        testedManager.shouldRecordTouch(Point(fakeOrigin + it, fakeOrigin + it))
+                    } catch (e: Throwable) {
+                        errors.add(e)
+                    }
+                }
+            }
+        ).shuffled(Random(forge.seed))
+            .map { it.apply { start() } }
+            .forEach { it.join() }
+
+        // Then
+        assertThat(errors).isEmpty()
     }
 }

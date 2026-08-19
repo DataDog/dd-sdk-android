@@ -30,37 +30,46 @@ class TouchPrivacyManager(
     // the overrides when they are no longer needed.
     private val nextOverrideAreas = HashMap<Rect, TouchPrivacy>()
 
+    // Each recorded window runs the snapshot pipeline on the Looper thread its view hierarchy is
+    // attached to. This could not be the main thread so these maps can be accessed concurrently.
+    private val lock = Any()
+
     /**
      * Adds touch area with [TouchPrivacy] override.
      */
     @UiThread
     fun addTouchOverrideArea(bounds: Rect, touchPrivacy: TouchPrivacy) {
-        nextOverrideAreas[bounds] = touchPrivacy
+        synchronized(lock) {
+            nextOverrideAreas[bounds] = touchPrivacy
+        }
     }
 
     @UiThread
     internal fun updateCurrentTouchOverrideAreas() {
-        currentOverrideAreas.clear()
-        // NPE cannot happen here
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        currentOverrideAreas.putAll(nextOverrideAreas)
-        nextOverrideAreas.clear()
+        synchronized(lock) {
+            currentOverrideAreas.clear()
+            // NPE cannot happen here
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            currentOverrideAreas.putAll(nextOverrideAreas)
+            nextOverrideAreas.clear()
+        }
     }
 
     @UiThread
     internal fun shouldRecordTouch(touchLocation: Point): Boolean {
         var isOverriddenToShowTouch = false
 
-        // Everything is UiThread, so ConcurrentModification cannot happen here
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        currentOverrideAreas.forEach { entry ->
-            val area = entry.key
-            val overrideValue = entry.value
+        synchronized(lock) {
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            currentOverrideAreas.forEach { entry ->
+                val area = entry.key
+                val overrideValue = entry.value
 
-            if (area.contains(touchLocation.x, touchLocation.y)) {
-                when (overrideValue) {
-                    TouchPrivacy.HIDE -> return false
-                    TouchPrivacy.SHOW -> isOverriddenToShowTouch = true
+                if (area.contains(touchLocation.x, touchLocation.y)) {
+                    when (overrideValue) {
+                        TouchPrivacy.HIDE -> return false
+                        TouchPrivacy.SHOW -> isOverriddenToShowTouch = true
+                    }
                 }
             }
         }
@@ -70,11 +79,19 @@ class TouchPrivacyManager(
 
     @VisibleForTesting
     internal fun getCurrentOverrideAreas(): Map<Rect, TouchPrivacy> {
-        return currentOverrideAreas
+        synchronized(lock) {
+            // NPE cannot happen here
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            return HashMap(currentOverrideAreas)
+        }
     }
 
     @VisibleForTesting
     internal fun getNextOverrideAreas(): Map<Rect, TouchPrivacy> {
-        return nextOverrideAreas
+        synchronized(lock) {
+            // NPE cannot happen here
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            return HashMap(nextOverrideAreas)
+        }
     }
 }
