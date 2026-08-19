@@ -106,6 +106,7 @@ internal class ProfilingFeature(
             this.timeProvider.delegate = sdkCore.timeProvider
             resolveProfilingPackageVersionCode(appContext)
             this.internalLogger = sdkCore.internalLogger
+            setAnrTriggerEnabled(configuration.anrTriggerEnabled)
             registerProfilingCallback(appContext, this@ProfilingFeature)
         }
         ProfilingStorage.setSampleRate(appContext, configuration.applicationLaunchSampleRate)

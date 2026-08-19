@@ -16,7 +16,8 @@ import androidx.annotation.FloatRange
 data class ProfilingConfiguration internal constructor(
     internal val customEndpointUrl: String?,
     internal val applicationLaunchSampleRate: Float,
-    internal val continuousSampleRate: Float
+    internal val continuousSampleRate: Float,
+    internal val anrTriggerEnabled: Boolean
 ) {
 
     /**
@@ -27,6 +28,7 @@ data class ProfilingConfiguration internal constructor(
         private var customEndpointUrl: String? = null
         private var applicationLaunchSampleRate: Float = DEFAULT_APPLICATION_LAUNCH_SAMPLE_RATE
         private var continuousSampleRate: Float = DEFAULT_CONTINUOUS_SAMPLE_RATE
+        private var anrTriggerEnabled: Boolean = DEFAULT_ANR_TRIGGER_ENABLED
 
         /**
          * Sets the sampling rate for Application Launch profiling. It will be applied on the next application launch.
@@ -67,13 +69,27 @@ data class ProfilingConfiguration internal constructor(
         }
 
         /**
+         * Enables or disables collecting a profile when an ANR occurs.
+         *
+         * When enabled (default), a profile is collected on ANR so the SDK can report the ANR
+         * event.
+         *
+         * @param enabled `true` to collect a profile on ANR (default), `false` to disable it.
+         */
+        fun enableAnrTrigger(enabled: Boolean): Builder {
+            this.anrTriggerEnabled = enabled
+            return this
+        }
+
+        /**
          * Builds a [ProfilingConfiguration] based on the current state of this Builder.
          */
         fun build(): ProfilingConfiguration {
             return ProfilingConfiguration(
                 customEndpointUrl = customEndpointUrl,
                 applicationLaunchSampleRate = applicationLaunchSampleRate,
-                continuousSampleRate = continuousSampleRate
+                continuousSampleRate = continuousSampleRate,
+                anrTriggerEnabled = anrTriggerEnabled
             )
         }
     }
@@ -86,6 +102,12 @@ data class ProfilingConfiguration internal constructor(
          * Default sampling rate for Continuous Profiling.
          */
         internal const val DEFAULT_CONTINUOUS_SAMPLE_RATE: Float = 15f
+
+        /**
+         * ANR-triggered profiling is enabled by default to preserve the existing behavior,
+         * making this an opt-out capability.
+         */
+        internal const val DEFAULT_ANR_TRIGGER_ENABLED: Boolean = true
 
         /**
          * A default configuration for the Profiling feature.
