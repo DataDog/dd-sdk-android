@@ -30,7 +30,7 @@ internal class RecordedDataProcessor(
     private val writer: RecordWriter,
     private val mutationResolver: MutationResolver,
     private val timeProvider: TimeProvider,
-    private val embeddedContentSlotRegistry: EmbeddedContentSlotRegistry? = null,
+    private val embeddedContentSlotRegistry: EmbeddedContentSlotRegistry,
     private val nodeFlattener: NodeFlattener = NodeFlattener(),
     private val resourceProcessor: ResourceProcessor = DefaultResourceProcessor(
         resourceDataStoreManager,
@@ -165,21 +165,19 @@ internal class RecordedDataProcessor(
     }
 
     /**
-     * Tells the registry which embedded content slots this snapshot drew a placeholder for, after the
-     * snapshot has been written so that nothing is released against a placeholder that never landed.
+     * Reported after the snapshot has been written, so that nothing is ever released against a
+     * placeholder that never landed.
      */
     private fun reportPlaceholders(
         viewId: String,
         timestamp: Long,
         wireframes: List<MobileSegment.Wireframe>
     ) {
-        val registry = embeddedContentSlotRegistry ?: return
-
         val visibleSlotIds = wireframes
             .filterIsInstance<MobileSegment.Wireframe.EmbeddedContentWireframe>()
             .filter { it.isVisible == true }
             .mapTo(mutableSetOf()) { it.slotId }
-        registry.onPlaceholdersWritten(viewId, timestamp, visibleSlotIds)
+        embeddedContentSlotRegistry.onPlaceholdersWritten(viewId, timestamp, visibleSlotIds)
     }
 
     private fun isTimeForFullSnapshot(): Boolean {

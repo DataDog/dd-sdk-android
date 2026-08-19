@@ -78,11 +78,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private val windowFromDecorView: (View) -> Window?
     private var shouldRecord = false
 
-    /**
-     * Whether a capture has been asked for and not yet taken. Kept as a flag rather than acted on
-     * once, so a request made while the recorder cannot serve it survives until it can — see
-     * [requestCapture].
-     */
+    /** Whether a capture has been asked for and not yet taken — see [requestCapture]. */
     private val captureRequested = AtomicBoolean(false)
 
     @Suppress("LongParameterList")
@@ -309,14 +305,11 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     }
 
     /**
-     * A capture request is a standing obligation rather than a single attempt.
-     *
-     * It is raised when a slot is marked as embedded content, and the placeholder wireframe it
-     * produces has to reach the player *before* the embedded records that composite into it —
-     * records are replayed in timestamp order, not write order. Dropping the request because the
-     * recorder cannot serve it yet (recording not resumed, no window intercepted) would leave those
-     * records waiting on a placeholder that never arrives, so the flag survives until a capture
-     * actually happens.
+     * A capture request is a standing obligation rather than a single attempt: the placeholder
+     * wireframe it produces has to reach the player before the embedded records that composite into
+     * it, and records are replayed in timestamp order, not write order. Dropping the request because
+     * the recorder cannot serve it yet would leave those records waiting on a placeholder that never
+     * arrives, so it survives until a capture actually happens.
      */
     override fun requestCapture() {
         captureRequested.set(true)
@@ -356,11 +349,9 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     }
 
     /**
-     * Starts intercepting every window currently open, [windows] included.
-     *
-     * Intercepting takes a snapshot of what it intercepts, which serves any capture request that was
-     * standing — the request is only cleared when there was in fact a window to snapshot, otherwise
-     * it stays pending for whichever window comes next.
+     * Starts intercepting every window currently open, [windows] included. Intercepting takes a
+     * snapshot, which serves any standing capture request — cleared only when there was in fact a
+     * window to snapshot, otherwise it stays pending for whichever window comes next.
      */
     @MainThread
     private fun interceptCurrentWindows(windows: List<Window>) {

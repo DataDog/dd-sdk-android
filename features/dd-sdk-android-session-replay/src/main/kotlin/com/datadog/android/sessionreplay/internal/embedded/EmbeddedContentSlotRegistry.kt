@@ -26,11 +26,7 @@ internal class EmbeddedContentSlotRegistration(
 internal class EmbeddedContentSlotRegistry {
     private val registrations = mutableListOf<WeakReference<EmbeddedContentSlotRegistration>>()
 
-    /**
-     * The placeholder wireframe standing in for each slot, keyed by slot ID: which view it was
-     * written in, and the timestamp it carries. This is what tells [EmbeddedContentReceiver] whether
-     * a slot's records have something to composite into yet.
-     */
+    /** The placeholder wireframe standing in for each slot, keyed by slot ID. */
     private val placeholders = mutableMapOf<String, Placeholder>()
     private val placeholderListeners = mutableListOf<(String) -> Unit>()
 
@@ -45,10 +41,9 @@ internal class EmbeddedContentSlotRegistry {
      * Records the placeholders a snapshot written for [viewId] at [timestamp] carries, as [slotIds].
      *
      * [slotIds] is the complete set drawn at that moment, not an addition to it, so a slot absent
-     * from it has no placeholder any more and its entry is dropped. A repeat in the same view keeps
-     * the original timestamp — the first placeholder in a view is the one records have to follow —
-     * and listeners fire only for a slot's first placeholder in a view, the moment anything held for
-     * it becomes writable.
+     * from it has no placeholder any more. A repeat in the same view keeps the original timestamp —
+     * the first placeholder in a view is the one records have to follow — so listeners fire only for
+     * a slot's first placeholder in a view.
      */
     @AnyThread
     fun onPlaceholdersWritten(viewId: String, timestamp: Long, slotIds: Set<String>) {
@@ -90,8 +85,6 @@ internal class EmbeddedContentSlotRegistry {
     fun activeSlotIds(): Set<String> {
         return synchronized(registrations) {
             removeInactiveRegistrations()
-            // The transform only reads a weak reference and immutable slot ID.
-            @Suppress("UnsafeThirdPartyFunctionCall")
             registrations.mapNotNullTo(mutableSetOf()) { it.get()?.slotId }
         }
     }
@@ -124,9 +117,7 @@ internal class EmbeddedContentSlotRegistry {
     private fun trackRegistration(registration: EmbeddedContentSlotRegistration?) {
         val isAlreadyTracked = registrations.any { it.get() === registration }
         if (registration != null && registration.isActive() && !isAlreadyTracked) {
-            @Suppress("UnsafeThirdPartyFunctionCall") // WeakReference construction has no documented exception.
-            val weakRegistration = WeakReference(registration)
-            registrations += weakRegistration
+            registrations += WeakReference(registration)
         }
     }
 

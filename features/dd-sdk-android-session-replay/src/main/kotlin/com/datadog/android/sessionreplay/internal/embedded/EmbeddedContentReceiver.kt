@@ -18,7 +18,6 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.concurrent.Executor
 
-@Suppress("TooManyFunctions")
 internal class EmbeddedContentReceiver(
     private val rumContextProvider: RumContextProvider,
     private val recordWriter: () -> EmbeddedContentRecordWriter,
@@ -28,6 +27,8 @@ internal class EmbeddedContentReceiver(
     private val embeddedContentSlotRegistry: EmbeddedContentSlotRegistry,
     private val internalLogger: InternalLogger
 ) {
+    private val timeline = EmbeddedRecordTimeline(embeddedContentSlotRegistry)
+
     /**
      * Batches for slots that have no placeholder yet, keyed by slot ID.
      *
@@ -36,12 +37,6 @@ internal class EmbeddedContentReceiver(
      * mis-ordered record beats a missing one.
      */
     private val pendingBatches = mutableMapOf<String, EvictingQueue<PendingBatch>>()
-
-    private class PendingBatch(
-        val event: EmbeddedContentEvent.RecordBatch,
-        val rumContext: SessionReplayRumContext,
-        val writer: EmbeddedContentRecordWriter
-    )
 
     init {
         embeddedContentSlotRegistry.addPlaceholderListener { slotId ->
@@ -76,30 +71,20 @@ internal class EmbeddedContentReceiver(
             return
         }
         val pending = PendingBatch(event, rumContext, recordWriter())
-        if (placeholderCovers(event)) {
-            write(pending, timestampShift(pending))
+        if (timeline.placeholderCovers(event)) {
+            write(pending, timeline.shiftFor(pending))
         } else {
             hold(pending)
         }
     }
 
-    /**
-     * Whether the slot's placeholder has been emitted in the same view [event] is addressed to.
-     *
-     * The view matters as much as the slot: records only composite into a placeholder that shares
-     * their segment, so one left over from a previous view is no help to this batch.
-     */
-    private fun placeholderCovers(event: EmbeddedContentEvent.RecordBatch): Boolean =
-        embeddedContentSlotRegistry.placeholder(event.slotId)?.viewId == event.viewId
-
-    /** Parks [pending] until a placeholder for its slot and view has been emitted. */
     private fun hold(pending: PendingBatch) {
         val displaced = synchronized(pendingBatches) { enqueue(pending) }
         writeAll(displaced)
         // The registry notifies its listeners outside the lock above, so a placeholder can appear
         // between the check and the enqueue with no listener left to fire. Checking again covers
         // that window; whichever path removes the queue is the one that writes it.
-        if (placeholderCovers(pending.event)) {
+        if (timeline.placeholderCovers(pending.event)) {
             releasePendingBatches(pending.event.slotId)
         }
     }
@@ -122,7 +107,6 @@ internal class EmbeddedContentReceiver(
         return displaced
     }
 
-    /** Writes everything held for [slotId], now that a placeholder for it has been emitted. */
     private fun releasePendingBatches(slotId: String) {
         val released = synchronized(pendingBatches) {
             pendingBatches.remove(slotId)
@@ -131,14 +115,12 @@ internal class EmbeddedContentReceiver(
     }
 
     /**
-     * Writes [batches], one shift per slot and view.
-     *
-     * Batches held across a view change are not on the same timeline as each other and must not
-     * share a shift: each view has its own placeholder, and so its own floor.
+     * Writes [batches], one shift per slot and view: batches held across a view change are not on
+     * the same timeline as each other, and each view has its own placeholder and so its own floor.
      */
     private fun writeAll(batches: Collection<PendingBatch>) {
         batches.groupBy { it.event.slotId to it.event.viewId }.forEach { (_, group) ->
-            val shift = timestampShift(group)
+            val shift = timeline.shiftFor(group)
             group.forEach { write(it, shift) }
         }
     }
@@ -148,37 +130,6 @@ internal class EmbeddedContentReceiver(
             processRecordBatch(pending.event, pending.rumContext, pending.writer, shift)
         }
     }
-
-    private fun timestampShift(batch: PendingBatch): Long =
-        timestampShift(batch.event, batch.earliestTimestamp())
-
-    private fun timestampShift(batches: Collection<PendingBatch>): Long {
-        val event = batches.firstOrNull()?.event ?: return NO_SHIFT
-        val earliest = batches.mapNotNull { it.earliestTimestamp() }.minOrNull()
-        return timestampShift(event, earliest)
-    }
-
-    /**
-     * How far forward records move so the earliest of them clears the slot's placeholder, or
-     * [NO_SHIFT] when they already do — the steady-state case.
-     *
-     * One shift for the whole set rather than a floor applied to each record: clamping pins
-     * everything captured before the placeholder to the same millisecond, so a gesture spread over
-     * several frames replays as a single jump. Moving the set keeps every original interval intact.
-     */
-    private fun timestampShift(event: EmbeddedContentEvent.RecordBatch, earliest: Long?): Long {
-        val placeholder = embeddedContentSlotRegistry.placeholder(event.slotId)
-            ?.takeIf { it.viewId == event.viewId }
-        if (placeholder == null || earliest == null) {
-            return NO_SHIFT
-        }
-        return maxOf(NO_SHIFT, placeholder.timestamp + 1 - earliest)
-    }
-
-    /** The batch's earliest record timestamp, corrected for the view's server time offset. */
-    private fun PendingBatch.earliestTimestamp(): Long? = event.records
-        .mapNotNull { record -> record.timestampOrNull()?.let { it + rumContext.viewTimeOffsetMs } }
-        .minOrNull()
 
     private fun processRecordBatch(
         event: EmbeddedContentEvent.RecordBatch,
@@ -192,7 +143,7 @@ internal class EmbeddedContentReceiver(
                     val jsonRecord = JsonSerializer.toJsonElement(record)
                     if (jsonRecord is JsonObject) {
                         jsonRecord.addProperty(RECORD_SLOT_ID_KEY, event.slotId)
-                        correctTimestamp(jsonRecord, record, rumContext, shift)
+                        timeline.correctTimestamp(jsonRecord, record, rumContext.viewTimeOffsetMs, shift)
                         array.add(jsonRecord)
                     } else {
                         logInvalidRecord()
@@ -215,30 +166,6 @@ internal class EmbeddedContentReceiver(
             event.viewId,
             records.size()
         )
-    }
-
-    /**
-     * Puts [jsonRecord] on the same timeline as the native records it is replayed alongside: the
-     * view's server time offset, which native records already carry and these do not, then the
-     * placeholder [shift] computed by [timestampShift].
-     */
-    private fun correctTimestamp(
-        jsonRecord: JsonObject,
-        record: Map<String, Any?>,
-        rumContext: SessionReplayRumContext,
-        shift: Long
-    ) {
-        val timestamp = record.timestampOrNull() ?: return
-        jsonRecord.addProperty(RECORD_TIMESTAMP_KEY, timestamp + rumContext.viewTimeOffsetMs + shift)
-    }
-
-    /** The record's own capture time, before any correction, or `null` if it carries none usable. */
-    private fun Map<String, Any?>.timestampOrNull(): Long? {
-        return when (val timestamp = this[RECORD_TIMESTAMP_KEY]) {
-            is Number -> timestamp.toLong()
-            is String -> timestamp.toLongOrNull()
-            else -> null
-        }
     }
 
     private fun processResource(
@@ -265,10 +192,8 @@ internal class EmbeddedContentReceiver(
 
         // Embedded records use the Session Replay record schema naming convention.
         internal const val RECORD_SLOT_ID_KEY = "slotId"
-        internal const val RECORD_TIMESTAMP_KEY = "timestamp"
         internal const val MAX_PENDING_BATCHES = 20
         internal const val MAX_PENDING_SLOTS = 10
-        internal const val NO_SHIFT = 0L
         internal const val INVALID_EMBEDDED_RECORD_MESSAGE =
             "Session Replay received an invalid embedded content record."
         internal const val PROCESS_EVENT_TASK_NAME = "Embedded Session Replay event processing"

@@ -534,7 +534,7 @@ internal class EmbeddedContentReceiverTest {
             JsonParser.parseString(bytes.toString(Charsets.UTF_8))
                 .asJsonObject[EmbeddedContentReceiver.RECORDS_KEY]
                 .asJsonArray
-                .map { it.asJsonObject[EmbeddedContentReceiver.RECORD_TIMESTAMP_KEY].asLong }
+                .map { it.asJsonObject[EmbeddedRecordTimeline.RECORD_TIMESTAMP_KEY].asLong }
         }
     }
 
