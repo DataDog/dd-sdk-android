@@ -33,6 +33,7 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -166,10 +167,36 @@ internal class ViewOnDrawInterceptorTest {
         clearInvocations(mockOnDrawListener)
 
         // When
-        testedInterceptor.requestCapture()
+        val captured = testedInterceptor.requestCapture()
 
         // Then
         verify(mockOnDrawListener).onDraw()
+        assertThat(captured).isTrue()
+    }
+
+    @Test
+    fun `M report no capture W requestCapture { nothing intercepted }`() {
+        // When
+        val captured = testedInterceptor.requestCapture()
+
+        // Then
+        assertThat(captured).isFalse()
+        verifyNoInteractions(mockOnDrawListener)
+    }
+
+    @Test
+    fun `M report no capture W requestCapture { after stopIntercepting }`() {
+        // Given
+        testedInterceptor.intercept(fakeDecorViews, fakeTextAndInputPrivacy, fakeImagePrivacy)
+        testedInterceptor.stopIntercepting()
+        clearInvocations(mockOnDrawListener)
+
+        // When
+        val captured = testedInterceptor.requestCapture()
+
+        // Then
+        assertThat(captured).isFalse()
+        verifyNoInteractions(mockOnDrawListener)
     }
 
     @Test

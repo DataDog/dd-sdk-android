@@ -13,6 +13,7 @@ import com.datadog.android.sessionreplay.internal.ResourcesFeature
 import com.datadog.android.sessionreplay.internal.async.ResourceRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.TouchEventRecordedDataQueueItem
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
@@ -92,6 +93,8 @@ internal class RecordedDataProcessorTest {
     @Mock
     lateinit var mockTimeProvider: TimeProvider
 
+    private val fakeSlotRegistry = EmbeddedContentSlotRegistry()
+
     private val invalidRumContext = SessionReplayRumContext()
 
     private lateinit var invalidRecordedQueuedItemContext: RecordedQueuedItemContext
@@ -157,6 +160,7 @@ internal class RecordedDataProcessorTest {
             writer = mockWriter,
             mutationResolver = mockMutationResolver,
             timeProvider = mockTimeProvider,
+            embeddedContentSlotRegistry = fakeSlotRegistry,
             nodeFlattener = mockNodeFlattener
         )
     }
@@ -1295,7 +1299,92 @@ internal class RecordedDataProcessorTest {
 
     // endregion
 
+    // region embedded content placeholders
+
+    @Test
+    fun `M report placeholder to the registry W process { snapshot with visible placeholder }`(
+        @StringForgery fakeSlotId: String,
+        forge: Forge
+    ) {
+        // Given
+        currentRecordedQueuedItemContext = mockRumContextDataHandler.createRumContextData()
+            ?: fail("RumContextData is null")
+        givenFlattenedWireframes(forge.anEmbeddedContentWireframe(fakeSlotId, isVisible = true))
+
+        // When
+        testedProcessor.processScreenSnapshots(createSnapshotItem(fakeSnapshot1))
+
+        // Then
+        assertThat(fakeSlotRegistry.placeholder(fakeSlotId))
+            .isEqualTo(
+                EmbeddedContentSlotRegistry.Placeholder(fakeRumContext.viewId, fakeTimestamp)
+            )
+    }
+
+    @Test
+    fun `M report no placeholder to the registry W process { snapshot with hidden placeholder }`(
+        @StringForgery fakeSlotId: String,
+        forge: Forge
+    ) {
+        // Given
+        currentRecordedQueuedItemContext = mockRumContextDataHandler.createRumContextData()
+            ?: fail("RumContextData is null")
+        givenFlattenedWireframes(forge.anEmbeddedContentWireframe(fakeSlotId, isVisible = false))
+
+        // When
+        testedProcessor.processScreenSnapshots(createSnapshotItem(fakeSnapshot1))
+
+        // Then
+        assertThat(fakeSlotRegistry.placeholder(fakeSlotId)).isNull()
+    }
+
+    @Test
+    fun `M report placeholders after writing W process { snapshot with visible placeholder }`(
+        @StringForgery fakeSlotId: String,
+        forge: Forge
+    ) {
+        // Given
+        // Nothing may be released against a placeholder whose record has not been written yet.
+        currentRecordedQueuedItemContext = mockRumContextDataHandler.createRumContextData()
+            ?: fail("RumContextData is null")
+        givenFlattenedWireframes(forge.anEmbeddedContentWireframe(fakeSlotId, isVisible = true))
+        var written = false
+        var writtenWhenNotified: Boolean? = null
+        whenever(mockWriter.write(any())).thenAnswer {
+            written = true
+            null
+        }
+        fakeSlotRegistry.addPlaceholderListener { writtenWhenNotified = written }
+
+        // When
+        testedProcessor.processScreenSnapshots(createSnapshotItem(fakeSnapshot1))
+
+        // Then
+        assertThat(writtenWhenNotified).isTrue()
+    }
+
+    // endregion
+
     // region Internal
+
+    private fun givenFlattenedWireframes(vararg wireframes: MobileSegment.Wireframe) {
+        whenever(mockNodeFlattener.flattenNode(any())).thenReturn(wireframes.toList())
+    }
+
+    private fun Forge.anEmbeddedContentWireframe(
+        slotId: String,
+        isVisible: Boolean
+    ): MobileSegment.Wireframe.EmbeddedContentWireframe {
+        return MobileSegment.Wireframe.EmbeddedContentWireframe(
+            id = aLong(min = 0),
+            x = aLong(min = 0),
+            y = aLong(min = 0),
+            width = aLong(min = 0),
+            height = aLong(min = 0),
+            slotId = slotId,
+            isVisible = isVisible
+        )
+    }
 
     private fun Forge.aSingleLevelSnapshot(): Node {
         return Node(

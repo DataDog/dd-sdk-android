@@ -63,11 +63,18 @@ internal class ViewOnDrawInterceptor(
         decorOnDrawListeners.clear()
     }
 
-    fun requestCapture() {
+    /**
+     * Takes a snapshot of every intercepted window, and reports whether there was one to take.
+     *
+     * `false` means nothing is being intercepted yet, so the caller still owes itself a capture —
+     * see [SessionReplayRecorder.requestCapture].
+     */
+    fun requestCapture(): Boolean {
         // Copy before callbacks because a capture may change the registered listener collection.
         @Suppress("UnsafeThirdPartyFunctionCall") // WeakHashMap access is confined to the UI thread.
         val listeners = decorOnDrawListeners.values.toSet()
         listeners.forEach { it.onDraw() }
+        return listeners.isNotEmpty()
     }
 
     private fun stopInterceptingAndRemove(decorViews: List<View>) {

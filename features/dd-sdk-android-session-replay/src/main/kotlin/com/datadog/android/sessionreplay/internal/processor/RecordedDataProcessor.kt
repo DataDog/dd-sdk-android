@@ -12,6 +12,7 @@ import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.internal.async.ResourceRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.TouchEventRecordedDataQueueItem
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
@@ -29,6 +30,7 @@ internal class RecordedDataProcessor(
     private val writer: RecordWriter,
     private val mutationResolver: MutationResolver,
     private val timeProvider: TimeProvider,
+    private val embeddedContentSlotRegistry: EmbeddedContentSlotRegistry? = null,
     private val nodeFlattener: NodeFlattener = NodeFlattener(),
     private val resourceProcessor: ResourceProcessor = DefaultResourceProcessor(
         resourceDataStoreManager,
@@ -145,9 +147,39 @@ internal class RecordedDataProcessor(
         }
         prevSnapshot = wireframes
         previousOrientation = systemInformation.screenOrientation
-        if (records.isNotEmpty()) {
-            writer.write(bundleRecordInEnrichedRecord(newRumContext, records))
+        writeSnapshot(newRumContext, timestamp, records, wireframes)
+    }
+
+    @WorkerThread
+    private fun writeSnapshot(
+        newRumContext: SessionReplayRumContext,
+        timestamp: Long,
+        records: List<MobileSegment.MobileRecord>,
+        wireframes: List<MobileSegment.Wireframe>
+    ) {
+        if (records.isEmpty()) {
+            return
         }
+        writer.write(bundleRecordInEnrichedRecord(newRumContext, records))
+        reportPlaceholders(newRumContext.viewId, timestamp, wireframes)
+    }
+
+    /**
+     * Tells the registry which embedded content slots this snapshot drew a placeholder for, after the
+     * snapshot has been written so that nothing is released against a placeholder that never landed.
+     */
+    private fun reportPlaceholders(
+        viewId: String,
+        timestamp: Long,
+        wireframes: List<MobileSegment.Wireframe>
+    ) {
+        val registry = embeddedContentSlotRegistry ?: return
+
+        val visibleSlotIds = wireframes
+            .filterIsInstance<MobileSegment.Wireframe.EmbeddedContentWireframe>()
+            .filter { it.isVisible == true }
+            .mapTo(mutableSetOf()) { it.slotId }
+        registry.onPlaceholdersWritten(viewId, timestamp, visibleSlotIds)
     }
 
     private fun isTimeForFullSnapshot(): Boolean {

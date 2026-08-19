@@ -59,6 +59,7 @@ import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
 
@@ -76,6 +77,13 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private val resourceResolver: ResourceResolver
     private val windowFromDecorView: (View) -> Window?
     private var shouldRecord = false
+
+    /**
+     * Whether a capture has been asked for and not yet taken. Kept as a flag rather than acted on
+     * once, so a request made while the recorder cannot serve it survives until it can — see
+     * [requestCapture].
+     */
+    private val captureRequested = AtomicBoolean(false)
 
     @Suppress("LongParameterList")
     constructor(
@@ -110,7 +118,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             resourcesWriter,
             recordWriter,
             MutationResolver(internalLogger),
-            timeProvider
+            timeProvider,
+            embeddedContentSlotRegistry
         )
 
         this.appContext = appContext
@@ -294,19 +303,41 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     override fun resumeRecorders() {
         uiHandler.post {
             shouldRecord = true
-            val windows = sessionReplayLifecycleCallback.getCurrentWindows()
-            val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
-            windowCallbackInterceptor.intercept(windows + resolveUntrackedWindows(decorViews, windows), appContext)
-            viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
+            @Suppress("ThreadSafety") // handler posts to the main looper
+            interceptCurrentWindows(sessionReplayLifecycleCallback.getCurrentWindows())
         }
     }
 
+    /**
+     * A capture request is a standing obligation rather than a single attempt.
+     *
+     * It is raised when a slot is marked as embedded content, and the placeholder wireframe it
+     * produces has to reach the player *before* the embedded records that composite into it —
+     * records are replayed in timestamp order, not write order. Dropping the request because the
+     * recorder cannot serve it yet (recording not resumed, no window intercepted) would leave those
+     * records waiting on a placeholder that never arrives, so the flag survives until a capture
+     * actually happens.
+     */
     override fun requestCapture() {
+        captureRequested.set(true)
         uiHandler.post {
-            if (shouldRecord) {
-                viewOnDrawInterceptor.requestCapture()
-            }
+            @Suppress("ThreadSafety") // handler posts to the main looper
+            performRequestedCapture()
         }
+    }
+
+    @MainThread
+    private fun performRequestedCapture() {
+        if (!shouldRecord || !captureRequested.get()) {
+            return
+        }
+        if (viewOnDrawInterceptor.requestCapture()) {
+            captureRequested.set(false)
+            return
+        }
+        // Nothing is being intercepted yet — the request arrived before this activity's window
+        // existed. Intercepting takes a snapshot of its own, which serves the request.
+        interceptCurrentWindows(sessionReplayLifecycleCallback.getCurrentWindows())
     }
 
     override fun stopRecorders() {
@@ -320,9 +351,24 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     @MainThread
     override fun onWindowsAdded(windows: List<Window>) {
         if (shouldRecord) {
-            val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
-            windowCallbackInterceptor.intercept(windows + resolveUntrackedWindows(decorViews, windows), appContext)
-            viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
+            interceptCurrentWindows(windows)
+        }
+    }
+
+    /**
+     * Starts intercepting every window currently open, [windows] included.
+     *
+     * Intercepting takes a snapshot of what it intercepts, which serves any capture request that was
+     * standing — the request is only cleared when there was in fact a window to snapshot, otherwise
+     * it stays pending for whichever window comes next.
+     */
+    @MainThread
+    private fun interceptCurrentWindows(windows: List<Window>) {
+        val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
+        windowCallbackInterceptor.intercept(windows + resolveUntrackedWindows(decorViews, windows), appContext)
+        viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
+        if (decorViews.isNotEmpty()) {
+            captureRequested.set(false)
         }
     }
 

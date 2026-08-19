@@ -25,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -57,6 +58,8 @@ internal class EmbeddedContentReceiverTest {
 
     private var isRecording: Boolean = true
 
+    private val fakeSlotRegistry = EmbeddedContentSlotRegistry()
+
     private val fakeRumContext = SessionReplayRumContext(
         applicationId = FAKE_NATIVE_APPLICATION_ID,
         sessionId = FAKE_NATIVE_SESSION_ID,
@@ -66,19 +69,13 @@ internal class EmbeddedContentReceiverTest {
     @BeforeEach
     fun `set up`() {
         whenever(mockRumContextProvider.getRumContext()).thenReturn(fakeRumContext)
-        testedReceiver = EmbeddedContentReceiver(
-            rumContextProvider = mockRumContextProvider,
-            recordWriter = { mockRecordWriter },
-            resourceProcessor = { mockResourceProcessor },
-            isRecording = { isRecording },
-            executor = { Executor(Runnable::run) },
-            internalLogger = mockInternalLogger
-        )
+        testedReceiver = receiver()
     }
 
     @Test
     fun `M enrich and write records W receive { record batch }`() {
         // Given
+        givenPlaceholder(FAKE_NATIVE_SLOT_ID, FAKE_EMBEDDED_VIEW_ID, FAKE_PLACEHOLDER_TIMESTAMP)
         val event = EmbeddedContentEvent.RecordBatch(
             records = listOf(
                 mapOf(
@@ -119,33 +116,15 @@ internal class EmbeddedContentReceiverTest {
     }
 
     @Test
-    fun `M write records W receive { slot has no native container }`() {
-        // When
-        testedReceiver.receive(
-            EmbeddedContentEvent.RecordBatch(
-                records = listOf(mapOf("type" to 10L)),
-                slotId = "unmaterialized-slot",
-                viewId = FAKE_EMBEDDED_VIEW_ID
-            )
-        )
-
-        // Then
-        verify(mockRecordWriter).writeRaw(any(), eq(FAKE_EMBEDDED_VIEW_ID), eq(1))
-    }
-
-    @Test
     fun `M process records asynchronously W receive { record batch }`() {
         // Given
+        givenPlaceholder(FAKE_NATIVE_SLOT_ID, FAKE_EMBEDDED_VIEW_ID, FAKE_PLACEHOLDER_TIMESTAMP)
         lateinit var queuedTask: Runnable
         val replacementRecordWriter = mock<EmbeddedContentRecordWriter>()
         var currentRecordWriter = mockRecordWriter
-        testedReceiver = EmbeddedContentReceiver(
-            rumContextProvider = mockRumContextProvider,
+        testedReceiver = receiver(
             recordWriter = { currentRecordWriter },
-            resourceProcessor = { mockResourceProcessor },
-            isRecording = { isRecording },
-            executor = { Executor { queuedTask = it } },
-            internalLogger = mockInternalLogger
+            executor = { Executor { queuedTask = it } }
         )
 
         // When
@@ -195,13 +174,9 @@ internal class EmbeddedContentReceiverTest {
         val replacementResourceProcessor = mock<ResourceProcessor>()
         var currentResourceProcessor = mockResourceProcessor
         val resourceData = byteArrayOf(1, 2, 3)
-        testedReceiver = EmbeddedContentReceiver(
-            rumContextProvider = mockRumContextProvider,
-            recordWriter = { mockRecordWriter },
+        testedReceiver = receiver(
             resourceProcessor = { currentResourceProcessor },
-            isRecording = { isRecording },
-            executor = { Executor { queuedTask = it } },
-            internalLogger = mockInternalLogger
+            executor = { Executor { queuedTask = it } }
         )
 
         // When
@@ -315,6 +290,256 @@ internal class EmbeddedContentReceiverTest {
         verifyNoInteractions(mockRecordWriter)
     }
 
+    // region placeholder ordering
+
+    @Test
+    fun `M hold records W receive { no placeholder for slot }`() {
+        // When
+        testedReceiver.receive(recordBatch(timestamps = listOf(123L)))
+
+        // Then
+        verifyNoInteractions(mockRecordWriter)
+    }
+
+    @Test
+    fun `M hold records W receive { placeholder in another view }`() {
+        // Given
+        givenPlaceholder(FAKE_NATIVE_SLOT_ID, FAKE_NATIVE_VIEW_ID, FAKE_PLACEHOLDER_TIMESTAMP)
+
+        // When
+        testedReceiver.receive(recordBatch(timestamps = listOf(123L)))
+
+        // Then
+        verifyNoInteractions(mockRecordWriter)
+    }
+
+    @Test
+    fun `M write held records W onPlaceholdersWritten { placeholder emitted for the slot }`() {
+        // Given
+        testedReceiver.receive(recordBatch(timestamps = listOf(123L)))
+        verifyNoInteractions(mockRecordWriter)
+
+        // When
+        givenPlaceholder(FAKE_NATIVE_SLOT_ID, FAKE_EMBEDDED_VIEW_ID, FAKE_PLACEHOLDER_TIMESTAMP)
+
+        // Then
+        verify(mockRecordWriter).writeRaw(any(), eq(FAKE_EMBEDDED_VIEW_ID), eq(1))
+    }
+
+    @Test
+    fun `M keep records held W onPlaceholdersWritten { placeholder emitted for another slot }`() {
+        // Given
+        testedReceiver.receive(recordBatch(timestamps = listOf(123L)))
+
+        // When
+        givenPlaceholder(FAKE_SLOT_ID, FAKE_EMBEDDED_VIEW_ID, FAKE_PLACEHOLDER_TIMESTAMP)
+
+        // Then
+        verifyNoInteractions(mockRecordWriter)
+    }
+
+    @Test
+    fun `M carry records past the placeholder W onPlaceholdersWritten { captured before it }`() {
+        // Given
+        testedReceiver.receive(recordBatch(timestamps = listOf(100L, 168L, 207L)))
+
+        // When
+        givenPlaceholder(FAKE_NATIVE_SLOT_ID, FAKE_EMBEDDED_VIEW_ID, 1000L)
+
+        // Then
+        // The earliest record lands one millisecond past the placeholder, and the 68/39 ms
+        // intervals between the three are preserved.
+        assertThat(writtenTimestamps()).containsExactly(1001L, 1069L, 1108L)
+    }
+
+    @Test
+    fun `M leave timestamps alone W receive { records already past the placeholder }`() {
+        // Given
+        givenPlaceholder(FAKE_NATIVE_SLOT_ID, FAKE_EMBEDDED_VIEW_ID, 1000L)
+
+        // When
+        testedReceiver.receive(recordBatch(timestamps = listOf(1500L, 1600L)))
+
+        // Then
+        assertThat(writtenTimestamps()).containsExactly(1500L, 1600L)
+    }
+
+    @Test
+    fun `M add view time offset W receive { record batch }`() {
+        // Given
+        whenever(mockRumContextProvider.getRumContext())
+            .thenReturn(fakeRumContext.copy(viewTimeOffsetMs = FAKE_VIEW_TIME_OFFSET_MS))
+        givenPlaceholder(FAKE_NATIVE_SLOT_ID, FAKE_EMBEDDED_VIEW_ID, 1000L)
+
+        // When
+        testedReceiver.receive(recordBatch(timestamps = listOf(2000L)))
+
+        // Then
+        assertThat(writtenTimestamps()).containsExactly(2000L + FAKE_VIEW_TIME_OFFSET_MS)
+    }
+
+    @Test
+    fun `M shift offset-corrected timestamps W onPlaceholdersWritten { held records }`() {
+        // Given
+        whenever(mockRumContextProvider.getRumContext())
+            .thenReturn(fakeRumContext.copy(viewTimeOffsetMs = FAKE_VIEW_TIME_OFFSET_MS))
+        testedReceiver.receive(recordBatch(timestamps = listOf(100L, 150L)))
+
+        // When
+        givenPlaceholder(FAKE_NATIVE_SLOT_ID, FAKE_EMBEDDED_VIEW_ID, 10_000L)
+
+        // Then
+        // The floor applies to the offset-corrected timestamps, not the raw ones.
+        assertThat(writtenTimestamps()).containsExactly(10_001L, 10_051L)
+    }
+
+    @Test
+    fun `M shift each view on its own floor W onPlaceholdersWritten { held across views }`() {
+        // Given
+        testedReceiver.receive(
+            recordBatch(timestamps = listOf(100L), viewId = FAKE_EMBEDDED_VIEW_ID)
+        )
+        testedReceiver.receive(
+            recordBatch(timestamps = listOf(200L), viewId = FAKE_OTHER_EMBEDDED_VIEW_ID)
+        )
+
+        // When
+        givenPlaceholder(FAKE_NATIVE_SLOT_ID, FAKE_OTHER_EMBEDDED_VIEW_ID, 5000L)
+
+        // Then
+        // Only the batch sharing the placeholder's view is shifted onto its floor; the batch from
+        // the earlier view has no placeholder of its own and keeps its timestamp.
+        verify(mockRecordWriter).writeRaw(any(), eq(FAKE_EMBEDDED_VIEW_ID), eq(1))
+        verify(mockRecordWriter).writeRaw(any(), eq(FAKE_OTHER_EMBEDDED_VIEW_ID), eq(1))
+        assertThat(writtenTimestamps()).containsExactlyInAnyOrder(100L, 5001L)
+    }
+
+    @Test
+    fun `M write oldest held batch W receive { more batches than the bound }`() {
+        // When
+        repeat(EmbeddedContentReceiver.MAX_PENDING_BATCHES + 1) { index ->
+            testedReceiver.receive(recordBatch(timestamps = listOf(index.toLong())))
+        }
+
+        // Then
+        // A mis-ordered record beats a missing one: the evicted batch is written as captured.
+        verify(mockRecordWriter).writeRaw(any(), eq(FAKE_EMBEDDED_VIEW_ID), eq(1))
+        assertThat(writtenTimestamps()).containsExactly(0L)
+    }
+
+    @Test
+    fun `M hold every batch W receive { as many batches as the bound }`() {
+        // When
+        repeat(EmbeddedContentReceiver.MAX_PENDING_BATCHES) { index ->
+            testedReceiver.receive(recordBatch(timestamps = listOf(index.toLong())))
+        }
+
+        // Then
+        verifyNoInteractions(mockRecordWriter)
+    }
+
+    @Test
+    fun `M write oldest slot's held batches W receive { more slots than the bound }`() {
+        // When
+        repeat(EmbeddedContentReceiver.MAX_PENDING_SLOTS + 1) { index ->
+            testedReceiver.receive(
+                recordBatch(timestamps = listOf(index.toLong()), slotId = "slot-$index")
+            )
+        }
+
+        // Then
+        // A placeholder may never come for a slot, so the oldest slot makes room for the newest and
+        // what it was holding is written rather than left pending forever.
+        verify(mockRecordWriter).writeRaw(any(), eq(FAKE_EMBEDDED_VIEW_ID), eq(1))
+        assertThat(writtenTimestamps()).containsExactly(0L)
+    }
+
+    @Test
+    fun `M hold every slot W receive { as many slots as the bound }`() {
+        // When
+        repeat(EmbeddedContentReceiver.MAX_PENDING_SLOTS) { index ->
+            testedReceiver.receive(
+                recordBatch(timestamps = listOf(index.toLong()), slotId = "slot-$index")
+            )
+        }
+
+        // Then
+        verifyNoInteractions(mockRecordWriter)
+    }
+
+    @Test
+    fun `M write held batch once W receive { placeholder lands between the check and the hold }`() {
+        // Given
+        // The registry publishes a placeholder and notifies its listeners outside the lock the hold
+        // takes, so a placeholder can appear after the check found none and before the batch is
+        // held — with no listener left to fire for it. Consecutive returns reproduce exactly that:
+        // the first check sees nothing, every later one sees the placeholder.
+        val mockSlotRegistry = mock<EmbeddedContentSlotRegistry>()
+        whenever(mockSlotRegistry.placeholder(FAKE_NATIVE_SLOT_ID)).thenReturn(
+            null,
+            EmbeddedContentSlotRegistry.Placeholder(FAKE_EMBEDDED_VIEW_ID, 1000L)
+        )
+        testedReceiver = receiver(registry = mockSlotRegistry)
+
+        // When
+        testedReceiver.receive(recordBatch(timestamps = listOf(100L)))
+
+        // Then
+        verify(mockRecordWriter).writeRaw(any(), eq(FAKE_EMBEDDED_VIEW_ID), eq(1))
+        assertThat(writtenTimestamps()).containsExactly(1001L)
+    }
+
+    // endregion
+
+    // region Internal
+
+    private fun receiver(
+        registry: EmbeddedContentSlotRegistry = fakeSlotRegistry,
+        recordWriter: () -> EmbeddedContentRecordWriter = { mockRecordWriter },
+        resourceProcessor: () -> ResourceProcessor = { mockResourceProcessor },
+        executor: () -> Executor = { Executor(Runnable::run) }
+    ): EmbeddedContentReceiver {
+        return EmbeddedContentReceiver(
+            rumContextProvider = mockRumContextProvider,
+            recordWriter = recordWriter,
+            resourceProcessor = resourceProcessor,
+            isRecording = { isRecording },
+            executor = executor,
+            embeddedContentSlotRegistry = registry,
+            internalLogger = mockInternalLogger
+        )
+    }
+
+    private fun givenPlaceholder(slotId: String, viewId: String, timestamp: Long) {
+        fakeSlotRegistry.onPlaceholdersWritten(viewId, timestamp, setOf(slotId))
+    }
+
+    private fun recordBatch(
+        timestamps: List<Long>,
+        slotId: String = FAKE_NATIVE_SLOT_ID,
+        viewId: String = FAKE_EMBEDDED_VIEW_ID
+    ): EmbeddedContentEvent.RecordBatch {
+        return EmbeddedContentEvent.RecordBatch(
+            records = timestamps.map { mapOf("type" to 10L, "timestamp" to it) },
+            slotId = slotId,
+            viewId = viewId
+        )
+    }
+
+    /** Every record timestamp handed to the writer, in the order it was written. */
+    private fun writtenTimestamps(): List<Long> {
+        val captor = argumentCaptor<ByteArray>()
+        verify(mockRecordWriter, atLeastOnce()).writeRaw(captor.capture(), any(), any())
+        return captor.allValues.flatMap { bytes ->
+            JsonParser.parseString(bytes.toString(Charsets.UTF_8))
+                .asJsonObject[EmbeddedContentReceiver.RECORDS_KEY]
+                .asJsonArray
+                .map { it.asJsonObject[EmbeddedContentReceiver.RECORD_TIMESTAMP_KEY].asLong }
+        }
+    }
+
+    // endregion
+
     private companion object {
         const val FAKE_APPLICATION_ID = "application-id"
         const val FAKE_SESSION_ID = "session-id"
@@ -324,6 +549,9 @@ internal class EmbeddedContentReceiverTest {
         const val FAKE_NATIVE_SESSION_ID = "native-session-id"
         const val FAKE_NATIVE_VIEW_ID = "native-view-id"
         const val FAKE_EMBEDDED_VIEW_ID = "embedded-view-id"
+        const val FAKE_OTHER_EMBEDDED_VIEW_ID = "other-embedded-view-id"
+        const val FAKE_PLACEHOLDER_TIMESTAMP = 100L
+        const val FAKE_VIEW_TIME_OFFSET_MS = 500L
         const val FAKE_NATIVE_SLOT_ID = "native-slot"
         const val FAKE_RESOURCE_ID = "resource-id"
         const val FAKE_MIME_TYPE = "image/png"
