@@ -359,7 +359,7 @@ internal class CoreFeature(
         contextExecutorService.queue.drainTo(contextTasks)
 
         contextExecutorService.shutdown()
-        contextExecutorService.awaitTermination(DRAIN_WAIT_SECONDS, TimeUnit.SECONDS)
+        awaitTerminationLogged(contextExecutorService, "contextExecutorService", DRAIN_WAIT_SECONDS, TimeUnit.SECONDS)
         contextTasks.forEach {
             it.run()
         }
@@ -376,11 +376,35 @@ internal class CoreFeature(
         persistenceExecutorService.shutdown()
         uploadExecutorService.shutdown()
 
-        persistenceExecutorService.awaitTermination(DRAIN_WAIT_SECONDS, TimeUnit.SECONDS)
-        uploadExecutorService.awaitTermination(DRAIN_WAIT_SECONDS, TimeUnit.SECONDS)
+        awaitTerminationLogged(
+            persistenceExecutorService,
+            "persistenceExecutorService",
+            DRAIN_WAIT_SECONDS,
+            TimeUnit.SECONDS
+        )
+        // uploadExecutorService can be mid-upload when this runs, and only NETWORK_TIMEOUT_MS
+        // bounds how long that upload can take. Failing to wait long enough here can lead to
+        // a DataFlusher race where it uploads the same batch twice. See RUM-18168.
+        awaitTerminationLogged(
+            uploadExecutorService,
+            "uploadExecutorService",
+            NETWORK_TIMEOUT_MS,
+            TimeUnit.MILLISECONDS
+        )
 
         ioTasks.forEach {
             it.run()
+        }
+    }
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // Used in Nightly tests only
+    private fun awaitTerminationLogged(executor: ExecutorService, executorName: String, wait: Long, unit: TimeUnit) {
+        if (!executor.awaitTermination(wait, unit)) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                { "drainAndShutdownExecutors: $executorName did not terminate within $wait $unit" }
+            )
         }
     }
 

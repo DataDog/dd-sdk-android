@@ -1555,8 +1555,37 @@ internal class CoreFeatureTest {
         // Then
         inOrder(mockUploadService) {
             verify(mockUploadService).shutdown()
-            verify(mockUploadService).awaitTermination(10, TimeUnit.SECONDS)
+            verify(mockUploadService).awaitTermination(CoreFeature.NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
         }
+    }
+
+    @Test
+    fun `M log a warning W drainAndShutdownExecutors() { upload executor doesn't terminate in time }`() {
+        // Given
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        val blockingQueue = LinkedBlockingQueue<Runnable>()
+        val mockUploadService: ScheduledThreadPoolExecutor = mock()
+        whenever(mockUploadService.queue).thenReturn(blockingQueue)
+        whenever(mockUploadService.awaitTermination(any(), any())) doReturn false
+        testedFeature.uploadExecutorService = mockUploadService
+
+        // When
+        testedFeature.drainAndShutdownExecutors()
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            "drainAndShutdownExecutors: uploadExecutorService did not terminate " +
+                "within ${CoreFeature.NETWORK_TIMEOUT_MS} ${TimeUnit.MILLISECONDS}",
+            mode = atLeastOnce()
+        )
     }
 
     @Test
