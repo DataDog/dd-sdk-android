@@ -3792,6 +3792,12 @@ data class com.datadog.android.telemetry.model.TelemetryUsageEvent
       companion object 
         fun fromJson(kotlin.String): TrackWebView
         fun fromJsonObject(com.google.gson.JsonObject): TrackWebView
+    class Timeseries : Usage
+      val feature: kotlin.String
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): Timeseries
+        fun fromJsonObject(com.google.gson.JsonObject): Timeseries
     data class AndroidNetworkInstrumentation : Usage
       constructor(Type)
       val feature: kotlin.String

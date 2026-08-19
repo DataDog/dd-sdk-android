@@ -39,9 +39,7 @@ internal class TimeseriesTrackingPlaygroundActivity : Activity() {
             sdkCore = sdkCore,
             rumConfiguration = RuntimeConfig.rumConfigBuilder()
                 .useViewTrackingStrategy(ActivityViewTrackingStrategy(trackExtras = false))
-                .setTimeseriesConfiguration(
-                    TimeseriesConfiguration.Builder().build()
-                )
+                .setTimeseriesConfiguration(TimeseriesConfiguration.DEFAULT)
                 .build()
         )
     }
