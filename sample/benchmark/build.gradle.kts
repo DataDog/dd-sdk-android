@@ -27,7 +27,7 @@ plugins {
 @Suppress("StringLiteralDuplication")
 android {
     namespace = "com.datadog.sample.benchmark"
-    compileSdk = AndroidConfig.TARGET_SDK
+    compileSdk = AndroidConfig.COMPILE_SDK
     buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
 
     defaultConfig {
