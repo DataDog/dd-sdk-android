@@ -14,6 +14,7 @@ data class com.datadog.android.profiling.ProfilingConfiguration
     fun setApplicationLaunchSampleRate(Float): Builder
     fun setContinuousSampleRate(Float): Builder
     fun useCustomEndpoint(String): Builder
+    fun setAnrTriggerEnabled(Boolean): Builder
     fun build(): ProfilingConfiguration
   companion object 
     val DEFAULT: ProfilingConfiguration

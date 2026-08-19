@@ -96,6 +96,9 @@ internal class PerfettoProfiler(
             profilingTelemetry.internalLogger = value
         }
 
+    @Volatile
+    internal var anrTriggerEnabled: Boolean = true
+
     internal val anrListener = AnrListener { event ->
         callback?.onAnrDetected(event)
     }
@@ -253,7 +256,7 @@ internal class PerfettoProfiler(
     ) {
         synchronized(this) {
             this.callback = callback
-            if (buildSdkVersionProvider.isAtLeastBaklava) {
+            if (buildSdkVersionProvider.isAtLeastBaklava && anrTriggerEnabled) {
                 anrTriggerRegistrar.register(appContext, anrListener)
             }
         }
@@ -262,7 +265,7 @@ internal class PerfettoProfiler(
     override fun unregisterProfilingCallback(appContext: Context) {
         synchronized(this) {
             callback = null
-            if (buildSdkVersionProvider.isAtLeastBaklava) {
+            if (buildSdkVersionProvider.isAtLeastBaklava && anrTriggerEnabled) {
                 anrTriggerRegistrar.unregister(appContext)
             }
         }
@@ -270,6 +273,10 @@ internal class PerfettoProfiler(
 
     override fun setExtendLaunchSession(extend: Boolean) {
         this.extendLaunchSession = extend
+    }
+
+    override fun setAnrTriggerEnabled(enabled: Boolean) {
+        this.anrTriggerEnabled = enabled
     }
 
     override fun resolveProfilingPackageVersionCode(appContext: Context) {
