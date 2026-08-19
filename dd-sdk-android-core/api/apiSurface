@@ -38,6 +38,7 @@ class com.datadog.android._InternalProxy
   fun flushAndShutdownExecutors()
   companion object 
     fun allowClearTextHttp(com.datadog.android.core.configuration.Configuration.Builder): com.datadog.android.core.configuration.Configuration.Builder
+    fun setRemoteConfigurationId(com.datadog.android.core.configuration.Configuration.Builder, String): com.datadog.android.core.configuration.Configuration.Builder
 interface com.datadog.android.api.InternalLogger
   enum Level
     - VERBOSE
@@ -285,7 +286,6 @@ data class com.datadog.android.core.configuration.Configuration
     fun setBackpressureStrategy(BackPressureStrategy): Builder
     fun setUploadSchedulerStrategy(UploadSchedulerStrategy?): Builder
     fun setVersion(String): Builder
-    fun setRemoteConfigurationId(String): Builder
   companion object 
 class com.datadog.android.core.configuration.HostPatternSanitizer
   constructor(com.datadog.android.api.InternalLogger)
