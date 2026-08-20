@@ -25,15 +25,15 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.function.Consumer
 
 /**
- * BAKLAVA+ implementation of [AnrTriggerRegistrar] backed by the system
+ * BAKLAVA+ implementation of [ProfilingTriggerRegistrar] backed by the system
  * [ProfilingManager.addProfilingTriggers] /
  * [ProfilingManager.registerForAllProfilingResults] APIs.
  */
-internal class AnrProfilingTriggerRegistrar(
+internal class ProfilingManagerTriggerRegistrar(
     private val timeProvider: TimeProvider,
     private val executorService: ExecutorService,
     private val profilingTelemetry: ProfilingTelemetry
-) : AnrTriggerRegistrar {
+) : ProfilingTriggerRegistrar {
 
     @Volatile
     internal var threadDumper: ThreadDumper = ThreadDumper()
@@ -48,7 +48,7 @@ internal class AnrProfilingTriggerRegistrar(
     private val registered = AtomicBoolean(false)
 
     @Volatile
-    private var listener: AnrListener? = null
+    private var listener: ProfilingTriggerListener? = null
 
     // Testable seam
     @RequiresApi(Build.VERSION_CODES.BAKLAVA)
@@ -63,7 +63,7 @@ internal class AnrProfilingTriggerRegistrar(
 
     @RequiresApi(Build.VERSION_CODES.BAKLAVA)
     @Suppress("ReturnCount")
-    override fun register(appContext: Context, listener: AnrListener) {
+    override fun register(appContext: Context, listener: ProfilingTriggerListener) {
         if (registered.get()) return
 
         val manager = appContext.getSystemService(ProfilingManager::class.java)

@@ -8,6 +8,6 @@ package com.datadog.android.profiling.internal.anr
 
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 
-internal fun interface AnrListener {
+internal fun interface ProfilingTriggerListener {
     fun onAnrDetected(event: ProfilingAnrDetectedEvent)
 }
