@@ -28,12 +28,14 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
+import org.mockito.Mockito.clearInvocations
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -263,6 +265,170 @@ internal class RemoteConfigServiceTest {
         assertThat(testedService.getCurrentConfig()).isNull()
     }
 
+    @Test
+    fun `M evict http cache before fetching W syncWithRemote() { cachedConfig is null }`(
+        @Forgery fakeRemoteConfiguration: RemoteConfiguration
+    ) {
+        // Given — nothing was on disk at construction (missing or corrupt config file), so a
+        // fresh cache hit from OkHttp must not be silently discarded until the cache goes stale.
+        testedService = buildService()
+        whenever(mockFetcher.fetch(any())).doReturn(
+            RemoteConfigFetcher.FetchResult(
+                body = fakeRemoteConfiguration.toJson().toString(),
+                versionId = null,
+                lastModified = null
+            )
+        )
+
+        // When
+        testedService.syncWithRemote()
+
+        // Then — the cache is evicted before the fetch, forcing a genuine network round-trip
+        // instead of risking a discarded cache hit.
+        inOrder(mockFetcher) {
+            verify(mockFetcher).evictCache()
+            verify(mockFetcher).fetch(any())
+        }
+    }
+
+    @Test
+    fun `M not evict http cache W syncWithRemote() { cachedConfig already set }`(
+        @Forgery fakeRemoteConfiguration: RemoteConfiguration
+    ) {
+        // Given — a valid config already exists on disk at construction
+        val configFile = File(fakeStorageDir, "$fakeRemoteConfigurationId.json")
+        configFile.writeText(RemoteConfiguration().toJson().toString())
+        whenever(mockFetcher.fetch(any())).doReturn(
+            RemoteConfigFetcher.FetchResult(
+                body = fakeRemoteConfiguration.toJson().toString(),
+                versionId = null,
+                lastModified = null
+            )
+        )
+        testedService = RemoteConfigServiceImpl(
+            remoteConfigurationId = fakeRemoteConfigurationId,
+            remoteConfigurationEndpoint = fakeEndpoint,
+            fetcher = mockFetcher,
+            storageDir = fakeStorageDir,
+            executor = mockExecutor,
+            internalLogger = mockInternalLogger,
+            timeProvider = mockTimeProvider
+        )
+
+        // When
+        testedService.syncWithRemote()
+
+        // Then — a healthy session must not force away OkHttp's cheap 304 revalidation
+        verify(mockFetcher, never()).evictCache()
+    }
+
+    @Test
+    fun `M not evict http cache W syncWithRemote() { second sync after a successful first fetch }`(
+        @Forgery fakeRemoteConfiguration: RemoteConfiguration
+    ) {
+        // Given — nothing on disk at construction, but the first sync successfully repairs it
+        testedService = buildService()
+        whenever(mockFetcher.fetch(any())).doReturn(
+            RemoteConfigFetcher.FetchResult(
+                body = fakeRemoteConfiguration.toJson().toString(),
+                versionId = null,
+                lastModified = null
+            )
+        )
+        testedService.syncWithRemote()
+        clearInvocations(mockFetcher)
+
+        // When — a later sync in the same process (e.g. a foreground-triggered resync)
+        testedService.syncWithRemote()
+
+        // Then — the file was already repaired by the first sync; this process must not keep
+        // forcing away OkHttp's cheap cache hit / 304 revalidation on every subsequent sync just
+        // because cachedConfig — frozen at construction — is still null.
+        verify(mockFetcher, never()).evictCache()
+    }
+
+    @Test
+    fun `M evict http cache W syncWithRemote() { config write fails despite valid cachedConfig }`(
+        @Forgery fakeRemoteConfiguration: RemoteConfiguration
+    ) {
+        // Given — a valid config already on disk at construction (configFileNeedsRecovery
+        // starts false), but the write for a newly fetched version fails
+        val configFile = File(fakeStorageDir, "$fakeRemoteConfigurationId.json")
+        configFile.createNewFile()
+        whenever(mockFileReaderWriter.readData(any(), any())).doReturn(
+            RemoteConfiguration().toJson().toString().toByteArray(Charsets.UTF_8)
+        )
+        whenever(mockFetcher.fetch(any())).doReturn(
+            RemoteConfigFetcher.FetchResult(
+                body = fakeRemoteConfiguration.toJson().toString(),
+                versionId = null,
+                lastModified = null
+            )
+        )
+        testedService = RemoteConfigServiceImpl(
+            remoteConfigurationId = fakeRemoteConfigurationId,
+            remoteConfigurationEndpoint = fakeEndpoint,
+            fetcher = mockFetcher,
+            storageDir = fakeStorageDir,
+            executor = mockExecutor,
+            internalLogger = mockInternalLogger,
+            timeProvider = mockTimeProvider,
+            fileReaderWriter = mockFileReaderWriter
+        )
+        whenever(mockFileReaderWriter.writeData(any(), any(), any(), any())).doReturn(false)
+
+        // When
+        testedService.syncWithRemote()
+
+        // Then — the network round-trip succeeded and OkHttp cached the response, but the write
+        // failed, so the cache must be evicted immediately rather than left to be silently
+        // reused as a stale cache hit on the next sync.
+        verify(mockFetcher).evictCache()
+        assertThat(testedService.getCurrentConfig()).isNotNull()
+    }
+
+    @Test
+    fun `M evict http cache again W syncWithRemote() { previous write failed }`(
+        @Forgery fakeRemoteConfiguration: RemoteConfiguration
+    ) {
+        // Given — a valid config on disk at construction, but the first sync's write fails
+        val configFile = File(fakeStorageDir, "$fakeRemoteConfigurationId.json")
+        configFile.createNewFile()
+        whenever(mockFileReaderWriter.readData(any(), any())).doReturn(
+            RemoteConfiguration().toJson().toString().toByteArray(Charsets.UTF_8)
+        )
+        whenever(mockFetcher.fetch(any())).doReturn(
+            RemoteConfigFetcher.FetchResult(
+                body = fakeRemoteConfiguration.toJson().toString(),
+                versionId = null,
+                lastModified = null
+            )
+        )
+        testedService = RemoteConfigServiceImpl(
+            remoteConfigurationId = fakeRemoteConfigurationId,
+            remoteConfigurationEndpoint = fakeEndpoint,
+            fetcher = mockFetcher,
+            storageDir = fakeStorageDir,
+            executor = mockExecutor,
+            internalLogger = mockInternalLogger,
+            timeProvider = mockTimeProvider,
+            fileReaderWriter = mockFileReaderWriter
+        )
+        whenever(mockFileReaderWriter.writeData(any(), any(), any(), any()))
+            .doReturn(false, true)
+        testedService.syncWithRemote()
+        clearInvocations(mockFetcher)
+
+        // When — a later sync, after the previous write failed, whose own write succeeds (so
+        // the failure branch itself won't be the one evicting this time)
+        testedService.syncWithRemote()
+
+        // Then — the failed write from the previous sync is remembered, so this sync's pre-check
+        // proactively evicts before fetching, retrying the eviction in case the first attempt's
+        // evictCache() call itself silently failed.
+        verify(mockFetcher).evictCache()
+    }
+
     // endregion
 
     // region syncWithRemote() — fetch failure
@@ -308,7 +474,9 @@ internal class RemoteConfigServiceTest {
         // Then
         assertThat(testedService.getCurrentConfig()).isNull()
         verify(mockFileReaderWriter, never()).writeData(any(), any(), any(), any())
-        verify(mockFetcher).evictCache()
+        // Once because cachedConfig was null at construction, once because the response failed
+        // to parse — both independently trigger an eviction.
+        verify(mockFetcher, times(2)).evictCache()
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
@@ -369,7 +537,9 @@ internal class RemoteConfigServiceTest {
         // Then
         assertThat(testedService.getCurrentConfig()).isNull()
         verify(mockFileReaderWriter, never()).writeData(any(), any(), any(), any())
-        verify(mockFetcher).evictCache()
+        // Once because cachedConfig was null at construction, once because the response failed
+        // to parse — both independently trigger an eviction.
+        verify(mockFetcher, times(2)).evictCache()
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
@@ -527,6 +697,67 @@ internal class RemoteConfigServiceTest {
             message = RemoteConfigServiceImpl.ERROR_PARSE_METADATA,
             throwableClass = JsonParseException::class.java
         )
+    }
+
+    // endregion
+
+    // region getSyncMetadata() — orphaned metadata (no usable config)
+
+    @Test
+    fun `M return null and delete metadata W getSyncMetadata() { valid metadata but corrupt config }`(
+        @Forgery fakeMetadata: RemoteConfigSyncMetadata
+    ) {
+        // Given — valid metadata on disk, but the paired config file is corrupt
+        val configFile = File(fakeStorageDir, "$fakeRemoteConfigurationId.json")
+        configFile.writeText("not-valid-json{{{")
+        val metadataFile = File(fakeStorageDir, "$fakeRemoteConfigurationId.metadata.json")
+        metadataFile.writeText(fakeMetadata.toJson().toString())
+
+        // When
+        testedService = RemoteConfigServiceImpl(
+            remoteConfigurationId = fakeRemoteConfigurationId,
+            remoteConfigurationEndpoint = fakeEndpoint,
+            fetcher = mockFetcher,
+            storageDir = fakeStorageDir,
+            executor = mockExecutor,
+            internalLogger = mockInternalLogger,
+            timeProvider = mockTimeProvider
+        )
+
+        // Then — exposing the old metadata here would make configuration telemetry report a
+        // version that RUM never actually applied (getCurrentConfig() is null, so RUM applies
+        // no remote configuration at all)
+        assertThat(testedService.getCurrentConfig()).isNull()
+        assertThat(testedService.getSyncMetadata()).isNull()
+        assertThat(configFile).doesNotExist()
+        assertThat(metadataFile).doesNotExist()
+    }
+
+    @Test
+    fun `M return null and delete metadata W getSyncMetadata() { valid metadata but config file missing }`(
+        @Forgery fakeMetadata: RemoteConfigSyncMetadata
+    ) {
+        // Given — a stray metadata file on disk, but no config file exists at all (e.g. it was
+        // never written, or was removed by some means other than this class's own cleanup)
+        val metadataFile = File(fakeStorageDir, "$fakeRemoteConfigurationId.metadata.json")
+        metadataFile.writeText(fakeMetadata.toJson().toString())
+
+        // When
+        testedService = RemoteConfigServiceImpl(
+            remoteConfigurationId = fakeRemoteConfigurationId,
+            remoteConfigurationEndpoint = fakeEndpoint,
+            fetcher = mockFetcher,
+            storageDir = fakeStorageDir,
+            executor = mockExecutor,
+            internalLogger = mockInternalLogger,
+            timeProvider = mockTimeProvider
+        )
+
+        // Then — readConfigFromDisk()'s "file missing" path never calls deleteRemoteConfigFiles()
+        // itself, so this exercises the constructor-level guard being the only line of defense
+        assertThat(testedService.getCurrentConfig()).isNull()
+        assertThat(testedService.getSyncMetadata()).isNull()
+        assertThat(metadataFile).doesNotExist()
     }
 
     // endregion

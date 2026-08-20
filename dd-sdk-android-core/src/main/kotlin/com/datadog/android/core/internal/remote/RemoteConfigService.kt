@@ -42,6 +42,9 @@ internal interface RemoteConfigService {
      * Sync/apply bookkeeping for the currently cached configuration version, used to populate
      * the SDK's configuration telemetry event. See "RFC - Remote Configuration Telemetry".
      * Frozen for the lifetime of this instance, same guarantee as [getCurrentConfig].
+     * Always null whenever [getCurrentConfig] is null: metadata is only ever paired with a
+     * configuration that was actually applied, so telemetry never reports a version that RUM
+     * never applied.
      */
     fun getSyncMetadata(): RemoteConfigSyncMetadata?
     fun stop()
@@ -88,6 +91,13 @@ internal class RemoteConfigServiceImpl(
     @Volatile
     private var syncMetadata: RemoteConfigSyncMetadata? = null
 
+    // Tracks whether the on-disk config file currently needs repair, independently of
+    // `cachedConfig` — which is deliberately frozen for this process's lifetime and must not be
+    // used as a proxy for "is there a usable file on disk right now." Seeded from `cachedConfig`
+    // at construction, then updated as fetches succeed or fail during this process's life.
+    @Volatile
+    private var configFileNeedsRecovery: Boolean = false
+
     init {
         // Synchronous reads on the caller's thread (main thread during SDK init).
         // Acceptable because the files are small and only present after a previous
@@ -95,7 +105,14 @@ internal class RemoteConfigServiceImpl(
         @Suppress("ThreadSafety") // allowThreadDiskReads is the SDK mechanism for safe main-thread disk reads
         cachedConfig = allowThreadDiskReads { readConfigFromDisk() }
         @Suppress("ThreadSafety")
-        syncMetadata = allowThreadDiskReads { readMetadataFromDisk() }
+        syncMetadata = if (cachedConfig != null) {
+            allowThreadDiskReads { readMetadataFromDisk() }
+        } else {
+            // No usable config: clear both files so stale metadata can't misreport an unapplied version as applied.
+            allowThreadDiskReads { deleteRemoteConfigFiles() }
+            null
+        }
+        configFileNeedsRecovery = cachedConfig == null
 
         // Stamp firstApplied asynchronously — ordering is guaranteed. Only when there is a
         // config to apply.
@@ -122,6 +139,12 @@ internal class RemoteConfigServiceImpl(
 
     @WorkerThread
     private fun fetchAndCache() {
+        if (configFileNeedsRecovery) {
+            // Nothing usable on disk — force a genuine fetch, since a fresh cache hit would
+            // otherwise be discarded as "nothing new," leaving the file unrepaired until the
+            // cache goes stale.
+            fetcher.evictCache()
+        }
         val fetchResult = fetcher.fetch(configUrl) ?: return
         if (parseConfig(fetchResult.body) == null) {
             // Evict the bad response from the HTTP cache so the next syncWithRemote()
@@ -141,7 +164,15 @@ internal class RemoteConfigServiceImpl(
             // Deliberately does not update `cachedConfig`: a fetch completing mid-session must
             // not retroactively change what this process considers "applied." The write above
             // is only for the *next* process's constructor read.
+            configFileNeedsRecovery = false
             persistSyncMetadata(fetchResult)
+        } else {
+            // The network round-trip succeeded and OkHttp cached it, but our own write failed —
+            // evict immediately so the next fetch is forced to be genuine instead of silently
+            // discarding this same response as a cache hit. Also recorded on configFileNeedsRecovery
+            // in case evictCache() itself fails, so the next attempt retries the eviction too.
+            configFileNeedsRecovery = true
+            fetcher.evictCache()
         }
     }
 
@@ -243,6 +274,12 @@ internal class RemoteConfigServiceImpl(
     }
 
     @WorkerThread
+    private fun deleteRemoteConfigFiles() {
+        configFile.deleteSafe(internalLogger)
+        metadataFile.deleteSafe(internalLogger)
+    }
+
+    @WorkerThread
     @Suppress("ReturnCount")
     private fun readConfigFromDisk(): RemoteConfiguration? {
         if (!configFile.existsSafe(internalLogger)) return null
@@ -257,8 +294,9 @@ internal class RemoteConfigServiceImpl(
                 { ERROR_PARSE },
                 e
             )
-            // Delete the corrupt file so the next successful fetch can write a clean one.
-            configFile.deleteSafe(internalLogger)
+            // Delete both files: this config is unusable, and any paired metadata for it would
+            // be stale/misleading if kept around (see deleteRemoteConfigFiles()).
+            deleteRemoteConfigFiles()
             null
         } catch (e: NoSuchElementException) {
             // Generated enum readers use values().first { } which throws NoSuchElementException
@@ -269,8 +307,7 @@ internal class RemoteConfigServiceImpl(
                 { ERROR_PARSE },
                 e
             )
-            // Delete the corrupt file so the next successful fetch can write a clean one.
-            configFile.deleteSafe(internalLogger)
+            deleteRemoteConfigFiles()
             null
         }
     }
