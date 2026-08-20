@@ -732,6 +732,18 @@ public final class com/datadog/android/internal/utils/ByteArrayExtKt {
 	public static final fun toHexString ([B)Ljava/lang/String;
 }
 
+public abstract interface class com/datadog/android/internal/utils/DDCoreStateHolder {
+	public static final field Companion Lcom/datadog/android/internal/utils/DDCoreStateHolder$Companion;
+	public abstract fun addListener (Ljava/lang/Object;)V
+	public abstract fun getCurrentState ()Ljava/lang/Object;
+	public abstract fun removeListener (Ljava/lang/Object;)V
+	public abstract fun updateState (Ljava/lang/Object;)V
+}
+
+public final class com/datadog/android/internal/utils/DDCoreStateHolder$Companion {
+	public final fun create (Ljava/lang/Object;Lkotlin/jvm/functions/Function2;)Lcom/datadog/android/internal/utils/DDCoreStateHolder;
+}
+
 public abstract interface class com/datadog/android/internal/utils/DDCoreSubscription {
 	public static final field Companion Lcom/datadog/android/internal/utils/DDCoreSubscription$Companion;
 	public abstract fun addListener (Ljava/lang/Object;)V

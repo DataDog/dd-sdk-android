@@ -9,17 +9,13 @@ package com.datadog.android.flags.internal
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.model.FlagsClientState
-import com.datadog.android.internal.utils.DDCoreSubscription
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
-import kotlin.concurrent.write
+import com.datadog.android.internal.utils.DDCoreStateHolder
 
 /**
  * Manages state transitions and notifications for a [com.datadog.android.flags.FlagsClient].
  *
  * This class handles state change notifications to registered listeners. All notification
- * methods are thread-safe and guarantee ordered delivery to listeners by using a
- * fair [ReentrantReadWriteLock].
+ * methods are thread-safe and guarantee ordered delivery to listeners.
  *
  * The current state is stored and emitted to new listeners immediately upon registration,
  * ensuring every listener receives the current state.
@@ -29,58 +25,33 @@ import kotlin.concurrent.write
  * dispatch them to a background thread. Listeners must catch and handle exceptions to prevent
  * them from bubbling up and crashing the application.
  *
- * @param subscription the underlying subscription for managing listeners
+ * @param stateHolder the underlying state holder, taking care of the listeners and the locking.
  */
-internal class FlagsStateManager(private val subscription: DDCoreSubscription<FlagsStateListener>) : StateObservable {
-    /**
-     * Fair read-write lock to ensure FIFO ordering of state mutations and allow concurrent reads.
-     * The fair parameter ensures that threads acquire the lock in the order they requested it.
-     * Read operations can proceed concurrently, while write operations are exclusive.
-     */
-    private val stateLock = ReentrantReadWriteLock(true)
-
-    /**
-     * The current state of the client.
-     * Thread-safe: access is protected by [stateLock].
-     */
-    private var currentState: FlagsClientState = FlagsClientState.NotReady
+internal class FlagsStateManager(
+    private val stateHolder: DDCoreStateHolder<FlagsClientState, FlagsStateListener>
+) : StateObservable {
 
     /**
      * Returns the current state synchronously.
      *
      * @return The current [FlagsClientState].
      */
-    override fun getCurrentState(): FlagsClientState = stateLock.read {
-        currentState
-    }
+    override fun getCurrentState(): FlagsClientState = stateHolder.currentState
 
     /**
      * Updates the state and notifies all listeners synchronously.
      *
-     * This method stores the new state and notifies all registered listeners
-     * within the write lock, ensuring ordered and atomic delivery.
-     *
      * @param newState The new state to transition to.
      */
     internal fun updateState(newState: FlagsClientState) {
-        stateLock.write {
-            currentState = newState
-            subscription.notifyListeners {
-                onStateChanged(newState)
-            }
-        }
+        stateHolder.updateState(newState)
     }
 
     override fun addListener(listener: FlagsStateListener) {
-        stateLock.read {
-            listener.onStateChanged(currentState)
-            subscription.addListener(listener)
-        }
+        stateHolder.addListener(listener)
     }
 
     override fun removeListener(listener: FlagsStateListener) {
-        stateLock.read {
-            subscription.removeListener(listener)
-        }
+        stateHolder.removeListener(listener)
     }
 }
