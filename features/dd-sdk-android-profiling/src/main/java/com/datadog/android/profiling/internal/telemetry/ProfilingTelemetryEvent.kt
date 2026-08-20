@@ -26,7 +26,8 @@ internal sealed class ProfilingTelemetryEvent {
         val startReason: String
     ) : ProfilingTelemetryEvent()
 
-    data class AnrTriggerResult(
+    data class TriggerResult(
+        val triggerType: Int,
         val errorCode: Int,
         val errorMessage: String?,
         val fileSize: Long,

@@ -47,6 +47,9 @@ interface BuildSdkVersionProvider {
     @get:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.BAKLAVA)
     val isAtLeastBaklava: Boolean
 
+    @get:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.CINNAMON_BUN)
+    val isAtLeastCinnamonBun: Boolean
+
     companion object {
 
         /**
@@ -85,6 +88,10 @@ interface BuildSdkVersionProvider {
             @get:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.BAKLAVA)
             override val isAtLeastBaklava: Boolean =
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA
+
+            @get:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.CINNAMON_BUN)
+            override val isAtLeastCinnamonBun: Boolean =
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN
         }
     }
 }

@@ -484,6 +484,7 @@ public abstract interface class com/datadog/android/internal/system/BuildSdkVers
 	public static final field Companion Lcom/datadog/android/internal/system/BuildSdkVersionProvider$Companion;
 	public abstract fun getVersion ()I
 	public abstract fun isAtLeastBaklava ()Z
+	public abstract fun isAtLeastCinnamonBun ()Z
 	public abstract fun isAtLeastN ()Z
 	public abstract fun isAtLeastO ()Z
 	public abstract fun isAtLeastP ()Z

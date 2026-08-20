@@ -16,6 +16,7 @@ import androidx.core.os.StackSamplingRequestBuilder
 import androidx.core.os.requestProfiling
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.scheduleSafe
+import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.profiling.internal.Profiler
 import com.datadog.android.profiling.internal.ProfilerCallback
@@ -44,19 +45,26 @@ import kotlin.random.Random
  * @param scheduledExecutorService the executor service to run the profiling task on.
  * @param profilingTelemetry shared telemetry helper that buffers metric events until a logger is
  * available and dispatches them through the unified `[Mobile Metric] Profiling Session` envelope.
- * @param triggerRegistrar registrar that owns the system ANR profiling-trigger lifecycle.
- * The profiler passes its internal listener to it at register time; the listener
- * captures the profiler's `callback` so the registered SDK instance receives the detection.
- * @param buildSdkVersionProvider Build.VERSION.SDK_INT provider used for the test.
+ * @param buildSdkVersionProvider Build.VERSION.SDK_INT provider used to gate trigger
+ * registration by API level (ANR on Baklava+, OOM/Anomaly on CinnamonBun+).
+ * @param triggerRegistrar registrar that owns the system profiling-trigger lifecycle
+ * (ANR / OOM / Anomaly). The profiler passes its internal listener to it at register time;
+ * the listener captures the profiler's `callback` so the registered SDK instance receives
+ * the detection.
  */
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 internal class PerfettoProfiler(
     override val timeProvider: MutableTimeProvider,
     override val scheduledExecutorService: ScheduledExecutorService,
     internal val profilingTelemetry: ProfilingTelemetry = ProfilingTelemetry(),
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
     internal val triggerRegistrar: ProfilingTriggerRegistrar =
-        ProfilingManagerTriggerRegistrar(timeProvider, scheduledExecutorService, profilingTelemetry),
-    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
+        ProfilingManagerTriggerRegistrar(
+            timeProvider,
+            scheduledExecutorService,
+            profilingTelemetry,
+            buildSdkVersionProvider
+        )
 ) : Profiler {
 
     internal var stopSignal: CancellationSignal? = null
@@ -96,8 +104,18 @@ internal class PerfettoProfiler(
             profilingTelemetry.internalLogger = value
         }
 
-    internal val triggerListener = ProfilingTriggerListener { event ->
-        callback?.onAnrDetected(event)
+    internal val triggerListener = object : ProfilingTriggerListener {
+        override fun onAnrDetected(event: ProfilingAnrDetectedEvent) {
+            callback?.onAnrDetected(event)
+        }
+
+        override fun onOutOfMemoryDetected(detectedAtMs: Long, resultFilePath: String) {
+            callback?.onOutOfMemoryDetected(detectedAtMs, resultFilePath)
+        }
+
+        override fun onMemoryAnomalyDetected(detectedAtMs: Long, resultFilePath: String) {
+            callback?.onMemoryAnomalyDetected(detectedAtMs, resultFilePath)
+        }
     }
 
     @Volatile

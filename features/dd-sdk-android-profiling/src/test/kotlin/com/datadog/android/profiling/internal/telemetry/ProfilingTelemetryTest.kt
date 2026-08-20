@@ -7,6 +7,7 @@
 package com.datadog.android.profiling.internal.telemetry
 
 import android.os.ProfilingResult
+import android.os.ProfilingTrigger
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.profiling.internal.ProfilingStartReason
@@ -113,14 +114,15 @@ internal class ProfilingTelemetryTest {
     }
 
     @Test
-    fun `M dispatch AnrTriggerResult through logMetric W report() {logger set}`(
+    fun `M dispatch TriggerResult through logMetric W report() {logger set}`(
         @StringForgery fakeErrorMessage: String,
         @LongForgery fakeClientClockDriftMs: Long,
         @IntForgery(min = 0, max = 8) fakeErrorCode: Int
     ) {
         // Given
         testedTelemetry.internalLogger = mockLogger
-        val event = ProfilingTelemetryEvent.AnrTriggerResult(
+        val event = ProfilingTelemetryEvent.TriggerResult(
+            triggerType = ProfilingTrigger.TRIGGER_TYPE_ANR,
             errorCode = fakeErrorCode,
             errorMessage = fakeErrorMessage,
             fileSize = 0L,
@@ -138,6 +140,7 @@ internal class ProfilingTelemetryTest {
             ProfilingTelemetry.KEY_METRIC_TYPE to ProfilingTelemetry.METRIC_TYPE_PROFILING_TRIGGER,
             ProfilingTelemetry.KEY_PROFILING_SESSION to mapOf(
                 ProfilingTelemetry.KEY_START_REASON to ProfilingTelemetry.ANR_PROFILING_TRIGGER_START_REASON,
+                ProfilingTelemetry.KEY_TRIGGER_TYPE to ProfilingTrigger.TRIGGER_TYPE_ANR,
                 ProfilingTelemetry.KEY_ERROR_CODE to fakeErrorCode,
                 ProfilingTelemetry.KEY_ERROR_MESSAGE to fakeErrorMessage,
                 ProfilingTelemetry.KEY_FILE_SIZE to 0L,
@@ -162,7 +165,8 @@ internal class ProfilingTelemetryTest {
     @Test
     fun `M queue events W report() {logger null}`() {
         // Given
-        val event = ProfilingTelemetryEvent.AnrTriggerResult(
+        val event = ProfilingTelemetryEvent.TriggerResult(
+            triggerType = ProfilingTrigger.TRIGGER_TYPE_ANR,
             errorCode = ProfilingResult.ERROR_NONE,
             errorMessage = null,
             fileSize = 0L,
@@ -181,7 +185,8 @@ internal class ProfilingTelemetryTest {
     @Test
     fun `M flush queued events W internalLogger set after report()`() {
         // Given
-        val firstEvent = ProfilingTelemetryEvent.AnrTriggerResult(
+        val firstEvent = ProfilingTelemetryEvent.TriggerResult(
+            triggerType = ProfilingTrigger.TRIGGER_TYPE_ANR,
             errorCode = ProfilingResult.ERROR_NONE,
             errorMessage = null,
             fileSize = 0L,
@@ -189,7 +194,8 @@ internal class ProfilingTelemetryTest {
             clientClockDriftMs = 0L,
             droppedAsStale = false
         )
-        val secondEvent = ProfilingTelemetryEvent.AnrTriggerResult(
+        val secondEvent = ProfilingTelemetryEvent.TriggerResult(
+            triggerType = ProfilingTrigger.TRIGGER_TYPE_ANR,
             errorCode = ProfilingResult.ERROR_FAILED_PROFILING_IN_PROGRESS,
             errorMessage = "in_progress",
             fileSize = 0L,
@@ -215,7 +221,8 @@ internal class ProfilingTelemetryTest {
     @Test
     fun `M not re-flush W internalLogger set twice`() {
         // Given
-        val event = ProfilingTelemetryEvent.AnrTriggerResult(
+        val event = ProfilingTelemetryEvent.TriggerResult(
+            triggerType = ProfilingTrigger.TRIGGER_TYPE_ANR,
             errorCode = ProfilingResult.ERROR_NONE,
             errorMessage = null,
             fileSize = 0L,
@@ -243,7 +250,8 @@ internal class ProfilingTelemetryTest {
     fun `M not dispatch W internalLogger set to null`() {
         // Given
         testedTelemetry.internalLogger = null
-        val event = ProfilingTelemetryEvent.AnrTriggerResult(
+        val event = ProfilingTelemetryEvent.TriggerResult(
+            triggerType = ProfilingTrigger.TRIGGER_TYPE_ANR,
             errorCode = ProfilingResult.ERROR_NONE,
             errorMessage = null,
             fileSize = 0L,
