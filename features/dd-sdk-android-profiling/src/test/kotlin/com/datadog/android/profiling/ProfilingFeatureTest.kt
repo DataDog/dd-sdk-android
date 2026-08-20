@@ -34,7 +34,7 @@ import com.datadog.android.profiling.internal.ProfilingRequestFactory
 import com.datadog.android.profiling.internal.ProfilingStartReason
 import com.datadog.android.profiling.internal.ProfilingStorage
 import com.datadog.android.profiling.internal.ProfilingWriter
-import com.datadog.android.profiling.internal.anr.AnrTriggerRegistrar
+import com.datadog.android.profiling.internal.anr.ProfilingTriggerRegistrar
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.quota.NoOpQuotaChecker
@@ -151,7 +151,7 @@ internal class ProfilingFeatureTest {
     private lateinit var mockPackageManager: PackageManager
 
     @Mock
-    private lateinit var mockAnrTriggerRegistrar: AnrTriggerRegistrar
+    private lateinit var mockTriggerRegistrar: ProfilingTriggerRegistrar
 
     @Mock
     private lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
@@ -272,7 +272,7 @@ internal class ProfilingFeatureTest {
             timeProvider = MutableTimeProvider.create(mockTimeProvider),
             scheduledExecutorService = mockSchedulerExecutor,
             profilingTelemetry = ProfilingTelemetry(),
-            anrTriggerRegistrar = mockAnrTriggerRegistrar,
+            triggerRegistrar = mockTriggerRegistrar,
             buildSdkVersionProvider = mockBuildSdkVersionProvider
         )
         val feature = ProfilingFeature(
@@ -302,7 +302,7 @@ internal class ProfilingFeatureTest {
             timeProvider = MutableTimeProvider.create(mockTimeProvider),
             scheduledExecutorService = mockSchedulerExecutor,
             profilingTelemetry = profilingTelemetry,
-            anrTriggerRegistrar = mockAnrTriggerRegistrar,
+            triggerRegistrar = mockTriggerRegistrar,
             buildSdkVersionProvider = mockBuildSdkVersionProvider
         )
         profilingTelemetry.report(
