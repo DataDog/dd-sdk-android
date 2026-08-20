@@ -9,11 +9,11 @@ package com.datadog.android.profiling.internal.anr
 import android.content.Context
 import com.datadog.android.api.InternalLogger
 
-internal interface AnrTriggerRegistrar {
+internal interface ProfilingTriggerRegistrar {
 
     var internalLogger: InternalLogger?
 
-    fun register(appContext: Context, listener: AnrListener)
+    fun register(appContext: Context, listener: ProfilingTriggerListener)
 
     fun unregister(appContext: Context)
 }
