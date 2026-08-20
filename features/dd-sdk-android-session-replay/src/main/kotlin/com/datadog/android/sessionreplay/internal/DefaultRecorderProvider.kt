@@ -41,6 +41,7 @@ import com.datadog.android.sessionreplay.internal.composition.CompositionCapture
 import com.datadog.android.sessionreplay.internal.composition.CompositionChangeListener
 import com.datadog.android.sessionreplay.internal.composition.CompositionChangeset
 import com.datadog.android.sessionreplay.internal.composition.CompositionViewOnDrawInterceptor
+import com.datadog.android.sessionreplay.internal.composition.DefaultOrientationProvider
 import com.datadog.android.sessionreplay.internal.composition.DefaultRumViewScopeProvider
 import com.datadog.android.sessionreplay.internal.composition.DefaultSnapshotCompletionProcessor
 import com.datadog.android.sessionreplay.internal.composition.HandlerCaptureMainThreadExecutor
@@ -235,6 +236,8 @@ internal class DefaultRecorderProvider(
             rumContextProvider = rumContextProvider,
             recordWriter = recordWriter,
             internalLogger = internalLogger,
+            timeProvider = sdkCore.timeProvider,
+            orientationProvider = DefaultOrientationProvider(),
             resourceDataQueueHandler = resourceDataQueueHandler
         ),
         internalLogger = internalLogger

@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.composition
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.internal.async.DataQueueHandler
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
@@ -16,11 +17,19 @@ import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.model.MobileSegment
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal fun interface SnapshotCompletionProcessor {
     fun process(capture: CompletedSnapshotCapture)
 }
+
+/** The last accepted snapshot a generation can be diffed against, and when it was last a full one. */
+private data class RetainedSnapshotState(
+    val snapshot: CapturedFullSnapshot,
+    val orientation: Int,
+    val lastFullSnapshotAtNs: Long
+)
 
 /**
  * Bundles composition wire-mapping with the view-lifecycle records the player needs around it -
@@ -40,11 +49,21 @@ internal fun interface SnapshotCompletionProcessor {
  * calls [DataQueueHandler.tryToConsumeItems] - without a caller, those items sat in memory
  * forever, so every composition-tree pixel capture's `resourceId` referenced a resource that had
  * never actually been persisted anywhere.
+ *
+ * Also diffs each completed generation against the last *accepted* one (retained only inside the
+ * [CaptureGenerationContext.tryAccept]-gated success branch below, so an expired/rejected
+ * generation never corrupts it) and emits an incremental mutation via [CapturedSnapshotDiffer]
+ * where possible, falling back to a full snapshot on a new RUM view, a periodic checkpoint, an
+ * orientation change, or a mutation that unexpectedly fails validation (self-healing rather than
+ * dropping the generation) - mirroring legacy `RecordedDataProcessor`'s
+ * `isNewView`/`isTimeForFullSnapshot`/`screenOrientationChanged` gating for this pipeline's state.
  */
 internal class DefaultSnapshotCompletionProcessor(
     private val rumContextProvider: RumContextProvider,
     private val recordWriter: RecordWriter,
     private val internalLogger: InternalLogger,
+    private val timeProvider: TimeProvider,
+    private val orientationProvider: OrientationProvider = DefaultOrientationProvider(),
     private val wireMapper: CapturedTreeWireMapper = DefaultCapturedTreeWireMapper(),
     private val resourceDataQueueHandler: DataQueueHandler? = null
 ) : SnapshotCompletionProcessor {
@@ -52,6 +71,7 @@ internal class DefaultSnapshotCompletionProcessor(
     // Only ever read/written from SnapshotCompletionQueue's single draining thread - same
     // single-threaded-processor assumption legacy RecordedDataProcessor's own prevRumContext relies on.
     private var lastViewContext: SessionReplayRumContext? = null
+    private var retained: RetainedSnapshotState? = null
 
     override fun process(capture: CompletedSnapshotCapture) {
         // Whatever resources this generation's pixel captures resolved were already queued
@@ -66,7 +86,8 @@ internal class DefaultSnapshotCompletionProcessor(
             return
         }
 
-        when (val mapping = wireMapper.mapFullSnapshot(capture.snapshot)) {
+        val currentOrientation = orientationProvider.currentOrientation()
+        when (val mapping = resolveMapping(capture.snapshot, currentOrientation)) {
             is CaptureWireMappingResult.Success -> {
                 if (capture.generation.tryAccept()) {
                     writeViewEndRecordIfViewChanged(rumContext, capture.snapshot.timestamp)
@@ -83,6 +104,11 @@ internal class DefaultSnapshotCompletionProcessor(
                             viewId = rumContext.viewId,
                             records = records
                         )
+                    )
+                    retained = RetainedSnapshotState(
+                        snapshot = capture.snapshot,
+                        orientation = currentOrientation,
+                        lastFullSnapshotAtNs = lastFullSnapshotAtNs(mapping.value)
                     )
                 }
             }
@@ -124,6 +150,48 @@ internal class DefaultSnapshotCompletionProcessor(
                 data = MobileSegment.Data2(hasFocus = true)
             )
         )
+    }
+
+    /** Only a full snapshot resets the periodic-checkpoint clock; a mutation cycle leaves it running. */
+    private fun lastFullSnapshotAtNs(record: MobileSegment.MobileRecord): Long =
+        if (record is MobileSegment.MobileRecord.MobileFullSnapshotRecord) {
+            timeProvider.getDeviceElapsedTimeNanos()
+        } else {
+            retained?.lastFullSnapshotAtNs ?: timeProvider.getDeviceElapsedTimeNanos()
+        }
+
+    @Suppress("ReturnCount")
+    private fun resolveMapping(
+        snapshot: CapturedFullSnapshot,
+        currentOrientation: Int
+    ): CaptureWireMappingResult<MobileSegment.MobileRecord> {
+        val retainedState = retained ?: return wireMapper.mapFullSnapshot(snapshot)
+        val fullSnapshotRequired = retainedState.snapshot.scope != snapshot.scope ||
+            currentOrientation != retainedState.orientation ||
+            isTimeForFullSnapshot(retainedState)
+        if (fullSnapshotRequired) return wireMapper.mapFullSnapshot(snapshot)
+
+        val mutation = CapturedSnapshotDiffer.diff(retainedState.snapshot, snapshot)
+            ?: return wireMapper.mapFullSnapshot(snapshot)
+
+        return when (val mutationMapping = wireMapper.mapMutation(mutation, retainedState.snapshot)) {
+            is CaptureWireMappingResult.Success -> mutationMapping
+            is CaptureWireMappingResult.Invalid -> {
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.TELEMETRY,
+                    { "Computed mutation failed validation, retrying as a full snapshot: ${mutationMapping.failures}" }
+                )
+                wireMapper.mapFullSnapshot(snapshot)
+            }
+        }
+    }
+
+    private fun isTimeForFullSnapshot(retainedState: RetainedSnapshotState): Boolean =
+        timeProvider.getDeviceElapsedTimeNanos() - retainedState.lastFullSnapshotAtNs >= FULL_SNAPSHOT_INTERVAL_NS
+
+    private companion object {
+        val FULL_SNAPSHOT_INTERVAL_NS = TimeUnit.MILLISECONDS.toNanos(3000)
     }
 }
 

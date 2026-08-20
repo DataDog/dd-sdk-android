@@ -13,6 +13,7 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedChild
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
@@ -20,10 +21,12 @@ import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 /**
  * The real [CapturedSnapshotProducer] for the plain Android View hierarchy - the workstream-3
  * implementation of the extension point [SnapshotCaptureOrchestrator] drives every generation.
- * Builds a fresh [CapturedIdentityFactory] per call (this workstream only produces full snapshots;
- * an identity factory persisting across generations for incremental diffing is a later workstream's
- * concern), walks every currently active window via [AndroidWindowTraversal], and assembles them
- * under one synthetic screen root in [ActiveWindowSource.currentWindows] order (already z-ordered).
+ * Retains one [CapturedIdentityFactory] per active [com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope],
+ * reusing it across generations so the same View keeps the same identity - required for
+ * [CapturedSnapshotDiffer] to mean anything - and minting a fresh one, implicitly starting a new
+ * identity scope, only when the RUM view changes. Walks every currently active window via
+ * [AndroidWindowTraversal], and assembles them under one synthetic screen root in
+ * [ActiveWindowSource.currentWindows] order (already z-ordered).
  */
 internal class AndroidCapturedSnapshotProducer(
     private val windowSource: ActiveWindowSource,
@@ -33,11 +36,13 @@ internal class AndroidCapturedSnapshotProducer(
     private val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver
 ) : CapturedSnapshotProducer {
 
+    private var retainedIdentityFactory: DefaultCapturedIdentityFactory? = null
+
     @MainThread
     @Suppress("ReturnCount")
     override fun capture(context: CaptureGenerationContext, changeset: CaptureChangeset): CaptureOutput? {
         val rumViewScope = scopeProvider.currentScope() ?: return null
-        val identityFactory = DefaultCapturedIdentityFactory(rumViewScope.scope)
+        val identityFactory = identityFactoryFor(rumViewScope.scope)
         val walk = walkWindows(windowSource.currentWindows(), identityFactory, context)
 
         return walk?.let {
@@ -59,6 +64,12 @@ internal class AndroidCapturedSnapshotProducer(
                 identityFactory = identityFactory
             )
         }
+    }
+
+    /** Reuses the retained factory while the RUM view scope is unchanged; mints a fresh one otherwise. */
+    private fun identityFactoryFor(scope: RumViewIdentityScope): DefaultCapturedIdentityFactory {
+        retainedIdentityFactory?.takeIf { it.scope == scope }?.let { return it }
+        return DefaultCapturedIdentityFactory(scope).also { retainedIdentityFactory = it }
     }
 
     private fun walkWindows(

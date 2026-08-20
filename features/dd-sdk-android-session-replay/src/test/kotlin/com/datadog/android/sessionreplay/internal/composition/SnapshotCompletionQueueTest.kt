@@ -23,6 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -136,6 +137,7 @@ internal class SnapshotCompletionQueueTest {
             rumContextProvider = rumContextProvider,
             recordWriter = writer,
             internalLogger = mock(),
+            timeProvider = mock(),
             wireMapper = wireMapper
         )
         val clock = FakeClock().apply { nowNs = 9L }
@@ -192,6 +194,7 @@ internal class SnapshotCompletionQueueTest {
             rumContextProvider = rumContextProvider,
             recordWriter = mock(),
             internalLogger = mock(),
+            timeProvider = mock(),
             wireMapper = wireMapper,
             resourceDataQueueHandler = resourceDataQueueHandler
         )
@@ -217,6 +220,7 @@ internal class SnapshotCompletionQueueTest {
             rumContextProvider = rumContextProvider,
             recordWriter = mock(),
             internalLogger = mock(),
+            timeProvider = mock(),
             resourceDataQueueHandler = resourceDataQueueHandler
         )
         val clock = FakeClock().apply { nowNs = 9L }
@@ -236,10 +240,11 @@ internal class SnapshotCompletionQueueTest {
         // Given
         val tree = compositionTestTree()
         val firstRecord = mock<MobileSegment.MobileRecord.MobileFullSnapshotRecord>()
-        val secondRecord = mock<MobileSegment.MobileRecord.MobileFullSnapshotRecord>()
+        val secondRecord = mock<MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord>()
         val wireMapper = mock<CapturedTreeWireMapper>()
         whenever(wireMapper.mapFullSnapshot(tree.snapshot))
             .thenReturn(CaptureWireMappingResult.Success(firstRecord))
+        whenever(wireMapper.mapMutation(any(), eq(tree.snapshot)))
             .thenReturn(CaptureWireMappingResult.Success(secondRecord))
         val writer = mock<RecordWriter>()
         val rumContextProvider = mock<RumContextProvider>()
@@ -250,12 +255,14 @@ internal class SnapshotCompletionQueueTest {
             rumContextProvider = rumContextProvider,
             recordWriter = writer,
             internalLogger = mock(),
+            timeProvider = mock(),
             wireMapper = wireMapper
         )
         val clock = FakeClock().apply { nowNs = 9L }
         processor.process(CompletedSnapshotCapture(generation(clock, deadlineNs = 10L), tree.snapshot))
 
-        // When: a second capture completes for the exact same RUM view.
+        // When: a second capture completes for the exact same RUM view and unchanged content, so
+        // it is diffed into a mutation rather than mapped as a new full snapshot.
         processor.process(CompletedSnapshotCapture(generation(clock, id = 2L, deadlineNs = 10L), tree.snapshot))
 
         // Then: no repeated Meta/Focus records - the view never changed.
@@ -290,6 +297,7 @@ internal class SnapshotCompletionQueueTest {
             rumContextProvider = rumContextProvider,
             recordWriter = writer,
             internalLogger = mock(),
+            timeProvider = mock(),
             wireMapper = wireMapper
         )
         val clock = FakeClock().apply { nowNs = 9L }
@@ -348,6 +356,7 @@ internal class SnapshotCompletionQueueTest {
             rumContextProvider = rumContextProvider,
             recordWriter = writer,
             internalLogger = mock(),
+            timeProvider = mock(),
             wireMapper = wireMapper
         )
 
@@ -401,6 +410,7 @@ internal class SnapshotCompletionQueueTest {
             rumContextProvider = rumContextProvider,
             recordWriter = writer,
             internalLogger = mock(),
+            timeProvider = mock(),
             wireMapper = wireMapper
         )
         val clock = FakeClock().apply { this.nowNs = nowNs }
