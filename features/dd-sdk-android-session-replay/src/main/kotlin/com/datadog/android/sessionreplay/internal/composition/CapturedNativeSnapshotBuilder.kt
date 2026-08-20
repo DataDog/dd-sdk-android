@@ -36,7 +36,7 @@ internal class CapturedNativeSnapshotBuilder(
             windows += buildWindow(window, generation) ?: return null
         }
         if (!generation.isActive()) return null
-        val identityFactory = DefaultCapturedIdentityFactory(snapshot.scope)
+        val identityFactory = snapshot.identityFactory ?: DefaultCapturedIdentityFactory(snapshot.scope)
 
         @Suppress("UnsafeThirdPartyFunctionCall") // Owned window lists; transform returns non-null layers.
         val layers = windows.flatMap { it.layers }

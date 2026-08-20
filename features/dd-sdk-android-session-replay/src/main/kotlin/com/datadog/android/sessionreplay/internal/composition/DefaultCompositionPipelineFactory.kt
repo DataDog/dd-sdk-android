@@ -105,6 +105,7 @@ internal class DefaultCompositionPipelineFactory(
                 rumContextProvider = rumContextProvider,
                 recordWriter = recordWriter,
                 internalLogger = internalLogger,
+                timeProvider = sdkCore.timeProvider,
                 resourceDataQueueHandler = resourceResolverBundle.dataQueueHandler
             ),
             internalLogger = internalLogger

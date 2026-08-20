@@ -10,7 +10,6 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
-import com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewData
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeResult
@@ -24,7 +23,7 @@ internal data class CapturedNativeSnapshot(
     val scope: RumViewIdentityScope,
     val windows: List<CapturedNativeWindow>,
     val pendingPixelCaptures: List<PendingPixelCapture> = emptyList(),
-    val identityFactory: CompositionIdentityFactory? = null
+    val identityFactory: CapturedIdentityFactory? = null
 ) : CapturedSnapshotInput
 
 /** Preorder copy; each parent index refers to an earlier entry, or -1 for the window root. */

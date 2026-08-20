@@ -263,4 +263,80 @@ internal class AndroidCapturedSnapshotProducerTest {
         val validation = DefaultCapturedTreeValidator().validate(snapshot!!)
         assertThat(validation).isEqualTo(CaptureValidationResult.Valid)
     }
+
+    @Test
+    fun `M keep the same wire id across generations W capture { same RUM view scope }`(
+        @Forgery fakeBounds: GlobalBounds,
+        @StringForgery fakeViewId: String,
+        @LongForgery(min = 0L) fakeOffset: Long,
+        @LongForgery fakeTimestamp: Long
+    ) {
+        // Given
+        val window = mockWindow(fakeBounds)
+        val mockTextView: TextView = mock()
+        whenever(mockTextView.isShown).thenReturn(true)
+        whenever(mockTextView.width).thenReturn(fakeBounds.width.toInt())
+        whenever(mockTextView.height).thenReturn(fakeBounds.height.toInt())
+        whenever(mockTextView.text).thenReturn("unchanged text")
+        whenever(mockTextView.compoundDrawables).thenReturn(arrayOfNulls(4))
+        whenever(mockViewIdentifierResolver.resolveViewId(mockTextView)).thenReturn(nextViewId.getAndIncrement())
+        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockTextView, fakeDensity)).thenReturn(fakeBounds)
+        whenever(window.childCount).thenReturn(1)
+        whenever(window.getChildAt(0)).thenReturn(mockTextView)
+        val testedProducer = producer(
+            windows = listOf(window),
+            scope = CapturedRumViewScope(RumViewIdentityScope(fakeViewId), fakeOffset),
+            fakeDeviceTimestampMs = fakeTimestamp
+        )
+
+        // When
+        val firstSnapshot = testedProducer.capture(fakeContext).doneValue()
+        val secondSnapshot = testedProducer.capture(fakeContext).doneValue()
+
+        // Then
+        val firstWindowLayerId = firstSnapshot!!.layers
+            .single { it.kind == CapturedLayerKind.WINDOW_ROOT }.identity.wireId
+        val secondWindowLayerId = secondSnapshot!!.layers
+            .single { it.kind == CapturedLayerKind.WINDOW_ROOT }.identity.wireId
+        assertThat(secondWindowLayerId).isEqualTo(firstWindowLayerId)
+        assertThat(secondSnapshot.root?.identity).isEqualTo(firstSnapshot.root?.identity)
+        assertThat(firstSnapshot.wireframes).isNotEmpty()
+        assertThat(secondSnapshot.wireframes).isEqualTo(firstSnapshot.wireframes)
+        assertThat(CapturedSnapshotDiffer.diff(firstSnapshot, secondSnapshot)).isEqualTo(
+            CapturedMutationSet(timestamp = secondSnapshot.timestamp, scope = secondSnapshot.scope)
+        )
+    }
+
+    @Test
+    fun `M start a fresh identity space W capture { RUM view scope changes }`(
+        @Forgery fakeBounds: GlobalBounds,
+        @StringForgery fakeViewId: String,
+        @StringForgery fakeOtherViewId: String,
+        @LongForgery(min = 0L) fakeOffset: Long,
+        @LongForgery fakeTimestamp: Long
+    ) {
+        // Given
+        val window = mockWindow(fakeBounds)
+        var scope: CapturedRumViewScope? = CapturedRumViewScope(RumViewIdentityScope(fakeViewId), fakeOffset)
+        val timeProvider: TimeProvider = mock()
+        whenever(timeProvider.getDeviceTimestampMillis()).thenReturn(fakeTimestamp)
+        val testedProducer = AndroidCapturedSnapshotProducer(
+            windowSource = ActiveWindowSource().apply { update(listOf(window)) },
+            scopeProvider = RumViewScopeProvider { scope },
+            timeProvider = timeProvider,
+            traversal = traversal(),
+            touchPrivacyManager = mockTouchPrivacyManager,
+            isMainThreadWindow = { true },
+            viewIdentifierResolver = mockViewIdentifierResolver
+        )
+
+        // When
+        val firstSnapshot = testedProducer.capture(fakeContext).doneValue()
+        scope = CapturedRumViewScope(RumViewIdentityScope(fakeOtherViewId), fakeOffset)
+        val secondSnapshot = testedProducer.capture(fakeContext).doneValue()
+
+        // Then
+        assertThat(firstSnapshot!!.scope).isEqualTo(RumViewIdentityScope(fakeViewId))
+        assertThat(secondSnapshot!!.scope).isEqualTo(RumViewIdentityScope(fakeOtherViewId))
+    }
 }

@@ -7,12 +7,21 @@
 package com.datadog.android.sessionreplay.internal.composition
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.internal.async.DataQueueHandler
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.model.MobileSegment
+import java.util.concurrent.TimeUnit
+
+/** The last accepted snapshot a generation can be diffed against, and when it was last a full one. */
+private data class RetainedSnapshotState(
+    val snapshot: CapturedFullSnapshot,
+    val orientation: Int,
+    val lastFullSnapshotAtNs: Long
+)
 
 /**
  * Bundles composition wire-mapping with the view-lifecycle records the player needs around it -
@@ -32,11 +41,17 @@ import com.datadog.android.sessionreplay.model.MobileSegment
  * calls [DataQueueHandler.tryToConsumeItems] - without a caller, those items sat in memory
  * forever, so every composition-tree pixel capture's `resourceId` referenced a resource that had
  * never actually been persisted anywhere.
+ *
+ * Diffs each generation against the last accepted snapshot. New RUM views, orientation changes,
+ * periodic checkpoints, and unrepresentable or invalid mutations fall back to full snapshots.
+ * Rejected generations never advance the retained state.
  */
 internal class DefaultSnapshotCompletionProcessor(
     private val rumContextProvider: RumContextProvider,
     private val recordWriter: RecordWriter,
     private val internalLogger: InternalLogger,
+    private val timeProvider: TimeProvider,
+    private val orientationProvider: OrientationProvider = DefaultOrientationProvider(),
     private val wireMapper: CapturedTreeWireMapper = DefaultCapturedTreeWireMapper(),
     private val resourceDataQueueHandler: DataQueueHandler? = null
 ) : SnapshotCompletionProcessor {
@@ -44,6 +59,7 @@ internal class DefaultSnapshotCompletionProcessor(
     // Only ever read/written from SnapshotCompletionQueue's single draining thread - same
     // single-threaded-processor assumption legacy RecordedDataProcessor's own prevRumContext relies on.
     private var lastViewContext: SessionReplayRumContext? = null
+    private var retained: RetainedSnapshotState? = null
 
     override fun process(capture: CompletedSnapshotCapture) {
         // Whatever resources this generation's pixel captures resolved were already queued
@@ -58,7 +74,8 @@ internal class DefaultSnapshotCompletionProcessor(
             return
         }
 
-        when (val mapping = wireMapper.mapFullSnapshot(capture.snapshot)) {
+        val currentOrientation = orientationProvider.currentOrientation()
+        when (val mapping = resolveMapping(capture.snapshot, currentOrientation)) {
             is CaptureWireMappingResult.Success -> {
                 if (capture.generation.tryAccept()) {
                     writeViewEndRecordIfViewChanged(rumContext, capture.snapshot.timestamp)
@@ -75,6 +92,11 @@ internal class DefaultSnapshotCompletionProcessor(
                             viewId = rumContext.viewId,
                             records = records
                         )
+                    )
+                    retained = RetainedSnapshotState(
+                        snapshot = capture.snapshot,
+                        orientation = currentOrientation,
+                        lastFullSnapshotAtNs = lastFullSnapshotAtNs(mapping.value)
                     )
                 }
             }
@@ -125,7 +147,52 @@ internal class DefaultSnapshotCompletionProcessor(
         )
     }
 
+    /** Only a full snapshot resets the periodic-checkpoint clock; a mutation cycle leaves it running. */
+    private fun lastFullSnapshotAtNs(record: MobileSegment.MobileRecord): Long =
+        if (record is MobileSegment.MobileRecord.MobileFullSnapshotRecord) {
+            timeProvider.getDeviceElapsedTimeNanos()
+        } else {
+            retained?.lastFullSnapshotAtNs ?: timeProvider.getDeviceElapsedTimeNanos()
+        }
+
+    @Suppress("ReturnCount")
+    private fun resolveMapping(
+        snapshot: CapturedFullSnapshot,
+        currentOrientation: Int
+    ): CaptureWireMappingResult<MobileSegment.MobileRecord> {
+        val retainedState = retained ?: return wireMapper.mapFullSnapshot(snapshot)
+        val fullSnapshotRequired = retainedState.snapshot.scope != snapshot.scope ||
+            currentOrientation != retainedState.orientation ||
+            isTimeForFullSnapshot(retainedState)
+        if (fullSnapshotRequired) return wireMapper.mapFullSnapshot(snapshot)
+
+        val mutation = CapturedSnapshotDiffer.diff(retainedState.snapshot, snapshot)
+            ?: return wireMapper.mapFullSnapshot(snapshot)
+
+        return when (val mutationMapping = wireMapper.mapMutation(mutation, retainedState.snapshot)) {
+            is CaptureWireMappingResult.Success -> mutationMapping
+            is CaptureWireMappingResult.Invalid -> {
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.TELEMETRY,
+                    { INVALID_MUTATION_MESSAGE },
+                    additionalProperties = mapOf(
+                        VALIDATION_ERROR_CODES_PROPERTY to mutationMapping.failures
+                            .map(CaptureValidationFailure::code).distinct().sorted().map(Enum<*>::name),
+                        VALIDATION_FAILURE_COUNT_PROPERTY to mutationMapping.failures.size
+                    )
+                )
+                wireMapper.mapFullSnapshot(snapshot)
+            }
+        }
+    }
+
+    private fun isTimeForFullSnapshot(retainedState: RetainedSnapshotState): Boolean =
+        timeProvider.getDeviceElapsedTimeNanos() - retainedState.lastFullSnapshotAtNs >= FULL_SNAPSHOT_INTERVAL_NS
+
     internal companion object {
+        private val FULL_SNAPSHOT_INTERVAL_NS = TimeUnit.MILLISECONDS.toNanos(3000)
+        internal const val INVALID_MUTATION_MESSAGE = "Computed mutation failed validation, retrying as a full snapshot"
         internal const val INVALID_SNAPSHOT_MESSAGE = "Dropping invalid completed composition snapshot"
         internal const val VALIDATION_ERROR_CODES_PROPERTY = "validation_error_codes"
         internal const val VALIDATION_FAILURE_COUNT_PROPERTY = "validation_failure_count"

@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.composition
 import android.graphics.Rect
 import android.view.View
 import androidx.annotation.MainThread
+import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
@@ -16,7 +17,11 @@ import com.datadog.android.sessionreplay.internal.putTouchOverrideArea
 import com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
-/** Copies all supported windows in one UI turn; final tree construction belongs to the worker. */
+/**
+ * Copies all supported windows in one UI turn; final tree construction belongs to the worker.
+ * Retains one identity factory per RUM view so native, Compose, and screen-root identities remain
+ * stable across generations for incremental diffing.
+ */
 internal class AndroidCapturedSnapshotProducer(
     private val windowSource: ActiveWindowSource,
     private val scopeProvider: RumViewScopeProvider,
@@ -26,6 +31,8 @@ internal class AndroidCapturedSnapshotProducer(
     private val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver,
     private val isMainThreadWindow: (View) -> Boolean = ::isAttachedToMainLooper
 ) : CapturedSnapshotProducer {
+    private var retainedIdentityFactory: DefaultCapturedIdentityFactory? = null
+
     @MainThread
     @Suppress("ReturnCount")
     override fun capture(context: CaptureGenerationContext): CapturedSnapshotInput? {
@@ -46,7 +53,7 @@ internal class AndroidCapturedSnapshotProducer(
             }
             return null
         }
-        val identityFactory = DefaultCapturedIdentityFactory(rumViewScope.scope)
+        val identityFactory = identityFactoryFor(rumViewScope.scope)
         val copies = mutableListOf<CapturedNativeWindow>()
         val capturedWindows = mutableListOf<View>()
         val touchOverrideAreas = mutableMapOf<Rect, TouchPrivacy>()
@@ -86,6 +93,11 @@ internal class AndroidCapturedSnapshotProducer(
             touchPrivacyManager.replaceCurrentTouchOverrideAreas(touchOverrideAreas)
         }
         return snapshot
+    }
+
+    private fun identityFactoryFor(scope: RumViewIdentityScope): DefaultCapturedIdentityFactory {
+        retainedIdentityFactory?.takeIf { it.scope == scope }?.let { return it }
+        return DefaultCapturedIdentityFactory(scope).also { retainedIdentityFactory = it }
     }
 
     private fun canContinueCapture(

@@ -29,6 +29,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -301,6 +302,7 @@ internal class SnapshotCompletionQueueTest {
             rumContextProvider = stubRumContextProvider(fakeApplicationId, fakeSessionId, fakeTree.scope.value),
             recordWriter = mockRecordWriter,
             internalLogger = mock(),
+            timeProvider = mock(),
             wireMapper = stubWireMapper
         )
         val fakeClock = FakeClock().apply { nowNs = fakeDeadlineNs - 1L }
@@ -362,6 +364,7 @@ internal class SnapshotCompletionQueueTest {
             rumContextProvider = rumContextProvider,
             recordWriter = mock(),
             internalLogger = mock(),
+            timeProvider = mock(),
             wireMapper = wireMapper,
             resourceDataQueueHandler = resourceDataQueueHandler
         )
@@ -387,6 +390,7 @@ internal class SnapshotCompletionQueueTest {
             rumContextProvider = rumContextProvider,
             recordWriter = mock(),
             internalLogger = mock(),
+            timeProvider = mock(),
             resourceDataQueueHandler = resourceDataQueueHandler
         )
         val clock = FakeClock().apply { nowNs = 9L }
@@ -406,10 +410,11 @@ internal class SnapshotCompletionQueueTest {
         // Given
         val tree = compositionTestTree()
         val firstRecord = mock<MobileSegment.MobileRecord.MobileFullSnapshotRecord>()
-        val secondRecord = mock<MobileSegment.MobileRecord.MobileFullSnapshotRecord>()
+        val secondRecord = mock<MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord>()
         val wireMapper = mock<CapturedTreeWireMapper>()
         whenever(wireMapper.mapFullSnapshot(tree.snapshot))
             .thenReturn(CaptureWireMappingResult.Success(firstRecord))
+        whenever(wireMapper.mapMutation(any(), eq(tree.snapshot)))
             .thenReturn(CaptureWireMappingResult.Success(secondRecord))
         val writer = mock<RecordWriter>()
         val rumContextProvider = mock<RumContextProvider>()
@@ -420,6 +425,7 @@ internal class SnapshotCompletionQueueTest {
             rumContextProvider = rumContextProvider,
             recordWriter = writer,
             internalLogger = mock(),
+            timeProvider = mock(),
             wireMapper = wireMapper
         )
         val clock = FakeClock().apply { nowNs = 9L }
@@ -460,6 +466,7 @@ internal class SnapshotCompletionQueueTest {
             rumContextProvider = rumContextProvider,
             recordWriter = writer,
             internalLogger = mock(),
+            timeProvider = mock(),
             wireMapper = wireMapper
         )
         val clock = FakeClock().apply { nowNs = 9L }
@@ -527,6 +534,7 @@ internal class SnapshotCompletionQueueTest {
             rumContextProvider = stubRumContextProvider(fakeApplicationId, fakeSessionId, fakeOtherViewId),
             recordWriter = mockRecordWriter,
             internalLogger = mock(),
+            timeProvider = mock(),
             wireMapper = mockWireMapper
         )
 
@@ -565,6 +573,7 @@ internal class SnapshotCompletionQueueTest {
             rumContextProvider = stubRumContextProvider(fakeApplicationId, fakeSessionId, fakeTree.scope.value),
             recordWriter = mockRecordWriter,
             internalLogger = mockInternalLogger,
+            timeProvider = mock(),
             wireMapper = stubWireMapper
         )
         val fakeGeneration = generation(FakeClock(), deadlineNs = fakeDeadlineNs)
@@ -604,6 +613,7 @@ internal class SnapshotCompletionQueueTest {
             rumContextProvider = stubRumContextProvider(applicationId, sessionId, fakeTree.scope.value),
             recordWriter = mockRecordWriter,
             internalLogger = mock(),
+            timeProvider = mock(),
             wireMapper = stubWireMapper
         )
         val fakeClock = FakeClock().apply { this.nowNs = nowNs }

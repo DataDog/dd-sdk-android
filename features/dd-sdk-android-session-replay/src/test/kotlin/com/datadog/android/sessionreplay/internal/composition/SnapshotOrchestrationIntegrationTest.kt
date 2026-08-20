@@ -55,7 +55,8 @@ internal class SnapshotOrchestrationIntegrationTest {
             processor = DefaultSnapshotCompletionProcessor(
                 rumContextProvider = rumContextProvider,
                 recordWriter = writer,
-                internalLogger = mock()
+                internalLogger = mock(),
+                timeProvider = mock()
             ),
             internalLogger = mock<InternalLogger>()
         )

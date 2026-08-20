@@ -159,7 +159,13 @@ internal class CompositionProcessingIsolationTest {
             }
             val completionQueue = SnapshotCompletionQueue(
                 mockCompletionExecutor,
-                DefaultSnapshotCompletionProcessor(mockRumContextProvider, mockWriter, mock(), mockWireMapper),
+                DefaultSnapshotCompletionProcessor(
+                    rumContextProvider = mockRumContextProvider,
+                    recordWriter = mockWriter,
+                    internalLogger = mock(),
+                    timeProvider = mock(),
+                    wireMapper = mockWireMapper
+                ),
                 mock()
             )
             var fakeCapturedCount = 0L
