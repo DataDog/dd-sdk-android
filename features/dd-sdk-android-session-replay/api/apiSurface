@@ -5,6 +5,7 @@ interface com.datadog.android.sessionreplay.ExtensionSupport
   fun getOptionSelectorDetectors(): List<com.datadog.android.sessionreplay.recorder.OptionSelectorDetector>
   fun getCustomDrawableMapper(): List<com.datadog.android.sessionreplay.utils.DrawableToColorMapper>
   fun getCompositionHostDecomposer(): com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposer?
+  fun getTextDetector(): com.datadog.android.sessionreplay.recorder.privacy.TextDetector?
 enum com.datadog.android.sessionreplay.ImagePrivacy : PrivacyLevel
   - MASK_NONE
   - MASK_LARGE_ONLY
@@ -137,6 +138,12 @@ open class com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper<T: a
 interface com.datadog.android.sessionreplay.recorder.mapper.TraverseAllChildrenMapper<T: android.view.ViewGroup> : WireframeMapper<T>
 interface com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper<T: android.view.View>
   fun map(T, com.datadog.android.sessionreplay.recorder.MappingContext, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback, com.datadog.android.api.InternalLogger): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
+interface com.datadog.android.sessionreplay.recorder.privacy.TextDetector
+  fun detectTextRegions(android.graphics.Bitmap, (TextDetectionOutcome) -> Unit)
+sealed interface com.datadog.android.sessionreplay.recorder.privacy.TextDetectionOutcome
+  class Detected : TextDetectionOutcome
+    constructor(List<android.graphics.Rect>)
+  object Unavailable : TextDetectionOutcome
 class com.datadog.android.sessionreplay.recorder.resources.DefaultDrawableCopier : DrawableCopier
   override fun copy(android.graphics.drawable.Drawable, android.content.res.Resources): android.graphics.drawable.Drawable?
 interface com.datadog.android.sessionreplay.recorder.resources.DrawableCopier

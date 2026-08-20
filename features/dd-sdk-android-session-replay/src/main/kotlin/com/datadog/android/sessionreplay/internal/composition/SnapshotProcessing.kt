@@ -6,9 +6,13 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory
+
 internal data class SnapshotProcessingRequest(
     val generation: CaptureGenerationContext,
-    val snapshot: CapturedFullSnapshot
+    val snapshot: CapturedFullSnapshot,
+    val pendingPixelCaptures: List<PendingPixelCapture> = emptyList(),
+    val identityFactory: CompositionIdentityFactory? = null
 )
 
 internal sealed interface SnapshotProcessingResult {

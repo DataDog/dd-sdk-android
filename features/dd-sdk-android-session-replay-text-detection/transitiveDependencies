@@ -1,0 +1,58 @@
+Dependencies List
+
+androidx.activity:activity:1.6.0                                :  108 Kb
+androidx.annotation:annotation-experimental:1.3.0               :   35 Kb
+androidx.annotation:annotation-jvm:1.9.1                        :   59 Kb
+androidx.appcompat:appcompat-resources:1.6.1                    :   64 Kb
+androidx.appcompat:appcompat:1.6.1                              : 1109 Kb
+androidx.arch.core:core-common:2.1.0                            :   10 Kb
+androidx.arch.core:core-runtime:2.1.0                           :    5 Kb
+androidx.collection:collection-jvm:1.4.5                        :  770 Kb
+androidx.core:core-ktx:1.9.0                                    :  173 Kb
+androidx.core:core:1.9.0                                        : 1089 Kb
+androidx.cursoradapter:cursoradapter:1.0.0                      :   10 Kb
+androidx.customview:customview:1.0.0                            :   32 Kb
+androidx.drawerlayout:drawerlayout:1.0.0                        :   31 Kb
+androidx.exifinterface:exifinterface:1.0.0                      :   44 Kb
+androidx.fragment:fragment:1.3.6                                :  291 Kb
+androidx.interpolator:interpolator:1.0.0                        :    7 Kb
+androidx.lifecycle:lifecycle-common:2.5.1                       :   23 Kb
+androidx.lifecycle:lifecycle-livedata-core:2.5.1                :    9 Kb
+androidx.lifecycle:lifecycle-livedata:2.1.0                     :   10 Kb
+androidx.lifecycle:lifecycle-runtime:2.5.1                      :   12 Kb
+androidx.lifecycle:lifecycle-viewmodel-savedstate:2.5.1         :   34 Kb
+androidx.lifecycle:lifecycle-viewmodel:2.5.1                    :   34 Kb
+androidx.loader:loader:1.0.0                                    :   32 Kb
+androidx.savedstate:savedstate:1.2.0                            :   18 Kb
+androidx.vectordrawable:vectordrawable-animated:1.1.0           :   33 Kb
+androidx.vectordrawable:vectordrawable:1.1.0                    :   32 Kb
+androidx.versionedparcelable:versionedparcelable:1.1.1          :   30 Kb
+androidx.viewpager:viewpager:1.0.0                              :   52 Kb
+com.google.android.datatransport:transport-api:2.2.1            :    4 Kb
+com.google.android.datatransport:transport-backend-cct:2.3.3    :   34 Kb
+com.google.android.datatransport:transport-runtime:2.2.6        :   95 Kb
+com.google.android.gms:play-services-base:18.5.0                :  429 Kb
+com.google.android.gms:play-services-basement:18.4.0            :  279 Kb
+com.google.android.gms:play-services-mlkit-text-recognition-common:19.1.0:  427 Kb
+com.google.android.gms:play-services-mlkit-text-recognition:19.0.1:   76 Kb
+com.google.android.gms:play-services-tasks:18.2.0               :   78 Kb
+com.google.android.odml:image:1.0.0-beta1                       :   23 Kb
+com.google.firebase:firebase-annotations:16.0.0                 :  921 b 
+com.google.firebase:firebase-components:16.1.0                  :   29 Kb
+com.google.firebase:firebase-encoders-json:17.1.0               :    9 Kb
+com.google.firebase:firebase-encoders:16.1.0                    :   17 Kb
+com.google.mlkit:common:18.11.0                                 :  423 Kb
+com.google.mlkit:text-recognition-bundled-common:17.0.0         :   17 Mb
+com.google.mlkit:text-recognition:16.0.1                        : 1350 Kb
+com.google.mlkit:vision-common:17.3.0                           :  262 Kb
+com.google.mlkit:vision-interfaces:16.3.0                       :   72 Kb
+javax.inject:javax.inject:1                                     :    2 Kb
+org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10                  :  959 b 
+org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10                  :  965 b 
+org.jetbrains.kotlin:kotlin-stdlib:2.0.21                       : 1706 Kb
+org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.1          :   19 Kb
+org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.6.1         : 1457 Kb
+org.jetbrains:annotations:13.0                                  :   17 Kb
+
+Total transitive dependencies size                              :   27 Mb
+

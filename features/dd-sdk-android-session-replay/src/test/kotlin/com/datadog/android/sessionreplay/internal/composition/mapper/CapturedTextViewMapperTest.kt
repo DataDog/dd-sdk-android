@@ -10,6 +10,8 @@ import android.widget.TextView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
+import com.datadog.android.sessionreplay.ImagePrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.DefaultCapturedIdentityFactory
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
@@ -43,7 +45,7 @@ internal class CapturedTextViewMapperTest {
     private val mockViewBoundsResolver: ViewBoundsResolver = mock()
     private val mockColorStringFormatter: ColorStringFormatter = mock()
     private val mockInternalLogger: InternalLogger = mock()
-    private val testedMapper = CapturedTextViewMapper(
+    private val testedMapper = CapturedTextViewMapper<TextView>(
         viewBoundsResolver = mockViewBoundsResolver,
         colorStringFormatter = mockColorStringFormatter,
         backgroundShapeStyleResolver = CapturedBackgroundShapeStyleResolver(),
@@ -69,7 +71,13 @@ internal class CapturedTextViewMapperTest {
         whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockTextView, fakeDensity)).thenReturn(fakeBounds)
         val factory = DefaultCapturedIdentityFactory(RumViewIdentityScope(fakeScope))
         val owner = factory.view(factory.window("window"), "text-owner")
-        val mappingContext = CapturedMappingContext(factory, owner, screenDensity = fakeDensity)
+        val mappingContext = CapturedMappingContext(
+            factory,
+            owner,
+            screenDensity = fakeDensity,
+            imagePrivacy = ImagePrivacy.MASK_NONE,
+            textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
+        )
 
         // When
         val result = testedMapper.map(mockTextView, mappingContext) as CapturedViewMapperResult.Wireframes
@@ -100,7 +108,13 @@ internal class CapturedTextViewMapperTest {
         whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockTextView, fakeDensity)).thenReturn(fakeBounds)
         val factory = DefaultCapturedIdentityFactory(RumViewIdentityScope(fakeScope))
         val owner = factory.view(factory.window("window"), "text-owner")
-        val mappingContext = CapturedMappingContext(factory, owner, screenDensity = fakeDensity)
+        val mappingContext = CapturedMappingContext(
+            factory,
+            owner,
+            screenDensity = fakeDensity,
+            imagePrivacy = ImagePrivacy.MASK_NONE,
+            textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
+        )
 
         // When
         val result = testedMapper.map(mockTextView, mappingContext) as CapturedViewMapperResult.Wireframes

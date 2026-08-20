@@ -10,6 +10,7 @@ import androidx.annotation.MainThread
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 
@@ -23,7 +24,7 @@ import com.datadog.android.sessionreplay.utils.GlobalBounds
  */
 internal fun interface CapturedSnapshotProducer {
     @MainThread
-    fun capture(context: CaptureGenerationContext, changeset: CaptureChangeset): CapturedFullSnapshot?
+    fun capture(context: CaptureGenerationContext, changeset: CaptureChangeset): CaptureOutput?
 }
 
 /**
@@ -53,4 +54,18 @@ internal data class CapturedFullSnapshot(
     val root: CapturedLayer?,
     val layers: List<CapturedLayer>,
     val wireframes: List<CapturedWireframe>
+)
+
+/**
+ * One [CapturedSnapshotProducer.capture] result: the platform-neutral snapshot itself, plus any
+ * raster captures taken synchronously during the walk that still need async text-region masking
+ * and resource registration. [pendingPixelCaptures] never crosses into [CapturedFullSnapshot] -
+ * it's a producer-to-processor side channel, not part of the wire-facing tree model.
+ * [identityFactory] is this same generation's identity factory, needed only if resolving a pending
+ * capture has to mint a fresh placeholder identity.
+ */
+internal data class CaptureOutput(
+    val snapshot: CapturedFullSnapshot,
+    val pendingPixelCaptures: List<PendingPixelCapture>,
+    val identityFactory: CompositionIdentityFactory
 )

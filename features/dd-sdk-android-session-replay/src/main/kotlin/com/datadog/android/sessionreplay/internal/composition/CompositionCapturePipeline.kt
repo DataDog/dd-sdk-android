@@ -6,7 +6,9 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import com.datadog.android.sessionreplay.internal.async.DataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
+import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 
 internal class CapturePipelineSelector(
     private val compositionEnabled: Boolean,
@@ -24,19 +26,24 @@ internal class CapturePipelineSelector(
 internal class CompositionCapturePipeline(
     private val orchestrator: SnapshotCaptureOrchestrator,
     private val lifecycle: CompositionCaptureLifecycle,
-    private val completionQueue: SnapshotCompletionQueue
+    private val completionQueue: SnapshotCompletionQueue,
+    private val resourceResolver: ResourceResolver? = null,
+    private val resourceDataQueueHandler: DataQueueHandler? = null
 ) : Recorder {
     override fun registerCallbacks() {
         lifecycle.registerCallbacks()
+        resourceResolver?.registerCallbacks()
     }
 
     override fun unregisterCallbacks() {
         lifecycle.unregisterCallbacks()
+        resourceResolver?.unregisterCallbacks()
     }
 
     override fun stopProcessingRecords() {
         orchestrator.shutdown()
         completionQueue.stop()
+        resourceDataQueueHandler?.clearAndStopProcessingQueue()
     }
 
     override fun resumeRecorders() {

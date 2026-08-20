@@ -44,13 +44,15 @@ import com.datadog.android.sessionreplay.internal.composition.DefaultRumViewScop
 import com.datadog.android.sessionreplay.internal.composition.DefaultSnapshotCompletionProcessor
 import com.datadog.android.sessionreplay.internal.composition.HandlerCaptureMainThreadExecutor
 import com.datadog.android.sessionreplay.internal.composition.HandlerCaptureTaskScheduler
-import com.datadog.android.sessionreplay.internal.composition.ImmediateCapturedSnapshotProcessor
+import com.datadog.android.sessionreplay.internal.composition.PixelFallbackSnapshotProcessor
 import com.datadog.android.sessionreplay.internal.composition.ScheduledExecutorCaptureTaskScheduler
 import com.datadog.android.sessionreplay.internal.composition.SnapshotCaptureOrchestrator
 import com.datadog.android.sessionreplay.internal.composition.SnapshotCompletionQueue
 import com.datadog.android.sessionreplay.internal.composition.TimeBankCaptureTimeBudget
 import com.datadog.android.sessionreplay.internal.composition.TimeProviderCaptureTimeProvider
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedEditTextMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMapperTypeWrapper
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedPixelFallbackMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedTextViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewGroupFallbackMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
@@ -70,6 +72,8 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.RadioButtonMap
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SeekBarWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.SwitchCompatMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.WebViewWireframeMapper
+import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
+import com.datadog.android.sessionreplay.internal.recorder.resources.buildResourceResolver
 import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
@@ -80,6 +84,7 @@ import com.datadog.android.sessionreplay.recorder.mapper.EditTextMapper
 import com.datadog.android.sessionreplay.recorder.mapper.ImageViewMapper
 import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
+import com.datadog.android.sessionreplay.recorder.privacy.TextDetector
 import com.datadog.android.sessionreplay.recorder.resources.DefaultDrawableCopier
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
@@ -102,6 +107,7 @@ internal class DefaultRecorderProvider(
     private val heatmapsEnabled: Boolean,
     private val compositionTreeRecordingEnabled: Boolean,
     private val compositionHostDecomposer: CompositionHostDecomposer? = null,
+    private val textDetector: TextDetector? = null,
     private val compositionPipelineFactory: (() -> Recorder)? = null,
     private val compositionSnapshotProducerFactory: (
         (ActiveWindowSource, RumContextProvider) -> CapturedSnapshotProducer
@@ -129,9 +135,12 @@ internal class DefaultRecorderProvider(
             compositionEnabled = compositionTreeRecordingEnabled,
             compositionFactory = {
                 compositionPipelineFactory?.invoke() ?: createCompositionPipeline(
+                    resourceDataStoreManager,
+                    resourceWriter,
                     recordWriter,
                     rumContextProvider,
-                    application
+                    application,
+                    embeddedContentSlotRegistry
                 )
             },
             legacyFactory = {
@@ -158,15 +167,36 @@ internal class DefaultRecorderProvider(
         ).create()
     }
 
+    @Suppress("LongParameterList")
     private fun createCompositionPipeline(
+        resourceDataStoreManager: ResourceDataStoreManager,
+        resourceWriter: ResourcesWriter,
         recordWriter: RecordWriter,
         rumContextProvider: RumContextProvider,
-        application: Application
+        application: Application,
+        embeddedContentSlotRegistry: EmbeddedContentSlotRegistry
     ): Recorder {
         val internalLogger = sdkCore.internalLogger
         val windowSource = ActiveWindowSource()
+        val resourceResolverBundle = buildResourceResolver(
+            appContext = application,
+            sdkCore = sdkCore,
+            resourceDataStoreManager = resourceDataStoreManager,
+            resourcesWriter = resourceWriter,
+            recordWriter = recordWriter,
+            rumContextProvider = rumContextProvider,
+            embeddedContentSlotRegistry = embeddedContentSlotRegistry,
+            eventProcessingExecutorName = "sr-composition-event-processing",
+            drawablesExecutorName = "sr-composition-drawables"
+        )
         val completionQueue = createCompletionQueue(recordWriter, rumContextProvider, internalLogger)
-        val orchestrator = createCaptureOrchestrator(windowSource, rumContextProvider, completionQueue, internalLogger)
+        val orchestrator = createCaptureOrchestrator(
+            windowSource,
+            rumContextProvider,
+            completionQueue,
+            resourceResolverBundle.resourceResolver,
+            internalLogger
+        )
         val interceptor = CompositionViewOnDrawInterceptor(
             windowSource = windowSource,
             onWindowsChanged = CompositionChangeListener { windows ->
@@ -182,7 +212,9 @@ internal class DefaultRecorderProvider(
                 internalLogger = internalLogger,
                 currentActivity = internalCallback.getCurrentActivity()
             ),
-            completionQueue = completionQueue
+            completionQueue = completionQueue,
+            resourceResolver = resourceResolverBundle.resourceResolver,
+            resourceDataQueueHandler = resourceResolverBundle.dataQueueHandler
         )
     }
 
@@ -204,6 +236,7 @@ internal class DefaultRecorderProvider(
         windowSource: ActiveWindowSource,
         rumContextProvider: RumContextProvider,
         completionQueue: SnapshotCompletionQueue,
+        resourceResolver: ResourceResolver,
         internalLogger: InternalLogger
     ): SnapshotCaptureOrchestrator {
         val skippedFrameNotifier = CaptureSkippedFrameNotifier(sdkCore)
@@ -211,7 +244,7 @@ internal class DefaultRecorderProvider(
             ?: defaultCompositionSnapshotProducer(windowSource, rumContextProvider)
         return SnapshotCaptureOrchestrator(
             producer = producer,
-            processor = ImmediateCapturedSnapshotProcessor(),
+            processor = PixelFallbackSnapshotProcessor(resourceResolver, textDetector),
             consumer = completionQueue,
             timeProvider = TimeProviderCaptureTimeProvider(sdkCore.timeProvider),
             captureScheduler = HandlerCaptureTaskScheduler(),
@@ -241,7 +274,10 @@ internal class DefaultRecorderProvider(
         timeProvider = sdkCore.timeProvider,
         traversal = AndroidWindowTraversal(
             mapperRegistry = builtInCapturedMappers(),
-            composeHostDecomposer = compositionHostDecomposer
+            composeHostDecomposer = compositionHostDecomposer,
+            rootImagePrivacy = imagePrivacy,
+            rootTextAndInputPrivacy = textAndInputPrivacy,
+            internalLogger = sdkCore.internalLogger
         )
     )
 
@@ -251,11 +287,18 @@ internal class DefaultRecorderProvider(
             mappers = listOf(
                 CapturedMapperTypeWrapper(WebView::class.java, CapturedWebViewMapper()),
                 CapturedMapperTypeWrapper(
+                    EditText::class.java,
+                    CapturedEditTextMapper(internalLogger = internalLogger)
+                ),
+                CapturedMapperTypeWrapper(
                     TextView::class.java,
-                    CapturedTextViewMapper(internalLogger = internalLogger)
+                    CapturedTextViewMapper<TextView>(internalLogger = internalLogger)
                 )
             ),
-            fallbackMapper = CapturedViewGroupFallbackMapper(internalLogger = internalLogger),
+            fallbackMapper = CapturedPixelFallbackMapper(
+                fallbackMapper = CapturedViewGroupFallbackMapper(internalLogger = internalLogger),
+                internalLogger = internalLogger
+            ),
             internalLogger = internalLogger
         )
     }

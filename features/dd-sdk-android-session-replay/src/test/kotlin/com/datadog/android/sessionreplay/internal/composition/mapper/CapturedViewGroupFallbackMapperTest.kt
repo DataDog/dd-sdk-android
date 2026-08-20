@@ -11,6 +11,8 @@ import android.view.View
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
+import com.datadog.android.sessionreplay.ImagePrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.DefaultCapturedIdentityFactory
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
@@ -64,7 +66,13 @@ internal class CapturedViewGroupFallbackMapperTest {
         whenever(mockView.background).thenReturn(null)
         val factory = DefaultCapturedIdentityFactory(RumViewIdentityScope(fakeScope))
         val owner = factory.view(factory.window("window"), "owner")
-        val mappingContext = CapturedMappingContext(factory, owner, screenDensity = fakeDensity)
+        val mappingContext = CapturedMappingContext(
+            factory,
+            owner,
+            screenDensity = fakeDensity,
+            imagePrivacy = ImagePrivacy.MASK_NONE,
+            textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
+        )
 
         // When
         val result = testedMapper.map(mockView, mappingContext)
@@ -92,7 +100,13 @@ internal class CapturedViewGroupFallbackMapperTest {
         whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockView, fakeDensity)).thenReturn(fakeBounds)
         val factory = DefaultCapturedIdentityFactory(RumViewIdentityScope(fakeScope))
         val owner = factory.view(factory.window("window"), "owner")
-        val mappingContext = CapturedMappingContext(factory, owner, screenDensity = fakeDensity)
+        val mappingContext = CapturedMappingContext(
+            factory,
+            owner,
+            screenDensity = fakeDensity,
+            imagePrivacy = ImagePrivacy.MASK_NONE,
+            textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
+        )
 
         // When
         val result = testedMapper.map(mockView, mappingContext) as CapturedViewMapperResult.Wireframes

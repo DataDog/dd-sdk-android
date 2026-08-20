@@ -20,7 +20,9 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedTruncation
 import com.datadog.android.internal.sessionreplay.composition.CapturedVerticalAlignment
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.utils.densityNormalized
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.composition.toCaptured
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver
@@ -28,21 +30,23 @@ import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 
 /**
- * The flagship semantic wireframe for this workstream: a real, unmasked text capture. Text/input
- * privacy masking is explicitly out of scope here - it is owned by the pixel-fallback/privacy
- * workstream, which applies masking policy uniformly across text and images before anything is
- * uploadable. Font-family bucketing, truncation-mode mapping, and padding/alignment resolution are
- * pure functions over a [TextView] ported verbatim from legacy `TextViewMapper`.
+ * The flagship semantic wireframe for this workstream: a text capture with [TextAndInputPrivacy]
+ * masking already applied, matching legacy `TextViewMapper.resolveCapturedText`'s non-option
+ * branch (`MASK_SENSITIVE_INPUTS`/`MASK_ALL_INPUTS` leave plain text as-is, `MASK_ALL` obfuscates
+ * it). `EditText`-specific sensitive-field detection (password/email/phoneInputType) lives in
+ * [CapturedEditTextMapper], registered ahead of this one. Font-family bucketing, truncation-mode
+ * mapping, and padding/alignment resolution are pure functions over a [TextView] ported verbatim
+ * from legacy `TextViewMapper`.
  */
-internal class CapturedTextViewMapper(
+internal open class CapturedTextViewMapper<T : TextView>(
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver,
     private val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter,
     private val backgroundShapeStyleResolver: CapturedBackgroundShapeStyleResolver =
         CapturedBackgroundShapeStyleResolver(),
     private val internalLogger: InternalLogger
-) : CapturedViewMapper<TextView> {
+) : CapturedViewMapper<T> {
 
-    override fun map(view: TextView, mappingContext: CapturedMappingContext): CapturedViewMapperResult {
+    override fun map(view: T, mappingContext: CapturedMappingContext): CapturedViewMapperResult {
         val wireframes = mutableListOf<CapturedWireframe>()
         val bounds = viewBoundsResolver.resolveViewGlobalBounds(view, mappingContext.screenDensity)
         val capturedBounds = bounds.toCaptured()
@@ -58,12 +62,22 @@ internal class CapturedTextViewMapper(
         wireframes += CapturedWireframe.Text(
             identity = mappingContext.identityFactory.textWireframe(mappingContext.ownerIdentity),
             bounds = capturedBounds,
-            text = resolveLayoutText(view),
+            text = resolveCapturedText(view, mappingContext.textAndInputPrivacy),
             textStyle = resolveTextStyle(view, mappingContext.screenDensity),
             textPosition = resolveTextPosition(view, mappingContext.screenDensity)
         )
 
         return CapturedViewMapperResult.Wireframes(wireframes)
+    }
+
+    /** Matches legacy `TextViewMapper.resolveCapturedText`'s non-option (`isOption = false`) branch. */
+    protected open fun resolveCapturedText(view: T, textAndInputPrivacy: TextAndInputPrivacy): String {
+        val originalText = resolveLayoutText(view)
+        return when (textAndInputPrivacy) {
+            TextAndInputPrivacy.MASK_SENSITIVE_INPUTS,
+            TextAndInputPrivacy.MASK_ALL_INPUTS -> originalText
+            TextAndInputPrivacy.MASK_ALL -> StringObfuscator.getStringObfuscator().obfuscate(originalText)
+        }
     }
 
     private fun resolveLayoutText(textView: TextView): String =

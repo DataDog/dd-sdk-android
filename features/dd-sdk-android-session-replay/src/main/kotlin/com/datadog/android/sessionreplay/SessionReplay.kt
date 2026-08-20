@@ -63,7 +63,8 @@ object SessionReplay {
                     internalCallback = sessionReplayConfiguration.internalCallback,
                     heatmapsEnabled = sessionReplayConfiguration.heatmapsEnabled,
                     compositionTreeRecordingEnabled = sessionReplayConfiguration.compositionTreeRecordingEnabled,
-                    compositionHostDecomposer = sessionReplayConfiguration.compositionHostDecomposer
+                    compositionHostDecomposer = sessionReplayConfiguration.compositionHostDecomposer,
+                    textDetector = sessionReplayConfiguration.textDetector
                 )
 
                 if (isAlreadyRegistered()) {

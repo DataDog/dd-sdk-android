@@ -35,7 +35,7 @@ internal class AndroidCapturedSnapshotProducer(
 
     @MainThread
     @Suppress("ReturnCount")
-    override fun capture(context: CaptureGenerationContext, changeset: CaptureChangeset): CapturedFullSnapshot? {
+    override fun capture(context: CaptureGenerationContext, changeset: CaptureChangeset): CaptureOutput? {
         val rumViewScope = scopeProvider.currentScope() ?: return null
         val identityFactory = DefaultCapturedIdentityFactory(rumViewScope.scope)
         val walk = walkWindows(windowSource.currentWindows(), identityFactory, context)
@@ -47,12 +47,16 @@ internal class AndroidCapturedSnapshotProducer(
                 bounds = it.windowLayers.firstOrNull()?.bounds ?: CapturedBounds(0, 0, 0, 0),
                 children = it.windowLayers.map { layer -> CapturedChild.Layer(layer.identity) }
             )
-            CapturedFullSnapshot(
-                timestamp = timeProvider.getDeviceTimestampMillis() + rumViewScope.viewTimeOffsetMs,
-                scope = rumViewScope.scope,
-                root = root,
-                layers = it.layers,
-                wireframes = it.wireframes
+            CaptureOutput(
+                snapshot = CapturedFullSnapshot(
+                    timestamp = timeProvider.getDeviceTimestampMillis() + rumViewScope.viewTimeOffsetMs,
+                    scope = rumViewScope.scope,
+                    root = root,
+                    layers = it.layers,
+                    wireframes = it.wireframes
+                ),
+                pendingPixelCaptures = it.pendingPixelCaptures,
+                identityFactory = identityFactory
             )
         }
     }
@@ -66,6 +70,7 @@ internal class AndroidCapturedSnapshotProducer(
         val layers = mutableListOf<CapturedLayer>()
         val wireframes = mutableListOf<CapturedWireframe>()
         val windowLayers = mutableListOf<CapturedLayer>()
+        val pendingPixelCaptures = mutableListOf<PendingPixelCapture>()
         var aborted = false
 
         for (window in windows) {
@@ -75,6 +80,7 @@ internal class AndroidCapturedSnapshotProducer(
                     windowLayers += result.rootLayer
                     layers += result.layers
                     wireframes += result.wireframes
+                    pendingPixelCaptures += result.pendingPixelCaptures
                 }
                 WindowWalkResult.Filtered -> Unit
                 WindowWalkResult.Aborted -> {
@@ -84,12 +90,13 @@ internal class AndroidCapturedSnapshotProducer(
             if (aborted) break
         }
 
-        return if (aborted) null else WindowsWalkAccumulation(windowLayers, layers, wireframes)
+        return if (aborted) null else WindowsWalkAccumulation(windowLayers, layers, wireframes, pendingPixelCaptures)
     }
 
     private class WindowsWalkAccumulation(
         val windowLayers: List<CapturedLayer>,
         val layers: List<CapturedLayer>,
-        val wireframes: List<CapturedWireframe>
+        val wireframes: List<CapturedWireframe>,
+        val pendingPixelCaptures: List<PendingPixelCapture>
     )
 }

@@ -6,11 +6,13 @@ public abstract interface class com/datadog/android/sessionreplay/ExtensionSuppo
 	public abstract fun getCustomDrawableMapper ()Ljava/util/List;
 	public abstract fun getCustomViewMappers ()Ljava/util/List;
 	public abstract fun getOptionSelectorDetectors ()Ljava/util/List;
+	public abstract fun getTextDetector ()Lcom/datadog/android/sessionreplay/recorder/privacy/TextDetector;
 	public abstract fun name ()Ljava/lang/String;
 }
 
 public final class com/datadog/android/sessionreplay/ExtensionSupport$DefaultImpls {
 	public static fun getCompositionHostDecomposer (Lcom/datadog/android/sessionreplay/ExtensionSupport;)Lcom/datadog/android/sessionreplay/recorder/composition/CompositionHostDecomposer;
+	public static fun getTextDetector (Lcom/datadog/android/sessionreplay/ExtensionSupport;)Lcom/datadog/android/sessionreplay/recorder/privacy/TextDetector;
 }
 
 public final class com/datadog/android/sessionreplay/ImagePrivacy : java/lang/Enum, com/datadog/android/sessionreplay/PrivacyLevel {
@@ -74,8 +76,8 @@ public final class com/datadog/android/sessionreplay/SessionReplay {
 }
 
 public final class com/datadog/android/sessionreplay/SessionReplayConfiguration {
-	public final fun copy (Ljava/lang/String;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Ljava/util/List;Ljava/util/List;Ljava/util/List;FLcom/datadog/android/sessionreplay/ImagePrivacy;ZLcom/datadog/android/sessionreplay/TouchPrivacy;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;ZLcom/datadog/android/sessionreplay/SystemRequirementsConfiguration;Lcom/datadog/android/sessionreplay/SessionReplayInternalCallback;ZZLcom/datadog/android/sessionreplay/recorder/composition/CompositionHostDecomposer;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
-	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;Ljava/lang/String;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Ljava/util/List;Ljava/util/List;Ljava/util/List;FLcom/datadog/android/sessionreplay/ImagePrivacy;ZLcom/datadog/android/sessionreplay/TouchPrivacy;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;ZLcom/datadog/android/sessionreplay/SystemRequirementsConfiguration;Lcom/datadog/android/sessionreplay/SessionReplayInternalCallback;ZZLcom/datadog/android/sessionreplay/recorder/composition/CompositionHostDecomposer;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
+	public final fun copy (Ljava/lang/String;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Ljava/util/List;Ljava/util/List;Ljava/util/List;FLcom/datadog/android/sessionreplay/ImagePrivacy;ZLcom/datadog/android/sessionreplay/TouchPrivacy;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;ZLcom/datadog/android/sessionreplay/SystemRequirementsConfiguration;Lcom/datadog/android/sessionreplay/SessionReplayInternalCallback;ZZLcom/datadog/android/sessionreplay/recorder/composition/CompositionHostDecomposer;Lcom/datadog/android/sessionreplay/recorder/privacy/TextDetector;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;Ljava/lang/String;Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;Ljava/util/List;Ljava/util/List;Ljava/util/List;FLcom/datadog/android/sessionreplay/ImagePrivacy;ZLcom/datadog/android/sessionreplay/TouchPrivacy;Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;ZLcom/datadog/android/sessionreplay/SystemRequirementsConfiguration;Lcom/datadog/android/sessionreplay/SessionReplayInternalCallback;ZZLcom/datadog/android/sessionreplay/recorder/composition/CompositionHostDecomposer;Lcom/datadog/android/sessionreplay/recorder/privacy/TextDetector;ILjava/lang/Object;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -2180,6 +2182,22 @@ public abstract interface class com/datadog/android/sessionreplay/recorder/mappe
 
 public abstract interface class com/datadog/android/sessionreplay/recorder/mapper/WireframeMapper {
 	public abstract fun map (Landroid/view/View;Lcom/datadog/android/sessionreplay/recorder/MappingContext;Lcom/datadog/android/sessionreplay/utils/AsyncJobStatusCallback;Lcom/datadog/android/api/InternalLogger;)Ljava/util/List;
+}
+
+public abstract interface class com/datadog/android/sessionreplay/recorder/privacy/TextDetectionOutcome {
+}
+
+public final class com/datadog/android/sessionreplay/recorder/privacy/TextDetectionOutcome$Detected : com/datadog/android/sessionreplay/recorder/privacy/TextDetectionOutcome {
+	public fun <init> (Ljava/util/List;)V
+	public final fun getRegions ()Ljava/util/List;
+}
+
+public final class com/datadog/android/sessionreplay/recorder/privacy/TextDetectionOutcome$Unavailable : com/datadog/android/sessionreplay/recorder/privacy/TextDetectionOutcome {
+	public static final field INSTANCE Lcom/datadog/android/sessionreplay/recorder/privacy/TextDetectionOutcome$Unavailable;
+}
+
+public abstract interface class com/datadog/android/sessionreplay/recorder/privacy/TextDetector {
+	public abstract fun detectTextRegions (Landroid/graphics/Bitmap;Lkotlin/jvm/functions/Function1;)V
 }
 
 public final class com/datadog/android/sessionreplay/recorder/resources/DefaultDrawableCopier : com/datadog/android/sessionreplay/recorder/resources/DrawableCopier {

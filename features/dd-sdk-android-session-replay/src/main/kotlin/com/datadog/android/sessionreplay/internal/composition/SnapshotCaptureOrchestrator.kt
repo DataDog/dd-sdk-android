@@ -106,13 +106,18 @@ internal class SnapshotCaptureOrchestrator(
         val captureResult = active.generation.runMainThreadCaptureUnit(admissionAlreadyGranted = true) {
             safeCapture(producer, internalLogger, active.generation, active.changeset)
         }
-        val snapshot = when (captureResult) {
+        val capture = when (captureResult) {
             is MainThreadCaptureResult.Completed -> captureResult.value
             MainThreadCaptureResult.Interrupted -> null
         }
-        if (snapshot != null && active.generation.isActive()) {
+        if (capture != null && active.generation.isActive()) {
             val processing = processor.process(
-                SnapshotProcessingRequest(active.generation, snapshot),
+                SnapshotProcessingRequest(
+                    active.generation,
+                    capture.snapshot,
+                    capture.pendingPixelCaptures,
+                    capture.identityFactory
+                ),
                 SnapshotProcessingCallback(::onProcessed)
             )
             val shouldCancel = synchronized(lock) {
@@ -238,7 +243,7 @@ private fun safeCapture(
     internalLogger: InternalLogger,
     generation: CaptureGenerationContext,
     changeset: CaptureChangeset
-): CapturedFullSnapshot? = try {
+): CaptureOutput? = try {
     producer.capture(generation, changeset)
 } catch (e: Exception) {
     internalLogger.log(

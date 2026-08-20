@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.composition
 
 import android.view.View
 import android.view.ViewGroup
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedChild
 import com.datadog.android.internal.sessionreplay.composition.CapturedClip
@@ -15,7 +16,9 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.R
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedHiddenViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMappingContext
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapper
@@ -36,7 +39,8 @@ internal sealed interface WindowWalkResult {
     data class Present(
         val rootLayer: CapturedLayer,
         val layers: List<CapturedLayer>,
-        val wireframes: List<CapturedWireframe>
+        val wireframes: List<CapturedWireframe>,
+        val pendingPixelCaptures: List<PendingPixelCapture>
     ) : WindowWalkResult
 
     /** The window (e.g. not shown, or on a secondary display) contributes nothing - skip it. */
@@ -67,6 +71,9 @@ internal class AndroidWindowTraversal(
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver,
     private val viewUtilsInternal: ViewUtilsInternal = ViewUtilsInternal(),
     private val composeHostDecomposer: CompositionHostDecomposer? = null,
+    private val rootImagePrivacy: ImagePrivacy = ImagePrivacy.MASK_ALL,
+    private val rootTextAndInputPrivacy: TextAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
+    private val internalLogger: InternalLogger = InternalLogger.UNBOUND,
     private val viewsPerCheckpoint: Int = VIEWS_PER_CHECKPOINT,
     private val isComposeHost: (View) -> Boolean = ::isComposeHostByClassName
 ) {
@@ -79,6 +86,7 @@ internal class AndroidWindowTraversal(
     ): WindowWalkResult {
         if (!context.shouldContinue()) return WindowWalkResult.Aborted
         val state = TraversalState(screenDensity = windowRoot.resources.displayMetrics.density)
+        val rootPrivacy = EffectivePrivacy(rootImagePrivacy, rootTextAndInputPrivacy)
         return when (
             val result = visitView(
                 view = windowRoot,
@@ -87,12 +95,13 @@ internal class AndroidWindowTraversal(
                 windowIdentity = windowIdentity,
                 identityFactory = identityFactory,
                 ancestorBounds = emptyList(),
+                inheritedPrivacy = rootPrivacy,
                 context = context,
                 state = state
             )
         ) {
             is LayerWalkResult.Present ->
-                WindowWalkResult.Present(result.layer, state.layers, state.wireframes)
+                WindowWalkResult.Present(result.layer, state.layers, state.wireframes, state.pendingPixelCaptures)
             LayerWalkResult.Filtered -> WindowWalkResult.Filtered
             LayerWalkResult.Aborted -> WindowWalkResult.Aborted
         }
@@ -106,6 +115,7 @@ internal class AndroidWindowTraversal(
         windowIdentity: CapturedIdentity,
         identityFactory: CapturedIdentityFactory,
         ancestorBounds: List<CapturedBounds>,
+        inheritedPrivacy: EffectivePrivacy,
         context: CaptureGenerationContext,
         state: TraversalState
     ): LayerWalkResult {
@@ -124,6 +134,7 @@ internal class AndroidWindowTraversal(
         val bounds = CapturedBounds(globalBounds.x, globalBounds.y, globalBounds.width, globalBounds.height)
         val childAncestorBounds = ancestorBounds + bounds
         val isHidden = view.getTag(R.id.datadog_hidden) == true
+        val ownPrivacy = resolveEffectivePrivacy(view, inheritedPrivacy, internalLogger)
 
         val children = mutableListOf<CapturedChild>()
         val attempt = attemptComposeDecomposition(
@@ -135,14 +146,22 @@ internal class AndroidWindowTraversal(
             identityFactory,
             context,
             state,
-            childAncestorBounds
+            childAncestorBounds,
+            ownPrivacy
         )
         if (attempt is ComposeAttempt.Aborted) return LayerWalkResult.Aborted
 
         if (attempt is ComposeAttempt.Decomposed) {
             spliceComposeResult(attempt.result, childAncestorBounds, children, state)
         } else {
-            val mappingContext = CapturedMappingContext(identityFactory, ownIdentity, state.screenDensity)
+            val mappingContext = CapturedMappingContext(
+                identityFactory,
+                ownIdentity,
+                state.screenDensity,
+                imagePrivacy = ownPrivacy.imagePrivacy,
+                textAndInputPrivacy = ownPrivacy.textAndInputPrivacy,
+                pendingPixelCaptureSink = PendingPixelCaptureSink { state.pendingPixelCaptures.add(it) }
+            )
             val mapped = (if (isHidden) hiddenViewMapper else mapperRegistry.resolve(view)).map(view, mappingContext)
             addWireframes(mapped, ancestorBounds, children, state)
         }
@@ -156,6 +175,7 @@ internal class AndroidWindowTraversal(
                 windowIdentity,
                 identityFactory,
                 childAncestorBounds,
+                ownPrivacy,
                 context,
                 state,
                 children
@@ -178,6 +198,7 @@ internal class AndroidWindowTraversal(
         windowIdentity: CapturedIdentity,
         identityFactory: CapturedIdentityFactory,
         childAncestorBounds: List<CapturedBounds>,
+        inheritedPrivacy: EffectivePrivacy,
         context: CaptureGenerationContext,
         state: TraversalState,
         children: MutableList<CapturedChild>
@@ -185,8 +206,15 @@ internal class AndroidWindowTraversal(
         for (i in 0 until view.childCount) {
             val child = view.getChildAt(i) ?: continue
             when (
-                val childResult =
-                    visitChild(child, windowIdentity, identityFactory, childAncestorBounds, context, state)
+                val childResult = visitChild(
+                    child,
+                    windowIdentity,
+                    identityFactory,
+                    childAncestorBounds,
+                    inheritedPrivacy,
+                    context,
+                    state
+                )
             ) {
                 is LayerWalkResult.Present -> children.add(CapturedChild.Layer(childResult.layer.identity))
                 LayerWalkResult.Filtered -> Unit
@@ -202,6 +230,7 @@ internal class AndroidWindowTraversal(
         windowIdentity: CapturedIdentity,
         identityFactory: CapturedIdentityFactory,
         ancestorBounds: List<CapturedBounds>,
+        inheritedPrivacy: EffectivePrivacy,
         context: CaptureGenerationContext,
         state: TraversalState
     ): LayerWalkResult {
@@ -219,6 +248,7 @@ internal class AndroidWindowTraversal(
             windowIdentity = windowIdentity,
             identityFactory = identityFactory,
             ancestorBounds = ancestorBounds,
+            inheritedPrivacy = inheritedPrivacy,
             context = context,
             state = state
         )
@@ -241,7 +271,8 @@ internal class AndroidWindowTraversal(
         identityFactory: CapturedIdentityFactory,
         context: CaptureGenerationContext,
         state: TraversalState,
-        hostChildAncestorBounds: List<CapturedBounds>
+        hostChildAncestorBounds: List<CapturedBounds>,
+        ownPrivacy: EffectivePrivacy
     ): ComposeAttempt {
         val decomposer = composeHostDecomposer
             ?.takeIf { !isHidden && ownKind == CapturedLayerKind.COMPOSE_HOST && it.canDecompose(view) }
@@ -257,6 +288,7 @@ internal class AndroidWindowTraversal(
                     windowIdentity,
                     identityFactory,
                     hostChildAncestorBounds,
+                    ownPrivacy,
                     context,
                     state
                 )
@@ -273,30 +305,38 @@ internal class AndroidWindowTraversal(
      * one self-contained [CompositionNativeSubtree] rather than mutating the ambient [outerState]
      * directly - the caller (the Compose decomposer) decides how/whether to splice it in. Resets
      * the per-checkpoint view counter for this nested walk; interop subtrees are bounded, so this
-     * only means slightly coarser deadline-checkpoint cadence, not a correctness issue.
+     * only means slightly coarser deadline-checkpoint cadence, not a correctness issue. Any pending
+     * pixel captures collected inside the interop subtree are merged directly into [outerState] -
+     * they're a traversal-internal side channel, not part of [CompositionNativeSubtree]'s shape.
      */
+    @Suppress("LongParameterList")
     private fun handleNativeViewHandoff(
         view: View,
         ownIdentity: CapturedIdentity,
         windowIdentity: CapturedIdentity,
         identityFactory: CapturedIdentityFactory,
         ancestorBounds: List<CapturedBounds>,
+        inheritedPrivacy: EffectivePrivacy,
         context: CaptureGenerationContext,
         outerState: TraversalState
     ): CompositionNativeSubtree? {
         val localState = TraversalState(screenDensity = outerState.screenDensity)
-        return when (
-            val result = visitView(
+        val result = try {
+            visitView(
                 view = view,
                 ownIdentity = ownIdentity,
                 ownKind = CapturedLayerKind.NATIVE_VIEW,
                 windowIdentity = windowIdentity,
                 identityFactory = identityFactory,
                 ancestorBounds = ancestorBounds,
+                inheritedPrivacy = inheritedPrivacy,
                 context = context,
                 state = localState
             )
-        ) {
+        } finally {
+            outerState.pendingPixelCaptures.addAll(localState.pendingPixelCaptures)
+        }
+        return when (result) {
             is LayerWalkResult.Present -> CompositionNativeSubtree(
                 result.layer,
                 localState.layers,
@@ -394,6 +434,7 @@ internal class AndroidWindowTraversal(
         var viewsVisited = 0
         val layers = mutableListOf<CapturedLayer>()
         val wireframes = mutableListOf<CapturedWireframe>()
+        val pendingPixelCaptures = mutableListOf<PendingPixelCapture>()
     }
 
     private companion object {

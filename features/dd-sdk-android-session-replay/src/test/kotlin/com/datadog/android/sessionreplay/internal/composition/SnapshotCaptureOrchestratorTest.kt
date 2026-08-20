@@ -634,7 +634,7 @@ internal class SnapshotCaptureOrchestratorTest {
                 producerChangesets += changeset
                 onProducerCapture()
                 clock.nowNs += producerExecutionNs
-                snapshotToProduce
+                snapshotToProduce?.let { CaptureOutput(it, emptyList(), mock()) }
             },
             processor = processor,
             consumer = CompletedSnapshotConsumer(consumed::add),

@@ -26,29 +26,19 @@ import com.datadog.android.sessionreplay.internal.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
-import com.datadog.android.sessionreplay.internal.processor.MutationResolver
-import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
 import com.datadog.android.sessionreplay.internal.processor.ResourceQueueImpl
-import com.datadog.android.sessionreplay.internal.processor.RumContextDataHandler
 import com.datadog.android.sessionreplay.internal.recorder.callback.OnWindowRefreshedCallback
 import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.EmbeddedContentViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.HiddenViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
-import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
-import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapPool
 import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper
 import com.datadog.android.sessionreplay.internal.recorder.resources.ImageTypeResolver
-import com.datadog.android.sessionreplay.internal.recorder.resources.MD5HashGenerator
-import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceDrawableKeyGenerator
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
-import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesLRUCache
-import com.datadog.android.sessionreplay.internal.recorder.resources.WebPImageCompression
+import com.datadog.android.sessionreplay.internal.recorder.resources.buildResourceResolver
 import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
-import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
-import com.datadog.android.sessionreplay.internal.utils.PathUtils
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
@@ -58,7 +48,6 @@ import com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
-import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
@@ -112,36 +101,24 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null
     ) {
         val internalLogger = sdkCore.internalLogger
-        val rumContextDataHandler = RumContextDataHandler(
-            rumContextProvider,
-            timeProvider,
-            internalLogger
-        )
-
-        val processor = RecordedDataProcessor(
-            resourceDataStoreManager,
-            resourcesWriter,
-            recordWriter,
-            MutationResolver(internalLogger),
-            timeProvider,
-            embeddedContentSlotRegistry
-        )
 
         this.appContext = appContext
         this.textAndInputPrivacy = textAndInputPrivacy
         this.imagePrivacy = imagePrivacy
         this.customOptionSelectorDetectors = customOptionSelectorDetectors
         this.windowInspector = windowInspector
-        this.recordedDataQueueHandler = RecordedDataQueueHandler(
-            processor = processor,
-            rumContextDataHandler = rumContextDataHandler,
-            internalLogger = internalLogger,
-            executorService = sdkCore.createSingleThreadExecutorService(
-                "sr-event-processing"
-            ),
-            recordedDataQueue = ConcurrentLinkedQueue(),
-            timeProvider = timeProvider
+
+        val resourceResolverBundle = buildResourceResolver(
+            appContext = appContext,
+            sdkCore = sdkCore,
+            resourceDataStoreManager = resourceDataStoreManager,
+            resourcesWriter = resourcesWriter,
+            recordWriter = recordWriter,
+            rumContextProvider = rumContextProvider,
+            embeddedContentSlotRegistry = embeddedContentSlotRegistry
         )
+        this.recordedDataQueueHandler = resourceResolverBundle.dataQueueHandler
+        this.resourceResolver = resourceResolverBundle.resourceResolver
 
         val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver
         val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter
@@ -163,28 +140,6 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             drawableToColorMapper = drawableToColorMapper,
             viewUtilsInternal = viewUtilsInternal,
             embeddedContentSlotRegistry = embeddedContentSlotRegistry
-        )
-
-        val bitmapCachesManager = BitmapCachesManager(
-            bitmapPool = BitmapPool(),
-            resourcesLRUCache = ResourcesLRUCache(),
-            logger = internalLogger,
-            keyGenerator = ResourceDrawableKeyGenerator()
-        )
-
-        this.resourceResolver = ResourceResolver(
-            applicationContext = appContext,
-            recordedDataQueueHandler = recordedDataQueueHandler,
-            pathUtils = PathUtils(internalLogger, bitmapCachesManager),
-            bitmapCachesManager = bitmapCachesManager,
-            drawableUtils = DrawableUtils(
-                internalLogger,
-                bitmapCachesManager,
-                sdkCore.createSingleThreadExecutorService("drawables")
-            ),
-            logger = internalLogger,
-            md5HashGenerator = MD5HashGenerator(internalLogger),
-            webPImageCompression = WebPImageCompression(internalLogger)
         )
 
         this.viewOnDrawInterceptor = ViewOnDrawInterceptor(

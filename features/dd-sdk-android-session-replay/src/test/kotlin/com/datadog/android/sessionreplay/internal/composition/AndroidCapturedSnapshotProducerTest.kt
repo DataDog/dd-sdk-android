@@ -131,7 +131,7 @@ internal class AndroidCapturedSnapshotProducerTest {
         )
 
         // When
-        val snapshot = testedProducer.capture(fakeContext, CaptureChangeset.EMPTY)
+        val snapshot = testedProducer.capture(fakeContext, CaptureChangeset.EMPTY)?.snapshot
 
         // Then
         assertThat(snapshot).isNull()
@@ -151,7 +151,7 @@ internal class AndroidCapturedSnapshotProducerTest {
         )
 
         // When
-        val snapshot = testedProducer.capture(fakeContext, CaptureChangeset.EMPTY)
+        val snapshot = testedProducer.capture(fakeContext, CaptureChangeset.EMPTY)?.snapshot
 
         // Then
         assertThat(snapshot).isNull()
@@ -172,7 +172,7 @@ internal class AndroidCapturedSnapshotProducerTest {
         )
 
         // When
-        val snapshot = testedProducer.capture(fakeContext, CaptureChangeset.EMPTY)
+        val snapshot = testedProducer.capture(fakeContext, CaptureChangeset.EMPTY)?.snapshot
 
         // Then
         assertThat(snapshot?.timestamp).isEqualTo(fakeTimestamp + fakeOffset)
@@ -197,7 +197,7 @@ internal class AndroidCapturedSnapshotProducerTest {
         )
 
         // When
-        val snapshot = testedProducer.capture(fakeContext, CaptureChangeset.EMPTY)
+        val snapshot = testedProducer.capture(fakeContext, CaptureChangeset.EMPTY)?.snapshot
 
         // Then
         val root = snapshot!!.root!!
@@ -240,7 +240,7 @@ internal class AndroidCapturedSnapshotProducerTest {
         )
 
         // When
-        val snapshot = testedProducer.capture(fakeContext, CaptureChangeset.EMPTY)
+        val snapshot = testedProducer.capture(fakeContext, CaptureChangeset.EMPTY)?.snapshot
 
         // Then
         val validation = DefaultCapturedTreeValidator().validate(snapshot!!)
