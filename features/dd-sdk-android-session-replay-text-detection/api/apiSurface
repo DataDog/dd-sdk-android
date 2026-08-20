@@ -1,0 +1,6 @@
+class com.datadog.android.sessionreplay.textdetection.TextDetectionExtensionSupport : com.datadog.android.sessionreplay.ExtensionSupport
+  override fun getCustomViewMappers(): List<com.datadog.android.sessionreplay.MapperTypeWrapper<*>>
+  override fun getOptionSelectorDetectors(): List<com.datadog.android.sessionreplay.recorder.OptionSelectorDetector>
+  override fun getCustomDrawableMapper(): List<com.datadog.android.sessionreplay.utils.DrawableToColorMapper>
+  override fun getTextDetector(): com.datadog.android.sessionreplay.recorder.privacy.TextDetector
+  override fun name(): String

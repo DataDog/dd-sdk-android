@@ -7,14 +7,20 @@
 package com.datadog.android.sessionreplay.internal.composition
 
 import android.app.Application
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
+import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
+import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 
 internal fun interface CompositionPipelineFactory {
     fun create(
+        resourceDataStoreManager: ResourceDataStoreManager,
+        resourceWriter: ResourcesWriter,
         recordWriter: RecordWriter,
         rumContextProvider: RumContextProvider,
-        application: Application
+        application: Application,
+        embeddedContentSlotRegistry: EmbeddedContentSlotRegistry
     ): Recorder
 }

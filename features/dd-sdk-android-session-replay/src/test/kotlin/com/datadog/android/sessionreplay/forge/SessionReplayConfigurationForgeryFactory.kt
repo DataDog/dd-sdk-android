@@ -38,7 +38,8 @@ class SessionReplayConfigurationForgeryFactory : ForgeryFactory<SessionReplayCon
                 .build(),
             heatmapsEnabled = forge.aBool(),
             compositionTreeRecordingEnabled = forge.aBool(),
-            compositionHostDecomposer = forge.aNullable { mock() }
+            compositionHostDecomposer = forge.aNullable { mock() },
+            textDetector = forge.aNullable { mock() }
         )
     }
 }

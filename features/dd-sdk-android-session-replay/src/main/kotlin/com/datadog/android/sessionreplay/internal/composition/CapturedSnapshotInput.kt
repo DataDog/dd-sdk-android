@@ -20,14 +20,17 @@ internal sealed interface CapturedSnapshotInput
 internal data class CapturedNativeSnapshot(
     val timestamp: Long,
     val scope: RumViewIdentityScope,
-    val windows: List<CapturedNativeWindow>
+    val windows: List<CapturedNativeWindow>,
+    val pendingPixelCaptures: List<PendingPixelCapture> = emptyList(),
+    val identityFactory: com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory? = null
 ) : CapturedSnapshotInput
 
 /** Preorder copy; each parent index refers to an earlier entry, or -1 for the window root. */
 internal data class CapturedNativeWindow(
     val screenDensity: Float,
     val views: List<CapturedNativeView>,
-    val isDrawingOrderReliable: Boolean = true
+    val isDrawingOrderReliable: Boolean = true,
+    val pendingPixelCaptures: List<PendingPixelCapture> = emptyList()
 )
 
 internal data class CapturedNativeView(

@@ -8,34 +8,48 @@ package com.datadog.android.sessionreplay.internal.composition
 
 import android.app.Application
 import android.webkit.WebView
+import android.widget.EditText
 import android.widget.TextView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayInternalCallback
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedBackgroundShapeStyleResolver
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedEditTextMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMapperTypeWrapper
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedPixelFallbackMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedTextViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewGroupFallbackMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedWebViewMapper
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.datadog.android.sessionreplay.internal.recorder.RecordingTimeBank
 import com.datadog.android.sessionreplay.internal.recorder.TimeBank
+import com.datadog.android.sessionreplay.internal.recorder.resources.buildResourceResolver
+import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
+import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposer
+import com.datadog.android.sessionreplay.recorder.privacy.TextDetector
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 
 /**
  * Wires every collaborator scoped to one composition recording session: the orchestrator and its
  * schedulers, the completion queue and its executor, and the draw-signal and touch interception.
  */
+@Suppress("LongParameterList")
 internal class DefaultCompositionPipelineFactory(
     private val sdkCore: FeatureSdkCore,
     private val internalCallback: SessionReplayInternalCallback,
     private val touchPrivacyManager: TouchPrivacyManager,
+    private val imagePrivacy: ImagePrivacy,
+    private val textAndInputPrivacy: TextAndInputPrivacy,
     private val compositionHostDecomposer: CompositionHostDecomposer? = null,
+    private val textDetector: TextDetector? = null,
     private val dynamicOptimizationEnabled: Boolean,
     private val customDrawableMappers: List<DrawableToColorMapper> = emptyList(),
     private val snapshotProducerFactory: (ActiveWindowSource, RumContextProvider) -> CapturedSnapshotProducer = {
@@ -49,7 +63,9 @@ internal class DefaultCompositionPipelineFactory(
             traversal = AndroidWindowTraversal(
                 mapperRegistry = builtInCapturedMappers(sdkCore.internalLogger, customDrawableMappers),
                 internalLogger = sdkCore.internalLogger,
-                composeHostDecomposer = compositionHostDecomposer
+                composeHostDecomposer = compositionHostDecomposer,
+                rootImagePrivacy = imagePrivacy,
+                rootTextAndInputPrivacy = textAndInputPrivacy
             ),
             touchPrivacyManager = touchPrivacyManager
         )
@@ -58,9 +74,12 @@ internal class DefaultCompositionPipelineFactory(
 ) : CompositionPipelineFactory {
 
     override fun create(
+        resourceDataStoreManager: ResourceDataStoreManager,
+        resourceWriter: ResourcesWriter,
         recordWriter: RecordWriter,
         rumContextProvider: RumContextProvider,
-        application: Application
+        application: Application,
+        embeddedContentSlotRegistry: EmbeddedContentSlotRegistry
     ): Recorder {
         val internalLogger = sdkCore.internalLogger
         val windowSource = ActiveWindowSource(WindowTouchPrivacyReader(internalLogger = internalLogger)::read)
@@ -68,6 +87,17 @@ internal class DefaultCompositionPipelineFactory(
         // Construction has a capture deadline and must not queue behind completion mapping or writes.
         val constructionExecutor = sdkCore.createSingleThreadExecutorService(CONSTRUCTION_EXECUTOR_NAME)
         val completionExecutor = sdkCore.createSingleThreadExecutorService(COMPLETION_EXECUTOR_NAME)
+        val resourceResolverBundle = buildResourceResolver(
+            appContext = application,
+            sdkCore = sdkCore,
+            resourceDataStoreManager = resourceDataStoreManager,
+            resourcesWriter = resourceWriter,
+            recordWriter = recordWriter,
+            rumContextProvider = rumContextProvider,
+            embeddedContentSlotRegistry = embeddedContentSlotRegistry,
+            eventProcessingExecutorName = "sr-composition-event-processing",
+            drawablesExecutorName = "sr-composition-drawables"
+        )
         val completionQueue = SnapshotCompletionQueue(
             executorService = completionExecutor,
             processor = DefaultSnapshotCompletionProcessor(
@@ -79,7 +109,10 @@ internal class DefaultCompositionPipelineFactory(
         )
         val orchestrator = SnapshotCaptureOrchestrator(
             producer = snapshotProducerFactory(windowSource, rumContextProvider),
-            processor = ExecutorCapturedSnapshotProcessor(constructionExecutor, internalLogger),
+            processor = ChainedCapturedSnapshotProcessor(
+                ExecutorCapturedSnapshotProcessor(constructionExecutor, internalLogger),
+                PixelFallbackSnapshotProcessor(resourceResolverBundle.resourceResolver, textDetector)
+            ),
             consumer = completionQueue,
             timeProvider = CaptureTimeProvider { sdkCore.timeProvider.getDeviceElapsedTimeNanos() },
             captureScheduler = HandlerCaptureTaskScheduler(),
@@ -117,7 +150,9 @@ internal class DefaultCompositionPipelineFactory(
             ),
             completionQueue = completionQueue,
             constructionExecutor = constructionExecutor,
-            internalLogger = internalLogger
+            internalLogger = internalLogger,
+            resourceResolver = resourceResolverBundle.resourceResolver,
+            resourceDataQueueHandler = resourceResolverBundle.dataQueueHandler
         )
     }
 
@@ -143,15 +178,25 @@ internal class DefaultCompositionPipelineFactory(
                 mappers = listOf(
                     CapturedMapperTypeWrapper(WebView::class.java, CapturedWebViewMapper()),
                     CapturedMapperTypeWrapper(
+                        EditText::class.java,
+                        CapturedEditTextMapper(
+                            backgroundShapeStyleResolver = backgroundResolver,
+                            internalLogger = internalLogger
+                        )
+                    ),
+                    CapturedMapperTypeWrapper(
                         TextView::class.java,
-                        CapturedTextViewMapper(
+                        CapturedTextViewMapper<TextView>(
                             backgroundShapeStyleResolver = backgroundResolver,
                             internalLogger = internalLogger
                         )
                     )
                 ),
-                fallbackMapper = CapturedViewGroupFallbackMapper(
-                    backgroundShapeStyleResolver = backgroundResolver,
+                fallbackMapper = CapturedPixelFallbackMapper(
+                    fallbackMapper = CapturedViewGroupFallbackMapper(
+                        backgroundShapeStyleResolver = backgroundResolver,
+                        internalLogger = internalLogger
+                    ),
                     internalLogger = internalLogger
                 ),
                 internalLogger = internalLogger

@@ -11,6 +11,7 @@ import com.datadog.android.lint.InternalApi
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposer
 import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
+import com.datadog.android.sessionreplay.recorder.privacy.TextDetector
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 
 /**
@@ -60,4 +61,18 @@ interface ExtensionSupport {
      */
     @InternalApi
     fun getCompositionHostDecomposer(): CompositionHostDecomposer? = null
+
+    /**
+     * SDK-internal hook for the experimental composition-tree pipeline's pixel-fallback/privacy
+     * workstream: implement this to provide a [TextDetector] able to find visible text regions in
+     * a rasterized pixel capture, so they can be masked before upload. Not part of the extension
+     * surface end users are expected to implement - the only real implementation is
+     * `com.datadog.android.sessionreplay.textdetection.TextDetectionExtensionSupport`. Marked
+     * [InternalApi] for the same reason as [getCompositionHostDecomposer]. When no extension
+     * provides one, any pixel capture that would need text masking fails closed to a placeholder
+     * instead of ever uploading an unverified bitmap.
+     * @return a text detector, or null if this extension doesn't provide one.
+     */
+    @InternalApi
+    fun getTextDetector(): TextDetector? = null
 }

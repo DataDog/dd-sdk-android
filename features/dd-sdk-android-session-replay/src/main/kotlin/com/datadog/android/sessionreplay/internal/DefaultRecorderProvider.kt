@@ -54,6 +54,7 @@ import com.datadog.android.sessionreplay.recorder.mapper.EditTextMapper
 import com.datadog.android.sessionreplay.recorder.mapper.ImageViewMapper
 import com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper
 import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
+import com.datadog.android.sessionreplay.recorder.privacy.TextDetector
 import com.datadog.android.sessionreplay.recorder.resources.DefaultDrawableCopier
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
@@ -76,11 +77,15 @@ internal class DefaultRecorderProvider(
     private val heatmapsEnabled: Boolean,
     private val compositionTreeRecordingEnabled: Boolean,
     private val compositionHostDecomposer: CompositionHostDecomposer? = null,
+    private val textDetector: TextDetector? = null,
     private val compositionPipelineFactory: CompositionPipelineFactory = DefaultCompositionPipelineFactory(
         sdkCore = sdkCore,
         internalCallback = internalCallback,
         touchPrivacyManager = touchPrivacyManager,
+        imagePrivacy = imagePrivacy,
+        textAndInputPrivacy = textAndInputPrivacy,
         compositionHostDecomposer = compositionHostDecomposer,
+        textDetector = textDetector,
         dynamicOptimizationEnabled = dynamicOptimizationEnabled,
         customDrawableMappers = customDrawableMappers
     )
@@ -105,7 +110,14 @@ internal class DefaultRecorderProvider(
         return CapturePipelineSelector(
             compositionEnabled = compositionTreeRecordingEnabled,
             compositionFactory = {
-                compositionPipelineFactory.create(recordWriter, rumContextProvider, application)
+                compositionPipelineFactory.create(
+                    resourceDataStoreManager,
+                    resourceWriter,
+                    recordWriter,
+                    rumContextProvider,
+                    application,
+                    embeddedContentSlotRegistry
+                )
             },
             legacyFactory = {
                 SessionReplayRecorder(

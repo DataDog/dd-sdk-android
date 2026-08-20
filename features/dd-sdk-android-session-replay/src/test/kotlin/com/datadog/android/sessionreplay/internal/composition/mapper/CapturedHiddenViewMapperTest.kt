@@ -9,6 +9,8 @@ package com.datadog.android.sessionreplay.internal.composition.mapper
 import android.view.View
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
+import com.datadog.android.sessionreplay.ImagePrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.DefaultCapturedIdentityFactory
 import com.datadog.android.sessionreplay.utils.GlobalBounds
@@ -49,7 +51,13 @@ internal class CapturedHiddenViewMapperTest {
         val mockView: View = mock()
         val factory = DefaultCapturedIdentityFactory(RumViewIdentityScope(fakeScope))
         val owner = factory.view(factory.window("window"), "hidden-owner")
-        val mappingContext = CapturedMappingContext(factory, owner, screenDensity = fakeDensity)
+        val mappingContext = CapturedMappingContext(
+            factory,
+            owner,
+            screenDensity = fakeDensity,
+            imagePrivacy = ImagePrivacy.MASK_NONE,
+            textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
+        )
         whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockView, fakeDensity)).thenReturn(fakeBounds)
 
         // When
