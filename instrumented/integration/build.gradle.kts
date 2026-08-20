@@ -18,7 +18,7 @@ plugins {
 
 android {
 
-    compileSdk = AndroidConfig.TARGET_SDK
+    compileSdk = AndroidConfig.COMPILE_SDK
     buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
 
     @Suppress("MagicNumber")

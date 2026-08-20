@@ -14,6 +14,7 @@ import org.gradle.api.Project
 
 object AndroidConfig {
 
+    const val COMPILE_SDK = 37
     const val TARGET_SDK = 36
     const val MIN_SDK = 23
     const val MIN_SDK_FOR_AUTO = 29
@@ -35,7 +36,7 @@ fun CompileOptions.java17() {
 
 fun Project.androidLibraryConfig() {
     extensionConfig<LibraryExtension> {
-        compileSdk = AndroidConfig.TARGET_SDK
+        compileSdk = AndroidConfig.COMPILE_SDK
         buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
 
         defaultConfig {

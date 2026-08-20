@@ -23,7 +23,7 @@ plugins {
 
 android {
     namespace = "com.datadog.android.tv.sample"
-    compileSdk = AndroidConfig.TARGET_SDK
+    compileSdk = AndroidConfig.COMPILE_SDK
     buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
 
     defaultConfig {
