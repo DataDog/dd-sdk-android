@@ -11,8 +11,10 @@ import androidx.annotation.FloatRange
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.composition.CompositionHostDecomposer
 import com.datadog.android.sessionreplay.internal.composition.CompositionHostDecomposerProvider
+import com.datadog.android.sessionreplay.internal.composition.TextDetectorProvider
 import com.datadog.android.sessionreplay.internal.recorder.SessionReplayRecorder
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
+import com.datadog.android.sessionreplay.recorder.privacy.TextDetector
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import java.util.Locale
 
@@ -42,6 +44,7 @@ data class SessionReplayConfiguration internal constructor(
     // Generated copy() does not carry these properties; SDK configuration copies must preserve them explicitly.
     internal var adaptiveCaptureSchedulingEnabled: Boolean = false
     internal var compositionHostDecomposer: CompositionHostDecomposer? = null
+    internal var textDetector: TextDetector? = null
 
     /**
      * A Builder class for a [SessionReplayConfiguration].
@@ -309,6 +312,7 @@ data class SessionReplayConfiguration internal constructor(
             ).also {
                 it.adaptiveCaptureSchedulingEnabled = adaptiveCaptureSchedulingEnabled
                 it.compositionHostDecomposer = compositionHostDecomposer()
+                it.textDetector = textDetector()
             }
         }
 
@@ -350,6 +354,18 @@ data class SessionReplayConfiguration internal constructor(
             return decomposers.firstOrNull()
         }
 
+        private fun textDetector(): TextDetector? {
+            val detectors = extensionSupportSet.mapNotNull { (it as? TextDetectorProvider)?.getTextDetector() }
+            if (detectors.size > 1) {
+                logger.log(
+                    target = InternalLogger.Target.MAINTAINER,
+                    level = InternalLogger.Level.WARN,
+                    messageBuilder = { DUPLICATE_TEXT_DETECTOR_DETECTED }
+                )
+            }
+            return detectors.firstOrNull()
+        }
+
         internal companion object {
             internal const val SAMPLE_IN_ALL_SESSIONS = 100.0f
             internal const val DUPLICATE_EXTENSION_DETECTED =
@@ -357,6 +373,8 @@ data class SessionReplayConfiguration internal constructor(
             internal const val DUPLICATE_MAPPER_DETECTED = "Duplicate mapper for %s. The duplicate will be ignored."
             internal const val DUPLICATE_COMPOSITION_HOST_DECOMPOSER_DETECTED =
                 "Multiple extensions provide a CompositionHostDecomposer. Only the first one will be used."
+            internal const val DUPLICATE_TEXT_DETECTOR_DETECTED =
+                "Multiple extensions provide a TextDetector. Only the first one will be used."
         }
     }
 }

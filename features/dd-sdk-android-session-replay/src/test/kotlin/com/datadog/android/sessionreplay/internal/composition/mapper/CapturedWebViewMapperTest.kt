@@ -9,6 +9,8 @@ package com.datadog.android.sessionreplay.internal.composition.mapper
 import android.webkit.WebView
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
+import com.datadog.android.sessionreplay.ImagePrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.DefaultCapturedIdentityFactory
 import com.datadog.android.sessionreplay.utils.GlobalBounds
@@ -52,7 +54,13 @@ internal class CapturedWebViewMapperTest {
         val fakeFactory = DefaultCapturedIdentityFactory(RumViewIdentityScope(fakeScope))
         val fakeWindow = fakeFactory.window("window")
         val fakeOwner = fakeFactory.view(fakeWindow, "webview-owner")
-        val fakeMappingContext = CapturedMappingContext(fakeFactory, fakeOwner, screenDensity = 2f)
+        val fakeMappingContext = CapturedMappingContext(
+            fakeFactory,
+            fakeOwner,
+            screenDensity = 2f,
+            imagePrivacy = ImagePrivacy.MASK_NONE,
+            textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
+        )
         whenever(mockViewIdentifierResolver.resolveViewId(mockWebView)).thenReturn(fakeSlotId)
         whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockWebView, 2f)).thenReturn(fakeBounds)
 

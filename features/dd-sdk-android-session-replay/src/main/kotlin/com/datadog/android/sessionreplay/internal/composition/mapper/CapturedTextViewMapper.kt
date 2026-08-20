@@ -22,7 +22,9 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedTruncation
 import com.datadog.android.internal.sessionreplay.composition.CapturedVerticalAlignment
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.utils.densityNormalized
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.composition.toCaptured
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver
@@ -35,20 +37,20 @@ import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
  * uploadable. Styling follows legacy `TextViewMapper`; relative alignment is resolved using the
  * rendered paragraph direction for text alignment and layout direction for view alignment.
  */
-internal class CapturedTextViewMapper(
+internal open class CapturedTextViewMapper<T : TextView>(
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver,
     private val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter,
     private val backgroundShapeStyleResolver: CapturedBackgroundShapeStyleResolver,
     private val internalLogger: InternalLogger
-) : CapturedViewMapper<TextView> {
+) : CapturedViewMapper<T> {
 
     // The mapper belongs to one recording session and is accessed by UI-thread traversal.
     private var hasReportedUnsupportedFont = false
 
-    override fun map(view: TextView, mappingContext: CapturedMappingContext): CapturedViewMapperResult =
+    override fun map(view: T, mappingContext: CapturedMappingContext): CapturedViewMapperResult =
         capture(view, mappingContext).map(mappingContext)
 
-    override fun capture(view: TextView, mappingContext: CapturedMappingContext): CapturedViewData {
+    override fun capture(view: T, mappingContext: CapturedMappingContext): CapturedViewData {
         val layout = view.layout
         val hasLayout = layout != null
         return CapturedTextViewData(
@@ -56,7 +58,7 @@ internal class CapturedTextViewMapper(
                 mappingContext.bounds
                     ?: viewBoundsResolver.resolveViewGlobalBounds(view, mappingContext.screenDensity).toCaptured()
                 ),
-            text = (layout?.text ?: view.text)?.toString().orEmpty(),
+            text = resolveCapturedText(view, mappingContext.textAndInputPrivacy),
             background = backgroundShapeStyleResolver.capture(view),
             family = resolveFontFamily(view.typeface),
             textSizePx = view.textSize.toLong(),
@@ -107,6 +109,15 @@ internal class CapturedTextViewMapper(
                 }
                 SANS_SERIF_FAMILY_NAME
             }
+        }
+    }
+
+    protected open fun resolveCapturedText(view: T, textAndInputPrivacy: TextAndInputPrivacy): String {
+        val text = resolveLayoutText(view)
+        return when (textAndInputPrivacy) {
+            TextAndInputPrivacy.MASK_SENSITIVE_INPUTS,
+            TextAndInputPrivacy.MASK_ALL_INPUTS -> text
+            TextAndInputPrivacy.MASK_ALL -> StringObfuscator.getStringObfuscator().obfuscate(text)
         }
     }
 

@@ -120,7 +120,12 @@ internal class SnapshotCaptureOrchestrator(
         }
         if (snapshot != null && active.generation.isActive()) {
             val processing = processor.process(
-                SnapshotProcessingRequest(active.generation, snapshot),
+                SnapshotProcessingRequest(
+                    active.generation,
+                    snapshot,
+                    (snapshot as? CapturedNativeSnapshot)?.pendingPixelCaptures.orEmpty(),
+                    (snapshot as? CapturedNativeSnapshot)?.identityFactory
+                ),
                 SnapshotProcessingCallback { result -> onProcessed(result) }
             )
             val shouldCancel = synchronized(lock) {

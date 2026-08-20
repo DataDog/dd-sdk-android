@@ -18,6 +18,8 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedPadding
 import com.datadog.android.internal.sessionreplay.composition.CapturedVerticalAlignment
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
+import com.datadog.android.sessionreplay.ImagePrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.DefaultCapturedIdentityFactory
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
@@ -67,7 +69,7 @@ internal class CapturedTextViewMapperTest {
     private val mockColorStringFormatter: ColorStringFormatter = mock()
     private val mockInternalLogger: InternalLogger = mock()
     private lateinit var fakeDefaultMappingContext: CapturedMappingContext
-    private val testedMapper = CapturedTextViewMapper(
+    private val testedMapper = CapturedTextViewMapper<TextView>(
         viewBoundsResolver = mockViewBoundsResolver,
         colorStringFormatter = mockColorStringFormatter,
         backgroundShapeStyleResolver = CapturedBackgroundShapeStyleResolver(mockInternalLogger),
@@ -82,7 +84,13 @@ internal class CapturedTextViewMapperTest {
     ) {
         val fakeIdentityFactory = DefaultCapturedIdentityFactory(RumViewIdentityScope(fakeScopeValue))
         val fakeOwner = fakeIdentityFactory.view(fakeIdentityFactory.window(fakeWindowName), fakeViewId)
-        fakeDefaultMappingContext = CapturedMappingContext(fakeIdentityFactory, fakeOwner, screenDensity = 1f)
+        fakeDefaultMappingContext = CapturedMappingContext(
+            fakeIdentityFactory,
+            fakeOwner,
+            screenDensity = 1f,
+            imagePrivacy = ImagePrivacy.MASK_NONE,
+            textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
+        )
     }
 
     @Test
@@ -199,7 +207,7 @@ internal class CapturedTextViewMapperTest {
             whenever(mockHintColors.defaultColor).thenReturn(0xff445566.toInt())
             whenever(mockTextView.hintTextColors).thenReturn(mockHintColors)
         }
-        val testedColorMapper = CapturedTextViewMapper(
+        val testedColorMapper = CapturedTextViewMapper<TextView>(
             viewBoundsResolver = mockViewBoundsResolver,
             backgroundShapeStyleResolver = CapturedBackgroundShapeStyleResolver(mockInternalLogger),
             internalLogger = mockInternalLogger
@@ -276,7 +284,13 @@ internal class CapturedTextViewMapperTest {
         whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockTextView, fakeDensity)).thenReturn(fakeBounds)
         val fakeFactory = DefaultCapturedIdentityFactory(RumViewIdentityScope(fakeScope))
         val fakeOwner = fakeFactory.view(fakeFactory.window("window"), "text-owner")
-        val fakeMappingContext = CapturedMappingContext(fakeFactory, fakeOwner, screenDensity = fakeDensity)
+        val fakeMappingContext = CapturedMappingContext(
+            fakeFactory,
+            fakeOwner,
+            screenDensity = fakeDensity,
+            imagePrivacy = ImagePrivacy.MASK_NONE,
+            textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
+        )
 
         // When
         val result = testedMapper.map(mockTextView, fakeMappingContext) as CapturedViewMapperResult.Wireframes
@@ -308,7 +322,13 @@ internal class CapturedTextViewMapperTest {
         whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockTextView, fakeDensity)).thenReturn(fakeBounds)
         val fakeFactory = DefaultCapturedIdentityFactory(RumViewIdentityScope(fakeScope))
         val fakeOwner = fakeFactory.view(fakeFactory.window("window"), "text-owner")
-        val fakeMappingContext = CapturedMappingContext(fakeFactory, fakeOwner, screenDensity = fakeDensity)
+        val fakeMappingContext = CapturedMappingContext(
+            fakeFactory,
+            fakeOwner,
+            screenDensity = fakeDensity,
+            imagePrivacy = ImagePrivacy.MASK_NONE,
+            textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
+        )
 
         // When
         val result = testedMapper.map(mockTextView, fakeMappingContext) as CapturedViewMapperResult.Wireframes
