@@ -51,6 +51,10 @@
         }
       },
       "required": ["id", "attributes"]
+    },
+    "serial_id": {
+      "type": "integer",
+      "description": "Serial identifier of the split that the subject was assigned to"
     }
   },
   "required": ["timestamp", "allocation", "flag", "variant", "subject"]
