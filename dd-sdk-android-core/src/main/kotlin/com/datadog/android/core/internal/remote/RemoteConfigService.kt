@@ -26,15 +26,22 @@ import java.util.concurrent.Executor
 
 /**
  * Manages the remote configuration lifecycle: fetches from the CDN, persists to disk,
- * and exposes the latest configuration for feature consumption.
+ * and exposes the configuration that was applied at the start of this process.
  */
 internal interface RemoteConfigService {
     fun syncWithRemote()
+
+    /**
+     * Returns the configuration applied at process start. Frozen for the lifetime of this
+     * instance: a fetch completing mid-session updates disk only, never this value, per the
+     * RFC's design — "the updated config only takes effect on the next application launch."
+     */
     fun getCurrentConfig(): RemoteConfiguration?
 
     /**
      * Sync/apply bookkeeping for the currently cached configuration version, used to populate
      * the SDK's configuration telemetry event. See "RFC - Remote Configuration Telemetry".
+     * Frozen for the lifetime of this instance, same guarantee as [getCurrentConfig].
      */
     fun getSyncMetadata(): RemoteConfigSyncMetadata?
     fun stop()
@@ -116,8 +123,7 @@ internal class RemoteConfigServiceImpl(
     @WorkerThread
     private fun fetchAndCache() {
         val fetchResult = fetcher.fetch(configUrl) ?: return
-        val config = parseConfig(fetchResult.body)
-        if (config == null) {
+        if (parseConfig(fetchResult.body) == null) {
             // Evict the bad response from the HTTP cache so the next syncWithRemote()
             // re-fetches from the network rather than serving the unparseable body again.
             fetcher.evictCache()
@@ -132,7 +138,9 @@ internal class RemoteConfigServiceImpl(
             telemetryContext = TelemetryContext(featureName = REMOTE_CONFIG_FEATURE_NAME)
         )
         if (written) {
-            cachedConfig = config
+            // Deliberately does not update `cachedConfig`: a fetch completing mid-session must
+            // not retroactively change what this process considers "applied." The write above
+            // is only for the *next* process's constructor read.
             persistSyncMetadata(fetchResult)
         }
     }
@@ -144,7 +152,10 @@ internal class RemoteConfigServiceImpl(
         // already been running, so carry the existing stamp over instead of resetting it.
         // A null versionId is never treated as "the same version" as another null — without a
         // real identifier there is no way to know the content didn't change, so it must reset.
-        val previous = syncMetadata
+        // "previous" is read from disk, not from the frozen `syncMetadata` field: a second
+        // genuine fetch within the same process (e.g. a foreground-triggered resync) must see
+        // the first fetch's result, which `syncMetadata` — frozen at construction — never holds.
+        val previous = readMetadataFromDisk()
         val newVersionId = fetchResult.versionId
         val firstApplied = if (newVersionId != null && previous?.versionId == newVersionId) {
             previous.firstApplied
@@ -159,9 +170,9 @@ internal class RemoteConfigServiceImpl(
             firstApplied = firstApplied,
             syncId = UUID.randomUUID().toString()
         )
-        if (writeMetadata(metadata)) {
-            syncMetadata = metadata
-        }
+        // Deliberately does not update `syncMetadata`: same reasoning as `fetchAndCache()` —
+        // a fetch completing mid-session must not change what this process considers applied.
+        writeMetadata(metadata)
     }
 
     @WorkerThread

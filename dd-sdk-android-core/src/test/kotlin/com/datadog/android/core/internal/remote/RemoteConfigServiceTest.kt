@@ -31,6 +31,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
@@ -179,7 +180,7 @@ internal class RemoteConfigServiceTest {
     // region syncWithRemote() — success
 
     @Test
-    fun `M update cachedConfig and write to disk W syncWithRemote() { successful fetch }`(
+    fun `M write to disk without updating cachedConfig W syncWithRemote() { successful fetch }`(
         @Forgery fakeRemoteConfiguration: RemoteConfiguration
     ) {
         // Given
@@ -192,10 +193,10 @@ internal class RemoteConfigServiceTest {
         // When
         testedService.syncWithRemote()
 
-        // Then — compare JSON output: the generated model uses Number fields that deserialize
-        // as LazilyParsedNumber (no equals() override), so object equality is unreliable.
-        // Comparing serialized JSON verifies the full roundtrip without false negatives.
-        assertThat(testedService.getCurrentConfig()?.toJson()?.toString()).isEqualTo(fakeJson)
+        // Then — the fetch is persisted to disk for the next process to pick up, but a
+        // mid-session fetch must not retroactively change what this process applies: nothing
+        // was cached at construction, so getCurrentConfig() stays null for this session.
+        assertThat(testedService.getCurrentConfig()).isNull()
         verify(mockFileReaderWriter).writeData(
             file = any(),
             data = eq(fakeJson.toByteArray(Charsets.UTF_8)),
@@ -230,7 +231,7 @@ internal class RemoteConfigServiceTest {
     }
 
     @Test
-    fun `M create storageDir and write config W syncWithRemote() { storageDir does not exist yet }`(
+    fun `M create storageDir and write config to disk W syncWithRemote() { storageDir does not exist yet }`(
         @Forgery fakeRemoteConfiguration: RemoteConfiguration
     ) {
         // Given — use a non-existent subdirectory as storageDir
@@ -254,10 +255,12 @@ internal class RemoteConfigServiceTest {
         // When
         testedService.syncWithRemote()
 
-        // Then
+        // Then — written to disk for the next process; this process's applied config (nothing
+        // was cached at construction) is unaffected by the mid-session fetch.
         val cacheFile = File(nonExistentStorageDir, "$fakeRemoteConfigurationId.json")
         assertThat(cacheFile).exists()
-        assertThat(testedService.getCurrentConfig()?.toJson()?.toString()).isEqualTo(fakeJson)
+        assertThat(cacheFile.readText()).isEqualTo(fakeJson)
+        assertThat(testedService.getCurrentConfig()).isNull()
     }
 
     // endregion
@@ -531,7 +534,7 @@ internal class RemoteConfigServiceTest {
     // region syncWithRemote() — metadata written on fetch
 
     @Test
-    fun `M write metadata file W syncWithRemote() { successful fetch }`(
+    fun `M write metadata to disk without updating syncMetadata W syncWithRemote() { successful fetch }`(
         @Forgery fakeRemoteConfiguration: RemoteConfiguration,
         @StringForgery fakeVersionId: String
     ) {
@@ -549,21 +552,29 @@ internal class RemoteConfigServiceTest {
         // When
         testedService.syncWithRemote()
 
-        // Then — metadata written with firstApplied = null and correct fields
-        // writeData called twice: once for config, once for metadata
-        verify(mockFileReaderWriter, times(2)).writeData(any(), any(), any(), any())
-        val meta = testedService.getSyncMetadata()
-        assertThat(meta).isNotNull()
-        assertThat(meta!!.configId).isEqualTo(fakeRemoteConfigurationId)
-        assertThat(meta.versionId).isEqualTo(fakeVersionId)
-        assertThat(meta.lastModified).isEqualTo(1_700_000_000_000L)
-        assertThat(meta.lastSynced).isEqualTo(fakeNow)
-        assertThat(meta.firstApplied).isNull()
-        assertThat(meta.syncId).isNotEmpty()
+        // Then — metadata written to disk with firstApplied = null and correct fields, but this
+        // process's applied metadata (nothing was cached at construction) is unaffected by the
+        // mid-session fetch. writeData is called twice: once for config, once for metadata.
+        argumentCaptor<ByteArray> {
+            verify(mockFileReaderWriter, times(2)).writeData(
+                file = any(),
+                data = capture(),
+                append = any(),
+                telemetryContext = any()
+            )
+            val meta = RemoteConfigSyncMetadata.fromJson(String(secondValue, Charsets.UTF_8))
+            assertThat(meta.configId).isEqualTo(fakeRemoteConfigurationId)
+            assertThat(meta.versionId).isEqualTo(fakeVersionId)
+            assertThat(meta.lastModified).isEqualTo(1_700_000_000_000L)
+            assertThat(meta.lastSynced).isEqualTo(fakeNow)
+            assertThat(meta.firstApplied).isNull()
+            assertThat(meta.syncId).isNotEmpty()
+        }
+        assertThat(testedService.getSyncMetadata()).isNull()
     }
 
     @Test
-    fun `M carry over firstApplied W syncWithRemote() { re-fetch returns same versionId }`(
+    fun `M carry over firstApplied to disk W syncWithRemote() { re-fetch returns same versionId }`(
         @Forgery fakeRemoteConfiguration: RemoteConfiguration,
         @Forgery fakeMetadata: RemoteConfigSyncMetadata,
         @LongForgery(min = 1L) fakeFirstApplied: Long,
@@ -595,15 +606,16 @@ internal class RemoteConfigServiceTest {
         // When
         testedService.syncWithRemote()
 
-        // Then — firstApplied survives the re-fetch of the same version
-        val meta = testedService.getSyncMetadata()
-        assertThat(meta).isNotNull()
-        assertThat(meta!!.versionId).isEqualTo(fakeVersionId)
-        assertThat(meta.firstApplied).isEqualTo(fakeFirstApplied)
+        // Then — firstApplied survives the re-fetch of the same version, persisted to disk. This
+        // process's applied metadata (frozen at construction) is unaffected by the mid-session fetch.
+        val persisted = RemoteConfigSyncMetadata.fromJson(metadataFile.readText())
+        assertThat(persisted.versionId).isEqualTo(fakeVersionId)
+        assertThat(persisted.firstApplied).isEqualTo(fakeFirstApplied)
+        assertThat(testedService.getSyncMetadata()).isEqualTo(stamped)
     }
 
     @Test
-    fun `M reset firstApplied W syncWithRemote() { fetch returns different versionId }`(
+    fun `M reset firstApplied to disk W syncWithRemote() { fetch returns different versionId }`(
         @Forgery fakeRemoteConfiguration: RemoteConfiguration,
         @Forgery fakeMetadata: RemoteConfigSyncMetadata,
         @LongForgery(min = 1L) fakeFirstApplied: Long,
@@ -636,14 +648,16 @@ internal class RemoteConfigServiceTest {
         // When
         testedService.syncWithRemote()
 
-        // Then — a new version has not been applied yet, so firstApplied resets
-        val meta = testedService.getSyncMetadata()
-        assertThat(meta!!.versionId).isEqualTo(fakeNewVersionId)
-        assertThat(meta.firstApplied).isNull()
+        // Then — a new version has not been applied yet, so firstApplied resets on disk. This
+        // process's applied metadata (frozen at construction, still the old version) is untouched.
+        val persisted = RemoteConfigSyncMetadata.fromJson(metadataFile.readText())
+        assertThat(persisted.versionId).isEqualTo(fakeNewVersionId)
+        assertThat(persisted.firstApplied).isNull()
+        assertThat(testedService.getSyncMetadata()).isEqualTo(stamped)
     }
 
     @Test
-    fun `M reset firstApplied W syncWithRemote() { both old and new versionId are null }`(
+    fun `M reset firstApplied to disk W syncWithRemote() { both old and new versionId are null }`(
         @Forgery fakeRemoteConfiguration: RemoteConfiguration,
         @Forgery fakeMetadata: RemoteConfigSyncMetadata,
         @LongForgery(min = 1L) fakeFirstApplied: Long
@@ -675,11 +689,12 @@ internal class RemoteConfigServiceTest {
         // When
         testedService.syncWithRemote()
 
-        // Then — without a real versionId there is no way to know this is the same content,
-        // so firstApplied must not be carried over
-        val meta = testedService.getSyncMetadata()
-        assertThat(meta!!.versionId).isNull()
-        assertThat(meta.firstApplied).isNull()
+        // Then — without a real versionId there is no way to know this is the same content, so
+        // firstApplied must not be carried over on disk
+        val persisted = RemoteConfigSyncMetadata.fromJson(metadataFile.readText())
+        assertThat(persisted.versionId).isNull()
+        assertThat(persisted.firstApplied).isNull()
+        assertThat(testedService.getSyncMetadata()).isEqualTo(stamped)
     }
 
     @Test
@@ -715,6 +730,56 @@ internal class RemoteConfigServiceTest {
         // Then
         assertThat(testedService.getSyncMetadata()).isNull()
         verify(mockFileReaderWriter, never()).writeData(any(), any(), any(), any())
+    }
+
+    // endregion
+
+    // region applied-at-next-launch invariant
+
+    @Test
+    fun `M expose config and metadata as applied W constructed after a previous session's fetch`(
+        @Forgery fakeRemoteConfiguration: RemoteConfiguration,
+        @StringForgery fakeVersionId: String
+    ) {
+        // Given — a first session fetches and persists a new version
+        val fakeJson = fakeRemoteConfiguration.toJson().toString()
+        whenever(mockFetcher.fetch(any())).doReturn(
+            RemoteConfigFetcher.FetchResult(
+                body = fakeJson,
+                versionId = fakeVersionId,
+                lastModified = 1_700_000_000_000L
+            )
+        )
+        val firstSession = RemoteConfigServiceImpl(
+            remoteConfigurationId = fakeRemoteConfigurationId,
+            remoteConfigurationEndpoint = fakeEndpoint,
+            fetcher = mockFetcher,
+            storageDir = fakeStorageDir,
+            executor = mockExecutor,
+            internalLogger = mockInternalLogger,
+            timeProvider = mockTimeProvider
+        )
+        firstSession.syncWithRemote()
+
+        // The fetch does not retroactively apply within the session that downloaded it
+        assertThat(firstSession.getCurrentConfig()).isNull()
+        assertThat(firstSession.getSyncMetadata()).isNull()
+
+        // When — a second session is constructed later, simulating the next application launch
+        val secondSession = RemoteConfigServiceImpl(
+            remoteConfigurationId = fakeRemoteConfigurationId,
+            remoteConfigurationEndpoint = fakeEndpoint,
+            fetcher = mockFetcher,
+            storageDir = fakeStorageDir,
+            executor = mockExecutor,
+            internalLogger = mockInternalLogger,
+            timeProvider = mockTimeProvider
+        )
+
+        // Then — the second session applies what the first session fetched
+        assertThat(secondSession.getCurrentConfig()?.toJson()?.toString()).isEqualTo(fakeJson)
+        assertThat(secondSession.getSyncMetadata()?.versionId).isEqualTo(fakeVersionId)
+        assertThat(secondSession.getSyncMetadata()?.firstApplied).isNotNull()
     }
 
     // endregion
