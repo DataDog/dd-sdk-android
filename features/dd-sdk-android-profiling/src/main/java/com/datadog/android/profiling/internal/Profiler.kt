@@ -41,5 +41,11 @@ internal interface Profiler {
      */
     fun setExtendLaunchSession(extend: Boolean)
 
-    fun setProfilingPackageVersionCode(versionCode: Long)
+    /**
+     * Resolves the version of the profiling system package, if it is not known yet, and keeps it
+     * for the whole process lifetime. The profiler can be started before the SDK is initialized,
+     * so it resolves the version on its own; this only makes sure it is also known when profiling
+     * never starts.
+     */
+    fun resolveProfilingPackageVersionCode(appContext: Context)
 }

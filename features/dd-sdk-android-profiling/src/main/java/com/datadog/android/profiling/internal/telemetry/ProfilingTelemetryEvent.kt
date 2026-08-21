@@ -22,6 +22,10 @@ internal sealed class ProfilingTelemetryEvent {
         val samplingFrequencyHz: Int
     ) : ProfilingTelemetryEvent()
 
+    data class Blocked(
+        val startReason: String
+    ) : ProfilingTelemetryEvent()
+
     data class AnrTriggerResult(
         val errorCode: Int,
         val errorMessage: String?,

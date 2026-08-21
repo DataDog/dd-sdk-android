@@ -51,6 +51,7 @@ internal class ProfilingTelemetry {
         when (event) {
             is ProfilingTelemetryEvent.SessionEnd -> dispatchSessionEnd(logger, event)
             is ProfilingTelemetryEvent.AnrTriggerResult -> dispatchAnrTriggerResult(logger, event)
+            is ProfilingTelemetryEvent.Blocked -> dispatchBlocked(logger, event)
         }
     }
 
@@ -76,6 +77,25 @@ internal class ProfilingTelemetry {
                 KEY_PROFILING_CONFIG to mapOf(
                     KEY_BUFFER_SIZE to event.bufferSizeKb,
                     KEY_SAMPLING_FREQUENCY to event.samplingFrequencyHz,
+                    KEY_PROFILING_PACKAGE_VERSION_CODE to profilingPackageVersionCode
+                )
+            ),
+            samplingRate = MethodCallSamplingRate.ALL.rate
+        )
+    }
+
+    private fun dispatchBlocked(
+        logger: InternalLogger,
+        event: ProfilingTelemetryEvent.Blocked
+    ) {
+        logger.logMetric(
+            messageBuilder = { TELEMETRY_MSG_PROFILING_SESSION },
+            additionalProperties = mapOf(
+                KEY_METRIC_TYPE to METRIC_TYPE_PROFILING_BLOCKED,
+                KEY_PROFILING_SESSION to mapOf(
+                    KEY_START_REASON to event.startReason
+                ),
+                KEY_PROFILING_CONFIG to mapOf(
                     KEY_PROFILING_PACKAGE_VERSION_CODE to profilingPackageVersionCode
                 )
             ),
@@ -131,6 +151,7 @@ internal class ProfilingTelemetry {
 
         internal const val METRIC_TYPE_PROFILING_SESSION = "profiling session"
         internal const val METRIC_TYPE_PROFILING_TRIGGER = "profiling trigger"
+        internal const val METRIC_TYPE_PROFILING_BLOCKED = "profiling blocked"
         internal const val ANR_PROFILING_TRIGGER_START_REASON = "anr_profiling_trigger"
 
         internal const val STOPPED_REASON_MANUAL = "manual"

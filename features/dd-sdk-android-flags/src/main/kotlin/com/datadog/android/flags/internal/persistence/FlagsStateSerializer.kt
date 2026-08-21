@@ -66,5 +66,6 @@ internal class FlagsStateSerializer(private val internalLogger: InternalLogger) 
         put(JsonKeys.VARIATION_KEY.value, flag.variationKey)
         put(JsonKeys.EXTRA_LOGGING.value, flag.extraLogging)
         put(JsonKeys.REASON.value, flag.reason)
+        flag.serialId?.let { put(JsonKeys.SERIAL_ID.value, it) }
     }
 }

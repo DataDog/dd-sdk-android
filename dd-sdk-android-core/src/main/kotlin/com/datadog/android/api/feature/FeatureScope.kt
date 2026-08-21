@@ -52,19 +52,31 @@ interface FeatureScope {
         callback: (datadogContext: DatadogContext) -> Unit
     )
 
-    // TODO RUM-9852 Implement better passthrough mechanism for the JVM crash scenario
     /**
-     * Same as [withWriteContext] but will be executed in the blocking manner.
+     * Same as [withWriteContext], but blocks the calling thread until [callback] has returned.
+     *
+     * The callback still runs on the context processing worker thread, so the calling thread must not
+     * hold any lock that [callback] may need, otherwise the two will deadlock.
      *
      * @param withFeatureContexts Feature contexts ([DatadogContext.featuresContext] property) to include
      * in the [DatadogContext] provided. The value should be the feature names as declared by [Feature.name].
      * Default is empty, meaning that no feature contexts will be included.
+     * @param callback an operation called with an up-to-date [DatadogContext]
+     * and an [EventWriteScope]. Callback will be executed on a single context processing worker thread. Execution of
+     * [EventWriteScope] will be done on a worker thread from I/O pool.
+     * [DatadogContext] is a snapshot taken when [callback] starts executing, which is once every context
+     * operation scheduled before this call has completed.
+     * @return `true` if [callback] was executed, `false` if it could not be, for example because the
+     * SDK core is not initialized or the operation could not be scheduled.
      *
      * **NOTE**: This API is for the internal use only and is not guaranteed to be stable.
      */
     @AnyThread
     @InternalApi
-    fun getWriteContextSync(withFeatureContexts: Set<String> = emptySet()): Pair<DatadogContext, EventWriteScope>?
+    fun withWriteContextSync(
+        withFeatureContexts: Set<String> = emptySet(),
+        callback: (datadogContext: DatadogContext, write: EventWriteScope) -> Unit
+    ): Boolean
 
     /**
      * Send event to a given feature. It will be sent in a synchronous way.

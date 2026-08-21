@@ -63,6 +63,58 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
 
     // region Tests
 
+    @Test
+    fun `M send later scroll target W onScroll {earlier target has higher Z}`(forge: Forge) {
+        // Given
+        val startDownEvent: MotionEvent = forge.getForgery()
+        val scrollEvent: MotionEvent = forge.getForgery()
+        val elevatedTarget: ScrollableView = mockView(
+            id = forge.anInt(),
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        ) {
+            whenever(it.z).thenReturn(10f)
+        }
+        val laterTarget: ScrollableView = mockView(
+            id = forge.anInt(),
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        ) {
+            whenever(it.z).thenReturn(0f)
+        }
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = startDownEvent,
+            hitTest = false,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(2)
+            whenever(it.getChildAt(0)).thenReturn(elevatedTarget)
+            whenever(it.getChildAt(1)).thenReturn(laterTarget)
+        }
+        val expectedResourceName = forge.anAlphabeticalString()
+        mockResourcesForTarget(laterTarget, expectedResourceName)
+        val expectedAttributes = mutableMapOf(
+            RumAttributes.ACTION_TARGET_CLASS_NAME to laterTarget.javaClass.canonicalName,
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName
+        )
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
+        )
+
+        // When
+        testedListener.onDown(startDownEvent)
+        testedListener.onScroll(startDownEvent, scrollEvent, forge.aFloat(), forge.aFloat())
+
+        // Then
+        verify(rumMonitor.mockInstance).startAction(RumActionType.SCROLL, "", expectedAttributes)
+    }
+
     @ParameterizedTest
     @ValueSource(
         strings = [

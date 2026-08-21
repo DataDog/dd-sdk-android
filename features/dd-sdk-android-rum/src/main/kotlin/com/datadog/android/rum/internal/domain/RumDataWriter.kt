@@ -38,11 +38,17 @@ internal class RumDataWriter(
     private val sdkCore: InternalSdkCore
 ) : DataWriter<Any> {
 
+    private var currentViewId: String? = null
+
     // region DataWriter
 
     @WorkerThread
     @Suppress("ReturnCount")
     override fun write(writer: EventBatchWriter, element: Any, eventType: EventType): Boolean {
+        if (element is ViewEvent) {
+            onViewEventSubmitted(element)
+        }
+
         val byteArray = eventSerializer.serializeToByteArray(element, sdkCore.internalLogger)
             ?: return false
 
@@ -85,7 +91,23 @@ internal class RumDataWriter(
     @WorkerThread
     internal fun onDataWritten(data: Any, rawData: ByteArray) {
         when (data) {
-            is ViewEvent -> sdkCore.writeLastViewEvent(rawData)
+            is ViewEvent -> onViewEventWritten(data, rawData)
+        }
+    }
+
+    @WorkerThread
+    internal fun onViewEventSubmitted(data: ViewEvent) {
+        synchronized(this) {
+            if (data.dd.documentVersion == FIRST_VIEW_DOCUMENT_VERSION) {
+                currentViewId = data.view.id
+            }
+        }
+    }
+
+    @WorkerThread
+    private fun onViewEventWritten(data: ViewEvent, rawData: ByteArray) {
+        if (data.view.id == currentViewId) {
+            sdkCore.writeLastViewEvent(rawData)
         }
     }
 
@@ -93,6 +115,8 @@ internal class RumDataWriter(
 
     companion object {
         val EMPTY_BYTE_ARRAY = ByteArray(0)
+
+        internal const val FIRST_VIEW_DOCUMENT_VERSION = 2L
 
         private const val UNKNOWN_EVENT_TYPE = "unknown"
 
