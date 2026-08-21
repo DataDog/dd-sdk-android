@@ -8,6 +8,7 @@ package com.datadog.android.cronet.internal
 
 import com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder
 import com.datadog.android.internal.network.HttpSpec
+import com.datadog.android.rum.internal.net.RumNetworkInstrumentation.Companion.buildResourceId
 import com.datadog.android.tests.elmyr.anUrlString
 import com.datadog.android.trace.internal.net.RequestTracingState
 import com.datadog.android.utils.forge.Configurator
@@ -25,13 +26,17 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.nio.ByteBuffer
+import java.util.UUID
 import java.util.concurrent.Executor
 
 @Extensions(
@@ -63,6 +68,8 @@ internal class CronetUrlRequestTest {
     @Mock
     lateinit var mockRequestTracingState: RequestTracingState
 
+    lateinit var fakeRequestContext: CronetRequestContext
+
     lateinit var testedRequest: CronetUrlRequest
 
     @BeforeEach
@@ -76,7 +83,7 @@ internal class CronetUrlRequestTest {
         whenever(mockRequestTracingState.requestInfoBuilder) doReturn mockRequestInfoBuilder
         whenever(mockCallback.onRequestStarted(any())) doReturn mockRequestTracingState
 
-        val requestContext = CronetRequestContext(
+        fakeRequestContext = CronetRequestContext(
             url = forge.anUrlString(),
             engine = mockEngine,
             requestCallback = mockCallback,
@@ -84,7 +91,7 @@ internal class CronetUrlRequestTest {
         ).apply { setHttpMethod(forge.anElementFrom(HttpSpec.Method.values())) }
 
         testedRequest = CronetUrlRequest(
-            initialRequestInfo = requestContext.asCronetRequestInfo(),
+            initialRequestInfo = fakeRequestContext.asCronetRequestInfo(),
             requestCallback = mockCallback
         )
     }
@@ -172,6 +179,72 @@ internal class CronetUrlRequestTest {
     }
 
     @Test
+    fun `M tag the request info with a UUID W start()`() {
+        // When
+        testedRequest.start()
+
+        // Then
+        assertThat(captureStartedRequestInfos().single().tag(UUID::class.java)).isNotNull()
+    }
+
+    @Test
+    fun `M resolve the same ResourceId on start and on finish W start()`() {
+        // When
+        testedRequest.start()
+
+        // Then
+        // The RUM start/wait events are built with generateUuid = true from the info handed to the
+        // callback, while the timing/stop events are built with generateUuid = false from the info
+        // annotated on the delegate request. All of them must resolve to a single ResourceId.
+        val startedId = buildResourceId(captureStartedRequestInfos().single(), generateUuid = true)
+        val annotatedId = buildResourceId(captureAnnotatedRequestInfos().single(), generateUuid = false)
+        // Asserting on the uuid rather than on ResourceId equality: ResourceId#equals falls back to
+        // comparing keys as soon as one of the uuids is null, which would hide a missing uuid.
+        assertThat(annotatedId.uuid).isNotNull()
+        assertThat(startedId.uuid).isEqualTo(annotatedId.uuid)
+        assertThat(startedId.key).isEqualTo(annotatedId.key)
+    }
+
+    @Test
+    fun `M reuse the application UUID W start() { UUID annotation already set }`() {
+        // Given
+        val fakeApplicationUuid = UUID.randomUUID()
+        fakeRequestContext.addRequestAnnotation(fakeApplicationUuid)
+        testedRequest = CronetUrlRequest(
+            initialRequestInfo = fakeRequestContext.asCronetRequestInfo(),
+            requestCallback = mockCallback
+        )
+
+        // When
+        testedRequest.start()
+
+        // Then
+        // Reused rather than replaced: the annotations belong to the application, which reads them
+        // back from RequestFinishedInfo.
+        assertThat(captureStartedRequestInfos().single().tag(UUID::class.java))
+            .isEqualTo(fakeApplicationUuid)
+        verify(mockDelegateBuilder).addRequestAnnotation(fakeApplicationUuid)
+    }
+
+    @Test
+    fun `M resolve distinct ResourceIds W start() { concurrent requests to the same URL }`() {
+        // Given
+        val otherRequest = CronetUrlRequest(
+            initialRequestInfo = fakeRequestContext.asCronetRequestInfo(),
+            requestCallback = mockCallback
+        )
+
+        // When
+        testedRequest.start()
+        otherRequest.start()
+
+        // Then
+        val (firstInfo, secondInfo) = captureStartedRequestInfos(times = 2)
+        assertThat(buildResourceId(firstInfo, generateUuid = false))
+            .isNotEqualTo(buildResourceId(secondInfo, generateUuid = false))
+    }
+
+    @Test
     fun `M do nothing W cancel() { before start }`() {
         // When
         testedRequest.cancel()
@@ -221,5 +294,17 @@ internal class CronetUrlRequestTest {
         // Then
         assertThat(result).isFalse()
         verifyNoInteractions(mockBuiltRequest)
+    }
+
+    private fun captureStartedRequestInfos(times: Int = 1): List<CronetHttpRequestInfo> {
+        val captor = argumentCaptor<CronetHttpRequestInfo>()
+        verify(mockCallback, times(times)).onRequestStarted(captor.capture())
+        return captor.allValues
+    }
+
+    private fun captureAnnotatedRequestInfos(): List<CronetHttpRequestInfo> {
+        val captor = argumentCaptor<Any>()
+        verify(mockDelegateBuilder, atLeastOnce()).addRequestAnnotation(captor.capture())
+        return captor.allValues.filterIsInstance<CronetHttpRequestInfo>()
     }
 }
