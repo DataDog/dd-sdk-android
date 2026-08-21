@@ -15,7 +15,6 @@ plugins {
     // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
     id("ktlint")
     kotlin("android")
-    id("com.google.devtools.ksp")
     id("datadogBuildConfig")
 
     // Publish
