@@ -59,19 +59,15 @@ internal class WebViewNativeRumViewsCache(
     private fun addToCache(
         entry: ViewEntry
     ) {
-        if (parentViewsHistoryQueue.isEmpty() ||
-            (
-                parentViewsHistoryQueue.first.viewId != entry.viewId &&
-                    parentViewsHistoryQueue.first.timestamp <= entry.timestamp
-                )
-        ) {
+        val first = parentViewsHistoryQueue.firstOrNull()
+        if (first == null || (first.viewId != entry.viewId && first.timestamp <= entry.timestamp)) {
             // add(index, element) instead of addFirst here is on purpose, to prevent issues
             // with old AGP being used when compiling with Android API 35.
             // Index 0 is always safe
             @Suppress("UnsafeThirdPartyFunctionCall")
             parentViewsHistoryQueue.add(0, entry)
-        } else if (parentViewsHistoryQueue.first.viewId == entry.viewId) {
-            // the function is synchronized and we are checking the size before
+        } else if (first.viewId == entry.viewId) {
+            // the function is synchronized, and we are checking the size before
             if (parentViewsHistoryQueue.isNotEmpty()) {
                 // removeAt(index) instead of removeFirst here is on purpose, to prevent issues
                 // with old AGP being used when compiling with Android API 35.

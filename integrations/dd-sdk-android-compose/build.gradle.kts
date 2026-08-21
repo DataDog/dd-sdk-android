@@ -38,6 +38,8 @@ plugins {
     id("test-pyramid-api-surface")
 }
 
+// TODO RUM-18189 Support new AGP DSL
+@Suppress("DEPRECATION")
 android {
     namespace = "com.datadog.android.compose"
     defaultConfig {
@@ -77,7 +79,13 @@ unMock {
 }
 
 datadogBuild {
-    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyKotlinConfig(
+        // TODO RUM-18191
+        // Suppress -> generateFunctionKeyMetaClasses is deprecated. It was replaced by emitting annotations on functions
+        // instead. Use generateFunctionKeyMetaAnnotations instead. Seems to Compose <-> Kotlin mismatch.
+        evaluateWarningsAsErrors = false,
+        jvmBytecodeTarget = JvmTarget.JVM_11
+    )
     applyAndroidLibraryConfig()
     applyJunitConfig()
     applyJavadocConfig()

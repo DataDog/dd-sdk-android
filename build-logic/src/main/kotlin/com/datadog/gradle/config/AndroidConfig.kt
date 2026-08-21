@@ -40,6 +40,14 @@ internal fun Project.androidLibraryConfig() {
 
         defaultConfig {
             minSdk = AndroidConfig.MIN_SDK
+            aarMetadata {
+                // TODO RUM-18201
+                // AGP 9 now sets it to the compileSdk value, imposing consumers
+                // to use this compile SDK or above. This will force consumers of the library to
+                // migrate to the latest API level once we bump it on our side.
+                // Set it compatible with AGP 8.x behavior for now.
+                minCompileSdk = 1
+            }
         }
 
         compileOptions {
@@ -47,7 +55,7 @@ internal fun Project.androidLibraryConfig() {
         }
 
         sourceSets.all {
-            java.srcDir("src/$name/kotlin")
+            java.directories += "src/$name/kotlin"
         }
 
         testOptions {

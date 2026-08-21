@@ -68,6 +68,7 @@ public final class com/datadog/android/DatadogSite : java/lang/Enum {
 	public static final field US2_FED Lcom/datadog/android/DatadogSite;
 	public static final field US3 Lcom/datadog/android/DatadogSite;
 	public static final field US5 Lcom/datadog/android/DatadogSite;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun getIntakeEndpoint ()Ljava/lang/String;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/DatadogSite;
 	public static fun values ()[Lcom/datadog/android/DatadogSite;
@@ -118,6 +119,7 @@ public final class com/datadog/android/api/InternalLogger$Level : java/lang/Enum
 	public static final field INFO Lcom/datadog/android/api/InternalLogger$Level;
 	public static final field VERBOSE Lcom/datadog/android/api/InternalLogger$Level;
 	public static final field WARN Lcom/datadog/android/api/InternalLogger$Level;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/api/InternalLogger$Level;
 	public static fun values ()[Lcom/datadog/android/api/InternalLogger$Level;
 }
@@ -126,6 +128,7 @@ public final class com/datadog/android/api/InternalLogger$Target : java/lang/Enu
 	public static final field MAINTAINER Lcom/datadog/android/api/InternalLogger$Target;
 	public static final field TELEMETRY Lcom/datadog/android/api/InternalLogger$Target;
 	public static final field USER Lcom/datadog/android/api/InternalLogger$Target;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/api/InternalLogger$Target;
 	public static fun values ()[Lcom/datadog/android/api/InternalLogger$Target;
 }
@@ -261,6 +264,7 @@ public final class com/datadog/android/api/context/DeviceType : java/lang/Enum {
 	public static final field OTHER Lcom/datadog/android/api/context/DeviceType;
 	public static final field TABLET Lcom/datadog/android/api/context/DeviceType;
 	public static final field TV Lcom/datadog/android/api/context/DeviceType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/api/context/DeviceType;
 	public static fun values ()[Lcom/datadog/android/api/context/DeviceType;
 }
@@ -321,6 +325,7 @@ public final class com/datadog/android/api/context/NetworkInfo$Connectivity : ja
 	public static final field NETWORK_WIFI Lcom/datadog/android/api/context/NetworkInfo$Connectivity;
 	public static final field NETWORK_WIMAX Lcom/datadog/android/api/context/NetworkInfo$Connectivity;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/api/context/NetworkInfo$Connectivity;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/api/context/NetworkInfo$Connectivity;
 	public static fun values ()[Lcom/datadog/android/api/context/NetworkInfo$Connectivity;
 }
@@ -588,6 +593,7 @@ public final class com/datadog/android/api/storage/EventType : java/lang/Enum {
 	public static final field CRASH Lcom/datadog/android/api/storage/EventType;
 	public static final field DEFAULT Lcom/datadog/android/api/storage/EventType;
 	public static final field TELEMETRY Lcom/datadog/android/api/storage/EventType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/api/storage/EventType;
 	public static fun values ()[Lcom/datadog/android/api/storage/EventType;
 }
@@ -704,6 +710,7 @@ public final class com/datadog/android/core/UploadWorker$Companion {
 public final class com/datadog/android/core/configuration/BackPressureMitigation : java/lang/Enum {
 	public static final field DROP_OLDEST Lcom/datadog/android/core/configuration/BackPressureMitigation;
 	public static final field IGNORE_NEWEST Lcom/datadog/android/core/configuration/BackPressureMitigation;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/configuration/BackPressureMitigation;
 	public static fun values ()[Lcom/datadog/android/core/configuration/BackPressureMitigation;
 }
@@ -729,6 +736,7 @@ public final class com/datadog/android/core/configuration/BatchProcessingLevel :
 	public static final field HIGH Lcom/datadog/android/core/configuration/BatchProcessingLevel;
 	public static final field LOW Lcom/datadog/android/core/configuration/BatchProcessingLevel;
 	public static final field MEDIUM Lcom/datadog/android/core/configuration/BatchProcessingLevel;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun getMaxBatchesPerUploadJob ()I
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/configuration/BatchProcessingLevel;
 	public static fun values ()[Lcom/datadog/android/core/configuration/BatchProcessingLevel;
@@ -738,6 +746,7 @@ public final class com/datadog/android/core/configuration/BatchSize : java/lang/
 	public static final field LARGE Lcom/datadog/android/core/configuration/BatchSize;
 	public static final field MEDIUM Lcom/datadog/android/core/configuration/BatchSize;
 	public static final field SMALL Lcom/datadog/android/core/configuration/BatchSize;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/configuration/BatchSize;
 	public static fun values ()[Lcom/datadog/android/core/configuration/BatchSize;
 }
@@ -793,6 +802,7 @@ public final class com/datadog/android/core/configuration/UploadFrequency : java
 	public static final field AVERAGE Lcom/datadog/android/core/configuration/UploadFrequency;
 	public static final field FREQUENT Lcom/datadog/android/core/configuration/UploadFrequency;
 	public static final field RARE Lcom/datadog/android/core/configuration/UploadFrequency;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/configuration/UploadFrequency;
 	public static fun values ()[Lcom/datadog/android/core/configuration/UploadFrequency;
 }
@@ -929,6 +939,7 @@ public final class com/datadog/android/core/metrics/MethodCallSamplingRate : jav
 	public static final field MEDIUM Lcom/datadog/android/core/metrics/MethodCallSamplingRate;
 	public static final field RARE Lcom/datadog/android/core/metrics/MethodCallSamplingRate;
 	public static final field REDUCED Lcom/datadog/android/core/metrics/MethodCallSamplingRate;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun getRate ()F
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/metrics/MethodCallSamplingRate;
 	public static fun values ()[Lcom/datadog/android/core/metrics/MethodCallSamplingRate;
@@ -946,6 +957,7 @@ public final class com/datadog/android/core/metrics/PerformanceMetric$Companion 
 
 public final class com/datadog/android/core/metrics/TelemetryMetricType : java/lang/Enum {
 	public static final field MethodCalled Lcom/datadog/android/core/metrics/TelemetryMetricType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/metrics/TelemetryMetricType;
 	public static fun values ()[Lcom/datadog/android/core/metrics/TelemetryMetricType;
 }
@@ -1124,6 +1136,7 @@ public final class com/datadog/android/privacy/TrackingConsent : java/lang/Enum 
 	public static final field GRANTED Lcom/datadog/android/privacy/TrackingConsent;
 	public static final field NOT_GRANTED Lcom/datadog/android/privacy/TrackingConsent;
 	public static final field PENDING Lcom/datadog/android/privacy/TrackingConsent;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/privacy/TrackingConsent;
 	public static fun values ()[Lcom/datadog/android/privacy/TrackingConsent;
 }
@@ -1142,6 +1155,7 @@ public final class com/datadog/android/trace/TracingHeaderType : java/lang/Enum 
 	public static final field B3MULTI Lcom/datadog/android/trace/TracingHeaderType;
 	public static final field DATADOG Lcom/datadog/android/trace/TracingHeaderType;
 	public static final field TRACECONTEXT Lcom/datadog/android/trace/TracingHeaderType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun getHeaderType ()Ljava/lang/String;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/trace/TracingHeaderType;
 	public static fun values ()[Lcom/datadog/android/trace/TracingHeaderType;
