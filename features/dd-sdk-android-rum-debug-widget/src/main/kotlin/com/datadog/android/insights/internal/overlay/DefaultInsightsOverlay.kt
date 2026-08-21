@@ -14,6 +14,7 @@ import android.widget.TextView
 import androidx.core.view.isVisible
 import com.datadog.android.insights.internal.DefaultInsightsCollector
 import com.datadog.android.insights.internal.InsightStateStorage
+import com.datadog.android.insights.internal.domain.TimelineEvent
 import com.datadog.android.insights.internal.extensions.animateVisibility
 import com.datadog.android.insights.internal.extensions.appendColored
 import com.datadog.android.insights.internal.extensions.color
@@ -23,6 +24,7 @@ import com.datadog.android.insights.internal.widgets.DragTouchListener
 import com.datadog.android.insights.internal.widgets.TimelineView
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
 import com.datadog.android.rumdebugwidget.R
+import kotlin.reflect.KClass
 
 /**
  * Overlay displaying performance metrics collected by the [DefaultInsightsCollector].
@@ -72,15 +74,9 @@ internal class DefaultInsightsOverlay(
                 }
             }
 
-            timelineLegend = overlayView.findViewById<TextView>(R.id.timeline_legend)?.apply {
-                text = SpannableStringBuilder()
-                    .append(SEP)
-                    .appendColored(ACTION, color(R.color.timeline_action)).append(SEP)
-                    .appendColored(RESOURCE, color(R.color.timeline_resource)).append(SEP)
-                    .appendColored(TIMESERIES, color(R.color.timeline_timeseries)).append(SEP)
-                    .appendColored(SLOW_FRAME, color(R.color.timeline_slow_frame)).append(SEP)
-                    .appendColored(FROZEN_FRAME, color(R.color.timeline_freeze_frame)).append(SEP)
-            }
+            timelineLegend = overlayView.findViewById<TextView>(R.id.timeline_legend)
+                ?.apply { updateLegend(insightsCollector.eventsCounter) }
+
 
             fab = overlayView.findViewById(R.id.fab)
             cpuValue = overlayView.setupChartView(R.id.vital_cpu, "CPU (ticks/s)")
@@ -222,6 +218,7 @@ internal class DefaultInsightsOverlay(
             threadsValue?.update(insightsCollector.threadsCount.toDouble())
             slowFrameRate?.update(insightsCollector.slowFramesRate)
             updateProfilerIndicator(insightsCollector.isProfilingRunning)
+            timelineLegend?.updateLegend(insightsCollector.eventsCounter)
         }
     }
 
@@ -234,6 +231,37 @@ internal class DefaultInsightsOverlay(
         }
     }
 
+    private fun TextView.updateLegend(eventCounters: Map<KClass<out TimelineEvent>, Int>) {
+        text = SpannableStringBuilder()
+            .append(SEP)
+            .appendColored(
+                ACTION + eventCounters.format(TimelineEvent.Action::class),
+                color(R.color.timeline_action)
+            )
+            .append(SEP)
+            .appendColored(
+                RESOURCE + eventCounters.format(TimelineEvent.Resource::class),
+                color(R.color.timeline_resource)
+            )
+            .append(SEP)
+            .appendColored(
+                TIMESERIES + eventCounters.format(TimelineEvent.Timeseries::class),
+                color(R.color.timeline_timeseries)
+            )
+            .append(SEP)
+            .appendColored(
+                SLOW_FRAME + eventCounters.format(TimelineEvent.SlowFrame::class),
+                color(R.color.timeline_slow_frame)
+            )
+            .append(SEP)
+            .appendColored(
+                FROZEN_FRAME + eventCounters.format(TimelineEvent.LongTask::class),
+                color(R.color.timeline_freeze_frame)
+            )
+            .append(SEP)
+    }
+
+
     companion object {
         private const val SEP = " | "
         private const val ACTION = "Action"
@@ -244,5 +272,14 @@ internal class DefaultInsightsOverlay(
         private const val PROFILER_DOT = "● "
         private const val PROFILER_ON = "Profiler: ON"
         private const val PROFILER_OFF = "Profiler: OFF"
+
+        private fun Map<KClass<out TimelineEvent>, Int>.format(klass: KClass<out TimelineEvent>): String {
+            val count = get(klass)
+            return when {
+                count == null || count <= 0 -> ""
+                count > 100 -> "(100+)"
+                else -> "($count)"
+            }
+        }
     }
 }

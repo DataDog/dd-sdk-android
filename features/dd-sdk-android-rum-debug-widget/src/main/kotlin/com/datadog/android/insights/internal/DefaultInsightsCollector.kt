@@ -20,6 +20,7 @@ import com.datadog.android.internal.collections.EvictingQueue
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
 import java.util.concurrent.CopyOnWriteArraySet
+import kotlin.reflect.KClass
 
 /**
  * Default implementation of [InsightsCollector] that collects performance related events and notifies
@@ -49,6 +50,7 @@ internal class DefaultInsightsCollector internal constructor(
 
     private var events = EvictingQueue<TimelineEvent>(maxSize)
     internal val eventsState: List<TimelineEvent> get() = events.toList()
+    internal val eventsCounter = mutableMapOf<KClass<out TimelineEvent>, Int>()
     private val updatesListeners = CopyOnWriteArraySet<InsightsUpdatesListener>()
     private val ticksProducer = Runnable {
         registerEvent(TimelineEvent.Tick)
@@ -78,6 +80,7 @@ internal class DefaultInsightsCollector internal constructor(
         set(value) {
             field = value
             events = EvictingQueue(value)
+            eventsCounter.clear()
         }
 
     override var updateIntervalMs: Long = updateIntervalMs
@@ -158,10 +161,12 @@ internal class DefaultInsightsCollector internal constructor(
 
     private fun clear() = withListenersUpdate {
         events.clear()
+        eventsCounter.clear()
     }
 
     private fun registerEvent(event: TimelineEvent) = withListenersUpdate {
         events += event
+        eventsCounter += event
     }
 
     private fun withListenersUpdate(block: () -> Unit) {
@@ -201,5 +206,10 @@ internal class DefaultInsightsCollector internal constructor(
         internal const val PRECISION = 2
         internal const val GC_COUNT = "art.gc.gc-count"
         internal const val ONE_SECOND_NS = 1_000_000_000L
+        internal operator fun <E : Any> MutableMap<KClass<out E>, Int>.plusAssign(event: E) {
+            val key = event::class
+            this[key] = getOrPut(key) { 0 } + 1
+        }
+
     }
 }

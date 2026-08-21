@@ -68,7 +68,7 @@ internal class DefaultInsightsCollectorTest {
         }
 
         whenever(mockHandler.postDelayed(any(), any())).thenAnswer {
-            (it.arguments[0] as Runnable).run()
+            // don't run the tick producer immediately to avoid infinite recursion
             true
         }
     }
@@ -147,6 +147,96 @@ internal class DefaultInsightsCollectorTest {
         // Then
         verify(mockInsightsUpdatesListener).onDataUpdated()
         assertThat(testedInsightsCollector.eventsState).containsExactly(TimelineEvent.Timeseries(fakeName))
+    }
+
+    @Test
+    fun `M increment event count per type W registerEvent()`() {
+        // When
+        testedInsightsCollector.onAction()
+        testedInsightsCollector.onAction()
+        testedInsightsCollector.onSlowFrame(durationNs = 10L)
+        testedInsightsCollector.onNetworkRequest(durationNs = 20L)
+        testedInsightsCollector.onLongTask(durationNs = 30L)
+        testedInsightsCollector.onTimeseries(name = "view.memory")
+        testedInsightsCollector.onTimeseries(name = "view.cpu")
+
+        // Then
+        assertThat(testedInsightsCollector.eventsCounter).containsExactlyInAnyOrderEntriesOf(
+            mapOf(
+                TimelineEvent.Action::class to 2,
+                TimelineEvent.SlowFrame::class to 1,
+                TimelineEvent.Resource::class to 1,
+                TimelineEvent.LongTask::class to 1,
+                TimelineEvent.Timeseries::class to 2
+            )
+        )
+    }
+
+    @Test
+    fun `M count registered events per type W maxSize exceeded`(@IntForgery(min = 2, max = 10) fakeMaxSize: Int) {
+        // Given
+        testedInsightsCollector.maxSize = fakeMaxSize
+
+        // When
+        repeat(fakeMaxSize + 2) {
+            testedInsightsCollector.onAction()
+        }
+
+        // Then
+        assertThat(testedInsightsCollector.eventsState).hasSize(fakeMaxSize)
+        assertThat(testedInsightsCollector.eventsCounter[TimelineEvent.Action::class]).isEqualTo(fakeMaxSize + 2)
+    }
+
+    @Test
+    fun `M count events per type W mixed events registered`() {
+        // Given
+        testedInsightsCollector.maxSize = 2
+
+        // When
+        testedInsightsCollector.onAction()
+        testedInsightsCollector.onSlowFrame(durationNs = 10L)
+        testedInsightsCollector.onNetworkRequest(durationNs = 20L)
+        testedInsightsCollector.onLongTask(durationNs = 30L)
+        testedInsightsCollector.onTimeseries(name = "view.memory")
+
+        // Then
+        assertThat(testedInsightsCollector.eventsState).hasSize(2)
+        assertThat(testedInsightsCollector.eventsCounter).containsExactlyInAnyOrderEntriesOf(
+            mapOf(
+                TimelineEvent.Action::class to 1,
+                TimelineEvent.SlowFrame::class to 1,
+                TimelineEvent.Resource::class to 1,
+                TimelineEvent.LongTask::class to 1,
+                TimelineEvent.Timeseries::class to 1
+            )
+        )
+    }
+
+    @Test
+    fun `M reset event counts W onNewView()`() {
+        // Given
+        testedInsightsCollector.onAction()
+        testedInsightsCollector.onSlowFrame(durationNs = 10L)
+        assertThat(testedInsightsCollector.eventsCounter).isNotEmpty()
+
+        // When
+        testedInsightsCollector.onNewView(name = "Home")
+
+        // Then
+        assertThat(testedInsightsCollector.eventsCounter).isEmpty()
+    }
+
+    @Test
+    fun `M reset event counts W maxSize setter`(@IntForgery(min = 2) fakeMaxSize: Int) {
+        // Given
+        repeat(3) { testedInsightsCollector.onAction() }
+        assertThat(testedInsightsCollector.eventsCounter).isNotEmpty()
+
+        // When
+        testedInsightsCollector.maxSize = fakeMaxSize
+
+        // Then
+        assertThat(testedInsightsCollector.eventsCounter).isEmpty()
     }
 
     @Test
