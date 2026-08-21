@@ -18,9 +18,6 @@ plugins {
     id("ktlint")
     kotlin("android")
     id("datadogBuildConfig")
-
-    // Analysis tools
-    id("com.github.ben-manes.versions")
 }
 
 android {
@@ -89,7 +86,6 @@ dependencies {
 datadogBuild {
     applyKotlinConfig(evaluateWarningsAsErrors = false)
     applyJunitConfig()
-    applyDependencyUpdateConfig()
 }
 
 taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {

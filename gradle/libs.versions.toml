@@ -67,7 +67,6 @@ unmock = "0.9.0"
 robolectric = "4.4_r1-robolectric-r2"
 androidLint = "31.0.2"
 
-versionsGradlePlugin = "0.46.0"
 nexusPublishGradlePlugin = "2.0.0"
 datadogPlugin = "1.27.0"
 
@@ -114,7 +113,6 @@ material3Android = "1.1.2"
 androidToolsGradlePluginApi = { module = "com.android.tools.build:gradle-api", version.ref = "androidToolsPlugin" }
 apolloRuntime = { module = "com.apollographql.apollo:apollo-runtime", version.ref = "apollo" }
 kotlinGradlePluginApi = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin-api", version.ref = "kotlin" }
-versionsGradlePlugin = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "versionsGradlePlugin" }
 dokkaGradlePlugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
 detektGradlePlugin = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
 unmockGradlePlugin = { module = "com.github.bjoernq:unmockplugin", version.ref = "unmock" }
@@ -374,7 +372,6 @@ traceCore = [
 ]
 
 [plugins]
-versionsGradlePlugin = { id = "com.github.ben-manes.versions", version.ref = "versionsGradlePlugin" }
 nexusPublishGradlePlugin = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexusPublishGradlePlugin" }
 datadogGradlePlugin = { id = "com.datadoghq.dd-sdk-android-gradle-plugin", version.ref = "datadogPlugin" }
 composeCompilerPlugin = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

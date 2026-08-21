@@ -135,5 +135,4 @@ dependencies {
 datadogBuild {
     applyKotlinConfig()
     applyJunitConfig()
-    applyDependencyUpdateConfig()
 }

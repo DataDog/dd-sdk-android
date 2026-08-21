@@ -17,9 +17,6 @@ plugins {
     kotlin("android")
     id("de.mobilej.unmock")
     id("datadogBuildConfig")
-
-    // Analysis tools
-    id("com.github.ben-manes.versions")
 }
 
 android {
@@ -84,5 +81,4 @@ unMock {
 datadogBuild {
     applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
     applyJunitConfig()
-    applyDependencyUpdateConfig()
 }

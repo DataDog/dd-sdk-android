@@ -20,9 +20,6 @@ plugins {
     // Publishing
     `maven-publish`
     signing
-
-    // Analysis tools
-    id("com.github.ben-manes.versions")
 }
 
 android {
@@ -65,7 +62,6 @@ createJsonModelsGenerationTask("generateTraceModelsFromJson") {
 datadogBuild {
     applyKotlinConfig()
     applyJunitConfig()
-    applyDependencyUpdateConfig()
     applyAndroidLibraryConfig()
     applyPublishingConfig(
         projectDescription = "An internal benchmarking tool to measure the overhead of Datadog SDK",

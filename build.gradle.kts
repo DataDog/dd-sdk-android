@@ -26,7 +26,6 @@ plugins {
     alias(libs.plugins.androidLibraryPlugin) apply false
     alias(libs.plugins.kotlinAndroidPlugin) apply false
     alias(libs.plugins.dokkaGradlePlugin) apply false
-    alias(libs.plugins.versionsGradlePlugin) apply false
     alias(libs.plugins.detektGradlePlugin) apply false
 }
 

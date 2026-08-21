@@ -7,7 +7,6 @@
 package com.datadog.gradle.plugin.config
 
 import com.datadog.gradle.config.androidLibraryConfig
-import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
@@ -49,11 +48,6 @@ abstract class DatadogBuildExtension @Inject constructor(
     /** Points the Dokka `javadoc` publication at `build/reports/javadoc`. */
     fun applyJavadocConfig() {
         project.javadocConfig()
-    }
-
-    /** Restricts the dependency-updates report to stable releases. */
-    fun applyDependencyUpdateConfig() {
-        project.dependencyUpdateConfig()
     }
 
     /** Declares the Maven publication (POM metadata, sources/javadoc jars) and its signing. */

@@ -21,7 +21,6 @@ plugins {
     id("org.jetbrains.dokka-javadoc")
 
     // Analysis tools
-    id("com.github.ben-manes.versions")
     id("detekt-conventions")
 
     // Tests
@@ -64,7 +63,6 @@ datadogBuild {
     applyAndroidLibraryConfig()
     applyJunitConfig()
     applyJavadocConfig()
-    applyDependencyUpdateConfig()
     applyPublishingConfig(
         "An OkHttp collection of extensions to be used in conjunction with OpenTelemetry Datadog SDK."
     )
