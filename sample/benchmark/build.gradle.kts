@@ -6,22 +6,22 @@
 
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.configureFlavorForBenchmark
-import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.java17
-import com.datadog.gradle.config.junitConfig
-import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.plugin.InstrumentationMode
 
 plugins {
-    id("ktlint")
+    // Build
     id("com.android.application")
+    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
+    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
+    id("ktlint")
     kotlin("android")
     alias(libs.plugins.composeCompilerPlugin)
     alias(libs.plugins.kotlinSPGradlePlugin)
     kotlin("plugin.serialization")
     id("kotlin-parcelize")
+    id("datadogBuildConfig")
     alias(libs.plugins.datadogGradlePlugin)
-    id("transitiveDependencies")
 }
 
 @Suppress("StringLiteralDuplication")
@@ -132,6 +132,8 @@ dependencies {
     testImplementation(libs.ktorClientMock)
 }
 
-kotlinConfig()
-junitConfig()
-dependencyUpdateConfig()
+datadogBuild {
+    applyKotlinConfig()
+    applyJunitConfig()
+    applyDependencyUpdateConfig()
+}

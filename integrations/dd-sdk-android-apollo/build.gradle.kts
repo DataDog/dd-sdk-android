@@ -4,17 +4,16 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.config.androidLibraryConfig
-import com.datadog.gradle.config.junitConfig
-import com.datadog.gradle.config.kotlinConfig
-import com.datadog.gradle.config.publishingConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    id("ktlint")
     // Build
     id("com.android.library")
+    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
+    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
+    id("ktlint")
     kotlin("android")
+    id("datadogBuildConfig")
 
     // Publish
     `maven-publish`
@@ -23,6 +22,7 @@ plugins {
 
     // Analysis tools
     id("com.github.ben-manes.versions")
+    id("detekt-conventions")
 
     // Tests
     id("de.mobilej.unmock")
@@ -33,7 +33,6 @@ plugins {
     id("apiSurface")
     id("transitiveDependencies")
     id("verificationXml")
-    id("detekt-conventions")
     id("test-pyramid-api-surface")
 }
 
@@ -63,10 +62,12 @@ unMock {
     keepStartingWith("android.util.")
 }
 
-kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
-junitConfig()
-androidLibraryConfig()
-publishingConfig(
-    projectDescription = "An Apollo interceptor for handling GraphQL requests to use with the " +
-        "Datadog monitoring library for Android applications."
-)
+datadogBuild {
+    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyJunitConfig()
+    applyAndroidLibraryConfig()
+    applyPublishingConfig(
+        projectDescription = "An Apollo interceptor for handling GraphQL requests to use with the " +
+            "Datadog monitoring library for Android applications."
+    )
+}

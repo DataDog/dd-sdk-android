@@ -5,18 +5,21 @@
  */
 
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.java11
-import com.datadog.gradle.config.junitConfig
-import com.datadog.gradle.config.kotlinConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    id("ktlint")
+    // Build
     id("com.android.library")
+    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
+    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
+    id("ktlint")
     kotlin("android")
-    id("com.github.ben-manes.versions")
     id("de.mobilej.unmock")
+    id("datadogBuildConfig")
+
+    // Analysis tools
+    id("com.github.ben-manes.versions")
 }
 
 android {
@@ -77,6 +80,9 @@ unMock {
 // It has to target 11 even if it is for unit-tests and this lib is not client facing, because
 // with bytecode of Java 17 there is an error:
 // Cannot inline bytecode built with JVM target 17 into bytecode that is being built with JVM target 11
-kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
-junitConfig()
-dependencyUpdateConfig()
+
+datadogBuild {
+    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyJunitConfig()
+    applyDependencyUpdateConfig()
+}

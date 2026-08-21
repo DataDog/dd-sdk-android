@@ -5,21 +5,18 @@
  */
 @file:Suppress("StringLiteralDuplication")
 
-import com.datadog.gradle.config.androidLibraryConfig
-import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.javadocConfig
-import com.datadog.gradle.config.junitConfig
-import com.datadog.gradle.config.kotlinConfig
-import com.datadog.gradle.config.publishingConfig
 import com.datadog.gradle.plugin.gitclone.GitCloneDependenciesTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    id("ktlint")
     // Build
     id("com.android.library")
+    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
+    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
+    id("ktlint")
     kotlin("android")
     id("com.google.devtools.ksp")
+    id("datadogBuildConfig")
 
     // Publish
     `maven-publish`
@@ -28,6 +25,7 @@ plugins {
 
     // Analysis tools
     id("com.github.ben-manes.versions")
+    id("detekt-conventions")
 
     // Tests
     id("de.mobilej.unmock")
@@ -38,7 +36,6 @@ plugins {
     id("apiSurface")
     id("transitiveDependencies")
     id("binary-compatibility-validator")
-    id("detekt-conventions")
     id("test-pyramid-api-surface")
 }
 
@@ -122,11 +119,13 @@ tasks.register<GitCloneDependenciesTask>("cloneDdTrace") {
     projectDirPath.set(project.layout.projectDirectory.asFile.path)
 }
 
-kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
-androidLibraryConfig()
-junitConfig()
-javadocConfig()
-dependencyUpdateConfig()
-publishingConfig(
-    "Internal APM support library for Android applications."
-)
+datadogBuild {
+    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyAndroidLibraryConfig()
+    applyJunitConfig()
+    applyJavadocConfig()
+    applyDependencyUpdateConfig()
+    applyPublishingConfig(
+        "Internal APM support library for Android applications."
+    )
+}

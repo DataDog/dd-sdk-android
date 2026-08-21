@@ -5,17 +5,17 @@
  */
 
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.java17
-import com.datadog.gradle.config.junitConfig
-import com.datadog.gradle.config.kotlinConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    id("ktlint")
     // Build
     id("com.android.application")
+    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
+    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
+    id("ktlint")
     kotlin("android")
+    id("datadogBuildConfig")
 
     // Analysis tools
     id("com.github.ben-manes.versions")
@@ -94,6 +94,8 @@ dependencies {
     }
 }
 
-kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
-junitConfig()
-dependencyUpdateConfig()
+datadogBuild {
+    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyJunitConfig()
+    applyDependencyUpdateConfig()
+}
