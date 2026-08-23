@@ -63,13 +63,19 @@ interface CompositionHostDecomposer {
  * [CompositionIdentityFactory.composeNode] - the caller mints it before invoking the handoff so a
  * consistent identity is used whether or not the handoff succeeds. Returns null if the interop view
  * itself is filtered out (e.g. not visible).
+ * @param shouldContinue Cheap cooperative checkpoint the decomposer should poll periodically during
+ * its own walk - the caller's generation deadline isn't otherwise visible across this module
+ * boundary. Returning false means the deadline has passed; the decomposer must stop and report
+ * failure (see [CompositionHostDecomposer.decompose]) rather than return a partial result. Defaults
+ * to always-continue for callers that don't need bounded main-thread work.
  */
 @InternalApi
 class CompositionHostDecomposeRequest(
     val identityFactory: CompositionIdentityFactory,
     val hostIdentity: CapturedIdentity,
     val screenDensity: Float,
-    val nativeViewHandoff: (view: View, childIdentity: CapturedIdentity) -> CompositionNativeSubtree?
+    val nativeViewHandoff: (view: View, childIdentity: CapturedIdentity) -> CompositionNativeSubtree?,
+    val shouldContinue: () -> Boolean = { true }
 )
 
 /**

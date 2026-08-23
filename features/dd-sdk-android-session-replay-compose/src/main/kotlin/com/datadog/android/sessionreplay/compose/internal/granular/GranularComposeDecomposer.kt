@@ -59,7 +59,8 @@ internal class GranularComposeDecomposer(
     private val reflectionUtils: ReflectionUtils = ReflectionUtils(),
     private val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter,
     private val internalLogger: InternalLogger = InternalLogger.UNBOUND,
-    private val compatibilityGate: GranularComposeCompatibilityGate = GranularComposeCompatibilityGate.SHARED
+    private val compatibilityGate: GranularComposeCompatibilityGate = GranularComposeCompatibilityGate.SHARED,
+    private val nodesPerCheckpoint: Int = NODES_PER_CHECKPOINT
 ) : CompositionHostDecomposer {
 
     // Deliberately catches Throwable, not Exception: a Compose UI version outside this artifact's
@@ -95,17 +96,34 @@ internal class GranularComposeDecomposer(
         private val windowOffset = hostView.resolveComposeWindowOffset(request.screenDensity)
         private val nodes = mutableListOf<CapturedLayer>()
         private val wireframes = mutableListOf<CapturedWireframe>()
+        private var nodesVisited = 0
+        private var aborted = false
 
         @Suppress("ReturnCount")
         fun run(): CompositionHostDecomposeResult? {
             val root = semanticsUtils.findRootSemanticsNode(hostView) ?: return null
             val rootChildren = root.children.mapNotNull { walkNode(it) }
-            if (rootChildren.isEmpty()) return null
+            if (aborted || rootChildren.isEmpty()) return null
             return CompositionHostDecomposeResult(rootChildren, nodes, wireframes)
         }
 
+        /**
+         * The caller's generation deadline isn't otherwise visible across this module boundary, so
+         * this walk polls [CompositionHostDecomposeRequest.shouldContinue] itself every
+         * [nodesPerCheckpoint] nodes - mirroring the native traversal's own `viewsPerCheckpoint`
+         * cadence in `AndroidWindowTraversal`. On failure the whole walk is abandoned (never a
+         * partial tree): every further [walkNode] call short-circuits via [aborted], and [run]
+         * returns null, which the caller's own post-call deadline re-check turns into discarding the
+         * entire window capture, exactly like a native-traversal abort.
+         */
         @Suppress("ReturnCount")
         private fun walkNode(node: SemanticsNode): CapturedChild? {
+            if (aborted) return null
+            nodesVisited++
+            if (nodesVisited % nodesPerCheckpoint == 0 && !request.shouldContinue()) {
+                aborted = true
+                return null
+            }
             val nodeIdentity = request.identityFactory.composeNode(request.hostIdentity, node.id.toString())
             val bounds = boundsOf(node)
 
@@ -261,5 +279,6 @@ internal class GranularComposeDecomposer(
         const val GRAPHICS_LAYER_NAME_FALLBACK = "graphicsLayer"
         const val ALPHA_PROPERTY_NAME = "alpha"
         const val COMPOSE_COLOR_SHIFT = 32
+        const val NODES_PER_CHECKPOINT = 200
     }
 }

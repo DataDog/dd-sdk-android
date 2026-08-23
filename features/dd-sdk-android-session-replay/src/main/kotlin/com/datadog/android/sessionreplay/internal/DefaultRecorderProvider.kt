@@ -254,17 +254,27 @@ internal class DefaultRecorderProvider(
         val producer = compositionSnapshotProducerFactory?.invoke(windowSource, rumContextProvider)
             ?: defaultCompositionSnapshotProducer(windowSource, rumContextProvider)
         val mainThreadExecutor = HandlerCaptureMainThreadExecutor()
+        // Shared rather than one-per-consumer: sdkCore.createScheduledExecutorService allocates a
+        // brand-new background thread with no pooling, and PixelFallbackSnapshotProcessor has no
+        // shutdown hook of its own - only SnapshotCaptureOrchestrator.shutdown()'s own
+        // expiryScheduler.shutdown() call ever reclaims it.
+        val sharedScheduler = ScheduledExecutorCaptureTaskScheduler(
+            executorService = sdkCore.createScheduledExecutorService("sr-composition-expiry"),
+            internalLogger = internalLogger
+        )
         return SnapshotCaptureOrchestrator(
             producer = producer,
-            processor = PixelFallbackSnapshotProcessor(resourceResolver, textDetector, mainThreadExecutor),
+            processor = PixelFallbackSnapshotProcessor(
+                resourceResolver,
+                textDetector,
+                mainThreadExecutor,
+                sharedScheduler
+            ),
             consumer = completionQueue,
             timeProvider = TimeProviderCaptureTimeProvider(sdkCore.timeProvider),
             captureScheduler = HandlerCaptureTaskScheduler(),
             mainThreadExecutor = mainThreadExecutor,
-            expiryScheduler = ScheduledExecutorCaptureTaskScheduler(
-                executorService = sdkCore.createScheduledExecutorService("sr-composition-expiry"),
-                internalLogger = internalLogger
-            ),
+            expiryScheduler = sharedScheduler,
             timeBudget = if (dynamicOptimizationEnabled) {
                 TimeBankCaptureTimeBudget(
                     recordingTimeBankFactory(),

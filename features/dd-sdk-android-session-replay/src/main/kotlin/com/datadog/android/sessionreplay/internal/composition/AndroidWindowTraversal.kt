@@ -283,10 +283,12 @@ internal class AndroidWindowTraversal(
 
     /**
      * Attempts Compose decomposition for [view] when it's an eligible, non-hidden compose host.
-     * Isolated from [visitView] to keep that function's own branching manageable - this is the
-     * only place [ComposeAttempt.Aborted] can arise, since a decomposer's own main-thread work
-     * isn't otherwise checkpointed by this traversal, so the deadline is re-polled immediately
-     * after it returns rather than waiting for the next `viewsPerCheckpoint` tick.
+     * Isolated from [visitView] to keep that function's own branching manageable. The decomposer
+     * itself checkpoints [CompositionHostDecomposeRequest.shouldContinue] against its own cadence
+     * (it lives in a separate module with no other visibility into the deadline), but the deadline
+     * is re-polled here too immediately after it returns rather than waiting for the next
+     * `viewsPerCheckpoint` tick, so this remains the single place [ComposeAttempt.Aborted] can
+     * arise regardless of whether the decomposer's own checkpoint ever fired.
      */
     @Suppress("LongParameterList", "ReturnCount")
     private fun attemptComposeDecomposition(
@@ -319,7 +321,8 @@ internal class AndroidWindowTraversal(
                     context,
                     state
                 )
-            }
+            },
+            shouldContinue = context::shouldContinue
         )
         val result = decomposer.decompose(view, request)
         if (!context.shouldContinue()) return ComposeAttempt.Aborted

@@ -37,6 +37,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -58,6 +59,16 @@ internal class PixelFallbackSnapshotProcessorTest {
         deadlineNs = 1_000_000_000L,
         timeProvider = CaptureTimeProvider { 0L }
     )
+
+    private class FakeCaptureTaskScheduler : CaptureTaskScheduler {
+        val scheduled = mutableListOf<Pair<Long, () -> Unit>>()
+        var cancelCount = 0
+
+        override fun schedule(delayNs: Long, task: () -> Unit): CancellableCaptureWork {
+            scheduled += delayNs to task
+            return CancellableCaptureWork { cancelCount++ }
+        }
+    }
 
     private class Fixture(scope: String) {
         val identityFactory = DefaultCapturedIdentityFactory(RumViewIdentityScope(scope))
@@ -199,10 +210,12 @@ internal class PixelFallbackSnapshotProcessorTest {
             val onComplete = invocation.getArgument<(TextDetectionOutcome) -> Unit>(1)
             onComplete(TextDetectionOutcome.Unavailable)
         }.whenever(mockTextDetector).detectTextRegions(any(), any())
+        val fakeScheduler = FakeCaptureTaskScheduler()
         val testedProcessor = PixelFallbackSnapshotProcessor(
             mockResourceResolver,
             mockTextDetector,
-            immediateMainThreadExecutor
+            immediateMainThreadExecutor,
+            fakeScheduler
         )
         val results = mutableListOf<SnapshotProcessingResult>()
 
@@ -223,6 +236,7 @@ internal class PixelFallbackSnapshotProcessorTest {
             completed.snapshot.wireframes.single()
         ).isInstanceOf(CapturedWireframe.PrivacyPlaceholder::class.java)
         verify(mockResourceResolver, never()).resolveResourceIdFromBitmap(any(), any())
+        assertThat(fakeScheduler.cancelCount).isEqualTo(1)
     }
 
     @Test
@@ -245,10 +259,12 @@ internal class PixelFallbackSnapshotProcessorTest {
             callback.onSuccess(fakeResourceId)
             null
         }.whenever(mockResourceResolver).resolveResourceIdFromBitmap(any(), any())
+        val fakeScheduler = FakeCaptureTaskScheduler()
         val testedProcessor = PixelFallbackSnapshotProcessor(
             mockResourceResolver,
             mockTextDetector,
-            immediateMainThreadExecutor
+            immediateMainThreadExecutor,
+            fakeScheduler
         )
         val results = mutableListOf<SnapshotProcessingResult>()
 
@@ -271,6 +287,7 @@ internal class PixelFallbackSnapshotProcessorTest {
         val bitmapCaptor = argumentCaptor<Bitmap>()
         verify(mockResourceResolver).resolveResourceIdFromBitmap(bitmapCaptor.capture(), any())
         assertThat(bitmapCaptor.firstValue).isSameAs(fixture.bitmap)
+        assertThat(fakeScheduler.cancelCount).isEqualTo(1)
     }
 
     @Test
@@ -289,10 +306,12 @@ internal class PixelFallbackSnapshotProcessorTest {
             callback.onFailure()
             null
         }.whenever(mockResourceResolver).resolveResourceIdFromBitmap(any(), any())
+        val fakeScheduler = FakeCaptureTaskScheduler()
         val testedProcessor = PixelFallbackSnapshotProcessor(
             mockResourceResolver,
             mockTextDetector,
-            immediateMainThreadExecutor
+            immediateMainThreadExecutor,
+            fakeScheduler
         )
         val results = mutableListOf<SnapshotProcessingResult>()
 
@@ -312,5 +331,117 @@ internal class PixelFallbackSnapshotProcessorTest {
         assertThat(
             completed.snapshot.wireframes.single()
         ).isInstanceOf(CapturedWireframe.PrivacyPlaceholder::class.java)
+        assertThat(fakeScheduler.cancelCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `M schedule the detector timeout relative to remaining budget W process()`(@StringForgery fakeScope: String) {
+        // Given
+        val fixture = Fixture(fakeScope)
+        val mockTextDetector: TextDetector = mock() // deliberately never invokes onComplete
+        val fakeScheduler = FakeCaptureTaskScheduler()
+        val testedProcessor = PixelFallbackSnapshotProcessor(
+            mockResourceResolver,
+            mockTextDetector,
+            immediateMainThreadExecutor,
+            fakeScheduler
+        )
+        val generation = CaptureGenerationContext(
+            id = 1L,
+            startedAtNs = 0L,
+            deadlineNs = 50_000_000L,
+            timeProvider = CaptureTimeProvider { 0L } // 50ms remaining, well above the 10ms safety margin
+        )
+
+        // When
+        testedProcessor.process(
+            SnapshotProcessingRequest(generation, fixture.snapshot, listOf(fixture.pending), fixture.identityFactory),
+            SnapshotProcessingCallback { }
+        )
+
+        // Then
+        assertThat(fakeScheduler.scheduled).hasSize(1)
+        assertThat(fakeScheduler.scheduled.single().first)
+            .isEqualTo(50_000_000L - TimeUnit.MILLISECONDS.toNanos(10))
+    }
+
+    @Test
+    fun `M resolve to a placeholder W process { timeout fires before detector callback }`(
+        @StringForgery fakeScope: String
+    ) {
+        // Given
+        val fixture = Fixture(fakeScope)
+        val mockTextDetector: TextDetector = mock() // deliberately never invokes onComplete
+        val fakeScheduler = FakeCaptureTaskScheduler()
+        val testedProcessor = PixelFallbackSnapshotProcessor(
+            mockResourceResolver,
+            mockTextDetector,
+            immediateMainThreadExecutor,
+            fakeScheduler
+        )
+        val results = mutableListOf<SnapshotProcessingResult>()
+
+        // When
+        testedProcessor.process(
+            SnapshotProcessingRequest(
+                generationContext(),
+                fixture.snapshot,
+                listOf(fixture.pending),
+                fixture.identityFactory
+            ),
+            SnapshotProcessingCallback { results += it }
+        )
+        fakeScheduler.scheduled.single().second.invoke() // fire the timeout manually
+
+        // Then
+        val completed = results.single() as SnapshotProcessingResult.Completed
+        assertThat(
+            completed.snapshot.wireframes.single()
+        ).isInstanceOf(CapturedWireframe.PrivacyPlaceholder::class.java)
+    }
+
+    @Test
+    fun `M ignore a late timeout W process { detector resolves before timeout fires }`(
+        @StringForgery fakeScope: String,
+        @StringForgery fakeResourceId: String
+    ) {
+        // Given
+        val fixture = Fixture(fakeScope)
+        val mockTextDetector: TextDetector = mock()
+        doAnswer { invocation ->
+            @Suppress("UNCHECKED_CAST")
+            val onComplete = invocation.getArgument<(TextDetectionOutcome) -> Unit>(1)
+            onComplete(TextDetectionOutcome.Detected(emptyList()))
+        }.whenever(mockTextDetector).detectTextRegions(any(), any())
+        doAnswer { invocation ->
+            val callback = invocation.getArgument<ResourceResolverCallback>(1)
+            callback.onSuccess(fakeResourceId)
+            null
+        }.whenever(mockResourceResolver).resolveResourceIdFromBitmap(any(), any())
+        val fakeScheduler = FakeCaptureTaskScheduler()
+        val testedProcessor = PixelFallbackSnapshotProcessor(
+            mockResourceResolver,
+            mockTextDetector,
+            immediateMainThreadExecutor,
+            fakeScheduler
+        )
+        val results = mutableListOf<SnapshotProcessingResult>()
+
+        // When
+        testedProcessor.process(
+            SnapshotProcessingRequest(
+                generationContext(),
+                fixture.snapshot,
+                listOf(fixture.pending),
+                fixture.identityFactory
+            ),
+            SnapshotProcessingCallback { results += it }
+        )
+        fakeScheduler.scheduled.single().second.invoke() // late-firing timeout, must be a no-op now
+
+        // Then
+        val completed = results.single() as SnapshotProcessingResult.Completed
+        val pixel = completed.snapshot.wireframes.single() as CapturedWireframe.Pixel
+        assertThat(pixel.resource).isEqualTo(PixelResource.Resolved(fakeResourceId, "image/webp"))
     }
 }

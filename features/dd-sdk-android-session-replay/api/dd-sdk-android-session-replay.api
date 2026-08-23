@@ -2102,11 +2102,13 @@ public final class com/datadog/android/sessionreplay/recorder/SystemInformation 
 }
 
 public final class com/datadog/android/sessionreplay/recorder/composition/CompositionHostDecomposeRequest {
-	public fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CompositionIdentityFactory;Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;FLkotlin/jvm/functions/Function2;)V
+	public fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CompositionIdentityFactory;Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;FLkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function0;)V
+	public synthetic fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CompositionIdentityFactory;Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;FLkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function0;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getHostIdentity ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
 	public final fun getIdentityFactory ()Lcom/datadog/android/internal/sessionreplay/composition/CompositionIdentityFactory;
 	public final fun getNativeViewHandoff ()Lkotlin/jvm/functions/Function2;
 	public final fun getScreenDensity ()F
+	public final fun getShouldContinue ()Lkotlin/jvm/functions/Function0;
 }
 
 public final class com/datadog/android/sessionreplay/recorder/composition/CompositionHostDecomposeResult {

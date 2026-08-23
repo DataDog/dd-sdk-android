@@ -407,6 +407,41 @@ internal class AndroidWindowTraversalTest {
     }
 
     @Test
+    fun `M forward the generation's shouldContinue into the decompose request W visit { compose host }`(
+        @Forgery fakeRootBounds: GlobalBounds,
+        @Forgery fakeHostBounds: GlobalBounds
+    ) {
+        // Given
+        val root = mockViewGroup(fakeRootBounds)
+        val composeHost = mockView(fakeHostBounds)
+        whenever(root.childCount).thenReturn(1)
+        whenever(root.getChildAt(0)).thenReturn(composeHost)
+        val windowIdentity = identityFactory.window("window")
+
+        var capturedShouldContinue: (() -> Boolean)? = null
+        val decomposer = object : CompositionHostDecomposer {
+            override fun canDecompose(view: View) = view === composeHost
+            override fun decompose(
+                view: View,
+                request: CompositionHostDecomposeRequest
+            ): CompositionHostDecomposeResult? {
+                capturedShouldContinue = request.shouldContinue
+                return null
+            }
+        }
+
+        // When
+        traversal(
+            composeHostDecomposer = decomposer,
+            isComposeHost = { it === composeHost }
+        ).traverseWindow(root, windowIdentity, identityFactory, fakeContext)
+
+        // Then
+        val shouldContinue = requireNotNull(capturedShouldContinue)
+        assertThat(shouldContinue.invoke()).isEqualTo(fakeContext.shouldContinue())
+    }
+
+    @Test
     fun `M fall back to the mapper W visit { compose host, decomposer cannot decompose }`(
         @Forgery fakeRootBounds: GlobalBounds,
         @Forgery fakeHostBounds: GlobalBounds

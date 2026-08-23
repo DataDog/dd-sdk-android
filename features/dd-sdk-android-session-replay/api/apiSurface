@@ -105,7 +105,7 @@ interface com.datadog.android.sessionreplay.recorder.composition.CompositionHost
   fun canDecompose(android.view.View): Boolean
   fun decompose(android.view.View, CompositionHostDecomposeRequest): CompositionHostDecomposeResult?
 class com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeRequest
-  constructor(com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory, com.datadog.android.internal.sessionreplay.composition.CapturedIdentity, Float, (android.view.View, com.datadog.android.internal.sessionreplay.composition.CapturedIdentity) -> CompositionNativeSubtree?)
+  constructor(com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory, com.datadog.android.internal.sessionreplay.composition.CapturedIdentity, Float, (android.view.View, com.datadog.android.internal.sessionreplay.composition.CapturedIdentity) -> CompositionNativeSubtree?, () -> Boolean = { true })
 class com.datadog.android.sessionreplay.recorder.composition.CompositionNativeSubtree
   constructor(com.datadog.android.internal.sessionreplay.composition.CapturedLayer, List<com.datadog.android.internal.sessionreplay.composition.CapturedLayer>, List<com.datadog.android.internal.sessionreplay.composition.CapturedWireframe>)
 class com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeResult

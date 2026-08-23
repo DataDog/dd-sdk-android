@@ -22,6 +22,8 @@ import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceRes
 import com.datadog.android.sessionreplay.recorder.privacy.TextDetectionOutcome
 import com.datadog.android.sessionreplay.recorder.privacy.TextDetector
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -29,18 +31,24 @@ import java.util.concurrent.atomic.AtomicInteger
  * masking (fails closed to a placeholder when text presence can't be verified), then hash/encode/
  * dedup/register via the existing [ResourceResolver] pipeline. Only ever replaces the exact
  * wireframes/child-references its own pending captures produced - everything else in the snapshot
- * passes through untouched. [cancel] is intentionally a no-op: once a generation expires or is
- * accepted, [CaptureGenerationContext] itself invalidates every [CaptureWorkToken] this processor
- * created, and this processor checks [CaptureWorkToken.isValid] before writing any result back -
- * cancellation is enforced by the token, not by this class needing to interrupt in-flight work.
- * [TextDetector.detectTextRegions] may invoke its callback on any thread, so [resolveBitmap] hops
- * onto [mainThreadExecutor] before calling [ResourceResolver.resolveResourceIdFromBitmap], which
- * is [androidx.annotation.MainThread]-only.
+ * passes through untouched. [process]'s own returned [CancellableCaptureWork] is intentionally a
+ * no-op: once a generation expires or is accepted, [CaptureGenerationContext] itself invalidates
+ * every [CaptureWorkToken] this processor created, and this processor checks
+ * [CaptureWorkToken.isValid] before writing any result back - cancellation of the overall request is
+ * enforced by the token, not by this class needing to interrupt in-flight work. Each individual
+ * detection call is separately bounded by [taskScheduler] (see [resolveOne]) so one slow/stuck
+ * detector degrades to a placeholder for just that capture, rather than silently starving the
+ * generation's own much shorter deadline of the whole snapshot. [TextDetector.detectTextRegions]
+ * may invoke its callback on any thread, so [resolveBitmap] hops onto [mainThreadExecutor] before
+ * calling [ResourceResolver.resolveResourceIdFromBitmap], which is
+ * [androidx.annotation.MainThread]-only.
  */
 internal class PixelFallbackSnapshotProcessor(
     private val resourceResolver: ResourceResolver,
     private val textDetector: TextDetector?,
-    private val mainThreadExecutor: CaptureMainThreadExecutor
+    private val mainThreadExecutor: CaptureMainThreadExecutor,
+    private val taskScheduler: CaptureTaskScheduler = CaptureTaskScheduler { _, _ -> CancellableCaptureWork.NONE },
+    private val detectionTimeoutSafetyMarginNs: Long = DEFAULT_SAFETY_MARGIN_NS
 ) : CapturedSnapshotProcessor {
 
     override fun process(
@@ -63,7 +71,7 @@ internal class PixelFallbackSnapshotProcessor(
                 if (remaining.decrementAndGet() == 0) finish(request, outcomes, callback)
                 return@forEach
             }
-            resolveOne(capture, identityFactory) { outcome ->
+            resolveOne(capture, identityFactory, request.generation) { outcome ->
                 if (token.isValid()) outcomes[capture.wireframeIdentity.wireId] = outcome
                 token.complete()
                 if (remaining.decrementAndGet() == 0) finish(request, outcomes, callback)
@@ -73,9 +81,21 @@ internal class PixelFallbackSnapshotProcessor(
         return CancellableCaptureWork { }
     }
 
+    /**
+     * Detection is bounded by a timeout relative to [generation]'s own remaining deadline, not a
+     * fixed constant - [TextDetector] implementations already fail closed on their own (much
+     * looser) internal timeout, which exists to bound the detector itself, not this generation's
+     * much shorter budget. Whichever of {detector callback, timeout} resolves first wins via
+     * [resolved]; the loser is a no-op. This CAS is a different concern from the [CaptureWorkToken]
+     * guard in [process]: that one decides whether an outcome still counts once the whole
+     * *generation* has expired, while this one decides which of two concurrent callers - which can
+     * run on any thread, per [TextDetector.detectTextRegions]'s contract - gets to report the
+     * outcome for *this one* pending capture at all.
+     */
     private fun resolveOne(
         capture: PendingPixelCapture,
         identityFactory: CompositionIdentityFactory,
+        generation: CaptureGenerationContext,
         onResolved: (PixelOutcome) -> Unit
     ) {
         if (capture.isTextFree) {
@@ -88,14 +108,45 @@ internal class PixelFallbackSnapshotProcessor(
             onResolved(PixelOutcome.Placeholder(identityFactory.placeholderWireframe(capture.ownerIdentity)))
             return
         }
+
+        val resolved = AtomicBoolean(false)
+        val resolveOnce: (PixelOutcome) -> Unit = { outcome ->
+            if (resolved.compareAndSet(false, true)) onResolved(outcome)
+        }
+
+        val timeoutNs = (generation.remainingBudgetNs() - detectionTimeoutSafetyMarginNs).coerceAtLeast(0L)
+        val timeoutWork = taskScheduler.schedule(timeoutNs) {
+            resolveOnce(PixelOutcome.Placeholder(identityFactory.placeholderWireframe(capture.ownerIdentity)))
+        }
+        generation.track(timeoutWork)
+
         detector.detectTextRegions(capture.bitmap) { detection ->
+            timeoutWork.cancel()
             when (detection) {
                 is TextDetectionOutcome.Unavailable ->
-                    onResolved(PixelOutcome.Placeholder(identityFactory.placeholderWireframe(capture.ownerIdentity)))
+                    resolveOnce(PixelOutcome.Placeholder(identityFactory.placeholderWireframe(capture.ownerIdentity)))
 
                 is TextDetectionOutcome.Detected -> {
                     maskRegions(capture.bitmap, detection.regions)
-                    resolveBitmap(capture.bitmap, identityFactory, capture.ownerIdentity, onResolved)
+                    @Suppress("ThreadSafety") // mainThreadExecutor posts this block onto the main thread.
+                    mainThreadExecutor.execute {
+                        resourceResolver.resolveResourceIdFromBitmap(
+                            capture.bitmap,
+                            object : ResourceResolverCallback {
+                                override fun onSuccess(resourceId: String) {
+                                    resolveOnce(PixelOutcome.Resolved(resourceId))
+                                }
+
+                                override fun onFailure() {
+                                    resolveOnce(
+                                        PixelOutcome.Placeholder(
+                                            identityFactory.placeholderWireframe(capture.ownerIdentity)
+                                        )
+                                    )
+                                }
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -204,5 +255,6 @@ internal class PixelFallbackSnapshotProcessor(
     private companion object {
         const val MIME_TYPE_WEBP = "image/webp"
         const val MASK_ALL_CONTENT_LABEL = "Image"
+        val DEFAULT_SAFETY_MARGIN_NS = TimeUnit.MILLISECONDS.toNanos(10)
     }
 }
