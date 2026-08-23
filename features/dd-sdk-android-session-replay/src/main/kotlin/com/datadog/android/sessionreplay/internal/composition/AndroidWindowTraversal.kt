@@ -318,7 +318,8 @@ internal class AndroidWindowTraversal(
                     EffectivePrivacy(mappingContext.imagePrivacy, mappingContext.textAndInputPrivacy),
                     context
                 )
-            }
+            },
+            shouldContinue = context::shouldContinue
         )
         return decomposer.decompose(view, request)
     }

@@ -55,6 +55,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -89,6 +90,43 @@ internal class DefaultRecorderProviderTest {
         whenever(mockSdkCore.createScheduledExecutorService(any())).thenReturn(mock())
         whenever(mockApplication.packageName).thenReturn(fakePackageName)
         compositionPipelineConstructions = 0
+    }
+
+    @Test
+    fun `M share one scheduled executor W provideSessionReplayRecorder { composition pipeline }`() {
+        // Given
+        val sdkCore = mock<FeatureSdkCore>()
+        whenever(sdkCore.timeProvider).thenReturn(mock())
+        whenever(sdkCore.internalLogger).thenReturn(mock())
+        whenever(sdkCore.createSingleThreadExecutorService(any())).thenReturn(mock())
+        whenever(sdkCore.createScheduledExecutorService(any())).thenReturn(mock())
+        val provider = DefaultRecorderProvider(
+            sdkCore = sdkCore,
+            textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
+            imagePrivacy = ImagePrivacy.MASK_ALL,
+            touchPrivacyManager = mock<TouchPrivacyManager>(),
+            customMappers = emptyList(),
+            customOptionSelectorDetectors = emptyList(),
+            customDrawableMappers = emptyList(),
+            dynamicOptimizationEnabled = false,
+            internalCallback = mock<SessionReplayInternalCallback>(),
+            heatmapsEnabled = false,
+            compositionTreeRecordingEnabled = true
+        )
+
+        // When
+        provider.provideSessionReplayRecorder(
+            resourceDataStoreManager = mock<ResourceDataStoreManager>(),
+            resourceWriter = mock<ResourcesWriter>(),
+            recordWriter = mock<RecordWriter>(),
+            rumContextProvider = mock<RumContextProvider>(),
+            application = mock<Application>(),
+            embeddedContentSlotRegistry = mock<EmbeddedContentSlotRegistry>()
+        )
+
+        // Then - a second, unshared scheduler would mean a second permanent background thread with
+        // no shutdown hook of its own (see PixelFallbackSnapshotProcessor's KDoc)
+        verify(sdkCore, times(1)).createScheduledExecutorService(any())
     }
 
     @Test

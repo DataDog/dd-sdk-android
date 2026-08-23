@@ -67,22 +67,28 @@ interface CompositionHostDecomposer {
  * [CompositionIdentityFactory.composeNode] - the caller mints it before invoking the handoff so a
  * consistent identity is used whether or not the handoff succeeds. Returns null if the interop view
  * itself is filtered out (e.g. not visible).
+ * @param shouldContinue Cooperative generation deadline/budget check. The decomposer polls this
+ * during its walk and returns null if it fails, discarding the entire decomposition rather than
+ * returning a partial tree. Defaults to allowing work for callers without a generation context.
  */
 @InternalApi
-class CompositionHostDecomposeRequest(
+class CompositionHostDecomposeRequest @JvmOverloads constructor(
     val identityFactory: CompositionIdentityFactory,
     val hostIdentity: CapturedIdentity,
     val screenDensity: Float,
     val hostBounds: CapturedBounds?,
-    val nativeViewHandoff: (view: View, childIdentity: CapturedIdentity) -> CompositionNativeSubtree?
+    val nativeViewHandoff: (view: View, childIdentity: CapturedIdentity) -> CompositionNativeSubtree?,
+    val shouldContinue: () -> Boolean = { true }
 ) {
     /** Preserves callers that do not supply a copied host clip. */
+    @JvmOverloads
     constructor(
         identityFactory: CompositionIdentityFactory,
         hostIdentity: CapturedIdentity,
         screenDensity: Float,
-        nativeViewHandoff: (view: View, childIdentity: CapturedIdentity) -> CompositionNativeSubtree?
-    ) : this(identityFactory, hostIdentity, screenDensity, null, nativeViewHandoff)
+        nativeViewHandoff: (view: View, childIdentity: CapturedIdentity) -> CompositionNativeSubtree?,
+        shouldContinue: () -> Boolean = { true }
+    ) : this(identityFactory, hostIdentity, screenDensity, null, nativeViewHandoff, shouldContinue)
 }
 
 /**

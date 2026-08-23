@@ -111,6 +111,10 @@ internal class DefaultCompositionPipelineFactory(
             internalLogger = internalLogger
         )
         val mainThreadExecutor = HandlerCaptureMainThreadExecutor()
+        val sharedScheduler = ExecutorCaptureTaskScheduler(
+            executorService = sdkCore.createScheduledExecutorService(EXPIRY_EXECUTOR_NAME),
+            internalLogger = internalLogger
+        )
         val orchestrator = SnapshotCaptureOrchestrator(
             producer = snapshotProducerFactory(windowSource, rumContextProvider),
             processor = ChainedCapturedSnapshotProcessor(
@@ -118,17 +122,15 @@ internal class DefaultCompositionPipelineFactory(
                 PixelFallbackSnapshotProcessor(
                     resourceResolverBundle.resourceResolver,
                     textDetector,
-                    mainThreadExecutor
+                    mainThreadExecutor,
+                    sharedScheduler
                 )
             ),
             consumer = completionQueue,
             timeProvider = CaptureTimeProvider { sdkCore.timeProvider.getDeviceElapsedTimeNanos() },
             captureScheduler = HandlerCaptureTaskScheduler(),
             mainThreadExecutor = mainThreadExecutor,
-            expiryScheduler = ExecutorCaptureTaskScheduler(
-                executorService = sdkCore.createScheduledExecutorService(EXPIRY_EXECUTOR_NAME),
-                internalLogger = internalLogger
-            ),
+            expiryScheduler = sharedScheduler,
             timeBudget = createTimeBudget(),
             onFrameSkipped = skippedFrameNotifier::notifySkippedFrame,
             internalLogger = internalLogger

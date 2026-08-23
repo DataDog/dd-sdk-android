@@ -64,7 +64,8 @@ internal class GranularComposeDecomposer(
     private val reflectionUtils: ReflectionUtils = ReflectionUtils(),
     private val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter,
     private val internalLogger: InternalLogger = InternalLogger.UNBOUND,
-    private val compatibilityGate: GranularComposeCompatibilityGate = GranularComposeCompatibilityGate.SHARED
+    private val compatibilityGate: GranularComposeCompatibilityGate = GranularComposeCompatibilityGate.SHARED,
+    private val nodesPerCheckpoint: Int = NODES_PER_CHECKPOINT
 ) : CompositionHostDecomposer {
 
     // Deliberately catches Throwable, not Exception: a Compose UI version outside this artifact's
@@ -93,6 +94,7 @@ internal class GranularComposeDecomposer(
     }
 
     /** One [decompose] call's state - a fresh instance per call, so this class itself stays stateless. */
+    @Suppress("TooManyFunctions") // Keep the decomposition phases and deadline checkpoint in one capture session.
     private inner class DecomposeSession(
         private val hostView: View,
         private val request: CompositionHostDecomposeRequest
@@ -102,18 +104,21 @@ internal class GranularComposeDecomposer(
         private val nodes = mutableListOf<CapturedLayer>()
         private val wireframes = mutableListOf<CapturedWireframe>()
         private var culledLeaf = false
+        private var nodesVisited = 0
+        private var aborted = false
 
         @Suppress("ReturnCount")
         fun run(): CompositionHostDecomposeResult? {
             val root = semanticsUtils.findRootSemanticsNode(hostView) ?: return null
             val rootChildren = mutableListOf<CapturedChild>()
             walkChildren(root.children, rootChildren)
-            if (rootChildren.isEmpty() && !culledLeaf) return null
+            if (aborted || (rootChildren.isEmpty() && !culledLeaf)) return null
             return CompositionHostDecomposeResult(rootChildren, nodes, wireframes)
         }
 
         @Suppress("ReturnCount")
         private fun walkNode(node: SemanticsNode, allowCulling: Boolean): CapturedChild? {
+            if (!shouldVisitNode()) return null
             val nodeIdentity = request.identityFactory.composeNode(request.hostIdentity, node.id.toString())
             val bounds = boundsOf(node)
 
@@ -158,8 +163,17 @@ internal class GranularComposeDecomposer(
                 children += CapturedChild.Wireframe(shape.identity)
             }
             walkChildren(resolvedChildren ?: node.children, children)
+            if (aborted) return null
 
             return registerLayer(nodeIdentity, bounds, children, modifiers = resolveModifiers(node))
+        }
+
+        /** Poll the caller's deadline between bounded node operations; never return a partial tree. */
+        private fun shouldVisitNode(): Boolean {
+            if (aborted) return false
+            nodesVisited++
+            if (nodesVisited % nodesPerCheckpoint == 0 && !request.shouldContinue()) aborted = true
+            return !aborted
         }
 
         private fun walkChildren(source: List<SemanticsNode>, destination: MutableList<CapturedChild>) {
@@ -167,6 +181,7 @@ internal class GranularComposeDecomposer(
             val allowCulling = hostClip != null && source.size >= MIN_CULLING_SIBLINGS
             for (child in source) {
                 walkNode(child, allowCulling)?.let { destination += it }
+                if (aborted) break
             }
         }
 
@@ -284,6 +299,7 @@ internal class GranularComposeDecomposer(
         const val GRAPHICS_LAYER_NAME_FALLBACK = "graphicsLayer"
         const val ALPHA_PROPERTY_NAME = "alpha"
         const val COMPOSE_COLOR_SHIFT = 32
+        const val NODES_PER_CHECKPOINT = 200
         const val MIN_CULLING_SIBLINGS = 32
     }
 }

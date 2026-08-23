@@ -11,9 +11,12 @@ import androidx.compose.ui.layout.LayoutInfo
 import androidx.compose.ui.semantics.SemanticsNode
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
+import com.datadog.android.internal.sessionreplay.composition.CapturedIdentityKind
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframeKind
 import com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory
+import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.compose.internal.utils.ReflectionUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
@@ -341,5 +344,152 @@ internal class GranularComposeDecomposerTest {
         whenever(stubIdentityFactory.composeNode(any(), any())).thenAnswer { mock<CapturedIdentity>() }
         whenever(stubIdentityFactory.placeholderWireframe(any())).thenAnswer { mock<CapturedIdentity>() }
         return CompositionHostDecomposeRequest(stubIdentityFactory, mock(), 1f, hostBounds, nativeHandoff)
+    }
+
+    // region shouldContinue checkpoint
+
+    private var nextNodeId = 0
+
+    /** A childless node that resolves to nothing (no text, no shape, no interop) - the cheapest leaf shape. */
+    private fun mockLeafNode(): SemanticsNode {
+        val node: SemanticsNode = mock()
+        // getId()'s real implementation reads layoutInfo internally, so this must be stubbed first -
+        // otherwise evaluating node.id below throws mid-stub and corrupts Mockito's recording state.
+        val layoutInfo: LayoutInfo = mock()
+        whenever(node.layoutInfo).thenReturn(layoutInfo)
+        whenever(layoutInfo.getModifierInfo()).thenReturn(emptyList())
+        whenever(node.id).thenReturn(nextNodeId++)
+        whenever(node.children).thenReturn(emptyList())
+        whenever(mockSemanticsUtils.isNodeHidden(node)).thenReturn(false)
+        whenever(mockReflectionUtils.getInteropView(node)).thenReturn(null)
+        whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(node), any())).thenReturn(null)
+        whenever(mockSemanticsUtils.resolveBackgroundColor(node)).thenReturn(null)
+        whenever(mockSemanticsUtils.resolveInnerBounds(eq(node), any())).thenReturn(GlobalBounds(0, 0, 10, 10))
+        return node
+    }
+
+    private fun mockRoot(children: List<SemanticsNode>): SemanticsNode {
+        val root: SemanticsNode = mock()
+        whenever(root.children).thenReturn(children)
+        return root
+    }
+
+    private fun realRequest(shouldContinue: () -> Boolean): CompositionHostDecomposeRequest {
+        val identityFactory = FakeCompositionIdentityFactory()
+        return CompositionHostDecomposeRequest(
+            identityFactory = identityFactory,
+            hostIdentity = identityFactory.anyIdentity(),
+            screenDensity = 1f,
+            nativeViewHandoff = { _, _ -> null },
+            shouldContinue = shouldContinue
+        )
+    }
+
+    @Test
+    fun `M abort and return null W decompose() { shouldContinue denies at the first checkpoint }`() {
+        // Given
+        val root = mockRoot(List(3) { mockLeafNode() })
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            nodesPerCheckpoint = 1
+        )
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest(shouldContinue = { false }))
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M complete the walk W decompose() { shouldContinue keeps allowing }`() {
+        // Given
+        val root = mockRoot(List(5) { mockLeafNode() })
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            nodesPerCheckpoint = 1
+        )
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest(shouldContinue = { true }))
+
+        // Then
+        assertThat(result).isNotNull()
+        assertThat(result!!.rootChildren).hasSize(5)
+    }
+
+    @Test
+    fun `M check shouldContinue only every nodesPerCheckpoint nodes W decompose()`() {
+        // Given
+        val root = mockRoot(List(6) { mockLeafNode() })
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            nodesPerCheckpoint = 2
+        )
+        var checkpointCalls = 0
+
+        // When
+        testedDecomposer.decompose(mockView, realRequest(shouldContinue = { checkpointCalls++; true }))
+
+        // Then
+        assertThat(checkpointCalls).isEqualTo(3) // 6 nodes / checkpoint-every-2
+    }
+
+    // endregion
+
+    @Test
+    fun `M discard partial tree W decompose() { checkpoint denies after a completed node }`() {
+        // Given
+        val root = mockRoot(List(3) { mockLeafNode() })
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            nodesPerCheckpoint = 2
+        )
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest(shouldContinue = { false }))
+
+        // Then
+        assertThat(result).isNull()
+        assertThat(testedGate.isAvailable()).isTrue()
+        verify(mockSemanticsUtils, never()).resolveInnerBounds(eq(root.children[2]), any())
+    }
+
+    private class FakeCompositionIdentityFactory : CompositionIdentityFactory {
+        private var nextWireId = 0L
+        private val scope = RumViewIdentityScope("fake-scope")
+
+        private fun next(kind: CapturedIdentityKind, wireframeKind: CapturedWireframeKind? = null): CapturedIdentity =
+            CapturedIdentity(
+                scope = scope,
+                kind = kind,
+                wireframeKind = wireframeKind,
+                namespace = emptyList(),
+                localId = nextWireId.toString(),
+                wireId = nextWireId++
+            )
+
+        fun anyIdentity(): CapturedIdentity = next(CapturedIdentityKind.VIEW)
+
+        override fun composeHost(window: CapturedIdentity, hostId: String) = next(CapturedIdentityKind.COMPOSE_HOST)
+        override fun composeNode(host: CapturedIdentity, nodeId: String) = next(CapturedIdentityKind.COMPOSE_NODE)
+        override fun shapeWireframe(owner: CapturedIdentity) =
+            next(CapturedIdentityKind.WIREFRAME, CapturedWireframeKind.SHAPE)
+        override fun textWireframe(owner: CapturedIdentity) =
+            next(CapturedIdentityKind.WIREFRAME, CapturedWireframeKind.TEXT)
+        override fun placeholderWireframe(owner: CapturedIdentity) =
+            next(CapturedIdentityKind.WIREFRAME, CapturedWireframeKind.PLACEHOLDER)
     }
 }
