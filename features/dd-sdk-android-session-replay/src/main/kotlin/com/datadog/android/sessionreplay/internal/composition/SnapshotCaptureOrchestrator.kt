@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit
  * processing, expiry, and handoff. A draw signal only calls [requestCapture]; it owns no capture
  * state. At most one generation is active, while additional signals coalesce into one follow-up.
  */
+@Suppress("TooManyFunctions")
 internal class SnapshotCaptureOrchestrator(
     private val producer: CapturedSnapshotProducer,
     private val processor: CapturedSnapshotProcessor,
@@ -112,29 +113,43 @@ internal class SnapshotCaptureOrchestrator(
             MainThreadCaptureResult.Interrupted -> null
         }
         if (capture != null && active.generation.isActive()) {
-            val processing = processor.process(
-                SnapshotProcessingRequest(
-                    active.generation,
-                    capture.snapshot,
-                    capture.pendingPixelCaptures,
-                    capture.identityFactory
-                ),
-                SnapshotProcessingCallback(::onProcessed)
-            )
-            val shouldCancel = synchronized(lock) {
-                val current = activeGeneration
-                if (current?.generation?.id == active.generation.id) {
-                    current.processing = processing
-                    active.generation.track(processing)
-                    false
-                } else {
-                    true
-                }
-            }
-            if (shouldCancel) processing.cancel()
+            // Dispatched rather than called inline: processor.process() may do real synchronous
+            // work before its own async handoff (e.g. PixelFallbackSnapshotProcessor iterating
+            // every pending pixel capture to start detection), and now that capture is a plain,
+            // thread-safe value handed off from the traversal that produced it, none of that has
+            // to happen on the UI thread.
+            val dispatch = expiryScheduler.schedule(0L) { processCapture(active, capture) }
+            active.generation.track(dispatch)
         } else {
             expire(active.generation)
         }
+    }
+
+    private fun processCapture(active: ActiveGeneration, capture: CaptureOutput) {
+        if (!active.generation.isActive()) {
+            expire(active.generation)
+            return
+        }
+        val processing = processor.process(
+            SnapshotProcessingRequest(
+                active.generation,
+                capture.snapshot,
+                capture.pendingPixelCaptures,
+                capture.identityFactory
+            ),
+            SnapshotProcessingCallback(::onProcessed)
+        )
+        val shouldCancel = synchronized(lock) {
+            val current = activeGeneration
+            if (current?.generation?.id == active.generation.id) {
+                current.processing = processing
+                active.generation.track(processing)
+                false
+            } else {
+                true
+            }
+        }
+        if (shouldCancel) processing.cancel()
     }
 
     private fun createActiveGeneration(scheduleId: Long): ActiveGeneration? = synchronized(lock) {

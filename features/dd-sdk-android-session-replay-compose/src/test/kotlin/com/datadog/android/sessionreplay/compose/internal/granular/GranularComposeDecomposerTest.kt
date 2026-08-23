@@ -6,17 +6,26 @@
 
 package com.datadog.android.sessionreplay.compose.internal.granular
 
+import android.graphics.Bitmap
+import android.graphics.Rect
 import android.view.View
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.LayoutInfo
+import androidx.compose.ui.layout.ModifierInfo
+import androidx.compose.ui.node.DrawModifierNode
 import androidx.compose.ui.semantics.SemanticsNode
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentityKind
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframeKind
 import com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory
+import com.datadog.android.internal.sessionreplay.composition.PixelResource
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.compose.internal.utils.ReflectionUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
+import com.datadog.android.sessionreplay.internal.composition.PendingPixelCapture
+import com.datadog.android.sessionreplay.internal.composition.PendingPixelCaptureSink
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeRequest
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -147,6 +156,7 @@ internal class GranularComposeDecomposerTest {
         whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(node), any())).thenReturn(null)
         whenever(mockSemanticsUtils.resolveBackgroundColor(node)).thenReturn(null)
         whenever(mockSemanticsUtils.resolveInnerBounds(eq(node), any())).thenReturn(GlobalBounds(0, 0, 10, 10))
+        whenever(node.boundsInRoot).thenReturn(androidx.compose.ui.geometry.Rect(0f, 0f, 10f, 10f))
         return node
     }
 
@@ -156,14 +166,22 @@ internal class GranularComposeDecomposerTest {
         return root
     }
 
-    private fun realRequest(shouldContinue: () -> Boolean): CompositionHostDecomposeRequest {
+    private fun realRequest(
+        shouldContinue: () -> Boolean = { true },
+        pixelCapturePlaceholderLabelFor: (
+            bounds: com.datadog.android.internal.sessionreplay.composition.CapturedBounds
+        ) -> String? = { null },
+        pendingPixelCaptureSink: PendingPixelCaptureSink = PendingPixelCaptureSink.NoOp
+    ): CompositionHostDecomposeRequest {
         val identityFactory = FakeCompositionIdentityFactory()
         return CompositionHostDecomposeRequest(
             identityFactory = identityFactory,
             hostIdentity = identityFactory.anyIdentity(),
             screenDensity = 1f,
             nativeViewHandoff = { _, _ -> null },
-            shouldContinue = shouldContinue
+            shouldContinue = shouldContinue,
+            pixelCapturePlaceholderLabelFor = pixelCapturePlaceholderLabelFor,
+            pendingPixelCaptureSink = pendingPixelCaptureSink
         )
     }
 
@@ -222,8 +240,205 @@ internal class GranularComposeDecomposerTest {
         // When
         testedDecomposer.decompose(mockView, realRequest(shouldContinue = { checkpointCalls++; true }))
 
+        // Then - 6 nodes / checkpoint-every-2 = 3, plus 1 more for the pre-batched-draw re-check
+        // that fires because every childless mockLeafNode() here is itself a pixel-capture
+        // candidate (see the "pixel capture" test region below).
+        assertThat(checkpointCalls).isEqualTo(4)
+    }
+
+    // endregion
+
+    // region pixel capture
+
+    private class FakeComposeHostCaptureRasterizer(
+        private val bitmapsToReturn: (regions: List<Rect>) -> List<Bitmap?> = { regions -> regions.map { mock() } }
+    ) : ComposeHostCaptureRasterizer {
+        var callCount = 0
+        var lastRegions: List<Rect> = emptyList()
+
+        override fun captureRegions(hostView: View, regions: List<Rect>): List<Bitmap?> {
+            callCount++
+            lastRegions = regions
+            return bitmapsToReturn(regions)
+        }
+    }
+
+    /** A node with a real drawing effect - a [DrawModifierNode] in its modifier chain. */
+    private fun mockDrawingEffectNode(): SemanticsNode {
+        val node = mockLeafNode()
+        // A node with its own drawing effect commonly has children too (e.g. a Card wrapping
+        // content) - non-empty here specifically to prove capture doesn't depend on childlessness.
+        // Evaluated before any whenever(...).thenReturn(...) below - mockLeafNode() itself performs
+        // several stubbing calls, and nesting a fresh one inside another's still-open .thenReturn(...)
+        // argument corrupts Mockito's stubbing recorder (see the block-7 fix for this same mistake
+        // earlier in this file).
+        val childNode = mockLeafNode()
+        val drawModifier = mock<Modifier>(extraInterfaces = arrayOf(DrawModifierNode::class))
+        val modifierInfo: ModifierInfo = mock()
+        whenever(modifierInfo.modifier).thenReturn(drawModifier)
+        whenever(node.layoutInfo.getModifierInfo()).thenReturn(listOf(modifierInfo))
+        whenever(node.children).thenReturn(listOf(childNode))
+        return node
+    }
+
+    @Test
+    fun `M register a pending capture and emit a Pixel wireframe W decompose() { drawing-effect node }`() {
+        // Given
+        val node = mockDrawingEffectNode()
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        val fakeRasterizer = FakeComposeHostCaptureRasterizer()
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            hostRasterizer = fakeRasterizer
+        )
+        val registered = mutableListOf<PendingPixelCapture>()
+
+        // When
+        val result = testedDecomposer.decompose(
+            mockView,
+            realRequest(pendingPixelCaptureSink = PendingPixelCaptureSink { registered += it })
+        )
+
         // Then
-        assertThat(checkpointCalls).isEqualTo(3) // 6 nodes / checkpoint-every-2
+        assertThat(result).isNotNull()
+        assertThat(fakeRasterizer.callCount).isEqualTo(1)
+        assertThat(registered).hasSize(1)
+        val pixelWireframe = result!!.wireframes.single() as CapturedWireframe.Pixel
+        assertThat(pixelWireframe.resource).isEqualTo(PixelResource.Unresolved)
+        assertThat(pixelWireframe.identity).isEqualTo(registered.single().wireframeIdentity)
+        // Never recurses into a capture candidate's own children (would double-render).
+        assertThat(result.wireframes).hasSize(1)
+    }
+
+    @Test
+    fun `M register a pending capture W decompose() { childless leaf with no text or shape }`() {
+        // Given - mockLeafNode() is itself exactly this: childless, no text, no resolvable background.
+        val node = mockLeafNode()
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        val fakeRasterizer = FakeComposeHostCaptureRasterizer()
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            hostRasterizer = fakeRasterizer
+        )
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest())
+
+        // Then
+        assertThat(result).isNotNull()
+        assertThat(fakeRasterizer.callCount).isEqualTo(1)
+        assertThat(result!!.wireframes.single()).isInstanceOf(CapturedWireframe.Pixel::class.java)
+    }
+
+    @Test
+    fun `M call the rasterizer exactly once W decompose() { two capture candidates under one host }`() {
+        // Given - the shared-draw batching guarantee: repeated View#draw on the same Compose host
+        // within one cycle can corrupt a stateful Painter's internal state, so this must never be N calls.
+        val nodes = listOf(mockLeafNode(), mockLeafNode())
+        val root = mockRoot(nodes)
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        val fakeRasterizer = FakeComposeHostCaptureRasterizer()
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            hostRasterizer = fakeRasterizer
+        )
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest())
+
+        // Then
+        assertThat(result).isNotNull()
+        assertThat(fakeRasterizer.callCount).isEqualTo(1)
+        assertThat(fakeRasterizer.lastRegions).hasSize(2)
+        assertThat(result!!.wireframes).hasSize(2)
+    }
+
+    @Test
+    fun `M emit a placeholder without registering a capture W decompose() { privacy denies }`(
+        @StringForgery fakeLabel: String
+    ) {
+        // Given
+        val node = mockLeafNode()
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        val fakeRasterizer = FakeComposeHostCaptureRasterizer()
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            hostRasterizer = fakeRasterizer
+        )
+        val registered = mutableListOf<PendingPixelCapture>()
+
+        // When
+        val result = testedDecomposer.decompose(
+            mockView,
+            realRequest(
+                pixelCapturePlaceholderLabelFor = { fakeLabel },
+                pendingPixelCaptureSink = PendingPixelCaptureSink { registered += it }
+            )
+        )
+
+        // Then
+        assertThat(result).isNotNull()
+        assertThat(fakeRasterizer.callCount).isEqualTo(0)
+        assertThat(registered).isEmpty()
+        val placeholder = result!!.wireframes.single() as CapturedWireframe.PrivacyPlaceholder
+        assertThat(placeholder.label).isEqualTo(fakeLabel)
+    }
+
+    @Test
+    fun `M emit a placeholder W decompose() { rasterizer returns null for the region }`() {
+        // Given
+        val node = mockLeafNode()
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        val fakeRasterizer = FakeComposeHostCaptureRasterizer(bitmapsToReturn = { regions -> regions.map { null } })
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            hostRasterizer = fakeRasterizer
+        )
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest())
+
+        // Then
+        assertThat(result).isNotNull()
+        assertThat(result!!.wireframes.single()).isInstanceOf(CapturedWireframe.PrivacyPlaceholder::class.java)
+    }
+
+    @Test
+    fun `M abort before the batched draw W decompose() { shouldContinue denies right before capture }`() {
+        // Given
+        val node = mockLeafNode()
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        val fakeRasterizer = FakeComposeHostCaptureRasterizer()
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            hostRasterizer = fakeRasterizer,
+            nodesPerCheckpoint = 1000 // never trips mid-walk; only the pre-capture check should fire
+        )
+
+        // When - denies every call, so the walk's own single node still passes (checkpoint never
+        // reached with only 1 node) but the dedicated pre-capture re-check catches it.
+        val result = testedDecomposer.decompose(mockView, realRequest(shouldContinue = { false }))
+
+        // Then
+        assertThat(result).isNull()
+        assertThat(fakeRasterizer.callCount).isEqualTo(0)
     }
 
     // endregion
@@ -252,5 +467,7 @@ internal class GranularComposeDecomposerTest {
             next(CapturedIdentityKind.WIREFRAME, CapturedWireframeKind.TEXT)
         override fun placeholderWireframe(owner: CapturedIdentity) =
             next(CapturedIdentityKind.WIREFRAME, CapturedWireframeKind.PLACEHOLDER)
+        override fun imageWireframe(owner: CapturedIdentity) =
+            next(CapturedIdentityKind.WIREFRAME, CapturedWireframeKind.IMAGE)
     }
 }

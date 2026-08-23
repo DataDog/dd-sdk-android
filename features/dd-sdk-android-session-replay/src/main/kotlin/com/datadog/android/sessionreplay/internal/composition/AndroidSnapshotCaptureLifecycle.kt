@@ -75,8 +75,16 @@ internal class AndroidSnapshotCaptureLifecycle(
     @MainThread
     override fun onWindowsRemoved(windows: List<Window>) = refreshWindows()
 
+    // A newly resumed Activity's decor view isn't attached to WindowManagerGlobal until after
+    // ActivityThread finishes dispatching onActivityResumed to registered callbacks, so querying
+    // windowProvider() synchronously here would miss it. Posting defers the query to the next
+    // main-thread message, by which point the attach (or detach) has completed.
+    @Suppress("ThreadSafety") // Handler posts this block onto the main looper.
     @MainThread
     private fun refreshWindows() {
-        if (isRunning) interceptor.intercept(windowProvider())
+        if (!isRunning) return
+        uiHandler.post {
+            if (isRunning) interceptor.intercept(windowProvider())
+        }
     }
 }

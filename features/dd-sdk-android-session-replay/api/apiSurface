@@ -89,6 +89,12 @@ class com.datadog.android.sessionreplay._SessionReplayInternalProxy
 class com.datadog.android.sessionreplay.internal.TouchPrivacyManager
   constructor(com.datadog.android.sessionreplay.TouchPrivacy)
   fun addTouchOverrideArea(android.graphics.Rect, com.datadog.android.sessionreplay.TouchPrivacy)
+data class com.datadog.android.sessionreplay.internal.composition.PendingPixelCapture
+  constructor(com.datadog.android.internal.sessionreplay.composition.CapturedIdentity, com.datadog.android.internal.sessionreplay.composition.CapturedIdentity, android.graphics.Bitmap, Boolean = false)
+interface com.datadog.android.sessionreplay.internal.composition.PendingPixelCaptureSink
+  fun register(PendingPixelCapture)
+  companion object 
+    val NoOp: PendingPixelCaptureSink
 interface com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
   fun obfuscate(String): String
   companion object 
@@ -105,7 +111,7 @@ interface com.datadog.android.sessionreplay.recorder.composition.CompositionHost
   fun canDecompose(android.view.View): Boolean
   fun decompose(android.view.View, CompositionHostDecomposeRequest): CompositionHostDecomposeResult?
 class com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeRequest
-  constructor(com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory, com.datadog.android.internal.sessionreplay.composition.CapturedIdentity, Float, (android.view.View, com.datadog.android.internal.sessionreplay.composition.CapturedIdentity) -> CompositionNativeSubtree?, () -> Boolean = { true })
+  constructor(com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory, com.datadog.android.internal.sessionreplay.composition.CapturedIdentity, Float, (android.view.View, com.datadog.android.internal.sessionreplay.composition.CapturedIdentity) -> CompositionNativeSubtree?, () -> Boolean = { true }, (com.datadog.android.internal.sessionreplay.composition.CapturedBounds) -> String? = { null }, com.datadog.android.sessionreplay.internal.composition.PendingPixelCaptureSink = PendingPixelCaptureSink.NoOp)
 class com.datadog.android.sessionreplay.recorder.composition.CompositionNativeSubtree
   constructor(com.datadog.android.internal.sessionreplay.composition.CapturedLayer, List<com.datadog.android.internal.sessionreplay.composition.CapturedLayer>, List<com.datadog.android.internal.sessionreplay.composition.CapturedWireframe>)
 class com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeResult

@@ -113,10 +113,33 @@ internal class SnapshotCaptureOrchestratorTest {
         fixture.orchestrator.requestCapture()
         fixture.scheduler.runNext(IMMEDIATE)
 
-        // Then
-        assertThat(fixture.processor.pending).hasSize(1)
+        // Then: processing itself is dispatched off the main thread, not called inline
+        assertThat(fixture.processor.pending).isEmpty()
         assertThat(mainThread.isExecuting).isFalse()
         assertThat(fixture.consumed).isEmpty()
+
+        // When
+        fixture.expiryScheduler.runNext(IMMEDIATE)
+
+        // Then
+        assertThat(fixture.processor.pending).hasSize(1)
+        assertThat(fixture.consumed).isEmpty()
+    }
+
+    @Test
+    fun `M cancel dispatched processing W generation expires before dispatch runs`() {
+        // Given
+        val fixture = Fixture()
+        fixture.orchestrator.start()
+        fixture.orchestrator.requestCapture()
+        fixture.scheduler.runNext(IMMEDIATE)
+
+        // When
+        fixture.expiryScheduler.runNext(TIMEOUT_NS)
+
+        // Then
+        assertThat(fixture.expiryScheduler.tasks.single { it.delayNs == IMMEDIATE }.cancelled).isTrue()
+        assertThat(fixture.processor.pending).isEmpty()
     }
 
     @Test
@@ -128,6 +151,7 @@ internal class SnapshotCaptureOrchestratorTest {
         fixture.orchestrator.start()
         fixture.orchestrator.requestCapture()
         fixture.scheduler.runNext(IMMEDIATE)
+        fixture.expiryScheduler.runNext(IMMEDIATE)
         val processing = fixture.processor.pending.single()
         processing.complete()
 
@@ -149,12 +173,14 @@ internal class SnapshotCaptureOrchestratorTest {
         fixture.orchestrator.start()
         fixture.orchestrator.requestCapture()
         fixture.scheduler.runNext(IMMEDIATE)
+        fixture.expiryScheduler.runNext(IMMEDIATE)
 
         // When
         fixture.orchestrator.requestCapture()
         fixture.orchestrator.requestCapture()
         fixture.processor.pending.single().complete()
         fixture.scheduler.runNext(IMMEDIATE)
+        fixture.expiryScheduler.runNext(IMMEDIATE)
 
         // Then
         assertThat(fixture.producerCaptures).isEqualTo(2)
@@ -249,12 +275,14 @@ internal class SnapshotCaptureOrchestratorTest {
         fixture.orchestrator.start()
         fixture.orchestrator.requestCapture()
         fixture.scheduler.runNext(IMMEDIATE)
+        fixture.expiryScheduler.runNext(IMMEDIATE)
         val expiredProcessing = fixture.processor.pending.single()
         fixture.orchestrator.requestCapture()
 
         // When
         fixture.expiryScheduler.runNext(TIMEOUT_NS)
         fixture.scheduler.runNext(IMMEDIATE)
+        fixture.expiryScheduler.runNext(IMMEDIATE)
         expiredProcessing.complete()
 
         // Then
@@ -271,6 +299,7 @@ internal class SnapshotCaptureOrchestratorTest {
         fixture.orchestrator.start()
         fixture.orchestrator.requestCapture()
         fixture.scheduler.runNext(IMMEDIATE)
+        fixture.expiryScheduler.runNext(IMMEDIATE)
         val processing = fixture.processor.pending.single()
 
         // When
@@ -290,6 +319,7 @@ internal class SnapshotCaptureOrchestratorTest {
         fixture.orchestrator.start()
         fixture.orchestrator.requestCapture()
         fixture.scheduler.runNext(IMMEDIATE)
+        fixture.expiryScheduler.runNext(IMMEDIATE)
         val processing = fixture.processor.pending.single()
 
         // When
@@ -308,6 +338,7 @@ internal class SnapshotCaptureOrchestratorTest {
         fixture.orchestrator.start()
         fixture.orchestrator.requestCapture()
         fixture.scheduler.runNext(IMMEDIATE)
+        fixture.expiryScheduler.runNext(IMMEDIATE)
         val processing = fixture.processor.pending.single()
 
         // When
@@ -329,6 +360,7 @@ internal class SnapshotCaptureOrchestratorTest {
         // When
         fixture.orchestrator.requestCapture()
         fixture.scheduler.runNext(IMMEDIATE)
+        fixture.expiryScheduler.runNext(IMMEDIATE)
         val generation = fixture.producerGenerations.single()
         fixture.clock.nowNs = 50L
 
@@ -366,6 +398,7 @@ internal class SnapshotCaptureOrchestratorTest {
         fixture.orchestrator.start()
         fixture.orchestrator.requestCapture()
         fixture.scheduler.runNext(IMMEDIATE)
+        fixture.expiryScheduler.runNext(IMMEDIATE)
         val processing = fixture.processor.pending.single()
 
         // When
@@ -394,6 +427,7 @@ internal class SnapshotCaptureOrchestratorTest {
         fixture.orchestrator.requestCapture()
         fixture.scheduler.runNext(IMMEDIATE)
         fixture.scheduler.runNext(IMMEDIATE)
+        fixture.expiryScheduler.runNext(IMMEDIATE)
 
         // Then
         assertThat(fixture.producerCaptures).isEqualTo(1)
@@ -407,6 +441,7 @@ internal class SnapshotCaptureOrchestratorTest {
         fixture.orchestrator.start()
         fixture.orchestrator.requestCapture()
         fixture.scheduler.runNext(IMMEDIATE)
+        fixture.expiryScheduler.runNext(IMMEDIATE)
         val processing = fixture.processor.pending.single()
 
         // When
@@ -522,6 +557,7 @@ internal class SnapshotCaptureOrchestratorTest {
         fixture.orchestrator.start()
         fixture.orchestrator.requestCapture()
         fixture.scheduler.runNext(IMMEDIATE)
+        fixture.expiryScheduler.runNext(IMMEDIATE)
 
         // When
         fixture.clock.nowNs += 1_000L

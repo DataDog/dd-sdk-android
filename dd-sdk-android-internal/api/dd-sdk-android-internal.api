@@ -1046,6 +1046,7 @@ public final class com/datadog/android/internal/sessionreplay/composition/Captur
 public abstract interface class com/datadog/android/internal/sessionreplay/composition/CompositionIdentityFactory {
 	public abstract fun composeHost (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Ljava/lang/String;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
 	public abstract fun composeNode (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Ljava/lang/String;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public abstract fun imageWireframe (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
 	public abstract fun placeholderWireframe (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
 	public abstract fun shapeWireframe (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
 	public abstract fun textWireframe (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;)Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;

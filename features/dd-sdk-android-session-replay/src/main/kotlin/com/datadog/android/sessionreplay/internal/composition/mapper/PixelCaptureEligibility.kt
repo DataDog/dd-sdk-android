@@ -13,15 +13,19 @@ import com.datadog.android.sessionreplay.utils.GlobalBounds
 /**
  * Whether a region is eligible for pixel capture under a given [ImagePrivacy] level, shared by
  * every pixel-capture path (a whole View's fallback rasterization, a TextView's non-solid
- * background) so the decision and its placeholder labels stay single-sourced rather than
- * duplicated per call site.
+ * background, native View, Compose) so the decision and its placeholder labels stay
+ * single-sourced rather than duplicated per call site or platform.
  */
 internal object PixelCaptureEligibility {
 
     /**
      * Null if [imagePrivacy] permits capturing [boundsDp], otherwise the placeholder label to use
-     * instead: `MASK_ALL` always placeholders, `MASK_LARGE_ONLY` placeholders only regions at or
-     * above [IMAGE_DIMEN_CONSIDERED_PII_IN_DP] in either dimension, `MASK_NONE` never placeholders.
+     * instead - using the same semantics ordinary (non-pixel-captured) images already apply:
+     * `MASK_ALL` always placeholders, `MASK_LARGE_ONLY` placeholders only regions at or above
+     * [IMAGE_DIMEN_CONSIDERED_PII_IN_DP] in either dimension, `MASK_NONE` never placeholders.
+     * Text-region masking of whatever *is* captured is a separate, later concern
+     * (`PixelFallbackSnapshotProcessor`) - it applies regardless of the image privacy level that
+     * let capture proceed at all.
      */
     fun placeholderLabelFor(imagePrivacy: ImagePrivacy, boundsDp: GlobalBounds): String? =
         when (imagePrivacy) {

@@ -180,6 +180,33 @@ public final class com/datadog/android/sessionreplay/internal/TouchPrivacyManage
 	public final fun addTouchOverrideArea (Landroid/graphics/Rect;Lcom/datadog/android/sessionreplay/TouchPrivacy;)V
 }
 
+public final class com/datadog/android/sessionreplay/internal/composition/PendingPixelCapture {
+	public fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Landroid/graphics/Bitmap;Z)V
+	public synthetic fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Landroid/graphics/Bitmap;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public final fun component2 ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public final fun component3 ()Landroid/graphics/Bitmap;
+	public final fun component4 ()Z
+	public final fun copy (Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Landroid/graphics/Bitmap;Z)Lcom/datadog/android/sessionreplay/internal/composition/PendingPixelCapture;
+	public static synthetic fun copy$default (Lcom/datadog/android/sessionreplay/internal/composition/PendingPixelCapture;Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;Landroid/graphics/Bitmap;ZILjava/lang/Object;)Lcom/datadog/android/sessionreplay/internal/composition/PendingPixelCapture;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBitmap ()Landroid/graphics/Bitmap;
+	public final fun getOwnerIdentity ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public final fun getWireframeIdentity ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
+	public fun hashCode ()I
+	public final fun isTextFree ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/datadog/android/sessionreplay/internal/composition/PendingPixelCaptureSink {
+	public static final field Companion Lcom/datadog/android/sessionreplay/internal/composition/PendingPixelCaptureSink$Companion;
+	public abstract fun register (Lcom/datadog/android/sessionreplay/internal/composition/PendingPixelCapture;)V
+}
+
+public final class com/datadog/android/sessionreplay/internal/composition/PendingPixelCaptureSink$Companion {
+	public final fun getNoOp ()Lcom/datadog/android/sessionreplay/internal/composition/PendingPixelCaptureSink;
+}
+
 public abstract interface class com/datadog/android/sessionreplay/internal/recorder/obfuscator/StringObfuscator {
 	public static final field Companion Lcom/datadog/android/sessionreplay/internal/recorder/obfuscator/StringObfuscator$Companion;
 	public abstract fun obfuscate (Ljava/lang/String;)Ljava/lang/String;
@@ -2102,11 +2129,13 @@ public final class com/datadog/android/sessionreplay/recorder/SystemInformation 
 }
 
 public final class com/datadog/android/sessionreplay/recorder/composition/CompositionHostDecomposeRequest {
-	public fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CompositionIdentityFactory;Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;FLkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function0;)V
-	public synthetic fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CompositionIdentityFactory;Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;FLkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function0;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CompositionIdentityFactory;Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;FLkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;Lcom/datadog/android/sessionreplay/internal/composition/PendingPixelCaptureSink;)V
+	public synthetic fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CompositionIdentityFactory;Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;FLkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;Lcom/datadog/android/sessionreplay/internal/composition/PendingPixelCaptureSink;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getHostIdentity ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
 	public final fun getIdentityFactory ()Lcom/datadog/android/internal/sessionreplay/composition/CompositionIdentityFactory;
 	public final fun getNativeViewHandoff ()Lkotlin/jvm/functions/Function2;
+	public final fun getPendingPixelCaptureSink ()Lcom/datadog/android/sessionreplay/internal/composition/PendingPixelCaptureSink;
+	public final fun getPixelCapturePlaceholderLabelFor ()Lkotlin/jvm/functions/Function1;
 	public final fun getScreenDensity ()F
 	public final fun getShouldContinue ()Lkotlin/jvm/functions/Function0;
 }

@@ -109,10 +109,13 @@ data class CapturedIdentity(
  * `com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposer`) - using the
  * same factory instance the native View walker uses, so every identity stays collision-free and
  * correctly scoped without a separate id space. Narrowed to only the identity kinds a Compose
- * decomposer may legitimately mint - notably no `imageWireframe`/`webViewWireframe`, since it must
- * never construct a [CapturedWireframe.Pixel] or [CapturedWireframe.WebView].
- * `dd-sdk-android-session-replay`'s internal `CapturedIdentityFactory` extends this with the rest
- * (`screenRoot`/`window`/`view`/`layer`/`webViewWireframe`/`imageWireframe`).
+ * decomposer may legitimately mint - notably no `webViewWireframe`, since it must never construct a
+ * [CapturedWireframe.WebView] (Compose has no WebView-equivalent embedding surface of its own; a
+ * real WebView only ever reaches the tree via [CapturedWireframe] produced by the native handoff).
+ * `imageWireframe` *is* included, for a decomposer that pixel-captures content it can't otherwise
+ * describe - see `GranularComposeDecomposer`. `dd-sdk-android-session-replay`'s internal
+ * `CapturedIdentityFactory` extends this with the rest (`screenRoot`/`window`/`view`/`layer`/
+ * `webViewWireframe`).
  */
 interface CompositionIdentityFactory {
     /** Mints the identity for a Compose host owned by [window]. */
@@ -129,4 +132,7 @@ interface CompositionIdentityFactory {
 
     /** Mints the identity for a [CapturedWireframe.PrivacyPlaceholder] owned by [owner]. */
     fun placeholderWireframe(owner: CapturedIdentity): CapturedIdentity
+
+    /** Mints the identity for a [CapturedWireframe.Pixel] owned by [owner]. */
+    fun imageWireframe(owner: CapturedIdentity): CapturedIdentity
 }

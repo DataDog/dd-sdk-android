@@ -24,6 +24,7 @@ import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMap
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
+import com.datadog.android.sessionreplay.internal.composition.mapper.PixelCaptureEligibility
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeRequest
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeResult
@@ -31,6 +32,7 @@ import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDec
 import com.datadog.android.sessionreplay.recorder.composition.CompositionNativeSubtree
 import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver
+import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import kotlin.math.max
@@ -322,7 +324,14 @@ internal class AndroidWindowTraversal(
                     state
                 )
             },
-            shouldContinue = context::shouldContinue
+            shouldContinue = context::shouldContinue,
+            pixelCapturePlaceholderLabelFor = { bounds ->
+                PixelCaptureEligibility.placeholderLabelFor(
+                    ownPrivacy.imagePrivacy,
+                    GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height)
+                )
+            },
+            pendingPixelCaptureSink = PendingPixelCaptureSink { state.pendingPixelCaptures.add(it) }
         )
         val result = decomposer.decompose(view, request)
         if (!context.shouldContinue()) return ComposeAttempt.Aborted

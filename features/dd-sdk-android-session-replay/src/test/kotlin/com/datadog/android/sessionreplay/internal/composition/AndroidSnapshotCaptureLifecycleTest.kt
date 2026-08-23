@@ -102,6 +102,43 @@ internal class AndroidSnapshotCaptureLifecycleTest {
     }
 
     @Test
+    fun `M defer window query W onWindowsAdded {window not yet attached}`() {
+        // Given
+        val application = mock<Application>()
+        val interceptor = mock<CompositionViewOnDrawInterceptor>()
+        val posted = mutableListOf<Runnable>()
+        val handler = mock<Handler>()
+        doAnswer {
+            posted += it.getArgument<Runnable>(0)
+            true
+        }.whenever(handler).post(any<Runnable>())
+        val views = listOf(mock<View>())
+        val lifecycle = AndroidSnapshotCaptureLifecycle(
+            application = application,
+            interceptor = interceptor,
+            internalLogger = mock(),
+            uiHandler = handler,
+            windowProvider = { views }
+        )
+
+        // When
+        lifecycle.start()
+        posted.removeAt(0).run() // the start() post itself
+        lifecycle.onWindowsAdded(listOf(mock<Window>()))
+
+        // Then: the new window isn't attached to WindowManagerGlobal yet at the point
+        // onWindowsAdded is dispatched, so the query must not run synchronously - only the
+        // start() post (already run above) has resolved into an intercept() call so far.
+        verify(interceptor, org.mockito.kotlin.times(1)).intercept(views)
+
+        // When the deferred query actually runs (posted to the next main-thread message)
+        posted.single().run()
+
+        // Then
+        verify(interceptor, org.mockito.kotlin.times(2)).intercept(views)
+    }
+
+    @Test
     fun `M schedule and cancel delayed task W use handler scheduler`() {
         // Given
         val handler = mock<Handler>()

@@ -78,6 +78,7 @@ internal class SnapshotOrchestrationIntegrationTest {
         orchestrator.start()
         listener.onDraw()
         scheduler.runNext()
+        expiryScheduler.runNext(0L)
         val completionTask = argumentCaptor<Runnable>()
         verify(executor).execute(completionTask.capture())
         completionTask.firstValue.run()
@@ -96,14 +97,19 @@ internal class SnapshotOrchestrationIntegrationTest {
         private val tasks = mutableListOf<TestTask>()
 
         override fun schedule(delayNs: Long, task: () -> Unit): CancellableCaptureWork =
-            TestTask(task).also(tasks::add)
+            TestTask(delayNs, task).also(tasks::add)
 
         fun runNext() {
             tasks.first { !it.cancelled }.run()
         }
+
+        fun runNext(delayNs: Long) {
+            tasks.first { !it.cancelled && it.delayNs == delayNs }.run()
+        }
     }
 
     private class TestTask(
+        val delayNs: Long,
         private val task: () -> Unit
     ) : CancellableCaptureWork {
         var cancelled = false

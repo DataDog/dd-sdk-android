@@ -323,6 +323,7 @@ interface com.datadog.android.internal.sessionreplay.composition.CompositionIden
   fun shapeWireframe(CapturedIdentity): CapturedIdentity
   fun textWireframe(CapturedIdentity): CapturedIdentity
   fun placeholderWireframe(CapturedIdentity): CapturedIdentity
+  fun imageWireframe(CapturedIdentity): CapturedIdentity
 interface com.datadog.android.internal.system.BuildSdkVersionProvider
   val version: Int
   val isAtLeastN: Boolean

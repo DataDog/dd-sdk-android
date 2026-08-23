@@ -61,6 +61,7 @@ import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.compose.ComposeExtensionSupport
 import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
+import com.datadog.android.sessionreplay.textdetection.TextDetectionExtensionSupport
 import com.datadog.android.timber.DatadogTree
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.DatadogTracing
@@ -339,6 +340,7 @@ class SampleApplication : Application() {
             }
             .addExtensionSupport(MaterialExtensionSupport())
             .addExtensionSupport(ComposeExtensionSupport())
+            .addExtensionSupport(TextDetectionExtensionSupport())
             .setSystemRequirements(systemRequirementsConfiguration)
             .setHeatmapsEnabled(true)
             .setCompositionTreeRecordingEnabled(true)

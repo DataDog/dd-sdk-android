@@ -442,6 +442,53 @@ internal class AndroidWindowTraversalTest {
     }
 
     @Test
+    fun `M surface a Compose-registered pixel capture through the same pending list as native W visit`(
+        @Forgery fakeRootBounds: GlobalBounds,
+        @Forgery fakeHostBounds: GlobalBounds
+    ) {
+        // Given - proves a Compose decomposer's pixel captures flow through the exact same
+        // pendingPixelCaptures list the native View pixel-fallback path already uses, so they get
+        // identical downstream treatment (OCR text masking, resource resolution, the budget-aware
+        // detector timeout) with no Compose-specific privacy code needed - see PixelFallbackSnapshotProcessor.
+        val root = mockViewGroup(fakeRootBounds)
+        val composeHost = mockView(fakeHostBounds)
+        whenever(root.childCount).thenReturn(1)
+        whenever(root.getChildAt(0)).thenReturn(composeHost)
+        val windowIdentity = identityFactory.window("window")
+        val mockBitmap: android.graphics.Bitmap = mock()
+
+        val decomposer = object : CompositionHostDecomposer {
+            override fun canDecompose(view: View) = view === composeHost
+            override fun decompose(
+                view: View,
+                request: CompositionHostDecomposeRequest
+            ): CompositionHostDecomposeResult? {
+                val nodeIdentity = request.identityFactory.composeNode(request.hostIdentity, "node")
+                val pixelIdentity = request.identityFactory.imageWireframe(nodeIdentity)
+                request.pendingPixelCaptureSink.register(
+                    PendingPixelCapture(
+                        wireframeIdentity = pixelIdentity,
+                        ownerIdentity = nodeIdentity,
+                        bitmap = mockBitmap
+                    )
+                )
+                return null
+            }
+        }
+
+        // When
+        val result = traversal(
+            composeHostDecomposer = decomposer,
+            isComposeHost = { it === composeHost }
+        ).traverseWindow(root, windowIdentity, identityFactory, fakeContext)
+
+        // Then
+        val present = result as WindowWalkResult.Present
+        assertThat(present.pendingPixelCaptures).hasSize(1)
+        assertThat(present.pendingPixelCaptures.single().bitmap).isSameAs(mockBitmap)
+    }
+
+    @Test
     fun `M fall back to the mapper W visit { compose host, decomposer cannot decompose }`(
         @Forgery fakeRootBounds: GlobalBounds,
         @Forgery fakeHostBounds: GlobalBounds
