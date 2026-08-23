@@ -15,6 +15,7 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory
 import com.datadog.android.lint.InternalApi
+import com.datadog.android.sessionreplay.internal.composition.PendingPixelCaptureSink
 
 /**
  * SDK-internal extension point: decomposes a Compose host view (`ComposeView`/`AndroidComposeView`)
@@ -70,6 +71,17 @@ interface CompositionHostDecomposer {
  * @param shouldContinue Cooperative generation deadline/budget check. The decomposer polls this
  * during its walk and returns null if it fails, discarding the entire decomposition rather than
  * returning a partial tree. Defaults to allowing work for callers without a generation context.
+ * @param pixelCapturePlaceholderLabelFor For a decomposer that pixel-captures content it can't
+ * otherwise describe (a real custom draw effect, an image, a shadow): given that content's own
+ * bounds, returns null if pixel capture is permitted, or a placeholder label if the caller's image
+ * privacy policy disqualifies it (`MASK_ALL`, or `MASK_LARGE_ONLY` for a large-enough region) - the
+ * same decision the native View pixel-fallback path applies before drawing anything. Bounds-based
+ * rather than a raw privacy enum so the label text and size threshold stay single-sourced with the
+ * native path rather than duplicated across the module boundary.
+ * @param pendingPixelCaptureSink Where a decomposer deposits a raster capture of content it can't
+ * describe structurally, once [pixelCapturePlaceholderLabelFor] has permitted it - mirrors the
+ * native path's own `CapturedMappingContext.pendingPixelCaptureSink`. Defaults to a no-op sink for
+ * callers that don't pixel-capture.
  */
 @InternalApi
 class CompositionHostDecomposeRequest @JvmOverloads constructor(
@@ -78,7 +90,9 @@ class CompositionHostDecomposeRequest @JvmOverloads constructor(
     val screenDensity: Float,
     val hostBounds: CapturedBounds?,
     val nativeViewHandoff: (view: View, childIdentity: CapturedIdentity) -> CompositionNativeSubtree?,
-    val shouldContinue: () -> Boolean = { true }
+    val shouldContinue: () -> Boolean = { true },
+    val pixelCapturePlaceholderLabelFor: (bounds: CapturedBounds) -> String? = { null },
+    val pendingPixelCaptureSink: PendingPixelCaptureSink = PendingPixelCaptureSink.NoOp
 ) {
     /** Preserves callers that do not supply a copied host clip. */
     @JvmOverloads
@@ -87,8 +101,19 @@ class CompositionHostDecomposeRequest @JvmOverloads constructor(
         hostIdentity: CapturedIdentity,
         screenDensity: Float,
         nativeViewHandoff: (view: View, childIdentity: CapturedIdentity) -> CompositionNativeSubtree?,
-        shouldContinue: () -> Boolean = { true }
-    ) : this(identityFactory, hostIdentity, screenDensity, null, nativeViewHandoff, shouldContinue)
+        shouldContinue: () -> Boolean = { true },
+        pixelCapturePlaceholderLabelFor: (bounds: CapturedBounds) -> String? = { null },
+        pendingPixelCaptureSink: PendingPixelCaptureSink = PendingPixelCaptureSink.NoOp
+    ) : this(
+        identityFactory,
+        hostIdentity,
+        screenDensity,
+        null,
+        nativeViewHandoff,
+        shouldContinue,
+        pixelCapturePlaceholderLabelFor,
+        pendingPixelCaptureSink
+    )
 }
 
 /**

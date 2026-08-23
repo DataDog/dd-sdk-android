@@ -17,6 +17,7 @@ import android.widget.ImageView
 import android.widget.ScrollView
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.IMAGE_DIMEN_CONSIDERED_PII_IN_DP
 import com.datadog.android.sessionreplay.internal.composition.ViewPixelCapture
 import com.datadog.android.sessionreplay.internal.composition.ViewTransform
 import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper

@@ -30,6 +30,7 @@ import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedVie
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
+import com.datadog.android.sessionreplay.internal.composition.mapper.PixelCaptureEligibility
 import com.datadog.android.sessionreplay.internal.putTouchOverrideArea
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeRequest
@@ -319,7 +320,14 @@ internal class AndroidWindowTraversal(
                     context
                 )
             },
-            shouldContinue = context::shouldContinue
+            shouldContinue = context::shouldContinue,
+            pixelCapturePlaceholderLabelFor = { bounds ->
+                PixelCaptureEligibility.placeholderLabelFor(
+                    mappingContext.imagePrivacy,
+                    GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height)
+                )
+            },
+            pendingPixelCaptureSink = PendingPixelCaptureSink { state.pendingPixelCaptures.add(it) }
         )
         return decomposer.decompose(view, request)
     }
