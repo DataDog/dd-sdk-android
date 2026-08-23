@@ -87,7 +87,8 @@ internal class SnapshotOrchestrationIntegrationTest {
         assertThat(record.firstValue.applicationId).isEqualTo(fakeApplicationId)
         assertThat(record.firstValue.sessionId).isEqualTo(fakeSessionId)
         assertThat(record.firstValue.viewId).isEqualTo(tree.scope.value)
-        assertThat(record.firstValue.records).hasSize(1)
+        // Meta + Focus (first snapshot for this view) + the full snapshot itself.
+        assertThat(record.firstValue.records).hasSize(3)
     }
 
     private class TestScheduler : CaptureTaskScheduler {

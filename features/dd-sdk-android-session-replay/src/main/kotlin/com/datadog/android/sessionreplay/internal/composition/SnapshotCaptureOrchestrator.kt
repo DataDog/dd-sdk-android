@@ -85,23 +85,24 @@ internal class SnapshotCaptureOrchestrator(
     private fun beginCapture(scheduleId: Long) {
         val active = createActiveGeneration(scheduleId) ?: return
 
-        val expiration = expiryScheduler.schedule(active.generation.remainingBudgetNs()) {
+        // Deliberately fire-and-forget: never tracked via generation.track() (invalidateAll()
+        // would cancel every tracked work item unconditionally, including this same timer's own
+        // backing Future while it is the one currently executing - a self-cancel race that
+        // reliably "wins" against the executor's own bookkeeping) and never explicitly cancelled
+        // on early success/failure/supersession either. expire() below only acts if this exact
+        // generation instance is still the active one, so an already-resolved generation's timer
+        // firing late is a harmless no-op. Explicitly cancelling a still-queued *scheduled*
+        // (delayed) task on a plain JDK ScheduledThreadPoolExecutor - which is what this SDK's
+        // shared executor factory hands out - doesn't remove it from the delay queue by default;
+        // it still gets dispatched through afterExecute() at its original fire time and logs a
+        // spurious CancellationException as an uncaught execution error. Never cancelling avoids
+        // that outright, without having to change the shared executor's behavior for every other
+        // feature that uses it.
+        expiryScheduler.schedule(active.generation.remainingBudgetNs()) {
             expire(active.generation)
         }
-        val shouldCancelExpiration = synchronized(lock) {
-            val current = activeGeneration
-            if (current?.generation?.id == active.generation.id) {
-                current.expiration = expiration
-                active.generation.track(expiration)
-                false
-            } else {
-                true
-            }
-        }
-        if (shouldCancelExpiration) {
-            expiration.cancel()
-            return
-        }
+        val isStillActive = synchronized(lock) { activeGeneration?.generation?.id == active.generation.id }
+        if (!isStillActive) return
 
         val captureResult = active.generation.runMainThreadCaptureUnit(admissionAlreadyGranted = true) {
             safeCapture(producer, internalLogger, active.generation, active.changeset)
@@ -218,10 +219,12 @@ internal class SnapshotCaptureOrchestrator(
     private class ActiveGeneration(
         val generation: CaptureGenerationContext,
         val changeset: CaptureChangeset,
-        var expiration: CancellableCaptureWork = CancellableCaptureWork.NONE,
         var processing: CancellableCaptureWork = CancellableCaptureWork.NONE
     ) {
         fun cancel() {
+            // The expiry timer itself is never cancelled - see the fire-and-forget comment on its
+            // scheduling in beginCapture(). expire()'s own generation-identity check makes letting
+            // it fire naturally, later, on an already-abandoned generation a harmless no-op.
             generation.expire()
         }
     }

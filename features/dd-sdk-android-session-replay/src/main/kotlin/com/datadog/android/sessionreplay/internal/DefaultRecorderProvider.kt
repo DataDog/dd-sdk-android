@@ -28,6 +28,7 @@ import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.SessionReplayInternalCallback
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.internal.async.DataQueueHandler
 import com.datadog.android.sessionreplay.internal.composition.ActiveWindowSource
 import com.datadog.android.sessionreplay.internal.composition.AndroidCapturedSnapshotProducer
 import com.datadog.android.sessionreplay.internal.composition.AndroidSnapshotCaptureLifecycle
@@ -189,7 +190,12 @@ internal class DefaultRecorderProvider(
             eventProcessingExecutorName = "sr-composition-event-processing",
             drawablesExecutorName = "sr-composition-drawables"
         )
-        val completionQueue = createCompletionQueue(recordWriter, rumContextProvider, internalLogger)
+        val completionQueue = createCompletionQueue(
+            recordWriter,
+            rumContextProvider,
+            internalLogger,
+            resourceResolverBundle.dataQueueHandler
+        )
         val orchestrator = createCaptureOrchestrator(
             windowSource,
             rumContextProvider,
@@ -221,13 +227,15 @@ internal class DefaultRecorderProvider(
     private fun createCompletionQueue(
         recordWriter: RecordWriter,
         rumContextProvider: RumContextProvider,
-        internalLogger: InternalLogger
+        internalLogger: InternalLogger,
+        resourceDataQueueHandler: DataQueueHandler
     ): SnapshotCompletionQueue = SnapshotCompletionQueue(
         executorService = sdkCore.createSingleThreadExecutorService("sr-composition-processing"),
         processor = DefaultSnapshotCompletionProcessor(
             rumContextProvider = rumContextProvider,
             recordWriter = recordWriter,
-            internalLogger = internalLogger
+            internalLogger = internalLogger,
+            resourceDataQueueHandler = resourceDataQueueHandler
         ),
         internalLogger = internalLogger
     )
@@ -242,13 +250,14 @@ internal class DefaultRecorderProvider(
         val skippedFrameNotifier = CaptureSkippedFrameNotifier(sdkCore)
         val producer = compositionSnapshotProducerFactory?.invoke(windowSource, rumContextProvider)
             ?: defaultCompositionSnapshotProducer(windowSource, rumContextProvider)
+        val mainThreadExecutor = HandlerCaptureMainThreadExecutor()
         return SnapshotCaptureOrchestrator(
             producer = producer,
-            processor = PixelFallbackSnapshotProcessor(resourceResolver, textDetector),
+            processor = PixelFallbackSnapshotProcessor(resourceResolver, textDetector, mainThreadExecutor),
             consumer = completionQueue,
             timeProvider = TimeProviderCaptureTimeProvider(sdkCore.timeProvider),
             captureScheduler = HandlerCaptureTaskScheduler(),
-            mainThreadExecutor = HandlerCaptureMainThreadExecutor(),
+            mainThreadExecutor = mainThreadExecutor,
             expiryScheduler = ScheduledExecutorCaptureTaskScheduler(
                 executorService = sdkCore.createScheduledExecutorService("sr-composition-expiry"),
                 internalLogger = internalLogger

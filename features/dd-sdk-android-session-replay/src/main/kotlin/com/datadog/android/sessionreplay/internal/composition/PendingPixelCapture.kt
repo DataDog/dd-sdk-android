@@ -16,11 +16,17 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
  * `CapturedWireframe.Pixel` this capture will resolve; [ownerIdentity] is that wireframe's owning
  * layer, needed only if resolution instead has to downgrade to a fresh
  * `CapturedWireframe.PrivacyPlaceholder` identity and fix up the owner's child reference.
+ * [isTextFree] skips text-region detection entirely for captures that are structurally
+ * guaranteed not to contain text - a `TextView`/`Button`'s background-drawable-only rasterization
+ * (its text is always captured separately, as its own `CapturedWireframe.Text`), not an arbitrary
+ * view's full-content screenshot, which could genuinely have readable text baked into it and must
+ * still fail closed to a placeholder when a detector can't verify otherwise.
  */
 internal data class PendingPixelCapture(
     val wireframeIdentity: CapturedIdentity,
     val ownerIdentity: CapturedIdentity,
-    val bitmap: Bitmap
+    val bitmap: Bitmap,
+    val isTextFree: Boolean = false
 )
 
 /** Where a mapper deposits a [PendingPixelCapture] it can't resolve synchronously. */

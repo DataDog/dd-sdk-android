@@ -4,12 +4,6 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.config.androidLibraryConfig
-import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.javadocConfig
-import com.datadog.gradle.config.junitConfig
-import com.datadog.gradle.config.kotlinConfig
-import com.datadog.gradle.config.publishingConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -17,14 +11,12 @@ plugins {
     // Build
     id("com.android.library")
     kotlin("android")
+    id("datadogBuildConfig")
 
     // Publish
     `maven-publish`
     signing
     id("org.jetbrains.dokka-javadoc")
-
-    // Analysis tools
-    id("com.github.ben-manes.versions")
 
     // Tests
     id("org.jetbrains.kotlinx.kover")
@@ -63,12 +55,13 @@ dependencies {
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
 }
 
-kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
-androidLibraryConfig()
-junitConfig()
-javadocConfig()
-dependencyUpdateConfig()
-publishingConfig(
-    "Session Replay on-device text detection, backed by ML Kit, used to mask visible text in " +
-        "pixel-fallback captures before upload."
-)
+datadogBuild {
+    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyAndroidLibraryConfig()
+    applyJunitConfig()
+    applyJavadocConfig()
+    applyPublishingConfig(
+        "Session Replay on-device text detection, backed by ML Kit, used to mask visible text in " +
+            "pixel-fallback captures before upload."
+    )
+}

@@ -65,8 +65,12 @@ import,com.google.accompanist,Apache-2.0,Copyright 2018 The Android Open Source 
 import,com.google.android.exoplayer,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,com.google.android.gms,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,com.google.android.material,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,com.google.android.datatransport,Apache-2.0,Copyright Google LLC
+import,com.google.android.odml,"Android Software Development Kit License",Copyright Google LLC
 import,com.google.code.gson,Apache-2.0,Copyright 2008 Google Inc
+import,com.google.firebase,Apache-2.0,Copyright Google LLC
 import,com.google.guava,Apache-2.0,Copyright 2009 The Guava Authors
+import,com.google.mlkit,"ML Kit Terms of Service",Copyright Google LLC
 import,com.hannesdorfmann,Apache-2.0,Copyright (c) 2015 Hannes Dorfmann.
 import,com.jakewharton.timber,Apache-2.0,Copyright 2013 Jake Wharton
 import,com.launchdarkly,Apache-2.0,"Copyright 2016 Catamorphic, Co."

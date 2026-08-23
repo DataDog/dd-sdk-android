@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.composition
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.async.DataQueueHandler
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
@@ -25,6 +26,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.util.concurrent.ExecutorService
@@ -141,11 +143,174 @@ internal class SnapshotCompletionQueueTest {
         // When
         processor.process(CompletedSnapshotCapture(generation(clock, deadlineNs = 10L), tree.snapshot))
 
-        // Then
+        // Then: this is the first snapshot for this view, so it must open with the Meta (viewport
+        // size) and Focus records a player following this rrweb-derived protocol requires before
+        // any wireframe content - see DefaultSnapshotCompletionProcessor's own doc comment.
         val recordCaptor = argumentCaptor<EnrichedRecord>()
         verify(writer).write(recordCaptor.capture(), any())
         assertThat(recordCaptor.firstValue).isEqualTo(
-            EnrichedRecord(fakeApplicationId, fakeSessionId, tree.scope.value, listOf(record))
+            EnrichedRecord(
+                fakeApplicationId,
+                fakeSessionId,
+                tree.scope.value,
+                listOf(
+                    MobileSegment.MobileRecord.MetaRecord(
+                        timestamp = tree.snapshot.timestamp,
+                        data = MobileSegment.Data1(width = tree.root.bounds.width, height = tree.root.bounds.height)
+                    ),
+                    MobileSegment.MobileRecord.FocusRecord(
+                        timestamp = tree.snapshot.timestamp,
+                        data = MobileSegment.Data2(hasFocus = true)
+                    ),
+                    record
+                )
+            )
+        )
+    }
+
+    @Test
+    fun `M drain the resource data queue W processing a capture`(
+        @StringForgery fakeApplicationId: String,
+        @StringForgery fakeSessionId: String
+    ) {
+        // Given: any resource bytes this generation's pixel captures resolved were already
+        // queued upstream, in PixelFallbackSnapshotProcessor/ResourceResolver, well before this
+        // processor ever sees the capture - nothing actually persists or uploads them, though,
+        // until something calls DataQueueHandler.tryToConsumeItems(). Verified regardless of the
+        // wire-mapping outcome below (Success here), since resource queueing already happened
+        // independently of it.
+        val tree = compositionTestTree()
+        val wireMapper = mock<CapturedTreeWireMapper>()
+        whenever(wireMapper.mapFullSnapshot(tree.snapshot))
+            .thenReturn(CaptureWireMappingResult.Success(mock()))
+        val rumContextProvider = mock<RumContextProvider>()
+        whenever(rumContextProvider.getRumContext()).thenReturn(
+            SessionReplayRumContext(fakeApplicationId, fakeSessionId, tree.scope.value)
+        )
+        val resourceDataQueueHandler = mock<DataQueueHandler>()
+        val processor = DefaultSnapshotCompletionProcessor(
+            rumContextProvider = rumContextProvider,
+            recordWriter = mock(),
+            internalLogger = mock(),
+            wireMapper = wireMapper,
+            resourceDataQueueHandler = resourceDataQueueHandler
+        )
+        val clock = FakeClock().apply { nowNs = 9L }
+
+        // When
+        processor.process(CompletedSnapshotCapture(generation(clock, deadlineNs = 10L), tree.snapshot))
+
+        // Then
+        verify(resourceDataQueueHandler).tryToConsumeItems()
+    }
+
+    @Test
+    fun `M drain the resource data queue W the rum context is invalid`() {
+        // Given: even when this capture's own generation gets dropped outright (an early-return
+        // path, before any wire-mapping is even attempted), any resources it already queued must
+        // still be drained - they were spent regardless of what happens to this specific capture.
+        val tree = compositionTestTree()
+        val rumContextProvider = mock<RumContextProvider>()
+        whenever(rumContextProvider.getRumContext()).thenReturn(SessionReplayRumContext())
+        val resourceDataQueueHandler = mock<DataQueueHandler>()
+        val processor = DefaultSnapshotCompletionProcessor(
+            rumContextProvider = rumContextProvider,
+            recordWriter = mock(),
+            internalLogger = mock(),
+            resourceDataQueueHandler = resourceDataQueueHandler
+        )
+        val clock = FakeClock().apply { nowNs = 9L }
+
+        // When
+        processor.process(CompletedSnapshotCapture(generation(clock, deadlineNs = 10L), tree.snapshot))
+
+        // Then
+        verify(resourceDataQueueHandler).tryToConsumeItems()
+    }
+
+    @Test
+    fun `M write only the mapped snapshot W second capture for the same view`(
+        @StringForgery fakeApplicationId: String,
+        @StringForgery fakeSessionId: String
+    ) {
+        // Given
+        val tree = compositionTestTree()
+        val firstRecord = mock<MobileSegment.MobileRecord.MobileFullSnapshotRecord>()
+        val secondRecord = mock<MobileSegment.MobileRecord.MobileFullSnapshotRecord>()
+        val wireMapper = mock<CapturedTreeWireMapper>()
+        whenever(wireMapper.mapFullSnapshot(tree.snapshot))
+            .thenReturn(CaptureWireMappingResult.Success(firstRecord))
+            .thenReturn(CaptureWireMappingResult.Success(secondRecord))
+        val writer = mock<RecordWriter>()
+        val rumContextProvider = mock<RumContextProvider>()
+        whenever(rumContextProvider.getRumContext()).thenReturn(
+            SessionReplayRumContext(fakeApplicationId, fakeSessionId, tree.scope.value)
+        )
+        val processor = DefaultSnapshotCompletionProcessor(
+            rumContextProvider = rumContextProvider,
+            recordWriter = writer,
+            internalLogger = mock(),
+            wireMapper = wireMapper
+        )
+        val clock = FakeClock().apply { nowNs = 9L }
+        processor.process(CompletedSnapshotCapture(generation(clock, deadlineNs = 10L), tree.snapshot))
+
+        // When: a second capture completes for the exact same RUM view.
+        processor.process(CompletedSnapshotCapture(generation(clock, id = 2L, deadlineNs = 10L), tree.snapshot))
+
+        // Then: no repeated Meta/Focus records - the view never changed.
+        val recordCaptor = argumentCaptor<EnrichedRecord>()
+        verify(writer, times(2)).write(recordCaptor.capture(), any())
+        assertThat(recordCaptor.secondValue).isEqualTo(
+            EnrichedRecord(fakeApplicationId, fakeSessionId, tree.scope.value, listOf(secondRecord))
+        )
+    }
+
+    @Test
+    fun `M write a ViewEndRecord for the previous view W a new view's snapshot completes`(
+        @StringForgery fakeApplicationId: String,
+        @StringForgery fakeSessionId: String,
+        @StringForgery fakeOtherViewId: String
+    ) {
+        // Given: a first snapshot completes for "rum-view" ...
+        val tree = compositionTestTree()
+        val otherTree = compositionTestTree(scopeValue = fakeOtherViewId)
+        val record = mock<MobileSegment.MobileRecord.MobileFullSnapshotRecord>()
+        val otherRecord = mock<MobileSegment.MobileRecord.MobileFullSnapshotRecord>()
+        val wireMapper = mock<CapturedTreeWireMapper>()
+        whenever(wireMapper.mapFullSnapshot(tree.snapshot)).thenReturn(CaptureWireMappingResult.Success(record))
+        whenever(wireMapper.mapFullSnapshot(otherTree.snapshot))
+            .thenReturn(CaptureWireMappingResult.Success(otherRecord))
+        val writer = mock<RecordWriter>()
+        val rumContextProvider = mock<RumContextProvider>()
+        whenever(rumContextProvider.getRumContext()).thenReturn(
+            SessionReplayRumContext(fakeApplicationId, fakeSessionId, tree.scope.value)
+        )
+        val processor = DefaultSnapshotCompletionProcessor(
+            rumContextProvider = rumContextProvider,
+            recordWriter = writer,
+            internalLogger = mock(),
+            wireMapper = wireMapper
+        )
+        val clock = FakeClock().apply { nowNs = 9L }
+        processor.process(CompletedSnapshotCapture(generation(clock, deadlineNs = 10L), tree.snapshot))
+
+        // When: ... then a new view ("fakeOtherViewId") completes its own first snapshot.
+        whenever(rumContextProvider.getRumContext()).thenReturn(
+            SessionReplayRumContext(fakeApplicationId, fakeSessionId, fakeOtherViewId)
+        )
+        processor.process(CompletedSnapshotCapture(generation(clock, id = 2L, deadlineNs = 10L), otherTree.snapshot))
+
+        // Then: the previous view is closed out, in its own record, before the new view opens.
+        val recordCaptor = argumentCaptor<EnrichedRecord>()
+        verify(writer, times(3)).write(recordCaptor.capture(), any())
+        assertThat(recordCaptor.secondValue).isEqualTo(
+            EnrichedRecord(
+                fakeApplicationId,
+                fakeSessionId,
+                tree.scope.value,
+                listOf(MobileSegment.MobileRecord.ViewEndRecord(otherTree.snapshot.timestamp))
+            )
         )
     }
 

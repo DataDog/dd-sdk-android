@@ -229,6 +229,7 @@ internal class AndroidCapturedSnapshotProducerTest {
         whenever(textView.text).thenReturn(fakeText)
         whenever(textView.background).thenReturn(null)
         whenever(textView.currentTextColor).thenReturn(fakeTextColor)
+        whenever(textView.compoundDrawables).thenReturn(arrayOfNulls(4))
         whenever(mockViewIdentifierResolver.resolveViewId(textView)).thenReturn(nextViewId.getAndIncrement())
         whenever(mockViewBoundsResolver.resolveViewGlobalBounds(textView, fakeDensity)).thenReturn(fakeTextBounds)
         whenever(window.childCount).thenReturn(1)

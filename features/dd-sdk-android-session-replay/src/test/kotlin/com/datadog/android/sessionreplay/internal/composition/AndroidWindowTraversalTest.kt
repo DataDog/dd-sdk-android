@@ -18,6 +18,7 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.internal.sessionreplay.composition.PixelResource
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMapperTypeWrapper
@@ -176,6 +177,51 @@ internal class AndroidWindowTraversalTest {
         // Then
         val present = result as WindowWalkResult.Present
         assertThat(present.rootLayer.children).isEmpty()
+    }
+
+    @Test
+    fun `M not recurse into native children W visit { fallback mapper returns a pixel wireframe }`(
+        @Forgery fakeRootBounds: GlobalBounds,
+        @Forgery fakePixelGroupBounds: GlobalBounds,
+        @Forgery fakeGrandChildBounds: GlobalBounds
+    ) {
+        // Given: [View.draw] already bakes grandChild into the bitmap this mapper rasterized -
+        // walking it again as a separate native child would only double-describe it.
+        val root = mockViewGroup(fakeRootBounds)
+        val pixelGroup = mockViewGroup(fakePixelGroupBounds)
+        val grandChild = mockView(fakeGrandChildBounds)
+        whenever(pixelGroup.childCount).thenReturn(1)
+        whenever(pixelGroup.getChildAt(0)).thenReturn(grandChild)
+        whenever(root.childCount).thenReturn(1)
+        whenever(root.getChildAt(0)).thenReturn(pixelGroup)
+        val pixelOnlyForGroup = CapturedViewMapper<View> { view, mappingContext ->
+            if (view === pixelGroup) {
+                CapturedViewMapperResult.Wireframes(
+                    listOf(
+                        CapturedWireframe.Pixel(
+                            identity = mappingContext.identityFactory.imageWireframe(mappingContext.ownerIdentity),
+                            bounds = CapturedBounds(0, 0, 10, 10),
+                            resource = PixelResource.Unresolved
+                        )
+                    )
+                )
+            } else {
+                CapturedViewMapperResult.None
+            }
+        }
+        val windowIdentity = identityFactory.window("window")
+
+        // When
+        val result = traversal(fallback = pixelOnlyForGroup)
+            .traverseWindow(root, windowIdentity, identityFactory, fakeContext)
+
+        // Then
+        val present = result as WindowWalkResult.Present
+        val pixelGroupLayer = present.layers.first { it.identity != present.rootLayer.identity }
+        assertThat(pixelGroupLayer.children).hasSize(1) // the pixel wireframe only, no native child layer
+        assertThat(present.wireframes.single()).isInstanceOf(CapturedWireframe.Pixel::class.java)
+        // No layer was created for grandChild since a terminal pixel wireframe skips recursion.
+        assertThat(present.layers).hasSize(2) // root + pixelGroup only
     }
 
     @Test

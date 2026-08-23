@@ -151,25 +151,22 @@ internal class AndroidWindowTraversal(
         )
         if (attempt is ComposeAttempt.Aborted) return LayerWalkResult.Aborted
 
-        if (attempt is ComposeAttempt.Decomposed) {
+        val isPixelFallbackTerminal = if (attempt is ComposeAttempt.Decomposed) {
             spliceComposeResult(attempt.result, childAncestorBounds, children, state)
+            false
         } else {
-            val mappingContext = CapturedMappingContext(
-                identityFactory,
-                ownIdentity,
-                state.screenDensity,
-                imagePrivacy = ownPrivacy.imagePrivacy,
-                textAndInputPrivacy = ownPrivacy.textAndInputPrivacy,
-                pendingPixelCaptureSink = PendingPixelCaptureSink { state.pendingPixelCaptures.add(it) }
-            )
-            val mapped = (if (isHidden) hiddenViewMapper else mapperRegistry.resolve(view)).map(view, mappingContext)
-            addWireframes(mapped, ancestorBounds, children, state)
+            mapNativeView(view, isHidden, identityFactory, ownIdentity, ancestorBounds, ownPrivacy, children, state)
         }
 
         // A Compose host's interior is Compose's own node tree, not further Android child Views -
         // its content is fully described by whatever composeHostDecomposer returned above. Covers
-        // both "not a compose host" and "decomposition wasn't attempted/failed".
-        if (!isHidden && attempt !is ComposeAttempt.Decomposed && view is ViewGroup) {
+        // both "not a compose host" and "decomposition wasn't attempted/failed". A pixel/placeholder
+        // wireframe is the same kind of terminal description on the native side: [View.draw] already
+        // bakes every child into the bitmap it produced (or the placeholder is standing in for that
+        // same subtree), so walking the real children again would only double-describe them.
+        val isNativeContainerNeedingChildren = !isHidden && attempt !is ComposeAttempt.Decomposed &&
+            !isPixelFallbackTerminal
+        if (isNativeContainerNeedingChildren && view is ViewGroup) {
             val mustAbort = recurseIntoNativeChildren(
                 view,
                 windowIdentity,
@@ -186,6 +183,36 @@ internal class AndroidWindowTraversal(
         val layer = CapturedLayer(identity = ownIdentity, kind = ownKind, bounds = bounds, children = children)
         state.layers.add(layer)
         return LayerWalkResult.Present(layer)
+    }
+
+    /**
+     * Maps [view] via the appropriate native mapper (hidden or resolved) when Compose decomposition
+     * wasn't attempted or didn't apply, recording its wireframes and reporting whether the result
+     * is pixel-fallback terminal. Isolated purely to keep [visitView]'s own branching within
+     * [LongMethod]'s budget.
+     */
+    @Suppress("LongParameterList")
+    private fun mapNativeView(
+        view: View,
+        isHidden: Boolean,
+        identityFactory: CapturedIdentityFactory,
+        ownIdentity: CapturedIdentity,
+        ancestorBounds: List<CapturedBounds>,
+        ownPrivacy: EffectivePrivacy,
+        children: MutableList<CapturedChild>,
+        state: TraversalState
+    ): Boolean {
+        val mappingContext = CapturedMappingContext(
+            identityFactory,
+            ownIdentity,
+            state.screenDensity,
+            imagePrivacy = ownPrivacy.imagePrivacy,
+            textAndInputPrivacy = ownPrivacy.textAndInputPrivacy,
+            pendingPixelCaptureSink = PendingPixelCaptureSink { state.pendingPixelCaptures.add(it) }
+        )
+        val mapped = (if (isHidden) hiddenViewMapper else mapperRegistry.resolve(view)).map(view, mappingContext)
+        addWireframes(mapped, ancestorBounds, children, state)
+        return mapped.isPixelFallbackTerminal()
     }
 
     /**
@@ -382,38 +409,6 @@ internal class AndroidWindowTraversal(
         }
     }
 
-    private fun computeClip(bounds: CapturedBounds, ancestorBounds: List<CapturedBounds>): CapturedClip? {
-        var clipTop = 0L
-        var clipBottom = 0L
-        var clipLeft = 0L
-        var clipRight = 0L
-        val bottom = bounds.y + bounds.height
-        val right = bounds.x + bounds.width
-        for (ancestor in ancestorBounds) {
-            clipTop = max(ancestor.y - bounds.y, clipTop)
-            clipBottom = max(bottom - (ancestor.y + ancestor.height), clipBottom)
-            clipLeft = max(ancestor.x - bounds.x, clipLeft)
-            clipRight = max(right - (ancestor.x + ancestor.width), clipRight)
-        }
-        // Each value is accumulated via max(x, 0), so all four are always non-negative - "all <= 0"
-        // reduces to a single comparison against their max, instead of a 4-term condition.
-        if (max(max(clipTop, clipBottom), max(clipLeft, clipRight)) <= 0) return null
-        return CapturedClip(
-            top = clipTop.takeIf { it > 0 },
-            bottom = clipBottom.takeIf { it > 0 },
-            left = clipLeft.takeIf { it > 0 },
-            right = clipRight.takeIf { it > 0 }
-        )
-    }
-
-    private fun CapturedWireframe.withClip(clip: CapturedClip?): CapturedWireframe = when (this) {
-        is CapturedWireframe.Shape -> copy(clip = clip)
-        is CapturedWireframe.Text -> copy(clip = clip)
-        is CapturedWireframe.WebView -> copy(clip = clip)
-        is CapturedWireframe.Pixel -> copy(clip = clip)
-        is CapturedWireframe.PrivacyPlaceholder -> copy(clip = clip)
-    }
-
     private sealed interface LayerWalkResult {
         data class Present(val layer: CapturedLayer) : LayerWalkResult
         object Filtered : LayerWalkResult
@@ -450,3 +445,48 @@ internal class AndroidWindowTraversal(
  */
 private fun isComposeHostByClassName(view: View): Boolean =
     view.javaClass.name == "androidx.compose.ui.platform.ComposeView"
+
+/**
+ * A [CapturedWireframe.Pixel] or [CapturedWireframe.PrivacyPlaceholder] from the native
+ * pixel-fallback mapper already stands in for this view's entire subtree - the bitmap it
+ * rasterized bakes every child in, and the placeholder is standing in for that same bitmap.
+ * Walking the real children afterward would describe them a second time, redundantly. Stateless -
+ * kept out of [AndroidWindowTraversal] itself to stay within [TooManyFunctions]'s budget.
+ */
+private fun CapturedViewMapperResult.isPixelFallbackTerminal(): Boolean =
+    this is CapturedViewMapperResult.Wireframes &&
+        wireframes.any { it is CapturedWireframe.Pixel || it is CapturedWireframe.PrivacyPlaceholder }
+
+/** Stateless - kept out of [AndroidWindowTraversal] itself to stay within [TooManyFunctions]'s budget. */
+private fun computeClip(bounds: CapturedBounds, ancestorBounds: List<CapturedBounds>): CapturedClip? {
+    var clipTop = 0L
+    var clipBottom = 0L
+    var clipLeft = 0L
+    var clipRight = 0L
+    val bottom = bounds.y + bounds.height
+    val right = bounds.x + bounds.width
+    for (ancestor in ancestorBounds) {
+        clipTop = max(ancestor.y - bounds.y, clipTop)
+        clipBottom = max(bottom - (ancestor.y + ancestor.height), clipBottom)
+        clipLeft = max(ancestor.x - bounds.x, clipLeft)
+        clipRight = max(right - (ancestor.x + ancestor.width), clipRight)
+    }
+    // Each value is accumulated via max(x, 0), so all four are always non-negative - "all <= 0"
+    // reduces to a single comparison against their max, instead of a 4-term condition.
+    if (max(max(clipTop, clipBottom), max(clipLeft, clipRight)) <= 0) return null
+    return CapturedClip(
+        top = clipTop.takeIf { it > 0 },
+        bottom = clipBottom.takeIf { it > 0 },
+        left = clipLeft.takeIf { it > 0 },
+        right = clipRight.takeIf { it > 0 }
+    )
+}
+
+/** Stateless - kept out of [AndroidWindowTraversal] itself to stay within [TooManyFunctions]'s budget. */
+private fun CapturedWireframe.withClip(clip: CapturedClip?): CapturedWireframe = when (this) {
+    is CapturedWireframe.Shape -> copy(clip = clip)
+    is CapturedWireframe.Text -> copy(clip = clip)
+    is CapturedWireframe.WebView -> copy(clip = clip)
+    is CapturedWireframe.Pixel -> copy(clip = clip)
+    is CapturedWireframe.PrivacyPlaceholder -> copy(clip = clip)
+}

@@ -27,9 +27,22 @@ internal class CapturedBackgroundShapeStyleResolver(
     fun resolve(view: View, internalLogger: InternalLogger): CapturedShapeStyle? {
         val color = view.background?.let { drawableToColorMapper.mapDrawableToColor(it, internalLogger) }
             ?: return null
+        // A fully transparent background (e.g. an explicit ColorDrawable(Color.TRANSPARENT), common
+        // on fragment-transaction containers) carries no visual information at all - emitting a
+        // wireframe for it anyway relies entirely on every renderer correctly treating an alpha-0
+        // color as invisible. Treating it the same as "no background" removes that dependency
+        // outright instead of gambling on it. Extracted via plain bit arithmetic rather than
+        // android.graphics.Color.alpha() - the latter isn't functional under plain JVM unit tests.
+        val alpha = (color ushr ALPHA_SHIFT_BITS) and ALPHA_MASK
+        if (alpha == 0) return null
         return CapturedShapeStyle(
             backgroundColor = colorStringFormatter.formatColorAsHexString(color),
             opacity = view.alpha
         )
+    }
+
+    private companion object {
+        const val ALPHA_SHIFT_BITS = 24
+        const val ALPHA_MASK = 0xFF
     }
 }

@@ -17,7 +17,6 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory
 import com.datadog.android.internal.sessionreplay.composition.PixelResource
-import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolverCallback
 import com.datadog.android.sessionreplay.recorder.privacy.TextDetectionOutcome
@@ -34,10 +33,14 @@ import java.util.concurrent.atomic.AtomicInteger
  * accepted, [CaptureGenerationContext] itself invalidates every [CaptureWorkToken] this processor
  * created, and this processor checks [CaptureWorkToken.isValid] before writing any result back -
  * cancellation is enforced by the token, not by this class needing to interrupt in-flight work.
+ * [TextDetector.detectTextRegions] may invoke its callback on any thread, so [resolveBitmap] hops
+ * onto [mainThreadExecutor] before calling [ResourceResolver.resolveResourceIdFromBitmap], which
+ * is [androidx.annotation.MainThread]-only.
  */
 internal class PixelFallbackSnapshotProcessor(
     private val resourceResolver: ResourceResolver,
-    private val textDetector: TextDetector?
+    private val textDetector: TextDetector?,
+    private val mainThreadExecutor: CaptureMainThreadExecutor
 ) : CapturedSnapshotProcessor {
 
     override fun process(
@@ -75,6 +78,11 @@ internal class PixelFallbackSnapshotProcessor(
         identityFactory: CompositionIdentityFactory,
         onResolved: (PixelOutcome) -> Unit
     ) {
+        if (capture.isTextFree) {
+            resolveBitmap(capture.bitmap, identityFactory, capture.ownerIdentity, onResolved)
+            return
+        }
+
         val detector = textDetector
         if (detector == null) {
             onResolved(PixelOutcome.Placeholder(identityFactory.placeholderWireframe(capture.ownerIdentity)))
@@ -87,30 +95,42 @@ internal class PixelFallbackSnapshotProcessor(
 
                 is TextDetectionOutcome.Detected -> {
                     maskRegions(capture.bitmap, detection.regions)
-                    resourceResolver.resolveResourceIdFromBitmap(
-                        capture.bitmap,
-                        object : ResourceResolverCallback {
-                            override fun onSuccess(resourceId: String) {
-                                onResolved(PixelOutcome.Resolved(resourceId))
-                            }
-
-                            override fun onFailure() {
-                                onResolved(
-                                    PixelOutcome.Placeholder(
-                                        identityFactory.placeholderWireframe(capture.ownerIdentity)
-                                    )
-                                )
-                            }
-                        }
-                    )
+                    resolveBitmap(capture.bitmap, identityFactory, capture.ownerIdentity, onResolved)
                 }
             }
+        }
+    }
+
+    private fun resolveBitmap(
+        bitmap: Bitmap,
+        identityFactory: CompositionIdentityFactory,
+        ownerIdentity: CapturedIdentity,
+        onResolved: (PixelOutcome) -> Unit
+    ) {
+        @Suppress("ThreadSafety") // mainThreadExecutor posts this block onto the main thread.
+        mainThreadExecutor.execute {
+            resourceResolver.resolveResourceIdFromBitmap(
+                bitmap,
+                object : ResourceResolverCallback {
+                    override fun onSuccess(resourceId: String) {
+                        onResolved(PixelOutcome.Resolved(resourceId))
+                    }
+
+                    override fun onFailure() {
+                        onResolved(PixelOutcome.Placeholder(identityFactory.placeholderWireframe(ownerIdentity)))
+                    }
+                }
+            )
         }
     }
 
     /** Painted directly onto the pixels, pre-upload - never a separate overlay wireframe. */
     private fun maskRegions(bitmap: Bitmap, regions: List<Rect>) {
         if (regions.isEmpty()) return
+        // bitmap is always produced by a *Rasterizer via Bitmap.createBitmap(...) (mutable by
+        // default), never decoded from a resource/file, so Canvas() can't hit the "immutable
+        // bitmap" IllegalStateException here.
+        @Suppress("UnsafeThirdPartyFunctionCall")
         val canvas = Canvas(bitmap)
         val paint = Paint().apply { color = Color.BLACK; style = Paint.Style.FILL }
         regions.forEach { canvas.drawRect(it, paint) }
@@ -146,7 +166,7 @@ internal class PixelFallbackSnapshotProcessor(
                         identity = outcome.identity,
                         bounds = original.bounds,
                         clip = original.clip,
-                        label = DefaultImageWireframeHelper.MASK_ALL_CONTENT_LABEL
+                        label = MASK_ALL_CONTENT_LABEL
                     )
                     childRewrites[wireId] = outcome.identity
                 }
@@ -183,5 +203,6 @@ internal class PixelFallbackSnapshotProcessor(
 
     private companion object {
         const val MIME_TYPE_WEBP = "image/webp"
+        const val MASK_ALL_CONTENT_LABEL = "Image"
     }
 }

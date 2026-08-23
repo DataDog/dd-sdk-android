@@ -82,15 +82,48 @@ internal class CapturedViewGroupFallbackMapperTest {
     }
 
     @Test
+    fun `M emit nothing W map { background resolves to a fully transparent color }`(
+        @StringForgery fakeScope: String,
+        @IntForgery(min = 0, max = 0xFFFFFF) fakeRgb: Int,
+        @FloatForgery(min = 0f, max = 4f) fakeDensity: Float
+    ) {
+        // Given: e.g. an explicit ColorDrawable(Color.TRANSPARENT), common on fragment-transaction
+        // containers - a real background, but one with zero alpha, carrying no visual information.
+        val fakeTransparentColor = fakeRgb and 0x00FFFFFF
+        val mockView: View = mock()
+        val mockDrawable: Drawable = mock()
+        whenever(mockView.background).thenReturn(mockDrawable)
+        whenever(mockDrawableToColorMapper.mapDrawableToColor(mockDrawable, mockInternalLogger))
+            .thenReturn(fakeTransparentColor)
+        val factory = DefaultCapturedIdentityFactory(RumViewIdentityScope(fakeScope))
+        val owner = factory.view(factory.window("window"), "owner")
+        val mappingContext = CapturedMappingContext(
+            factory,
+            owner,
+            screenDensity = fakeDensity,
+            imagePrivacy = ImagePrivacy.MASK_NONE,
+            textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
+        )
+
+        // When
+        val result = testedMapper.map(mockView, mappingContext)
+
+        // Then
+        assertThat(result).isEqualTo(CapturedViewMapperResult.None)
+    }
+
+    @Test
     fun `M emit a Shape wireframe W map { resolvable background color }`(
         @StringForgery fakeScope: String,
-        @IntForgery(min = 0, max = 0xFFFFFF) fakeColor: Int,
+        @IntForgery(min = 0, max = 0xFFFFFF) fakeRgb: Int,
         @StringForgery(regex = "#[0-9A-F]{8}") fakeColorHexString: String,
         @FloatForgery(min = 0f, max = 1f) fakeAlpha: Float,
         @FloatForgery(min = 0f, max = 4f) fakeDensity: Float,
         @Forgery fakeBounds: GlobalBounds
     ) {
-        // Given
+        // Given: fakeRgb alone never sets the alpha byte (bits 24-31), which this resolver now
+        // treats as "fully transparent, nothing to draw" - a real opaque color needs it set too.
+        val fakeColor = fakeRgb or (0xFF shl 24)
         val mockView: View = mock()
         val mockDrawable: Drawable = mock()
         whenever(mockView.background).thenReturn(mockDrawable)
