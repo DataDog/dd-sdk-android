@@ -21,8 +21,8 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
 import com.datadog.android.sessionreplay.ImagePrivacy
-import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.R
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedHiddenViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMappingContext
@@ -126,7 +126,12 @@ internal class AndroidWindowTraversal(
         } else {
             // Lists are owned by this copy and are never mutated after this handoff.
             WindowCopyResult.Present(
-                CapturedNativeWindow(state.density, state.views, state.isDrawingOrderReliable, state.pendingPixelCaptures),
+                CapturedNativeWindow(
+                    state.density,
+                    state.views,
+                    state.isDrawingOrderReliable,
+                    state.pendingPixelCaptures
+                ),
                 state.touchOverrideAreas
             )
         }
@@ -182,7 +187,6 @@ internal class AndroidWindowTraversal(
         val clip = resolveExplicitClip(view, pixels, pixelClip, state.density)
         val geometryIsReliable = item.isGeometryReliable &&
             view.hasReliableGeometry(if (kind == CapturedLayerKind.WINDOW_ROOT) -1 else 0)
-        val index = state.views.size
         state.views += CapturedNativeView(
             identity,
             item.parentIndex,
@@ -199,10 +203,24 @@ internal class AndroidWindowTraversal(
             kind,
             composition
         )
+        pushNativeChildren(view, children, hidden, ownPrivacy, stack, state)
+    }
+
+    @UiThread
+    @Suppress("UnsafeThirdPartyFunctionCall") // copyView appended this view before pushing its children.
+    private fun pushNativeChildren(
+        view: View,
+        children: ViewGroup?,
+        hidden: Boolean,
+        inheritedPrivacy: EffectivePrivacy,
+        stack: ArrayDeque<WorkItem>,
+        state: CopyState
+    ) {
+        val copied = state.views.last()
         if (children != null) {
-            pushChildren(children, index, geometryIsReliable, ownPrivacy, stack, state)
-        } else {
-            pushHiddenTouchChildren(view, hidden, stack)
+            pushChildren(children, state.views.lastIndex, copied.isGeometryReliable, inheritedPrivacy, stack, state)
+        } else if ((hidden || copied.viewData.isPixelFallbackTerminal) && view is ViewGroup && view !is WebView) {
+            pushTouchChildren(view, stack)
         }
     }
 

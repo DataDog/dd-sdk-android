@@ -57,6 +57,7 @@ internal fun interface CapturedViewMapper<T : View> {
 /** Builds wireframes exclusively from copied values; safe to invoke on the processing executor. */
 internal sealed interface CapturedViewData {
     val isTerminal: Boolean get() = false
+    val isPixelFallbackTerminal: Boolean get() = false
 
     /** Only built-in mappings with visual output confined to the copied view rectangle opt in. */
     val isOcclusionBounded: Boolean get() = false
@@ -65,7 +66,12 @@ internal sealed interface CapturedViewData {
     fun map(mappingContext: CapturedMappingContext): CapturedViewMapperResult
 
     data class Mapped(val result: CapturedViewMapperResult) : CapturedViewData {
-        override val isTerminal: Boolean get() = (result as? CapturedViewMapperResult.Wireframes)?.isTerminal == true
+        override val isPixelFallbackTerminal: Boolean
+            get() = (result as? CapturedViewMapperResult.Wireframes)?.wireframes?.any {
+                it is CapturedWireframe.Pixel || it is CapturedWireframe.PrivacyPlaceholder
+            } == true
+        override val isTerminal: Boolean
+            get() = (result as? CapturedViewMapperResult.Wireframes)?.isTerminal == true || isPixelFallbackTerminal
         override fun map(mappingContext: CapturedMappingContext): CapturedViewMapperResult = result
     }
 }

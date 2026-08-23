@@ -8,11 +8,15 @@ package com.datadog.android.sessionreplay.internal.composition.mapper
 
 import android.content.res.Resources
 import android.graphics.Bitmap
+import android.graphics.PixelFormat
 import android.graphics.Rect
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.Drawable
 import android.util.DisplayMetrics
 import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ScrollView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.PixelResource
@@ -23,6 +27,8 @@ import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.DefaultCapturedIdentityFactory
 import com.datadog.android.sessionreplay.internal.composition.PendingPixelCapture
 import com.datadog.android.sessionreplay.internal.composition.PendingPixelCaptureSink
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -35,11 +41,13 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.clearInvocations
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.atomic.AtomicReference
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -98,6 +106,111 @@ internal class CapturedPixelFallbackMapperTest {
     }
 
     @Test
+    fun `M retain copied background coverage W capture { solid background }`() {
+        // Given
+        val mockView = eligibleView()
+        val mockBackground: ColorDrawable = mock()
+        val mockColorMapper: DrawableToColorMapper = mock()
+        val mockFormatter: ColorStringFormatter = mock()
+        val mockRasterizer: ViewRasterizer = mock()
+        val fakeContext = mappingContext(ImagePrivacy.MASK_ALL)
+        whenever(mockView.background).thenReturn(mockBackground)
+        whenever(mockBackground.opacity).thenReturn(PixelFormat.OPAQUE)
+        whenever(mockColorMapper.mapDrawableToColor(mockBackground, mockInternalLogger)).thenReturn(0xFF112233.toInt())
+        whenever(mockFormatter.formatColorAsHexString(0xFF112233.toInt())).thenReturn("#112233FF")
+        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockView, 1f))
+            .thenReturn(GlobalBounds(0, 0, 100, 100))
+        val testedCopyingMapper = CapturedPixelFallbackMapper(
+            fallbackMapper = CapturedViewGroupFallbackMapper(
+                viewBoundsResolver = mockViewBoundsResolver,
+                backgroundShapeStyleResolver = CapturedBackgroundShapeStyleResolver(mockFormatter, mockColorMapper),
+                internalLogger = mockInternalLogger
+            ),
+            internalLogger = mockInternalLogger,
+            viewRasterizer = mockRasterizer
+        )
+        val fakeCopy = testedCopyingMapper.capture(mockView, fakeContext)
+        whenever(mockView.background).thenReturn(null)
+        clearInvocations(mockView, mockBackground, mockViewBoundsResolver, mockColorMapper)
+        val fakeResult = AtomicReference<CapturedViewMapperResult>()
+
+        // When
+        Thread { fakeResult.set(fakeCopy.map(fakeContext)) }.apply { start(); join() }
+
+        // Then
+        assertThat(fakeCopy.isOcclusionBounded).isTrue()
+        assertThat(fakeCopy.hasOpaqueBackground).isTrue()
+        val fakeShape = (fakeResult.get() as CapturedViewMapperResult.Wireframes).wireframes.single()
+            as CapturedWireframe.Shape
+        assertThat(fakeShape.style?.backgroundColor).isEqualTo("#112233FF")
+        verifyNoInteractions(mockView, mockBackground, mockViewBoundsResolver, mockColorMapper, mockRasterizer)
+    }
+
+    @Test
+    fun `M delegate to fallback W map { view will not draw }`(@StringForgery fakeScope: String) {
+        // Given: a plain layout container - no background, no overridden onDraw - exactly what
+        // ConstraintLayout, ScrollView, LinearLayout, etc. report when they have no background.
+        val mockView = eligibleView()
+        whenever(mockView.willNotDraw()).thenReturn(true)
+        val mappingContext = mappingContext(ImagePrivacy.MASK_ALL, scope = fakeScope)
+
+        // When
+        testedMapper.map(mockView, mappingContext)
+
+        // Then: never even considered for a placeholder or pixel capture.
+        verify(mockFallbackMapper).map(mockView, mappingContext)
+        verifyNoInteractions(mockViewBoundsResolver)
+    }
+
+    @Test
+    fun `M delegate to fallback W map { edge-effect-only container with no background }`(
+        @StringForgery fakeScope: String
+    ) {
+        // Given: a real ScrollView always reports willNotDraw() == false (its onDraw()/draw()
+        // override exists solely for the overscroll edge-glow), even with no background of its
+        // own - exactly the case that used to turn every scrollable screen into one giant
+        // full-bounds placeholder covering all of its real children underneath.
+        val mockScrollView: ScrollView = mock()
+        whenever(mockScrollView.width).thenReturn(100)
+        whenever(mockScrollView.height).thenReturn(100)
+        val mappingContext = mappingContext(ImagePrivacy.MASK_ALL, scope = fakeScope)
+
+        // When
+        testedMapper.map(mockScrollView, mappingContext)
+
+        // Then: never even considered for a placeholder or pixel capture.
+        verify(mockFallbackMapper).map(mockScrollView, mappingContext)
+        verifyNoInteractions(mockViewBoundsResolver)
+    }
+
+    @Test
+    fun `M still consider for capture W map { edge-effect-only container with a real background }`(
+        @StringForgery fakeScope: String
+    ) {
+        // Given: a ScrollView someone explicitly gave a (non-solid) background to - that
+        // background is genuine, persistent content, so it must not be waved through as if it
+        // were an ordinary backgroundless scrolling container.
+        val mockScrollView: ScrollView = mock()
+        val mockDrawable: Drawable = mock()
+        whenever(mockScrollView.width).thenReturn(100)
+        whenever(mockScrollView.height).thenReturn(100)
+        whenever(mockScrollView.background).thenReturn(mockDrawable)
+        whenever(mockScrollView.getGlobalVisibleRect(any())).thenAnswer { invocation ->
+            invocation.getArgument<Rect>(0).set(0, 0, 100, 100)
+            true
+        }
+        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockScrollView, 1f))
+            .thenReturn(GlobalBounds(0, 0, 100, 100))
+        val mappingContext = mappingContext(ImagePrivacy.MASK_ALL, scope = fakeScope)
+
+        // When
+        val result = testedMapper.map(mockScrollView, mappingContext) as CapturedViewMapperResult.Wireframes
+
+        // Then: still reaches the privacy gate - it has real content to protect.
+        assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.PrivacyPlaceholder::class.java)
+    }
+
+    @Test
     fun `M delegate to fallback W map { zero width }`(@StringForgery fakeScope: String) {
         // Given
         val mockView = eligibleView(width = 0)
@@ -138,7 +251,9 @@ internal class CapturedPixelFallbackMapperTest {
         // Then
         assertThat(result.wireframes).hasSize(1)
         assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.PrivacyPlaceholder::class.java)
-        verifyNoInteractions(mockFallbackMapper)
+        // fallbackMapper is consulted first (and here returns None, i.e. no solid background) -
+        // only then does the privacy-gated placeholder path apply.
+        verify(mockFallbackMapper).map(mockView, mappingContext)
     }
 
     @Test
@@ -156,7 +271,7 @@ internal class CapturedPixelFallbackMapperTest {
 
         // Then
         assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.PrivacyPlaceholder::class.java)
-        verifyNoInteractions(mockFallbackMapper)
+        verify(mockFallbackMapper).map(mockView, mappingContext)
     }
 
     @Test
@@ -184,7 +299,7 @@ internal class CapturedPixelFallbackMapperTest {
         assertThat(registered.single().wireframeIdentity).isEqualTo(pixel.identity)
         assertThat(registered.single().ownerIdentity).isEqualTo(mappingContext.ownerIdentity)
         assertThat(registered.single().bitmap).isSameAs(mockBitmap)
-        verifyNoInteractions(mockFallbackMapper)
+        verify(mockFallbackMapper).map(mockView, mappingContext)
     }
 
     @Test

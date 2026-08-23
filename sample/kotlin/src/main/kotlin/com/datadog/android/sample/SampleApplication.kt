@@ -49,6 +49,7 @@ import com.datadog.android.sample.image.CoilImageLoader
 import com.datadog.android.sample.image.FrescoImageLoader
 import com.datadog.android.sample.image.PicassoImageLoader
 import com.datadog.android.sample.user.UserFragment
+import com.datadog.android.sessionreplay.ExperimentalSessionReplayApi
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplay
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
@@ -314,6 +315,7 @@ class SampleApplication : Application() {
         Logs.enable(logsConfig)
     }
 
+    @OptIn(ExperimentalSessionReplayApi::class)
     private fun initializeSessionReplay() {
         val shouldUseFgm = SecureRandom().nextInt(100) < USE_FGM_PCT
         val systemRequirementsConfiguration = SystemRequirementsConfiguration.Builder()
@@ -337,6 +339,7 @@ class SampleApplication : Application() {
             .addExtensionSupport(ComposeExtensionSupport())
             .setSystemRequirements(systemRequirementsConfiguration)
             .setHeatmapsEnabled(true)
+            .setCompositionTreeRecordingEnabled(true)
             .build()
         SessionReplay.enable(sessionReplayConfig)
     }

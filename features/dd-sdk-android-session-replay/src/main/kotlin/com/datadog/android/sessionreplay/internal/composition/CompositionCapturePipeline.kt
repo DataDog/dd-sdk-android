@@ -9,8 +9,8 @@ package com.datadog.android.sessionreplay.internal.composition
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.async.DataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
-import java.util.concurrent.ExecutorService
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
+import java.util.concurrent.ExecutorService
 
 /**
  * Owns the composition capture lifecycle and its construction and completion workers.

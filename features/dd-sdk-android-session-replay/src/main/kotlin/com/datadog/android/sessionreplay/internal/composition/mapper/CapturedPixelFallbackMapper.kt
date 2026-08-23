@@ -13,11 +13,12 @@ import android.view.SurfaceView
 import android.view.TextureView
 import android.view.View
 import android.view.ViewGroup
+import android.widget.HorizontalScrollView
+import android.widget.ScrollView
+import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.PixelResource
-import com.datadog.android.sessionreplay.IMAGE_DIMEN_CONSIDERED_PII_IN_DP
-import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.internal.composition.PendingPixelCapture
 import com.datadog.android.sessionreplay.internal.composition.toCaptured
 import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper
@@ -46,18 +47,47 @@ internal class CapturedPixelFallbackMapper(
     private val viewRasterizer: ViewRasterizer = DefaultViewRasterizer(internalLogger)
 ) : CapturedViewMapper<View> {
 
+    @Suppress("ReturnCount")
     override fun map(view: View, mappingContext: CapturedMappingContext): CapturedViewMapperResult {
+        // fallbackMapper already fully and harmlessly describes two distinct cases: a genuine
+        // pass-through with nothing of its own to draw (None - willNotDraw() is the platform's own
+        // answer to "does this instance paint anything besides its children"), or a plain
+        // solid-color background (Wireframes - never privacy-sensitive, exactly what the legacy,
+        // non-composition-tree pipeline has always shown for such views). Neither case should ever
+        // reach the privacy-gated pixel-capture logic below: doing so turned every ordinary
+        // ViewGroup with a themed background into a full-bounds opaque placeholder, burying the
+        // real content its children would otherwise render. Only a view fallbackMapper genuinely
+        // can't describe (a complex/non-solid background, or overridden custom onDraw content) is
+        // an actual candidate for pixel capture.
+        val fallbackResult = fallbackMapper.map(view, mappingContext)
+        if (view.willNotDraw() || fallbackResult is CapturedViewMapperResult.Wireframes) {
+            return fallbackResult
+        }
+
+        // Scrolling containers (ScrollView, RecyclerView, ...) always report willNotDraw() ==
+        // false, regardless of background: the platform reserves their onDraw()/draw() override
+        // for the overscroll edge-glow, which paints nothing outside an active fling-past-the-end
+        // gesture. Absent an actual background of their own, there is no persistent visual content
+        // here to protect or capture - only the momentary glow, which isn't worth a pixel capture
+        // and isn't privacy-sensitive. A view with a real background (even non-solid) still falls
+        // through to the normal capture-or-placeholder logic below, since that background is
+        // genuine, persistent content.
+        if (view.background == null && isEdgeEffectOnlyContainer(view)) {
+            return fallbackResult
+        }
+
         if (view.width <= 0 || view.height <= 0) {
-            return fallbackMapper.map(view, mappingContext)
+            return fallbackResult
         }
 
         val visibleRect = Rect()
+        @Suppress("UnsafeThirdPartyFunctionCall") // visibleRect is a freshly-allocated non-null Rect, never null
         if (!view.getGlobalVisibleRect(visibleRect) || visibleRect.isEmpty) {
-            return fallbackMapper.map(view, mappingContext)
+            return fallbackResult
         }
 
-        val bounds = viewBoundsResolver.resolveViewGlobalBounds(view, mappingContext.screenDensity)
-        val placeholderLabel = imagePrivacyPlaceholderLabel(mappingContext.imagePrivacy, bounds)
+        val bounds = resolveBounds(view, mappingContext)
+        val placeholderLabel = PixelCaptureEligibility.placeholderLabelFor(mappingContext.imagePrivacy, bounds)
         if (placeholderLabel != null) {
             val identity = mappingContext.identityFactory.placeholderWireframe(mappingContext.ownerIdentity)
             return CapturedViewMapperResult.Wireframes(
@@ -67,15 +97,16 @@ internal class CapturedPixelFallbackMapper(
                         bounds = bounds.toCaptured(),
                         label = placeholderLabel
                     )
-                )
+                ),
+                isTerminal = true
             )
         }
 
         if (isTooLargeToCapture(view) || containsHardwareSurface(view)) {
-            return fallbackMapper.map(view, mappingContext)
+            return fallbackResult
         }
 
-        val bitmap = viewRasterizer.rasterize(view) ?: return fallbackMapper.map(view, mappingContext)
+        val bitmap = viewRasterizer.rasterize(view) ?: return fallbackResult
 
         val identity = mappingContext.identityFactory.imageWireframe(mappingContext.ownerIdentity)
         mappingContext.pendingPixelCaptureSink.register(
@@ -92,31 +123,29 @@ internal class CapturedPixelFallbackMapper(
                     bounds = bounds.toCaptured(),
                     resource = PixelResource.Unresolved
                 )
-            )
+            ),
+            isTerminal = true
         )
     }
 
-    private fun imagePrivacyPlaceholderLabel(imagePrivacy: ImagePrivacy, boundsDp: GlobalBounds): String? =
-        when (imagePrivacy) {
-            ImagePrivacy.MASK_ALL -> DefaultImageWireframeHelper.MASK_ALL_CONTENT_LABEL
-            ImagePrivacy.MASK_LARGE_ONLY -> if (isLarge(boundsDp)) {
-                DefaultImageWireframeHelper.MASK_CONTEXTUAL_CONTENT_LABEL
-            } else {
-                null
-            }
-            ImagePrivacy.MASK_NONE -> null
-        }
+    @UiThread
+    override fun capture(view: View, mappingContext: CapturedMappingContext): CapturedViewData {
+        val fallback = fallbackMapper.capture(view, mappingContext)
+        // Solid backgrounds retain their copied opacity/coverage flags and deferred style mapping.
+        if (fallback.isOcclusionBounded || view.willNotDraw()) return fallback
+        return CapturedViewData.Mapped(map(view, mappingContext))
+    }
 
-    private fun isLarge(boundsDp: GlobalBounds): Boolean =
-        boundsDp.width >= IMAGE_DIMEN_CONSIDERED_PII_IN_DP || boundsDp.height >= IMAGE_DIMEN_CONSIDERED_PII_IN_DP
+    private fun resolveBounds(view: View, mappingContext: CapturedMappingContext): GlobalBounds =
+        mappingContext.bounds?.let { GlobalBounds(it.x, it.y, it.width, it.height) }
+            ?: viewBoundsResolver.resolveViewGlobalBounds(view, mappingContext.screenDensity)
 
     /** Pre-emptive OOM defense: an unbounded custom View could otherwise demand a huge bitmap. */
     private fun isTooLargeToCapture(view: View): Boolean {
         val displayMetrics = view.resources.displayMetrics
         val screenArea = displayMetrics.widthPixels.toLong() * displayMetrics.heightPixels.toLong()
-        if (screenArea <= 0) return false
         val viewArea = view.width.toLong() * view.height.toLong()
-        return viewArea > MAX_CAPTURABLE_AREA_IN_SCREENS * screenArea
+        return PixelCaptureEligibility.isTooLargeToCapture(viewArea, screenArea)
     }
 
     /**
@@ -131,8 +160,17 @@ internal class CapturedPixelFallbackMapper(
         else -> false
     }
 
-    private companion object {
-        const val MAX_CAPTURABLE_AREA_IN_SCREENS = 8L
+    /**
+     * `NestedScrollView`/`RecyclerView` are matched by class name rather than type, the same way
+     * [com.datadog.android.sessionreplay.internal.composition.AndroidWindowTraversal] recognizes a
+     * Compose host - this module doesn't depend on `androidx.core`/`androidx.recyclerview`, and a
+     * hard dependency isn't worth adding just to widen this check.
+     */
+    private fun isEdgeEffectOnlyContainer(view: View): Boolean = when (view) {
+        is ScrollView, is HorizontalScrollView -> true
+        else ->
+            view.javaClass.name == "androidx.core.widget.NestedScrollView" ||
+                view.javaClass.name == "androidx.recyclerview.widget.RecyclerView"
     }
 }
 
@@ -148,6 +186,7 @@ internal class DefaultViewRasterizer(
     @Suppress("TooGenericExceptionCaught")
     override fun rasterize(view: View): Bitmap? = try {
         val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+        @Suppress("UnsafeThirdPartyFunctionCall") // view.draw runs arbitrary custom draw code; caught below
         view.draw(Canvas(bitmap))
         bitmap
     } catch (e: Exception) {

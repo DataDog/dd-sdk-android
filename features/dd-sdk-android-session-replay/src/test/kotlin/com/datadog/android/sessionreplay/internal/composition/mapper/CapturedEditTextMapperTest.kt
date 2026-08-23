@@ -71,6 +71,7 @@ internal class CapturedEditTextMapperTest {
         whenever(mockEditText.text).thenReturn(mockEditable)
         whenever(mockEditText.inputType).thenReturn(inputType)
         whenever(mockEditText.background).thenReturn(null)
+        whenever(mockEditText.compoundDrawables).thenReturn(arrayOfNulls(4))
         whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockEditText, 1f))
             .thenReturn(GlobalBounds(0, 0, 100, 20))
         return mockEditText

@@ -17,11 +17,16 @@ import android.view.ViewTreeObserver
 import android.view.Window
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayInternalCallback
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.recorder.TimeBank
+import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
+import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -77,7 +82,14 @@ internal class CompositionPipelineFactoryTest {
         val testedFactory = createFactory(dynamicOptimizationEnabled = false)
 
         // When
-        val result = testedFactory.create(mock<RecordWriter>(), mock<RumContextProvider>(), mockApplication)
+        val result = testedFactory.create(
+            mock<ResourceDataStoreManager>(),
+            mock<ResourcesWriter>(),
+            mock<RecordWriter>(),
+            mock<RumContextProvider>(),
+            mockApplication,
+            mock<EmbeddedContentSlotRegistry>()
+        )
 
         // Then
         assertThat(result).isInstanceOf(CompositionCapturePipeline::class.java)
@@ -89,7 +101,14 @@ internal class CompositionPipelineFactoryTest {
         val testedFactory = createFactory(dynamicOptimizationEnabled = false)
 
         // When
-        testedFactory.create(mock<RecordWriter>(), mock<RumContextProvider>(), mockApplication)
+        testedFactory.create(
+            mock<ResourceDataStoreManager>(),
+            mock<ResourcesWriter>(),
+            mock<RecordWriter>(),
+            mock<RumContextProvider>(),
+            mockApplication,
+            mock<EmbeddedContentSlotRegistry>()
+        )
 
         // Then
         verify(mockSdkCore).createSingleThreadExecutorService("sr-composition-construction")
@@ -143,7 +162,14 @@ internal class CompositionPipelineFactoryTest {
                     true
                 }.whenever(handler).postDelayed(any<Runnable>(), any())
             }.use { fakeHandlers ->
-                val testedPipeline = testedFactory.create(mock(), mock(), mockApplication)
+                val testedPipeline = testedFactory.create(
+                    mock<ResourceDataStoreManager>(),
+                    mock<ResourcesWriter>(),
+                    mock<RecordWriter>(),
+                    mock<RumContextProvider>(),
+                    mockApplication,
+                    mock<EmbeddedContentSlotRegistry>()
+                )
                 whenever(mockRoot.handler).thenReturn(fakeHandlers.constructed().first())
                 testedPipeline.resumeRecorders()
                 fakeCaptureTasks.removeFirst().run()
@@ -179,7 +205,14 @@ internal class CompositionPipelineFactoryTest {
         whenever(mockSdkCore.createSingleThreadExecutorService("sr-composition-processing"))
             .thenReturn(mockCompletionExecutor)
         val testedPipeline = createFactory(dynamicOptimizationEnabled = false)
-            .create(mock<RecordWriter>(), mock<RumContextProvider>(), mockApplication)
+            .create(
+                mock<ResourceDataStoreManager>(),
+                mock<ResourcesWriter>(),
+                mock<RecordWriter>(),
+                mock<RumContextProvider>(),
+                mockApplication,
+                mock<EmbeddedContentSlotRegistry>()
+            )
 
         // When
         testedPipeline.stopProcessingRecords()
@@ -205,7 +238,14 @@ internal class CompositionPipelineFactoryTest {
         )
 
         // When
-        testedFactory.create(mock<RecordWriter>(), mockRumContextProvider, mockApplication)
+        testedFactory.create(
+            mock<ResourceDataStoreManager>(),
+            mock<ResourcesWriter>(),
+            mock<RecordWriter>(),
+            mockRumContextProvider,
+            mockApplication,
+            mock<EmbeddedContentSlotRegistry>()
+        )
 
         // Then
         assertThat(windowSources).hasSize(1)
@@ -225,7 +265,14 @@ internal class CompositionPipelineFactoryTest {
         )
 
         // When
-        testedFactory.create(mock<RecordWriter>(), mock<RumContextProvider>(), mockApplication)
+        testedFactory.create(
+            mock<ResourceDataStoreManager>(),
+            mock<ResourcesWriter>(),
+            mock<RecordWriter>(),
+            mock<RumContextProvider>(),
+            mockApplication,
+            mock<EmbeddedContentSlotRegistry>()
+        )
 
         // Then
         assertThat(timeBankConstructions).isZero()
@@ -244,7 +291,14 @@ internal class CompositionPipelineFactoryTest {
         )
 
         // When
-        testedFactory.create(mock<RecordWriter>(), mock<RumContextProvider>(), mockApplication)
+        testedFactory.create(
+            mock<ResourceDataStoreManager>(),
+            mock<ResourcesWriter>(),
+            mock<RecordWriter>(),
+            mock<RumContextProvider>(),
+            mockApplication,
+            mock<EmbeddedContentSlotRegistry>()
+        )
 
         // Then
         assertThat(timeBankConstructions).isEqualTo(1)
@@ -257,7 +311,14 @@ internal class CompositionPipelineFactoryTest {
         val testedFactory = createFactory(dynamicOptimizationEnabled = false)
 
         // When
-        testedFactory.create(mock<RecordWriter>(), mock<RumContextProvider>(), mockApplication)
+        testedFactory.create(
+            mock<ResourceDataStoreManager>(),
+            mock<ResourcesWriter>(),
+            mock<RecordWriter>(),
+            mock<RumContextProvider>(),
+            mockApplication,
+            mock<EmbeddedContentSlotRegistry>()
+        )
 
         // Then
         verify(mockInternalCallback).getCurrentActivity()
@@ -290,6 +351,8 @@ internal class CompositionPipelineFactoryTest {
         sdkCore = mockSdkCore,
         internalCallback = mockInternalCallback,
         touchPrivacyManager = mock<TouchPrivacyManager>(),
+        imagePrivacy = ImagePrivacy.MASK_ALL,
+        textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
         dynamicOptimizationEnabled = dynamicOptimizationEnabled,
         snapshotProducerFactory = snapshotProducerFactory,
         recordingTimeBankFactory = recordingTimeBankFactory

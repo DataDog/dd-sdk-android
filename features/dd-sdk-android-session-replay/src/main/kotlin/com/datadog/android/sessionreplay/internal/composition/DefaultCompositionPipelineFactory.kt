@@ -73,6 +73,7 @@ internal class DefaultCompositionPipelineFactory(
     private val recordingTimeBankFactory: () -> TimeBank = { RecordingTimeBank() }
 ) : CompositionPipelineFactory {
 
+    @Suppress("LongMethod")
     override fun create(
         resourceDataStoreManager: ResourceDataStoreManager,
         resourceWriter: ResourcesWriter,
@@ -103,20 +104,26 @@ internal class DefaultCompositionPipelineFactory(
             processor = DefaultSnapshotCompletionProcessor(
                 rumContextProvider = rumContextProvider,
                 recordWriter = recordWriter,
-                internalLogger = internalLogger
+                internalLogger = internalLogger,
+                resourceDataQueueHandler = resourceResolverBundle.dataQueueHandler
             ),
             internalLogger = internalLogger
         )
+        val mainThreadExecutor = HandlerCaptureMainThreadExecutor()
         val orchestrator = SnapshotCaptureOrchestrator(
             producer = snapshotProducerFactory(windowSource, rumContextProvider),
             processor = ChainedCapturedSnapshotProcessor(
                 ExecutorCapturedSnapshotProcessor(constructionExecutor, internalLogger),
-                PixelFallbackSnapshotProcessor(resourceResolverBundle.resourceResolver, textDetector)
+                PixelFallbackSnapshotProcessor(
+                    resourceResolverBundle.resourceResolver,
+                    textDetector,
+                    mainThreadExecutor
+                )
             ),
             consumer = completionQueue,
             timeProvider = CaptureTimeProvider { sdkCore.timeProvider.getDeviceElapsedTimeNanos() },
             captureScheduler = HandlerCaptureTaskScheduler(),
-            mainThreadExecutor = HandlerCaptureMainThreadExecutor(),
+            mainThreadExecutor = mainThreadExecutor,
             expiryScheduler = ExecutorCaptureTaskScheduler(
                 executorService = sdkCore.createScheduledExecutorService(EXPIRY_EXECUTOR_NAME),
                 internalLogger = internalLogger

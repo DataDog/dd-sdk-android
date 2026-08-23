@@ -19,24 +19,29 @@ internal class ChainedCapturedSnapshotProcessor(
         request: SnapshotProcessingRequest,
         callback: SnapshotProcessingCallback
     ): CancellableCaptureWork {
-        val cancelled = AtomicBoolean(false)
+        val terminal = AtomicBoolean(false)
         val pixelWork = AtomicReference<CancellableCaptureWork>()
+        val complete = SnapshotProcessingCallback { result ->
+            if (terminal.compareAndSet(false, true)) callback.onProcessed(result)
+        }
         val constructionWork = constructionProcessor.process(request) { result ->
-            if (!cancelled.get()) {
+            if (!terminal.get()) {
                 when (result) {
                     is SnapshotProcessingResult.Completed -> {
-                        val work = pixelProcessor.process(request.copy(snapshot = result.snapshot), callback)
+                        val work = pixelProcessor.process(request.copy(snapshot = result.snapshot), complete)
                         pixelWork.set(work)
-                        if (cancelled.get()) work.cancel()
+                        if (terminal.get()) work.cancel()
                     }
-                    is SnapshotProcessingResult.Failed -> callback.onProcessed(result)
+                    is SnapshotProcessingResult.Failed -> complete.onProcessed(result)
                 }
             }
         }
         return CancellableCaptureWork {
-            cancelled.set(true)
-            constructionWork.cancel()
-            pixelWork.get()?.cancel()
+            if (terminal.compareAndSet(false, true)) {
+                request.generation.expire()
+                constructionWork.cancel()
+                pixelWork.get()?.cancel()
+            }
         }
     }
 }

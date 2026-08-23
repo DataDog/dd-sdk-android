@@ -28,10 +28,10 @@ internal class CapturedEditTextMapper(
     backgroundShapeStyleResolver: CapturedBackgroundShapeStyleResolver = CapturedBackgroundShapeStyleResolver(),
     internalLogger: InternalLogger
 ) : CapturedTextViewMapper<EditText>(
-    viewBoundsResolver,
-    colorStringFormatter,
-    backgroundShapeStyleResolver,
-    internalLogger
+    viewBoundsResolver = viewBoundsResolver,
+    colorStringFormatter = colorStringFormatter,
+    backgroundShapeStyleResolver = backgroundShapeStyleResolver,
+    internalLogger = internalLogger
 ) {
 
     override fun resolveCapturedText(view: EditText, textAndInputPrivacy: TextAndInputPrivacy): String {

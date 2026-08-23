@@ -6,9 +6,13 @@
 
 package com.datadog.android.sessionreplay.internal.composition.mapper
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Typeface
+import android.graphics.drawable.Drawable
 import android.text.TextUtils
 import android.view.Gravity
+import android.view.View
 import android.widget.TextView
 import androidx.core.text.TextDirectionHeuristicsCompat
 import com.datadog.android.api.InternalLogger
@@ -21,27 +25,31 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedTextStyle
 import com.datadog.android.internal.sessionreplay.composition.CapturedTruncationMode
 import com.datadog.android.internal.sessionreplay.composition.CapturedVerticalAlignment
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.internal.sessionreplay.composition.PixelResource
 import com.datadog.android.internal.utils.densityNormalized
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
-import com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
+import com.datadog.android.sessionreplay.internal.composition.PendingPixelCapture
 import com.datadog.android.sessionreplay.internal.composition.toCaptured
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 
 /**
- * The flagship semantic wireframe for this workstream: a real, unmasked text capture. Text/input
- * privacy masking is explicitly out of scope here - it is owned by the pixel-fallback/privacy
- * workstream, which applies masking policy uniformly across text and images before anything is
- * uploadable. Styling follows legacy `TextViewMapper`; relative alignment is resolved using the
- * rendered paragraph direction for text alignment and layout direction for view alignment.
+ * Copies masked text and native styling on the UI thread for wireframe construction on the worker.
+ * Non-solid backgrounds and compound drawables contribute privacy-gated raster captures during
+ * this same copy. Relative alignment follows the rendered paragraph direction for text alignment
+ * and the layout direction for view alignment.
  */
 internal open class CapturedTextViewMapper<T : TextView>(
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver,
     private val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter,
     private val backgroundShapeStyleResolver: CapturedBackgroundShapeStyleResolver =
         CapturedBackgroundShapeStyleResolver(),
+    private val backgroundRasterizer: ViewBackgroundRasterizer = DefaultViewBackgroundRasterizer(),
+    private val compoundDrawableRasterizer: CompoundDrawableRasterizer = DefaultCompoundDrawableRasterizer(),
     private val internalLogger: InternalLogger
 ) : CapturedViewMapper<T> {
 
@@ -50,13 +58,19 @@ internal open class CapturedTextViewMapper<T : TextView>(
 
     override fun capture(view: T, mappingContext: CapturedMappingContext): CapturedViewData {
         val layout = view.layout
+        val bounds = mappingContext.bounds
+            ?: viewBoundsResolver.resolveViewGlobalBounds(view, mappingContext.screenDensity).toCaptured()
+        val background = backgroundShapeStyleResolver.capture(view, internalLogger)
         return CapturedTextViewData(
-            bounds = (
-                mappingContext.bounds
-                    ?: viewBoundsResolver.resolveViewGlobalBounds(view, mappingContext.screenDensity).toCaptured()
-                ),
+            bounds = bounds,
             text = resolveCapturedText(view, mappingContext.textAndInputPrivacy),
-            background = backgroundShapeStyleResolver.capture(view, internalLogger),
+            background = background,
+            backgroundWireframes = if (background == null) {
+                resolveBackgroundWireframe(view, mappingContext, bounds)
+            } else {
+                emptyList()
+            },
+            compoundDrawableWireframes = resolveCompoundDrawableWireframes(view, mappingContext, bounds),
             family = when (view.typeface) {
                 Typeface.MONOSPACE -> "monospace"
                 Typeface.SERIF -> "serif"
@@ -85,6 +99,135 @@ internal open class CapturedTextViewMapper<T : TextView>(
             isLayoutRtl = view.layoutDirection == TextView.LAYOUT_DIRECTION_RTL,
             hasLayout = layout != null,
             colorStringFormatter = colorStringFormatter
+        )
+    }
+
+    @Suppress("ReturnCount")
+    private fun resolveBackgroundWireframe(
+        view: T,
+        mappingContext: CapturedMappingContext,
+        capturedBounds: CapturedBounds
+    ): List<CapturedWireframe> {
+        if (view.background == null || view.width <= 0 || view.height <= 0) return emptyList()
+
+        val placeholderLabel = PixelCaptureEligibility.placeholderLabelForBackground(mappingContext.imagePrivacy)
+        if (placeholderLabel != null) return emptyList()
+
+        val displayMetrics = view.resources.displayMetrics
+        val screenArea = displayMetrics.widthPixels.toLong() * displayMetrics.heightPixels.toLong()
+        val viewArea = view.width.toLong() * view.height.toLong()
+        if (PixelCaptureEligibility.isTooLargeToCapture(viewArea, screenArea)) return emptyList()
+
+        val bitmap = backgroundRasterizer.rasterize(view) ?: return emptyList()
+        val identity = mappingContext.identityFactory.imageWireframe(mappingContext.ownerIdentity)
+        mappingContext.pendingPixelCaptureSink.register(
+            PendingPixelCapture(
+                wireframeIdentity = identity,
+                ownerIdentity = mappingContext.ownerIdentity,
+                bitmap = bitmap,
+                isTextFree = true
+            )
+        )
+        return listOf(
+            CapturedWireframe.Pixel(
+                identity = identity,
+                bounds = capturedBounds,
+                resource = PixelResource.Unresolved
+            )
+        )
+    }
+
+    /**
+     * Ported from legacy `ViewUtilsInternal.resolveCompoundDrawableBounds`'s positioning math:
+     * `compoundDrawables` is always ordered [left, top, right, bottom], each centered on the
+     * view's cross-axis and pinned to its own edge (inset by that edge's padding) on the main axis.
+     * Uses [PixelCaptureEligibility.placeholderLabelFor] - the "ordinary image" gate, not
+     * [PixelCaptureEligibility.placeholderLabelForBackground] - since a compound drawable is real
+     * icon/image content, not decorative chrome, matching legacy's `usePIIPlaceholder = true` for
+     * this same call site.
+     */
+    private fun resolveCompoundDrawableWireframes(
+        view: T,
+        mappingContext: CapturedMappingContext,
+        viewBounds: CapturedBounds
+    ): List<CapturedWireframe> {
+        val drawables = view.compoundDrawables
+        if (drawables.all { it == null }) return emptyList()
+
+        val density = mappingContext.screenDensity
+        val paddingStart = view.paddingStart.densityNormalized(density).toLong()
+        val paddingTop = view.paddingTop.densityNormalized(density).toLong()
+        val paddingEnd = view.paddingEnd.densityNormalized(density).toLong()
+        val paddingBottom = view.paddingBottom.densityNormalized(density).toLong()
+        val displayMetrics = view.resources.displayMetrics
+        val screenAreaPx = displayMetrics.widthPixels.toLong() * displayMetrics.heightPixels.toLong()
+
+        return drawables.mapIndexedNotNull { index, drawable ->
+            if (drawable == null || drawable.intrinsicWidth <= 0 || drawable.intrinsicHeight <= 0) {
+                return@mapIndexedNotNull null
+            }
+
+            val widthDp = drawable.intrinsicWidth.densityNormalized(density).toLong()
+            val heightDp = drawable.intrinsicHeight.densityNormalized(density).toLong()
+            val offset = when (index) {
+                LEFT_DRAWABLE_INDEX -> paddingStart to centerOffset(viewBounds.height, heightDp)
+                TOP_DRAWABLE_INDEX -> centerOffset(viewBounds.width, widthDp) to paddingTop
+                RIGHT_DRAWABLE_INDEX ->
+                    (viewBounds.width - (widthDp + paddingEnd)) to centerOffset(viewBounds.height, heightDp)
+                BOTTOM_DRAWABLE_INDEX ->
+                    centerOffset(viewBounds.width, widthDp) to (viewBounds.height - (heightDp + paddingBottom))
+                else -> return@mapIndexedNotNull null
+            }
+
+            val iconBounds = CapturedBounds(
+                x = viewBounds.x + offset.first,
+                y = viewBounds.y + offset.second,
+                width = widthDp,
+                height = heightDp
+            )
+
+            resolveCompoundDrawableWireframe(mappingContext, drawable, iconBounds, screenAreaPx)
+        }
+    }
+
+    @Suppress("ReturnCount")
+    private fun resolveCompoundDrawableWireframe(
+        mappingContext: CapturedMappingContext,
+        drawable: Drawable,
+        iconBounds: CapturedBounds,
+        screenAreaPx: Long
+    ): CapturedWireframe? {
+        val boundsDp = GlobalBounds(iconBounds.x, iconBounds.y, iconBounds.width, iconBounds.height)
+        val placeholderLabel = PixelCaptureEligibility.placeholderLabelFor(mappingContext.imagePrivacy, boundsDp)
+        if (placeholderLabel != null) {
+            return CapturedWireframe.PrivacyPlaceholder(
+                identity = mappingContext.identityFactory.placeholderWireframe(mappingContext.ownerIdentity),
+                bounds = iconBounds,
+                label = placeholderLabel
+            )
+        }
+
+        val candidateAreaPx = drawable.intrinsicWidth.toLong() * drawable.intrinsicHeight.toLong()
+        if (PixelCaptureEligibility.isTooLargeToCapture(candidateAreaPx, screenAreaPx)) return null
+
+        val bitmap = compoundDrawableRasterizer.rasterize(
+            drawable,
+            drawable.intrinsicWidth,
+            drawable.intrinsicHeight
+        ) ?: return null
+        val identity = mappingContext.identityFactory.imageWireframe(mappingContext.ownerIdentity)
+        mappingContext.pendingPixelCaptureSink.register(
+            PendingPixelCapture(
+                wireframeIdentity = identity,
+                ownerIdentity = mappingContext.ownerIdentity,
+                bitmap = bitmap,
+                isTextFree = true
+            )
+        )
+        return CapturedWireframe.Pixel(
+            identity = identity,
+            bounds = iconBounds,
+            resource = PixelResource.Unresolved
         )
     }
 
@@ -127,6 +270,8 @@ private data class CapturedTextViewData(
     val bounds: CapturedBounds,
     val text: String,
     val background: CapturedBackgroundColor?,
+    val backgroundWireframes: List<CapturedWireframe>,
+    val compoundDrawableWireframes: List<CapturedWireframe>,
     val family: String,
     val textSizePx: Long,
     val textColor: Int,
@@ -142,7 +287,7 @@ private data class CapturedTextViewData(
     val hasLayout: Boolean,
     val colorStringFormatter: ColorStringFormatter
 ) : CapturedViewData {
-    override val isOcclusionBounded: Boolean get() = true
+    override val isOcclusionBounded: Boolean get() = compoundDrawableWireframes.isEmpty()
     override val hasOpaqueBackground: Boolean get() = background?.isOpaque == true
 
     override fun map(mappingContext: CapturedMappingContext): CapturedViewMapperResult {
@@ -154,6 +299,7 @@ private data class CapturedTextViewData(
                 style = it.resolve()
             )
         }
+        wireframes += backgroundWireframes
         val density = mappingContext.screenDensity
         wireframes += CapturedWireframe.Text(
             identity = mappingContext.identityFactory.textWireframe(mappingContext.ownerIdentity),
@@ -175,6 +321,7 @@ private data class CapturedTextViewData(
                 alignment = resolveAlignment()
             )
         )
+        wireframes += compoundDrawableWireframes
         return CapturedViewMapperResult.Wireframes(wireframes)
     }
 
@@ -216,3 +363,91 @@ private fun resolveVerticalAlignment(gravity: Int): CapturedVerticalAlignment =
 
 private fun resolveLayoutText(textView: TextView): String =
     (textView.layout?.text ?: textView.text)?.toString().orEmpty()
+
+/** [compoundDrawables] centers the icon on the view's cross-axis, pinned to its own edge on the main axis. */
+private fun centerOffset(containerDp: Long, contentDp: Long): Long = (containerDp / 2) - (contentDp / 2)
+
+/** [android.widget.TextView.getCompoundDrawables] is always ordered [left, top, right, bottom]. */
+private const val LEFT_DRAWABLE_INDEX = 0
+private const val TOP_DRAWABLE_INDEX = 1
+private const val RIGHT_DRAWABLE_INDEX = 2
+private const val BOTTOM_DRAWABLE_INDEX = 3
+
+/**
+ * Isolates the actual background-drawable-only draw so it can be substituted in tests. Draws only
+ * [View.getBackground], never the full view - the view's own content (text, in
+ * [CapturedTextViewMapper]'s case) is already captured separately, and baking it into this bitmap
+ * too would render it twice.
+ */
+internal fun interface ViewBackgroundRasterizer {
+    fun rasterize(view: View): Bitmap?
+}
+
+internal class DefaultViewBackgroundRasterizer(
+    private val internalLogger: InternalLogger = InternalLogger.UNBOUND
+) : ViewBackgroundRasterizer {
+
+    @Suppress("TooGenericExceptionCaught")
+    override fun rasterize(view: View): Bitmap? {
+        val background = view.background ?: return null
+        return try {
+            val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            val originalBounds = background.copyBounds()
+            background.setBounds(0, 0, view.width, view.height)
+            try {
+                background.draw(Canvas(bitmap))
+            } finally {
+                // background is the live Drawable instance the real View still uses for its own
+                // rendering - its bounds must be restored, not left at whatever this capture needed.
+                background.bounds = originalBounds
+            }
+            bitmap
+        } catch (e: Exception) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.TELEMETRY,
+                { "Failed to rasterize view background for pixel-fallback capture" },
+                e
+            )
+            null
+        }
+    }
+}
+
+/**
+ * Isolates a compound drawable's own draw so it can be substituted in tests. Draws only [drawable]
+ * at its intrinsic size, never the owning [TextView] - its text is already captured separately.
+ */
+internal fun interface CompoundDrawableRasterizer {
+    fun rasterize(drawable: Drawable, widthPx: Int, heightPx: Int): Bitmap?
+}
+
+internal class DefaultCompoundDrawableRasterizer(
+    private val internalLogger: InternalLogger = InternalLogger.UNBOUND
+) : CompoundDrawableRasterizer {
+
+    @Suppress("TooGenericExceptionCaught")
+    override fun rasterize(drawable: Drawable, widthPx: Int, heightPx: Int): Bitmap? {
+        return try {
+            val bitmap = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888)
+            val originalBounds = drawable.copyBounds()
+            drawable.setBounds(0, 0, widthPx, heightPx)
+            try {
+                drawable.draw(Canvas(bitmap))
+            } finally {
+                // drawable is the live instance the real View still uses for its own rendering -
+                // its bounds must be restored, not left at whatever this capture needed.
+                drawable.bounds = originalBounds
+            }
+            bitmap
+        } catch (e: Exception) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.TELEMETRY,
+                { "Failed to rasterize compound drawable for pixel-fallback capture" },
+                e
+            )
+            null
+        }
+    }
+}

@@ -91,23 +91,12 @@ internal class SnapshotCaptureOrchestrator(
     private fun beginCapture(scheduleId: Long) {
         val active = createActiveGeneration(scheduleId) ?: return scheduleCaptureIfRequested()
 
-        val expiration = expiryScheduler.schedule(active.generation.remainingBudgetNs()) {
+        // Expiry timers fire once even after completion; stale generations are ignored by expire().
+        expiryScheduler.schedule(active.generation.remainingBudgetNs()) {
             expire(active.generation)
         }
-        val shouldCancelExpiration = synchronized(lock) {
-            val current = activeGeneration
-            if (current?.generation?.id == active.generation.id) {
-                current.expiration = expiration
-                active.generation.track(expiration)
-                false
-            } else {
-                true
-            }
-        }
-        if (shouldCancelExpiration) {
-            expiration.cancel()
-            return
-        }
+        val isStillActive = synchronized(lock) { activeGeneration?.generation?.id == active.generation.id }
+        if (!isStillActive) return
 
         val captureResult = active.generation.runMainThreadCaptureUnit(admissionAlreadyGranted = true) {
             safeCapture(producer, internalLogger, active.generation)
@@ -241,7 +230,6 @@ internal class SnapshotCaptureOrchestrator(
 
     private class ActiveGeneration(
         val generation: CaptureGenerationContext,
-        var expiration: CancellableCaptureWork = CancellableCaptureWork.NONE,
         var processing: CancellableCaptureWork = CancellableCaptureWork.NONE
     ) {
         fun cancel() {
