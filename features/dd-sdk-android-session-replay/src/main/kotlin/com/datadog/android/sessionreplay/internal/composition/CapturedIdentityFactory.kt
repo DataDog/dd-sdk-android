@@ -26,7 +26,5 @@ internal interface CapturedIdentityFactory : CompositionIdentityFactory {
 
     fun layer(owner: CapturedIdentity, layerId: String): CapturedIdentity
 
-    fun imageWireframe(owner: CapturedIdentity): CapturedIdentity
-
     fun webViewWireframe(owner: CapturedIdentity, slotId: Long): CapturedIdentity
 }
