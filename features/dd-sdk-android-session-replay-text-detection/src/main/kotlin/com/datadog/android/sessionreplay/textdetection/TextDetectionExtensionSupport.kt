@@ -11,6 +11,7 @@ import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.composition.TextDetectorProvider
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.recorder.privacy.TextDetector
+import com.datadog.android.sessionreplay.textdetection.internal.MlKitTextDetector
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import java.util.concurrent.Executors
 

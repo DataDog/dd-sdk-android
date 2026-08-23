@@ -47,6 +47,10 @@ import org.mockito.quality.Strictness
 internal class PixelFallbackSnapshotProcessorTest {
 
     private val mockResourceResolver: ResourceResolver = mock()
+    private val immediateMainThreadExecutor = CaptureMainThreadExecutor { task ->
+        task()
+        CancellableCaptureWork.NONE
+    }
 
     private fun generationContext(): CaptureGenerationContext = CaptureGenerationContext(
         id = 1L,
@@ -87,13 +91,18 @@ internal class PixelFallbackSnapshotProcessorTest {
             wireframes = listOf(pixelWireframe)
         )
         val pending = PendingPixelCapture(pixelIdentity, ownerIdentity, bitmap)
+        val pendingTextFree = PendingPixelCapture(pixelIdentity, ownerIdentity, bitmap, isTextFree = true)
     }
 
     @Test
     fun `M complete immediately W process { no pending captures }`(@StringForgery fakeScope: String) {
         // Given
         val fixture = Fixture(fakeScope)
-        val testedProcessor = PixelFallbackSnapshotProcessor(mockResourceResolver, textDetector = null)
+        val testedProcessor = PixelFallbackSnapshotProcessor(
+            mockResourceResolver,
+            textDetector = null,
+            immediateMainThreadExecutor
+        )
         val results = mutableListOf<SnapshotProcessingResult>()
 
         // When
@@ -113,7 +122,11 @@ internal class PixelFallbackSnapshotProcessorTest {
     fun `M downgrade to a placeholder W process { no text detector configured }`(@StringForgery fakeScope: String) {
         // Given
         val fixture = Fixture(fakeScope)
-        val testedProcessor = PixelFallbackSnapshotProcessor(mockResourceResolver, textDetector = null)
+        val testedProcessor = PixelFallbackSnapshotProcessor(
+            mockResourceResolver,
+            textDetector = null,
+            immediateMainThreadExecutor
+        )
         val results = mutableListOf<SnapshotProcessingResult>()
 
         // When
@@ -138,6 +151,45 @@ internal class PixelFallbackSnapshotProcessorTest {
     }
 
     @Test
+    fun `M resolve the pixel resource W process { capture is text-free, no detector configured }`(
+        @StringForgery fakeScope: String,
+        @StringForgery fakeResourceId: String
+    ) {
+        // Given: a TextView/Button background-only rasterization is structurally guaranteed not
+        // to contain text (its text is always captured separately), so it must skip the
+        // text-detection safety net entirely - even when no detector is configured at all.
+        val fixture = Fixture(fakeScope)
+        doAnswer { invocation ->
+            val callback = invocation.getArgument<ResourceResolverCallback>(1)
+            callback.onSuccess(fakeResourceId)
+            null
+        }.whenever(mockResourceResolver).resolveResourceIdFromBitmap(any(), any())
+        val testedProcessor = PixelFallbackSnapshotProcessor(
+            mockResourceResolver,
+            textDetector = null,
+            immediateMainThreadExecutor
+        )
+        val results = mutableListOf<SnapshotProcessingResult>()
+
+        // When
+        testedProcessor.process(
+            SnapshotProcessingRequest(
+                generationContext(),
+                fixture.snapshot,
+                listOf(fixture.pendingTextFree),
+                fixture.identityFactory
+            ),
+            SnapshotProcessingCallback { results += it }
+        )
+
+        // Then
+        val completed = results.single() as SnapshotProcessingResult.Completed
+        val resolvedWireframe = completed.snapshot.wireframes.single { it.identity == fixture.pixelIdentity }
+            as CapturedWireframe.Pixel
+        assertThat(resolvedWireframe.resource).isEqualTo(PixelResource.Resolved(fakeResourceId, "image/webp"))
+    }
+
+    @Test
     fun `M downgrade to a placeholder W process { detector reports Unavailable }`(@StringForgery fakeScope: String) {
         // Given
         val fixture = Fixture(fakeScope)
@@ -147,7 +199,11 @@ internal class PixelFallbackSnapshotProcessorTest {
             val onComplete = invocation.getArgument<(TextDetectionOutcome) -> Unit>(1)
             onComplete(TextDetectionOutcome.Unavailable)
         }.whenever(mockTextDetector).detectTextRegions(any(), any())
-        val testedProcessor = PixelFallbackSnapshotProcessor(mockResourceResolver, mockTextDetector)
+        val testedProcessor = PixelFallbackSnapshotProcessor(
+            mockResourceResolver,
+            mockTextDetector,
+            immediateMainThreadExecutor
+        )
         val results = mutableListOf<SnapshotProcessingResult>()
 
         // When
@@ -189,7 +245,11 @@ internal class PixelFallbackSnapshotProcessorTest {
             callback.onSuccess(fakeResourceId)
             null
         }.whenever(mockResourceResolver).resolveResourceIdFromBitmap(any(), any())
-        val testedProcessor = PixelFallbackSnapshotProcessor(mockResourceResolver, mockTextDetector)
+        val testedProcessor = PixelFallbackSnapshotProcessor(
+            mockResourceResolver,
+            mockTextDetector,
+            immediateMainThreadExecutor
+        )
         val results = mutableListOf<SnapshotProcessingResult>()
 
         // When
@@ -229,7 +289,11 @@ internal class PixelFallbackSnapshotProcessorTest {
             callback.onFailure()
             null
         }.whenever(mockResourceResolver).resolveResourceIdFromBitmap(any(), any())
-        val testedProcessor = PixelFallbackSnapshotProcessor(mockResourceResolver, mockTextDetector)
+        val testedProcessor = PixelFallbackSnapshotProcessor(
+            mockResourceResolver,
+            mockTextDetector,
+            immediateMainThreadExecutor
+        )
         val results = mutableListOf<SnapshotProcessingResult>()
 
         // When

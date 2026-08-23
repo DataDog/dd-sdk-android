@@ -124,7 +124,12 @@ internal class AndroidWindowTraversal(
         } else {
             // Lists are owned by this copy and are never mutated after this handoff.
             WindowCopyResult.Present(
-                CapturedNativeWindow(state.density, state.views, state.isDrawingOrderReliable, state.pendingPixelCaptures),
+                CapturedNativeWindow(
+                    state.density,
+                    state.views,
+                    state.isDrawingOrderReliable,
+                    state.pendingPixelCaptures
+                ),
                 state.touchOverrideAreas
             )
         }
@@ -193,7 +198,6 @@ internal class AndroidWindowTraversal(
         val clip = resolveExplicitClip(view, pixels, pixelClip, state.density)
         val geometryIsReliable = item.isGeometryReliable &&
             view.hasReliableGeometry(if (kind == CapturedLayerKind.WINDOW_ROOT) -1 else 0)
-        val index = state.views.size
         state.views += CapturedNativeView(
             identity = identity,
             parentIndex = item.parentIndex,
@@ -210,10 +214,25 @@ internal class AndroidWindowTraversal(
             kind = kind,
             composition = composition
         )
-        if (nativeChildren != null) {
-            pushChildren(nativeChildren, index, geometryIsReliable, ownPrivacy, stack, state)
-        } else {
-            pushHiddenTouchChildren(view, hidden, stack)
+        pushNativeChildren(view, nativeChildren, hidden, ownPrivacy, stack, state)
+    }
+
+    @UiThread
+    @Suppress("UnsafeThirdPartyFunctionCall") // copyView appended this view before pushing its children.
+    private fun pushNativeChildren(
+        view: View,
+        children: ViewGroup?,
+        hidden: Boolean,
+        inheritedPrivacy: EffectivePrivacy,
+        stack: ArrayDeque<WorkItem>,
+        state: CopyState
+    ) {
+        val copied = state.views.last()
+        if (children != null) {
+            pushChildren(children, state.views.lastIndex, copied.isGeometryReliable, inheritedPrivacy, stack, state)
+        } else if ((hidden || copied.viewData.isPixelFallbackTerminal) && view is ViewGroup) {
+            // Visual hiding and pixel captures still allow descendant touch overrides.
+            pushTouchChildren(view, stack)
         }
     }
 
@@ -365,12 +384,6 @@ internal class AndroidWindowTraversal(
             @Suppress("UnsafeThirdPartyFunctionCall") // Unbounded UI-owned deque.
             stack.addLast(WorkItem(children[i], -1, false, touchOnly = true))
         }
-    }
-
-    /** Visual hiding still allows descendant touch overrides; WebView internals remain opaque. */
-    @UiThread
-    private fun pushHiddenTouchChildren(view: View, hidden: Boolean, stack: ArrayDeque<WorkItem>) {
-        if (hidden && view is ViewGroup) pushTouchChildren(view, stack)
     }
 
     private class CopyState(

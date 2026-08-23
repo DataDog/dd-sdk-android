@@ -99,7 +99,8 @@ internal class CompositionProcessingIsolationTest {
         if (fakeExpectedWrite) {
             val records = argumentCaptor<EnrichedRecord>()
             verify(fakeFixture.mockWriter).write(records.capture(), isA())
-            val record = records.firstValue.records.single() as MobileSegment.MobileRecord.MobileFullSnapshotRecord
+            val record = records.firstValue.records
+                .filterIsInstance<MobileSegment.MobileRecord.MobileFullSnapshotRecord>().single()
             assertThat(record.timestamp).isEqualTo(fakeFixture.fakeTimestamp + 2)
         } else {
             verifyNoInteractions(fakeFixture.mockWriter)
