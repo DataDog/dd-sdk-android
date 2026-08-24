@@ -21,6 +21,7 @@ import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.data.SharedPreferencesStorage
 import com.datadog.android.internal.profiling.ProfilerEvent
+import com.datadog.android.internal.profiling.ProfilingAnomalyDetectedEvent
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.rum.RumSessionConstants
 import com.datadog.android.internal.sampling.SessionSamplingIdProvider
@@ -1332,6 +1333,36 @@ internal class ProfilingFeatureTest {
 
         // Then
         verify(mockRumFeatureScope, never()).sendEvent(any())
+    }
+
+    @Test
+    fun `M not forward OOM event to RUM W onOutOfMemoryDetected()`(
+        @LongForgery(min = 0L) fakeDetectedAtMs: Long
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+
+        // When
+        testedFeature.onOutOfMemoryDetected(fakeDetectedAtMs, "")
+
+        // Then
+        verify(mockRumFeatureScope, never()).sendEvent(any())
+    }
+
+    @Test
+    fun `M forward anomaly event to RUM W onMemoryAnomalyDetected()`(
+        @LongForgery(min = 0L) fakeDetectedAtMs: Long
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+
+        // When
+        testedFeature.onMemoryAnomalyDetected(fakeDetectedAtMs, "")
+
+        // Then
+        verify(mockRumFeatureScope).sendEvent(ProfilingAnomalyDetectedEvent(fakeDetectedAtMs))
     }
 
     @Test

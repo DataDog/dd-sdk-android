@@ -6,9 +6,12 @@
 
 package com.datadog.android.profiling.forge
 
+import com.datadog.android.internal.tests.elmyr.ProfilerEventRumAnomalyErrorEventForgeryFactory
 import com.datadog.android.internal.tests.elmyr.ProfilerEventRumAnrEventForgeryFactory
 import com.datadog.android.internal.tests.elmyr.ProfilerEventRumLongTaskEventForgeryFactory
+import com.datadog.android.internal.tests.elmyr.ProfilerEventRumOomErrorEventForgeryFactory
 import com.datadog.android.internal.tests.elmyr.ProfilerEventRumVitalEventFactory
+import com.datadog.android.internal.tests.elmyr.ProfilingAnomalyDetectedEventForgeryFactory
 import com.datadog.android.internal.tests.elmyr.ProfilingAnrDetectedEventForgeryFactory
 import com.datadog.android.internal.tests.elmyr.ProfilingRumContextFactory
 import com.datadog.android.internal.tests.elmyr.ProfilingThreadDumpForgeryFactory
@@ -28,8 +31,11 @@ class Configurator : BaseConfigurator() {
         forge.addFactory(ProfilerEventRumVitalEventFactory())
         forge.addFactory(ProfilerEventRumLongTaskEventForgeryFactory())
         forge.addFactory(ProfilerEventRumAnrEventForgeryFactory())
+        forge.addFactory(ProfilerEventRumOomErrorEventForgeryFactory())
+        forge.addFactory(ProfilerEventRumAnomalyErrorEventForgeryFactory())
         forge.addFactory(ProfilingRumContextFactory())
         forge.addFactory(ProfilingAnrDetectedEventForgeryFactory())
+        forge.addFactory(ProfilingAnomalyDetectedEventForgeryFactory())
         forge.addFactory(StackTraceElementForgeryFactory())
         forge.addFactory(ProfilingThreadDumpForgeryFactory())
     }

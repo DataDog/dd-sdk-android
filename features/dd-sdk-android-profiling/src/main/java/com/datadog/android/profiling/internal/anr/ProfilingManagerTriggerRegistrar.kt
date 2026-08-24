@@ -165,6 +165,7 @@ internal class ProfilingManagerTriggerRegistrar(
                         currentListener.onOutOfMemoryDetected(detectedAtMs, resultPath)
 
                     ProfilingTrigger.TRIGGER_TYPE_ANOMALY ->
+                        // TODO RUM-18223: filter in only memory anomaly result by tag
                         currentListener.onMemoryAnomalyDetected(detectedAtMs, resultPath)
                 }
                 // We currently don't use the result profile, just delete it.

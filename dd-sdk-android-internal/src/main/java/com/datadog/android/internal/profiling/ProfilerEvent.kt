@@ -32,6 +32,36 @@ sealed class ProfilerEvent {
     ) : ProfilerEvent()
 
     /**
+     * Sent by the RUM feature to the profiling feature when an OOM error event
+     * has been successfully written. Allows the profiling feature to correlate
+     * the captured heap histogram with the RUM error event.
+     *
+     * @param id The ID of the corresponding RUM error event.
+     * @param timestamp Timestamp in milliseconds since epoch (server time-adjusted).
+     * @param rumContext RUM context at the time of the OOM.
+     */
+    data class RumOomErrorEvent(
+        val id: String,
+        val timestamp: Long,
+        val rumContext: ProfilingRumContext
+    ) : ProfilerEvent()
+
+    /**
+     * Sent by the RUM feature to the profiling feature when a memory anomaly
+     * error event has been successfully written. Allows the profiling feature
+     * to correlate the captured heap histogram with the RUM error event.
+     *
+     * @param id The ID of the corresponding RUM error event.
+     * @param timestamp Timestamp in milliseconds since epoch (server time-adjusted).
+     * @param rumContext RUM context at the time of the anomaly.
+     */
+    data class RumAnomalyErrorEvent(
+        val id: String,
+        val timestamp: Long,
+        val rumContext: ProfilingRumContext
+    ) : ProfilerEvent()
+
+    /**
      * Sent by the RUM feature to the profiling feature whenever a long task is detected.
      *
      * @param id The ID of the corresponding RUM long task event.

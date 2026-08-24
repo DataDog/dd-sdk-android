@@ -183,6 +183,10 @@ sealed class com.datadog.android.internal.profiling.ProfilerEvent
   object TTIDNotTracked : ProfilerEvent
   data class RumAnrEvent : ProfilerEvent
     constructor(String, Long, Long, ProfilingRumContext)
+  data class RumOomErrorEvent : ProfilerEvent
+    constructor(String, Long, ProfilingRumContext)
+  data class RumAnomalyErrorEvent : ProfilerEvent
+    constructor(String, Long, ProfilingRumContext)
   data class RumLongTaskEvent : ProfilerEvent
     constructor(String, Long, Long, ProfilingRumContext)
   data class RumVitalEvent : ProfilerEvent
@@ -191,6 +195,8 @@ sealed class com.datadog.android.internal.profiling.ProfilerEvent
       - TTID
       - TTFD
       - OPERATION
+data class com.datadog.android.internal.profiling.ProfilingAnomalyDetectedEvent
+  constructor(Long)
 data class com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
   constructor(Long, List<StackTraceElement>, String, Thread.State, List<ProfilingThreadDump>)
 data class com.datadog.android.internal.profiling.ProfilingRumContext
