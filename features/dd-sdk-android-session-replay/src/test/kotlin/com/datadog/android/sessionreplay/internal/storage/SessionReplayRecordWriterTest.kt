@@ -187,6 +187,50 @@ internal class SessionReplayRecordWriterTest {
     }
 
     @Test
+    fun `M call onSuccess W write`(forge: Forge) {
+        // Given
+        val fakeRecord = forge.forgeEnrichedRecord()
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
+        }
+        whenever(mockSessionReplayFeature.withWriteContext(any(), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
+        }
+        var onSuccessCalls = 0
+
+        // When
+        testedWriter.write(fakeRecord) { onSuccessCalls++ }
+
+        // Then
+        assertThat(onSuccessCalls).isEqualTo(1)
+    }
+
+    @Test
+    fun `M not call onSuccess W write { eventBatchWriter write failed }`(forge: Forge) {
+        // Given
+        whenever(mockEventBatchWriter.write(anyOrNull(), anyOrNull(), any()))
+            .thenReturn(false)
+        val fakeRecord = forge.forgeEnrichedRecord()
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
+        }
+        whenever(mockSessionReplayFeature.withWriteContext(any(), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
+        }
+        var onSuccessCalls = 0
+
+        // When
+        testedWriter.write(fakeRecord) { onSuccessCalls++ }
+
+        // Then
+        assertThat(onSuccessCalls).isZero()
+    }
+
+    @Test
     fun `M not count embedded records W writeRaw { eventBatchWriter write failed }`(
         @StringForgery fakeViewId: String,
         @IntForgery(min = 1) fakeRecordsCount: Int

@@ -171,7 +171,7 @@ internal class SessionReplayFeatureTest {
         )
 
         // Then
-        verify(mockRecorder).requestCapture()
+        verify(mockRecorder).requestCapture(setOf(FAKE_EMBEDDED_SLOT_ID))
 
         // Cleanup
         testedFeature.embeddedContentSlotRegistry.notifySlotChanged(fakeRegistration, null)
@@ -195,7 +195,7 @@ internal class SessionReplayFeatureTest {
         )
 
         // Then
-        verify(mockRecorder).requestCapture()
+        verify(mockRecorder).requestCapture(setOf(FAKE_EMBEDDED_SLOT_ID))
 
         // Cleanup
         testedFeature.embeddedContentSlotRegistry.notifySlotChanged(fakeRegistration, null)
@@ -218,7 +218,7 @@ internal class SessionReplayFeatureTest {
         )
 
         // Then
-        verify(mockRecorder, never()).requestCapture()
+        verify(mockRecorder, never()).requestCapture(any())
 
         // Cleanup
         testedFeature.embeddedContentSlotRegistry.notifySlotChanged(fakeRegistration, null)
@@ -284,6 +284,13 @@ internal class SessionReplayFeatureTest {
                 RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString()
             )
         )
+        // Embedded records are held until the placeholder they composite into has been written.
+        testedFeature.embeddedContentSlotRegistry.onPlaceholdersWritten(
+            FAKE_EMBEDDED_VIEW_ID,
+            FAKE_PLACEHOLDER_TIMESTAMP,
+            setOf(FAKE_EMBEDDED_SLOT_ID)
+        )
+
         // When
         testedFeature.onReceive(
             EmbeddedContentEvent.RecordBatch(
@@ -1506,6 +1513,7 @@ internal class SessionReplayFeatureTest {
     companion object {
         private const val FAKE_EMBEDDED_SLOT_ID = "slot-id"
         private const val FAKE_RECORD_TYPE_KEY = "type"
+        private const val FAKE_PLACEHOLDER_TIMESTAMP = 1L
         private const val FAKE_EMBEDDED_VIEW_ID = "embedded-view-id"
 
         val appContext = ApplicationContextTestConfiguration(Application::class.java)

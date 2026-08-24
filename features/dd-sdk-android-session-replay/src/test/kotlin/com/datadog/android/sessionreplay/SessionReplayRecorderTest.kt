@@ -13,6 +13,7 @@ import android.view.Window
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.LifecycleCallback
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.recorder.SessionReplayRecorder
 import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
 import com.datadog.android.sessionreplay.internal.recorder.WindowCallbackInterceptor
@@ -24,6 +25,7 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -33,8 +35,11 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.atLeastOnce
+import org.mockito.kotlin.clearInvocations
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -75,6 +80,17 @@ internal class SessionReplayRecorderTest {
     private lateinit var fakeActiveWindowsDecorViews: List<View>
     private lateinit var testedSessionReplayRecorder: SessionReplayRecorder
 
+    private val fakeSlotRegistry = EmbeddedContentSlotRegistry()
+
+    @StringForgery
+    private lateinit var fakeSlotId: String
+
+    @StringForgery
+    private lateinit var fakeOtherSlotId: String
+
+    @StringForgery
+    private lateinit var fakeViewId: String
+
     @Mock
     lateinit var mockRecordedDataQueueHandler: RecordedDataQueueHandler
 
@@ -92,6 +108,12 @@ internal class SessionReplayRecorderTest {
             it.getArgument<Runnable>(0).run()
             true
         }
+        whenever(mockUiHandler.postDelayed(any(), any())).then {
+            it.getArgument<Runnable>(0).run()
+            true
+        }
+        whenever(mockViewOnDrawInterceptor.requestCapture())
+            .thenReturn(ViewOnDrawInterceptor.CaptureRequestResult.CAPTURED)
         testedSessionReplayRecorder = SessionReplayRecorder(
             appContext = appContext.mockInstance,
             textAndInputPrivacy = fakeTextAndInputPrivacy,
@@ -104,8 +126,14 @@ internal class SessionReplayRecorderTest {
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             resourceResolver = mockResourceResolver,
             uiHandler = mockUiHandler,
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            embeddedContentSlotRegistry = fakeSlotRegistry
         )
+    }
+
+    /** Reports [slotIds] as drawn, which is what discharges a standing capture request. */
+    private fun writePlaceholdersFor(vararg slotIds: String) {
+        fakeSlotRegistry.onPlaceholdersWritten(fakeViewId, PLACEHOLDER_TIMESTAMP, slotIds.toSet())
     }
 
     @Test
@@ -280,16 +308,106 @@ internal class SessionReplayRecorderTest {
         testedSessionReplayRecorder.resumeRecorders()
 
         // When
-        testedSessionReplayRecorder.requestCapture()
+        testedSessionReplayRecorder.requestCapture(setOf(fakeSlotId))
+
+        // Then
+        verify(mockViewOnDrawInterceptor, atLeastOnce()).requestCapture()
+    }
+
+    @Test
+    fun `M intercept the current windows W requestCapture { nothing intercepted yet }`() {
+        // Given
+        testedSessionReplayRecorder.resumeRecorders()
+        clearInvocations(mockViewOnDrawInterceptor)
+        whenever(mockViewOnDrawInterceptor.requestCapture()).then {
+            writePlaceholdersFor(fakeSlotId)
+            ViewOnDrawInterceptor.CaptureRequestResult.NOT_INTERCEPTING
+        }
+
+        // When
+        testedSessionReplayRecorder.requestCapture(setOf(fakeSlotId))
+
+        // Then
+        verify(mockViewOnDrawInterceptor).intercept(
+            decorViews = fakeActiveWindowsDecorViews,
+            textAndInputPrivacy = fakeTextAndInputPrivacy,
+            imagePrivacy = fakeImagePrivacy
+        )
+    }
+
+    @Test
+    fun `M retry W requestCapture { no snapshot taken }`() {
+        // Given
+        // A capture request is a standing obligation: the placeholder it produces has to reach the
+        // player, so it is not dropped just because the recorder could not serve it right away.
+        testedSessionReplayRecorder.resumeRecorders()
+        clearInvocations(mockViewOnDrawInterceptor)
+        whenever(mockViewOnDrawInterceptor.requestCapture())
+            .thenReturn(ViewOnDrawInterceptor.CaptureRequestResult.NOT_CAPTURED)
+
+        // When
+        testedSessionReplayRecorder.requestCapture(setOf(fakeSlotId))
+
+        // Then
+        verify(mockViewOnDrawInterceptor, times(SessionReplayRecorder.MAX_CAPTURE_ATTEMPTS + 1))
+            .requestCapture()
+    }
+
+    @Test
+    fun `M keep retrying W requestCapture { snapshot taken, no placeholder written }`() {
+        // Given
+        // A snapshot being taken proves nothing: the processing queue can drop it, the write can
+        // fail, and the traversal may not have walked the slot at all.
+        testedSessionReplayRecorder.resumeRecorders()
+        clearInvocations(mockViewOnDrawInterceptor)
+
+        // When
+        testedSessionReplayRecorder.requestCapture(setOf(fakeSlotId))
+
+        // Then
+        verify(mockViewOnDrawInterceptor, times(SessionReplayRecorder.MAX_CAPTURE_ATTEMPTS + 1))
+            .requestCapture()
+    }
+
+    @Test
+    fun `M stop retrying W requestCapture { placeholder written }`() {
+        // Given
+        testedSessionReplayRecorder.resumeRecorders()
+        clearInvocations(mockViewOnDrawInterceptor)
+        whenever(mockViewOnDrawInterceptor.requestCapture()).then {
+            writePlaceholdersFor(fakeSlotId)
+            ViewOnDrawInterceptor.CaptureRequestResult.CAPTURED
+        }
+
+        // When
+        testedSessionReplayRecorder.requestCapture(setOf(fakeSlotId))
 
         // Then
         verify(mockViewOnDrawInterceptor).requestCapture()
     }
 
     @Test
+    fun `M keep retrying W requestCapture { only one of the slots placed }`() {
+        // Given
+        testedSessionReplayRecorder.resumeRecorders()
+        clearInvocations(mockViewOnDrawInterceptor)
+        whenever(mockViewOnDrawInterceptor.requestCapture()).then {
+            writePlaceholdersFor(fakeSlotId)
+            ViewOnDrawInterceptor.CaptureRequestResult.CAPTURED
+        }
+
+        // When
+        testedSessionReplayRecorder.requestCapture(setOf(fakeSlotId, fakeOtherSlotId))
+
+        // Then
+        verify(mockViewOnDrawInterceptor, times(SessionReplayRecorder.MAX_CAPTURE_ATTEMPTS + 1))
+            .requestCapture()
+    }
+
+    @Test
     fun `M not request capture W requestCapture { recorder stopped }`() {
         // When
-        testedSessionReplayRecorder.requestCapture()
+        testedSessionReplayRecorder.requestCapture(setOf(fakeSlotId))
 
         // Then
         verify(mockViewOnDrawInterceptor, never()).requestCapture()
@@ -437,6 +555,8 @@ internal class SessionReplayRecorderTest {
     }
 
     companion object {
+        private const val PLACEHOLDER_TIMESTAMP = 1000L
+
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
 
         @TestConfigurationsProvider

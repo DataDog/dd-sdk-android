@@ -18,7 +18,7 @@ internal interface Recorder {
 
     fun resumeRecorders()
 
-    fun requestCapture()
+    fun requestCapture(slotIds: Set<String>)
 
     fun stopRecorders()
 }
