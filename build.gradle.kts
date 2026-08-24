@@ -164,12 +164,15 @@ registerSubModuleAggregationTask("checkApiSurfaceChangesAll", "checkApiSurfaceCh
 
 registerSubModuleAggregationTask("checkCompilerMetadataChangesAll", "checkCompilerMetadataChanges")
 
+registerSubModuleAggregationTask("checkAarMetadataInfoChangesAll", "checkAarMetadataInfoChanges")
+
 registerSubModuleAggregationTask("checkTransitiveDependenciesListAll", "checkTransitiveDependenciesList")
 
 tasks.register("checkGeneratedFiles") {
     dependsOn("checkDependencyLicensesAll")
     dependsOn("checkApiSurfaceChangesAll")
     dependsOn("checkCompilerMetadataChangesAll")
+    dependsOn("checkAarMetadataInfoChangesAll")
     dependsOn("checkTransitiveDependenciesListAll")
 }
 

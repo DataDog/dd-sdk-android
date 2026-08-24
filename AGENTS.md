@@ -111,7 +111,7 @@ Filename matches the flavor: `config/us1.json`, `config/staging.json`, etc. Get 
 
 # Generated Models
 
-Some modules generate Kotlin data classes from JSON schemas at build time (e.g. `features/dd-sdk-android-rum/src/main/json/`). The generated Kotlin files land in `build/generated/json2kotlin/` — **do not edit them directly**. Edit the JSON schemas instead and rebuild.
+Some modules generate Kotlin data classes from JSON schemas at build time (e.g. `features/dd-sdk-android-rum/src/main/json/`). The generated Kotlin files land in `build/generated/<generationTaskName>/` — **do not edit them directly**. Edit the JSON schemas instead and rebuild.
 
 # Commits
 

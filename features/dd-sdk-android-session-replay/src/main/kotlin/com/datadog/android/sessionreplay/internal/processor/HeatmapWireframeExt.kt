@@ -15,6 +15,7 @@ internal fun MobileSegment.Wireframe.permanentId(): String? {
         is MobileSegment.Wireframe.ImageWireframe -> this.permanentId
         is MobileSegment.Wireframe.PlaceholderWireframe -> this.permanentId
         is MobileSegment.Wireframe.WebviewWireframe -> this.permanentId
+        is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.permanentId
     }
 }
 
@@ -27,5 +28,6 @@ internal fun MobileSegment.Wireframe.copyWithPermanentId(
         is MobileSegment.Wireframe.ImageWireframe -> this.copy(permanentId = permanentId)
         is MobileSegment.Wireframe.PlaceholderWireframe -> this.copy(permanentId = permanentId)
         is MobileSegment.Wireframe.WebviewWireframe -> this.copy(permanentId = permanentId)
+        is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.copy(permanentId = permanentId)
     }
 }

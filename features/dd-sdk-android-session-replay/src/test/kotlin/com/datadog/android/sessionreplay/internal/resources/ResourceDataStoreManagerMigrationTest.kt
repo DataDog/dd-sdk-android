@@ -78,7 +78,7 @@ internal class ResourceDataStoreManagerMigrationTest {
         assertThat(dataStore.removeCount).isEqualTo(1)
 
         // When
-        testedManager.cacheResourceHash(NEW_RESOURCE_HASH)
+        testedManager.markResourceAsSentIfNew(NEW_RESOURCE_HASH)
 
         // Then
         val migratedEntry = checkNotNull(dataStore.entry)

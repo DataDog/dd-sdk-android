@@ -18,6 +18,7 @@ import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer.Companion.INVALID_PRIVACY_LEVEL_ERROR
+import com.datadog.android.sessionreplay.internal.recorder.mapper.EmbeddedContentViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.HiddenViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.QueueStatusCallback
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -34,17 +35,20 @@ internal class TreeViewTraversal(
     private val hiddenViewMapper: HiddenViewMapper,
     private val decorViewMapper: WireframeMapper<View>,
     private val viewUtilsInternal: ViewUtilsInternal,
-    private val internalLogger: InternalLogger
+    private val internalLogger: InternalLogger,
+    private val embeddedContentViewMapper: EmbeddedContentViewMapper? = null
 ) {
 
-    @Suppress("ReturnCount")
+    @Suppress("ReturnCount", "LongMethod", "ComplexCondition")
     @UiThread
     fun traverse(
         view: View,
         mappingContext: MappingContext,
         recordedDataQueueRefs: RecordedDataQueueRefs
     ): TraversedTreeView {
-        if (viewUtilsInternal.isNotVisible(view) ||
+        val isNotVisible = viewUtilsInternal.isNotVisible(view)
+        val embeddedMapper = embeddedContentViewMapper?.takeIf { it.hasSlotId(view) }
+        if ((embeddedMapper == null && isNotVisible) ||
             viewUtilsInternal.isSystemNoise(view) ||
             viewUtilsInternal.isOnSecondaryDisplay(view)
         ) {
@@ -61,8 +65,15 @@ internal class TreeViewTraversal(
         updateTouchOverrideAreas(view, mappingContext)
 
         if (isHidden(view)) {
+            if (isNotVisible) {
+                return TraversedTreeView(emptyList(), TraversalStrategy.STOP_AND_DROP_NODE)
+            }
             traversalStrategy = TraversalStrategy.STOP_AND_RETURN_NODE
             mapper = hiddenViewMapper
+            jobStatusCallback = noOpCallback
+        } else if (embeddedMapper != null) {
+            traversalStrategy = TraversalStrategy.STOP_AND_RETURN_NODE
+            mapper = embeddedMapper
             jobStatusCallback = noOpCallback
         } else if (mapper != null) {
             jobStatusCallback = QueueStatusCallback(recordedDataQueueRefs)
