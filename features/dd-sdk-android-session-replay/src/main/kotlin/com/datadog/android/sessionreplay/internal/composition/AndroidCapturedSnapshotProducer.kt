@@ -43,7 +43,7 @@ internal class AndroidCapturedSnapshotProducer(
     override fun capture(context: CaptureGenerationContext, changeset: CaptureChangeset): CaptureOutput? {
         val rumViewScope = scopeProvider.currentScope() ?: return null
         val identityFactory = identityFactoryFor(rumViewScope.scope)
-        val walk = walkWindows(windowSource.currentWindows(), identityFactory, context)
+        val walk = walkWindows(windowSource.currentWindows(), identityFactory, context, rumViewScope.viewUrl)
 
         return walk?.let {
             val root = CapturedLayer(
@@ -72,10 +72,12 @@ internal class AndroidCapturedSnapshotProducer(
         return DefaultCapturedIdentityFactory(scope).also { retainedIdentityFactory = it }
     }
 
+    @MainThread
     private fun walkWindows(
         windows: List<View>,
         identityFactory: CapturedIdentityFactory,
-        context: CaptureGenerationContext
+        context: CaptureGenerationContext,
+        viewUrl: String?
     ): WindowsWalkAccumulation? {
         if (windows.isEmpty()) return null
         val layers = mutableListOf<CapturedLayer>()
@@ -86,7 +88,9 @@ internal class AndroidCapturedSnapshotProducer(
 
         for (window in windows) {
             val windowIdentity = identityFactory.window(viewIdentifierResolver.resolveViewId(window).toString())
-            when (val result = traversal.traverseWindow(window, windowIdentity, identityFactory, context)) {
+            when (
+                val result = traversal.traverseWindow(window, windowIdentity, identityFactory, context, viewUrl)
+            ) {
                 is WindowWalkResult.Present -> {
                     windowLayers += result.rootLayer
                     layers += result.layers

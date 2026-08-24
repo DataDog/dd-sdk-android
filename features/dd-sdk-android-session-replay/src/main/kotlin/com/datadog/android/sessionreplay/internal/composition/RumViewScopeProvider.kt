@@ -9,10 +9,14 @@ package com.datadog.android.sessionreplay.internal.composition
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 
-/** The current RUM view's identity scope and time offset, or null when there is no active view. */
+/**
+ * The current RUM view's identity scope and time offset, or null when there is no active view.
+ * [viewUrl] scopes heatmap identifiers to a screen - see `HeatmapIdentifierResolver`.
+ */
 internal data class CapturedRumViewScope(
     val scope: RumViewIdentityScope,
-    val viewTimeOffsetMs: Long
+    val viewTimeOffsetMs: Long,
+    val viewUrl: String? = null
 )
 
 /**
@@ -32,7 +36,8 @@ internal class DefaultRumViewScopeProvider(
         if (rumContext.isNotValid()) return null
         return CapturedRumViewScope(
             scope = RumViewIdentityScope(rumContext.viewId),
-            viewTimeOffsetMs = rumContext.viewTimeOffsetMs
+            viewTimeOffsetMs = rumContext.viewTimeOffsetMs,
+            viewUrl = rumContext.viewUrl
         )
     }
 }

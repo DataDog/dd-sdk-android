@@ -71,6 +71,7 @@
     <string name="default_image_button">default image button</string>
     <string name="app_compat_image_button">app compat image button</string>
     <string name="session_replay_image_buttons_end_to_end">Session Replay Image Buttons (End to End)</string>
+    <string name="session_replay_composition_image_buttons_end_to_end">Session Replay Composition Image Buttons (End to End)</string>
     <string name="session_replay_images_end_to_end">Session Replay Images (End to End)</string>
     <string name="image_view">image view</string>
     <string name="app_compat_image_view">app compat image view</string>

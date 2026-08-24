@@ -21,7 +21,6 @@ import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreMan
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
-import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -244,8 +243,9 @@ internal class DefaultRecorderProviderTest {
     }
 
     @Test
-    fun `M log warning W provideSessionReplayRecorder { heatmaps and composition recording both enabled }`() {
-        // Given
+    fun `M not log warning W provideSessionReplayRecorder { heatmaps and composition recording both enabled }`() {
+        // Given: heatmaps are supported by the composition pipeline for native View content, so
+        // enabling both together is no longer a limitation worth warning about.
         val sdkCore = mock<FeatureSdkCore>()
         val internalLogger = mock<InternalLogger>()
         whenever(sdkCore.internalLogger).thenReturn(internalLogger)
@@ -278,11 +278,7 @@ internal class DefaultRecorderProviderTest {
         )
 
         // Then
-        internalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            DefaultRecorderProvider.HEATMAPS_UNSUPPORTED_WITH_COMPOSITION_RECORDING_MESSAGE
-        )
+        verifyNoInteractions(internalLogger)
     }
 
     @Test

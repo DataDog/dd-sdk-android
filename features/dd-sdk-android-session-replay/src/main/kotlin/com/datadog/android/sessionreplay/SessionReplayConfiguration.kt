@@ -257,8 +257,9 @@ data class SessionReplayConfiguration internal constructor(
          *
          * Disabled by default.
          *
-         * Heatmap recording ([setHeatmapsEnabled]) is not supported by this pipeline yet; combining
-         * the two will log a warning and no heatmap data will be recorded.
+         * Heatmap recording ([setHeatmapsEnabled]) is supported by this pipeline for native
+         * [View] content. Jetpack Compose content does not yet produce heatmap data when this
+         * pipeline is enabled - this matches the default recorder, which has the same limitation.
          *
          * @param enabled whether composition-tree recording should be used.
          */

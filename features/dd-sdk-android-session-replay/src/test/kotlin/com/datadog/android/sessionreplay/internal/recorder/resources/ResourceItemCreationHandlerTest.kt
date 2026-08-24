@@ -19,7 +19,10 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.never
+import org.mockito.kotlin.reset
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -86,5 +89,55 @@ internal class ResourceItemCreationHandlerTest {
 
         // Then
         assertThat(testedHandler.resourceIdsSeen).hasSize(1)
+    }
+
+    @Test
+    fun `M not drain the queue W queueItem() { eagerDrain disabled by default }`() {
+        // Given
+        val fakeByteArray = fakeResourceId.toByteArray()
+
+        // When
+        testedHandler.queueItem(fakeResourceId, fakeByteArray)
+
+        // Then
+        verify(mockDataQueueHandler, never()).tryToConsumeItems()
+    }
+
+    @Test
+    fun `M eagerly drain the queue W queueItem() { new resource, eagerDrain enabled }`() {
+        // Given
+        val fakeByteArray = fakeResourceId.toByteArray()
+        testedHandler = ResourceItemCreationHandler(
+            recordedDataQueueHandler = mockDataQueueHandler,
+            eagerDrain = true
+        )
+
+        // When
+        testedHandler.queueItem(fakeResourceId, fakeByteArray)
+
+        // Then
+        verify(mockDataQueueHandler).addResourceItem(
+            identifier = fakeResourceId,
+            resourceData = fakeByteArray
+        )
+        verify(mockDataQueueHandler).tryToConsumeItems()
+    }
+
+    @Test
+    fun `M not drain the queue W queueItem() { previously seen, eagerDrain enabled }`() {
+        // Given
+        val fakeByteArray = fakeResourceId.toByteArray()
+        testedHandler = ResourceItemCreationHandler(
+            recordedDataQueueHandler = mockDataQueueHandler,
+            eagerDrain = true
+        )
+        testedHandler.queueItem(fakeResourceId, fakeByteArray)
+        reset(mockDataQueueHandler)
+
+        // When
+        testedHandler.queueItem(fakeResourceId, fakeByteArray)
+
+        // Then
+        verifyNoInteractions(mockDataQueueHandler)
     }
 }

@@ -8,7 +8,9 @@ package com.datadog.android.sessionreplay.internal.composition
 
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.heatmaps.HeatmapIdentifier
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedChild
 import com.datadog.android.internal.sessionreplay.composition.CapturedClip
@@ -16,6 +18,7 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.internal.utils.isValidTapTarget
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
@@ -25,6 +28,7 @@ import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedVie
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
 import com.datadog.android.sessionreplay.internal.composition.mapper.PixelCaptureEligibility
+import com.datadog.android.sessionreplay.internal.recorder.HeatmapIdentifierResolver
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeRequest
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeResult
@@ -77,18 +81,30 @@ internal class AndroidWindowTraversal(
     private val rootTextAndInputPrivacy: TextAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
     private val internalLogger: InternalLogger = InternalLogger.UNBOUND,
     private val viewsPerCheckpoint: Int = VIEWS_PER_CHECKPOINT,
-    private val isComposeHost: (View) -> Boolean = ::isComposeHostByClassName
+    private val isComposeHost: (View) -> Boolean = ::isComposeHostByClassName,
+    private val heatmapResolver: HeatmapIdentifierResolver? = null
 ) {
 
+    /**
+     * [viewUrl] scopes this window's heatmap identifiers to a screen (see
+     * [HeatmapIdentifierResolver]) - null (no active RUM view, or heatmaps disabled) skips
+     * identifier resolution entirely for this window. Only native View content gets a
+     * [CapturedWireframe.permanentId][com.datadog.android.internal.sessionreplay.composition.CapturedWireframe.permanentId] -
+     * a Compose host's own interior (including any embedded native "interop" View handed back via
+     * [handleNativeViewHandoff]) is out of scope for now, same as the legacy pipeline's own gap.
+     */
+    @UiThread
     fun traverseWindow(
         windowRoot: View,
         windowIdentity: CapturedIdentity,
         identityFactory: CapturedIdentityFactory,
-        context: CaptureGenerationContext
+        context: CaptureGenerationContext,
+        viewUrl: String? = null
     ): WindowWalkResult {
         if (!context.shouldContinue()) return WindowWalkResult.Aborted
         val state = TraversalState(screenDensity = windowRoot.resources.displayMetrics.density)
         val rootPrivacy = EffectivePrivacy(rootImagePrivacy, rootTextAndInputPrivacy)
+        val heatmapContext = viewUrl?.let { heatmapResolver?.beginTraversal(it) }
         return when (
             val result = visitView(
                 view = windowRoot,
@@ -99,17 +115,28 @@ internal class AndroidWindowTraversal(
                 ancestorBounds = emptyList(),
                 inheritedPrivacy = rootPrivacy,
                 context = context,
-                state = state
+                state = state,
+                nodePath = emptyList(),
+                typeIndex = 0,
+                heatmapContext = heatmapContext
             )
         ) {
-            is LayerWalkResult.Present ->
+            is LayerWalkResult.Present -> {
+                heatmapContext?.publish()
                 WindowWalkResult.Present(result.layer, state.layers, state.wireframes, state.pendingPixelCaptures)
-            LayerWalkResult.Filtered -> WindowWalkResult.Filtered
+            }
+            LayerWalkResult.Filtered -> {
+                heatmapContext?.publish()
+                WindowWalkResult.Filtered
+            }
+            // The whole capture is discarded on abort - publishing a possibly-incomplete snapshot
+            // of identifiers here would be worse than leaving the previous, complete one in place.
             LayerWalkResult.Aborted -> WindowWalkResult.Aborted
         }
     }
 
-    @Suppress("ReturnCount", "LongParameterList")
+    @Suppress("ReturnCount", "LongParameterList", "LongMethod")
+    @UiThread
     private fun visitView(
         view: View,
         ownIdentity: CapturedIdentity,
@@ -119,7 +146,10 @@ internal class AndroidWindowTraversal(
         ancestorBounds: List<CapturedBounds>,
         inheritedPrivacy: EffectivePrivacy,
         context: CaptureGenerationContext,
-        state: TraversalState
+        state: TraversalState,
+        nodePath: List<String>,
+        typeIndex: Int,
+        heatmapContext: HeatmapIdentifierResolver.TraversalContext?
     ): LayerWalkResult {
         state.viewsVisited++
         if (state.viewsVisited % viewsPerCheckpoint == 0 && !context.shouldContinue()) {
@@ -137,6 +167,9 @@ internal class AndroidWindowTraversal(
         val childAncestorBounds = ancestorBounds + bounds
         val isHidden = view.getTag(R.id.datadog_hidden) == true
         val ownPrivacy = resolveEffectivePrivacy(view, inheritedPrivacy, internalLogger)
+
+        val heatmapIdentity = resolveHeatmapIdentity(view, nodePath, typeIndex, heatmapContext)
+        val viewPath = heatmapIdentity?.viewPath ?: nodePath
 
         val children = mutableListOf<CapturedChild>()
         val attempt = attemptComposeDecomposition(
@@ -157,30 +190,35 @@ internal class AndroidWindowTraversal(
             spliceComposeResult(attempt.result, childAncestorBounds, children, state)
             false
         } else {
-            mapNativeView(view, isHidden, identityFactory, ownIdentity, ancestorBounds, ownPrivacy, children, state)
+            mapNativeView(
+                view,
+                isHidden,
+                identityFactory,
+                ownIdentity,
+                ancestorBounds,
+                ownPrivacy,
+                children,
+                state,
+                heatmapIdentity?.identifier
+            )
         }
 
-        // A Compose host's interior is Compose's own node tree, not further Android child Views -
-        // its content is fully described by whatever composeHostDecomposer returned above. Covers
-        // both "not a compose host" and "decomposition wasn't attempted/failed". A pixel/placeholder
-        // wireframe is the same kind of terminal description on the native side: [View.draw] already
-        // bakes every child into the bitmap it produced (or the placeholder is standing in for that
-        // same subtree), so walking the real children again would only double-describe them.
-        val isNativeContainerNeedingChildren = !isHidden && attempt !is ComposeAttempt.Decomposed &&
-            !isPixelFallbackTerminal
-        if (isNativeContainerNeedingChildren && view is ViewGroup) {
-            val mustAbort = recurseIntoNativeChildren(
-                view,
-                windowIdentity,
-                identityFactory,
-                childAncestorBounds,
-                ownPrivacy,
-                context,
-                state,
-                children
-            )
-            if (mustAbort) return LayerWalkResult.Aborted
-        }
+        val mustAbort = recurseIntoNativeChildren(
+            view,
+            isHidden,
+            attempt,
+            isPixelFallbackTerminal,
+            windowIdentity,
+            identityFactory,
+            childAncestorBounds,
+            ownPrivacy,
+            context,
+            state,
+            children,
+            viewPath,
+            heatmapContext
+        )
+        if (mustAbort) return LayerWalkResult.Aborted
 
         val layer = CapturedLayer(identity = ownIdentity, kind = ownKind, bounds = bounds, children = children)
         state.layers.add(layer)
@@ -202,7 +240,8 @@ internal class AndroidWindowTraversal(
         ancestorBounds: List<CapturedBounds>,
         ownPrivacy: EffectivePrivacy,
         children: MutableList<CapturedChild>,
-        state: TraversalState
+        state: TraversalState,
+        heatmapIdentifier: HeatmapIdentifier?
     ): Boolean {
         val mappingContext = CapturedMappingContext(
             identityFactory,
@@ -213,27 +252,77 @@ internal class AndroidWindowTraversal(
             pendingPixelCaptureSink = PendingPixelCaptureSink { state.pendingPixelCaptures.add(it) }
         )
         val mapped = (if (isHidden) hiddenViewMapper else mapperRegistry.resolve(view)).map(view, mappingContext)
-        addWireframes(mapped, ancestorBounds, children, state)
+        addWireframes(mapped, ancestorBounds, children, state, heatmapIdentifier)
         return mapped.isPixelFallbackTerminal()
     }
 
     /**
-     * Visits every native child of [view], appending each to [children]. Returns true if the whole
-     * capture must be aborted because a child's visit ran past the deadline.
+     * Resolves [view]'s stable heatmap identity, mirroring the legacy pipeline's own
+     * `SnapshotProducer.resolveHeatmapIdentity` - computed whenever [view] is itself a valid tap
+     * target, or it's a [ViewGroup] with children whose own paths need this view's path segment as
+     * a prefix regardless of whether it turns out to be a valid tap target itself. The latter check
+     * is deliberately conservative (it doesn't know yet whether children will actually be walked -
+     * e.g. a pixel-fallback-terminal ViewGroup never recurses into them) rather than tightly
+     * coupled to that later decision: computing an unused path segment is harmless, but skipping a
+     * needed one would silently break every descendant's identifier.
      */
-    @Suppress("LongParameterList")
+    @UiThread
+    private fun resolveHeatmapIdentity(
+        view: View,
+        nodePath: List<String>,
+        typeIndex: Int,
+        heatmapContext: HeatmapIdentifierResolver.TraversalContext?
+    ): HeatmapIdentifierResolver.HeatmapIdentity? {
+        return heatmapContext?.let { ctx ->
+            val pathMayBeNeededForChildren = view is ViewGroup && view.childCount > 0
+            if (pathMayBeNeededForChildren || view.isValidTapTarget()) {
+                ctx.resolveIdentity(view, nodePath, typeIndex)
+            } else {
+                null
+            }
+        }
+    }
+
+    /**
+     * A Compose host's interior is Compose's own node tree, not further Android child Views - its
+     * content is fully described by whatever composeHostDecomposer returned in [visitView]. Covers
+     * both "not a compose host" and "decomposition wasn't attempted/failed". A pixel/placeholder
+     * wireframe is the same kind of terminal description on the native side: [View.draw] already
+     * bakes every child into the bitmap it produced (or the placeholder is standing in for that
+     * same subtree), so walking the real children again would only double-describe them - in
+     * either case there's nothing to recurse into, so this returns early rather than requiring
+     * [visitView] itself to guard the call. Otherwise visits every native child of [view],
+     * appending each to [children]. Returns true if the whole capture must be aborted because a
+     * child's visit ran past the deadline.
+     */
+    @Suppress("LongParameterList", "ReturnCount")
+    @UiThread
     private fun recurseIntoNativeChildren(
-        view: ViewGroup,
+        view: View,
+        isHidden: Boolean,
+        attempt: ComposeAttempt,
+        isPixelFallbackTerminal: Boolean,
         windowIdentity: CapturedIdentity,
         identityFactory: CapturedIdentityFactory,
         childAncestorBounds: List<CapturedBounds>,
         inheritedPrivacy: EffectivePrivacy,
         context: CaptureGenerationContext,
         state: TraversalState,
-        children: MutableList<CapturedChild>
+        children: MutableList<CapturedChild>,
+        nodePath: List<String>,
+        heatmapContext: HeatmapIdentifierResolver.TraversalContext?
     ): Boolean {
+        val isNativeContainerNeedingChildren = !isHidden && attempt !is ComposeAttempt.Decomposed &&
+            !isPixelFallbackTerminal
+        if (!isNativeContainerNeedingChildren || view !is ViewGroup) return false
+        // Computed once per parent regardless of whether heatmapContext is present: same pattern
+        // as the identity resolution itself, cheap when there's nothing to compute for.
+        val childTypeIndices = heatmapContext?.computeChildTypeIndices(view)
         for (i in 0 until view.childCount) {
             val child = view.getChildAt(i) ?: continue
+
+            @Suppress("UnsafeThirdPartyFunctionCall") // i is always in-bounds: array size == view.childCount
+            val childTypeIndex = childTypeIndices?.get(i) ?: 0
             when (
                 val childResult = visitChild(
                     child,
@@ -242,7 +331,10 @@ internal class AndroidWindowTraversal(
                     childAncestorBounds,
                     inheritedPrivacy,
                     context,
-                    state
+                    state,
+                    nodePath,
+                    childTypeIndex,
+                    heatmapContext
                 )
             ) {
                 is LayerWalkResult.Present -> children.add(CapturedChild.Layer(childResult.layer.identity))
@@ -254,6 +346,8 @@ internal class AndroidWindowTraversal(
     }
 
     /** Mints a child's identity/kind (Compose host or plain native view) and visits it. */
+    @Suppress("LongParameterList")
+    @UiThread
     private fun visitChild(
         child: View,
         windowIdentity: CapturedIdentity,
@@ -261,7 +355,10 @@ internal class AndroidWindowTraversal(
         ancestorBounds: List<CapturedBounds>,
         inheritedPrivacy: EffectivePrivacy,
         context: CaptureGenerationContext,
-        state: TraversalState
+        state: TraversalState,
+        nodePath: List<String>,
+        typeIndex: Int,
+        heatmapContext: HeatmapIdentifierResolver.TraversalContext?
     ): LayerWalkResult {
         val localId = viewIdentifierResolver.resolveViewId(child).toString()
         val isChildComposeHost = isComposeHost(child)
@@ -279,7 +376,10 @@ internal class AndroidWindowTraversal(
             ancestorBounds = ancestorBounds,
             inheritedPrivacy = inheritedPrivacy,
             context = context,
-            state = state
+            state = state,
+            nodePath = nodePath,
+            typeIndex = typeIndex,
+            heatmapContext = heatmapContext
         )
     }
 
@@ -293,6 +393,7 @@ internal class AndroidWindowTraversal(
      * arise regardless of whether the decomposer's own checkpoint ever fired.
      */
     @Suppress("LongParameterList", "ReturnCount")
+    @UiThread
     private fun attemptComposeDecomposition(
         view: View,
         ownKind: CapturedLayerKind,
@@ -349,6 +450,7 @@ internal class AndroidWindowTraversal(
      * they're a traversal-internal side channel, not part of [CompositionNativeSubtree]'s shape.
      */
     @Suppress("LongParameterList")
+    @UiThread
     private fun handleNativeViewHandoff(
         view: View,
         ownIdentity: CapturedIdentity,
@@ -370,7 +472,12 @@ internal class AndroidWindowTraversal(
                 ancestorBounds = ancestorBounds,
                 inheritedPrivacy = inheritedPrivacy,
                 context = context,
-                state = localState
+                state = localState,
+                // Out of scope for now: a native View embedded inside a Compose host has no
+                // legacy analog to mirror a path/heatmap story from - see this class's own doc.
+                nodePath = emptyList(),
+                typeIndex = 0,
+                heatmapContext = null
             )
         } finally {
             outerState.pendingPixelCaptures.addAll(localState.pendingPixelCaptures)
@@ -411,13 +518,18 @@ internal class AndroidWindowTraversal(
         result: CapturedViewMapperResult,
         ancestorBounds: List<CapturedBounds>,
         children: MutableList<CapturedChild>,
-        state: TraversalState
+        state: TraversalState,
+        heatmapIdentifier: HeatmapIdentifier?
     ) {
         if (result !is CapturedViewMapperResult.Wireframes) return
         for (wireframe in result.wireframes) {
             val clipped = wireframe.withClip(computeClip(wireframe.bounds, ancestorBounds))
-            state.wireframes.add(clipped)
-            children.add(CapturedChild.Wireframe(clipped.identity))
+            // Every wireframe this one View produced shares the same permanentId, same as legacy's
+            // NodeFlattener applying one Node's heatmapIdentifier to all of that Node's wireframes -
+            // e.g. a TextView's background-shape and text wireframes both identify the same element.
+            val identified = heatmapIdentifier?.let { clipped.withPermanentId(it.rawValue) } ?: clipped
+            state.wireframes.add(identified)
+            children.add(CapturedChild.Wireframe(identified.identity))
         }
     }
 
@@ -501,4 +613,13 @@ private fun CapturedWireframe.withClip(clip: CapturedClip?): CapturedWireframe =
     is CapturedWireframe.WebView -> copy(clip = clip)
     is CapturedWireframe.Pixel -> copy(clip = clip)
     is CapturedWireframe.PrivacyPlaceholder -> copy(clip = clip)
+}
+
+/** Stateless - kept out of [AndroidWindowTraversal] itself to stay within [TooManyFunctions]'s budget. */
+private fun CapturedWireframe.withPermanentId(permanentId: String): CapturedWireframe = when (this) {
+    is CapturedWireframe.Shape -> copy(permanentId = permanentId)
+    is CapturedWireframe.Text -> copy(permanentId = permanentId)
+    is CapturedWireframe.WebView -> copy(permanentId = permanentId)
+    is CapturedWireframe.Pixel -> copy(permanentId = permanentId)
+    is CapturedWireframe.PrivacyPlaceholder -> copy(permanentId = permanentId)
 }

@@ -184,7 +184,9 @@ internal class SnapshotCaptureOrchestrator(
         var expired: ActiveGeneration? = null
         val completed = synchronized(lock) {
             val active = activeGeneration
-            if (!isRunning || active?.generation?.id != result.generationId) return
+            if (!isRunning || active?.generation?.id != result.generationId) {
+                return
+            }
             if (!active.generation.isActive()) {
                 activeGeneration = null
                 expired = active

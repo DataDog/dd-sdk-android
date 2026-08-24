@@ -73,6 +73,10 @@
             android:label="@string/session_replay_image_buttons_end_to_end"
             android:windowSoftInputMode="adjustResize"/>
         <activity
+            android:name=".sessionreplay.SessionReplayCompositionImageButtonsActivity"
+            android:label="@string/session_replay_composition_image_buttons_end_to_end"
+            android:windowSoftInputMode="adjustResize"/>
+        <activity
             android:name=".sessionreplay.SessionReplayImagesActivity"
             android:label="@string/session_replay_images_end_to_end"
             android:windowSoftInputMode="adjustResize"/>

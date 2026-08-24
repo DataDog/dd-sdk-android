@@ -23,6 +23,7 @@ import androidx.appcompat.widget.ActionBarContainer
 import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
@@ -60,6 +61,7 @@ import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedVie
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedWebViewMapper
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
+import com.datadog.android.sessionreplay.internal.recorder.HeatmapIdentifierResolver
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.datadog.android.sessionreplay.internal.recorder.RecordingTimeBank
 import com.datadog.android.sessionreplay.internal.recorder.SessionReplayRecorder
@@ -125,13 +127,6 @@ internal class DefaultRecorderProvider(
         application: Application,
         embeddedContentSlotRegistry: EmbeddedContentSlotRegistry
     ): Recorder {
-        if (heatmapsEnabled && compositionTreeRecordingEnabled) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { HEATMAPS_UNSUPPORTED_WITH_COMPOSITION_RECORDING_MESSAGE }
-            )
-        }
         val heatmapIdentifierRegistry = if (heatmapsEnabled) LazyHeatmapIdentifierRegistry(sdkCore) else null
         return CapturePipelineSelector(
             compositionEnabled = compositionTreeRecordingEnabled,
@@ -142,7 +137,8 @@ internal class DefaultRecorderProvider(
                     recordWriter,
                     rumContextProvider,
                     application,
-                    embeddedContentSlotRegistry
+                    embeddedContentSlotRegistry,
+                    heatmapIdentifierRegistry
                 )
             },
             legacyFactory = {
@@ -176,10 +172,21 @@ internal class DefaultRecorderProvider(
         recordWriter: RecordWriter,
         rumContextProvider: RumContextProvider,
         application: Application,
-        embeddedContentSlotRegistry: EmbeddedContentSlotRegistry
+        embeddedContentSlotRegistry: EmbeddedContentSlotRegistry,
+        heatmapIdentifierRegistry: HeatmapIdentifierRegistry?
     ): Recorder {
         val internalLogger = sdkCore.internalLogger
         val windowSource = ActiveWindowSource()
+        // Native View content only - see setCompositionTreeRecordingEnabled's own doc for why
+        // Jetpack Compose content doesn't get heatmap identifiers here either, same as the legacy
+        // pipeline.
+        val heatmapResolver = heatmapIdentifierRegistry?.let {
+            HeatmapIdentifierResolver(
+                appPackageName = application.packageName,
+                registry = it,
+                internalLogger = internalLogger
+            )
+        }
         val resourceResolverBundle = buildResourceResolver(
             appContext = application,
             sdkCore = sdkCore,
@@ -189,7 +196,12 @@ internal class DefaultRecorderProvider(
             rumContextProvider = rumContextProvider,
             embeddedContentSlotRegistry = embeddedContentSlotRegistry,
             eventProcessingExecutorName = "sr-composition-event-processing",
-            drawablesExecutorName = "sr-composition-drawables"
+            drawablesExecutorName = "sr-composition-drawables",
+            // This pipeline's own drain trigger only runs as a side effect of a full capture
+            // generation completing, not on every View.onDraw() like the legacy pipeline - so it
+            // needs its own eager drain to avoid the resource queue's expiry window on a screen
+            // that renders once and then sits idle. See ResourceItemCreationHandler's own doc.
+            eagerResourceDrain = true
         )
         val completionQueue = createCompletionQueue(
             recordWriter,
@@ -202,7 +214,8 @@ internal class DefaultRecorderProvider(
             rumContextProvider,
             completionQueue,
             resourceResolverBundle.resourceResolver,
-            internalLogger
+            internalLogger,
+            heatmapResolver
         )
         val interceptor = CompositionViewOnDrawInterceptor(
             windowSource = windowSource,
@@ -243,16 +256,18 @@ internal class DefaultRecorderProvider(
         internalLogger = internalLogger
     )
 
+    @Suppress("LongParameterList")
     private fun createCaptureOrchestrator(
         windowSource: ActiveWindowSource,
         rumContextProvider: RumContextProvider,
         completionQueue: SnapshotCompletionQueue,
         resourceResolver: ResourceResolver,
-        internalLogger: InternalLogger
+        internalLogger: InternalLogger,
+        heatmapResolver: HeatmapIdentifierResolver?
     ): SnapshotCaptureOrchestrator {
         val skippedFrameNotifier = CaptureSkippedFrameNotifier(sdkCore)
         val producer = compositionSnapshotProducerFactory?.invoke(windowSource, rumContextProvider)
-            ?: defaultCompositionSnapshotProducer(windowSource, rumContextProvider)
+            ?: defaultCompositionSnapshotProducer(windowSource, rumContextProvider, heatmapResolver)
         val mainThreadExecutor = HandlerCaptureMainThreadExecutor()
         // Shared rather than one-per-consumer: sdkCore.createScheduledExecutorService allocates a
         // brand-new background thread with no pooling, and PixelFallbackSnapshotProcessor has no
@@ -289,7 +304,8 @@ internal class DefaultRecorderProvider(
 
     private fun defaultCompositionSnapshotProducer(
         windowSource: ActiveWindowSource,
-        rumContextProvider: RumContextProvider
+        rumContextProvider: RumContextProvider,
+        heatmapResolver: HeatmapIdentifierResolver?
     ): AndroidCapturedSnapshotProducer = AndroidCapturedSnapshotProducer(
         windowSource = windowSource,
         scopeProvider = DefaultRumViewScopeProvider(rumContextProvider),
@@ -299,7 +315,8 @@ internal class DefaultRecorderProvider(
             composeHostDecomposer = compositionHostDecomposer,
             rootImagePrivacy = imagePrivacy,
             rootTextAndInputPrivacy = textAndInputPrivacy,
-            internalLogger = sdkCore.internalLogger
+            internalLogger = sdkCore.internalLogger,
+            heatmapResolver = heatmapResolver
         )
     )
 
@@ -481,11 +498,5 @@ internal class DefaultRecorderProvider(
         } else {
             null
         }
-    }
-
-    internal companion object {
-        internal const val HEATMAPS_UNSUPPORTED_WITH_COMPOSITION_RECORDING_MESSAGE = "Heatmaps are not " +
-            "supported by the composition-tree recording pipeline yet. No heatmap data will be recorded " +
-            "for this session."
     }
 }
