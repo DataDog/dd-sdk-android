@@ -26,7 +26,6 @@ plugins {
     id("org.jetbrains.dokka-javadoc")
 
     // Analysis tools
-    id("com.github.ben-manes.versions")
     id("detekt-conventions")
 
     // Tests
@@ -167,6 +166,5 @@ datadogBuild {
     applyAndroidLibraryConfig()
     applyJunitConfig()
     applyJavadocConfig()
-    applyDependencyUpdateConfig()
     applyPublishingConfig("Datadog monitoring library for Android applications.")
 }

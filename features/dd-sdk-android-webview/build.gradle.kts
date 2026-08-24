@@ -22,7 +22,6 @@ plugins {
     id("org.jetbrains.dokka-javadoc")
 
     // Analysis tools
-    id("com.github.ben-manes.versions")
     id("detekt-conventions")
 
     // Tests
@@ -75,7 +74,6 @@ datadogBuild {
     applyAndroidLibraryConfig()
     applyJunitConfig()
     applyJavadocConfig()
-    applyDependencyUpdateConfig()
     applyPublishingConfig(
         "The WebView integration feature to use with the Datadog monitoring " +
             "library for Android applications."

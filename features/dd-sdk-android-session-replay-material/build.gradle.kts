@@ -21,7 +21,6 @@ plugins {
     id("org.jetbrains.dokka-javadoc")
 
     // Analysis tools
-    id("com.github.ben-manes.versions")
     id("binary-compatibility-validator")
 
     // Tests
@@ -65,7 +64,6 @@ datadogBuild {
     applyAndroidLibraryConfig()
     applyJunitConfig()
     applyJavadocConfig()
-    applyDependencyUpdateConfig()
     applyPublishingConfig(
         "Session Replay Extension Support for Material UI components."
     )

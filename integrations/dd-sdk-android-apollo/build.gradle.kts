@@ -21,7 +21,6 @@ plugins {
     id("org.jetbrains.dokka")
 
     // Analysis tools
-    id("com.github.ben-manes.versions")
     id("detekt-conventions")
 
     // Tests

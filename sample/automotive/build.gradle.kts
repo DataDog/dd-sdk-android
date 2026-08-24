@@ -19,9 +19,6 @@ plugins {
     kotlin("android")
     id("datadogBuildConfig")
     alias(libs.plugins.datadogGradlePlugin)
-
-    // Analysis tools
-    id("com.github.ben-manes.versions")
 }
 
 android {
@@ -89,7 +86,6 @@ dependencies {
 datadogBuild {
     applyKotlinConfig(evaluateWarningsAsErrors = false)
     applyJunitConfig()
-    applyDependencyUpdateConfig()
 }
 
 taskConfig<KotlinCompile> {

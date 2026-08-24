@@ -9,7 +9,6 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     `kotlin-dsl`
-    alias(libs.plugins.versionsGradlePlugin)
     alias(libs.plugins.ktlintGradlePlugin)
 }
 
@@ -42,7 +41,6 @@ dependencies {
     // would put two AGP/KGP resolutions on the same classpath.
     compileOnly(libs.kotlinGradlePluginApi)
     compileOnly(libs.androidToolsGradlePluginApi)
-    compileOnly(libs.versionsGradlePlugin)
     compileOnly(libs.dokkaGradlePlugin)
     compileOnly(libs.detektGradlePlugin)
     compileOnly(libs.ktlintGradlePlugin)

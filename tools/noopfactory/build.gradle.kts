@@ -12,7 +12,6 @@ plugins {
     id("datadogBuildConfig")
 
     // Analysis tools
-    id("com.github.ben-manes.versions")
     id("ktlint")
 }
 
@@ -31,7 +30,6 @@ dependencies {
 datadogBuild {
     applyKotlinConfig()
     applyJunitConfig()
-    applyDependencyUpdateConfig()
 }
 
 taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {

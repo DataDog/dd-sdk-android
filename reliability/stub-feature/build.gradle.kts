@@ -16,7 +16,6 @@ plugins {
     id("datadogBuildConfig")
 
     // Analysis tools
-    id("com.github.ben-manes.versions")
     id("test-pyramid-api-usage")
 }
 
@@ -36,5 +35,4 @@ dependencies {
 datadogBuild {
     applyAndroidLibraryConfig()
     applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
-    applyDependencyUpdateConfig()
 }

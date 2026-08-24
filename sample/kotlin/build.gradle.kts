@@ -24,9 +24,6 @@ plugins {
     id("com.google.devtools.ksp")
     id("datadogBuildConfig")
     alias(libs.plugins.datadogGradlePlugin)
-
-    // Analysis tools
-    id("com.github.ben-manes.versions")
 }
 
 sqldelight {
@@ -245,7 +242,6 @@ dependencies {
 datadogBuild {
     applyKotlinConfig(evaluateWarningsAsErrors = false)
     applyJunitConfig()
-    applyDependencyUpdateConfig()
 }
 
 taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
