@@ -4,7 +4,7 @@
   "title": "CommonProperties",
   "type": "object",
   "description": "Schema of common properties of RUM events",
-  "required": ["date", "application", "session", "view", "_dd"],
+  "required": ["date", "application", "session", "_dd"],
   "properties": {
     "date": {
       "type": "integer",
@@ -92,7 +92,7 @@
         "unity",
         "kotlin-multiplatform",
         "electron",
-        "rum-cpp",
+        "cpp",
         "maui"
       ],
       "readOnly": true
@@ -168,6 +168,20 @@
         "name": {
           "type": "string",
           "description": "Name of the account",
+          "readOnly": true
+        }
+      },
+      "readOnly": true
+    },
+    "tab": {
+      "type": "object",
+      "description": "Tab properties",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "UUID of the browser tab",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
           "readOnly": true
         }
       },
@@ -455,6 +469,14 @@
               "minimum": 0,
               "maximum": 100,
               "readOnly": true
+            },
+            "session_replay_experimental_features": {
+              "type": "array",
+              "description": "Session Replay experimental features enabled in the SDK configuration",
+              "items": {
+                "type": "string"
+              },
+              "readOnly": true
             }
           }
         },
@@ -475,6 +497,19 @@
       "type": "object",
       "description": "User provided context",
       "additionalProperties": true
+    },
+    "stream": {
+      "type": "object",
+      "description": "Stream properties",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "UUID of the stream",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+          "readOnly": true
+        }
+      }
     }
   }
 }

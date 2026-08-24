@@ -35,6 +35,12 @@ class InternalApiUsageEventAssert(actual: InternalTelemetryEvent.ApiUsage) :
                     .isEqualTo(expected as InternalTelemetryEvent.ApiUsage.TrackWebView)
             }
 
+            is InternalTelemetryEvent.ApiUsage.Timeseries -> {
+                InternalTimeseriesEventAssert
+                    .assertThat(actual as InternalTelemetryEvent.ApiUsage.Timeseries)
+                    .isEqualTo(expected as InternalTelemetryEvent.ApiUsage.Timeseries)
+            }
+
             is InternalTelemetryEvent.ApiUsage.NetworkInstrumentation -> {
                 InternalApiUsageNetworkInstrumentationEventAssert
                     .assertThat(actual as InternalTelemetryEvent.ApiUsage.NetworkInstrumentation)

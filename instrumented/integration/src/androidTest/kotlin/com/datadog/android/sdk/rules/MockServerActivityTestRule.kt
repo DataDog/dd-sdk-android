@@ -26,6 +26,7 @@ import okhttp3.mockwebserver.MockWebServer
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
 import java.io.File
+import java.util.concurrent.CopyOnWriteArrayList
 
 internal open class MockServerActivityTestRule<T : Activity>(
     val activityClass: Class<T>,
@@ -35,7 +36,7 @@ internal open class MockServerActivityTestRule<T : Activity>(
 
     private val mockWebServer: MockWebServer = MockWebServer()
 
-    private val requests = mutableListOf<HandledRequest>()
+    private val requests = CopyOnWriteArrayList<HandledRequest>()
 
     val forge = Forge()
 
