@@ -178,7 +178,7 @@ analysis:ktlint:
   timeout: 30m
   script:
     - !reference [.snippets, setup-gradle]
-    - ./gradlew ktlintCheck :buildSrc:ktlintCheck
+    - ./gradlew ktlintCheck :build-logic:ktlintCheck
 
 analysis:detekt:
   extends:
@@ -236,6 +236,28 @@ test:tools:
     - !reference [.snippets, setup-gradle]
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
     - ./gradlew :unitTestTools
+  artifacts:
+    when: always
+    expire_in: 1 week
+    reports:
+      junit: "tools/**/build/test-results/test/*.xml"
+
+test:build-logic:
+  extends:
+    - .base-cache-pull-job
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  stage: verify
+  timeout: 30m
+  script:
+    - !reference [.snippets, setup-gradle]
+    - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
+    - ./gradlew :build-logic:test
+  artifacts:
+    when: always
+    expire_in: 1 week
+    reports:
+      junit: "build-logic/build/test-results/test/*.xml"
 
 test:kover:
   tags: [ "arch:amd64" ]

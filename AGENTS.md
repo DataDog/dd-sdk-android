@@ -91,7 +91,7 @@ Shared factories: `forge.useCoreFactories()` (from `dd-sdk-android-core` testFix
 
 # Sample App Config
 
-The sample app reads credentials from gitignored JSON files in `config/`. Missing files don't break the build (empty strings are used), but the app won't send data to Datadog. Schema (from `buildSrc/.../SampleAppConfig.kt`):
+The sample app reads credentials from gitignored JSON files in `config/`. Missing files don't break the build (empty strings are used), but the app won't send data to Datadog. Schema (from `build-logic/.../SampleAppConfig.kt`):
 
 ```json
 {

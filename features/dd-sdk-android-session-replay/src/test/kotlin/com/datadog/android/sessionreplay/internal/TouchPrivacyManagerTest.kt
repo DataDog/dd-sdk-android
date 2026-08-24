@@ -22,6 +22,8 @@ import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.Random
+import java.util.concurrent.CopyOnWriteArrayList
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -153,5 +155,94 @@ internal class TouchPrivacyManagerTest {
 
         // Then
         assertThat(testedManager.shouldRecordTouch(touchLocation)).isFalse()
+    }
+
+    @Test
+    fun `M not throw W updateCurrentTouchOverrideAreas() { concurrent addTouchOverrideArea }`(
+        forge: Forge
+    ) {
+        // Given
+        // Each recorded window runs the snapshot pipeline on the Looper thread its view
+        // hierarchy is attached to, so a traversal writing overrides can run concurrently
+        // with the copy-and-clear swap performed at the end of another window's snapshot.
+        val fakePrivacyOverride = forge.aValueFrom(TouchPrivacy::class.java)
+        val fakeOrigin = forge.anInt(min = 0, max = 1000)
+        val iterations = 10_000
+        val errors = CopyOnWriteArrayList<Throwable>()
+
+        // When
+        listOf(
+            Thread {
+                repeat(iterations) {
+                    try {
+                        testedManager.addTouchOverrideArea(
+                            Rect(fakeOrigin + it, fakeOrigin + it, fakeOrigin + it + 1, fakeOrigin + it + 1),
+                            fakePrivacyOverride
+                        )
+                    } catch (e: Throwable) {
+                        errors.add(e)
+                    }
+                }
+            },
+            Thread {
+                repeat(iterations) {
+                    try {
+                        testedManager.updateCurrentTouchOverrideAreas()
+                        testedManager.shouldRecordTouch(Point(fakeOrigin + it, fakeOrigin + it))
+                    } catch (e: Throwable) {
+                        errors.add(e)
+                    }
+                }
+            }
+        ).shuffled(Random(forge.seed))
+            .map { it.apply { start() } }
+            .forEach { it.join() }
+
+        // Then
+        assertThat(errors).isEmpty()
+    }
+
+    @Test
+    fun `M never publish a partial mix W concurrent windows rebuild and swap`(forge: Forge) {
+        // Given
+        // In production, one WindowsOnDrawListener instance is shared across every recorded
+        // window. Each window's onDraw pass rebuilds the FULL override set (across all windows)
+        // on its own thread, then swaps it into currentOverrideAreas once. Two windows' passes
+        // running concurrently must never leave currentOverrideAreas holding a mix of one
+        // pass's entries and another's partially-built entries -- only ever one pass's complete,
+        // self-consistent set.
+        val privacyA = forge.aValueFrom(TouchPrivacy::class.java)
+        val privacyB = forge.aValueFrom(TouchPrivacy::class.java)
+        val rangeSize = forge.anInt(min = 10, max = 30)
+        val originA = forge.anInt(min = 0, max = 1000)
+        val originB = originA + rangeSize + forge.anInt(min = 50, max = 200)
+        val setA = (originA until originA + rangeSize).associate { Rect(it, it, it + 1, it + 1) to privacyA }
+        val setB = (originB until originB + rangeSize).associate { Rect(it, it, it + 1, it + 1) to privacyB }
+        val iterations = 2_000
+        val errors = CopyOnWriteArrayList<Throwable>()
+        val invalidSnapshots = CopyOnWriteArrayList<Map<Rect, TouchPrivacy>>()
+
+        fun runOnePass(overrides: Map<Rect, TouchPrivacy>) {
+            overrides.forEach { (rect, privacy) -> testedManager.addTouchOverrideArea(rect, privacy) }
+            testedManager.updateCurrentTouchOverrideAreas()
+            val snapshot = testedManager.getCurrentOverrideAreas()
+            if (snapshot != setA && snapshot != setB) {
+                invalidSnapshots.add(snapshot)
+            }
+        }
+
+        // When
+        listOf(
+            Thread { repeat(iterations) { try { runOnePass(setA) } catch (e: Throwable) { errors.add(e) } } },
+            Thread { repeat(iterations) { try { runOnePass(setB) } catch (e: Throwable) { errors.add(e) } } }
+        ).shuffled(Random(forge.seed))
+            .map { it.apply { start() } }
+            .forEach { it.join() }
+
+        // Then
+        assertThat(errors).isEmpty()
+        assertThat(invalidSnapshots)
+            .describedAs("currentOverrideAreas must always equal one pass's complete set, never a partial mix")
+            .isEmpty()
     }
 }
