@@ -37,10 +37,8 @@ googleMaterial = "1.3.0"
 dagger = "2.56.2"
 
 # JUnit
-jUnit4 = "4.13.2"
 jUnitJupiter = "5.9.3"
 jUnitPlatform = "1.9.3"
-jUnitVintage = "5.9.3"
 jUnitMockitoExt = "5.4.0"
 systemStubsJupiter = "2.1.6"
 
@@ -113,9 +111,9 @@ material3Android = "1.1.2"
 
 # Classpaths
 # Gradle version catalog doesn't allow names to end with plugin, that is why strange names
-androidToolsGradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "androidToolsPlugin" }
+androidToolsGradlePluginApi = { module = "com.android.tools.build:gradle-api", version.ref = "androidToolsPlugin" }
 apolloRuntime = { module = "com.apollographql.apollo:apollo-runtime", version.ref = "apollo" }
-kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlinGradlePluginApi = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin-api", version.ref = "kotlin" }
 versionsGradlePlugin = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "versionsGradlePlugin" }
 dokkaGradlePlugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
 detektGradlePlugin = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
@@ -180,13 +178,9 @@ androidXComposeUiTestManifest = { module = "androidx.compose.ui:ui-test-manifest
 androidXComposeMaterial = { module = "androidx.compose.material:material" }
 material3Android = { group = "androidx.compose.material3", name = "material3", version.ref = "material3Android" }
 
-# Junit 4 (for buildSrc)
-jUnit4 = { module = "junit:junit", version.ref = "jUnit4" }
-
 # Junit 5
 jUnitPlatform = { module = "org.junit.platform:junit-platform-launcher", version.ref = "jUnitPlatform" }
 jUnitJupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "jUnitJupiter" }
-jUnitVintageEngine = { module = "org.junit.vintage:junit-vintage-engine", version.ref = "jUnitVintage" }
 jUnitMockitoExt = { module = "org.mockito:mockito-junit-jupiter", version.ref = "jUnitMockitoExt" }
 
 # Android JUnit
@@ -295,7 +289,6 @@ re2j = { module = "com.google.re2j:re2j", version.ref = "re2j" }
 jUnit5 = [
     "jUnitPlatform",
     "jUnitJupiter",
-    "jUnitVintageEngine",
     "jUnitMockitoExt"
 ]
 
@@ -396,3 +389,4 @@ binaryCompatibilityGradlePlugin = { id = "org.jetbrains.kotlinx.binary-compatibi
 kotlinxSerializationPlugin = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 koverPlugin = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 ktlintGradlePlugin = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradlePlugin" }
+detektGradlePlugin = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }

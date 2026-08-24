@@ -4,14 +4,14 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.junitConfig
-import com.datadog.gradle.config.kotlinConfig
-
 plugins {
-    id("ktlint")
+    // Build
     id("org.jetbrains.kotlin.jvm")
+    id("datadogBuildConfig")
+
+    // Analysis tools
     id("com.github.ben-manes.versions")
+    id("ktlint")
 }
 
 dependencies {
@@ -26,6 +26,8 @@ dependencies {
     testImplementation(libs.robolectric)
 }
 
-kotlinConfig()
-junitConfig()
-dependencyUpdateConfig()
+datadogBuild {
+    applyKotlinConfig()
+    applyJunitConfig()
+    applyDependencyUpdateConfig()
+}

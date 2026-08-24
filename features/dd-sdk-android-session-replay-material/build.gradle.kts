@@ -4,19 +4,16 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.config.androidLibraryConfig
-import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.javadocConfig
-import com.datadog.gradle.config.junitConfig
-import com.datadog.gradle.config.kotlinConfig
-import com.datadog.gradle.config.publishingConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    id("ktlint")
     // Build
     id("com.android.library")
+    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
+    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
+    id("ktlint")
     kotlin("android")
+    id("datadogBuildConfig")
 
     // Publish
     `maven-publish`
@@ -25,6 +22,7 @@ plugins {
 
     // Analysis tools
     id("com.github.ben-manes.versions")
+    id("binary-compatibility-validator")
 
     // Tests
     id("org.jetbrains.kotlinx.kover")
@@ -34,7 +32,6 @@ plugins {
     id("apiSurface")
     id("transitiveDependencies")
     id("verificationXml")
-    id("binary-compatibility-validator")
     id("detekt-conventions")
     id("test-pyramid-api-surface")
 }
@@ -63,11 +60,13 @@ dependencies {
     }
 }
 
-kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
-androidLibraryConfig()
-junitConfig()
-javadocConfig()
-dependencyUpdateConfig()
-publishingConfig(
-    "Session Replay Extension Support for Material UI components."
-)
+datadogBuild {
+    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyAndroidLibraryConfig()
+    applyJunitConfig()
+    applyJavadocConfig()
+    applyDependencyUpdateConfig()
+    applyPublishingConfig(
+        "Session Replay Extension Support for Material UI components."
+    )
+}

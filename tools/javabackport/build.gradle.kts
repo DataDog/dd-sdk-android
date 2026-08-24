@@ -4,15 +4,19 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.config.kotlinConfig
-
 plugins {
-    id("ktlint")
+    // Build
     id("org.jetbrains.kotlin.jvm")
+    id("datadogBuildConfig")
+
+    // Analysis tools
+    id("ktlint")
 }
 
 dependencies {
     implementation(libs.kotlin)
 }
 
-kotlinConfig()
+datadogBuild {
+    applyKotlinConfig()
+}
