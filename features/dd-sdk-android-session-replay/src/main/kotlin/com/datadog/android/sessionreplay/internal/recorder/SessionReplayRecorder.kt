@@ -78,8 +78,17 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private val windowFromDecorView: (View) -> Window?
     private var shouldRecord = false
 
-    /** Whether a capture has been asked for and not yet taken — see [requestCapture]. */
+    /** Whether a capture has been asked for and not yet honoured — see [requestCapture]. */
     private val captureRequested = AtomicBoolean(false)
+
+    /**
+     * The slots a standing capture request still owes a placeholder, guarded by itself.
+     *
+     * A request is satisfied by the placeholders reaching storage, not by a snapshot being taken:
+     * the queue can drop the snapshot before it is processed, the write can fail, and the slot can
+     * be absent from the tree the traversal walked. Each leaves the request outstanding.
+     */
+    private val slotsAwaitingPlaceholder = mutableSetOf<String>()
 
     @Suppress("LongParameterList")
     constructor(
@@ -246,6 +255,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.uiHandler = Handler(Looper.getMainLooper())
         this.internalLogger = internalLogger
         this.windowFromDecorView = { WindowReflectionUtils.getWindowFromDecorView(it, internalLogger) }
+        embeddedContentSlotRegistry.addPlaceholderListener(::onPlaceholderWritten)
     }
 
     @VisibleForTesting
@@ -263,6 +273,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         resourceResolver: ResourceResolver,
         uiHandler: Handler,
         internalLogger: InternalLogger,
+        embeddedContentSlotRegistry: EmbeddedContentSlotRegistry = EmbeddedContentSlotRegistry(),
         windowFromDecorView: (View) -> Window? = {
             WindowReflectionUtils.getWindowFromDecorView(it, internalLogger)
         }
@@ -280,6 +291,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.uiHandler = uiHandler
         this.windowFromDecorView = windowFromDecorView
         this.internalLogger = internalLogger
+        embeddedContentSlotRegistry.addPlaceholderListener(::onPlaceholderWritten)
     }
 
     override fun stopProcessingRecords() {
@@ -306,16 +318,30 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
 
     /**
      * A capture request is a standing obligation rather than a single attempt: the placeholder
-     * wireframe it produces has to reach the player before the embedded records that composite into
-     * it, and records are replayed in timestamp order, not write order. Dropping the request because
-     * the recorder cannot serve it yet would leave those records waiting on a placeholder that never
-     * arrives, so it survives until a capture actually happens.
+     * wireframe for each of [slotIds] has to reach the player before the embedded records that
+     * composite into it, and records are replayed in timestamp order, not write order. Dropping the
+     * request because the recorder cannot serve it yet would leave those records waiting on a
+     * placeholder that never arrives, so it survives until the placeholders are actually written.
      */
-    override fun requestCapture() {
+    override fun requestCapture(slotIds: Set<String>) {
+        synchronized(slotsAwaitingPlaceholder) {
+            slotsAwaitingPlaceholder.addAll(slotIds)
+        }
         captureRequested.set(true)
         uiHandler.post {
             @Suppress("ThreadSafety") // handler posts to the main looper
             performRequestedCapture(attempt = 0)
+        }
+    }
+
+    /** Clears the request once every slot it was made for has its placeholder in storage. */
+    private fun onPlaceholderWritten(slotId: String) {
+        val isSatisfied = synchronized(slotsAwaitingPlaceholder) {
+            slotsAwaitingPlaceholder.remove(slotId)
+            slotsAwaitingPlaceholder.isEmpty()
+        }
+        if (isSatisfied) {
+            captureRequested.set(false)
         }
     }
 
@@ -325,10 +351,11 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             return
         }
         when (viewOnDrawInterceptor.requestCapture()) {
-            ViewOnDrawInterceptor.CaptureRequestResult.CAPTURED -> {
-                captureRequested.set(false)
-                return
-            }
+            // Taking the snapshot does not discharge the request — only the placeholder reaching
+            // storage does, which happens asynchronously and may not happen at all. Retrying until
+            // then also drives recovery: each capture drains the processing queue, which is what
+            // an expired snapshot left stuck behind.
+            ViewOnDrawInterceptor.CaptureRequestResult.CAPTURED -> Unit
 
             ViewOnDrawInterceptor.CaptureRequestResult.NOT_INTERCEPTING -> {
                 // The request arrived before this activity's window existed. Intercepting registers
@@ -341,15 +368,32 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             // whatever draw or batch happens to come along next.
             ViewOnDrawInterceptor.CaptureRequestResult.NOT_CAPTURED -> Unit
         }
-        if (captureRequested.get() && attempt < MAX_CAPTURE_ATTEMPTS) {
+        if (!captureRequested.get()) {
+            return
+        }
+        if (attempt < MAX_CAPTURE_ATTEMPTS) {
             uiHandler.postDelayed(
                 {
                     @Suppress("ThreadSafety") // handler posts to the main looper
                     performRequestedCapture(attempt + 1)
                 },
-                CAPTURE_RETRY_DELAY_IN_MS
+                // Doubling each time, so the last attempts fall outside the window in which the
+                // processing queue discards an item it could not consume in time.
+                CAPTURE_RETRY_DELAY_IN_MS shl attempt
             )
+        } else {
+            // Out of attempts. The slots are released rather than left pending so that a later
+            // request is not immediately satisfied by a placeholder owed to this one; the batches
+            // waiting on them are written by the receiver's own bounds.
+            abandonCaptureRequest()
         }
+    }
+
+    private fun abandonCaptureRequest() {
+        synchronized(slotsAwaitingPlaceholder) {
+            slotsAwaitingPlaceholder.clear()
+        }
+        captureRequested.set(false)
     }
 
     override fun stopRecorders() {
@@ -370,18 +414,16 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     /**
      * Starts intercepting every window currently open, [windows] included. Any standing capture
      * request is then served explicitly: intercepting does take a snapshot of its own, but that one
-     * goes through the debouncer, which is free to drop it. The request is cleared only once a
-     * snapshot has in fact been taken, otherwise it stays pending for whichever window comes next.
+     * goes through the debouncer, which is free to drop it. The request stays standing either way —
+     * it is discharged by the placeholders being written, not by this snapshot being taken.
      */
     @MainThread
     private fun interceptCurrentWindows(windows: List<Window>) {
         val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
         windowCallbackInterceptor.intercept(windows + resolveUntrackedWindows(decorViews, windows), appContext)
         viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
-        if (captureRequested.get() &&
-            viewOnDrawInterceptor.requestCapture() == ViewOnDrawInterceptor.CaptureRequestResult.CAPTURED
-        ) {
-            captureRequested.set(false)
+        if (captureRequested.get()) {
+            viewOnDrawInterceptor.requestCapture()
         }
     }
 

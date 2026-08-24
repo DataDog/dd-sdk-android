@@ -23,12 +23,14 @@ internal class EmbeddedContentSlotRegistration(
     fun isActive(): Boolean = active.get()
 }
 
+@Suppress("TooManyFunctions")
 internal class EmbeddedContentSlotRegistry {
     private val registrations = mutableListOf<WeakReference<EmbeddedContentSlotRegistration>>()
 
     /** The placeholder wireframe standing in for each slot, keyed by slot ID. */
     private val placeholders = mutableMapOf<String, Placeholder>()
     private val placeholderListeners = mutableListOf<(String) -> Unit>()
+    private val snapshotListeners = mutableListOf<(Set<String>) -> Unit>()
 
     internal data class Placeholder(val viewId: String, val timestamp: Long)
 
@@ -59,19 +61,30 @@ internal class EmbeddedContentSlotRegistry {
                 }
             }
         }
-        if (newlyPlaced.isEmpty()) {
-            return
+        val (placeholderNotified, snapshotNotified) = synchronized(placeholders) {
+            placeholderListeners.toList() to snapshotListeners.toList()
         }
-        val listeners = synchronized(placeholders) {
-            placeholderListeners.toList()
-        }
-        newlyPlaced.forEach { slotId -> listeners.forEach { it(slotId) } }
+        newlyPlaced.forEach { slotId -> placeholderNotified.forEach { it(slotId) } }
+        // Fired for every snapshot, including one that placed nothing new: a listener waiting on a
+        // slot learns from the snapshots that leave it out, not from the ones that include it.
+        snapshotNotified.forEach { it(slotIds) }
     }
 
     @AnyThread
     fun addPlaceholderListener(listener: (String) -> Unit) {
         synchronized(placeholders) {
             placeholderListeners.add(listener)
+        }
+    }
+
+    /**
+     * Registers [listener] to receive the complete slot set of every snapshot that reports
+     * placeholders, whether or not any of them are new.
+     */
+    @AnyThread
+    fun addSnapshotListener(listener: (Set<String>) -> Unit) {
+        synchronized(placeholders) {
+            snapshotListeners.add(listener)
         }
     }
 

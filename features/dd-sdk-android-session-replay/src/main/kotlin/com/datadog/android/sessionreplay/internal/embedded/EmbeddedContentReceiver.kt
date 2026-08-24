@@ -18,13 +18,14 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.concurrent.Executor
 
+@Suppress("TooManyFunctions")
 internal class EmbeddedContentReceiver(
     private val rumContextProvider: RumContextProvider,
     private val recordWriter: () -> EmbeddedContentRecordWriter,
     private val resourceProcessor: () -> ResourceProcessor,
     private val isRecording: () -> Boolean,
     private val executor: () -> Executor,
-    private val requestCapture: () -> Unit,
+    private val requestCapture: (String) -> Unit,
     private val embeddedContentSlotRegistry: EmbeddedContentSlotRegistry,
     private val internalLogger: InternalLogger
 ) {
@@ -42,6 +43,9 @@ internal class EmbeddedContentReceiver(
     init {
         embeddedContentSlotRegistry.addPlaceholderListener { slotId ->
             releasePendingBatches(slotId)
+        }
+        embeddedContentSlotRegistry.addSnapshotListener { drawnSlotIds ->
+            flushAbandonedSlots(drawnSlotIds)
         }
     }
 
@@ -99,7 +103,7 @@ internal class EmbeddedContentReceiver(
             // when the slot is registered keys the request to the invariant actually being broken,
             // whatever broke it. Only for the batch that starts the queue — until it is released,
             // the queue stays non-empty, so this is one request per slot per view.
-            requestCapture()
+            requestCapture(slotId)
         }
     }
 
@@ -119,6 +123,26 @@ internal class EmbeddedContentReceiver(
         }
         queue.add(pending)
         return displaced
+    }
+
+    /**
+     * Writes out the batches of slots that will never get a placeholder, given a snapshot carrying
+     * [drawnSlotIds].
+     *
+     * A slot missing from that set is not necessarily gone — it may be laying out, or scrolled off
+     * screen with its placeholder still to come — so absence alone is not the test. A slot that is
+     * also no longer registered has been torn down, and nothing will draw it again; holding its
+     * batches until the bounds happen to displace them only delays the same unshifted write.
+     */
+    private fun flushAbandonedSlots(drawnSlotIds: Set<String>) {
+        val activeSlotIds = embeddedContentSlotRegistry.activeSlotIds()
+        val abandoned = synchronized(pendingBatches) {
+            pendingBatches.keys
+                .filter { it !in drawnSlotIds && it !in activeSlotIds }
+                .mapNotNull { pendingBatches.remove(it) }
+                .flatten()
+        }
+        writeAll(abandoned)
     }
 
     private fun releasePendingBatches(slotId: String) {

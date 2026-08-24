@@ -146,7 +146,7 @@ internal class SessionReplayFeature(
         resourceProcessor = { resourceProcessor },
         isRecording = { isRecording.get() },
         executor = { embeddedContentExecutor },
-        requestCapture = { sessionReplayRecorder.requestCapture() },
+        requestCapture = { slotId -> sessionReplayRecorder.requestCapture(setOf(slotId)) },
         embeddedContentSlotRegistry = embeddedContentSlotRegistry,
         internalLogger = sdkCore.internalLogger
     )
@@ -449,8 +449,9 @@ internal class SessionReplayFeature(
         if (!isRecording.get()) {
             return
         }
-        if (embeddedContentSlotRegistry.hasMarkedSlots()) {
-            sessionReplayRecorder.requestCapture()
+        val activeSlotIds = embeddedContentSlotRegistry.activeSlotIds()
+        if (activeSlotIds.isNotEmpty()) {
+            sessionReplayRecorder.requestCapture(activeSlotIds)
         }
     }
 

@@ -171,7 +171,7 @@ internal class SessionReplayFeatureTest {
         )
 
         // Then
-        verify(mockRecorder).requestCapture()
+        verify(mockRecorder).requestCapture(setOf(FAKE_EMBEDDED_SLOT_ID))
 
         // Cleanup
         testedFeature.embeddedContentSlotRegistry.notifySlotChanged(fakeRegistration, null)
@@ -195,7 +195,7 @@ internal class SessionReplayFeatureTest {
         )
 
         // Then
-        verify(mockRecorder).requestCapture()
+        verify(mockRecorder).requestCapture(setOf(FAKE_EMBEDDED_SLOT_ID))
 
         // Cleanup
         testedFeature.embeddedContentSlotRegistry.notifySlotChanged(fakeRegistration, null)
@@ -218,7 +218,7 @@ internal class SessionReplayFeatureTest {
         )
 
         // Then
-        verify(mockRecorder, never()).requestCapture()
+        verify(mockRecorder, never()).requestCapture(any())
 
         // Cleanup
         testedFeature.embeddedContentSlotRegistry.notifySlotChanged(fakeRegistration, null)

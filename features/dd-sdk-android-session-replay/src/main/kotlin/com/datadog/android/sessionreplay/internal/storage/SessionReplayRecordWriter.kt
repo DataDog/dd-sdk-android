@@ -34,7 +34,6 @@ internal class SessionReplayRecordWriter(
                             updateViewSent(record)
                             // Runs while this monitor is held, so whatever the callback does must
                             // not write back through this writer synchronously.
-                            @Suppress("UnsafeThirdPartyFunctionCall") // Callback is internal.
                             onSuccess()
                         }
                     }

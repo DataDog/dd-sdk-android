@@ -58,7 +58,9 @@ internal class EmbeddedContentReceiverTest {
 
     private var isRecording: Boolean = true
 
-    private var captureRequests: Int = 0
+    private val capturedSlotIds = mutableListOf<String>()
+
+    private val captureRequests: Int get() = capturedSlotIds.size
 
     private val fakeSlotRegistry = EmbeddedContentSlotRegistry()
 
@@ -331,6 +333,9 @@ internal class EmbeddedContentReceiverTest {
     @Test
     fun `M keep records held W onPlaceholdersWritten { placeholder emitted for another slot }`() {
         // Given
+        // Still registered, so its placeholder is only late, not never coming.
+        val fakeRegistration = EmbeddedContentSlotRegistration(FAKE_NATIVE_SLOT_ID)
+        fakeSlotRegistry.notifySlotChanged(null, fakeRegistration)
         testedReceiver.receive(recordBatch(timestamps = listOf(123L)))
 
         // When
@@ -558,6 +563,38 @@ internal class EmbeddedContentReceiverTest {
 
     // endregion
 
+    // region abandoned slots
+
+    @Test
+    fun `M write held batches W snapshot { slot neither drawn nor registered }`() {
+        // Given
+        // The slot was torn down before its placeholder was ever drawn, so nothing will draw it
+        // again — holding its batches only delays the same unshifted write.
+        testedReceiver.receive(recordBatch(timestamps = listOf(123L)))
+
+        // When
+        givenPlaceholder(FAKE_SLOT_ID, FAKE_EMBEDDED_VIEW_ID, FAKE_PLACEHOLDER_TIMESTAMP)
+
+        // Then
+        verify(mockRecordWriter).writeRaw(any(), eq(FAKE_EMBEDDED_VIEW_ID), eq(1))
+        assertThat(writtenTimestamps()).containsExactly(123L)
+    }
+
+    @Test
+    fun `M shift held batches W snapshot { slot drawn }`() {
+        // Given
+        testedReceiver.receive(recordBatch(timestamps = listOf(1L)))
+
+        // When
+        givenPlaceholder(FAKE_NATIVE_SLOT_ID, FAKE_EMBEDDED_VIEW_ID, FAKE_PLACEHOLDER_TIMESTAMP)
+
+        // Then
+        // Released by the placeholder rather than flushed, so it lands after the wireframe.
+        assertThat(writtenTimestamps()).containsExactly(FAKE_PLACEHOLDER_TIMESTAMP + 1)
+    }
+
+    // endregion
+
     // region Internal
 
     private fun receiver(
@@ -572,7 +609,7 @@ internal class EmbeddedContentReceiverTest {
             resourceProcessor = resourceProcessor,
             isRecording = { isRecording },
             executor = executor,
-            requestCapture = { captureRequests++ },
+            requestCapture = { slotId -> capturedSlotIds += slotId },
             embeddedContentSlotRegistry = registry,
             internalLogger = mockInternalLogger
         )

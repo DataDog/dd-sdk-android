@@ -280,6 +280,39 @@ internal class EmbeddedContentSlotRegistryTest {
     }
 
     @Test
+    fun `M notify snapshot listener W onPlaceholdersWritten { nothing newly placed }`() {
+        // Given
+        // A listener waiting on a slot learns from the snapshots that leave it out, so every
+        // snapshot is reported, not only the ones that place something new.
+        val notified = mutableListOf<Set<String>>()
+        testedRegistry.onPlaceholdersWritten(FAKE_VIEW_ID, FAKE_TIMESTAMP, setOf(FAKE_SLOT_ID))
+        testedRegistry.addSnapshotListener { notified.add(it) }
+
+        // When
+        testedRegistry.onPlaceholdersWritten(FAKE_VIEW_ID, FAKE_LATER_TIMESTAMP, setOf(FAKE_SLOT_ID))
+        testedRegistry.onPlaceholdersWritten(FAKE_VIEW_ID, FAKE_LATEST_TIMESTAMP, emptySet())
+
+        // Then
+        assertThat(notified).containsExactly(setOf(FAKE_SLOT_ID), emptySet())
+    }
+
+    @Test
+    fun `M notify every snapshot listener W onPlaceholdersWritten { several listeners }`() {
+        // Given
+        val firstNotified = mutableListOf<Set<String>>()
+        val secondNotified = mutableListOf<Set<String>>()
+        testedRegistry.addSnapshotListener { firstNotified.add(it) }
+        testedRegistry.addSnapshotListener { secondNotified.add(it) }
+
+        // When
+        testedRegistry.onPlaceholdersWritten(FAKE_VIEW_ID, FAKE_TIMESTAMP, setOf(FAKE_SLOT_ID))
+
+        // Then
+        assertThat(firstNotified).containsExactly(setOf(FAKE_SLOT_ID))
+        assertThat(secondNotified).containsExactly(setOf(FAKE_SLOT_ID))
+    }
+
+    @Test
     fun `M keep placeholders isolated W separate instances`() {
         // Given
         val otherRegistry = EmbeddedContentSlotRegistry()
