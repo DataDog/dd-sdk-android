@@ -6,16 +6,13 @@
 
 package com.datadog.gradle.utils
 
-import com.datadog.gradle.config.taskConfig
-import com.datadog.gradle.plugin.apisurface.GenerateApiSurfaceTask
+import com.android.build.api.variant.LibraryAndroidComponentsExtension
 import com.datadog.gradle.plugin.gitclone.GitCloneDependenciesExtension
 import com.datadog.gradle.plugin.gitclone.GitCloneDependenciesTask
 import com.datadog.gradle.plugin.jsonschema.GenerateJsonSchemaTask
 import org.gradle.api.Project
+import org.gradle.kotlin.dsl.findByType
 import org.gradle.kotlin.dsl.register
-import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompilerOptions
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
-import java.io.File
 import java.nio.file.Paths
 
 private const val RUM_EVENTS_FORMAT_REPO = "https://github.com/DataDog/rum-events-format.git"
@@ -66,19 +63,9 @@ fun Project.createJsonModelsGenerationTask(
 
         action()
 
-        val rootPath = Paths.get("generated", "json2kotlin", "main", "kotlin")
-        val rootGenDirectory = layout.buildDirectory
-            .dir(rootPath.toString())
-            .get()
-            .asFile
-        destinationGenDirectoryPath.set(rootGenDirectory.absolutePath)
-        val outputPackageDir = File(
-            rootGenDirectory,
-            targetPackageName.get().replace(".", File.separator)
-        ).apply {
-            if (!exists()) mkdirs()
-        }
-        destinationPackageDirectory.set(outputPackageDir)
+        destinationGenDirectory.set(
+            layout.buildDirectory.dir(Paths.get("generated", taskName).toString())
+        )
         inputDir.set(layout.projectDirectory.dir(inputDirPath))
         inputFiles.from(
             inputDir.map {
@@ -91,15 +78,15 @@ fun Project.createJsonModelsGenerationTask(
 
     rootTask.dependsOn(task)
 
-    taskConfig<GenerateApiSurfaceTask> {
-        dependsOn(task)
-    }
-
-    taskConfig<KotlinCompilationTask<KotlinJvmCompilerOptions>> {
-        dependsOn(task)
-    }
-
-    tasks.matching { it.name.startsWith("ksp") && it.name.endsWith("Kotlin") }.configureEach {
-        dependsOn(task)
+    val androidComponents = extensions.findByType<LibraryAndroidComponentsExtension>()
+        ?: error(
+            "Project $path applies the JSON models generation without the Android library plugin," +
+                " the generated sources cannot be wired to any variant."
+        )
+    androidComponents.onVariants { variant ->
+        variant.sources.java?.addGeneratedSourceDirectory(
+            task,
+            GenerateJsonSchemaTask::destinationGenDirectory
+        )
     }
 }
