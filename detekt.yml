@@ -838,12 +838,12 @@ datadog:
   active: true
   excludes:
     - '**/build/**'
+    - '**/build-logic/**'
     - '**/test/**'
     - '**/testDebug/**'
     - '**/testRelease/**'
     - '**/androidTest/**'
     - '**/testFixtures/**'
-    - '**/buildSrc/**'
     - '**/*.kts'
     - '**/instrumented/**'
     - '**/reliability/**'

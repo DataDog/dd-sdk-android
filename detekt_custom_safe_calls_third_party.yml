@@ -444,6 +444,7 @@ datadog:
       - "kotlin.Array.firstOrNull(kotlin.Function1)"
       - "kotlin.Array.forEach(kotlin.Function1)"
       - "kotlin.Array.forEachIndexed(kotlin.Function2)"
+      - "kotlin.Array.isEmpty()"
       - "kotlin.Array.isNotEmpty()"
       - "kotlin.Array.joinToString(kotlin.CharSequence, kotlin.CharSequence, kotlin.CharSequence, kotlin.Int, kotlin.CharSequence, kotlin.Function1?)"
       - "kotlin.Array.map(kotlin.Function1)"
