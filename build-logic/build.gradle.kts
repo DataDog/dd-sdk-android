@@ -70,23 +70,21 @@ dependencies {
 gradlePlugin {
     plugins {
         register("datadogBuildConfig") {
-            id = "datadogBuildConfig" // the alias
             implementationClass = "com.datadog.gradle.plugin.config.DatadogBuildConfigPlugin"
         }
         register("apiSurface") {
-            id = "apiSurface" // the alias
             implementationClass = "com.datadog.gradle.plugin.apisurface.ApiSurfacePlugin"
         }
+        register("aarMetadata") {
+            implementationClass = "com.datadog.gradle.plugin.aarmetadata.AarMetadataPlugin"
+        }
         register("cloneDependencies") {
-            id = "cloneDependencies" // the alias
             implementationClass = "com.datadog.gradle.plugin.gitclone.GitCloneDependenciesPlugin"
         }
         register("transitiveDependencies") {
-            id = "transitiveDependencies" // the alias
             implementationClass = "com.datadog.gradle.plugin.transdeps.TransitiveDependenciesPlugin"
         }
         register("verificationXml") {
-            id = "verificationXml" // the alias
             implementationClass = "com.datadog.gradle.plugin.verification.VerificationXmlPlugin"
         }
     }
