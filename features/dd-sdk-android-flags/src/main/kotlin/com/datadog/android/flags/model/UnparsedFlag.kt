@@ -24,4 +24,5 @@ interface UnparsedFlag {
     val variationKey: String
     val extraLogging: JSONObject
     val reason: String
+    val serialId: Long?
 }

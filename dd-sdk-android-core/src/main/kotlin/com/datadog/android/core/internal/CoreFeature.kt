@@ -20,6 +20,7 @@ import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.configuration.BackPressureStrategy
 import com.datadog.android.core.configuration.BatchProcessingLevel
@@ -74,6 +75,7 @@ import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.telemetry.TelemetryContext
 import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.internal.utils.allowThreadDiskReads
@@ -386,8 +388,17 @@ internal class CoreFeature(
 
     @WorkerThread
     internal fun writeLastViewEvent(data: ByteArray) {
-        val serialized = lastViewEventFileWriter.serializeToBytes(RawBatchEvent(data = data)) ?: return
-        lastViewEventFileWriter.writeBinaryData(lastViewEventFile, serialized, false)
+        val telemetryContext = TelemetryContext(featureName = Feature.RUM_FEATURE_NAME)
+        val serialized = lastViewEventFileWriter.serializeToBytes(
+            RawBatchEvent(data = data),
+            telemetryContext
+        ) ?: return
+        lastViewEventFileWriter.writeBinaryData(
+            lastViewEventFile,
+            serialized,
+            append = false,
+            telemetryContext
+        )
     }
 
     @WorkerThread
@@ -437,7 +448,10 @@ internal class CoreFeature(
 
         val reader =
             BatchFileReaderWriter.create(internalLogger, localDataEncryption)
-        val content = reader.readData(lastViewEventFile)
+        val content = reader.readData(
+            lastViewEventFile,
+            TelemetryContext(featureName = Feature.RUM_FEATURE_NAME)
+        )
         return if (content.isEmpty()) {
             null
         } else {

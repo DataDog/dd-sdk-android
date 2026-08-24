@@ -15,6 +15,7 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.heatmaps.HeatmapIdentifierRegistryProvider
 import com.datadog.android.heatmaps.heatmapViewKey
+import com.datadog.android.internal.heatmaps.HeatmapIdentifier
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
@@ -43,6 +44,9 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
  * Contract test for the SR → RUM heatmap identifier pipeline.
@@ -67,6 +71,8 @@ internal class HeatmapIdentifierContractTest {
     private lateinit var realRegistry: HeatmapIdentifierRegistry
 
     private lateinit var testedSnapshotProducer: SnapshotProducer
+
+    private lateinit var testedHeatmapResolver: HeatmapIdentifierResolver
 
     @Mock lateinit var mockSdkCore: FeatureSdkCore
 
@@ -101,17 +107,18 @@ internal class HeatmapIdentifierContractTest {
         whenever(mockTreeViewTraversal.traverse(any(), any(), any())).thenReturn(
             TreeViewTraversal.TraversedTreeView(fakeViewWireframes, TraversalStrategy.TRAVERSE_ALL_CHILDREN)
         )
+        testedHeatmapResolver = HeatmapIdentifierResolver(
+            appPackageName = fakeAppPackageName,
+            registry = LazyHeatmapIdentifierRegistry(mockSdkCore),
+            internalLogger = mockInternalLogger
+        )
         testedSnapshotProducer = SnapshotProducer(
             imageWireframeHelper = mockImageWireframeHelper,
             treeViewTraversal = mockTreeViewTraversal,
             optionSelectorDetector = mockOptionSelectorDetector,
             touchPrivacyManager = mockTouchPrivacyManager,
             internalLogger = mockInternalLogger,
-            heatmapResolver = HeatmapIdentifierResolver(
-                appPackageName = fakeAppPackageName,
-                registry = LazyHeatmapIdentifierRegistry(mockSdkCore),
-                internalLogger = mockInternalLogger
-            )
+            heatmapResolver = testedHeatmapResolver
         )
     }
 
@@ -267,6 +274,95 @@ internal class HeatmapIdentifierContractTest {
         assertThat(localRegistry.getHeatmapIdentifier(heatmapViewKey(mockButton), fakeViewUrl)).isNotNull()
     }
 
+    @Test
+    fun `M keep registry consistent with resolver cache W concurrent traversals for different screens`(
+        forge: Forge
+    ) {
+        // Given
+        // Two windows recording different RUM screens concurrently, each on its own thread.
+        // publishIfChanged() must update the resolver's own cache and call registry
+        // .setHeatmapIdentifiers() as a single locked operation -- otherwise one traversal's
+        // cache update and its registry publish can be split apart by the other traversal's
+        // full cache-update-and-publish sequence, leaving the resolver's cache pointing at one
+        // screen while the registry (a single global "current snapshot") points at the other.
+        //
+        // Deliberately delaying screen A's registry write (rather than just hammering both
+        // threads and hoping for a lucky interleave) forces the exact window this bug lives in:
+        // if the write happens outside the resolver's lock, screen B's whole publish can run to
+        // completion while A is delayed, landing A's now-stale write last. If the write happens
+        // inside the lock (the fix), B is blocked from even starting until A's delay is over, so
+        // no interleaving is possible -- this deadlocks-free because B never needs anything
+        // from A to make progress, it only waits for the lock A already holds.
+        val screenA = "screen-${forge.anAlphabeticalString()}"
+        val screenB = "screen-${forge.anAlphabeticalString()}"
+        val viewA = forge.aMockTappableViewWithResourceId(
+            viewId = forge.anInt(min = 1, max = Int.MAX_VALUE),
+            resourceName = "com.example.app:id/${forge.anAlphabeticalString()}"
+        )
+        val viewB = forge.aMockTappableViewWithResourceId(
+            viewId = forge.anInt(min = 1, max = Int.MAX_VALUE),
+            resourceName = "com.example.app:id/${forge.anAlphabeticalString()}"
+        )
+        val screenAWriteStarted = CountDownLatch(1)
+        val delayingRegistry = object : HeatmapIdentifierRegistry {
+            override fun setHeatmapIdentifiers(identifiers: Map<Long, HeatmapIdentifier>, screenName: String) {
+                if (screenName == screenA) {
+                    screenAWriteStarted.countDown()
+                    Thread.sleep(SCREEN_A_WRITE_DELAY_MS)
+                }
+                realRegistry.setHeatmapIdentifiers(identifiers, screenName)
+            }
+
+            override fun getHeatmapIdentifier(heatmapViewKey: Long, currentScreenName: String) =
+                realRegistry.getHeatmapIdentifier(heatmapViewKey, currentScreenName)
+        }
+        val delayedResolver = HeatmapIdentifierResolver(
+            appPackageName = fakeAppPackageName,
+            registry = delayingRegistry,
+            internalLogger = mockInternalLogger
+        )
+        val delayedProducer = SnapshotProducer(
+            imageWireframeHelper = mockImageWireframeHelper,
+            treeViewTraversal = mockTreeViewTraversal,
+            optionSelectorDetector = mockOptionSelectorDetector,
+            touchPrivacyManager = mockTouchPrivacyManager,
+            internalLogger = mockInternalLogger,
+            heatmapResolver = delayedResolver
+        )
+        val errors = CopyOnWriteArrayList<Throwable>()
+
+        fun produceFor(view: View, screenName: String) {
+            delayedProducer.produce(
+                rootView = view,
+                systemInformation = fakeSystemInformation,
+                textAndInputPrivacy = fakeTextAndInputPrivacy,
+                imagePrivacy = fakeImagePrivacy,
+                recordedDataQueueRefs = mockRecordedDataQueueRefs,
+                activeRumViewUrl = screenName
+            )
+        }
+
+        // When
+        val threadA = Thread { try { produceFor(viewA, screenA) } catch (e: Throwable) { errors.add(e) } }
+        threadA.start()
+        assertThat(screenAWriteStarted.await(2, TimeUnit.SECONDS))
+            .describedAs("screen A's write should have started")
+            .isTrue()
+        val threadB = Thread { try { produceFor(viewB, screenB) } catch (e: Throwable) { errors.add(e) } }
+        threadB.start()
+        threadA.join()
+        threadB.join()
+
+        // Then
+        assertThat(errors).isEmpty()
+        val cachedScreen = delayedResolver.getLastPublishedScreenName()
+        val viewForCachedScreen = if (cachedScreen == screenA) viewA else viewB
+        assertThat(cachedScreen).isEqualTo(screenB)
+        assertThat(realRegistry.getHeatmapIdentifier(heatmapViewKey(viewForCachedScreen), cachedScreen!!))
+            .describedAs("the registry must agree with the resolver's own cache about which screen is current")
+            .isNotNull()
+    }
+
     // region helpers
 
     private fun stubRumFeatureWithRegistry(registry: HeatmapIdentifierRegistry): FeatureScope {
@@ -308,4 +404,8 @@ internal class HeatmapIdentifierContractTest {
     }
 
     // endregion
+
+    companion object {
+        private const val SCREEN_A_WRITE_DELAY_MS = 300L
+    }
 }

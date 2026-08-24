@@ -7,20 +7,33 @@
 package com.datadog.android.rum.internal.domain
 
 import androidx.annotation.WorkerThread
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.api.storage.write
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.serializeToByteArray
+import com.datadog.android.internal.telemetry.TelemetryContext
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.domain.event.RumEventMeta
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
 import com.datadog.android.rum.internal.domain.scope.DiffThenFullView
 import com.datadog.android.rum.internal.domain.scope.MappedViewEvent
 import com.datadog.android.rum.internal.domain.scope.RumViewUpdateData
+import com.datadog.android.rum.model.ActionEvent
+import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.LongTaskEvent
+import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.VitalAppLaunchEvent
+import com.datadog.android.rum.model.VitalOperationStepEvent
+import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
+import com.datadog.android.telemetry.model.TelemetryDebugEvent
+import com.datadog.android.telemetry.model.TelemetryErrorEvent
+import com.datadog.android.telemetry.model.TelemetryUsageEvent
 
 internal class RumDataWriter(
     internal val eventMapper: RumEventMapper,
@@ -28,6 +41,8 @@ internal class RumDataWriter(
     private val eventMetaSerializer: Serializer<RumEventMeta>,
     private val sdkCore: InternalSdkCore
 ) : DataWriter<Any> {
+
+    private var currentViewId: String? = null
 
     @WorkerThread
     override fun write(writer: EventBatchWriter, element: Any, eventType: EventType): Boolean {
@@ -53,8 +68,33 @@ internal class RumDataWriter(
 
     @WorkerThread
     private fun writeMappedViewEvent(writer: EventBatchWriter, event: ViewEvent, eventType: EventType): Boolean {
+        onViewEventSubmitted(event)
+
+        val (byteArray, serializedEventMeta) = serializeViewEvent(event) ?: return false
+
+        return writeBatchEvent(
+            writer,
+            RawBatchEvent(data = byteArray, metadata = serializedEventMeta),
+            eventType,
+            telemetryContext(event)
+        ) {
+            onDataWritten(event, byteArray)
+        }
+    }
+
+    @WorkerThread
+    private fun writeFullViewCheckpoint(writer: EventBatchWriter, event: ViewEvent, eventType: EventType): Boolean {
+        val (byteArray, serializedEventMeta) = serializeViewEvent(event) ?: return false
+
+        return writeBatchEvent(writer, RawBatchEvent(data = byteArray, metadata = serializedEventMeta), eventType) {
+            sdkCore.writeLastViewEvent(byteArray)
+        }
+    }
+
+    @WorkerThread
+    private fun serializeViewEvent(event: ViewEvent): Pair<ByteArray, ByteArray>? {
         val byteArray = eventSerializer.serializeToByteArray(event, sdkCore.internalLogger)
-            ?: return false
+            ?: return null
 
         val eventMeta = RumEventMeta.View(
             viewId = event.view.id,
@@ -64,9 +104,7 @@ internal class RumDataWriter(
         val serializedEventMeta = eventMetaSerializer.serializeToByteArray(eventMeta, sdkCore.internalLogger)
             ?: EMPTY_BYTE_ARRAY
 
-        return writeBatchEvent(writer, RawBatchEvent(data = byteArray, metadata = serializedEventMeta), eventType) {
-            sdkCore.writeLastViewEvent(byteArray)
-        }
+        return byteArray to serializedEventMeta
     }
 
     @WorkerThread
@@ -111,7 +149,7 @@ internal class RumDataWriter(
         )
         // Only write the full view checkpoint if the diff was persisted
         if (diffWritten) {
-            writeMappedViewEvent(writer, eventData.viewEvent, eventType)
+            writeFullViewCheckpoint(writer, eventData.viewEvent, eventType)
         }
         // Always return diffWritten so prevViewEvent is updated whenever the diff was
         // persisted, keeping the baseline consistent regardless of full view write outcome
@@ -122,7 +160,7 @@ internal class RumDataWriter(
     private fun writeOtherEvent(writer: EventBatchWriter, event: Any, eventType: EventType): Boolean {
         val mappedElement = eventMapper.map(event) ?: return false
         return eventSerializer.serializeToByteArray(mappedElement, sdkCore.internalLogger)
-            ?.let { writeBatchEvent(writer, RawBatchEvent(data = it), eventType) }
+            ?.let { writeBatchEvent(writer, RawBatchEvent(data = it), eventType, telemetryContext(event)) }
             ?: false
     }
 
@@ -131,16 +169,66 @@ internal class RumDataWriter(
         writer: EventBatchWriter,
         batchEvent: RawBatchEvent,
         eventType: EventType,
+        telemetryContext: TelemetryContext? = null,
         onSuccess: () -> Unit = {}
     ): Boolean {
         return synchronized(this) {
-            val result = writer.write(batchEvent, null, eventType)
+            val result = if (telemetryContext != null) {
+                writer.write(batchEvent, null, eventType, telemetryContext)
+            } else {
+                writer.write(batchEvent, null, eventType)
+            }
             if (result) onSuccess()
             result
         }
     }
 
+    @WorkerThread
+    internal fun onDataWritten(data: Any, rawData: ByteArray) {
+        when (data) {
+            is ViewEvent -> onViewEventWritten(data, rawData)
+        }
+    }
+
+    @WorkerThread
+    internal fun onViewEventSubmitted(data: ViewEvent) {
+        synchronized(this) {
+            if (data.dd.documentVersion == FIRST_VIEW_DOCUMENT_VERSION) {
+                currentViewId = data.view.id
+            }
+        }
+    }
+
+    @WorkerThread
+    private fun onViewEventWritten(data: ViewEvent, rawData: ByteArray) {
+        if (data.view.id == currentViewId) {
+            sdkCore.writeLastViewEvent(rawData)
+        }
+    }
+
+    private fun telemetryContext(event: Any): TelemetryContext =
+        TelemetryContext(featureName = Feature.RUM_FEATURE_NAME, eventType = resolveEventType(event))
+
     companion object {
         val EMPTY_BYTE_ARRAY = ByteArray(0)
+
+        internal const val FIRST_VIEW_DOCUMENT_VERSION = 2L
+
+        private const val UNKNOWN_EVENT_TYPE = "unknown"
+
+        private fun resolveEventType(event: Any): String = when (event) {
+            is ActionEvent -> event.type
+            is ErrorEvent -> event.type
+            is LongTaskEvent -> event.type
+            is ResourceEvent -> event.type
+            is ViewEvent -> event.type
+            is VitalAppLaunchEvent -> event.type
+            is VitalOperationStepEvent -> event.type
+            is TelemetryConfigurationEvent -> event.type
+            is TelemetryDebugEvent -> event.type
+            is TelemetryErrorEvent -> event.type
+            is TelemetryUsageEvent -> event.type
+            else -> UNKNOWN_EVENT_TYPE
+        }
     }
 }

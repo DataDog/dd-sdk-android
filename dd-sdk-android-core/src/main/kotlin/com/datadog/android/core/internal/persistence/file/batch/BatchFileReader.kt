@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.persistence.file.batch
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.internal.telemetry.TelemetryContext
 import java.io.File
 
 internal interface BatchFileReader {
@@ -15,10 +16,12 @@ internal interface BatchFileReader {
     /**
      * Reads data from the given file.
      *  @param file the file to read from
+     *  @param telemetryContext telemetry metadata for dropped-event diagnostics
      *  @return the list of events as [RawBatchEvent] data stored in a file.
      */
     @WorkerThread
     fun readData(
-        file: File
+        file: File,
+        telemetryContext: TelemetryContext
     ): List<RawBatchEvent>
 }

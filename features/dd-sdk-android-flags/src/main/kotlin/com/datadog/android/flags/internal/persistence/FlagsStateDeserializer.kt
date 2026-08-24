@@ -109,7 +109,8 @@ internal class FlagsStateDeserializer(private val internalLogger: InternalLogger
             allocationKey = flagJson.getString(JsonKeys.ALLOCATION_KEY.value),
             variationKey = flagJson.getString(JsonKeys.VARIATION_KEY.value),
             extraLogging = flagJson.getJSONObject(JsonKeys.EXTRA_LOGGING.value),
-            reason = flagJson.getString(JsonKeys.REASON.value)
+            reason = flagJson.getString(JsonKeys.REASON.value),
+            serialId = (flagJson.opt(JsonKeys.SERIAL_ID.value) as? Number)?.toLong()
         )
     } catch (e: JSONException) {
         internalLogger.log(

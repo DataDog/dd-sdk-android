@@ -19,6 +19,11 @@
         },
         "data": {
           "$ref": "incremental-data-schema.json"
+        },
+        "slotId": {
+          "type": "string",
+          "description": "Unique ID of the slot that generated this record.",
+          "readOnly": true
         }
       }
     }

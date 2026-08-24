@@ -61,6 +61,7 @@ enum com.datadog.android.flags.model.ResolutionReason
   - STATIC
   - DEFAULT
   - TARGETING_MATCH
+  - SPLIT
   - RULE_MATCH
   - PREREQUISITE_FAILED
   - ERROR
@@ -72,8 +73,9 @@ interface com.datadog.android.flags.model.UnparsedFlag
   val variationKey: String
   val extraLogging: org.json.JSONObject
   val reason: String
+  val serialId: Long?
 data class com.datadog.android.flags.model.ExposureEvent
-  constructor(kotlin.Long, Identifier, Identifier, Identifier, Subject)
+  constructor(kotlin.Long, Identifier, Identifier, Identifier, Subject, kotlin.Long? = null)
   fun toJson(): com.google.gson.JsonElement
   companion object 
     fun fromJson(kotlin.String): ExposureEvent

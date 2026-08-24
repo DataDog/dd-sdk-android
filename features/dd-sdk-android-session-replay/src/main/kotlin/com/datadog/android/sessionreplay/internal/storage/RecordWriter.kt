@@ -15,6 +15,8 @@ internal interface RecordWriter {
     /**
      * Writes the record to disk.
      * @param record to write
+     * @param onSuccess invoked once the record has actually been persisted, on the thread that
+     * performed the write. Never invoked if the write is rejected.
      */
-    fun write(record: EnrichedRecord)
+    fun write(record: EnrichedRecord, onSuccess: () -> Unit = {})
 }
