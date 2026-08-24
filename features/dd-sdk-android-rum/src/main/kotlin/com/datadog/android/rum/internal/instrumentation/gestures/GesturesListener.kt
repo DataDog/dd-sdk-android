@@ -51,6 +51,7 @@ internal class GesturesListener(
     private var onTouchDownYPos = 0f
 
     private val tapLocationBuffer = IntArray(2)
+    private val tapTargetSelector = TapTargetSelector()
 
     // region GesturesListener
 
@@ -146,7 +147,9 @@ internal class GesturesListener(
         // Index 0 is always safe
         @Suppress("UnsafeThirdPartyFunctionCall")
         queue.add(0, decorView)
-        var target: ViewTarget? = null
+        var tapTarget: ViewTarget? = null
+        var tapTargetHost: View? = null
+        var scrollTarget: ViewTarget? = null
         var composeViewDetected = false
         while (queue.isNotEmpty()) {
             // removeAt(index) instead of removeFirst here is on purpose, to prevent issues
@@ -161,7 +164,12 @@ internal class GesturesListener(
                 findTargetForTap(view, x, y)
             }
             if (newTarget != null) {
-                target = newTarget
+                if (isScroll) {
+                    scrollTarget = newTarget
+                } else if (tapTargetSelector.shouldSelectCandidate(tapTargetHost, view)) {
+                    tapTarget = newTarget
+                    tapTargetHost = view
+                }
             }
             if (view.isVisible && view is ViewGroup) {
                 for (i in 0 until view.childCount) {
@@ -171,6 +179,7 @@ internal class GesturesListener(
             }
         }
 
+        val target = scrollTarget ?: tapTarget
         if (target == null) {
             val msg = if (composeViewDetected) {
                 MSG_NO_COMPOSE_TARGET

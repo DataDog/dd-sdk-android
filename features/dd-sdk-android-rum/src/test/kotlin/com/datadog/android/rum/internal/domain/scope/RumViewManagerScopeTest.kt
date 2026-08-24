@@ -162,6 +162,7 @@ internal class RumViewManagerScopeTest {
         fakeSampleRate = forge.aFloat(min = 0.0f, max = 100.0f)
 
         whenever(mockSdkCore.time) doReturn fakeTime
+        whenever(mockSdkCore.timeProvider) doReturn mock()
 
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any(), any(), any())) doReturn mockChildScope

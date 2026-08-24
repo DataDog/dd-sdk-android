@@ -16,6 +16,7 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.data.SharedPreferencesStorage
@@ -23,6 +24,7 @@ import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.rum.RumSessionConstants
 import com.datadog.android.internal.sampling.SessionSamplingIdProvider
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.Profiler
@@ -32,11 +34,15 @@ import com.datadog.android.profiling.internal.ProfilingRequestFactory
 import com.datadog.android.profiling.internal.ProfilingStartReason
 import com.datadog.android.profiling.internal.ProfilingStorage
 import com.datadog.android.profiling.internal.ProfilingWriter
+import com.datadog.android.profiling.internal.anr.AnrTriggerRegistrar
+import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.quota.NoOpQuotaChecker
 import com.datadog.android.profiling.internal.quota.QuotaChecker
 import com.datadog.android.profiling.internal.quota.QuotaReason
 import com.datadog.android.profiling.internal.quota.QuotaResult
+import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
+import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
 import com.datadog.android.profiling.internal.time.MutableTimeProvider
 import com.datadog.android.profiling.utils.config.MainLooperTestConfiguration
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -45,6 +51,7 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -68,6 +75,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -141,6 +149,12 @@ internal class ProfilingFeatureTest {
 
     @Mock
     private lateinit var mockPackageManager: PackageManager
+
+    @Mock
+    private lateinit var mockAnrTriggerRegistrar: AnrTriggerRegistrar
+
+    @Mock
+    private lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
 
     @Forgery
     private lateinit var fakeConfiguration: ProfilingConfiguration
@@ -252,54 +266,99 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
-    fun `M set Profiling sample rate W initialize {sample rate not exists}()`() {
-        // Given
-        whenever(
-            mockSharedPreferencesStorage
-                .getFloat("dd_profiling_sample_rate", -1f)
-        ) doReturn (-1f)
+    fun `M query the package manager once W start() then initialize()`() {
+        // Given a profiler already started by the content provider, before initialization
+        val profiler = PerfettoProfiler(
+            timeProvider = MutableTimeProvider.create(mockTimeProvider),
+            scheduledExecutorService = mockSchedulerExecutor,
+            profilingTelemetry = ProfilingTelemetry(),
+            anrTriggerRegistrar = mockAnrTriggerRegistrar,
+            buildSdkVersionProvider = mockBuildSdkVersionProvider
+        )
+        val feature = ProfilingFeature(
+            sdkCore = mockSdkCore,
+            configuration = fakeConfiguration.copy(continuousSampleRate = 0f),
+            profiler = profiler
+        )
+        profiler.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap())
 
         // When
-        testedFeature.onInitialize(mockContext)
+        feature.onInitialize(mockContext)
 
         // Then
-        verify(mockSharedPreferencesStorage).putFloat(
-            "dd_profiling_sample_rate",
-            fakeConfiguration.applicationLaunchSampleRate
-        )
+        verify(mockPackageManager, times(1))
+            .getPackageInfo("com.google.android.profiling", PackageManager.MATCH_APEX)
     }
 
     @Test
-    fun `M not set Profiling sample rate W initialize() {smaller sample rate exists}`() {
-        // Given
-        // A non-negative existing rate that is <= the configured rate (the configured rate is
-        // forged in 0f..100f, so subtracting would underflow below the "unset" sentinel).
-        whenever(
-            mockSharedPreferencesStorage
-                .getFloat("dd_profiling_sample_rate", -1f)
-        ) doReturn fakeConfiguration.applicationLaunchSampleRate / 2f
+    fun `M report the package version code W initialize() {telemetry reported before init}`(
+        @IntForgery(min = 1, max = 8) fakeErrorCode: Int,
+        @StringForgery fakeErrorMessage: String
+    ) {
+        // Given a profiling session that ended before the SDK was initialized: the profiler has
+        // no logger yet, so its telemetry is buffered and only dispatched on initialization.
+        val profilingTelemetry = ProfilingTelemetry()
+        val profiler = PerfettoProfiler(
+            timeProvider = MutableTimeProvider.create(mockTimeProvider),
+            scheduledExecutorService = mockSchedulerExecutor,
+            profilingTelemetry = profilingTelemetry,
+            anrTriggerRegistrar = mockAnrTriggerRegistrar,
+            buildSdkVersionProvider = mockBuildSdkVersionProvider
+        )
+        profilingTelemetry.report(
+            ProfilingTelemetryEvent.SessionEnd(
+                startReason = ProfilingStartReason.APPLICATION_LAUNCH.value,
+                appStartInfo = null,
+                errorCode = fakeErrorCode,
+                errorMessage = fakeErrorMessage,
+                fileSize = 0L,
+                durationMs = 0L,
+                resultCallbackDelayMs = 0L,
+                clientClockDriftMs = 0L,
+                stopReason = ProfilingTelemetry.STOPPED_REASON_ERROR,
+                bufferSizeKb = 0,
+                samplingFrequencyHz = 0
+            )
+        )
+        val feature = ProfilingFeature(
+            sdkCore = mockSdkCore,
+            // continuous profiling disabled, so initialization doesn't schedule anything
+            configuration = fakeConfiguration.copy(continuousSampleRate = 0f),
+            profiler = profiler
+        )
 
         // When
-        testedFeature.onInitialize(mockContext)
+        feature.onInitialize(mockContext)
 
         // Then
-        verify(mockSharedPreferencesStorage, never()).putFloat(
-            "dd_profiling_sample_rate",
-            fakeConfiguration.applicationLaunchSampleRate
+        val propertiesCaptor = argumentCaptor<Map<String, Any?>>()
+        verify(mockInternalLogger).logMetric(
+            any(),
+            propertiesCaptor.capture(),
+            eq(MethodCallSamplingRate.ALL.rate),
+            isNull()
         )
+        val profilingConfig = propertiesCaptor.firstValue["profiling_config"] as Map<*, *>
+        assertThat(profilingConfig["profiling_package_version_code"])
+            .isEqualTo(fakeProfilingPackageVersionCode)
     }
 
     @Test
-    fun `M set Profiling sample rate W initialize() {bigger sample rate exists}`() {
+    fun `M set Profiling sample rate W initialize()`(
+        @FloatForgery(min = 0f, max = 100f) fakeStoredSampleRate: Float
+    ) {
+        // Given
+        // Whatever was previously stored, only one SDK instance can initialize the feature, so the
+        // configured sample rate always wins.
         whenever(
-            mockSharedPreferencesStorage.getFloat("dd_profiling_sample_rate", -1f)
-        ) doReturn fakeConfiguration.applicationLaunchSampleRate + 1f
+            mockSharedPreferencesStorage
+                .getFloat("dd_profiling_sample_rate", -1f)
+        ) doReturn fakeStoredSampleRate
 
         // When
         testedFeature.onInitialize(mockContext)
 
         // Then
-        // Since the existing value was higher, it should be updated to the configuration value
         verify(mockSharedPreferencesStorage).putFloat(
             "dd_profiling_sample_rate",
             fakeConfiguration.applicationLaunchSampleRate

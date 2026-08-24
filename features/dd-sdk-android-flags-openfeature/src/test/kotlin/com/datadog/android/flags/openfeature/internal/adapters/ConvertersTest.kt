@@ -116,6 +116,30 @@ internal class ConvertersTest {
     }
 
     @Test
+    fun `M convert SPLIT reason W toProviderEvaluation() {resolution with SPLIT reason}`(
+        @StringForgery variant: String,
+        forge: Forge
+    ) {
+        // Given
+        val value = forge.aBool()
+        val resolution = ResolutionDetails(
+            value = value,
+            variant = variant,
+            reason = ResolutionReason.SPLIT
+        )
+
+        // When
+        val result = resolution.toProviderEvaluation()
+
+        // Then
+        assertThat(result.value).isEqualTo(value)
+        assertThat(result.variant).isEqualTo(variant)
+        assertThat(result.reason).isEqualTo("SPLIT")
+        assertThat(result.errorCode).isNull()
+        assertThat(result.errorMessage).isNull()
+    }
+
+    @Test
     fun `M convert error resolution W toProviderEvaluation() {with error code}`(@StringForgery errorMessage: String) {
         // Given
         val resolution = ResolutionDetails(

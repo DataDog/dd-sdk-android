@@ -16,5 +16,6 @@ internal data class PrecomputedFlag(
     override val allocationKey: String,
     override val variationKey: String,
     override val extraLogging: JSONObject,
-    override val reason: String
+    override val reason: String,
+    override val serialId: Long? = null
 ) : UnparsedFlag

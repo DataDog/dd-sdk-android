@@ -7,6 +7,7 @@
 package com.datadog.android.profiling
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.ProfilingManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -69,6 +70,9 @@ class ProfilingTest {
     private lateinit var mockContext: Context
 
     @Mock
+    private lateinit var mockPackageManager: PackageManager
+
+    @Mock
     private lateinit var mockProfilingExecutor: ExecutorService
 
     @Mock
@@ -90,6 +94,7 @@ class ProfilingTest {
         whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mockProfilingExecutor
         whenever(mockSdkCore.remoteConfiguration) doReturn null
         whenever(mockContext.getSystemService(ProfilingManager::class.java)) doReturn mockProfilingManager
+        whenever(mockContext.packageManager) doReturn mockPackageManager
         ProfilingStorage.sharedPreferencesStorage = mockSharedPreferencesStorage
     }
 
