@@ -12,6 +12,7 @@ import android.widget.EditText
 import android.widget.TextView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayInternalCallback
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
@@ -25,6 +26,7 @@ import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedVie
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedWebViewMapper
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
+import com.datadog.android.sessionreplay.internal.recorder.HeatmapIdentifierResolver
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.datadog.android.sessionreplay.internal.recorder.RecordingTimeBank
 import com.datadog.android.sessionreplay.internal.recorder.TimeBank
@@ -52,24 +54,7 @@ internal class DefaultCompositionPipelineFactory(
     private val textDetector: TextDetector? = null,
     private val dynamicOptimizationEnabled: Boolean,
     private val customDrawableMappers: List<DrawableToColorMapper> = emptyList(),
-    private val snapshotProducerFactory: (ActiveWindowSource, RumContextProvider) -> CapturedSnapshotProducer = {
-            windowSource,
-            rumContextProvider
-        ->
-        AndroidCapturedSnapshotProducer(
-            windowSource = windowSource,
-            scopeProvider = DefaultRumViewScopeProvider(rumContextProvider),
-            timeProvider = sdkCore.timeProvider,
-            traversal = AndroidWindowTraversal(
-                mapperRegistry = builtInCapturedMappers(sdkCore.internalLogger, customDrawableMappers),
-                internalLogger = sdkCore.internalLogger,
-                composeHostDecomposer = compositionHostDecomposer,
-                rootImagePrivacy = imagePrivacy,
-                rootTextAndInputPrivacy = textAndInputPrivacy
-            ),
-            touchPrivacyManager = touchPrivacyManager
-        )
-    },
+    private val snapshotProducerFactory: ((ActiveWindowSource, RumContextProvider) -> CapturedSnapshotProducer)? = null,
     private val recordingTimeBankFactory: () -> TimeBank = { RecordingTimeBank() }
 ) : CompositionPipelineFactory {
 
@@ -80,10 +65,14 @@ internal class DefaultCompositionPipelineFactory(
         recordWriter: RecordWriter,
         rumContextProvider: RumContextProvider,
         application: Application,
-        embeddedContentSlotRegistry: EmbeddedContentSlotRegistry
+        embeddedContentSlotRegistry: EmbeddedContentSlotRegistry,
+        heatmapIdentifierRegistry: HeatmapIdentifierRegistry?
     ): Recorder {
         val internalLogger = sdkCore.internalLogger
         val windowSource = ActiveWindowSource(WindowTouchPrivacyReader(internalLogger = internalLogger)::read)
+        val heatmapResolver = heatmapIdentifierRegistry?.let {
+            HeatmapIdentifierResolver(application.packageName, it, internalLogger)
+        }
         val skippedFrameNotifier = CaptureSkippedFrameNotifier(sdkCore)
         // Construction has a capture deadline and must not queue behind completion mapping or writes.
         val constructionExecutor = sdkCore.createSingleThreadExecutorService(CONSTRUCTION_EXECUTOR_NAME)
@@ -97,7 +86,8 @@ internal class DefaultCompositionPipelineFactory(
             rumContextProvider = rumContextProvider,
             embeddedContentSlotRegistry = embeddedContentSlotRegistry,
             eventProcessingExecutorName = "sr-composition-event-processing",
-            drawablesExecutorName = "sr-composition-drawables"
+            drawablesExecutorName = "sr-composition-drawables",
+            eagerResourceDrain = true
         )
         val completionQueue = SnapshotCompletionQueue(
             executorService = completionExecutor,
@@ -116,7 +106,8 @@ internal class DefaultCompositionPipelineFactory(
             internalLogger = internalLogger
         )
         val orchestrator = SnapshotCaptureOrchestrator(
-            producer = snapshotProducerFactory(windowSource, rumContextProvider),
+            producer = snapshotProducerFactory?.invoke(windowSource, rumContextProvider)
+                ?: defaultSnapshotProducer(windowSource, rumContextProvider, heatmapResolver),
             processor = ChainedCapturedSnapshotProcessor(
                 ExecutorCapturedSnapshotProcessor(constructionExecutor, internalLogger),
                 PixelFallbackSnapshotProcessor(
@@ -165,6 +156,25 @@ internal class DefaultCompositionPipelineFactory(
             resourceDataQueueHandler = resourceResolverBundle.dataQueueHandler
         )
     }
+
+    private fun defaultSnapshotProducer(
+        windowSource: ActiveWindowSource,
+        rumContextProvider: RumContextProvider,
+        heatmapResolver: HeatmapIdentifierResolver?
+    ): CapturedSnapshotProducer = AndroidCapturedSnapshotProducer(
+        windowSource = windowSource,
+        scopeProvider = DefaultRumViewScopeProvider(rumContextProvider),
+        timeProvider = sdkCore.timeProvider,
+        traversal = AndroidWindowTraversal(
+            mapperRegistry = builtInCapturedMappers(sdkCore.internalLogger, customDrawableMappers),
+            internalLogger = sdkCore.internalLogger,
+            composeHostDecomposer = compositionHostDecomposer,
+            rootImagePrivacy = imagePrivacy,
+            rootTextAndInputPrivacy = textAndInputPrivacy,
+            heatmapResolver = heatmapResolver
+        ),
+        touchPrivacyManager = touchPrivacyManager
+    )
 
     private fun createTimeBudget(): CaptureTimeBudget = if (dynamicOptimizationEnabled) {
         TimeBankCaptureTimeBudget(recordingTimeBankFactory())

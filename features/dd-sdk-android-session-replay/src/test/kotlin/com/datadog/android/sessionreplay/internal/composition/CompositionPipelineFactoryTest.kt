@@ -88,7 +88,8 @@ internal class CompositionPipelineFactoryTest {
             mock<RecordWriter>(),
             mock<RumContextProvider>(),
             mockApplication,
-            mock<EmbeddedContentSlotRegistry>()
+            mock<EmbeddedContentSlotRegistry>(),
+            null
         )
 
         // Then
@@ -107,7 +108,8 @@ internal class CompositionPipelineFactoryTest {
             mock<RecordWriter>(),
             mock<RumContextProvider>(),
             mockApplication,
-            mock<EmbeddedContentSlotRegistry>()
+            mock<EmbeddedContentSlotRegistry>(),
+            null
         )
 
         // Then
@@ -168,7 +170,8 @@ internal class CompositionPipelineFactoryTest {
                     mock<RecordWriter>(),
                     mock<RumContextProvider>(),
                     mockApplication,
-                    mock<EmbeddedContentSlotRegistry>()
+                    mock<EmbeddedContentSlotRegistry>(),
+                    heatmapIdentifierRegistry = null
                 )
                 whenever(mockRoot.handler).thenReturn(fakeHandlers.constructed().first())
                 testedPipeline.resumeRecorders()
@@ -211,7 +214,8 @@ internal class CompositionPipelineFactoryTest {
                 mock<RecordWriter>(),
                 mock<RumContextProvider>(),
                 mockApplication,
-                mock<EmbeddedContentSlotRegistry>()
+                mock<EmbeddedContentSlotRegistry>(),
+                null
             )
 
         // When
@@ -244,7 +248,8 @@ internal class CompositionPipelineFactoryTest {
             mock<RecordWriter>(),
             mockRumContextProvider,
             mockApplication,
-            mock<EmbeddedContentSlotRegistry>()
+            mock<EmbeddedContentSlotRegistry>(),
+            null
         )
 
         // Then
@@ -271,7 +276,8 @@ internal class CompositionPipelineFactoryTest {
             mock<RecordWriter>(),
             mock<RumContextProvider>(),
             mockApplication,
-            mock<EmbeddedContentSlotRegistry>()
+            mock<EmbeddedContentSlotRegistry>(),
+            null
         )
 
         // Then
@@ -297,7 +303,8 @@ internal class CompositionPipelineFactoryTest {
             mock<RecordWriter>(),
             mock<RumContextProvider>(),
             mockApplication,
-            mock<EmbeddedContentSlotRegistry>()
+            mock<EmbeddedContentSlotRegistry>(),
+            null
         )
 
         // Then
@@ -317,7 +324,8 @@ internal class CompositionPipelineFactoryTest {
             mock<RecordWriter>(),
             mock<RumContextProvider>(),
             mockApplication,
-            mock<EmbeddedContentSlotRegistry>()
+            mock<EmbeddedContentSlotRegistry>(),
+            null
         )
 
         // Then

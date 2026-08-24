@@ -141,6 +141,7 @@ internal class CapturedNativeSnapshotBuilder(
         if (mapping !is CapturedViewMapperResult.Wireframes) return
         for (wireframe in mapping.wireframes) {
             val clipped = wireframe.withClip(wireframe.clip.intersectWith(clip?.clip(wireframe.bounds)))
+                .withPermanentId(view.permanentId)
             wireframes += clipped
             children += CapturedChild.Wireframe(clipped.identity)
         }
@@ -209,6 +210,17 @@ private fun CapturedWireframe.withClip(clip: CapturedClip?): CapturedWireframe {
         is CapturedWireframe.WebView -> copy(clip = combinedClip)
         is CapturedWireframe.Pixel -> copy(clip = combinedClip)
         is CapturedWireframe.PrivacyPlaceholder -> copy(clip = combinedClip)
+    }
+}
+
+private fun CapturedWireframe.withPermanentId(permanentId: String?): CapturedWireframe = when {
+    permanentId == null -> this
+    else -> when (this) {
+        is CapturedWireframe.Shape -> copy(permanentId = permanentId)
+        is CapturedWireframe.Text -> copy(permanentId = permanentId)
+        is CapturedWireframe.WebView -> copy(permanentId = permanentId)
+        is CapturedWireframe.Pixel -> copy(permanentId = permanentId)
+        is CapturedWireframe.PrivacyPlaceholder -> copy(permanentId = permanentId)
     }
 }
 

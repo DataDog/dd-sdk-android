@@ -20,6 +20,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
+import com.datadog.android.internal.utils.isValidTapTarget
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
@@ -32,6 +33,7 @@ import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedVie
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
 import com.datadog.android.sessionreplay.internal.composition.mapper.PixelCaptureEligibility
 import com.datadog.android.sessionreplay.internal.putTouchOverrideArea
+import com.datadog.android.sessionreplay.internal.recorder.HeatmapIdentifierResolver
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeRequest
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeResult
@@ -74,7 +76,8 @@ internal class AndroidWindowTraversal(
     private val rootTextAndInputPrivacy: TextAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
     private val isComposeHost: (View) -> Boolean = ::isComposeHostByClassName,
     private val pixelCapture: ViewPixelCapture = ViewPixelCapture(internalLogger),
-    private val foregroundCapture: ViewForegroundCapture = ViewForegroundCapture(internalLogger)
+    private val foregroundCapture: ViewForegroundCapture = ViewForegroundCapture(internalLogger),
+    private val heatmapResolver: HeatmapIdentifierResolver? = null
 ) {
     private val occlusionDetector = ViewOcclusionDetector(drawableToColorMapper, viewUtilsInternal, internalLogger)
 
@@ -83,14 +86,16 @@ internal class AndroidWindowTraversal(
         windowRoot: View,
         windowIdentity: CapturedIdentity,
         identityFactory: CapturedIdentityFactory,
-        context: CaptureGenerationContext
+        context: CaptureGenerationContext,
+        viewUrl: String? = null
     ): WindowCopyResult = copyWindow(
         windowRoot,
         CopyState(
             windowRoot.resources.displayMetrics.density,
             windowIdentity,
             identityFactory,
-            EffectivePrivacy(rootImagePrivacy, rootTextAndInputPrivacy)
+            EffectivePrivacy(rootImagePrivacy, rootTextAndInputPrivacy),
+            heatmapContext = viewUrl?.let { heatmapResolver?.beginTraversal(it) }
         ),
         context
     )
@@ -124,6 +129,7 @@ internal class AndroidWindowTraversal(
             }
         }
         if (!context.shouldContinue()) return WindowCopyResult.Aborted
+        state.heatmapContext?.publish()
         return if (state.views.isEmpty()) {
             WindowCopyResult.Filtered
         } else {
@@ -171,6 +177,7 @@ internal class AndroidWindowTraversal(
         val pixels = if (hasTransform) transform?.pixelBounds else resolvePixelBounds(view, state.locationOnScreen)
         val bounds = resolveCapturedBounds(view, pixels, hasTransform, state.density)
         val ownPrivacy = resolveEffectivePrivacy(view, item.inheritedPrivacy, internalLogger)
+        val heatmapIdentity = resolveHeatmapIdentity(view, item, state.heatmapContext)
         val mappingContext = CapturedMappingContext(
             state.identityFactory,
             identity,
@@ -210,9 +217,23 @@ internal class AndroidWindowTraversal(
             kind,
             composition,
             foreground = captureForeground(view, mappingContext, viewData, hidden),
-            viewScale = viewScale
+            viewScale = viewScale,
+            permanentId = heatmapIdentity?.identifier?.rawValue
         )
-        pushNativeChildren(view, children, hidden, ownPrivacy, stack, state)
+        pushNativeChildren(view, children, hidden, ownPrivacy, stack, state, heatmapIdentity?.viewPath ?: item.nodePath)
+    }
+
+    @UiThread
+    private fun resolveHeatmapIdentity(
+        view: View,
+        item: WorkItem,
+        heatmapContext: HeatmapIdentifierResolver.TraversalContext?
+    ): HeatmapIdentifierResolver.HeatmapIdentity? = heatmapContext?.let {
+        if ((view is ViewGroup && view.childCount > 0) || view.isValidTapTarget()) {
+            it.resolveIdentity(view, item.nodePath, item.typeIndex)
+        } else {
+            null
+        }
     }
 
     @UiThread
@@ -265,11 +286,12 @@ internal class AndroidWindowTraversal(
         hidden: Boolean,
         inheritedPrivacy: EffectivePrivacy,
         stack: ArrayDeque<WorkItem>,
-        state: CopyState
+        state: CopyState,
+        nodePath: List<String>
     ) {
         val copied = state.views.last()
         if (children != null) {
-            pushChildren(children, copied, inheritedPrivacy, stack, state)
+            pushChildren(children, copied, inheritedPrivacy, stack, state, nodePath)
         } else if (view is ViewGroup && view !is WebView) {
             if (hidden || copied.viewData.isPixelFallbackTerminal) pushTouchChildren(view, stack)
         }
@@ -421,9 +443,14 @@ internal class AndroidWindowTraversal(
         parent: CapturedNativeView,
         inheritedPrivacy: EffectivePrivacy,
         stack: ArrayDeque<WorkItem>,
-        state: CopyState
+        state: CopyState,
+        nodePath: List<String>
     ) {
         val drawingOrder = drawingOrderResolver.resolve(viewGroup)
+        val childTypeIndices = IdentityHashMap<View, Int>()
+        state.heatmapContext?.computeChildTypeIndices(viewGroup)?.let { indices ->
+            for (i in indices.indices) viewGroup.getChildAt(i)?.let { childTypeIndices[it] = indices[i] }
+        }
         state.isDrawingOrderReliable = state.isDrawingOrderReliable && drawingOrder.isReliable
         val clipChildren = viewGroup.clipChildren
         val occluded = if (clipChildren) occlusionDetector.occludedChildIndices(drawingOrder) else emptySet()
@@ -437,7 +464,9 @@ internal class AndroidWindowTraversal(
                     i in occluded,
                     parent.isGeometryReliable,
                     inheritedPrivacy = inheritedPrivacy,
-                    inheritedScale = parent.viewScale
+                    inheritedScale = parent.viewScale,
+                    nodePath = nodePath,
+                    typeIndex = childTypeIndices[drawingOrder.children[i]] ?: 0
                 )
             )
         }
@@ -461,7 +490,8 @@ internal class AndroidWindowTraversal(
         val rootPrivacy: EffectivePrivacy,
         val rootIdentity: CapturedIdentity = windowIdentity,
         val rootKind: CapturedLayerKind = CapturedLayerKind.WINDOW_ROOT,
-        val visited: IdentityHashMap<View, Boolean> = IdentityHashMap()
+        val visited: IdentityHashMap<View, Boolean> = IdentityHashMap(),
+        val heatmapContext: HeatmapIdentifierResolver.TraversalContext? = null
     ) {
         var isDrawingOrderReliable = true
         val locationOnScreen = IntArray(2)
@@ -478,7 +508,9 @@ internal class AndroidWindowTraversal(
         val isGeometryReliable: Boolean = true,
         val expectedParent: ViewParent? = view.parent,
         val inheritedPrivacy: EffectivePrivacy = EffectivePrivacy(ImagePrivacy.MASK_ALL, TextAndInputPrivacy.MASK_ALL),
-        val inheritedScale: Float = 1f
+        val inheritedScale: Float = 1f,
+        val nodePath: List<String> = emptyList(),
+        val typeIndex: Int = 0
     )
 }
 

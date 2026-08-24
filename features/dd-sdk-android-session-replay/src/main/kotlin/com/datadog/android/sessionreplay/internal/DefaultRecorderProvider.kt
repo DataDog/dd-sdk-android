@@ -21,7 +21,6 @@ import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.widget.ActionBarContainer
 import androidx.appcompat.widget.SwitchCompat
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.ImagePrivacy
@@ -99,13 +98,6 @@ internal class DefaultRecorderProvider(
         application: Application,
         embeddedContentSlotRegistry: EmbeddedContentSlotRegistry
     ): Recorder {
-        if (heatmapsEnabled && compositionTreeRecordingEnabled) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { HEATMAPS_UNSUPPORTED_WITH_COMPOSITION_RECORDING_MESSAGE }
-            )
-        }
         val heatmapIdentifierRegistry = if (heatmapsEnabled) LazyHeatmapIdentifierRegistry(sdkCore) else null
         return CapturePipelineSelector(
             compositionEnabled = compositionTreeRecordingEnabled,
@@ -116,7 +108,8 @@ internal class DefaultRecorderProvider(
                     recordWriter,
                     rumContextProvider,
                     application,
-                    embeddedContentSlotRegistry
+                    embeddedContentSlotRegistry,
+                    heatmapIdentifierRegistry
                 )
             },
             legacyFactory = {
@@ -299,11 +292,5 @@ internal class DefaultRecorderProvider(
         } else {
             null
         }
-    }
-
-    internal companion object {
-        internal const val HEATMAPS_UNSUPPORTED_WITH_COMPOSITION_RECORDING_MESSAGE = "Heatmaps are not " +
-            "supported by the composition-tree recording pipeline yet. No heatmap data will be recorded " +
-            "for this session."
     }
 }

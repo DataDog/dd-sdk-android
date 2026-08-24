@@ -64,7 +64,15 @@ internal class AndroidCapturedSnapshotProducer(
                 return null
             }
             val identity = identityFactory.window(viewIdentifierResolver.resolveViewId(window).toString())
-            when (val result = traversal.traverseWindow(window, identity, identityFactory, context)) {
+            when (
+                val result = traversal.traverseWindow(
+                    window,
+                    identity,
+                    identityFactory,
+                    context,
+                    rumViewScope.viewUrl
+                )
+            ) {
                 is WindowCopyResult.Present -> {
                     copies += result.window
                     capturedWindows += window
