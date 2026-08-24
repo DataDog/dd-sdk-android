@@ -131,7 +131,7 @@ interface com.datadog.android.api.feature.FeatureScope
   val dataStore: com.datadog.android.api.storage.datastore.DataStoreHandler
   fun withWriteContext(Set<String> = emptySet(), (com.datadog.android.api.context.DatadogContext) -> Unit)
   fun withContext(Set<String> = emptySet(), (com.datadog.android.api.context.DatadogContext) -> Unit)
-  fun getWriteContextSync(Set<String> = emptySet()): Pair<com.datadog.android.api.context.DatadogContext, EventWriteScope>?
+  fun withWriteContextSync(Set<String> = emptySet(), (com.datadog.android.api.context.DatadogContext) -> Unit): Boolean
   fun sendEvent(Any)
   fun <T: Feature> unwrap(): T
 typealias EventWriteScope = ((com.datadog.android.api.storage.EventBatchWriter) -> Unit) -> Unit

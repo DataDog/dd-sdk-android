@@ -7,13 +7,16 @@
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.depotProxied
 import com.datadog.gradle.config.java17
-import com.datadog.gradle.config.kotlinConfig
 
 plugins {
-    id("ktlint")
+    // Build
     id("com.android.application")
+    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
+    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
+    id("ktlint")
     kotlin("android")
     alias(libs.plugins.composeCompilerPlugin)
+    id("datadogBuildConfig")
 }
 
 android {
@@ -141,4 +144,6 @@ dependencies {
     }
 }
 
-kotlinConfig()
+datadogBuild {
+    applyKotlinConfig()
+}
