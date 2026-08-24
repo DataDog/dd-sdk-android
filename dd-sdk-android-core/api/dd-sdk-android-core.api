@@ -677,6 +677,7 @@ public abstract interface class com/datadog/android/core/InternalSdkCore : com/d
 	public abstract fun getNetworkInfo ()Lcom/datadog/android/api/context/NetworkInfo;
 	public abstract fun getPersistenceExecutorService ()Ljava/util/concurrent/ExecutorService;
 	public abstract fun getRemoteConfiguration ()Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration;
+	public abstract fun getRemoteConfigurationSyncMetadata ()Lcom/datadog/android/core/internal/remote/model/RemoteConfigSyncMetadata;
 	public abstract fun getRootStorageDir ()Ljava/io/File;
 	public abstract fun getTrackingConsent ()Lcom/datadog/android/privacy/TrackingConsent;
 	public abstract fun isDeveloperModeEnabled ()Z
@@ -893,6 +894,36 @@ public final class com/datadog/android/core/internal/persistence/file/FileExtKt 
 	public static synthetic fun readLinesSafe$default (Ljava/io/File;Ljava/nio/charset/Charset;Lcom/datadog/android/api/InternalLogger;ILjava/lang/Object;)Ljava/util/List;
 	public static final fun readTextSafe (Ljava/io/File;Ljava/nio/charset/Charset;Lcom/datadog/android/api/InternalLogger;)Ljava/lang/String;
 	public static synthetic fun readTextSafe$default (Ljava/io/File;Ljava/nio/charset/Charset;Lcom/datadog/android/api/InternalLogger;ILjava/lang/Object;)Ljava/lang/String;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfigSyncMetadata {
+	public static final field Companion Lcom/datadog/android/core/internal/remote/model/RemoteConfigSyncMetadata$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;JLjava/lang/Long;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/Long;
+	public final fun component4 ()J
+	public final fun component5 ()Ljava/lang/Long;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;JLjava/lang/Long;Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfigSyncMetadata;
+	public static synthetic fun copy$default (Lcom/datadog/android/core/internal/remote/model/RemoteConfigSyncMetadata;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;JLjava/lang/Long;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/core/internal/remote/model/RemoteConfigSyncMetadata;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfigSyncMetadata;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/core/internal/remote/model/RemoteConfigSyncMetadata;
+	public final fun getConfigId ()Ljava/lang/String;
+	public final fun getFirstApplied ()Ljava/lang/Long;
+	public final fun getLastModified ()Ljava/lang/Long;
+	public final fun getLastSynced ()J
+	public final fun getSyncId ()Ljava/lang/String;
+	public final fun getVersionId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfigSyncMetadata$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfigSyncMetadata;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/core/internal/remote/model/RemoteConfigSyncMetadata;
 }
 
 public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration {
