@@ -11,7 +11,9 @@ import android.util.DisplayMetrics
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
@@ -19,7 +21,10 @@ import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedTextViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewGroupFallbackMapper
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
+import com.datadog.android.sessionreplay.internal.recorder.HeatmapIdentifierResolver
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
@@ -338,5 +343,67 @@ internal class AndroidCapturedSnapshotProducerTest {
         // Then
         assertThat(firstSnapshot!!.scope).isEqualTo(RumViewIdentityScope(fakeViewId))
         assertThat(secondSnapshot!!.scope).isEqualTo(RumViewIdentityScope(fakeOtherViewId))
+    }
+
+    @Test
+    fun `M forward the RUM view URL into the traversal W capture { heatmap resolver configured }`(
+        @Forgery fakeBounds: GlobalBounds,
+        @StringForgery fakeViewId: String,
+        @StringForgery fakeViewUrl: String,
+        @LongForgery(min = 0L) fakeOffset: Long,
+        @LongForgery fakeTimestamp: Long
+    ) {
+        // Given
+        val window = mockWindow(fakeBounds).apply {
+            whenever(isClickable).thenReturn(true)
+            whenever(visibility).thenReturn(View.VISIBLE)
+        }
+        val resolver = HeatmapIdentifierResolver(
+            appPackageName = "com.example.app",
+            registry = HeatmapIdentifierRegistry.create(),
+            internalLogger = mock()
+        )
+        val markerMapper = CapturedViewMapper<View> { view, mappingContext ->
+            CapturedViewMapperResult.Wireframes(
+                listOf(
+                    CapturedWireframe.Shape(
+                        identity = mappingContext.identityFactory.shapeWireframe(mappingContext.ownerIdentity),
+                        bounds = mockViewBoundsResolver.resolveViewGlobalBounds(view, fakeDensity).toCaptured()
+                    )
+                )
+            )
+        }
+        val windowSource = ActiveWindowSource().apply { update(listOf(window)) }
+        val timeProvider: TimeProvider = mock()
+        whenever(timeProvider.getDeviceTimestampMillis()).thenReturn(fakeTimestamp)
+        val testedProducer = AndroidCapturedSnapshotProducer(
+            windowSource = windowSource,
+            scopeProvider = RumViewScopeProvider {
+                CapturedRumViewScope(RumViewIdentityScope(fakeViewId), fakeOffset, fakeViewUrl)
+            },
+            timeProvider = timeProvider,
+            traversal = AndroidWindowTraversal(
+                mapperRegistry = CapturedViewMapperRegistry(
+                    mappers = emptyList(),
+                    fallbackMapper = markerMapper,
+                    internalLogger = mock()
+                ),
+                viewIdentifierResolver = mockViewIdentifierResolver,
+                viewBoundsResolver = mockViewBoundsResolver,
+                viewUtilsInternal = ViewUtilsInternal(),
+                internalLogger = mock(),
+                heatmapResolver = resolver
+            ),
+            viewIdentifierResolver = mockViewIdentifierResolver,
+            touchPrivacyManager = mockTouchPrivacyManager,
+            isMainThreadWindow = { true }
+        )
+
+        // When
+        val snapshot = testedProducer.capture(fakeContext).doneValue()
+
+        // Then
+        val windowWireframe = snapshot!!.wireframes.single()
+        assertThat(windowWireframe.permanentId).isNotNull()
     }
 }

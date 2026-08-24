@@ -51,7 +51,8 @@ internal data class CapturedNativeView(
     val kind: CapturedLayerKind = if (parentIndex < 0) CapturedLayerKind.WINDOW_ROOT else CapturedLayerKind.NATIVE_VIEW,
     val composition: CompositionHostDecomposeResult? = null,
     val foreground: CapturedForeground? = null,
-    val viewScale: Float = 1f
+    val viewScale: Float = 1f,
+    val permanentId: String? = null
 )
 
 /** Owned foreground values, with a distinct identity from the view background. */

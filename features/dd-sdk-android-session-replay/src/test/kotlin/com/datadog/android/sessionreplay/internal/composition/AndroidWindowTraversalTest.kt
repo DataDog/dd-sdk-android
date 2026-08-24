@@ -19,6 +19,8 @@ import android.view.ViewStub
 import android.webkit.WebView
 import android.widget.TextView
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.heatmaps.heatmapViewKey
+import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedChild
 import com.datadog.android.internal.sessionreplay.composition.CapturedClip
@@ -40,6 +42,7 @@ import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedVie
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedWebViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.ViewRasterizer
+import com.datadog.android.sessionreplay.internal.recorder.HeatmapIdentifierResolver
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeRequest
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeResult
@@ -161,7 +164,8 @@ internal class AndroidWindowTraversalTest {
         composeHostDecomposer: CompositionHostDecomposer? = null,
         isComposeHost: (View) -> Boolean = { false },
         pixelCapture: ViewPixelCapture = ViewPixelCapture(mock()),
-        rootImagePrivacy: ImagePrivacy = ImagePrivacy.MASK_ALL
+        rootImagePrivacy: ImagePrivacy = ImagePrivacy.MASK_ALL,
+        heatmapResolver: HeatmapIdentifierResolver? = null
     ) = AndroidWindowTraversal(
         mapperRegistry = CapturedViewMapperRegistry(typedMappers, fallback, mock()),
         internalLogger = mock(),
@@ -172,7 +176,8 @@ internal class AndroidWindowTraversalTest {
         composeHostDecomposer = composeHostDecomposer,
         isComposeHost = isComposeHost,
         pixelCapture = pixelCapture,
-        rootImagePrivacy = rootImagePrivacy
+        rootImagePrivacy = rootImagePrivacy,
+        heatmapResolver = heatmapResolver
     )
 
     @ParameterizedTest
@@ -1393,4 +1398,158 @@ internal class AndroidWindowTraversalTest {
     // endregion
 
     private fun GlobalBounds.toCapturedBounds() = CapturedBounds(x, y, width, height)
+    private fun makeTapTarget(view: View) {
+        whenever(view.isClickable).thenReturn(true)
+        whenever(view.visibility).thenReturn(View.VISIBLE)
+    }
+
+    @Test
+    fun `M attach a permanentId W visit { heatmap resolver configured, view is a valid tap target }`(
+        @Forgery fakeRootBounds: GlobalBounds,
+        @StringForgery fakeViewUrl: String
+    ) {
+        // Given
+        val root = mockViewGroup(fakeRootBounds)
+        makeTapTarget(root)
+        val windowIdentity = identityFactory.window("window")
+        val registry = HeatmapIdentifierRegistry.create()
+        val resolver = HeatmapIdentifierResolver(
+            appPackageName = "com.example.app",
+            registry = registry,
+            internalLogger = mock()
+        )
+
+        // When
+        val result = traversal(fallback = markerMapper, heatmapResolver = resolver)
+            .traverseWindow(root, windowIdentity, identityFactory, fakeContext, fakeViewUrl).doneValue()
+
+        // Then
+        val present = result as WindowWalkResult.Present
+        val wireframe = present.wireframes.single()
+        assertThat(wireframe.permanentId).isNotNull()
+        assertThat(registry.getHeatmapIdentifier(heatmapViewKey(root), fakeViewUrl)?.rawValue)
+            .isEqualTo(wireframe.permanentId)
+    }
+
+    @Test
+    fun `M not attach a permanentId W visit { no heatmap resolver configured }`(
+        @Forgery fakeRootBounds: GlobalBounds,
+        @StringForgery fakeViewUrl: String
+    ) {
+        // Given
+        val root = mockViewGroup(fakeRootBounds)
+        makeTapTarget(root)
+        val windowIdentity = identityFactory.window("window")
+
+        // When
+        val result = traversal(fallback = markerMapper)
+            .traverseWindow(root, windowIdentity, identityFactory, fakeContext, fakeViewUrl).doneValue()
+
+        // Then
+        val present = result as WindowWalkResult.Present
+        assertThat(present.wireframes.single().permanentId).isNull()
+    }
+
+    @Test
+    fun `M not attach a permanentId W visit { heatmap resolver configured but no viewUrl }`(
+        @Forgery fakeRootBounds: GlobalBounds
+    ) {
+        // Given
+        val root = mockViewGroup(fakeRootBounds)
+        makeTapTarget(root)
+        val windowIdentity = identityFactory.window("window")
+        val resolver = HeatmapIdentifierResolver(
+            appPackageName = "com.example.app",
+            registry = HeatmapIdentifierRegistry.create(),
+            internalLogger = mock()
+        )
+
+        // When
+        val result = traversal(fallback = markerMapper, heatmapResolver = resolver)
+            .traverseWindow(root, windowIdentity, identityFactory, fakeContext).doneValue()
+
+        // Then
+        val present = result as WindowWalkResult.Present
+        assertThat(present.wireframes.single().permanentId).isNull()
+    }
+
+    @Test
+    fun `M not attach a permanentId W visit { view is not a valid tap target }`(
+        @Forgery fakeRootBounds: GlobalBounds,
+        @Forgery fakeLeafBounds: GlobalBounds,
+        @StringForgery fakeViewUrl: String
+    ) {
+        // Given: a leaf View that is neither clickable nor a container needing a path for children.
+        val root = mockViewGroup(fakeRootBounds)
+        makeTapTarget(root)
+        val leaf = mockView(fakeLeafBounds)
+        whenever(root.childCount).thenReturn(1)
+        whenever(root.getChildAt(0)).thenReturn(leaf)
+        val windowIdentity = identityFactory.window("window")
+        val resolver = HeatmapIdentifierResolver(
+            appPackageName = "com.example.app",
+            registry = HeatmapIdentifierRegistry.create(),
+            internalLogger = mock()
+        )
+
+        // When
+        val result = traversal(fallback = markerMapper, heatmapResolver = resolver)
+            .traverseWindow(root, windowIdentity, identityFactory, fakeContext, fakeViewUrl).doneValue()
+
+        // Then
+        val present = result as WindowWalkResult.Present
+        val leafWireframe = present.wireframes.first { it.bounds.x == fakeLeafBounds.x }
+        assertThat(leafWireframe.permanentId).isNull()
+    }
+
+    @Test
+    fun `M not attach a permanentId W native View is reached through a Compose interop handoff`(
+        @Forgery fakeRootBounds: GlobalBounds,
+        @Forgery fakeHostBounds: GlobalBounds,
+        @Forgery fakeInteropBounds: GlobalBounds,
+        @StringForgery fakeViewUrl: String
+    ) {
+        // Given: heatmaps for Compose-embedded native content are explicitly out of scope for now.
+        val root = mockViewGroup(fakeRootBounds)
+        val composeHost = mockView(fakeHostBounds)
+        val interopView = mockView(fakeInteropBounds)
+        makeTapTarget(interopView)
+        whenever(root.childCount).thenReturn(1)
+        whenever(root.getChildAt(0)).thenReturn(composeHost)
+        val windowIdentity = identityFactory.window("window")
+        val resolver = HeatmapIdentifierResolver(
+            appPackageName = "com.example.app",
+            registry = HeatmapIdentifierRegistry.create(),
+            internalLogger = mock()
+        )
+
+        val decomposer = object : CompositionHostDecomposer {
+            override fun canDecompose(view: View) = view === composeHost
+            override fun decompose(
+                view: View,
+                request: CompositionHostDecomposeRequest
+            ): CompositionHostDecomposeResult? {
+                val childIdentity = request.identityFactory.composeNode(request.hostIdentity, "interop")
+                val subtree = request.nativeViewHandoff(interopView, childIdentity) ?: return null
+                return CompositionHostDecomposeResult(
+                    rootChildren = listOf(CapturedChild.Layer(subtree.rootLayer.identity)),
+                    nodes = subtree.layers,
+                    wireframes = subtree.wireframes
+                )
+            }
+        }
+
+        // When
+        val result = traversal(
+            fallback = markerMapper,
+            composeHostDecomposer = decomposer,
+            isComposeHost = { it === composeHost },
+            heatmapResolver = resolver
+        ).traverseWindow(root, windowIdentity, identityFactory, fakeContext, fakeViewUrl).doneValue()
+
+        // Then
+        val present = result as WindowWalkResult.Present
+        val interopWireframe = present.wireframes.first { it.bounds.x == fakeInteropBounds.x }
+        assertThat(interopWireframe.permanentId).isNull()
+    }
 }

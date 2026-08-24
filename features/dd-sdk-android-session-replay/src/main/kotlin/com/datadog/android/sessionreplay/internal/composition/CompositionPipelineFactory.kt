@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.composition
 
 import android.app.Application
+import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
@@ -21,6 +22,7 @@ internal fun interface CompositionPipelineFactory {
         recordWriter: RecordWriter,
         rumContextProvider: RumContextProvider,
         application: Application,
-        embeddedContentSlotRegistry: EmbeddedContentSlotRegistry
+        embeddedContentSlotRegistry: EmbeddedContentSlotRegistry,
+        heatmapIdentifierRegistry: HeatmapIdentifierRegistry?
     ): Recorder
 }

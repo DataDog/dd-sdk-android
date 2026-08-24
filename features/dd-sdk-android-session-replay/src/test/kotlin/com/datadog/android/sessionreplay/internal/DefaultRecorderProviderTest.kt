@@ -37,7 +37,6 @@ import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
-import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -172,7 +171,7 @@ internal class DefaultRecorderProviderTest {
         val testedProvider = createProvider(
             heatmapsEnabled = false,
             compositionTreeRecordingEnabled = true,
-            compositionPipelineFactory = { _, _, recordWriter, rumContextProvider, application, _ ->
+            compositionPipelineFactory = { _, _, recordWriter, rumContextProvider, application, _, _ ->
                 factoryArguments = Triple(recordWriter, rumContextProvider, application)
                 mock()
             }
@@ -249,7 +248,7 @@ internal class DefaultRecorderProviderTest {
     }
 
     @Test
-    fun `M log warning W provideSessionReplayRecorder { heatmaps and composition recording enabled }`() {
+    fun `M not log warning W provideSessionReplayRecorder { heatmaps and composition recording enabled }`() {
         // Given
         val testedProvider = createProvider(
             heatmapsEnabled = true,
@@ -260,11 +259,7 @@ internal class DefaultRecorderProviderTest {
         testedProvider.provideRecorder()
 
         // Then
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            DefaultRecorderProvider.HEATMAPS_UNSUPPORTED_WITH_COMPOSITION_RECORDING_MESSAGE
-        )
+        verifyNoInteractions(mockInternalLogger)
     }
 
     @Test
@@ -286,7 +281,7 @@ internal class DefaultRecorderProviderTest {
         heatmapsEnabled: Boolean,
         compositionTreeRecordingEnabled: Boolean,
         compositionRecorder: Recorder = mock(),
-        compositionPipelineFactory: CompositionPipelineFactory = CompositionPipelineFactory { _, _, _, _, _, _ ->
+        compositionPipelineFactory: CompositionPipelineFactory = CompositionPipelineFactory { _, _, _, _, _, _, _ ->
             compositionPipelineConstructions++
             compositionRecorder
         }

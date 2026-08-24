@@ -31,7 +31,9 @@ internal class ResourceResolverBundle(
  * Builds a [ResourceResolver] wired to its own dedicated resource-registration queue, exactly as
  * `SessionReplayRecorder` does for the legacy pipeline - factored out so the composition pipeline's
  * pixel-fallback workstream can register/hash/encode/dedup images through the same, already-tested
- * pipeline instead of a second implementation.
+ * pipeline instead of a second implementation. [eagerResourceDrain] defaults to `false`, preserving
+ * the legacy pipeline's exact existing behavior - see [ResourceItemCreationHandler]'s own doc for
+ * why the composition pipeline's call site opts in instead.
  */
 @Suppress("LongParameterList")
 internal fun buildResourceResolver(
@@ -43,7 +45,8 @@ internal fun buildResourceResolver(
     rumContextProvider: RumContextProvider,
     embeddedContentSlotRegistry: EmbeddedContentSlotRegistry,
     eventProcessingExecutorName: String = "sr-event-processing",
-    drawablesExecutorName: String = "drawables"
+    drawablesExecutorName: String = "drawables",
+    eagerResourceDrain: Boolean = false
 ): ResourceResolverBundle {
     val internalLogger = sdkCore.internalLogger
     val timeProvider = sdkCore.timeProvider
@@ -85,7 +88,11 @@ internal fun buildResourceResolver(
         ),
         logger = internalLogger,
         md5HashGenerator = MD5HashGenerator(internalLogger),
-        webPImageCompression = WebPImageCompression(internalLogger)
+        webPImageCompression = WebPImageCompression(internalLogger),
+        resourceItemCreationHandler = ResourceItemCreationHandler(
+            recordedDataQueueHandler = recordedDataQueueHandler,
+            eagerDrain = eagerResourceDrain
+        )
     )
 
     return ResourceResolverBundle(resourceResolver, recordedDataQueueHandler)
