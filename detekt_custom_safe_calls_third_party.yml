@@ -790,6 +790,7 @@ datadog:
       - "kotlin.collections.MutableCollection.sumOf(kotlin.Function1)"
       - "kotlin.collections.MutableCollection.sum()"
       - "kotlin.collections.List.sortedByDescending(kotlin.Function1)"
+      - "kotlin.collections.List.toIntArray()"
       - "kotlin.emptyArray()"
       - "kotlin.sequences.Sequence.groupBy(kotlin.Function1)"
       - "kotlin.sequences.Sequence.filter(kotlin.Function1)"

@@ -40,6 +40,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
@@ -62,6 +63,7 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.io.File
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -1055,6 +1057,36 @@ class PerfettoProfilerTest {
 
         // Then
         verify(mockProfilerCallback).onAnrDetected(fakeEvent)
+    }
+
+    @Test
+    fun `M dispatch OOM histogram to registered callback W triggerListener fires`(
+        @TempDir tempDir: File,
+        @LongForgery(min = 0L) fakeDetectedAtMs: Long
+    ) {
+        // Given
+        val fakeFile = File(tempDir, "heap.hprof").apply { writeText("hist") }
+
+        // When
+        testedProfiler.triggerListener.onOutOfMemoryDetected(fakeDetectedAtMs, fakeFile.absolutePath)
+
+        // Then
+        verify(mockProfilerCallback).onOutOfMemoryDetected(fakeDetectedAtMs, fakeFile.absolutePath)
+    }
+
+    @Test
+    fun `M dispatch anomaly histogram to registered callback W triggerListener fires`(
+        @TempDir tempDir: File,
+        @LongForgery(min = 0L) fakeDetectedAtMs: Long
+    ) {
+        // Given
+        val fakeFile = File(tempDir, "heap.hprof").apply { writeText("hist") }
+
+        // When
+        testedProfiler.triggerListener.onMemoryAnomalyDetected(fakeDetectedAtMs, fakeFile.absolutePath)
+
+        // Then
+        verify(mockProfilerCallback).onMemoryAnomalyDetected(fakeDetectedAtMs, fakeFile.absolutePath)
     }
 
     @Test

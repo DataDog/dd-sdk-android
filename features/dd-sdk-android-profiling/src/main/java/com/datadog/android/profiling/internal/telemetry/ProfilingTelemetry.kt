@@ -6,6 +6,7 @@
 
 package com.datadog.android.profiling.internal.telemetry
 
+import android.os.ProfilingTrigger
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 
@@ -50,7 +51,7 @@ internal class ProfilingTelemetry {
     private fun dispatch(logger: InternalLogger, event: ProfilingTelemetryEvent) {
         when (event) {
             is ProfilingTelemetryEvent.SessionEnd -> dispatchSessionEnd(logger, event)
-            is ProfilingTelemetryEvent.AnrTriggerResult -> dispatchAnrTriggerResult(logger, event)
+            is ProfilingTelemetryEvent.TriggerResult -> dispatchTriggerResult(logger, event)
             is ProfilingTelemetryEvent.Blocked -> dispatchBlocked(logger, event)
         }
     }
@@ -103,16 +104,22 @@ internal class ProfilingTelemetry {
         )
     }
 
-    private fun dispatchAnrTriggerResult(
+    private fun dispatchTriggerResult(
         logger: InternalLogger,
-        event: ProfilingTelemetryEvent.AnrTriggerResult
+        event: ProfilingTelemetryEvent.TriggerResult
     ) {
+        val startReason = if (event.triggerType == ProfilingTrigger.TRIGGER_TYPE_ANR) {
+            ANR_PROFILING_TRIGGER_START_REASON
+        } else {
+            MEMORY_PROFILING_TRIGGER_START_REASON
+        }
         logger.logMetric(
             messageBuilder = { TELEMETRY_MSG_PROFILING_SESSION },
             additionalProperties = mapOf(
                 KEY_METRIC_TYPE to METRIC_TYPE_PROFILING_TRIGGER,
                 KEY_PROFILING_SESSION to mapOf(
-                    KEY_START_REASON to ANR_PROFILING_TRIGGER_START_REASON,
+                    KEY_START_REASON to startReason,
+                    KEY_TRIGGER_TYPE to event.triggerType,
                     KEY_ERROR_CODE to event.errorCode,
                     KEY_ERROR_MESSAGE to event.errorMessage,
                     KEY_FILE_SIZE to event.fileSize,
@@ -148,11 +155,13 @@ internal class ProfilingTelemetry {
         internal const val KEY_BUFFER_SIZE = "buffer_size"
         internal const val KEY_SAMPLING_FREQUENCY = "sampling_frequency"
         internal const val KEY_DROPPED_AS_STALE = "dropped_as_stale"
+        internal const val KEY_TRIGGER_TYPE = "trigger_type"
 
         internal const val METRIC_TYPE_PROFILING_SESSION = "profiling session"
         internal const val METRIC_TYPE_PROFILING_TRIGGER = "profiling trigger"
         internal const val METRIC_TYPE_PROFILING_BLOCKED = "profiling blocked"
         internal const val ANR_PROFILING_TRIGGER_START_REASON = "anr_profiling_trigger"
+        internal const val MEMORY_PROFILING_TRIGGER_START_REASON = "memory_profiling_trigger"
 
         internal const val STOPPED_REASON_MANUAL = "manual"
         internal const val STOPPED_REASON_TIMEOUT = "timeout"

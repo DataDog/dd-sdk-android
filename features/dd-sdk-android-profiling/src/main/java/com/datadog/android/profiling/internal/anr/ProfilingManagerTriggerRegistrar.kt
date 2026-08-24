@@ -13,6 +13,7 @@ import android.os.ProfilingResult
 import android.os.ProfilingTrigger
 import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
@@ -32,7 +33,8 @@ import java.util.function.Consumer
 internal class ProfilingManagerTriggerRegistrar(
     private val timeProvider: TimeProvider,
     private val executorService: ExecutorService,
-    private val profilingTelemetry: ProfilingTelemetry
+    private val profilingTelemetry: ProfilingTelemetry,
+    private val buildSdkVersionProvider: BuildSdkVersionProvider
 ) : ProfilingTriggerRegistrar {
 
     @Volatile
@@ -52,8 +54,32 @@ internal class ProfilingManagerTriggerRegistrar(
 
     // Testable seam
     @RequiresApi(Build.VERSION_CODES.BAKLAVA)
-    internal var triggerFactory: () -> ProfilingTrigger = {
-        ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_ANR).build()
+    internal var triggersFactory: () -> List<ProfilingTrigger> = {
+        buildDefaultTriggers()
+    }
+
+    @RequiresApi(Build.VERSION_CODES.BAKLAVA)
+    @Volatile
+    private var registeredTriggerTypes: IntArray = intArrayOf(ProfilingTrigger.TRIGGER_TYPE_ANR)
+
+    @RequiresApi(Build.VERSION_CODES.BAKLAVA)
+    @Suppress("UnsafeThirdPartyFunctionCall")
+    private fun buildDefaultTriggers(): List<ProfilingTrigger> {
+        // TODO RUM-18175: register each trigger type separately based on the
+        // ProfilingConfiguration so users can opt in/out of individual trigger
+        // types (e.g. enable OOM but not ANOMALY). Currently all triggers are
+        // registered together unconditionally.
+        val triggers = mutableListOf<ProfilingTrigger>()
+        triggers.add(ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_ANR).build())
+        if (buildSdkVersionProvider.isAtLeastCinnamonBun) {
+            triggers.add(
+                ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_OOM).build()
+            )
+            triggers.add(
+                ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_ANOMALY).build()
+            )
+        }
+        return triggers
     }
 
     @RequiresApi(Build.VERSION_CODES.BAKLAVA)
@@ -79,8 +105,9 @@ internal class ProfilingManagerTriggerRegistrar(
         if (!registered.compareAndSet(false, true)) return
 
         this.listener = listener
-        val trigger = triggerFactory()
-        manager.addProfilingTriggers(listOf(trigger))
+        val triggers = triggersFactory()
+        registeredTriggerTypes = triggers.map { it.triggerType }.toIntArray()
+        manager.addProfilingTriggers(triggers)
         manager.registerForAllProfilingResults(executorService, resultCallback)
     }
 
@@ -101,18 +128,22 @@ internal class ProfilingManagerTriggerRegistrar(
 
         if (!registered.compareAndSet(true, false)) return
 
-        manager.removeProfilingTriggersByType(intArrayOf(ProfilingTrigger.TRIGGER_TYPE_ANR))
+        manager.removeProfilingTriggersByType(registeredTriggerTypes)
         manager.unregisterForAllProfilingResults(resultCallback)
         listener = null
     }
 
     @RequiresApi(Build.VERSION_CODES.BAKLAVA)
     private fun handleResult(result: ProfilingResult) {
-        if (result.triggerType != ProfilingTrigger.TRIGGER_TYPE_ANR) return
-
+        val triggerType = result.triggerType
+        if (triggerType != ProfilingTrigger.TRIGGER_TYPE_ANR &&
+            triggerType != ProfilingTrigger.TRIGGER_TYPE_OOM &&
+            triggerType != ProfilingTrigger.TRIGGER_TYPE_ANOMALY
+        ) {
+            return
+        }
         val currentListener = listener ?: return
         val detectedAtMs = timeProvider.getDeviceTimestampMillis()
-
         val resultPath = result.resultFilePath
         var callbackDelayMs: Long? = null
         var droppedAsStale = false
@@ -123,17 +154,29 @@ internal class ProfilingManagerTriggerRegistrar(
             if (creationTimeMs != null) {
                 val delayMs = detectedAtMs - creationTimeMs
                 callbackDelayMs = delayMs
-                if (delayMs > MAX_CALLBACK_DELAY_MS) {
-                    droppedAsStale = true
-                } else {
-                    currentListener.onAnrDetected(threadDumper.dump(detectedAtMs))
-                }
+                droppedAsStale = delayMs > MAX_CALLBACK_DELAY_MS
             }
-            // We currently don't use the result profile, just delete it.
-            safeDelete(resultPath)
+            if (callbackDelayMs != null && !droppedAsStale) {
+                when (triggerType) {
+                    ProfilingTrigger.TRIGGER_TYPE_ANR ->
+                        currentListener.onAnrDetected(threadDumper.dump(detectedAtMs))
+
+                    ProfilingTrigger.TRIGGER_TYPE_OOM ->
+                        currentListener.onOutOfMemoryDetected(detectedAtMs, resultPath)
+
+                    ProfilingTrigger.TRIGGER_TYPE_ANOMALY ->
+                        currentListener.onMemoryAnomalyDetected(detectedAtMs, resultPath)
+                }
+                // We currently don't use the result profile, just delete it.
+                safeDelete(resultPath)
+            } else {
+                // Not forwarded (stale, or could not compute staleness): delete to avoid leaking.
+                safeDelete(resultPath)
+            }
         }
         profilingTelemetry.report(
-            ProfilingTelemetryEvent.AnrTriggerResult(
+            ProfilingTelemetryEvent.TriggerResult(
+                triggerType = triggerType,
                 errorCode = result.errorCode,
                 errorMessage = result.errorMessage,
                 fileSize = fileSize,
@@ -168,7 +211,7 @@ internal class ProfilingManagerTriggerRegistrar(
     private companion object {
         const val MAX_CALLBACK_DELAY_MS = 1_000L
         const val LOG_NO_MANAGER =
-            "Cannot register ANR profiling trigger: ProfilingManager system service is unavailable."
+            "Cannot register profiling trigger: ProfilingManager system service is unavailable."
         const val LOG_FILE_DELETE_FAILED = "Failed to delete ANR trigger trace file."
     }
 }

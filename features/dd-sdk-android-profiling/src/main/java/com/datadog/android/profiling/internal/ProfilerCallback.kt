@@ -15,4 +15,8 @@ internal interface ProfilerCallback {
     fun onFailure(startReason: ProfilingStartReason)
 
     fun onAnrDetected(event: ProfilingAnrDetectedEvent)
+
+    fun onOutOfMemoryDetected(detectedAtMs: Long, resultFilePath: String)
+
+    fun onMemoryAnomalyDetected(detectedAtMs: Long, resultFilePath: String)
 }

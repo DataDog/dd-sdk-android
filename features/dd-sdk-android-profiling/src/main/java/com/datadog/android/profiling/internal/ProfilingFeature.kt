@@ -230,6 +230,14 @@ internal class ProfilingFeature(
         }
     }
 
+    override fun onOutOfMemoryDetected(detectedAtMs: Long, resultFilePath: String) {
+        // TODO RUM-18155: emit a ProfilingOomDetectedEvent to RUM.
+    }
+
+    override fun onMemoryAnomalyDetected(detectedAtMs: Long, resultFilePath: String) {
+        // TODO RUM-18155: emit a ProfilingAnomalyDetectedEvent to RUM.
+    }
+
     private fun onTtidEvent() {
         if (isTtidVitalReceived.getAndSet(true)) return
 
