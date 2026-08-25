@@ -13,6 +13,7 @@ import com.datadog.android.log.model.LogEvent
 /**
  * Describes configuration to be used for the Logs feature.
  */
+@ExposedCopyVisibility
 data class LogsConfiguration internal constructor(
     internal val customEndpointUrl: String?,
     internal val eventMapper: EventMapper<LogEvent>

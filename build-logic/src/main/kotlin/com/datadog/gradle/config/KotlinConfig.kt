@@ -8,21 +8,20 @@ package com.datadog.gradle.config
 
 import org.gradle.api.Project
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompilerOptions
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
+import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
 internal fun Project.kotlinConfig(
     evaluateWarningsAsErrors: Boolean = true,
     jvmBytecodeTarget: JvmTarget = JvmTarget.JVM_17
 ) {
-    taskConfig<KotlinCompilationTask<KotlinJvmCompilerOptions>> {
+    taskConfig<KotlinJvmCompile> {
         compilerOptions {
             jvmTarget.set(jvmBytecodeTarget)
             val isCI = System.getenv("CI").toBoolean()
             allWarningsAsErrors.set(evaluateWarningsAsErrors && isCI)
-            apiVersion.set(KotlinVersion.KOTLIN_1_8)
-            languageVersion.set(KotlinVersion.KOTLIN_1_8)
+            apiVersion.set(KotlinVersion.KOTLIN_2_0)
+            languageVersion.set(KotlinVersion.KOTLIN_2_0)
         }
     }
 }

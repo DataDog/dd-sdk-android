@@ -38,6 +38,8 @@ plugins {
     id("binary-compatibility-validator")
 }
 
+// TODO RUM-18189 Support new AGP DSL
+@Suppress("DEPRECATION")
 android {
     namespace = "com.datadog.android.internal"
     compileOptions {

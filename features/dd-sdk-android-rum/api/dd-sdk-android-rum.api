@@ -36,6 +36,7 @@ public final class com/datadog/android/rum/RumActionType : java/lang/Enum {
 	public static final field SCROLL Lcom/datadog/android/rum/RumActionType;
 	public static final field SWIPE Lcom/datadog/android/rum/RumActionType;
 	public static final field TAP Lcom/datadog/android/rum/RumActionType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/RumActionType;
 	public static fun values ()[Lcom/datadog/android/rum/RumActionType;
 }
@@ -147,6 +148,7 @@ public final class com/datadog/android/rum/RumErrorSource : java/lang/Enum {
 	public static final field REPORT Lcom/datadog/android/rum/RumErrorSource;
 	public static final field SOURCE Lcom/datadog/android/rum/RumErrorSource;
 	public static final field WEBVIEW Lcom/datadog/android/rum/RumErrorSource;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/RumErrorSource;
 	public static fun values ()[Lcom/datadog/android/rum/RumErrorSource;
 }
@@ -211,6 +213,7 @@ public final class com/datadog/android/rum/RumPerformanceMetric : java/lang/Enum
 	public static final field FLUTTER_BUILD_TIME Lcom/datadog/android/rum/RumPerformanceMetric;
 	public static final field FLUTTER_RASTER_TIME Lcom/datadog/android/rum/RumPerformanceMetric;
 	public static final field JS_FRAME_TIME Lcom/datadog/android/rum/RumPerformanceMetric;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/RumPerformanceMetric;
 	public static fun values ()[Lcom/datadog/android/rum/RumPerformanceMetric;
 }
@@ -238,6 +241,7 @@ public final class com/datadog/android/rum/RumResourceKind : java/lang/Enum {
 	public static final field OTHER Lcom/datadog/android/rum/RumResourceKind;
 	public static final field UNKNOWN Lcom/datadog/android/rum/RumResourceKind;
 	public static final field XHR Lcom/datadog/android/rum/RumResourceKind;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/RumResourceKind;
 	public static fun values ()[Lcom/datadog/android/rum/RumResourceKind;
 }
@@ -256,6 +260,7 @@ public final class com/datadog/android/rum/RumResourceMethod : java/lang/Enum {
 	public static final field POST Lcom/datadog/android/rum/RumResourceMethod;
 	public static final field PUT Lcom/datadog/android/rum/RumResourceMethod;
 	public static final field TRACE Lcom/datadog/android/rum/RumResourceMethod;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/RumResourceMethod;
 	public static fun values ()[Lcom/datadog/android/rum/RumResourceMethod;
 }
@@ -267,6 +272,7 @@ public abstract interface class com/datadog/android/rum/RumSessionListener {
 public final class com/datadog/android/rum/RumSessionType : java/lang/Enum {
 	public static final field SYNTHETICS Lcom/datadog/android/rum/RumSessionType;
 	public static final field USER Lcom/datadog/android/rum/RumSessionType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/RumSessionType;
 	public static fun values ()[Lcom/datadog/android/rum/RumSessionType;
 }
@@ -324,6 +330,7 @@ public final class com/datadog/android/rum/configuration/VitalsUpdateFrequency :
 	public static final field FREQUENT Lcom/datadog/android/rum/configuration/VitalsUpdateFrequency;
 	public static final field NEVER Lcom/datadog/android/rum/configuration/VitalsUpdateFrequency;
 	public static final field RARE Lcom/datadog/android/rum/configuration/VitalsUpdateFrequency;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/configuration/VitalsUpdateFrequency;
 	public static fun values ()[Lcom/datadog/android/rum/configuration/VitalsUpdateFrequency;
 }
@@ -336,6 +343,7 @@ public final class com/datadog/android/rum/featureoperations/FailureReason : jav
 	public static final field ABANDONED Lcom/datadog/android/rum/featureoperations/FailureReason;
 	public static final field ERROR Lcom/datadog/android/rum/featureoperations/FailureReason;
 	public static final field OTHER Lcom/datadog/android/rum/featureoperations/FailureReason;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/featureoperations/FailureReason;
 	public static fun values ()[Lcom/datadog/android/rum/featureoperations/FailureReason;
 }
@@ -671,6 +679,7 @@ public final class com/datadog/android/rum/model/ActionEvent$ActionEventActionTy
 	public static final field SWIPE Lcom/datadog/android/rum/model/ActionEvent$ActionEventActionType;
 	public static final field TAP Lcom/datadog/android/rum/model/ActionEvent$ActionEventActionType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$ActionEventActionType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$ActionEventActionType;
 	public static fun values ()[Lcom/datadog/android/rum/model/ActionEvent$ActionEventActionType;
@@ -711,6 +720,7 @@ public final class com/datadog/android/rum/model/ActionEvent$ActionEventSessionT
 	public static final field SYNTHETICS Lcom/datadog/android/rum/model/ActionEvent$ActionEventSessionType;
 	public static final field USER Lcom/datadog/android/rum/model/ActionEvent$ActionEventSessionType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$ActionEventSessionType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$ActionEventSessionType;
 	public static fun values ()[Lcom/datadog/android/rum/model/ActionEvent$ActionEventSessionType;
@@ -734,6 +744,7 @@ public final class com/datadog/android/rum/model/ActionEvent$ActionEventSource :
 	public static final field ROKU Lcom/datadog/android/rum/model/ActionEvent$ActionEventSource;
 	public static final field UNITY Lcom/datadog/android/rum/model/ActionEvent$ActionEventSource;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$ActionEventSource;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$ActionEventSource;
 	public static fun values ()[Lcom/datadog/android/rum/model/ActionEvent$ActionEventSource;
@@ -1157,6 +1168,7 @@ public final class com/datadog/android/rum/model/ActionEvent$DeviceType : java/l
 	public static final field TABLET Lcom/datadog/android/rum/model/ActionEvent$DeviceType;
 	public static final field TV Lcom/datadog/android/rum/model/ActionEvent$DeviceType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$DeviceType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$DeviceType;
 	public static fun values ()[Lcom/datadog/android/rum/model/ActionEvent$DeviceType;
@@ -1195,6 +1207,7 @@ public final class com/datadog/android/rum/model/ActionEvent$EffectiveType : jav
 	public static final field Companion Lcom/datadog/android/rum/model/ActionEvent$EffectiveType$Companion;
 	public static final field SLOW_2G Lcom/datadog/android/rum/model/ActionEvent$EffectiveType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$EffectiveType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$EffectiveType;
 	public static fun values ()[Lcom/datadog/android/rum/model/ActionEvent$EffectiveType;
@@ -1256,6 +1269,7 @@ public final class com/datadog/android/rum/model/ActionEvent$Interface : java/la
 	public static final field WIFI Lcom/datadog/android/rum/model/ActionEvent$Interface;
 	public static final field WIMAX Lcom/datadog/android/rum/model/ActionEvent$Interface;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$Interface;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$Interface;
 	public static fun values ()[Lcom/datadog/android/rum/model/ActionEvent$Interface;
@@ -1294,6 +1308,7 @@ public final class com/datadog/android/rum/model/ActionEvent$NameSource : java/l
 	public static final field STANDARD_ATTRIBUTE Lcom/datadog/android/rum/model/ActionEvent$NameSource;
 	public static final field TEXT_CONTENT Lcom/datadog/android/rum/model/ActionEvent$NameSource;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$NameSource;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$NameSource;
 	public static fun values ()[Lcom/datadog/android/rum/model/ActionEvent$NameSource;
@@ -1335,6 +1350,7 @@ public final class com/datadog/android/rum/model/ActionEvent$Plan : java/lang/En
 	public static final field PLAN_1 Lcom/datadog/android/rum/model/ActionEvent$Plan;
 	public static final field PLAN_2 Lcom/datadog/android/rum/model/ActionEvent$Plan;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$Plan;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$Plan;
 	public static fun values ()[Lcom/datadog/android/rum/model/ActionEvent$Plan;
@@ -1396,6 +1412,7 @@ public final class com/datadog/android/rum/model/ActionEvent$SessionPrecondition
 	public static final field PREWARM Lcom/datadog/android/rum/model/ActionEvent$SessionPrecondition;
 	public static final field USER_APP_LAUNCH Lcom/datadog/android/rum/model/ActionEvent$SessionPrecondition;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$SessionPrecondition;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$SessionPrecondition;
 	public static fun values ()[Lcom/datadog/android/rum/model/ActionEvent$SessionPrecondition;
@@ -1411,6 +1428,7 @@ public final class com/datadog/android/rum/model/ActionEvent$Status : java/lang/
 	public static final field MAYBE Lcom/datadog/android/rum/model/ActionEvent$Status;
 	public static final field NOT_CONNECTED Lcom/datadog/android/rum/model/ActionEvent$Status;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$Status;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$Status;
 	public static fun values ()[Lcom/datadog/android/rum/model/ActionEvent$Status;
@@ -1495,6 +1513,7 @@ public final class com/datadog/android/rum/model/ActionEvent$Type : java/lang/En
 	public static final field RAGE_CLICK Lcom/datadog/android/rum/model/ActionEvent$Type;
 	public static final field RAGE_TAP Lcom/datadog/android/rum/model/ActionEvent$Type;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$Type;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$Type;
 	public static fun values ()[Lcom/datadog/android/rum/model/ActionEvent$Type;
@@ -1733,6 +1752,7 @@ public final class com/datadog/android/rum/model/ErrorEvent$Category : java/lang
 	public static final field NETWORK Lcom/datadog/android/rum/model/ErrorEvent$Category;
 	public static final field WATCHDOG_TERMINATION Lcom/datadog/android/rum/model/ErrorEvent$Category;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$Category;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$Category;
 	public static fun values ()[Lcom/datadog/android/rum/model/ErrorEvent$Category;
@@ -1882,6 +1902,7 @@ public final class com/datadog/android/rum/model/ErrorEvent$ConnectivityStatus :
 	public static final field MAYBE Lcom/datadog/android/rum/model/ErrorEvent$ConnectivityStatus;
 	public static final field NOT_CONNECTED Lcom/datadog/android/rum/model/ErrorEvent$ConnectivityStatus;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$ConnectivityStatus;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$ConnectivityStatus;
 	public static fun values ()[Lcom/datadog/android/rum/model/ErrorEvent$ConnectivityStatus;
@@ -2090,6 +2111,7 @@ public final class com/datadog/android/rum/model/ErrorEvent$DeviceType : java/la
 	public static final field TABLET Lcom/datadog/android/rum/model/ErrorEvent$DeviceType;
 	public static final field TV Lcom/datadog/android/rum/model/ErrorEvent$DeviceType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$DeviceType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$DeviceType;
 	public static fun values ()[Lcom/datadog/android/rum/model/ErrorEvent$DeviceType;
@@ -2126,6 +2148,7 @@ public final class com/datadog/android/rum/model/ErrorEvent$Disposition : java/l
 	public static final field ENFORCE Lcom/datadog/android/rum/model/ErrorEvent$Disposition;
 	public static final field REPORT Lcom/datadog/android/rum/model/ErrorEvent$Disposition;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$Disposition;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$Disposition;
 	public static fun values ()[Lcom/datadog/android/rum/model/ErrorEvent$Disposition;
@@ -2142,6 +2165,7 @@ public final class com/datadog/android/rum/model/ErrorEvent$EffectiveType : java
 	public static final field Companion Lcom/datadog/android/rum/model/ErrorEvent$EffectiveType$Companion;
 	public static final field SLOW_2G Lcom/datadog/android/rum/model/ErrorEvent$EffectiveType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$EffectiveType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$EffectiveType;
 	public static fun values ()[Lcom/datadog/android/rum/model/ErrorEvent$EffectiveType;
@@ -2244,6 +2268,7 @@ public final class com/datadog/android/rum/model/ErrorEvent$ErrorEventSessionTyp
 	public static final field SYNTHETICS Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSessionType;
 	public static final field USER Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSessionType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSessionType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSessionType;
 	public static fun values ()[Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSessionType;
@@ -2267,6 +2292,7 @@ public final class com/datadog/android/rum/model/ErrorEvent$ErrorEventSource : j
 	public static final field ROKU Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSource;
 	public static final field UNITY Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSource;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSource;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSource;
 	public static fun values ()[Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSource;
@@ -2315,6 +2341,7 @@ public final class com/datadog/android/rum/model/ErrorEvent$ErrorReason : java/l
 	public static final field NOT_SUPPORTED_BY_BROWSER Lcom/datadog/android/rum/model/ErrorEvent$ErrorReason;
 	public static final field UNEXPECTED_EXCEPTION Lcom/datadog/android/rum/model/ErrorEvent$ErrorReason;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$ErrorReason;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$ErrorReason;
 	public static fun values ()[Lcom/datadog/android/rum/model/ErrorEvent$ErrorReason;
@@ -2335,6 +2362,7 @@ public final class com/datadog/android/rum/model/ErrorEvent$ErrorSource : java/l
 	public static final field SOURCE Lcom/datadog/android/rum/model/ErrorEvent$ErrorSource;
 	public static final field WEBVIEW Lcom/datadog/android/rum/model/ErrorEvent$ErrorSource;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$ErrorSource;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$ErrorSource;
 	public static fun values ()[Lcom/datadog/android/rum/model/ErrorEvent$ErrorSource;
@@ -2369,6 +2397,7 @@ public final class com/datadog/android/rum/model/ErrorEvent$Handling : java/lang
 	public static final field HANDLED Lcom/datadog/android/rum/model/ErrorEvent$Handling;
 	public static final field UNHANDLED Lcom/datadog/android/rum/model/ErrorEvent$Handling;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$Handling;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$Handling;
 	public static fun values ()[Lcom/datadog/android/rum/model/ErrorEvent$Handling;
@@ -2390,6 +2419,7 @@ public final class com/datadog/android/rum/model/ErrorEvent$Interface : java/lan
 	public static final field WIFI Lcom/datadog/android/rum/model/ErrorEvent$Interface;
 	public static final field WIMAX Lcom/datadog/android/rum/model/ErrorEvent$Interface;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$Interface;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$Interface;
 	public static fun values ()[Lcom/datadog/android/rum/model/ErrorEvent$Interface;
@@ -2445,6 +2475,7 @@ public final class com/datadog/android/rum/model/ErrorEvent$Method : java/lang/E
 	public static final field PUT Lcom/datadog/android/rum/model/ErrorEvent$Method;
 	public static final field TRACE Lcom/datadog/android/rum/model/ErrorEvent$Method;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$Method;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$Method;
 	public static fun values ()[Lcom/datadog/android/rum/model/ErrorEvent$Method;
@@ -2486,6 +2517,7 @@ public final class com/datadog/android/rum/model/ErrorEvent$Plan : java/lang/Enu
 	public static final field PLAN_1 Lcom/datadog/android/rum/model/ErrorEvent$Plan;
 	public static final field PLAN_2 Lcom/datadog/android/rum/model/ErrorEvent$Plan;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$Plan;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$Plan;
 	public static fun values ()[Lcom/datadog/android/rum/model/ErrorEvent$Plan;
@@ -2530,6 +2562,7 @@ public final class com/datadog/android/rum/model/ErrorEvent$ProfilingStatus : ja
 	public static final field STARTING Lcom/datadog/android/rum/model/ErrorEvent$ProfilingStatus;
 	public static final field STOPPED Lcom/datadog/android/rum/model/ErrorEvent$ProfilingStatus;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$ProfilingStatus;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$ProfilingStatus;
 	public static fun values ()[Lcom/datadog/android/rum/model/ErrorEvent$ProfilingStatus;
@@ -2582,6 +2615,7 @@ public final class com/datadog/android/rum/model/ErrorEvent$ProviderType : java/
 	public static final field UTILITY Lcom/datadog/android/rum/model/ErrorEvent$ProviderType;
 	public static final field VIDEO Lcom/datadog/android/rum/model/ErrorEvent$ProviderType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$ProviderType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$ProviderType;
 	public static fun values ()[Lcom/datadog/android/rum/model/ErrorEvent$ProviderType;
@@ -2629,6 +2663,7 @@ public final class com/datadog/android/rum/model/ErrorEvent$SessionPrecondition 
 	public static final field PREWARM Lcom/datadog/android/rum/model/ErrorEvent$SessionPrecondition;
 	public static final field USER_APP_LAUNCH Lcom/datadog/android/rum/model/ErrorEvent$SessionPrecondition;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$SessionPrecondition;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$SessionPrecondition;
 	public static fun values ()[Lcom/datadog/android/rum/model/ErrorEvent$SessionPrecondition;
@@ -2654,6 +2689,7 @@ public final class com/datadog/android/rum/model/ErrorEvent$SourceType : java/la
 	public static final field ROKU Lcom/datadog/android/rum/model/ErrorEvent$SourceType;
 	public static final field WINDOWS Lcom/datadog/android/rum/model/ErrorEvent$SourceType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$SourceType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$SourceType;
 	public static fun values ()[Lcom/datadog/android/rum/model/ErrorEvent$SourceType;
@@ -3053,6 +3089,7 @@ public final class com/datadog/android/rum/model/LongTaskEvent$ConnectivityStatu
 	public static final field MAYBE Lcom/datadog/android/rum/model/LongTaskEvent$ConnectivityStatus;
 	public static final field NOT_CONNECTED Lcom/datadog/android/rum/model/LongTaskEvent$ConnectivityStatus;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$ConnectivityStatus;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$ConnectivityStatus;
 	public static fun values ()[Lcom/datadog/android/rum/model/LongTaskEvent$ConnectivityStatus;
@@ -3241,6 +3278,7 @@ public final class com/datadog/android/rum/model/LongTaskEvent$DeviceType : java
 	public static final field TABLET Lcom/datadog/android/rum/model/LongTaskEvent$DeviceType;
 	public static final field TV Lcom/datadog/android/rum/model/LongTaskEvent$DeviceType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$DeviceType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$DeviceType;
 	public static fun values ()[Lcom/datadog/android/rum/model/LongTaskEvent$DeviceType;
@@ -3279,6 +3317,7 @@ public final class com/datadog/android/rum/model/LongTaskEvent$EffectiveType : j
 	public static final field Companion Lcom/datadog/android/rum/model/LongTaskEvent$EffectiveType$Companion;
 	public static final field SLOW_2G Lcom/datadog/android/rum/model/LongTaskEvent$EffectiveType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$EffectiveType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$EffectiveType;
 	public static fun values ()[Lcom/datadog/android/rum/model/LongTaskEvent$EffectiveType;
@@ -3293,6 +3332,7 @@ public final class com/datadog/android/rum/model/LongTaskEvent$EntryType : java/
 	public static final field LONG_ANIMATION_FRAME Lcom/datadog/android/rum/model/LongTaskEvent$EntryType;
 	public static final field LONG_TASK Lcom/datadog/android/rum/model/LongTaskEvent$EntryType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$EntryType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$EntryType;
 	public static fun values ()[Lcom/datadog/android/rum/model/LongTaskEvent$EntryType;
@@ -3309,6 +3349,7 @@ public final class com/datadog/android/rum/model/LongTaskEvent$ErrorReason : jav
 	public static final field NOT_SUPPORTED_BY_BROWSER Lcom/datadog/android/rum/model/LongTaskEvent$ErrorReason;
 	public static final field UNEXPECTED_EXCEPTION Lcom/datadog/android/rum/model/LongTaskEvent$ErrorReason;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$ErrorReason;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$ErrorReason;
 	public static fun values ()[Lcom/datadog/android/rum/model/LongTaskEvent$ErrorReason;
@@ -3330,6 +3371,7 @@ public final class com/datadog/android/rum/model/LongTaskEvent$Interface : java/
 	public static final field WIFI Lcom/datadog/android/rum/model/LongTaskEvent$Interface;
 	public static final field WIMAX Lcom/datadog/android/rum/model/LongTaskEvent$Interface;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$Interface;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$Interface;
 	public static fun values ()[Lcom/datadog/android/rum/model/LongTaskEvent$Interface;
@@ -3348,6 +3390,7 @@ public final class com/datadog/android/rum/model/LongTaskEvent$InvokerType : jav
 	public static final field RESOLVE_PROMISE Lcom/datadog/android/rum/model/LongTaskEvent$InvokerType;
 	public static final field USER_CALLBACK Lcom/datadog/android/rum/model/LongTaskEvent$InvokerType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$InvokerType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$InvokerType;
 	public static fun values ()[Lcom/datadog/android/rum/model/LongTaskEvent$InvokerType;
@@ -3427,6 +3470,7 @@ public final class com/datadog/android/rum/model/LongTaskEvent$LongTaskEventSess
 	public static final field SYNTHETICS Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSessionType;
 	public static final field USER Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSessionType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSessionType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSessionType;
 	public static fun values ()[Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSessionType;
@@ -3450,6 +3494,7 @@ public final class com/datadog/android/rum/model/LongTaskEvent$LongTaskEventSour
 	public static final field ROKU Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSource;
 	public static final field UNITY Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSource;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSource;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSource;
 	public static fun values ()[Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSource;
@@ -3521,6 +3566,7 @@ public final class com/datadog/android/rum/model/LongTaskEvent$Plan : java/lang/
 	public static final field PLAN_1 Lcom/datadog/android/rum/model/LongTaskEvent$Plan;
 	public static final field PLAN_2 Lcom/datadog/android/rum/model/LongTaskEvent$Plan;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$Plan;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$Plan;
 	public static fun values ()[Lcom/datadog/android/rum/model/LongTaskEvent$Plan;
@@ -3565,6 +3611,7 @@ public final class com/datadog/android/rum/model/LongTaskEvent$ProfilingStatus :
 	public static final field STARTING Lcom/datadog/android/rum/model/LongTaskEvent$ProfilingStatus;
 	public static final field STOPPED Lcom/datadog/android/rum/model/LongTaskEvent$ProfilingStatus;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$ProfilingStatus;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$ProfilingStatus;
 	public static fun values ()[Lcom/datadog/android/rum/model/LongTaskEvent$ProfilingStatus;
@@ -3626,6 +3673,7 @@ public final class com/datadog/android/rum/model/LongTaskEvent$SessionPreconditi
 	public static final field PREWARM Lcom/datadog/android/rum/model/LongTaskEvent$SessionPrecondition;
 	public static final field USER_APP_LAUNCH Lcom/datadog/android/rum/model/LongTaskEvent$SessionPrecondition;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$SessionPrecondition;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$SessionPrecondition;
 	public static fun values ()[Lcom/datadog/android/rum/model/LongTaskEvent$SessionPrecondition;
@@ -4147,6 +4195,7 @@ public final class com/datadog/android/rum/model/ResourceEvent$DeliveryType : ja
 	public static final field NAVIGATIONAL_PREFETCH Lcom/datadog/android/rum/model/ResourceEvent$DeliveryType;
 	public static final field OTHER Lcom/datadog/android/rum/model/ResourceEvent$DeliveryType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$DeliveryType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$DeliveryType;
 	public static fun values ()[Lcom/datadog/android/rum/model/ResourceEvent$DeliveryType;
@@ -4214,6 +4263,7 @@ public final class com/datadog/android/rum/model/ResourceEvent$DeviceType : java
 	public static final field TABLET Lcom/datadog/android/rum/model/ResourceEvent$DeviceType;
 	public static final field TV Lcom/datadog/android/rum/model/ResourceEvent$DeviceType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$DeviceType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$DeviceType;
 	public static fun values ()[Lcom/datadog/android/rum/model/ResourceEvent$DeviceType;
@@ -4296,6 +4346,7 @@ public final class com/datadog/android/rum/model/ResourceEvent$EffectiveType : j
 	public static final field Companion Lcom/datadog/android/rum/model/ResourceEvent$EffectiveType$Companion;
 	public static final field SLOW_2G Lcom/datadog/android/rum/model/ResourceEvent$EffectiveType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$EffectiveType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$EffectiveType;
 	public static fun values ()[Lcom/datadog/android/rum/model/ResourceEvent$EffectiveType;
@@ -4400,6 +4451,7 @@ public final class com/datadog/android/rum/model/ResourceEvent$Interface : java/
 	public static final field WIFI Lcom/datadog/android/rum/model/ResourceEvent$Interface;
 	public static final field WIMAX Lcom/datadog/android/rum/model/ResourceEvent$Interface;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$Interface;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$Interface;
 	public static fun values ()[Lcom/datadog/android/rum/model/ResourceEvent$Interface;
@@ -4443,6 +4495,7 @@ public final class com/datadog/android/rum/model/ResourceEvent$Method : java/lan
 	public static final field PUT Lcom/datadog/android/rum/model/ResourceEvent$Method;
 	public static final field TRACE Lcom/datadog/android/rum/model/ResourceEvent$Method;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$Method;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$Method;
 	public static fun values ()[Lcom/datadog/android/rum/model/ResourceEvent$Method;
@@ -4458,6 +4511,7 @@ public final class com/datadog/android/rum/model/ResourceEvent$OperationType : j
 	public static final field QUERY Lcom/datadog/android/rum/model/ResourceEvent$OperationType;
 	public static final field SUBSCRIPTION Lcom/datadog/android/rum/model/ResourceEvent$OperationType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$OperationType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$OperationType;
 	public static fun values ()[Lcom/datadog/android/rum/model/ResourceEvent$OperationType;
@@ -4551,6 +4605,7 @@ public final class com/datadog/android/rum/model/ResourceEvent$Plan : java/lang/
 	public static final field PLAN_1 Lcom/datadog/android/rum/model/ResourceEvent$Plan;
 	public static final field PLAN_2 Lcom/datadog/android/rum/model/ResourceEvent$Plan;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$Plan;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$Plan;
 	public static fun values ()[Lcom/datadog/android/rum/model/ResourceEvent$Plan;
@@ -4603,6 +4658,7 @@ public final class com/datadog/android/rum/model/ResourceEvent$ProviderType : ja
 	public static final field UTILITY Lcom/datadog/android/rum/model/ResourceEvent$ProviderType;
 	public static final field VIDEO Lcom/datadog/android/rum/model/ResourceEvent$ProviderType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$ProviderType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$ProviderType;
 	public static fun values ()[Lcom/datadog/android/rum/model/ResourceEvent$ProviderType;
@@ -4639,6 +4695,7 @@ public final class com/datadog/android/rum/model/ResourceEvent$RenderBlockingSta
 	public static final field Companion Lcom/datadog/android/rum/model/ResourceEvent$RenderBlockingStatus$Companion;
 	public static final field NON_BLOCKING Lcom/datadog/android/rum/model/ResourceEvent$RenderBlockingStatus;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$RenderBlockingStatus;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$RenderBlockingStatus;
 	public static fun values ()[Lcom/datadog/android/rum/model/ResourceEvent$RenderBlockingStatus;
@@ -4795,6 +4852,7 @@ public final class com/datadog/android/rum/model/ResourceEvent$ResourceEventSess
 	public static final field SYNTHETICS Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSessionType;
 	public static final field USER Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSessionType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSessionType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSessionType;
 	public static fun values ()[Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSessionType;
@@ -4818,6 +4876,7 @@ public final class com/datadog/android/rum/model/ResourceEvent$ResourceEventSour
 	public static final field ROKU Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSource;
 	public static final field UNITY Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSource;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSource;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSource;
 	public static fun values ()[Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSource;
@@ -4871,6 +4930,7 @@ public final class com/datadog/android/rum/model/ResourceEvent$ResourceType : ja
 	public static final field OTHER Lcom/datadog/android/rum/model/ResourceEvent$ResourceType;
 	public static final field XHR Lcom/datadog/android/rum/model/ResourceEvent$ResourceType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$ResourceType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$ResourceType;
 	public static fun values ()[Lcom/datadog/android/rum/model/ResourceEvent$ResourceType;
@@ -4912,6 +4972,7 @@ public final class com/datadog/android/rum/model/ResourceEvent$SessionPreconditi
 	public static final field PREWARM Lcom/datadog/android/rum/model/ResourceEvent$SessionPrecondition;
 	public static final field USER_APP_LAUNCH Lcom/datadog/android/rum/model/ResourceEvent$SessionPrecondition;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$SessionPrecondition;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$SessionPrecondition;
 	public static fun values ()[Lcom/datadog/android/rum/model/ResourceEvent$SessionPrecondition;
@@ -4949,6 +5010,7 @@ public final class com/datadog/android/rum/model/ResourceEvent$Status : java/lan
 	public static final field MAYBE Lcom/datadog/android/rum/model/ResourceEvent$Status;
 	public static final field NOT_CONNECTED Lcom/datadog/android/rum/model/ResourceEvent$Status;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$Status;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$Status;
 	public static fun values ()[Lcom/datadog/android/rum/model/ResourceEvent$Status;
@@ -5468,6 +5530,7 @@ public final class com/datadog/android/rum/model/TimeseriesCpuEvent$DeviceType :
 	public static final field TABLET Lcom/datadog/android/rum/model/TimeseriesCpuEvent$DeviceType;
 	public static final field TV Lcom/datadog/android/rum/model/TimeseriesCpuEvent$DeviceType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$DeviceType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$DeviceType;
 	public static fun values ()[Lcom/datadog/android/rum/model/TimeseriesCpuEvent$DeviceType;
@@ -5506,6 +5569,7 @@ public final class com/datadog/android/rum/model/TimeseriesCpuEvent$EffectiveTyp
 	public static final field Companion Lcom/datadog/android/rum/model/TimeseriesCpuEvent$EffectiveType$Companion;
 	public static final field SLOW_2G Lcom/datadog/android/rum/model/TimeseriesCpuEvent$EffectiveType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$EffectiveType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$EffectiveType;
 	public static fun values ()[Lcom/datadog/android/rum/model/TimeseriesCpuEvent$EffectiveType;
@@ -5527,6 +5591,7 @@ public final class com/datadog/android/rum/model/TimeseriesCpuEvent$Interface : 
 	public static final field WIFI Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Interface;
 	public static final field WIMAX Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Interface;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Interface;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Interface;
 	public static fun values ()[Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Interface;
@@ -5568,6 +5633,7 @@ public final class com/datadog/android/rum/model/TimeseriesCpuEvent$Plan : java/
 	public static final field PLAN_1 Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Plan;
 	public static final field PLAN_2 Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Plan;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Plan;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Plan;
 	public static fun values ()[Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Plan;
@@ -5587,6 +5653,7 @@ public final class com/datadog/android/rum/model/TimeseriesCpuEvent$SessionPreco
 	public static final field PREWARM Lcom/datadog/android/rum/model/TimeseriesCpuEvent$SessionPrecondition;
 	public static final field USER_APP_LAUNCH Lcom/datadog/android/rum/model/TimeseriesCpuEvent$SessionPrecondition;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$SessionPrecondition;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$SessionPrecondition;
 	public static fun values ()[Lcom/datadog/android/rum/model/TimeseriesCpuEvent$SessionPrecondition;
@@ -5610,6 +5677,7 @@ public final class com/datadog/android/rum/model/TimeseriesCpuEvent$Source : jav
 	public static final field ROKU Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Source;
 	public static final field UNITY Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Source;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Source;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Source;
 	public static fun values ()[Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Source;
@@ -5625,6 +5693,7 @@ public final class com/datadog/android/rum/model/TimeseriesCpuEvent$Status : jav
 	public static final field MAYBE Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Status;
 	public static final field NOT_CONNECTED Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Status;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Status;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Status;
 	public static fun values ()[Lcom/datadog/android/rum/model/TimeseriesCpuEvent$Status;
@@ -5760,6 +5829,7 @@ public final class com/datadog/android/rum/model/TimeseriesCpuEvent$TimeseriesCp
 	public static final field SYNTHETICS Lcom/datadog/android/rum/model/TimeseriesCpuEvent$TimeseriesCpuEventSessionType;
 	public static final field USER Lcom/datadog/android/rum/model/TimeseriesCpuEvent$TimeseriesCpuEventSessionType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$TimeseriesCpuEventSessionType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$TimeseriesCpuEventSessionType;
 	public static fun values ()[Lcom/datadog/android/rum/model/TimeseriesCpuEvent$TimeseriesCpuEventSessionType;
@@ -6240,6 +6310,7 @@ public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$DeviceTyp
 	public static final field TABLET Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$DeviceType;
 	public static final field TV Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$DeviceType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$DeviceType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$DeviceType;
 	public static fun values ()[Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$DeviceType;
@@ -6278,6 +6349,7 @@ public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$Effective
 	public static final field Companion Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$EffectiveType$Companion;
 	public static final field SLOW_2G Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$EffectiveType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$EffectiveType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$EffectiveType;
 	public static fun values ()[Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$EffectiveType;
@@ -6299,6 +6371,7 @@ public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$Interface
 	public static final field WIFI Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Interface;
 	public static final field WIMAX Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Interface;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Interface;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Interface;
 	public static fun values ()[Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Interface;
@@ -6340,6 +6413,7 @@ public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$Plan : ja
 	public static final field PLAN_1 Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Plan;
 	public static final field PLAN_2 Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Plan;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Plan;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Plan;
 	public static fun values ()[Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Plan;
@@ -6359,6 +6433,7 @@ public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$SessionPr
 	public static final field PREWARM Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$SessionPrecondition;
 	public static final field USER_APP_LAUNCH Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$SessionPrecondition;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$SessionPrecondition;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$SessionPrecondition;
 	public static fun values ()[Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$SessionPrecondition;
@@ -6382,6 +6457,7 @@ public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$Source : 
 	public static final field ROKU Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Source;
 	public static final field UNITY Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Source;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Source;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Source;
 	public static fun values ()[Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Source;
@@ -6397,6 +6473,7 @@ public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$Status : 
 	public static final field MAYBE Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Status;
 	public static final field NOT_CONNECTED Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Status;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Status;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Status;
 	public static fun values ()[Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$Status;
@@ -6532,6 +6609,7 @@ public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$Timeserie
 	public static final field SYNTHETICS Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$TimeseriesMemoryEventSessionType;
 	public static final field USER Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$TimeseriesMemoryEventSessionType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$TimeseriesMemoryEventSessionType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$TimeseriesMemoryEventSessionType;
 	public static fun values ()[Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$TimeseriesMemoryEventSessionType;
@@ -6955,6 +7033,7 @@ public final class com/datadog/android/rum/model/ViewEvent$ConnectivityStatus : 
 	public static final field MAYBE Lcom/datadog/android/rum/model/ViewEvent$ConnectivityStatus;
 	public static final field NOT_CONNECTED Lcom/datadog/android/rum/model/ViewEvent$ConnectivityStatus;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$ConnectivityStatus;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$ConnectivityStatus;
 	public static fun values ()[Lcom/datadog/android/rum/model/ViewEvent$ConnectivityStatus;
@@ -7212,6 +7291,7 @@ public final class com/datadog/android/rum/model/ViewEvent$DeviceType : java/lan
 	public static final field TABLET Lcom/datadog/android/rum/model/ViewEvent$DeviceType;
 	public static final field TV Lcom/datadog/android/rum/model/ViewEvent$DeviceType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$DeviceType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$DeviceType;
 	public static fun values ()[Lcom/datadog/android/rum/model/ViewEvent$DeviceType;
@@ -7252,6 +7332,7 @@ public final class com/datadog/android/rum/model/ViewEvent$EffectiveType : java/
 	public static final field Companion Lcom/datadog/android/rum/model/ViewEvent$EffectiveType$Companion;
 	public static final field SLOW_2G Lcom/datadog/android/rum/model/ViewEvent$EffectiveType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$EffectiveType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$EffectiveType;
 	public static fun values ()[Lcom/datadog/android/rum/model/ViewEvent$EffectiveType;
@@ -7288,6 +7369,7 @@ public final class com/datadog/android/rum/model/ViewEvent$ErrorReason : java/la
 	public static final field NOT_SUPPORTED_BY_BROWSER Lcom/datadog/android/rum/model/ViewEvent$ErrorReason;
 	public static final field UNEXPECTED_EXCEPTION Lcom/datadog/android/rum/model/ViewEvent$ErrorReason;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$ErrorReason;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$ErrorReason;
 	public static fun values ()[Lcom/datadog/android/rum/model/ViewEvent$ErrorReason;
@@ -7514,6 +7596,7 @@ public final class com/datadog/android/rum/model/ViewEvent$Interface : java/lang
 	public static final field WIFI Lcom/datadog/android/rum/model/ViewEvent$Interface;
 	public static final field WIMAX Lcom/datadog/android/rum/model/ViewEvent$Interface;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$Interface;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$Interface;
 	public static fun values ()[Lcom/datadog/android/rum/model/ViewEvent$Interface;
@@ -7586,6 +7669,7 @@ public final class com/datadog/android/rum/model/ViewEvent$LoadingType : java/la
 	public static final field VIEW_CONTROLLER_DISPLAY Lcom/datadog/android/rum/model/ViewEvent$LoadingType;
 	public static final field VIEW_CONTROLLER_REDISPLAY Lcom/datadog/android/rum/model/ViewEvent$LoadingType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$LoadingType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$LoadingType;
 	public static fun values ()[Lcom/datadog/android/rum/model/ViewEvent$LoadingType;
@@ -7730,6 +7814,7 @@ public final class com/datadog/android/rum/model/ViewEvent$Plan : java/lang/Enum
 	public static final field PLAN_1 Lcom/datadog/android/rum/model/ViewEvent$Plan;
 	public static final field PLAN_2 Lcom/datadog/android/rum/model/ViewEvent$Plan;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$Plan;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$Plan;
 	public static fun values ()[Lcom/datadog/android/rum/model/ViewEvent$Plan;
@@ -7820,6 +7905,7 @@ public final class com/datadog/android/rum/model/ViewEvent$ProfilingStatus : jav
 	public static final field STARTING Lcom/datadog/android/rum/model/ViewEvent$ProfilingStatus;
 	public static final field STOPPED Lcom/datadog/android/rum/model/ViewEvent$ProfilingStatus;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$ProfilingStatus;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$ProfilingStatus;
 	public static fun values ()[Lcom/datadog/android/rum/model/ViewEvent$ProfilingStatus;
@@ -7835,6 +7921,7 @@ public final class com/datadog/android/rum/model/ViewEvent$ReplayLevel : java/la
 	public static final field MASK Lcom/datadog/android/rum/model/ViewEvent$ReplayLevel;
 	public static final field MASK_USER_INPUT Lcom/datadog/android/rum/model/ViewEvent$ReplayLevel;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$ReplayLevel;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$ReplayLevel;
 	public static fun values ()[Lcom/datadog/android/rum/model/ViewEvent$ReplayLevel;
@@ -7926,6 +8013,7 @@ public final class com/datadog/android/rum/model/ViewEvent$SessionPrecondition :
 	public static final field PREWARM Lcom/datadog/android/rum/model/ViewEvent$SessionPrecondition;
 	public static final field USER_APP_LAUNCH Lcom/datadog/android/rum/model/ViewEvent$SessionPrecondition;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$SessionPrecondition;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$SessionPrecondition;
 	public static fun values ()[Lcom/datadog/android/rum/model/ViewEvent$SessionPrecondition;
@@ -7965,6 +8053,7 @@ public final class com/datadog/android/rum/model/ViewEvent$State : java/lang/Enu
 	public static final field PASSIVE Lcom/datadog/android/rum/model/ViewEvent$State;
 	public static final field TERMINATED Lcom/datadog/android/rum/model/ViewEvent$State;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$State;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$State;
 	public static fun values ()[Lcom/datadog/android/rum/model/ViewEvent$State;
@@ -8106,6 +8195,7 @@ public final class com/datadog/android/rum/model/ViewEvent$ViewEventSessionType 
 	public static final field SYNTHETICS Lcom/datadog/android/rum/model/ViewEvent$ViewEventSessionType;
 	public static final field USER Lcom/datadog/android/rum/model/ViewEvent$ViewEventSessionType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$ViewEventSessionType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$ViewEventSessionType;
 	public static fun values ()[Lcom/datadog/android/rum/model/ViewEvent$ViewEventSessionType;
@@ -8129,6 +8219,7 @@ public final class com/datadog/android/rum/model/ViewEvent$ViewEventSource : jav
 	public static final field ROKU Lcom/datadog/android/rum/model/ViewEvent$ViewEventSource;
 	public static final field UNITY Lcom/datadog/android/rum/model/ViewEvent$ViewEventSource;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$ViewEventSource;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$ViewEventSource;
 	public static fun values ()[Lcom/datadog/android/rum/model/ViewEvent$ViewEventSource;
@@ -8377,6 +8468,7 @@ public final class com/datadog/android/rum/model/VitalAppLaunchEvent$AppLaunchMe
 	public static final field TTFD Lcom/datadog/android/rum/model/VitalAppLaunchEvent$AppLaunchMetric;
 	public static final field TTID Lcom/datadog/android/rum/model/VitalAppLaunchEvent$AppLaunchMetric;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$AppLaunchMetric;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$AppLaunchMetric;
 	public static fun values ()[Lcom/datadog/android/rum/model/VitalAppLaunchEvent$AppLaunchMetric;
@@ -8520,6 +8612,7 @@ public final class com/datadog/android/rum/model/VitalAppLaunchEvent$Connectivit
 	public static final field MAYBE Lcom/datadog/android/rum/model/VitalAppLaunchEvent$ConnectivityStatus;
 	public static final field NOT_CONNECTED Lcom/datadog/android/rum/model/VitalAppLaunchEvent$ConnectivityStatus;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$ConnectivityStatus;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$ConnectivityStatus;
 	public static fun values ()[Lcom/datadog/android/rum/model/VitalAppLaunchEvent$ConnectivityStatus;
@@ -8706,6 +8799,7 @@ public final class com/datadog/android/rum/model/VitalAppLaunchEvent$DeviceType 
 	public static final field TABLET Lcom/datadog/android/rum/model/VitalAppLaunchEvent$DeviceType;
 	public static final field TV Lcom/datadog/android/rum/model/VitalAppLaunchEvent$DeviceType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$DeviceType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$DeviceType;
 	public static fun values ()[Lcom/datadog/android/rum/model/VitalAppLaunchEvent$DeviceType;
@@ -8744,6 +8838,7 @@ public final class com/datadog/android/rum/model/VitalAppLaunchEvent$EffectiveTy
 	public static final field Companion Lcom/datadog/android/rum/model/VitalAppLaunchEvent$EffectiveType$Companion;
 	public static final field SLOW_2G Lcom/datadog/android/rum/model/VitalAppLaunchEvent$EffectiveType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$EffectiveType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$EffectiveType;
 	public static fun values ()[Lcom/datadog/android/rum/model/VitalAppLaunchEvent$EffectiveType;
@@ -8760,6 +8855,7 @@ public final class com/datadog/android/rum/model/VitalAppLaunchEvent$ErrorReason
 	public static final field NOT_SUPPORTED_BY_BROWSER Lcom/datadog/android/rum/model/VitalAppLaunchEvent$ErrorReason;
 	public static final field UNEXPECTED_EXCEPTION Lcom/datadog/android/rum/model/VitalAppLaunchEvent$ErrorReason;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$ErrorReason;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$ErrorReason;
 	public static fun values ()[Lcom/datadog/android/rum/model/VitalAppLaunchEvent$ErrorReason;
@@ -8781,6 +8877,7 @@ public final class com/datadog/android/rum/model/VitalAppLaunchEvent$Interface :
 	public static final field WIFI Lcom/datadog/android/rum/model/VitalAppLaunchEvent$Interface;
 	public static final field WIMAX Lcom/datadog/android/rum/model/VitalAppLaunchEvent$Interface;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$Interface;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$Interface;
 	public static fun values ()[Lcom/datadog/android/rum/model/VitalAppLaunchEvent$Interface;
@@ -8822,6 +8919,7 @@ public final class com/datadog/android/rum/model/VitalAppLaunchEvent$Plan : java
 	public static final field PLAN_1 Lcom/datadog/android/rum/model/VitalAppLaunchEvent$Plan;
 	public static final field PLAN_2 Lcom/datadog/android/rum/model/VitalAppLaunchEvent$Plan;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$Plan;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$Plan;
 	public static fun values ()[Lcom/datadog/android/rum/model/VitalAppLaunchEvent$Plan;
@@ -8866,6 +8964,7 @@ public final class com/datadog/android/rum/model/VitalAppLaunchEvent$ProfilingSt
 	public static final field STARTING Lcom/datadog/android/rum/model/VitalAppLaunchEvent$ProfilingStatus;
 	public static final field STOPPED Lcom/datadog/android/rum/model/VitalAppLaunchEvent$ProfilingStatus;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$ProfilingStatus;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$ProfilingStatus;
 	public static fun values ()[Lcom/datadog/android/rum/model/VitalAppLaunchEvent$ProfilingStatus;
@@ -8885,6 +8984,7 @@ public final class com/datadog/android/rum/model/VitalAppLaunchEvent$SessionPrec
 	public static final field PREWARM Lcom/datadog/android/rum/model/VitalAppLaunchEvent$SessionPrecondition;
 	public static final field USER_APP_LAUNCH Lcom/datadog/android/rum/model/VitalAppLaunchEvent$SessionPrecondition;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$SessionPrecondition;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$SessionPrecondition;
 	public static fun values ()[Lcom/datadog/android/rum/model/VitalAppLaunchEvent$SessionPrecondition;
@@ -8899,6 +8999,7 @@ public final class com/datadog/android/rum/model/VitalAppLaunchEvent$StartupType
 	public static final field Companion Lcom/datadog/android/rum/model/VitalAppLaunchEvent$StartupType$Companion;
 	public static final field WARM_START Lcom/datadog/android/rum/model/VitalAppLaunchEvent$StartupType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$StartupType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$StartupType;
 	public static fun values ()[Lcom/datadog/android/rum/model/VitalAppLaunchEvent$StartupType;
@@ -9094,6 +9195,7 @@ public final class com/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLau
 	public static final field SYNTHETICS Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSessionType;
 	public static final field USER Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSessionType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSessionType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSessionType;
 	public static fun values ()[Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSessionType;
@@ -9117,6 +9219,7 @@ public final class com/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLau
 	public static final field ROKU Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSource;
 	public static final field UNITY Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSource;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSource;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSource;
 	public static fun values ()[Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSource;
@@ -9378,6 +9481,7 @@ public final class com/datadog/android/rum/model/VitalOperationStepEvent$Connect
 	public static final field MAYBE Lcom/datadog/android/rum/model/VitalOperationStepEvent$ConnectivityStatus;
 	public static final field NOT_CONNECTED Lcom/datadog/android/rum/model/VitalOperationStepEvent$ConnectivityStatus;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$ConnectivityStatus;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$ConnectivityStatus;
 	public static fun values ()[Lcom/datadog/android/rum/model/VitalOperationStepEvent$ConnectivityStatus;
@@ -9564,6 +9668,7 @@ public final class com/datadog/android/rum/model/VitalOperationStepEvent$DeviceT
 	public static final field TABLET Lcom/datadog/android/rum/model/VitalOperationStepEvent$DeviceType;
 	public static final field TV Lcom/datadog/android/rum/model/VitalOperationStepEvent$DeviceType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$DeviceType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$DeviceType;
 	public static fun values ()[Lcom/datadog/android/rum/model/VitalOperationStepEvent$DeviceType;
@@ -9602,6 +9707,7 @@ public final class com/datadog/android/rum/model/VitalOperationStepEvent$Effecti
 	public static final field Companion Lcom/datadog/android/rum/model/VitalOperationStepEvent$EffectiveType$Companion;
 	public static final field SLOW_2G Lcom/datadog/android/rum/model/VitalOperationStepEvent$EffectiveType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$EffectiveType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$EffectiveType;
 	public static fun values ()[Lcom/datadog/android/rum/model/VitalOperationStepEvent$EffectiveType;
@@ -9618,6 +9724,7 @@ public final class com/datadog/android/rum/model/VitalOperationStepEvent$ErrorRe
 	public static final field NOT_SUPPORTED_BY_BROWSER Lcom/datadog/android/rum/model/VitalOperationStepEvent$ErrorReason;
 	public static final field UNEXPECTED_EXCEPTION Lcom/datadog/android/rum/model/VitalOperationStepEvent$ErrorReason;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$ErrorReason;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$ErrorReason;
 	public static fun values ()[Lcom/datadog/android/rum/model/VitalOperationStepEvent$ErrorReason;
@@ -9633,6 +9740,7 @@ public final class com/datadog/android/rum/model/VitalOperationStepEvent$Failure
 	public static final field ERROR Lcom/datadog/android/rum/model/VitalOperationStepEvent$FailureReason;
 	public static final field OTHER Lcom/datadog/android/rum/model/VitalOperationStepEvent$FailureReason;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$FailureReason;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$FailureReason;
 	public static fun values ()[Lcom/datadog/android/rum/model/VitalOperationStepEvent$FailureReason;
@@ -9654,6 +9762,7 @@ public final class com/datadog/android/rum/model/VitalOperationStepEvent$Interfa
 	public static final field WIFI Lcom/datadog/android/rum/model/VitalOperationStepEvent$Interface;
 	public static final field WIMAX Lcom/datadog/android/rum/model/VitalOperationStepEvent$Interface;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$Interface;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$Interface;
 	public static fun values ()[Lcom/datadog/android/rum/model/VitalOperationStepEvent$Interface;
@@ -9695,6 +9804,7 @@ public final class com/datadog/android/rum/model/VitalOperationStepEvent$Plan : 
 	public static final field PLAN_1 Lcom/datadog/android/rum/model/VitalOperationStepEvent$Plan;
 	public static final field PLAN_2 Lcom/datadog/android/rum/model/VitalOperationStepEvent$Plan;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$Plan;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$Plan;
 	public static fun values ()[Lcom/datadog/android/rum/model/VitalOperationStepEvent$Plan;
@@ -9739,6 +9849,7 @@ public final class com/datadog/android/rum/model/VitalOperationStepEvent$Profili
 	public static final field STARTING Lcom/datadog/android/rum/model/VitalOperationStepEvent$ProfilingStatus;
 	public static final field STOPPED Lcom/datadog/android/rum/model/VitalOperationStepEvent$ProfilingStatus;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$ProfilingStatus;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$ProfilingStatus;
 	public static fun values ()[Lcom/datadog/android/rum/model/VitalOperationStepEvent$ProfilingStatus;
@@ -9758,6 +9869,7 @@ public final class com/datadog/android/rum/model/VitalOperationStepEvent$Session
 	public static final field PREWARM Lcom/datadog/android/rum/model/VitalOperationStepEvent$SessionPrecondition;
 	public static final field USER_APP_LAUNCH Lcom/datadog/android/rum/model/VitalOperationStepEvent$SessionPrecondition;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$SessionPrecondition;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$SessionPrecondition;
 	public static fun values ()[Lcom/datadog/android/rum/model/VitalOperationStepEvent$SessionPrecondition;
@@ -9774,6 +9886,7 @@ public final class com/datadog/android/rum/model/VitalOperationStepEvent$StepTyp
 	public static final field START Lcom/datadog/android/rum/model/VitalOperationStepEvent$StepType;
 	public static final field UPDATE Lcom/datadog/android/rum/model/VitalOperationStepEvent$StepType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$StepType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$StepType;
 	public static fun values ()[Lcom/datadog/android/rum/model/VitalOperationStepEvent$StepType;
@@ -9965,6 +10078,7 @@ public final class com/datadog/android/rum/model/VitalOperationStepEvent$VitalOp
 	public static final field SYNTHETICS Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSessionType;
 	public static final field USER Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSessionType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSessionType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSessionType;
 	public static fun values ()[Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSessionType;
@@ -9988,6 +10102,7 @@ public final class com/datadog/android/rum/model/VitalOperationStepEvent$VitalOp
 	public static final field ROKU Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSource;
 	public static final field UNITY Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSource;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSource;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSource;
 	public static fun values ()[Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSource;
@@ -10031,6 +10146,7 @@ public final class com/datadog/android/rum/operations/FailureReason : java/lang/
 	public static final field ABANDONED Lcom/datadog/android/rum/operations/FailureReason;
 	public static final field ERROR Lcom/datadog/android/rum/operations/FailureReason;
 	public static final field OTHER Lcom/datadog/android/rum/operations/FailureReason;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/operations/FailureReason;
 	public static fun values ()[Lcom/datadog/android/rum/operations/FailureReason;
 }
@@ -10118,6 +10234,7 @@ public final class com/datadog/android/rum/timeseries/TimeseriesConfiguration$Co
 public final class com/datadog/android/rum/timeseries/TimeseriesType : java/lang/Enum {
 	public static final field CPU Lcom/datadog/android/rum/timeseries/TimeseriesType;
 	public static final field MEMORY Lcom/datadog/android/rum/timeseries/TimeseriesType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/timeseries/TimeseriesType;
 	public static fun values ()[Lcom/datadog/android/rum/timeseries/TimeseriesType;
 }
@@ -10733,6 +10850,7 @@ public final class com/datadog/android/telemetry/model/TelemetryConfigurationEve
 	public static final field DATADOG Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$SelectedTracingPropagator;
 	public static final field TRACECONTEXT Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$SelectedTracingPropagator;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$SelectedTracingPropagator;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$SelectedTracingPropagator;
 	public static fun values ()[Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$SelectedTracingPropagator;
@@ -10768,6 +10886,7 @@ public final class com/datadog/android/telemetry/model/TelemetryConfigurationEve
 	public static final field LOCAL_STORAGE Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$SessionPersistence;
 	public static final field MEMORY Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$SessionPersistence;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$SessionPersistence;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$SessionPersistence;
 	public static fun values ()[Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$SessionPersistence;
@@ -10790,6 +10909,7 @@ public final class com/datadog/android/telemetry/model/TelemetryConfigurationEve
 	public static final field RUM_CPP Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Source;
 	public static final field UNITY Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Source;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Source;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Source;
 	public static fun values ()[Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$Source;
@@ -10832,6 +10952,7 @@ public final class com/datadog/android/telemetry/model/TelemetryConfigurationEve
 	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TraceContextInjection$Companion;
 	public static final field SAMPLED Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TraceContextInjection;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TraceContextInjection;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TraceContextInjection;
 	public static fun values ()[Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TraceContextInjection;
@@ -10848,6 +10969,7 @@ public final class com/datadog/android/telemetry/model/TelemetryConfigurationEve
 	public static final field RESOURCE Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TrackFeatureFlagsForEvent;
 	public static final field VITAL Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TrackFeatureFlagsForEvent;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TrackFeatureFlagsForEvent;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TrackFeatureFlagsForEvent;
 	public static fun values ()[Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TrackFeatureFlagsForEvent;
@@ -10862,6 +10984,7 @@ public final class com/datadog/android/telemetry/model/TelemetryConfigurationEve
 	public static final field Companion Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TrackResourceHeaders$Companion;
 	public static final field DEFAULT_HEADERS Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TrackResourceHeaders;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TrackResourceHeaders;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TrackResourceHeaders;
 	public static fun values ()[Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TrackResourceHeaders;
@@ -10877,6 +11000,7 @@ public final class com/datadog/android/telemetry/model/TelemetryConfigurationEve
 	public static final field NOT_GRANTED Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TrackingConsent;
 	public static final field PENDING Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TrackingConsent;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TrackingConsent;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TrackingConsent;
 	public static fun values ()[Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$TrackingConsent;
@@ -10913,6 +11037,7 @@ public final class com/datadog/android/telemetry/model/TelemetryConfigurationEve
 	public static final field MIXEDVIEWTRACKINGSTRATEGY Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$ViewTrackingStrategy;
 	public static final field NAVIGATIONVIEWTRACKINGSTRATEGY Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$ViewTrackingStrategy;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$ViewTrackingStrategy;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$ViewTrackingStrategy;
 	public static fun values ()[Lcom/datadog/android/telemetry/model/TelemetryConfigurationEvent$ViewTrackingStrategy;
@@ -11111,6 +11236,7 @@ public final class com/datadog/android/telemetry/model/TelemetryDebugEvent$Sourc
 	public static final field RUM_CPP Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Source;
 	public static final field UNITY Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Source;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Source;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Source;
 	public static fun values ()[Lcom/datadog/android/telemetry/model/TelemetryDebugEvent$Source;
@@ -11382,6 +11508,7 @@ public final class com/datadog/android/telemetry/model/TelemetryErrorEvent$Sourc
 	public static final field RUM_CPP Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Source;
 	public static final field UNITY Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Source;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Source;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Source;
 	public static fun values ()[Lcom/datadog/android/telemetry/model/TelemetryErrorEvent$Source;
@@ -11507,6 +11634,7 @@ public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Actio
 	public static final field START Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$ActionType;
 	public static final field SUCCEED Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$ActionType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$ActionType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$ActionType;
 	public static fun values ()[Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$ActionType;
@@ -11646,6 +11774,7 @@ public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Sourc
 	public static final field RUM_CPP Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Source;
 	public static final field UNITY Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Source;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Source;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Source;
 	public static fun values ()[Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Source;
@@ -11689,6 +11818,7 @@ public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Track
 	public static final field NOT_GRANTED Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$TrackingConsent;
 	public static final field PENDING Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$TrackingConsent;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$TrackingConsent;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$TrackingConsent;
 	public static fun values ()[Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$TrackingConsent;
@@ -11704,6 +11834,7 @@ public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$Type 
 	public static final field LEGACY_OKHTTP Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Type;
 	public static final field OKHTTP Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Type;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Type;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Type;
 	public static fun values ()[Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$Type;
