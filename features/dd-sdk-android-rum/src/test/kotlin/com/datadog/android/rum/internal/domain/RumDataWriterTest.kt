@@ -803,6 +803,102 @@ internal class RumDataWriterTest {
         verify(rumMonitor.mockSdkCore, never()).writeLastViewEvent(any<ByteArray>())
     }
 
+    @Test
+    fun `M call writeLastViewEvent with full ViewEvent W write() { RumViewUpdateData, current view }`(
+        @Forgery fakeViewUpdateEvent: ViewUpdateEvent,
+        @Forgery fakeViewEvent: ViewEvent,
+        @StringForgery fakeDiffSerializedEvent: String,
+        @StringForgery fakeFullSerializedEvent: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeViewUpdateData = RumViewUpdateData(
+            viewUpdate = fakeViewUpdateEvent,
+            viewEvent = fakeViewEvent
+        )
+        val fakeDiffSerializedData = fakeDiffSerializedEvent.toByteArray(Charsets.UTF_8)
+        val fakeFullSerializedData = fakeFullSerializedEvent.toByteArray(Charsets.UTF_8)
+        whenever(mockEventSerializer.serialize(fakeViewUpdateEvent)) doReturn fakeDiffSerializedEvent
+        whenever(mockEventSerializer.serialize(fakeViewEvent)) doReturn fakeFullSerializedEvent
+        val fakeSerializedMeta = forge.aString()
+        val eventMeta = RumEventMeta.ViewUpdate(
+            viewId = fakeViewUpdateEvent.view.id,
+            documentVersion = fakeViewUpdateEvent.dd.documentVersion
+        )
+        whenever(mockEventMetaSerializer.serialize(eventMeta)) doReturn fakeSerializedMeta
+        whenever(
+            mockEventBatchWriter.write(
+                RawBatchEvent(
+                    data = fakeDiffSerializedData,
+                    metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)
+                ),
+                null,
+                fakeEventType
+            )
+        ) doReturn true
+        // the checkpointed view is the current view, so its crash-recovery write is not gated out
+        testedWriter.onViewEventSubmitted(
+            fakeViewEvent.copy(dd = fakeViewEvent.dd.copy(documentVersion = RumDataWriter.FIRST_VIEW_DOCUMENT_VERSION))
+        )
+
+        // When
+        testedWriter.write(mockEventBatchWriter, fakeViewUpdateData, fakeEventType)
+
+        // Then
+        verify(rumMonitor.mockSdkCore).writeLastViewEvent(fakeFullSerializedData)
+    }
+
+    @Test
+    fun `M NOT call writeLastViewEvent W write() { RumViewUpdateData, stale view }`(
+        @Forgery fakeViewUpdateEvent: ViewUpdateEvent,
+        @Forgery fakeViewEvent: ViewEvent,
+        @StringForgery fakeDiffSerializedEvent: String,
+        @StringForgery fakeFullSerializedEvent: String,
+        forge: Forge
+    ) {
+        // Given — a newer view (view B) is current; this RumViewUpdateData belongs to a stale view
+        // (view A) whose crash-recovery write must not overwrite view B's snapshot
+        val staleViewEvent = fakeViewEvent.copy(view = fakeViewEvent.view.copy(id = VIEW_A_ID))
+        val staleViewUpdateEvent = fakeViewUpdateEvent.copy(view = fakeViewUpdateEvent.view.copy(id = VIEW_A_ID))
+        val fakeViewUpdateData = RumViewUpdateData(
+            viewUpdate = staleViewUpdateEvent,
+            viewEvent = staleViewEvent
+        )
+        val fakeDiffSerializedData = fakeDiffSerializedEvent.toByteArray(Charsets.UTF_8)
+        val fakeFullSerializedData = fakeFullSerializedEvent.toByteArray(Charsets.UTF_8)
+        whenever(mockEventSerializer.serialize(staleViewUpdateEvent)) doReturn fakeDiffSerializedEvent
+        whenever(mockEventSerializer.serialize(staleViewEvent)) doReturn fakeFullSerializedEvent
+        val fakeSerializedMeta = forge.aString()
+        val eventMeta = RumEventMeta.ViewUpdate(
+            viewId = staleViewUpdateEvent.view.id,
+            documentVersion = staleViewUpdateEvent.dd.documentVersion
+        )
+        whenever(mockEventMetaSerializer.serialize(eventMeta)) doReturn fakeSerializedMeta
+        whenever(
+            mockEventBatchWriter.write(
+                RawBatchEvent(
+                    data = fakeDiffSerializedData,
+                    metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)
+                ),
+                null,
+                fakeEventType
+            )
+        ) doReturn true
+        // view B is the current view — established after view A's own update would have started
+        testedWriter.onViewEventSubmitted(
+            fakeViewEvent.copy(
+                view = fakeViewEvent.view.copy(id = VIEW_B_ID),
+                dd = fakeViewEvent.dd.copy(documentVersion = RumDataWriter.FIRST_VIEW_DOCUMENT_VERSION)
+            )
+        )
+
+        // When
+        testedWriter.write(mockEventBatchWriter, fakeViewUpdateData, fakeEventType)
+
+        // Then
+        verify(rumMonitor.mockSdkCore, never()).writeLastViewEvent(fakeFullSerializedData)
+    }
+
     // endregion
 
     // region writeDiffThenFullView
@@ -920,12 +1016,84 @@ internal class RumDataWriterTest {
                 fakeEventType
             )
         ) doReturn true
+        // the checkpointed view is the current view, so its crash-recovery write is not gated out
+        testedWriter.onViewEventSubmitted(
+            fakeViewEvent.copy(dd = fakeViewEvent.dd.copy(documentVersion = RumDataWriter.FIRST_VIEW_DOCUMENT_VERSION))
+        )
 
         // When
         testedWriter.write(mockEventBatchWriter, fakeData, fakeEventType)
 
         // Then — writeLastViewEvent is called exactly once: for the full view via the checkpoint write
         verify(rumMonitor.mockSdkCore).writeLastViewEvent(fakeFullBytes)
+    }
+
+    @Test
+    fun `M NOT call writeLastViewEvent for full view W write() { DiffThenFullView, stale view }`(
+        @Forgery fakeViewUpdateEvent: ViewUpdateEvent,
+        @Forgery fakeViewEvent: ViewEvent,
+        @StringForgery fakeDiffSerializedEvent: String,
+        @StringForgery fakeFullSerializedEvent: String,
+        forge: Forge
+    ) {
+        // Given — a newer view (view B) is current; this DiffThenFullView belongs to a stale view
+        // (view A) whose checkpoint must not overwrite view B's crash-recovery snapshot
+        val staleViewEvent = fakeViewEvent.copy(view = fakeViewEvent.view.copy(id = VIEW_A_ID))
+        val staleViewUpdateEvent = fakeViewUpdateEvent.copy(view = fakeViewUpdateEvent.view.copy(id = VIEW_A_ID))
+        val fakeData = DiffThenFullView(
+            viewUpdate = staleViewUpdateEvent,
+            viewEvent = staleViewEvent
+        )
+        val fakeDiffBytes = fakeDiffSerializedEvent.toByteArray(Charsets.UTF_8)
+        val fakeFullBytes = fakeFullSerializedEvent.toByteArray(Charsets.UTF_8)
+        val fakeSerializedMeta = forge.aString()
+        val fakeFullMeta = forge.aString()
+        val diffMeta = RumEventMeta.ViewUpdate(
+            viewId = staleViewUpdateEvent.view.id,
+            documentVersion = staleViewUpdateEvent.dd.documentVersion
+        )
+        val fullMeta = RumEventMeta.View(
+            viewId = staleViewEvent.view.id,
+            documentVersion = staleViewEvent.dd.documentVersion,
+            hasAccessibility = staleViewEvent.view.accessibility != null
+        )
+        whenever(mockEventSerializer.serialize(staleViewUpdateEvent)) doReturn fakeDiffSerializedEvent
+        whenever(mockEventSerializer.serialize(staleViewEvent)) doReturn fakeFullSerializedEvent
+        whenever(mockEventMetaSerializer.serialize(diffMeta)) doReturn fakeSerializedMeta
+        whenever(mockEventMetaSerializer.serialize(fullMeta)) doReturn fakeFullMeta
+        whenever(
+            mockEventBatchWriter.write(
+                RawBatchEvent(
+                    data = fakeDiffBytes,
+                    metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)
+                ),
+                null,
+                fakeEventType
+            )
+        ) doReturn true
+        whenever(
+            mockEventBatchWriter.write(
+                RawBatchEvent(
+                    data = fakeFullBytes,
+                    metadata = fakeFullMeta.toByteArray(Charsets.UTF_8)
+                ),
+                null,
+                fakeEventType
+            )
+        ) doReturn true
+        // view B is the current view — established after view A's own checkpoint would have started
+        testedWriter.onViewEventSubmitted(
+            fakeViewEvent.copy(
+                view = fakeViewEvent.view.copy(id = VIEW_B_ID),
+                dd = fakeViewEvent.dd.copy(documentVersion = RumDataWriter.FIRST_VIEW_DOCUMENT_VERSION)
+            )
+        )
+
+        // When
+        testedWriter.write(mockEventBatchWriter, fakeData, fakeEventType)
+
+        // Then — the stale view's checkpoint does not overwrite view B's crash-recovery snapshot
+        verify(rumMonitor.mockSdkCore, never()).writeLastViewEvent(fakeFullBytes)
     }
 
     @Test
@@ -972,6 +1140,10 @@ internal class RumDataWriterTest {
                 fakeEventType
             )
         ) doReturn true
+        // the checkpointed view is the current view, so its crash-recovery write is not gated out
+        testedWriter.onViewEventSubmitted(
+            fakeViewEvent.copy(dd = fakeViewEvent.dd.copy(documentVersion = RumDataWriter.FIRST_VIEW_DOCUMENT_VERSION))
+        )
 
         // When
         testedWriter.write(mockEventBatchWriter, fakeData, fakeEventType)

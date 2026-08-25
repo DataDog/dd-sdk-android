@@ -35,6 +35,7 @@ import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.telemetry.model.TelemetryUsageEvent
 
+@Suppress("TooManyFunctions")
 internal class RumDataWriter(
     internal val eventMapper: RumEventMapper,
     internal val eventSerializer: RumEventSerializer,
@@ -87,7 +88,7 @@ internal class RumDataWriter(
         val (byteArray, serializedEventMeta) = serializeViewEvent(event) ?: return false
 
         return writeBatchEvent(writer, RawBatchEvent(data = byteArray, metadata = serializedEventMeta), eventType) {
-            sdkCore.writeLastViewEvent(byteArray)
+            onDataWritten(event, byteArray)
         }
     }
 
@@ -129,7 +130,7 @@ internal class RumDataWriter(
             if (writeCrashRecovery) {
                 // serialize the full ViewEvent only on successful write, for crash recovery
                 val byteArrayView = eventSerializer.serializeToByteArray(eventData.viewEvent, sdkCore.internalLogger)
-                if (byteArrayView != null) sdkCore.writeLastViewEvent(byteArrayView)
+                if (byteArrayView != null) onDataWritten(eventData.viewEvent, byteArrayView)
             }
         }
     }
@@ -184,10 +185,8 @@ internal class RumDataWriter(
     }
 
     @WorkerThread
-    internal fun onDataWritten(data: Any, rawData: ByteArray) {
-        when (data) {
-            is ViewEvent -> onViewEventWritten(data, rawData)
-        }
+    internal fun onDataWritten(data: ViewEvent, rawData: ByteArray) {
+        onViewEventWritten(data, rawData)
     }
 
     @WorkerThread
