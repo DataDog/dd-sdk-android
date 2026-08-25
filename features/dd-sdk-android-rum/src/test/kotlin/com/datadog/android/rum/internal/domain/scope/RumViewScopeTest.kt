@@ -41,6 +41,7 @@ import com.datadog.android.rum.assertj.VitalEventAssert
 import com.datadog.android.rum.assertj.VitalOperationPropertiesAssert
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumErrorSourceType
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.InfoProvider
@@ -4287,6 +4288,151 @@ internal class RumViewScopeTest {
         // Then — the profile must not reference an ANR error id that RUM never ingested.
         verify(mockWriter).write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))
         verify(mockProfilingFeatureScope, never()).sendEvent(isA<ProfilerEvent.RumAnrEvent>())
+    }
+
+    @Test
+    fun `M send RumAnomalyErrorEvent to profiling W handleEvent(AddError) {profiling anomaly marker}`(
+        @StringForgery fakeMessage: String,
+        @Forgery fakeSource: RumErrorSource,
+        @StringForgery fakeStacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        val fakeErrorAttributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeErrorAttributes[RumAttributes.INTERNAL_PROFILING_ANOMALY] = true
+        fakeEvent = RumRawEvent.AddError(
+            fakeMessage,
+            fakeSource,
+            null,
+            fakeStacktrace,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = fakeErrorAttributes,
+            eventTime = fakeEventTime
+        )
+        val expectedTimestamp = resolveExpectedTimestamp(fakeEvent.eventTime.timestamp)
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ErrorEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue).hasErrorCategory(ErrorEvent.Category.MEMORY_WARNING)
+        }
+        argumentCaptor<ProfilerEvent.RumAnomalyErrorEvent> {
+            verify(mockProfilingFeatureScope).sendEvent(capture())
+            assertThat(firstValue.id).isNotEmpty()
+            assertThat(firstValue.timestamp).isEqualTo(expectedTimestamp)
+            assertThat(firstValue.rumContext).isEqualTo(
+                ProfilingRumContext(
+                    applicationId = fakeParentContext.applicationId,
+                    sessionId = fakeParentContext.sessionId,
+                    viewId = testedScope.viewId,
+                    viewName = fakeKey.name
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `M not send RumAnomalyErrorEvent to profiling W handleEvent(AddError) {no profiling anomaly marker}`(
+        @Forgery fakeSource: RumErrorSource,
+        @StringForgery fakeStacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeThrowable = RuntimeException("not an anomaly")
+        testedScope.activeActionScope = mockActionScope
+        val fakeErrorAttributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        // Same message as the profiling anomaly but without the private marker — must not match.
+        fakeEvent = RumRawEvent.AddError(
+            RumFeature.MEMORY_ANOMALY_MESSAGE,
+            fakeSource,
+            fakeThrowable,
+            fakeStacktrace,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = fakeErrorAttributes,
+            eventTime = fakeEventTime
+        )
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verify(mockProfilingFeatureScope, never()).sendEvent(isA<ProfilerEvent.RumAnomalyErrorEvent>())
+    }
+
+    @Test
+    fun `M send RumOomErrorEvent to profiling W handleEvent(AddError) {fatal OutOfMemoryError}`(
+        @Forgery fakeSource: RumErrorSource,
+        @StringForgery fakeStacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeThrowable = OutOfMemoryError()
+        testedScope.activeActionScope = mockActionScope
+        val fakeErrorAttributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            "OutOfMemoryError",
+            fakeSource,
+            fakeThrowable,
+            fakeStacktrace,
+            isFatal = true,
+            threads = emptyList(),
+            attributes = fakeErrorAttributes,
+            eventTime = fakeEventTime
+        )
+        val expectedTimestamp = resolveExpectedTimestamp(fakeEvent.eventTime.timestamp)
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then — best-effort signal sent immediately (fatal crash has no onSuccess callback)
+        argumentCaptor<ProfilerEvent.RumOomErrorEvent> {
+            verify(mockProfilingFeatureScope).sendEvent(capture())
+            assertThat(firstValue.id).isNotEmpty()
+            assertThat(firstValue.timestamp).isEqualTo(expectedTimestamp)
+            assertThat(firstValue.rumContext).isEqualTo(
+                ProfilingRumContext(
+                    applicationId = fakeParentContext.applicationId,
+                    sessionId = fakeParentContext.sessionId,
+                    viewId = testedScope.viewId,
+                    viewName = fakeKey.name
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `M not send RumOomErrorEvent to profiling W handleEvent(AddError) {fatal but not OutOfMemoryError}`(
+        @StringForgery fakeMessage: String,
+        @Forgery fakeSource: RumErrorSource,
+        @StringForgery fakeStacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeThrowable = RuntimeException("not an OOM")
+        testedScope.activeActionScope = mockActionScope
+        val fakeErrorAttributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            fakeMessage,
+            fakeSource,
+            fakeThrowable,
+            fakeStacktrace,
+            isFatal = true,
+            threads = emptyList(),
+            attributes = fakeErrorAttributes,
+            eventTime = fakeEventTime
+        )
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        verify(mockProfilingFeatureScope, never()).sendEvent(isA<ProfilerEvent.RumOomErrorEvent>())
     }
 
     @Test

@@ -80,6 +80,12 @@ object RumAttributes {
     internal const val INTERNAL_ALL_THREADS: String = "_dd.error.threads"
 
     /**
+     * Private marker set on RUM error events that originate from the profiling
+     * feature (e.g. a memory anomaly trigger).
+     */
+    internal const val INTERNAL_PROFILING_ANOMALY: String = "_dd.profiling.anomaly"
+
+    /**
      * Overrides the default view instrumentation type with a custom one.
      * Used by cross-platform SDKs (Flutter, React Native, Unity, etc.) to report
      * their specific navigation patterns in telemetry.

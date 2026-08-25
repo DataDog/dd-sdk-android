@@ -21,6 +21,7 @@ import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.internal.profiling.ProfilerEvent
+import com.datadog.android.internal.profiling.ProfilingAnomalyDetectedEvent
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.rum.RumSessionConstants
 import com.datadog.android.internal.time.DefaultTimeProvider
@@ -228,14 +229,19 @@ internal class ProfilingFeature(
         if (isLaunchProfilingActive || continuousProfilingScheduler?.isActive == true) {
             sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.sendEvent(event)
         }
+        // TODO RUM-18154: Wire resultFilePath with ProfilingDataWriter
     }
 
     override fun onOutOfMemoryDetected(detectedAtMs: Long, resultFilePath: String) {
-        // TODO RUM-18155: emit a ProfilingOomDetectedEvent to RUM.
+        // RUM already generates its own OOM error event, so the profiling feature
+        // does not forward a separate OOM event.
+        // TODO RUM-18154: Wire resultFilePath with ProfilingDataWriter
     }
 
     override fun onMemoryAnomalyDetected(detectedAtMs: Long, resultFilePath: String) {
-        // TODO RUM-18155: emit a ProfilingAnomalyDetectedEvent to RUM.
+        sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.sendEvent(
+            ProfilingAnomalyDetectedEvent(detectedAtMs)
+        )
     }
 
     private fun onTtidEvent() {
