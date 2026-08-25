@@ -329,6 +329,7 @@ datadog:
       - "java.lang.Class.hashCode()"
       - "java.lang.Class.isInstance(kotlin.Any?)"
       - "java.lang.Class.getDeclaredFieldSafe(kotlin.String)"
+      - "java.lang.Exception.addSuppressed(kotlin.Throwable)"
       - "java.lang.IllegalArgumentException.constructor(kotlin.String)"
       - "java.lang.IllegalStateException.constructor(kotlin.String)"
       - "java.lang.IllegalStateException.constructor(kotlin.String?)"

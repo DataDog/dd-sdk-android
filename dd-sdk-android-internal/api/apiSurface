@@ -311,6 +311,13 @@ abstract class com.datadog.android.internal.time.BaseTimeProvider : TimeProvider
   override fun getDeviceUptimeMillis(): Long
 fun ByteArray.toHexString(): String
 fun <T> android.content.Context.getSystemServiceAs(String): T?
+interface com.datadog.android.internal.utils.DDCoreStateHolder<S: Any, L: Any>
+  val currentState: S
+  fun updateState(S)
+  fun addListener(L)
+  fun removeListener(L)
+  companion object 
+    fun <S: Any, L: Any> create(S, L.(S) -> Unit): DDCoreStateHolder<S, L>
 interface com.datadog.android.internal.utils.DDCoreSubscription<T: Any>
   fun addListener(T)
   fun removeListener(T)
