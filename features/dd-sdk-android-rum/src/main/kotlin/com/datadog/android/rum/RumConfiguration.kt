@@ -420,7 +420,7 @@ data class RumConfiguration internal constructor(
          * @param configuration configuration for timeseries collection.
          */
         @ExperimentalRumApi
-        fun setTimeseriesConfiguration(
+        internal fun setTimeseriesConfiguration(
             configuration: TimeseriesConfiguration
         ): Builder {
             rumConfig = rumConfig.copy(timeseriesConfiguration = configuration)
