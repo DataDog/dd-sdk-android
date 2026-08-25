@@ -18,20 +18,52 @@ import com.datadog.android.core.internal.thread.waitToIdle
 import com.datadog.android.core.internal.utils.triggerUploadWorker
 import com.datadog.android.internal.utils.asString
 import com.datadog.android.internal.utils.loggableStackTrace
-import java.lang.ref.WeakReference
 import java.util.concurrent.ThreadPoolExecutor
 
 internal class DatadogExceptionHandler(
     private val sdkCore: FeatureSdkCore,
-    appContext: Context
+    private val appContext: Context
 ) : Thread.UncaughtExceptionHandler {
 
-    private val contextRef = WeakReference(appContext)
+    @Volatile
     private var previousHandler: Thread.UncaughtExceptionHandler? = null
 
     // region Thread.UncaughtExceptionHandler
 
     override fun uncaughtException(t: Thread, e: Throwable) {
+        try {
+            ingestUncaughtException(t, e)
+        } catch (@Suppress("TooGenericExceptionCaught") fatal: Throwable) {
+            try {
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                    { PROCESSING_FAILURE_MESSAGE },
+                    fatal
+                )
+            } catch (@Suppress("TooGenericExceptionCaught, SwallowedException") _: Throwable) {
+                // do nothing, we did our best
+            }
+        } finally {
+            // Always do this one last; this will shut down the VM
+            previousHandler?.uncaughtException(t, e)
+        }
+    }
+
+    // endregion
+
+    // region DatadogExceptionHandler
+
+    fun register() {
+        previousHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler(this)
+    }
+
+    // endregion
+
+    // region Internal
+
+    private fun ingestUncaughtException(t: Thread, e: Throwable) {
         val threads = getThreadDumps(t, e)
 
         // write a RUM Error too
@@ -68,28 +100,10 @@ internal class DatadogExceptionHandler(
         }
 
         // trigger a task to send the logs ASAP
-        contextRef.get()?.let {
-            if (WorkManager.isInitialized()) {
-                triggerUploadWorker(it, sdkCore.name, sdkCore.internalLogger)
-            }
+        if (WorkManager.isInitialized()) {
+            triggerUploadWorker(appContext, sdkCore.name, sdkCore.internalLogger)
         }
-
-        // Always do this one last; this will shut down the VM
-        previousHandler?.uncaughtException(t, e)
     }
-
-    // endregion
-
-    // region DatadogExceptionHandler
-
-    fun register() {
-        previousHandler = Thread.getDefaultUncaughtExceptionHandler()
-        Thread.setDefaultUncaughtExceptionHandler(this)
-    }
-
-    // endregion
-
-    // region Internal
 
     private fun createCrashMessage(throwable: Throwable): String {
         val rawMessage = throwable.message
@@ -147,5 +161,6 @@ internal class DatadogExceptionHandler(
                 "Some events could be lost."
         internal const val MISSING_RUM_FEATURE_INFO =
             "RUM feature is not registered, won't report crash as RUM event."
+        internal const val PROCESSING_FAILURE_MESSAGE = "Failed to process uncaught exception."
     }
 }
