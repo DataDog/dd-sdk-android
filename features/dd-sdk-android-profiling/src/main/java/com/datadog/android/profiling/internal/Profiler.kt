@@ -35,6 +35,11 @@ internal interface Profiler {
     fun unregisterProfilingCallback(appContext: Context)
 
     /**
+     * Enables or disables system profiling triggers for the current RUM session.
+     */
+    fun setTriggersEnabled(appContext: Context, enabled: Boolean)
+
+    /**
      * Controls whether an app launch profiling session should extend past the 10-second
      * TTID threshold. Set to `true` when continuous profiling is enabled for the session
      * so the launch window merges into the first continuous cycle.

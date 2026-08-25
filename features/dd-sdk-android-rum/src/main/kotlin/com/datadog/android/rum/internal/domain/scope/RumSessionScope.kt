@@ -16,6 +16,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
+import com.datadog.android.internal.rum.RumSessionConstants
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.InfoProvider
@@ -110,9 +111,9 @@ internal class RumSessionScope(
         }
 
     enum class State(val asString: String) {
-        NOT_TRACKED("NOT_TRACKED"),
-        TRACKED("TRACKED"),
-        EXPIRED("EXPIRED");
+        NOT_TRACKED(RumSessionConstants.SESSION_STATE_NOT_TRACKED),
+        TRACKED(RumSessionConstants.SESSION_STATE_TRACKED),
+        EXPIRED(RumSessionConstants.SESSION_STATE_EXPIRED);
 
         companion object {
             fun fromString(string: String?): State? {

@@ -149,6 +149,7 @@ internal class ProfilingFeature(
         continuousProfilingScheduler?.stop()
         profiler.apply {
             stop()
+            setTriggersEnabled(appContext, false)
             unregisterProfilingCallback(appContext)
         }
         sdkCore.removeEventReceiver(name)
@@ -261,17 +262,33 @@ internal class ProfilingFeature(
     override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
         if (featureName != Feature.RUM_FEATURE_NAME) return
         val sessionId = context[FeatureContextKeys.RUM_SESSION_ID] as? String
-        if (sessionId == null ||
-            sessionId == RumSessionConstants.EMPTY_RUM_SESSION_ID ||
-            sessionId == lastSeenRumSessionId
-        ) {
-            return
+        when {
+            sessionId == null || sessionId == RumSessionConstants.EMPTY_RUM_SESSION_ID -> {
+                profiler.setTriggersEnabled(appContext, false)
+            }
+
+            sessionId == lastSeenRumSessionId -> {
+                profiler.setTriggersEnabled(appContext, isRumSessionTracked(context))
+            }
+
+            else -> {
+                onNewRumSession(sessionId, context)
+            }
         }
+    }
+
+    private fun isRumSessionTracked(context: Map<String, Any?>): Boolean {
+        return context[FeatureContextKeys.RUM_SESSION_STATE] ==
+            RumSessionConstants.SESSION_STATE_TRACKED
+    }
+
+    private fun onNewRumSession(sessionId: String, context: Map<String, Any?>) {
         this.lastQuotaResult = null
         continuousProfilingScheduler?.lastQuotaResult = null
         val sampleRate = (context[FeatureContextKeys.RUM_SESSION_SAMPLE_RATE] as? Number)?.toFloat()
             ?: DEFAULT_RUM_SESSION_SAMPLE_RATE
         lastSeenRumSessionId = sessionId
+        profiler.setTriggersEnabled(appContext, isRumSessionTracked(context))
         sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.withContext { datadogContext ->
             quotaChecker.checkAsync(sessionId, datadogContext)
         }

@@ -60,7 +60,7 @@ internal data class RumContext(
         const val APPLICATION_ID = "application_id"
         const val SESSION_ID = FeatureContextKeys.RUM_SESSION_ID
         const val SESSION_ACTIVE = "session_active"
-        const val SESSION_STATE = "session_state"
+        const val SESSION_STATE = FeatureContextKeys.RUM_SESSION_STATE
         const val SESSION_START_REASON = "session_start_reason"
         const val VIEW_ID = "view_id"
         const val VIEW_NAME = "view_name"
