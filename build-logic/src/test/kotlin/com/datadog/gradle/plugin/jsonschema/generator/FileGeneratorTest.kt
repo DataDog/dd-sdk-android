@@ -13,6 +13,8 @@ import com.datadog.gradle.plugin.jsonschema.Book
 import com.datadog.gradle.plugin.jsonschema.Comment
 import com.datadog.gradle.plugin.jsonschema.Company
 import com.datadog.gradle.plugin.jsonschema.Conflict
+import com.datadog.gradle.plugin.jsonschema.CrossFileOneOfPrimitiveA
+import com.datadog.gradle.plugin.jsonschema.CrossFileOneOfPrimitiveB
 import com.datadog.gradle.plugin.jsonschema.Customer
 import com.datadog.gradle.plugin.jsonschema.DateTime
 import com.datadog.gradle.plugin.jsonschema.Delivery
@@ -23,6 +25,7 @@ import com.datadog.gradle.plugin.jsonschema.Jacket
 import com.datadog.gradle.plugin.jsonschema.Location
 import com.datadog.gradle.plugin.jsonschema.Message
 import com.datadog.gradle.plugin.jsonschema.NoOpLogger
+import com.datadog.gradle.plugin.jsonschema.OneOfPrimitiveRef
 import com.datadog.gradle.plugin.jsonschema.Opus
 import com.datadog.gradle.plugin.jsonschema.Order
 import com.datadog.gradle.plugin.jsonschema.Paper
@@ -124,7 +127,10 @@ class FileGeneratorTest {
                 arrayOf(Video, "Video"),
                 arrayOf(WeirdCombo, "WeirdCombo"),
                 arrayOf(PathArrayWithInteger, "PathArrayWithInteger"),
-                arrayOf(PathArrayWithNumber, "PathArrayWithNumber")
+                arrayOf(PathArrayWithNumber, "PathArrayWithNumber"),
+                arrayOf(OneOfPrimitiveRef, "OneOfPrimitiveRef"),
+                arrayOf(CrossFileOneOfPrimitiveA, "CrossFileOneOfPrimitiveA"),
+                arrayOf(CrossFileOneOfPrimitiveB, "CrossFileOneOfPrimitiveB")
             )
         }
     }

@@ -211,7 +211,10 @@ class ModelValidationTest {
                 arrayOf("sets", OutputInfo("Video")),
                 arrayOf("one_of_nested", OutputInfo("WeirdCombo")),
                 arrayOf("path_array_with_integer", OutputInfo("PathArrayWithInteger")),
-                arrayOf("path_array_with_number", OutputInfo("PathArrayWithNumber"))
+                arrayOf("path_array_with_number", OutputInfo("PathArrayWithNumber")),
+                arrayOf("one_of_primitive_ref", OutputInfo("OneOfPrimitiveRef")),
+                arrayOf("cross_file_one_of_primitive_a", OutputInfo("CrossFileOneOfPrimitiveA")),
+                arrayOf("cross_file_one_of_primitive_b", OutputInfo("CrossFileOneOfPrimitiveB"))
             )
         }
     }

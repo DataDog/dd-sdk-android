@@ -137,6 +137,35 @@ internal class NodeFlattenerTest {
     }
 
     @Test
+    fun `M keep covered wireframe W flattenNode { covering embedded content is hidden }`(forge: Forge) {
+        // Given
+        val fakeBottomWireframe = forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>().copy(
+            x = 0,
+            y = 0,
+            width = 100,
+            height = 100,
+            clip = null,
+            shapeStyle = forge.getForgery()
+        )
+        val fakeHiddenEmbeddedContent =
+            forge.getForgery<MobileSegment.Wireframe.EmbeddedContentWireframe>().copy(
+                x = 0,
+                y = 0,
+                width = 100,
+                height = 100,
+                clip = null,
+                isVisible = false
+            )
+        val fakeNode = Node(wireframes = listOf(fakeBottomWireframe, fakeHiddenEmbeddedContent))
+
+        // When
+        val wireframes = NodeFlattener().flattenNode(fakeNode)
+
+        // Then
+        assertThat(wireframes).containsExactly(fakeBottomWireframe, fakeHiddenEmbeddedContent)
+    }
+
+    @Test
     fun `M not have ConcurrentModificationException W modifying nodes concurrently`(forge: Forge) {
         // Given
         val maxWidth = forge.aLong(2, 1000)
@@ -332,6 +361,8 @@ internal class NodeFlattenerTest {
                 this.copy(id = id)
             is MobileSegment.Wireframe.WebviewWireframe ->
                 this.copy(id = id)
+            is MobileSegment.Wireframe.EmbeddedContentWireframe ->
+                this.copy(id = id)
         }
     }
 
@@ -411,6 +442,14 @@ internal class NodeFlattenerTest {
                 height = height,
                 clip = null
             )
+            is MobileSegment.Wireframe.EmbeddedContentWireframe -> fakeWireframe.copy(
+                id = id,
+                x = x,
+                y = y,
+                width = width,
+                height = height,
+                clip = null
+            )
         }
     }
 
@@ -425,6 +464,8 @@ internal class NodeFlattenerTest {
             is MobileSegment.Wireframe.PlaceholderWireframe ->
                 Bounds(this.x, this.y, this.width, this.height)
             is MobileSegment.Wireframe.WebviewWireframe ->
+                Bounds(this.x, this.y, this.width, this.height)
+            is MobileSegment.Wireframe.EmbeddedContentWireframe ->
                 Bounds(this.x, this.y, this.width, this.height)
         }
     }
@@ -441,6 +482,8 @@ internal class NodeFlattenerTest {
                 clip
             is MobileSegment.Wireframe.WebviewWireframe ->
                 clip
+            is MobileSegment.Wireframe.EmbeddedContentWireframe ->
+                clip
         }
     }
 
@@ -453,6 +496,7 @@ internal class NodeFlattenerTest {
             is MobileSegment.Wireframe.ImageWireframe -> this.id
             is MobileSegment.Wireframe.PlaceholderWireframe -> this.id
             is MobileSegment.Wireframe.WebviewWireframe -> this.id
+            is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.id
         }
     }
 

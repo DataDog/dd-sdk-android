@@ -24,7 +24,6 @@ import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
-import java.io.File
 
 // TODO test all from https://github.com/json-schema-org/JSON-Schema-Test-Suite/tree/master/tests/draft2019-09
 
@@ -95,16 +94,15 @@ abstract class GenerateJsonSchemaTask : DefaultTask() {
     abstract val inputNameMapping: MapProperty<String, String>
 
     /**
-     * The directory to package-agnostic directory write the generated files.
-     */
-    @get:Input
-    abstract val destinationGenDirectoryPath: Property<String>
-
-    /**
-     * The [OutputDirectory] (`src/main/kotlin/{out_package}`).
+     * The [OutputDirectory] where the generated files are written, in a package-agnostic way
+     * (the `{out_package}` subdirectories are created by the generator itself).
+     *
+     * Note that this is wired to the Android variant sources through
+     * `SourceDirectories.addGeneratedSourceDirectory`, which sets a *convention* on this property,
+     * hence the location set by the caller always wins.
      */
     @get:OutputDirectory
-    abstract val destinationPackageDirectory: DirectoryProperty
+    abstract val destinationGenDirectory: DirectoryProperty
 
     // endregion
 
@@ -116,7 +114,7 @@ abstract class GenerateJsonSchemaTask : DefaultTask() {
     @TaskAction
     fun performTask() {
         val inputDir = inputDir.get().asFile
-        val outputDir = File(destinationGenDirectoryPath.get())
+        val outputDir = destinationGenDirectory.get().asFile
         val files = inputFiles
             .filter {
                 it.name !in ignoredFiles.get() && it.parentFile == inputDir

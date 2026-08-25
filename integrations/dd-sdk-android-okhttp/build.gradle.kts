@@ -33,6 +33,7 @@ plugins {
 
     // Internal Generation
     id("apiSurface")
+    id("aarMetadata")
     id("transitiveDependencies")
     id("verificationXml")
     id("binary-compatibility-validator")

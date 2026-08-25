@@ -19,6 +19,9 @@
     },
     {
       "$ref": "webview-wireframe-update-schema.json"
+    },
+    {
+      "$ref": "embedded-content-wireframe-update-schema.json"
     }
   ]
 }
