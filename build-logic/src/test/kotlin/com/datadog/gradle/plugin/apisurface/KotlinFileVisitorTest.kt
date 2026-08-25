@@ -999,6 +999,86 @@ internal class KotlinFileVisitorTest {
         ).isEqualTo("fun String.withFooBar(): String\n")
     }
 
+    @Test
+    fun `renders default parameters the same however they are formatted`() {
+        val variants = listOf(
+            "foo(1,2)",
+            "foo(1, 2)",
+            "foo(1,/* note */2)",
+            "foo(1, /* note */ 2)",
+            "foo(\n    1,\n    2\n)"
+        )
+
+        val descriptions = variants.map { default ->
+            val visitor = KotlinFileVisitor()
+            tempFile.writeText("fun doSomething(i: Int = $default) {}")
+            visitor.visitFile(tempFile)
+            visitor.description.toString()
+        }
+
+        assertThat(descriptions).containsOnly("fun doSomething(Int = foo(1,2))\n")
+    }
+
+    @Test
+    fun `renders lambda defaults with canonical brace spacing`() {
+        val variants = listOf("remember{emptyMap()}", "remember { emptyMap() }")
+
+        val descriptions = variants.map { default ->
+            val visitor = KotlinFileVisitor()
+            tempFile.writeText("fun doSomething(m: Map<String, Any?> = $default) {}")
+            visitor.visitFile(tempFile)
+            visitor.description.toString()
+        }
+
+        assertThat(descriptions)
+            .containsOnly("fun doSomething(Map<String, Any?> = remember { emptyMap() })\n")
+    }
+
+    @Test
+    fun `renders empty lambda defaults without padding`() {
+        tempFile.writeText(
+            """
+            fun doSomething(a: () -> Unit = {}, b: () -> Unit = {   }) {}
+            """.trimIndent()
+        )
+
+        testedVisitor.visitFile(tempFile)
+
+        assertThat(
+            testedVisitor.description.toString()
+        ).isEqualTo("fun doSomething(() -> Unit = {}, () -> Unit = {})\n")
+    }
+
+    @Test
+    fun `keeps spacing needed to separate default parameter tokens`() {
+        tempFile.writeText(
+            """
+            fun doSomething(m: Map<String, Int> = mapOf("x" to 1), a: Any = o as String) {}
+            """.trimIndent()
+        )
+
+        testedVisitor.visitFile(tempFile)
+
+        assertThat(
+            testedVisitor.description.toString()
+        ).isEqualTo("fun doSomething(Map<String, Int> = mapOf(\"x\" to 1), Any = o as String)\n")
+    }
+
+    @Test
+    fun `keeps whitespace inside default parameter string literals`() {
+        tempFile.writeText(
+            """
+            fun doSomething(s: String = "a  b", c: String = "not /* a */ comment") {}
+            """.trimIndent()
+        )
+
+        testedVisitor.visitFile(tempFile)
+
+        assertThat(
+            testedVisitor.description.toString()
+        ).isEqualTo("fun doSomething(String = \"a  b\", String = \"not /* a */ comment\")\n")
+    }
+
     companion object {
         const val FILE_NAME = "file.kt"
     }

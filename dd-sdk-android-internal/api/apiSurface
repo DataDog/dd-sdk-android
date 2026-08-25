@@ -287,8 +287,10 @@ interface com.datadog.android.internal.thread.NamedExecutionUnit
   val name: String
 class com.datadog.android.internal.thread.NamedRunnable : NamedExecutionUnit, Runnable
   constructor(String, Runnable)
+  override val name: String
 class com.datadog.android.internal.thread.NamedCallable<V> : NamedExecutionUnit, java.util.concurrent.Callable<V>
   constructor(String, java.util.concurrent.Callable<V>)
+  override val name: String
 fun isMainThread(): Boolean
 class com.datadog.android.internal.time.DefaultTimeProvider : BaseTimeProvider
   override fun getServerTimestampMillis(): Long
