@@ -31,7 +31,6 @@ import com.datadog.android.profiling.internal.quota.NoOpQuotaChecker
 import com.datadog.android.profiling.internal.quota.ProfilingQuotaChecker
 import com.datadog.android.profiling.internal.quota.QuotaChecker
 import com.datadog.android.profiling.internal.quota.QuotaResult
-import com.datadog.android.profiling.internal.utils.getProfilingModuleLongVersionCode
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
@@ -93,14 +92,12 @@ internal class ProfilingFeature(
     override fun onInitialize(appContext: Context) {
         this.appContext = appContext
         profiler.apply {
-            this.internalLogger = sdkCore.internalLogger
             this.timeProvider.delegate = sdkCore.timeProvider
-            setProfilingPackageVersionCode(
-                appContext.packageManager.getProfilingModuleLongVersionCode(sdkCore.internalLogger)
-            )
+            resolveProfilingPackageVersionCode(appContext)
+            this.internalLogger = sdkCore.internalLogger
             registerProfilingCallback(appContext, this@ProfilingFeature)
         }
-        setMinimumSampleRate(appContext, configuration.applicationLaunchSampleRate)
+        ProfilingStorage.setSampleRate(appContext, configuration.applicationLaunchSampleRate)
         // Set the profiling flag in SharedPreferences to profile for the next app launch
         ProfilingStorage.addProfilingFlag(appContext)
         isLaunchProfilingActive = profiler.isRunning()
@@ -270,15 +267,6 @@ internal class ProfilingFeature(
         )
     }
 
-    private fun setMinimumSampleRate(appContext: Context, sampleRate: Float) {
-        val oldValue = ProfilingStorage.getSampleRate(appContext)
-        // if old value doesn't exist (we use negative default value in case of absence) or
-        // the value is bigger than the sample rate, we update the sample rate.
-        if (oldValue !in 0f..sampleRate) {
-            ProfilingStorage.setSampleRate(appContext, configuration.applicationLaunchSampleRate)
-        }
-    }
-
     @Suppress("ReturnCount")
     private fun tryWriteProfilingEvent() {
         val result = perfettoResult ?: return
@@ -392,7 +380,7 @@ internal class ProfilingFeature(
         private const val LOG_CONTINUOUS_PROFILING_WRITTEN =
             "Continuous profiling result written: %d long task(s), %d ANR event(s)."
         internal const val QUOTA_CHECK_TIMEOUT_MS = 5_000L
-        private const val QUOTA_EXECUTOR_CONTEXT = "dd-profiling-quota"
+        private const val QUOTA_EXECUTOR_CONTEXT = "profiling-quota"
         internal const val LOG_LAUNCH_PROFILING_DROPPED_QUOTA_DENIED =
             "Launch profiling dropped: quota denied (reason=%s)."
     }

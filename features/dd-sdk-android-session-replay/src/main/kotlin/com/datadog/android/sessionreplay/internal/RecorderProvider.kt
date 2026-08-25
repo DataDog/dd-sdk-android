@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal
 
 import android.app.Application
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
@@ -19,6 +20,7 @@ internal fun interface RecorderProvider {
         resourceWriter: ResourcesWriter,
         recordWriter: RecordWriter,
         rumContextProvider: RumContextProvider,
-        application: Application
+        application: Application,
+        embeddedContentSlotRegistry: EmbeddedContentSlotRegistry
     ): Recorder
 }

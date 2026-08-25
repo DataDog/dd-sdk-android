@@ -13,6 +13,7 @@ import com.datadog.android.sessionreplay.internal.ResourcesFeature
 import com.datadog.android.sessionreplay.internal.async.ResourceRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.TouchEventRecordedDataQueueItem
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
@@ -40,7 +41,6 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
-import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -92,6 +92,8 @@ internal class RecordedDataProcessorTest {
 
     @Mock
     lateinit var mockTimeProvider: TimeProvider
+
+    private val fakeSlotRegistry = EmbeddedContentSlotRegistry()
 
     private val invalidRumContext = SessionReplayRumContext()
 
@@ -152,12 +154,18 @@ internal class RecordedDataProcessorTest {
             .thenReturn(forge.aList { forge.getForgery() })
         whenever(mockMutationResolver.resolveMutations(any(), any()))
             .thenReturn(forge.getForgery())
+        // By default writes are persisted, so the success callback runs.
+        whenever(mockWriter.write(any(), any())).thenAnswer { invocation ->
+            invocation.getArgument<() -> Unit>(1).invoke()
+            null
+        }
         testedProcessor = RecordedDataProcessor(
             resourceDataStoreManager = mockResourceDataStoreManager,
             resourcesWriter = mockResourcesWriter,
             writer = mockWriter,
             mutationResolver = mockMutationResolver,
             timeProvider = mockTimeProvider,
+            embeddedContentSlotRegistry = fakeSlotRegistry,
             nodeFlattener = mockNodeFlattener
         )
     }
@@ -175,7 +183,7 @@ internal class RecordedDataProcessorTest {
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter).write(captor.capture())
+        verify(mockWriter).write(captor.capture(), any())
         assertThat(captor.firstValue.applicationId).isEqualTo(fakeRumContext.applicationId)
         assertThat(captor.firstValue.sessionId).isEqualTo(fakeRumContext.sessionId)
         assertThat(captor.firstValue.viewId).isEqualTo(fakeRumContext.viewId)
@@ -204,7 +212,7 @@ internal class RecordedDataProcessorTest {
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter).write(captor.capture())
+        verify(mockWriter).write(captor.capture(), any())
         assertThat(captor.firstValue.records.size).isEqualTo(3)
         val fullSnapshotRecord = captor.firstValue.records[2]
             as MobileSegment.MobileRecord.MobileFullSnapshotRecord
@@ -228,7 +236,7 @@ internal class RecordedDataProcessorTest {
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter).write(captor.capture())
+        verify(mockWriter).write(captor.capture(), any())
         assertThat(captor.firstValue.toJson()).contains("\"permanentId\":\"$fakePermanentId\"")
     }
 
@@ -277,7 +285,7 @@ internal class RecordedDataProcessorTest {
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
         // one for first view, one for first view end and one for new view
-        verify(mockWriter, times(3)).write(captor.capture())
+        verify(mockWriter, times(3)).write(captor.capture(), any())
         assertThat(captor.firstValue.applicationId).isEqualTo(fakeRumContext.applicationId)
         assertThat(captor.firstValue.sessionId).isEqualTo(fakeRumContext.sessionId)
         assertThat(captor.firstValue.viewId).isEqualTo(fakeRumContext.viewId)
@@ -344,7 +352,7 @@ internal class RecordedDataProcessorTest {
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter, times(2)).write(captor.capture())
+        verify(mockWriter, times(2)).write(captor.capture(), any())
         assertThat(captor.secondValue.records.size).isEqualTo(1)
         val fullSnapshotRecord = captor.secondValue.records[0]
             as MobileSegment.MobileRecord.MobileFullSnapshotRecord
@@ -395,7 +403,7 @@ internal class RecordedDataProcessorTest {
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter, times(2)).write(captor.capture())
+        verify(mockWriter, times(2)).write(captor.capture(), any())
         assertThat(captor.secondValue.records.size).isEqualTo(1)
         val fullSnapshotRecord = captor.secondValue.records[0]
             as MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord
@@ -415,7 +423,7 @@ internal class RecordedDataProcessorTest {
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter).write(captor.capture())
+        verify(mockWriter).write(captor.capture(), any())
         assertThat(captor.firstValue.records.size).isEqualTo(3)
         val metaRecord = captor.firstValue.records[0] as MobileSegment.MobileRecord.MetaRecord
         assertThat(metaRecord.timestamp).isEqualTo(fakeTimestamp)
@@ -452,7 +460,7 @@ internal class RecordedDataProcessorTest {
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter).write(captor.capture())
+        verify(mockWriter).write(captor.capture(), any())
         assertThat(captor.firstValue.records.size).isEqualTo(3)
         val focusRecord = captor.firstValue.records[1] as MobileSegment.MobileRecord.FocusRecord
         assertThat(focusRecord.timestamp).isEqualTo(fakeTimestamp)
@@ -479,7 +487,7 @@ internal class RecordedDataProcessorTest {
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter, times(2)).write(captor.capture())
+        verify(mockWriter, times(2)).write(captor.capture(), any())
         assertThat(captor.secondValue.records.size).isEqualTo(1)
         assertThat(captor.secondValue.records[0]).isInstanceOf(
             MobileSegment.MobileRecord
@@ -507,7 +515,7 @@ internal class RecordedDataProcessorTest {
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter, times(2)).write(captor.capture())
+        verify(mockWriter, times(2)).write(captor.capture(), any())
         assertThat(captor.secondValue.records.size).isEqualTo(1)
         assertThat(captor.secondValue.records[0]).isInstanceOf(
             MobileSegment.MobileRecord
@@ -553,7 +561,7 @@ internal class RecordedDataProcessorTest {
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter, times(4)).write(captor.capture())
+        verify(mockWriter, times(4)).write(captor.capture(), any())
         assertThat(captor.lastValue.records.size).isEqualTo(3)
         val metaRecord = captor.lastValue.records[0] as MobileSegment.MobileRecord.MetaRecord
         assertThat(metaRecord.timestamp).isEqualTo(fakeTimestamp)
@@ -600,7 +608,7 @@ internal class RecordedDataProcessorTest {
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter, times(4)).write(captor.capture())
+        verify(mockWriter, times(4)).write(captor.capture(), any())
         assertThat(captor.lastValue.records.size).isEqualTo(3)
         val focusRecord = captor.lastValue.records[1] as MobileSegment.MobileRecord.FocusRecord
         assertThat(focusRecord.timestamp).isEqualTo(fakeTimestamp)
@@ -646,7 +654,7 @@ internal class RecordedDataProcessorTest {
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter, times(4)).write(captor.capture())
+        verify(mockWriter, times(4)).write(captor.capture(), any())
         assertThat(captor.thirdValue.records.size).isEqualTo(1)
         assertThat(captor.firstValue.applicationId).isEqualTo(fakeRumContext.applicationId)
         assertThat(captor.firstValue.sessionId).isEqualTo(fakeRumContext.sessionId)
@@ -704,7 +712,7 @@ internal class RecordedDataProcessorTest {
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter, times(2)).write(captor.capture())
+        verify(mockWriter, times(2)).write(captor.capture(), any())
         assertThat(captor.secondValue.records.size).isEqualTo(1)
         val incrementalSnapshotRecord = captor.secondValue.records[0]
             as MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord
@@ -755,7 +763,7 @@ internal class RecordedDataProcessorTest {
         // We should only send the FullSnapshotRecord. The IncrementalSnapshotRecord will not be
         // send as there was no mutation data detected.
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter, times(1)).write(captor.capture())
+        verify(mockWriter, times(1)).write(captor.capture(), any())
         assertThat(captor.firstValue.records.size).isEqualTo(3)
         assertThat(captor.firstValue.records[2])
             .isInstanceOf(MobileSegment.MobileRecord.MobileFullSnapshotRecord::class.java)
@@ -787,7 +795,7 @@ internal class RecordedDataProcessorTest {
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter).write(captor.capture())
+        verify(mockWriter).write(captor.capture(), any())
         assertThat(captor.firstValue.applicationId).isEqualTo(fakeRumContext.applicationId)
         assertThat(captor.firstValue.sessionId).isEqualTo(fakeRumContext.sessionId)
         assertThat(captor.firstValue.viewId).isEqualTo(fakeRumContext.viewId)
@@ -821,7 +829,7 @@ internal class RecordedDataProcessorTest {
         // Then
 
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter).write(captor.capture())
+        verify(mockWriter).write(captor.capture(), any())
         assertThat(captor.firstValue.applicationId).isEqualTo(fakeRumContext.applicationId)
         assertThat(captor.firstValue.sessionId).isEqualTo(fakeRumContext.sessionId)
         assertThat(captor.firstValue.viewId).isEqualTo(fakeRumContext.viewId)
@@ -855,7 +863,7 @@ internal class RecordedDataProcessorTest {
         // Then
 
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter, times(2)).write(captor.capture())
+        verify(mockWriter, times(2)).write(captor.capture(), any())
         assertThat(captor.firstValue.applicationId).isEqualTo(fakeRumContext.applicationId)
         assertThat(captor.firstValue.sessionId).isEqualTo(fakeRumContext.sessionId)
         assertThat(captor.firstValue.viewId).isEqualTo(fakeRumContext.viewId)
@@ -892,7 +900,7 @@ internal class RecordedDataProcessorTest {
         // Then
 
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter, times(2)).write(captor.capture())
+        verify(mockWriter, times(2)).write(captor.capture(), any())
         assertThat(captor.firstValue.applicationId).isEqualTo(fakeRumContext.applicationId)
         assertThat(captor.firstValue.sessionId).isEqualTo(fakeRumContext.sessionId)
         assertThat(captor.firstValue.viewId).isEqualTo(fakeRumContext.viewId)
@@ -928,7 +936,7 @@ internal class RecordedDataProcessorTest {
         // Then
 
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter, times(2)).write(captor.capture())
+        verify(mockWriter, times(2)).write(captor.capture(), any())
         assertThat(captor.firstValue.applicationId).isEqualTo(fakeRumContext.applicationId)
         assertThat(captor.firstValue.sessionId).isEqualTo(fakeRumContext.sessionId)
         assertThat(captor.firstValue.viewId).isEqualTo(fakeRumContext.viewId)
@@ -971,7 +979,7 @@ internal class RecordedDataProcessorTest {
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter, times(3)).write(captor.capture())
+        verify(mockWriter, times(3)).write(captor.capture(), any())
         val relevantItem = captor.lastValue
         assertThat(relevantItem.records.size).isEqualTo(3)
         assertThat(relevantItem.records[0]).isInstanceOf(MobileSegment.MobileRecord.MetaRecord::class.java)
@@ -1013,7 +1021,7 @@ internal class RecordedDataProcessorTest {
 
         val captor = argumentCaptor<EnrichedRecord>()
         // one for first view, one for first view end and one for new view
-        verify(mockWriter, times(3)).write(captor.capture())
+        verify(mockWriter, times(3)).write(captor.capture(), any())
         assertThat(captor.firstValue.applicationId).isEqualTo(fakeRumContext.applicationId)
         assertThat(captor.firstValue.sessionId).isEqualTo(fakeRumContext.sessionId)
         assertThat(captor.firstValue.viewId).isEqualTo(fakeRumContext.viewId)
@@ -1072,7 +1080,7 @@ internal class RecordedDataProcessorTest {
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter, atLeastOnce()).write(captor.capture())
+        verify(mockWriter, atLeastOnce()).write(captor.capture(), any())
 
         val initialSnapshot = captor.allValues[0].records
         val endSnapshot = captor.allValues[1].records
@@ -1127,7 +1135,7 @@ internal class RecordedDataProcessorTest {
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter, atLeastOnce()).write(captor.capture())
+        verify(mockWriter, atLeastOnce()).write(captor.capture(), any())
 
         val initialSnapshot = captor.allValues[0].records
         val touchEvent = captor.allValues[1].records
@@ -1182,7 +1190,7 @@ internal class RecordedDataProcessorTest {
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter, atLeastOnce()).write(captor.capture())
+        verify(mockWriter, atLeastOnce()).write(captor.capture(), any())
 
         val firstSnapshot = captor.allValues[0].records
         val endSnapshot = captor.allValues[1].records
@@ -1237,7 +1245,7 @@ internal class RecordedDataProcessorTest {
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter, atLeastOnce()).write(captor.capture())
+        verify(mockWriter, atLeastOnce()).write(captor.capture(), any())
 
         val firstSnapshot = captor.allValues[0].records
         val firstTouchEvent = captor.allValues[1].records
@@ -1258,6 +1266,7 @@ internal class RecordedDataProcessorTest {
         // Given
         val fakeByteArray = forge.anAlphaNumericalString().toByteArray()
         val fakeResourceItem = createResourceItem(fakeByteArray, usedContext = initialRecordedQueuedItemContext)
+        whenever(mockResourceDataStoreManager.markResourceAsSentIfNew(fakeIdentifier)).thenReturn(true)
 
         // When
         testedProcessor.processResources(fakeResourceItem)
@@ -1277,46 +1286,14 @@ internal class RecordedDataProcessorTest {
     }
 
     @Test
-    fun `M not store resource in datastore W processResources { resource not previously seen by manager not ready }`(
-        forge: Forge
-    ) {
-        // Given
-        val fakeByteArray = forge.anAlphaNumericalString().toByteArray()
-        val fakeResourceItem = createResourceItem(fakeByteArray, usedContext = initialRecordedQueuedItemContext)
-        whenever(mockResourceDataStoreManager.isReady()).thenReturn(false)
-
-        // When
-        testedProcessor.processResources(fakeResourceItem)
-
-        // Then
-        verify(mockResourceDataStoreManager, never()).cacheResourceHash(fakeIdentifier)
-    }
-
-    @Test
-    fun `M store resource in datastore W processResources { resource not previously seen and manager ready }`(
-        forge: Forge
-    ) {
-        // Given
-        val fakeByteArray = forge.anAlphaNumericalString().toByteArray()
-        val fakeResourceItem = createResourceItem(fakeByteArray, usedContext = initialRecordedQueuedItemContext)
-        whenever(mockResourceDataStoreManager.isReady()).thenReturn(true)
-
-        // When
-        testedProcessor.processResources(fakeResourceItem)
-
-        // Then
-        verify(mockResourceDataStoreManager, times(1)).cacheResourceHash(fakeIdentifier)
-    }
-
-    @Test
     fun `M not write resource data W processResources { resource was previously seen }`(
         @StringForgery fakeString: String
     ) {
         // Given
         val fakeByteArray = fakeString.toByteArray()
         val fakeResourceItem = createResourceItem(fakeByteArray, usedContext = initialRecordedQueuedItemContext)
-        whenever(mockResourceDataStoreManager.isPreviouslySentResource(fakeIdentifier))
-            .thenReturn(true)
+        whenever(mockResourceDataStoreManager.markResourceAsSentIfNew(fakeIdentifier))
+            .thenReturn(false)
 
         // When
         testedProcessor.processResources(fakeResourceItem)
@@ -1327,7 +1304,112 @@ internal class RecordedDataProcessorTest {
 
     // endregion
 
+    // region embedded content placeholders
+
+    @Test
+    fun `M report placeholder to the registry W process { snapshot with visible placeholder }`(
+        @StringForgery fakeSlotId: String,
+        forge: Forge
+    ) {
+        // Given
+        currentRecordedQueuedItemContext = mockRumContextDataHandler.createRumContextData()
+            ?: fail("RumContextData is null")
+        givenFlattenedWireframes(forge.anEmbeddedContentWireframe(fakeSlotId, isVisible = true))
+
+        // When
+        testedProcessor.processScreenSnapshots(createSnapshotItem(fakeSnapshot1))
+
+        // Then
+        assertThat(fakeSlotRegistry.placeholder(fakeSlotId))
+            .isEqualTo(
+                EmbeddedContentSlotRegistry.Placeholder(fakeRumContext.viewId, fakeTimestamp)
+            )
+    }
+
+    @Test
+    fun `M report no placeholder to the registry W process { snapshot with hidden placeholder }`(
+        @StringForgery fakeSlotId: String,
+        forge: Forge
+    ) {
+        // Given
+        currentRecordedQueuedItemContext = mockRumContextDataHandler.createRumContextData()
+            ?: fail("RumContextData is null")
+        givenFlattenedWireframes(forge.anEmbeddedContentWireframe(fakeSlotId, isVisible = false))
+
+        // When
+        testedProcessor.processScreenSnapshots(createSnapshotItem(fakeSnapshot1))
+
+        // Then
+        assertThat(fakeSlotRegistry.placeholder(fakeSlotId)).isNull()
+    }
+
+    @Test
+    fun `M report placeholders after writing W process { snapshot with visible placeholder }`(
+        @StringForgery fakeSlotId: String,
+        forge: Forge
+    ) {
+        // Given
+        // Nothing may be released against a placeholder whose record has not been written yet.
+        currentRecordedQueuedItemContext = mockRumContextDataHandler.createRumContextData()
+            ?: fail("RumContextData is null")
+        givenFlattenedWireframes(forge.anEmbeddedContentWireframe(fakeSlotId, isVisible = true))
+        var written = false
+        var writtenWhenNotified: Boolean? = null
+        whenever(mockWriter.write(any(), any())).thenAnswer { invocation ->
+            written = true
+            invocation.getArgument<() -> Unit>(1).invoke()
+            null
+        }
+        fakeSlotRegistry.addPlaceholderListener { writtenWhenNotified = written }
+
+        // When
+        testedProcessor.processScreenSnapshots(createSnapshotItem(fakeSnapshot1))
+
+        // Then
+        assertThat(writtenWhenNotified).isTrue()
+    }
+
+    @Test
+    fun `M report no placeholder W process { snapshot write rejected }`(
+        @StringForgery fakeSlotId: String,
+        forge: Forge
+    ) {
+        // Given
+        currentRecordedQueuedItemContext = mockRumContextDataHandler.createRumContextData()
+            ?: fail("RumContextData is null")
+        givenFlattenedWireframes(forge.anEmbeddedContentWireframe(fakeSlotId, isVisible = true))
+        // A rejected write never invokes the success callback.
+        whenever(mockWriter.write(any(), any())).thenAnswer { null }
+
+        // When
+        testedProcessor.processScreenSnapshots(createSnapshotItem(fakeSnapshot1))
+
+        // Then
+        assertThat(fakeSlotRegistry.placeholder(fakeSlotId)).isNull()
+    }
+
+    // endregion
+
     // region Internal
+
+    private fun givenFlattenedWireframes(vararg wireframes: MobileSegment.Wireframe) {
+        whenever(mockNodeFlattener.flattenNode(any())).thenReturn(wireframes.toList())
+    }
+
+    private fun Forge.anEmbeddedContentWireframe(
+        slotId: String,
+        isVisible: Boolean
+    ): MobileSegment.Wireframe.EmbeddedContentWireframe {
+        return MobileSegment.Wireframe.EmbeddedContentWireframe(
+            id = aLong(min = 0),
+            x = aLong(min = 0),
+            y = aLong(min = 0),
+            width = aLong(min = 0),
+            height = aLong(min = 0),
+            slotId = slotId,
+            isVisible = isVisible
+        )
+    }
 
     private fun Forge.aSingleLevelSnapshot(): Node {
         return Node(

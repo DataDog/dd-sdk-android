@@ -16,6 +16,7 @@ import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockFileReade
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockType
 import com.datadog.android.core.internal.utils.toInt
 import com.datadog.android.core.persistence.datastore.DataStoreContent
+import com.datadog.android.internal.telemetry.TelemetryContext
 import java.io.File
 import java.util.Locale
 
@@ -31,7 +32,8 @@ internal class DatastoreFileReader(
         key: String,
         deserializer: Deserializer<String, T>,
         version: Int? = null,
-        callback: DataStoreReadCallback<T>
+        callback: DataStoreReadCallback<T>,
+        telemetryContext: TelemetryContext
     ) {
         val datastoreFile = dataStoreFileHelper.getDataStoreFile(
             storageDir = storageDir,
@@ -44,7 +46,7 @@ internal class DatastoreFileReader(
             return
         }
 
-        readFromDataStoreFile(datastoreFile, deserializer, tlvBlockFileReader, version, callback)
+        readFromDataStoreFile(datastoreFile, deserializer, tlvBlockFileReader, version, callback, telemetryContext)
     }
 
     @Suppress("ReturnCount", "ThreadSafety")
@@ -53,9 +55,10 @@ internal class DatastoreFileReader(
         deserializer: Deserializer<String, T>,
         tlvBlockFileReader: TLVBlockFileReader,
         requestedVersion: Int?,
-        callback: DataStoreReadCallback<T>
+        callback: DataStoreReadCallback<T>,
+        telemetryContext: TelemetryContext
     ) {
-        val tlvBlocks = tlvBlockFileReader.read(datastoreFile)
+        val tlvBlocks = tlvBlockFileReader.read(datastoreFile, telemetryContext)
 
         // there should be as many blocks read as there are block types
         val numberBlocksFound = tlvBlocks.size

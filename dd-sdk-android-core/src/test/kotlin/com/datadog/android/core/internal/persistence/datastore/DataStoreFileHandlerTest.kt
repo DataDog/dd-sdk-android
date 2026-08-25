@@ -12,6 +12,7 @@ import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.datastore.DataStoreContent
+import com.datadog.android.internal.telemetry.TelemetryContext
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -71,10 +72,14 @@ internal class DataStoreFileHandlerTest {
     @StringForgery
     lateinit var fakeDataString: String
 
+    private lateinit var fakeTelemetryContext: TelemetryContext
+
     private lateinit var fileCallback: DataStoreReadCallback<ByteArray>
 
     @BeforeEach
     fun setup() {
+        fakeTelemetryContext = TelemetryContext(featureName = fakeFeatureName)
+
         whenever(mockExecutorService.execute(any())) doAnswer {
             it.getArgument<Runnable>(0).run()
         }
@@ -85,6 +90,7 @@ internal class DataStoreFileHandlerTest {
         }
 
         testedDataStoreHandler = DataStoreFileHandler(
+            featureName = fakeFeatureName,
             executorService = mockExecutorService,
             internalLogger = mockInternalLogger,
             dataStoreFileReader = mockDataStoreFileReader,
@@ -105,7 +111,8 @@ internal class DataStoreFileHandlerTest {
         verify(mockDataStoreFileReader).read(
             key = fakeKey,
             deserializer = mockDeserializer,
-            callback = fileCallback
+            callback = fileCallback,
+            telemetryContext = fakeTelemetryContext
         )
     }
 
@@ -126,7 +133,8 @@ internal class DataStoreFileHandlerTest {
             key = fakeKey,
             deserializer = mockDeserializer,
             version = fakeVersion,
-            callback = fileCallback
+            callback = fileCallback,
+            telemetryContext = fakeTelemetryContext
         )
     }
 
@@ -149,7 +157,8 @@ internal class DataStoreFileHandlerTest {
             data = fakeDataString,
             serializer = mockSerializer,
             callback = mockDataStoreWriteCallback,
-            version = fakeVersion
+            version = fakeVersion,
+            telemetryContext = fakeTelemetryContext
         )
     }
 

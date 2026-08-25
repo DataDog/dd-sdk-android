@@ -19,8 +19,11 @@ import com.datadog.android.sessionreplay.internal.RecordCallback
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -46,6 +49,7 @@ import java.util.UUID
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class SessionReplayRecordWriterTest {
     lateinit var testedWriter: SessionReplayRecordWriter
+    private val embeddedRecordWrites = mutableListOf<Pair<String, Int>>()
 
     @Mock
     lateinit var mockSdkCore: FeatureSdkCore
@@ -73,7 +77,10 @@ internal class SessionReplayRecordWriterTest {
         whenever(mockSdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME))
             .thenReturn(mockSessionReplayFeature)
 
-        testedWriter = SessionReplayRecordWriter(mockSdkCore, mockRecordCallback)
+        embeddedRecordWrites.clear()
+        testedWriter = SessionReplayRecordWriter(mockSdkCore, mockRecordCallback) { viewId, recordsCount ->
+            embeddedRecordWrites += viewId to recordsCount
+        }
     }
 
     @Test
@@ -102,6 +109,7 @@ internal class SessionReplayRecordWriterTest {
 
         verify(mockRecordCallback).onRecordForViewSent(fakeRecord)
         verifyNoMoreInteractions(mockRecordCallback)
+        assertThat(embeddedRecordWrites).isEmpty()
     }
 
     @Test
@@ -116,6 +124,35 @@ internal class SessionReplayRecordWriterTest {
 
         // Then
         verifyNoMoreInteractions(mockSessionReplayFeature)
+        verifyNoMoreInteractions(mockRecordCallback)
+    }
+
+    @Test
+    fun `M write serialized record W writeRaw`(
+        @StringForgery fakeViewId: String,
+        @IntForgery(min = 1) fakeRecordsCount: Int
+    ) {
+        // Given
+        val fakeRecord = byteArrayOf(1, 2, 3)
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
+        }
+        whenever(mockSessionReplayFeature.withWriteContext(eq(emptySet()), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
+        }
+
+        // When
+        testedWriter.writeRaw(fakeRecord, fakeViewId, fakeRecordsCount)
+
+        // Then
+        verify(mockEventBatchWriter).write(
+            event = RawBatchEvent(data = fakeRecord),
+            batchMetadata = null,
+            eventType = EventType.DEFAULT
+        )
+        assertThat(embeddedRecordWrites).containsExactly(fakeViewId to fakeRecordsCount)
         verifyNoMoreInteractions(mockRecordCallback)
     }
 
@@ -146,6 +183,81 @@ internal class SessionReplayRecordWriterTest {
         )
         verifyNoMoreInteractions(mockEventBatchWriter)
 
+        verifyNoMoreInteractions(mockRecordCallback)
+    }
+
+    @Test
+    fun `M call onSuccess W write`(forge: Forge) {
+        // Given
+        val fakeRecord = forge.forgeEnrichedRecord()
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
+        }
+        whenever(mockSessionReplayFeature.withWriteContext(any(), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
+        }
+        var onSuccessCalls = 0
+
+        // When
+        testedWriter.write(fakeRecord) { onSuccessCalls++ }
+
+        // Then
+        assertThat(onSuccessCalls).isEqualTo(1)
+    }
+
+    @Test
+    fun `M not call onSuccess W write { eventBatchWriter write failed }`(forge: Forge) {
+        // Given
+        whenever(mockEventBatchWriter.write(anyOrNull(), anyOrNull(), any()))
+            .thenReturn(false)
+        val fakeRecord = forge.forgeEnrichedRecord()
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
+        }
+        whenever(mockSessionReplayFeature.withWriteContext(any(), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
+        }
+        var onSuccessCalls = 0
+
+        // When
+        testedWriter.write(fakeRecord) { onSuccessCalls++ }
+
+        // Then
+        assertThat(onSuccessCalls).isZero()
+    }
+
+    @Test
+    fun `M not count embedded records W writeRaw { eventBatchWriter write failed }`(
+        @StringForgery fakeViewId: String,
+        @IntForgery(min = 1) fakeRecordsCount: Int
+    ) {
+        // Given
+        val fakeRecord = byteArrayOf(1, 2, 3)
+        whenever(mockEventBatchWriter.write(anyOrNull(), anyOrNull(), any()))
+            .thenReturn(false)
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
+        }
+        whenever(mockSessionReplayFeature.withWriteContext(any(), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
+        }
+
+        // When
+        testedWriter.writeRaw(fakeRecord, fakeViewId, fakeRecordsCount)
+
+        // Then
+        verify(mockEventBatchWriter).write(
+            event = RawBatchEvent(data = fakeRecord),
+            batchMetadata = null,
+            eventType = EventType.DEFAULT
+        )
+        assertThat(embeddedRecordWrites).isEmpty()
         verifyNoMoreInteractions(mockRecordCallback)
     }
 

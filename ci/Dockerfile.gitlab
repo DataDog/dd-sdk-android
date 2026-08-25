@@ -18,7 +18,6 @@ RUN set -x \
     curl \
     git \
     unzip \
-    wget \
     openssh-client \
     expect \
     python3-distutils \
@@ -65,7 +64,7 @@ RUN mkdir /root/.android \
 
 # Android SDK
 RUN \
-    wget --quiet --output-document=android-sdk.zip https://dl.google.com/android/repository/commandlinetools-linux-${ANDROID_SDK_TOOLS}_latest.zip && \
+    curl -fsSLo android-sdk.zip https://dl.google.com/android/repository/commandlinetools-linux-${ANDROID_SDK_TOOLS}_latest.zip && \
     mkdir -p android-sdk-linux/cmdline-tools && \
     unzip -d android-sdk-linux/cmdline-tools android-sdk.zip && \
     mv android-sdk-linux/cmdline-tools/cmdline-tools android-sdk-linux/cmdline-tools/latest && \
@@ -76,12 +75,6 @@ RUN \
     echo y | android-sdk-linux/cmdline-tools/latest/bin/sdkmanager --install "cmake;${CMAKE_VERSION}" >/dev/null && \
     (yes || true) | android-sdk-linux/cmdline-tools/latest/bin/sdkmanager --licenses
 
-RUN set -x \
- && curl -OL https://s3.amazonaws.com/dd-package-public/dd-package.deb && dpkg -i dd-package.deb && rm dd-package.deb \
- && apt-get update \
- && apt-get -y clean \
- && rm -rf /var/lib/apt/lists/*
-
 ENV ANDROID_SDK_ROOT $PWD/android-sdk-linux
 ENV ANDROID_HOME $PWD/android-sdk-linux
 ENV GRADLE_HOME /usr/local/gradle-${GRADLE_VERSION}
@@ -90,25 +83,47 @@ ENV PATH $PATH:$GRADLE_HOME/bin
 ENV PATH $PATH:$ANDROID_HOME/platform-tools
 ENV PATH $PATH:$ANDROID_SDK_ROOT/build-tools/${ANDROID_BUILD_TOOLS}:$ANDROID_NDK
 
-# Install Node
-ENV NODENV_VERSION 22.19.0
-ENV NODENV_ROOT /root/.nodenv
-ENV PATH "$NODENV_ROOT/shims:$NODENV_ROOT/bin:$PATH"
-RUN set -x \
-    && curl -fsSL https://github.com/nodenv/nodenv-installer/raw/master/bin/nodenv-installer | bash \
-    && nodenv install $NODENV_VERSION \
-    && nodenv rehash
-
 # Install Datadog CI
-RUN npm install -g npm@9.6.5
-RUN npm install -g @datadog/datadog-ci
+ARG GITHUB_RELEASES_BASE=https://depot-read-api-github-releases.us1.ddbuild.io/internal/mirror/github-releases
+ENV DATADOG_CI_VERSION=5.21.2
+ENV DATADOG_CI_SHA256_amd64=b163d332679b677410e05389700874a7e73b8fcb4d29dbc94c904637a9665b79
+ENV DATADOG_CI_SHA256_arm64=526d92541ef6990211f9da96d828394db956a3b12bdadc68a687b114f21918f7
+RUN set -x \
+  && case "${TARGETARCH}" in \
+       amd64) sha256="${DATADOG_CI_SHA256_amd64}"; arch=x64 ;; \
+       arm64) sha256="${DATADOG_CI_SHA256_arm64}"; arch=arm64 ;; \
+     esac \
+  && curl -fsSLo /usr/local/bin/datadog-ci \
+        "${GITHUB_RELEASES_BASE}/DataDog/datadog-ci/releases/download/v${DATADOG_CI_VERSION}/datadog-ci_linux-${arch}" \
+  && echo "${sha256}  /usr/local/bin/datadog-ci" | sha256sum -c \
+  && chmod +x /usr/local/bin/datadog-ci \
+  && datadog-ci version
 
 # Install Datadog Java tracer
 ENV DD_TRACER_FOLDER $PWD/dd-java-agent
 RUN mkdir -p $DD_TRACER_FOLDER
-RUN wget -O $DD_TRACER_FOLDER/dd-java-agent.jar https://repo1.maven.org/maven2/com/datadoghq/dd-java-agent/$DD_TRACER_VERSION/dd-java-agent-$DD_TRACER_VERSION.jar
+RUN curl -fsSLo $DD_TRACER_FOLDER/dd-java-agent.jar https://repo1.maven.org/maven2/com/datadoghq/dd-java-agent/$DD_TRACER_VERSION/dd-java-agent-$DD_TRACER_VERSION.jar
+
+# Install GitHub CLI
+ENV GH_CLI_VERSION=2.97.0
+ENV GH_CLI_SHA256_amd64=a2c9b8497e1f85b1ad0dfcb78b5a622e098801b8e461e459e88e1ee12f018112
+ENV GH_CLI_SHA256_arm64=73ea440ecad9c9e284429997ee6f93577bc6f7bc6fba357ef62c53ad8fb641a5
+RUN set -x \
+  && case "${TARGETARCH}" in \
+       amd64) sha256="${GH_CLI_SHA256_amd64}"; arch=amd64 ;; \
+       arm64) sha256="${GH_CLI_SHA256_arm64}"; arch=arm64 ;; \
+     esac \
+  && curl -fsSLo gh.tar.gz \
+        "${GITHUB_RELEASES_BASE}/cli/cli/releases/download/v${GH_CLI_VERSION}/gh_${GH_CLI_VERSION}_linux_${arch}.tar.gz" \
+  && echo "${sha256}  gh.tar.gz" | sha256sum -c \
+  && mkdir gh-cli \
+  && tar -xzf gh.tar.gz -C gh-cli \
+  && mv "$(find gh-cli -type f -name gh)" /usr/local/bin/gh \
+  && rm -rf gh.tar.gz gh-cli \
+  && gh --version
 
 COPY --from=registry.ddbuild.io/dd-octo-sts:v1.8.2 /usr/local/bin/dd-octo-sts /usr/local/bin/dd-octo-sts
+COPY --from=registry.ddbuild.io/dd-sts:v0.1.7@sha256:dea74bd68e19075b6001a02a2f6121001fbcd84b2512c7f398f7b39bf22f04a8 /usr/local/bin/dd-sts /usr/local/bin/dd-sts
 COPY --from=registry.ddbuild.io/commit-headless:v2.0.1 /commit-headless /usr/local/bin/commit-headless
 
 # Install ddsign for image signing

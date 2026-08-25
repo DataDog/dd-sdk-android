@@ -16,6 +16,7 @@ import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer.Companion.INVALID_PRIVACY_LEVEL_ERROR
+import com.datadog.android.sessionreplay.internal.recorder.mapper.EmbeddedContentViewMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.SystemInformation
@@ -72,6 +73,9 @@ internal class SnapshotProducerTest {
     @Mock
     lateinit var mockTouchPrivacyManager: TouchPrivacyManager
 
+    @Mock
+    lateinit var mockEmbeddedContentViewMapper: EmbeddedContentViewMapper
+
     @Forgery
     lateinit var fakeSystemInformation: SystemInformation
 
@@ -93,6 +97,30 @@ internal class SnapshotProducerTest {
             mockTouchPrivacyManager,
             mockInternalLogger
         )
+    }
+
+    @Test
+    fun `M delegate embedded lifecycle W beginSnapshot and finishSnapshot`() {
+        // Given
+        val hiddenNode = Node(wireframes = fakeViewWireframes)
+        testedSnapshotProducer = SnapshotProducer(
+            mockImageWireframeHelper,
+            mockTreeViewTraversal,
+            mockOptionSelectorDetector,
+            mockTouchPrivacyManager,
+            mockInternalLogger,
+            embeddedContentViewMapper = mockEmbeddedContentViewMapper
+        )
+        whenever(mockEmbeddedContentViewMapper.finishSnapshot()).thenReturn(hiddenNode)
+
+        // When
+        testedSnapshotProducer.beginSnapshot()
+        val result = testedSnapshotProducer.finishSnapshot()
+
+        // Then
+        verify(mockEmbeddedContentViewMapper).beginSnapshot()
+        verify(mockEmbeddedContentViewMapper).finishSnapshot()
+        assertThat(result).isSameAs(hiddenNode)
     }
 
     @Test

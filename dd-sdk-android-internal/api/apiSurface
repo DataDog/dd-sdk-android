@@ -253,6 +253,27 @@ sealed class com.datadog.android.internal.telemetry.InternalTelemetryEvent
     enum Mode
       - DEFAULT_HEADERS
       - CUSTOM
+data class com.datadog.android.internal.telemetry.TelemetryContext
+  constructor(String, String? = null)
+  fun asAttributesMap(Int, Pair<String, Any> = emptyArray()): Map<String, Any>
+  companion object 
+    const val BYTE_LOST_UNKNOWN: Int
+    const val TELEMETRY_DATA_LIMIT: String
+    const val TELEMETRY_FILE_PATH: String
+    const val TELEMETRY_BATCH_OPERATION: String
+    const val TELEMETRY_BATCH_BYTES_EXPECTED: String
+    const val TELEMETRY_BATCH_BYTES_ACTUAL: String
+    const val TELEMETRY_BLOCK_TYPE_ACTUAL_IDENTIFIER: String
+    const val TELEMETRY_BLOCK_TYPE_EXPECTED: String
+    const val TELEMETRY_BLOCK_TYPE_EXPECTED_IDENTIFIER: String
+    const val TELEMETRY_TLV_TYPE: String
+    const val TELEMETRY_TLV_SIZE: String
+    const val TELEMETRY_TLV_SIZE_LIMIT: String
+    const val TELEMETRY_TLV_DATA_LENGTH: String
+    const val TELEMETRY_TLV_DATA_LENGTH_LIMIT: String
+    const val TELEMETRY_TLV_HEADER_LENGTH: String
+    const val TELEMETRY_TLV_HEADER_LENGTH_LIMIT: String
+    fun asAttributesMap(String, Int? = null, String? = null, Pair<String, Any> = emptyArray()): Map<String, Any>
 enum com.datadog.android.internal.telemetry.TracingHeaderType
   - DATADOG
   - B3

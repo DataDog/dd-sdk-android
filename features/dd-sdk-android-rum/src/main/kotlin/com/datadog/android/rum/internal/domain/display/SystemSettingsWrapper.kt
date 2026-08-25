@@ -25,6 +25,14 @@ internal class SystemSettingsWrapper(
                 throwable = e
             )
             Integer.MIN_VALUE
+        } catch (@Suppress("TooGenericExceptionCaught") e: RuntimeException) {
+            internalLogger.log(
+                target = InternalLogger.Target.MAINTAINER,
+                level = InternalLogger.Level.WARN,
+                messageBuilder = { "Problem retrieving system value for $name" },
+                throwable = e
+            )
+            Integer.MIN_VALUE
         }
     }
 }
