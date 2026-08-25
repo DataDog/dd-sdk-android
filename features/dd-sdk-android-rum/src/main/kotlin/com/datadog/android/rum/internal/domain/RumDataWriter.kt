@@ -28,6 +28,7 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.ViewUpdateEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
@@ -87,7 +88,12 @@ internal class RumDataWriter(
     private fun writeFullViewCheckpoint(writer: EventBatchWriter, event: ViewEvent, eventType: EventType): Boolean {
         val (byteArray, serializedEventMeta) = serializeViewEvent(event) ?: return false
 
-        return writeBatchEvent(writer, RawBatchEvent(data = byteArray, metadata = serializedEventMeta), eventType) {
+        return writeBatchEvent(
+            writer,
+            RawBatchEvent(data = byteArray, metadata = serializedEventMeta),
+            eventType,
+            telemetryContext(event)
+        ) {
             onDataWritten(event, byteArray)
         }
     }
@@ -126,7 +132,12 @@ internal class RumDataWriter(
         val serializedEventMeta = eventMetaSerializer.serializeToByteArray(eventMeta, sdkCore.internalLogger)
             ?: EMPTY_BYTE_ARRAY
 
-        return writeBatchEvent(writer, RawBatchEvent(data = byteArray, metadata = serializedEventMeta), eventType) {
+        return writeBatchEvent(
+            writer,
+            RawBatchEvent(data = byteArray, metadata = serializedEventMeta),
+            eventType,
+            telemetryContext(event)
+        ) {
             if (writeCrashRecovery) {
                 // serialize the full ViewEvent only on successful write, for crash recovery
                 val byteArrayView = eventSerializer.serializeToByteArray(eventData.viewEvent, sdkCore.internalLogger)
@@ -170,15 +181,11 @@ internal class RumDataWriter(
         writer: EventBatchWriter,
         batchEvent: RawBatchEvent,
         eventType: EventType,
-        telemetryContext: TelemetryContext? = null,
+        telemetryContext: TelemetryContext,
         onSuccess: () -> Unit = {}
     ): Boolean {
         return synchronized(this) {
-            val result = if (telemetryContext != null) {
-                writer.write(batchEvent, null, eventType, telemetryContext)
-            } else {
-                writer.write(batchEvent, null, eventType)
-            }
+            val result = writer.write(batchEvent, null, eventType, telemetryContext)
             if (result) onSuccess()
             result
         }
@@ -221,6 +228,7 @@ internal class RumDataWriter(
             is LongTaskEvent -> event.type
             is ResourceEvent -> event.type
             is ViewEvent -> event.type
+            is ViewUpdateEvent -> event.type
             is VitalAppLaunchEvent -> event.type
             is VitalOperationStepEvent -> event.type
             is TelemetryConfigurationEvent -> event.type

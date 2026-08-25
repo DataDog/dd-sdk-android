@@ -745,22 +745,16 @@ internal class RumDataWriterTest {
             documentVersion = fakeViewUpdateEvent.dd.documentVersion
         )
         whenever(mockEventMetaSerializer.serialize(eventMeta)) doThrow forge.aThrowable()
-        whenever(
-            mockEventBatchWriter.write(
-                RawBatchEvent(data = fakeDiffSerializedData),
-                null,
-                fakeEventType
-            )
-        ) doReturn true
 
         // When
         testedWriter.write(mockEventBatchWriter, fakeViewUpdateData, fakeEventType)
 
         // Then
         verify(mockEventBatchWriter).write(
-            RawBatchEvent(data = fakeDiffSerializedData),
-            null,
-            fakeEventType
+            eq(RawBatchEvent(data = fakeDiffSerializedData)),
+            isNull(),
+            eq(fakeEventType),
+            any<TelemetryContext>()
         )
     }
 
@@ -776,7 +770,6 @@ internal class RumDataWriterTest {
             viewUpdate = fakeViewUpdateEvent,
             viewEvent = fakeViewEvent
         )
-        val fakeDiffSerializedData = fakeDiffSerializedEvent.toByteArray(Charsets.UTF_8)
         whenever(mockEventSerializer.serialize(fakeViewUpdateEvent)) doReturn fakeDiffSerializedEvent
         whenever(mockEventSerializer.serialize(fakeViewEvent)) doThrow RuntimeException("serialization error")
         val fakeSerializedMeta = forge.aString()
@@ -785,16 +778,6 @@ internal class RumDataWriterTest {
             documentVersion = fakeViewUpdateEvent.dd.documentVersion
         )
         whenever(mockEventMetaSerializer.serialize(eventMeta)) doReturn fakeSerializedMeta
-        whenever(
-            mockEventBatchWriter.write(
-                RawBatchEvent(
-                    data = fakeDiffSerializedData,
-                    metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)
-                ),
-                null,
-                fakeEventType
-            )
-        ) doReturn true
 
         // When
         testedWriter.write(mockEventBatchWriter, fakeViewUpdateData, fakeEventType)
@@ -816,7 +799,6 @@ internal class RumDataWriterTest {
             viewUpdate = fakeViewUpdateEvent,
             viewEvent = fakeViewEvent
         )
-        val fakeDiffSerializedData = fakeDiffSerializedEvent.toByteArray(Charsets.UTF_8)
         val fakeFullSerializedData = fakeFullSerializedEvent.toByteArray(Charsets.UTF_8)
         whenever(mockEventSerializer.serialize(fakeViewUpdateEvent)) doReturn fakeDiffSerializedEvent
         whenever(mockEventSerializer.serialize(fakeViewEvent)) doReturn fakeFullSerializedEvent
@@ -826,16 +808,6 @@ internal class RumDataWriterTest {
             documentVersion = fakeViewUpdateEvent.dd.documentVersion
         )
         whenever(mockEventMetaSerializer.serialize(eventMeta)) doReturn fakeSerializedMeta
-        whenever(
-            mockEventBatchWriter.write(
-                RawBatchEvent(
-                    data = fakeDiffSerializedData,
-                    metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)
-                ),
-                null,
-                fakeEventType
-            )
-        ) doReturn true
         // the checkpointed view is the current view, so its crash-recovery write is not gated out
         testedWriter.onViewEventSubmitted(
             fakeViewEvent.copy(dd = fakeViewEvent.dd.copy(documentVersion = RumDataWriter.FIRST_VIEW_DOCUMENT_VERSION))
@@ -864,7 +836,6 @@ internal class RumDataWriterTest {
             viewUpdate = staleViewUpdateEvent,
             viewEvent = staleViewEvent
         )
-        val fakeDiffSerializedData = fakeDiffSerializedEvent.toByteArray(Charsets.UTF_8)
         val fakeFullSerializedData = fakeFullSerializedEvent.toByteArray(Charsets.UTF_8)
         whenever(mockEventSerializer.serialize(staleViewUpdateEvent)) doReturn fakeDiffSerializedEvent
         whenever(mockEventSerializer.serialize(staleViewEvent)) doReturn fakeFullSerializedEvent
@@ -874,16 +845,6 @@ internal class RumDataWriterTest {
             documentVersion = staleViewUpdateEvent.dd.documentVersion
         )
         whenever(mockEventMetaSerializer.serialize(eventMeta)) doReturn fakeSerializedMeta
-        whenever(
-            mockEventBatchWriter.write(
-                RawBatchEvent(
-                    data = fakeDiffSerializedData,
-                    metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)
-                ),
-                null,
-                fakeEventType
-            )
-        ) doReturn true
         // view B is the current view — established after view A's own update would have started
         testedWriter.onViewEventSubmitted(
             fakeViewEvent.copy(
@@ -933,26 +894,6 @@ internal class RumDataWriterTest {
         whenever(mockEventSerializer.serialize(fakeViewEvent)) doReturn fakeFullSerializedEvent
         whenever(mockEventMetaSerializer.serialize(diffMeta)) doReturn fakeSerializedMeta
         whenever(mockEventMetaSerializer.serialize(fullMeta)) doReturn fakeFullMeta
-        whenever(
-            mockEventBatchWriter.write(
-                RawBatchEvent(
-                    data = fakeDiffBytes,
-                    metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)
-                ),
-                null,
-                fakeEventType
-            )
-        ) doReturn true
-        whenever(
-            mockEventBatchWriter.write(
-                RawBatchEvent(
-                    data = fakeFullBytes,
-                    metadata = fakeFullMeta.toByteArray(Charsets.UTF_8)
-                ),
-                null,
-                fakeEventType
-            )
-        ) doReturn true
 
         // When
         val result = testedWriter.write(mockEventBatchWriter, fakeData, fakeEventType)
@@ -960,7 +901,12 @@ internal class RumDataWriterTest {
         // Then
         assertThat(result).isTrue()
         val captor = argumentCaptor<RawBatchEvent>()
-        verify(mockEventBatchWriter, times(2)).write(captor.capture(), isNull(), eq(fakeEventType))
+        verify(mockEventBatchWriter, times(2)).write(
+            captor.capture(),
+            isNull(),
+            eq(fakeEventType),
+            any<TelemetryContext>()
+        )
         // diff is written first, then the full view
         assertThat(captor.firstValue.data).isEqualTo(fakeDiffBytes)
         assertThat(captor.secondValue.data).isEqualTo(fakeFullBytes)
@@ -979,7 +925,6 @@ internal class RumDataWriterTest {
             viewUpdate = fakeViewUpdateEvent,
             viewEvent = fakeViewEvent
         )
-        val fakeDiffBytes = fakeDiffSerializedEvent.toByteArray(Charsets.UTF_8)
         val fakeFullBytes = fakeFullSerializedEvent.toByteArray(Charsets.UTF_8)
         val fakeSerializedMeta = forge.aString()
         val fakeFullMeta = forge.aString()
@@ -996,26 +941,6 @@ internal class RumDataWriterTest {
         whenever(mockEventSerializer.serialize(fakeViewEvent)) doReturn fakeFullSerializedEvent
         whenever(mockEventMetaSerializer.serialize(diffMeta)) doReturn fakeSerializedMeta
         whenever(mockEventMetaSerializer.serialize(fullMeta)) doReturn fakeFullMeta
-        whenever(
-            mockEventBatchWriter.write(
-                RawBatchEvent(
-                    data = fakeDiffBytes,
-                    metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)
-                ),
-                null,
-                fakeEventType
-            )
-        ) doReturn true
-        whenever(
-            mockEventBatchWriter.write(
-                RawBatchEvent(
-                    data = fakeFullBytes,
-                    metadata = fakeFullMeta.toByteArray(Charsets.UTF_8)
-                ),
-                null,
-                fakeEventType
-            )
-        ) doReturn true
         // the checkpointed view is the current view, so its crash-recovery write is not gated out
         testedWriter.onViewEventSubmitted(
             fakeViewEvent.copy(dd = fakeViewEvent.dd.copy(documentVersion = RumDataWriter.FIRST_VIEW_DOCUMENT_VERSION))
@@ -1044,7 +969,6 @@ internal class RumDataWriterTest {
             viewUpdate = staleViewUpdateEvent,
             viewEvent = staleViewEvent
         )
-        val fakeDiffBytes = fakeDiffSerializedEvent.toByteArray(Charsets.UTF_8)
         val fakeFullBytes = fakeFullSerializedEvent.toByteArray(Charsets.UTF_8)
         val fakeSerializedMeta = forge.aString()
         val fakeFullMeta = forge.aString()
@@ -1061,26 +985,6 @@ internal class RumDataWriterTest {
         whenever(mockEventSerializer.serialize(staleViewEvent)) doReturn fakeFullSerializedEvent
         whenever(mockEventMetaSerializer.serialize(diffMeta)) doReturn fakeSerializedMeta
         whenever(mockEventMetaSerializer.serialize(fullMeta)) doReturn fakeFullMeta
-        whenever(
-            mockEventBatchWriter.write(
-                RawBatchEvent(
-                    data = fakeDiffBytes,
-                    metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)
-                ),
-                null,
-                fakeEventType
-            )
-        ) doReturn true
-        whenever(
-            mockEventBatchWriter.write(
-                RawBatchEvent(
-                    data = fakeFullBytes,
-                    metadata = fakeFullMeta.toByteArray(Charsets.UTF_8)
-                ),
-                null,
-                fakeEventType
-            )
-        ) doReturn true
         // view B is the current view — established after view A's own checkpoint would have started
         testedWriter.onViewEventSubmitted(
             fakeViewEvent.copy(
@@ -1109,7 +1013,6 @@ internal class RumDataWriterTest {
             viewUpdate = fakeViewUpdateEvent,
             viewEvent = fakeViewEvent
         )
-        val fakeDiffBytes = fakeDiffSerializedEvent.toByteArray(Charsets.UTF_8)
         val fakeFullBytes = fakeFullSerializedEvent.toByteArray(Charsets.UTF_8)
         val fakeSerializedMeta = forge.aString()
         val fakeFullMeta = forge.aString()
@@ -1126,20 +1029,6 @@ internal class RumDataWriterTest {
         whenever(mockEventSerializer.serialize(fakeViewEvent)) doReturn fakeFullSerializedEvent
         whenever(mockEventMetaSerializer.serialize(diffMeta)) doReturn fakeSerializedMeta
         whenever(mockEventMetaSerializer.serialize(fullMeta)) doReturn fakeFullMeta
-        whenever(
-            mockEventBatchWriter.write(
-                RawBatchEvent(data = fakeDiffBytes, metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)),
-                null,
-                fakeEventType
-            )
-        ) doReturn true
-        whenever(
-            mockEventBatchWriter.write(
-                RawBatchEvent(data = fakeFullBytes, metadata = fakeFullMeta.toByteArray(Charsets.UTF_8)),
-                null,
-                fakeEventType
-            )
-        ) doReturn true
         // the checkpointed view is the current view, so its crash-recovery write is not gated out
         testedWriter.onViewEventSubmitted(
             fakeViewEvent.copy(dd = fakeViewEvent.dd.copy(documentVersion = RumDataWriter.FIRST_VIEW_DOCUMENT_VERSION))
@@ -1165,7 +1054,6 @@ internal class RumDataWriterTest {
             viewUpdate = fakeViewUpdateEvent,
             viewEvent = fakeViewEvent
         )
-        val fakeDiffBytes = fakeDiffSerializedEvent.toByteArray(Charsets.UTF_8)
         val fakeFullBytes = fakeFullSerializedEvent.toByteArray(Charsets.UTF_8)
         val fakeSerializedMeta = forge.aString()
         val fakeFullMeta = forge.aString()
@@ -1184,16 +1072,10 @@ internal class RumDataWriterTest {
         whenever(mockEventMetaSerializer.serialize(fullMeta)) doReturn fakeFullMeta
         whenever(
             mockEventBatchWriter.write(
-                RawBatchEvent(data = fakeDiffBytes, metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)),
-                null,
-                fakeEventType
-            )
-        ) doReturn true
-        whenever(
-            mockEventBatchWriter.write(
-                RawBatchEvent(data = fakeFullBytes, metadata = fakeFullMeta.toByteArray(Charsets.UTF_8)),
-                null,
-                fakeEventType
+                eq(RawBatchEvent(data = fakeFullBytes, metadata = fakeFullMeta.toByteArray(Charsets.UTF_8))),
+                isNull(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
             )
         ) doReturn false
 
@@ -1227,9 +1109,10 @@ internal class RumDataWriterTest {
         whenever(mockEventMetaSerializer.serialize(diffMeta)) doReturn fakeSerializedMeta
         whenever(
             mockEventBatchWriter.write(
-                RawBatchEvent(data = fakeDiffBytes, metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)),
-                null,
-                fakeEventType
+                eq(RawBatchEvent(data = fakeDiffBytes, metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8))),
+                isNull(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
             )
         ) doReturn false
 
@@ -1237,7 +1120,7 @@ internal class RumDataWriterTest {
         testedWriter.write(mockEventBatchWriter, fakeData, fakeEventType)
 
         // Then — only one batch write (the diff); full view batch write never attempted
-        verify(mockEventBatchWriter, times(1)).write(any(), isNull(), any())
+        verify(mockEventBatchWriter, times(1)).write(any(), isNull(), any(), any<TelemetryContext>())
     }
 
     @Test
@@ -1262,9 +1145,10 @@ internal class RumDataWriterTest {
         whenever(mockEventMetaSerializer.serialize(diffMeta)) doReturn fakeSerializedMeta
         whenever(
             mockEventBatchWriter.write(
-                RawBatchEvent(data = fakeDiffBytes, metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)),
-                null,
-                fakeEventType
+                eq(RawBatchEvent(data = fakeDiffBytes, metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8))),
+                isNull(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
             )
         ) doReturn false
 
@@ -1297,9 +1181,10 @@ internal class RumDataWriterTest {
         whenever(mockEventMetaSerializer.serialize(diffMeta)) doReturn fakeSerializedMeta
         whenever(
             mockEventBatchWriter.write(
-                RawBatchEvent(data = fakeDiffBytes, metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8)),
-                null,
-                fakeEventType
+                eq(RawBatchEvent(data = fakeDiffBytes, metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8))),
+                isNull(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
             )
         ) doReturn false
 
