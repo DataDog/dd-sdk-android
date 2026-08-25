@@ -19,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 
@@ -42,6 +43,7 @@ internal class PrivacyOverrideExtensionsTest {
 
         // Then
         verify(mockView).setTag(eq(R.id.datadog_hidden), eq(true))
+        verify(mockView, never()).postInvalidateOnAnimation()
     }
 
     @Test
@@ -54,6 +56,7 @@ internal class PrivacyOverrideExtensionsTest {
 
         // Then
         verify(mockView).setTag(eq(R.id.datadog_hidden), isNull())
+        verify(mockView, never()).postInvalidateOnAnimation()
     }
 
     // endregion

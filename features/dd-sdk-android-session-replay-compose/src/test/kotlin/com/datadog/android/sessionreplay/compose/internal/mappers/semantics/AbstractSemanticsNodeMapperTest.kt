@@ -241,7 +241,7 @@ internal open class AbstractSemanticsNodeMapperTest {
     }
 
     protected fun mockSemanticsNodeWithBound(additionalMock: SemanticsNode.() -> Unit = {}): SemanticsNode {
-        return mock<SemanticsNode?>().apply {
+        return mock<SemanticsNode>().apply {
             whenever(id) doReturn fakeSemanticsId
             whenever(boundsInRoot) doReturn fakeBounds
             whenever(layoutInfo) doReturn mockLayoutInfo
@@ -277,7 +277,6 @@ internal open class AbstractSemanticsNodeMapperTest {
     companion object {
         private const val MAX_ALPHA = 255
         private const val DEFAULT_FONT_FAMILY = "Roboto, sans-serif"
-        protected const val DEFAULT_TEXT_COLOR = "#000000FF"
     }
 }
 

@@ -30,6 +30,7 @@ internal class ResourcesLRUCache(
 
     override fun onConfigurationChanged(newConfig: Configuration) {}
 
+    @Deprecated("Deprecated in Java")
     override fun onLowMemory() {
         @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
         invocationUtils.safeCallWithErrorLogging(

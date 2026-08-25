@@ -27,6 +27,7 @@ import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollect
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
+import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollectorFactory
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -215,7 +216,8 @@ internal class RumApplicationScopeAttributePropagationTest {
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
-            heatmapIdentifierRegistry = null
+            heatmapIdentifierRegistry = null,
+            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
         )
     }
 

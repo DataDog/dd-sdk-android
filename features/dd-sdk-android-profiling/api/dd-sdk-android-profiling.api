@@ -133,6 +133,7 @@ public final class com/datadog/android/profiling/model/ProfileEvent$Family : jav
 	public static final field Companion Lcom/datadog/android/profiling/model/ProfileEvent$Family$Companion;
 	public static final field IOS Lcom/datadog/android/profiling/model/ProfileEvent$Family;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/profiling/model/ProfileEvent$Family;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/profiling/model/ProfileEvent$Family;
 	public static fun values ()[Lcom/datadog/android/profiling/model/ProfileEvent$Family;
@@ -261,6 +262,7 @@ public final class com/datadog/android/profiling/model/RumMetadataEvent$Type : j
 	public static final field LONG_TASK Lcom/datadog/android/profiling/model/RumMetadataEvent$Type;
 	public static final field VITAL Lcom/datadog/android/profiling/model/RumMetadataEvent$Type;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/profiling/model/RumMetadataEvent$Type;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/profiling/model/RumMetadataEvent$Type;
 	public static fun values ()[Lcom/datadog/android/profiling/model/RumMetadataEvent$Type;

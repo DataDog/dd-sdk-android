@@ -46,7 +46,8 @@ internal class PrecomputedFlagForgeryFactory : ForgeryFactory<PrecomputedFlag> {
                     }
                 }
             } ?: JSONObject(),
-            reason = reason
+            reason = reason,
+            serialId = forge.aNullable { aLong(min = 0L) }
         )
     }
 }

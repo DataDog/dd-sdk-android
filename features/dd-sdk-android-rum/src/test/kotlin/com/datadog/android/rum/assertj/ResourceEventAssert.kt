@@ -377,22 +377,22 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
     }
 
     fun hasView(expected: RumContext): ResourceEventAssert {
-        assertThat(actual.view.id)
+        assertThat(actual.view?.id)
             .overridingErrorMessage(
                 "Expected event data to have view.id ${expected.viewId} " +
-                    "but was ${actual.view.id}"
+                    "but was ${actual.view?.id}"
             )
             .isEqualTo(expected.viewId.orEmpty())
-        assertThat(actual.view.name)
+        assertThat(actual.view?.name)
             .overridingErrorMessage(
                 "Expected event data to have view.name ${expected.viewName} " +
-                    "but was ${actual.view.name}"
+                    "but was ${actual.view?.name}"
             )
             .isEqualTo(expected.viewName)
-        assertThat(actual.view.url)
+        assertThat(actual.view?.url)
             .overridingErrorMessage(
                 "Expected event data to have view.url ${expected.viewUrl} " +
-                    "but was ${actual.view.url}"
+                    "but was ${actual.view?.url}"
             )
             .isEqualTo(expected.viewUrl.orEmpty())
         return this

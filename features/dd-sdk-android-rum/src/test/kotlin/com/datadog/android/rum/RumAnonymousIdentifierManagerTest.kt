@@ -11,31 +11,31 @@ import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.rum.internal.AnonymousIdentifierReadCallback
 import com.datadog.android.rum.internal.RumAnonymousIdentifierManager
-import org.junit.Before
-import org.junit.Test
-import org.junit.runner.RunWith
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
-import org.mockito.junit.MockitoJUnitRunner
+import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.whenever
 import java.util.UUID
 
-@RunWith(MockitoJUnitRunner::class)
+@ExtendWith(MockitoExtension::class)
 class RumAnonymousIdentifierManagerTest {
 
     @Mock
-    private lateinit var dataStore: DataStoreHandler
+    lateinit var dataStore: DataStoreHandler
 
     @Mock
-    private lateinit var core: FeatureSdkCore
+    lateinit var core: FeatureSdkCore
 
     private lateinit var rumAnonymousIdentifierManager: RumAnonymousIdentifierManager
 
-    @Before
+    @BeforeEach
     fun setUp() {
         rumAnonymousIdentifierManager = RumAnonymousIdentifierManager(dataStore, core)
     }

@@ -11,6 +11,8 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.TimeseriesCpuEvent.TimeseriesCpuEventSessionType
+import com.datadog.android.rum.model.TimeseriesMemoryEvent.TimeseriesMemoryEventSessionType
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
@@ -49,6 +51,7 @@ internal fun RumSessionType.toLongTask(): LongTaskEvent.LongTaskEventSessionType
         RumSessionType.USER -> LongTaskEvent.LongTaskEventSessionType.USER
     }
 }
+
 internal fun RumSessionType.toVital(): VitalOperationStepEvent.VitalOperationStepEventSessionType {
     return when (this) {
         RumSessionType.SYNTHETICS -> VitalOperationStepEvent.VitalOperationStepEventSessionType.SYNTHETICS
@@ -61,4 +64,14 @@ internal fun RumSessionType.toVitalAppLaunch(): VitalAppLaunchEvent.VitalAppLaun
         RumSessionType.SYNTHETICS -> VitalAppLaunchEvent.VitalAppLaunchEventSessionType.SYNTHETICS
         RumSessionType.USER -> VitalAppLaunchEvent.VitalAppLaunchEventSessionType.USER
     }
+}
+
+internal fun RumSessionType.toTimeseriesMemorySessionType(): TimeseriesMemoryEventSessionType = when (this) {
+    RumSessionType.SYNTHETICS -> TimeseriesMemoryEventSessionType.SYNTHETICS
+    RumSessionType.USER -> TimeseriesMemoryEventSessionType.USER
+}
+
+internal fun RumSessionType.toTimeseriesCpuSessionType(): TimeseriesCpuEventSessionType = when (this) {
+    RumSessionType.SYNTHETICS -> TimeseriesCpuEventSessionType.SYNTHETICS
+    RumSessionType.USER -> TimeseriesCpuEventSessionType.USER
 }

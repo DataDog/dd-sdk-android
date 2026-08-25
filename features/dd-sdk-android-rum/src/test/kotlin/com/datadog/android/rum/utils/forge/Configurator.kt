@@ -58,6 +58,7 @@ internal class Configurator : BaseConfigurator() {
         forge.addFactory(SlowFramesConfigurationForgeryFactory())
         forge.addFactory(DisplayInfoForgeryFactory())
         forge.addFactory(BatteryInfoForgeryFactory())
+        forge.addFactory(DataPointForgeryFactory())
         forge.addFactory(NativeHeatmapActionDataForgeryFactory())
         forge.addFactory(CrossPlatformHeatmapActionDataForgeryFactory())
 

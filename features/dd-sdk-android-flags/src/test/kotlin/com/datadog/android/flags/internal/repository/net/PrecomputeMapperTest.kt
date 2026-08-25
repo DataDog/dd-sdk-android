@@ -13,6 +13,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -56,6 +57,9 @@ internal class PrecomputeMapperTest {
 
     @DoubleForgery
     var fakeDoubleValue: Double = 0.0
+
+    @LongForgery(min = 1L)
+    var fakeSerialId: Long = 0L
 
     private lateinit var testedMapper: PrecomputeMapper
 
@@ -304,6 +308,89 @@ internal class PrecomputeMapperTest {
 
         // Then
         assertThat(result).isEmpty()
+        verifyNoInteractions(mockInternalLogger)
+    }
+
+    // endregion
+
+    // region Serial Id
+
+    @Test
+    fun `M parse serial id W map() { flag carries a serial id }`() {
+        // Given
+        val flagJson = buildFlagJson(
+            variationType = VariationType.STRING.value,
+            variationValue = "test-value"
+        ).apply { put("serialId", fakeSerialId) }
+        val json = buildValidJson(mapOf(fakeFlagKey to flagJson))
+
+        // When
+        val result = testedMapper.map(json)
+
+        // Then
+        val flag = result[fakeFlagKey]
+        checkNotNull(flag)
+        assertThat(flag.serialId).isEqualTo(fakeSerialId)
+        verifyNoInteractions(mockInternalLogger)
+    }
+
+    @Test
+    fun `M parse serial id W map() { serial id is zero }`() {
+        // Given
+        val flagJson = buildFlagJson(
+            variationType = VariationType.STRING.value,
+            variationValue = "test-value"
+        ).apply { put("serialId", 0L) }
+        val json = buildValidJson(mapOf(fakeFlagKey to flagJson))
+
+        // When
+        val result = testedMapper.map(json)
+
+        // Then
+        val flag = result[fakeFlagKey]
+        checkNotNull(flag)
+        assertThat(flag.serialId).isEqualTo(0L)
+        verifyNoInteractions(mockInternalLogger)
+    }
+
+    @Test
+    fun `M parse no serial id W map() { serial id is null }`() {
+        // Given
+        val flagJson = buildFlagJson(
+            variationType = VariationType.STRING.value,
+            variationValue = "test-value"
+        ).apply { put("serialId", JSONObject.NULL) }
+        val json = buildValidJson(mapOf(fakeFlagKey to flagJson))
+
+        // When
+        val result = testedMapper.map(json)
+
+        // Then
+        val flag = result[fakeFlagKey]
+        checkNotNull(flag)
+        assertThat(flag.serialId).isNull()
+        verifyNoInteractions(mockInternalLogger)
+    }
+
+    @Test
+    fun `M parse no serial id W map() { no serial id key }`() {
+        // Given
+        val json = buildValidJson(
+            mapOf(
+                fakeFlagKey to buildFlagJson(
+                    variationType = VariationType.STRING.value,
+                    variationValue = "test-value"
+                )
+            )
+        )
+
+        // When
+        val result = testedMapper.map(json)
+
+        // Then
+        val flag = result[fakeFlagKey]
+        checkNotNull(flag)
+        assertThat(flag.serialId).isNull()
         verifyNoInteractions(mockInternalLogger)
     }
 

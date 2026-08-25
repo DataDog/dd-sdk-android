@@ -37,6 +37,27 @@ internal class SerializedFlagsStateAssert(actual: JSONObject) :
         return this
     }
 
+    fun hasFlagSerialId(flagKey: String, expected: Long): SerializedFlagsStateAssert {
+        val flag = actual.getJSONObject("flags").getJSONObject(flagKey)
+        assertThat(flag.getLong("serialId"))
+            .overridingErrorMessage(
+                "Expected flag $flagKey to have serialId $expected " +
+                    "but was ${flag.opt("serialId")}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasNoFlagSerialId(flagKey: String): SerializedFlagsStateAssert {
+        val flag = actual.getJSONObject("flags").getJSONObject(flagKey)
+        assertThat(flag.has("serialId"))
+            .overridingErrorMessage(
+                "Expected flag $flagKey to have no serialId but was ${flag.opt("serialId")}"
+            )
+            .isFalse()
+        return this
+    }
+
     fun hasEmptyFlags(): SerializedFlagsStateAssert {
         val flags = actual.getJSONObject("flags")
         assertThat(flags.length())

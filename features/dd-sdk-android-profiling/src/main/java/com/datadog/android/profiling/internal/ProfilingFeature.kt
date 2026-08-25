@@ -394,7 +394,7 @@ internal class ProfilingFeature(
         private const val LOG_CONTINUOUS_PROFILING_WRITTEN =
             "Continuous profiling result written: %d long task(s), %d ANR event(s)."
         internal const val QUOTA_CHECK_TIMEOUT_MS = 5_000L
-        private const val QUOTA_EXECUTOR_CONTEXT = "dd-profiling-quota"
+        private const val QUOTA_EXECUTOR_CONTEXT = "profiling-quota"
         internal const val LOG_LAUNCH_PROFILING_DROPPED_QUOTA_DENIED =
             "Launch profiling dropped: quota denied (reason=%s)."
     }

@@ -13,4 +13,5 @@
     <color name="timeline_slow_frame">#FFFF00</color>
     <color name="timeline_freeze_frame">#FF0000</color>
     <color name="timeline_resource">#00FF00</color>
+    <color name="timeline_timeseries">#66CCFF</color>
 </resources>
