@@ -81,6 +81,52 @@ internal class CrashReportsFeatureTest {
         assertThat(finalHandler).isSameAs(mockOriginalHandler)
     }
 
+    @Test
+    fun `M keep foreign handler W onStop() { another handler registered after us }`() {
+        // Given
+        val mockOriginalHandler: Thread.UncaughtExceptionHandler = mock()
+        Thread.setDefaultUncaughtExceptionHandler(mockOriginalHandler)
+        testedFeature.onInitialize(appContext.mockInstance)
+        val mockForeignHandler: Thread.UncaughtExceptionHandler = mock()
+        Thread.setDefaultUncaughtExceptionHandler(mockForeignHandler)
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        assertThat(Thread.getDefaultUncaughtExceptionHandler()).isSameAs(mockForeignHandler)
+    }
+
+    @Test
+    fun `M keep current handler W onStop() { feature was never initialized }`() {
+        // Given
+        val mockForeignHandler: Thread.UncaughtExceptionHandler = mock()
+        Thread.setDefaultUncaughtExceptionHandler(mockForeignHandler)
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        assertThat(Thread.getDefaultUncaughtExceptionHandler()).isSameAs(mockForeignHandler)
+    }
+
+    @Test
+    fun `M keep current handler W onStop() twice`() {
+        // Given
+        val mockOriginalHandler: Thread.UncaughtExceptionHandler = mock()
+        Thread.setDefaultUncaughtExceptionHandler(mockOriginalHandler)
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.onStop()
+        val mockForeignHandler: Thread.UncaughtExceptionHandler = mock()
+        Thread.setDefaultUncaughtExceptionHandler(mockForeignHandler)
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        assertThat(Thread.getDefaultUncaughtExceptionHandler()).isSameAs(mockForeignHandler)
+    }
+
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
 
