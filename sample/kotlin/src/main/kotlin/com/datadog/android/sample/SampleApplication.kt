@@ -42,6 +42,7 @@ import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
 import com.datadog.android.rum.resource.ResourceHeadersExtractor
+import com.datadog.android.rum.timeseries.TimeseriesConfiguration
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.sample.account.AccountFragment
 import com.datadog.android.sample.data.db.LocalDataSource
@@ -432,6 +433,7 @@ class SampleApplication : Application() {
             .trackAnonymousUser(true)
             .enableComposeActionTracking()
             .collectAccessibility(true)
+            .setTimeseriesConfiguration(TimeseriesConfiguration.DEFAULT)
             .build()
     }
 

@@ -123,6 +123,7 @@ datadog:
       - "java.util.concurrent.ConcurrentHashMap.contains(kotlin.Any?):java.lang.NullPointerException"
       - "java.util.concurrent.ConcurrentHashMap.remove(com.datadog.android.api.feature.FeatureContextUpdateReceiver):java.lang.NullPointerException"
       - "java.util.concurrent.ConcurrentHashMap.remove(kotlin.String?):java.lang.NullPointerException"
+      - "java.util.concurrent.ConcurrentLinkedQueue.offer(com.datadog.android.internal.utils.PendingUpdate):java.lang.NullPointerException"
       - "java.util.concurrent.ConcurrentLinkedQueue.offer(com.datadog.android.sessionreplay.internal.async.RecordedDataQueueItem):java.lang.NullPointerException"
       - "java.util.concurrent.CopyOnWriteArraySet.removeAll(kotlin.collections.Collection):java.lang.NullPointerException,java.lang.ClassCastException"
       - "java.util.concurrent.CountDownLatch.await():java.lang.InterruptedException"

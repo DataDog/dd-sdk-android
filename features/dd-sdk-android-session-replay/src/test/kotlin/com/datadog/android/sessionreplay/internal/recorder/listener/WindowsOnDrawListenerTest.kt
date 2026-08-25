@@ -206,6 +206,50 @@ internal class WindowsOnDrawListenerTest {
     }
 
     @Test
+    fun `M take and add to queue without debouncing W captureNow()`() {
+        // Given
+        // The debouncer is free to drop a debounced frame, which would lose the requested capture.
+        whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
+            .thenReturn(fakeSnapshotQueueItem)
+
+        // When
+        val captured = testedListener.captureNow()
+
+        // Then
+        assertThat(captured).isTrue()
+        verify(mockRecordedDataQueueHandler).addSnapshotItem(fakeSystemInformation)
+        verifyNoInteractions(mockDebouncer)
+    }
+
+    @Test
+    fun `M report no capture W captureNow() { queue refused the item }`() {
+        // Given
+        whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
+            .thenReturn(null)
+
+        // When
+        val captured = testedListener.captureNow()
+
+        // Then
+        assertThat(captured).isFalse()
+        verifyNoInteractions(mockSnapshotProducer)
+    }
+
+    @Test
+    fun `M report no capture W captureNow() { windows lost the strong reference }`() {
+        // Given
+        testedListener.weakReferencedDecorViews.forEach { it.clear() }
+
+        // When
+        val captured = testedListener.captureNow()
+
+        // Then
+        assertThat(captured).isFalse()
+        verifyNoInteractions(mockRecordedDataQueueHandler)
+        verifyNoInteractions(mockSnapshotProducer)
+    }
+
+    @Test
     fun `M update queue with correct nodes W onDraw()`() {
         // Given
         whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
@@ -227,6 +271,25 @@ internal class WindowsOnDrawListenerTest {
         )
         assertThat(argCaptor.firstValue.recordedDataQueueItem).isEqualTo(fakeSnapshotQueueItem)
         verify(mockRecordedDataQueueHandler).tryToConsumeItems()
+    }
+
+    @Test
+    fun `M prepend hidden embedded node W onDraw { embedded view missing from snapshot }`() {
+        // Given
+        val hiddenEmbeddedNode = Node(wireframes = emptyList())
+        whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
+            .thenReturn(fakeSnapshotQueueItem)
+        whenever(mockSnapshotProducer.finishSnapshot()).thenReturn(hiddenEmbeddedNode)
+        fakeSnapshotQueueItem.pendingJobs.set(0)
+
+        // When
+        testedListener.onDraw()
+
+        // Then
+        verify(mockSnapshotProducer).beginSnapshot()
+        verify(mockSnapshotProducer).finishSnapshot()
+        assertThat(fakeSnapshotQueueItem.nodes)
+            .containsExactlyElementsOf(listOf(hiddenEmbeddedNode) + fakeWindowsSnapshots)
     }
 
     @Test

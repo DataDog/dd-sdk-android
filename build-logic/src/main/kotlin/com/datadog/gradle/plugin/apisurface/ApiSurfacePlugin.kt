@@ -32,7 +32,7 @@ class ApiSurfacePlugin : Plugin<Project> {
         val generateApiSurfaceTask = target.tasks
             .register<GenerateApiSurfaceTask>(TASK_GEN_KOTLIN_API_SURFACE) {
                 this.srcDir.set(srcDir)
-                this.genDir.from(jsonToModelGenerations.map { it.destinationPackageDirectory })
+                this.genDir.from(jsonToModelGenerations.map { it.destinationGenDirectory })
                 this.surfaceFile.set(kotlinSurfaceFile)
             }
         target.tasks

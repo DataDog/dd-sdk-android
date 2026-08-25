@@ -45,8 +45,8 @@ dependencies {
     compileOnly(libs.detektGradlePlugin)
     compileOnly(libs.ktlintGradlePlugin)
 
-    // check api surface
-    implementation(libs.kotlinGrammarParser)
+    // Bundled with Gradle buildscript path
+    compileOnly(libs.kotlinCompilerEmbeddable)
 
     // JsonSchema 2 Poko
     implementation(libs.gson)
@@ -56,6 +56,9 @@ dependencies {
     implementation(libs.kotlinXmlBuilder)
 
     // Tests
+    // Not inherited from `compileOnly`, and the test JVM has no buildscript classpath to
+    // borrow it from, so the API surface tests need their own copy.
+    testImplementation(libs.kotlinCompilerEmbeddable)
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.mockitoKotlin)
     testImplementation(libs.assertJ)
@@ -70,23 +73,21 @@ dependencies {
 gradlePlugin {
     plugins {
         register("datadogBuildConfig") {
-            id = "datadogBuildConfig" // the alias
             implementationClass = "com.datadog.gradle.plugin.config.DatadogBuildConfigPlugin"
         }
         register("apiSurface") {
-            id = "apiSurface" // the alias
             implementationClass = "com.datadog.gradle.plugin.apisurface.ApiSurfacePlugin"
         }
+        register("aarMetadata") {
+            implementationClass = "com.datadog.gradle.plugin.aarmetadata.AarMetadataPlugin"
+        }
         register("cloneDependencies") {
-            id = "cloneDependencies" // the alias
             implementationClass = "com.datadog.gradle.plugin.gitclone.GitCloneDependenciesPlugin"
         }
         register("transitiveDependencies") {
-            id = "transitiveDependencies" // the alias
             implementationClass = "com.datadog.gradle.plugin.transdeps.TransitiveDependenciesPlugin"
         }
         register("verificationXml") {
-            id = "verificationXml" // the alias
             implementationClass = "com.datadog.gradle.plugin.verification.VerificationXmlPlugin"
         }
     }

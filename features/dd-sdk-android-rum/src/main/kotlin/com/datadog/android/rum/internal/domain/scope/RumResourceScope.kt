@@ -155,6 +155,12 @@ internal class RumResourceScope(
     ) {
         if (key != event.key) return
         timing = event.timing
+        // DatadogEventListener can dispatch AddResourceTiming more than once for the same
+        // resource (e.g. once from responseHeadersEnd for HTTP error status codes, again from
+        // callEnd/callFailed). This is not a double-report risk: as soon as sendResource() below
+        // runs, handleEvent() returns null and RumViewScope.delegateEventToResources removes this
+        // scope from activeResourceScopes in that same dispatch. Any later AddResourceTiming for
+        // this key finds no matching scope and is silently dropped before it ever reaches here.
         if (stopped && !sent) {
             sendResource(kind, statusCode, size, event.eventTime, datadogContext, writeScope, writer)
         }

@@ -1,0 +1,85 @@
+{
+  "date": 1700000001000,
+  "application": {
+    "id": "fake-app-id",
+    "current_locale": "en-US"
+  },
+  "service": "fake-service",
+  "version": "1.2.3",
+  "build_version": "42",
+  "build_id": "fake-app-build-id",
+  "ddtags": "service:fake-service,version:1.2.3,sdk_version:2.0.0,env:fake-env,variant:fake-variant",
+  "session": {
+    "id": "fake-session-id",
+    "type": "user",
+    "has_replay": true
+  },
+  "source": "android",
+  "os": {
+    "name": "Android",
+    "version": "13.0.1",
+    "version_major": "13"
+  },
+  "device": {
+    "type": "mobile",
+    "name": "fake-device-name",
+    "model": "fake-device-model",
+    "brand": "fake-device-brand",
+    "architecture": "arm64-v8a",
+    "locales": [
+      "en-US",
+      "fr-FR"
+    ],
+    "time_zone": "America/New_York",
+    "battery_level": 0.42,
+    "power_saving_mode": true,
+    "brightness_level": 128,
+    "logical_cpu_count": 8,
+    "total_ram": 4096,
+    "is_low_ram": false
+  },
+  "_dd": {
+    "format_version": 2,
+    "session": {
+      "session_precondition": "user_app_launch"
+    },
+    "configuration": {
+      "session_sample_rate": 42.0,
+      "session_replay_sample_rate": 75,
+      "trace_sample_rate": 20.0
+    }
+  },
+  "type": "timeseries",
+  "timeseries": {
+    "id": "00000000-0000-0000-0000-000000000000",
+    "name": "memory",
+    "schema": "object-v2",
+    "start": 1700000001000000000,
+    "end": 1700000005000000000,
+    "data": {
+      "timestamps": [
+        1700000001000000000,
+        1700000002000000000,
+        1700000003000000000,
+        1700000004000000000,
+        1700000005000000000
+      ],
+      "values": {
+        "memory_footprint": [
+          31233.3,
+          31245.5,
+          31300.8,
+          31289.1,
+          31350.0
+        ],
+        "memory_percent": [
+          3.12333,
+          3.12455,
+          3.13008,
+          3.12891,
+          3.135
+        ]
+      }
+    }
+  }
+}

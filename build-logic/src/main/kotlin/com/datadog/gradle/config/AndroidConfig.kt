@@ -49,9 +49,6 @@ internal fun Project.androidLibraryConfig() {
         sourceSets.all {
             java.srcDir("src/$name/kotlin")
         }
-        sourceSets.named("main") {
-            java.srcDir("build/generated/json2kotlin/main/kotlin")
-        }
 
         testOptions {
             unitTests.isReturnDefaultValues = true

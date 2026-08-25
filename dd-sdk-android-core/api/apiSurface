@@ -129,9 +129,9 @@ interface com.datadog.android.api.feature.FeatureEventReceiver
   fun onReceive(Any)
 interface com.datadog.android.api.feature.FeatureScope
   val dataStore: com.datadog.android.api.storage.datastore.DataStoreHandler
-  fun withWriteContext(Set<String> = emptySet(), (com.datadog.android.api.context.DatadogContext) -> Unit)
+  fun withWriteContext(Set<String> = emptySet(), (com.datadog.android.api.context.DatadogContext, EventWriteScope) -> Unit)
   fun withContext(Set<String> = emptySet(), (com.datadog.android.api.context.DatadogContext) -> Unit)
-  fun withWriteContextSync(Set<String> = emptySet(), (com.datadog.android.api.context.DatadogContext) -> Unit): Boolean
+  fun withWriteContextSync(Set<String> = emptySet(), (com.datadog.android.api.context.DatadogContext, EventWriteScope) -> Unit): Boolean
   fun sendEvent(Any)
   fun <T: Feature> unwrap(): T
 typealias EventWriteScope = ((com.datadog.android.api.storage.EventBatchWriter) -> Unit) -> Unit
@@ -500,7 +500,7 @@ enum com.datadog.android.trace.TracingHeaderType
   - B3
   - B3MULTI
   - TRACECONTEXT
-data class com.datadog.android.core.`internal`.remote.model.RemoteConfiguration
+data class com.datadog.android.core.internal.remote.model.RemoteConfiguration
   constructor(Rum? = null, SessionReplay? = null, Profiling? = null, Trace? = null)
   val platform: kotlin.String
   fun toJson(): com.google.gson.JsonElement

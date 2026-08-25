@@ -27,8 +27,10 @@ internal class ResourceDataStoreManager(
 ) {
     @Suppress("UnsafeThirdPartyFunctionCall") // map is initialized empty
     private val knownResources = Collections.newSetFromMap(ConcurrentHashMap<String, Boolean>())
+    private val knownResourcesLock = Any()
     private val storedLastUpdateTimestampMs = AtomicLong(featureSdkCore.timeProvider.getDeviceTimestampMillis())
     private val isInitialized = AtomicBoolean(false) // has init finished executing its async actions
+    private var hasUnpersistedResourceHashes = false
 
     init {
         fetchStoredResourceHashes(
@@ -72,9 +74,19 @@ internal class ResourceDataStoreManager(
     internal fun isPreviouslySentResource(resourceHash: String): Boolean =
         knownResources.contains(resourceHash)
 
-    internal fun cacheResourceHash(resourceHash: String) {
-        knownResources.add(resourceHash)
-        writeResourcesToStore()
+    internal fun markResourceAsSentIfNew(resourceHash: String): Boolean {
+        return synchronized(knownResourcesLock) {
+            if (!knownResources.add(resourceHash)) {
+                false
+            } else {
+                if (isInitialized.get()) {
+                    writeResourcesToStore()
+                } else {
+                    hasUnpersistedResourceHashes = true
+                }
+                true
+            }
+        }
     }
 
     internal fun isReady(): Boolean =
@@ -83,7 +95,13 @@ internal class ResourceDataStoreManager(
     // region internal
 
     private fun finishedInitializingManager() {
-        isInitialized.set(true)
+        synchronized(knownResourcesLock) {
+            isInitialized.set(true)
+            if (hasUnpersistedResourceHashes) {
+                hasUnpersistedResourceHashes = false
+                writeResourcesToStore()
+            }
+        }
     }
 
     private fun writeResourcesToStore() {

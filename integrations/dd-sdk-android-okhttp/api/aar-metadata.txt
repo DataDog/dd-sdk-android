@@ -1,0 +1,6 @@
+aarFormatVersion=1.0
+aarMetadataVersion=1.0
+coreLibraryDesugaringEnabled=false
+minAndroidGradlePluginVersion=1.0.0
+minCompileSdk=1
+minCompileSdkExtension=0

@@ -32,6 +32,7 @@ plugins {
 
     // Internal Generation
     id("apiSurface")
+    id("aarMetadata")
     id("transitiveDependencies")
     id("binary-compatibility-validator")
     id("test-pyramid-api-surface")
