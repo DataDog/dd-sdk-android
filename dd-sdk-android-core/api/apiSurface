@@ -500,7 +500,7 @@ enum com.datadog.android.trace.TracingHeaderType
   - B3
   - B3MULTI
   - TRACECONTEXT
-data class com.datadog.android.core.`internal`.remote.model.RemoteConfiguration
+data class com.datadog.android.core.internal.remote.model.RemoteConfiguration
   constructor(Rum? = null, SessionReplay? = null, Profiling? = null, Trace? = null)
   val platform: kotlin.String
   fun toJson(): com.google.gson.JsonElement
