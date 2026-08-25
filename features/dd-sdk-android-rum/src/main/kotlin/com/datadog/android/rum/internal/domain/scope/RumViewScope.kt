@@ -1448,8 +1448,8 @@ internal open class RumViewScope(
                     replayStats = replayStats,
                     configuration = ViewEvent.Configuration(
                         sessionSampleRate = sampleRate,
-                        sessionReplaySampleRate = resolveSessionReplaySampleRate(datadogContext),
-                        traceSampleRate = resolveTraceSampleRate(datadogContext)
+                        sessionReplaySampleRate = datadogContext.resolveSessionReplaySampleRate(),
+                        traceSampleRate = datadogContext.resolveTraceSampleRate()
                     ),
                     profiling = resolveViewProfilingStatus(datadogContext)
                 ),
@@ -1733,16 +1733,6 @@ internal open class RumViewScope(
         } else {
             null
         }
-    }
-
-    private fun resolveSessionReplaySampleRate(datadogContext: DatadogContext): Long? {
-        val srContext = datadogContext.featuresContext[Feature.SESSION_REPLAY_FEATURE_NAME]
-        return srContext?.get(SESSION_REPLAY_SAMPLE_RATE_KEY) as? Long
-    }
-
-    private fun resolveTraceSampleRate(datadogContext: DatadogContext): Float? {
-        val tracingContext = datadogContext.featuresContext[Feature.TRACING_FEATURE_NAME]
-        return tracingContext?.get(TRACE_SAMPLE_RATE) as? Float
     }
 
     private fun resolveErrorProfilingStatus(datadogContext: DatadogContext): ErrorEvent.Profiling? {

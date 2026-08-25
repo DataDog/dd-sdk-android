@@ -256,6 +256,7 @@ internal class RumScopeKeyTest {
     }
 
     class StubLegacyFragment : LegacyFragment() {
+        @Suppress("POTENTIALLY_NON_REPORTED_ANNOTATION")
         @Deprecated("Deprecated in Java")
         override fun toString(): String {
             return "StubLegacyFragment{${System.identityHashCode(this)}}"

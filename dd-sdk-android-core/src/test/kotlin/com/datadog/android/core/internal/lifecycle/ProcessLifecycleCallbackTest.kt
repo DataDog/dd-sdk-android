@@ -127,6 +127,7 @@ internal class ProcessLifecycleCallbackTest {
     fun `when process started cancel existing workers`() {
         // Given
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
+        whenever(mockWorkManager.cancelAllWorkByTag(any())) doReturn mock()
 
         // When
         testedCallback.onStarted()

@@ -23,44 +23,64 @@ class TouchPrivacyManager(
     // areas on screen where overrides are applied
     private val currentOverrideAreas = HashMap<Rect, TouchPrivacy>()
 
-    // Built during the view traversal and copied to currentOverrideAreas at the end
-    // We use two hashmaps because touch handling happens in parallel to the view traversal
-    // and we don't know which will happen first.
-    // Secondly, because we don't want to have to keep track of the lifecycle of the overridden views in order to remove
-    // the overrides when they are no longer needed.
-    private val nextOverrideAreas = HashMap<Rect, TouchPrivacy>()
+    // Built during the view traversal and copied to currentOverrideAreas at the end.
+    // ThreadLocal because each window's onDraw pass rebuilds this on its own thread: a shared
+    // map would let one pass's clear() wipe another's still-in-progress entries.
+    // initialValue() (not withInitial(), which needs API 26) keeps this working below minSdk.
+    private val nextOverrideAreas = object : ThreadLocal<HashMap<Rect, TouchPrivacy>>() {
+        override fun initialValue(): HashMap<Rect, TouchPrivacy> = HashMap()
+    }
+
+    // ThreadLocal#get() is a platform type from Kotlin's view; initialValue() always supplies a
+    // value, but falling back to a fresh map here (never crashing) is safer than asserting it.
+    private fun currentPass(): HashMap<Rect, TouchPrivacy> {
+        val existing = nextOverrideAreas.get()
+        if (existing != null) return existing
+        val fresh = HashMap<Rect, TouchPrivacy>()
+        nextOverrideAreas.set(fresh)
+        return fresh
+    }
+
+    // Each recorded window runs the snapshot pipeline on the Looper thread its view hierarchy is
+    // attached to. This could not be the main thread so currentOverrideAreas can be accessed
+    // concurrently.
+    private val lock = Any()
 
     /**
      * Adds touch area with [TouchPrivacy] override.
      */
     @UiThread
     fun addTouchOverrideArea(bounds: Rect, touchPrivacy: TouchPrivacy) {
-        nextOverrideAreas[bounds] = touchPrivacy
+        currentPass()[bounds] = touchPrivacy
     }
 
     @UiThread
     internal fun updateCurrentTouchOverrideAreas() {
-        currentOverrideAreas.clear()
-        // NPE cannot happen here
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        currentOverrideAreas.putAll(nextOverrideAreas)
-        nextOverrideAreas.clear()
+        val builtByThisPass = currentPass()
+        synchronized(lock) {
+            currentOverrideAreas.clear()
+            // NPE cannot happen here
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            currentOverrideAreas.putAll(builtByThisPass)
+        }
+        builtByThisPass.clear()
     }
 
     @UiThread
     internal fun shouldRecordTouch(touchLocation: Point): Boolean {
         var isOverriddenToShowTouch = false
 
-        // Everything is UiThread, so ConcurrentModification cannot happen here
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        currentOverrideAreas.forEach { entry ->
-            val area = entry.key
-            val overrideValue = entry.value
+        synchronized(lock) {
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            currentOverrideAreas.forEach { entry ->
+                val area = entry.key
+                val overrideValue = entry.value
 
-            if (area.contains(touchLocation.x, touchLocation.y)) {
-                when (overrideValue) {
-                    TouchPrivacy.HIDE -> return false
-                    TouchPrivacy.SHOW -> isOverriddenToShowTouch = true
+                if (area.contains(touchLocation.x, touchLocation.y)) {
+                    when (overrideValue) {
+                        TouchPrivacy.HIDE -> return false
+                        TouchPrivacy.SHOW -> isOverriddenToShowTouch = true
+                    }
                 }
             }
         }
@@ -70,11 +90,17 @@ class TouchPrivacyManager(
 
     @VisibleForTesting
     internal fun getCurrentOverrideAreas(): Map<Rect, TouchPrivacy> {
-        return currentOverrideAreas
+        synchronized(lock) {
+            // NPE cannot happen here
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            return HashMap(currentOverrideAreas)
+        }
     }
 
     @VisibleForTesting
     internal fun getNextOverrideAreas(): Map<Rect, TouchPrivacy> {
-        return nextOverrideAreas
+        // NPE cannot happen here
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        return HashMap(currentPass())
     }
 }

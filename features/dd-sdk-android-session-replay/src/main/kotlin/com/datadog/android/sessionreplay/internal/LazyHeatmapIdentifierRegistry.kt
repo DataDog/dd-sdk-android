@@ -6,7 +6,6 @@
 
 package com.datadog.android.sessionreplay.internal
 
-import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -19,15 +18,17 @@ import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
  * This wrapper defers the `getFeature(RUM)` lookup to the first heatmap operation and caches
  * the result once resolved so the lookup cost is paid at most once.
  *
- * All methods are `@UiThread`: the SR snapshot traversal drives writes from the UI thread and
- * [HeatmapIdentifierResolver] is annotated `@UiThread`, so no locking is needed here.
+ * Each recorded window drives its snapshot traversal on its own Looper thread, so [delegate] can
+ * be entered concurrently from multiple threads. The cached resolution is `@Volatile` so a
+ * resolution made on one thread is visible to the others; a redundant [FeatureSdkCore.getFeature]
+ * lookup racing on first use is harmless since the result is deterministic.
  */
-@UiThread
 internal class LazyHeatmapIdentifierRegistry(
     private val sdkCore: FeatureSdkCore
 ) : HeatmapIdentifierRegistry {
 
     // null = not yet attempted; UNAVAILABLE = permanently failed; anything else = real registry
+    @Volatile
     private var resolved: HeatmapIdentifierRegistry? = null
 
     private fun delegate(): HeatmapIdentifierRegistry? {

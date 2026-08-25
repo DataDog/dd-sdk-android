@@ -46,19 +46,25 @@ internal class WireframeUtils(private val boundsUtils: BoundsUtils = BoundsUtils
         wireframe: MobileSegment.Wireframe,
         topWireframes: List<MobileSegment.Wireframe>
     ): Boolean {
-        val wireframeBounds = boundsUtils.resolveBounds(wireframe)
-        topWireframes.forEach {
-            val topBounds = boundsUtils.resolveBounds(it)
-            if (boundsUtils.isCovering(topBounds, wireframeBounds) &&
-                it.hasOpaqueBackground()
-            ) {
-                return true
-            }
+        if (wireframe is MobileSegment.Wireframe.EmbeddedContentWireframe &&
+            wireframe.isVisible == false
+        ) {
+            return false
         }
-        return false
+        val wireframeBounds = boundsUtils.resolveBounds(wireframe)
+        return topWireframes.any {
+            val topBounds = boundsUtils.resolveBounds(it)
+            boundsUtils.isCovering(topBounds, wireframeBounds) &&
+                it.hasOpaqueBackground()
+        }
     }
 
     internal fun checkWireframeIsValid(wireframe: MobileSegment.Wireframe): Boolean {
+        if (wireframe is MobileSegment.Wireframe.EmbeddedContentWireframe &&
+            wireframe.isVisible == false
+        ) {
+            return true
+        }
         val wireframeBounds = boundsUtils.resolveBounds(wireframe)
         return (
             wireframeBounds.width > 0 &&
@@ -78,6 +84,7 @@ internal class WireframeUtils(private val boundsUtils: BoundsUtils = BoundsUtils
             is MobileSegment.Wireframe.ImageWireframe -> this.clip
             is MobileSegment.Wireframe.PlaceholderWireframe -> this.clip
             is MobileSegment.Wireframe.WebviewWireframe -> this.clip
+            is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.clip
         }
     }
 }

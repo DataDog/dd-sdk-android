@@ -17,6 +17,7 @@ internal object BoundsUtils {
             is MobileSegment.Wireframe.ImageWireframe -> wireframe.bounds()
             is MobileSegment.Wireframe.PlaceholderWireframe -> wireframe.bounds()
             is MobileSegment.Wireframe.WebviewWireframe -> wireframe.bounds()
+            is MobileSegment.Wireframe.EmbeddedContentWireframe -> wireframe.bounds()
         }
     }
 
@@ -45,6 +46,10 @@ internal object BoundsUtils {
         return resolveBounds(x, y, width, height, clip)
     }
     private fun MobileSegment.Wireframe.WebviewWireframe.bounds(): WireframeBounds {
+        return resolveBounds(x, y, width, height, clip)
+    }
+
+    private fun MobileSegment.Wireframe.EmbeddedContentWireframe.bounds(): WireframeBounds {
         return resolveBounds(x, y, width, height, clip)
     }
 

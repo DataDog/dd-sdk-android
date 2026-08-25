@@ -5,24 +5,25 @@
  */
 
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.androidLibraryConfig
-import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.java11
-import com.datadog.gradle.config.junitConfig
-import com.datadog.gradle.config.kotlinConfig
-import com.datadog.gradle.config.publishingConfig
 import com.datadog.gradle.utils.createJsonModelsGenerationTask
 
 plugins {
-    id("ktlint")
+    // Build
     id("com.android.library")
+    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
+    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
+    id("ktlint")
     kotlin("android")
-    id("com.github.ben-manes.versions")
+    id("datadogBuildConfig")
 
+    // Publishing
     `maven-publish`
     signing
 }
 
+// TODO RUM-18189 Support new AGP DSL
+@Suppress("DEPRECATION")
 android {
     defaultConfig {
         compileSdk = AndroidConfig.COMPILE_SDK
@@ -60,11 +61,12 @@ createJsonModelsGenerationTask("generateTraceModelsFromJson") {
     targetPackageName = "com.datadog.benchmark.internal.model"
 }
 
-kotlinConfig()
-junitConfig()
-dependencyUpdateConfig()
-androidLibraryConfig()
-publishingConfig(
-    projectDescription = "An internal benchmarking tool to measure the overhead of Datadog SDK",
-    customArtifactId = "dd-sdk-android-benchmark-internal"
-)
+datadogBuild {
+    applyKotlinConfig()
+    applyJunitConfig()
+    applyAndroidLibraryConfig()
+    applyPublishingConfig(
+        projectDescription = "An internal benchmarking tool to measure the overhead of Datadog SDK",
+        customArtifactId = "dd-sdk-android-benchmark-internal"
+    )
+}

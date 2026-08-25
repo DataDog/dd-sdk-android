@@ -345,6 +345,53 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
         return mutation
     }
 
+    private fun resolveEmbeddedContentWireframeMutation(
+        prevWireframe: MobileSegment.Wireframe.EmbeddedContentWireframe,
+        currentWireframe: MobileSegment.Wireframe.EmbeddedContentWireframe
+    ): MobileSegment.WireframeUpdateMutation? {
+        var mutation = MobileSegment.WireframeUpdateMutation
+            .EmbeddedContentWireframeUpdate(currentWireframe.id, slotId = currentWireframe.slotId)
+        var hasMutation = prevWireframe.slotId != currentWireframe.slotId
+        if (prevWireframe.x != currentWireframe.x) {
+            mutation = mutation.copy(x = currentWireframe.x)
+            hasMutation = true
+        }
+        if (prevWireframe.y != currentWireframe.y) {
+            mutation = mutation.copy(y = currentWireframe.y)
+            hasMutation = true
+        }
+        if (prevWireframe.width != currentWireframe.width) {
+            mutation = mutation.copy(width = currentWireframe.width)
+            hasMutation = true
+        }
+        if (prevWireframe.height != currentWireframe.height) {
+            mutation = mutation.copy(height = currentWireframe.height)
+            hasMutation = true
+        }
+        if (prevWireframe.border != currentWireframe.border) {
+            mutation = mutation.copy(border = currentWireframe.border)
+            hasMutation = true
+        }
+        if (prevWireframe.shapeStyle != currentWireframe.shapeStyle) {
+            mutation = mutation.copy(shapeStyle = currentWireframe.shapeStyle)
+            hasMutation = true
+        }
+        if (prevWireframe.clip != currentWireframe.clip) {
+            mutation = mutation.copy(
+                clip = currentWireframe.clip
+                    ?: MobileSegment.WireframeClip(0, 0, 0, 0)
+            )
+            hasMutation = true
+        }
+        val wasVisible = prevWireframe.isVisible != false
+        val isVisible = currentWireframe.isVisible != false
+        if (wasVisible != isVisible) {
+            mutation = mutation.copy(isVisible = isVisible)
+            hasMutation = true
+        }
+        return mutation.takeIf { hasMutation }
+    }
+
     private fun recordChangedWireframeMutations(
         oldElement: MobileSegment.Wireframe,
         newElement: MobileSegment.Wireframe,
@@ -414,6 +461,11 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
                         prevWireframe,
                         currentWireframe as MobileSegment.Wireframe.WebviewWireframe
                     )
+
+                    is MobileSegment.Wireframe.EmbeddedContentWireframe -> resolveEmbeddedContentWireframeMutation(
+                        prevWireframe,
+                        currentWireframe as MobileSegment.Wireframe.EmbeddedContentWireframe
+                    )
                 }
             }
         }
@@ -472,6 +524,7 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
             is MobileSegment.Wireframe.ImageWireframe -> this.id
             is MobileSegment.Wireframe.PlaceholderWireframe -> this.id
             is MobileSegment.Wireframe.WebviewWireframe -> this.id
+            is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.id
         }
     }
 

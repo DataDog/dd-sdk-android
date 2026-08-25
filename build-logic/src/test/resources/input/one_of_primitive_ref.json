@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OneOfPrimitiveRef",
+  "type": "object",
+  "properties": {
+    "from": { "$ref": "#/definitions/path" },
+    "to": { "$ref": "#/definitions/path" }
+  },
+  "required": ["from"],
+  "definitions": {
+    "path": {
+      "title": "Path",
+      "description": "This is a definition of a path",
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "string element"
+        },
+        {
+          "type": "integer",
+          "description": "integer element"
+        }
+      ]
+    }
+  }
+}
