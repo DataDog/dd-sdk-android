@@ -12,6 +12,7 @@ import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.core.persistence.Serializer
+import com.datadog.android.internal.telemetry.TelemetryContext
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -59,6 +60,9 @@ internal class SingleItemDataWriterTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Forgery
+    lateinit var fakeTelemetryContext: TelemetryContext
+
+    @Forgery
     lateinit var fakeThrowable: Throwable
 
     @Forgery
@@ -83,7 +87,8 @@ internal class SingleItemDataWriterTest {
             mockSerializer,
             mockFileWriter,
             mockInternalLogger,
-            fakeFilePersistenceConfig.copy(maxItemSize = Long.MAX_VALUE)
+            fakeFilePersistenceConfig.copy(maxItemSize = Long.MAX_VALUE),
+            fakeTelemetryContext
         )
     }
 
@@ -94,7 +99,7 @@ internal class SingleItemDataWriterTest {
     ) {
         // Given
         val serialized = data.reversed().toByteArray(Charsets.UTF_8)
-        whenever(mockOrchestrator.getWritableFile()) doReturn file
+        whenever(mockOrchestrator.getWritableFile(any())) doReturn file
 
         // When
         testedWriter.write(data)
@@ -104,7 +109,8 @@ internal class SingleItemDataWriterTest {
             .writeData(
                 file,
                 serialized,
-                append = false
+                append = false,
+                telemetryContext = fakeTelemetryContext
             )
     }
 
@@ -115,7 +121,7 @@ internal class SingleItemDataWriterTest {
     ) {
         // Given
         val lastSerialized = data.last().reversed().toByteArray(Charsets.UTF_8)
-        whenever(mockOrchestrator.getWritableFile()) doReturn file
+        whenever(mockOrchestrator.getWritableFile(any())) doReturn file
 
         // When
         testedWriter.write(data)
@@ -125,7 +131,8 @@ internal class SingleItemDataWriterTest {
             .writeData(
                 file,
                 lastSerialized,
-                append = false
+                append = false,
+                telemetryContext = fakeTelemetryContext
             )
     }
 
@@ -177,9 +184,8 @@ internal class SingleItemDataWriterTest {
             mockSerializer,
             mockFileWriter,
             mockInternalLogger,
-            fakeFilePersistenceConfig.copy(
-                maxItemSize = maxLimit
-            )
+            fakeFilePersistenceConfig.copy(maxItemSize = maxLimit),
+            fakeTelemetryContext
         )
 
         // When

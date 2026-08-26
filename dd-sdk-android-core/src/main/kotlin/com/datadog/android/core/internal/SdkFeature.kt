@@ -52,6 +52,7 @@ import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderW
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockFileReader
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.getSafe
+import com.datadog.android.core.internal.utils.safeTryWithLock
 import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
@@ -62,6 +63,7 @@ import com.datadog.android.security.Encryption
 import java.util.Locale
 import java.util.concurrent.Callable
 import java.util.concurrent.Future
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReadWriteLock
@@ -163,7 +165,9 @@ internal class SdkFeature(
             (coreFeature.appContext as? Application)
                 ?.unregisterActivityLifecycleCallbacks(processLifecycleMonitor)
             processLifecycleMonitor = null
-            featureContext.clear()
+            featureContextLock.writeLock().safeTryWithLock(1, TimeUnit.SECONDS, internalLogger) {
+                featureContext.clear()
+            }
             initialized.set(false)
         }
     }
@@ -178,7 +182,7 @@ internal class SdkFeature(
     ) {
         coreFeature.contextExecutorService
             .executeSafe("withWriteContext-${wrappedFeature.name}", internalLogger) {
-                if (coreFeature.initialized.get() == false) return@executeSafe
+                if (!coreFeature.initialized.get()) return@executeSafe
                 val context = contextProvider.getContext(withFeatureContexts)
                 val eventBatchWriteScope = storage.getEventWriteScope(context)
                 callback(context, eventBatchWriteScope)
@@ -191,7 +195,7 @@ internal class SdkFeature(
     ) {
         coreFeature.contextExecutorService
             .executeSafe("withContext-${wrappedFeature.name}", internalLogger) {
-                if (coreFeature.initialized.get() == false) return@executeSafe
+                if (!coreFeature.initialized.get()) return@executeSafe
                 val context = contextProvider.getContext(withFeatureContexts)
                 callback(context)
             }
@@ -211,22 +215,24 @@ internal class SdkFeature(
         )
     }
 
-    override fun getWriteContextSync(
-        withFeatureContexts: Set<String>
-    ): Pair<DatadogContext, EventWriteScope>? {
-        val operationName = "getWriteContextSync-${wrappedFeature.name}"
+    override fun withWriteContextSync(
+        withFeatureContexts: Set<String>,
+        callback: (DatadogContext, EventWriteScope) -> Unit
+    ): Boolean {
+        val operationName = "withWriteContextSync-${wrappedFeature.name}"
         return coreFeature.contextExecutorService
             .submitSafe(
                 operationName,
                 internalLogger,
                 Callable {
-                    if (coreFeature.initialized.get() == false) return@Callable null
+                    if (!coreFeature.initialized.get()) return@Callable false
                     val context = contextProvider.getContext(withFeatureContexts)
                     val eventBatchWriteScope = storage.getEventWriteScope(context)
-                    context to eventBatchWriteScope
+                    callback(context, eventBatchWriteScope)
+                    true
                 }
             )
-            .getSafe(operationName, internalLogger)
+            .getSafe(operationName, internalLogger) ?: false
     }
 
     override fun sendEvent(event: Any) {
@@ -439,6 +445,7 @@ internal class SdkFeature(
         )
 
         dataStore = DataStoreFileHandler(
+            featureName = featureName,
             executorService = coreFeature.persistenceExecutorService,
             internalLogger = internalLogger,
             dataStoreFileReader = dataStoreFileReader,
@@ -457,6 +464,7 @@ internal class SdkFeature(
             BatchFileReaderWriter.create(internalLogger, coreFeature.localDataEncryption),
             FileReaderWriter.create(internalLogger, coreFeature.localDataEncryption),
             FileMover(internalLogger),
+            wrappedFeature.name,
             internalLogger
         )
         flusher.flush(uploader)

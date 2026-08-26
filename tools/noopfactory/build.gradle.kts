@@ -4,14 +4,15 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.junitConfig
-import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.taskConfig
 
 plugins {
+    // Build
     id("org.jetbrains.kotlin.jvm")
-    id("com.github.ben-manes.versions")
+    id("datadogBuildConfig")
+
+    // Analysis tools
+    id("ktlint")
 }
 
 dependencies {
@@ -26,11 +27,13 @@ dependencies {
     testImplementation(libs.kspTesting)
 }
 
-kotlinConfig()
+datadogBuild {
+    applyKotlinConfig()
+    applyJunitConfig()
+}
+
 taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     compilerOptions {
         optIn.add("kotlin.RequiresOptIn")
     }
 }
-junitConfig()
-dependencyUpdateConfig()

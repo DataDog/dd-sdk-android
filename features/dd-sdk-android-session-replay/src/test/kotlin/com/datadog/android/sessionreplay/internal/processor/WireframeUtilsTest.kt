@@ -581,6 +581,19 @@ internal class WireframeUtilsTest {
             .isFalse
     }
 
+    @Test
+    fun `M return false W checkWireframeIsCovered { hidden embedded content }`(
+        @Forgery fakeWireframe: MobileSegment.Wireframe.EmbeddedContentWireframe,
+        @Forgery topWireframes: List<MobileSegment.Wireframe>
+    ) {
+        // Given
+        val hiddenWireframe = fakeWireframe.copy(isVisible = false)
+
+        // Then
+        assertThat(testedWireframeUtils.checkWireframeIsCovered(hiddenWireframe, topWireframes))
+            .isFalse
+    }
+
     // endregion
 
     // region checkWireframesIsValid
@@ -591,9 +604,12 @@ internal class WireframeUtilsTest {
         forge: Forge
     ) {
         // Given
-        forge.getForgery<WireframeBounds>().copy(width = 0).apply {
-            whenever(mockBoundsUtils.resolveBounds(fakeWireframe)).thenReturn(this)
-        }
+        assumeTrue(
+            fakeWireframe !is MobileSegment.Wireframe.EmbeddedContentWireframe ||
+                fakeWireframe.isVisible != false
+        )
+        whenever(mockBoundsUtils.resolveBounds(fakeWireframe))
+            .thenReturn(forge.getForgery<WireframeBounds>().copy(width = 0))
 
         // Then
         assertThat(testedWireframeUtils.checkWireframeIsValid(fakeWireframe)).isFalse
@@ -605,12 +621,30 @@ internal class WireframeUtilsTest {
         forge: Forge
     ) {
         // Given
-        forge.getForgery<WireframeBounds>().copy(height = 0).apply {
-            whenever(mockBoundsUtils.resolveBounds(fakeWireframe)).thenReturn(this)
-        }
+        assumeTrue(
+            fakeWireframe !is MobileSegment.Wireframe.EmbeddedContentWireframe ||
+                fakeWireframe.isVisible != false
+        )
+        whenever(mockBoundsUtils.resolveBounds(fakeWireframe))
+            .thenReturn(forge.getForgery<WireframeBounds>().copy(height = 0))
 
         // Then
         assertThat(testedWireframeUtils.checkWireframeIsValid(fakeWireframe)).isFalse
+    }
+
+    @Test
+    fun `M return true W checkWireframeIsValid { hidden embedded content has empty bounds }`(
+        @Forgery fakeWireframe: MobileSegment.Wireframe.EmbeddedContentWireframe
+    ) {
+        // Given
+        val hiddenWireframe = fakeWireframe.copy(
+            width = 0,
+            height = 0,
+            isVisible = false
+        )
+
+        // Then
+        assertThat(testedWireframeUtils.checkWireframeIsValid(hiddenWireframe)).isTrue
     }
 
     @Test
@@ -620,12 +654,12 @@ internal class WireframeUtilsTest {
         // Given
         val fakeWireframe = forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>()
             .copy(shapeStyle = null, border = null)
-        forge.getForgery<WireframeBounds>().copy(
-            width = forge.aPositiveLong(true),
-            height = forge.aPositiveLong(true)
-        ).apply {
-            whenever(mockBoundsUtils.resolveBounds(fakeWireframe)).thenReturn(this)
-        }
+        whenever(mockBoundsUtils.resolveBounds(fakeWireframe)).thenReturn(
+            forge.getForgery<WireframeBounds>().copy(
+                width = forge.aPositiveLong(true),
+                height = forge.aPositiveLong(true)
+            )
+        )
 
         // Then
         assertThat(testedWireframeUtils.checkWireframeIsValid(fakeWireframe)).isFalse
@@ -638,12 +672,12 @@ internal class WireframeUtilsTest {
         // Given
         val fakeWireframe = forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>()
             .copy(shapeStyle = forge.getForgery(), border = null)
-        forge.getForgery<WireframeBounds>().copy(
-            width = forge.aPositiveLong(true),
-            height = forge.aPositiveLong(true)
-        ).apply {
-            whenever(mockBoundsUtils.resolveBounds(fakeWireframe)).thenReturn(this)
-        }
+        whenever(mockBoundsUtils.resolveBounds(fakeWireframe)).thenReturn(
+            forge.getForgery<WireframeBounds>().copy(
+                width = forge.aPositiveLong(true),
+                height = forge.aPositiveLong(true)
+            )
+        )
 
         // Then
         assertThat(testedWireframeUtils.checkWireframeIsValid(fakeWireframe)).isTrue
@@ -656,12 +690,12 @@ internal class WireframeUtilsTest {
         // Given
         val fakeWireframe = forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>()
             .copy(shapeStyle = null, border = forge.getForgery())
-        forge.getForgery<WireframeBounds>().copy(
-            width = forge.aPositiveLong(true),
-            height = forge.aPositiveLong(true)
-        ).apply {
-            whenever(mockBoundsUtils.resolveBounds(fakeWireframe)).thenReturn(this)
-        }
+        whenever(mockBoundsUtils.resolveBounds(fakeWireframe)).thenReturn(
+            forge.getForgery<WireframeBounds>().copy(
+                width = forge.aPositiveLong(true),
+                height = forge.aPositiveLong(true)
+            )
+        )
 
         // Then
         assertThat(testedWireframeUtils.checkWireframeIsValid(fakeWireframe)).isTrue
@@ -674,12 +708,12 @@ internal class WireframeUtilsTest {
         // Given
         val fakeWireframe = forge.getForgery<MobileSegment.Wireframe.TextWireframe>()
             .copy(shapeStyle = null, border = null)
-        forge.getForgery<WireframeBounds>().copy(
-            width = forge.aPositiveLong(true),
-            height = forge.aPositiveLong(true)
-        ).apply {
-            whenever(mockBoundsUtils.resolveBounds(fakeWireframe)).thenReturn(this)
-        }
+        whenever(mockBoundsUtils.resolveBounds(fakeWireframe)).thenReturn(
+            forge.getForgery<WireframeBounds>().copy(
+                width = forge.aPositiveLong(true),
+                height = forge.aPositiveLong(true)
+            )
+        )
 
         // Then
         assertThat(testedWireframeUtils.checkWireframeIsValid(fakeWireframe)).isTrue
@@ -696,6 +730,7 @@ internal class WireframeUtilsTest {
             is MobileSegment.Wireframe.ImageWireframe -> clip?.normalized()
             is MobileSegment.Wireframe.PlaceholderWireframe -> clip?.normalized()
             is MobileSegment.Wireframe.WebviewWireframe -> clip?.normalized()
+            is MobileSegment.Wireframe.EmbeddedContentWireframe -> clip?.normalized()
         }
     }
 
@@ -738,6 +773,7 @@ internal class WireframeUtilsTest {
 
             is MobileSegment.Wireframe.PlaceholderWireframe -> this
             is MobileSegment.Wireframe.WebviewWireframe -> this
+            is MobileSegment.Wireframe.EmbeddedContentWireframe -> this
         }
     }
 

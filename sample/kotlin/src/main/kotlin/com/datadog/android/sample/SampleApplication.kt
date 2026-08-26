@@ -31,6 +31,7 @@ import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.ndk.NdkCrashReports
 import com.datadog.android.okhttp.configureDatadogInstrumentation
+import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.Profiling
 import com.datadog.android.profiling.ProfilingConfiguration
 import com.datadog.android.rum.ExperimentalRumApi
@@ -40,6 +41,7 @@ import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
 import com.datadog.android.rum.resource.ResourceHeadersExtractor
+import com.datadog.android.rum.timeseries.TimeseriesConfiguration
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.sample.account.AccountFragment
 import com.datadog.android.sample.data.db.LocalDataSource
@@ -186,6 +188,7 @@ class SampleApplication : Application() {
         GlobalRumMonitor.get().debug = true
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            @OptIn(ExperimentalProfilingApi::class)
             Profiling.enable(
                 ProfilingConfiguration.Builder()
                     .setApplicationLaunchSampleRate(100f)
@@ -429,6 +432,7 @@ class SampleApplication : Application() {
             .trackAnonymousUser(true)
             .enableComposeActionTracking()
             .collectAccessibility(true)
+            .setTimeseriesConfiguration(TimeseriesConfiguration.DEFAULT)
             .build()
     }
 

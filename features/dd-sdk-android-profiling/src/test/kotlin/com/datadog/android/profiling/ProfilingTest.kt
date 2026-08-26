@@ -7,6 +7,7 @@
 package com.datadog.android.profiling
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.ProfilingManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.InternalSdkCore
@@ -19,6 +20,7 @@ import com.datadog.android.profiling.internal.ProfilingStartReason
 import com.datadog.android.profiling.internal.ProfilingStorage
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
 import com.datadog.android.profiling.utils.config.MainLooperTestConfiguration
+import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -38,9 +40,11 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.Locale
 import java.util.concurrent.ExecutorService
 
 @OptIn(ExperimentalProfilingApi::class)
@@ -63,6 +67,9 @@ class ProfilingTest {
     private lateinit var mockContext: Context
 
     @Mock
+    private lateinit var mockPackageManager: PackageManager
+
+    @Mock
     private lateinit var mockProfilingExecutor: ExecutorService
 
     @Mock
@@ -83,23 +90,22 @@ class ProfilingTest {
         whenever(mockSdkCore.name) doReturn fakeInstanceName
         whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mockProfilingExecutor
         whenever(mockContext.getSystemService(ProfilingManager::class.java)) doReturn mockProfilingManager
+        whenever(mockContext.packageManager) doReturn mockPackageManager
         ProfilingStorage.sharedPreferencesStorage = mockSharedPreferencesStorage
     }
 
     @AfterEach
     fun `tear down`() {
         resetProfilerField()
+        Profiling.currentRegisteredCore = null
         ProfilingStorage.sharedPreferencesStorage = null
     }
 
     @Test
     fun `M use PerfettoProfiler W enable called before start`() {
-        // Given
-        val sdkInstanceNames = setOf(fakeInstanceName)
-
         // When
         Profiling.enable(fakeConfiguration, mockSdkCore)
-        Profiling.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap(), sdkInstanceNames)
+        Profiling.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap())
 
         // Then
         verify(mockSdkCore).registerFeature(any<ProfilingFeature>())
@@ -122,11 +128,8 @@ class ProfilingTest {
 
     @Test
     fun `M use PerfettoProfiler W start called before enable`() {
-        // Given
-        val sdkInstanceNames = setOf(fakeInstanceName)
-
         // When
-        Profiling.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap(), sdkInstanceNames)
+        Profiling.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap())
         Profiling.enable(fakeConfiguration, mockSdkCore)
 
         // Then
@@ -138,15 +141,12 @@ class ProfilingTest {
 
     @Test
     fun `M keep same profiler instance W start called multiple times`() {
-        // Given
-        val sdkInstanceNames = setOf(fakeInstanceName)
-
         // When
-        Profiling.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap(), sdkInstanceNames)
+        Profiling.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap())
 
         val firstProfiler = Profiling.profiler
 
-        Profiling.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap(), sdkInstanceNames)
+        Profiling.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap())
 
         val secondProfiler = Profiling.profiler
 
@@ -157,37 +157,17 @@ class ProfilingTest {
     }
 
     @Test
-    fun `M start profiler W call Profiling start(with instance names)`() {
-        // Given
-        val sdkInstanceNames = setOf(fakeInstanceName)
-        val mockProfiler = mock<Profiler>()
-        Profiling.profiler = mockProfiler
-        Profiling.isProfilerInitialized.set(true)
-
-        // When
-        Profiling.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap(), sdkInstanceNames)
-
-        // Then
-        verify(mockProfiler).start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap(), sdkInstanceNames)
-    }
-
-    @Test
-    fun `M start profiler W call Profiling start(with sdk core)`() {
+    fun `M start profiler W call Profiling start`() {
         // Given
         val mockProfiler = mock<Profiler>()
         Profiling.profiler = mockProfiler
         Profiling.isProfilerInitialized.set(true)
 
         // When
-        Profiling.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap(), mockSdkCore)
+        Profiling.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap())
 
         // Then
-        verify(mockProfiler).start(
-            mockContext,
-            ProfilingStartReason.APPLICATION_LAUNCH,
-            emptyMap(),
-            setOf(fakeInstanceName)
-        )
+        verify(mockProfiler).start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap())
     }
 
     @Test
@@ -198,11 +178,62 @@ class ProfilingTest {
         Profiling.isProfilerInitialized.set(true)
 
         // When
-        Profiling.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap(), mockSdkCore)
-        Profiling.stop(mockSdkCore)
+        Profiling.stop()
 
         // Then
-        verify(mockProfiler).stop(fakeInstanceName)
+        verify(mockProfiler).stop()
+    }
+
+    @Test
+    fun `M warn and skip W enable { profiling already registered with another active core }`(
+        @StringForgery fakeCore1Name: String
+    ) {
+        // Given
+        val mockCore1 = mock<InternalSdkCore>()
+        val mockCore2 = mock<InternalSdkCore>()
+        whenever(mockCore1.isCoreActive()) doReturn true
+        whenever(mockCore1.name) doReturn fakeCore1Name
+        whenever(mockCore1.internalLogger) doReturn mockInternalLogger
+        whenever(mockCore2.internalLogger) doReturn mockInternalLogger
+        Profiling.enable(fakeConfiguration, mockCore1)
+
+        // When
+        Profiling.enable(fakeConfiguration, mockCore2)
+
+        // Then
+        verify(mockCore1).registerFeature(any<ProfilingFeature>())
+        verify(mockCore2, never()).registerFeature(any())
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.USER),
+            message = Profiling.IS_ALREADY_REGISTERED_USER_WARNING.format(Locale.US, fakeCore1Name)
+        )
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.DEBUG,
+            targets = listOf(InternalLogger.Target.TELEMETRY),
+            message = Profiling.IS_ALREADY_REGISTERED_WARNING
+        )
+        assertThat(Profiling.currentRegisteredCore?.get()).isEqualTo(mockCore1)
+    }
+
+    @Test
+    fun `M allow changing cores W enable { profiling enabled but old core inactive }`() {
+        // Given
+        val mockCore1 = mock<InternalSdkCore>()
+        val mockCore2 = mock<InternalSdkCore>()
+        whenever(mockCore1.internalLogger) doReturn mockInternalLogger
+        whenever(mockCore2.internalLogger) doReturn mockInternalLogger
+        whenever(mockCore1.isCoreActive()) doReturn true
+        Profiling.enable(fakeConfiguration, mockCore1)
+        assertThat(Profiling.currentRegisteredCore?.get()).isEqualTo(mockCore1)
+
+        // When
+        whenever(mockCore1.isCoreActive()) doReturn false
+        Profiling.enable(fakeConfiguration, mockCore2)
+
+        // Then
+        verify(mockCore2).registerFeature(any<ProfilingFeature>())
+        assertThat(Profiling.currentRegisteredCore?.get()).isEqualTo(mockCore2)
     }
 
     private fun resetProfilerField() {

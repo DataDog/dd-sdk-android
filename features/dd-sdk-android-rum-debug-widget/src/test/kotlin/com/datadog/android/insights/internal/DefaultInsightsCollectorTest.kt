@@ -33,7 +33,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
-@Suppress("OPT_IN_USAGE")
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
@@ -110,7 +109,7 @@ internal class DefaultInsightsCollectorTest {
         verify(mockInsightsUpdatesListener).onDataUpdated()
         val e = testedInsightsCollector.eventsState.single()
         assertThat(e).isInstanceOf(TimelineEvent.SlowFrame::class.java)
-        assertThat(e.durationNs).isEqualTo(fakeDurationNs)
+        assertThat(e.text).isEqualTo((fakeDurationNs / NANOS_PER_MILLI).toString())
     }
 
     @Test
@@ -122,7 +121,7 @@ internal class DefaultInsightsCollectorTest {
         verify(mockInsightsUpdatesListener).onDataUpdated()
         val e = testedInsightsCollector.eventsState.single()
         assertThat(e is TimelineEvent.LongTask).isTrue
-        assertThat(e.durationNs).isEqualTo(fakeDurationNs)
+        assertThat(e.text).isEqualTo((fakeDurationNs / NANOS_PER_MILLI).toString())
     }
 
     @Test
@@ -134,7 +133,20 @@ internal class DefaultInsightsCollectorTest {
         verify(mockInsightsUpdatesListener).onDataUpdated()
         val e = testedInsightsCollector.eventsState.single()
         assertThat(e is TimelineEvent.Resource).isTrue
-        assertThat(e.durationNs).isEqualTo(fakeDurationNs)
+        assertThat(e.text).isEqualTo((fakeDurationNs / NANOS_PER_MILLI).toString())
+    }
+
+    @Test
+    fun `M append Timeseries event W onTimeseries()`() {
+        // Given
+        val fakeName = "view.memory"
+
+        // When
+        testedInsightsCollector.onTimeseries(fakeName)
+
+        // Then
+        verify(mockInsightsUpdatesListener).onDataUpdated()
+        assertThat(testedInsightsCollector.eventsState).containsExactly(TimelineEvent.Timeseries(fakeName))
     }
 
     @Test
@@ -257,5 +269,9 @@ internal class DefaultInsightsCollectorTest {
 
         // Then
         assertThat(testedInsightsCollector.gcCallsPerSecond).isNaN
+    }
+
+    private companion object {
+        private const val NANOS_PER_MILLI = 1_000_000L
     }
 }

@@ -58,7 +58,7 @@ internal class ResourcesFeature(
         /**
          * Session Replay Resources storage configuration with the following parameters:
          * max item size = 10 MB,
-         * max items per batch = 500,
+         * max items per batch = 1000,
          * max batch size = 10 MB, SR intake batch limit is 10MB
          * old batch threshold = 18 hours.
          */

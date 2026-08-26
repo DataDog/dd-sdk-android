@@ -23,17 +23,16 @@ internal interface Profiler {
         appContext: Context,
         startReason: ProfilingStartReason,
         additionalAttributes: Map<String, String>,
-        sdkInstanceNames: Set<String>,
         durationMs: Int = 0
     )
 
-    fun stop(sdkInstanceName: String)
+    fun stop()
 
-    fun isRunning(sdkInstanceName: String): Boolean
+    fun isRunning(): Boolean
 
-    fun registerProfilingCallback(appContext: Context, sdkInstanceName: String, callback: ProfilerCallback)
+    fun registerProfilingCallback(appContext: Context, callback: ProfilerCallback)
 
-    fun unregisterProfilingCallback(appContext: Context, sdkInstanceName: String)
+    fun unregisterProfilingCallback(appContext: Context)
 
     /**
      * Controls whether an app launch profiling session should extend past the 10-second
@@ -42,5 +41,11 @@ internal interface Profiler {
      */
     fun setExtendLaunchSession(extend: Boolean)
 
-    fun setProfilingPackageVersionCode(versionCode: Long)
+    /**
+     * Resolves the version of the profiling system package, if it is not known yet, and keeps it
+     * for the whole process lifetime. The profiler can be started before the SDK is initialized,
+     * so it resolves the version on its own; this only makes sure it is also known when profiling
+     * never starts.
+     */
+    fun resolveProfilingPackageVersionCode(appContext: Context)
 }

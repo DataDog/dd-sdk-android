@@ -27,6 +27,10 @@ internal class HeatmapIdentifierResolver(
     private val lastPublishedEntries: MutableMap<Long, CachedHeatmapEntry> = mutableMapOf()
     private val resourceNameCache: HashMap<Int, String> = HashMap()
 
+    // Each recorded window runs its own traversal on the Looper thread its view hierarchy is
+    // attached to, so the maps above can be read/written from multiple threads concurrently.
+    private val lock = Any()
+
     @UiThread
     fun beginTraversal(viewUrl: String): TraversalContext = TraversalContext(viewUrl)
 
@@ -43,8 +47,9 @@ internal class HeatmapIdentifierResolver(
 
         val identityHash = heatmapViewKey(view)
         val pathComponent = pathComponentFor(view, typeIndex)
-        val cachedEntry = lastPublishedEntries[identityHash]
-            ?.takeIf { context.viewUrl == lastPublishedScreenName }
+        val cachedEntry = synchronized(lock) {
+            lastPublishedEntries[identityHash]?.takeIf { context.viewUrl == lastPublishedScreenName }
+        }
             // Guards against stale entries when a view or any ancestor shifts among same-type
             // siblings without being detached (e.g. notifyItemMoved with an in-place animator).
             ?.takeIf { it.viewPath == nodePath + pathComponent }
@@ -72,7 +77,8 @@ internal class HeatmapIdentifierResolver(
     internal fun pathComponentFor(view: View, typeIndex: Int): String {
         val viewId = view.id
         if (viewId != View.NO_ID) {
-            val name = resourceNameCache[viewId] ?: resolveAndCacheResourceName(viewId, view.resources)
+            val cachedName = synchronized(lock) { resourceNameCache[viewId] }
+            val name = cachedName ?: resolveAndCacheResourceName(viewId, view.resources)
             if (!name.isNullOrEmpty()) {
                 return "$name#$typeIndex"
             }
@@ -89,8 +95,15 @@ internal class HeatmapIdentifierResolver(
                 null
             }
         }
-        if (resolved != null) resourceNameCache[viewId] = resolved
+        if (resolved != null) synchronized(lock) { resourceNameCache[viewId] = resolved }
         return resolved
+    }
+
+    @VisibleForTesting
+    internal fun getLastPublishedScreenName(): String? {
+        synchronized(lock) {
+            return lastPublishedScreenName
+        }
     }
 
     @VisibleForTesting
@@ -109,10 +122,18 @@ internal class HeatmapIdentifierResolver(
 
     @UiThread
     private fun publishIfChanged(context: TraversalContext) {
-        if (context.entries.isEmpty()) {
-            lastPublishedScreenName = null
-            lastPublishedEntries.clear()
-        } else {
+        // registry.setHeatmapIdentifiers() is called inside the lock, not after releasing it:
+        // two concurrent traversals' cache updates and registry publications must happen in the
+        // same relative order, or the resolver's cache and the registry's snapshot can end up
+        // pointing at different screens (the registry is a single global "current snapshot",
+        // not scoped per screen). The registry write is a cheap in-memory operation with its own
+        // lock and no reentrancy into this resolver, so holding this lock during the call is safe.
+        synchronized(lock) {
+            if (context.entries.isEmpty()) {
+                lastPublishedScreenName = null
+                lastPublishedEntries.clear()
+                return
+            }
             val anyIdentifierChangedOrNew = context.entries.any { (k, v) ->
                 lastPublishedEntries[k]?.identifier != v.identifier
             }
@@ -123,10 +144,7 @@ internal class HeatmapIdentifierResolver(
                 lastPublishedScreenName = context.viewUrl
                 lastPublishedEntries.clear()
                 lastPublishedEntries.putAll(context.entries)
-                registry.setHeatmapIdentifiers(
-                    context.entries.mapValues { it.value.identifier },
-                    context.viewUrl
-                )
+                registry.setHeatmapIdentifiers(context.entries.mapValues { it.value.identifier }, context.viewUrl)
             }
         }
     }

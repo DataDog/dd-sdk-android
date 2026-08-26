@@ -14,6 +14,7 @@ import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.serializeToByteArray
+import com.datadog.android.internal.telemetry.TelemetryContext
 import java.util.Locale
 
 internal open class SingleItemDataWriter<T : Any>(
@@ -21,7 +22,8 @@ internal open class SingleItemDataWriter<T : Any>(
     internal val serializer: Serializer<T>,
     internal val fileWriter: FileWriter<ByteArray>,
     internal val internalLogger: InternalLogger,
-    internal val filePersistenceConfig: FilePersistenceConfig
+    internal val filePersistenceConfig: FilePersistenceConfig,
+    internal val telemetryContext: TelemetryContext
 ) : DataWriter<T> {
 
     // region DataWriter
@@ -54,8 +56,8 @@ internal open class SingleItemDataWriter<T : Any>(
     @WorkerThread
     private fun writeData(byteArray: ByteArray): Boolean {
         if (!checkEventSize(byteArray.size)) return false
-        val file = fileOrchestrator.getWritableFile() ?: return false
-        return fileWriter.writeData(file, byteArray, false)
+        val file = fileOrchestrator.getWritableFile(byteArray.size.toLong()) ?: return false
+        return fileWriter.writeData(file, byteArray, false, telemetryContext)
     }
 
     private fun checkEventSize(eventSize: Int): Boolean {

@@ -104,6 +104,29 @@ internal class FlagsStateDeserializerTest {
     }
 
     @Test
+    fun `M deserialize the serial id W deserialize() { flags carry a serial id }`(forge: Forge) {
+        // Given
+        val json = buildStateJson(
+            targetingKey = forge.anAlphabeticalString(),
+            flags = JSONObject().apply {
+                put("withSerialId", buildFlagJson().apply { put("serialId", 0L) })
+                put("withNullSerialId", buildFlagJson().apply { put("serialId", JSONObject.NULL) })
+                put("withoutSerialId", buildFlagJson())
+            }
+        )
+
+        // When
+        val result = testedDeserializer.deserialize(json)
+
+        // Then
+        checkNotNull(result)
+        assertThat(result.flags).hasSize(3)
+        assertThat(result.flags.getValue("withSerialId").serialId).isEqualTo(0L)
+        assertThat(result.flags.getValue("withNullSerialId").serialId).isNull()
+        assertThat(result.flags.getValue("withoutSerialId").serialId).isNull()
+    }
+
+    @Test
     fun `M deserialize empty state W deserialize() { valid JSON with empty data }`(forge: Forge) {
         // Given
         val targetingKey = forge.anAlphabeticalString()
@@ -295,4 +318,26 @@ internal class FlagsStateDeserializerTest {
         assertThat(result.evaluationContext.attributes["valid_number"]).isEqualTo(validNumber)
         assertThat(result.evaluationContext.attributes["valid_boolean"]).isEqualTo(validBoolean)
     }
+
+    private fun buildFlagJson(): JSONObject = JSONObject().apply {
+        put("variationType", "boolean")
+        put("variationValue", "true")
+        put("doLog", true)
+        put("allocationKey", "allocation1")
+        put("variationKey", "variation1")
+        put("extraLogging", JSONObject())
+        put("reason", "TARGETING_MATCH")
+    }
+
+    private fun buildStateJson(targetingKey: String, flags: JSONObject): String = JSONObject().apply {
+        put(
+            "evaluationContext",
+            JSONObject().apply {
+                put("targetingKey", targetingKey)
+                put("attributes", JSONObject())
+            }
+        )
+        put("flags", flags)
+        put("lastUpdateTimestamp", System.currentTimeMillis())
+    }.toString()
 }

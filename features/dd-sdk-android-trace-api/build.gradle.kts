@@ -5,21 +5,18 @@
  */
 @file:Suppress("StringLiteralDuplication")
 
-import com.datadog.gradle.config.androidLibraryConfig
-import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.detektCustomConfig
-import com.datadog.gradle.config.javadocConfig
-import com.datadog.gradle.config.junitConfig
-import com.datadog.gradle.config.kotlinConfig
-import com.datadog.gradle.config.publishingConfig
 import com.datadog.gradle.config.taskConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     // Build
     id("com.android.library")
+    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
+    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
+    id("ktlint")
     kotlin("android")
     id("com.google.devtools.ksp")
+    id("datadogBuildConfig")
 
     // Publish
     `maven-publish`
@@ -27,7 +24,7 @@ plugins {
     id("org.jetbrains.dokka-javadoc")
 
     // Analysis tools
-    id("com.github.ben-manes.versions")
+    id("detekt-conventions")
 
     // Tests
     id("de.mobilej.unmock")
@@ -35,8 +32,10 @@ plugins {
 
     // Internal Generation
     id("apiSurface")
+    id("aarMetadata")
     id("transitiveDependencies")
     id("binary-compatibility-validator")
+    id("test-pyramid-api-surface")
 }
 
 android {
@@ -58,15 +57,15 @@ unMock {
     keepStartingWith("org.json")
 }
 
-kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
-androidLibraryConfig()
-junitConfig()
-javadocConfig()
-dependencyUpdateConfig()
-publishingConfig(
-    "Tracing engine API specification used for internal module communication."
-)
-detektCustomConfig()
+datadogBuild {
+    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyAndroidLibraryConfig()
+    applyJunitConfig()
+    applyJavadocConfig()
+    applyPublishingConfig(
+        "Tracing engine API specification used for internal module communication."
+    )
+}
 
 taskConfig<Test> {
     // this module has no tests

@@ -28,12 +28,13 @@ internal const val UI_THREAD_DELAY_MS = 1000L
 internal const val DECOMPRESSION_BUFFER_SIZE = 1024
 
 /**
- * Delay before launching a new activity in tests.
- * This gives time to remove the previous activity to avoid issues where Espresso
- * tries to launch a new activity while the previous one is still being removed,
- * which can cause WindowInspector.getGlobalWindowViews() to return multiple windows.
+ * Maximum time to wait for the previous activity to be torn down before launching a new one.
+ * Espresso can otherwise try to launch a new activity while the previous one is still being
+ * removed, which makes WindowInspector.getGlobalWindowViews() return multiple windows and
+ * alters the SR recorder's snapshots. This is an upper bound: the wait is a poll and returns
+ * as soon as no activity is alive.
  */
-internal const val SLEEP_DELAY_BEFORE_ACTIVITY_LAUNCH_MS = 2000L
+internal const val ACTIVITY_TEARDOWN_TIMEOUT_MS = 2000L
 
 /**
  * Sample rate indicating no sessions should be recorded (0%).

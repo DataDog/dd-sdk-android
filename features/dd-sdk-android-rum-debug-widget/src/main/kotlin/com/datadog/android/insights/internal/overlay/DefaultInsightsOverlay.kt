@@ -77,6 +77,7 @@ internal class DefaultInsightsOverlay(
                     .append(SEP)
                     .appendColored(ACTION, color(R.color.timeline_action)).append(SEP)
                     .appendColored(RESOURCE, color(R.color.timeline_resource)).append(SEP)
+                    .appendColored(TIMESERIES, color(R.color.timeline_timeseries)).append(SEP)
                     .appendColored(SLOW_FRAME, color(R.color.timeline_slow_frame)).append(SEP)
                     .appendColored(FROZEN_FRAME, color(R.color.timeline_freeze_frame)).append(SEP)
             }
@@ -237,6 +238,7 @@ internal class DefaultInsightsOverlay(
         private const val SEP = " | "
         private const val ACTION = "Action"
         private const val RESOURCE = "Resource"
+        private const val TIMESERIES = "Timeseries"
         private const val SLOW_FRAME = "Slow"
         private const val FROZEN_FRAME = "Frozen"
         private const val PROFILER_DOT = "● "

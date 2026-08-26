@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder
 
 import android.view.View
 import android.view.ViewTreeObserver.OnDrawListener
+import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
@@ -19,7 +20,7 @@ internal class ViewOnDrawInterceptor(
     private val touchPrivacyManager: TouchPrivacyManager,
     private val onDrawListenerProducer: OnDrawListenerProducer
 ) {
-    internal val decorOnDrawListeners: WeakHashMap<View, OnDrawListener> =
+    internal val decorOnDrawListeners: WeakHashMap<View, OnDemandCaptureListener> =
         WeakHashMap()
 
     fun intercept(
@@ -61,6 +62,41 @@ internal class ViewOnDrawInterceptor(
             stopInterceptingSafe(decorView, listener)
         }
         decorOnDrawListeners.clear()
+    }
+
+    /**
+     * Takes a snapshot of every intercepted window, without going through the debouncer, which
+     * would be free to drop it — see [SessionReplayRecorder.requestCapture].
+     */
+    @MainThread
+    fun requestCapture(): CaptureRequestResult {
+        // Copy before callbacks because a capture may change the registered listener collection.
+        val listeners = decorOnDrawListeners.values.toSet()
+        if (listeners.isEmpty()) {
+            return CaptureRequestResult.NOT_INTERCEPTING
+        }
+        // Every window is asked, not only up to the first that succeeds: each contributes its own
+        // wireframes to the snapshot.
+        @Suppress("UnsafeThirdPartyFunctionCall") // count only propagates what captureNow throws
+        return if (listeners.count { it.captureNow() } > 0) {
+            CaptureRequestResult.CAPTURED
+        } else {
+            CaptureRequestResult.NOT_CAPTURED
+        }
+    }
+
+    /**
+     * The outcome of a [requestCapture] call.
+     */
+    internal enum class CaptureRequestResult {
+        /** A snapshot was taken and queued. */
+        CAPTURED,
+
+        /** Nothing is being intercepted yet, so the caller still owes itself a capture. */
+        NOT_INTERCEPTING,
+
+        /** Listeners are registered, but none of them could produce a snapshot right now. */
+        NOT_CAPTURED
     }
 
     private fun stopInterceptingAndRemove(decorViews: List<View>) {

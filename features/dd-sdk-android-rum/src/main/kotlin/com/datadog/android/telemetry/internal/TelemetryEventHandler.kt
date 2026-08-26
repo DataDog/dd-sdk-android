@@ -446,6 +446,9 @@ internal class TelemetryEventHandler(
             is InternalTelemetryEvent.ApiUsage.TrackWebView -> {
                 TelemetryUsageEvent.Usage.TrackWebView()
             }
+            is InternalTelemetryEvent.ApiUsage.Timeseries -> {
+                TelemetryUsageEvent.Usage.Timeseries()
+            }
             is InternalTelemetryEvent.ApiUsage.NetworkInstrumentation -> {
                 TelemetryUsageEvent.Usage.AndroidNetworkInstrumentation(
                     type = when (event.type) {

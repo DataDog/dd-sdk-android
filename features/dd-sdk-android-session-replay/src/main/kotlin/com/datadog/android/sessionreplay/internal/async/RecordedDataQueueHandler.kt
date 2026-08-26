@@ -129,7 +129,7 @@ internal class RecordedDataQueueHandler(
         while (recordedDataQueue.isNotEmpty()) {
             // peeking is safe here because we are in a synchronized block
             // and we check for isEmpty first
-            @SuppressWarnings("UnsafeThirdPartyFunctionCall")
+            @Suppress("UnsafeThirdPartyFunctionCall")
             val nextItem = recordedDataQueue.peek()
 
             if (nextItem != null) {

@@ -27,11 +27,14 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.clearInvocations
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -52,7 +55,7 @@ internal class ViewOnDrawInterceptorTest {
     lateinit var mockOnDrawListenerProducer: OnDrawListenerProducer
 
     @Mock
-    lateinit var mockOnDrawListener: ViewTreeObserver.OnDrawListener
+    lateinit var mockOnDrawListener: OnDemandCaptureListener
 
     @Mock
     lateinit var mockTouchPrivacyManager: TouchPrivacyManager
@@ -77,6 +80,7 @@ internal class ViewOnDrawInterceptorTest {
                 touchPrivacyManager = mockTouchPrivacyManager
             )
         ) doReturn mockOnDrawListener
+        whenever(mockOnDrawListener.captureNow()) doReturn true
 
         testedInterceptor = ViewOnDrawInterceptor(
             internalLogger = mockInternalLogger,
@@ -125,7 +129,7 @@ internal class ViewOnDrawInterceptorTest {
     @Test
     fun `M force onDraw on the listener when registered()`() {
         // Given
-        val mockOnDrawListener = mock<ViewTreeObserver.OnDrawListener>()
+        val mockOnDrawListener = mock<OnDemandCaptureListener>()
         testedInterceptor = ViewOnDrawInterceptor(
             internalLogger = mockInternalLogger,
             touchPrivacyManager = mockTouchPrivacyManager
@@ -156,6 +160,61 @@ internal class ViewOnDrawInterceptorTest {
             assertThat(acc).isSameAs(next)
             next
         }
+    }
+
+    @Test
+    fun `M capture on the active listener once W requestCapture { multiple decor views }`() {
+        // Given
+        testedInterceptor.intercept(fakeDecorViews, fakeTextAndInputPrivacy, fakeImagePrivacy)
+        clearInvocations(mockOnDrawListener)
+
+        // When
+        val result = testedInterceptor.requestCapture()
+
+        // Then
+        // The debouncer is bypassed on purpose: it is free to drop a debounced frame.
+        verify(mockOnDrawListener).captureNow()
+        verify(mockOnDrawListener, never()).onDraw()
+        assertThat(result).isEqualTo(ViewOnDrawInterceptor.CaptureRequestResult.CAPTURED)
+    }
+
+    @Test
+    fun `M report not captured W requestCapture { listener took no snapshot }`() {
+        // Given
+        testedInterceptor.intercept(fakeDecorViews, fakeTextAndInputPrivacy, fakeImagePrivacy)
+        clearInvocations(mockOnDrawListener)
+        whenever(mockOnDrawListener.captureNow()) doReturn false
+
+        // When
+        val result = testedInterceptor.requestCapture()
+
+        // Then
+        assertThat(result).isEqualTo(ViewOnDrawInterceptor.CaptureRequestResult.NOT_CAPTURED)
+    }
+
+    @Test
+    fun `M report not intercepting W requestCapture { nothing intercepted }`() {
+        // When
+        val result = testedInterceptor.requestCapture()
+
+        // Then
+        assertThat(result).isEqualTo(ViewOnDrawInterceptor.CaptureRequestResult.NOT_INTERCEPTING)
+        verifyNoInteractions(mockOnDrawListener)
+    }
+
+    @Test
+    fun `M report not intercepting W requestCapture { after stopIntercepting }`() {
+        // Given
+        testedInterceptor.intercept(fakeDecorViews, fakeTextAndInputPrivacy, fakeImagePrivacy)
+        testedInterceptor.stopIntercepting()
+        clearInvocations(mockOnDrawListener)
+
+        // When
+        val result = testedInterceptor.requestCapture()
+
+        // Then
+        assertThat(result).isEqualTo(ViewOnDrawInterceptor.CaptureRequestResult.NOT_INTERCEPTING)
+        verifyNoInteractions(mockOnDrawListener)
     }
 
     @Test
@@ -283,7 +342,7 @@ internal class ViewOnDrawInterceptorTest {
     // region Internal
 
     private fun Forge.aMockedDecorViewsList(): List<View> {
-        return aList {
+        return aList(size = 2) {
             mock {
                 val mockViewTreeObserver: ViewTreeObserver = mock()
                 whenever(mockViewTreeObserver.isAlive) doReturn true

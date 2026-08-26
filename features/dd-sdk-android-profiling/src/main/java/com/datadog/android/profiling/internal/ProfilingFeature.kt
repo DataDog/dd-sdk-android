@@ -31,7 +31,6 @@ import com.datadog.android.profiling.internal.quota.NoOpQuotaChecker
 import com.datadog.android.profiling.internal.quota.ProfilingQuotaChecker
 import com.datadog.android.profiling.internal.quota.QuotaChecker
 import com.datadog.android.profiling.internal.quota.QuotaResult
-import com.datadog.android.profiling.internal.utils.getProfilingModuleLongVersionCode
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
@@ -93,20 +92,18 @@ internal class ProfilingFeature(
     override fun onInitialize(appContext: Context) {
         this.appContext = appContext
         profiler.apply {
-            this.internalLogger = sdkCore.internalLogger
             this.timeProvider.delegate = sdkCore.timeProvider
-            setProfilingPackageVersionCode(
-                appContext.packageManager.getProfilingModuleLongVersionCode(sdkCore.internalLogger)
-            )
-            registerProfilingCallback(appContext, sdkCore.name, this@ProfilingFeature)
+            resolveProfilingPackageVersionCode(appContext)
+            this.internalLogger = sdkCore.internalLogger
+            registerProfilingCallback(appContext, this@ProfilingFeature)
         }
-        setMinimumSampleRate(appContext, configuration.applicationLaunchSampleRate)
+        ProfilingStorage.setSampleRate(appContext, configuration.applicationLaunchSampleRate)
         // Set the profiling flag in SharedPreferences to profile for the next app launch
-        ProfilingStorage.addProfilingFlag(appContext, sdkCore.name)
-        isLaunchProfilingActive = profiler.isRunning(sdkCore.name)
+        ProfilingStorage.addProfilingFlag(appContext)
+        isLaunchProfilingActive = profiler.isRunning()
         sdkCore.setEventReceiver(name, this)
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-            context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning(sdkCore.name)
+            context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning()
         }
         dataWriter = createDataWriter(sdkCore)
 
@@ -130,7 +127,7 @@ internal class ProfilingFeature(
             sampleRate = configuration.continuousSampleRate,
             onActiveWindowStarted = pendingRumEvents::clear
         ).apply {
-            start(launchProfilingActive = profiler.isRunning(sdkCore.name))
+            start(launchProfilingActive = profiler.isRunning())
         }
         continuousProfilingScheduler = scheduler
 
@@ -150,8 +147,8 @@ internal class ProfilingFeature(
         processLifecycleMonitor = null
         continuousProfilingScheduler?.stop()
         profiler.apply {
-            stop(sdkCore.name)
-            unregisterProfilingCallback(appContext, sdkCore.name)
+            stop()
+            unregisterProfilingCallback(appContext)
         }
         sdkCore.removeEventReceiver(name)
         sdkCore.removeContextUpdateReceiver(this)
@@ -207,7 +204,7 @@ internal class ProfilingFeature(
         perfettoResult = result
         tryWriteProfilingEvent()
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-            context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning(sdkCore.name)
+            context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning()
         }
     }
 
@@ -222,7 +219,7 @@ internal class ProfilingFeature(
             continuousProfilingScheduler?.onActiveWindowEnded()
         }
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-            context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning(sdkCore.name)
+            context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning()
         }
     }
 
@@ -237,7 +234,7 @@ internal class ProfilingFeature(
         if (isTtidVitalReceived.getAndSet(true)) return
 
         if (continuousProfilingScheduler?.currentSessionSampled != true) {
-            profiler.stop(sdkCore.name)
+            profiler.stop()
             tryWriteProfilingEvent()
             sdkCore.internalLogger.log(
                 InternalLogger.Level.INFO,
@@ -268,15 +265,6 @@ internal class ProfilingFeature(
             sessionId = sessionId,
             rumSessionSampleRate = sampleRate
         )
-    }
-
-    private fun setMinimumSampleRate(appContext: Context, sampleRate: Float) {
-        val oldValue = ProfilingStorage.getSampleRate(appContext)
-        // if old value doesn't exist (we use negative default value in case of absence) or
-        // the value is bigger than the sample rate, we update the sample rate.
-        if (oldValue !in 0f..sampleRate) {
-            ProfilingStorage.setSampleRate(appContext, configuration.applicationLaunchSampleRate)
-        }
     }
 
     @Suppress("ReturnCount")
@@ -392,7 +380,7 @@ internal class ProfilingFeature(
         private const val LOG_CONTINUOUS_PROFILING_WRITTEN =
             "Continuous profiling result written: %d long task(s), %d ANR event(s)."
         internal const val QUOTA_CHECK_TIMEOUT_MS = 5_000L
-        private const val QUOTA_EXECUTOR_CONTEXT = "dd-profiling-quota"
+        private const val QUOTA_EXECUTOR_CONTEXT = "profiling-quota"
         internal const val LOG_LAUNCH_PROFILING_DROPPED_QUOTA_DENIED =
             "Launch profiling dropped: quota denied (reason=%s)."
     }

@@ -4,19 +4,16 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.config.androidLibraryConfig
-import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.detektCustomConfig
-import com.datadog.gradle.config.javadocConfig
-import com.datadog.gradle.config.junitConfig
-import com.datadog.gradle.config.kotlinConfig
-import com.datadog.gradle.config.publishingConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     // Build
     id("com.android.library")
+    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
+    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
+    id("ktlint")
     kotlin("android")
+    id("datadogBuildConfig")
 
     // Publish
     `maven-publish`
@@ -24,7 +21,7 @@ plugins {
     id("org.jetbrains.dokka-javadoc")
 
     // Analysis tools
-    id("com.github.ben-manes.versions")
+    id("detekt-conventions")
 
     // Tests
     id("org.jetbrains.kotlinx.kover")
@@ -32,9 +29,11 @@ plugins {
 
     // Internal Generation
     id("apiSurface")
+    id("aarMetadata")
     id("transitiveDependencies")
     id("verificationXml")
     id("binary-compatibility-validator")
+    id("test-pyramid-api-surface")
 }
 
 android {
@@ -60,12 +59,12 @@ dependencies {
     }
 }
 
-kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
-androidLibraryConfig()
-junitConfig()
-javadocConfig()
-dependencyUpdateConfig()
-publishingConfig(
-    "An OkHttp collection of extensions to be used in conjunction with OpenTelemetry Datadog SDK."
-)
-detektCustomConfig()
+datadogBuild {
+    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyAndroidLibraryConfig()
+    applyJunitConfig()
+    applyJavadocConfig()
+    applyPublishingConfig(
+        "An OkHttp collection of extensions to be used in conjunction with OpenTelemetry Datadog SDK."
+    )
+}

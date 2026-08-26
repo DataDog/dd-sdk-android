@@ -4,15 +4,16 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.junitConfig
-import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.taskConfig
 
 plugins {
+    // Build
     id("org.jetbrains.kotlin.jvm")
-    id("com.github.ben-manes.versions")
     id("com.android.lint")
+    id("datadogBuildConfig")
+
+    // Analysis tools
+    id("ktlint")
 }
 
 dependencies {
@@ -26,9 +27,10 @@ dependencies {
     testImplementation(libs.bundles.testTools)
 }
 
-kotlinConfig()
-junitConfig()
-dependencyUpdateConfig()
+datadogBuild {
+    applyKotlinConfig()
+    applyJunitConfig()
+}
 
 taskConfig<Jar> {
     manifest {

@@ -6,17 +6,18 @@
 
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.configureFlavorForAutoApp
-import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.java17
-import com.datadog.gradle.config.junitConfig
-import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.taskConfig
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
+    // Build
     id("com.android.application")
+    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
+    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
+    id("ktlint")
     kotlin("android")
-    id("com.github.ben-manes.versions")
+    id("datadogBuildConfig")
     alias(libs.plugins.datadogGradlePlugin)
 }
 
@@ -82,11 +83,13 @@ dependencies {
     implementation(libs.androidXCarAutomotive)
 }
 
-kotlinConfig(evaluateWarningsAsErrors = false)
+datadogBuild {
+    applyKotlinConfig(evaluateWarningsAsErrors = false)
+    applyJunitConfig()
+}
+
 taskConfig<KotlinCompile> {
     compilerOptions {
         optIn.add("kotlin.RequiresOptIn")
     }
 }
-junitConfig()
-dependencyUpdateConfig()

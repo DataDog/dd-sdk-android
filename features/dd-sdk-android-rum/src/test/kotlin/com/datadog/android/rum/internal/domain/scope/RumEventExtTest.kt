@@ -1103,5 +1103,29 @@ internal class RumEventExtTest {
         assertThat(schemaDeviceType.name).isEqualTo(deviceType.name)
     }
 
+    @ParameterizedTest
+    @EnumSource(DeviceType::class)
+    fun `M return schema device type W toTimeseriesCpuSchemaType()`(
+        deviceType: DeviceType
+    ) {
+        // When
+        val schemaDeviceType = deviceType.toTimeseriesCpuSchemaType()
+
+        // Then
+        assertThat(schemaDeviceType.name).isEqualTo(deviceType.name)
+    }
+
+    @ParameterizedTest
+    @EnumSource(DeviceType::class)
+    fun `M return schema device type W toTimeseriesMemorySchemaType()`(
+        deviceType: DeviceType
+    ) {
+        // When
+        val schemaDeviceType = deviceType.toTimeseriesMemorySchemaType()
+
+        // Then
+        assertThat(schemaDeviceType.name).isEqualTo(deviceType.name)
+    }
+
     // endregion
 }

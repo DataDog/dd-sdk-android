@@ -30,6 +30,7 @@ import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollect
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
+import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -57,7 +58,8 @@ internal class RumApplicationScope(
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
     private val insightsCollector: InsightsCollector,
-    private val heatmapIdentifierRegistry: HeatmapIdentifierRegistry?
+    private val heatmapIdentifierRegistry: HeatmapIdentifierRegistry?,
+    private val timeseriesCollectorFactory: TimeseriesCollector.Factory
 ) : RumScope, RumViewChangedListener {
 
     override val parentScope: RumScope? = null
@@ -88,7 +90,8 @@ internal class RumApplicationScope(
             displayInfoProvider = displayInfoProvider,
             rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
             insightsCollector = insightsCollector,
-            heatmapIdentifierRegistry = heatmapIdentifierRegistry
+            heatmapIdentifierRegistry = heatmapIdentifierRegistry,
+            timeseriesCollectorFactory = timeseriesCollectorFactory
         )
     )
 
@@ -211,7 +214,8 @@ internal class RumApplicationScope(
             displayInfoProvider = displayInfoProvider,
             rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
             insightsCollector = insightsCollector,
-            heatmapIdentifierRegistry = heatmapIdentifierRegistry
+            heatmapIdentifierRegistry = heatmapIdentifierRegistry,
+            timeseriesCollectorFactory = timeseriesCollectorFactory
         )
         childScopes.add(newSession)
         if (event !is RumRawEvent.StartView) {
@@ -226,7 +230,7 @@ internal class RumApplicationScope(
         }
 
         // Confidence telemetry, only end up with one active session
-        if (childScopes.filter { it.isActive() }.size > 1) {
+        if (childScopes.count { it.isActive() } > 1) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.TELEMETRY,

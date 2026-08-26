@@ -56,6 +56,7 @@ import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_NAME
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_NAME_CHARACTERS
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_OPERATION_KEY
+import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollectorFactory
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -237,6 +238,10 @@ internal class DatadogRumMonitorTest {
         whenever(mockExecutorService.execute(any<Runnable>())) doAnswer {
             it.getArgument<Runnable>(0).run()
         }
+        whenever(mockExecutorService.submit(any<Runnable>())) doAnswer {
+            it.getArgument<Runnable>(0).run()
+            mock<Future<*>>()
+        }
         whenever(mockExecutorService.submit(any<Callable<RumContext?>>())) doAnswer {
             val rumContext = it.getArgument<Callable<RumContext?>>(0).call()
             mock<Future<RumContext?>>().apply { whenever(get()) doReturn rumContext }
@@ -269,8 +274,15 @@ internal class DatadogRumMonitorTest {
             callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
         whenever(
-            mockRumFeatureScope.getWriteContextSync(setOf(Feature.SESSION_REPLAY_FEATURE_NAME))
-        ) doReturn (fakeDatadogContext to mockEventWriteScope)
+            mockRumFeatureScope.withWriteContextSync(
+                eq(setOf(Feature.SESSION_REPLAY_FEATURE_NAME)),
+                any()
+            )
+        ) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
+            true
+        }
 
         fakeAttributes = forge.exhaustiveAttributes()
 
@@ -305,7 +317,8 @@ internal class DatadogRumMonitorTest {
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
             appPackageName = fakeApplicationPackageName,
-            heatmapIdentifierRegistry = null
+            heatmapIdentifierRegistry = null,
+            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
         )
         testedMonitor.rootScope = mockApplicationScope
     }
@@ -339,7 +352,8 @@ internal class DatadogRumMonitorTest {
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
             appPackageName = fakeApplicationPackageName,
-            heatmapIdentifierRegistry = null
+            heatmapIdentifierRegistry = null,
+            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
         )
 
         // When
@@ -416,7 +430,8 @@ internal class DatadogRumMonitorTest {
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
             appPackageName = fakeApplicationPackageName,
-            heatmapIdentifierRegistry = null
+            heatmapIdentifierRegistry = null,
+            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -461,7 +476,8 @@ internal class DatadogRumMonitorTest {
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
             appPackageName = fakeApplicationPackageName,
-            heatmapIdentifierRegistry = null
+            heatmapIdentifierRegistry = null,
+            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -1351,16 +1367,14 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope on current thread W addCrash()`(
+    fun `M delegate event to rootScope W addCrash()`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
         forge: Forge
     ) {
         // Given
-        whenever(
-            mockRumFeatureScope.getWriteContextSync(setOf(Feature.SESSION_REPLAY_FEATURE_NAME))
-        ) doReturn (fakeDatadogContext to mockEventWriteScope)
+        // the fatal event is handled without the RUM pipeline, so a drained executor changes nothing
         testedMonitor.drainExecutorService()
         val now = System.nanoTime()
         val appStartTimeNs = forge.aLong(min = 0L, max = now)
@@ -1398,7 +1412,12 @@ internal class DatadogRumMonitorTest {
         @Forgery throwable: Throwable
     ) {
         // Given
-        whenever(mockRumFeatureScope.getWriteContextSync(setOf(Feature.SESSION_REPLAY_FEATURE_NAME))) doReturn null
+        whenever(
+            mockRumFeatureScope.withWriteContextSync(
+                eq(setOf(Feature.SESSION_REPLAY_FEATURE_NAME)),
+                any()
+            )
+        ) doReturn false
 
         // When
         testedMonitor.addCrash(message, source, throwable, threads = emptyList())
@@ -1410,6 +1429,59 @@ internal class DatadogRumMonitorTest {
             DatadogRumMonitor.CANNOT_WRITE_CRASH_WRITE_CONTEXT_IS_NOT_AVAILABLE
         )
         verifyNoInteractions(mockApplicationScope, mockWriter)
+    }
+
+    @Test
+    fun `M not hold rootScope lock W addCrash() { fatal error }`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable
+    ) {
+        // Given
+        var rootScopeHeldWhileWaiting = true
+        whenever(
+            mockRumFeatureScope.withWriteContextSync(
+                eq(setOf(Feature.SESSION_REPLAY_FEATURE_NAME)),
+                any()
+            )
+        ) doAnswer {
+            rootScopeHeldWhileWaiting = Thread.holdsLock(testedMonitor.rootScope)
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
+            true
+        }
+
+        // When
+        testedMonitor.addCrash(message, source, throwable, threads = emptyList())
+
+        // Then
+        assertThat(rootScopeHeldWhileWaiting)
+            .withFailMessage(
+                "The crashing thread must not hold the rootScope lock while waiting on the context" +
+                    " thread — lock-ordering inversion causes a deadlock (RUM-17619)"
+            )
+            .isFalse()
+    }
+
+    @Test
+    fun `M not delegate to the RUM executor W addCrash() { fatal error }`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable
+    ) {
+        // When
+        testedMonitor.addCrash(message, source, throwable, threads = emptyList())
+
+        // Then
+        // the crash is handled on the context thread: the extra hop would only add latency and expose the
+        // event to the RUM executor back-pressure, and ordering is already guaranteed by the context thread
+        verify(mockExecutorService, never()).submit(any<Callable<RumContext?>>())
+        verify(mockApplicationScope).handleEvent(
+            any(),
+            same(fakeDatadogContext),
+            same(mockEventWriteScope),
+            same(mockWriter)
+        )
     }
 
     @Test
@@ -2087,9 +2159,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W eventDropped {error}`(
-        @StringForgery viewId: String
-    ) {
+    fun `M delegate event to rootScope W eventDropped {error}`(@StringForgery viewId: String) {
         testedMonitor.eventDropped(viewId, StorageEvent.Error())
 
         argumentCaptor<RumRawEvent> {
@@ -2224,7 +2294,8 @@ internal class DatadogRumMonitorTest {
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
             appPackageName = fakeApplicationPackageName,
-            heatmapIdentifierRegistry = null
+            heatmapIdentifierRegistry = null,
+            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
         )
 
         // When
@@ -2266,7 +2337,8 @@ internal class DatadogRumMonitorTest {
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
             appPackageName = fakeApplicationPackageName,
-            heatmapIdentifierRegistry = null
+            heatmapIdentifierRegistry = null,
+            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
         )
 
         // When
@@ -2309,7 +2381,8 @@ internal class DatadogRumMonitorTest {
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
             appPackageName = fakeApplicationPackageName,
-            heatmapIdentifierRegistry = null
+            heatmapIdentifierRegistry = null,
+            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 
@@ -2534,7 +2607,8 @@ internal class DatadogRumMonitorTest {
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
             appPackageName = fakeApplicationPackageName,
-            heatmapIdentifierRegistry = null
+            heatmapIdentifierRegistry = null,
+            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
         )
         testedMonitor.startView(key, name, attributes)
         // When
@@ -2662,11 +2736,9 @@ internal class DatadogRumMonitorTest {
         val mockRootScope = mock<RumApplicationScope>().apply {
             whenever(getRumContext()) doReturn forge.getForgery<RumContext>()
             whenever(handleEvent(any(), any(), any(), any())) doAnswer {
-                if (isMethodOccupied) {
-                    throw IllegalStateException(
-                        "Only one thread should" +
-                            " be allowed to enter rootScope at the time."
-                    )
+                check(!isMethodOccupied) {
+                    "Only one thread should" +
+                        " be allowed to enter rootScope at the time."
                 }
                 isMethodOccupied = true
                 Thread.sleep(100)
@@ -2929,7 +3001,6 @@ internal class DatadogRumMonitorTest {
     ) {
         // Given
         val mockFeatureScope = mock<FeatureScope>()
-        whenever(mockFeatureScope.getWriteContextSync(setOf(Feature.SESSION_REPLAY_FEATURE_NAME))) doReturn null
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockFeatureScope
         whenever(mockExecutorService.submit(any<Callable<RumContext>>())) doAnswer {
             mock<Future<RumContext>>().apply { whenever(get()) doReturn null }
@@ -2962,6 +3033,23 @@ internal class DatadogRumMonitorTest {
             firstValue.invoke(acc)
             assertThat(acc).isEmpty()
         }
+    }
+
+    // endregion
+
+    // region timeseries
+
+    @Test
+    fun `M stop the active session timeseries W stopTimeseries()`() {
+        // Given
+        val mockSessionScope = mock<RumSessionScope>()
+        whenever(mockApplicationScope.activeSession) doReturn mockSessionScope
+
+        // When
+        testedMonitor.stopTimeseries()
+
+        // Then
+        verify(mockSessionScope).stopTimeseries()
     }
 
     // endregion

@@ -18,8 +18,7 @@ workflow:
 stages:
   - ci-image
   - security
-  - analysis
-  - test # TODO RUM-1622 cleanup eventually
+  - verify
   - test-pyramid
   - publish
   - notify
@@ -156,44 +155,59 @@ create_key:
       - pubkeys
 
 
-# STATIC ANALYSIS
+# TESTS
 
-static-analysis:
-  stage: analysis
-  variables:
-    DETEKT_PUBLIC_API: "true"
-    # Our Detekt tasks can't run in parallel mode
-    DETEKT_GENERATE_CLASSPATH_BUILD_TASK: "printSdkDebugRuntimeClasspath --no-parallel"
-    DETEKT_CLASSPATH_FILE_PATH: "sdk_classpath"
-    FLAVORED_ANDROID_LINT: ":tools:lint:lint"
-  trigger:
-    include: "https://gitlab-templates.ddbuild.io/mobile/v123745390-227cb48b/static-analysis.yml"
-    strategy: depend
-
-analysis:detekt-custom:
+analysis:generated-files-check:
   extends:
     - .base-cache-pull-job
-  tags:
-    - "arch:amd64"
+  tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
-  stage: analysis
+  stage: verify
+  timeout: 30m
+  script:
+    - !reference [.snippets, setup-gradle]
+    # TODO RUM-17809: configuration cache not supported by gradle-dependency-license-plugin; re-enable once fixed
+    - ./gradlew checkGeneratedFiles --no-configuration-cache
+
+analysis:ktlint:
+  extends:
+    - .base-cache-pull-job
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  stage: verify
+  timeout: 30m
+  script:
+    - !reference [.snippets, setup-gradle]
+    - ./gradlew ktlintCheck :build-logic:ktlintCheck
+
+analysis:detekt:
+  extends:
+    - .base-cache-pull-job
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  stage: verify
   timeout: 1h
   script:
     - !reference [.snippets, setup-gradle]
-    - ./gradlew unzipAarForDetekt :tools:detekt:jar
-    - ./gradlew printDetektClasspath --no-parallel
-    - curl -sSLO https://github.com/detekt/detekt/releases/download/v1.23.8/detekt-cli-1.23.8-all.jar
-    - ./gradlew customDetektRules
+    - ./gradlew detekt --continue
 
-# TODO RUM-1622 cleanup this section
-# TESTS
+analysis:android-lint:
+  extends:
+    - .base-cache-pull-job
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  stage: verify
+  timeout: 1h
+  script:
+    - !reference [.snippets, setup-gradle]
+    - ./gradlew :lintCheckAll --continue
 
 test:debug:
   extends:
     - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
-  stage: test
+  stage: verify
   timeout: 1h
   script:
     - !reference [.snippets, setup-gradle]
@@ -216,20 +230,45 @@ test:tools:
     - .base-cache-pull-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
-  stage: test
+  stage: verify
   timeout: 1h
   script:
     - !reference [.snippets, setup-gradle]
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
     - ./gradlew :unitTestTools
+  artifacts:
+    when: always
+    expire_in: 1 week
+    reports:
+      junit: "tools/**/build/test-results/test/*.xml"
+
+test:build-logic:
+  extends:
+    - .base-cache-pull-job
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  stage: verify
+  timeout: 30m
+  script:
+    - !reference [.snippets, setup-gradle]
+    - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
+    - ./gradlew :build-logic:test
+  artifacts:
+    when: always
+    expire_in: 1 week
+    reports:
+      junit: "build-logic/build/test-results/test/*.xml"
 
 test:kover:
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
-  stage: test
+  stage: verify
   timeout: 1h
   variables:
     GRADLE_CACHE_CLEANUP: "true"
+  id_tokens:
+    DD_STS_OIDC_TOKEN:
+      aud: dd-sts
   cache:
     key: $CI_COMMIT_REF_SLUG
     paths:
@@ -239,20 +278,14 @@ test:kover:
   script:
     - !reference [.snippets, source-secrets]
     - !reference [.snippets, setup-gradle]
-    - pip3 install datadog
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
-    - export DD_API_KEY=$(get_secret $DD_ANDROID_SECRET__API_KEY)
-    - export DD_APP_KEY=$(get_secret $DD_ANDROID_SECRET__APP_KEY)
-    - CODECOV_TOKEN=$(get_secret $DD_ANDROID_SECRET__CODECOV_TOKEN)
     - >-
         DD_TAGS="test.configuration.variant:release" ./gradlew
         :dd-sdk-android-core:koverXmlReportRelease
         :dd-sdk-android-internal:koverXmlReportRelease
         :koverReportFeatures
         :koverReportIntegrations
-    - bash <(cat ./ci/scripts/codecov.sh) -t $CODECOV_TOKEN
-    - npm install -g @datadog/datadog-ci
-    - datadog-ci coverage upload --format=jacoco . || true
+    - dd-sts exchange --policy dd-sdk-android -- datadog-ci coverage upload . || true
   artifacts:
     when: always
     expire_in: 1 week
@@ -437,7 +470,7 @@ test-pyramid:ndk-instrumented-latest-api:
     - !reference [.snippets, setup-macos-ami-runner]
     - !reference [.snippets, run-ndk-instrumented]
 
-test-pyramid:detekt-api-coverage:
+test-pyramid:api-coverage:
   extends:
     - .base-cache-pull-job
   tags: [ "arch:amd64" ]
@@ -445,16 +478,13 @@ test-pyramid:detekt-api-coverage:
   stage: test-pyramid
   timeout: 1h
   script:
-    - !reference [ .snippets, source-secrets ]
     - !reference [ .snippets, setup-gradle ]
-    - mkdir -p ./config/
-    - ./gradlew assembleLibrariesDebug :tools:detekt:jar
-    - ./gradlew printSdkDebugRuntimeClasspath --no-parallel # can't be combined with line above due to fails in parallel mode due to design of our detekt system
-    - curl -sSLO https://github.com/detekt/detekt/releases/download/v1.23.8/detekt-cli-1.23.8-all.jar
-    # Explicit includes to avoid OOM. Keep it in sync with includes for rules.
-    - java -jar detekt-cli-1.23.8-all.jar --config detekt_test_pyramid.yml --plugins tools/detekt/build/libs/detekt.jar -ex "**/*.kts" -in "**/reliability/**,**/dd-sdk-android-*/**" --jvm-target 11 -cp $(cat sdk_classpath)
-    # For now we just print the uncovered apis, eventually we will fail if it's not empty
-    - grep -v -f apiUsage.log apiSurface.log
+    - ./gradlew checkTestPyramidCoverage
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - build/reports/test-pyramid/coverage.txt
 
 test-pyramid:publish-e2e-synthetics:
   extends:
@@ -476,9 +506,7 @@ test-pyramid:publish-e2e-synthetics:
     - export E2E_MOBILE_APP_ID=$(get_secret $DD_ANDROID_SECRET__E2E_MOBILE_APP_ID)
     - !reference [ .snippets, setup-gradle ]
     - ./gradlew :sample:kotlin:packageUs1Release
-    - npm update -g @datadog/datadog-ci
-    - echo "Using datadog-ci $(npx @datadog/datadog-ci version)"
-    - npx @datadog/datadog-ci synthetics upload-application --appKey "$E2E_DD_APP_KEY" --apiKey "$E2E_DD_API_KEY" --mobileApp "sample/kotlin/build/outputs/apk/us1/release/kotlin-us1-release.apk" --mobileApplicationId "$E2E_MOBILE_APP_ID" --versionName "$CI_COMMIT_SHORT_SHA" --latest
+    - datadog-ci synthetics upload-application --appKey "$E2E_DD_APP_KEY" --apiKey "$E2E_DD_API_KEY" --mobileApp "sample/kotlin/build/outputs/apk/us1/release/kotlin-us1-release.apk" --mobileApplicationId "$E2E_MOBILE_APP_ID" --versionName "$CI_COMMIT_SHORT_SHA" --latest
   artifacts:
     when: always
     expire_in: 1 week
@@ -505,9 +533,7 @@ test-pyramid:publish-webview-synthetics:
     - export E2E_MOBILE_APP_ID=$(get_secret $DD_ANDROID_SECRET__WEBVIEW_MOBILE_APP_ID)
     - !reference [ .snippets, setup-gradle ]
     - ./gradlew :sample:kotlin:packageUs1Release
-    - npm update -g @datadog/datadog-ci
-    - echo "Using datadog-ci $(npx @datadog/datadog-ci version)"
-    - npx @datadog/datadog-ci synthetics upload-application --appKey "$E2E_DD_APP_KEY" --apiKey "$E2E_DD_API_KEY" --mobileApp "sample/kotlin/build/outputs/apk/us1/release/kotlin-us1-release.apk" --mobileApplicationId "$E2E_MOBILE_APP_ID" --versionName "$CI_COMMIT_SHORT_SHA" --latest
+    - datadog-ci synthetics upload-application --appKey "$E2E_DD_APP_KEY" --apiKey "$E2E_DD_API_KEY" --mobileApp "sample/kotlin/build/outputs/apk/us1/release/kotlin-us1-release.apk" --mobileApplicationId "$E2E_MOBILE_APP_ID" --versionName "$CI_COMMIT_SHORT_SHA" --latest
   artifacts:
     when: always
     expire_in: 1 week
@@ -534,9 +560,7 @@ test-pyramid:publish-staging-synthetics:
     - export E2E_MOBILE_APP_ID=$(get_secret $DD_ANDROID_SECRET__E2E_STAGING_APP_ID)
     - !reference [ .snippets, setup-gradle ]
     - ./gradlew :sample:kotlin:packageStagingRelease
-    - npm update -g @datadog/datadog-ci
-    - echo "Using datadog-ci $(npx @datadog/datadog-ci version)"
-    - npx @datadog/datadog-ci synthetics upload-application --appKey "$E2E_DD_APP_KEY" --apiKey "$E2E_DD_API_KEY" --mobileApp "sample/kotlin/build/outputs/apk/staging/release/kotlin-staging-release.apk" --mobileApplicationId "$E2E_MOBILE_APP_ID" --versionName "$CI_COMMIT_SHORT_SHA" --latest --datadogSite "datad0g.com"
+    - datadog-ci synthetics upload-application --appKey "$E2E_DD_APP_KEY" --apiKey "$E2E_DD_API_KEY" --mobileApp "sample/kotlin/build/outputs/apk/staging/release/kotlin-staging-release.apk" --mobileApplicationId "$E2E_MOBILE_APP_ID" --versionName "$CI_COMMIT_SHORT_SHA" --latest --datadogSite "datad0g.com"
   artifacts:
     when: always
     expire_in: 1 week
@@ -563,9 +587,7 @@ test-pyramid:publish-benchmark-synthetics:
     - export BM_MOBILE_APP_ID=$(get_secret $DD_ANDROID_SECRET__BENCHMARK_MOBILE_APP_ID)
     - !reference [ .snippets, setup-gradle ]
     - ./gradlew :sample:benchmark:packageRelease
-    - npm update -g @datadog/datadog-ci
-    - echo "Using datadog-ci $(npx @datadog/datadog-ci version)"
-    - npx @datadog/datadog-ci synthetics upload-application --appKey "$BM_DD_APP_KEY" --apiKey "$BM_DD_API_KEY" --mobileApp "sample/benchmark/build/outputs/apk/release/benchmark-release.apk" --mobileApplicationId "$BM_MOBILE_APP_ID" --versionName "$CI_COMMIT_SHORT_SHA" --latest
+    - datadog-ci synthetics upload-application --appKey "$BM_DD_APP_KEY" --apiKey "$BM_DD_API_KEY" --mobileApp "sample/benchmark/build/outputs/apk/release/benchmark-release.apk" --mobileApplicationId "$BM_MOBILE_APP_ID" --versionName "$CI_COMMIT_SHORT_SHA" --latest
   artifacts:
     when: always
     expire_in: 1 week
@@ -708,4 +730,35 @@ notify:merge-verification-metadata:
     expire_in: 3 mos
     paths:
       - verification-metadata.xml
+
+notify:github-release:
+  tags: [ "arch:amd64" ]
+  interruptible: false
+  only:
+    - tags
+  image: $CI_IMAGE_DOCKER
+  id_tokens:
+    DDOCTOSTS_ID_TOKEN:
+      aud: dd-octo-sts
+  stage: notify
+  when: on_success
+  needs:
+    - notify:merge-verification-metadata
+  script:
+    - export GITHUB_TOKEN=$(dd-octo-sts token --scope DataDog/dd-sdk-android --policy self.gitlab.release.create-release)
+    - >-
+        if gh release view "$CI_COMMIT_TAG" --repo DataDog/dd-sdk-android >/dev/null 2>&1; then
+          gh release upload "$CI_COMMIT_TAG" --repo DataDog/dd-sdk-android --clobber verification-metadata.xml;
+        else
+          # Extract out the tag's changelog entry
+          start_line=$(grep -Fn "# ${CI_COMMIT_TAG} /" CHANGELOG.md | head -1 | cut -d: -f1 || true);
+          if [ -n "$start_line" ]; then
+            tail -n "+$((start_line + 1))" CHANGELOG.md | sed -n '/^# /q;p' > release-notes.md || true;
+          else
+            echo "No CHANGELOG.md entry found for tag $CI_COMMIT_TAG" >&2;
+            echo "Fill this in" > release-notes.md;
+          fi;
+      
+          gh release create "$CI_COMMIT_TAG" --repo DataDog/dd-sdk-android --draft --verify-tag --title "$CI_COMMIT_TAG" --notes-file release-notes.md verification-metadata.xml;
+        fi
 

@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.recorder
 import android.app.Application
 import android.os.Handler
 import android.os.Looper
+import android.view.View
 import android.view.Window
 import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
@@ -24,12 +25,14 @@ import com.datadog.android.sessionreplay.internal.LifecycleCallback
 import com.datadog.android.sessionreplay.internal.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.processor.MutationResolver
 import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
 import com.datadog.android.sessionreplay.internal.processor.ResourceQueueImpl
 import com.datadog.android.sessionreplay.internal.processor.RumContextDataHandler
 import com.datadog.android.sessionreplay.internal.recorder.callback.OnWindowRefreshedCallback
 import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.EmbeddedContentViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.HiddenViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
@@ -56,6 +59,7 @@ import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
 
@@ -71,7 +75,20 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private val internalLogger: InternalLogger
     private val uiHandler: Handler
     private val resourceResolver: ResourceResolver
+    private val windowFromDecorView: (View) -> Window?
     private var shouldRecord = false
+
+    /** Whether a capture has been asked for and not yet honoured — see [requestCapture]. */
+    private val captureRequested = AtomicBoolean(false)
+
+    /**
+     * The slots a standing capture request still owes a placeholder, guarded by itself.
+     *
+     * A request is satisfied by the placeholders reaching storage, not by a snapshot being taken:
+     * the queue can drop the snapshot before it is processed, the write can fail, and the slot can
+     * be absent from the tree the traversal walked. Each leaves the request outstanding.
+     */
+    private val slotsAwaitingPlaceholder = mutableSetOf<String>()
 
     @Suppress("LongParameterList")
     constructor(
@@ -91,6 +108,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         resourceDataStoreManager: ResourceDataStoreManager,
         dynamicOptimizationEnabled: Boolean,
         internalCallback: SessionReplayInternalCallback,
+        embeddedContentSlotRegistry: EmbeddedContentSlotRegistry,
         heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null
     ) {
         val internalLogger = sdkCore.internalLogger
@@ -105,7 +123,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             resourcesWriter,
             recordWriter,
             MutationResolver(internalLogger),
-            timeProvider
+            timeProvider,
+            embeddedContentSlotRegistry
         )
 
         this.appContext = appContext
@@ -135,6 +154,15 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             colorStringFormatter,
             viewBoundsResolver,
             drawableToColorMapper
+        )
+        val viewUtilsInternal = ViewUtilsInternal()
+        val embeddedContentViewMapper = EmbeddedContentViewMapper(
+            viewIdentifierResolver = viewIdentifierResolver,
+            colorStringFormatter = colorStringFormatter,
+            viewBoundsResolver = viewBoundsResolver,
+            drawableToColorMapper = drawableToColorMapper,
+            viewUtilsInternal = viewUtilsInternal,
+            embeddedContentSlotRegistry = embeddedContentSlotRegistry
         )
 
         val bitmapCachesManager = BitmapCachesManager(
@@ -178,8 +206,9 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                             viewBoundsResolver = viewBoundsResolver,
                             viewIdentifierResolver = viewIdentifierResolver
                         ),
-                        viewUtilsInternal = ViewUtilsInternal(),
-                        internalLogger = internalLogger
+                        viewUtilsInternal = viewUtilsInternal,
+                        internalLogger = internalLogger,
+                        embeddedContentViewMapper = embeddedContentViewMapper
                     ),
                     optionSelectorDetector = ComposedOptionSelectorDetector(
                         customOptionSelectorDetectors + DefaultOptionSelectorDetector()
@@ -192,7 +221,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                             registry = it,
                             internalLogger = internalLogger
                         )
-                    }
+                    },
+                    embeddedContentViewMapper = embeddedContentViewMapper
                 ),
                 recordedDataQueueHandler = recordedDataQueueHandler,
                 sdkCore = sdkCore,
@@ -224,6 +254,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
 
         this.uiHandler = Handler(Looper.getMainLooper())
         this.internalLogger = internalLogger
+        this.windowFromDecorView = { WindowReflectionUtils.getWindowFromDecorView(it, internalLogger) }
+        embeddedContentSlotRegistry.addPlaceholderListener(::onPlaceholderWritten)
     }
 
     @VisibleForTesting
@@ -240,7 +272,11 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         recordedDataQueueHandler: RecordedDataQueueHandler,
         resourceResolver: ResourceResolver,
         uiHandler: Handler,
-        internalLogger: InternalLogger
+        internalLogger: InternalLogger,
+        embeddedContentSlotRegistry: EmbeddedContentSlotRegistry = EmbeddedContentSlotRegistry(),
+        windowFromDecorView: (View) -> Window? = {
+            WindowReflectionUtils.getWindowFromDecorView(it, internalLogger)
+        }
     ) {
         this.appContext = appContext
         this.textAndInputPrivacy = textAndInputPrivacy
@@ -253,7 +289,9 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.sessionReplayLifecycleCallback = sessionReplayLifecycleCallback
         this.resourceResolver = resourceResolver
         this.uiHandler = uiHandler
+        this.windowFromDecorView = windowFromDecorView
         this.internalLogger = internalLogger
+        embeddedContentSlotRegistry.addPlaceholderListener(::onPlaceholderWritten)
     }
 
     override fun stopProcessingRecords() {
@@ -273,11 +311,89 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     override fun resumeRecorders() {
         uiHandler.post {
             shouldRecord = true
-            val windows = sessionReplayLifecycleCallback.getCurrentWindows()
-            val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
-            windowCallbackInterceptor.intercept(windows, appContext)
-            viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
+            @Suppress("ThreadSafety") // handler posts to the main looper
+            interceptCurrentWindows(sessionReplayLifecycleCallback.getCurrentWindows())
         }
+    }
+
+    /**
+     * A capture request is a standing obligation rather than a single attempt: the placeholder
+     * wireframe for each of [slotIds] has to reach the player before the embedded records that
+     * composite into it, and records are replayed in timestamp order, not write order. Dropping the
+     * request because the recorder cannot serve it yet would leave those records waiting on a
+     * placeholder that never arrives, so it survives until the placeholders are actually written.
+     */
+    override fun requestCapture(slotIds: Set<String>) {
+        synchronized(slotsAwaitingPlaceholder) {
+            slotsAwaitingPlaceholder.addAll(slotIds)
+        }
+        captureRequested.set(true)
+        uiHandler.post {
+            @Suppress("ThreadSafety") // handler posts to the main looper
+            performRequestedCapture(attempt = 0)
+        }
+    }
+
+    /** Clears the request once every slot it was made for has its placeholder in storage. */
+    private fun onPlaceholderWritten(slotId: String) {
+        val isSatisfied = synchronized(slotsAwaitingPlaceholder) {
+            slotsAwaitingPlaceholder.remove(slotId)
+            slotsAwaitingPlaceholder.isEmpty()
+        }
+        if (isSatisfied) {
+            captureRequested.set(false)
+        }
+    }
+
+    @MainThread
+    private fun performRequestedCapture(attempt: Int) {
+        if (!shouldRecord || !captureRequested.get()) {
+            return
+        }
+        when (viewOnDrawInterceptor.requestCapture()) {
+            // Taking the snapshot does not discharge the request — only the placeholder reaching
+            // storage does, which happens asynchronously and may not happen at all. Retrying until
+            // then also drives recovery: each capture drains the processing queue, which is what
+            // an expired snapshot left stuck behind.
+            ViewOnDrawInterceptor.CaptureRequestResult.CAPTURED -> Unit
+
+            ViewOnDrawInterceptor.CaptureRequestResult.NOT_INTERCEPTING -> {
+                // The request arrived before this activity's window existed. Intercepting registers
+                // the listeners and serves the request itself.
+                interceptCurrentWindows(sessionReplayLifecycleCallback.getCurrentWindows())
+            }
+
+            // Either no window survived, or the queue refused the item. Neither clears within this
+            // frame, so the request is given a few further chances rather than being left to
+            // whatever draw or batch happens to come along next.
+            ViewOnDrawInterceptor.CaptureRequestResult.NOT_CAPTURED -> Unit
+        }
+        if (!captureRequested.get()) {
+            return
+        }
+        if (attempt < MAX_CAPTURE_ATTEMPTS) {
+            uiHandler.postDelayed(
+                {
+                    @Suppress("ThreadSafety") // handler posts to the main looper
+                    performRequestedCapture(attempt + 1)
+                },
+                // Doubling each time, so the last attempts fall outside the window in which the
+                // processing queue discards an item it could not consume in time.
+                CAPTURE_RETRY_DELAY_IN_MS shl attempt
+            )
+        } else {
+            // Out of attempts. The slots are released rather than left pending so that a later
+            // request is not immediately satisfied by a placeholder owed to this one; the batches
+            // waiting on them are written by the receiver's own bounds.
+            abandonCaptureRequest()
+        }
+    }
+
+    private fun abandonCaptureRequest() {
+        synchronized(slotsAwaitingPlaceholder) {
+            slotsAwaitingPlaceholder.clear()
+        }
+        captureRequested.set(false)
     }
 
     override fun stopRecorders() {
@@ -291,9 +407,23 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     @MainThread
     override fun onWindowsAdded(windows: List<Window>) {
         if (shouldRecord) {
-            val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
-            windowCallbackInterceptor.intercept(windows, appContext)
-            viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
+            interceptCurrentWindows(windows)
+        }
+    }
+
+    /**
+     * Starts intercepting every window currently open, [windows] included. Any standing capture
+     * request is then served explicitly: intercepting does take a snapshot of its own, but that one
+     * goes through the debouncer, which is free to drop it. The request stays standing either way —
+     * it is discharged by the placeholders being written, not by this snapshot being taken.
+     */
+    @MainThread
+    private fun interceptCurrentWindows(windows: List<Window>) {
+        val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
+        windowCallbackInterceptor.intercept(windows + resolveUntrackedWindows(decorViews, windows), appContext)
+        viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
+        if (captureRequested.get()) {
+            viewOnDrawInterceptor.requestCapture()
         }
     }
 
@@ -304,5 +434,23 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             windowCallbackInterceptor.stopIntercepting(windows)
             viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
         }
+    }
+
+    // a window already open (e.g. a dialog) isn't reported through the Activity lifecycle
+    private fun resolveUntrackedWindows(decorViews: List<View>, knownWindows: List<Window>): List<Window> {
+        return decorViews
+            .filterNot { it.width == 0 || it.height == 0 }
+            .mapNotNull { windowFromDecorView(it) }
+            .filterNot { it in knownWindows || windowCallbackInterceptor.isExcluded(it) }
+            .distinct()
+    }
+
+    internal companion object {
+        // A saturated queue, or a window in the middle of being replaced, clears within a frame or
+        // two; past that, retrying is unlikely to be what makes the difference.
+        internal const val MAX_CAPTURE_ATTEMPTS: Int = 4
+
+        // one frame time
+        internal const val CAPTURE_RETRY_DELAY_IN_MS: Long = 64
     }
 }
