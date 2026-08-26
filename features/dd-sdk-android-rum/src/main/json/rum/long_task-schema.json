@@ -16,7 +16,7 @@
       "$ref": "_view-container-schema.json"
     },
     {
-      "required": ["type", "long_task"],
+      "required": ["type", "view", "long_task"],
       "properties": {
         "type": {
           "type": "string",
