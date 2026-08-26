@@ -1,6 +1,5 @@
-# 3.13.0 / 2026-08-25
+# 3.13.0 / 2026-08-26
 
-* [FEATURE] `Timeseries` collection experimental support. See [#3432](https://github.com/DataDog/dd-sdk-android/pull/3432)
 * [FEATURE] Add widget support for `timeseries`. See [#3568](https://github.com/DataDog/dd-sdk-android/pull/3568)
 * [FEATURE] Support cross-platform embedded content in Session Replay. See [#3690](https://github.com/DataDog/dd-sdk-android/pull/3690)
 * [BUGFIX] Fix long task duration computation. See [#3748](https://github.com/DataDog/dd-sdk-android/pull/3748)
