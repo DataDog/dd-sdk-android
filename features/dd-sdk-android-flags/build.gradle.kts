@@ -44,6 +44,8 @@ createJsonModelsGenerationTask("generateFlagsModelsFromJson") {
     targetPackageName = "com.datadog.android.flags.model"
 }
 
+// TODO RUM-18189 Support new AGP DSL
+@Suppress("DEPRECATION")
 android {
     namespace = "com.datadog.android.flags"
 }

@@ -37,6 +37,8 @@ plugins {
     id("test-pyramid-api-surface")
 }
 
+// TODO RUM-18189 Support new AGP DSL
+@Suppress("DEPRECATION")
 android {
     namespace = "com.datadog.android.rumdebugwidget"
 }
@@ -48,6 +50,7 @@ dependencies {
 
     // Android Instrumentation
     implementation(libs.androidXFragment)
+    implementation(libs.androidXCoreKtx)
 
     testImplementation(project(":tools:unit")) {
         attributes {

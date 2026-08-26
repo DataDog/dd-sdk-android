@@ -47,6 +47,7 @@ public final class com/datadog/android/internal/attributes/LocalAttribute$Key : 
 	public static final field CREATION_SAMPLING_RATE Lcom/datadog/android/internal/attributes/LocalAttribute$Key;
 	public static final field REPORTING_SAMPLING_RATE Lcom/datadog/android/internal/attributes/LocalAttribute$Key;
 	public static final field VIEW_SCOPE_INSTRUMENTATION_TYPE Lcom/datadog/android/internal/attributes/LocalAttribute$Key;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public fun toString ()Ljava/lang/String;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/attributes/LocalAttribute$Key;
 	public static fun values ()[Lcom/datadog/android/internal/attributes/LocalAttribute$Key;
@@ -77,6 +78,7 @@ public final class com/datadog/android/internal/attributes/ViewScopeInstrumentat
 	public static final field COMPOSE Lcom/datadog/android/internal/attributes/ViewScopeInstrumentationType$Native;
 	public static final field FRAGMENT Lcom/datadog/android/internal/attributes/ViewScopeInstrumentationType$Native;
 	public static final field MANUAL Lcom/datadog/android/internal/attributes/ViewScopeInstrumentationType$Native;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public fun getKey ()Lcom/datadog/android/internal/attributes/LocalAttribute$Key;
 	public fun getValue ()Ljava/lang/String;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/attributes/ViewScopeInstrumentationType$Native;
@@ -222,6 +224,7 @@ public final class com/datadog/android/internal/network/GraphQLHeaders : java/la
 	public static final field DD_GRAPHQL_PAYLOAD_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;
 	public static final field DD_GRAPHQL_TYPE_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;
 	public static final field DD_GRAPHQL_VARIABLES_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun getHeaderValue ()Ljava/lang/String;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/network/GraphQLHeaders;
 	public static fun values ()[Lcom/datadog/android/internal/network/GraphQLHeaders;
@@ -406,6 +409,7 @@ public final class com/datadog/android/internal/profiling/ProfilerEvent$RumVital
 	public static final field OPERATION Lcom/datadog/android/internal/profiling/ProfilerEvent$RumVitalEvent$Type;
 	public static final field TTFD Lcom/datadog/android/internal/profiling/ProfilerEvent$RumVitalEvent$Type;
 	public static final field TTID Lcom/datadog/android/internal/profiling/ProfilerEvent$RumVitalEvent$Type;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/profiling/ProfilerEvent$RumVitalEvent$Type;
 	public static fun values ()[Lcom/datadog/android/internal/profiling/ProfilerEvent$RumVitalEvent$Type;
 }
@@ -517,6 +521,7 @@ public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent
 	public static final field FAIL Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$AddOperationStepVital$ActionType;
 	public static final field START Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$AddOperationStepVital$ActionType;
 	public static final field SUCCEED Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$AddOperationStepVital$ActionType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$AddOperationStepVital$ActionType;
 	public static fun values ()[Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$AddOperationStepVital$ActionType;
 }
@@ -539,6 +544,7 @@ public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent
 	public static final field CRONET Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$NetworkInstrumentation$LibraryType;
 	public static final field LEGACY_OKHTTP Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$NetworkInstrumentation$LibraryType;
 	public static final field OKHTTP Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$NetworkInstrumentation$LibraryType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$NetworkInstrumentation$LibraryType;
 	public static fun values ()[Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$NetworkInstrumentation$LibraryType;
 }
@@ -621,6 +627,7 @@ public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent
 public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent$ResourceHeadersTrackingConfigured$Mode : java/lang/Enum {
 	public static final field CUSTOM Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ResourceHeadersTrackingConfigured$Mode;
 	public static final field DEFAULT_HEADERS Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ResourceHeadersTrackingConfigured$Mode;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ResourceHeadersTrackingConfigured$Mode;
 	public static fun values ()[Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ResourceHeadersTrackingConfigured$Mode;
 }
@@ -668,6 +675,7 @@ public final class com/datadog/android/internal/telemetry/TracingHeaderType : ja
 	public static final field B3MULTI Lcom/datadog/android/internal/telemetry/TracingHeaderType;
 	public static final field DATADOG Lcom/datadog/android/internal/telemetry/TracingHeaderType;
 	public static final field TRACECONTEXT Lcom/datadog/android/internal/telemetry/TracingHeaderType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/telemetry/TracingHeaderType;
 	public static fun values ()[Lcom/datadog/android/internal/telemetry/TracingHeaderType;
 }
@@ -730,6 +738,18 @@ public abstract interface class com/datadog/android/internal/time/TimeProvider {
 
 public final class com/datadog/android/internal/utils/ByteArrayExtKt {
 	public static final fun toHexString ([B)Ljava/lang/String;
+}
+
+public abstract interface class com/datadog/android/internal/utils/DDCoreStateHolder {
+	public static final field Companion Lcom/datadog/android/internal/utils/DDCoreStateHolder$Companion;
+	public abstract fun addListener (Ljava/lang/Object;)V
+	public abstract fun getCurrentState ()Ljava/lang/Object;
+	public abstract fun removeListener (Ljava/lang/Object;)V
+	public abstract fun updateState (Ljava/lang/Object;)V
+}
+
+public final class com/datadog/android/internal/utils/DDCoreStateHolder$Companion {
+	public final fun create (Ljava/lang/Object;Lkotlin/jvm/functions/Function2;)Lcom/datadog/android/internal/utils/DDCoreStateHolder;
 }
 
 public abstract interface class com/datadog/android/internal/utils/DDCoreSubscription {

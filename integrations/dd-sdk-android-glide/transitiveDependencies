@@ -1,26 +1,26 @@
 Dependencies List
 
 androidx.activity:activity:1.7.2                                :  139 Kb
-androidx.annotation:annotation-experimental:1.4.1               :   38 Kb
-androidx.annotation:annotation-jvm:1.9.1                        :   59 Kb
+androidx.annotation:annotation-experimental:1.1.0               :   16 Kb
+androidx.annotation:annotation-jvm:1.7.1                        :   53 Kb
 androidx.arch.core:core-common:2.2.0                            :   11 Kb
-androidx.arch.core:core-runtime:2.2.0                           :    7 Kb
-androidx.collection:collection-jvm:1.4.5                        :  770 Kb
-androidx.core:core-ktx:1.15.0                                   :  171 Kb
-androidx.core:core:1.15.0                                       : 1304 Kb
-androidx.customview:customview:1.1.0                            :   32 Kb
+androidx.arch.core:core-runtime:2.1.0                           :    5 Kb
+androidx.collection:collection:1.1.0                            :   41 Kb
+androidx.core:core-ktx:1.2.0                                    :  155 Kb
+androidx.core:core:1.8.0                                        : 1052 Kb
+androidx.customview:customview:1.0.0                            :   32 Kb
 androidx.exifinterface:exifinterface:1.3.6                      :   62 Kb
-androidx.fragment:fragment:1.6.2                                :  345 Kb
+androidx.fragment:fragment:1.6.1                                :  345 Kb
 androidx.interpolator:interpolator:1.0.0                        :    7 Kb
-androidx.lifecycle:lifecycle-common:2.6.2                       :   51 Kb
-androidx.lifecycle:lifecycle-livedata-core:2.6.2                :   11 Kb
-androidx.lifecycle:lifecycle-livedata:2.6.2                     :   18 Kb
-androidx.lifecycle:lifecycle-runtime:2.6.2                      :   21 Kb
-androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.2         :   38 Kb
-androidx.lifecycle:lifecycle-viewmodel:2.6.2                    :   38 Kb
+androidx.lifecycle:lifecycle-common:2.6.1                       :   51 Kb
+androidx.lifecycle:lifecycle-livedata-core:2.6.1                :   11 Kb
+androidx.lifecycle:lifecycle-livedata:2.6.1                     :   18 Kb
+androidx.lifecycle:lifecycle-runtime:2.6.1                      :   21 Kb
+androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.1         :   38 Kb
+androidx.lifecycle:lifecycle-viewmodel:2.6.1                    :   38 Kb
 androidx.loader:loader:1.0.0                                    :   32 Kb
 androidx.savedstate:savedstate:1.2.1                            :   19 Kb
-androidx.tracing:tracing:1.2.0                                  :    5 Kb
+androidx.tracing:tracing:1.0.0                                  :    4 Kb
 androidx.vectordrawable:vectordrawable-animated:1.1.0           :   33 Kb
 androidx.vectordrawable:vectordrawable:1.1.0                    :   32 Kb
 androidx.versionedparcelable:versionedparcelable:1.1.1          :   30 Kb
@@ -39,5 +39,5 @@ org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4          :   19 Kb
 org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.6.4         : 1442 Kb
 org.jetbrains:annotations:13.0                                  :   17 Kb
 
-Total transitive dependencies size                              :    8 Mb
+Total transitive dependencies size                              :    7 Mb
 

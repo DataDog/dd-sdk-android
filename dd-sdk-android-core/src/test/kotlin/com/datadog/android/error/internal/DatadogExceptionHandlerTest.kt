@@ -30,6 +30,7 @@ import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -42,6 +43,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.ArgumentMatchers
@@ -51,6 +53,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -370,6 +373,48 @@ internal class DatadogExceptionHandlerTest {
             }
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, throwable)
+    }
+
+    // endregion
+
+    // region Resilience
+
+    @Test
+    fun `M call previous handler W uncaughtException() { exception ingestion throws }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeFailure = forge.aThrowable()
+        whenever(mockRumFeatureScope.sendEvent(any())) doThrow fakeFailure
+        val currentThread = Thread.currentThread()
+
+        // When
+        testedHandler.uncaughtException(currentThread, fakeThrowable)
+
+        // Then
+        verify(mockPreviousHandler).uncaughtException(currentThread, fakeThrowable)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            DatadogExceptionHandler.PROCESSING_FAILURE_MESSAGE,
+            fakeFailure
+        )
+    }
+
+    @Test
+    fun `M not throw W uncaughtException() { ingestion throws and no previous handler }`(
+        @StringForgery fakeErrorMessage: String
+    ) {
+        // Given
+        whenever(mockRumFeatureScope.sendEvent(any())) doThrow RuntimeException(fakeErrorMessage)
+        Thread.setDefaultUncaughtExceptionHandler(null)
+        testedHandler.register()
+        val currentThread = Thread.currentThread()
+
+        // When + Then
+        assertDoesNotThrow {
+            testedHandler.uncaughtException(currentThread, fakeThrowable)
+        }
     }
 
     // endregion
