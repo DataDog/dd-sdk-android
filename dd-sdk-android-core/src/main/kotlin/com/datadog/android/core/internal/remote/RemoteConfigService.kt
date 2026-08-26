@@ -17,7 +17,7 @@ import com.datadog.android.core.internal.remote.model.RemoteConfiguration
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.internal.telemetry.TelemetryContext
 import com.datadog.android.internal.time.TimeProvider
-import com.datadog.android.internal.utils.allowThreadDiskReads
+import com.datadog.android.internal.utils.allowThreadDiskWrites
 import com.google.gson.JsonParseException
 import okhttp3.HttpUrl
 import java.io.File
@@ -102,14 +102,15 @@ internal class RemoteConfigServiceImpl(
         // Synchronous reads on the caller's thread (main thread during SDK init).
         // Acceptable because the files are small and only present after a previous
         // successful fetch — absent on first launch.
-        @Suppress("ThreadSafety") // allowThreadDiskReads is the SDK mechanism for safe main-thread disk reads
-        cachedConfig = allowThreadDiskReads { readConfigFromDisk() }
+        @Suppress("ThreadSafety")
+        // allowThreadDiskWrites is the SDK mechanism for safe main-thread disk reads and writes
+        cachedConfig = allowThreadDiskWrites { readConfigFromDisk() }
         @Suppress("ThreadSafety")
         syncMetadata = if (cachedConfig != null) {
-            allowThreadDiskReads { readMetadataFromDisk() }
+            allowThreadDiskWrites { readMetadataFromDisk() }
         } else {
             // No usable config: clear both files so stale metadata can't misreport an unapplied version as applied.
-            allowThreadDiskReads { deleteRemoteConfigFiles() }
+            allowThreadDiskWrites { deleteRemoteConfigFiles() }
             null
         }
         configFileNeedsRecovery = cachedConfig == null
