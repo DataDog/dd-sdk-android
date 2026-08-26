@@ -94,8 +94,8 @@ internal class RumEventSerializerTest {
                 hasField("type", event.session.type.name.lowercase(Locale.US))
             }
             .hasField("view") {
-                hasNullableField("id", event.view?.id)
-                hasNullableField("url", event.view?.url)
+                hasNullableField("id", event.view.id)
+                hasNullableField("url", event.view.url)
             }
             .hasField("_dd") {
                 hasField("format_version", 2L)
@@ -211,8 +211,8 @@ internal class RumEventSerializerTest {
                 hasField("type", event.session.type.name.lowercase(Locale.US))
             }
             .hasField("view") {
-                hasNullableField("id", event.view?.id)
-                hasNullableField("url", event.view?.url)
+                hasNullableField("id", event.view.id)
+                hasNullableField("url", event.view.url)
             }
             .hasField("_dd") {
                 hasField("format_version", 2L)
@@ -403,8 +403,8 @@ internal class RumEventSerializerTest {
                 hasField("type", event.session.type.name.lowercase(Locale.US))
             }
             .hasField("view") {
-                hasNullableField("id", event.view?.id)
-                hasNullableField("url", event.view?.url)
+                hasNullableField("id", event.view.id)
+                hasNullableField("url", event.view.url)
             }
             .hasField("_dd") {
                 hasField("format_version", 2L)
@@ -490,8 +490,8 @@ internal class RumEventSerializerTest {
                 hasField("type", event.session.type.name.lowercase(Locale.US))
             }
             .hasField("view") {
-                hasNullableField("id", event.view?.id)
-                hasNullableField("url", event.view?.url)
+                hasNullableField("id", event.view.id)
+                hasNullableField("url", event.view.url)
             }
             .hasField("_dd") {
                 hasField("format_version", 2L)
@@ -669,7 +669,7 @@ internal class RumEventSerializerTest {
             }
             .hasNullableField("service", event.service)
 
-        event.view?.let {
+        event.view.let {
             assertThat(jsonObject).hasField("view") {
                 val view = checkNotNull(event.view)
                 hasField("id", view.id)
