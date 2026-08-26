@@ -22,6 +22,7 @@ stages:
   - test-pyramid
   - publish
   - notify
+  - post-release
 
 .snippets:
   source-secrets:
@@ -761,4 +762,19 @@ notify:github-release:
       
           gh release create "$CI_COMMIT_TAG" --repo DataDog/dd-sdk-android --draft --verify-tag --title "$CI_COMMIT_TAG" --notes-file release-notes.md verification-metadata.xml;
         fi
+
+post-release:merge-develop:
+  tags: [ "arch:amd64" ]
+  interruptible: false
+  only:
+    - tags
+  image: $CI_IMAGE_DOCKER
+  id_tokens:
+    DDOCTOSTS_ID_TOKEN:
+      aud: dd-octo-sts
+  stage: post-release
+  when: on_success
+  script:
+    - export GITHUB_TOKEN=$(dd-octo-sts token --scope DataDog/dd-sdk-android --policy self.gitlab.release.create-release)
+    - bash ./ci/scripts/merge-release-develop.sh "$CI_COMMIT_TAG"
 
