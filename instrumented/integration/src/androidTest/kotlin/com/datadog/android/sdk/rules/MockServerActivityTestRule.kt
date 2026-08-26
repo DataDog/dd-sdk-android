@@ -55,9 +55,13 @@ internal open class MockServerActivityTestRule<T : Activity>(
     }
 
     override fun beforeActivityLaunched() {
-        // This configures some well know cases for Android when memory leaks shouldn't be detected
+        // This configures some well know cases for Android when memory leaks shouldn't be detected plus
+        // one case that we encountered in CI.
         LeakCanary.config = LeakCanary.config.copy(
-            referenceMatchers = AndroidReferenceMatchers.appDefaults
+            referenceMatchers = AndroidReferenceMatchers.appDefaults + AndroidReferenceMatchers.ignoredInstanceField(
+                className = "android.app.job.JobService\$1",
+                fieldName = "this\$0"
+            )
         )
 
         InstrumentationRegistry

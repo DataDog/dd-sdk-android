@@ -16,6 +16,7 @@ import java.util.Locale
 /**
  * Describes configuration to be used for the Session Replay feature.
  */
+@ExposedCopyVisibility
 data class SessionReplayConfiguration internal constructor(
     internal val customEndpointUrl: String?,
     internal val privacy: SessionReplayPrivacy,

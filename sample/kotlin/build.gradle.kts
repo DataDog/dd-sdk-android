@@ -34,7 +34,8 @@ sqldelight {
     }
 }
 
-@Suppress("StringLiteralDuplication")
+// TODO RUM-18189 Support new AGP DSL
+@Suppress("DEPRECATION", "StringLiteralDuplication")
 android {
     compileSdk = AndroidConfig.TARGET_SDK
     buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
@@ -44,7 +45,6 @@ android {
         targetSdk = AndroidConfig.TARGET_SDK
         versionCode = AndroidConfig.VERSION.code
         versionName = AndroidConfig.VERSION.name
-        multiDexEnabled = true
 
         buildFeatures {
             buildConfig = true
@@ -182,7 +182,6 @@ dependencies {
     implementation(libs.kotlin)
 
     // Android dependencies
-    implementation(libs.androidXMultidex)
     implementation(libs.cronetPlayServices)
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.androidXAppCompat)

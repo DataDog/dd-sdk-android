@@ -27,6 +27,7 @@ import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -52,8 +53,6 @@ import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import org.mockito.stubbing.Answer
-import java.util.concurrent.ScheduledThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -61,10 +60,7 @@ import java.util.concurrent.TimeUnit
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class DataUploadRunnableTest {
-
-    @Mock
-    lateinit var mockThreadPoolExecutor: ScheduledThreadPoolExecutor
+internal class DataUploadTaskTest {
 
     @Mock
     lateinit var mockStorage: Storage
@@ -102,7 +98,7 @@ internal class DataUploadRunnableTest {
     @StringForgery
     lateinit var fakeFeatureName: String
 
-    private lateinit var testedRunnable: DataUploadRunnable
+    private lateinit var testedTask: DataUploadTask
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -125,17 +121,15 @@ internal class DataUploadRunnableTest {
 
         whenever(mockContextProvider.getContext(emptySet())) doReturn fakeContext
 
-        testedRunnable = DataUploadRunnable(
+        testedTask = DataUploadTask(
             featureName = fakeFeatureName,
-            threadPoolExecutor = mockThreadPoolExecutor,
             storage = mockStorage,
             dataUploader = mockDataUploader,
             contextProvider = mockContextProvider,
             networkInfoProvider = mockNetworkInfoProvider,
             systemInfoProvider = mockSystemInfoProvider,
             uploadSchedulerStrategy = mockUploadSchedulerStrategy,
-            maxBatchesPerJob = fakeMaxBatchesPerJob,
-            internalLogger = mockInternalLogger
+            maxBatchesPerJob = fakeMaxBatchesPerJob
         )
     }
 
@@ -148,19 +142,19 @@ internal class DataUploadRunnableTest {
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn networkInfo
 
         // When
-        testedRunnable.run()
+        val delayMs = testedTask.call()
 
         // Then
         verifyNoInteractions(mockDataUploader, mockStorage)
         verify(mockUploadSchedulerStrategy).getMsDelayUntilNextUpload(fakeFeatureName, 0, null, null)
-        verify(mockThreadPoolExecutor).schedule(testedRunnable, fakeDelayUntilNextUploadMs, TimeUnit.MILLISECONDS)
+        assertThat(delayMs).isEqualTo(fakeDelayUntilNextUploadMs)
     }
 
     @Test
     fun `M send batch W run() { batteryFullOrCharging }`(
         @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
-        @IntForgery(min = 0, max = DataUploadRunnable.LOW_BATTERY_THRESHOLD) batteryLevel: Int,
+        @IntForgery(min = 0, max = DataUploadTask.LOW_BATTERY_THRESHOLD) batteryLevel: Int,
         forge: Forge
     ) {
         // Given
@@ -188,7 +182,7 @@ internal class DataUploadRunnableTest {
         ) doReturn fakeUploadStatus
 
         // When
-        testedRunnable.run()
+        val delayMs = testedTask.call()
 
         // Then
         verify(mockStorage, times(fakeMaxBatchesPerJob)).confirmBatchRead(
@@ -203,14 +197,14 @@ internal class DataUploadRunnableTest {
             fakeUploadStatus.code,
             null
         )
-        verify(mockThreadPoolExecutor).schedule(testedRunnable, fakeDelayUntilNextUploadMs, TimeUnit.MILLISECONDS)
+        assertThat(delayMs).isEqualTo(fakeDelayUntilNextUploadMs)
     }
 
     @Test
     fun `M send batch W run() { battery level high }`(
         @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
-        @IntForgery(min = DataUploadRunnable.LOW_BATTERY_THRESHOLD + 1) batteryLevel: Int,
+        @IntForgery(min = DataUploadTask.LOW_BATTERY_THRESHOLD + 1) batteryLevel: Int,
         forge: Forge
     ) {
         // Given
@@ -237,7 +231,7 @@ internal class DataUploadRunnableTest {
         ) doReturn fakeUploadStatus
 
         // When
-        testedRunnable.run()
+        val delayMs = testedTask.call()
 
         // Then
         verify(mockStorage, times(fakeMaxBatchesPerJob)).confirmBatchRead(
@@ -252,14 +246,14 @@ internal class DataUploadRunnableTest {
             fakeUploadStatus.code,
             null
         )
-        verify(mockThreadPoolExecutor).schedule(testedRunnable, fakeDelayUntilNextUploadMs, TimeUnit.MILLISECONDS)
+        assertThat(delayMs).isEqualTo(fakeDelayUntilNextUploadMs)
     }
 
     @Test
     fun `M send batch W run() { onExternalPower }`(
         @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
-        @IntForgery(min = 0, max = DataUploadRunnable.LOW_BATTERY_THRESHOLD) batteryLevel: Int,
+        @IntForgery(min = 0, max = DataUploadTask.LOW_BATTERY_THRESHOLD) batteryLevel: Int,
         forge: Forge
     ) {
         val fakeSystemInfo = SystemInfo(
@@ -285,7 +279,7 @@ internal class DataUploadRunnableTest {
         ) doReturn fakeUploadStatus
 
         // When
-        testedRunnable.run()
+        val delayMs = testedTask.call()
 
         // Then
         verify(mockStorage, times(fakeMaxBatchesPerJob)).confirmBatchRead(
@@ -300,12 +294,12 @@ internal class DataUploadRunnableTest {
             fakeUploadStatus.code,
             null
         )
-        verify(mockThreadPoolExecutor).schedule(testedRunnable, fakeDelayUntilNextUploadMs, TimeUnit.MILLISECONDS)
+        assertThat(delayMs).isEqualTo(fakeDelayUntilNextUploadMs)
     }
 
     @Test
     fun `M not send batch W run() { not enough battery }`(
-        @IntForgery(min = 0, max = DataUploadRunnable.LOW_BATTERY_THRESHOLD) batteryLevel: Int
+        @IntForgery(min = 0, max = DataUploadTask.LOW_BATTERY_THRESHOLD) batteryLevel: Int
     ) {
         // Given
         val fakeSystemInfo = SystemInfo(
@@ -317,12 +311,12 @@ internal class DataUploadRunnableTest {
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
 
         // When
-        testedRunnable.run()
+        val delayMs = testedTask.call()
 
         // Then
         verifyNoInteractions(mockStorage, mockDataUploader)
         verify(mockUploadSchedulerStrategy).getMsDelayUntilNextUpload(fakeFeatureName, 0, null, null)
-        verify(mockThreadPoolExecutor).schedule(testedRunnable, fakeDelayUntilNextUploadMs, TimeUnit.MILLISECONDS)
+        assertThat(delayMs).isEqualTo(fakeDelayUntilNextUploadMs)
     }
 
     @Test
@@ -339,17 +333,17 @@ internal class DataUploadRunnableTest {
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
 
         // When
-        testedRunnable.run()
+        val delayMs = testedTask.call()
 
         // Then
         verifyNoInteractions(mockStorage, mockDataUploader)
         verify(mockUploadSchedulerStrategy).getMsDelayUntilNextUpload(fakeFeatureName, 0, null, null)
-        verify(mockThreadPoolExecutor).schedule(testedRunnable, fakeDelayUntilNextUploadMs, TimeUnit.MILLISECONDS)
+        assertThat(delayMs).isEqualTo(fakeDelayUntilNextUploadMs)
     }
 
     @Test
     fun `M not send batch W run() { batteryLeveHigh, powerSaveMode }`(
-        @IntForgery(min = DataUploadRunnable.LOW_BATTERY_THRESHOLD + 1) batteryLevel: Int
+        @IntForgery(min = DataUploadTask.LOW_BATTERY_THRESHOLD + 1) batteryLevel: Int
     ) {
         // Given
         val fakeSystemInfo = SystemInfo(
@@ -361,17 +355,17 @@ internal class DataUploadRunnableTest {
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
 
         // When
-        testedRunnable.run()
+        val delayMs = testedTask.call()
 
         // Then
         verifyNoInteractions(mockStorage, mockDataUploader)
         verify(mockUploadSchedulerStrategy).getMsDelayUntilNextUpload(fakeFeatureName, 0, null, null)
-        verify(mockThreadPoolExecutor).schedule(testedRunnable, fakeDelayUntilNextUploadMs, TimeUnit.MILLISECONDS)
+        assertThat(delayMs).isEqualTo(fakeDelayUntilNextUploadMs)
     }
 
     @Test
     fun `M not send batch W run() { onExternalPower, powerSaveMode }`(
-        @IntForgery(min = 0, max = DataUploadRunnable.LOW_BATTERY_THRESHOLD) batteryLevel: Int
+        @IntForgery(min = 0, max = DataUploadTask.LOW_BATTERY_THRESHOLD) batteryLevel: Int
     ) {
         // Given
         val fakeSystemInfo = SystemInfo(
@@ -383,12 +377,12 @@ internal class DataUploadRunnableTest {
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
 
         // When
-        testedRunnable.run()
+        val delayMs = testedTask.call()
 
         // Then
         verifyNoInteractions(mockStorage, mockDataUploader)
         verify(mockUploadSchedulerStrategy).getMsDelayUntilNextUpload(fakeFeatureName, 0, null, null)
-        verify(mockThreadPoolExecutor).schedule(testedRunnable, fakeDelayUntilNextUploadMs, TimeUnit.MILLISECONDS)
+        assertThat(delayMs).isEqualTo(fakeDelayUntilNextUploadMs)
     }
 
     @Test
@@ -397,14 +391,14 @@ internal class DataUploadRunnableTest {
         whenever(mockStorage.readNextBatch()).thenReturn(null)
 
         // When
-        testedRunnable.run()
+        val delayMs = testedTask.call()
 
         // Then
         verify(mockStorage).readNextBatch()
         verifyNoMoreInteractions(mockStorage)
         verifyNoInteractions(mockDataUploader)
         verify(mockUploadSchedulerStrategy).getMsDelayUntilNextUpload(fakeFeatureName, 0, null, null)
-        verify(mockThreadPoolExecutor).schedule(testedRunnable, fakeDelayUntilNextUploadMs, TimeUnit.MILLISECONDS)
+        assertThat(delayMs).isEqualTo(fakeDelayUntilNextUploadMs)
     }
 
     @Test
@@ -429,7 +423,7 @@ internal class DataUploadRunnableTest {
         ) doReturn fakeUploadStatus
 
         // When
-        testedRunnable.run()
+        val delayMs = testedTask.call()
 
         // Then
         verify(mockStorage, times(fakeMaxBatchesPerJob)).confirmBatchRead(any(), any(), eq(true))
@@ -440,8 +434,7 @@ internal class DataUploadRunnableTest {
             fakeUploadStatus.code,
             null
         )
-        verify(mockThreadPoolExecutor).remove(testedRunnable)
-        verify(mockThreadPoolExecutor).schedule(testedRunnable, fakeDelayUntilNextUploadMs, TimeUnit.MILLISECONDS)
+        assertThat(delayMs).isEqualTo(fakeDelayUntilNextUploadMs)
     }
 
     @ParameterizedTest
@@ -467,7 +460,7 @@ internal class DataUploadRunnableTest {
         ) doReturn uploadStatus
 
         // When
-        testedRunnable.run()
+        val delayMs = testedTask.call()
 
         // Then
         verify(mockStorage).confirmBatchRead(eq(batchId), any(), eq(false))
@@ -478,7 +471,7 @@ internal class DataUploadRunnableTest {
             uploadStatus.code,
             uploadStatus.throwable
         )
-        verify(mockThreadPoolExecutor).schedule(testedRunnable, fakeDelayUntilNextUploadMs, TimeUnit.MILLISECONDS)
+        assertThat(delayMs).isEqualTo(fakeDelayUntilNextUploadMs)
     }
 
     @ParameterizedTest
@@ -506,7 +499,7 @@ internal class DataUploadRunnableTest {
 
         // WHen
         repeat(runCount) {
-            testedRunnable.run()
+            assertThat(testedTask.call()).isEqualTo(fakeDelayUntilNextUploadMs)
         }
 
         // Then
@@ -518,8 +511,6 @@ internal class DataUploadRunnableTest {
             uploadStatus.code,
             uploadStatus.throwable
         )
-        verify(mockThreadPoolExecutor, times(runCount))
-            .schedule(testedRunnable, fakeDelayUntilNextUploadMs, TimeUnit.MILLISECONDS)
     }
 
     @ParameterizedTest
@@ -545,7 +536,7 @@ internal class DataUploadRunnableTest {
         ) doReturn uploadStatus
 
         // When
-        testedRunnable.run()
+        val delayMs = testedTask.call()
 
         // Then
         verify(mockStorage).confirmBatchRead(eq(batchId), any(), eq(true))
@@ -556,7 +547,7 @@ internal class DataUploadRunnableTest {
             uploadStatus.code,
             uploadStatus.throwable
         )
-        verify(mockThreadPoolExecutor).schedule(testedRunnable, fakeDelayUntilNextUploadMs, TimeUnit.MILLISECONDS)
+        assertThat(delayMs).isEqualTo(fakeDelayUntilNextUploadMs)
     }
 
     // region maxBatchesPerJob
@@ -566,17 +557,15 @@ internal class DataUploadRunnableTest {
         forge: Forge
     ) {
         // Given
-        testedRunnable = DataUploadRunnable(
+        testedTask = DataUploadTask(
             featureName = fakeFeatureName,
-            threadPoolExecutor = mockThreadPoolExecutor,
             storage = mockStorage,
             dataUploader = mockDataUploader,
             contextProvider = mockContextProvider,
             networkInfoProvider = mockNetworkInfoProvider,
             systemInfoProvider = mockSystemInfoProvider,
             uploadSchedulerStrategy = mockUploadSchedulerStrategy,
-            maxBatchesPerJob = fakeMaxBatchesPerJob,
-            internalLogger = mockInternalLogger
+            maxBatchesPerJob = fakeMaxBatchesPerJob
         )
         val batches = forge.aList(
             size = forge.anInt(
@@ -601,7 +590,7 @@ internal class DataUploadRunnableTest {
         }
 
         // When
-        testedRunnable.run()
+        val delayMs = testedTask.call()
 
         // Then
         repeat(fakeMaxBatchesPerJob) { index ->
@@ -614,7 +603,7 @@ internal class DataUploadRunnableTest {
             )
         }
         verifyNoMoreInteractions(mockDataUploader)
-        verify(mockThreadPoolExecutor).schedule(testedRunnable, fakeDelayUntilNextUploadMs, TimeUnit.MILLISECONDS)
+        assertThat(delayMs).isEqualTo(fakeDelayUntilNextUploadMs)
     }
 
     @Test
@@ -622,17 +611,15 @@ internal class DataUploadRunnableTest {
         forge: Forge
     ) {
         // Given
-        testedRunnable = DataUploadRunnable(
+        testedTask = DataUploadTask(
             featureName = fakeFeatureName,
-            threadPoolExecutor = mockThreadPoolExecutor,
             storage = mockStorage,
             dataUploader = mockDataUploader,
             contextProvider = mockContextProvider,
             networkInfoProvider = mockNetworkInfoProvider,
             systemInfoProvider = mockSystemInfoProvider,
             uploadSchedulerStrategy = mockUploadSchedulerStrategy,
-            maxBatchesPerJob = fakeMaxBatchesPerJob,
-            internalLogger = mockInternalLogger
+            maxBatchesPerJob = fakeMaxBatchesPerJob
         )
         val fakeBatchesCount = forge.anInt(
             min = 1,
@@ -656,7 +643,7 @@ internal class DataUploadRunnableTest {
         }
 
         // When
-        testedRunnable.run()
+        val delayMs = testedTask.call()
 
         // Then
         batches.forEachIndexed { index, batch ->
@@ -668,7 +655,7 @@ internal class DataUploadRunnableTest {
             )
         }
         verifyNoMoreInteractions(mockDataUploader)
-        verify(mockThreadPoolExecutor).schedule(testedRunnable, fakeDelayUntilNextUploadMs, TimeUnit.MILLISECONDS)
+        assertThat(delayMs).isEqualTo(fakeDelayUntilNextUploadMs)
     }
 
     // region Internal
@@ -702,9 +689,8 @@ internal class DataUploadRunnableTest {
     @Test
     fun `M send upload benchmark telemetry W run { online }`() {
         // Given
-        testedRunnable = DataUploadRunnable(
+        testedTask = DataUploadTask(
             featureName = fakeFeatureName,
-            threadPoolExecutor = mockThreadPoolExecutor,
             storage = mockStorage,
             dataUploader = mockDataUploader,
             contextProvider = mockContextProvider,
@@ -712,12 +698,11 @@ internal class DataUploadRunnableTest {
             systemInfoProvider = mockSystemInfoProvider,
             uploadSchedulerStrategy = mockUploadSchedulerStrategy,
             maxBatchesPerJob = fakeMaxBatchesPerJob,
-            internalLogger = mockInternalLogger,
             benchmarkUploads = mockBenchmarkUploads
         )
 
         // When
-        testedRunnable.run()
+        testedTask.call()
 
         // Then
         verify(mockBenchmarkUploads).incrementBenchmarkUploadsCount(any())
@@ -728,9 +713,8 @@ internal class DataUploadRunnableTest {
         @Mock mockNetworkInfo: NetworkInfo
     ) {
         // Given
-        testedRunnable = DataUploadRunnable(
+        testedTask = DataUploadTask(
             featureName = fakeFeatureName,
-            threadPoolExecutor = mockThreadPoolExecutor,
             storage = mockStorage,
             dataUploader = mockDataUploader,
             contextProvider = mockContextProvider,
@@ -738,7 +722,6 @@ internal class DataUploadRunnableTest {
             systemInfoProvider = mockSystemInfoProvider,
             uploadSchedulerStrategy = mockUploadSchedulerStrategy,
             maxBatchesPerJob = fakeMaxBatchesPerJob,
-            internalLogger = mockInternalLogger,
             benchmarkUploads = mockBenchmarkUploads
         )
 
@@ -749,7 +732,7 @@ internal class DataUploadRunnableTest {
             .thenReturn(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
 
         // When
-        testedRunnable.run()
+        testedTask.call()
 
         // Then
         verify(mockBenchmarkUploads, never()).incrementBenchmarkUploadsCount(any())
@@ -760,9 +743,8 @@ internal class DataUploadRunnableTest {
         forge: Forge
     ) {
         // Given
-        testedRunnable = DataUploadRunnable(
+        testedTask = DataUploadTask(
             featureName = fakeFeatureName,
-            threadPoolExecutor = mockThreadPoolExecutor,
             storage = mockStorage,
             dataUploader = mockDataUploader,
             contextProvider = mockContextProvider,
@@ -770,7 +752,6 @@ internal class DataUploadRunnableTest {
             systemInfoProvider = mockSystemInfoProvider,
             uploadSchedulerStrategy = mockUploadSchedulerStrategy,
             maxBatchesPerJob = fakeMaxBatchesPerJob,
-            internalLogger = mockInternalLogger,
             benchmarkUploads = mockBenchmarkUploads
         )
 
@@ -791,7 +772,7 @@ internal class DataUploadRunnableTest {
         ).thenReturn(UploadStatus.Success(202))
 
         // When
-        testedRunnable.run()
+        testedTask.call()
 
         // Then
         verify(mockBenchmarkUploads).sendBenchmarkBytesUploaded(any(), any())
@@ -802,9 +783,8 @@ internal class DataUploadRunnableTest {
         forge: Forge
     ) {
         // Given
-        testedRunnable = DataUploadRunnable(
+        testedTask = DataUploadTask(
             featureName = fakeFeatureName,
-            threadPoolExecutor = mockThreadPoolExecutor,
             storage = mockStorage,
             dataUploader = mockDataUploader,
             contextProvider = mockContextProvider,
@@ -812,7 +792,6 @@ internal class DataUploadRunnableTest {
             systemInfoProvider = mockSystemInfoProvider,
             uploadSchedulerStrategy = mockUploadSchedulerStrategy,
             maxBatchesPerJob = fakeMaxBatchesPerJob,
-            internalLogger = mockInternalLogger,
             benchmarkUploads = mockBenchmarkUploads
         )
 
@@ -833,7 +812,7 @@ internal class DataUploadRunnableTest {
         ).thenReturn(UploadStatus.RequestCreationError(mock()))
 
         // When
-        testedRunnable.run()
+        testedTask.call()
 
         // Then
         verify(mockBenchmarkUploads, never()).sendBenchmarkBytesUploaded(any(), any())

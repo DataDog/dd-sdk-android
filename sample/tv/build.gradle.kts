@@ -21,6 +21,8 @@ plugins {
     alias(libs.plugins.datadogGradlePlugin)
 }
 
+// TODO RUM-18189 Support new AGP DSL
+@Suppress("DEPRECATION")
 android {
     namespace = "com.datadog.android.tv.sample"
     compileSdk = AndroidConfig.TARGET_SDK
@@ -31,7 +33,6 @@ android {
         targetSdk = AndroidConfig.TARGET_SDK
         versionCode = AndroidConfig.VERSION.code
         versionName = AndroidConfig.VERSION.name
-        multiDexEnabled = true
 
         vectorDrawables.useSupportLibrary = true
 

@@ -39,6 +39,7 @@ import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 /**
  * Describes configuration to be used for the RUM feature.
  */
+@ExposedCopyVisibility
 data class RumConfiguration internal constructor(
     internal val applicationId: String,
     internal val featureConfiguration: RumFeature.Configuration
