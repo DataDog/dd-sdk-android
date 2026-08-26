@@ -27,7 +27,6 @@ abstract class DatadogBuildExtension @Inject constructor(
 ) {
 
     /** Aligns Kotlin compilation: bytecode target, API/language version and warning strictness. */
-    @JvmOverloads
     fun applyKotlinConfig(
         evaluateWarningsAsErrors: Boolean = true,
         jvmBytecodeTarget: JvmTarget = JvmTarget.JVM_17
@@ -51,7 +50,6 @@ abstract class DatadogBuildExtension @Inject constructor(
     }
 
     /** Declares the Maven publication (POM metadata, sources/javadoc jars) and its signing. */
-    @JvmOverloads
     fun applyPublishingConfig(
         projectDescription: String,
         customArtifactId: String = project.name

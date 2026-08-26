@@ -23,6 +23,8 @@ plugins {
     alias(libs.plugins.apolloPlugin)
 }
 
+// TODO RUM-18189 Support new AGP DSL
+@Suppress("DEPRECATION")
 android {
     namespace = "com.datadog.android.okhttp.integration"
 }
@@ -82,6 +84,11 @@ unMock {
 
 datadogBuild {
     applyAndroidLibraryConfig()
-    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyKotlinConfig(
+        // TODO RUM-18200 We access internal members of another module in this module
+        // This should be addressed properly, temporarily disable treating warnings as errors
+        evaluateWarningsAsErrors = false,
+        jvmBytecodeTarget = JvmTarget.JVM_11
+    )
     applyJunitConfig()
 }

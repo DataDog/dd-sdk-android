@@ -38,6 +38,8 @@ plugins {
     id("test-pyramid-api-surface")
 }
 
+// TODO RUM-18189 Support new AGP DSL
+@Suppress("DEPRECATION")
 android {
     namespace = "com.datadog.android.trace.api"
 }
@@ -45,6 +47,7 @@ android {
 dependencies {
     api(project(":dd-sdk-android-core"))
     implementation(project(":dd-sdk-android-internal"))
+    implementation(libs.kotlin)
     implementation(libs.gson)
     implementation(libs.androidXAnnotation)
     implementation(libs.bundles.traceCore)

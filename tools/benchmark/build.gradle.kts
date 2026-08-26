@@ -22,6 +22,8 @@ plugins {
     signing
 }
 
+// TODO RUM-18189 Support new AGP DSL
+@Suppress("DEPRECATION")
 android {
     defaultConfig {
         compileSdk = AndroidConfig.TARGET_SDK

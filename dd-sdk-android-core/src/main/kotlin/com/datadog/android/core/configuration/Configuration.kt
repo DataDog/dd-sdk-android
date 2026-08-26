@@ -19,6 +19,7 @@ import java.net.Proxy
  *
  * This is necessary to initialize the SDK with the [Datadog.initialize] method.
  */
+@ExposedCopyVisibility
 data class Configuration
 internal constructor(
     internal val coreConfig: Core,

@@ -11,13 +11,15 @@ import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.CacheableTask
+import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
-import java.io.File
+import org.gradle.workers.WorkerExecutor
+import javax.inject.Inject
 
 @CacheableTask
 abstract class GenerateApiSurfaceTask : DefaultTask() {
@@ -30,10 +32,19 @@ abstract class GenerateApiSurfaceTask : DefaultTask() {
     @get:InputFiles
     abstract val genDir: ConfigurableFileCollection
 
+    /**
+     * Kotlin compiler jars holding the PSI parser. They are deliberately absent from the plugin
+     * runtime classpath (see `build-logic/build.gradle.kts`) and only loaded here, inside the
+     * worker's isolated classloader.
+     */
+    @get:Classpath
+    abstract val parserClasspath: ConfigurableFileCollection
+
     @get:OutputFile
     abstract val surfaceFile: RegularFileProperty
 
-    private lateinit var visitor: KotlinFileVisitor
+    @get:Inject
+    abstract val workerExecutor: WorkerExecutor
 
     init {
         group = "datadog"
@@ -44,43 +55,15 @@ abstract class GenerateApiSurfaceTask : DefaultTask() {
 
     @TaskAction
     fun applyTask() {
-        visitor = KotlinFileVisitor()
-        visitDirectoryRecursively(srcDir.get().asFile)
-        genDir.forEach {
-            visitDirectoryRecursively(it)
+        val queue = workerExecutor.classLoaderIsolation {
+            classpath.from(parserClasspath)
         }
-
-        surfaceFile.get().asFile.printWriter().use {
-            it.print(visitor.description.toString())
+        queue.submit(GenerateApiSurfaceWorkAction::class.java) {
+            srcDir.set(this@GenerateApiSurfaceTask.srcDir)
+            genDir.setFrom(this@GenerateApiSurfaceTask.genDir)
+            surfaceFile.set(this@GenerateApiSurfaceTask.surfaceFile)
         }
     }
 
     // endregion
-
-    private fun visitDirectoryRecursively(file: File) {
-        when {
-            !file.exists() -> logger.info("File $file doesn't exist, ignoring")
-            file.isDirectory ->
-                file.listFiles().orEmpty()
-                    .sortedBy { it.absolutePath }
-                    .forEach { visitDirectoryRecursively(it) }
-
-            file.isFile -> visitFile(file)
-            else -> logger.error("${file.path} is neither file nor directory")
-        }
-    }
-
-    private fun visitFile(file: File) {
-        if (file.canRead()) {
-            if (file.extension == EXT_KT) {
-                visitor.visitFile(file)
-            }
-        } else {
-            logger.error("${file.path} is not readable")
-        }
-    }
-
-    companion object {
-        const val EXT_KT = "kt"
-    }
 }

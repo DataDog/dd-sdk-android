@@ -22,6 +22,8 @@ plugins {
     id("de.mobilej.unmock")
 }
 
+// TODO RUM-18189 Support new AGP DSL
+@Suppress("DEPRECATION")
 android {
     namespace = "com.datadog.android.rum.integration"
 }

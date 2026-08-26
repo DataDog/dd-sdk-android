@@ -50,6 +50,8 @@ fun isLogEnabledInRelease(): String {
     return project.findProperty(GradlePropertiesKeys.FORCE_ENABLE_LOGCAT) as? String ?: "false"
 }
 
+// TODO RUM-18189 Support new AGP DSL
+@Suppress("DEPRECATION")
 android {
     defaultConfig {
         consumerProguardFiles("consumer-rules.pro")

@@ -103,6 +103,7 @@ class FeatureSdkCoreTest : MockServerTest() {
     @Test
     fun mustReturnTheCrashReportFeature_when_getFeature_crashReportEnabled() {
         // Given
+        @Suppress("DATA_CLASS_INVISIBLE_COPY_USAGE_WARNING")
         val fakeConfigCrashReportsEnabled = fakeConfiguration.copy(crashReportsEnabled = true)
 
         // When
@@ -124,6 +125,7 @@ class FeatureSdkCoreTest : MockServerTest() {
     @Test
     fun mustReturnEmptyFeatures_when_getFeature_crashReportNotEnabled() {
         // Given
+        @Suppress("DATA_CLASS_INVISIBLE_COPY_USAGE_WARNING")
         val fakeConfigCrashReportsNotEnabled = fakeConfiguration.copy(crashReportsEnabled = false)
 
         // When

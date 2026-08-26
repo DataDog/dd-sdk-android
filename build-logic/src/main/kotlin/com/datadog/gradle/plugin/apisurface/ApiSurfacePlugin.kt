@@ -10,6 +10,9 @@ import com.datadog.gradle.config.taskConfig
 import com.datadog.gradle.plugin.jsonschema.GenerateJsonSchemaTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.artifacts.Configuration
+import org.gradle.api.artifacts.VersionCatalogsExtension
+import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompilerOptions
@@ -29,10 +32,12 @@ class ApiSurfacePlugin : Plugin<Project> {
         val compilerMetaFile = apiDir.file("compiler-meta.txt")
 
         val jsonToModelGenerations = target.tasks.withType<GenerateJsonSchemaTask>()
+        val parserClasspath = target.createParserConfiguration()
         val generateApiSurfaceTask = target.tasks
             .register<GenerateApiSurfaceTask>(TASK_GEN_KOTLIN_API_SURFACE) {
                 this.srcDir.set(srcDir)
                 this.genDir.from(jsonToModelGenerations.map { it.destinationGenDirectory })
+                this.parserClasspath.from(parserClasspath)
                 this.surfaceFile.set(kotlinSurfaceFile)
             }
         target.tasks
@@ -87,7 +92,30 @@ class ApiSurfacePlugin : Plugin<Project> {
         }
     }
 
+    /**
+     * Classpath the API surface generator parses sources with. It is resolved as a project
+     * dependency rather than shipped with this plugin, to keep a second copy of
+     * `kotlin-compiler-embeddable` off the buildscript classpath, where it would clash with the
+     * one bundled with the Kotlin Gradle plugin.
+     */
+    private fun Project.createParserConfiguration(): Configuration {
+        val kotlinVersion = extensions.getByType<VersionCatalogsExtension>()
+            .named("libs")
+            .findVersion("kotlin")
+            .orElseThrow { IllegalStateException("No `kotlin` version found in the version catalog") }
+        return configurations.create(CONFIGURATION_PARSER) {
+            isCanBeConsumed = false
+            isCanBeResolved = true
+            isVisible = false
+            dependencies.add(
+                this@createParserConfiguration.dependencies
+                    .create("org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlinVersion")
+            )
+        }
+    }
+
     companion object {
+        const val CONFIGURATION_PARSER = "apiSurfaceParser"
         const val TASK_GEN_KOTLIN_API_SURFACE = "generateApiSurface"
         const val TASK_GEN_COMPILER_METADATA = "generateCompilerMetadata"
         const val TASK_GEN_JAVA_API_SURFACE = "apiDump"

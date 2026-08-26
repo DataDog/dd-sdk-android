@@ -23,8 +23,8 @@ import com.datadog.android.core.internal.SdkFeature.Companion.BATCH_COUNT_METRIC
 import com.datadog.android.core.internal.SdkFeature.Companion.METER_NAME
 import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.data.upload.DataOkHttpUploader
-import com.datadog.android.core.internal.data.upload.DataUploadRunnable
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
+import com.datadog.android.core.internal.data.upload.DataUploadTask
 import com.datadog.android.core.internal.data.upload.DefaultUploadSchedulerStrategy
 import com.datadog.android.core.internal.data.upload.NoOpDataUploader
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
@@ -87,6 +87,7 @@ import java.util.concurrent.CancellationException
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Future
 import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 @Extensions(
@@ -205,15 +206,11 @@ internal class SdkFeatureTest {
 
         // Then
         assertThat(testedFeature.uploadScheduler).isInstanceOf(DataUploadScheduler::class.java)
-        val dataUploadRunnable = (testedFeature.uploadScheduler as DataUploadScheduler).runnable
-        val uploadSchedulerStrategy = (dataUploadRunnable.uploadSchedulerStrategy as? DefaultUploadSchedulerStrategy)
+        val dataUploadTask = (testedFeature.uploadScheduler as DataUploadScheduler).runnable as DataUploadTask
+        val uploadSchedulerStrategy = (dataUploadTask.uploadSchedulerStrategy as? DefaultUploadSchedulerStrategy)
         assertThat(uploadSchedulerStrategy?.uploadConfiguration).isEqualTo(expectedUploadConfiguration)
-        assertThat(dataUploadRunnable.maxBatchesPerJob).isEqualTo(fakeCoreBatchProcessingLevel.maxBatchesPerUploadJob)
-        argumentCaptor<Runnable> {
-            verify(coreFeature.mockUploadExecutor).execute(
-                argThat { this is DataUploadRunnable }
-            )
-        }
+        assertThat(dataUploadTask.maxBatchesPerJob).isEqualTo(fakeCoreBatchProcessingLevel.maxBatchesPerUploadJob)
+        verify(coreFeature.mockUploadExecutor).schedule(any(), eq(0L), eq(TimeUnit.MILLISECONDS))
         assertThat(testedFeature.uploader).isInstanceOf(DataOkHttpUploader::class.java)
     }
 

@@ -19,6 +19,8 @@ plugins {
     id("datadogBuildConfig")
 }
 
+// TODO RUM-18189 Support new AGP DSL
+@Suppress("DEPRECATION")
 android {
 
     compileSdk = AndroidConfig.TARGET_SDK
@@ -36,7 +38,6 @@ android {
             compose = true
         }
 
-        multiDexEnabled = true
         vectorDrawables.useSupportLibrary = true
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -114,7 +115,6 @@ dependencies {
     implementation(libs.gson)
     implementation(libs.kotlin)
     implementation(libs.bundles.androidXSupportBase)
-    implementation(libs.androidXMultidex)
     implementation(libs.elmyr)
     implementation(libs.leakCanaryAndroid)
 
@@ -145,5 +145,10 @@ dependencies {
 }
 
 datadogBuild {
-    applyKotlinConfig()
+    applyKotlinConfig(
+        // TODO RUM-18191
+        // Suppress -> generateFunctionKeyMetaClasses is deprecated. It was replaced by emitting annotations on functions
+        // instead. Use generateFunctionKeyMetaAnnotations instead. Seems to Compose <-> Kotlin mismatch.
+        evaluateWarningsAsErrors = false
+    )
 }

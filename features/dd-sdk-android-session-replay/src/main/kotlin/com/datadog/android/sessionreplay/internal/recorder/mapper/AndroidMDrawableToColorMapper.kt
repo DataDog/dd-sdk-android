@@ -259,6 +259,7 @@ internal open class AndroidMDrawableToColorMapper(
         @Suppress("PrivateAPI", "SwallowedException", "TooGenericExceptionCaught")
         internal val mColorField = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
             try {
+                @Suppress("SoonBlockedPrivateApi")
                 PorterDuffColorFilter::class.java.getDeclaredField("mColor").apply {
                     this.isAccessible = true
                 }

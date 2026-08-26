@@ -7,7 +7,6 @@
 package com.datadog.android.core.internal.data.upload
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.storage.RawBatchEvent
@@ -19,13 +18,10 @@ import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.BatchId
 import com.datadog.android.core.internal.persistence.Storage
 import com.datadog.android.core.internal.system.SystemInfoProvider
-import com.datadog.android.core.internal.utils.scheduleSafe
-import java.util.concurrent.ScheduledThreadPoolExecutor
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.Callable
 
-internal class DataUploadRunnable(
+internal class DataUploadTask(
     private val featureName: String,
-    private val threadPoolExecutor: ScheduledThreadPoolExecutor,
     private val storage: Storage,
     private val dataUploader: DataUploader,
     private val contextProvider: ContextProvider,
@@ -33,14 +29,18 @@ internal class DataUploadRunnable(
     private val systemInfoProvider: SystemInfoProvider,
     internal val uploadSchedulerStrategy: UploadSchedulerStrategy,
     internal val maxBatchesPerJob: Int,
-    private val internalLogger: InternalLogger,
     private val benchmarkUploads: BenchmarkUploads = BenchmarkUploads()
-) : UploadRunnable {
+) : Callable<Long> {
 
-    //  region Runnable
+    //  region Callable
 
+    /**
+     * Runs one upload cycle.
+     *
+     * @return the delay in ms before the next cycle should run.
+     */
     @WorkerThread
-    override fun run() {
+    override fun call(): Long {
         var uploadAttempts = 0
         var lastBatchUploadStatus: UploadStatus? = null
         if (isNetworkAvailable() && isSystemReady()) {
@@ -60,13 +60,12 @@ internal class DataUploadRunnable(
             )
         }
 
-        val delayMs = uploadSchedulerStrategy.getMsDelayUntilNextUpload(
+        return uploadSchedulerStrategy.getMsDelayUntilNextUpload(
             featureName,
             uploadAttempts,
             lastBatchUploadStatus?.code,
             lastBatchUploadStatus?.throwable
         )
-        scheduleNextUpload(delayMs)
     }
 
     // endregion
@@ -100,17 +99,6 @@ internal class DataUploadRunnable(
             systemInfo.onExternalPowerSource ||
             systemInfo.batteryLevel > LOW_BATTERY_THRESHOLD
         return hasEnoughPower && !systemInfo.powerSaveMode
-    }
-
-    private fun scheduleNextUpload(delayMs: Long) {
-        threadPoolExecutor.remove(this)
-        threadPoolExecutor.scheduleSafe(
-            "$featureName: data upload",
-            delayMs,
-            TimeUnit.MILLISECONDS,
-            internalLogger,
-            this
-        )
     }
 
     @WorkerThread
