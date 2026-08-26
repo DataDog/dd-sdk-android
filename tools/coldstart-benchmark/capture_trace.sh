@@ -1,0 +1,589 @@
+#!/usr/bin/env bash
+# Unless explicitly stated otherwise all files in this repository are licensed
+# under the Apache License Version 2.0.
+# This product includes software developed at Datadog (https://www.datadoghq.com/).
+# Copyright 2016-Present Datadog, Inc.
+# Cold-start Perfetto capture with attestation + Datadog liveness proof.
+#
+# Fixes the two defects that made the original trace pair unusable:
+#   1. trace.sh never installed anything, so there was no guarantee which APK
+#      was actually traced. This script installs + md5-attests the APK.
+#   2. Nothing verified Datadog was running. The "with-datadog" trace had zero
+#      Datadog threads/slices. This script refuses to save a trace whose arm
+#      expectation is violated.
+#
+# Also adds sched_blocked_reason (I/O-wait attribution) which the original
+# config omitted, and drives the app to a fixed state to reduce content-driven
+# variance (the original pair differed by ~90 ExoPlayer/MediaCodec threads
+# because one run played video and the other did not).
+#
+# Usage: ./capture_trace.sh <apk> <name> <expect-datadog:0|1>
+set -euo pipefail
+
+PKG="${PKG:?set PKG to your application id, e.g. PKG=com.example.app}"
+COMPILE_FILTER="${COMPILE_FILTER:-speed-profile}"
+# Must match the ANIMATIONS the A/B was run with. Forcing 0 unconditionally meant a
+# benchmark run with ANIMATIONS=1 was traced with animations OFF -- so the trace omits
+# the per-frame SDK work whose cost that benchmark included, and the two are no longer
+# the same scenario, which is the one thing trace comparison requires.
+ANIMATIONS="${ANIMATIONS:-0}"
+# Same argument as ANIMATIONS: trace and benchmark must use the same controlled
+# Wi-Fi/mobile-radio state. Reachability is not inferred from an enabled setting;
+# the operator must hold the external network condition stable across both.
+AIRPLANE="${AIRPLANE:-0}"
+# Same name and same default as coldstart_bench.sh, because it has to be the same
+# number. A benchmark cell runs ONE liveness-probe launch and then $WARMUP warm-ups
+# before its first measured launch, so the launch it measures is the (WARMUP+2)-th
+# after install. Capturing after only $WARMUP settle launches traced the
+# (WARMUP+1)-th -- one launch earlier in the JIT/profile ramp, which matters most
+# under the default fresh-install `speed-profile` condition, where there is no
+# profile at install time and each launch adds to it. Set WARMUP here to whatever
+# the A/B ran with.
+WARMUP="${WARMUP:-3}"
+# The trace must reach the same endpoint as the A/B it is meant to explain.
+# total_ms is the benchmark's default (am start -W TotalTime / first frame).
+# TTFD and an app-owned log endpoint need an explicit log marker before the
+# Perfetto process exits, otherwise a long trace can look complete even though
+# the launch never reached the window under study.
+TRACE_ENDPOINT="${TRACE_ENDPOINT:-total_ms}"
+APP_TRACE_REGEX="${APP_TRACE_REGEX:-}"
+# Escape hatch for a device whose ActivityManager does not emit the global
+# `launching: <pkg>` slice the whole-window foreground check prefers. Forwarded to
+# the verifier, which then runs the lifecycle-only check and reports the capture as
+# PARTIALLY verified -- never as clean.
+ALLOW_MISSING_LAUNCH_MARKER="${ALLOW_MISSING_LAUNCH_MARKER:-0}"
+REMOTE_TRACE="/data/misc/perfetto-traces/dd-coldstart-$$.pftrace"
+APK="${1:?usage: $0 <apk> <name> <expect-datadog 0|1>}"
+NAME="${2:?}"
+EXPECT_DD="${3:?}"
+
+die() { echo "FATAL: $*" >&2; exit 1; }
+case "$PKG" in *[!a-zA-Z0-9._]*|""|.*|*.) die "invalid application id: '$PKG'" ;; esac
+case "$EXPECT_DD" in 0|1) ;; *) die "expect-datadog must be 0 or 1 (got '$EXPECT_DD')" ;; esac
+case "$NAME" in */*|*..*|"") die "invalid trace name: '$NAME'" ;; esac
+case "$ANIMATIONS" in 0|1) ;; *) die "ANIMATIONS must be 0 or 1 (got '$ANIMATIONS')" ;; esac
+case "$AIRPLANE" in 0|1) ;; *) die "AIRPLANE must be 0 or 1 (got '$AIRPLANE')" ;; esac
+case "$WARMUP" in ''|*[!0-9]*) die "WARMUP must be a non-negative integer (got '$WARMUP')" ;; esac
+case "$ALLOW_MISSING_LAUNCH_MARKER" in 0|1) ;;
+  *) die "ALLOW_MISSING_LAUNCH_MARKER must be 0 or 1 (got '$ALLOW_MISSING_LAUNCH_MARKER')" ;; esac
+case "$TRACE_ENDPOINT" in
+  total_ms|ttfd) ;;
+  app_trace_ms)
+    [ -n "$APP_TRACE_REGEX" ] || die "TRACE_ENDPOINT=app_trace_ms requires APP_TRACE_REGEX" ;;
+  *) die "TRACE_ENDPOINT must be total_ms, ttfd or app_trace_ms (got '$TRACE_ENDPOINT')" ;;
+esac
+if [ -n "$APP_TRACE_REGEX" ]; then
+  _re_rc=0
+  _re_err=$(printf 'compile test\n' | grep -oE "$APP_TRACE_REGEX" 2>&1) || _re_rc=$?
+  [ "$_re_rc" -le 1 ] || die "APP_TRACE_REGEX is not a valid POSIX ERE; grep rejected it
+       (exit $_re_rc): ${_re_err:-no message}
+       Pattern: $APP_TRACE_REGEX"
+fi
+# +1 = the benchmark's liveness-probe launch, which precedes its warm-ups.
+# Not named SETTLE: verify_sdk_active.sh already uses that for a number of
+# SECONDS, and this is a number of LAUNCHES.
+SETTLE_LAUNCHES=$((WARMUP + 1))
+[ -f "$APK" ] || die "APK not found: $APK"
+TRACE_FILE="./$NAME.pftrace"
+PKG_RE=$(printf '%s' "$PKG" | sed 's/[.]/\\./g')
+log() { echo "[$(date +%H:%M:%S)] $*" >&2; }
+
+. "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+dd_resolve_tools || exit 2
+dd_require_device || exit 2
+DD_ANDROID_USER=""
+dd_resolve_android_user || exit 2
+log "android user: $DD_ANDROID_USER"
+if [ "$TRACE_ENDPOINT" = app_trace_ms ]; then
+  dd_logcat_supports_uid_filter || die "this device's logcat has no --uid filter.
+       TRACE_ENDPOINT=app_trace_ms must be attributable to the installed package;
+       a device-wide watcher can accept another process's matching line."
+fi
+# Animations are not startup time, so they come off -- but put them back on the
+# way out, including on Ctrl-C. Leaving a borrowed device with animations
+# permanently disabled (and a trace file in /data/misc) is not acceptable.
+# All three scales are read separately. Restoring all three from the window one
+# rewrites the other two on any device where they differed -- which silently broke
+# the restoration guarantee this comment claims.
+_ORIG_ANIM_window_animation_scale=""
+_ORIG_ANIM_transition_animation_scale=""
+_ORIG_ANIM_animator_duration_scale=""
+for _s in window_animation_scale transition_animation_scale animator_duration_scale; do
+  _v=$(dd_snapshot_numeric_setting global "$_s") || exit 2
+  printf -v "_ORIG_ANIM_$_s" '%s' "$_v"
+done
+_ORIG_WIFI=$(dd_snapshot_radio_setting global wifi_on) || exit 2
+_ORIG_DATA=$(dd_snapshot_radio_setting global mobile_data) || exit 2
+# Empty is reachable only through ALLOW_UNVERIFIED_RADIOS, which the snapshot
+# helper enforces; a numeric value that is neither 0 nor 1 is not a radio state
+# this harness knows how to restore.
+for _v in "$_ORIG_WIFI" "$_ORIG_DATA"; do
+  case "$_v" in
+    0|1|'') ;;
+    *) die "radio snapshot must read 0 or 1 (got '$_v')." ;;
+  esac
+done
+_ORIG_STAY=$(dd_snapshot_numeric_setting global stay_on_while_plugged_in) || exit 2
+_ORIG_TIMEOUT=$(dd_snapshot_numeric_setting system screen_off_timeout) || exit 2
+_WE_SET_PERF=0
+_WE_SET_DEXOPT=0
+_TRACE_RESERVED=0
+PERFETTO_PID=""
+_ENDPOINT_WATCH_PID=""
+_ENDPOINT_WATCH_PGID=""
+_ENDPOINT_FILE=""
+# Stop the endpoint watcher, and with it the `logcat` it left on the DEVICE.
+# `$!` on a background pipeline is the LAST element (grep), and killing grep does
+# not stop the `adb shell logcat` feeding it, nor the logcat process on the device:
+# measured on a moto g(60)s / Android 12, the device-side logcat was still running
+# 10s after grep exited, and only died when the host `adb shell logcat` client was
+# killed -- one leaked process per capture. The watcher is therefore started under
+# job control so it owns a process group, and stopped by group.
+# Deliberately no `wait`: this runs from the EXIT trap, which Ctrl-C also takes, and
+# a cleanup path that can block is worse than a transient zombie the kernel reaps.
+dd_stop_endpoint_watcher() {
+  [ -n "${_ENDPOINT_WATCH_PGID:-}${_ENDPOINT_WATCH_PID:-}" ] || return 0
+  if [ -n "${_ENDPOINT_WATCH_PGID:-}" ]; then
+    kill -- -"$_ENDPOINT_WATCH_PGID" >/dev/null 2>&1 || true
+  fi
+  # The pipeline may have exited before Bash exposed its job-table PGID. Keep the
+  # tail PID as a best-effort fallback, but never mistake it for the group leader.
+  if [ -n "${_ENDPOINT_WATCH_PID:-}" ]; then
+    kill "$_ENDPOINT_WATCH_PID" >/dev/null 2>&1 || true
+  fi
+  _ENDPOINT_WATCH_PGID=""
+  _ENDPOINT_WATCH_PID=""
+}
+cleanup() {
+  local rc=$?
+  local _var _orig
+  # Stop host-side readers before changing the device back. On an early failure
+  # Perfetto may still be recording and the endpoint watcher may still own an adb
+  # connection; leaving either alive races the remote-trace deletion below.
+  if [ -n "${PERFETTO_PID:-}" ]; then
+    kill "$PERFETTO_PID" >/dev/null 2>&1 || true
+    wait "$PERFETTO_PID" >/dev/null 2>&1 || true
+  fi
+  dd_stop_endpoint_watcher
+  for _s in window_animation_scale transition_animation_scale animator_duration_scale; do
+    _var="_ORIG_ANIM_$_s"; _orig="${!_var}"
+    "$ADB" shell settings put global "$_s" "$_orig" >/dev/null 2>&1 || true
+  done
+  "$ADB" shell settings put global stay_on_while_plugged_in "$_ORIG_STAY" >/dev/null 2>&1 || true
+  "$ADB" shell settings put system screen_off_timeout "$_ORIG_TIMEOUT" >/dev/null 2>&1 || true
+  case "$_ORIG_WIFI" in 0) "$ADB" shell svc wifi disable >/dev/null 2>&1 || true ;;
+                        1) "$ADB" shell svc wifi enable  >/dev/null 2>&1 || true ;; esac
+  case "$_ORIG_DATA" in 0) "$ADB" shell svc data disable >/dev/null 2>&1 || true ;;
+                        1) "$ADB" shell svc data enable  >/dev/null 2>&1 || true ;; esac
+  # Android exposes no getter for either control. Match coldstart_bench.sh's
+  # best-effort restoration: undo only a command that this capture successfully
+  # issued, rather than unconditionally flipping both settings on exit.
+  [ "${_WE_SET_PERF:-0}" = 1 ] && { "$ADB" shell cmd power set-fixed-performance-mode-enabled false >/dev/null 2>&1 || true; }
+  [ "${_WE_SET_DEXOPT:-0}" = 1 ] && { "$ADB" shell cmd package bg-dexopt-job --enable >/dev/null 2>&1 || true; }
+  [ -z "${_ENDPOINT_FILE:-}" ] || rm -f "$_ENDPOINT_FILE"
+  "$ADB" shell rm -f "$REMOTE_TRACE" >/dev/null 2>&1 || true
+  # Hand back exactly the permissions we force-granted below -- not a device-wide
+  # `pm reset-permissions`, which would also revoke grants for every other app on
+  # a borrowed device.
+  for _p in ${_GRANTED:-}; do
+    "$ADB" shell pm revoke --user "$DD_ANDROID_USER" "$PKG" "$_p" >/dev/null 2>&1 || true
+  done
+  if [ "${_TRACE_RESERVED:-0}" = 1 ]; then
+    rm -f "$TRACE_FILE"
+  fi
+  return $rc
+}
+# Restore on EXIT only. `trap cleanup INT` returns to the interrupted line, so
+# Ctrl-C mid-capture used to delete the on-device trace and revoke the grants and
+# then carry on to pull a file that no longer exists. Exiting routes through EXIT
+# once, with the right status.
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+dd_reserve_output_files "$TRACE_FILE" || die "trace output reservation failed"
+_TRACE_RESERVED=1
+dd_apply_animation_scales "$ANIMATIONS" || exit 2
+[ "$ANIMATIONS" = 1 ] && log "animations ENABLED -- matching a benchmark run with ANIMATIONS=1"
+dd_apply_radio_state "$AIRPLANE" || exit 2
+# Trace the same scheduling/compilation scenario the A/B measured. Leaving these
+# controls out made trace attribution observe dynamic CPU behavior and background
+# dexopt work that every benchmark launch explicitly excluded.
+if "$ADB" shell cmd power set-fixed-performance-mode-enabled true >/dev/null 2>&1; then
+  _WE_SET_PERF=1
+fi
+if "$ADB" shell cmd package bg-dexopt-job --disable >/dev/null 2>&1; then
+  _WE_SET_DEXOPT=1
+fi
+# Keep the screen on for the whole capture. $SETTLE_LAUNCHES settle launches plus a 20s trace
+# outlast a default screen timeout, and a screen that sleeps mid-capture relocks the
+# device -- which produces a trace with no rendering in it.
+"$ADB" shell settings put global stay_on_while_plugged_in 3 >/dev/null 2>&1 || true
+"$ADB" shell settings put system screen_off_timeout 1800000 >/dev/null 2>&1 || true
+
+# A locked device resumes the activity but never draws, so the trace would contain
+# no rendering and `am start -W` no TotalTime. Same gate the benchmark applies.
+"$ADB" shell input keyevent KEYCODE_WAKEUP >/dev/null 2>&1 || true
+"$ADB" shell wm dismiss-keyguard >/dev/null 2>&1 || true
+sleep 1
+dd_require_unlocked || exit 2
+
+# Verify the APK actually declares PKG BEFORE uninstalling anything. The md5
+# attestation below only proves the file we pushed is the file that landed -- it
+# says nothing about whether PKG names the same app, and by then the uninstall has
+# already destroyed the data of whatever app did own that id. coldstart_bench.sh
+# gates on this; trace capture is just as destructive and did not.
+if [ "${ALLOW_UNVERIFIED_PKG:-0}" = "1" ]; then
+  log "WARNING: ALLOW_UNVERIFIED_PKG=1 -- the APK/package check is DISABLED."
+  log "         'adb uninstall $PKG' will run against whatever app owns that id."
+else
+  [ -n "${AAPT2:-}" ] || die "aapt2 not found, so the APK's package name cannot be
+       verified against PKG='$PKG' before 'adb uninstall' destroys that app's data.
+       Fix: install Android SDK build-tools, or set AAPT2=/path/to/aapt2.
+       Override with ALLOW_UNVERIFIED_PKG=1 once you have checked by hand."
+  APK_PKG=$("$AAPT2" dump badging "$APK" 2>/dev/null \
+            | awk -F"'" '/^package: name=/{print $2; exit}' || true)
+  [ -n "$APK_PKG" ] || die "aapt2 could not read a package name from $APK."
+  [ "$APK_PKG" = "$PKG" ] || die "PKG='$PKG' but the APK declares '$APK_PKG'.
+       Refusing to uninstall '$PKG' -- that would wipe an unrelated app's data."
+  log "APK declares $APK_PKG, matches PKG"
+fi
+
+HOST_MD5=$(dd_md5 "$APK")
+log "installing $(basename "$APK") md5=$HOST_MD5"
+dd_ensure_uninstalled "$PKG" || die "uninstall did not establish a clean install state"
+"$ADB" install --user "$DD_ANDROID_USER" -r "$APK" >/dev/null || die "install failed"
+REMOTE=$(dd_package_path "$PKG" | head -1 | sed 's/package://') \
+  || die "cannot read the installed APK path"
+DEV_MD5=$("$ADB" shell md5sum "$REMOTE" | awk '{print $1}' | tr -d '\r')
+[ "$HOST_MD5" = "$DEV_MD5" ] || die "APK attestation failed host=$HOST_MD5 dev=$DEV_MD5"
+log "APK attested OK"
+
+PKG_UID=""
+if [ "$TRACE_ENDPOINT" = app_trace_ms ]; then
+  PKG_UID=$(dd_unique_pkg_uid "$PKG") || die "cannot scope APP_TRACE_REGEX to $PKG"
+  log "app-owned trace endpoint scoped to package UID $PKG_UID"
+fi
+
+"$ADB" shell cmd package compile -m "$COMPILE_FILTER" -f "$PKG" >/dev/null
+log "AOT compiled (-m $COMPILE_FILTER)"
+
+# Pre-grant every runtime permission the app declares -- the same thing
+# coldstart_bench.sh does before it measures anything.
+#
+# WHY THIS IS ESSENTIAL HERE TOO: an app that asks for runtime permissions on
+# first launch gets GrantPermissionsActivity stacked on top of it. That is a
+# second activity launch inside the window, it pauses (and can stop) the app
+# under trace, and on a stopped activity the framework produces no frames -- so
+# the app never reaches its fully-drawn point and the trace records a scenario
+# that never happened in the benchmark. A whole trace set was thrown away to
+# this: the baseline arm was stopped at +1030 ms and rendered nothing for the
+# rest of the capture, while both treatment arms carried a permissioncontroller
+# launch mid-window. A trace has to be the same scenario the A/B measured, or
+# its deltas are not comparable to the A/B's.
+#
+# Derived from the package manager rather than hardcoded, so it tracks any build.
+_GRANTED=""
+grant_runtime_permissions() {
+  if ! dd_grant_runtime_permissions "$PKG"; then
+    # Preserve successful grants for cleanup even on a partial failure.
+    _GRANTED="$DD_GRANTED_PERMISSIONS"
+    die "runtime-permission setup was incomplete; refusing a different trace scenario"
+  fi
+  _GRANTED="$DD_GRANTED_PERMISSIONS"
+  log "pre-granted $DD_GRANTED_PERMISSION_COUNT/$DD_RUNTIME_PERMISSION_COUNT runtime permissions"
+  return 0
+}
+grant_runtime_permissions
+
+# Measure the REAL user cold start: resolve the launcher activity rather than
+# hardcoding a component. Apps commonly route the launcher through
+# activity-aliases, so `am start -n <activity>` may not be the path a user
+# actually takes.
+ACT=$("$ADB" shell cmd package resolve-activity --brief --user "$DD_ANDROID_USER" \
+       -c android.intent.category.LAUNCHER "$PKG" \
+       | tail -1 | tr -d '\r')
+# `resolve-activity --brief` prints the literal text "No activity found" (exit 0)
+# when nothing matches, so a bare non-empty test passes it straight through to
+# `am start -n "No activity found"`. Verified on a moto g(60)s / Android 12.
+# Check the SHAPE instead: it must be <pkg>/<component> for the app under test.
+case "$ACT" in
+  "$PKG"/*) ;;
+  *) die "could not resolve a launcher activity for $PKG (got '${ACT:-nothing}')." ;;
+esac
+START_ARGS=(--user "$DD_ANDROID_USER" -a android.intent.action.MAIN \
+  -c android.intent.category.LAUNCHER -n "$ACT")
+log "launcher activity: $ACT"
+
+# settle: $SETTLE_LAUNCHES discarded launches so dex/oat caches and any first-run migrations
+# are done, verifying Datadog liveness after each launch. The count reproduces
+# the benchmark's probe + warm-up launches exactly (see WARMUP above), so the traced
+# launch sits at the same point in the post-install ramp as a measured one.
+log "settling: $SETTLE_LAUNCHES discarded launches (WARMUP=$WARMUP + 1 liveness probe),"
+log "          so the traced launch is the $((SETTLE_LAUNCHES + 1))th after install -- the same"
+log "          position as the benchmark's first measured launch"
+for ((_i=1; _i<=SETTLE_LAUNCHES; _i++)); do
+  "$ADB" shell am force-stop --user "$DD_ANDROID_USER" "$PKG"; sleep 3
+  "$ADB" shell logcat -c >/dev/null 2>&1 || true
+  _SETTLE_POST_CLEAR=$("$ADB" shell logcat -d 2>/dev/null | tr -d '\r') || true
+  _SETTLE_STALE=$(printf '%s\n' "$_SETTLE_POST_CLEAR" \
+    | grep -cE "ActivityTaskManager: Displayed [a-zA-Z0-9_.]+/" || true)
+  # Deliberately every package, not just $PKG: proving the buffer holds no Displayed
+  # line at all is what makes a foreign one seen later provably inside this window.
+  # The cause is not knowable from here -- a denied `logcat -c` and an unrelated
+  # activity drawing in the same instant look identical -- so the message says what
+  # was observed and lists the causes rather than asserting one.
+  [ "${_SETTLE_STALE:-0}" -eq 0 ] || die "settle launch $_i/$SETTLE_LAUNCHES:
+       $_SETTLE_STALE ActivityTaskManager Displayed marker(s) were in the buffer
+       immediately after 'logcat -c'. Either clearing logcat is denied on this device,
+       or something drew in that instant; without an empty buffer a later foreign
+       draw cannot be attributed to this launch. Check 'adb shell logcat -c' first."
+  _SETTLE_OUT=$("$ADB" shell am start -W "${START_ARGS[@]}" | tr -d '\r') \
+    || die "settle launch $_i/$SETTLE_LAUNCHES: am start -W failed"
+  dd_validate_cold_launch_output "$_SETTLE_OUT" \
+    || die "settle launch $_i/$SETTLE_LAUNCHES: $DD_LAUNCH_ERROR"
+  log "settle launch $_i/$SETTLE_LAUNCHES: Status=$DD_LAUNCH_STATUS LaunchState=$DD_LAUNCH_STATE TotalTime=${DD_LAUNCH_TOTAL}ms"
+  sleep 8
+  _SETTLE_LOG=$("$ADB" shell logcat -d 2>/dev/null | tr -d '\r') || true
+  _SETTLE_TARGET_DISPLAYED=$(printf '%s\n' "$_SETTLE_LOG" \
+    | grep -cE "ActivityTaskManager: Displayed $PKG_RE/" || true)
+  [ "${_SETTLE_TARGET_DISPLAYED:-0}" -gt 0 ] \
+    || die "settle launch $_i/$SETTLE_LAUNCHES: no ActivityTaskManager Displayed marker for $PKG"
+  _SETTLE_FOREIGN=$(printf '%s\n' "$_SETTLE_LOG" \
+    | dd_first_foreign_displayed_activity "$PKG") || true
+  [ -z "$_SETTLE_FOREIGN" ] \
+    || die "settle launch $_i/$SETTLE_LAUNCHES: foreign activity reached first draw: $_SETTLE_FOREIGN"
+  _SETTLE_TOP=$(dd_top_activity)
+  case "$_SETTLE_TOP" in
+    "$PKG"/*) ;;
+    *) die "settle launch $_i/$SETTLE_LAUNCHES: app is not the foreground activity (found '${_SETTLE_TOP:-nothing}')" ;;
+  esac
+  _SETTLE_PIDS=$(dd_pkg_pids "$PKG")
+  [ -n "$_SETTLE_PIDS" ] \
+    || die "settle launch $_i/$SETTLE_LAUNCHES: app owns no running process"
+  _SETTLE_DD=$(dd_datadog_threads "$_SETTLE_PIDS")
+  log "settle launch $_i/$SETTLE_LAUNCHES: processes=$(printf '%s' "$_SETTLE_PIDS" | tr '\n' ' ') datadog-*=$_SETTLE_DD"
+  if [ "$EXPECT_DD" = 1 ] && [ "$_SETTLE_DD" -eq 0 ]; then
+    die "settle launch $_i/$SETTLE_LAUNCHES: expected Datadog ACTIVE, found none"
+  fi
+  if [ "$EXPECT_DD" = 0 ] && [ "$_SETTLE_DD" -ne 0 ]; then
+    die "settle launch $_i/$SETTLE_LAUNCHES: expected Datadog ABSENT, found $_SETTLE_DD datadog-* threads"
+  fi
+done
+
+"$ADB" shell am force-stop --user "$DD_ANDROID_USER" "$PKG"
+sleep 3
+
+# For log-backed endpoints, clear and prove the marker is absent before starting
+# the watcher. A denied/no-op `logcat -c` must not let a previous launch satisfy
+# this capture's endpoint gate.
+_ENDPOINT_REGEX=""
+_ENDPOINT_UID=""
+case "$TRACE_ENDPOINT" in
+  ttfd) _ENDPOINT_REGEX="Fully drawn $PKG_RE/" ;;
+  app_trace_ms) _ENDPOINT_REGEX="$APP_TRACE_REGEX"; _ENDPOINT_UID="$PKG_UID" ;;
+esac
+if [ -n "$_ENDPOINT_REGEX" ]; then
+  "$ADB" shell logcat -c >/dev/null 2>&1 || true
+  if [ -n "$_ENDPOINT_UID" ]; then
+    _post_clear=$("$ADB" shell logcat -d --uid="$_ENDPOINT_UID" 2>/dev/null | tr -d '\r') || true
+  else
+    _post_clear=$("$ADB" shell logcat -d 2>/dev/null | tr -d '\r') || true
+  fi
+  _stale_endpoint=$(printf '%s\n' "$_post_clear" | grep -cE "$_ENDPOINT_REGEX" || true)
+  [ "${_stale_endpoint:-0}" -eq 0 ] || die "'logcat -c' left a previous
+       TRACE_ENDPOINT=$TRACE_ENDPOINT marker in the buffer. Clearing logcat is
+       likely denied on this device; fix that before tracing."
+fi
+
+log "starting perfetto"
+cat <<EOF | "$ADB" shell perfetto -c - --txt -o "$REMOTE_TRACE" &
+buffers: { size_kb: 65536 fill_policy: RING_BUFFER }
+data_sources: {
+  config {
+    name: "linux.ftrace"
+    ftrace_config {
+      ftrace_events: "sched/sched_switch"
+      ftrace_events: "sched/sched_waking"
+      ftrace_events: "sched/sched_blocked_reason"
+      ftrace_events: "sched/sched_process_exit"
+      ftrace_events: "task/task_newtask"
+      ftrace_events: "task/task_rename"
+      ftrace_events: "power/cpu_frequency"
+      ftrace_events: "power/cpu_idle"
+      atrace_categories: "am"
+      atrace_categories: "wm"
+      atrace_categories: "gfx"
+      atrace_categories: "view"
+      atrace_categories: "dalvik"
+      atrace_categories: "binder_driver"
+      atrace_categories: "pm"
+      atrace_categories: "ss"
+      atrace_categories: "res"
+      atrace_categories: "database"
+      atrace_categories: "disk"
+      atrace_categories: "sched"
+      atrace_apps: "$PKG"
+    }
+  }
+}
+data_sources: { config { name: "linux.process_stats"
+  process_stats_config { scan_all_processes_on_start: true proc_stats_poll_ms: 1000
+                         record_thread_names: true } } }
+data_sources: { config { name: "linux.sys_stats"
+  sys_stats_config { stat_period_ms: 1000 stat_counters: STAT_CPU_TIMES } } }
+duration_ms: 20000
+EOF
+PERFETTO_PID=$!
+
+sleep 4
+if [ -n "$_ENDPOINT_REGEX" ]; then
+  _ENDPOINT_FILE=$(mktemp "${TMPDIR:-/tmp}/dd-coldstart-endpoint.XXXXXX")
+  # Stream logcat instead of polling dumpsys/logcat during the trace. The watcher
+  # records the first endpoint marker and exits; the file is the cross-process
+  # signal that the marker happened while Perfetto was still alive.
+  # `set -m` puts the pipeline in its own process group so it can be killed as one.
+  # The regex stays on the HOST on purpose: `logcat -e` would match the device side's
+  # message field only, while coldstart_bench.sh scrapes APP_TRACE_REGEX against the
+  # whole formatted line. Moving it would silently accept a different set of patterns
+  # here than the benchmark accepts -- verified on-device that a tag-qualified pattern
+  # matches host-side and not with `logcat -e`.
+  set -m
+  if [ -n "$_ENDPOINT_UID" ]; then
+    "$ADB" shell logcat --uid="$_ENDPOINT_UID" 2>/dev/null \
+      | grep -m1 -E "$_ENDPOINT_REGEX" >"$_ENDPOINT_FILE" &
+  else
+    "$ADB" shell logcat 2>/dev/null \
+      | grep -m1 -E "$_ENDPOINT_REGEX" >"$_ENDPOINT_FILE" &
+  fi
+  _ENDPOINT_WATCH_PID=$!
+  # With job control, every process in the pipeline joins a new process group led
+  # by its FIRST command (`adb`). `$!` is the LAST command (`grep`), so it is not a
+  # valid group id. Read the actual leader from Bash's job table while monitor mode
+  # is still enabled; cleanup can then terminate host adb and device logcat as well
+  # as grep.
+  _ENDPOINT_WATCH_PGID=$(jobs -p %+)
+  set +m
+  # An empty job table is only fatal if the watcher is still RUNNING: then it
+  # cannot be reaped by group and would leave a logcat on the device. If the
+  # pipeline has already exited -- `adb` failing immediately on a disconnected
+  # device is the realistic case -- there is nothing to reap, and aborting here
+  # would replace that device's real error with a confusing one about job control.
+  case "$_ENDPOINT_WATCH_PGID" in
+    ''|*[!0-9]*)
+      _ENDPOINT_WATCH_PGID=""
+      if kill -0 "$_ENDPOINT_WATCH_PID" 2>/dev/null; then
+        die "the endpoint watcher is running but its process-group leader could not
+       be read from the job table, so cleanup could not stop the logcat it started
+       on the device. Refusing to leave that behind."
+      fi
+      log "endpoint watcher exited before it could be grouped; nothing to reap" ;;
+  esac
+fi
+
+LAUNCH_OUT=$("$ADB" shell am start -W "${START_ARGS[@]}" | tr -d '\r') \
+  || die "traced am start -W failed"
+dd_validate_cold_launch_output "$LAUNCH_OUT" || die "traced launch: $DD_LAUNCH_ERROR"
+LAUNCH_STATUS="$DD_LAUNCH_STATUS"
+LAUNCH_STATE="$DD_LAUNCH_STATE"
+LAUNCH_TOTAL="$DD_LAUNCH_TOTAL"
+# Deliberately conservative, and deliberately not phrased as a measurement: all
+# this proves is that Perfetto was still alive when `am start -W` returned. It
+# cannot separate "first frame just before Perfetto exited" from "just after".
+kill -0 "$PERFETTO_PID" >/dev/null 2>&1 \
+  || die "the first-frame endpoint could not be confirmed to fall inside the trace:
+       Perfetto had already stopped by the time the traced launch returned."
+log "traced launch reached first frame: Status=$LAUNCH_STATUS LaunchState=$LAUNCH_STATE TotalTime=${LAUNCH_TOTAL}ms"
+
+if [ -n "$_ENDPOINT_REGEX" ]; then
+  while [ ! -s "$_ENDPOINT_FILE" ] && kill -0 "$PERFETTO_PID" >/dev/null 2>&1; do
+    sleep 0.1
+  done
+  [ -s "$_ENDPOINT_FILE" ] || die "TRACE_ENDPOINT=$TRACE_ENDPOINT was not reached
+       before Perfetto stopped. The capture does not cover the measurement window."
+  # Same conservatism as the first-frame check above: a marker landing in the last
+  # moments of the window is indistinguishable from one landing just after it, so
+  # this reports what it can prove rather than asserting the ordering.
+  kill -0 "$PERFETTO_PID" >/dev/null 2>&1 \
+    || die "TRACE_ENDPOINT=$TRACE_ENDPOINT could not be confirmed to have occurred
+       before Perfetto stopped. The capture does not prove that it covers the
+       measurement window."
+  log "TRACE_ENDPOINT=$TRACE_ENDPOINT reached inside the trace"
+  dd_stop_endpoint_watcher
+fi
+_perfetto_rc=0
+wait "$PERFETTO_PID" || _perfetto_rc=$?
+PERFETTO_PID=""
+[ "$_perfetto_rc" -eq 0 ] || die "Perfetto failed (exit $_perfetto_rc)"
+
+# Read the foreground state before the trace is pulled, but judge it after, so a
+# rejected capture is still on disk to be looked at.
+TOP=$(dd_top_activity)
+
+"$ADB" pull "$REMOTE_TRACE" "$TRACE_FILE" >/dev/null || die "failed to pull trace"
+[ -s "$TRACE_FILE" ] || die "pulled trace is empty -- perfetto produced no output"
+_TRACE_RESERVED=0
+
+# The app has to still be the resumed activity when the capture ends. If a
+# permission dialog, a system prompt or the launcher took over, the trace
+# records an app that was paused or stopped for part of the window, produced no
+# frames while it was, and never reached its fully-drawn point -- none of which
+# is the launch the benchmark measures. Liveness verification does not catch
+# this: a stopped app still has all of its `datadog-*` threads.
+case "$TOP" in
+  "$PKG"/*) log "app still foreground at end of capture ($TOP)" ;;
+  *) die "app was not foreground when the capture ended (top=${TOP:-unknown}).
+  Something took the foreground -- most often a runtime permission dialog.
+  This is a SNAPSHOT with no transition timestamp: it cannot say WHEN, and the
+  traced launch above already proved Status=ok, LaunchState=COLD and a first
+  frame, so on its own it does not establish that the measured interval was
+  affected. Treated as fatal anyway, conservatively. The trace is kept at
+  $TRACE_FILE; run the verifier on it by hand for timestamped ownership detail
+  before deciding to re-capture:
+    <python-with-perfetto> verify_trace.py $TRACE_FILE --package $PKG --require-foreground" ;;
+esac
+log "saved $TRACE_FILE (md5 $(dd_md5 "$TRACE_FILE"))"
+
+VERIFIER="$(dirname "$0")/verify_trace.py"
+[ -f "$VERIFIER" ] || die "verifier missing: $VERIFIER"
+log "post-hoc trace verification:"
+# --require-foreground makes the verifier check ownership across the WHOLE window
+# from the trace's own lifecycle slices. The end-of-capture dumpsys check below is
+# kept, but it only sees the final state: an activity that took over and handed back
+# mid-window is invisible to it and visible here.
+VERIFY_ARGS=(--package "$PKG" --require-foreground)
+if [ "$ALLOW_MISSING_LAUNCH_MARKER" = 1 ]; then
+  log "WARNING: ALLOW_MISSING_LAUNCH_MARKER=1 -- if ActivityManager's global"
+  log "  'launching: $PKG' slice is missing, the whole-window check runs on this"
+  log "  app's lifecycle slices alone. A foreign activity taking over BETWEEN two"
+  log "  of this app's activities would then be invisible. The verifier will say so."
+  VERIFY_ARGS+=(--allow-missing-launch-marker)
+fi
+if [ "$EXPECT_DD" = "1" ]; then VERIFY_ARGS+=(--expect-ndk)
+else VERIFY_ARGS+=(--expect-absent); fi
+# Resolve an interpreter that can import perfetto BEFORE judging the trace, so a
+# missing dependency is never reported as a liveness failure. The trace is already
+# on disk at this point and is worth keeping either way.
+if ! dd_resolve_python; then
+  log "trace saved to $TRACE_FILE but NOT verified -- see the error above."
+  log "verify it once perfetto is installed:"
+  log "  <python-with-perfetto> $VERIFIER $TRACE_FILE ${VERIFY_ARGS[*]}"
+  exit 2
+fi
+# verify_trace.py distinguishes "SDK absent" (1) from "no cold start in this trace
+# at all" (3). Collapsing both into one message sends you looking for a gated SDK
+# when the real problem is that the launch happened outside the trace window.
+set +e
+"$PY" "$VERIFIER" "$TRACE_FILE" "${VERIFY_ARGS[@]}"
+_vrc=$?
+set -e
+case $_vrc in
+  0) ;;
+  3) die "the capture contains no cold start (no bindApplication slice), so it cannot
+       answer the question either way. The app was already running when tracing
+       began. Kept at $TRACE_FILE. Re-capture." ;;
+  4) die "the app did not own the foreground for the whole capture (see above).
+       Part of the window was paused or stopped, so this is not the scenario the
+       benchmark measures. Kept at $TRACE_FILE for inspection. Re-capture." ;;
+  *) die "trace failed SDK liveness verification (arm expect=$EXPECT_DD, verifier exit $_vrc)" ;;
+esac
