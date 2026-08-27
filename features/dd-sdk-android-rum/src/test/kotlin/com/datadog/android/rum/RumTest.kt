@@ -14,18 +14,23 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.core.sampling.RateBasedSampler
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.net.RumRequestFactory
+import com.datadog.android.rum.timeseries.TimeseriesConfiguration
+import com.datadog.android.rum.timeseries.TimeseriesType
 import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.utils.config.MainLooperTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.android.utils.verifyApiUsage
 import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -55,14 +60,18 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
+@OptIn(ExperimentalRumApi::class)
 internal class RumTest {
 
     @Mock
     lateinit var mockSdkCore: InternalSdkCore
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @BeforeEach
     fun `set up`() {
-        whenever(mockSdkCore.internalLogger) doReturn mock()
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.timeProvider) doReturn mock()
         whenever(mockSdkCore.firstPartyHostResolver) doReturn mock()
         whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mock()
@@ -184,11 +193,80 @@ internal class RumTest {
     }
 
     @Test
+    fun `M send timeseries api usage W enable() { timeseries collection enabled }`(
+        @StringForgery fakePackageName: String,
+        @Forgery fakeRumConfiguration: RumConfiguration
+    ) {
+        // Given
+        stubFeatureInitialization(fakePackageName)
+
+        // When
+        Rum.enable(fakeRumConfiguration.withTimeseries(TimeseriesConfiguration.DEFAULT), mockSdkCore)
+
+        // Then
+        mockInternalLogger.verifyApiUsage(
+            apiUsage = InternalTelemetryEvent.ApiUsage.Timeseries(),
+            samplingRate = API_USAGE_SAMPLING_RATE
+        )
+    }
+
+    @Test
+    fun `M send timeseries api usage W enable() { timeseries collection subset }`(
+        @StringForgery fakePackageName: String,
+        @Forgery fakeRumConfiguration: RumConfiguration,
+        forge: Forge
+    ) {
+        // Given
+        stubFeatureInitialization(fakePackageName)
+        val fakeType = forge.aValueFrom(TimeseriesType::class.java)
+        val timeseriesConfiguration = TimeseriesConfiguration.Builder().collectOnly(fakeType).build()
+
+        // When
+        Rum.enable(fakeRumConfiguration.withTimeseries(timeseriesConfiguration), mockSdkCore)
+
+        // Then
+        mockInternalLogger.verifyApiUsage(
+            apiUsage = InternalTelemetryEvent.ApiUsage.Timeseries(),
+            samplingRate = API_USAGE_SAMPLING_RATE
+        )
+    }
+
+    @Test
+    fun `M not send timeseries api usage W enable() { timeseries collection disabled }`(
+        @StringForgery fakePackageName: String,
+        @Forgery fakeRumConfiguration: RumConfiguration
+    ) {
+        // Given
+        stubFeatureInitialization(fakePackageName)
+        val fakeTimeseriesConfiguration = TimeseriesConfiguration.Builder().collectOnly().build()
+
+        // When
+        Rum.enable(fakeRumConfiguration.withTimeseries(fakeTimeseriesConfiguration), mockSdkCore)
+
+        // Then
+        verify(mockInternalLogger, never()).logApiUsage(any(), any())
+    }
+
+    @Test
+    fun `M not send timeseries api usage W enable() { no timeseries configuration }`(
+        @StringForgery fakePackageName: String,
+        @Forgery fakeRumConfiguration: RumConfiguration
+    ) {
+        // Given
+        stubFeatureInitialization(fakePackageName)
+
+        // When
+        Rum.enable(fakeRumConfiguration.withTimeseries(null), mockSdkCore)
+
+        // Then
+        verify(mockInternalLogger, never()).logApiUsage(any(), any())
+    }
+
+    @Test
     fun `M register nothing W enable() { SDK instance doesn't implement InternalSdkCore }`(
         @Forgery fakeRumConfiguration: RumConfiguration
     ) {
         // Given
-        val mockInternalLogger = mock<InternalLogger>()
         val wrongSdkCore = mock<FeatureSdkCore>()
         whenever(wrongSdkCore.internalLogger) doReturn mockInternalLogger
 
@@ -210,10 +288,6 @@ internal class RumTest {
         @Forgery fakeRumConfiguration: RumConfiguration,
         @StringForgery(regex = "\\s*") fakeApplicationId: String
     ) {
-        // Given
-        val mockInternalLogger = mock<InternalLogger>()
-        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
-
         // When
         Rum.enable(
             rumConfiguration = fakeRumConfiguration.copy(applicationId = fakeApplicationId),
@@ -235,8 +309,6 @@ internal class RumTest {
         @Forgery fakeRumConfiguration: RumConfiguration
     ) {
         // Given
-        val mockInternalLogger = mock<InternalLogger>()
-        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
 
         // When
@@ -251,7 +323,27 @@ internal class RumTest {
         verify(mockSdkCore, never()).registerFeature(any())
     }
 
+    private fun stubFeatureInitialization(packageName: String) {
+        whenever(mockSdkCore.registerFeature(any())) doAnswer {
+            val mockApplication = mock<Application> { application ->
+                whenever(application.packageName) doReturn packageName
+                whenever(application.resources) doReturn mock()
+                whenever(application.contentResolver) doReturn mock()
+                whenever(application.resources.configuration) doReturn mock()
+            }
+            whenever(mockApplication.applicationContext) doReturn mockApplication
+
+            it.getArgument<RumFeature>(0).onInitialize(appContext = mockApplication)
+        }
+    }
+
+    private fun RumConfiguration.withTimeseries(configuration: TimeseriesConfiguration?) = copy(
+        featureConfiguration = featureConfiguration.copy(timeseriesConfiguration = configuration)
+    )
+
     companion object {
+        private const val API_USAGE_SAMPLING_RATE = 15f
+
         private val mainLooper = MainLooperTestConfiguration()
 
         @TestConfigurationsProvider

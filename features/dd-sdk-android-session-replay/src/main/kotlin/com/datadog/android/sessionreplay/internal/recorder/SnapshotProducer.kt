@@ -17,6 +17,7 @@ import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.callback.DefaultInteropViewCallback
+import com.datadog.android.sessionreplay.internal.recorder.mapper.EmbeddedContentViewMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
@@ -30,8 +31,19 @@ internal class SnapshotProducer(
     private val optionSelectorDetector: OptionSelectorDetector,
     private val touchPrivacyManager: TouchPrivacyManager,
     private val internalLogger: InternalLogger,
-    private val heatmapResolver: HeatmapIdentifierResolver? = null
+    private val heatmapResolver: HeatmapIdentifierResolver? = null,
+    private val embeddedContentViewMapper: EmbeddedContentViewMapper? = null
 ) {
+
+    @UiThread
+    fun beginSnapshot() {
+        embeddedContentViewMapper?.beginSnapshot()
+    }
+
+    @UiThread
+    fun finishSnapshot(): Node? {
+        return embeddedContentViewMapper?.finishSnapshot()
+    }
 
     @UiThread
     fun produce(

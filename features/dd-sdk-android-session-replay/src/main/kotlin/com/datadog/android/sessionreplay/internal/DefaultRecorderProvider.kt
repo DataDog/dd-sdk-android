@@ -29,6 +29,7 @@ import com.datadog.android.sessionreplay.SessionReplayInternalCallback
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.composition.CapturePipelineSelector
 import com.datadog.android.sessionreplay.internal.composition.CompositionCapturePipeline
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.datadog.android.sessionreplay.internal.recorder.SessionReplayRecorder
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ActionBarContainerMapper
@@ -79,7 +80,8 @@ internal class DefaultRecorderProvider(
         resourceWriter: ResourcesWriter,
         recordWriter: RecordWriter,
         rumContextProvider: RumContextProvider,
-        application: Application
+        application: Application,
+        embeddedContentSlotRegistry: EmbeddedContentSlotRegistry
     ): Recorder {
         val heatmapIdentifierRegistry = if (heatmapsEnabled) LazyHeatmapIdentifierRegistry(sdkCore) else null
         return CapturePipelineSelector(
@@ -102,6 +104,7 @@ internal class DefaultRecorderProvider(
                     sdkCore = sdkCore,
                     dynamicOptimizationEnabled = dynamicOptimizationEnabled,
                     internalCallback = internalCallback,
+                    embeddedContentSlotRegistry = embeddedContentSlotRegistry,
                     heatmapIdentifierRegistry = heatmapIdentifierRegistry
                 )
             }

@@ -66,6 +66,7 @@ import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
+import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -109,7 +110,8 @@ internal class DatadogRumMonitor(
     displayInfoProvider: InfoProvider<DisplayInfo>,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
     insightsCollector: InsightsCollector,
-    heatmapIdentifierRegistry: HeatmapIdentifierRegistry?
+    heatmapIdentifierRegistry: HeatmapIdentifierRegistry?,
+    timeseriesCollectorFactory: TimeseriesCollector.Factory
 ) : RumMonitor, AdvancedRumMonitor {
 
     @Volatile private var cachedViewUrl: String? = null
@@ -135,7 +137,8 @@ internal class DatadogRumMonitor(
         displayInfoProvider = displayInfoProvider,
         rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
         insightsCollector = insightsCollector,
-        heatmapIdentifierRegistry = heatmapIdentifierRegistry
+        heatmapIdentifierRegistry = heatmapIdentifierRegistry,
+        timeseriesCollectorFactory = timeseriesCollectorFactory
     )
 
     internal var debugListener: RumDebugListener? = null
@@ -914,6 +917,27 @@ internal class DatadogRumMonitor(
         executorService.awaitTermination(DRAIN_WAIT_SECONDS, TimeUnit.SECONDS)
         tasks.forEach {
             it.run()
+        }
+    }
+
+    /**
+     * Stops the timeseries collector on the currently active session, if any.
+     *
+     * Must be called from [RumFeature.onStop] **before** [GlobalRumMonitor.unregister], so that
+     * the active session can stop sampling and flush buffered timeseries data while the monitor is
+     * still reachable. The shared RUM vitals executor is owned and shut down separately by
+     * [RumFeature.onStop].
+     *
+     * Must be called **before** [RumFeature.dataWriter] is replaced with a
+     * [com.datadog.android.rum.internal.storage.NoOpDataWriter]. [EventWriter.write] captures the
+     * writer eagerly at call time, so the final flush issued inside [stop] will reach the real
+     * writer only if this ordering is maintained. Note: the flush is best-effort — if the core SDK
+     * de-initializes and shuts down its context executor before the async write task fires, the
+     * write is silently skipped regardless.
+     */
+    internal fun stopTimeseries() {
+        synchronized(rootScope) {
+            rootScope.activeSession?.stopTimeseries()
         }
     }
 

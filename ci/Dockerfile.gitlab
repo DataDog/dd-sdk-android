@@ -123,6 +123,7 @@ RUN set -x \
   && gh --version
 
 COPY --from=registry.ddbuild.io/dd-octo-sts:v1.8.2 /usr/local/bin/dd-octo-sts /usr/local/bin/dd-octo-sts
+COPY --from=registry.ddbuild.io/dd-sts:v0.1.7@sha256:dea74bd68e19075b6001a02a2f6121001fbcd84b2512c7f398f7b39bf22f04a8 /usr/local/bin/dd-sts /usr/local/bin/dd-sts
 COPY --from=registry.ddbuild.io/commit-headless:v2.0.1 /commit-headless /usr/local/bin/commit-headless
 
 # Install ddsign for image signing

@@ -35,6 +35,9 @@ class InternalTelemetryApiUsageForgeryFactory : ForgeryFactory<InternalTelemetry
                         .LibraryType::class.java
                 ),
                 additionalProperties = forge.aMap { aString() to aString() }.toMutableMap()
+            ),
+            InternalTelemetryEvent.ApiUsage.Timeseries(
+                additionalProperties = forge.aMap { aString() to aString() }.toMutableMap()
             )
         )
     }

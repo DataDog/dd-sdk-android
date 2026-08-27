@@ -293,11 +293,11 @@ class ComposeActionTrackingStrategyTest {
                 )
             )
         }
-        whenever(nodeList[0].zSortedChildren) doReturn mutableVectorOf(nodeList[1], nodeList[2])
-        whenever(nodeList[1].zSortedChildren) doReturn mutableVectorOf(nodeList[3], nodeList[4])
-        whenever(nodeList[2].zSortedChildren) doReturn mutableVectorOf()
-        whenever(nodeList[3].zSortedChildren) doReturn mutableVectorOf()
-        whenever(nodeList[4].zSortedChildren) doReturn mutableVectorOf()
+        whenever(nodeList[0].zSortedChildren) doReturn mutableVectorOf<LayoutNode>(nodeList[1], nodeList[2])
+        whenever(nodeList[1].zSortedChildren) doReturn mutableVectorOf<LayoutNode>(nodeList[3], nodeList[4])
+        whenever(nodeList[2].zSortedChildren) doReturn mutableVectorOf<LayoutNode>()
+        whenever(nodeList[3].zSortedChildren) doReturn mutableVectorOf<LayoutNode>()
+        whenever(nodeList[4].zSortedChildren) doReturn mutableVectorOf<LayoutNode>()
         whenever(mockAndroidComposeView.root) doReturn nodeList[0]
     }
 

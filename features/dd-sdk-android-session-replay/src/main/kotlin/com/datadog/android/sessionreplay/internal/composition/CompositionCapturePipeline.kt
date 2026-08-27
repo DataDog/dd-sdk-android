@@ -29,5 +29,7 @@ internal class CompositionCapturePipeline : Recorder {
 
     override fun resumeRecorders() = Unit
 
+    override fun requestCapture(slotIds: Set<String>) = Unit
+
     override fun stopRecorders() = Unit
 }

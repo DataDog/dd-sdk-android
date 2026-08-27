@@ -1,0 +1,89 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.gradle.plugin.jsonschema
+
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
+import java.io.File
+
+class JsonSchemaReaderTest {
+
+    @ParameterizedTest
+    @MethodSource("data")
+    fun `reads a Schema file`(
+        inputSchema: String,
+        outputType: TypeDefinition
+    ) {
+        val clazz = JsonSchemaReaderTest::class.java
+        val inputPath = clazz.getResource("/input/$inputSchema.json").file
+        val testedReader = JsonSchemaReader(
+            mapOf(
+                "all_of_merged.json" to "UserMerged",
+                "additional_props_merged.json" to "AdditionalPropsMerged",
+                "additional_props_single_merge.json" to "AdditionalPropsSingleMerge"
+            ),
+            NoOpLogger()
+        )
+
+        val generatedType = testedReader.readSchema(File(inputPath))
+
+        assertThat(generatedType)
+            .overridingErrorMessage(
+                "Expected definition:\n$outputType\nbut was:\n$generatedType"
+            )
+            .isEqualTo(outputType)
+    }
+
+    companion object {
+        @JvmStatic
+        fun data(): Collection<Array<Any>> {
+            return listOf(
+                arrayOf("arrays", Article),
+                arrayOf("one_of", Animal),
+                arrayOf("defaults_with_optionals", Bike),
+                arrayOf("nested", Book),
+                arrayOf("additional_props", Comment),
+                arrayOf("additional_props_any", Company),
+                arrayOf("additional_props_merged", AdditionalPropsMerged),
+                arrayOf("additional_props_single_merge", AdditionalPropsSingleMerge),
+                arrayOf("definition_name_conflict", Conflict),
+                arrayOf("root_schema_with_no_type", Country),
+                arrayOf("definition", Customer),
+                arrayOf("definition_with_id", Customer),
+                arrayOf("nested_enum", DateTime),
+                arrayOf("external_description", Delivery),
+                arrayOf("types", Demo),
+                arrayOf("external_description_complex_path", Employee),
+                arrayOf("top_level_definition", Foo),
+                arrayOf("one_of_ref", Household),
+                arrayOf("enum_number", Jacket),
+                arrayOf("constant", Location),
+                arrayOf("read_only", Message),
+                arrayOf("enum_array", Order),
+                arrayOf("description", Opus),
+                arrayOf("one_of_complex", Paper),
+                arrayOf("minimal", Person),
+                arrayOf("required", Product),
+                arrayOf("external_nested_description", Shipping),
+                arrayOf("external_nested_description_properties", Shipping),
+                arrayOf("enum", Style),
+                arrayOf("all_of", User),
+                arrayOf("all_of_merged", UserMerged),
+                arrayOf("constant_number", Version),
+                arrayOf("sets", Video),
+                arrayOf("one_of_nested", WeirdCombo),
+                arrayOf("required_for_other_all_of", RequiredForOtherAllOf),
+                arrayOf("path_array_with_integer", PathArrayWithInteger),
+                arrayOf("path_array_with_number", PathArrayWithNumber),
+                arrayOf("one_of_primitive_ref", OneOfPrimitiveRef),
+                arrayOf("cross_file_one_of_primitive_a", CrossFileOneOfPrimitiveA),
+                arrayOf("cross_file_one_of_primitive_b", CrossFileOneOfPrimitiveB)
+            )
+        }
+    }
+}

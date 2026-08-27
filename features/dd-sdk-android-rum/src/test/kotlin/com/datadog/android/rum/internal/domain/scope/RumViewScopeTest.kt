@@ -2935,9 +2935,10 @@ internal class RumViewScopeTest {
         assertThat(actionScope.sampleRate).isCloseTo(fakeSampleRate, Assertions.offset(0.001f))
     }
 
-    @Test
+    @ParameterizedTest
+    @EnumSource(RumActionType::class, names = ["CUSTOM"], mode = EnumSource.Mode.EXCLUDE)
     fun `M pass heatmapData through W handleEvent(StartAction) {heatmapData set}`(
-        @Forgery type: RumActionType,
+        type: RumActionType,
         @StringForgery name: String,
         @BoolForgery waitForStop: Boolean,
         @Forgery fakeHeatmapData: NativeHeatmapActionData,
@@ -10603,8 +10604,8 @@ internal class RumViewScopeTest {
 
         assertThat(profilerEvent.rumContext.applicationId).isEqualTo(writtenVital.application.id)
         assertThat(profilerEvent.rumContext.sessionId).isEqualTo(writtenVital.session.id)
-        assertThat(profilerEvent.rumContext.viewId).isEqualTo(writtenVital.view.id)
-        assertThat(profilerEvent.rumContext.viewName).isEqualTo(writtenVital.view.name)
+        assertThat(profilerEvent.rumContext.viewId).isEqualTo(writtenVital.view?.id)
+        assertThat(profilerEvent.rumContext.viewName).isEqualTo(writtenVital.view?.name)
     }
 
     @Test

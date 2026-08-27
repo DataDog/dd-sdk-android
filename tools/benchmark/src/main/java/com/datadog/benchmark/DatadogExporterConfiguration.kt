@@ -19,6 +19,7 @@ package com.datadog.benchmark
  * @param endPoint the endpoint to submit the metrics.
  * @param intervalInSeconds the interval of seconds of sampling and uploading vital data.
  */
+@ConsistentCopyVisibility
 data class DatadogExporterConfiguration internal constructor(
     val serviceName: String? = null,
     val resource: String? = null,

@@ -44,7 +44,8 @@ internal class PrecomputeMapper(private val internalLogger: InternalLogger) {
                 allocationKey = flagData.getString(JsonKeys.ALLOCATION_KEY.value),
                 variationKey = flagData.getString(JsonKeys.VARIATION_KEY.value),
                 extraLogging = flagData.getJSONObject(JsonKeys.EXTRA_LOGGING.value),
-                reason = flagData.getString(JsonKeys.REASON.value)
+                reason = flagData.getString(JsonKeys.REASON.value),
+                serialId = (flagData.opt(JsonKeys.SERIAL_ID.value) as? Number)?.toLong()
             )
 
             flagsMap[flagKey] = precomputedFlag

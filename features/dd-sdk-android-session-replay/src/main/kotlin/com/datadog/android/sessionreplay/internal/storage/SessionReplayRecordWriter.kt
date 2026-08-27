@@ -15,9 +15,10 @@ import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 
 internal class SessionReplayRecordWriter(
     private val sdkCore: FeatureSdkCore,
-    private val recordCallback: RecordCallback
-) : RecordWriter {
-    override fun write(record: EnrichedRecord) {
+    private val recordCallback: RecordCallback,
+    private val onEmbeddedRecordWritten: (String, Int) -> Unit = { _, _ -> }
+) : RecordWriter, EmbeddedContentRecordWriter {
+    override fun write(record: EnrichedRecord, onSuccess: () -> Unit) {
         sdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)
             ?.withWriteContext { _, writeScope ->
                 writeScope {
@@ -31,6 +32,28 @@ internal class SessionReplayRecordWriter(
                         )
                         if (success) {
                             updateViewSent(record)
+                            // Runs while this monitor is held, so whatever the callback does must
+                            // not write back through this writer synchronously.
+                            onSuccess()
+                        }
+                    }
+                }
+            }
+    }
+
+    override fun writeRaw(record: ByteArray, viewId: String, recordsCount: Int) {
+        sdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)
+            ?.withWriteContext { _, writeScope ->
+                writeScope {
+                    val rawBatchEvent = RawBatchEvent(data = record)
+                    synchronized(this@SessionReplayRecordWriter) {
+                        val success = it.write(
+                            event = rawBatchEvent,
+                            batchMetadata = null,
+                            eventType = EventType.DEFAULT
+                        )
+                        if (success) {
+                            onEmbeddedRecordWritten(viewId, recordsCount)
                         }
                     }
                 }

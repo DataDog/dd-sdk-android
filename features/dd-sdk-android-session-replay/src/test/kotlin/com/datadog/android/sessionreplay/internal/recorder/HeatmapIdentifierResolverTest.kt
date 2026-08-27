@@ -30,6 +30,9 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.Random
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -237,6 +240,70 @@ internal class HeatmapIdentifierResolverTest {
         assertThat(indices[0]).isEqualTo(0)
         assertThat(indices[1]).isEqualTo(0) // slot left at default; not a real child
         assertThat(indices[2]).isEqualTo(1)
+    }
+
+    // endregion
+
+    // region concurrency
+
+    @Test
+    fun `M not throw W concurrent traversals from multiple windows`(forge: Forge) {
+        // Given
+        // Each recorded window runs its own traversal on the Looper thread its view hierarchy is
+        // attached to, so two windows' traversals — including the resolveIdentity/publish
+        // read-then-write sequence over the shared lastPublished* maps — can interleave on
+        // different threads.
+        //
+        // lastPublishedEntries is only ever touched via get()/clear()/putAll(), never an
+        // external iterator, so an unsynchronized race here does not reliably throw
+        // ConcurrentModificationException the way an iterated HashMap does. Verified: this
+        // exact test (300 entries/pass, 20 reps/thread) still passes 5/5 with synchronization
+        // stripped out -- it is kept as a smoke check on the happy path, not as proof this race
+        // is caught. The `synchronized` blocks in the production code are the actual defense;
+        // don't rely on this test to validate them. Scale is capped below ~15k total
+        // mock-intercepted calls because this environment's Mockito setup gets measurably,
+        // sometimes catastrophically (OOM/livelock-like CPU spin), slower beyond that.
+        val repetitions = 20
+        val entriesPerPass = 300
+        val errors = CopyOnWriteArrayList<Throwable>()
+        val baseViewId = forge.anInt(min = 1, max = 100_000)
+        val views = (0 until entriesPerPass).map { offset ->
+            val viewId = baseViewId + offset
+            val resourceName = "com.example.app:id/${forge.anAlphabeticalString()}"
+            val mockResources: Resources = mock {
+                whenever(it.getResourceName(viewId)).thenReturn(resourceName)
+            }
+            val mockView: View = mock {
+                whenever(it.id).thenReturn(viewId)
+                whenever(it.resources).thenReturn(mockResources)
+                whenever(it.isClickable).thenReturn(true)
+                whenever(it.visibility).thenReturn(View.VISIBLE)
+            }
+            mockView
+        }
+        val screenA = "screen-${forge.anAlphabeticalString()}"
+        val screenB = "screen-${forge.anAlphabeticalString()}"
+
+        fun runTraversal(screenName: String) {
+            val context = testedResolver.beginTraversal(screenName)
+            views.forEachIndexed { index, view -> context.resolveIdentity(view, emptyList(), index) }
+            context.publish()
+        }
+
+        // When
+        val threads = listOf(
+            Thread { repeat(repetitions) { try { runTraversal(screenA) } catch (e: Throwable) { errors.add(e) } } },
+            Thread { repeat(repetitions) { try { runTraversal(screenB) } catch (e: Throwable) { errors.add(e) } } }
+        ).shuffled(Random(forge.seed))
+        threads.forEach { it.start() }
+        threads.forEach { it.join(TimeUnit.SECONDS.toMillis(30)) }
+        threads.filter { it.isAlive }.forEach { it.interrupt() }
+        assertThat(threads.none { it.isAlive })
+            .describedAs("a thread failed to complete within the timeout -- treat as a failure, not a hang")
+            .isTrue()
+
+        // Then
+        assertThat(errors).isEmpty()
     }
 
     // endregion

@@ -47,7 +47,7 @@ internal enum class CapturedWireframeKind(internal val wireIdNamespace: Long) {
     PLACEHOLDER(PLACEHOLDER_WIREFRAME_NAMESPACE)
 }
 
-internal data class CapturedIdentity internal constructor(
+internal data class CapturedIdentity(
     val scope: RumViewIdentityScope,
     val kind: CapturedIdentityKind,
     val wireframeKind: CapturedWireframeKind?,

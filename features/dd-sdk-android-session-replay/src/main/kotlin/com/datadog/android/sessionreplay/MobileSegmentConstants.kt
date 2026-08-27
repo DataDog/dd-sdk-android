@@ -75,3 +75,9 @@ const val WIREFRAME_TYPE_PLACEHOLDER: String = "placeholder"
  * @see com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.WebviewWireframe
  */
 const val WIREFRAME_TYPE_WEBVIEW: String = "webview"
+
+/**
+ * EmbeddedContentWireframe type.
+ * @see com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.EmbeddedContentWireframe
+ */
+const val WIREFRAME_TYPE_EMBEDDED_CONTENT: String = "embedded_content"

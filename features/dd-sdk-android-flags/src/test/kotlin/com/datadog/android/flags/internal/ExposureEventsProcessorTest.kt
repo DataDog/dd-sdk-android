@@ -442,6 +442,111 @@ internal class ExposureEventsProcessorTest {
 
     // endregion
 
+    // region Serial Id
+
+    @Test
+    fun `M send the serial id W processEvent() { flag carries a serial id }`(forge: Forge) {
+        // Given
+        val fakeSerialId = forge.aLong(min = 1L)
+        val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
+        val flag = fakeFlag.copy(serialId = fakeSerialId)
+
+        // When
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, flag)
+
+        // Then
+        val eventCaptor = argumentCaptor<ExposureEvent>()
+        verify(mockRecordWriter).write(eventCaptor.capture())
+        assertThat(eventCaptor.firstValue.serialId).isEqualTo(fakeSerialId)
+        assertThat(eventCaptor.firstValue.toJson().asJsonObject.get("serial_id").asLong)
+            .isEqualTo(fakeSerialId)
+    }
+
+    @Test
+    fun `M send the serial id W processEvent() { serial id is zero }`() {
+        // Given
+        val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
+        val flag = fakeFlag.copy(serialId = 0L)
+
+        // When
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, flag)
+
+        // Then
+        val eventCaptor = argumentCaptor<ExposureEvent>()
+        verify(mockRecordWriter).write(eventCaptor.capture())
+        assertThat(eventCaptor.firstValue.serialId).isEqualTo(0L)
+    }
+
+    @Test
+    fun `M send no serial id W processEvent() { flag has no serial id }`() {
+        // Given
+        val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
+        val flag = fakeFlag.copy(serialId = null)
+
+        // When
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, flag)
+
+        // Then
+        val eventCaptor = argumentCaptor<ExposureEvent>()
+        verify(mockRecordWriter).write(eventCaptor.capture())
+        assertThat(eventCaptor.firstValue.serialId).isNull()
+        assertThat(eventCaptor.firstValue.toJson().asJsonObject.has("serial_id")).isFalse()
+    }
+
+    @Test
+    fun `M process exposure again W processEvent() { serial id appears }`(forge: Forge) {
+        // Given
+        val fakeSerialId = forge.aLong(min = 1L)
+        val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
+        val flagWithoutSerialId = fakeFlag.copy(serialId = null)
+        val flagWithSerialId = flagWithoutSerialId.copy(serialId = fakeSerialId)
+
+        // When
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, flagWithoutSerialId)
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, flagWithSerialId)
+
+        // Then
+        val eventCaptor = argumentCaptor<ExposureEvent>()
+        verify(mockRecordWriter, times(2)).write(eventCaptor.capture())
+        assertThat(eventCaptor.firstValue.serialId).isNull()
+        assertThat(eventCaptor.secondValue.serialId).isEqualTo(fakeSerialId)
+    }
+
+    @Test
+    fun `M process exposure again W processEvent() { serial id changes }`(forge: Forge) {
+        // Given
+        val fakeSerialId = forge.aLong(min = 1L)
+        val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
+        val flag = fakeFlag.copy(serialId = fakeSerialId)
+        val flagWithNewSerialId = flag.copy(serialId = fakeSerialId + 1)
+
+        // When
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, flag)
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, flagWithNewSerialId)
+
+        // Then
+        val eventCaptor = argumentCaptor<ExposureEvent>()
+        verify(mockRecordWriter, times(2)).write(eventCaptor.capture())
+        assertThat(eventCaptor.firstValue.serialId).isEqualTo(fakeSerialId)
+        assertThat(eventCaptor.secondValue.serialId).isEqualTo(fakeSerialId + 1)
+    }
+
+    @Test
+    fun `M not process duplicate exposure W processEvent() { same serial id }`(forge: Forge) {
+        // Given
+        val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
+        val flag = fakeFlag.copy(serialId = forge.aLong(min = 1L))
+
+        // When
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, flag)
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, flag)
+
+        // Then
+        verify(mockRecordWriter).write(any())
+    }
+
+    // endregion
+
     // region Concurrency Tests
 
     @Test

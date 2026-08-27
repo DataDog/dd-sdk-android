@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal
 
 import android.app.Application
 import android.content.Context
+import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
@@ -25,19 +26,29 @@ import com.datadog.android.sessionreplay.SessionReplayInternalCallback
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentEvent
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentReceiver
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistration
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
 import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
+import com.datadog.android.sessionreplay.internal.processor.DefaultResourceProcessor
+import com.datadog.android.sessionreplay.internal.processor.NoOpResourceProcessor
+import com.datadog.android.sessionreplay.internal.processor.ResourceProcessor
 import com.datadog.android.sessionreplay.internal.recorder.NoOpRecorder
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.resources.ResourceHashesEntryDeserializer
 import com.datadog.android.sessionreplay.internal.resources.ResourceHashesEntrySerializer
+import com.datadog.android.sessionreplay.internal.storage.EmbeddedContentRecordWriter
+import com.datadog.android.sessionreplay.internal.storage.NoOpEmbeddedContentRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import java.util.Locale
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
@@ -58,6 +69,7 @@ internal class SessionReplayFeature(
 ) : StorageBackedFeature, FeatureEventReceiver {
 
     private val currentRumSessionId = AtomicReference<String>()
+    internal val embeddedContentSlotRegistry = EmbeddedContentSlotRegistry()
 
     @Suppress("LongParameterList")
     internal constructor(
@@ -123,7 +135,23 @@ internal class SessionReplayFeature(
     internal var sessionReplayRecorder: Recorder = NoOpRecorder()
     internal var dataWriter: RecordWriter = NoOpRecordWriter()
     internal val initialized = AtomicBoolean(false)
-    private val rumContextProvider = SessionReplayRumContextProvider()
+
+    private val rumContextProvider = SessionReplayRumContextProvider {
+        onRumViewChanged()
+    }
+    private var resourceProcessor: ResourceProcessor = NoOpResourceProcessor()
+    private var embeddedContentRecordWriter: EmbeddedContentRecordWriter = NoOpEmbeddedContentRecordWriter()
+    private lateinit var embeddedContentExecutor: ExecutorService
+    private val embeddedContentReceiver = EmbeddedContentReceiver(
+        rumContextProvider = rumContextProvider,
+        recordWriter = { embeddedContentRecordWriter },
+        resourceProcessor = { resourceProcessor },
+        isRecording = { isRecording.get() },
+        executor = { embeddedContentExecutor },
+        requestCapture = { slotId -> sessionReplayRecorder.requestCapture(setOf(slotId)) },
+        embeddedContentSlotRegistry = embeddedContentSlotRegistry,
+        internalLogger = sdkCore.internalLogger
+    )
 
     // region Feature
 
@@ -136,6 +164,9 @@ internal class SessionReplayFeature(
         }
 
         this.appContext = appContext
+        embeddedContentExecutor = sdkCore.createSingleThreadExecutorService(
+            EMBEDDED_CONTENT_EXECUTOR_CONTEXT
+        )
         sdkCore.setEventReceiver(Feature.SESSION_REPLAY_FEATURE_NAME, this)
 
         val resourcesFeature = registerResourceFeature(sdkCore)
@@ -146,7 +177,13 @@ internal class SessionReplayFeature(
             resourceHashesDeserializer = ResourceHashesEntryDeserializer(internalLogger = sdkCore.internalLogger)
         )
 
-        dataWriter = createDataWriter()
+        val sessionReplayRecordWriter = createDataWriter()
+        dataWriter = sessionReplayRecordWriter
+        embeddedContentRecordWriter = sessionReplayRecordWriter
+        resourceProcessor = DefaultResourceProcessor(
+            resourceDataStoreManager = resourceDataStoreManager,
+            resourcesWriter = resourcesFeature.dataWriter
+        )
         sdkCore.setContextUpdateReceiver(rumContextProvider)
         sessionReplayRecorder =
             recorderProvider.provideSessionReplayRecorder(
@@ -154,7 +191,8 @@ internal class SessionReplayFeature(
                 resourceWriter = resourcesFeature.dataWriter,
                 recordWriter = dataWriter,
                 rumContextProvider = rumContextProvider,
-                application = appContext
+                application = appContext,
+                embeddedContentSlotRegistry = embeddedContentSlotRegistry
             )
         sessionReplayRecorder.registerCallbacks()
         initialized.set(true)
@@ -183,7 +221,12 @@ internal class SessionReplayFeature(
         sdkCore.removeContextUpdateReceiver(rumContextProvider)
         sessionReplayRecorder.unregisterCallbacks()
         sessionReplayRecorder.stopProcessingRecords()
+        if (::embeddedContentExecutor.isInitialized) {
+            embeddedContentExecutor.shutdown()
+        }
         dataWriter = NoOpRecordWriter()
+        embeddedContentRecordWriter = NoOpEmbeddedContentRecordWriter()
+        resourceProcessor = NoOpResourceProcessor()
         sessionReplayRecorder = NoOpRecorder()
         initialized.set(false)
     }
@@ -192,21 +235,36 @@ internal class SessionReplayFeature(
 
     // region EventReceiver
 
+    internal fun receiveEmbeddedContentEvent(event: EmbeddedContentEvent) {
+        if (checkIfInitialized()) {
+            embeddedContentReceiver.receive(event)
+        }
+    }
+
+    @UiThread
+    internal fun notifyEmbeddedContentSlotChanged(
+        previousRegistration: EmbeddedContentSlotRegistration?,
+        newRegistration: EmbeddedContentSlotRegistration?
+    ) {
+        embeddedContentSlotRegistry.notifySlotChanged(previousRegistration, newRegistration)
+    }
+
     override fun onReceive(event: Any) {
-        if (event !is Map<*, *>) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName) }
-            )
-            return
+        when (event) {
+            is EmbeddedContentEvent -> receiveEmbeddedContentEvent(event)
+            is Map<*, *> -> {
+                if (checkIfInitialized()) {
+                    handleRumSession(event)
+                }
+            }
+            else -> {
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    { UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName) }
+                )
+            }
         }
-
-        if (!checkIfInitialized()) {
-            return
-        }
-
-        handleRumSession(event)
     }
 
     // endregion
@@ -366,9 +424,15 @@ internal class SessionReplayFeature(
         }
     }
 
-    private fun createDataWriter(): RecordWriter {
+    private fun createDataWriter(): SessionReplayRecordWriter {
         val recordCallback = SessionReplayRecordCallback(sdkCore)
-        return SessionReplayRecordWriter(sdkCore, recordCallback)
+        return SessionReplayRecordWriter(
+            sdkCore,
+            recordCallback,
+            { viewId, recordsCount ->
+                recordCallback.onEmbeddedRecordsForViewSent(viewId, recordsCount)
+            }
+        )
     }
 
     /**
@@ -380,6 +444,16 @@ internal class SessionReplayFeature(
                 it[SESSION_REPLAY_ENABLED_KEY] = false
             }
             sessionReplayRecorder.stopRecorders()
+        }
+    }
+
+    private fun onRumViewChanged() {
+        if (!isRecording.get()) {
+            return
+        }
+        val activeSlotIds = embeddedContentSlotRegistry.activeSlotIds()
+        if (activeSlotIds.isNotEmpty()) {
+            sessionReplayRecorder.requestCapture(activeSlotIds)
         }
     }
 
@@ -400,6 +474,8 @@ internal class SessionReplayFeature(
     // endregion
 
     internal companion object {
+
+        internal const val EMBEDDED_CONTENT_EXECUTOR_CONTEXT = "sr-embedded-content"
 
         /**
          * Session Replay storage configuration with the following parameters:

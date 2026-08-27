@@ -22,6 +22,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.InfoProvider
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
@@ -30,6 +31,7 @@ import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
+import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -57,6 +59,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -136,6 +139,12 @@ internal class RumApplicationScopeTest {
     @Mock
     lateinit var mockSessionSampler: Sampler<String>
 
+    @Mock
+    lateinit var mockTimeseriesCollectorFactory: TimeseriesCollector.Factory
+
+    @Mock
+    lateinit var mockTimeseriesCollector: TimeseriesCollector
+
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
@@ -177,6 +186,7 @@ internal class RumApplicationScopeTest {
 
         whenever(mockSessionSampler.getSampleRate()).thenReturn(fakeSampleRate)
         whenever(mockSessionSampler.sample(any())).thenReturn(true)
+        whenever(mockTimeseriesCollectorFactory.create(any(), any())) doReturn mockTimeseriesCollector
 
         testedScope = RumApplicationScope(
             applicationId = fakeApplicationId,
@@ -199,7 +209,8 @@ internal class RumApplicationScopeTest {
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
-            heatmapIdentifierRegistry = null
+            heatmapIdentifierRegistry = null,
+            timeseriesCollectorFactory = mockTimeseriesCollectorFactory
         )
     }
 
@@ -213,6 +224,37 @@ internal class RumApplicationScopeTest {
         assertThat(childScope.sessionSampler).isSameAs(mockSessionSampler)
         assertThat(childScope.backgroundTrackingEnabled).isEqualTo(fakeBackgroundTrackingEnabled)
         assertThat(childScope.firstPartyHostHeaderTypeResolver).isSameAs(mockResolver)
+    }
+
+    @Test
+    fun `M propagate timeseriesFactory to every child session W handleEvent { startView, stop, startView }`(
+        @StringForgery viewKey: String,
+        @StringForgery viewName: String
+    ) {
+        // Given - the initial child session, renewed by an interactive event
+        val fakeStartViewEvent = RumRawEvent.StartView(
+            key = RumScopeKey.from(viewKey, viewName),
+            attributes = emptyMap(),
+            eventTime = fakeEventTime
+        )
+        testedScope.handleEvent(fakeStartViewEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(
+            RumRawEvent.StopSession(fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // When - a brand new child session scope is created by the application scope
+        testedScope.handleEvent(fakeStartViewEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then - both the initial and the new child session use the factory we gave the application scope
+        val rumContextCaptor = argumentCaptor<RumContext>()
+        verify(mockTimeseriesCollectorFactory, times(2)).create(any(), rumContextCaptor.capture())
+        assertThat(rumContextCaptor.allValues.map { it.applicationId })
+            .containsOnly(fakeApplicationId)
+        assertThat(rumContextCaptor.firstValue.sessionId)
+            .isNotEqualTo(rumContextCaptor.secondValue.sessionId)
     }
 
     @Test
