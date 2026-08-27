@@ -181,37 +181,6 @@ internal class SpanEventSerializerTest {
     }
 
     @Test
-    fun `M sanitise with the right prefix the span tags W serialize`(
-        @Forgery fakeSpanEvent: SpanEvent,
-        forge: Forge
-    ) {
-        // GIVEN
-        val fakeSanitizedTags = forge.aMap<String, String>(size = 10) {
-            forge.anAlphabeticalString() to forge.anAlphabeticalString()
-        }
-        whenever(
-            mockDatadogConstraints
-                .validateAttributes(
-                    fakeSpanEvent.meta.additionalProperties,
-                    SpanEventSerializer.META_KEY_PREFIX,
-                    reservedKeys = emptySet()
-                )
-        ).thenReturn(fakeSanitizedTags.toMutableMap())
-
-        // WHEN
-        val serialized = testedSerializer.serialize(fakeDatadogContext, fakeSpanEvent)
-
-        // THEN
-        val jsonObject = JsonParser.parseString(serialized).asJsonObject
-        val spanObject = jsonObject.getAsJsonArray(KEY_SPANS).first() as JsonObject
-        JsonObjectAssert.assertThat(spanObject).hasField(KEY_META) {
-            fakeSanitizedTags.forEach { (key, value) ->
-                hasField(key, value)
-            }
-        }
-    }
-
-    @Test
     fun `M not throw W serialize() { usr#additionalProperties serialization throws }`(
         @Forgery fakeSpanEvent: SpanEvent,
         forge: Forge

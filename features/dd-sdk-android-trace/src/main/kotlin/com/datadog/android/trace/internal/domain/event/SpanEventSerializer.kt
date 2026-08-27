@@ -47,13 +47,8 @@ internal class SpanEventSerializer(
             sanitizeAccountAttributes(it)
         }
         val newMetricsObject = sanitizeMetrics(model.metrics)
-        val newTags = sanitizeTags(model.meta.additionalProperties)
         return model.copy(
-            meta = model.meta.copy(
-                usr = newUserObject,
-                account = newAccountObject,
-                additionalProperties = newTags
-            ),
+            meta = model.meta.copy(usr = newUserObject, account = newAccountObject),
             metrics = newMetricsObject
         )
     }
@@ -111,13 +106,6 @@ internal class SpanEventSerializer(
         )
     }
 
-    private fun sanitizeTags(tags: Map<String, String>): Map<String, String> {
-        return dataConstraints.validateAttributes(
-            tags,
-            META_KEY_PREFIX
-        )
-    }
-
     private fun toMetaString(element: Any?): String? {
         return when (element) {
             NULL_MAP_VALUE -> null
@@ -136,7 +124,6 @@ internal class SpanEventSerializer(
         internal const val TAG_ENV = "env"
         internal const val META_USR_KEY_PREFIX = "meta.usr"
         internal const val META_ACCOUNT_KEY_PREFIX = "meta.account"
-        internal const val META_KEY_PREFIX = "meta"
         internal const val METRICS_KEY_PREFIX = "metrics"
     }
 }
