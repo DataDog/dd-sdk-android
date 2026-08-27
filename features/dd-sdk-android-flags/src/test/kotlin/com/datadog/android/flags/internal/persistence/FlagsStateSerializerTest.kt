@@ -85,6 +85,43 @@ internal class FlagsStateSerializerTest {
     }
 
     @Test
+    fun `M serialize the serial id W serialize() { flag carries a serial id }`(forge: Forge) {
+        // Given
+        val evaluationContext = EvaluationContext(forge.anAlphabeticalString(), emptyMap())
+        val flags = mapOf(
+            "flag1" to PrecomputedFlag(
+                variationType = "boolean",
+                variationValue = "true",
+                doLog = true,
+                allocationKey = forge.anAlphabeticalString(),
+                variationKey = "variation1",
+                extraLogging = JSONObject(),
+                reason = "TARGETING_MATCH",
+                serialId = 0L
+            ),
+            "flag2" to PrecomputedFlag(
+                variationType = "string",
+                variationValue = forge.anAlphabeticalString(),
+                doLog = false,
+                allocationKey = forge.anAlphabeticalString(),
+                variationKey = "variation2",
+                extraLogging = JSONObject(),
+                reason = "DEFAULT",
+                serialId = null
+            )
+        )
+        val flagsState = FlagsStateEntry(evaluationContext, flags, fakeTimestamp)
+
+        // When
+        val serialized = testedSerializer.serialize(flagsState)
+
+        // Then
+        SerializedFlagsStateAssert.assertThatSerializedFlagsState(serialized)
+            .hasFlagSerialId("flag1", 0L)
+            .hasNoFlagSerialId("flag2")
+    }
+
+    @Test
     fun `M serialize empty flags state W serialize()`(forge: Forge) {
         // Given
         val targetingKey = forge.anAlphabeticalString()

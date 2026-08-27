@@ -131,6 +131,11 @@ internal constructor(
     override fun responseHeadersEnd(call: Call, response: Response) {
         super.responseHeadersEnd(call, response)
         headersEnd = sdkCore.time.deviceTimeNs
+        // For error responses, report timing as soon as headers are in rather than waiting for
+        // callEnd, which can fire only after a much later body read. callEnd/callFailed below
+        // will still call sendTiming() again, but that's harmless: RumResourceScope discards
+        // any AddResourceTiming that arrives after the resource has already been sent (see
+        // RumResourceScope.onAddResourceTiming), so it never causes a double-report.
         if (response.code >= HttpURLConnection.HTTP_BAD_REQUEST) {
             sendTiming()
         }

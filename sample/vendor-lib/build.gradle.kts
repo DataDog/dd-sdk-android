@@ -5,28 +5,29 @@
  */
 
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.java17
-import com.datadog.gradle.config.junitConfig
-import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.sampleAppConfig
 import com.datadog.gradle.config.taskConfig
 import java.io.File
 
 plugins {
-    id("ktlint")
+    // Build
     id("com.android.library")
+    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
+    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
+    id("ktlint")
     kotlin("android")
-    id("com.github.ben-manes.versions")
+    id("datadogBuildConfig")
 }
 
+// TODO RUM-18189 Support new AGP DSL
+@Suppress("DEPRECATION")
 android {
     compileSdk = AndroidConfig.TARGET_SDK
     buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
 
     defaultConfig {
         minSdk = AndroidConfig.MIN_SDK
-        multiDexEnabled = true
 
         buildFeatures {
             buildConfig = true
@@ -83,11 +84,13 @@ dependencies {
     implementation(libs.bundles.ktorServer)
 }
 
-kotlinConfig(evaluateWarningsAsErrors = false)
+datadogBuild {
+    applyKotlinConfig(evaluateWarningsAsErrors = false)
+    applyJunitConfig()
+}
+
 taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     compilerOptions {
         optIn.add("kotlin.RequiresOptIn")
     }
 }
-junitConfig()
-dependencyUpdateConfig()

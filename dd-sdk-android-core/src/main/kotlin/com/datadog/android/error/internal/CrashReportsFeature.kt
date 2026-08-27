@@ -15,6 +15,7 @@ internal class CrashReportsFeature(private val sdkCore: FeatureSdkCore) : Featur
 
     internal val initialized = AtomicBoolean(false)
     internal var originalUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
+    private var ourUncaughtExceptionHandler: Thread.UncaughtExceptionHandler? = null
 
     // region Feature
 
@@ -34,18 +35,19 @@ internal class CrashReportsFeature(private val sdkCore: FeatureSdkCore) : Featur
 
     // region Internal
 
-    private fun setupExceptionHandler(
-        appContext: Context
-    ) {
+    private fun setupExceptionHandler(appContext: Context) {
         originalUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
-        DatadogExceptionHandler(
+        ourUncaughtExceptionHandler = DatadogExceptionHandler(
             sdkCore = sdkCore,
             appContext = appContext
-        ).register()
+        ).apply { register() }
     }
 
     private fun resetOriginalExceptionHandler() {
-        Thread.setDefaultUncaughtExceptionHandler(originalUncaughtExceptionHandler)
+        if (Thread.getDefaultUncaughtExceptionHandler() === ourUncaughtExceptionHandler) {
+            Thread.setDefaultUncaughtExceptionHandler(originalUncaughtExceptionHandler)
+        }
+        ourUncaughtExceptionHandler = null
     }
 
     // endregion

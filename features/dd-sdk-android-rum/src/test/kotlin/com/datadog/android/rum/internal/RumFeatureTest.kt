@@ -16,6 +16,7 @@ import android.content.res.Resources
 import android.os.Handler
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
+import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.JvmCrash
@@ -28,6 +29,7 @@ import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.asString
 import com.datadog.android.internal.utils.loggableStackTrace
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -46,11 +48,14 @@ import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilitySn
 import com.datadog.android.rum.internal.domain.battery.DefaultBatteryInfoProvider
 import com.datadog.android.rum.internal.domain.display.DefaultDisplayInfoProvider
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.startup.RumAppStartupDetector
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
+import com.datadog.android.rum.internal.timeseries.DefaultTimeseriesCollectorFactory
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
@@ -60,6 +65,7 @@ import com.datadog.android.rum.internal.vitals.FrameStateListener
 import com.datadog.android.rum.internal.vitals.FrameStatesAggregator
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalReaderRunnable
+import com.datadog.android.rum.timeseries.TimeseriesConfiguration
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
@@ -732,7 +738,8 @@ internal class RumFeatureTest {
     fun `M not initialize the vital monitors W initialize { frequency = NEVER }`() {
         // Given
         fakeConfiguration = fakeConfiguration.copy(
-            vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER
+            vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER,
+            timeseriesConfiguration = null
         )
         testedFeature = RumFeature(
             mockSdkCore,
@@ -850,6 +857,104 @@ internal class RumFeatureTest {
     }
 
     @Test
+    fun `M stop active timeseries before resetting writer W onStop()`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        val stubDatadogMonitor = mock<DatadogRumMonitor>()
+        GlobalRumMonitor.clear()
+        GlobalRumMonitor.registerIfAbsent(stubDatadogMonitor, mockSdkCore)
+
+        var writerAtStopTime: DataWriter<Any>? = null
+        doAnswer {
+            writerAtStopTime = testedFeature.dataWriter
+        }.whenever(stubDatadogMonitor).stopTimeseries()
+
+        // When
+        testedFeature.onStop()
+
+        // Then — the last timeseries batch must still reach the real writer
+        assertThat(writerAtStopTime).isNotNull
+        assertThat(writerAtStopTime).isNotInstanceOf(NoOpDataWriter::class.java)
+        assertThat(testedFeature.dataWriter).isInstanceOf(NoOpDataWriter::class.java)
+    }
+
+    @Test
+    @OptIn(ExperimentalRumApi::class)
+    fun `M wire timeseries factory W initialize { timeseries enabled }`(
+        @LongForgery(min = 1L) fakeTotalRamBytes: Long
+    ) {
+        // Given
+        fakeConfiguration = fakeConfiguration.copy(
+            timeseriesConfiguration = TimeseriesConfiguration.Builder().build()
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+        val stubActivityManager = mock<ActivityManager>()
+        doAnswer { invocation ->
+            invocation.getArgument<ActivityManager.MemoryInfo>(0).totalMem = fakeTotalRamBytes
+            null
+        }.whenever(stubActivityManager).getMemoryInfo(any())
+        whenever(
+            appContext.mockInstance.getSystemService(Context.ACTIVITY_SERVICE)
+        ) doReturn stubActivityManager
+
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        val timeseriesFactory = testedFeature.timeseriesCollectorFactory
+        check(timeseriesFactory is DefaultTimeseriesCollectorFactory)
+        assertThat(timeseriesFactory.getFieldValue<DataWriter<*>, DefaultTimeseriesCollectorFactory>("dataWriter"))
+            .isSameAs(testedFeature.dataWriter)
+        assertThat(
+            timeseriesFactory.getFieldValue<InsightsCollector, DefaultTimeseriesCollectorFactory>("insightsCollector")
+        )
+            .isSameAs(testedFeature.insightsCollector)
+        assertThat(
+            timeseriesFactory
+                .getFieldValue<ScheduledExecutorService, DefaultTimeseriesCollectorFactory>("scheduledExecutorService")
+        ).isSameAs(testedFeature.vitalExecutorService)
+        assertThat(timeseriesFactory.getFieldValue<Long, DefaultTimeseriesCollectorFactory>("totalRamBytes"))
+            .isEqualTo(fakeTotalRamBytes)
+        assertThat(
+            timeseriesFactory.getFieldValue<InfoProvider<*>, DefaultTimeseriesCollectorFactory>("batteryInfoProvider")
+        )
+            .isSameAs(testedFeature.batteryInfoProvider)
+        assertThat(
+            timeseriesFactory.getFieldValue<InfoProvider<*>, DefaultTimeseriesCollectorFactory>("displayInfoProvider")
+        )
+            .isSameAs(testedFeature.displayInfoProvider)
+    }
+
+    @Test
+    @OptIn(ExperimentalRumApi::class)
+    fun `M initialize vital executor W initialize { frequency = NEVER and timeseries enabled }`() {
+        // Given
+        fakeConfiguration = fakeConfiguration.copy(
+            vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER,
+            slowFramesConfiguration = null,
+            timeseriesConfiguration = TimeseriesConfiguration.Builder().build()
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then: timeseries sampling needs a real executor even when vitals are disabled.
+        assertThat(testedFeature.vitalExecutorService)
+            .isNotInstanceOf(NoOpScheduledExecutorService::class.java)
+    }
+
+    @Test
     fun `M remove associated monitor W onStop()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
@@ -933,7 +1038,8 @@ internal class RumFeatureTest {
     fun `M not initialize vital executor W initialize { frequency = NEVER }()`() {
         // Given
         fakeConfiguration = fakeConfiguration.copy(
-            vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER
+            vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER,
+            timeseriesConfiguration = null
         )
         testedFeature = RumFeature(
             mockSdkCore,
