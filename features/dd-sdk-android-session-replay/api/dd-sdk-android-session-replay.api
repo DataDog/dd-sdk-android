@@ -320,6 +320,7 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$Composi
 	public static final field PLUSDARKER Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation;
 	public static final field SOURCEOVER Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation;
 	public static fun values ()[Lcom/datadog/android/sessionreplay/model/MobileSegment$CompositeOperation;
@@ -741,6 +742,7 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$FillRul
 	public static final field EVENODD Lcom/datadog/android/sessionreplay/model/MobileSegment$FillRule;
 	public static final field NONZERO Lcom/datadog/android/sessionreplay/model/MobileSegment$FillRule;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$FillRule;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$FillRule;
 	public static fun values ()[Lcom/datadog/android/sessionreplay/model/MobileSegment$FillRule;
@@ -1385,6 +1387,7 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$Type : 
 	public static final field LAYER Lcom/datadog/android/sessionreplay/model/MobileSegment$Type;
 	public static final field WIREFRAME Lcom/datadog/android/sessionreplay/model/MobileSegment$Type;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Type;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Type;
 	public static fun values ()[Lcom/datadog/android/sessionreplay/model/MobileSegment$Type;

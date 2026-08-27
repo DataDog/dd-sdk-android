@@ -11,6 +11,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayInternalCallback
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.datadog.android.sessionreplay.internal.recorder.SessionReplayRecorder
 import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
@@ -57,7 +58,8 @@ internal class DefaultRecorderProviderTest {
             resourceWriter = mock<ResourcesWriter>(),
             recordWriter = mock<RecordWriter>(),
             rumContextProvider = mock<RumContextProvider>(),
-            application = mock<Application>()
+            application = mock<Application>(),
+            embeddedContentSlotRegistry = mock<EmbeddedContentSlotRegistry>()
         )
 
         // Then
@@ -94,7 +96,8 @@ internal class DefaultRecorderProviderTest {
             resourceWriter = mock<ResourcesWriter>(),
             recordWriter = mock<RecordWriter>(),
             rumContextProvider = mock<RumContextProvider>(),
-            application = mock<Application>()
+            application = mock<Application>(),
+            embeddedContentSlotRegistry = mock<EmbeddedContentSlotRegistry>()
         )
 
         // Then

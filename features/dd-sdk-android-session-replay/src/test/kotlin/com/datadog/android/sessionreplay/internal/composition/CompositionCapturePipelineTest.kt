@@ -130,6 +130,8 @@ internal class CompositionCapturePipelineTest {
 
         override fun resumeRecorders() = Unit
 
+        override fun requestCapture(slotIds: Set<String>) = Unit
+
         override fun stopRecorders() = Unit
     }
 }
