@@ -436,10 +436,12 @@ delta per block and runs a paired test on those; the unpaired Welch result is st
 labeled `[diagnostic]`, because it is what most tools report and the contrast is
 informative.
 
-The CSV must also preserve `pos_in_block` for every contributing block. If any first-arm value is
-missing, the analyzer still prints the block deltas for diagnosis but suppresses the confidence
-interval, MDE and significance verdict: without complete order evidence it cannot prove that the
-counterbalancing contract held for the observations being reported.
+The CSV must also preserve a stable, complementary `pos_in_block` pair for the selected arms in
+every contributing block: exactly one arm at position 1 and the other at position 2. If either
+value is missing, both cells claim the same position, or repeated rows disagree, the analyzer
+still prints the block deltas for diagnosis but suppresses the confidence interval, MDE and
+significance verdict: without valid order evidence it cannot prove that the counterbalancing
+contract held for the observations being reported.
 
 The practical consequence: **blocks buy statistical power, launches per block buy less of
 it.** The confidence interval narrows with the square root of the number of blocks. If a run
@@ -1149,7 +1151,7 @@ output contain no such data and are safe to share as-is.
 | first block differs wildly from later blocks | not AOT-compiled, or too few warm-ups |
 | `TotalTime` empty and `LaunchState=UNKNOWN` on every launch | the device is locked, or the notification shade is on top. Unlock it and leave it on the home screen |
 | every launch reports the wrong foreground activity | your `dumpsys` grep is anchored on `mResumedActivity`; this device prints `ResumedActivity:`. Match `m?ResumedActivity[:=]` |
-| `ab_stats.py` refuses to print a CI | fewer than 3 complete blocks, the selected endpoint is `NA` on an otherwise eligible measured launch, a selected row lacks `status`/`launch_state`/`foreground`, or any contributing block lacks `pos_in_block` evidence. Missing endpoints can be the slowest launches censored by the collection window, while missing validity/order evidence leaves the protocol unverifiable, so none is silently accepted; fix the CSV/collection and re-run. `--allow-missing-endpoint` is diagnostic only and still suppresses the primary interval |
+| `ab_stats.py` refuses to print a CI | fewer than 3 complete blocks, the selected endpoint is `NA` on an otherwise eligible measured launch, a selected row lacks `status`/`launch_state`/`foreground`, or a contributing block lacks one stable complementary `{1}`/`{2}` `pos_in_block` pair for the selected arms. Missing endpoints can be the slowest launches censored by the collection window, while missing or malformed validity/order evidence leaves the protocol unverifiable, so none is silently accepted; fix the CSV/collection and re-run. `--allow-missing-endpoint` is diagnostic only and still suppresses the primary interval |
 | `ab_stats.py` refuses the file entirely | the run aborted, contains a rejected/invalid measured launch, or holds fewer blocks/launches than its own header says (a `kill -9` or power cut can skip the abort marker). Re-run; `--allow-aborted` inspects it diagnostically without producing a reportable primary interval |
 | the harness refuses to start, naming another Android user | the app is also installed in a work or secondary profile. Host-side `adb uninstall` has no user selector, so continuing would delete that profile's app data, and no user-scoped removal leaves the measured user a genuinely fresh install. Remove it from those profiles, or use a dedicated test device |
 | the harness refuses to start, naming an output path | a results CSV, log or trace of that name already exists, or a parallel run against another device picked the same name. Output paths are atomically reserved before device state is changed, so evidence is never interleaved or overwritten. Move the old file or choose a new name |

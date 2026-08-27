@@ -571,7 +571,7 @@ def main():
         print("[WARNING: --allow-aborted over a truncated matrix. DIAGNOSTIC ONLY.]")
 
     arms, blocks, by_pos = defaultdict(list), defaultdict(list), defaultdict(list)
-    by_block_pos, first_arm = defaultdict(list), {}
+    by_block_pos, positions_by_arm_block = defaultdict(list), defaultdict(set)
     skipped_warmup = skipped_na = skipped_invalid = no_fg = unverified_validity = 0
     missing_validity_fields = set()
     labels_seen = defaultdict(set)
@@ -632,12 +632,13 @@ def main():
         arms[r["label"]].append(v)
         blk = r["block"] if len(per_file) == 1 else f"{path}#{r['block']}"
         blocks[(r["label"], blk)].append(v)
-        pos = r.get("pos_in_block")
-        if pos not in (None, "", "0"):
-            by_pos[pos].append(v)
-            by_block_pos[(blk, pos)].append(v)
-            if pos == "1":
-                first_arm[blk] = r["label"]
+        if r["label"] in (a.baseline, a.treatment):
+            pos = r.get("pos_in_block")
+            normalized_pos = "<missing>" if pos in (None, "", "0") else pos
+            positions_by_arm_block[(r["label"], blk)].add(normalized_pos)
+            if pos in ("1", "2"):
+                by_pos[pos].append(v)
+                by_block_pos[(blk, pos)].append(v)
 
     if skipped_warmup:
         print(f"[excluded {skipped_warmup} non-measured rows (warm-ups and liveness probes)]")
@@ -761,7 +762,26 @@ def main():
     # `order` cancels only when each arm ran first equally often here. Missing values
     # -- sparse `ttfd`, a rejected launch -- drop whole blocks, and the survivors can
     # be lopsided even though the harness alternated the order faithfully.
-    pri_firsts = Counter(first_arm[b] for b in delta_blocks if b in first_arm)
+    # A position-1 row alone does not identify the first arm. Validate the whole
+    # selected pair so duplicated, mixed or same-position cells cannot manufacture
+    # counterbalancing through last-row-wins assignment. Unselected labels never
+    # participate in this evidence.
+    valid_first_arm, malformed_position_pairs = {}, []
+    for blk in delta_blocks:
+        baseline_positions = positions_by_arm_block[(a.baseline, blk)]
+        treatment_positions = positions_by_arm_block[(a.treatment, blk)]
+        if baseline_positions == {"<missing>"} or treatment_positions == {"<missing>"}:
+            continue
+        if baseline_positions == {"1"} and treatment_positions == {"2"}:
+            valid_first_arm[blk] = a.baseline
+        elif baseline_positions == {"2"} and treatment_positions == {"1"}:
+            valid_first_arm[blk] = a.treatment
+        else:
+            malformed_position_pairs.append(
+                (blk, baseline_positions, treatment_positions)
+            )
+
+    pri_firsts = Counter(valid_first_arm[b] for b in delta_blocks if b in valid_first_arm)
     # Denominator is the number of blocks whose first arm is KNOWN, not len(deltas):
     # dividing by the larger figure would report a smaller residual than the evidence
     # supports whenever some blocks carry no pos_in_block.
@@ -780,6 +800,17 @@ def main():
         print(f"  NOT REPORTABLE: {skipped_na} otherwise eligible measured launch(es) have")
         print(f"  no {a.metric} endpoint. The per-block deltas below use only observed")
         print("  survivors and are diagnostics, not an estimate of the registered experiment.")
+    elif malformed_position_pairs:
+        print(f"  NOT REPORTABLE: {len(malformed_position_pairs)} contributing block(s) do")
+        print("  not record one stable, complementary pos_in_block pair for the selected")
+        print("  arms. Expected exactly {1}/{2} or {2}/{1}; observed:")
+        for blk, baseline_positions, treatment_positions in malformed_position_pairs[:5]:
+            print(f"    block {blk}: {a.baseline}={sorted(baseline_positions)}, "
+                  f"{a.treatment}={sorted(treatment_positions)}")
+        if len(malformed_position_pairs) > 5:
+            print(f"    ... and {len(malformed_position_pairs) - 5} more block(s)")
+        print("  Counterbalancing is therefore not verifiable. The per-block deltas above")
+        print("  are retained as diagnostics; fix the position evidence and re-run.")
     elif len(deltas) >= 3 and pri_known < len(deltas):
         print(f"  NOT REPORTABLE: only {pri_known} of {len(deltas)} contributing block(s)")
         print("  record which arm ran first. Counterbalancing is therefore not verifiable")
@@ -884,11 +915,13 @@ def main():
     # then the uncancelled treatment effect shows up as an "order effect".
     order_deltas, contributing = [], []
     for blk in bset:
+        if blk not in valid_first_arm:
+            continue
         v1, v2 = by_block_pos.get((blk, "1")), by_block_pos.get((blk, "2"))
         if v1 and v2:
             order_deltas.append(st.mean(v2) - st.mean(v1))
             contributing.append(blk)
-    firsts = Counter(first_arm[b] for b in contributing if b in first_arm)
+    firsts = Counter(valid_first_arm[b] for b in contributing)
 
     if len(by_pos) < 2 or len(bset) < 2:
         print("  NOT ESTIMABLE: arm and position are confounded (needs >= 2 blocks with")

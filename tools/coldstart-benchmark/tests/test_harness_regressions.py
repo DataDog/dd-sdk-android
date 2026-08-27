@@ -1545,6 +1545,33 @@ class AbStatsRegressionTests(unittest.TestCase):
         self.assertNotIn("  MDE at", result.stdout)
         self.assertNotIn("  => Significant", result.stdout)
 
+    def test_same_position_for_both_arms_suppresses_primary_inference(self) -> None:
+        lines = self.benchmark_csv().splitlines()
+        header_index = next(i for i, line in enumerate(lines) if not line.startswith("#"))
+        for index in range(header_index + 1, len(lines)):
+            fields = lines[index].split(",")
+            fields[2] = "1"
+            lines[index] = ",".join(fields)
+
+        result = self.run_stats("\n".join(lines) + "\n")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("NOT REPORTABLE: 4 contributing block(s)", result.stdout)
+        self.assertIn("stable, complementary pos_in_block pair", result.stdout)
+        self.assertNotIn("  95% CI                ", result.stdout)
+        self.assertNotIn("  MDE at", result.stdout)
+        self.assertNotIn("  => Significant", result.stdout)
+
+    def test_unrelated_label_cannot_overwrite_selected_position_evidence(self) -> None:
+        csv_body = self.benchmark_csv()
+        csv_body += "THIRD,1,1,measure,1,999,COLD,ok,ok,999\n"
+
+        result = self.run_stats(csv_body)
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("  95% CI                ", result.stdout)
+        self.assertNotIn("first-arm counts among contributing blocks", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

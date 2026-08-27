@@ -257,8 +257,9 @@ not see a venv-installed `perfetto`.
   evidence.** Legacy missing/empty fields are not filled with passing defaults. Their values remain
   available for descriptive diagnosis, but the CI, MDE and significance verdict are suppressed.
 - **The primary endpoint is gated on complete order evidence and the counterbalancing of the
-  blocks that actually contribute.** Every contributing block must record which arm ran first;
-  otherwise the CI, MDE and significance verdict are suppressed. With complete evidence,
+  blocks that actually contribute.** Every contributing block must record exactly one stable,
+  complementary `{1}`/`{2}` position pair for the selected arms; missing, same or internally
+  mixed positions suppress the CI, MDE and significance verdict. With valid evidence,
   `order` cancels out of the block deltas only when each
   arm ran first equally often. If they all ran the same arm first the interval is **suppressed** —
   every delta is then `effect + order` with no way to separate them. Otherwise the residual
