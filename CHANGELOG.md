@@ -1,3 +1,7 @@
+# 3.13.1 / 2026-08-27
+
+* [BUGFIX] Make `view` required again in RUM events. See [#3783](https://github.com/DataDog/dd-sdk-android/pull/3783)
+
 # 3.13.0 / 2026-08-26
 
 * [FEATURE] Add widget support for `timeseries`. See [#3568](https://github.com/DataDog/dd-sdk-android/pull/3568)
