@@ -317,9 +317,8 @@ pin_device() {
   if "$ADB" shell cmd power set-fixed-performance-mode-enabled true >/dev/null 2>&1; then
     _WE_SET_PERF=1
   fi
-  if "$ADB" shell cmd package bg-dexopt-job --disable >/dev/null 2>&1; then
-    _WE_SET_DEXOPT=1
-  fi
+  dd_disable_background_dexopt || exit 2
+  _WE_SET_DEXOPT=1
 }
 
 

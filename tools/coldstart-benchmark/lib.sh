@@ -320,6 +320,21 @@ dd_apply_animation_scales() {
   done
 }
 
+# Background dexopt can compile against profile data accumulated by the warm-up
+# and measured launches. If it cannot be disabled, compilation state may drift
+# inside a cell while the run still claims the controlled protocol. There is no
+# weaker/reportable mode for that scenario, so every device workflow fails before
+# collection through this shared gate.
+dd_disable_background_dexopt() {
+  if "$ADB" shell cmd package bg-dexopt-job --disable >/dev/null 2>&1; then
+    return 0
+  fi
+  echo "FATAL: cannot disable Android's background dexopt job." >&2
+  echo "       It could change compilation state during the benchmark or trace." >&2
+  echo "       Use a dedicated test device/build that supports bg-dexopt-job --disable." >&2
+  return 1
+}
+
 # Atomically reserve every evidence path as one set. Bash noclobber turns the
 # redirection into an exclusive create; checking `[ ! -e ]` first would leave a
 # race where two runs pass the check and then append/truncate the same files.

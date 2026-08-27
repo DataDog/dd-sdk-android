@@ -153,7 +153,8 @@ def parse_ms(raw):
     if raw in ("", "NA", "null"):
         return None
     try:
-        return float(raw)
+        value = float(raw)
+        return value if math.isfinite(value) else None
     except ValueError:
         pass
     m = _DUR.match(raw)
@@ -513,9 +514,9 @@ def main():
 
     # ---- does the CSV contain the experiment its own header describes? ----------
     # A `kill -9`, host crash or power cut bypasses the harness's EXIT trap, so the
-    # RUN ABORTED marker never gets written and a truncated file looks complete. The
-    # header records how many blocks and runs were requested, so compare against what
-    # is actually present rather than trusting the absence of a marker.
+    # RUN ABORTED marker never gets written and a truncated file looks complete. A
+    # wrong label selection can expose the same structural mismatch. Compare the
+    # requested arms against the exact matrix declared in each file's header.
     shortfalls = []
     for (path, body), own_meta in zip(per_file, per_meta):
         kv = parse_meta(own_meta)
@@ -526,24 +527,41 @@ def main():
         cells = defaultdict(int)
         for r in csv.DictReader(body):
             if r.get("phase") in ("measure", "measure_rejected"):
-                cells[(r.get("label"), r.get("block"))] += 1
-        seen_blocks = {b for _, b in cells}
-        short = [f"{lbl} block {blk}: {n}/{want_runs} launches"
-                 for (lbl, blk), n in sorted(cells.items()) if n != want_runs]
+                block = r.get("block") or "<missing>"
+                cells[(r.get("label"), block)] += 1
         name = path if len(per_file) > 1 else "this CSV"
-        if len(seen_blocks) != want_blocks:
-            shortfalls.append(f"  {name}: {len(seen_blocks)}/{want_blocks} blocks present")
-        if len(cells) != want_blocks * 2:
-            shortfalls.append(f"  {name}: {len(cells)}/{want_blocks * 2} arm x block cells present")
-        shortfalls += [f"  {name}: {x}" for x in short[:6]]
+        expected_blocks = {str(block) for block in range(1, want_blocks + 1)}
+        short = []
+        for label in (a.baseline, a.treatment):
+            for block in range(1, want_blocks + 1):
+                count = cells.get((label, str(block)), 0)
+                if count != want_runs:
+                    short.append(
+                        f"{label} block {block}: {count}/{want_runs} launches"
+                    )
+            unexpected = sorted(
+                block for label_in_file, block in cells
+                if label_in_file == label and block not in expected_blocks
+            )
+            if unexpected:
+                short.append(
+                    f"{label}: unexpected block(s) {', '.join(unexpected)}"
+                )
+        # Say what was left out. A silently capped list reads as the complete
+        # set of problems, which is how a partly-analyzed matrix looks whole.
+        shortfalls += [f"  {name}: {item}" for item in short[:10]]
+        if len(short) > 10:
+            shortfalls.append(f"  {name}: ... and {len(short) - 10} more cell(s) not listed")
     if shortfalls:
         print("!" * 78)
-        print("!! INCOMPLETE EXPERIMENT MATRIX -- the CSV does not contain the run its")
-        print("!! own header describes. The harness was killed in a way that bypassed")
-        print("!! its exit trap (kill -9, host crash, power loss), so no RUN ABORTED")
-        print("!! marker was written and the file looks complete.")
+        print("!! INCOMPLETE EXPERIMENT MATRIX -- the selected baseline/treatment do")
+        print("!! not contain the exact block/run matrix declared by the CSV header.")
+        print("!! Collection may have been interrupted without an abort trailer, or")
+        print("!! the requested labels may not name the experiment in this file.")
         for line in shortfalls[:10]:
             print("!!" + line)
+        if len(shortfalls) > 10:
+            print(f"!!  ... and {len(shortfalls) - 10} more line(s) not listed")
         print("!" * 78)
         if not a.allow_aborted:
             raise SystemExit(

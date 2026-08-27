@@ -212,9 +212,8 @@ dd_apply_radio_state "$AIRPLANE" || exit 2
 if "$ADB" shell cmd power set-fixed-performance-mode-enabled true >/dev/null 2>&1; then
   _WE_SET_PERF=1
 fi
-if "$ADB" shell cmd package bg-dexopt-job --disable >/dev/null 2>&1; then
-  _WE_SET_DEXOPT=1
-fi
+dd_disable_background_dexopt || exit 2
+_WE_SET_DEXOPT=1
 # Keep the screen on for the whole capture. $SETTLE_LAUNCHES settle launches plus a 20s trace
 # outlast a default screen timeout, and a screen that sleeps mid-capture relocks the
 # device -- which produces a trace with no rendering in it.

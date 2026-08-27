@@ -138,6 +138,37 @@ class HarnessRegressionTests(unittest.TestCase):
         self.assertIn("transition_animation_scale", result.stderr)
         self.assertIn("read back as '1.0'", result.stderr)
 
+    def test_background_dexopt_is_a_shared_fail_closed_precollection_gate(self) -> None:
+        success = self.run_with_fake_adb(
+            '. "$LIB"; dd_disable_background_dexopt; echo disabled',
+            """
+            #!/usr/bin/env bash
+            [ "$*" = "shell cmd package bg-dexopt-job --disable" ]
+            """,
+        )
+        self.assertEqual(success.returncode, 0, success.stderr)
+        self.assertEqual(success.stdout.strip(), "disabled")
+
+        failure = self.run_with_fake_adb(
+            '. "$LIB"; dd_disable_background_dexopt',
+            """
+            #!/usr/bin/env bash
+            exit 17
+            """,
+        )
+        self.assertNotEqual(failure.returncode, 0)
+        self.assertIn("cannot disable Android's background dexopt job", failure.stderr)
+
+        benchmark = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
+        capture = (HARNESS / "capture_trace.sh").read_text(encoding="utf-8")
+        gate = "dd_disable_background_dexopt || exit 2"
+        self.assertEqual(benchmark.count(gate), 1)
+        self.assertEqual(capture.count(gate), 1)
+        main_pin = benchmark.rindex("\npin_device\n")
+        first_block = benchmark.index("for ((b=1; b<=BLOCKS; b++))", main_pin)
+        self.assertLess(main_pin, first_block)
+        self.assertLess(capture.index(gate), capture.index('log "starting perfetto"'))
+
     def test_enabled_radio_readback_does_not_claim_reachability(self) -> None:
         result = self.run_with_fake_adb(
             """
@@ -1245,6 +1276,21 @@ class AbStatsRegressionTests(unittest.TestCase):
         self.assertIn("refusing to report --metric ttfd", result.stderr)
         self.assertNotIn("PRIMARY ENDPOINT", result.stdout)
 
+    def test_non_finite_endpoint_is_refused_as_invalid_evidence(self) -> None:
+        stats = load_ab_stats_module()
+        for value in ("NaN", "nan", "Infinity", "-Infinity", "inf", "-inf", "1e309"):
+            self.assertIsNone(stats.parse_ms(value), value)
+
+        original = "A_noDD,1,1,measure,1,101,COLD,ok,ok,101"
+        for value in ("NaN", "Infinity", "-Infinity"):
+            with self.subTest(value=value):
+                replacement = f"A_noDD,1,1,measure,1,101,COLD,ok,ok,{value}"
+                result = self.run_stats(self.benchmark_csv().replace(original, replacement))
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("refusing to report --metric ttfd", result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+                self.assertNotIn("PRIMARY ENDPOINT", result.stdout)
+
     def test_missing_endpoint_override_stays_non_reportable(self) -> None:
         result = self.run_stats(
             self.benchmark_csv(missing_treatment_block=2),
@@ -1257,11 +1303,30 @@ class AbStatsRegressionTests(unittest.TestCase):
 
     def test_missing_endpoint_in_an_unanalysed_arm_does_not_block(self) -> None:
         """A third label's NA could never have contributed, so it must not refuse."""
-        csv_body = self.benchmark_csv() + "THIRD,1,2,measure,1,133,COLD,ok,ok,NA\n"
+        csv_body = self.benchmark_csv(
+            metadata=f"{self.COMPATIBLE_META} blocks=4 runs=1"
+        ) + "THIRD,99,2,measure,1,133,COLD,ok,ok,NA\n"
         result = self.run_stats(csv_body)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertNotIn("refusing to report", result.stdout + result.stderr)
         self.assertIn("95% CI", result.stdout)
+
+    def test_unrelated_labels_cannot_fill_missing_selected_arm_blocks(self) -> None:
+        csv_body = self.benchmark_csv(
+            metadata=f"{self.COMPATIBLE_META} blocks=6 runs=1",
+            block_count=4,
+        )
+        for block in (5, 6):
+            csv_body += f"C,{block},1,measure,1,100,COLD,ok,ok,100\n"
+            csv_body += f"D,{block},2,measure,1,101,COLD,ok,ok,101\n"
+
+        result = self.run_stats(csv_body)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("INCOMPLETE EXPERIMENT MATRIX", result.stdout)
+        self.assertIn("A_noDD block 5: 0/1 launches", result.stdout)
+        self.assertIn("B_withDD block 6: 0/1 launches", result.stdout)
+        self.assertIn("refusing to analyze a truncated run", result.stderr)
 
     def test_complete_selected_endpoint_still_reports_primary_interval(self) -> None:
         result = self.run_stats(self.benchmark_csv())

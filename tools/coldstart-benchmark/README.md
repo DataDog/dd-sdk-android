@@ -14,6 +14,8 @@ file is the operator's reference for the scripts themselves.
 > destroys its state. All three also pre-grant the app's runtime permissions.
 > `coldstart_bench.sh` and `capture_trace.sh` also change device settings (animation scales,
 > screen timeout, stay-awake, Wi-Fi, fixed-performance mode and the background dexopt job).
+> Both abort before collection if Android rejects the request to disable background dexopt;
+> otherwise accumulated profile data could change compilation state during the experiment.
 > Both refuse to mutate the device unless every restorable setting has a concrete numeric
 > snapshot; a key the device has never set reports `null`, and writing it once makes the state
 > restorable. The two radio settings are the documented exception, since a device can genuinely

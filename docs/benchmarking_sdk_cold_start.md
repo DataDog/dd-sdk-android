@@ -599,8 +599,10 @@ end of the range, run `COMPILE_FILTER=speed` as a second arm; that forces full A
 most of the class-load and verify cost the SDK contributes, and overrides any Baseline Profile
 you ship.
 
-Note the harness also disables `bg-dexopt-job` for the duration, so whatever state the compile
-leaves is pinned for the whole run rather than drifting between blocks.
+The harness also disables `bg-dexopt-job` for the duration, so whatever state the compile leaves
+is pinned for the whole run rather than drifting between blocks. If the device does not support or
+permit that control, benchmark and trace capture abort before collection instead of recording a
+compilation scenario that can change underneath the experiment.
 
 Three warm-up launches per block are discarded. That count is fixed in advance and nothing
 else is ever dropped: post-hoc outlier removal is how a null result becomes a "finding".
@@ -1099,7 +1101,8 @@ It snapshots the original values first and restores them from an `EXIT` trap; `I
 exit into that trap, so Ctrl-C stops the run *and* restores the device, once.
 `capture_trace.sh` does the same for the animation scales, screen settings and its own
 permission grants. It also mirrors the benchmark's fixed-performance and background-dexopt
-controls so the trace observes the same scheduling and compilation scenario. The two controls
+controls so the trace observes the same scheduling and compilation scenario. Failure to disable
+background dexopt aborts either workflow before collection. The two controls
 have no readable prior state, so both scripts can only reverse a command they successfully issued,
 not prove exact restoration. Before any mutation, an empty, `null`, malformed or failed read of a
 restorable numeric setting aborts the workflow; guessing a default would risk leaving a borrowed

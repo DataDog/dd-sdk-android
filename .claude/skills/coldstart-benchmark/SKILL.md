@@ -162,6 +162,7 @@ not see a venv-installed `perfetto`.
 | md5 attestation of the install | measuring a build you didn't intend | invalidated an entire trace pair |
 | verified uninstall postcondition before `install -r`, with refusal when another Android user owns the package | a protected package preserves data, caches and profile state while APK md5 still passes; global `adb uninstall` would delete another profile's data | — |
 | `compile -m speed-profile -f` + discard warm-ups | no AOT profile makes early launches slow and erratic | first-block means differed by ~17 ms |
+| require background dexopt to be disabled | accumulated profile data can trigger compilation during a cell and change later launches | — |
 | real launcher intent | `am start -n <component>` isn't an icon tap | wrong code path on apps that route the launcher through activity aliases |
 | pre-registered warm-up count | post-hoc outlier dropping | turned a null into a "finding" in one report |
 | device-state snapshot + restore trap | leaving a device with no lock screen, animations off, Wi-Fi flipped on and permissions granted | — |
