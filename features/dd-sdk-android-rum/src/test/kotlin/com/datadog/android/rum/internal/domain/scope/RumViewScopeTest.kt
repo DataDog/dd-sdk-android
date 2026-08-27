@@ -10604,8 +10604,8 @@ internal class RumViewScopeTest {
 
         assertThat(profilerEvent.rumContext.applicationId).isEqualTo(writtenVital.application.id)
         assertThat(profilerEvent.rumContext.sessionId).isEqualTo(writtenVital.session.id)
-        assertThat(profilerEvent.rumContext.viewId).isEqualTo(writtenVital.view?.id)
-        assertThat(profilerEvent.rumContext.viewName).isEqualTo(writtenVital.view?.name)
+        assertThat(profilerEvent.rumContext.viewId).isEqualTo(writtenVital.view.id)
+        assertThat(profilerEvent.rumContext.viewName).isEqualTo(writtenVital.view.name)
     }
 
     @Test

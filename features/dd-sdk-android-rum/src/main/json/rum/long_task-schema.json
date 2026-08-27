@@ -24,6 +24,10 @@
           "const": "long_task",
           "readOnly": true
         },
+        "view": {
+          "type": "object",
+          "readOnly": true
+        },
         "long_task": {
           "type": "object",
           "description": "Long Task properties",
