@@ -271,17 +271,23 @@ internal class PerfettoProfiler(
     ) {
         synchronized(this) {
             this.callback = callback
-            if (buildSdkVersionProvider.isAtLeastBaklava) {
-                triggerRegistrar.register(appContext, triggerListener)
-            }
         }
     }
 
     override fun unregisterProfilingCallback(appContext: Context) {
         synchronized(this) {
             callback = null
+        }
+    }
+
+    override fun setTriggersEnabled(appContext: Context, enabled: Boolean) {
+        synchronized(this) {
             if (buildSdkVersionProvider.isAtLeastBaklava) {
-                triggerRegistrar.unregister(appContext)
+                if (enabled) {
+                    triggerRegistrar.register(appContext, triggerListener)
+                } else {
+                    triggerRegistrar.unregister(appContext)
+                }
             }
         }
     }

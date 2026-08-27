@@ -1033,19 +1033,49 @@ class PerfettoProfilerTest {
     // region ANR trigger registration
 
     @Test
-    fun `M delegate to registrar W registerProfilingCallback`() {
-        // Set-up performs 1 registerProfilingCallback call, which delegates to the registrar,
-        // passing the profiler's listener.
-        verify(mockRegistrar).register(mockContext, testedProfiler.triggerListener)
+    fun `M not delegate to registrar W registerProfilingCallback`() {
+        // Set-up performs 1 registerProfilingCallback call, which no longer registers triggers;
+        // trigger registration is now driven by setTriggersEnabled.
+        verify(mockRegistrar, never()).register(any(), any())
     }
 
     @Test
-    fun `M call registrar unregister W callback removed`() {
+    fun `M not call registrar unregister W unregisterProfilingCallback`() {
         // When
         testedProfiler.unregisterProfilingCallback(mockContext)
 
         // Then
+        verify(mockRegistrar, never()).unregister(any())
+    }
+
+    @Test
+    fun `M delegate to registrar register W setTriggersEnabled {enabled=true}`() {
+        // When
+        testedProfiler.setTriggersEnabled(mockContext, true)
+
+        // Then
+        verify(mockRegistrar).register(mockContext, testedProfiler.triggerListener)
+    }
+
+    @Test
+    fun `M delegate to registrar unregister W setTriggersEnabled {enabled=false}`() {
+        // When
+        testedProfiler.setTriggersEnabled(mockContext, false)
+
+        // Then
         verify(mockRegistrar).unregister(mockContext)
+    }
+
+    @Test
+    fun `M not delegate to registrar W setTriggersEnabled {SDK below BAKLAVA}`() {
+        // Given
+        whenever(mockBuildSdkVersionProvider.isAtLeastBaklava) doReturn false
+
+        // When
+        testedProfiler.setTriggersEnabled(mockContext, true)
+
+        // Then
+        verify(mockRegistrar, never()).register(any(), any())
     }
 
     @Test

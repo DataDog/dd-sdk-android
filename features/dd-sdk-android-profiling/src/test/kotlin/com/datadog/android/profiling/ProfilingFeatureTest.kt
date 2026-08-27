@@ -500,7 +500,7 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
-    fun `M ignore context update W onContextUpdate {session id is NULL_UUID sentinel}`(
+    fun `M disable triggers W onContextUpdate {session id is NULL_UUID sentinel}`(
         @FloatForgery(min = 0f, max = 100f) fakeSessionRate: Float
     ) {
         // Given — RUM has been initialised but no session has been created yet
@@ -517,6 +517,7 @@ internal class ProfilingFeatureTest {
 
         // Then
         assertThat(testedFeature.lastSeenRumSessionId).isNull()
+        verify(mockProfiler).setTriggersEnabled(mockContext, false)
     }
 
     @Test
@@ -563,6 +564,116 @@ internal class ProfilingFeatureTest {
         // Then
         assertThat(scheduler.currentSessionSampled).isEqualTo(sampledAfterFirst)
     }
+
+    // region trigger gating
+
+    @Test
+    fun `M enable triggers W onContextUpdate {RUM session sampled in}`() {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning()) doReturn false
+        testedFeature.onInitialize(mockContext)
+        val sessionId = sampledInSessionId()
+
+        // When
+        testedFeature.dispatchRumSession(sessionId, 100f)
+
+        // Then
+        verify(mockProfiler).setTriggersEnabled(mockContext, true)
+    }
+
+    @Test
+    fun `M disable triggers W onContextUpdate {RUM session sampled out}`() {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning()) doReturn false
+        testedFeature.onInitialize(mockContext)
+
+        // When
+        testedFeature.dispatchRumSession(
+            UUID.randomUUID().toString(),
+            0f,
+            RumSessionConstants.SESSION_STATE_NOT_TRACKED
+        )
+
+        // Then
+        verify(mockProfiler).setTriggersEnabled(mockContext, false)
+    }
+
+    @Test
+    fun `M disable triggers W onStop {after sampled-in session}`() {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning()) doReturn false
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dispatchRumSession(sampledInSessionId(), 100f)
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        verify(mockProfiler).setTriggersEnabled(mockContext, false)
+    }
+
+    @Test
+    fun `M disable triggers W onContextUpdate {sampled-in session then expired, same id}`() {
+        // Given — a sampled-in session registered the triggers
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning()) doReturn false
+        testedFeature.onInitialize(mockContext)
+        val sessionId = sampledInSessionId()
+        testedFeature.dispatchRumSession(sessionId, 100f)
+
+        // When — the session expires on a non-interaction event: RUM keeps the same id
+        // but transitions the state to EXPIRED.
+        testedFeature.dispatchRumSession(
+            sessionId,
+            100f,
+            RumSessionConstants.SESSION_STATE_EXPIRED
+        )
+
+        // Then
+        verify(mockProfiler).setTriggersEnabled(mockContext, false)
+    }
+
+    @Test
+    fun `M keep triggers enabled W onContextUpdate {same session id, still tracked}`() {
+        // Given — a sampled-in session registered the triggers
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning()) doReturn false
+        testedFeature.onInitialize(mockContext)
+        val sessionId = sampledInSessionId()
+        testedFeature.dispatchRumSession(sessionId, 100f)
+
+        // When — a spurious context update re-emits the same id still in TRACKED state
+        testedFeature.dispatchRumSession(sessionId, 100f)
+
+        // Then — triggers are never disabled for the tracked session
+        verify(mockProfiler, never()).setTriggersEnabled(mockContext, false)
+    }
+
+    @Test
+    fun `M disable triggers W onContextUpdate {sampled-in session then cleared}`() {
+        // Given — a sampled-in session registered the triggers
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning()) doReturn false
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dispatchRumSession(sampledInSessionId(), 100f)
+
+        // When — the session ends and RUM clears its feature context (no session id)
+        testedFeature.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(
+                FeatureContextKeys.RUM_SESSION_ID to RumSessionConstants.EMPTY_RUM_SESSION_ID,
+                FeatureContextKeys.RUM_SESSION_SAMPLE_RATE to 100f
+            )
+        )
+
+        // Then
+        verify(mockProfiler).setTriggersEnabled(mockContext, false)
+    }
+
+    // endregion
 
     @Test
     fun `M unregister context receiver and clear last session W onStop()`(
@@ -1401,6 +1512,7 @@ internal class ProfilingFeatureTest {
     fun `M fire quota check W onContextUpdate { new session id }`(forge: Forge) {
         // Given
         val fakeNewSessionId = forge.aString()
+        testedFeature.onInitialize(mockContext)
         testedFeature.quotaChecker = mockQuotaChecker
 
         // When
@@ -1596,15 +1708,24 @@ internal class ProfilingFeatureTest {
         propagateQuotaResult(QuotaResult(QuotaResult.Decision.ALLOWED, QuotaReason.QUOTA_OK))
     }
 
-    private fun ProfilingFeature.dispatchRumSession(sessionId: String, sampleRate: Float) {
+    private fun ProfilingFeature.dispatchRumSession(
+        sessionId: String,
+        sampleRate: Float,
+        sessionState: String = RumSessionConstants.SESSION_STATE_TRACKED
+    ) {
         onContextUpdate(
             Feature.RUM_FEATURE_NAME,
             mapOf(
                 FeatureContextKeys.RUM_SESSION_ID to sessionId,
-                FeatureContextKeys.RUM_SESSION_SAMPLE_RATE to sampleRate
+                FeatureContextKeys.RUM_SESSION_SAMPLE_RATE to sampleRate,
+                FeatureContextKeys.RUM_SESSION_STATE to sessionState
             )
         )
     }
+
+    // dispatchRumSession defaults the session state to TRACKED, so any UUID dispatched
+    // through it is treated as a sampled-in RUM session.
+    private fun sampledInSessionId(): String = UUID.randomUUID().toString()
 
     companion object {
         private val mainLooper = MainLooperTestConfiguration()
