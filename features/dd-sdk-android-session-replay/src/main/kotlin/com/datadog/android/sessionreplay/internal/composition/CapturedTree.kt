@@ -6,6 +6,8 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import com.datadog.android.sessionreplay.utils.GlobalBounds
+
 /**
  * Discovers roots and synchronously inspects Android/Compose state on the main thread. Concrete
  * walkers must use [CaptureGenerationContext.shouldContinue] between bounded operations and may
@@ -43,6 +45,8 @@ internal data class CapturedBounds(
     val width: Long,
     val height: Long
 )
+
+internal fun GlobalBounds.toCaptured() = CapturedBounds(x, y, width, height)
 
 internal enum class CapturedLayerKind {
     SYNTHETIC_SCREEN_ROOT,

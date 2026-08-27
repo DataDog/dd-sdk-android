@@ -29,7 +29,9 @@ import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.SessionReplayInternalCallback
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.composition.ActiveWindowSource
+import com.datadog.android.sessionreplay.internal.composition.AndroidCapturedSnapshotProducer
 import com.datadog.android.sessionreplay.internal.composition.AndroidSnapshotCaptureLifecycle
+import com.datadog.android.sessionreplay.internal.composition.AndroidWindowTraversal
 import com.datadog.android.sessionreplay.internal.composition.CapturePipelineSelector
 import com.datadog.android.sessionreplay.internal.composition.CaptureSkippedFrameNotifier
 import com.datadog.android.sessionreplay.internal.composition.CaptureTimeBudget
@@ -38,6 +40,7 @@ import com.datadog.android.sessionreplay.internal.composition.CompositionCapture
 import com.datadog.android.sessionreplay.internal.composition.CompositionChangeListener
 import com.datadog.android.sessionreplay.internal.composition.CompositionChangeset
 import com.datadog.android.sessionreplay.internal.composition.CompositionViewOnDrawInterceptor
+import com.datadog.android.sessionreplay.internal.composition.DefaultRumViewScopeProvider
 import com.datadog.android.sessionreplay.internal.composition.DefaultSnapshotCompletionProcessor
 import com.datadog.android.sessionreplay.internal.composition.HandlerCaptureMainThreadExecutor
 import com.datadog.android.sessionreplay.internal.composition.HandlerCaptureTaskScheduler
@@ -47,6 +50,11 @@ import com.datadog.android.sessionreplay.internal.composition.SnapshotCaptureOrc
 import com.datadog.android.sessionreplay.internal.composition.SnapshotCompletionQueue
 import com.datadog.android.sessionreplay.internal.composition.TimeBankCaptureTimeBudget
 import com.datadog.android.sessionreplay.internal.composition.TimeProviderCaptureTimeProvider
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMapperTypeWrapper
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedTextViewMapper
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewGroupFallbackMapper
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedWebViewMapper
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.datadog.android.sessionreplay.internal.recorder.RecordingTimeBank
@@ -93,9 +101,9 @@ internal class DefaultRecorderProvider(
     private val heatmapsEnabled: Boolean,
     private val compositionTreeRecordingEnabled: Boolean,
     private val compositionPipelineFactory: (() -> Recorder)? = null,
-    private val compositionSnapshotProducerFactory: (ActiveWindowSource) -> CapturedSnapshotProducer = {
-        CapturedSnapshotProducer { _, _ -> null }
-    },
+    private val compositionSnapshotProducerFactory: (
+        (ActiveWindowSource, RumContextProvider) -> CapturedSnapshotProducer
+    )? = null,
     private val recordingTimeBankFactory: () -> TimeBank = { RecordingTimeBank() }
 ) : RecorderProvider {
 
@@ -154,39 +162,9 @@ internal class DefaultRecorderProvider(
         application: Application
     ): Recorder {
         val internalLogger = sdkCore.internalLogger
-        val timeProvider = TimeProviderCaptureTimeProvider(sdkCore.timeProvider)
-        val skippedFrameNotifier = CaptureSkippedFrameNotifier(sdkCore)
         val windowSource = ActiveWindowSource()
-        val completionQueue = SnapshotCompletionQueue(
-            executorService = sdkCore.createSingleThreadExecutorService("sr-composition-processing"),
-            processor = DefaultSnapshotCompletionProcessor(
-                rumContextProvider = rumContextProvider,
-                recordWriter = recordWriter,
-                internalLogger = internalLogger
-            ),
-            internalLogger = internalLogger
-        )
-        val orchestrator = SnapshotCaptureOrchestrator(
-            producer = compositionSnapshotProducerFactory(windowSource),
-            processor = ImmediateCapturedSnapshotProcessor(),
-            consumer = completionQueue,
-            timeProvider = timeProvider,
-            captureScheduler = HandlerCaptureTaskScheduler(),
-            mainThreadExecutor = HandlerCaptureMainThreadExecutor(),
-            expiryScheduler = ScheduledExecutorCaptureTaskScheduler(
-                executorService = sdkCore.createScheduledExecutorService("sr-composition-expiry"),
-                internalLogger = internalLogger
-            ),
-            timeBudget = if (dynamicOptimizationEnabled) {
-                TimeBankCaptureTimeBudget(
-                    recordingTimeBankFactory(),
-                    skippedFrameNotifier::notifySkippedFrame
-                )
-            } else {
-                CaptureTimeBudget.UNLIMITED
-            },
-            internalLogger = internalLogger
-        )
+        val completionQueue = createCompletionQueue(recordWriter, rumContextProvider, internalLogger)
+        val orchestrator = createCaptureOrchestrator(windowSource, rumContextProvider, completionQueue, internalLogger)
         val interceptor = CompositionViewOnDrawInterceptor(
             windowSource = windowSource,
             onWindowsChanged = CompositionChangeListener { windows ->
@@ -203,6 +181,72 @@ internal class DefaultRecorderProvider(
                 currentActivity = internalCallback.getCurrentActivity()
             ),
             completionQueue = completionQueue
+        )
+    }
+
+    private fun createCompletionQueue(
+        recordWriter: RecordWriter,
+        rumContextProvider: RumContextProvider,
+        internalLogger: InternalLogger
+    ): SnapshotCompletionQueue = SnapshotCompletionQueue(
+        executorService = sdkCore.createSingleThreadExecutorService("sr-composition-processing"),
+        processor = DefaultSnapshotCompletionProcessor(
+            rumContextProvider = rumContextProvider,
+            recordWriter = recordWriter,
+            internalLogger = internalLogger
+        ),
+        internalLogger = internalLogger
+    )
+
+    private fun createCaptureOrchestrator(
+        windowSource: ActiveWindowSource,
+        rumContextProvider: RumContextProvider,
+        completionQueue: SnapshotCompletionQueue,
+        internalLogger: InternalLogger
+    ): SnapshotCaptureOrchestrator {
+        val skippedFrameNotifier = CaptureSkippedFrameNotifier(sdkCore)
+        val producer = compositionSnapshotProducerFactory?.invoke(windowSource, rumContextProvider)
+            ?: AndroidCapturedSnapshotProducer(
+                windowSource = windowSource,
+                scopeProvider = DefaultRumViewScopeProvider(rumContextProvider),
+                timeProvider = sdkCore.timeProvider,
+                traversal = AndroidWindowTraversal(mapperRegistry = builtInCapturedMappers())
+            )
+        return SnapshotCaptureOrchestrator(
+            producer = producer,
+            processor = ImmediateCapturedSnapshotProcessor(),
+            consumer = completionQueue,
+            timeProvider = TimeProviderCaptureTimeProvider(sdkCore.timeProvider),
+            captureScheduler = HandlerCaptureTaskScheduler(),
+            mainThreadExecutor = HandlerCaptureMainThreadExecutor(),
+            expiryScheduler = ScheduledExecutorCaptureTaskScheduler(
+                executorService = sdkCore.createScheduledExecutorService("sr-composition-expiry"),
+                internalLogger = internalLogger
+            ),
+            timeBudget = if (dynamicOptimizationEnabled) {
+                TimeBankCaptureTimeBudget(
+                    recordingTimeBankFactory(),
+                    skippedFrameNotifier::notifySkippedFrame
+                )
+            } else {
+                CaptureTimeBudget.UNLIMITED
+            },
+            internalLogger = internalLogger
+        )
+    }
+
+    private fun builtInCapturedMappers(): CapturedViewMapperRegistry {
+        val internalLogger = sdkCore.internalLogger
+        return CapturedViewMapperRegistry(
+            mappers = listOf(
+                CapturedMapperTypeWrapper(WebView::class.java, CapturedWebViewMapper()),
+                CapturedMapperTypeWrapper(
+                    TextView::class.java,
+                    CapturedTextViewMapper(internalLogger = internalLogger)
+                )
+            ),
+            fallbackMapper = CapturedViewGroupFallbackMapper(internalLogger = internalLogger),
+            internalLogger = internalLogger
         )
     }
 

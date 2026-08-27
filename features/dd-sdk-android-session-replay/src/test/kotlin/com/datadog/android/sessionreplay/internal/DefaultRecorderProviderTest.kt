@@ -121,6 +121,42 @@ internal class DefaultRecorderProviderTest {
     }
 
     @Test
+    fun `M construct a real composition pipeline W provideSessionReplayRecorder { no factory override }`() {
+        // Given
+        val sdkCore = mock<FeatureSdkCore>()
+        whenever(sdkCore.timeProvider).thenReturn(mock())
+        whenever(sdkCore.internalLogger).thenReturn(mock())
+        whenever(sdkCore.createSingleThreadExecutorService(any())).thenReturn(mock())
+        whenever(sdkCore.createScheduledExecutorService(any())).thenReturn(mock())
+        val provider = DefaultRecorderProvider(
+            sdkCore = sdkCore,
+            textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
+            imagePrivacy = ImagePrivacy.MASK_ALL,
+            touchPrivacyManager = mock<TouchPrivacyManager>(),
+            customMappers = emptyList(),
+            customOptionSelectorDetectors = emptyList(),
+            customDrawableMappers = emptyList(),
+            dynamicOptimizationEnabled = false,
+            internalCallback = mock<SessionReplayInternalCallback>(),
+            heatmapsEnabled = false,
+            compositionTreeRecordingEnabled = true
+        )
+
+        // When
+        val result = provider.provideSessionReplayRecorder(
+            resourceDataStoreManager = mock<ResourceDataStoreManager>(),
+            resourceWriter = mock<ResourcesWriter>(),
+            recordWriter = mock<RecordWriter>(),
+            rumContextProvider = mock<RumContextProvider>(),
+            application = mock<Application>(),
+            embeddedContentSlotRegistry = mock<EmbeddedContentSlotRegistry>()
+        )
+
+        // Then
+        assertThat(result).isInstanceOf(CompositionCapturePipeline::class.java)
+    }
+
+    @Test
     fun `M construct wired composition pipeline W provideSessionReplayRecorder { default factory }`() {
         // Given
         val sdkCore = mock<FeatureSdkCore>()
@@ -142,7 +178,7 @@ internal class DefaultRecorderProviderTest {
             internalCallback = mock<SessionReplayInternalCallback>(),
             heatmapsEnabled = false,
             compositionTreeRecordingEnabled = true,
-            compositionSnapshotProducerFactory = {
+            compositionSnapshotProducerFactory = { _, _ ->
                 producerConstructions++
                 mock()
             },
