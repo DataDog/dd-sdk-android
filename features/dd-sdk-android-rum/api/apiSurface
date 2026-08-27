@@ -2685,7 +2685,7 @@ data class com.datadog.android.rum.model.ViewEvent
     companion object 
       fun fromJson(kotlin.String): ErrorReason
 data class com.datadog.android.rum.model.VitalAppLaunchEvent
-  constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, VitalAppLaunchEventSession, VitalAppLaunchEventSource? = null, VitalAppLaunchEventView? = null, Usr? = null, Account? = null, Tab? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null, Stream? = null, Container? = null, Vital)
+  constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, VitalAppLaunchEventSession, VitalAppLaunchEventSource? = null, VitalAppLaunchEventView, Usr? = null, Account? = null, Tab? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null, Stream? = null, Container? = null, Vital)
   val type: kotlin.String
   fun toJson(): com.google.gson.JsonElement
   companion object 
@@ -2950,7 +2950,7 @@ data class com.datadog.android.rum.model.VitalAppLaunchEvent
     companion object 
       fun fromJson(kotlin.String): ErrorReason
 data class com.datadog.android.rum.model.VitalOperationStepEvent
-  constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, VitalOperationStepEventSession, VitalOperationStepEventSource? = null, VitalOperationStepEventView? = null, Usr? = null, Account? = null, Tab? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null, Stream? = null, Container? = null, Vital)
+  constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, VitalOperationStepEventSession, VitalOperationStepEventSource? = null, VitalOperationStepEventView, Usr? = null, Account? = null, Tab? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null, Stream? = null, Container? = null, Vital)
   val type: kotlin.String
   fun toJson(): com.google.gson.JsonElement
   companion object 
