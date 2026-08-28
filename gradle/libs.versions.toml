@@ -5,6 +5,15 @@ cronetApi = "141.7340.3"
 cronetPlayServices = "18.1.1"
 gson = "2.10.1"
 kotlin = "2.0.21"
+# Deliberately not `version.ref = "kotlin"`: this must match the Kotlin Gradle Plugin that is actually
+# loaded, which is AGP's. `androidToolsPlugin` (below) depends on KGP 2.2.10, and that outranks the
+# `kotlin` version above in conflict resolution (`kotlin-gradle-plugin:2.0.21 -> 2.2.10`).
+# The Compose *compiler* is always resolved at the loaded KGP's version and never at this one, so the
+# two drift apart silently. An older plugin against a newer compiler passes options the compiler has
+# since deprecated (RUM-18191, `generateFunctionKeyMetaClasses`), and the version also decides which
+# options are sent at all — 2.2.10 turns on `sourceInformation`, which changes generated Compose code.
+# Re-check this whenever `androidToolsPlugin` moves.
+composeCompilerPlugin = "2.2.10"
 kotlinSP = "2.0.21-1.0.28"
 kronosNTP = "0.0.1-alpha11"
 kotlinxSerialization = "1.6.3"
@@ -371,7 +380,7 @@ traceCore = [
 [plugins]
 nexusPublishGradlePlugin = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexusPublishGradlePlugin" }
 datadogGradlePlugin = { id = "com.datadoghq.dd-sdk-android-gradle-plugin", version.ref = "datadogPlugin" }
-composeCompilerPlugin = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+composeCompilerPlugin = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "composeCompilerPlugin" }
 apolloPlugin = { id = "com.apollographql.apollo", version.ref = "apollo" }
 dependencyLicenseGradlePlugin = { id = "com.datadoghq.dependency-license", version.ref = "dependencyLicense" }
 kotlinAndroidPlugin = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

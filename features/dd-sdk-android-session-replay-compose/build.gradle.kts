@@ -4,7 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+import com.datadog.gradle.config.taskConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     // Build
@@ -78,17 +80,18 @@ unMock {
 }
 
 datadogBuild {
-    applyKotlinConfig(
-        // TODO RUM-18191
-        // Suppress -> generateFunctionKeyMetaClasses is deprecated. It was replaced by emitting annotations on functions
-        // instead. Use generateFunctionKeyMetaAnnotations instead. Seems to Compose <-> Kotlin mismatch.
-        evaluateWarningsAsErrors = false,
-        jvmBytecodeTarget = JvmTarget.JVM_11
-    )
+    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
     applyAndroidLibraryConfig()
     applyJunitConfig()
     applyJavadocConfig()
     applyPublishingConfig(
         "Session Replay Extension Support for Jetpack Compose."
     )
+}
+
+taskConfig<KotlinCompile> {
+    compilerOptions {
+        // TODO RUM-18190
+        freeCompilerArgs.add("-Xwarning-level=ERROR_SUPPRESSION:disabled")
+    }
 }
