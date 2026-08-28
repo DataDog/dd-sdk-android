@@ -190,17 +190,6 @@ tasks.register("instrumentTestAll") {
     dependsOn(":instrumented:integration:connectedCheck")
 }
 
-tasks.register("buildIntegrationTestsArtifacts") {
-    dependsOn(":instrumented:integration:assembleDebugAndroidTest")
-    dependsOn(":instrumented:integration:assembleDebug")
-}
-
-tasks.register("buildNdkIntegrationTestsArtifacts") {
-    dependsOn(":features:dd-sdk-android-ndk:assembleDebugAndroidTest")
-    // we need this artifact to trick Bitrise
-    dependsOn(":instrumented:integration:assembleDebug")
-}
-
 tasks.register("listAllPublishedArtifactIds") {
     doLast {
         val artifactIds = rootProject.subprojects.flatMap { subproject ->
