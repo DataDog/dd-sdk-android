@@ -971,6 +971,7 @@ public final class com/datadog/android/core/internal/remote/model/RemoteConfigur
 	public static final field MASK_LARGE_ONLY Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$ImagePrivacy;
 	public static final field MASK_NONE Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$ImagePrivacy;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$ImagePrivacy;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$ImagePrivacy;
 	public static fun values ()[Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$ImagePrivacy;
@@ -1035,6 +1036,7 @@ public final class com/datadog/android/core/internal/remote/model/RemoteConfigur
 	public static final field DATADOG Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$PropagatorType;
 	public static final field TRACECONTEXT Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$PropagatorType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$PropagatorType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$PropagatorType;
 	public static fun values ()[Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$PropagatorType;
@@ -1119,6 +1121,7 @@ public final class com/datadog/android/core/internal/remote/model/RemoteConfigur
 	public static final field MASK_ALL_INPUTS Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TextAndInputPrivacy;
 	public static final field MASK_SENSITIVE_INPUTS Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TextAndInputPrivacy;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TextAndInputPrivacy;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TextAndInputPrivacy;
 	public static fun values ()[Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TextAndInputPrivacy;
@@ -1133,6 +1136,7 @@ public final class com/datadog/android/core/internal/remote/model/RemoteConfigur
 	public static final field HIDE Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TouchPrivacy;
 	public static final field SHOW Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TouchPrivacy;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TouchPrivacy;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TouchPrivacy;
 	public static fun values ()[Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TouchPrivacy;
@@ -1173,6 +1177,7 @@ public final class com/datadog/android/core/internal/remote/model/RemoteConfigur
 	public static final field Companion Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TraceContextInjection$Companion;
 	public static final field SAMPLED Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TraceContextInjection;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TraceContextInjection;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TraceContextInjection;
 	public static fun values ()[Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TraceContextInjection;
@@ -1211,6 +1216,7 @@ public final class com/datadog/android/core/internal/remote/model/RemoteConfigur
 	public static final field NEVER Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$VitalsUpdateFrequency;
 	public static final field RARE Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$VitalsUpdateFrequency;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$VitalsUpdateFrequency;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$VitalsUpdateFrequency;
 	public static fun values ()[Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$VitalsUpdateFrequency;
