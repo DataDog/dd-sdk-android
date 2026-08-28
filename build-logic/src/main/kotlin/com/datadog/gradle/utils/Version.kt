@@ -6,12 +6,7 @@
 
 package com.datadog.gradle.utils
 
-data class Version(
-    val major: Int,
-    val minor: Int,
-    val hotfix: Int,
-    val type: Type = Type.Release
-) {
+data class Version(val major: Int, val minor: Int, val hotfix: Int, val type: Type = Type.Release) {
 
     // region Type
 
@@ -39,8 +34,9 @@ data class Version(
             override val suffix: String = "-dev"
         }
 
-        object Snapshot : Type() {
-            override val suffix: String = "-SNAPSHOT"
+        data class Snapshot(val label: String? = null) : Type() {
+            override val suffix: String =
+                if (label.isNullOrEmpty()) "-SNAPSHOT" else "-$label-SNAPSHOT"
         }
     }
 
