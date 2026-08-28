@@ -18,9 +18,20 @@ Sample app requires a flavor name:
 ./gradlew :sample:kotlin:assembleUs1Debug   # us1 is the default flavor
 ```
 
-Code formatting (requires `ktlint` installed):
+Code formatting:
 ```bash
-ktlint -F "**/*.kt" "**/*.kts" '!**/build/generated/**' '!**/build/kspCaches/**'
+./gradlew ktlintFormatAll
+
+# alternatively per module
+./gradlew <module_name>:ktlintFormat
+```
+
+Detekt checks:
+```bash
+./gradlew detekt
+
+# alternatively per module
+./gradlew <module_name>:detekt
 ```
 
 # API Surface Files
