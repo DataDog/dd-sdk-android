@@ -17,6 +17,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.internal.profiling.ProfilerEvent
+import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.utils.formatIsoUtc
 import com.datadog.android.profiling.assertj.ProfileEventAssert.Companion.assertThat
 import com.datadog.android.profiling.assertj.RumMetadataEventsAssert.Companion.assertThat
@@ -29,6 +30,7 @@ import com.datadog.android.profiling.model.RumMetadataEvent
 import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -111,7 +113,7 @@ internal class ProfilingDataWriterTest {
     }
 
     @Test
-    fun `M write the result in a batch W write`(
+    fun `M write the result in a batch W writeManualProfile()`(
         @Forgery fakeResult: PerfettoResult,
         @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
         @Forgery fakeLongTasks: List<ProfilerEvent.RumLongTaskEvent>,
@@ -125,7 +127,7 @@ internal class ProfilingDataWriterTest {
         val rumContext = fakeVitals.first().rumContext
 
         // When
-        testedDataWriterTest.write(
+        testedDataWriterTest.writeManualProfile(
             profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
             vitalEvents = fakeVitals.map {
                 it.copy(
@@ -246,7 +248,7 @@ internal class ProfilingDataWriterTest {
     }
 
     @Test
-    fun `M skip writing and log warn on delete W write {perfetto file not found}`(
+    fun `M skip writing and log warn on delete W writeManualProfile() {perfetto file not found}`(
         @Forgery fakeResult: PerfettoResult,
         @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
         @Forgery fakeLongTasks: List<ProfilerEvent.RumLongTaskEvent>,
@@ -256,7 +258,7 @@ internal class ProfilingDataWriterTest {
         val nonExistentFile = File(tmp, "nonexistent.perfetto-stack-sample")
 
         // When
-        testedDataWriterTest.write(
+        testedDataWriterTest.writeManualProfile(
             profilingResult = fakeResult.copy(resultFilePath = nonExistentFile.absolutePath),
             vitalEvents = fakeVitals,
             anrEvents = fakeAnrs,
@@ -294,7 +296,7 @@ internal class ProfilingDataWriterTest {
     }
 
     @Test
-    fun `M skip writing and report drop metric W write {file is empty}`(
+    fun `M skip writing and report drop metric W writeManualProfile() {file is empty}`(
         @Forgery fakeResult: PerfettoResult,
         @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
         @Forgery fakeLongTasks: List<ProfilerEvent.RumLongTaskEvent>,
@@ -305,7 +307,7 @@ internal class ProfilingDataWriterTest {
         file.writeBytes(ByteArray(0))
 
         // When
-        testedDataWriterTest.write(
+        testedDataWriterTest.writeManualProfile(
             profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
             vitalEvents = fakeVitals,
             anrEvents = fakeAnrs,
@@ -336,7 +338,7 @@ internal class ProfilingDataWriterTest {
     }
 
     @Test
-    fun `M skip writing and report metric W write {no rum events}`(
+    fun `M skip writing and report metric W writeManualProfile() {no rum events}`(
         @Forgery fakeResult: PerfettoResult,
         forge: Forge
     ) {
@@ -345,7 +347,7 @@ internal class ProfilingDataWriterTest {
         file.writeBytes(forge.aString().toByteArray())
 
         // When
-        testedDataWriterTest.write(
+        testedDataWriterTest.writeManualProfile(
             profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
             vitalEvents = emptyList(),
             anrEvents = emptyList(),
@@ -376,7 +378,7 @@ internal class ProfilingDataWriterTest {
     }
 
     @Test
-    fun `M write the result in a batch W write {only vital events present}`(
+    fun `M write the result in a batch W writeManualProfile() {only vital events present}`(
         @Forgery fakeResult: PerfettoResult,
         @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
         forge: Forge
@@ -396,7 +398,7 @@ internal class ProfilingDataWriterTest {
         }
 
         // When
-        testedDataWriterTest.write(
+        testedDataWriterTest.writeManualProfile(
             profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
             vitalEvents = alignedVitals,
             anrEvents = emptyList(),
@@ -441,7 +443,7 @@ internal class ProfilingDataWriterTest {
     }
 
     @Test
-    fun `M delete result file W write {feature not initialized}`(
+    fun `M delete result file W writeManualProfile() {feature not initialized}`(
         @Forgery fakeResult: PerfettoResult,
         forge: Forge
     ) {
@@ -451,7 +453,7 @@ internal class ProfilingDataWriterTest {
         file.writeBytes(forge.aString().toByteArray())
 
         // When
-        testedDataWriterTest.write(
+        testedDataWriterTest.writeManualProfile(
             profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
             vitalEvents = emptyList(),
             anrEvents = emptyList(),
@@ -464,7 +466,7 @@ internal class ProfilingDataWriterTest {
     }
 
     @Test
-    fun `M delete result file W write {events present}`(
+    fun `M delete result file W writeManualProfile() {events present}`(
         @Forgery fakeResult: PerfettoResult,
         @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
         forge: Forge
@@ -483,7 +485,7 @@ internal class ProfilingDataWriterTest {
         }
 
         // When
-        testedDataWriterTest.write(
+        testedDataWriterTest.writeManualProfile(
             profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
             vitalEvents = alignedVitals,
             anrEvents = emptyList(),
@@ -496,7 +498,7 @@ internal class ProfilingDataWriterTest {
     }
 
     @Test
-    fun `M drop and report write metric with clock drift reason W write {continuous, drift over threshold positive}`(
+    fun `M drop write metric on clock drift W writeManualProfile() {continuous, drift over threshold positive}`(
         @Forgery fakeResult: PerfettoResult,
         @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
         forge: Forge
@@ -510,7 +512,7 @@ internal class ProfilingDataWriterTest {
         file.writeBytes(forge.aString().toByteArray())
 
         // When
-        testedDataWriterTest.write(
+        testedDataWriterTest.writeManualProfile(
             profilingResult = fakeResult.copy(
                 resultFilePath = file.absolutePath,
                 startReason = ProfilingStartReason.CONTINUOUS
@@ -544,7 +546,7 @@ internal class ProfilingDataWriterTest {
     }
 
     @Test
-    fun `M drop and report write metric with clock drift reason W write {continuous, drift over threshold negative}`(
+    fun `M drop write metric on clock drift W writeManualProfile() {continuous, drift over threshold negative}`(
         @Forgery fakeResult: PerfettoResult,
         @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
         forge: Forge
@@ -558,7 +560,7 @@ internal class ProfilingDataWriterTest {
         file.writeBytes(forge.aString().toByteArray())
 
         // When
-        testedDataWriterTest.write(
+        testedDataWriterTest.writeManualProfile(
             profilingResult = fakeResult.copy(
                 resultFilePath = file.absolutePath,
                 startReason = ProfilingStartReason.CONTINUOUS
@@ -592,7 +594,7 @@ internal class ProfilingDataWriterTest {
     }
 
     @Test
-    fun `M write profile despite clock drift W write {app launch, drift over threshold positive}`(
+    fun `M write profile despite clock drift W writeManualProfile() {app launch, drift over threshold positive}`(
         @Forgery fakeResult: PerfettoResult,
         @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
         forge: Forge
@@ -606,7 +608,7 @@ internal class ProfilingDataWriterTest {
         file.writeBytes(forge.aString().toByteArray())
 
         // When
-        testedDataWriterTest.write(
+        testedDataWriterTest.writeManualProfile(
             profilingResult = fakeResult.copy(
                 resultFilePath = file.absolutePath,
                 startReason = ProfilingStartReason.APPLICATION_LAUNCH
@@ -640,7 +642,7 @@ internal class ProfilingDataWriterTest {
     }
 
     @Test
-    fun `M write profile despite clock drift W write {app launch, drift over threshold negative}`(
+    fun `M write profile despite clock drift W writeManualProfile() {app launch, drift over threshold negative}`(
         @Forgery fakeResult: PerfettoResult,
         @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
         forge: Forge
@@ -654,7 +656,7 @@ internal class ProfilingDataWriterTest {
         file.writeBytes(forge.aString().toByteArray())
 
         // When
-        testedDataWriterTest.write(
+        testedDataWriterTest.writeManualProfile(
             profilingResult = fakeResult.copy(
                 resultFilePath = file.absolutePath,
                 startReason = ProfilingStartReason.APPLICATION_LAUNCH
@@ -688,7 +690,7 @@ internal class ProfilingDataWriterTest {
     }
 
     @Test
-    fun `M report write metric with event counts W write {write successful}`(
+    fun `M report write metric with event counts W writeManualProfile() {write successful}`(
         @Forgery fakeResult: PerfettoResult,
         @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
         @Forgery fakeLongTasks: List<ProfilerEvent.RumLongTaskEvent>,
@@ -700,7 +702,7 @@ internal class ProfilingDataWriterTest {
         file.writeBytes(forge.aString().toByteArray())
 
         // When
-        testedDataWriterTest.write(
+        testedDataWriterTest.writeManualProfile(
             profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
             vitalEvents = fakeVitals,
             anrEvents = fakeAnrs,
@@ -765,5 +767,103 @@ internal class ProfilingDataWriterTest {
             isNull()
         )
         verifyNoInteractions(mockEventBatchWriter)
+    }
+
+    @Test
+    fun `M write ProfileEvent with error id and oom operation W writeTriggerProfile() {valid file}`(
+        @StringForgery rumErrorId: String,
+        @Forgery rumContext: ProfilingRumContext,
+        forge: Forge
+    ) {
+        // Given
+        val profileFile = File(tmp, "trigger.proto").apply { writeBytes(forge.aString().toByteArray()) }
+        val detectedAtMs = 1_000L
+
+        // When
+        testedDataWriterTest.writeTriggerProfile(
+            perfettoResult = PerfettoResult(
+                start = detectedAtMs,
+                startReason = ProfilingStartReason.OUT_OF_MEMORY,
+                end = detectedAtMs,
+                resultFilePath = profileFile.absolutePath
+            ),
+            rumErrorId = rumErrorId,
+            rumContext = rumContext
+        )
+
+        // Then
+        val argumentCaptor = argumentCaptor<RawBatchEvent>()
+        verify(mockEventBatchWriter).write(
+            event = argumentCaptor.capture(),
+            batchMetadata = isNull(),
+            eventType = eq(EventType.DEFAULT)
+        )
+        val actualEvent = ProfileEvent.fromJson(String(argumentCaptor.firstValue.data))
+        val expectedTagList = arrayListOf(
+            "service:${fakeDatadogContext.service}",
+            "env:${fakeDatadogContext.env}",
+            "version:${fakeDatadogContext.version}",
+            "sdk_version:${fakeDatadogContext.sdkVersion}",
+            "profiler_version:${fakeDatadogContext.sdkVersion}",
+            "runtime_version:${fakeDatadogContext.deviceInfo.osVersion}",
+            "operation:out_of_memory"
+        )
+        fakeDatadogContext.appBuildId?.let {
+            expectedTagList.add("build_id:${fakeDatadogContext.appBuildId}")
+        }
+        assertThat(actualEvent)
+            .hasStart(formatIsoUtc(detectedAtMs))
+            .hasEnd(formatIsoUtc(detectedAtMs))
+            .hasAttachments(listOf("perfetto.proto", "rum-mobile-events.json"))
+            .hasFamily(ProfileEvent.Family.ANDROID)
+            .hasRuntime(ProfileEvent.Family.ANDROID)
+            .hasVersion(4)
+            .hasTags(expectedTagList)
+            .hasApplicationId(rumContext.applicationId)
+            .hasSessionId(rumContext.sessionId)
+            .hasErrorIds(listOf(rumErrorId))
+        assertThat(profileFile.exists()).isFalse()
+
+        val actualMetadata = ProfilingBatchMetadata
+            .fromBytesOrNull(argumentCaptor.firstValue.metadata, mock<InternalLogger>())
+        checkNotNull(actualMetadata)
+        val actualMetadataEvents = JsonParser.parseString(String(actualMetadata.rumMobileEventsBytes))
+            .asJsonArray
+            .map {
+                RumMetadataEvent.fromJsonObject(it.asJsonObject)
+            }
+        assertThat(actualMetadataEvents).containsExactly(
+            RumMetadataEvent(
+                id = rumErrorId,
+                type = RumMetadataEvent.Type.ERROR,
+                startNs = TimeUnit.MILLISECONDS.toNanos(detectedAtMs),
+                durationNs = 0L
+            )
+        )
+    }
+
+    @Test
+    fun `M not write and delete file W writeTriggerProfile() {empty file}`(
+        @StringForgery rumErrorId: String,
+        @Forgery rumContext: ProfilingRumContext
+    ) {
+        // Given
+        val profileFile = File(tmp, "empty.proto").apply { writeBytes(ByteArray(0)) }
+
+        // When
+        testedDataWriterTest.writeTriggerProfile(
+            perfettoResult = PerfettoResult(
+                start = 1_000L,
+                startReason = ProfilingStartReason.MEMORY_ANOMALY,
+                end = 1_000L,
+                resultFilePath = profileFile.absolutePath
+            ),
+            rumErrorId = rumErrorId,
+            rumContext = rumContext
+        )
+
+        // Then
+        verifyNoInteractions(mockEventBatchWriter)
+        assertThat(profileFile.exists()).isFalse()
     }
 }
