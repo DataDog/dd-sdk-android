@@ -230,6 +230,8 @@ datadog:
       - "kotlinx.coroutines.withContext(kotlin.coroutines.CoroutineContext, kotlin.coroutines.SuspendFunction1):kotlinx.coroutines.CancellationException"
       # endregion
       # region OkHttp
+      - "okhttp3.Cache.close():java.io.IOException"
+      - "okhttp3.Cache.evictAll():java.io.IOException"
       - "okhttp3.Call.execute():java.io.IOException"
       - "okhttp3.Dns.lookup(kotlin.String):java.net.UnknownHostException"
       - "okhttp3.Headers.Builder.add(kotlin.String, kotlin.String):java.lang.IllegalArgumentException"
@@ -270,6 +272,9 @@ datadog:
       # endregion
       # region Gson
       - "com.google.gson.JsonParser.parseString(kotlin.String?):com.google.gson.JsonParseException"
+      - "com.google.gson.JsonElement.getAsString():java.lang.IllegalStateException"
+      - "com.google.gson.JsonElement.getAsLong():java.lang.IllegalStateException,java.lang.NumberFormatException"
+      - "com.google.gson.JsonElement.getAsJsonObject():java.lang.IllegalStateException"
       # endregion
       # region Kronos
       - "com.lyft.kronos.KronosClock.syncInBackground():java.lang.IllegalStateException"

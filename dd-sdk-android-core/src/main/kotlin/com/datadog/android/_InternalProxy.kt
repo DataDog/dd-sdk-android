@@ -98,5 +98,12 @@ class _InternalProxy internal constructor(
         fun allowClearTextHttp(builder: Configuration.Builder): Configuration.Builder {
             return builder.allowClearTextHttp()
         }
+
+        fun setRemoteConfigurationId(
+            builder: Configuration.Builder,
+            remoteConfigurationId: String
+        ): Configuration.Builder {
+            return builder.setRemoteConfigurationId(remoteConfigurationId)
+        }
     }
 }

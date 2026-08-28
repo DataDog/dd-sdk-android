@@ -1449,7 +1449,8 @@ internal open class RumViewScope(
                     configuration = ViewEvent.Configuration(
                         sessionSampleRate = sampleRate,
                         sessionReplaySampleRate = datadogContext.resolveSessionReplaySampleRate(),
-                        traceSampleRate = datadogContext.resolveTraceSampleRate()
+                        traceSampleRate = datadogContext.resolveTraceSampleRate(),
+                        remoteConfigurationId = datadogContext.remoteConfigurationId
                     ),
                     profiling = resolveViewProfilingStatus(datadogContext)
                 ),
