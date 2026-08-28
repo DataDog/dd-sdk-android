@@ -16,6 +16,16 @@ internal class ProfileEventAssert(actual: ProfileEvent) :
         ProfileEventAssert::class.java
     ) {
 
+    fun hasClockDrift(expected: Long): ProfileEventAssert {
+        assertThat(actual.dd?.clockDrift)
+            .overridingErrorMessage(
+                "Expected event data to have _dd.clock_drift $expected " +
+                    "but was ${actual.dd?.clockDrift}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasStart(expected: String): ProfileEventAssert {
         assertThat(actual.start)
             .overridingErrorMessage(
