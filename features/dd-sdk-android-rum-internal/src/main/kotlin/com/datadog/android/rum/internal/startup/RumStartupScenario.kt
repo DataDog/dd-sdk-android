@@ -10,7 +10,7 @@ import android.app.Activity
 import com.datadog.android.rum.internal.domain.Time
 import java.lang.ref.WeakReference
 
-internal sealed interface RumStartupScenario {
+sealed interface RumStartupScenario {
     val initialTime: Time
     val hasSavedInstanceStateBundle: Boolean
     val activity: WeakReference<Activity>
@@ -35,14 +35,13 @@ internal sealed interface RumStartupScenario {
         override val initialTime: Time
     ) : RumStartupScenario
 }
-
-internal val RumStartupScenario.name: String get() = when (this) {
+val RumStartupScenario.name: String get() = when (this) {
     is RumStartupScenario.Cold -> "cold"
     is RumStartupScenario.WarmAfterActivityDestroyed -> "warm_after_activity_destroyed"
     is RumStartupScenario.WarmFirstActivity -> "warm_first_activity"
 }
 
-internal val RumStartupScenario.appStartActivityOnCreateGapNs: Long? get() = when (this) {
+val RumStartupScenario.appStartActivityOnCreateGapNs: Long? get() = when (this) {
     is RumStartupScenario.Cold -> appStartActivityOnCreateGapNs
     is RumStartupScenario.WarmFirstActivity -> appStartActivityOnCreateGapNs
     is RumStartupScenario.WarmAfterActivityDestroyed -> null

@@ -9,7 +9,7 @@ package com.datadog.android.rum.internal.domain
 import com.datadog.android.internal.time.TimeProvider
 import java.util.concurrent.TimeUnit
 
-internal data class Time(
+data class Time(
     val timestamp: Long,
     val nanoTime: Long
 ) {

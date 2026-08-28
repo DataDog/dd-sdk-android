@@ -4,11 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.time
+package com.datadog.android.internal.time
 
 import android.os.Process
 import com.datadog.android.internal.system.BuildSdkVersionProvider
-import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.DdRumContentProvider
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds

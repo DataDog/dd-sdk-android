@@ -30,7 +30,7 @@ import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvi
 import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
 import com.datadog.android.core.internal.thread.BackPressuredBlockingQueue
 import com.datadog.android.core.internal.thread.BroadcastReceiverThread
-import com.datadog.android.core.internal.time.AppStartTimeProvider
+import com.datadog.android.internal.time.AppStartTimeProvider
 import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.user.DatadogUserInfoProvider
 import com.datadog.android.core.internal.user.NoOpMutableUserInfoProvider

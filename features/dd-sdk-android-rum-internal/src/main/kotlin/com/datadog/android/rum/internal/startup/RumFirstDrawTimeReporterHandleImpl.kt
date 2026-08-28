@@ -11,14 +11,13 @@ import android.os.Handler
 import android.os.Message
 import android.view.View
 import android.view.ViewTreeObserver
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.rum.internal.utils.window.RumWindowCallbackListener
 import com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistry
 
 internal class RumFirstDrawTimeReporterHandleImpl(
     private val callback: RumFirstDrawTimeReporter.Callback,
     private val activity: Activity,
-    private val internalLogger: InternalLogger,
+    private val warningLogger: RumAppStartupDetector.WarningLogger,
     private val timeProviderNs: () -> Long,
     private val windowCallbacksRegistry: RumWindowCallbacksRegistry,
     private val handler: Handler
@@ -93,10 +92,8 @@ internal class RumFirstDrawTimeReporterHandleImpl(
             try {
                 decorView.viewTreeObserver.addOnDrawListener(this)
             } catch (e: IllegalStateException) {
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.TELEMETRY,
-                    { "RumFirstDrawTimeReporterImpl unable to add onDrawListener onto viewTreeObserver" },
+                warningLogger.logWarning(
+                    "RumFirstDrawTimeReporterImpl unable to add onDrawListener onto viewTreeObserver",
                     e
                 )
             }
@@ -147,10 +144,8 @@ internal class RumFirstDrawTimeReporterHandleImpl(
             try {
                 decorView.viewTreeObserver.removeOnDrawListener(this)
             } catch (e: IllegalStateException) {
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.TELEMETRY,
-                    { "RumTTIDReporterImpl unable to remove onDrawListener from viewTreeObserver" },
+                warningLogger.logWarning(
+                    "RumTTIDReporterImpl unable to remove onDrawListener from viewTreeObserver",
                     e
                 )
             }
