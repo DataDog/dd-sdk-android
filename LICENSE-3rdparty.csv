@@ -31,6 +31,7 @@ import,androidx.lifecycle,Apache-2.0,Copyright 2018 The Android Open Source Proj
 import,androidx.loader,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.localbroadcastmanager,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.media,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,androidx.media3,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.metrics,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.multidex,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.navigation,Apache-2.0,Copyright 2018 The Android Open Source Project
@@ -62,7 +63,6 @@ import,com.github.spotbugs,"GNU LESSER GENERAL PUBLIC LICENSE, Version 2.1","Cop
 import,com.github.TeamNewPipe,AGPL-3.0-only,"2017-2024 NewPipe contributors <https://newpipe.net>"
 import,com.github.TeamNewPipe.NewPipeExtractor,AGPL-3.0-only,"2017-2024 NewPipe contributors <https://newpipe.net>"
 import,com.google.accompanist,Apache-2.0,Copyright 2018 The Android Open Source Project
-import,com.google.android.exoplayer,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,com.google.android.gms,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,com.google.android.material,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,com.google.code.gson,Apache-2.0,Copyright 2008 Google Inc

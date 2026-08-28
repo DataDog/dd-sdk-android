@@ -11,6 +11,7 @@ import com.datadog.gradle.config.configureFlavorForSampleApp
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.taskConfig
 import com.datadog.gradle.plugin.InstrumentationMode
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     // Build
@@ -239,11 +240,11 @@ dependencies {
 }
 
 datadogBuild {
-    applyKotlinConfig(evaluateWarningsAsErrors = false)
+    applyKotlinConfig()
     applyJunitConfig()
 }
 
-taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+taskConfig<KotlinCompile> {
     compilerOptions {
         optIn.add("kotlin.RequiresOptIn")
     }
