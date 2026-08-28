@@ -92,7 +92,7 @@ internal class TimelineView @JvmOverloads constructor(
                 is TimelineEvent.Tick -> tickPaint
                 is TimelineEvent.LongTask -> longTaskPaint
                 is TimelineEvent.Action -> actionsFramesPaint
-                is TimelineEvent.Timeseries -> timeseriesFramesPaint
+                is TimelineEvent.TimeSeries -> timeseriesFramesPaint
                 is TimelineEvent.SlowFrame -> slowFramesPaint
                 is TimelineEvent.Resource -> resourceFramesPaint
             }
