@@ -233,15 +233,15 @@ internal class ProfilingFeature(
         // TODO RUM-18154: Wire resultFilePath with ProfilingDataWriter
     }
 
-    override fun onOutOfMemoryDetected(detectedAtMs: Long, resultFilePath: String) {
+    override fun onOutOfMemoryDetected(result: PerfettoResult) {
         // RUM already generates its own OOM error event, so the profiling feature
         // does not forward a separate OOM event.
         // TODO RUM-18154: Wire resultFilePath with ProfilingDataWriter
     }
 
-    override fun onMemoryAnomalyDetected(detectedAtMs: Long, resultFilePath: String) {
+    override fun onMemoryAnomalyDetected(result: PerfettoResult) {
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.sendEvent(
-            ProfilingAnomalyDetectedEvent(detectedAtMs)
+            ProfilingAnomalyDetectedEvent(result.start)
         )
     }
 

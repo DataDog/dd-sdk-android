@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.profiling.internal.anr
+package com.datadog.android.profiling.internal.trigger
 
 import android.content.Context
 import android.os.Build
@@ -15,6 +15,8 @@ import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.profiling.internal.ProfilingStartReason
+import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
 import com.datadog.android.profiling.internal.utils.ThreadDumper
@@ -157,17 +159,7 @@ internal class ProfilingManagerTriggerRegistrar(
                 droppedAsStale = delayMs > MAX_CALLBACK_DELAY_MS
             }
             if (callbackDelayMs != null && !droppedAsStale) {
-                when (triggerType) {
-                    ProfilingTrigger.TRIGGER_TYPE_ANR ->
-                        currentListener.onAnrDetected(threadDumper.dump(detectedAtMs))
-
-                    ProfilingTrigger.TRIGGER_TYPE_OOM ->
-                        currentListener.onOutOfMemoryDetected(detectedAtMs, resultPath)
-
-                    ProfilingTrigger.TRIGGER_TYPE_ANOMALY ->
-                        // TODO RUM-18223: filter in only memory anomaly result by tag
-                        currentListener.onMemoryAnomalyDetected(detectedAtMs, resultPath)
-                }
+                forwardTriggerResult(triggerType, currentListener, detectedAtMs, resultPath)
                 // We currently don't use the result profile, just delete it.
                 safeDelete(resultPath)
             } else {
@@ -186,6 +178,41 @@ internal class ProfilingManagerTriggerRegistrar(
                 droppedAsStale = droppedAsStale
             )
         )
+    }
+
+    @RequiresApi(Build.VERSION_CODES.BAKLAVA)
+    private fun forwardTriggerResult(
+        triggerType: Int,
+        listener: ProfilingTriggerListener,
+        detectedAtMs: Long,
+        resultPath: String
+    ) {
+        when (triggerType) {
+            ProfilingTrigger.TRIGGER_TYPE_ANR ->
+                listener.onAnrDetected(threadDumper.dump(detectedAtMs))
+
+            ProfilingTrigger.TRIGGER_TYPE_OOM ->
+                listener.onOutOfMemoryDetected(
+                    PerfettoResult(
+                        start = detectedAtMs,
+                        startReason = ProfilingStartReason.OUT_OF_MEMORY,
+                        end = detectedAtMs,
+                        resultFilePath = resultPath
+                    )
+                )
+
+            ProfilingTrigger.TRIGGER_TYPE_ANOMALY ->
+                // TODO RUM-18223: filter in only memory anomaly result by tag
+                listener.onMemoryAnomalyDetected(
+                    PerfettoResult(
+                        start = detectedAtMs,
+                        startReason = ProfilingStartReason.MEMORY_ANOMALY,
+                        // end is same as start in point-in-time profile
+                        end = detectedAtMs,
+                        resultFilePath = resultPath
+                    )
+                )
+        }
     }
 
     private fun safeDelete(path: String) {

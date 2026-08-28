@@ -35,7 +35,6 @@ import com.datadog.android.profiling.internal.ProfilingRequestFactory
 import com.datadog.android.profiling.internal.ProfilingStartReason
 import com.datadog.android.profiling.internal.ProfilingStorage
 import com.datadog.android.profiling.internal.ProfilingWriter
-import com.datadog.android.profiling.internal.anr.ProfilingTriggerRegistrar
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.quota.NoOpQuotaChecker
@@ -45,6 +44,7 @@ import com.datadog.android.profiling.internal.quota.QuotaResult
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
 import com.datadog.android.profiling.internal.time.MutableTimeProvider
+import com.datadog.android.profiling.internal.trigger.ProfilingTriggerRegistrar
 import com.datadog.android.profiling.utils.config.MainLooperTestConfiguration
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -1448,14 +1448,14 @@ internal class ProfilingFeatureTest {
 
     @Test
     fun `M not forward OOM event to RUM W onOutOfMemoryDetected()`(
-        @LongForgery(min = 0L) fakeDetectedAtMs: Long
+        @Forgery fakeResult: PerfettoResult
     ) {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
         testedFeature.onInitialize(mockContext)
 
         // When
-        testedFeature.onOutOfMemoryDetected(fakeDetectedAtMs, "")
+        testedFeature.onOutOfMemoryDetected(fakeResult)
 
         // Then
         verify(mockRumFeatureScope, never()).sendEvent(any())
@@ -1463,17 +1463,17 @@ internal class ProfilingFeatureTest {
 
     @Test
     fun `M forward anomaly event to RUM W onMemoryAnomalyDetected()`(
-        @LongForgery(min = 0L) fakeDetectedAtMs: Long
+        @Forgery fakeResult: PerfettoResult
     ) {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
         testedFeature.onInitialize(mockContext)
 
         // When
-        testedFeature.onMemoryAnomalyDetected(fakeDetectedAtMs, "")
+        testedFeature.onMemoryAnomalyDetected(fakeResult)
 
         // Then
-        verify(mockRumFeatureScope).sendEvent(ProfilingAnomalyDetectedEvent(fakeDetectedAtMs))
+        verify(mockRumFeatureScope).sendEvent(ProfilingAnomalyDetectedEvent(fakeResult.start))
     }
 
     @Test

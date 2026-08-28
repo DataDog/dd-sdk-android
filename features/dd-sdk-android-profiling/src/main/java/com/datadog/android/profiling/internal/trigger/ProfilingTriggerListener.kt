@@ -4,14 +4,15 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.profiling.internal.anr
+package com.datadog.android.profiling.internal.trigger
 
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
+import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 
 internal interface ProfilingTriggerListener {
     fun onAnrDetected(event: ProfilingAnrDetectedEvent)
 
-    fun onOutOfMemoryDetected(detectedAtMs: Long, resultFilePath: String)
+    fun onOutOfMemoryDetected(result: PerfettoResult)
 
-    fun onMemoryAnomalyDetected(detectedAtMs: Long, resultFilePath: String)
+    fun onMemoryAnomalyDetected(result: PerfettoResult)
 }
