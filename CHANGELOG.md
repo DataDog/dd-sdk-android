@@ -1,3 +1,7 @@
+# Unreleased
+
+* [IMPROVEMENT] Add an assignment-only HTTP call factory plus optional per-attempt timeout and retry-count configuration for Flags assignment requests. Timeouts and retries are opt-in; the default remains one request with no SDK-added timeout.
+
 # 3.13.1 / 2026-08-27
 
 * [BUGFIX] Make `view` required again in RUM events. See [#3783](https://github.com/DataDog/dd-sdk-android/pull/3783)

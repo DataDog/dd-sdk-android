@@ -9,9 +9,12 @@ package com.datadog.android.flags
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import okhttp3.Call
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.kotlin.mock
 
 @ExtendWith(ForgeExtension::class)
 internal class FlagsConfigurationTest {
@@ -29,6 +32,9 @@ internal class FlagsConfigurationTest {
         assertThat(configuration.customExposureEndpoint).isNull()
         assertThat(configuration.customFlagEndpoint).isNull()
         assertThat(configuration.gracefulModeEnabled).isTrue()
+        assertThat(configuration.assignmentRequestCallFactory).isNull()
+        assertThat(configuration.assignmentRequestTimeoutMs).isZero()
+        assertThat(configuration.assignmentRequestRetryCount).isZero()
     }
 
     @Test
@@ -70,6 +76,34 @@ internal class FlagsConfigurationTest {
         // Then
         assertThat(configuration1).isEqualTo(configuration2)
         assertThat(configuration1).isNotSameAs(configuration2) // Different instances
+    }
+
+    @Test
+    fun `M preserve assignment request settings W legacy copy overload`() {
+        // Given
+        val callFactory = mock<Call.Factory>()
+        val configuration = FlagsConfiguration.Builder()
+            .assignmentRequestCallFactory(callFactory)
+            .assignmentRequestTimeout(2_500L)
+            .assignmentRequestRetryCount(3)
+            .build()
+
+        // When
+        val copiedConfiguration = configuration.copy(trackExposures = false)
+        val defaultCopy = configuration.copy()
+        val configurationWithDifferentLimits = FlagsConfiguration.Builder()
+            .assignmentRequestTimeout(5_000L)
+            .assignmentRequestRetryCount(4)
+            .build()
+
+        // Then
+        assertThat(copiedConfiguration.trackExposures).isFalse()
+        assertThat(copiedConfiguration.assignmentRequestCallFactory).isSameAs(callFactory)
+        assertThat(copiedConfiguration.assignmentRequestTimeoutMs).isEqualTo(2_500L)
+        assertThat(copiedConfiguration.assignmentRequestRetryCount).isEqualTo(3)
+        assertThat(defaultCopy).isEqualTo(configuration)
+        assertThat(defaultCopy.assignmentRequestCallFactory).isSameAs(callFactory)
+        assertThat(configurationWithDifferentLimits).isNotEqualTo(configuration)
     }
 
     @Test
@@ -140,6 +174,72 @@ internal class FlagsConfigurationTest {
 
         // Then
         assertThat(returnedBuilder).isSameAs(builder)
+    }
+
+    @Test
+    fun `M set assignment request limits W Builder`() {
+        // When
+        val configuration = FlagsConfiguration.Builder()
+            .assignmentRequestTimeout(2_500L)
+            .assignmentRequestRetryCount(3)
+            .build()
+
+        // Then
+        assertThat(configuration.assignmentRequestTimeoutMs).isEqualTo(2_500L)
+        assertThat(configuration.assignmentRequestRetryCount).isEqualTo(3)
+    }
+
+    @Test
+    fun `M set assignment request call factory W Builder`() {
+        // Given
+        val callFactory = mock<Call.Factory>()
+
+        // When
+        val configuration = FlagsConfiguration.Builder()
+            .assignmentRequestCallFactory(callFactory)
+            .build()
+
+        // Then
+        assertThat(configuration.assignmentRequestCallFactory).isSameAs(callFactory)
+    }
+
+    @Test
+    fun `M accept assignment request limit boundaries W Builder`() {
+        // When
+        val configuration = FlagsConfiguration.Builder()
+            .assignmentRequestTimeout(0)
+            .assignmentRequestRetryCount(10)
+            .build()
+
+        // Then
+        assertThat(configuration.assignmentRequestTimeoutMs).isZero()
+        assertThat(configuration.assignmentRequestRetryCount).isEqualTo(10)
+    }
+
+    @Test
+    fun `M reject negative assignment request timeout W Builder`() {
+        // When + Then
+        assertThatThrownBy {
+            FlagsConfiguration.Builder().assignmentRequestTimeout(-1)
+        }
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessage("timeoutMs must be greater than or equal to 0")
+    }
+
+    @Test
+    fun `M reject assignment retry counts outside supported range W Builder`() {
+        // When + Then
+        assertThatThrownBy {
+            FlagsConfiguration.Builder().assignmentRequestRetryCount(-1)
+        }
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessage("retryCount must be between 0 and 10")
+
+        assertThatThrownBy {
+            FlagsConfiguration.Builder().assignmentRequestRetryCount(11)
+        }
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessage("retryCount must be between 0 and 10")
     }
 
     // endregion

@@ -11,6 +11,7 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
+import com.datadog.android.internal.time.TimeProvider
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -18,12 +19,9 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Call
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody
-import okhttp3.ResponseBody.Companion.toResponseBody
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -38,6 +36,7 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -65,6 +64,9 @@ internal class PrecomputedAssignmentsDownloaderTest {
     @Mock
     lateinit var mockCall: Call
 
+    @Mock
+    lateinit var mockTimeProvider: TimeProvider
+
     private lateinit var testedDownloader: PrecomputedAssignmentsDownloader
 
     @Forgery
@@ -89,7 +91,11 @@ internal class PrecomputedAssignmentsDownloaderTest {
         testedDownloader = PrecomputedAssignmentsDownloader(
             callFactory = mockCallFactory,
             internalLogger = mockInternalLogger,
-            requestFactory = mockRequestFactory
+            requestFactory = mockRequestFactory,
+            timeProvider = mockTimeProvider,
+            requestTimeoutMs = 0L,
+            retryDelay = { _ -> },
+            jitterSource = { 0L }
         )
     }
 
@@ -104,7 +110,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
         val fakeRequest = Request.Builder()
             .url(fakeUrl)
             .build()
-        val fakeResponse = createSuccessfulResponse(fakeResponseBody, fakeUrl)
+        val fakeResponse = createPrecomputedSuccessfulResponse(fakeResponseBody, fakeUrl)
 
         whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext))
             .doReturn(fakeRequest)
@@ -128,7 +134,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
         val fakeRequest = Request.Builder()
             .url(fakeUrl)
             .build()
-        val fakeResponse = createSuccessfulResponse(fakeResponseBody, fakeUrl)
+        val fakeResponse = createPrecomputedSuccessfulResponse(fakeResponseBody, fakeUrl)
 
         whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext))
             .doReturn(fakeRequest)
@@ -229,6 +235,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
         )
         assertThat(messageCaptor.firstValue.invoke())
             .isEqualTo("Unexpected error while downloading flags")
+        verify(mockCallFactory, times(2)).newCall(fakeRequest)
     }
 
     @Test
@@ -311,7 +318,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
         val fakeRequest = Request.Builder()
             .url(fakeUrl)
             .build()
-        val fakeResponse = createUnsuccessfulResponse(404, fakeUrl)
+        val fakeResponse = createPrecomputedUnsuccessfulResponse(404, fakeUrl)
 
         whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext))
             .doReturn(fakeRequest)
@@ -346,6 +353,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
         )
         assertThat(telemetryMessageCaptor.firstValue.invoke())
             .isEqualTo("Flag assignment server returned error (404)")
+        verify(mockCallFactory).newCall(fakeRequest)
     }
 
     @Test
@@ -356,7 +364,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
         val fakeRequest = Request.Builder()
             .url(fakeUrl)
             .build()
-        val fakeResponse = createSuccessfulResponseWithNullBody(fakeUrl)
+        val fakeResponse = createPrecomputedSuccessfulResponseWithNullBody(fakeUrl)
 
         whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext))
             .doReturn(fakeRequest)
@@ -371,7 +379,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
     }
 
     @Test
-    fun `M close response body W readPrecomputedFlags()`(
+    fun `M close response W readPrecomputedFlags()`(
         @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String,
         @BoolForgery fakeIsSuccessfulResponse: Boolean
     ) {
@@ -395,36 +403,8 @@ internal class PrecomputedAssignmentsDownloaderTest {
         testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
 
         // Then
-        verify(fakeResponseBody).close()
+        verify(fakeResponse).close()
     }
-
-    // endregion
-
-    // region Helper methods
-
-    private fun createSuccessfulResponse(body: String, url: String): Response = Response.Builder()
-        .request(Request.Builder().url(url).build())
-        .protocol(Protocol.HTTP_1_1)
-        .code(200)
-        .message("OK")
-        .body(body.toResponseBody("application/json".toMediaType()))
-        .build()
-
-    private fun createSuccessfulResponseWithNullBody(url: String): Response = Response.Builder()
-        .request(Request.Builder().url(url).build())
-        .protocol(Protocol.HTTP_1_1)
-        .code(200)
-        .message("OK")
-        .body(null)
-        .build()
-
-    private fun createUnsuccessfulResponse(code: Int, url: String): Response = Response.Builder()
-        .request(Request.Builder().url(url).build())
-        .protocol(Protocol.HTTP_1_1)
-        .code(code)
-        .message("Error")
-        .body("".toResponseBody("application/json".toMediaType()))
-        .build()
 
     // endregion
 }

@@ -17,6 +17,7 @@ import com.datadog.android.flags.model.EvaluationContext
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import okhttp3.Call
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -30,6 +31,7 @@ import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -275,6 +277,37 @@ internal class FlagsClientTest {
     // endregion
 
     // region Builder API Tests
+
+    @Test
+    fun `M use custom assignment call factory W resolveAssignmentRequestCallFactory()`() {
+        // Given
+        val customCallFactory = mock<Call.Factory>()
+        val configuration = FlagsConfiguration.Builder()
+            .assignmentRequestCallFactory(customCallFactory)
+            .build()
+
+        // When
+        val resolvedFactory = FlagsClient.resolveAssignmentRequestCallFactory(configuration, mockSdkCore)
+
+        // Then
+        assertThat(resolvedFactory).isSameAs(customCallFactory)
+        verify(mockSdkCore, never()).createOkHttpCallFactory()
+    }
+
+    @Test
+    fun `M use SDK assignment call factory W resolveAssignmentRequestCallFactory() { custom factory omitted }`() {
+        // Given
+        val sdkCallFactory = mock<Call.Factory>()
+        val configuration = FlagsConfiguration.Builder().build()
+        whenever(mockSdkCore.createOkHttpCallFactory()).thenReturn(sdkCallFactory)
+
+        // When
+        val resolvedFactory = FlagsClient.resolveAssignmentRequestCallFactory(configuration, mockSdkCore)
+
+        // Then
+        assertThat(resolvedFactory).isSameAs(sdkCallFactory)
+        verify(mockSdkCore).createOkHttpCallFactory()
+    }
 
     @Test
     fun `M return existing client W Builder#build() {client already exists with default name}`() {

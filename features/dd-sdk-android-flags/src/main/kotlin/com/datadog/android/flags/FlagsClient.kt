@@ -31,6 +31,7 @@ import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.internal.utils.DDCoreStateHolder
+import okhttp3.Call
 import org.json.JSONObject
 
 /**
@@ -408,11 +409,14 @@ interface FlagsClient {
                 NoOpFlagsRepository()
             }
 
-            val callFactory = featureSdkCore.createOkHttpCallFactory()
+            val callFactory = resolveAssignmentRequestCallFactory(configuration, featureSdkCore)
             val assignmentsDownloader = PrecomputedAssignmentsDownloader(
                 internalLogger = featureSdkCore.internalLogger,
                 callFactory = callFactory,
-                requestFactory = flagsFeature.precomputedRequestFactory
+                requestFactory = flagsFeature.precomputedRequestFactory,
+                requestTimeoutMs = configuration.assignmentRequestTimeoutMs,
+                requestRetryCount = configuration.assignmentRequestRetryCount,
+                timeProvider = featureSdkCore.timeProvider
             )
 
             val precomputeMapper = PrecomputeMapper(featureSdkCore.internalLogger)
@@ -447,6 +451,12 @@ interface FlagsClient {
                 flagStateManager = flagStateManager
             )
         }
+
+        internal fun resolveAssignmentRequestCallFactory(
+            configuration: FlagsConfiguration,
+            featureSdkCore: FeatureSdkCore
+        ): Call.Factory = configuration.assignmentRequestCallFactory
+            ?: featureSdkCore.createOkHttpCallFactory()
 
         private fun createRumEvaluationLogger(featureSdkCore: FeatureSdkCore): RumEvaluationLogger {
             val rumFeatureScope = featureSdkCore.getFeature(RUM_FEATURE_NAME)

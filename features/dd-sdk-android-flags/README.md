@@ -93,6 +93,40 @@ val flagsConfig = FlagsConfiguration.Builder()
     .build()
 ```
 
+#### Configure assignment request limits
+
+Precomputed assignment requests make one attempt and have no SDK-added timeout by default. Set an explicit timeout to
+include both receiving the response and downloading its body. A zero timeout keeps the SDK timeout disabled and preserves
+any timeout already configured on the HTTP client. The retry count accepts values from zero to ten; zero disables retries.
+
+```kotlin
+val flagsConfig = FlagsConfiguration.Builder()
+    .assignmentRequestTimeout(2_000)
+    .assignmentRequestRetryCount(2)
+    .build()
+```
+
+#### Customize the assignment request transport
+
+Supply an OkHttp `Call.Factory` to customize only precomputed assignment requests. The SDK still constructs the
+request URL, method, body, and authentication headers; the factory must preserve them. Exposure and evaluation
+uploads continue to use the SDK transport. Timeout and retry policies compose independently on top of the supplied
+factory.
+
+```kotlin
+val customOkHttpClient = OkHttpClient.Builder()
+    // Add assignment-specific proxy, TLS, or interceptors here.
+    .build()
+
+val flagsConfig = FlagsConfiguration.Builder()
+    .assignmentRequestCallFactory(customOkHttpClient)
+    .assignmentRequestTimeout(2_000)
+    .assignmentRequestRetryCount(2)
+    .build()
+```
+
+The SDK does not own or shut down a supplied call factory or its resources.
+
 ## Use the Feature Flags SDK
 
 ### Create a Flags client

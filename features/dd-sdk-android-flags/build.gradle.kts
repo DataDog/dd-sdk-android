@@ -57,7 +57,8 @@ dependencies {
 
     implementation(libs.gson)
     implementation(libs.kotlin)
-    implementation(libs.okHttp)
+    // Public API: FlagsConfiguration.Builder.assignmentRequestCallFactory(Call.Factory)
+    api(libs.okHttp)
     implementation(libs.androidXAnnotation)
     implementation(libs.androidXCollection)
 
