@@ -10,10 +10,24 @@
     {
       "type": "object",
       "properties": {
+        "_dd": {
+          "type": "object",
+          "description": "Datadog internal metadata.",
+          "properties": {
+            "boot_ntp": {
+              "type": "integer",
+              "description": "NTP-corrected device boot timestamp, in nanoseconds.",
+              "readOnly": true
+            }
+          },
+          "readOnly": true
+        },
         "error": {
           "type": "object",
           "description": "Error properties.",
-          "required": ["id"],
+          "required": [
+            "id"
+          ],
           "properties": {
             "id": {
               "type": "array",
