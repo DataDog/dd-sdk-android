@@ -36,7 +36,6 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -235,7 +234,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
         )
         assertThat(messageCaptor.firstValue.invoke())
             .isEqualTo("Unexpected error while downloading flags")
-        verify(mockCallFactory, times(2)).newCall(fakeRequest)
+        verify(mockCallFactory).newCall(fakeRequest)
     }
 
     @Test
