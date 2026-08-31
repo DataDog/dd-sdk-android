@@ -694,6 +694,36 @@ assume.
 
 ---
 
+### If the run aborts part-way
+
+An hour is a long time to lose to one bad launch, so a run that aborts does not throw away what
+it already collected. The harness stamps `# completed_blocks=N` next to the abort marker and
+prints the command to collect the rest. Fix the cause the message names, collect the missing
+blocks with the same settings on the same device, then analyze both files together:
+
+```bash
+PKG=<app.id> WARMUP=3 ./coldstart_bench.sh baseline.apk treatment.apk 4 2   # 4 runs, 2 blocks
+./ab_stats.py --recover-completed-blocks results_<aborted>.csv results_<new>.csv
+```
+
+Use the command the aborted run printed rather than retyping this one: it already carries that
+run's compile filter, animation and radio state, warm-up count, labels, arm expectations, any
+`ALLOW_*` it needed and its `APP_TRACE_REGEX`. Those are the fields the analyzer compares
+between the two files, so dropping one is what makes the second collection unpoolable with the
+first. Note that the run count and block count are positional arguments, not environment
+variables.
+
+That restores the registered design and reports normally. The recovered blocks are whole cells
+with their own installs and their own passed gates, the prefix is floored to an even number so
+the arm order stays counterbalanced, and the block count comes from the harness rather than
+from you. Fewer blocks would mean a wider interval and a larger MDE, both of which the analyzer
+prints; recovery costs precision, never correctness.
+
+Recover only when the abort was a one-off. If the cause was drift, heat, storage or a change in
+the app, the blocks before the failure are suspect too: truncating there keeps the fast
+outcomes and drops the slow ones. Repeat the run instead. The abort reason is printed with the
+recovery banner so this is a decision you make with the evidence in front of you.
+
 ## Step 7 — Interpret the result
 
 `ab_stats.py` reports all of the below.
@@ -1152,6 +1182,7 @@ output contain no such data and are safe to share as-is.
 | `TotalTime` empty and `LaunchState=UNKNOWN` on every launch | the device is locked, or the notification shade is on top. Unlock it and leave it on the home screen |
 | every launch reports the wrong foreground activity | your `dumpsys` grep is anchored on `mResumedActivity`; this device prints `ResumedActivity:`. Match `m?ResumedActivity[:=]` |
 | `ab_stats.py` refuses to print a CI | fewer than 3 complete blocks, the selected endpoint is `NA` on an otherwise eligible measured launch, a selected row lacks `status`/`launch_state`/`foreground`, or a contributing block lacks one stable complementary `{1}`/`{2}` `pos_in_block` pair for the selected arms. Missing endpoints can be the slowest launches censored by the collection window, while missing or malformed validity/order evidence leaves the protocol unverifiable, so none is silently accepted; fix the CSV/collection and re-run. `--allow-missing-endpoint` is diagnostic only and still suppresses the primary interval |
+| a run aborted at block 7 and you do not want to lose 45 minutes | fix the cause, collect the missing blocks, and pool with `--recover-completed-blocks`; see [If the run aborts part-way](#if-the-run-aborts-part-way) |
 | `ab_stats.py` refuses the file entirely | the run aborted, contains a rejected/invalid measured launch, or holds fewer blocks/launches than its own header says (a `kill -9` or power cut can skip the abort marker). Re-run; `--allow-aborted` inspects it diagnostically without producing a reportable primary interval |
 | the harness refuses to start, naming another Android user | the app is also installed in a work or secondary profile. Host-side `adb uninstall` has no user selector, so continuing would delete that profile's app data, and no user-scoped removal leaves the measured user a genuinely fresh install. Remove it from those profiles, or use a dedicated test device |
 | the harness refuses to start, naming an output path | a results CSV, log or trace of that name already exists, or a parallel run against another device picked the same name. Output paths are atomically reserved before device state is changed, so evidence is never interleaved or overwritten. Move the old file or choose a new name |

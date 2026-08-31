@@ -1,11 +1,41 @@
 ---
 name: coldstart-benchmark
-description: Use when measuring the Datadog Android SDK's cold-start impact on an app (your own or one you are supporting) when app start got slower after adding the SDK, or when checking whether a cold-start A/B benchmark can be trusted. Enforces the liveness check, A/A validation and statistical controls that uncontrolled benchmarks miss.
+description: Operating rules for the cold-start benchmark harness that ships in this repository at tools/coldstart-benchmark (verify_sdk_active.sh, coldstart_bench.sh, ab_stats.py, capture_trace.sh, verify_trace.py). Use when measuring the Datadog Android SDK's cold-start impact on an app, when app start got slower after adding the SDK, or when judging whether a cold-start benchmark can be trusted. You run these scripts and report what they output; a hand-rolled adb or logcat measurement is not a substitute for any of them, and their refusals are results rather than obstacles.
 ---
 
-# Datadog Android SDK — Cold-start benchmarking
+# Datadog Android SDK — Cold-start benchmark harness
 
-## Overview
+## What this skill is
+
+**The operating manual for one specific toolchain in this repository, not general advice
+about benchmarking.** Everything below exists to get you to a number produced by
+`ab_stats.py` from a CSV produced by `coldstart_bench.sh`. If you find yourself reasoning
+about how to measure cold start, stop: that decision is already made and implemented, and
+your job is to drive it correctly.
+
+**Rules that bound the whole task:**
+
+1. **Run the scripts. Do not reimplement them.** `am start -W`, `logcat`, `dumpsys` and
+   `perfetto` invocations you compose yourself skip controls you cannot see (permission
+   pre-grant, force-stop settle, cleared-buffer boundary, per-launch validity gates), and a
+   result obtained that way is not comparable to one the harness produced. This is the
+   failure that has actually happened, and it looked like a confident answer.
+2. **Report only what the tools print.** Every millisecond figure you state must be
+   traceable to a line of `ab_stats.py` output over a named CSV. Do not average CSV columns
+   yourself, and do not quote `am start -W TotalTime` from a launch you drove by hand.
+3. **An abort is an answer.** When a script refuses, the refusal names the condition that
+   makes the measurement invalid. Fix that condition and re-run. Do not switch to a manual
+   path, do not silence a gate, and do not use an `ALLOW_*` override unless its own
+   documentation covers your situation.
+4. **If the analyzer suppresses the primary interval, there is no number to report.**
+   `NOT REPORTABLE` means the data cannot support an estimate. Say that, and say why.
+5. **Ask for what only the app's owner knows** (build type, feature flags, SDK
+   configuration, whether `reportFullyDrawn()` is called) instead of assuming it.
+6. **No device, no result.** If you cannot reach an unlocked physical device over `adb`,
+   report that you could not measure. Do not substitute an emulator, a reasoned estimate or
+   numbers from another app.
+
+## Why the controls exist
 
 Cold-start A/B benchmarking looks trivial and is not. An uncontrolled protocol produces
 numbers that are wrong by more than the effect being measured. On identical APKs (true
@@ -17,13 +47,14 @@ did not exist.
 initializes in the treatment arm, and (b) run the same APK in both arms and confirmed the
 result is null.
 
-Scripts: [`tools/coldstart-benchmark/`](../../../tools/coldstart-benchmark). The same
-material in prose, with more background:
-[`docs/benchmarking_sdk_cold_start.md`](../../../docs/benchmarking_sdk_cold_start.md).
+The scripts: [`tools/coldstart-benchmark/`](../../../tools/coldstart-benchmark), with
+[`README.md`](../../../tools/coldstart-benchmark/README.md) as their reference for every
+environment variable and exit code. The method in prose, with the measurements behind it:
+[`docs/benchmarking_sdk_cold_start.md`](../../../docs/benchmarking_sdk_cold_start.md). Read
+those for detail; do not re-derive their conclusions from first principles here.
 
-This skill ships in the SDK repository, so it applies whether you are measuring your own
-app or helping someone else measure theirs. Where a step needs information only the app's
-owner has (build type, feature flags, SDK configuration), ask for it rather than guessing.
+The harness ships in the SDK repository, so it applies whether the app being measured is
+ours or a customer's.
 
 ## When to Use
 
@@ -32,7 +63,11 @@ owner has (build type, feature flags, SDK configuration), ask for it rather than
 - Deciding whether a benchmark result (yours or someone else's) can be trusted
 - Auditing whether a Perfetto trace can support the conclusion drawn from it
 
-## Do these in order
+**Not for:** designing a different measurement, benchmarking something other than Android
+cold start, or answering "how would one benchmark this?" in the abstract. If the task cannot
+be served by running these scripts on a real device, say so rather than approximating them.
+
+## The required procedure, in this order
 
 ### 0. Reject the run before it starts if either of these is wrong
 
@@ -73,6 +108,27 @@ intent, settles (`SETTLE`, default 20s of wall clock, unchanged and distinct fro
 `capture_trace.sh`'s settle *launches*, which derive from `WARMUP`), then reads
 `/proc/<pid>/task/*/comm`. Exit 0 = live,
 1 = not, 2 = setup failure (no adb, no device, missing APK).
+
+**Never substitute an ad-hoc `adb` probe for one of the scripts.** A hand-rolled `am start -W`
+plus a `logcat` grep looks equivalent and is not: it skips the runtime-permission pre-grant, the
+force-stop settle and the cleared-buffer boundary that every launch in the protocol gets. An app
+whose initialization or logging is permission-gated then looks inert, and the improvised probe
+reports an absence the protocol would never have produced. This has already happened, and it
+reads as a confident result rather than as an error. To check whether a `datadog-*` thread or a
+log signpost appears on a single launch, run `verify_sdk_active.sh`. If you need the CSV
+columns too, run the shortest real A/A instead, with both expectations matching the APK you
+pass twice (`EXPECT_A=1 EXPECT_B=1` for an SDK build, `0`/`0` for a baseline one; a mismatch
+aborts on the liveness probe, which is the gate working):
+
+```bash
+# RUNS and BLOCKS are POSITIONAL (argv 3 and 4). Setting them in the environment is
+# discarded, and you get the full 4x8 default run instead of a two-block probe.
+EXPECT_A=1 EXPECT_B=1 LABEL_A=A1 LABEL_B=A2 WARMUP=0 \
+  ./coldstart_bench.sh <apk> <apk> 1 2
+```
+
+Two blocks is below the three the analyzer needs, so treat that CSV as a probe, not a
+measurement. **Absence observed any other way is not evidence of absence.**
 
 If it reports not-live, check logcat for SDK errors and for host-app gating:
 
@@ -147,6 +203,44 @@ until the run exits.
 Use the venv interpreter: `verify_trace.py`'s shebang is the system `python3`, which will
 not see a venv-installed `perfetto`.
 
+## If a run aborts
+
+Do not restart from zero, and do not report the partial file. The harness stamps
+`# completed_blocks=N` beside the abort marker and prints the command for the remainder.
+
+1. Read the abort reason. A one-off (dialog, foreign activity, one bad launch) means the
+   completed blocks are sound. Drift (heat, storage, an app-side change) means they are not,
+   because the tail degrades before it fails, and truncating there drops the slow outcomes.
+   In that case repeat the run rather than recovering it, and say why.
+2. Fix the named cause.
+3. Collect the missing blocks with the same device, same APK files and same settings, using
+   the block count from the hint.
+4. `ab_stats.py --recover-completed-blocks <aborted csv> <new csv>`.
+
+That yields the registered design and a normal, reportable result. The prefix is floored to an
+even block count so counterbalancing holds, and the count comes from the harness rather than
+from you: a file without that line (a `kill -9`) is refused, and there is no flag that lets you
+nominate a prefix yourself. Fewer blocks widen the interval and raise the MDE, both printed.
+
+## What a finished task looks like
+
+Report these, and nothing that is not one of them:
+
+- the `verify_sdk_active.sh` verdict for the treatment APK, and its exit code
+- the A/A result, with the CSV filename it came from
+- the A/B result as `ab_stats.py` printed it: the paired block mean, its 95% CI, the MDE at
+  that block count, and the significance verdict, each quoted rather than recomputed
+- every warning or `NOT REPORTABLE` line the analyzer emitted, and what it implies
+- the bias direction of the controls that were on (see below), so the number is read as the
+  lower bound it usually is
+- if a trace was captured: the `verify_trace.py` verdict and exit code, plus what the trace
+  can and cannot attribute
+
+If any of those is missing because a script aborted or the device was unavailable, that
+absence is the deliverable. A benchmarking task that ends in "the harness refused, here is
+the condition it named" is complete and useful. One that ends in a number obtained some
+other way is neither.
+
 ## Controls the scripts enforce, and why
 
 | control | failure it prevents | measured cost of omitting |
@@ -172,7 +266,7 @@ not see a venv-installed `perfetto`.
 | mandatory `aapt2` package preflight (all three device-touching scripts; both APKs in the A/B) | `PKG` naming a different app than the APKs (every block runs `adb uninstall $PKG`), or arms built from different app versions | — |
 | launcher resolved *after* each install | resolving up front cannot work on a clean device, and silently reuses a component read off a leftover build when one is installed | — |
 
-## Reading the statistics
+## Reading `ab_stats.py` output
 
 `ab_stats.py` prints all of this. The rules:
 
@@ -269,7 +363,7 @@ not see a venv-installed `perfetto`.
   baseline launch; pooled files may differ in `runs`, but a high-run-count file must not dominate
   only the denominator. A zero denominator makes the percentage undefined, not the absolute CI.
 
-## Where the SDK's startup cost comes from
+## Interpreting a result: where the cost landed in our measurements
 
 These are the real contributors. State them plainly in any writeup: they are all
 discoverable from a trace or from StrictMode, so a result that omits them reads as
@@ -295,7 +389,7 @@ again from JS. The core guards re-init, but `DdSdkImplementation.initialize` has
 return: it rebuilds its configuration, and `enableJankStatsTracking` plus the
 `Choreographer.FrameCallback` in `FrameRateProvider` are **not** guarded.
 
-## Bias direction of the controls
+## Which way the harness's controls bias the number
 
 Every discretionary control removes variance, and most bias the measured SDK cost *downward*.
 Full table in the
@@ -305,7 +399,7 @@ the page cache), TTID-only measurement and pre-granted permissions all shrink th
 metric is a **process-cold, page-cache-warm** start to first frame, and is closer to a lower
 bound than a worst case. Quote it with that caveat attached.
 
-## Trace gotchas
+## `capture_trace.sh` / `verify_trace.py` gotchas
 
 `verify_trace.py` returns three outcomes, and the distinction matters:
 
@@ -342,7 +436,7 @@ report the n: a single trace per arm had put the Session Replay figure at 443 ms
 `capture_trace.sh` captures **device-wide** process, thread and window data from every running
 app. Check what a trace contains before attaching it to a ticket or sending it to anyone.
 
-## Measurement-window trap
+## Choosing `--metric`: the measurement-window trap
 
 `am start -W TotalTime` ends at **first frame**. For React Native and Flutter apps much of
 startup follows: in one measured case first frame landed at ~963 ms while framework bring-up
@@ -353,6 +447,10 @@ The harness records `total_ms`, `displayed` (TTID from logcat) and `ttfd` separa
 `displayed` must be extracted anchored on the AOSP `ActivityTaskManager: Displayed <pkg>/…`
 format: some vendors (e.g. Motorola) log their own `MotoDisplayed` line first, and an
 unanchored `grep -m1` picks that one and silently yields `NA` on every row.
+
+Look for a signpost the same way you look for the SDK: through a script. A launch you drive by
+hand carries none of the permission and settle guarantees, so a marker missing from an
+improvised probe can still be present in every launch of a real run.
 
 ## Device caveats
 

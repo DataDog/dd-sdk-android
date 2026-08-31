@@ -341,6 +341,50 @@ class HarnessRegressionTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("settings put global window_animation_scale", result.stderr)
 
+    def test_abort_trailer_records_what_completed_and_how_to_recover(self) -> None:
+        source = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
+        # The count is set only after BOTH arms of a block finished every gate,
+        # which is what makes the prefix a set of whole cells.
+        loop_end = source.index("_COMPLETED_BLOCKS=$b")
+        measure_call = source.index('measure "$arm" "$b" "measure" "$RUNS" "$pos"')
+        self.assertLess(measure_call, loop_end)
+        self.assertIn('echo "# completed_blocks=$_COMPLETED_BLOCKS" >> "$OUT"', source)
+        self.assertIn("# recover: collect", source)
+        # The recovery hint must not introduce header keys of its own.
+        self.assertNotIn("recover_with=BLOCKS=", source)
+
+    def test_printed_recovery_command_survives_being_pasted(self) -> None:
+        """Every env line needs a continuation, or the settings never reach the run.
+
+        Without one, the leading lines paste as standalone assignments: they become
+        shell variables, are never exported, and the resume run silently falls back
+        to the defaults for WARMUP, COMPILE_FILTER, ANIMATIONS and AIRPLANE -- all
+        `_MUST_MATCH` keys -- so ab_stats.py refuses the pool and the operator has
+        collected a second run for nothing.
+        """
+        source = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
+        block = source[source.index("1. collect the remainder"):
+                       source.index("2. ab_stats.py --recover-completed-blocks")]
+        env_echoes = [ln for ln in block.splitlines()
+                      if "=$" in ln and "echo" in ln and "_ALLOW_IN_EFFECT" not in ln]
+        self.assertTrue(env_echoes)
+        for ln in env_echoes:
+            self.assertIn("\\\\", ln, f"env line lacks a line continuation: {ln.strip()}")
+        # RUNS and BLOCKS are argv 3 and 4; exporting them is silently discarded.
+        self.assertNotIn("RUNS=$RUNS WARMUP=", block)
+        self.assertIn("$RUNS $_resume_missing", block)
+        # A run using APP_TRACE_REGEX must carry it over, or the resume CSV stamps
+        # app_trace_id=none and --metric app_trace_ms cannot be pooled with it.
+        self.assertIn("APP_TRACE_REGEX=%q", block)
+
+    def test_abort_trailer_globals_exist_before_the_trap_is_armed(self) -> None:
+        """`set -u` inside the EXIT trap would replace the abort message with a crash."""
+        source = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
+        self.assertLess(source.index("_COMPLETED_BLOCKS=0"),
+                        source.index("trap restore_device EXIT"))
+        self.assertLess(source.index('_ALLOW_IN_EFFECT=""'),
+                        source.index("trap restore_device EXIT"))
+
     def test_trace_output_is_reserved_before_the_first_device_mutation(self) -> None:
         source = (HARNESS / "capture_trace.sh").read_text(encoding="utf-8")
         reserve = source.index('dd_reserve_output_files "$TRACE_FILE"')
@@ -1357,6 +1401,139 @@ class AbStatsRegressionTests(unittest.TestCase):
         self.assertIn("launch-validity evidence", result.stdout)
         self.assertIn("NOT REPORTABLE", result.stdout)
         self.assertNotIn("  95% CI                ", result.stdout)
+
+    def aborted_csv(
+        self,
+        completed_blocks: int,
+        declared_blocks: int = 8,
+        with_count: bool = True,
+        invalid_treatment_block: int | None = None,
+        drop_baseline_block: int | None = None,
+    ) -> str:
+        """A CSV shaped like the one an abort mid-block leaves behind.
+
+        Whole blocks up to `completed_blocks`, then a partial block whose last row
+        is the rejected launch that stopped the run, then the harness's trailer.
+        """
+        rows = self.benchmark_csv(
+            metadata=self.recoverable_metadata(declared_blocks),
+            runs_per_cell=2,
+            block_count=completed_blocks,
+            invalid_treatment_block=invalid_treatment_block,
+        ).rstrip("\n").split("\n")
+        if drop_baseline_block is not None:
+            rows = [r for r in rows
+                    if not r.startswith(f"A_noDD,{drop_baseline_block},")]
+        partial = completed_blocks + 1
+        rows.append(f"B_withDD,{partial},1,measure,1,118,COLD,ok,ok,118")
+        rows.append(f"B_withDD,{partial},2,measure_rejected,2,NA,NA,ok,OTHER_MID,NA")
+        rows.append("# RUN ABORTED (exit 1) -- another activity took the foreground: "
+                    "com.android.settings/.homepage.SettingsHomepageActivity")
+        if with_count:
+            rows.append(f"# completed_blocks={completed_blocks}")
+        return "\n".join(rows) + "\n"
+
+    def recoverable_metadata(self, blocks: int, runs: int = 2) -> str:
+        return (f"device=pixel sdk=31 abi=arm64-v8a emulator=0 android_user=0 "
+                f"compile_filter=speed-profile blocks={blocks} runs={runs} warmup=3 "
+                f"animations=0 fp=fp1 launcher=com.example/.Main airplane=0 "
+                f"baseline_md5=aaa treatment_md5=bbb label_a=A_noDD label_b=B_withDD "
+                f"expect_a=0 expect_b=1 app_trace_id=none permission_a=p1 permission_b=p2")
+
+    def test_aborted_run_is_still_refused_without_the_recovery_flag(self) -> None:
+        result = self.run_stats(self.aborted_csv(6))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("refusing to analyze an aborted run", result.stderr)
+
+    def test_completed_blocks_of_an_aborted_run_are_recoverable(self) -> None:
+        """45 minutes of valid blocks must not be lost to a failure in block 7.
+
+        The prefix is whole cells collected under the full protocol; only their
+        number changed. Every other refusal still applies to what remains.
+        """
+        result = self.run_stats(self.aborted_csv(6), "--recover-completed-blocks")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("RECOVERED 6 of the 8 blocks", result.stdout)
+        self.assertIn("2 row(s) after block 6 excluded", result.stdout)
+        self.assertIn("com.android.settings", result.stdout)
+        self.assertIn("  blocks                6", result.stdout)
+        self.assertIn("  95% CI                ", result.stdout)
+        self.assertNotIn("NOT REPORTABLE", result.stdout)
+
+    def test_recovered_prefix_is_floored_to_an_even_block_count(self) -> None:
+        """An odd prefix is not counterbalanced, and 1/k of an order effect stays in."""
+        result = self.run_stats(self.aborted_csv(7), "--recover-completed-blocks")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("using 6 so the arm order stays counterbalanced", result.stdout)
+        self.assertIn("  blocks                6", result.stdout)
+        self.assertIn("{'A_noDD': 3, 'B_withDD': 3}", result.stdout)
+
+    def test_recovered_prefix_pools_to_the_registered_design(self) -> None:
+        fresh = self.benchmark_csv(
+            metadata=self.recoverable_metadata(2),
+            runs_per_cell=2,
+            block_count=2,
+            baseline_offset=106,
+        )
+        result = self.run_stats_files(
+            [self.aborted_csv(6), fresh], "--recover-completed-blocks"
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("  blocks                8", result.stdout)
+        self.assertIn("{'A_noDD': 4, 'B_withDD': 4}", result.stdout)
+        self.assertIn("  95% CI                ", result.stdout)
+        self.assertNotIn("NOT REPORTABLE", result.stdout)
+
+    def test_recovery_does_not_relax_any_other_refusal(self) -> None:
+        """The banner claims every other gate still applies. Prove it does.
+
+        An invalid launch and an incomplete cell both sit INSIDE the recovered
+        prefix here, so recovering the prefix must not turn either into a result.
+        """
+        invalid = self.aborted_csv(6, invalid_treatment_block=3)
+        result = self.run_stats(invalid, "--recover-completed-blocks")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("RECOVERED 6 of the 8 blocks", result.stdout)
+        self.assertIn("invalid measured launch", result.stderr)
+
+        short = self.aborted_csv(6, drop_baseline_block=3)
+        result = self.run_stats(short, "--recover-completed-blocks")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("RECOVERED 6 of the 8 blocks", result.stdout)
+        self.assertIn("truncated run", result.stderr)
+
+    def test_rows_with_an_unreadable_block_are_kept_not_counted_as_excluded(self) -> None:
+        """A row it cannot classify must not be deleted and reported as post-prefix.
+
+        Dropping it would remove a row the gates exist to judge, and would attribute
+        it to the abort. It is kept, counted separately, and left to those gates.
+        """
+        body = self.aborted_csv(6).replace("A_noDD,3,1,measure,1,", "A_noDD,x3,1,measure,1,", 1)
+        result = self.run_stats(body, "--recover-completed-blocks")
+        self.assertIn("2 row(s) after block 6 excluded", result.stdout)
+        self.assertIn("1 row(s) have no readable block number and were NOT", result.stdout)
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_recovery_says_so_when_it_does_not_apply(self) -> None:
+        """A flag that quietly does nothing reads as a flag that was not needed."""
+        result = self.run_stats(self.aborted_csv(1), "--recover-completed-blocks")
+        self.assertIn("--recover-completed-blocks does NOT apply", result.stdout)
+        self.assertIn("only 1 block(s) completed", result.stdout)
+
+        result = self.run_stats(
+            self.aborted_csv(6, with_count=False), "--recover-completed-blocks"
+        )
+        self.assertIn("--recover-completed-blocks does NOT apply", result.stdout)
+        self.assertIn("no usable `# completed_blocks=N` line", result.stdout)
+
+    def test_recovery_requires_the_count_the_harness_recorded(self) -> None:
+        """A kill -9 leaves no count, so there is nothing to trust. Refusal stands."""
+        result = self.run_stats(
+            self.aborted_csv(6, with_count=False), "--recover-completed-blocks"
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("refusing to analyze an aborted run", result.stderr)
+        self.assertNotIn("RECOVERED", result.stdout)
 
     def test_byte_identical_csv_copy_is_refused(self) -> None:
         csv_body = self.benchmark_csv()

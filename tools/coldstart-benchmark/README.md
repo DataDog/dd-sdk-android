@@ -82,7 +82,7 @@ newest phone on the team's desk.
 |---|---|
 | `verify_sdk_active.sh` | **run this first**: proves the SDK actually initializes on-device. Uninstalls/reinstalls, so it deletes app data. Threads are read from **every** process of the package, `<pkg>` and `<pkg>:<private>` alike, so an app that initializes Datadog in a private process is not reported as SDK-less |
 | `coldstart_bench.sh` | the A/B (or A/A) benchmark. Its liveness probe, warm-ups and measured launches all require a numeric `TotalTime` and apply the foreground gate before they can condition or enter the experiment. Each arm's effective runtime-permission outcome is stamped and must remain stable across fresh installs |
-| `ab_stats.py` | statistics: paired per-block delta (primary), Welch and permutation tests (diagnostic), per-block drift, block-paired order effect, MDE / required even block counts. `--metric total_ms\|displayed\|ttfd\|app_trace_ms` selects the measurement window. Refuses duplicate aliases or byte-identical copies of an input file and pooled CSVs that omit or disagree on mandatory device/protocol metadata, including Android user and `warmup` (each cell is a fresh install, so the warm-up count fixes where in the post-install JIT/profile ramp the measured launches sit), CSVs whose arms were built from different APKs, CSVs that map their labels, SDK-liveness expectations or effective permission outcomes to different arms, and incompatible `APP_TRACE_REGEX` identities. The normal protocol keeps one physical device; the analyzer does not stamp the adb serial or distinguish two same-model devices on the same build. `--allow-mixed` overrides the metadata refusal for an operator who intends to pool anyway and will caveat the result. Refuses aborted or truncated runs, `measure_rejected` rows even when a hard kill prevented the abort trailer, legacy `phase=measure` rows whose recorded launch checks are invalid, and a selected endpoint that is `NA` on any otherwise eligible measured launch: excluding any of these can select away slow outcomes and manufacture an improvement. Legacy rows that omit or leave empty `status`, `launch_state` or `foreground` remain descriptive but suppress the primary interval because missing evidence is not a passing verdict. A zero between-block sample variance is non-estimable rather than a zero-width CI/MDE; a zero baseline mean keeps the absolute estimate and interval but makes the relative percentage undefined. That percentage uses the same equal block weighting as the primary absolute delta, even when pooled files used different launches per cell. `--allow-aborted` and `--allow-missing-endpoint` expose survivor diagnostics only; the primary interval stays suppressed and is not reportable. With a complete valid endpoint, the primary result is also gated on each contributing block recording exactly one stable, complementary `{1}`/`{2}` position pair for the selected arms and on their counterbalancing; unrelated labels cannot provide or overwrite that evidence |
+| `ab_stats.py` | statistics: paired per-block delta (primary), Welch and permutation tests (diagnostic), per-block drift, block-paired order effect, MDE / required even block counts. `--metric total_ms\|displayed\|ttfd\|app_trace_ms` selects the measurement window. Refuses duplicate aliases or byte-identical copies of an input file and pooled CSVs that omit or disagree on mandatory device/protocol metadata, including Android user and `warmup` (each cell is a fresh install, so the warm-up count fixes where in the post-install JIT/profile ramp the measured launches sit), CSVs whose arms were built from different APKs, CSVs that map their labels, SDK-liveness expectations or effective permission outcomes to different arms, and incompatible `APP_TRACE_REGEX` identities. The normal protocol keeps one physical device; the analyzer does not stamp the adb serial or distinguish two same-model devices on the same build. `--allow-mixed` overrides the metadata refusal for an operator who intends to pool anyway and will caveat the result. Refuses aborted or truncated runs, `measure_rejected` rows even when a hard kill prevented the abort trailer, legacy `phase=measure` rows whose recorded launch checks are invalid, and a selected endpoint that is `NA` on any otherwise eligible measured launch: excluding any of these can select away slow outcomes and manufacture an improvement. Legacy rows that omit or leave empty `status`, `launch_state` or `foreground` remain descriptive but suppress the primary interval because missing evidence is not a passing verdict. A zero between-block sample variance is non-estimable rather than a zero-width CI/MDE; a zero baseline mean keeps the absolute estimate and interval but makes the relative percentage undefined. That percentage uses the same equal block weighting as the primary absolute delta, even when pooled files used different launches per cell. `--allow-aborted` and `--allow-missing-endpoint` expose survivor diagnostics only; the primary interval stays suppressed and is not reportable. `--recover-completed-blocks` is the one exception, and only for an aborted run whose whole completed blocks the harness itself counted in `# completed_blocks=N`: it re-declares the matrix to that even-floored prefix and leaves every other refusal in force. See [Recovering an aborted run](#recovering-an-aborted-run). With a complete valid endpoint, the primary result is also gated on each contributing block recording exactly one stable, complementary `{1}`/`{2}` position pair for the selected arms and on their counterbalancing; unrelated labels cannot provide or overwrite that evidence |
 | `capture_trace.sh` | Perfetto capture with attestation, cold-launch/endpoint checks and liveness gating. Every discarded settle launch must report `Status=ok`, `LaunchState=COLD`, a numeric `TotalTime`, draw the target without a foreign activity reaching first draw, end with the target in the foreground, and satisfy the requested SDK-liveness state. A contaminated launch aborts rather than silently moving the trace earlier in or preparing a different post-install JIT/profile ramp. Atomically reserves the `.pftrace` path before changing device state and refuses to overwrite an existing capture |
 | `verify_trace.py` | decides whether a trace shows the SDK running, and whether it *can* answer that at all. `--require-foreground` additionally fails (exit 4) a capture the app did not own for the *whole* window, which an end-of-capture check cannot see. It applies to **both arms**, since a baseline capture is as contaminable as a treatment one, and it fails equally when lifecycle or ActivityManager launch evidence is unavailable: an unrunnable check must not report as a passed one (`ALLOW_MISSING_LAUNCH_MARKER=1` / `--allow-missing-launch-marker` is the one exception, and it downgrades the verdict rather than the report). Ownership is tracked as the set of resumed activities across **every** process of the app, `<pkg>` and `<pkg>:<private>` alike, so a splash activity handing over to the next one still counts as held while an activity that pauses and comes back as itself does not. Global ActivityManager `launching:` slices expose a foreign permission/system activity even when a later target activity makes the lifecycle gap resemble a valid handoff . Rejection currently spans the whole capture rather than only the interval the A/B measures: the endpoint is observed on the host, so its timestamp is not in the trace, and a takeover in the tail, which cannot have changed the A/B number, is refused on the same footing as one inside the measured interval. Conservative, not exact; the detail lines are timestamped (relative to the app's first resume), so read them before re-capturing |
 | `fp_simulation.py` | reproduces the false-positive table below, using `ab_stats.py`'s own interval code |
@@ -149,6 +149,67 @@ interval at all.
 | `SETTLE` | `20` | `verify_sdk_active.sh` only: seconds to wait after launch before sampling threads. The verifier pre-grants the same declared runtime permissions as the benchmark and trace before launching, then revokes exactly those grants on exit, so permission-gated initialization is tested under the measured scenario |
 | `ANIMATIONS` / `AIRPLANE` (trace) | `0` / `0` | `capture_trace.sh` honors both; set them to whatever the A/B used. The radio state must match the benchmark, and external reachability must be held stable by the operator. A trace with animations off omits the per-frame SDK work an `ANIMATIONS=1` benchmark included |
 | `TRACE_ENDPOINT` (trace) | `total_ms` | endpoint that `capture_trace.sh` must observe before Perfetto stops: `total_ms` validates the cold `am start -W` first-frame result, `ttfd` requires the app's `Fully drawn` marker, and `app_trace_ms` requires a matching `APP_TRACE_REGEX`. Set this to the metric the trace is meant to explain |
+
+## Recovering an aborted run
+
+A run that aborts in block 7 of 8 has already spent 45 minutes collecting six complete blocks.
+Those blocks are whole cells, each with its own install, AOT compilation and full set of passed
+gates, so nothing that happened in block 7 changed them. Only their number changed.
+
+The harness records what it finished. On abort the CSV gets:
+
+```
+# RUN ABORTED (exit 1) -- another activity took the foreground: com.android.settings/...
+# completed_blocks=6
+# recover: collect 2 more blocks, then pool both CSVs
+```
+
+and the run prints the exact command to collect the remainder. To recover:
+
+```bash
+# 1. fix whatever the abort message named, then collect the missing blocks.
+#    Prefer the command the aborted run printed: it already carries that run's
+#    COMPILE_FILTER, ANIMATIONS, AIRPLANE, WARMUP, labels, expectations, any
+#    ALLOW_* it needed and its APP_TRACE_REGEX. Dropping one of those is what makes
+#    the second collection unpoolable with the first.
+PKG=<app.id> WARMUP=3 ./coldstart_bench.sh baseline.apk treatment.apk 4 2   # 4 runs, 2 blocks
+
+# 2. analyze the surviving prefix together with the new run
+./ab_stats.py --recover-completed-blocks results_<aborted>.csv results_<new>.csv
+```
+
+You end up with the registered 8-block design and a fully reportable interval: no
+`--allow-mixed`, no `--allow-aborted`, no diagnostic-only downgrade. Block ids are namespaced
+per file, so blocks from the two collections are never merged, and the analyzer reports the
+first-arm balance it observed rather than assuming it.
+
+What `--recover-completed-blocks` does and does not relax:
+
+- The block count comes from the harness's own `completed_blocks=` line. Nothing lets you
+  choose a prefix, so a prefix cannot be picked to suit a result. A file with no such line (a
+  `kill -9`, a power cut) is still refused outright.
+- The count is floored to an even number, because the arm order alternates by block: an odd
+  prefix is not counterbalanced, and carrying a 1/k residual order effect into the estimate is
+  worse than discarding one good block.
+- Rows after the prefix, including the rejected launch that aborted the run, are excluded and
+  counted in the output.
+- Every other refusal still applies to what remains: matrix completeness against the
+  re-declared block count, validity columns, endpoint completeness, position pairs, metadata
+  compatibility between the two files.
+- Fewer blocks means a wider interval and a larger MDE, both reported. Recovery costs
+  precision, never correctness.
+- If the file has no `completed_blocks=` line, or fewer than 2 whole blocks, the flag
+  prints why it does not apply and the file stays refused. It never silently does
+  nothing.
+- Rows whose block number is unreadable are kept rather than excluded, so the checks
+  below still judge them, and are counted separately from the post-prefix rows.
+
+**The one judgement it cannot make for you.** A one-off failure (a dialog, a foreign activity,
+a single bad launch) leaves the prefix sound. A drifting failure (thermal throttling, storage
+filling, an app-side change) degrades the tail *before* it aborts, so truncating at the failure
+point keeps the fast blocks and drops the slow ones, which is exactly the outcome-dependent
+censoring this tool refuses everywhere else. The abort reason is printed for that reason. If it
+looks like drift, repeat the run instead of recovering it.
 
 ## What the benchmark does per arm, per block
 

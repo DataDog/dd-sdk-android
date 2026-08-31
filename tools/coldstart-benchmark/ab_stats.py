@@ -249,6 +249,12 @@ def main():
     ap.add_argument("csv", nargs="+", help="one or more results CSVs (concatenated)")
     ap.add_argument("--baseline", default="A_noDD")
     ap.add_argument("--treatment", default="B_withDD")
+    ap.add_argument("--recover-completed-blocks", action="store_true",
+                    help="analyze the whole blocks an aborted run did finish, as "
+                         "recorded by the harness itself in `# completed_blocks=N`. "
+                         "Pool with a fresh run collecting the remainder to restore "
+                         "the registered design. Only for a one-off failure: if the "
+                         "abort was caused by drift, the earlier blocks are suspect too")
     ap.add_argument("--allow-aborted", action="store_true",
                     help="inspect an aborted/truncated run or one with legacy invalid rows "
                          "(diagnostic only; primary interval stays suppressed)")
@@ -494,6 +500,115 @@ def main():
         print("!! contention are all distorted, and there is no thermal throttling.")
         print("!! Do not report these as your app's startup cost.")
         print("!" * 78)
+
+    # ---- recover the whole blocks an aborted run did finish -------------------
+    # An abort at block 7 of 8 costs 45 minutes of collection. Blocks 1..N are
+    # complete cells collected under the full protocol, so they are not damaged by
+    # what happened afterwards; only their number changed. Recovering them is
+    # therefore a matter of reading the count the harness recorded and re-declaring
+    # the matrix to match, NOT of relaxing any gate:
+    #   * N comes from the harness's own trailer. Nothing here lets the analyst pick
+    #     a prefix, so a prefix cannot be chosen to suit a result.
+    #   * N is floored to an even number, because the arm order alternates by block
+    #     and an odd prefix is not counterbalanced. Dropping one good block is
+    #     cheaper than carrying a 1/k residual order effect into the estimate.
+    #   * Rows past the prefix, including the rejected launch that caused the abort,
+    #     are excluded here and reported. Every other refusal still applies to what
+    #     remains: matrix completeness for the re-declared block count, validity
+    #     columns, endpoint completeness, position pairs.
+    # What it cannot check is WHY the run aborted. A one-off (a dialog, a foreign
+    # activity) leaves the prefix sound. Drift (heat, storage, an app-side change)
+    # degrades the tail before it aborts, so truncating there selects away the slow
+    # outcomes -- the same outcome-dependent censoring this tool refuses elsewhere.
+    # That judgement needs the abort reason, so the reason is printed and the flag
+    # is opt-in rather than automatic.
+    recovered, declined = [], []
+    if a.recover_completed_blocks:
+        for i, ((path, body), own_meta) in enumerate(zip(per_file, per_meta)):
+            if not any("RUN ABORTED" in m for m in own_meta):
+                continue
+            kv = parse_meta(own_meta)
+            # Named separately so the message below states which line is actually
+            # missing. A run that aborts before the first block writes no `blocks=`
+            # header at all, and reporting that as a missing `completed_blocks=`
+            # would send the operator looking at the wrong thing.
+            unusable = [k for k in ("completed_blocks", "blocks")
+                        if not str(kv.get(k, "")).isdigit()]
+            if unusable:
+                # No count the harness recorded (a kill -9, a power cut, an abort
+                # before the header, a hand-edited file): the refusal stands. Say so.
+                # A flag that quietly does nothing is indistinguishable from one that
+                # was not needed.
+                declined.append((path, "it records no usable `# "
+                                       + "=N`, `# ".join(unusable)
+                                       + "=N` line, so there is no count from the "
+                                         "harness to trust"))
+                continue
+            completed, declared = int(kv["completed_blocks"]), int(kv["blocks"])
+            keep = completed - (completed % 2)
+            if keep < 2:
+                declined.append((path, f"only {completed} block(s) completed, and a "
+                                       "counterbalanced prefix needs at least 2"))
+                continue
+            # The block column is located by NAME. Hardcoding index 1 would silently
+            # mis-slice the file if a column were ever inserted before it, and the
+            # symptom would be a plausible interval over the wrong rows.
+            header, kept, dropped, unreadable = None, [], 0, 0
+            blk_col = None
+            for ln in body:
+                if header is None:
+                    header = ln
+                    cols = [c.strip() for c in header.split(",")]
+                    blk_col = cols.index("block") if "block" in cols else None
+                    continue
+                fields = ln.split(",")
+                try:
+                    in_prefix = int(fields[blk_col]) <= keep
+                except (IndexError, ValueError, TypeError):
+                    # A row whose block cannot be read is NOT classified as "after the
+                    # prefix". Dropping it would delete a row the gates below exist to
+                    # judge, and would report it as one of the rows the abort left
+                    # behind. Keep it and count it separately: whatever refuses on a
+                    # malformed row still refuses.
+                    kept.append(ln)
+                    unreadable += 1
+                    continue
+                if in_prefix:
+                    kept.append(ln)
+                else:
+                    dropped += 1
+            per_file[i] = (path, [header] + kept)
+            # ` blocks=`, with the leading space: `blocks={declared}` alone also
+            # matches the `completed_blocks={declared}` line.
+            per_meta[i] = [m.replace(f" blocks={declared}", f" blocks={keep}")
+                           for m in own_meta if "RUN ABORTED" not in m]
+            recovered.append((path, keep, completed, declared, dropped, unreadable,
+                              [m.strip() for m in own_meta if "RUN ABORTED" in m][0].strip("# ")))
+        for path, why in declined:
+            print("!" * 78)
+            print(f"!! --recover-completed-blocks does NOT apply to {path}:")
+            print(f"!!   {why}.")
+            print("!! That file is treated as the aborted run it is.")
+            print("!" * 78)
+        if recovered:
+            meta = [m for own in per_meta for m in own]
+            print("!" * 78)
+            for path, keep, completed, declared, dropped, unreadable, reason in recovered:
+                print(f"!! RECOVERED {keep} of the {declared} blocks {path} declared.")
+                print(f"!!   the harness recorded {completed} block(s) completed under the full")
+                if keep != completed:
+                    print(f"!!   protocol; using {keep} so the arm order stays counterbalanced.")
+                else:
+                    print("!!   protocol, all of which are used.")
+                print(f"!!   {dropped} row(s) after block {keep} excluded, including the launch")
+                print(f"!!   that aborted the run: {reason}")
+                if unreadable:
+                    print(f"!!   {unreadable} row(s) have no readable block number and were NOT")
+                    print("!!   excluded; the checks below decide what to do with them.")
+            print("!! Sound only if that failure was a one-off. If it was drift, the blocks")
+            print("!! before it are suspect too and the run should be repeated instead.")
+            print("!! Pool with a run collecting the remaining blocks to restore the design.")
+            print("!" * 78)
 
     if any("RUN ABORTED" in m for m in meta):
         print("!" * 78)
