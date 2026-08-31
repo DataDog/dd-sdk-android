@@ -156,12 +156,17 @@ internal class ProfilingManagerTriggerRegistrar(
             if (creationTimeMs != null) {
                 val delayMs = detectedAtMs - creationTimeMs
                 callbackDelayMs = delayMs
-                droppedAsStale = delayMs > MAX_CALLBACK_DELAY_MS
+                droppedAsStale = triggerType == ProfilingTrigger.TRIGGER_TYPE_ANR &&
+                    delayMs > MAX_CALLBACK_DELAY_MS
             }
-            if (callbackDelayMs != null && !droppedAsStale) {
+            // ANR needs to dump the threads, it must be gated by the callback delay.
+            val shouldForward = if (triggerType == ProfilingTrigger.TRIGGER_TYPE_ANR) {
+                callbackDelayMs != null && !droppedAsStale
+            } else {
+                true
+            }
+            if (shouldForward) {
                 forwardTriggerResult(triggerType, currentListener, detectedAtMs, resultPath)
-                // We currently don't use the result profile, just delete it.
-                safeDelete(resultPath)
             } else {
                 // Not forwarded (stale, or could not compute staleness): delete to avoid leaking.
                 safeDelete(resultPath)
@@ -188,8 +193,11 @@ internal class ProfilingManagerTriggerRegistrar(
         resultPath: String
     ) {
         when (triggerType) {
-            ProfilingTrigger.TRIGGER_TYPE_ANR ->
+            ProfilingTrigger.TRIGGER_TYPE_ANR -> {
                 listener.onAnrDetected(threadDumper.dump(detectedAtMs))
+                // We currently don't use the result of ANR profile, just delete it.
+                safeDelete(resultPath)
+            }
 
             ProfilingTrigger.TRIGGER_TYPE_OOM ->
                 listener.onOutOfMemoryDetected(

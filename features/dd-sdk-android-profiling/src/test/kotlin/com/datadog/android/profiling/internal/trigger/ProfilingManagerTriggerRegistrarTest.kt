@@ -15,7 +15,6 @@ import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.internal.ProfilingStartReason
-import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
 import com.datadog.android.profiling.internal.utils.ThreadDumper
@@ -33,6 +32,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -544,14 +544,15 @@ internal class ProfilingManagerTriggerRegistrarTest {
         triggerCallbackCaptor.firstValue.accept(oomResult)
 
         // Then
-        val forwardedResultCaptor = argumentCaptor<PerfettoResult>()
-        verify(mockListener).onOutOfMemoryDetected(forwardedResultCaptor.capture())
-        val forwardedResult = forwardedResultCaptor.firstValue
-        assertThat(forwardedResult.start).isEqualTo(fakeNow)
-        assertThat(forwardedResult.end).isEqualTo(fakeNow)
-        assertThat(forwardedResult.startReason).isEqualTo(ProfilingStartReason.OUT_OF_MEMORY)
-        assertThat(forwardedResult.resultFilePath).isEqualTo(tmpFile.absolutePath)
-        assertThat(tmpFile.exists()).isFalse // registrar deletes the histogram file after forwarding
+        verify(mockListener).onOutOfMemoryDetected(
+            argThat {
+                start == fakeNow &&
+                    end == fakeNow &&
+                    startReason == ProfilingStartReason.OUT_OF_MEMORY &&
+                    resultFilePath == tmpFile.absolutePath
+            }
+        )
+        assertThat(tmpFile.exists()).isTrue // registrar keeps the histogram file; the listener owns its lifetime
         verify(mockProfilingTelemetry).report(
             ProfilingTelemetryEvent.TriggerResult(
                 triggerType = ProfilingTrigger.TRIGGER_TYPE_OOM,
@@ -566,11 +567,12 @@ internal class ProfilingManagerTriggerRegistrarTest {
     }
 
     @Test
-    fun `M drop OOM histogram W trigger fires {OOM stale, delay above threshold}`(
+    fun `M forward OOM histogram W trigger fires {OOM success, delay above threshold}`(
         @TempDir tempDir: File,
         @LongForgery(min = 1_001L, max = 60_000L) fakeDelayMs: Long
     ) {
-        // Given
+        // Given — the staleness cutoff only applies to ANR (live thread dump); OOM's trace file
+        // is captured at the actual trigger time, so a delayed callback must still be forwarded.
         val tmpFile = File(tempDir, "heap.hprof").apply { writeText("histogram") }
         val creationTimeMs = Files.readAttributes(
             Paths.get(tmpFile.absolutePath),
@@ -593,8 +595,15 @@ internal class ProfilingManagerTriggerRegistrarTest {
         triggerCallbackCaptor.firstValue.accept(oomResult)
 
         // Then
-        verify(mockListener, never()).onOutOfMemoryDetected(any())
-        assertThat(tmpFile.exists()).isFalse // registrar deletes the stale histogram file
+        verify(mockListener).onOutOfMemoryDetected(
+            argThat {
+                start == fakeNow &&
+                    end == fakeNow &&
+                    startReason == ProfilingStartReason.OUT_OF_MEMORY &&
+                    resultFilePath == tmpFile.absolutePath
+            }
+        )
+        assertThat(tmpFile.exists()).isTrue // registrar keeps the histogram file; the listener owns its lifetime
         verify(mockProfilingTelemetry).report(
             ProfilingTelemetryEvent.TriggerResult(
                 triggerType = ProfilingTrigger.TRIGGER_TYPE_OOM,
@@ -603,7 +612,7 @@ internal class ProfilingManagerTriggerRegistrarTest {
                 fileSize = expectedFileSize,
                 callbackDelayMs = fakeDelayMs,
                 clientClockDriftMs = 0L,
-                droppedAsStale = true
+                droppedAsStale = false
             )
         )
     }
@@ -636,14 +645,15 @@ internal class ProfilingManagerTriggerRegistrarTest {
         triggerCallbackCaptor.firstValue.accept(anomalyResult)
 
         // Then
-        val forwardedResultCaptor = argumentCaptor<PerfettoResult>()
-        verify(mockListener).onMemoryAnomalyDetected(forwardedResultCaptor.capture())
-        val forwardedResult = forwardedResultCaptor.firstValue
-        assertThat(forwardedResult.start).isEqualTo(fakeNow)
-        assertThat(forwardedResult.end).isEqualTo(fakeNow)
-        assertThat(forwardedResult.startReason).isEqualTo(ProfilingStartReason.MEMORY_ANOMALY)
-        assertThat(forwardedResult.resultFilePath).isEqualTo(tmpFile.absolutePath)
-        assertThat(tmpFile.exists()).isFalse // registrar deletes the histogram file after forwarding
+        verify(mockListener).onMemoryAnomalyDetected(
+            argThat {
+                start == fakeNow &&
+                    end == fakeNow &&
+                    startReason == ProfilingStartReason.MEMORY_ANOMALY &&
+                    resultFilePath == tmpFile.absolutePath
+            }
+        )
+        assertThat(tmpFile.exists()).isTrue // registrar keeps the histogram file; the listener owns its lifetime
         verify(mockProfilingTelemetry).report(
             ProfilingTelemetryEvent.TriggerResult(
                 triggerType = ProfilingTrigger.TRIGGER_TYPE_ANOMALY,
@@ -658,11 +668,12 @@ internal class ProfilingManagerTriggerRegistrarTest {
     }
 
     @Test
-    fun `M drop anomaly histogram W trigger fires {ANOMALY stale, delay above threshold}`(
+    fun `M forward anomaly histogram W trigger fires {ANOMALY success, delay above threshold}`(
         @TempDir tempDir: File,
         @LongForgery(min = 1_001L, max = 60_000L) fakeDelayMs: Long
     ) {
-        // Given
+        // Given — the staleness cutoff only applies to ANR (live thread dump); Anomaly's trace
+        // file is captured at the actual trigger time, so a delayed callback must still forward.
         val tmpFile = File(tempDir, "heap.hprof").apply { writeText("histogram") }
         val creationTimeMs = Files.readAttributes(
             Paths.get(tmpFile.absolutePath),
@@ -685,8 +696,15 @@ internal class ProfilingManagerTriggerRegistrarTest {
         triggerCallbackCaptor.firstValue.accept(anomalyResult)
 
         // Then
-        verify(mockListener, never()).onMemoryAnomalyDetected(any())
-        assertThat(tmpFile.exists()).isFalse
+        verify(mockListener).onMemoryAnomalyDetected(
+            argThat {
+                start == fakeNow &&
+                    end == fakeNow &&
+                    startReason == ProfilingStartReason.MEMORY_ANOMALY &&
+                    resultFilePath == tmpFile.absolutePath
+            }
+        )
+        assertThat(tmpFile.exists()).isTrue // registrar keeps the histogram file; the listener owns its lifetime
         verify(mockProfilingTelemetry).report(
             ProfilingTelemetryEvent.TriggerResult(
                 triggerType = ProfilingTrigger.TRIGGER_TYPE_ANOMALY,
@@ -695,7 +713,7 @@ internal class ProfilingManagerTriggerRegistrarTest {
                 fileSize = expectedFileSize,
                 callbackDelayMs = fakeDelayMs,
                 clientClockDriftMs = 0L,
-                droppedAsStale = true
+                droppedAsStale = false
             )
         )
     }
