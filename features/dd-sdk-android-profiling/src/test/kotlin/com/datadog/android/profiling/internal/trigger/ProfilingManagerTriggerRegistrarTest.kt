@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.profiling.internal.anr
+package com.datadog.android.profiling.internal.trigger
 
 import android.content.Context
 import android.os.ProfilingManager
@@ -14,6 +14,8 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.profiling.internal.ProfilingStartReason
+import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
 import com.datadog.android.profiling.internal.utils.ThreadDumper
@@ -542,7 +544,13 @@ internal class ProfilingManagerTriggerRegistrarTest {
         triggerCallbackCaptor.firstValue.accept(oomResult)
 
         // Then
-        verify(mockListener).onOutOfMemoryDetected(eq(fakeNow), eq(tmpFile.absolutePath))
+        val forwardedResultCaptor = argumentCaptor<PerfettoResult>()
+        verify(mockListener).onOutOfMemoryDetected(forwardedResultCaptor.capture())
+        val forwardedResult = forwardedResultCaptor.firstValue
+        assertThat(forwardedResult.start).isEqualTo(fakeNow)
+        assertThat(forwardedResult.end).isEqualTo(fakeNow)
+        assertThat(forwardedResult.startReason).isEqualTo(ProfilingStartReason.OUT_OF_MEMORY)
+        assertThat(forwardedResult.resultFilePath).isEqualTo(tmpFile.absolutePath)
         assertThat(tmpFile.exists()).isFalse // registrar deletes the histogram file after forwarding
         verify(mockProfilingTelemetry).report(
             ProfilingTelemetryEvent.TriggerResult(
@@ -585,7 +593,7 @@ internal class ProfilingManagerTriggerRegistrarTest {
         triggerCallbackCaptor.firstValue.accept(oomResult)
 
         // Then
-        verify(mockListener, never()).onOutOfMemoryDetected(any(), any())
+        verify(mockListener, never()).onOutOfMemoryDetected(any())
         assertThat(tmpFile.exists()).isFalse // registrar deletes the stale histogram file
         verify(mockProfilingTelemetry).report(
             ProfilingTelemetryEvent.TriggerResult(
@@ -628,7 +636,13 @@ internal class ProfilingManagerTriggerRegistrarTest {
         triggerCallbackCaptor.firstValue.accept(anomalyResult)
 
         // Then
-        verify(mockListener).onMemoryAnomalyDetected(eq(fakeNow), eq(tmpFile.absolutePath))
+        val forwardedResultCaptor = argumentCaptor<PerfettoResult>()
+        verify(mockListener).onMemoryAnomalyDetected(forwardedResultCaptor.capture())
+        val forwardedResult = forwardedResultCaptor.firstValue
+        assertThat(forwardedResult.start).isEqualTo(fakeNow)
+        assertThat(forwardedResult.end).isEqualTo(fakeNow)
+        assertThat(forwardedResult.startReason).isEqualTo(ProfilingStartReason.MEMORY_ANOMALY)
+        assertThat(forwardedResult.resultFilePath).isEqualTo(tmpFile.absolutePath)
         assertThat(tmpFile.exists()).isFalse // registrar deletes the histogram file after forwarding
         verify(mockProfilingTelemetry).report(
             ProfilingTelemetryEvent.TriggerResult(
@@ -671,7 +685,7 @@ internal class ProfilingManagerTriggerRegistrarTest {
         triggerCallbackCaptor.firstValue.accept(anomalyResult)
 
         // Then
-        verify(mockListener, never()).onMemoryAnomalyDetected(any(), any())
+        verify(mockListener, never()).onMemoryAnomalyDetected(any())
         assertThat(tmpFile.exists()).isFalse
         verify(mockProfilingTelemetry).report(
             ProfilingTelemetryEvent.TriggerResult(
@@ -707,8 +721,8 @@ internal class ProfilingManagerTriggerRegistrarTest {
         triggerCallbackCaptor.firstValue.accept(oomResult)
 
         // Then
-        verify(mockListener, never()).onOutOfMemoryDetected(any(), any())
-        verify(mockListener, never()).onMemoryAnomalyDetected(any(), any())
+        verify(mockListener, never()).onOutOfMemoryDetected(any())
+        verify(mockListener, never()).onMemoryAnomalyDetected(any())
         verify(mockProfilingTelemetry).report(
             ProfilingTelemetryEvent.TriggerResult(
                 triggerType = ProfilingTrigger.TRIGGER_TYPE_OOM,

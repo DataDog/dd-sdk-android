@@ -14,5 +14,9 @@ internal enum class ProfilingStartReason(val value: String) {
 
     CONTINUOUS("continuous"),
 
+    OUT_OF_MEMORY("out_of_memory"),
+
+    MEMORY_ANOMALY("memory_anomaly"),
+
     UNKNOWN("unknown")
 }

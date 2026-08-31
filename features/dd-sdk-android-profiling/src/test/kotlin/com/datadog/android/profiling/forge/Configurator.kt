@@ -27,7 +27,7 @@ class Configurator : BaseConfigurator() {
         super.configure(forge)
         forge.useCoreFactories()
         forge.addFactory(ProfilingConfigurationForgeryFactory())
-        forge.addFactory(PerfettoResultFactory())
+        forge.addFactory(PerfettoResultForgeryFactory())
         forge.addFactory(ProfilerEventRumVitalEventFactory())
         forge.addFactory(ProfilerEventRumLongTaskEventForgeryFactory())
         forge.addFactory(ProfilerEventRumAnrEventForgeryFactory())

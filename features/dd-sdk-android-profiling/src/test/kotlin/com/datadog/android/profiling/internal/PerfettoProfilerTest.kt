@@ -20,7 +20,6 @@ import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.forge.Configurator
-import com.datadog.android.profiling.internal.anr.ProfilingTriggerRegistrar
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companion.APP_LAUNCH_PROFILING_MAX_DURATION_MS
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companion.PROFILING_SAMPLING_RATE_APP_LAUNCH
@@ -28,6 +27,7 @@ import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companio
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.time.MutableTimeProvider
+import com.datadog.android.profiling.internal.trigger.ProfilingTriggerRegistrar
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -40,7 +40,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
@@ -63,7 +62,6 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.io.File
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -75,7 +73,7 @@ import java.util.function.Consumer
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-class PerfettoProfilerTest {
+internal class PerfettoProfilerTest {
 
     @Mock
     private lateinit var mockContext: Context
@@ -1091,32 +1089,24 @@ class PerfettoProfilerTest {
 
     @Test
     fun `M dispatch OOM histogram to registered callback W triggerListener fires`(
-        @TempDir tempDir: File,
-        @LongForgery(min = 0L) fakeDetectedAtMs: Long
+        @Forgery fakeResult: PerfettoResult
     ) {
-        // Given
-        val fakeFile = File(tempDir, "heap.hprof").apply { writeText("hist") }
-
         // When
-        testedProfiler.triggerListener.onOutOfMemoryDetected(fakeDetectedAtMs, fakeFile.absolutePath)
+        testedProfiler.triggerListener.onOutOfMemoryDetected(fakeResult)
 
         // Then
-        verify(mockProfilerCallback).onOutOfMemoryDetected(fakeDetectedAtMs, fakeFile.absolutePath)
+        verify(mockProfilerCallback).onOutOfMemoryDetected(fakeResult)
     }
 
     @Test
     fun `M dispatch anomaly histogram to registered callback W triggerListener fires`(
-        @TempDir tempDir: File,
-        @LongForgery(min = 0L) fakeDetectedAtMs: Long
+        @Forgery fakeResult: PerfettoResult
     ) {
-        // Given
-        val fakeFile = File(tempDir, "heap.hprof").apply { writeText("hist") }
-
         // When
-        testedProfiler.triggerListener.onMemoryAnomalyDetected(fakeDetectedAtMs, fakeFile.absolutePath)
+        testedProfiler.triggerListener.onMemoryAnomalyDetected(fakeResult)
 
         // Then
-        verify(mockProfilerCallback).onMemoryAnomalyDetected(fakeDetectedAtMs, fakeFile.absolutePath)
+        verify(mockProfilerCallback).onMemoryAnomalyDetected(fakeResult)
     }
 
     @Test

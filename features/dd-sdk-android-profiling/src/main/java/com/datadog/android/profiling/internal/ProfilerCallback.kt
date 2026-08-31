@@ -16,7 +16,7 @@ internal interface ProfilerCallback {
 
     fun onAnrDetected(event: ProfilingAnrDetectedEvent)
 
-    fun onOutOfMemoryDetected(detectedAtMs: Long, resultFilePath: String)
+    fun onOutOfMemoryDetected(result: PerfettoResult)
 
-    fun onMemoryAnomalyDetected(detectedAtMs: Long, resultFilePath: String)
+    fun onMemoryAnomalyDetected(result: PerfettoResult)
 }

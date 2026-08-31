@@ -10,7 +10,7 @@ import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-internal class PerfettoResultFactory : ForgeryFactory<PerfettoResult> {
+internal class PerfettoResultForgeryFactory : ForgeryFactory<PerfettoResult> {
     override fun getForgery(forge: Forge): PerfettoResult {
         return PerfettoResult(
             start = forge.aLong(),
