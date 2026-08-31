@@ -1,13 +1,13 @@
 [versions]
 # Commons
-apollo = "4.3.3"
+apollo = "4.4.3"
 cronetApi = "143.7445.0"
 cronetPlayServices = "18.1.1"
-gson = "2.10.1"
-kotlin = "2.0.21"
-kotlinSP = "2.0.21-1.0.28"
+gson = "2.14.0"
+kotlin = "2.4.10"
+kotlinSP = "2.3.11"
 kronosNTP = "0.0.1-alpha11"
-kotlinxSerialization = "1.6.3"
+kotlinxSerialization = "1.11.0"
 okHttp = "4.12.0"
 
 # Android
@@ -31,14 +31,14 @@ androidXMetrics = "1.0.0-beta03"
 androidXNavigation = "2.7.7"
 androidXRecyclerView = "1.3.2"
 androidXWorkManager = "2.8.1" # Next version will bring coroutines
-googleAccompanist = "0.20.2"
+googleAccompanist = "0.36.0"
 googleMaterial = "1.3.0"
-dagger = "2.56.2"
+dagger = "2.60.1"
 
 # JUnit
-jUnitJupiter = "5.9.3"
-jUnitPlatform = "1.9.3"
-jUnitMockitoExt = "5.4.0"
+jUnitJupiter = "5.14.4"
+jUnitPlatform = "1.14.4"
+jUnitMockitoExt = "5.23.0"
 systemStubsJupiter = "2.1.6"
 
 # Android JUnit
@@ -52,24 +52,24 @@ espresso = "3.7.0"
 assertJ = "3.27.7"
 elmyr = "1.3.1"
 leakCanary = "2.14"
-mockitoKotlin = "5.1.0"
-mockitoAndroid = "5.12.0"
+mockitoKotlin = "5.4.0"
+mockitoAndroid = "5.23.0"
 kover = "0.9.8"
-kspTesting = "1.5.0"
+kspTesting = "1.6.0"
 
 # Tools
 detekt = "1.23.8"
 dokka = "2.2.0"
 ktlint = "1.5.0"
 ktlintGradlePlugin = "14.2.0"
-unmock = "0.9.0"
+unmock = "0.11.0"
 robolectric = "4.4_r1-robolectric-r2"
 androidLint = "31.0.2"
 
 nexusPublishGradlePlugin = "2.0.0"
-datadogPlugin = "1.27.0"
+datadogPlugin = "1.30.0"
 
-kotlinPoet = "1.14.2"
+kotlinPoet = "1.18.1"
 jsonSchemaValidator = "1.12.1"
 binaryCompatibility = "0.18.1"
 dependencyLicense = "0.7.0"
@@ -77,31 +77,31 @@ kotlinXmlBuilder = "1.9.3"
 
 # Integrations
 sqlDelight = "1.5.5"
-coil = "1.0.0"
-coilCompose = "2.1.0"
-coil3 = "3.0.4"
+coil = "1.4.0"
+coilCompose = "2.7.0"
+coil3 = "3.6.0"
 fresco = "2.3.0"
 glide = "5.0.5"
-picasso = "2.8"
+picasso = "2.71828"
 room = "2.5.1"
-rxJava3 = "3.0.0"
+rxJava3 = "3.1.12"
 timber = "5.0.1"
-coroutines = "1.7.3"
+coroutines = "1.11.0"
 exoplayer = "2.19.1"
 newPipeExtractor = "v0.24.6"
 navigation3 = "1.0.0-alpha01"
-kotlinxSerializationCore = "1.8.1"
+kotlinxSerializationCore = "1.11.0"
 lifecycleViewmodelNav3 = "1.0.0-alpha01"
-openFeature = "0.6.2"
+openFeature = "0.8.0"
 
 # Local Server
 ktor = "2.3.13"
-ktorServer = "3.0.0-rc-1"
+ktorServer = "3.5.2"
 
 # Otel
 jctools = "3.3.0"
-openTelemetry = "1.40.0"
-re2j = "1.7"
+openTelemetry = "1.65.0"
+re2j = "1.8"
 material3Android = "1.1.2"
 
 [libraries]

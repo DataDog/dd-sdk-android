@@ -219,16 +219,16 @@ dependencies {
 
     // Multithreading
     implementation(libs.rxJava3)
-    implementation("com.squareup.retrofit2:adapter-rxjava3:2.9.0")
+    implementation("com.squareup.retrofit2:adapter-rxjava3:2.12.0")
     implementation(libs.rxJava3Android)
     implementation(libs.coroutinesCore)
 
     // Network
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.retrofit2:retrofit:2.12.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.12.0")
     implementation(libs.okHttp)
     implementation(libs.gson)
-    implementation("com.launchdarkly:okhttp-eventsource:2.5.0")
+    implementation("com.launchdarkly:okhttp-eventsource:2.7.1")
 
     // Misc
     implementation(libs.timber)
