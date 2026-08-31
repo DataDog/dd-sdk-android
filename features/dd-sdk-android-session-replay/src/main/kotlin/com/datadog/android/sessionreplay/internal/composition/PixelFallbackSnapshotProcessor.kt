@@ -11,12 +11,15 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
+import androidx.collection.LruCache
 import com.datadog.android.internal.sessionreplay.composition.CapturedChild
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory
 import com.datadog.android.internal.sessionreplay.composition.PixelResource
+import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapSignatureGenerator
+import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultBitmapSignatureGenerator
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolverCallback
 import com.datadog.android.sessionreplay.recorder.privacy.TextDetectionOutcome
@@ -42,13 +45,27 @@ import java.util.concurrent.atomic.AtomicInteger
  * may invoke its callback on any thread, so [resolveBitmap] hops onto [mainThreadExecutor] before
  * calling [ResourceResolver.resolveResourceIdFromBitmap], which is
  * [androidx.annotation.MainThread]-only.
+ *
+ * A detection call that loses that race isn't wasted, only its result was going to be discarded:
+ * [TextDetector.detectTextRegions] keeps running in the background regardless of which generation
+ * "owns" it - nothing in [CaptureGenerationContext] cancels the underlying detector call itself,
+ * only the safety-margin timeout is a trackable, cancellable unit of work. [resolveOne] now uses
+ * that: [resolvedContentCache] remembers a real, successful resolution by [BitmapSignatureGenerator]
+ * signature, and [recaptureTrigger] asks for a fresh generation the moment one lands too late to
+ * help the generation that requested it. The *next* capture of that same (unchanged) content then
+ * resolves straight from the cache instead of racing detection again - the 90ms generation budget
+ * only ever has to cover traversal and rasterization, never a full detector round-trip.
  */
 internal class PixelFallbackSnapshotProcessor(
     private val resourceResolver: ResourceResolver,
     private val textDetector: TextDetector?,
     private val mainThreadExecutor: CaptureMainThreadExecutor,
     private val taskScheduler: CaptureTaskScheduler = CaptureTaskScheduler { _, _ -> CancellableCaptureWork.NONE },
-    private val detectionTimeoutSafetyMarginNs: Long = DEFAULT_SAFETY_MARGIN_NS
+    private val detectionTimeoutSafetyMarginNs: Long = DEFAULT_SAFETY_MARGIN_NS,
+    private val bitmapSignatureGenerator: BitmapSignatureGenerator = DefaultBitmapSignatureGenerator(),
+    private val recaptureTrigger: RecaptureTrigger = RecaptureTrigger {},
+    @Suppress("UnsafeThirdPartyFunctionCall") // MAX_RESOLVED_CONTENT_CACHE_SIZE is a positive constant
+    private val resolvedContentCache: LruCache<Long, String> = LruCache(MAX_RESOLVED_CONTENT_CACHE_SIZE)
 ) : CapturedSnapshotProcessor {
 
     override fun process(
@@ -87,15 +104,17 @@ internal class PixelFallbackSnapshotProcessor(
      * Detection is bounded by a timeout relative to [generation]'s own remaining deadline, not a
      * fixed constant - [TextDetector] implementations already fail closed on their own (much
      * looser) internal timeout, which exists to bound the detector itself, not this generation's
-     * much shorter budget. Whichever of {detector callback, timeout} arrives first wins via
-     * [detectionFinished]; the loser does no masking or resource work. [resolved] separately guards
-     * final delivery against duplicate resource callbacks. These guards differ from the [CaptureWorkToken]
-     * guard in [process]: that one decides whether an outcome still counts once the whole
-     * *generation* has expired, while this one decides which of two concurrent callers - which can
-     * run on any thread, per [TextDetector.detectTextRegions]'s contract - gets to report the
-     * outcome for *this one* pending capture at all.
+     * much shorter budget. Whichever of {detector callback, timeout} resolves first wins via
+     * [resolved]; the loser is a no-op *for this generation's own outcome* - see the class doc for
+     * why the detector call itself is never actually cancelled, and what a late-arriving success
+     * still does ([resolvedContentCache]/[recaptureTrigger]) even after losing that race. This CAS
+     * is a different concern from the [CaptureWorkToken] guard in [process]: that one decides
+     * whether an outcome still counts once the whole *generation* has expired, while this one
+     * decides which of two concurrent callers - which can run on any thread, per
+     * [TextDetector.detectTextRegions]'s contract - gets to report the outcome for *this one*
+     * pending capture at all.
      */
-    @Suppress("ReturnCount") // Text-free, missing-detector, and already-expired captures bypass detection.
+    @Suppress("ReturnCount")
     private fun resolveOne(
         capture: PendingPixelCapture,
         identityFactory: CompositionIdentityFactory,
@@ -113,10 +132,23 @@ internal class PixelFallbackSnapshotProcessor(
             return
         }
 
+        val signature = bitmapSignatureGenerator.generateSignature(capture.bitmap)
+
+        @Suppress("UnsafeThirdPartyFunctionCall") // LruCache.get never throws for a valid Long key
+        val cachedResourceId = signature?.let { resolvedContentCache.get(it) }
+        if (cachedResourceId != null) {
+            onResolved(PixelOutcome.Resolved(cachedResourceId))
+            return
+        }
+
         val resolved = AtomicBoolean(false)
         val detectionFinished = AtomicBoolean(false)
-        val resolveOnce: (PixelOutcome) -> Unit = { outcome ->
-            if (resolved.compareAndSet(false, true)) onResolved(outcome)
+        // Returns whether this call was the one that actually delivered an outcome, so a
+        // late-arriving success can tell it lost the race and ask for a fresh capture instead.
+        val resolveOnce: (PixelOutcome) -> Boolean = { outcome ->
+            val won = resolved.compareAndSet(false, true)
+            if (won) onResolved(outcome)
+            won
         }
 
         val timeoutNs = (generation.remainingBudgetNs() - detectionTimeoutSafetyMarginNs).coerceAtLeast(0L)
@@ -124,21 +156,51 @@ internal class PixelFallbackSnapshotProcessor(
         // on the SDK's scheduler can log a spurious CancellationException, including self-cancellation
         // if resolving the placeholder accepts the generation. The guards make late firing harmless.
         taskScheduler.schedule(timeoutNs) {
-            if (detectionFinished.compareAndSet(false, true) && generation.isActive()) {
+            if (!resolved.get() && generation.isActive()) {
                 resolveOnce(PixelOutcome.Placeholder(identityFactory.placeholderWireframe(capture.ownerIdentity)))
             }
         }
 
-        if (detectionFinished.get() || !generation.isActive()) return
+        if (resolved.get() || !generation.isActive()) return
         detector.detectTextRegions(capture.bitmap) { detection ->
-            if (!detectionFinished.compareAndSet(false, true) || !generation.isActive()) return@detectTextRegions
+            if (!detectionFinished.compareAndSet(false, true)) return@detectTextRegions
             when (detection) {
                 is TextDetectionOutcome.Unavailable ->
                     resolveOnce(PixelOutcome.Placeholder(identityFactory.placeholderWireframe(capture.ownerIdentity)))
 
                 is TextDetectionOutcome.Detected -> {
                     maskRegions(capture.bitmap, detection.regions)
-                    resolveBitmap(capture.bitmap, identityFactory, capture.ownerIdentity, resolveOnce)
+                    @Suppress("ThreadSafety") // mainThreadExecutor posts this block onto the main thread.
+                    mainThreadExecutor.execute {
+                        val resourceCallbackHandled = AtomicBoolean(false)
+                        resourceResolver.resolveResourceIdFromBitmap(
+                            capture.bitmap,
+                            object : ResourceResolverCallback {
+                                override fun onSuccess(resourceId: String) {
+                                    if (!resourceCallbackHandled.compareAndSet(false, true)) return
+                                    val generationWasActive = generation.isActive()
+                                    if (signature != null) {
+                                        @Suppress("UnsafeThirdPartyFunctionCall") // never throws for valid arguments
+                                        resolvedContentCache.put(signature, resourceId)
+                                    }
+                                    val wonRace = resolveOnce(PixelOutcome.Resolved(resourceId))
+                                    // This generation already placeholder'd this exact capture -
+                                    // don't wait for the next unrelated redraw to show the content
+                                    // this detection call just proved is safe to display.
+                                    if (!wonRace || !generationWasActive) recaptureTrigger.requestRecapture()
+                                }
+
+                                override fun onFailure() {
+                                    if (!resourceCallbackHandled.compareAndSet(false, true)) return
+                                    resolveOnce(
+                                        PixelOutcome.Placeholder(
+                                            identityFactory.placeholderWireframe(capture.ownerIdentity)
+                                        )
+                                    )
+                                }
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -184,6 +246,7 @@ internal class PixelFallbackSnapshotProcessor(
         outcomes: Map<Long, PixelOutcome>,
         callback: SnapshotProcessingCallback
     ) {
+        if (!request.generation.isActive()) return
         val resolvedSnapshot = applyOutcomes(request.snapshot as CapturedFullSnapshot, outcomes)
         callback.onProcessed(SnapshotProcessingResult.Completed(request.generation.id, resolvedSnapshot))
     }
@@ -248,5 +311,20 @@ internal class PixelFallbackSnapshotProcessor(
         const val MIME_TYPE_WEBP = "image/webp"
         const val MASK_ALL_CONTENT_LABEL = "Image"
         val DEFAULT_SAFETY_MARGIN_NS = TimeUnit.MILLISECONDS.toNanos(10)
+
+        // Entries are a signature Long plus a short resource-id String each - generous headroom
+        // for every distinct pixel-fallback view on screen at once without unbounded growth over a
+        // long session.
+        const val MAX_RESOLVED_CONTENT_CACHE_SIZE = 200
     }
+}
+
+/**
+ * Asks for a fresh capture generation outside the normal draw-triggered flow - used by
+ * [PixelFallbackSnapshotProcessor] when a detection result arrives too late for the generation
+ * that requested it, so the corrected content reaches the recording without waiting for the next
+ * unrelated redraw.
+ */
+internal fun interface RecaptureTrigger {
+    fun requestRecapture()
 }

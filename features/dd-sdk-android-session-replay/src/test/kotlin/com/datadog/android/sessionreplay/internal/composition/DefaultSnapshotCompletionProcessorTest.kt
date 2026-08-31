@@ -72,6 +72,65 @@ internal class DefaultSnapshotCompletionProcessorTest {
     }
 
     @Test
+    fun `M emit both mutation records W process { layer and wireframe content both changed }`(
+        @StringForgery fakeApplicationId: String,
+        @StringForgery fakeSessionId: String
+    ) {
+        // Given
+        val tree = compositionTestTree()
+        val fixture = Fixture(tree.scope.value, fakeApplicationId, fakeSessionId)
+        val layerMutationRecord = mock<MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord>()
+        val wireframeMutationRecord = mock<MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord>()
+        whenever(fixture.wireMapper.mapFullSnapshot(tree.snapshot))
+            .thenReturn(CaptureWireMappingResult.Success(mock()))
+        whenever(fixture.wireMapper.mapMutation(any(), eq(tree.snapshot)))
+            .thenReturn(CaptureWireMappingResult.Success(layerMutationRecord))
+        whenever(fixture.wireMapper.mapWireframeMutation(eq(tree.snapshot), any()))
+            .thenReturn(wireframeMutationRecord)
+
+        // When
+        fixture.processor.process(fixture.capture(tree.snapshot))
+        fixture.processor.process(fixture.capture(tree.snapshot))
+
+        // Then: both the layer-structure mutation and the independently-computed wireframe-content
+        // mutation are written together, in the same cycle - neither one forces a full snapshot.
+        verify(fixture.writer).write(
+            EnrichedRecord(
+                fakeApplicationId,
+                fakeSessionId,
+                tree.scope.value,
+                listOf(layerMutationRecord, wireframeMutationRecord)
+            )
+        )
+    }
+
+    @Test
+    fun `M emit only the layer mutation W process { nothing changed at the wireframe level }`(
+        @StringForgery fakeApplicationId: String,
+        @StringForgery fakeSessionId: String
+    ) {
+        // Given
+        val tree = compositionTestTree()
+        val fixture = Fixture(tree.scope.value, fakeApplicationId, fakeSessionId)
+        val layerMutationRecord = mock<MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord>()
+        whenever(fixture.wireMapper.mapFullSnapshot(tree.snapshot))
+            .thenReturn(CaptureWireMappingResult.Success(mock()))
+        whenever(fixture.wireMapper.mapMutation(any(), eq(tree.snapshot)))
+            .thenReturn(CaptureWireMappingResult.Success(layerMutationRecord))
+        // mapWireframeMutation left unstubbed - a Mockito mock returns null by default, exactly
+        // like the real implementation would when nothing changed at the wireframe level.
+
+        // When
+        fixture.processor.process(fixture.capture(tree.snapshot))
+        fixture.processor.process(fixture.capture(tree.snapshot))
+
+        // Then
+        verify(fixture.writer).write(
+            EnrichedRecord(fakeApplicationId, fakeSessionId, tree.scope.value, listOf(layerMutationRecord))
+        )
+    }
+
+    @Test
     fun `M emit a full snapshot W process { new RUM view since last accepted }`(
         @StringForgery fakeApplicationId: String,
         @StringForgery fakeSessionId: String
@@ -134,6 +193,62 @@ internal class DefaultSnapshotCompletionProcessorTest {
         // Then
         verify(fixture.wireMapper, times(2)).mapFullSnapshot(tree.snapshot)
         verify(fixture.wireMapper, never()).mapMutation(any(), any())
+    }
+
+    @Test
+    fun `M emit a viewport resize record ahead of the full snapshot W process { orientation changed }`(
+        @StringForgery fakeApplicationId: String,
+        @StringForgery fakeSessionId: String
+    ) {
+        // Given: mirrors legacy RecordedDataProcessor, which sends both a ViewportResizeData record
+        // and a full snapshot on an orientation change - the composition pipeline already forced the
+        // full snapshot, it was just missing this record.
+        val tree = compositionTestTree()
+        val fixture = Fixture(tree.scope.value, fakeApplicationId, fakeSessionId)
+        val firstFullRecord = mock<MobileSegment.MobileRecord.MobileFullSnapshotRecord>()
+        val secondFullRecord = mock<MobileSegment.MobileRecord.MobileFullSnapshotRecord>()
+        whenever(fixture.wireMapper.mapFullSnapshot(tree.snapshot))
+            .thenReturn(
+                CaptureWireMappingResult.Success(firstFullRecord),
+                CaptureWireMappingResult.Success(secondFullRecord)
+            )
+
+        // When
+        fixture.processor.process(fixture.capture(tree.snapshot))
+        fixture.orientationProvider.orientation = fixture.orientationProvider.orientation + 1
+        fixture.processor.process(fixture.capture(tree.snapshot))
+
+        // Then: no viewport record on the first (baseline) cycle - there is no prior orientation to
+        // have changed from.
+        verify(fixture.writer).write(
+            EnrichedRecord(
+                fakeApplicationId,
+                fakeSessionId,
+                tree.scope.value,
+                openingRecords(tree.snapshot) + firstFullRecord
+            )
+        )
+        // Then: the second cycle's orientation change gets a ViewportResizeData record, sized from
+        // the current snapshot's root bounds, ahead of the (still forced) full snapshot.
+        val bounds = tree.snapshot.root?.bounds
+        checkNotNull(bounds)
+        verify(fixture.writer).write(
+            EnrichedRecord(
+                fakeApplicationId,
+                fakeSessionId,
+                tree.scope.value,
+                listOf(
+                    MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord(
+                        timestamp = tree.snapshot.timestamp,
+                        data = MobileSegment.MobileIncrementalData.ViewportResizeData(
+                            width = bounds.width,
+                            height = bounds.height
+                        )
+                    ),
+                    secondFullRecord
+                )
+            )
+        )
     }
 
     @Test

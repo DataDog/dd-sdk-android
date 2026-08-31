@@ -105,7 +105,8 @@ internal class DefaultCompositionPipelineFactory(
             executorService = sdkCore.createScheduledExecutorService(EXPIRY_EXECUTOR_NAME),
             internalLogger = internalLogger
         )
-        val orchestrator = SnapshotCaptureOrchestrator(
+        lateinit var orchestrator: SnapshotCaptureOrchestrator
+        orchestrator = SnapshotCaptureOrchestrator(
             producer = snapshotProducerFactory?.invoke(windowSource, rumContextProvider)
                 ?: defaultSnapshotProducer(windowSource, rumContextProvider, heatmapResolver),
             processor = ChainedCapturedSnapshotProcessor(
@@ -114,7 +115,8 @@ internal class DefaultCompositionPipelineFactory(
                     resourceResolverBundle.resourceResolver,
                     textDetector,
                     mainThreadExecutor,
-                    sharedScheduler
+                    taskScheduler = sharedScheduler,
+                    recaptureTrigger = RecaptureTrigger { orchestrator.requestCapture() }
                 )
             ),
             consumer = completionQueue,

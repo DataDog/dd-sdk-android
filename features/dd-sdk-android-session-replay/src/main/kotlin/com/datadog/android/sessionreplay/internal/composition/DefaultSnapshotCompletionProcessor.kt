@@ -75,6 +75,7 @@ internal class DefaultSnapshotCompletionProcessor(
         }
 
         val currentOrientation = orientationProvider.currentOrientation()
+        val orientationChanged = retained?.orientation?.let { it != currentOrientation } ?: false
         when (val mapping = resolveMapping(capture.snapshot, currentOrientation)) {
             is CaptureWireMappingResult.Success -> {
                 if (capture.generation.tryAccept()) {
@@ -84,6 +85,7 @@ internal class DefaultSnapshotCompletionProcessor(
                         records += viewOpeningRecords(capture)
                         lastViewContext = rumContext
                     }
+                    if (orientationChanged) records += viewportResizeRecord(capture.snapshot)
                     records += mapping.value
                     recordWriter.write(
                         EnrichedRecord(
@@ -148,8 +150,8 @@ internal class DefaultSnapshotCompletionProcessor(
     }
 
     /** Only a full snapshot resets the periodic-checkpoint clock; a mutation cycle leaves it running. */
-    private fun lastFullSnapshotAtNs(record: MobileSegment.MobileRecord): Long =
-        if (record is MobileSegment.MobileRecord.MobileFullSnapshotRecord) {
+    private fun lastFullSnapshotAtNs(records: List<MobileSegment.MobileRecord>): Long =
+        if (records.any { it is MobileSegment.MobileRecord.MobileFullSnapshotRecord }) {
             timeProvider.getDeviceElapsedTimeNanos()
         } else {
             retained?.lastFullSnapshotAtNs ?: timeProvider.getDeviceElapsedTimeNanos()
@@ -159,18 +161,22 @@ internal class DefaultSnapshotCompletionProcessor(
     private fun resolveMapping(
         snapshot: CapturedFullSnapshot,
         currentOrientation: Int
-    ): CaptureWireMappingResult<MobileSegment.MobileRecord> {
-        val retainedState = retained ?: return wireMapper.mapFullSnapshot(snapshot)
+    ): CaptureWireMappingResult<List<MobileSegment.MobileRecord>> {
+        val retainedState = retained ?: return wireMapper.mapFullSnapshot(snapshot).asRecordList()
         val fullSnapshotRequired = retainedState.snapshot.scope != snapshot.scope ||
             currentOrientation != retainedState.orientation ||
             isTimeForFullSnapshot(retainedState)
-        if (fullSnapshotRequired) return wireMapper.mapFullSnapshot(snapshot)
+        if (fullSnapshotRequired) return wireMapper.mapFullSnapshot(snapshot).asRecordList()
 
         val mutation = CapturedSnapshotDiffer.diff(retainedState.snapshot, snapshot)
-            ?: return wireMapper.mapFullSnapshot(snapshot)
+            ?: return wireMapper.mapFullSnapshot(snapshot).asRecordList()
 
         return when (val mutationMapping = wireMapper.mapMutation(mutation, retainedState.snapshot)) {
-            is CaptureWireMappingResult.Success -> mutationMapping
+            is CaptureWireMappingResult.Success -> {
+                val records = mutableListOf<MobileSegment.MobileRecord>(mutationMapping.value)
+                wireMapper.mapWireframeMutation(retainedState.snapshot, snapshot)?.let(records::add)
+                CaptureWireMappingResult.Success(records)
+            }
             is CaptureWireMappingResult.Invalid -> {
                 internalLogger.log(
                     InternalLogger.Level.WARN,
@@ -182,9 +188,29 @@ internal class DefaultSnapshotCompletionProcessor(
                         VALIDATION_FAILURE_COUNT_PROPERTY to mutationMapping.failures.size
                     )
                 )
-                wireMapper.mapFullSnapshot(snapshot)
+                wireMapper.mapFullSnapshot(snapshot).asRecordList()
             }
         }
+    }
+
+    private fun viewportResizeRecord(
+        snapshot: CapturedFullSnapshot
+    ): MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord {
+        val bounds = snapshot.root?.bounds
+        return MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord(
+            timestamp = snapshot.timestamp,
+            data = MobileSegment.MobileIncrementalData.ViewportResizeData(
+                width = bounds?.width ?: 0L,
+                height = bounds?.height ?: 0L
+            )
+        )
+    }
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // The successfully mapped record is non-null.
+    private fun <T : MobileSegment.MobileRecord> CaptureWireMappingResult<T>.asRecordList():
+        CaptureWireMappingResult<List<MobileSegment.MobileRecord>> = when (this) {
+        is CaptureWireMappingResult.Success -> CaptureWireMappingResult.Success(listOf(value))
+        is CaptureWireMappingResult.Invalid -> this
     }
 
     private fun isTimeForFullSnapshot(retainedState: RetainedSnapshotState): Boolean =

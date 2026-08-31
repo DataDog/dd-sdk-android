@@ -36,12 +36,23 @@ internal data class CapturedMappingContext(
 
 internal sealed interface CapturedViewMapperResult {
     /**
-     * [isTerminal] is true when the result represents the whole native subtree (for example a
-     * WebView slot). Traversal must not also capture that view's native children independently.
+     * @property wireframes this view's own wireframes.
+     * @property isTerminal whether these wireframes already fully account for every
+     * pixel this view (and, for a whole-view rasterization, its subtree) paints, so
+     * [com.datadog.android.sessionreplay.internal.composition.AndroidWindowTraversal] must not
+     * also visit this view's children independently - true by default whenever a
+     * [CapturedWireframe.Pixel] or [CapturedWireframe.PrivacyPlaceholder] is present, matching
+     * every mapper except one. The one exception: [CapturedPixelFallbackMapper] sets this to
+     * `false` when its `Pixel` only rasterizes this view's own background (a themed Toolbar/
+     * CardView/etc. whose background alone can't reduce to a solid color) - its children were
+     * never drawn into that bitmap, so they still need to be captured by their own proper mapper
+     * instead of being swept into one opaque, blanket-masked screenshot.
      */
     data class Wireframes(
         val wireframes: List<CapturedWireframe>,
-        val isTerminal: Boolean = false
+        val isTerminal: Boolean = wireframes.any {
+            it is CapturedWireframe.Pixel || it is CapturedWireframe.PrivacyPlaceholder
+        }
     ) : CapturedViewMapperResult
     object None : CapturedViewMapperResult
 }
@@ -68,9 +79,8 @@ internal sealed interface CapturedViewData {
 
     data class Mapped(val result: CapturedViewMapperResult) : CapturedViewData {
         override val isPixelFallbackTerminal: Boolean
-            get() = (result as? CapturedViewMapperResult.Wireframes)?.wireframes?.any {
-                it is CapturedWireframe.Pixel || it is CapturedWireframe.PrivacyPlaceholder
-            } == true
+            get() = (result as? CapturedViewMapperResult.Wireframes)?.isTerminal == true &&
+                result.wireframes.any { it is CapturedWireframe.Pixel || it is CapturedWireframe.PrivacyPlaceholder }
         override val isTerminal: Boolean
             get() = (result as? CapturedViewMapperResult.Wireframes)?.isTerminal == true || isPixelFallbackTerminal
         override fun map(mappingContext: CapturedMappingContext): CapturedViewMapperResult = result
