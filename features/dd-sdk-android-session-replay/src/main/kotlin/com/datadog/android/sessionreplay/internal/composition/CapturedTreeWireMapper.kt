@@ -25,4 +25,17 @@ internal interface CapturedTreeWireMapper {
         mutation: CapturedMutationSet,
         base: CapturedFullSnapshot
     ): CaptureWireMappingResult<MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord>
+
+    /**
+     * Diffs [previous] and [current]'s flat wireframe lists - independently of, and in addition
+     * to, [mapMutation]'s layer-only diff - and returns a ready-to-write mutation record for
+     * whatever wireframe content actually changed (added, removed, or altered), or null if nothing
+     * did. This is the same wireframe-level diff/mutation the legacy pipeline already emits
+     * ([MutationResolver]), reused as-is so a text or image content change never has to force a
+     * full composition-tree snapshot just to be delivered.
+     */
+    fun mapWireframeMutation(
+        previous: CapturedFullSnapshot,
+        current: CapturedFullSnapshot
+    ): MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord?
 }

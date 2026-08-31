@@ -70,11 +70,12 @@ internal class ViewPixelCapture(
     fun captureDecoration(
         view: View,
         context: CapturedMappingContext,
+        isTextFree: Boolean = false,
         rasterize: () -> Bitmap?
     ): CapturedWireframe? {
         if (PixelCaptureEligibility.placeholderLabelForBackground(context.imagePrivacy) != null) return null
         val bounds = context.bounds ?: return null
-        return captureBitmap(view, context, bounds, view.pixelSize(), rasterize)
+        return captureBitmap(view, context, bounds, view.pixelSize(), rasterize, isTextFree)
     }
 
     @UiThread
@@ -99,12 +100,15 @@ internal class ViewPixelCapture(
         context: CapturedMappingContext,
         bounds: CapturedBounds,
         pixels: GlobalBounds,
-        rasterize: () -> Bitmap?
+        rasterize: () -> Bitmap?,
+        isTextFree: Boolean = false
     ): CapturedWireframe.Pixel? {
         if (!isCapturable(pixels, view)) return null
         val bitmap = rasterize() ?: return null
         val identity = context.identityFactory.imageWireframe(context.ownerIdentity)
-        context.pendingPixelCaptureSink.register(PendingPixelCapture(identity, context.ownerIdentity, bitmap))
+        context.pendingPixelCaptureSink.register(
+            PendingPixelCapture(identity, context.ownerIdentity, bitmap, isTextFree = isTextFree)
+        )
         return CapturedWireframe.Pixel(identity, bounds, resource = PixelResource.Unresolved)
     }
 

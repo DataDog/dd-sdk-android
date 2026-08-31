@@ -12,9 +12,19 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
 import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import fr.xgouchet.elmyr.annotation.LongForgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.Extensions
 
+@Extensions(
+    ExtendWith(ForgeExtension::class)
+)
+@ForgeConfiguration(ForgeConfigurator::class)
 internal class CapturedSnapshotDifferTest {
 
     @Test
@@ -155,11 +165,19 @@ internal class CapturedSnapshotDifferTest {
     }
 
     @Test
-    fun `M return null W diff { a persisting wireframe's content changed }`() {
-        // Given
+    fun `M ignore it and diff layers normally W diff { a persisting wireframe's content changed }`(
+        @LongForgery fakeX: Long,
+        @LongForgery fakeY: Long,
+        @LongForgery fakeWidth: Long,
+        @LongForgery fakeHeight: Long
+    ) {
+        // Given: a wireframe's own content changing is delivered separately by
+        // DefaultCapturedTreeWireMapper#mapWireframeMutation - this differ only cares about layers,
+        // which are untouched here, so the result is the same all-unchanged mutation as if nothing
+        // had changed at all.
         val tree = compositionTestTree()
         val changedWireframe = (tree.wireframe as CapturedWireframe.Shape).copy(
-            bounds = CapturedBounds(9, 9, 9, 9)
+            bounds = CapturedBounds(fakeX, fakeY, fakeWidth, fakeHeight)
         )
         val current = tree.snapshot.copy(wireframes = listOf(changedWireframe))
 
@@ -167,21 +185,28 @@ internal class CapturedSnapshotDifferTest {
         val mutation = CapturedSnapshotDiffer.diff(tree.snapshot, current)
 
         // Then
-        assertThat(mutation).isNull()
+        assertThat(mutation).isEqualTo(CapturedMutationSet(timestamp = tree.snapshot.timestamp, scope = tree.scope))
+        assertValidMutation(mutation, tree.snapshot)
     }
 
     @Test
-    fun `M return null W diff { a brand new wireframe appears }`() {
-        // Given
+    fun `M emit a children update W diff { a brand new wireframe appears }`(
+        @LongForgery fakeX: Long,
+        @LongForgery fakeY: Long,
+        @LongForgery fakeWidth: Long,
+        @LongForgery fakeHeight: Long
+    ) {
+        // Given: the new wireframe's own definition is delivered separately by
+        // DefaultCapturedTreeWireMapper#mapWireframeMutation - this differ only needs to notice
+        // that the owning layer's children list changed.
         val tree = compositionTestTree()
         val newWireframeIdentity = tree.factory.placeholderWireframe(tree.layer.identity)
         val newWireframe = CapturedWireframe.PrivacyPlaceholder(
             identity = newWireframeIdentity,
-            bounds = CapturedBounds(9, 9, 9, 9)
+            bounds = CapturedBounds(fakeX, fakeY, fakeWidth, fakeHeight)
         )
-        val layerWithNewChild = tree.layer.copy(
-            children = tree.layer.children + CapturedChild.Wireframe(newWireframeIdentity)
-        )
+        val newChildren = tree.layer.children + CapturedChild.Wireframe(newWireframeIdentity)
+        val layerWithNewChild = tree.layer.copy(children = newChildren)
         val current = tree.snapshot.copy(
             layers = listOf(layerWithNewChild),
             wireframes = tree.snapshot.wireframes + newWireframe
@@ -191,7 +216,11 @@ internal class CapturedSnapshotDifferTest {
         val mutation = CapturedSnapshotDiffer.diff(tree.snapshot, current)
 
         // Then
-        assertThat(mutation).isNull()
+        checkNotNull(mutation)
+        val update = (mutation.updates as CapturedChange.Set).value.single()
+        assertThat(update.identity).isEqualTo(tree.layer.identity)
+        assertThat(update.children).isEqualTo(CapturedChange.Set(newChildren))
+        assertValidMutation(mutation, tree.snapshot)
     }
 
     @Test

@@ -10,6 +10,8 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.Rect
+import android.view.SurfaceView
+import android.view.TextureView
 import android.view.View
 import android.view.ViewGroup
 import android.widget.HorizontalScrollView
@@ -17,11 +19,14 @@ import android.widget.ImageView
 import android.widget.ScrollView
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.sessionreplay.IMAGE_DIMEN_CONSIDERED_PII_IN_DP
 import com.datadog.android.sessionreplay.internal.composition.ViewPixelCapture
 import com.datadog.android.sessionreplay.internal.composition.ViewTransform
+import com.datadog.android.sessionreplay.internal.composition.toCaptured
 import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper
 import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver
+import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 
 /**
@@ -37,13 +42,28 @@ import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
  * [IMAGE_DIMEN_CONSIDERED_PII_IN_DP] in either dimension. Text-region masking of whatever *is*
  * captured is a separate, later concern (`PixelFallbackSnapshotProcessor`) - it applies regardless
  * of the image privacy level that let capture proceed at all.
+ *
+ * A [ViewGroup] with its own children and a real background (non-solid, since [fallbackMapper]
+ * already failed to reduce it to one) is common decorative chrome - a themed `Toolbar`,
+ * `CardView`, etc. Rasterizing the *whole* view for that case would bake its children's content
+ * (a title `TextView`'s text, say) into one opaque bitmap, at which point
+ * `PixelFallbackSnapshotProcessor`'s text-detection safety net has no choice but to blanket-mask
+ * anything it finds - text that a dedicated `TextView`/`Button` mapper would otherwise have shown
+ * unmasked, per [com.datadog.android.sessionreplay.TextAndInputPrivacy]. [map] rasterizes only the
+ * background in that case (via [backgroundRasterizer], `isTextFree = true` - a background alone
+ * structurally can't contain text) and reports `pixelFallbackTerminal = false`, so
+ * [com.datadog.android.sessionreplay.internal.composition.AndroidWindowTraversal] still visits
+ * those children on their own instead of treating this capture as standing in for the whole
+ * subtree. A leaf (no children) or a childless/backgroundless `ViewGroup` has no such content to
+ * protect, so it keeps the original whole-view rasterization.
  */
 internal class CapturedPixelFallbackMapper(
     private val fallbackMapper: CapturedViewMapper<View>,
     private val internalLogger: InternalLogger,
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver,
     viewRasterizer: ViewRasterizer = DefaultViewRasterizer(internalLogger),
-    private val pixelCapture: ViewPixelCapture = ViewPixelCapture(internalLogger, viewBoundsResolver, viewRasterizer)
+    private val pixelCapture: ViewPixelCapture = ViewPixelCapture(internalLogger, viewBoundsResolver, viewRasterizer),
+    private val backgroundRasterizer: ViewBackgroundRasterizer = DefaultViewBackgroundRasterizer()
 ) : CapturedViewMapper<View> {
 
     @UiThread
@@ -80,6 +100,9 @@ internal class CapturedPixelFallbackMapper(
             return fallbackResult
         }
 
+        if (isBackgroundOnlyEligible(view)) {
+            return captureBackground(view, mappingContext) ?: fallbackResult
+        }
         return pixelCapture.capture(view, mappingContext) ?: fallbackResult
     }
 
@@ -93,6 +116,49 @@ internal class CapturedPixelFallbackMapper(
 
     @UiThread
     private fun hasImageContent(view: View): Boolean = view is ImageView && view.drawable != null
+
+    private fun resolveBounds(view: View, mappingContext: CapturedMappingContext): GlobalBounds =
+        mappingContext.bounds?.let { GlobalBounds(it.x, it.y, it.width, it.height) }
+            ?: viewBoundsResolver.resolveViewGlobalBounds(view, mappingContext.screenDensity)
+
+    private fun isBackgroundOnlyEligible(view: View): Boolean =
+        view is ViewGroup && view.childCount > 0 && view.background != null
+
+    @UiThread
+    private fun captureBackground(view: View, context: CapturedMappingContext): CapturedViewMapperResult? {
+        val bounds = resolveBounds(view, context)
+        val label = PixelCaptureEligibility.placeholderLabelFor(context.imagePrivacy, bounds)
+        if (label != null) {
+            return CapturedViewMapperResult.Wireframes(
+                listOf(
+                    CapturedWireframe.PrivacyPlaceholder(
+                        context.identityFactory.placeholderWireframe(context.ownerIdentity),
+                        bounds.toCaptured(),
+                        label = label
+                    )
+                ),
+                isTerminal = true
+            )
+        }
+        val wireframe = if (containsHardwareSurface(view)) {
+            null
+        } else {
+            pixelCapture.captureDecoration(view, context.copy(bounds = bounds.toCaptured()), isTextFree = true) {
+                backgroundRasterizer.rasterize(view)
+            }
+        }
+        return wireframe?.let {
+            @Suppress("UnsafeThirdPartyFunctionCall") // One capture-owned, non-null wireframe.
+            val wireframes = listOf(it)
+            CapturedViewMapperResult.Wireframes(wireframes, isTerminal = false)
+        }
+    }
+
+    private fun containsHardwareSurface(view: View): Boolean = when (view) {
+        is SurfaceView, is TextureView -> true
+        is ViewGroup -> (0 until view.childCount).any { containsHardwareSurface(view.getChildAt(it)) }
+        else -> false
+    }
 
     /**
      * `NestedScrollView`/`RecyclerView` are matched by class name rather than type, the same way
