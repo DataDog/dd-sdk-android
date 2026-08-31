@@ -13,10 +13,20 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedFillRule
 import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.PixelResource
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
+import fr.xgouchet.elmyr.annotation.LongForgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.Extensions
 
+@Extensions(
+    ExtendWith(ForgeExtension::class)
+)
+@ForgeConfiguration(ForgeConfigurator::class)
 internal class CapturedTreeWireMapperTest {
 
     private val testedMapper = DefaultCapturedTreeWireMapper()
@@ -341,6 +351,96 @@ internal class CapturedTreeWireMapperTest {
         assertThat(result).isInstanceOf(CaptureWireMappingResult.Invalid::class.java)
         assertThat((result as CaptureWireMappingResult.Invalid).failures.map { it.code })
             .containsExactly(CaptureValidationErrorCode.MISSING_ROOT)
+    }
+
+    @Test
+    fun `M return null W mapWireframeMutation { nothing changed }`() {
+        // Given
+        val tree = compositionTestTree()
+
+        // When
+        val record = testedMapper.mapWireframeMutation(tree.snapshot, tree.snapshot)
+
+        // Then
+        assertThat(record).isNull()
+    }
+
+    @Test
+    fun `M emit a wireframe update W mapWireframeMutation { wireframe content changed }`(
+        @LongForgery fakeX: Long,
+        @LongForgery fakeY: Long,
+        @LongForgery fakeWidth: Long,
+        @LongForgery fakeHeight: Long,
+        @LongForgery fakeTimestamp: Long
+    ) {
+        // Given
+        val tree = compositionTestTree()
+        val changedWireframe = (tree.wireframe as CapturedWireframe.Shape).copy(
+            bounds = CapturedBounds(fakeX, fakeY, fakeWidth, fakeHeight)
+        )
+        val current = tree.snapshot.copy(timestamp = fakeTimestamp, wireframes = listOf(changedWireframe))
+
+        // When
+        val record = testedMapper.mapWireframeMutation(tree.snapshot, current)
+
+        // Then
+        checkNotNull(record)
+        assertThat(record.timestamp).isEqualTo(fakeTimestamp)
+        val data = record.data as MobileSegment.MobileIncrementalData.MobileMutationData
+        assertThat(data.adds).isEmpty()
+        assertThat(data.removes).isEmpty()
+        val update = data.updates.single() as MobileSegment.WireframeUpdateMutation.ShapeWireframeUpdate
+        assertThat(update.id).isEqualTo(tree.wireframeIdentity.wireId)
+        assertThat(update.width).isEqualTo(fakeWidth)
+    }
+
+    @Test
+    fun `M emit a wireframe add W mapWireframeMutation { new wireframe appears }`(
+        @LongForgery fakeX: Long,
+        @LongForgery fakeY: Long,
+        @LongForgery fakeWidth: Long,
+        @LongForgery fakeHeight: Long
+    ) {
+        // Given
+        val tree = compositionTestTree()
+        val newIdentity = tree.factory.placeholderWireframe(tree.layer.identity)
+        val newWireframe = CapturedWireframe.PrivacyPlaceholder(
+            identity = newIdentity,
+            bounds = CapturedBounds(fakeX, fakeY, fakeWidth, fakeHeight)
+        )
+        val current = tree.snapshot.copy(wireframes = tree.snapshot.wireframes + newWireframe)
+
+        // When
+        val record = testedMapper.mapWireframeMutation(tree.snapshot, current)
+
+        // Then
+        checkNotNull(record)
+        val data = record.data as MobileSegment.MobileIncrementalData.MobileMutationData
+        val addedWireframe = data.adds.single().wireframe as MobileSegment.Wireframe.PlaceholderWireframe
+        assertThat(addedWireframe.id).isEqualTo(newIdentity.wireId)
+    }
+
+    @Test
+    fun `M return null W mapWireframeMutation { a wireframe still has an unresolved pixel resource }`(
+        @LongForgery fakeX: Long,
+        @LongForgery fakeY: Long,
+        @LongForgery fakeWidth: Long,
+        @LongForgery fakeHeight: Long
+    ) {
+        // Given
+        val tree = compositionTestTree()
+        val unresolvedPixel = CapturedWireframe.Pixel(
+            identity = tree.factory.imageWireframe(tree.layer.identity),
+            bounds = CapturedBounds(fakeX, fakeY, fakeWidth, fakeHeight),
+            resource = PixelResource.Unresolved
+        )
+        val current = tree.snapshot.copy(wireframes = tree.snapshot.wireframes + unresolvedPixel)
+
+        // When
+        val record = testedMapper.mapWireframeMutation(tree.snapshot, current)
+
+        // Then
+        assertThat(record).isNull()
     }
 
     @Test

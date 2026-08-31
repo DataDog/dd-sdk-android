@@ -18,6 +18,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedAlignment
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedHorizontalAlignment
+import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedPadding
 import com.datadog.android.internal.sessionreplay.composition.CapturedTextPosition
 import com.datadog.android.internal.sessionreplay.composition.CapturedTextStyle
@@ -206,13 +207,24 @@ internal open class CapturedTextViewMapper<T : TextView>(
                 height = heightDp
             )
 
-            resolveCompoundDrawableWireframe(mappingContext, drawable, iconBounds, screenAreaPx)
+            // A dedicated per-slot owner, not mappingContext.ownerIdentity directly: imageWireframe/
+            // placeholderWireframe mint exactly one identity per owner (every other call site in this
+            // class calls each at most once), so reusing the view's own owner identity here would
+            // collide with resolveBackgroundWireframe's imageWireframe(ownerIdentity) call - both
+            // wireframes would land on the same wire id and one would silently clobber the other.
+            val slotOwner = mappingContext.identityFactory.layer(
+                mappingContext.ownerIdentity,
+                "compound-drawable-$index"
+            )
+
+            resolveCompoundDrawableWireframe(mappingContext, slotOwner, drawable, iconBounds, screenAreaPx)
         }
     }
 
     @Suppress("ReturnCount")
     private fun resolveCompoundDrawableWireframe(
         mappingContext: CapturedMappingContext,
+        slotOwner: CapturedIdentity,
         drawable: Drawable,
         iconBounds: CapturedBounds,
         screenAreaPx: Long
@@ -221,7 +233,7 @@ internal open class CapturedTextViewMapper<T : TextView>(
         val placeholderLabel = PixelCaptureEligibility.placeholderLabelFor(mappingContext.imagePrivacy, boundsDp)
         if (placeholderLabel != null) {
             return CapturedWireframe.PrivacyPlaceholder(
-                identity = mappingContext.identityFactory.placeholderWireframe(mappingContext.ownerIdentity),
+                identity = mappingContext.identityFactory.placeholderWireframe(slotOwner),
                 bounds = iconBounds,
                 label = placeholderLabel
             )
@@ -235,7 +247,7 @@ internal open class CapturedTextViewMapper<T : TextView>(
             drawable.intrinsicWidth,
             drawable.intrinsicHeight
         ) ?: return null
-        val identity = mappingContext.identityFactory.imageWireframe(mappingContext.ownerIdentity)
+        val identity = mappingContext.identityFactory.imageWireframe(slotOwner)
         mappingContext.pendingPixelCaptureSink.register(
             PendingPixelCapture(
                 wireframeIdentity = identity,

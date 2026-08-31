@@ -8,6 +8,7 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedBackgroundGradient
 import com.datadog.android.internal.sessionreplay.composition.CapturedChild
 import com.datadog.android.internal.sessionreplay.composition.CapturedClip
@@ -25,6 +26,7 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedTruncation
 import com.datadog.android.internal.sessionreplay.composition.CapturedVerticalAlignment
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.PixelResource
+import com.datadog.android.sessionreplay.internal.processor.MutationResolver
 import com.datadog.android.sessionreplay.model.MobileSegment
 
 internal sealed interface CaptureWireMappingResult<out T> {
@@ -44,10 +46,24 @@ internal interface CapturedTreeWireMapper {
         mutation: CapturedMutationSet,
         base: CapturedFullSnapshot
     ): CaptureWireMappingResult<MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord>
+
+    /**
+     * Diffs [previous] and [current]'s flat wireframe lists - independently of, and in addition
+     * to, [mapMutation]'s layer-only diff - and returns a ready-to-write mutation record for
+     * whatever wireframe content actually changed (added, removed, or altered), or null if nothing
+     * did. This is the same wireframe-level diff/mutation the legacy pipeline already emits
+     * ([MutationResolver]), reused as-is so a text or image content change never has to force a
+     * full composition-tree snapshot just to be delivered.
+     */
+    fun mapWireframeMutation(
+        previous: CapturedFullSnapshot,
+        current: CapturedFullSnapshot
+    ): MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord?
 }
 
 internal class DefaultCapturedTreeWireMapper(
-    private val validator: CapturedTreeValidator = DefaultCapturedTreeValidator()
+    private val validator: CapturedTreeValidator = DefaultCapturedTreeValidator(),
+    private val mutationResolver: MutationResolver = MutationResolver(InternalLogger.UNBOUND)
 ) : CapturedTreeWireMapper {
 
     @Suppress("ReturnCount") // Invalid capture data is returned at the point where it is detected.
@@ -105,6 +121,25 @@ internal class DefaultCapturedTreeWireMapper(
             )
         )
     }
+
+    @Suppress("ReturnCount") // Nothing-to-report is returned at the point where it is detected.
+    override fun mapWireframeMutation(
+        previous: CapturedFullSnapshot,
+        current: CapturedFullSnapshot
+    ): MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord? {
+        val previousWireframes = previous.wireframes.mapToWireOrNull() ?: return null
+        val currentWireframes = current.wireframes.mapToWireOrNull() ?: return null
+        val mutationData = mutationResolver.resolveMutations(previousWireframes, currentWireframes)
+            ?: return null
+        return MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord(
+            timestamp = current.timestamp,
+            data = mutationData
+        )
+    }
+
+    /** Null (skip this cycle's wireframe mutation) if any wireframe isn't resolvable yet - e.g. a pending pixel capture. */
+    private fun List<CapturedWireframe>.mapToWireOrNull(): List<MobileSegment.Wireframe>? =
+        map { it.toWireframeOrNull() ?: return null }
 }
 
 private fun CapturedLayer.toWireLayer(): MobileSegment.CompositionLayer =

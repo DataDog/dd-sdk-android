@@ -572,14 +572,16 @@ private fun isComposeHostByClassName(view: View): Boolean =
 
 /**
  * A [CapturedWireframe.Pixel] or [CapturedWireframe.PrivacyPlaceholder] from the native
- * pixel-fallback mapper already stands in for this view's entire subtree - the bitmap it
+ * pixel-fallback mapper usually already stands in for this view's entire subtree - the bitmap it
  * rasterized bakes every child in, and the placeholder is standing in for that same bitmap.
- * Walking the real children afterward would describe them a second time, redundantly. Stateless -
- * kept out of [AndroidWindowTraversal] itself to stay within [TooManyFunctions]'s budget.
+ * Walking the real children afterward would describe them a second time, redundantly. The one
+ * exception is a background-only pixel capture (see [CapturedViewMapperResult.Wireframes]'s doc),
+ * which [CapturedPixelFallbackMapper] flags itself via `pixelFallbackTerminal = false` since its
+ * bitmap never included the children at all. Stateless - kept out of [AndroidWindowTraversal]
+ * itself to stay within [TooManyFunctions]'s budget.
  */
 private fun CapturedViewMapperResult.isPixelFallbackTerminal(): Boolean =
-    this is CapturedViewMapperResult.Wireframes &&
-        wireframes.any { it is CapturedWireframe.Pixel || it is CapturedWireframe.PrivacyPlaceholder }
+    this is CapturedViewMapperResult.Wireframes && pixelFallbackTerminal
 
 /** Stateless - kept out of [AndroidWindowTraversal] itself to stay within [TooManyFunctions]'s budget. */
 private fun computeClip(bounds: CapturedBounds, ancestorBounds: List<CapturedBounds>): CapturedClip? {

@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.composition
 
 import android.graphics.Bitmap
 import android.graphics.Rect
+import androidx.collection.LruCache
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedChild
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
@@ -16,6 +17,7 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.PixelResource
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultBitmapSignatureGenerator
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolverCallback
 import com.datadog.android.sessionreplay.recorder.privacy.TextDetectionOutcome
@@ -443,5 +445,112 @@ internal class PixelFallbackSnapshotProcessorTest {
         val completed = results.single() as SnapshotProcessingResult.Completed
         val pixel = completed.snapshot.wireframes.single() as CapturedWireframe.Pixel
         assertThat(pixel.resource).isEqualTo(PixelResource.Resolved(fakeResourceId, "image/webp"))
+    }
+
+    @Test
+    fun `M resolve from cache without touching the detector W process { bitmap signature already resolved }`(
+        @StringForgery fakeScope: String,
+        @StringForgery fakeResourceId: String
+    ) {
+        // Given: a prior generation already resolved this exact bitmap content once - a fresh
+        // generation capturing the same (unchanged) view must not pay for another detector
+        // round-trip at all.
+        val fixture = Fixture(fakeScope)
+        stubBitmapDimensions(fixture.bitmap, width = 20, height = 20)
+        val signature = DefaultBitmapSignatureGenerator().generateSignature(fixture.bitmap)
+        checkNotNull(signature)
+        val cache = LruCache<Long, String>(10).apply { put(signature, fakeResourceId) }
+        val mockTextDetector: TextDetector = mock()
+        val testedProcessor = PixelFallbackSnapshotProcessor(
+            resourceResolver = mockResourceResolver,
+            textDetector = mockTextDetector,
+            mainThreadExecutor = immediateMainThreadExecutor,
+            resolvedContentCache = cache
+        )
+        val results = mutableListOf<SnapshotProcessingResult>()
+
+        // When
+        testedProcessor.process(
+            SnapshotProcessingRequest(
+                generationContext(),
+                fixture.snapshot,
+                listOf(fixture.pending),
+                fixture.identityFactory
+            ),
+            SnapshotProcessingCallback { results += it }
+        )
+
+        // Then
+        val completed = results.single() as SnapshotProcessingResult.Completed
+        val pixel = completed.snapshot.wireframes.single() as CapturedWireframe.Pixel
+        assertThat(pixel.resource).isEqualTo(PixelResource.Resolved(fakeResourceId, "image/webp"))
+        verify(mockTextDetector, never()).detectTextRegions(any(), any())
+        verify(mockResourceResolver, never()).resolveResourceIdFromBitmap(any(), any())
+    }
+
+    @Test
+    fun `M cache a late success and request a fresh capture W process { detector resolves after own timeout fired }`(
+        @StringForgery fakeScope: String,
+        @StringForgery fakeResourceId: String
+    ) {
+        // Given: the safety-margin timeout fires first (as it does whenever the 90ms generation
+        // budget loses the race against a real detector round-trip), but the detector call itself
+        // was never cancelled and keeps running in the background.
+        val fixture = Fixture(fakeScope)
+        stubBitmapDimensions(fixture.bitmap, width = 20, height = 20)
+        val mockTextDetector: TextDetector = mock()
+        var lateOnComplete: ((TextDetectionOutcome) -> Unit)? = null
+        doAnswer { invocation ->
+            @Suppress("UNCHECKED_CAST")
+            lateOnComplete = invocation.getArgument<(TextDetectionOutcome) -> Unit>(1)
+            null
+        }.whenever(mockTextDetector).detectTextRegions(any(), any())
+        doAnswer { invocation ->
+            val callback = invocation.getArgument<ResourceResolverCallback>(1)
+            callback.onSuccess(fakeResourceId)
+            null
+        }.whenever(mockResourceResolver).resolveResourceIdFromBitmap(any(), any())
+        val fakeScheduler = FakeCaptureTaskScheduler()
+        val recaptureRequests = mutableListOf<Unit>()
+        val cache = LruCache<Long, String>(10)
+        val testedProcessor = PixelFallbackSnapshotProcessor(
+            resourceResolver = mockResourceResolver,
+            textDetector = mockTextDetector,
+            mainThreadExecutor = immediateMainThreadExecutor,
+            taskScheduler = fakeScheduler,
+            recaptureTrigger = RecaptureTrigger { recaptureRequests += Unit },
+            resolvedContentCache = cache
+        )
+        val results = mutableListOf<SnapshotProcessingResult>()
+
+        // When
+        testedProcessor.process(
+            SnapshotProcessingRequest(
+                generationContext(),
+                fixture.snapshot,
+                listOf(fixture.pending),
+                fixture.identityFactory
+            ),
+            SnapshotProcessingCallback { results += it }
+        )
+        fakeScheduler.scheduled.single().second.invoke() // this generation's own deadline expires first
+        lateOnComplete?.invoke(TextDetectionOutcome.Detected(emptyList())) // the real result lands after
+
+        // Then: this generation already emitted a placeholder and is not revised in place ...
+        val completed = results.single() as SnapshotProcessingResult.Completed
+        assertThat(
+            completed.snapshot.wireframes.single()
+        ).isInstanceOf(CapturedWireframe.PrivacyPlaceholder::class.java)
+        // ... but the late success is not wasted: it's cached and a fresh capture is requested so
+        // the corrected content reaches the recording without waiting for an unrelated redraw.
+        assertThat(recaptureRequests).hasSize(1)
+        val signature = DefaultBitmapSignatureGenerator().generateSignature(fixture.bitmap)
+        checkNotNull(signature)
+        assertThat(cache.get(signature)).isEqualTo(fakeResourceId)
+    }
+
+    private fun stubBitmapDimensions(bitmap: Bitmap, width: Int, height: Int) {
+        whenever(bitmap.width).thenReturn(width)
+        whenever(bitmap.height).thenReturn(height)
     }
 }

@@ -13,14 +13,17 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
  * into a [CapturedMutationSet], or returns null when the change can't be expressed as a mutation
  * under the current wire contract - the caller must fall back to a full snapshot in that case.
  *
- * The wire mutation model (block 1) can only express layer-level structural changes (a layer's own
- * bounds/children/modifiers/composite operation) - it has no operation for a wireframe's own
- * content changing (text, its independently-absolute bounds, an image resource, a style), nor for
- * delivering a brand-new wireframe's definition out of band. [diff] therefore requires every
- * wireframe referenced by [current] to already have existed, unchanged, in [previous] before it
- * will attempt a layer diff at all; a wireframe simply disappearing needs no such check, since it
- * becomes unreachable exactly when its owning layer is removed or stops referencing it, which the
- * layer diff below already produces correctly by construction.
+ * This only diffs layer-level structure (a layer's own bounds/children/modifiers/composite
+ * operation) - it is deliberately blind to a wireframe's own content (text, its
+ * independently-absolute bounds, an image resource, a style) and to whether a wireframe referenced
+ * by a layer's children has actually been delivered yet. That is intentional, not an omission: a
+ * wireframe's own content is diffed and delivered completely independently, by
+ * [DefaultCapturedTreeWireMapper.mapWireframeMutation] against the same flat [CapturedFullSnapshot.wireframes]
+ * lists this differ ignores - mirroring how the composition tree and the flat wireframe list are
+ * two separately-diffed, separately-delivered records on the wire. A layer referencing a wireframe
+ * whose definition arrives only via that other record is expected and valid; see
+ * `CapturedSnapshotValidation`'s `validateWireframeDefinitions` for the corresponding validation-side
+ * accommodation.
  */
 internal object CapturedSnapshotDiffer {
 
@@ -28,7 +31,6 @@ internal object CapturedSnapshotDiffer {
     fun diff(previous: CapturedFullSnapshot, current: CapturedFullSnapshot): CapturedMutationSet? {
         if (previous.scope != current.scope) return null
         val currentRoot = current.root ?: return null
-        if (!isWireframeContentStable(previous, current)) return null
 
         val previousLayers = previous.layers.associateBy { it.identity.wireId }
         val currentLayers = current.layers.associateBy { it.identity.wireId }
@@ -47,19 +49,6 @@ internal object CapturedSnapshotDiffer {
             removes = removes.toChange(),
             updates = updates.toChange()
         )
-    }
-
-    /**
-     * True only if every wireframe [current] references already existed, with identical content,
-     * in [previous]. A brand-new wireframe id has no delivery mechanism on the wire today, and a
-     * persisting wireframe with different content has no update mechanism either - both force a
-     * full snapshot. Wireframes present only in [previous] are deliberately not examined here.
-     */
-    private fun isWireframeContentStable(previous: CapturedFullSnapshot, current: CapturedFullSnapshot): Boolean {
-        val previousWireframesById = previous.wireframes.associateBy { it.identity.wireId }
-        return current.wireframes.all { wireframe ->
-            previousWireframesById[wireframe.identity.wireId] == wireframe
-        }
     }
 
     /** Null if nothing about [current] differs from [previous]; otherwise a sparse per-field update. */

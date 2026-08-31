@@ -298,6 +298,109 @@ internal class CapturedPixelFallbackMapperTest {
         assertThat((result.wireframes.single() as CapturedWireframe.Pixel).resource)
             .isEqualTo(PixelResource.Unresolved)
         assertThat(registered).hasSize(1)
+        // A leaf's whole-view rasterization bakes in everything it paints - there's no separate
+        // content left for the traversal to visit independently afterward.
+        assertThat(result.pixelFallbackTerminal).isTrue()
+    }
+
+    @Test
+    fun `M rasterize only the background and report non-terminal W map { ViewGroup, children, background }`(
+        @StringForgery fakeScope: String
+    ) {
+        // Given: a themed container (Toolbar, CardView, ...) whose background alone can't reduce
+        // to a solid color. Its children must still be captured by their own proper mapper -
+        // rasterizing the whole view here would bake them into one opaque bitmap that
+        // PixelFallbackSnapshotProcessor's text-detection safety net would then have to
+        // blanket-mask, instead of letting a child TextView's real text show through masked (or
+        // not) per TextAndInputPrivacy as usual.
+        val mockViewGroup: ViewGroup = mock()
+        val mockChild: View = mock()
+        val mockDrawable: Drawable = mock()
+        val mockBackgroundOnlyBitmap: Bitmap = mock()
+        whenever(mockViewGroup.width).thenReturn(100)
+        whenever(mockViewGroup.height).thenReturn(100)
+        whenever(mockViewGroup.background).thenReturn(mockDrawable)
+        whenever(mockViewGroup.childCount).thenReturn(1)
+        whenever(mockViewGroup.getChildAt(0)).thenReturn(mockChild)
+        val resources: Resources = mock()
+        val displayMetrics = DisplayMetrics().apply {
+            widthPixels = 1000
+            heightPixels = 1000
+        }
+        whenever(mockViewGroup.resources).thenReturn(resources)
+        whenever(resources.displayMetrics).thenReturn(displayMetrics)
+        whenever(mockViewGroup.getGlobalVisibleRect(any())).thenAnswer { invocation ->
+            invocation.getArgument<Rect>(0).set(0, 0, 100, 100)
+            true
+        }
+        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockViewGroup, 1f))
+            .thenReturn(GlobalBounds(0, 0, 100, 100))
+        val registered = mutableListOf<PendingPixelCapture>()
+        val testedMapperWithBackgroundRasterizer = CapturedPixelFallbackMapper(
+            fallbackMapper = mockFallbackMapper,
+            internalLogger = mockInternalLogger,
+            viewBoundsResolver = mockViewBoundsResolver,
+            viewRasterizer = ViewRasterizer { error("the whole-view rasterizer must not be used here") },
+            backgroundRasterizer = ViewBackgroundRasterizer { mockBackgroundOnlyBitmap }
+        )
+        val mappingContext = mappingContext(
+            ImagePrivacy.MASK_NONE,
+            sink = PendingPixelCaptureSink { registered += it },
+            scope = fakeScope
+        )
+
+        // When
+        val result = testedMapperWithBackgroundRasterizer.map(mockViewGroup, mappingContext)
+            as CapturedViewMapperResult.Wireframes
+
+        // Then
+        assertThat(result.pixelFallbackTerminal).isFalse()
+        val pixel = result.wireframes.single() as CapturedWireframe.Pixel
+        assertThat(pixel.resource).isEqualTo(PixelResource.Unresolved)
+        assertThat(registered).hasSize(1)
+        assertThat(registered.single().bitmap).isSameAs(mockBackgroundOnlyBitmap)
+        assertThat(registered.single().isTextFree).isTrue()
+    }
+
+    @Test
+    fun `M rasterize the whole view and report terminal W map { ViewGroup, no children, background }`(
+        @StringForgery fakeScope: String
+    ) {
+        // Given: a childless ViewGroup has nothing else for the traversal to visit independently
+        // afterward, so it keeps the original whole-view rasterization.
+        val mockViewGroup: ViewGroup = mock()
+        val mockDrawable: Drawable = mock()
+        whenever(mockViewGroup.width).thenReturn(100)
+        whenever(mockViewGroup.height).thenReturn(100)
+        whenever(mockViewGroup.background).thenReturn(mockDrawable)
+        whenever(mockViewGroup.childCount).thenReturn(0)
+        val resources: Resources = mock()
+        val displayMetrics = DisplayMetrics().apply {
+            widthPixels = 1000
+            heightPixels = 1000
+        }
+        whenever(mockViewGroup.resources).thenReturn(resources)
+        whenever(resources.displayMetrics).thenReturn(displayMetrics)
+        whenever(mockViewGroup.getGlobalVisibleRect(any())).thenAnswer { invocation ->
+            invocation.getArgument<Rect>(0).set(0, 0, 100, 100)
+            true
+        }
+        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockViewGroup, 1f))
+            .thenReturn(GlobalBounds(0, 0, 100, 100))
+        val registered = mutableListOf<PendingPixelCapture>()
+        val mappingContext = mappingContext(
+            ImagePrivacy.MASK_NONE,
+            sink = PendingPixelCaptureSink { registered += it },
+            scope = fakeScope
+        )
+
+        // When
+        val result = testedMapper.map(mockViewGroup, mappingContext) as CapturedViewMapperResult.Wireframes
+
+        // Then
+        assertThat(result.pixelFallbackTerminal).isTrue()
+        assertThat(registered.single().bitmap).isSameAs(mockBitmap)
+        assertThat(registered.single().isTextFree).isFalse()
     }
 
     @Test

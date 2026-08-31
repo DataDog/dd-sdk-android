@@ -38,12 +38,27 @@ import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
  * [IMAGE_DIMEN_CONSIDERED_PII_IN_DP] in either dimension. Text-region masking of whatever *is*
  * captured is a separate, later concern (`PixelFallbackSnapshotProcessor`) - it applies regardless
  * of the image privacy level that let capture proceed at all.
+ *
+ * A [ViewGroup] with its own children and a real background (non-solid, since [fallbackMapper]
+ * already failed to reduce it to one) is common decorative chrome - a themed `Toolbar`,
+ * `CardView`, etc. Rasterizing the *whole* view for that case would bake its children's content
+ * (a title `TextView`'s text, say) into one opaque bitmap, at which point
+ * `PixelFallbackSnapshotProcessor`'s text-detection safety net has no choice but to blanket-mask
+ * anything it finds - text that a dedicated `TextView`/`Button` mapper would otherwise have shown
+ * unmasked, per [com.datadog.android.sessionreplay.TextAndInputPrivacy]. [map] rasterizes only the
+ * background in that case (via [backgroundRasterizer], `isTextFree = true` - a background alone
+ * structurally can't contain text) and reports `pixelFallbackTerminal = false`, so
+ * [com.datadog.android.sessionreplay.internal.composition.AndroidWindowTraversal] still visits
+ * those children on their own instead of treating this capture as standing in for the whole
+ * subtree. A leaf (no children) or a childless/backgroundless `ViewGroup` has no such content to
+ * protect, so it keeps the original whole-view rasterization.
  */
 internal class CapturedPixelFallbackMapper(
     private val fallbackMapper: CapturedViewMapper<View>,
     private val internalLogger: InternalLogger,
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver,
-    private val viewRasterizer: ViewRasterizer = DefaultViewRasterizer(internalLogger)
+    private val viewRasterizer: ViewRasterizer = DefaultViewRasterizer(internalLogger),
+    private val backgroundRasterizer: ViewBackgroundRasterizer = DefaultViewBackgroundRasterizer()
 ) : CapturedViewMapper<View> {
 
     @Suppress("ReturnCount")
@@ -104,25 +119,42 @@ internal class CapturedPixelFallbackMapper(
             return fallbackResult
         }
 
-        val bitmap = viewRasterizer.rasterize(view) ?: return fallbackResult
+        val backgroundOnly = isBackgroundOnlyEligible(view)
+        val bitmap = rasterize(view, backgroundOnly) ?: return fallbackResult
 
         val identity = mappingContext.identityFactory.imageWireframe(mappingContext.ownerIdentity)
         mappingContext.pendingPixelCaptureSink.register(
             PendingPixelCapture(
                 wireframeIdentity = identity,
                 ownerIdentity = mappingContext.ownerIdentity,
-                bitmap = bitmap
+                bitmap = bitmap,
+                isTextFree = backgroundOnly
             )
         )
         return CapturedViewMapperResult.Wireframes(
-            listOf(
+            wireframes = listOf(
                 CapturedWireframe.Pixel(
                     identity = identity,
                     bounds = bounds.toCaptured(),
                     resource = PixelResource.Unresolved
                 )
-            )
+            ),
+            pixelFallbackTerminal = !backgroundOnly
         )
+    }
+
+    /**
+     * A [ViewGroup] with its own children and a real background (non-solid, since [fallbackMapper]
+     * already failed to reduce it to one) - see the class doc for why only that combination is
+     * eligible for a background-only capture instead of the whole-view rasterization.
+     */
+    private fun isBackgroundOnlyEligible(view: View): Boolean =
+        view is ViewGroup && view.childCount > 0 && view.background != null
+
+    private fun rasterize(view: View, backgroundOnly: Boolean): Bitmap? = if (backgroundOnly) {
+        backgroundRasterizer.rasterize(view)
+    } else {
+        viewRasterizer.rasterize(view)
     }
 
     /** Pre-emptive OOM defense: an unbounded custom View could otherwise demand a huge bitmap. */

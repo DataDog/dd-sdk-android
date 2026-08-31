@@ -21,6 +21,7 @@ import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.DefaultCapturedIdentityFactory
 import com.datadog.android.sessionreplay.internal.composition.PendingPixelCapture
 import com.datadog.android.sessionreplay.internal.composition.PendingPixelCaptureSink
+import com.datadog.android.sessionreplay.internal.composition.toCaptured
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.GlobalBounds
@@ -448,6 +449,49 @@ internal class CapturedTextViewMapperTest {
         assertThat(registered.single().wireframeIdentity).isEqualTo(pixelWireframe.identity)
         assertThat(registered.single().bitmap).isSameAs(mockIconBitmap)
         assertThat(registered.single().isTextFree).isTrue()
+    }
+
+    @Test
+    fun `M keep background and icon Pixel wireframes distinct W map { non-solid background, icon }`(
+        @StringForgery fakeScope: String,
+        @StringForgery fakeText: String,
+        @IntForgery(min = 0, max = 0xFFFFFF) fakeTextColor: Int,
+        @StringForgery(regex = "#[0-9A-F]{8}") fakeTextColorHexString: String
+    ) {
+        // Given: a button with both a non-solid (ripple/selector) background AND a compound
+        // drawable icon - each is captured via its own imageWireframe() call, which must not
+        // collide onto the same wire id (identityFactory.imageWireframe/placeholderWireframe mint
+        // exactly one identity per owner, so a naive implementation reusing the view's own owner
+        // identity for both would have the icon's Pixel wireframe silently clobber the background's).
+        val fakeBounds = GlobalBounds(x = 100, y = 200, width = 300, height = 50)
+        val mockTextView = stubTextView(fakeText, fakeTextColor, fakeTextColorHexString, fakeDensity = 1f, fakeBounds)
+        val mockBackgroundDrawable: Drawable = mock()
+        whenever(mockTextView.background).thenReturn(mockBackgroundDrawable)
+        whenever(mockDrawableToColorMapper.mapDrawableToColor(mockBackgroundDrawable, mockInternalLogger))
+            .thenReturn(null)
+        stubCompoundDrawable(mockTextView, index = 0, intrinsicWidth = 20, intrinsicHeight = 20)
+        stubDisplayMetrics(mockTextView, screenWidth = 1000, screenHeight = 1000)
+        val registered = mutableListOf<PendingPixelCapture>()
+        val mappingContext = mappingContext(
+            fakeScope,
+            fakeDensity = 1f,
+            imagePrivacy = ImagePrivacy.MASK_NONE,
+            sink = PendingPixelCaptureSink { registered += it }
+        )
+
+        // When
+        val result = testedMapper.map(mockTextView, mappingContext) as CapturedViewMapperResult.Wireframes
+
+        // Then
+        val pixelWireframes = result.wireframes.filterIsInstance<CapturedWireframe.Pixel>()
+        assertThat(pixelWireframes).hasSize(2)
+        assertThat(pixelWireframes.map { it.identity }.toSet()).hasSize(2)
+        assertThat(pixelWireframes.map { it.identity.wireId }.toSet()).hasSize(2)
+        assertThat(registered).hasSize(2)
+        assertThat(registered.map { it.wireframeIdentity }.toSet()).hasSize(2)
+        // The full-size background must still be present, at the view's own bounds - not the
+        // icon's small bounds.
+        assertThat(pixelWireframes).anyMatch { it.bounds == fakeBounds.toCaptured() }
     }
 
     @Test

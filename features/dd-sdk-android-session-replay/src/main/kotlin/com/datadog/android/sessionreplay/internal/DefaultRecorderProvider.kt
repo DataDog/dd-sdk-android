@@ -48,6 +48,7 @@ import com.datadog.android.sessionreplay.internal.composition.DefaultSnapshotCom
 import com.datadog.android.sessionreplay.internal.composition.HandlerCaptureMainThreadExecutor
 import com.datadog.android.sessionreplay.internal.composition.HandlerCaptureTaskScheduler
 import com.datadog.android.sessionreplay.internal.composition.PixelFallbackSnapshotProcessor
+import com.datadog.android.sessionreplay.internal.composition.RecaptureTrigger
 import com.datadog.android.sessionreplay.internal.composition.ScheduledExecutorCaptureTaskScheduler
 import com.datadog.android.sessionreplay.internal.composition.SnapshotCaptureOrchestrator
 import com.datadog.android.sessionreplay.internal.composition.SnapshotCompletionQueue
@@ -277,13 +278,20 @@ internal class DefaultRecorderProvider(
             executorService = sdkCore.createScheduledExecutorService("sr-composition-expiry"),
             internalLogger = internalLogger
         )
-        return SnapshotCaptureOrchestrator(
+        // Assigned right after construction below - PixelFallbackSnapshotProcessor needs a way to
+        // ask for a fresh generation once a detection result arrives too late for the one that
+        // requested it, but the orchestrator doesn't exist yet at the point the processor is built
+        // (it's a constructor argument of the orchestrator itself). The lambda only ever runs later,
+        // asynchronously, well after this var is set.
+        lateinit var orchestrator: SnapshotCaptureOrchestrator
+        orchestrator = SnapshotCaptureOrchestrator(
             producer = producer,
             processor = PixelFallbackSnapshotProcessor(
-                resourceResolver,
-                textDetector,
-                mainThreadExecutor,
-                sharedScheduler
+                resourceResolver = resourceResolver,
+                textDetector = textDetector,
+                mainThreadExecutor = mainThreadExecutor,
+                taskScheduler = sharedScheduler,
+                recaptureTrigger = RecaptureTrigger { orchestrator.requestCapture() }
             ),
             consumer = completionQueue,
             timeProvider = TimeProviderCaptureTimeProvider(sdkCore.timeProvider),
@@ -300,6 +308,7 @@ internal class DefaultRecorderProvider(
             },
             internalLogger = internalLogger
         )
+        return orchestrator
     }
 
     private fun defaultCompositionSnapshotProducer(
