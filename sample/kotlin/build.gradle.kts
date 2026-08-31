@@ -187,6 +187,7 @@ dependencies {
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.androidXAppCompat)
     implementation(libs.bundles.androidXCompose)
+    implementation(libs.androidXLifecycleCompose)
     implementation(libs.material3Android)
     implementation(libs.googleAccompanistAppCompatTheme)
     implementation(libs.googleAccompanistPager)
@@ -240,7 +241,7 @@ dependencies {
 }
 
 datadogBuild {
-    applyKotlinConfig()
+    applyKotlinConfig(evaluateWarningsAsErrors = false)
     applyJunitConfig()
 }
 
