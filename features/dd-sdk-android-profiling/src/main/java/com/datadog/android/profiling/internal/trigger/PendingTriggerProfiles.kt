@@ -14,6 +14,16 @@ import com.datadog.tools.annotation.NoOpImplementation
 /**
  * Thread-safe buffer pairing a trigger-captured profiling artifact with the gating RUM error
  * event that promotes it to an upload.
+ *
+ * Holds at most one profiling result and one gating event at a time; a new one on either side
+ * overrides (and expires) the previous one on that same side. Whichever arrives second
+ * completes the pair, but only when the gating event's trigger type matches the result's
+ * [com.datadog.android.profiling.internal.perfetto.PerfettoResult.startReason] — a mismatch
+ * stays pending for its true counterpart. Accepted gating events are
+ * [com.datadog.android.internal.profiling.ProfilerEvent.RumAnrEvent],
+ * [com.datadog.android.internal.profiling.ProfilerEvent.RumOomErrorEvent] and
+ * [com.datadog.android.internal.profiling.ProfilerEvent.RumAnomalyErrorEvent]; any other event
+ * type is silently rejected.
  */
 @NoOpImplementation
 internal interface PendingTriggerProfiles {
@@ -28,9 +38,16 @@ internal interface PendingTriggerProfiles {
     /**
      * Buffers a RUM gating [ProfilerEvent]. If a matching profiling result is already pending,
      * the pair is dispatched immediately via the on-match callback; otherwise the event
-     * self-cleans after [EXPIRY_TIMEOUT_MS]. Non-ANR events are silently rejected.
+     * self-cleans after [EXPIRY_TIMEOUT_MS]. Rejected event types are silently ignored.
      */
     fun setRumGatingEvent(event: ProfilerEvent)
+
+    /**
+     * Runs one expiry sweep at the current time, discarding a stale profiling result or gating
+     * event. Also invoked automatically by the internal cleanup schedule; exposed here as a
+     * testable seam.
+     */
+    fun sweepAndDiscard()
 
     /**
      * Cancels any pending cleanup tasks and deletes any still-pending profiling result's
@@ -43,6 +60,6 @@ internal interface PendingTriggerProfiles {
          * How long a profiling result or RUM gating event may wait for its counterpart
          * before it is considered stale and dropped.
          */
-        internal const val EXPIRY_TIMEOUT_MS = 30_000L
+        internal const val EXPIRY_TIMEOUT_MS = 5_000L
     }
 }

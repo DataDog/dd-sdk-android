@@ -9,7 +9,9 @@ package com.datadog.android.profiling.internal.trigger
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.internal.profiling.ProfilerEvent
+import com.datadog.android.internal.profiling.ProfilerEvent.RumAnomalyErrorEvent
 import com.datadog.android.internal.profiling.ProfilerEvent.RumAnrEvent
+import com.datadog.android.internal.profiling.ProfilerEvent.RumOomErrorEvent
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.internal.ProfilingStartReason
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
@@ -18,14 +20,21 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
+/**
+ * [onExpiredOverride] lets a caller take over artifact deletion (e.g. to route it through the
+ * profiling data writer instead of deleting the file directly). Defaults to deleting the file
+ * in place.
+ */
 @Suppress("TooManyFunctions")
 internal class PendingTriggerProfileStorage(
     private val executor: ScheduledExecutorService,
     private val timeProvider: TimeProvider,
     private val internalLogger: InternalLogger? = null,
-    private val onMatch: (PerfettoResult, ProfilerEvent) -> Unit
+    private val onMatch: (PerfettoResult, ProfilerEvent) -> Unit,
+    onExpiredOverride: ((PerfettoResult) -> Unit)? = null
 ) : PendingTriggerProfiles {
     private val lock = Any()
+    private val onExpired: (PerfettoResult) -> Unit = onExpiredOverride ?: { result -> safeDelete(result.resultFilePath) }
 
     @Volatile
     private var profilingResult: PerfettoResult? = null
@@ -46,7 +55,7 @@ internal class PendingTriggerProfileStorage(
             profilingResult = result
             matchResult()
         }
-        overriddenResult?.let { safeDelete(it.resultFilePath) }
+        overriddenResult?.let { onExpired(it) }
         if (pair != null) {
             val (matchedResult, gatingEvent) = pair
             onMatch(matchedResult, gatingEvent)
@@ -101,12 +110,12 @@ internal class PendingTriggerProfileStorage(
         expired
     }
 
-    private fun sweepAndDiscard() {
+    override fun sweepAndDiscard() {
         val expired = sweep(
             deviceNow = timeProvider.getDeviceTimestampMillis(),
             serverNow = timeProvider.getServerTimestampMillis()
         )
-        expired?.let { safeDelete(it.resultFilePath) }
+        expired?.let { onExpired(it) }
     }
 
     override fun stop() {
@@ -116,7 +125,7 @@ internal class PendingTriggerProfileStorage(
             gatingEventCleanupTask?.cancel(false)
             gatingEventCleanupTask = null
         }
-        clear()?.let { safeDelete(it.resultFilePath) }
+        clear()?.let { onExpired(it) }
     }
 
     internal fun clear(): PerfettoResult? = synchronized(lock) {
@@ -175,11 +184,15 @@ internal class PendingTriggerProfileStorage(
 
     private fun ProfilerEvent.triggerType(): ProfilingStartReason? = when (this) {
         is RumAnrEvent -> ProfilingStartReason.ANR
+        is RumOomErrorEvent -> ProfilingStartReason.OUT_OF_MEMORY
+        is RumAnomalyErrorEvent -> ProfilingStartReason.MEMORY_ANOMALY
         else -> null
     }
 
     private fun ProfilerEvent.timestampMs(): Long = when (this) {
         is RumAnrEvent -> startMs
+        is RumOomErrorEvent -> timestamp
+        is RumAnomalyErrorEvent -> timestamp
         else -> 0L
     }
 
