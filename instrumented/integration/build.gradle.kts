@@ -152,7 +152,8 @@ datadogBuild {
 
 taskConfig<KotlinCompile> {
     compilerOptions {
-        // TODO RUM-18190
+        // Integration fixtures intentionally access Kotlin-internal SDK APIs via INVISIBLE_*
+        // suppressions, which KGP 2.2 reports with the ERROR_SUPPRESSION diagnostic.
         freeCompilerArgs.add("-Xwarning-level=ERROR_SUPPRESSION:disabled")
     }
 }

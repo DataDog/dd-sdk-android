@@ -93,7 +93,8 @@ datadogBuild {
 taskConfig<KotlinCompile> {
     compilerOptions {
         optIn.add("kotlin.RequiresOptIn")
-        // TODO RUM-18190
+        // This integration intentionally accesses Kotlin-internal Compose APIs via INVISIBLE_*
+        // suppressions, which KGP 2.2 reports with the ERROR_SUPPRESSION diagnostic.
         freeCompilerArgs.add("-Xwarning-level=ERROR_SUPPRESSION:disabled")
     }
 }
