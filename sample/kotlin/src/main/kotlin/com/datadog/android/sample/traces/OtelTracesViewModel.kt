@@ -6,32 +6,41 @@
 
 package com.datadog.android.sample.traces
 
-import android.os.AsyncTask
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.datadog.android.log.Logger
 import com.datadog.android.okhttp.otel.addParentSpan
 import com.datadog.android.sample.BuildConfig
 import com.datadog.android.vendor.sample.LocalServer
 import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.common.Attributes
-import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.context.Context
 import io.opentelemetry.context.ContextKey
-import io.opentelemetry.context.Scope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
-@Suppress("DEPRECATION")
 internal class OtelTracesViewModel(
     private val okHttpClient: OkHttpClient,
     private val localServer: LocalServer
-
 ) : ViewModel() {
 
-    private var asyncOperationTask: AsyncTask<Unit, Unit, Unit>? = null
-    private var chainedContextsTask: AsyncTask<Unit, Unit, Unit>? = null
-    private var linkedSpansTask: AsyncTask<Unit, Unit, Unit>? = null
+    private var asyncOperationJob: Job? = null
+    private var chainedContextsJob: Job? = null
+    private var linkedSpansJob: Job? = null
+
+    private val asyncOperationLogger: Logger by lazy {
+        buildLogger("async_operation")
+    }
+    private val chainedContextsLogger: Logger by lazy {
+        buildLogger("chained-contexts-task")
+    }
 
     fun onResume() {
         localServer.start("https://www.datadoghq.com/")
@@ -45,230 +54,218 @@ internal class OtelTracesViewModel(
         onProgress: (Int) -> Unit = {},
         onDone: () -> Unit = {}
     ) {
-        asyncOperationTask = AsyncOperationTask(onProgress, onDone)
-        asyncOperationTask?.execute()
+        asyncOperationJob?.cancel()
+        val parentContext = Context.current()
+        asyncOperationJob = viewModelScope.launch {
+            runAsyncOperation(parentContext, onProgress, onDone)
+        }
     }
 
     fun startChainedContexts(onDone: () -> Unit = {}) {
-        chainedContextsTask = ChainedContextsTask(
-            localServer.getUrl(),
-            okHttpClient,
-            onDone
-        )
-        chainedContextsTask?.execute()
+        chainedContextsJob?.cancel()
+        val parentContext = Context.current()
+        val url = localServer.getUrl()
+        chainedContextsJob = viewModelScope.launch {
+            runChainedContexts(parentContext, url, onDone)
+        }
     }
 
     fun startLinkedSpans(onDone: () -> Unit = {}) {
-        linkedSpansTask = LinkedSpansTask(onDone)
-        linkedSpansTask?.execute()
+        linkedSpansJob?.cancel()
+        val parentContext = Context.current()
+        linkedSpansJob = viewModelScope.launch {
+            runLinkedSpans(parentContext, onDone)
+        }
     }
 
     fun stopAsyncOperations() {
-        asyncOperationTask?.cancel(true)
-        chainedContextsTask?.cancel(true)
-        linkedSpansTask?.cancel(true)
+        asyncOperationJob?.cancel()
+        chainedContextsJob?.cancel()
+        linkedSpansJob?.cancel()
+        asyncOperationJob = null
+        chainedContextsJob = null
+        linkedSpansJob = null
     }
 
-    // region AsyncOperationTask
-
-    private class AsyncOperationTask(
-        val onProgress: (Int) -> Unit,
-        val onDone: () -> Unit
-    ) : AsyncTask<Unit, Unit, Unit>() {
-        val tracer: Tracer = GlobalOpenTelemetry
-            .get()
+    @Suppress("MagicNumber")
+    private suspend fun runAsyncOperation(
+        parentContext: Context,
+        onProgress: (Int) -> Unit,
+        onDone: () -> Unit
+    ) {
+        val tracer = GlobalOpenTelemetry.get()
             .getTracer(OtelTracesViewModel::class.java.simpleName)
-        val parentSpan: Span = tracer
+        val parentSpan = tracer
             .spanBuilder("Executing Async Operation")
+            .setParent(parentContext)
             .startSpan()
-        val scope: Scope = parentSpan.makeCurrent()
+        val operationContext = parentContext.with(parentSpan)
 
-        private val logger: Logger by lazy {
-            Logger.Builder()
-                .setName("async_task")
-                .setLogcatLogsEnabled(true)
-                .build()
-                .apply {
-                    addTag(ATTR_FLAVOR, BuildConfig.FLAVOR)
-                    addTag(BUILD_TYPE, BuildConfig.BUILD_TYPE)
-                }
-        }
-
-        @Deprecated("Deprecated in Java")
-        override fun onPreExecute() {
-            val span = tracer
-                .spanBuilder("OnPreExecute")
+        try {
+            tracer.spanBuilder("OnPreExecute")
+                .setParent(operationContext)
                 .startSpan()
-            super.onPreExecute()
-            span.end()
-        }
+                .end()
 
-        @Suppress("MagicNumber")
-        @Deprecated("Deprecated in Java")
-        override fun doInBackground(vararg params: Unit?) {
-            val asyncOperationSpan = tracer
-                .spanBuilder("AsyncOperation")
-                .setParent(Context.current().with(parentSpan))
-                .startSpan()
-            logger.v("Starting Async Operation...")
-            for (i in 0..100) {
-                if (isCancelled) {
-                    break
+            withContext(Dispatchers.Default) {
+                val asyncOperationSpan = tracer
+                    .spanBuilder("AsyncOperation")
+                    .setParent(operationContext)
+                    .startSpan()
+                try {
+                    asyncOperationLogger.v("Starting Async Operation...")
+                    for (progress in 0..100) {
+                        ensureActive()
+                        withContext(Dispatchers.Main.immediate) {
+                            onProgress(progress)
+                        }
+                        delay(((progress * progress).toDouble() / 100.0).toLong())
+                    }
+                    asyncOperationLogger.v("Finishing Async Operation...")
+                } finally {
+                    asyncOperationSpan.end()
                 }
-                onProgress(i)
-                Thread.sleep(((i * i).toDouble() / 100.0).toLong())
             }
-            logger.v("Finishing Async Operation...")
-            asyncOperationSpan.end()
-        }
 
-        @Deprecated("Deprecated in Java")
-        override fun onPostExecute(result: Unit?) {
-            val span = tracer
+            val postExecuteSpan = tracer
                 .spanBuilder("OnPostExecute")
+                .setParent(operationContext)
                 .startSpan()
-            if (!isCancelled) {
+            try {
                 onDone()
+            } finally {
+                postExecuteSpan.end()
             }
-            span.end()
-            // close the current scope
-            scope.close()
-            // finish the parent span
+        } finally {
             parentSpan.end()
         }
     }
 
-    // endregion
-
-    // region ChainedContextsTask
-
-    private class ChainedContextsTask(
-        private val url: String,
-        private val okHttpClient: OkHttpClient,
-        val onDone: () -> Unit
-    ) : AsyncTask<Unit, Unit, Unit>() {
-        private val tracer: Tracer = GlobalOpenTelemetry.get()
-            .getTracer("chainedContexts")
-        private val email = "john.doe@example.com"
-        private val username = "John Doe"
-        private val emailKey: ContextKey<String> = ContextKey.named("email")
-        private val usernameKey: ContextKey<String> = ContextKey.named("username")
-        private val context: Context =
-            Context.current().with(emailKey, email).with(usernameKey, username)
-        val startSpan: Span = tracer
+    @Suppress("MagicNumber")
+    private suspend fun runChainedContexts(
+        parentContext: Context,
+        url: String,
+        onDone: () -> Unit
+    ) {
+        val tracer = GlobalOpenTelemetry.get().getTracer("chainedContexts")
+        val emailKey: ContextKey<String> = ContextKey.named("email")
+        val usernameKey: ContextKey<String> = ContextKey.named("username")
+        val context = parentContext
+            .with(emailKey, "john.doe@example.com")
+            .with(usernameKey, "John Doe")
+        val startSpan = tracer
             .spanBuilder("submitForm with chained contexts")
             .setParent(context)
             .startSpan()
-        val scope: Scope = startSpan.makeCurrent()
+        val startContext = context.with(startSpan)
 
-        private val logger: Logger by lazy {
-            Logger.Builder()
-                .setName("chained-contexts-task")
-                .setLogcatLogsEnabled(true)
-                .build()
-                .apply {
-                    addTag(ATTR_FLAVOR, BuildConfig.FLAVOR)
-                    addTag(BUILD_TYPE, BuildConfig.BUILD_TYPE)
+        try {
+            withContext(Dispatchers.IO) {
+                val processingFormSpan = tracer
+                    .spanBuilder("processingForm")
+                    .setParent(startContext)
+                    .startSpan()
+                try {
+                    sanitizeForm(
+                        tracer = tracer,
+                        parentContext = startContext.with(processingFormSpan),
+                        email = context.get(emailKey),
+                        username = context.get(usernameKey)
+                    )
+                    val request = Request.Builder()
+                        .get()
+                        .url(url)
+                        .addParentSpan(processingFormSpan)
+                        .build()
+                    okHttpClient.newCall(request).execute().use {
+                        // Closing the response releases the connection.
+                    }
+                } finally {
+                    processingFormSpan.end()
                 }
-        }
-
-        @Suppress("MagicNumber")
-        @Deprecated("Deprecated in Java")
-        override fun doInBackground(vararg params: Unit?) {
-            val processingFormSpan = tracer
-                .spanBuilder("processingForm")
-                .setParent(Context.current().with(startSpan))
-                .startSpan()
-            val email = context.get(emailKey)
-            val username = context.get(usernameKey)
-            val formScope = processingFormSpan.makeCurrent()
-            val processingSanitization = tracer
-                .spanBuilder("formSanitization")
-                .startSpan()
-            logger.v("Sanitizing email: $email")
-            logger.v("Sanitizing username: $username")
-            Thread.sleep(2000)
-            processingSanitization.end()
-            val request = Request.Builder()
-                .get()
-                .url(url)
-                .addParentSpan(processingFormSpan)
-                .build()
-            okHttpClient.newCall(request).execute()
-            formScope.close()
-            processingFormSpan.end()
-        }
-
-        @Deprecated("Deprecated in Java")
-        override fun onPostExecute(result: Unit?) {
-            scope.close()
-            startSpan.end()
+            }
             onDone()
+        } finally {
+            startSpan.end()
         }
     }
 
-    // endregion
-
-    // region LinkedSpansTask
-
-    private class LinkedSpansTask(
-        val onDone: () -> Unit
-    ) : AsyncTask<Unit, Unit, Unit>() {
-        private val email = "john.doe@example.com"
-        private val username = "John Doe"
-        private val tracer: Tracer = GlobalOpenTelemetry.get()
-            .getTracer("spanLinks")
-        val startSpan: Span = tracer
-            .spanBuilder("submitForm with linked spans")
+    @Suppress("MagicNumber")
+    private suspend fun sanitizeForm(
+        tracer: Tracer,
+        parentContext: Context,
+        email: String?,
+        username: String?
+    ) {
+        val sanitizationSpan = tracer
+            .spanBuilder("formSanitization")
+            .setParent(parentContext)
             .startSpan()
-        val scope: Scope = startSpan.makeCurrent()
-
-        private val logger: Logger by lazy {
-            Logger.Builder()
-                .setName("chained-contexts-task")
-                .setLogcatLogsEnabled(true)
-                .build()
-                .apply {
-                    addTag(ATTR_FLAVOR, BuildConfig.FLAVOR)
-                    addTag(BUILD_TYPE, BuildConfig.BUILD_TYPE)
-                }
-        }
-
-        @Suppress("MagicNumber")
-        @Deprecated("Deprecated in Java")
-        override fun doInBackground(vararg params: Unit?) {
-            val processingFormSpan = tracer
-                .spanBuilder("processingForm")
-                .setParent(Context.current().with(startSpan))
-                .startSpan()
-            val formScope = processingFormSpan.makeCurrent()
-            val attributes = Attributes
-                .builder()
-                .put("email", email)
-                .put("username", username)
-                .build()
-            val processingSanitization = tracer
-                .spanBuilder("formSanitization")
-                .addLink(processingFormSpan.spanContext, attributes)
-                .startSpan()
-            logger.v("Sanitizing email")
-            logger.v("Sanitizing username")
-            Thread.sleep(2000)
-            processingSanitization.end()
-            Thread.sleep(5000)
-            formScope.close()
-            processingFormSpan.end()
-        }
-
-        @Deprecated("Deprecated in Java")
-        override fun onPostExecute(result: Unit?) {
-            scope.close()
-            startSpan.end()
-            onDone()
+        try {
+            chainedContextsLogger.v("Sanitizing email: $email")
+            chainedContextsLogger.v("Sanitizing username: $username")
+            delay(2000)
+        } finally {
+            sanitizationSpan.end()
         }
     }
 
-    // endregion
+    @Suppress("MagicNumber")
+    private suspend fun runLinkedSpans(
+        parentContext: Context,
+        onDone: () -> Unit
+    ) {
+        val tracer = GlobalOpenTelemetry.get().getTracer("spanLinks")
+        val startSpan = tracer
+            .spanBuilder("submitForm with linked spans")
+            .setParent(parentContext)
+            .startSpan()
+        val startContext = parentContext.with(startSpan)
+
+        try {
+            withContext(Dispatchers.Default) {
+                val processingFormSpan = tracer
+                    .spanBuilder("processingForm")
+                    .setParent(startContext)
+                    .startSpan()
+                try {
+                    val attributes = Attributes.builder()
+                        .put("email", "john.doe@example.com")
+                        .put("username", "John Doe")
+                        .build()
+                    val sanitizationSpan = tracer
+                        .spanBuilder("formSanitization")
+                        .setParent(startContext.with(processingFormSpan))
+                        .addLink(processingFormSpan.spanContext, attributes)
+                        .startSpan()
+                    try {
+                        chainedContextsLogger.v("Sanitizing email")
+                        chainedContextsLogger.v("Sanitizing username")
+                        delay(2000)
+                    } finally {
+                        sanitizationSpan.end()
+                    }
+                    delay(5000)
+                } finally {
+                    processingFormSpan.end()
+                }
+            }
+            onDone()
+        } finally {
+            startSpan.end()
+        }
+    }
+
+    private fun buildLogger(name: String): Logger {
+        return Logger.Builder()
+            .setName(name)
+            .setLogcatLogsEnabled(true)
+            .build()
+            .apply {
+                addTag(ATTR_FLAVOR, BuildConfig.FLAVOR)
+                addTag(BUILD_TYPE, BuildConfig.BUILD_TYPE)
+            }
+    }
 
     companion object {
         private const val BUILD_TYPE = "build_type"

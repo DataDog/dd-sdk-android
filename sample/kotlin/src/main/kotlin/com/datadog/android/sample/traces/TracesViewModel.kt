@@ -6,9 +6,9 @@
 
 package com.datadog.android.sample.traces
 
-import android.os.AsyncTask
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.datadog.android.log.Logger
 import com.datadog.android.rum.coroutines.sendErrorToDatadog
 import com.datadog.android.sample.BuildConfig
@@ -20,18 +20,23 @@ import com.datadog.android.trace.coroutines.asyncTraced
 import com.datadog.android.trace.coroutines.awaitTraced
 import com.datadog.android.trace.coroutines.launchTraced
 import com.datadog.android.trace.coroutines.withContextTraced
-import com.datadog.android.trace.withinSpan
 import com.datadog.android.vendor.sample.LocalServer
 import com.launchdarkly.eventsource.EventHandler
 import com.launchdarkly.eventsource.EventSource
 import com.launchdarkly.eventsource.MessageEvent
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -39,17 +44,30 @@ import java.net.URI
 import java.time.Duration
 import java.util.Locale
 import java.util.Random
+import java.util.concurrent.atomic.AtomicBoolean
 
-@Suppress("DEPRECATION", "StringLiteralDuplication", "TooManyFunctions")
+@Suppress("StringLiteralDuplication", "TooManyFunctions")
 internal class TracesViewModel(
     private val okHttpClient: OkHttpClient,
     private val localServer: LocalServer
 ) : ViewModel() {
 
-    private var asyncOperationTask: AsyncTask<Unit, Unit, Unit>? = null
-    private var networkRequestTask: AsyncTask<Unit, Unit, Result>? = null
+    private var asyncOperationJob: Job? = null
+    private var networkRequestJob: Job? = null
+    private var eventSource: EventSource? = null
+    private var sseEventHandler: SseEventHandler? = null
 
-    private val scope = MainScope()
+    @Suppress("CheckInternal")
+    private val asyncOperationLogger: Logger by lazy {
+        Logger.Builder()
+            .setName("async_operation")
+            .setLogcatLogsEnabled(true)
+            .build()
+            .apply {
+                addTag(ATTR_FLAVOR, BuildConfig.FLAVOR)
+                addTag("build_type", BuildConfig.BUILD_TYPE)
+            }
+    }
 
     fun onResume() {
         localServer.start("https://www.datadoghq.com/")
@@ -59,18 +77,41 @@ internal class TracesViewModel(
         localServer.stop()
     }
 
+    @Suppress("MagicNumber")
     fun startAsyncOperation(
         onProgress: (Int) -> Unit = {},
         onDone: () -> Unit = {}
     ) {
-        asyncOperationTask = AsyncOperationTask(onProgress, onDone)
-        asyncOperationTask?.execute()
+        asyncOperationJob?.cancel()
+        asyncOperationJob = viewModelScope.launchTraced("AsyncOperation", Dispatchers.Default) {
+            logErrorMessage("Test error log in async operation")
+            asyncOperationLogger.v("Starting Async Operation...")
+
+            val count = (Random().nextInt() % 50) + 50
+            logMessage("Async op loops $count times")
+            var actualCount = 0
+
+            for (progress in 0 until count) {
+                ensureActive()
+                withContext(Dispatchers.Main.immediate) {
+                    onProgress(progress)
+                }
+                delay(((progress * progress).toDouble() / 100.0).toLong())
+                actualCount++
+            }
+
+            logAttributes(mapOf("wanted_count" to count, "actual_count" to actualCount))
+            asyncOperationLogger.v("Finishing Async Operation...")
+            withContext(Dispatchers.Main.immediate) {
+                onDone()
+            }
+        }
     }
 
     fun startCoroutineOperation(
         onDone: () -> Unit = {}
     ) {
-        scope.launchTraced("startCoroutineOperation", Dispatchers.Main) {
+        viewModelScope.launchTraced("startCoroutineOperation", Dispatchers.Main) {
             setTag(ATTR_FLAVOR, BuildConfig.FLAVOR)
             performTask(this)
             performFlowTask()
@@ -84,14 +125,12 @@ internal class TracesViewModel(
         onException: (Throwable) -> Unit,
         onCancel: () -> Unit
     ) {
-        networkRequestTask = GetRequestTask(
-            localServer.getUrl(),
-            okHttpClient,
-            onResponse,
-            onException,
-            onCancel
+        launchRequest(
+            url = localServer.getUrl(),
+            onResponse = onResponse,
+            onException = onException,
+            onCancel = onCancel
         )
-        networkRequestTask?.execute()
     }
 
     fun start404Request(
@@ -99,35 +138,56 @@ internal class TracesViewModel(
         onException: (Throwable) -> Unit,
         onCancel: () -> Unit
     ) {
-        networkRequestTask = GetRequestTask(
-            "https://www.datadoghq.com/notfound",
-            okHttpClient,
-            onResponse,
-            onException,
-            onCancel
+        launchRequest(
+            url = "https://www.datadoghq.com/notfound",
+            onResponse = onResponse,
+            onException = onException,
+            onCancel = onCancel
         )
-        networkRequestTask?.execute()
     }
 
     fun startSseRequest(
         onResponse: () -> Unit,
         onException: (Throwable) -> Unit
     ) {
-        networkRequestTask = SSERequestTask(
-            localServer.sseUrl(),
-            okHttpClient,
-            onResponse,
-            onException
-        )
-        networkRequestTask?.execute()
+        networkRequestJob?.cancel()
+        closeEventSource()
+
+        val eventHandler = SseEventHandler(viewModelScope, onResponse, onException)
+        val url = localServer.sseUrl()
+        sseEventHandler = eventHandler
+        networkRequestJob = viewModelScope.launch {
+            try {
+                val newEventSource = withContext(Dispatchers.IO) {
+                    EventSource.Builder(eventHandler, URI.create(url))
+                        .client(okHttpClient)
+                        .connectTimeout(Duration.ofSeconds(3))
+                        .backoffResetThreshold(Duration.ofSeconds(3))
+                        .build()
+                }
+                eventSource = newEventSource
+                newEventSource?.start()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e("Response", "Error", e)
+                onException(e)
+            }
+        }
     }
 
     fun stopAsyncOperations() {
-        asyncOperationTask?.cancel(true)
-        networkRequestTask?.cancel(true)
-        asyncOperationTask = null
-        networkRequestTask = null
+        asyncOperationJob?.cancel()
+        networkRequestJob?.cancel()
+        asyncOperationJob = null
+        networkRequestJob = null
+        closeEventSource()
         localServer.stop()
+    }
+
+    override fun onCleared() {
+        closeEventSource()
+        super.onCleared()
     }
 
     // region Flow/Coroutine
@@ -201,113 +261,75 @@ internal class TracesViewModel(
 
     // endregion
 
-    // region GetRequestTask
+    // region Network requests
 
-    private class GetRequestTask(
-        private val url: String,
-        private val okHttpClient: OkHttpClient,
-        private val onResponse: (Response) -> Unit,
-        private val onException: (Throwable) -> Unit,
-        private val onCancel: () -> Unit
-    ) : AsyncTask<Unit, Unit, Result>() {
-        private var currentActiveMainSpan: DatadogSpan? = null
+    private fun launchRequest(
+        url: String,
+        onResponse: (Response) -> Unit,
+        onException: (Throwable) -> Unit,
+        onCancel: () -> Unit
+    ) {
+        networkRequestJob?.cancel()
+        closeEventSource()
+        val currentActiveMainSpan = GlobalDatadogTracer.get().activeSpan()
+        networkRequestJob = viewModelScope.launch {
+            val result = runInterruptible(Dispatchers.IO) {
+                performRequest(url, currentActiveMainSpan)
+            }
+            handleResult(result, onResponse, onException, onCancel)
+        }
+    }
 
-        @Deprecated("Deprecated in Java")
-        override fun onPreExecute() {
-            super.onPreExecute()
-            currentActiveMainSpan = GlobalDatadogTracer.get().activeSpan()
+    @Suppress("TooGenericExceptionCaught", "LogNotTimber")
+    private fun performRequest(url: String, parentSpan: DatadogSpan?): Result {
+        val builder = Request.Builder()
+            .get()
+            .url(url)
+
+        if (parentSpan != null) {
+            builder.tag(DatadogSpan::class.java, parentSpan)
         }
 
-        @Deprecated("Deprecated in Java")
-        @Suppress("TooGenericExceptionCaught", "LogNotTimber")
-        override fun doInBackground(vararg params: Unit?): Result {
-            val builder = Request.Builder()
-                .get()
-                .url(url)
-
-            if (currentActiveMainSpan != null) {
-                builder.tag(
-                    DatadogSpan::class.java,
-                    currentActiveMainSpan
-                )
+        return try {
+            val response = okHttpClient.newCall(builder.build()).execute()
+            val body = response.body
+            if (body != null) {
+                val content = body.string()
+                // Necessary to consume the response
+                Log.d("Response", content)
             }
-            val request = builder.build()
-            return try {
-                val response = okHttpClient.newCall(request).execute()
-                val body = response.body
-                if (body != null) {
-                    val content: String = body.string()
-                    // Necessary to consume the response
-                    Log.d("Response", content)
-                }
-                Result.Success(response)
-            } catch (e: Exception) {
-                Log.e("Response", "Error", e)
-                Result.Failure(throwable = e)
-            }
+            Result.Success(response)
+        } catch (e: Exception) {
+            Log.e("Response", "Error", e)
+            Result.Failure(throwable = e)
         }
+    }
 
-        @Deprecated("Deprecated in Java")
-        override fun onPostExecute(result: Result) {
-            super.onPostExecute(result)
-            if (!isCancelled) {
-                handleResult(result)
-            }
-        }
-
-        private fun handleResult(
-            result: Result
-        ) {
-            when (result) {
-                is Result.Success<*> -> {
-                    onResponse(result.data as Response)
-                }
-
-                is Result.Failure -> {
-                    if (result.throwable != null) {
-                        onException(result.throwable)
-                    } else {
-                        onCancel()
-                    }
-                }
-            }
+    private fun handleResult(
+        result: Result,
+        onResponse: (Response) -> Unit,
+        onException: (Throwable) -> Unit,
+        onCancel: () -> Unit
+    ) {
+        when (result) {
+            is Result.Success<*> -> onResponse(result.data as Response)
+            is Result.Failure -> result.throwable?.let(onException) ?: onCancel()
         }
     }
 
     // endregion
 
-    // region SSERequestTask
+    // region Server-sent events
 
-    private class SSERequestTask(
-        private val url: String,
-        private val okHttpClient: OkHttpClient,
+    private class SseEventHandler(
+        private val coroutineScope: CoroutineScope,
         private val onResponse: () -> Unit,
         private val onException: (Throwable) -> Unit
-    ) : AsyncTask<Unit, Unit, Result>(), EventHandler {
-        private var currentActiveMainSpan: DatadogSpan? = null
+    ) : EventHandler {
+        private val active = AtomicBoolean(true)
 
-        @Deprecated("Deprecated in Java")
-        override fun onPreExecute() {
-            super.onPreExecute()
-            currentActiveMainSpan = GlobalDatadogTracer.get().activeSpan()
-        }
-
-        @Deprecated("Deprecated in Java")
-        @Suppress("TooGenericExceptionCaught", "LogNotTimber", "MagicNumber")
-        override fun doInBackground(vararg params: Unit?): Result {
-            return try {
-                val eventSourceSse = EventSource.Builder(this, URI.create(url))
-                    .client(okHttpClient)
-                    .connectTimeout(Duration.ofSeconds(3))
-                    .backoffResetThreshold(Duration.ofSeconds(3))
-                    .build()
-
-                eventSourceSse?.start()
-                Result.Success("")
-            } catch (e: Exception) {
-                Log.e("Response", "Error", e)
-                Result.Failure(throwable = e)
-            }
+        fun cancel() {
+            active.set(false)
         }
 
         override fun onOpen() {
@@ -316,7 +338,9 @@ internal class TracesViewModel(
 
         override fun onError(e: Throwable?) {
             Log.e("SSE", "onError", e)
-            e?.let { onException(it) }
+            if (e != null) {
+                dispatch { onException(e) }
+            }
         }
 
         override fun onComment(comment: String?) {
@@ -328,71 +352,25 @@ internal class TracesViewModel(
         }
 
         override fun onClosed() {
-            onResponse()
+            dispatch(onResponse)
+        }
+
+        private fun dispatch(block: () -> Unit) {
+            if (active.get()) {
+                coroutineScope.launch {
+                    if (active.get()) {
+                        block()
+                    }
+                }
+            }
         }
     }
 
-    // endregion
-
-    // region AsyncOperationTask
-
-    private class AsyncOperationTask(
-        val onProgress: (Int) -> Unit,
-        val onDone: () -> Unit
-    ) : AsyncTask<Unit, Unit, Unit>() {
-
-        var activeSpanInMainThread: DatadogSpan? = null
-
-        @Suppress("CheckInternal")
-        private val logger: Logger by lazy {
-            Logger.Builder()
-                .setName("async_task")
-                .setLogcatLogsEnabled(true)
-                .build()
-                .apply {
-                    addTag(ATTR_FLAVOR, BuildConfig.FLAVOR)
-                    addTag("build_type", BuildConfig.BUILD_TYPE)
-                }
-        }
-
-        @Deprecated("Deprecated in Java")
-        override fun onPreExecute() {
-            super.onPreExecute()
-            activeSpanInMainThread = GlobalDatadogTracer.get().activeSpan()
-        }
-
-        @Suppress("MagicNumber")
-        @Deprecated("Deprecated in Java")
-        override fun doInBackground(vararg params: Unit?) {
-            withinSpan("AsyncOperation", activeSpanInMainThread) {
-                logErrorMessage("Test error log in async operation")
-
-                logger.v("Starting Async Operation...")
-
-                val count = (Random().nextInt() % 50) + 50
-                logMessage("Async op loops $count times")
-                var actualCount = 0
-
-                for (i in 0 until count) {
-                    if (isCancelled) {
-                        logMessage("Async operation cancelled")
-                        break
-                    }
-                    onProgress(i)
-                    Thread.sleep(((i * i).toDouble() / 100.0).toLong())
-                    actualCount++
-                }
-                logAttributes(mapOf("wanted_count" to count, "actual_count" to actualCount))
-                logger.v("Finishing Async Operation...")
-            }
-        }
-
-        @Deprecated("Deprecated in Java")
-        override fun onPostExecute(result: Unit?) {
-            if (!isCancelled) {
-                onDone()
-            }
-        }
+    private fun closeEventSource() {
+        sseEventHandler?.cancel()
+        sseEventHandler = null
+        eventSource?.close()
+        eventSource = null
     }
 
     // endregion

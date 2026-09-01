@@ -3,7 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
+@file:Suppress("INVISIBLE_REFERENCE")
 
 package com.datadog.android.sample
 
@@ -455,7 +455,7 @@ class SampleApplication : Application() {
 
         try {
             configBuilder.useSite(DatadogSite.valueOf(BuildConfig.DD_SITE_NAME))
-        } catch (e: IllegalArgumentException) {
+        } catch (_: IllegalArgumentException) {
             Timber.e("Error setting site to ${BuildConfig.DD_SITE_NAME}")
         }
 

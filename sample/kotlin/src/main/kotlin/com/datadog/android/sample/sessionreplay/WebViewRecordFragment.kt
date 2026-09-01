@@ -16,24 +16,21 @@ import android.view.ViewGroup
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Button
+import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.sample.R
 import com.datadog.android.webview.WebViewTracking
 
-internal class WebViewRecordFragment : Fragment() {
+internal class WebViewRecordFragment : Fragment(), MenuProvider {
 
     private lateinit var webView: WebView
     private lateinit var startCustomRumViewButton: Button
     private val webViewTrackingHosts = listOf(
         "datadoghq.dev"
     )
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setHasOptionsMenu(true)
-    }
 
     @OptIn(ExperimentalRumApi::class)
     @SuppressLint("SetJavaScriptEnabled")
@@ -64,14 +61,18 @@ internal class WebViewRecordFragment : Fragment() {
         return rootView
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
+    }
+
     override fun onResume() {
         super.onResume()
         webView.loadUrl("https://datadoghq.dev/browser-sdk-test-playground/webview-support/#click_event")
     }
 
-    @Deprecated("Deprecated in Java")
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        inflater.inflate(R.menu.sr_webview, menu)
+    override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+        menuInflater.inflate(R.menu.sr_webview, menu)
         if (webView.visibility == View.VISIBLE) {
             menu.findItem(R.id.webview_show).isVisible = false
         } else {
@@ -79,8 +80,7 @@ internal class WebViewRecordFragment : Fragment() {
         }
     }
 
-    @Deprecated("Deprecated in Java")
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+    override fun onMenuItemSelected(item: MenuItem): Boolean {
         val newVisibility = when (item.itemId) {
             R.id.webview_show -> View.VISIBLE
             R.id.webview_hide -> View.GONE
@@ -88,10 +88,10 @@ internal class WebViewRecordFragment : Fragment() {
         }
 
         return if (newVisibility == null) {
-            super.onOptionsItemSelected(item)
+            false
         } else {
             webView.visibility = newVisibility
-            activity?.invalidateOptionsMenu()
+            requireActivity().invalidateMenu()
             true
         }
     }

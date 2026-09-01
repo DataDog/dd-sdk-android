@@ -27,7 +27,6 @@ internal class BadView(context: Context, attrs: AttributeSet) : View(context, at
 
     init {
         setWillNotDraw(false)
-        setWillNotCacheDrawing(true)
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {

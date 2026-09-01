@@ -11,6 +11,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
 import android.util.AttributeSet
+import android.util.TypedValue
 import android.view.View
 import com.datadog.android.sample.R
 import kotlin.math.max
@@ -26,7 +27,11 @@ internal class DividerView @JvmOverloads constructor(
 
     private val textPaint = Paint().apply {
         color = Color.GRAY
-        textSize = DEFAULT_TEXT_SIZE_SP * resources.displayMetrics.scaledDensity
+        textSize = TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_SP,
+            DEFAULT_TEXT_SIZE_SP,
+            resources.displayMetrics
+        )
         isAntiAlias = true
     }
     private val dividerPaint = Paint().apply {

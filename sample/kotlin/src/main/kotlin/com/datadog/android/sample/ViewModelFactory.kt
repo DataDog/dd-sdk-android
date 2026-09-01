@@ -44,7 +44,7 @@ internal class ViewModelFactory(
                 OtelTracesViewModel(okHttpClient, localServer) as T
             }
             else -> {
-                modelClass.newInstance()
+                throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
             }
         }
     }

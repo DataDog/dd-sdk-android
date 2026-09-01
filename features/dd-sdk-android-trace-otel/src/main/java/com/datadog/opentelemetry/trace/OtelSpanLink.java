@@ -63,20 +63,10 @@ public class OtelSpanLink implements DatadogSpanLink {
           bundle.put(attributeKey.getKey(), Double.toString((double) value));
           break;
         case STRING_ARRAY:
-          // noinspection unchecked
-          putArray(bundle, attributeKey.getKey(), (List<String>) value);
-          break;
         case BOOLEAN_ARRAY:
-          //noinspection unchecked,DuplicateBranchesInSwitch
-          putArray(bundle, attributeKey.getKey(), (List<Boolean>) value);
-          break;
         case LONG_ARRAY:
-          //noinspection unchecked,DuplicateBranchesInSwitch
-          putArray(bundle, attributeKey.getKey(), (List<Long>) value);
-          break;
         case DOUBLE_ARRAY:
-          //noinspection unchecked,DuplicateBranchesInSwitch
-          putArray(bundle, attributeKey.getKey(), (List<Double>) value);
+          putArray(bundle, attributeKey.getKey(), (List<?>) value);
           break;
       }
     });
@@ -112,7 +102,7 @@ public class OtelSpanLink implements DatadogSpanLink {
     return traceState;
   }
 
-  private static <T> void putArray(Map<String, String> attributes, String key, List<T> array) {
+  private static void putArray(Map<String, String> attributes, String key, List<?> array) {
     if (key != null && array != null) {
       for (int index = 0; index < array.size(); index++) {
         Object value = array.get(index);

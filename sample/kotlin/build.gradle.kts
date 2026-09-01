@@ -188,6 +188,7 @@ dependencies {
     implementation(libs.androidXAppCompat)
     implementation(libs.bundles.androidXCompose)
     implementation(libs.androidXLifecycleCompose)
+    implementation(libs.androidXLifecycleViewModelKtx)
     implementation(libs.material3Android)
     implementation(libs.googleAccompanistAppCompatTheme)
     implementation(libs.googleAccompanistPager)
@@ -241,12 +242,13 @@ dependencies {
 }
 
 datadogBuild {
-    applyKotlinConfig(evaluateWarningsAsErrors = false)
+    applyKotlinConfig()
     applyJunitConfig()
 }
 
 taskConfig<KotlinCompile> {
     compilerOptions {
         optIn.add("kotlin.RequiresOptIn")
+        freeCompilerArgs.add("-Xwarning-level=ERROR_SUPPRESSION:disabled")
     }
 }
