@@ -141,11 +141,15 @@ sleep "$SETTLE"
 PIDS=$(dd_pkg_pids "$PKG")
 [ -n "$PIDS" ] || die "app is not running after launch"
 
-ALL=""
-for _p in $PIDS; do
-  ALL="$ALL$("$ADB" shell "cat /proc/$_p/task/*/comm 2>/dev/null" | tr -d '\r')
-"
-done
+# `die` exits 2, the setup-failure code -- deliberately NOT the exit 1 that means
+# "Datadog is not initializing". Reading /proc directly here, an adb hiccup or a
+# denied read left every thread list empty and the script fell out at the `grep .`
+# below under `set -e`, exiting 1: this tool's own contract for "not live", printed
+# without a single line of explanation. That is the confident false negative the
+# skill tells agents to come here to avoid.
+ALL=$(dd_thread_names "$PIDS") \
+  || die "SDK liveness could not be verified on every process of $PKG (see above).
+       An unreadable thread list is not evidence that Datadog is absent."
 ALL=$(printf '%s' "$ALL" | grep . | sort)
 DD=$(echo "$ALL" | grep '^datadog-' || true)
 N_ALL=$(echo "$ALL" | grep -c . || true)
@@ -158,15 +162,27 @@ echo " datadog-* threads        : $N_DD"
 # shellcheck disable=SC2001  # indenting every line of a list; parameter expansion cannot
 [ -n "$DD" ] && echo "$DD" | sed 's/^/     /'
 echo "--------------------------------------------------------------"
-# Secondary evidence: is the NDK crash-reporting lib mapped in?
-NDKMAP=0
-for _p in $PIDS; do
-  _n=$("$ADB" shell "grep -c libdatadog-ndk /proc/$_p/maps 2>/dev/null" | tr -d '\r') || _n=0
-  NDKMAP=$((NDKMAP + ${_n:-0}))
-done
-echo " libdatadog-ndk.so mapped : ${NDKMAP:-0}"
-# Tertiary: SDK's own logcat output
-echo " Datadog logcat lines     : $("$ADB" shell logcat -d 2>/dev/null | grep -ci datadog | tr -d '\r')"
+# Secondary evidence: is the NDK crash-reporting lib mapped in? Both this and the
+# logcat count below are informational -- the verdict is taken from N_DD alone -- but
+# an informational line still may not state more than its own check can distinguish,
+# so an unreadable source prints "unknown" instead of a 0 that reads as "absent".
+if NDKMAP=$(dd_mapped_lib_count libdatadog-ndk "$PIDS"); then
+  echo " libdatadog-ndk.so mapped : $NDKMAP"
+else
+  echo " libdatadog-ndk.so mapped : unknown (see the error above)"
+fi
+# Tertiary: SDK's own logcat output. No pipeline around adb, so the status is adb's
+# and not `grep`'s: `grep -ci` exits 1 on a count of zero, so piping straight into it
+# reported 0 both for "the SDK logged nothing" and for "logcat could not be read".
+if ! _DD_LOGCAT=$("$ADB" shell logcat -d 2>/dev/null); then
+  echo " Datadog logcat lines     : unknown ('logcat -d' failed)"
+elif [ -z "$_DD_LOGCAT" ]; then
+  # A real device's buffer is never empty; empty means the read did not happen.
+  echo " Datadog logcat lines     : unknown ('logcat -d' returned nothing)"
+else
+  echo " Datadog logcat lines     : $(printf '%s\n' "$_DD_LOGCAT" | tr -d '\r' \
+                                       | grep -ci datadog || true)"
+fi
 echo "=============================================================="
 echo
 

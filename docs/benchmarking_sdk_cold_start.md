@@ -307,7 +307,12 @@ is a common one for a startup-work provider) it reports the default process and 
 SDK is dead in a build where it is live. `adb shell` output carries `\r` on many devices, hence
 the `tr`. Absence is proven only when every discovered PID returns a readable, non-empty thread
 list. If one process exits during enumeration, `/proc` is denied or adb fails, liveness is unknown;
-the harness rejects that launch rather than converting the failed read to zero.
+the harness rejects that launch rather than converting the failed read to zero. One case is not a
+rejection: `cat` also fails when a single thread exits between the shell expanding the glob and
+`cat` opening the file, which is ordinary churn on a live app. The process is re-checked and the
+read repeated once, so churn does not end an hour-long run while a crash still does. All three
+scripts share this one reader, so the arm gate, the measured launches and the standalone verifier
+cannot disagree about what counts as readable.
 
 Expected on a working build:
 
@@ -331,7 +336,12 @@ tools/coldstart-benchmark/verify_sdk_active.sh app-with-datadog.apk <your.app.id
 
 If you use NDK crash reporting, `libdatadog-ndk.so` appearing in `/proc/<pid>/maps` is a
 second signal, corroborating only, since the SDK loads it with a plain
-`System.loadLibrary`, which does not always emit a trace slice.
+`System.loadLibrary`, which does not always emit a trace slice. `grep -c` exits 1 for a
+count of zero and 2 or more when it could not read the file, so read the count through
+the exit status the device reports rather than through the pipeline's: otherwise an
+unreadable `maps` prints the same `0` as a build that does not map the library.
+`verify_sdk_active.sh` prints `unknown` for that case, and for a `logcat -d` it could not
+read.
 
 ---
 
@@ -680,7 +690,7 @@ for the launches that follow it: initialization that is first-launch-only, conse
 remote-config-gated passes the probe and then never happens again, and every such launch measures
 an SDK-absent start as treatment. The app's own log marker is not a substitute, because most apps
 never emit one and that gate passes vacuously. A zero count is accepted only after every package
-process was readable; partial enumeration aborts for both arms.
+process was readable; an enumeration that stays unreadable after a re-check aborts for both arms.
 
 **Give heavy features their own arm.** Run a third arm with Session Replay disabled, so you
 can attribute cost to the feature that carries it and make an informed trade rather than a

@@ -107,7 +107,9 @@ This installs, md5-attests the install against the local file, launches via the 
 intent, settles (`SETTLE`, default 20s of wall clock, unchanged and distinct from
 `capture_trace.sh`'s settle *launches*, which derive from `WARMUP`), then reads
 `/proc/<pid>/task/*/comm`. Exit 0 = live,
-1 = not, 2 = setup failure (no adb, no device, missing APK).
+1 = not, 2 = setup failure (no adb, no device, missing APK, or a thread list it could
+not read — an unverifiable check exits 2, never 1, so "not live" always means the
+script actually looked).
 
 **Never substitute an ad-hoc `adb` probe for one of the scripts.** A hand-rolled `am start -W`
 plus a `logcat` grep looks equivalent and is not: it skips the runtime-permission pre-grant, the
@@ -137,7 +139,9 @@ adb shell logcat -d | grep -iE 'datadog|DD_SDK'
 ```
 
 `libdatadog-ndk.so` in `/proc/<pid>/maps` is corroborating only: the SDK loads it with a
-plain `System.loadLibrary`, which does not reliably emit a trace slice.
+plain `System.loadLibrary`, which does not reliably emit a trace slice. That line and the
+Datadog logcat count print `unknown` when their source could not be read; neither is a
+zero you can quote as absence.
 
 ### 2. Validate the protocol with an A/A run
 
@@ -296,7 +300,10 @@ other way is neither.
   remote-config-gated passes the probe and then never happens again, and the app's own log
   marker is absent in most apps, so that gate passes vacuously. Zero means every discovered PID
   returned a readable thread list with no match; a failed or empty read from any PID is unknown
-  and rejects both arms rather than proving SDK absence.
+  and rejects both arms rather than proving SDK absence. One reader serves all three scripts, so
+  the arm gate cannot pass on evidence a measured launch would have refused. A read that fails
+  because one thread exited under the glob is retried against a still-running process, so churn
+  costs a retry rather than the run.
 - The liveness probe is itself a conditioning launch. Give it a post-settle logcat boundary,
   target/foreign-display scan and final-foreground check before its thread result can count.
 - A launch whose logcat buffer holds no `ActivityTaskManager: Displayed <pkg>/` line is

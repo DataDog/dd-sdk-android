@@ -1282,7 +1282,9 @@ class HarnessRegressionTests(unittest.TestCase):
             """,
         )
         self.assertNotEqual(partial.returncode, 0)
-        self.assertIn("thread enumeration failed for PID 456", partial.stderr)
+        # The fake adb answers nothing about /proc/456, so the read is classified
+        # as a process that is gone rather than as transient thread churn.
+        self.assertIn("PID 456's thread list could not be", partial.stderr)
 
         empty = self.run_with_fake_adb(
             '. "$LIB"; dd_datadog_threads "123"',
@@ -1299,6 +1301,154 @@ class HarnessRegressionTests(unittest.TestCase):
         self.assertIn('if ! dd_thr=$(dd_datadog_threads "$_pids"); then', benchmark)
         self.assertIn('if ! _SETTLE_DD=$(dd_datadog_threads "$_SETTLE_PIDS"); then', capture)
         self.assertIn("Unknown\n       liveness is never accepted", benchmark)
+
+    def test_liveness_oracle_separates_thread_churn_from_a_dead_process(self) -> None:
+        """`cat /proc/<pid>/task/*/comm` fails when ONE thread exits under the glob.
+
+        That is ordinary churn on a live app and says nothing about the SDK, but it
+        is the same failure a crashed process gives. Treating them alike aborts an
+        hour-long run over a millisecond of churn; treating them alike the other way
+        would accept a crash as evidence of absence. The process is re-checked and
+        the read retried, so each case gets its own answer.
+        """
+        churn = self.run_with_fake_adb(
+            'set -uo pipefail; . "$LIB"; dd_datadog_threads "123"',
+            """
+            #!/bin/sh
+            case "$2" in
+              "cat /proc/123/task/*/comm 2>/dev/null")
+                  if [ -f "$FAKE_ADB_STATE" ]; then
+                    printf 'main\ndatadog-storage\n'; exit 0
+                  fi
+                  : > "$FAKE_ADB_STATE"; printf 'main\n'; exit 1 ;;
+              "[ -d /proc/123 ] && echo __dd_alive") echo __dd_alive ;;
+              *) exit 90 ;;
+            esac
+            """,
+        )
+        self.assertEqual(churn.returncode, 0, churn.stderr)
+        self.assertEqual(churn.stdout.strip(), "1")
+
+        crashed = self.run_with_fake_adb(
+            'set -uo pipefail; . "$LIB"; dd_datadog_threads "123"',
+            """
+            #!/bin/sh
+            case "$2" in
+              "cat /proc/123/task/*/comm 2>/dev/null") exit 1 ;;
+              "[ -d /proc/123 ] && echo __dd_alive") exit 1 ;;
+              *) exit 90 ;;
+            esac
+            """,
+        )
+        self.assertNotEqual(crashed.returncode, 0)
+        self.assertIn("the process is gone", crashed.stderr)
+
+        denied = self.run_with_fake_adb(
+            'set -uo pipefail; . "$LIB"; dd_datadog_threads "123"',
+            """
+            #!/bin/sh
+            case "$2" in
+              "cat /proc/123/task/*/comm 2>/dev/null") exit 1 ;;
+              "[ -d /proc/123 ] && echo __dd_alive") echo __dd_alive ;;
+              *) exit 90 ;;
+            esac
+            """,
+        )
+        self.assertNotEqual(denied.returncode, 0)
+        self.assertIn("could not be read twice", denied.stderr)
+
+    def test_mapped_library_count_separates_zero_from_unreadable(self) -> None:
+        """`grep -c` exits 1 on a count of zero, which is an answer, and >=2 on no read.
+
+        Piping adb straight into it collapsed both into 0, so an unreadable
+        /proc/<pid>/maps printed `libdatadog-ndk.so mapped : 0` -- indistinguishable
+        from a build that genuinely does not map it.
+        """
+        counted = self.run_with_fake_adb(
+            'set -uo pipefail; . "$LIB"; dd_mapped_lib_count libdatadog-ndk "111 222"',
+            """
+            #!/bin/sh
+            case "$2" in
+              *"grep -c libdatadog-ndk /proc/111/maps"*) printf '3\n__dd_rc=0\n' ;;
+              *"grep -c libdatadog-ndk /proc/222/maps"*) printf '0\n__dd_rc=1\n' ;;
+              *) exit 90 ;;
+            esac
+            """,
+        )
+        self.assertEqual(counted.returncode, 0, counted.stderr)
+        # grep's exit 1 for PID 222 is the answer "zero", not a failed read.
+        self.assertEqual(counted.stdout.strip(), "3")
+
+        unreadable = self.run_with_fake_adb(
+            'set -uo pipefail; . "$LIB"; dd_mapped_lib_count libdatadog-ndk "111"',
+            """
+            #!/bin/sh
+            case "$2" in
+              *"grep -c libdatadog-ndk /proc/111/maps"*) printf '__dd_rc=2\n' ;;
+              *) exit 90 ;;
+            esac
+            """,
+        )
+        self.assertNotEqual(unreadable.returncode, 0)
+        self.assertIn("was not read", unreadable.stderr)
+
+        no_marker = self.run_with_fake_adb(
+            'set -uo pipefail; . "$LIB"; dd_mapped_lib_count libdatadog-ndk "111"',
+            """
+            #!/bin/sh
+            exit 1
+            """,
+        )
+        self.assertNotEqual(no_marker.returncode, 0)
+        self.assertIn("reported no exit status", no_marker.stderr)
+
+    def test_informational_lines_say_unknown_rather_than_zero(self) -> None:
+        """A line nobody takes a verdict from still may not overclaim.
+
+        `libdatadog-ndk.so mapped : 0` and `Datadog logcat lines : 0` both used to
+        appear when the read had failed, which reads as evidence of absence.
+        """
+        source = (HARNESS / "verify_sdk_active.sh").read_text(encoding="utf-8")
+        self.assertNotIn("|| _n=0", source)
+        self.assertNotIn("logcat -d 2>/dev/null | grep -ci datadog", source)
+        self.assertIn('if NDKMAP=$(dd_mapped_lib_count libdatadog-ndk "$PIDS"); then', source)
+        self.assertIn('libdatadog-ndk.so mapped : unknown', source)
+        self.assertIn("Datadog logcat lines     : unknown", source)
+
+    def test_every_liveness_reader_goes_through_the_shared_oracle(self) -> None:
+        """One definition of a readable thread list, or the weakest one decides.
+
+        The probe gates the arm and `verify_sdk_active.sh` is the standalone verdict
+        the skill sends agents to; both read /proc themselves with the failure
+        swallowed, so an unreadable process counted as zero `datadog-*` threads and
+        confirmed SDK absence on evidence never obtained.
+        """
+        readers = {
+            name: (HARNESS / name).read_text(encoding="utf-8")
+            for name in ("coldstart_bench.sh", "capture_trace.sh", "verify_sdk_active.sh")
+        }
+        for name, source in readers.items():
+            self.assertNotIn(
+                'shell "cat /proc/', source,
+                f"{name} reads thread names itself instead of via dd_thread_names",
+            )
+        self.assertIn('names=$(dd_thread_names "$pids")', readers["coldstart_bench.sh"])
+        self.assertIn('ALL=$(dd_thread_names "$PIDS")', readers["verify_sdk_active.sh"])
+        # The only remaining direct read, behind the retry/refusal logic.
+        lib = LIB.read_text(encoding="utf-8")
+        self.assertEqual(lib.count('shell "cat /proc/'), 1)
+
+    def test_unverifiable_liveness_is_a_setup_failure_not_a_not_live_verdict(self) -> None:
+        """verify_sdk_active.sh exit 1 means "the SDK is not initializing".
+
+        An unreadable /proc must not borrow that code: it used to fall out of the
+        `grep .` below under `set -e` and exit 1 with nothing printed at all.
+        """
+        source = (HARNESS / "verify_sdk_active.sh").read_text(encoding="utf-8")
+        self.assertIn('ALL=$(dd_thread_names "$PIDS")', source)
+        call = source.index('ALL=$(dd_thread_names "$PIDS")')
+        self.assertIn("|| die", source[call:call + 200])
+        self.assertIn("die() { echo \"FATAL: $*\" >&2; exit 2; }", source)
 
 
 class AbStatsRegressionTests(unittest.TestCase):

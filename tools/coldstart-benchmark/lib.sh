@@ -415,12 +415,29 @@ dd_pkg_pids() {
   printf '%s\n' "$pids" | grep -E '^[0-9]+$' || true
 }
 
-# Count `datadog-*` threads across every PID given. The SDK always creates one
-# during Datadog.initialize() (CoreFeature.setupExecutors submits an NTP task
-# immediately), so this is the harness's liveness oracle. Reading
-# /proc/<pid>/task/*/comm is the cheapest reliable probe.
-dd_datadog_threads() {
-  local pids="$1" pid names all="" count
+# One read of one process's thread names. No pipeline around adb: the caller must
+# see adb's own status, not `tr`'s, even when it has not enabled pipefail.
+_dd_thread_names_once() {
+  "$ADB" shell "cat /proc/$1/task/*/comm 2>/dev/null"
+}
+
+# Every thread name owned by the package's processes, one line each.
+#
+# THE liveness oracle for all three device-touching workflows, so that none of them
+# can drift into a weaker definition of "the SDK is not running". It fails closed:
+# a read that did not happen is not a count of zero. An unreadable /proc, an adb
+# that dropped the connection and a process that exited all leave liveness UNKNOWN,
+# and unknown must never be reported as absent -- that is the shape of a confident
+# false negative, which is the failure this harness exists to prevent.
+#
+# `cat /proc/<pid>/task/*/comm` also fails when a single thread exits between the
+# remote shell expanding the glob and `cat` opening the file. That is ordinary churn
+# on a live app and says nothing about the SDK, so it is separated from a dead
+# process by re-checking /proc/<pid> and reading once more. Without that, a
+# millisecond of thread churn would abort an hour-long run; with it, a genuine crash
+# still does.
+dd_thread_names() {
+  local pids="$1" pid names all="" alive
   if [ -z "$pids" ]; then
     echo "ERROR: cannot verify SDK liveness: no package process IDs were provided." >&2
     return 1
@@ -431,12 +448,22 @@ dd_datadog_threads() {
         echo "ERROR: cannot verify SDK liveness: invalid package PID '$pid'." >&2
         return 1 ;;
     esac
-    # No pipeline around adb: this helper must preserve its failure even when a
-    # caller does not happen to enable pipefail. A PID that exits between process
-    # discovery and this read is unknown liveness, not a successful count of zero.
-    if ! names=$("$ADB" shell "cat /proc/$pid/task/*/comm 2>/dev/null"); then
-      echo "ERROR: cannot verify SDK liveness: thread enumeration failed for PID $pid." >&2
-      return 1
+    if ! names=$(_dd_thread_names_once "$pid"); then
+      # A printed marker, not the remote exit status: not every adb propagates it,
+      # and this branch exists precisely because something already went wrong.
+      alive=$("$ADB" shell "[ -d /proc/$pid ] && echo __dd_alive" 2>/dev/null) || alive=""
+      case "$alive" in
+        *__dd_alive*)
+          if ! names=$(_dd_thread_names_once "$pid"); then
+            echo "ERROR: cannot verify SDK liveness: PID $pid is still running but its" >&2
+            echo "       thread list could not be read twice (/proc denied?)." >&2
+            return 1
+          fi ;;
+        *)
+          echo "ERROR: cannot verify SDK liveness: PID $pid's thread list could not be" >&2
+          echo "       read and the process is gone or /proc is unreadable (crash?)." >&2
+          return 1 ;;
+      esac
     fi
     names=$(printf '%s' "$names" | tr -d '\r')
     if [ -z "$names" ]; then
@@ -446,6 +473,66 @@ dd_datadog_threads() {
     all="$all$names
 "
   done
+  printf '%s' "$all"
+}
+
+# How many of the package's processes map a shared library, summed over every PID.
+# Secondary evidence only: no verdict is taken from it, so a failure prints
+# "unknown" rather than aborting the caller.
+#
+# `grep -c` exits 1 on a count of ZERO, which is an answer, and >= 2 when it could
+# not read the file, which is not. Its exit status therefore cannot separate "the
+# library is not mapped" from "/proc/<pid>/maps could not be read", and the caller's
+# `|| _n=0` reported a confident 0 for both. The remote shell always reaches the
+# echo, so ask it for grep's own status the same way dd_package_path_for_user asks
+# for pm's, and treat an absent marker -- the one thing that cannot happen if the
+# shell ran -- as no answer.
+dd_mapped_lib_count() {
+  local lib="$1" pids="$2" pid raw status count total=0
+  if [ -z "$pids" ]; then
+    echo "ERROR: cannot count '$lib' mappings: no package process IDs were provided." >&2
+    return 1
+  fi
+  for pid in $pids; do
+    case "$pid" in
+      ''|*[!0-9]*)
+        echo "ERROR: cannot count '$lib' mappings: invalid package PID '$pid'." >&2
+        return 1 ;;
+    esac
+    raw=$("$ADB" shell "grep -c $lib /proc/$pid/maps 2>/dev/null; echo __dd_rc=\$?" 2>/dev/null \
+          | tr -d '\r') || true
+    status=$(printf '%s\n' "$raw" | sed -n 's/^__dd_rc=//p' | tail -1)
+    case "$status" in
+      0|1) ;;
+      ''|*[!0-9]*)
+        echo "ERROR: cannot count '$lib' mappings for PID $pid: the device shell" >&2
+        echo "       reported no exit status. Output: ${raw:-none}" >&2
+        return 1 ;;
+      *)
+        echo "ERROR: cannot count '$lib' mappings for PID $pid: grep exited $status," >&2
+        echo "       so /proc/$pid/maps was not read. Zero would not mean 'not mapped'." >&2
+        return 1 ;;
+    esac
+    count=$(printf '%s\n' "$raw" | grep -v '^__dd_rc=' | grep -E '^[0-9]+$' | tail -1) || true
+    case "$count" in
+      ''|*[!0-9]*)
+        echo "ERROR: cannot count '$lib' mappings for PID $pid: grep exited $status but" >&2
+        echo "       printed no count. Output: ${raw:-none}" >&2
+        return 1 ;;
+    esac
+    total=$((total + count))
+  done
+  printf '%s\n' "$total"
+}
+
+# Count `datadog-*` threads across every PID given. The SDK always creates one
+# during Datadog.initialize() (CoreFeature.setupExecutors submits an NTP task
+# immediately), so this is the harness's liveness oracle. Reading
+# /proc/<pid>/task/*/comm is the cheapest reliable probe. Inherits the refusal
+# above: it returns a count only when every process was actually read.
+dd_datadog_threads() {
+  local all count
+  all=$(dd_thread_names "$1") || return 1
   count=$(printf '%s' "$all" | grep -c '^datadog-' || true)
   printf '%s\n' "$count"
 }

@@ -644,11 +644,15 @@ probe_datadog() {
   local pids names dd
   pids=$(dd_pkg_pids "$PKG")
   [ -n "$pids" ] || die "[$arm] app did not start"
-  names=""
-  for _p in $pids; do
-    names="$names$("$ADB" shell "cat /proc/$_p/task/*/comm 2>/dev/null" | tr -d '\r')
-"
-  done
+  # Through the shared oracle, not a private read: this gate decides whether the
+  # arm is SDK-active, and the reject message for a measured launch cites it as
+  # proof ("probe_datadog proved the SDK live once"). Reading /proc here with the
+  # failure swallowed let an unreadable process count as zero datadog-* threads,
+  # so the BASELINE arm's expectation was confirmed by evidence never obtained.
+  names=$(dd_thread_names "$pids") || die "[$arm] SDK liveness could not be verified on
+       every process of $PKG (see the error above). An unreadable thread list is not
+       evidence that Datadog is absent, and this probe is what the measured launches
+       in this cell are checked against."
   names=$(printf '%s' "$names" | grep . | sort -u) || true
   dd=$(printf '%s\n' "$names" | grep -c '^datadog-' || true)
   log ">>> [$arm] processes=$(printf '%s' "$pids" | tr '\n' ' ') threads=$(printf '%s\n' "$names" | grep -c . || true)  datadog-*=$dd"
