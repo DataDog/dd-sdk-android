@@ -260,6 +260,8 @@ other way is neither.
 | md5 attestation of the install | measuring a build you didn't intend | invalidated an entire trace pair |
 | verified uninstall postcondition before `install -r`, with refusal when another Android user owns the package | a protected package preserves data, caches and profile state while APK md5 still passes; global `adb uninstall` would delete another profile's data | — |
 | `compile -m speed-profile -f` + discard warm-ups | no AOT profile makes early launches slow and erratic | first-block means differed by ~17 ms |
+| require a readable, stable achieved dexopt status and stamp it separately from the requested filter | a successful compile command can leave different arms/cells at `verify` vs `speed-profile`, attributing compilation state to the SDK | — |
+| require fixed-performance mode to be accepted, or `ALLOW_DYNAMIC_PERFORMANCE=1` and a `perf_mode` stamp | a rejected command silently leaves dynamic CPU behavior while benchmark and trace claim one scheduling scenario. Acceptance is the only evidence there is; Android cannot read the mode back | — |
 | require background dexopt to be disabled | accumulated profile data can trigger compilation during a cell and change later launches | — |
 | real launcher intent | `am start -n <component>` isn't an icon tap | wrong code path on apps that route the launcher through activity aliases |
 | pre-registered warm-up count | post-hoc outlier dropping | turned a null into a "finding" in one report |
@@ -299,8 +301,10 @@ other way is neither.
   probe cannot cover it: initialization that is first-launch-only, consent-gated or
   remote-config-gated passes the probe and then never happens again, and the app's own log
   marker is absent in most apps, so that gate passes vacuously. Zero means every discovered PID
-  returned a readable thread list with no match; a failed or empty read from any PID is unknown
-  and rejects both arms rather than proving SDK absence. One reader serves all three scripts, so
+  came from a successful full `ps` listing and returned a readable thread list with no match. A
+  failed listing cannot fall back to exact-name `pidof`, which omits private processes; a failed
+  or empty read from any PID is likewise unknown and rejects both arms rather than proving SDK
+  absence. One reader serves all three scripts, so
   the arm gate cannot pass on evidence a measured launch would have refused. A read that fails
   because one thread exited under the glob is retried against a still-running process, so churn
   costs a retry rather than the run.
@@ -320,7 +324,9 @@ other way is neither.
   requested `WARMUP + 1` position is part of the trace protocol. Discard 1 uses the benchmark
   probe's 3-second pre-launch/8-second validation cadence; later discards use its warm-up cadence
   (5 seconds before launch, validation after 6, then the final 4-second wait). Matching launch
-  count without matching elapsed conditioning time does not reproduce the same ramp.
+  count without matching elapsed conditioning time does not reproduce the same ramp. Perfetto must
+  then start before the final traced launch's own force-stop, five-second wait, log boundary and
+  launch, matching the benchmark's measured pre-start cadence too.
 - The order-effect test **refuses to report** when arm and position are confounded. With a
   single block, arm A is always first, so any "order effect" *is* the treatment effect —
   previously this reported a genuine +30 ms regression as an ordering artifact. It is also
@@ -330,7 +336,10 @@ other way is neither.
 - **Concatenating CSVs that omit or disagree on mandatory device/protocol metadata is refused**
   (`--allow-mixed` to override). Two missing values are not evidence that the runs match.
   Namespacing block ids stops blocks merging; it does not make
-  two experiments comparable. A differing `warmup` counts as a differing protocol: every cell
+  two experiments comparable. The achieved `compile_status` and `perf_mode` must agree when
+  both files carry them, and warn when either does not; the
+  requested `compile_filter` alone does not prove the same AOT/JIT state. A differing `warmup`
+  counts as a differing protocol: every cell
   is a fresh install, so the warm-up count sets where in the post-install JIT/profile ramp the
   measured launches sit. `blocks` and `runs` may differ, since they only lengthen the tail. The
   normal protocol keeps one physical device; it does not stamp the adb serial or distinguish two
@@ -358,9 +367,10 @@ other way is neither.
   `APP_TRACE_REGEX`. That metric's window is whatever the app's own log line measures, so two
   files captured with different patterns can hold native-init duration and total launch
   duration under one column name. Every other metric is defined by the harness.
-- **The selected endpoint must exist on every otherwise eligible measured launch.** An `NA`
-  can be a slow launch censored by the collection window, so dropping it and reporting the
-  faster survivors can manufacture an improvement. The analyzer refuses by default.
+- **The selected endpoint must be finite and non-negative on every otherwise eligible measured
+  launch.** An `NA` can be a slow launch censored by the collection window, while a negative
+  sentinel such as `-1` is not an elapsed time. Dropping either and reporting the faster survivors
+  can manufacture an improvement. The analyzer refuses by default.
   `--allow-missing-endpoint` exposes diagnostics only and keeps the primary interval suppressed.
 - **Every selected measured row must carry explicit `status`, `launch_state` and `foreground`
   evidence.** Legacy missing/empty fields are not filled with passing defaults. Their values remain

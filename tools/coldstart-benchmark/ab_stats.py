@@ -154,7 +154,7 @@ def parse_ms(raw):
         return None
     try:
         value = float(raw)
-        return value if math.isfinite(value) else None
+        return value if math.isfinite(value) and value >= 0 else None
     except ValueError:
         pass
     m = _DUR.match(raw)
@@ -216,6 +216,27 @@ _LIVENESS_KEYS = ("expect_a", "expect_b")
 # sets), stamped after that arm's first install. Soft-checked because older CSVs
 # predate these keys; when present, a disagreement is a different startup state.
 _PERMISSION_KEYS = ("permission_a", "permission_b")
+
+# What the device actually did with the two runtime controls it cannot be asked to
+# confirm afterwards.
+#
+#   compile_status  the achieved dexopt state, which is NOT the requested filter:
+#                   `speed-profile` commonly leaves a fresh install at `verify`,
+#                   so equal `compile_filter` values do not prove equal AOT/JIT
+#                   code. A set like `speed-profile+verify` covers every code path
+#                   and ABI in the package.
+#   perf_mode       `fixed` when the power HAL accepted fixed-performance mode,
+#                   `dynamic` under ALLOW_DYNAMIC_PERFORMANCE. Pooling the two
+#                   averages a pinned-CPU experiment with an unpinned one.
+#
+# Soft-checked, NOT in _MUST_MATCH, for exactly the reason spelled out for
+# _BUILD_KEYS above: these keys did not always exist, and a hard failure on absence
+# makes every previously-analyzable CSV unpoolable -- including with
+# --recover-completed-blocks, whose whole purpose is not losing collected blocks.
+# The only escape from a _MUST_MATCH failure is --allow-mixed, which switches off
+# every other compatibility check at once to work around one absent key. Absence
+# therefore warns; a genuine disagreement is refused like any other incompatibility.
+_CONTROL_KEYS = ("compile_status", "perf_mode")
 
 # md5 of APP_TRACE_REGEX, checked ONLY when --metric app_trace_ms is what gets
 # pooled. That metric's window is defined by the host app's own log line, so two
@@ -465,6 +486,40 @@ def main():
                   " header, so it cannot be]")
             print("[         checked that each arm had the same effective runtime-permission]")
             print("[         state in every file. Older CSVs predate these outcome stamps.]")
+
+        control_unstamped = [k for k in _CONTROL_KEYS
+                             if any(k not in m for m in metas)]
+        control_differing = {
+            k: sorted({m[k] for m in metas})
+            for k in _CONTROL_KEYS
+            if k not in control_unstamped and len({m[k] for m in metas}) > 1
+        }
+        if control_differing:
+            lines = [f"    {k}: {' vs '.join(v)}"
+                     for k, v in control_differing.items()]
+            if not a.allow_mixed:
+                raise SystemExit(
+                    "refusing to pool CSVs collected under different runtime controls:\n"
+                    + "\n".join(lines)
+                    + "\n  compile_status is the AOT/JIT state the device actually reached,"
+                      "\n  and perf_mode is whether CPU behavior was pinned. Either one"
+                      "\n  differing makes these two experiments rather than more samples"
+                      "\n  of one, and the difference is attributed to the SDK. Analyze them"
+                      "\n  separately, or pass --allow-mixed only for an explicitly"
+                      "\n  diagnostic pool whose caveat you will carry into the result.")
+            print("[WARNING: --allow-mixed, pooling runs collected under different"
+                  " runtime controls:]")
+            for ln in lines:
+                print(ln)
+        elif control_unstamped:
+            print(f"[WARNING: {', '.join(control_unstamped)} absent from at least one"
+                  " header, so it cannot be]")
+            print("[         checked that these runs reached the same AOT/JIT state and"
+                  " CPU-scheduling]")
+            print("[         scenario. Older CSVs predate these stamps; the requested"
+                  " compile_filter]")
+            print("[         above is not a substitute. Confirm by hand before pooling"
+                  " them.]")
 
         if a.metric == "app_trace_ms":
             ids = {m.get(_APP_TRACE_KEY, "?") for m in metas}

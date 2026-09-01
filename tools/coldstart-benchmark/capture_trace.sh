@@ -209,9 +209,12 @@ dd_apply_radio_state "$AIRPLANE" || exit 2
 # Trace the same scheduling/compilation scenario the A/B measured. Leaving these
 # controls out made trace attribution observe dynamic CPU behavior and background
 # dexopt work that every benchmark launch explicitly excluded.
-if "$ADB" shell cmd power set-fixed-performance-mode-enabled true >/dev/null 2>&1; then
+dd_enable_fixed_performance_mode || exit 2
+# Only when the device accepted it: see the note in coldstart_bench.sh's pin_device.
+if [ "$DD_PERF_MODE" = fixed ]; then
   _WE_SET_PERF=1
 fi
+log "CPU scheduling scenario: perf_mode=$DD_PERF_MODE"
 dd_disable_background_dexopt || exit 2
 _WE_SET_DEXOPT=1
 # Keep the screen on for the whole capture. $SETTLE_LAUNCHES settle launches plus a 20s trace
@@ -264,8 +267,11 @@ if [ "$TRACE_ENDPOINT" = app_trace_ms ]; then
   log "app-owned trace endpoint scoped to package UID $PKG_UID"
 fi
 
-"$ADB" shell cmd package compile -m "$COMPILE_FILTER" -f "$PKG" >/dev/null
-log "AOT compiled (-m $COMPILE_FILTER)"
+"$ADB" shell cmd package compile -m "$COMPILE_FILTER" -f "$PKG" >/dev/null \
+  || die "'cmd package compile -m $COMPILE_FILTER' failed"
+TRACE_COMPILE_STATUS=$(dd_package_compile_status "$PKG") \
+  || die "achieved compilation state is unreadable after a successful compile"
+log "AOT compile requested -m $COMPILE_FILTER; achieved status=$TRACE_COMPILE_STATUS"
 
 # Pre-grant every runtime permission the app declares -- the same thing
 # coldstart_bench.sh does before it measures anything.
@@ -374,7 +380,10 @@ for ((_i=1; _i<=SETTLE_LAUNCHES; _i++)); do
     "$PKG"/*) ;;
     *) die "settle launch $_i/$SETTLE_LAUNCHES: app is not the foreground activity (found '${_SETTLE_TOP:-nothing}')" ;;
   esac
-  _SETTLE_PIDS=$(dd_pkg_pids "$PKG")
+  if ! _SETTLE_PIDS=$(dd_pkg_pids "$PKG"); then
+    die "settle launch $_i/$SETTLE_LAUNCHES: complete package-process enumeration
+         is unavailable, so SDK liveness is unverified"
+  fi
   [ -n "$_SETTLE_PIDS" ] \
     || die "settle launch $_i/$SETTLE_LAUNCHES: app owns no running process"
   if ! _SETTLE_DD=$(dd_datadog_threads "$_SETTLE_PIDS"); then
@@ -393,30 +402,15 @@ for ((_i=1; _i<=SETTLE_LAUNCHES; _i++)); do
   fi
 done
 
-"$ADB" shell am force-stop --user "$DD_ANDROID_USER" "$PKG"
-sleep 3
-
-# For log-backed endpoints, clear and prove the marker is absent before starting
-# the watcher. A denied/no-op `logcat -c` must not let a previous launch satisfy
-# this capture's endpoint gate.
+# Select the host-observed endpoint before starting Perfetto. The final app stop,
+# five-second wait and logcat boundary happen only after capture is established,
+# reproducing measure()'s last pre-start cadence inside the trace.
 _ENDPOINT_REGEX=""
 _ENDPOINT_UID=""
 case "$TRACE_ENDPOINT" in
   ttfd) _ENDPOINT_REGEX="Fully drawn $PKG_RE/" ;;
   app_trace_ms) _ENDPOINT_REGEX="$APP_TRACE_REGEX"; _ENDPOINT_UID="$PKG_UID" ;;
 esac
-if [ -n "$_ENDPOINT_REGEX" ]; then
-  "$ADB" shell logcat -c >/dev/null 2>&1 || true
-  if [ -n "$_ENDPOINT_UID" ]; then
-    _post_clear=$("$ADB" shell logcat -d --uid="$_ENDPOINT_UID" 2>/dev/null | tr -d '\r') || true
-  else
-    _post_clear=$("$ADB" shell logcat -d 2>/dev/null | tr -d '\r') || true
-  fi
-  _stale_endpoint=$(printf '%s\n' "$_post_clear" | grep -cE "$_ENDPOINT_REGEX" || true)
-  [ "${_stale_endpoint:-0}" -eq 0 ] || die "'logcat -c' left a previous
-       TRACE_ENDPOINT=$TRACE_ENDPOINT marker in the buffer. Clearing logcat is
-       likely denied on this device; fix that before tracing."
-fi
 
 log "starting perfetto"
 cat <<EOF | "$ADB" shell perfetto -c - --txt -o "$REMOTE_TRACE" &
@@ -454,11 +448,43 @@ data_sources: { config { name: "linux.process_stats"
                          record_thread_names: true } } }
 data_sources: { config { name: "linux.sys_stats"
   sys_stats_config { stat_period_ms: 1000 stat_counters: STAT_CPU_TIMES } } }
-duration_ms: 20000
+duration_ms: 25000
 EOF
 PERFETTO_PID=$!
 
+# Preserve the established capture wait, then reproduce the benchmark's measured
+# launch from its own force-stop boundary. Previously the app was stopped before
+# Perfetto, waited 3s, then waited another 4s after Perfetto: neither interval was
+# the benchmark's final 5s cache-cooling/profile-persistence cadence.
+#
+# BUDGET. Everything from here to `am start -W` runs INSIDE the capture: 4s of
+# Perfetto establishment plus the benchmark's own 5s pre-launch wait. Those 9s come
+# out of `duration_ms` above, which is why it is 25000 and not 20000 -- the endpoint
+# wait further down is bounded by Perfetto's lifetime, so shrinking the post-launch
+# window is what makes a late `Fully drawn` marker fail. Any change to the cadence
+# here has to be paid for there.
 sleep 4
+kill -0 "$PERFETTO_PID" >/dev/null 2>&1 \
+  || die "Perfetto stopped before the traced launch could be prepared"
+"$ADB" shell am force-stop --user "$DD_ANDROID_USER" "$PKG"
+sleep 5
+"$ADB" shell logcat -c >/dev/null 2>&1 || true
+
+# For log-backed endpoints, prove that the post-wait boundary contains no stale
+# marker before starting the watcher. A denied/no-op clear must not let a previous
+# launch satisfy this capture's endpoint gate.
+if [ -n "$_ENDPOINT_REGEX" ]; then
+  if [ -n "$_ENDPOINT_UID" ]; then
+    _post_clear=$("$ADB" shell logcat -d --uid="$_ENDPOINT_UID" 2>/dev/null | tr -d '\r') || true
+  else
+    _post_clear=$("$ADB" shell logcat -d 2>/dev/null | tr -d '\r') || true
+  fi
+  _stale_endpoint=$(printf '%s\n' "$_post_clear" | grep -cE "$_ENDPOINT_REGEX" || true)
+  [ "${_stale_endpoint:-0}" -eq 0 ] || die "'logcat -c' left a previous
+       TRACE_ENDPOINT=$TRACE_ENDPOINT marker in the buffer. Clearing logcat is
+       likely denied on this device; fix that before tracing."
+fi
+
 if [ -n "$_ENDPOINT_REGEX" ]; then
   _ENDPOINT_FILE=$(mktemp "${TMPDIR:-/tmp}/dd-coldstart-endpoint.XXXXXX")
   # Stream logcat instead of polling dumpsys/logcat during the trace. The watcher

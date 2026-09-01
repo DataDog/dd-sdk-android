@@ -320,6 +320,48 @@ dd_apply_animation_scales() {
   done
 }
 
+# Fixed-performance mode is part of the benchmark/trace scheduling scenario. A
+# rejected request cannot be reported as though CPU behavior was pinned: it changes
+# both variance and the work placement an explanatory trace observes.
+#
+# WHAT THE EVIDENCE IS, exactly. `cmd power` reports whether the power HAL accepted
+# the mode, and that report is all there is: Android exposes no way to read the mode
+# back, unlike the animation scales and the radio settings, whose readback IS their
+# gate. So this proves the request was accepted, NOT that CPU behavior is pinned --
+# and it must not be described as more than that. What it can do is refuse to call an
+# unaccepted request a pinned run, and record which of the two scenarios the run got.
+#
+# Not every power HAL implements the mode, and making it an unconditional hard
+# requirement made the harness unusable on such a device with no way through. The
+# outcome is therefore stamped rather than assumed, and ALLOW_DYNAMIC_PERFORMANCE
+# accepts the weaker scenario explicitly -- which ab_stats.py then refuses to pool
+# against a fixed-performance run, so the two cannot be mixed silently.
+#
+# Sets DD_PERF_MODE to `fixed` or `dynamic` for the caller to log and stamp.
+dd_enable_fixed_performance_mode() {
+  DD_PERF_MODE=""
+  if "$ADB" shell cmd power set-fixed-performance-mode-enabled true >/dev/null 2>&1; then
+    DD_PERF_MODE=fixed
+    return 0
+  fi
+  if [ "${ALLOW_DYNAMIC_PERFORMANCE:-0}" = 1 ]; then
+    DD_PERF_MODE=dynamic
+    echo "WARNING: ALLOW_DYNAMIC_PERFORMANCE=1 and the device rejected fixed-performance" >&2
+    echo "         mode, so this run measures DYNAMIC CPU behavior. Expect wider" >&2
+    echo "         intervals, and read the result as a noisier estimate of the same" >&2
+    echo "         effect rather than as a different one. Recorded as perf_mode=dynamic;" >&2
+    echo "         ab_stats.py refuses to pool it with a fixed-performance run." >&2
+    return 0
+  fi
+  echo "FATAL: the device did not accept Android fixed-performance mode." >&2
+  echo "       Dynamic CPU behavior is a different benchmark and trace scenario." >&2
+  echo "       Use a device whose power HAL supports this control, or set" >&2
+  echo "       ALLOW_DYNAMIC_PERFORMANCE=1 to measure under dynamic CPU behavior" >&2
+  echo "       instead. That outcome is stamped in the CSV, and pooling it with a" >&2
+  echo "       fixed-performance run is refused rather than averaged." >&2
+  return 1
+}
+
 # Background dexopt can compile against profile data accumulated by the warm-up
 # and measured launches. If it cannot be disabled, compilation state may drift
 # inside a cell while the run still claims the controlled protocol. There is no
@@ -333,6 +375,47 @@ dd_disable_background_dexopt() {
   echo "       It could change compilation state during the benchmark or trace." >&2
   echo "       Use a dedicated test device/build that supports bg-dexopt-job --disable." >&2
   return 1
+}
+
+# Canonical achieved compilation state for the package. The requested
+# `cmd package compile -m ...` filter is not the result: speed-profile commonly
+# leaves a fresh install at verify because no profile exists yet.
+#
+# EVERY status in the package's section, not just the first. A package carries one
+# per code path per ABI, and they differ in practice: base.apk can sit at
+# speed-profile while a split, or the secondary ABI, is still at verify. Reporting
+# only the first made the caller's abort ("arms/cells no longer share one AOT/JIT
+# scenario") claim more than the comparison actually covered. Sorted and
+# de-duplicated, so the value is a canonical set and two identical states always
+# compare equal regardless of the order dumpsys happens to list them in.
+dd_package_compile_status() {
+  local pkg="$1" dump statuses status
+  if ! dump=$("$ADB" shell dumpsys package dexopt 2>/dev/null); then
+    echo "ERROR: cannot read achieved compilation state for $pkg: dumpsys failed." >&2
+    return 1
+  fi
+  dump=$(printf '%s' "$dump" | tr -d '\r')
+  # Plain `exit`, not `exit 2`: reaching the next package section is the NORMAL end
+  # of the scan now that statuses accumulate, and a non-zero awk would blank
+  # everything collected under `pipefail`.
+  statuses=$(awk -v pkg="[$pkg]" '
+    index($0, pkg) { found=1; next }
+    found && /^[[:space:]]*\[[^]]+\][[:space:]]*$/ { exit }
+    found && /status=/ {
+      value=$0
+      sub(/^.*status=/, "", value)
+      sub(/[^[:alnum:]_-].*$/, "", value)
+      if (value != "") { print value }
+    }
+  ' <<< "$dump" | sort -u) || statuses=""
+  status=$(printf '%s' "$statuses" | tr '\n' '+')
+  case "$status" in
+    ''|*[![:alnum:]_+-]*)
+      echo "ERROR: cannot read achieved compilation state for $pkg: no usable" >&2
+      echo "       status followed the package section in dumpsys package dexopt." >&2
+      return 1 ;;
+  esac
+  printf '%s\n' "$status"
 }
 
 # Atomically reserve every evidence path as one set. Bash noclobber turns the
@@ -402,17 +485,33 @@ dd_validate_cold_launch_output() {
 # process and inspects the wrong one. Every liveness gate in this harness needs the
 # whole set, for the same reason verify_trace.py searches colon-suffixed processes.
 #
-# `ps -A -o PID -o NAME` is the reliable enumeration (toybox ps, API 26+). The
-# `pidof` fallback covers older devices, where it at least finds the default process.
+# `ps -A -o PID -o NAME` is the complete enumeration (toybox ps, API 26+). There
+# is deliberately no `pidof` fallback: exact-name output cannot prove absence from
+# private processes, so an unsupported/failed full listing is unknown liveness.
 dd_pkg_pids() {
   local pkg="$1" out pids
-  out=$("$ADB" shell "ps -A -o PID -o NAME" 2>/dev/null | tr -d '\r') || true
-  pids=$(printf '%s\n' "$out" \
-         | awk -v p="$pkg" '$2 == p || index($2, p ":") == 1 {print $1}') || true
-  if [ -z "$pids" ]; then
-    pids=$("$ADB" shell pidof "$pkg" 2>/dev/null | tr -d '\r' | tr ' ' '\n') || true
+  if ! out=$("$ADB" shell "ps -A -o PID -o NAME" 2>/dev/null); then
+    echo "ERROR: cannot enumerate every process for $pkg: full ps query failed." >&2
+    return 1
   fi
-  printf '%s\n' "$pids" | grep -E '^[0-9]+$' || true
+  out=$(printf '%s' "$out" | tr -d '\r')
+  if ! pids=$(awk -v p="$pkg" '
+    NR == 1 {
+      if ($1 != "PID" || $2 != "NAME") exit 2
+      next
+    }
+    NF {
+      if ($1 !~ /^[0-9]+$/ || NF < 2) exit 3
+      saw_process=1
+      if ($2 == p || index($2, p ":") == 1) print $1
+    }
+    END { if (!saw_process) exit 4 }
+  ' <<< "$out"); then
+    echo "ERROR: cannot enumerate every process for $pkg: full ps output was" >&2
+    echo "       empty or did not have the expected PID/NAME structure." >&2
+    return 1
+  fi
+  printf '%s\n' "$pids"
 }
 
 # One read of one process's thread names. No pipeline around adb: the caller must

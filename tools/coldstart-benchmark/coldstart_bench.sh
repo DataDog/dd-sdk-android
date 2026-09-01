@@ -57,6 +57,7 @@ LABEL_B="${LABEL_B-B_withDD}"
 TS="$(date +%Y%m%d_%H%M%S)"
 OUT="results_$TS.csv"
 LOG="bench_$TS.log"
+RUN_COMPILE_STATUS=""
 
 die() { echo "FATAL: $*" >&2; exit 1; }
 
@@ -314,7 +315,13 @@ pin_device() {
   # call succeeded instead, and undo only that -- otherwise a device that arrived
   # with fixed-performance mode already on, or bg-dexopt already disabled, would
   # be left in the opposite state by a run that never chose it.
-  if "$ADB" shell cmd power set-fixed-performance-mode-enabled true >/dev/null 2>&1; then
+  dd_enable_fixed_performance_mode || exit 2
+  # Only when the device actually accepted it. Under ALLOW_DYNAMIC_PERFORMANCE the
+  # helper returns 0 without having changed anything, and restoring a mode we never
+  # set would leave the device in a state this run did not choose. `if`, not
+  # `[ ... ] && ...`: a false test as pin_device's last command is a non-zero
+  # function status, which `set -e` turns into a silent exit here.
+  if [ "$DD_PERF_MODE" = fixed ]; then
     _WE_SET_PERF=1
   fi
   dd_disable_background_dexopt || exit 2
@@ -477,23 +484,27 @@ install_and_attest() {
   log ">>> [$arm] AOT compile (-m $COMPILE_FILTER)"
   "$ADB" shell cmd package compile -m "$COMPILE_FILTER" -f "$PKG" >/dev/null \
     || die "[$arm] 'cmd package compile -m $COMPILE_FILTER' failed"
-  # Report what the compile ACTUALLY achieved. `speed-profile` compiles only what is in
+  # Gate on what the compile ACTUALLY achieved. `speed-profile` compiles only what is in
   # the app's profile, and a freshly installed app has none -- so on a fresh install it
   # lands at `status=verify`, i.e. NO AOT code at all, and every launch JITs the startup
   # path. Silently assuming otherwise is how a run gets described as "AOT compiled" when
-  # it is not. Logged per arm into bench_<ts>.log; the CSV header is written before the
-  # first install, so it carries the requested COMPILE_FILTER, not the achieved status.
-  # index(), not a regex match: "[com.example.app]" as an ERE is a bracket expression and
-  # matches single characters, so `$0 ~ pkg` silently never fires.
-  DEXOPT_STATUS=$("$ADB" shell dumpsys package dexopt 2>/dev/null \
-    | awk -v pkg="[$PKG]" 'index($0,pkg){found=1; next} found && /status=/{print; exit}' \
-    | grep -oE 'status=[a-z-]+' | head -1 | tr -d '\r') || true
-  log ">>> [$arm] dexopt after compile: ${DEXOPT_STATUS:-unknown}"
+  # it is not. Every cell must reach the same readable status; otherwise an arm or
+  # later block measures a different AOT/JIT condition under the same run label.
+  local achieved_status
+  achieved_status=$(dd_package_compile_status "$PKG") \
+    || die "[$arm] achieved compilation state is unreadable after a successful compile"
+  if [ -z "$RUN_COMPILE_STATUS" ]; then
+    RUN_COMPILE_STATUS="$achieved_status"
+  elif [ "$achieved_status" != "$RUN_COMPILE_STATUS" ]; then
+    die "[$arm] achieved compilation state changed from $RUN_COMPILE_STATUS to
+       $achieved_status. Arms/cells no longer share one AOT/JIT scenario."
+  fi
+  log ">>> [$arm] dexopt after compile: status=$achieved_status"
   # `run-from-apk` means the same thing as `verify` for our purposes -- no AOT code --
   # and it is what an emulator reports where a device reports `verify`. Warning on only
   # one of them let the other pass as though the app had been compiled.
-  case "${DEXOPT_STATUS:-}" in
-    status=verify|status=run-from-apk)
+  case "$achieved_status" in
+    verify|run-from-apk)
       log ">>> [$arm] NOTE: no AOT code (no profile to compile against on a fresh install)."
       log ">>> [$arm]       The startup path is JIT-compiled on every launch. This is a"
       log ">>> [$arm]       no-profile condition -- pessimistic vs a Play install, which"
@@ -642,7 +653,12 @@ probe_datadog() {
   # either declared the app dead or inspected the default process and rejected a
   # treatment build whose SDK was live.
   local pids names dd
-  pids=$(dd_pkg_pids "$PKG")
+  if ! pids=$(dd_pkg_pids "$PKG"); then
+    die "[$arm] SDK liveness is unknown: the full process listing failed or was not
+       shaped as expected (the error above says which). There is deliberately no
+       exact-name pidof fallback, because it omits private processes and therefore
+       cannot prove absence."
+  fi
   [ -n "$pids" ] || die "[$arm] app did not start"
   # Through the shared oracle, not a private read: this gate decides whether the
   # arm is SDK-active, and the reject message for a measured launch cites it as
@@ -794,8 +810,9 @@ measure() {
     # thread oracle needs no cooperation from the app. Sampled here, after the whole
     # collection window has already elapsed, so it cannot perturb the timing.
     local dd_thr=NA _pids
-    _pids=$(dd_pkg_pids "$PKG")
-    if [ -n "$_pids" ]; then
+    if ! _pids=$(dd_pkg_pids "$PKG"); then
+      dd_thr=NA
+    elif [ -n "$_pids" ]; then
       if ! dd_thr=$(dd_datadog_threads "$_pids"); then
         dd_thr=NA
       fi
@@ -922,7 +939,12 @@ write_header_once() {
     # app_trace_id is the md5 of APP_TRACE_REGEX ("none" when unset) -- the regex
     # itself cannot go in a whitespace-split header, and two files whose regexes
     # differ hold app_trace_ms values from different app events entirely.
-    echo "# device=$DEV_MODEL sdk=$DEV_SDK abi=$DEV_ABI emulator=$IS_EMU android_user=$DD_ANDROID_USER compile_filter=$COMPILE_FILTER blocks=$BLOCKS runs=$RUNS warmup=$WARMUP animations=$ANIMATIONS fp=$DEV_FP launcher=$ACT airplane=$AIRPLANE baseline_md5=$APK_A_MD5 treatment_md5=$APK_B_MD5 label_a=$LABEL_A label_b=$LABEL_B expect_a=$EXPECT_A expect_b=$EXPECT_B app_trace_id=$APP_TRACE_ID" >> "$OUT"
+    # compile_status is known here because install_and_attest has already required
+    # the first cell's achieved dexopt state; every later cell must match it.
+    # perf_mode records which scheduling scenario the device actually gave us:
+    # `fixed` only if it accepted the mode, `dynamic` under
+    # ALLOW_DYNAMIC_PERFORMANCE. ab_stats.py refuses to pool the two.
+    echo "# device=$DEV_MODEL sdk=$DEV_SDK abi=$DEV_ABI emulator=$IS_EMU android_user=$DD_ANDROID_USER compile_filter=$COMPILE_FILTER compile_status=$RUN_COMPILE_STATUS perf_mode=$DD_PERF_MODE blocks=$BLOCKS runs=$RUNS warmup=$WARMUP animations=$ANIMATIONS fp=$DEV_FP launcher=$ACT airplane=$AIRPLANE baseline_md5=$APK_A_MD5 treatment_md5=$APK_B_MD5 label_a=$LABEL_A label_b=$LABEL_B expect_a=$EXPECT_A expect_b=$EXPECT_B app_trace_id=$APP_TRACE_ID" >> "$OUT"
     echo "label,block,pos_in_block,phase,run,total_ms,launch_state,status,foreground,displayed,ttfd,app_trace_ms,dd_enabled,dd_threads,dd_native_init_ms,dd_rn_init_ms" >> "$OUT"
     _HEADER_WRITTEN=1
   fi

@@ -138,7 +138,12 @@ sleep "$SETTLE"
 # process (`<pkg>:startup`), which an exact-name `pidof` never sees -- this script
 # would then report "Datadog is NOT initializing in this build" about a build whose
 # SDK is live, and send the operator hunting a consent flag that is already set.
-PIDS=$(dd_pkg_pids "$PKG")
+if ! PIDS=$(dd_pkg_pids "$PKG"); then
+  die "SDK liveness is unknown: the full process listing failed or was not shaped as
+       expected (the error above says which). There is deliberately no exact-name
+       pidof fallback, because it omits private processes and therefore cannot prove
+       absence."
+fi
 [ -n "$PIDS" ] || die "app is not running after launch"
 
 # `die` exits 2, the setup-failure code -- deliberately NOT the exit 1 that means

@@ -306,11 +306,14 @@ process name, so on an app that initializes the SDK in a private process (`<your
 is a common one for a startup-work provider) it reports the default process and you conclude the
 SDK is dead in a build where it is live. `adb shell` output carries `\r` on many devices, hence
 the `tr`. Absence is proven only when every discovered PID returns a readable, non-empty thread
-list. If one process exits during enumeration, `/proc` is denied or adb fails, liveness is unknown;
-the harness rejects that launch rather than converting the failed read to zero. One case is not a
-rejection: `cat` also fails when a single thread exits between the shell expanding the glob and
-`cat` opening the file, which is ordinary churn on a live app. The process is re-checked and the
-read repeated once, so churn does not end an hour-long run while a crash still does. All three
+list from a successful full `ps` query. If full enumeration is unsupported or fails, the harness
+does not fall back to exact-name `pidof`: liveness is unknown because private processes may have
+been omitted. If one process exits during inspection, `/proc` is denied or adb fails, liveness is
+likewise unknown. The harness rejects that launch rather than converting the failed read to zero.
+One case is not a rejection: `cat` also fails when a single thread exits between the shell
+expanding the glob and `cat` opening the file, which is ordinary churn on a live app. The process
+is re-checked and the read repeated once, so churn does not end an hour-long run while a crash
+still does. All three
 scripts share this one reader, so the arm gate, the measured launches and the standalone verifier
 cannot disagree about what counts as readable.
 
@@ -605,8 +608,15 @@ adb shell dumpsys package dexopt | grep -A3 "\[<your.app.id>\]"
 #       arm64: [status=speed] [reason=cmdline]       <- fully AOT compiled
 ```
 
-The harness logs this per arm and warns when it sees `verify`. A `verify` run is a legitimate
-condition (it is what a sideloaded or freshly updated install looks like) but it is **not**
+The harness requires a readable achieved status after every compile, aborts if it changes between
+arms or cells, and stamps it as `compile_status` separately from the requested `compile_filter`.
+The stamp covers every code path and ABI in the package, sorted, so a build whose `base.apk`
+reached `speed-profile` while a split stayed at `verify` records `speed-profile+verify` rather
+than the first value it happened to find. `ab_stats.py` refuses to pool runs whose achieved
+statuses differ. Absence only warns: CSVs recorded before the stamp existed have to stay
+analyzable, which matters most for recovering an aborted run collected earlier.
+A `verify` run is a legitimate condition (it is what a sideloaded or freshly updated install looks
+like) but it is **not**
 what a long-installed Play user experiences, because Play ships a cloud profile and
 `bg-dexopt` recompiles against accumulated local profile data. If you want the well-compiled
 end of the range, run `COMPILE_FILTER=speed` as a second arm; that forces full AOT, removes
@@ -1038,7 +1048,9 @@ asynchronous migrations, profile persistence and deferred work continue between 
 discard gets a fresh post-settle logcat boundary and must draw the target without a foreign
 activity drawing, end with the target in the foreground, and satisfy the arm's SDK-liveness
 expectation. A contaminated or unreadable conditioning launch aborts the capture instead of
-silently preparing a different ramp.
+silently preparing a different ramp. Perfetto starts before the final traced launch's own
+force-stop, five-second wait and log boundary, reproducing the measured launch's pre-start cadence
+inside the capture.
 
 `verify_trace.py` exits `0` if the SDK is demonstrably active (or correctly absent), `1` if it
 is not detected, and `3` if the trace is unusable: no `bindApplication` slice, meaning the
@@ -1046,8 +1058,10 @@ trace does not contain a cold start and cannot answer the question either way.
 
 Three requirements that are easy to get wrong:
 
-1. **`am force-stop` before tracing**, and launch *inside* the trace window. A trace with no
-   `bindApplication` slice contains no cold start.
+1. **Start Perfetto, then `am force-stop`, wait five seconds and launch inside the trace window.**
+   Stopping before Perfetto and splitting the wait around trace startup does not reproduce the
+   benchmark's measured-launch cadence. A trace with no `bindApplication` slice contains no cold
+   start.
 2. **Enable full process stats.** With a bare `linux.process_stats` data source, thread names
    come only from scheduler events, so an idle thread is invisible, and you cannot conclude
    the SDK is absent from the absence of its threads:
@@ -1150,13 +1164,16 @@ It snapshots the original values first and restores them from an `EXIT` trap; `I
 exit into that trap, so Ctrl-C stops the run *and* restores the device, once.
 `capture_trace.sh` does the same for the animation scales, screen settings and its own
 permission grants. It also mirrors the benchmark's fixed-performance and background-dexopt
-controls so the trace observes the same scheduling and compilation scenario. Failure to disable
-background dexopt aborts either workflow before collection. The two controls
-have no readable prior state, so both scripts can only reverse a command they successfully issued,
-not prove exact restoration. Before any mutation, an empty, `null`, malformed or failed read of a
-restorable numeric setting aborts the workflow; guessing a default would risk leaving a borrowed
-device changed. A key the device has never set reads `null`, so writing it once makes it
-restorable and that value is what the run puts back. The two radio settings are the one
+controls so the trace observes the same scheduling and compilation scenario. Failure to enable
+disable background dexopt aborts either workflow before collection, as does a rejected
+fixed-performance mode unless `ALLOW_DYNAMIC_PERFORMANCE=1` accepts dynamic CPU behavior. Either
+way the scenario the device actually gave is stamped as `perf_mode`, because Android offers no
+read-back for the mode: the only evidence is whether the power HAL accepted the request.
+The two controls have no readable prior state, so both scripts can only reverse a command they
+successfully issued, not prove exact restoration. Before any mutation, an empty, `null`, malformed
+or failed read of a restorable numeric setting aborts the workflow; guessing a default would risk
+leaving a borrowed device changed. A key the device has never set reads `null`, so writing it once
+makes it restorable and that value is what the run puts back. The two radio settings are the one
 exception, because a device can genuinely not have one: `ALLOW_UNVERIFIED_RADIOS=1` accepts an
 unreadable radio snapshot and restores nothing for it, which is also the override the read-back
 gate names when it aborts. Trace capture also uninstalls and reinstalls the app, so it destroys
@@ -1198,7 +1215,7 @@ output contain no such data and are safe to share as-is.
 | first block differs wildly from later blocks | not AOT-compiled, or too few warm-ups |
 | `TotalTime` empty and `LaunchState=UNKNOWN` on every launch | the device is locked, or the notification shade is on top. Unlock it and leave it on the home screen |
 | every launch reports the wrong foreground activity | your `dumpsys` grep is anchored on `mResumedActivity`; this device prints `ResumedActivity:`. Match `m?ResumedActivity[:=]` |
-| `ab_stats.py` refuses to print a CI | fewer than 3 complete blocks, the selected endpoint is `NA` on an otherwise eligible measured launch, a selected row lacks `status`/`launch_state`/`foreground`, or a contributing block lacks one stable complementary `{1}`/`{2}` `pos_in_block` pair for the selected arms. Missing endpoints can be the slowest launches censored by the collection window, while missing or malformed validity/order evidence leaves the protocol unverifiable, so none is silently accepted; fix the CSV/collection and re-run. `--allow-missing-endpoint` is diagnostic only and still suppresses the primary interval |
+| `ab_stats.py` refuses to print a CI | fewer than 3 complete blocks, the selected endpoint is missing, non-finite or negative on an otherwise eligible measured launch, a selected row lacks `status`/`launch_state`/`foreground`, or a contributing block lacks one stable complementary `{1}`/`{2}` `pos_in_block` pair for the selected arms. Missing endpoints can be the slowest launches censored by the collection window, while negative values are impossible elapsed times and missing or malformed validity/order evidence leaves the protocol unverifiable, so none is silently accepted; fix the CSV/collection and re-run. `--allow-missing-endpoint` is diagnostic only and still suppresses the primary interval |
 | a run aborted at block 7 and you do not want to lose 45 minutes | fix the cause, collect the missing blocks, and pool with `--recover-completed-blocks`; see [If the run aborts part-way](#if-the-run-aborts-part-way) |
 | `ab_stats.py` refuses the file entirely | the run aborted, contains a rejected/invalid measured launch, or holds fewer blocks/launches than its own header says (a `kill -9` or power cut can skip the abort marker). Re-run; `--allow-aborted` inspects it diagnostically without producing a reportable primary interval |
 | the harness refuses to start, naming another Android user | the app is also installed in a work or secondary profile. Host-side `adb uninstall` has no user selector, so continuing would delete that profile's app data, and no user-scoped removal leaves the measured user a genuinely fresh install. Remove it from those profiles, or use a dedicated test device |

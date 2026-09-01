@@ -169,6 +169,201 @@ class HarnessRegressionTests(unittest.TestCase):
         self.assertLess(main_pin, first_block)
         self.assertLess(capture.index(gate), capture.index('log "starting perfetto"'))
 
+    def test_fixed_performance_is_a_shared_fail_closed_precollection_gate(self) -> None:
+        success = self.run_with_fake_adb(
+            '. "$LIB"; dd_enable_fixed_performance_mode; echo enabled',
+            """
+            #!/usr/bin/env bash
+            [ "$*" = "shell cmd power set-fixed-performance-mode-enabled true" ]
+            """,
+        )
+        self.assertEqual(success.returncode, 0, success.stderr)
+        self.assertEqual(success.stdout.strip(), "enabled")
+
+        failure = self.run_with_fake_adb(
+            '. "$LIB"; dd_enable_fixed_performance_mode',
+            """
+            #!/usr/bin/env bash
+            exit 17
+            """,
+        )
+        self.assertNotEqual(failure.returncode, 0)
+        self.assertIn("did not accept Android fixed-performance mode", failure.stderr)
+        self.assertIn("ALLOW_DYNAMIC_PERFORMANCE=1", failure.stderr)
+
+        # Not every power HAL implements the mode. An unconditional hard requirement
+        # left such a device with no way through at all, so the weaker scenario is
+        # available explicitly -- and stamped, so it cannot be pooled with a pinned
+        # run by accident.
+        allowed = self.run_with_fake_adb(
+            'ALLOW_DYNAMIC_PERFORMANCE=1; . "$LIB"'
+            '; dd_enable_fixed_performance_mode; echo "mode=$DD_PERF_MODE"',
+            """
+            #!/usr/bin/env bash
+            exit 17
+            """,
+        )
+        self.assertEqual(allowed.returncode, 0, allowed.stderr)
+        self.assertEqual(allowed.stdout.strip(), "mode=dynamic")
+        self.assertIn("DYNAMIC CPU behavior", allowed.stderr)
+
+        # `fixed` only when the device accepted it, so the restore path cannot undo a
+        # mode this run never set.
+        for name in ("coldstart_bench.sh", "capture_trace.sh"):
+            source = (HARNESS / name).read_text(encoding="utf-8")
+            gate_at = source.index("dd_enable_fixed_performance_mode || exit 2")
+            guard = source.index('[ "$DD_PERF_MODE" = fixed ]', gate_at)
+            ownership = source.index("_WE_SET_PERF=1", guard)
+            self.assertLess(guard, ownership, name)
+        # The outcome reaches the CSV, so analysis can refuse to mix the scenarios.
+        benchmark = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
+        self.assertIn("perf_mode=$DD_PERF_MODE", benchmark)
+
+        gate = "dd_enable_fixed_performance_mode || exit 2"
+        for name in ("coldstart_bench.sh", "capture_trace.sh"):
+            source = (HARNESS / name).read_text(encoding="utf-8")
+            self.assertEqual(source.count(gate), 1, name)
+        capture = (HARNESS / "capture_trace.sh").read_text(encoding="utf-8")
+        self.assertLess(capture.index(gate), capture.index('log "starting perfetto"'))
+
+    def test_package_process_enumeration_never_falls_back_to_pidof(self) -> None:
+        complete = self.run_with_fake_adb(
+            '. "$LIB"; dd_pkg_pids com.example.app',
+            """
+            #!/usr/bin/env bash
+            case "$*" in
+              "shell ps -A -o PID -o NAME")
+                printf 'PID NAME\n1 init\n123 com.example.app\n456 com.example.app:startup\n'
+                ;;
+              *) exit 90 ;;
+            esac
+            """,
+        )
+        self.assertEqual(complete.returncode, 0, complete.stderr)
+        self.assertEqual(complete.stdout.splitlines(), ["123", "456"])
+
+        unavailable = self.run_with_fake_adb(
+            '. "$LIB"; dd_pkg_pids com.example.app',
+            """
+            #!/usr/bin/env bash
+            case "$*" in
+              "shell ps -A -o PID -o NAME") exit 17 ;;
+              "shell pidof com.example.app") printf '999\n' ;;
+              *) exit 90 ;;
+            esac
+            """,
+        )
+        self.assertNotEqual(unavailable.returncode, 0)
+        self.assertIn("full ps query failed", unavailable.stderr)
+        self.assertNotEqual(unavailable.stdout.strip(), "999")
+
+        no_match = self.run_with_fake_adb(
+            '. "$LIB"; dd_pkg_pids com.example.app',
+            """
+            #!/usr/bin/env bash
+            printf 'PID NAME\n1 init\n2 system_server\n'
+            """,
+        )
+        self.assertEqual(no_match.returncode, 0, no_match.stderr)
+        self.assertEqual(no_match.stdout, "\n")
+
+        malformed = self.run_with_fake_adb(
+            '. "$LIB"; dd_pkg_pids com.example.app',
+            """
+            #!/usr/bin/env bash
+            printf 'PID NAME\n'
+            """,
+        )
+        self.assertNotEqual(malformed.returncode, 0)
+        self.assertIn("expected PID/NAME structure", malformed.stderr)
+
+        lib = LIB.read_text(encoding="utf-8")
+        helper = lib[lib.index("dd_pkg_pids() {"):lib.index("\n}", lib.index("dd_pkg_pids() {"))]
+        self.assertNotIn('shell pidof', helper)
+
+        # The aborts may state only what the check distinguishes: the listing failed
+        # or was malformed. `pidof` is never run, so it cannot be the observed cause
+        # -- only the reason there is no second attempt.
+        for name in ("coldstart_bench.sh", "verify_sdk_active.sh"):
+            source = (HARNESS / name).read_text(encoding="utf-8")
+            self.assertNotIn("unknown because exact-name pidof", source, name)
+            self.assertNotIn("is unknown because exact-name", source, name)
+            self.assertIn("the full process listing failed or was not", source, name)
+            self.assertIn("deliberately no", source, name)
+
+    def test_achieved_compile_status_must_be_readable_and_stable(self) -> None:
+        readable = self.run_with_fake_adb(
+            '. "$LIB"; dd_package_compile_status com.example.app',
+            """
+            #!/usr/bin/env bash
+            cat <<'EOF'
+            [com.other]
+              status=speed reason=install
+            [com.example.app]
+              path: /data/app/base.apk
+              status=verify reason=install
+            EOF
+            """,
+        )
+        self.assertEqual(readable.returncode, 0, readable.stderr)
+        self.assertEqual(readable.stdout.strip(), "verify")
+
+        # The shape Android 9+ actually prints, which the fixture above is not:
+        # bracketed statuses, one per code path per ABI. base.apk at speed-profile
+        # while the secondary ABI and the split sit at verify is a real state, and
+        # reporting only the first status called that "one AOT/JIT scenario".
+        real_format = self.run_with_fake_adb(
+            '. "$LIB"; dd_package_compile_status com.example.app',
+            """
+            #!/usr/bin/env bash
+            cat <<'EOF'
+            Current DexOpt state:
+              [com.other.app]
+                path: /data/app/~~aa==/com.other.app-bb==/base.apk
+                  arm64: [status=speed] [reason=install] [primary-abi]
+              [com.example.app]
+                path: /data/app/~~cc==/com.example.app-dd==/base.apk
+                  arm64: [status=speed-profile] [reason=install] [primary-abi]
+                  arm: [status=verify] [reason=install]
+                path: /data/app/~~cc==/com.example.app-dd==/split_config.en.apk
+                  arm64: [status=verify] [reason=install]
+              [com.zzz.app]
+                path: /data/app/base.apk
+                  arm64: [status=speed] [reason=install]
+            EOF
+            """,
+        )
+        self.assertEqual(real_format.returncode, 0, real_format.stderr)
+        # Sorted, de-duplicated, and stopping at the next package section: the
+        # trailing com.zzz.app `speed` must not leak in.
+        self.assertEqual(real_format.stdout.strip(), "speed-profile+verify")
+
+        failed = self.run_with_fake_adb(
+            '. "$LIB"; dd_package_compile_status com.example.app',
+            """
+            #!/usr/bin/env bash
+            exit 17
+            """,
+        )
+        self.assertNotEqual(failed.returncode, 0)
+        self.assertIn("dumpsys failed", failed.stderr)
+
+        missing = self.run_with_fake_adb(
+            '. "$LIB"; dd_package_compile_status com.example.app',
+            """
+            #!/usr/bin/env bash
+            printf '[com.example.app]\n  reason=install\n[com.other]\n  status=speed\n'
+            """,
+        )
+        self.assertNotEqual(missing.returncode, 0)
+        self.assertIn("no usable", missing.stderr)
+
+        benchmark = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
+        self.assertIn('elif [ "$achieved_status" != "$RUN_COMPILE_STATUS" ]; then', benchmark)
+        self.assertIn("compile_status=$RUN_COMPILE_STATUS", benchmark)
+        capture = (HARNESS / "capture_trace.sh").read_text(encoding="utf-8")
+        self.assertIn('TRACE_COMPILE_STATUS=$(dd_package_compile_status "$PKG")', capture)
+
     def test_enabled_radio_readback_does_not_claim_reachability(self) -> None:
         result = self.run_with_fake_adb(
             """
@@ -1247,6 +1442,67 @@ class HarnessRegressionTests(unittest.TestCase):
         self.assertIn("sleep 6", measure)
         self.assertIn("sleep 4", measure)
 
+    def test_trace_duration_pays_for_the_in_capture_pre_launch_cadence(self) -> None:
+        """Moving the pre-launch cadence inside the capture spends `duration_ms`.
+
+        Reproducing measure()'s force-stop and 5s wait after Perfetto starts put 9s
+        of the budget before `am start -W` instead of 4s, silently cutting the
+        post-launch window from ~16s to ~11s. The endpoint wait is bounded by
+        Perfetto's lifetime, so that is exactly what makes a late `Fully drawn` or
+        app-trace marker die with "was not reached before Perfetto stopped".
+        """
+        capture = (HARNESS / "capture_trace.sh").read_text(encoding="utf-8")
+        duration_ms = int(re.search(r"duration_ms:\s*(\d+)", capture).group(1))
+        started = capture.index("PERFETTO_PID=$!")
+        launch = capture.index('LAUNCH_OUT=$("$ADB" shell am start -W', started)
+        in_capture_s = sum(
+            int(m.group(1))
+            for m in re.finditer(r"^\s*sleep (\d+)\s*$", capture[started:launch], re.M)
+        )
+        # 4s of Perfetto establishment plus the benchmark's own 5s pre-launch wait.
+        self.assertGreaterEqual(in_capture_s, 9)
+        post_launch_ms = duration_ms - in_capture_s * 1000
+        self.assertGreaterEqual(
+            post_launch_ms, 15000,
+            f"{in_capture_s}s of the {duration_ms}ms capture elapses before the traced "
+            f"launch, leaving only {post_launch_ms}ms for the launch and its endpoint. "
+            "Raise duration_ms to pay for any added pre-launch wait.",
+        )
+
+    def test_traced_launch_reproduces_measured_final_pre_start_cadence(self) -> None:
+        capture = (HARNESS / "capture_trace.sh").read_text(encoding="utf-8")
+        settle = capture.index("for ((_i=1; _i<=SETTLE_LAUNCHES; _i++)); do")
+        after_settle = capture.index("\ndone", settle) + len("\ndone")
+        perfetto = capture.index('log "starting perfetto"', after_settle)
+        perfetto_pid = capture.index("PERFETTO_PID=$!", perfetto)
+        ready_wait = capture.index("sleep 4", perfetto_pid)
+        force_stop = capture.index("shell am force-stop", ready_wait)
+        measured_wait = capture.index("sleep 5", force_stop)
+        clear = capture.index("shell logcat -c", measured_wait)
+        watcher = capture.index('_ENDPOINT_FILE=$(mktemp', clear)
+        launch = capture.index('LAUNCH_OUT=$("$ADB" shell am start -W', watcher)
+
+        self.assertNotIn("shell am force-stop", capture[after_settle:perfetto])
+        self.assertLess(perfetto, perfetto_pid)
+        self.assertLess(perfetto_pid, ready_wait)
+        self.assertLess(ready_wait, force_stop)
+        self.assertLess(force_stop, measured_wait)
+        self.assertLess(measured_wait, clear)
+        self.assertLess(clear, watcher)
+        self.assertLess(watcher, launch)
+
+        benchmark = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
+        measure_start = benchmark.index("measure() {")
+        measure_end = benchmark.index("\n}", measure_start)
+        measure = benchmark[measure_start:measure_end]
+        bench_stop = measure.index("shell am force-stop")
+        bench_wait = measure.index("sleep 5", bench_stop)
+        bench_clear = measure.index("shell logcat -c", bench_wait)
+        bench_launch = measure.index('shell am start "${START_ARGS[@]}"', bench_clear)
+        self.assertLess(bench_stop, bench_wait)
+        self.assertLess(bench_wait, bench_clear)
+        self.assertLess(bench_clear, bench_launch)
+
     def test_thread_liveness_fails_closed_on_unreadable_processes(self) -> None:
         success = self.run_with_fake_adb(
             """
@@ -1454,7 +1710,8 @@ class HarnessRegressionTests(unittest.TestCase):
 class AbStatsRegressionTests(unittest.TestCase):
     COMPATIBLE_META = (
         "fp=build/fingerprint emulator=0 android_user=0 "
-        "compile_filter=speed-profile animations=0 airplane=0 abi=arm64-v8a "
+        "compile_filter=speed-profile compile_status=verify animations=0 "
+        "airplane=0 abi=arm64-v8a "
         "launcher=com.example/.MainActivity warmup=3"
     )
 
@@ -1564,13 +1821,16 @@ class AbStatsRegressionTests(unittest.TestCase):
         self.assertIn("refusing to report --metric ttfd", result.stderr)
         self.assertNotIn("PRIMARY ENDPOINT", result.stdout)
 
-    def test_non_finite_endpoint_is_refused_as_invalid_evidence(self) -> None:
+    def test_non_finite_or_negative_endpoint_is_refused_as_invalid_evidence(self) -> None:
         stats = load_ab_stats_module()
-        for value in ("NaN", "nan", "Infinity", "-Infinity", "inf", "-inf", "1e309"):
+        for value in (
+            "NaN", "nan", "Infinity", "-Infinity", "inf", "-inf", "1e309",
+            "-1", "-0.5", "-1e-9",
+        ):
             self.assertIsNone(stats.parse_ms(value), value)
 
         original = "A_noDD,1,1,measure,1,101,COLD,ok,ok,101"
-        for value in ("NaN", "Infinity", "-Infinity"):
+        for value in ("NaN", "Infinity", "-Infinity", "-1", "-0.5"):
             with self.subTest(value=value):
                 replacement = f"A_noDD,1,1,measure,1,101,COLD,ok,ok,{value}"
                 result = self.run_stats(self.benchmark_csv().replace(original, replacement))
@@ -1697,7 +1957,8 @@ class AbStatsRegressionTests(unittest.TestCase):
 
     def recoverable_metadata(self, blocks: int, runs: int = 2) -> str:
         return (f"device=pixel sdk=31 abi=arm64-v8a emulator=0 android_user=0 "
-                f"compile_filter=speed-profile blocks={blocks} runs={runs} warmup=3 "
+                f"compile_filter=speed-profile compile_status=verify "
+                f"blocks={blocks} runs={runs} warmup=3 "
                 f"animations=0 fp=fp1 launcher=com.example/.Main airplane=0 "
                 f"baseline_md5=aaa treatment_md5=bbb label_a=A_noDD label_b=B_withDD "
                 f"expect_a=0 expect_b=1 app_trace_id=none permission_a=p1 permission_b=p2")
@@ -1954,6 +2215,59 @@ class AbStatsRegressionTests(unittest.TestCase):
         )
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("android_user: 0 vs 10", result.stderr)
+
+    def test_runtime_control_stamps_do_not_break_csvs_that_predate_them(self) -> None:
+        """Absence warns; it must not make previously-analyzable files unpoolable.
+
+        `compile_status` and `perf_mode` were _MUST_MATCH for one commit, which meant
+        two CSVs collected on the same device the day before refused to pool WITH EACH
+        OTHER. The only escape was --allow-mixed, which switches off all nine other
+        compatibility checks to work around one absent key -- and it broke
+        --recover-completed-blocks, whose entire purpose is not losing collected
+        blocks. Same policy as _BUILD_KEYS: missing degrades to a warning.
+        """
+        legacy = (self.COMPATIBLE_META
+                  .replace(" compile_status=verify", ""))
+        result = self.run_stats_files(
+            [self.benchmark_csv(metadata=legacy),
+             self.benchmark_csv(metadata=legacy, baseline_offset=140)]
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("compile_status, perf_mode absent from at least one header",
+                      result.stdout)
+        self.assertIn("  95% CI                ", result.stdout)
+
+        mixed = self.run_stats_files(
+            [self.benchmark_csv(metadata=legacy),
+             self.benchmark_csv(metadata=self.COMPATIBLE_META, baseline_offset=140)]
+        )
+        self.assertEqual(mixed.returncode, 0, mixed.stderr)
+
+    def test_pooling_different_cpu_scheduling_scenarios_is_refused(self) -> None:
+        """A pinned-CPU run and a dynamic one are two experiments, not more samples."""
+        fixed = self.COMPATIBLE_META + " perf_mode=fixed"
+        dynamic = self.COMPATIBLE_META + " perf_mode=dynamic"
+        result = self.run_stats_files(
+            [self.benchmark_csv(metadata=fixed),
+             self.benchmark_csv(metadata=dynamic, baseline_offset=140)]
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("different runtime controls", result.stderr)
+        self.assertIn("perf_mode: dynamic vs fixed", result.stderr)
+
+    def test_pooling_different_achieved_compile_states_is_refused(self) -> None:
+        result = self.run_stats_files(
+            [
+                self.benchmark_csv(metadata=self.COMPATIBLE_META),
+                self.benchmark_csv(
+                    metadata=self.COMPATIBLE_META.replace(
+                        "compile_status=verify", "compile_status=speed-profile"
+                    )
+                ),
+            ]
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("compile_status: speed-profile vs verify", result.stderr)
 
     def test_pooling_without_mandatory_metadata_is_refused(self) -> None:
         result = self.run_stats_files(
