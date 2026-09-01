@@ -47,6 +47,7 @@ internal class RumDataWriter(
 ) : DataWriter<Any> {
 
     private var currentViewId: String? = null
+    private val lastWrittenAccessibilityByViewId = mutableMapOf<String, ViewEvent.Accessibility?>()
 
     @WorkerThread
     override fun write(writer: EventBatchWriter, element: Any, eventType: EventType): Boolean {
@@ -108,12 +109,39 @@ internal class RumDataWriter(
         val eventMeta = RumEventMeta.View(
             viewId = event.view.id,
             documentVersion = event.dd.documentVersion,
-            hasAccessibility = event.view.accessibility != null
+            hasAccessibility = resolveHasAccessibility(event)
         )
         val serializedEventMeta = eventMetaSerializer.serializeToByteArray(eventMeta, sdkCore.internalLogger)
             ?: EMPTY_BYTE_ARRAY
 
         return byteArray to serializedEventMeta
+    }
+
+    /**
+     * Returns true when this full [ViewEvent]'s accessibility snapshot differs from the last
+     * full ViewEvent written for this exact viewId. This signals [RumViewEventFilter] to retain
+     * this event even if a later documentVersion supersedes it for batch dedup purposes — since
+     * accessibility settings can change mid-view (e.g. screen reader toggled) and later,
+     * otherwise-superseding full view writes would not preserve that intermediate state.
+     *
+     * Tracked per viewId (not a single "current view") because RumViewManagerScope can hold
+     * multiple concurrently active RumViewScope instances (e.g. a background or app-launch view
+     * scope alongside a newly started foreground view), so writes for different views can be
+     * interleaved rather than strictly sequential for a single view.
+     */
+    @WorkerThread
+    private fun resolveHasAccessibility(event: ViewEvent): Boolean {
+        synchronized(this) {
+            val viewId = event.view.id
+            val changed = event.view.accessibility != lastWrittenAccessibilityByViewId[viewId]
+            if (event.view.isActive == false) {
+                // Last write for this view — evict to avoid unbounded growth across a long session.
+                lastWrittenAccessibilityByViewId.remove(viewId)
+            } else {
+                lastWrittenAccessibilityByViewId[viewId] = event.view.accessibility
+            }
+            return changed
+        }
     }
 
     @WorkerThread
