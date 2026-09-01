@@ -5,7 +5,7 @@ data class com.datadog.android.rum.internal.domain.Time
     fun fromTimestampMillis(Long, com.datadog.android.internal.time.TimeProvider): Time
     fun fromNanoTime(Long, com.datadog.android.internal.time.TimeProvider): Time
 object com.datadog.android.rum.internal.startup.PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener
-  var capturedActivity: android.app.Activity?
+  val capturedActivity: android.app.Activity?
   var activityPredicate: (android.app.Activity) -> Boolean
   val isInstalled: Boolean
   val hasPendingEvents: Boolean

@@ -224,7 +224,7 @@ internal class RumFeaturePreLaunchStartupTest {
     private fun resetPreLaunchDetector() {
         PreLaunchRumAppStartupDetector.detach()
         PreLaunchRumAppStartupDetector.setFieldValue("detectorImpl", null)
-        PreLaunchRumAppStartupDetector.setFieldValue("capturedActivity", null)
+        PreLaunchRumAppStartupDetector.setFieldValue("capturedActivityRef", null)
         PreLaunchRumAppStartupDetector
             .getFieldValue<MutableList<*>, PreLaunchRumAppStartupDetector>("pendingEvents")
             .clear()

@@ -27,6 +27,7 @@ import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.internal.utils.guardedProcessStartNs
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.internal.domain.Time
+import java.lang.ref.WeakReference
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
 
@@ -59,9 +60,16 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
     private val pendingEvents = mutableListOf<Event>()
     private var attachedListener: RumAppStartupDetector.Listener? = null
 
-    /** The activity associated with the most recent [onAppStartupDetected] call, if any. */
-    var capturedActivity: Activity? = null
-        private set
+    // Weakly held: this singleton lives for the whole process, so a strong Activity reference
+    // here would outlive the Activity and leak it (lint: StaticFieldLeak).
+    private var capturedActivityRef: WeakReference<Activity>? = null
+
+    /**
+     * The activity associated with the most recent [onAppStartupDetected] call, if any.
+     *
+     * Weakly referenced, so this returns `null` once that Activity has been collected.
+     */
+    val capturedActivity: Activity? get() = capturedActivityRef?.get()
 
     /**
      * Predicate deciding whether an Activity qualifies as a startup Activity.
@@ -153,7 +161,7 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
     // region RumAppStartupDetector.Listener
 
     override fun onAppStartupDetected(scenario: RumStartupScenario) {
-        capturedActivity = scenario.activity.get()
+        capturedActivityRef = scenario.activity
         val attached = attachedListener
         if (attached != null) {
             attached.onAppStartupDetected(scenario)
