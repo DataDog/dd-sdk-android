@@ -8,6 +8,7 @@
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.BuildConfigPropertiesKeys
 import com.datadog.gradle.config.GradlePropertiesKeys
+import com.datadog.gradle.utils.createJsonModelsGenerationTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -42,6 +43,13 @@ plugins {
     id("test-pyramid-api-surface")
 }
 
+createJsonModelsGenerationTask("generateRemoteConfigModelsFromJson") {
+    inputDirPath = "src/main/json/rc"
+    targetPackageName = "com.datadog.android.core.internal.remote.model"
+    ignoredFiles = listOf("mobile.json")
+    inputNameMapping = mapOf("android.json" to "RemoteConfiguration")
+}
+
 /**
  * Checks whether logcat logs should be enabled when building the release version of the library.
  * @return true if logcat logs should be enabled
@@ -50,6 +58,8 @@ fun isLogEnabledInRelease(): String {
     return project.findProperty(GradlePropertiesKeys.FORCE_ENABLE_LOGCAT) as? String ?: "false"
 }
 
+// TODO RUM-18189 Support new AGP DSL
+@Suppress("DEPRECATION")
 android {
     defaultConfig {
         consumerProguardFiles("consumer-rules.pro")

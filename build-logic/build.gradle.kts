@@ -45,8 +45,11 @@ dependencies {
     compileOnly(libs.detektGradlePlugin)
     compileOnly(libs.ktlintGradlePlugin)
 
-    // check api surface
-    implementation(libs.kotlinGrammarParser)
+    // Kotlin PSI, used by the API surface generator to parse sources. Kept off the plugin runtime
+    // classpath on purpose: KGP warns (and misbehaves) when a second `kotlin-compiler-embeddable`
+    // sits next to it on the buildscript classpath. `GenerateApiSurfaceTask` loads it at execution
+    // time from an isolated worker classpath instead.
+    compileOnly(libs.kotlinCompilerEmbeddable)
 
     // JsonSchema 2 Poko
     implementation(libs.gson)
@@ -56,6 +59,9 @@ dependencies {
     implementation(libs.kotlinXmlBuilder)
 
     // Tests
+    // Not inherited from `compileOnly`, and the test JVM has no worker classpath to borrow it
+    // from, so the API surface tests need their own copy.
+    testImplementation(libs.kotlinCompilerEmbeddable)
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.mockitoKotlin)
     testImplementation(libs.assertJ)

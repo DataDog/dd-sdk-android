@@ -21,10 +21,11 @@ import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.jvm.throws
 
 class OneOfPrimitiveOptionGenerator(
-    packageName: String
+    packageName: String,
+    knownTypes: MutableSet<KotlinTypeWrapper> = mutableSetOf()
 ) : TypeSpecGenerator<TypeDefinition.Primitive>(
     packageName,
-    mutableSetOf()
+    knownTypes
 ) {
     override fun generate(
         definition: TypeDefinition.Primitive,

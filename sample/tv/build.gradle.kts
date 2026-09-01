@@ -9,6 +9,7 @@ import com.datadog.gradle.config.configureFlavorForTvApp
 import com.datadog.gradle.config.depotProxied
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.taskConfig
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     // Build
@@ -21,6 +22,8 @@ plugins {
     alias(libs.plugins.datadogGradlePlugin)
 }
 
+// TODO RUM-18189 Support new AGP DSL
+@Suppress("DEPRECATION")
 android {
     namespace = "com.datadog.android.tv.sample"
     compileSdk = AndroidConfig.TARGET_SDK
@@ -31,7 +34,6 @@ android {
         targetSdk = AndroidConfig.TARGET_SDK
         versionCode = AndroidConfig.VERSION.code
         versionName = AndroidConfig.VERSION.name
-        multiDexEnabled = true
 
         vectorDrawables.useSupportLibrary = true
 
@@ -101,16 +103,16 @@ dependencies {
     implementation(libs.timber)
 
     // Video
-    implementation(libs.bundles.exoplayer)
+    implementation(libs.bundles.media3)
     implementation(libs.newPipeExtractor)
 }
 
 datadogBuild {
-    applyKotlinConfig(evaluateWarningsAsErrors = false)
+    applyKotlinConfig()
     applyJunitConfig()
 }
 
-taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+taskConfig<KotlinCompile> {
     compilerOptions {
         optIn.add("kotlin.RequiresOptIn")
     }

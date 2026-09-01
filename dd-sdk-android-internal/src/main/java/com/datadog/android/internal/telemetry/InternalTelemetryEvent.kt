@@ -82,6 +82,10 @@ sealed class InternalTelemetryEvent {
                 LEGACY_OKHTTP
             }
         }
+
+        class Timeseries(
+            additionalProperties: MutableMap<String, Any?> = mutableMapOf()
+        ) : ApiUsage(additionalProperties)
     }
 
     object InterceptorInstantiated : InternalTelemetryEvent()

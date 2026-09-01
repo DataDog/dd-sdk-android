@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.utils.forge
 
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.configuration.RumViewEventWriteConfig
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
@@ -14,6 +15,7 @@ import com.datadog.android.rum.metric.interactiontonextview.NoOpLastInteractionI
 import com.datadog.android.rum.metric.interactiontonextview.TimeBasedInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.NoOpInitialResourceIdentifier
 import com.datadog.android.rum.metric.networksettled.TimeBasedInitialResourceIdentifier
+import com.datadog.android.rum.timeseries.TimeseriesConfiguration
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
@@ -22,6 +24,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import org.mockito.kotlin.mock
 
+@OptIn(ExperimentalRumApi::class)
 internal class ConfigurationRumForgeryFactory :
     ForgeryFactory<RumFeature.Configuration> {
     override fun getForgery(forge: Forge): RumFeature.Configuration {
@@ -76,7 +79,8 @@ internal class ConfigurationRumForgeryFactory :
             disableJankStats = false,
             insightsCollector = mock(),
             appStartupActivityPredicate = mock(),
-            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart
+            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
+            timeseriesConfiguration = forge.aNullable { TimeseriesConfiguration.Builder().build() }
         )
     }
 }

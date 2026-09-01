@@ -40,5 +40,8 @@ internal class ModelForgeryConfigurator : ForgeConfigurator {
         forge.addFactory(WeirdComboForgeryFactory())
         forge.addFactory(PathArrayWithIntegerForgeryFactory())
         forge.addFactory(PathArrayWithNumberForgeryFactory())
+        forge.addFactory(OneOfPrimitiveRefForgeryFactory())
+        forge.addFactory(CrossFileOneOfPrimitiveAForgeryFactory())
+        forge.addFactory(CrossFileOneOfPrimitiveBForgeryFactory())
     }
 }

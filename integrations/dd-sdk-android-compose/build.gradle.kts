@@ -6,6 +6,7 @@
 
 import com.datadog.gradle.config.taskConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     // Build
@@ -38,6 +39,8 @@ plugins {
     id("test-pyramid-api-surface")
 }
 
+// TODO RUM-18189 Support new AGP DSL
+@Suppress("DEPRECATION")
 android {
     namespace = "com.datadog.android.compose"
     defaultConfig {
@@ -87,8 +90,10 @@ datadogBuild {
     )
 }
 
-taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+taskConfig<KotlinCompile> {
     compilerOptions {
         optIn.add("kotlin.RequiresOptIn")
+        // TODO RUM-18190
+        freeCompilerArgs.add("-Xwarning-level=ERROR_SUPPRESSION:disabled")
     }
 }

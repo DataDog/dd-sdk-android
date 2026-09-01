@@ -1112,3 +1112,47 @@ val PathArrayWithNumber = TypeDefinition.Class(
     ),
     required = setOf("path")
 )
+
+val OneOfPrimitivePath = TypeDefinition.OneOfClass(
+    name = "Path",
+    options = listOf(
+        TypeDefinition.OneOfClass.Option.Primitive(
+            primitive = TypeDefinition.Primitive(
+                type = JsonPrimitiveType.STRING,
+                description = "string element"
+            )
+        ),
+        TypeDefinition.OneOfClass.Option.Primitive(
+            primitive = TypeDefinition.Primitive(
+                type = JsonPrimitiveType.INTEGER,
+                description = "integer element"
+            )
+        )
+    ),
+    description = "This is a definition of a path"
+)
+
+val OneOfPrimitiveRef = TypeDefinition.Class(
+    name = "OneOfPrimitiveRef",
+    properties = listOf(
+        TypeProperty("from", OneOfPrimitivePath),
+        TypeProperty("to", OneOfPrimitivePath)
+    ),
+    required = setOf("from")
+)
+
+val CrossFileOneOfPrimitiveA = TypeDefinition.Class(
+    name = "CrossFileOneOfPrimitiveA",
+    properties = listOf(
+        TypeProperty("path", OneOfPrimitivePath)
+    ),
+    required = setOf("path")
+)
+
+val CrossFileOneOfPrimitiveB = TypeDefinition.Class(
+    name = "CrossFileOneOfPrimitiveB",
+    properties = listOf(
+        TypeProperty("path", OneOfPrimitivePath)
+    ),
+    required = setOf("path")
+)

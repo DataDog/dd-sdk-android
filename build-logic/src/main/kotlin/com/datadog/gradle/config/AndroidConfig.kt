@@ -19,7 +19,7 @@ object AndroidConfig {
     const val MIN_SDK_FOR_AUTO = 29
     const val BUILD_TOOLS_VERSION = "36.0.0"
 
-    val VERSION = Version(3, 13, 0, Version.Type.Snapshot)
+    val VERSION = Version(3, 14, 0, Version.Type.Snapshot)
 }
 
 // TODO RUM-628 Switch to Java 17 bytecode
@@ -40,6 +40,14 @@ internal fun Project.androidLibraryConfig() {
 
         defaultConfig {
             minSdk = AndroidConfig.MIN_SDK
+            aarMetadata {
+                // TODO RUM-18201
+                // AGP 9 now sets it to the compileSdk value, imposing consumers
+                // to use this compile SDK or above. This will force consumers of the library to
+                // migrate to the latest API level once we bump it on our side.
+                // Set it compatible with AGP 8.x behavior for now.
+                minCompileSdk = 1
+            }
         }
 
         compileOptions {
@@ -47,7 +55,7 @@ internal fun Project.androidLibraryConfig() {
         }
 
         sourceSets.all {
-            java.srcDir("src/$name/kotlin")
+            java.directories += "src/$name/kotlin"
         }
 
         testOptions {

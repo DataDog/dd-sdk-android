@@ -30,6 +30,9 @@ import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollect
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
+import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollector
+import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollectorFactory
+import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -60,13 +63,16 @@ internal class RumSessionScope(
     displayInfoProvider: InfoProvider<DisplayInfo>,
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS,
-    rumSessionTypeOverride: RumSessionType?,
+    private val rumSessionTypeOverride: RumSessionType?,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
     insightsCollector: InsightsCollector,
     private val viewEventMapper: ViewEventMapper,
     private val rumViewEventWriteConfig: RumViewEventWriteConfig,
-    heatmapIdentifierRegistry: HeatmapIdentifierRegistry?
+    heatmapIdentifierRegistry: HeatmapIdentifierRegistry?,
+    private val timeseriesCollectorFactory: TimeseriesCollector.Factory = NoOpTimeseriesCollectorFactory()
 ) : RumScope {
+
+    private var timeseriesCollector: TimeseriesCollector = NoOpTimeseriesCollector()
 
     internal var sessionId = RumContext.NULL_UUID
     internal var sessionState: State = State.NOT_TRACKED
@@ -163,7 +169,7 @@ internal class RumSessionScope(
 
         val actualWriter = if (sessionState == State.TRACKED) writer else noOpWriter
 
-        val rumContext = activeView?.getRumContext() ?: getRumContext()
+        val rumContext = getActiveRumContext()
 
         when (event) {
             is RumRawEvent.AppStartTTIDEvent -> {
@@ -201,6 +207,12 @@ internal class RumSessionScope(
             }
         }
 
+        // getActiveRumContext() copies the whole context chain, so it is only built when there is a
+        // collector to feed: timeseries collection is opt-in and this runs on every RUM event.
+        if (timeseriesCollector !is NoOpTimeseriesCollector) {
+            timeseriesCollector.onRumContextUpdate(getActiveRumContext())
+        }
+
         return if (isSessionComplete()) {
             null
         } else {
@@ -227,8 +239,27 @@ internal class RumSessionScope(
 
     // region Internal
 
+    private fun getActiveRumContext(): RumContext {
+        return activeView?.getRumContext() ?: getRumContext()
+    }
+
+    private fun startTimeseries() {
+        val rumContext = getActiveRumContext()
+        timeseriesCollector = timeseriesCollectorFactory.create(
+            rumContext = rumContext,
+            sessionType = rumContext.resolveSessionType(rumSessionTypeOverride)
+        )
+        timeseriesCollector.onSessionStart()
+    }
+
+    internal fun stopTimeseries() {
+        timeseriesCollector.onSessionStop()
+        timeseriesCollector = NoOpTimeseriesCollector()
+    }
+
     private fun stopSession() {
         isActive = false
+        stopTimeseries()
         sessionEndedMetricDispatcher.onSessionStopped(sessionId)
     }
 
@@ -276,6 +307,7 @@ internal class RumSessionScope(
                 renewSession(event.eventTime, StartReason.BACKGROUND_LAUNCH)
                 lastUserInteractionNs.set(nanoTime)
             } else {
+                stopTimeseries()
                 sessionState = State.EXPIRED
             }
         } else if (isTimedOut) {
@@ -286,6 +318,7 @@ internal class RumSessionScope(
     }
 
     private fun renewSession(time: Time, reason: StartReason) {
+        stopTimeseries()
         val newSessionId = UUID.randomUUID().toString()
         val keepSession = sessionSampler.sample(newSessionId)
         startReason = reason
@@ -301,6 +334,7 @@ internal class RumSessionScope(
                 ntpOffsetAtStartMs = sdkCore.time.serverTimeOffsetMs,
                 backgroundEventTracking = backgroundTrackingEnabled
             )
+            startTimeseries()
         }
         sessionListener?.onSessionStarted(sessionId, !keepSession)
     }
@@ -332,5 +366,13 @@ internal class RumSessionScope(
         internal const val RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY = "sessionSampleRate"
         internal val DEFAULT_SESSION_INACTIVITY_NS = TimeUnit.MINUTES.toNanos(15)
         internal val DEFAULT_SESSION_MAX_DURATION_NS = TimeUnit.HOURS.toNanos(4)
+
+        internal fun RumContext.resolveSessionType(rumSessionTypeOverride: RumSessionType?): RumSessionType {
+            return when {
+                rumSessionTypeOverride != null -> rumSessionTypeOverride
+                !syntheticsTestId.isNullOrBlank() && !syntheticsResultId.isNullOrBlank() -> RumSessionType.SYNTHETICS
+                else -> RumSessionType.USER
+            }
+        }
     }
 }

@@ -81,7 +81,7 @@ def generate_target_code(target: str, temp_dir_path: str, version: str):
     file_path = FILE_PATH[target]
     target_file = os.path.join(temp_dir_path, file_path)
     prefix = PREFIX[target]
-    regex = prefix + " = \"[0-9a-z\\.-]+\""
+    regex = prefix + " = \"[0-9a-zA-Z\\.\\-+]+\""
 
     previous_version = None
 

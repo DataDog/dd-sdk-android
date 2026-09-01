@@ -58,6 +58,7 @@ import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_NAME
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_NAME_CHARACTERS
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_OPERATION_KEY
+import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollectorFactory
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -331,7 +332,8 @@ internal class DatadogRumMonitorTest {
             viewEventMapper = mockViewEventMapper,
             rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
-            heatmapIdentifierRegistry = null
+            heatmapIdentifierRegistry = null,
+            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
         )
         testedMonitor.rootScope = mockApplicationScope
     }
@@ -367,7 +369,8 @@ internal class DatadogRumMonitorTest {
             viewEventMapper = mockViewEventMapper,
             rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
-            heatmapIdentifierRegistry = null
+            heatmapIdentifierRegistry = null,
+            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
         )
 
         // When
@@ -446,7 +449,8 @@ internal class DatadogRumMonitorTest {
             viewEventMapper = mockViewEventMapper,
             rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
-            heatmapIdentifierRegistry = null
+            heatmapIdentifierRegistry = null,
+            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -493,7 +497,8 @@ internal class DatadogRumMonitorTest {
             viewEventMapper = mockViewEventMapper,
             rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
-            heatmapIdentifierRegistry = null
+            heatmapIdentifierRegistry = null,
+            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -2175,9 +2180,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W eventDropped {error}`(
-        @StringForgery viewId: String
-    ) {
+    fun `M delegate event to rootScope W eventDropped {error}`(@StringForgery viewId: String) {
         testedMonitor.eventDropped(viewId, StorageEvent.Error())
 
         argumentCaptor<RumRawEvent> {
@@ -2314,7 +2317,8 @@ internal class DatadogRumMonitorTest {
             viewEventMapper = mockViewEventMapper,
             rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
-            heatmapIdentifierRegistry = null
+            heatmapIdentifierRegistry = null,
+            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
         )
 
         // When
@@ -2358,7 +2362,8 @@ internal class DatadogRumMonitorTest {
             viewEventMapper = mockViewEventMapper,
             rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
-            heatmapIdentifierRegistry = null
+            heatmapIdentifierRegistry = null,
+            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
         )
 
         // When
@@ -2403,7 +2408,8 @@ internal class DatadogRumMonitorTest {
             viewEventMapper = mockViewEventMapper,
             rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
-            heatmapIdentifierRegistry = null
+            heatmapIdentifierRegistry = null,
+            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 
@@ -2630,7 +2636,8 @@ internal class DatadogRumMonitorTest {
             viewEventMapper = mockViewEventMapper,
             rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
-            heatmapIdentifierRegistry = null
+            heatmapIdentifierRegistry = null,
+            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
         )
         testedMonitor.startView(key, name, attributes)
         // When
@@ -3055,6 +3062,23 @@ internal class DatadogRumMonitorTest {
             firstValue.invoke(acc)
             assertThat(acc).isEmpty()
         }
+    }
+
+    // endregion
+
+    // region timeseries
+
+    @Test
+    fun `M stop the active session timeseries W stopTimeseries()`() {
+        // Given
+        val mockSessionScope = mock<RumSessionScope>()
+        whenever(mockApplicationScope.activeSession) doReturn mockSessionScope
+
+        // When
+        testedMonitor.stopTimeseries()
+
+        // Then
+        verify(mockSessionScope).stopTimeseries()
     }
 
     // endregion

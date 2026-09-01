@@ -28,8 +28,9 @@ import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
-import com.datadog.android.internal.utils.DDCoreSubscription
+import com.datadog.android.internal.utils.DDCoreStateHolder
 import org.json.JSONObject
 
 /**
@@ -417,7 +418,10 @@ interface FlagsClient {
             val precomputeMapper = PrecomputeMapper(featureSdkCore.internalLogger)
 
             val flagStateManager = FlagsStateManager(
-                DDCoreSubscription.create()
+                stateHolder = DDCoreStateHolder.create(
+                    initialState = FlagsClientState.NotReady,
+                    onStateChanged = FlagsStateListener::onStateChanged
+                )
             )
 
             val evaluationsManager = EvaluationsManager(

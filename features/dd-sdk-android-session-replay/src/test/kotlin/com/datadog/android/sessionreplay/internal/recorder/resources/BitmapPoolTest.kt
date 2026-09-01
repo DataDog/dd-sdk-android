@@ -348,6 +348,7 @@ internal class BitmapPoolTest {
         testedCache.put(mockBitmap)
 
         // When
+        @Suppress("DEPRECATION")
         testedCache.onLowMemory()
 
         // Then
@@ -388,6 +389,7 @@ internal class BitmapPoolTest {
                 if (forge.aBool()) {
                     testedCache.get(bitmapKey)
                 } else {
+                    @Suppress("DEPRECATION")
                     testedCache.onLowMemory()
                 }
             }

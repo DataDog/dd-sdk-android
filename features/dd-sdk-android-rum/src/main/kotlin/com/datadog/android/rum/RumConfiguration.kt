@@ -29,6 +29,7 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
 import com.datadog.android.rum.startup.AppStartupActivityPredicate
+import com.datadog.android.rum.timeseries.TimeseriesConfiguration
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -39,6 +40,7 @@ import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 /**
  * Describes configuration to be used for the RUM feature.
  */
+@ExposedCopyVisibility
 data class RumConfiguration internal constructor(
     internal val applicationId: String,
     internal val featureConfiguration: RumFeature.Configuration
@@ -408,6 +410,22 @@ data class RumConfiguration internal constructor(
         @ExperimentalRumApi
         fun setAppStartupActivityPredicate(predicate: AppStartupActivityPredicate): Builder {
             rumConfig = rumConfig.copy(appStartupActivityPredicate = predicate)
+            return this
+        }
+
+        /**
+         * Enables device timeseries collection.
+         *
+         * By default, all supported timeseries types are collected. Use
+         * [TimeseriesConfiguration.Builder.collectOnly] to restrict collection to specific types.
+         *
+         * @param configuration configuration for timeseries collection.
+         */
+        @ExperimentalRumApi
+        internal fun setTimeseriesConfiguration(
+            configuration: TimeseriesConfiguration
+        ): Builder {
+            rumConfig = rumConfig.copy(timeseriesConfiguration = configuration)
             return this
         }
 

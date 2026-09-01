@@ -15,6 +15,7 @@ import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.EvaluationContextCallback
+import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
@@ -25,7 +26,7 @@ import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
-import com.datadog.android.internal.utils.DDCoreSubscription
+import com.datadog.android.internal.utils.DDCoreStateHolder
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -433,7 +434,10 @@ internal class EvaluationsManagerTest {
     fun `M have state READY when callback invoked W updateEvaluationsForContext() { success }`() {
         // Given
         val realStateManager = FlagsStateManager(
-            DDCoreSubscription.create()
+            DDCoreStateHolder.create(
+                initialState = FlagsClientState.NotReady,
+                onStateChanged = FlagsStateListener::onStateChanged
+            )
         )
 
         val evaluationsManagerWithRealState = EvaluationsManager(

@@ -542,6 +542,11 @@
               "type": "boolean",
               "description": "Whether session replay recording configured to start manually",
               "readOnly": true
+            },
+            "remote_configuration_id": {
+              "type": "string",
+              "description": "The id of the remote configuration applied to the SDK, if any",
+              "readOnly": true
             }
           }
         },

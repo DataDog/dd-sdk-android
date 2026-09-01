@@ -12,6 +12,8 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.TimeseriesCpuEvent
+import com.datadog.android.rum.model.TimeseriesMemoryEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
@@ -34,6 +36,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -317,6 +320,22 @@ internal class RumEventMapperTest {
         // THEN
         verifyNoInteractions(mockInternalLogger)
         assertThat(mappedRumEvent).isSameAs(telemetryErrorEvent)
+    }
+
+    @Test
+    fun `M return the original event W map() { timeseries events }`() {
+        // Given
+        val fakeEvents = listOf(
+            mock<TimeseriesCpuEvent>(),
+            mock<TimeseriesMemoryEvent>()
+        )
+
+        // When
+        val mappedEvents = fakeEvents.map(testedRumEventMapper::map)
+
+        // Then
+        verifyNoInteractions(mockInternalLogger)
+        assertThat(mappedEvents).containsExactlyElementsOf(fakeEvents)
     }
 
     @Test

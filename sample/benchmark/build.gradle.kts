@@ -24,7 +24,8 @@ plugins {
     alias(libs.plugins.datadogGradlePlugin)
 }
 
-@Suppress("StringLiteralDuplication")
+// TODO RUM-18189 Support new AGP DSL
+@Suppress("DEPRECATION", "StringLiteralDuplication")
 android {
     namespace = "com.datadog.sample.benchmark"
     compileSdk = AndroidConfig.TARGET_SDK
@@ -35,7 +36,6 @@ android {
         targetSdk = AndroidConfig.TARGET_SDK
         versionCode = AndroidConfig.VERSION.code
         versionName = AndroidConfig.VERSION.name
-        multiDexEnabled = true
 
         buildFeatures {
             buildConfig = true
@@ -93,7 +93,6 @@ dependencies {
 
     // Android dependencies
     implementation(libs.adapterDelegatesViewBinding)
-    implementation(libs.androidXMultidex)
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.androidXAppCompat)
     implementation(libs.androidXConstraintLayout)
