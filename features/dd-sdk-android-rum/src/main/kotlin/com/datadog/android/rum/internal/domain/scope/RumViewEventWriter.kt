@@ -90,24 +90,40 @@ internal class RumViewEventWriterImpl(
                     )
                     viewEvent
                 }
-                mappedViewEvent = mapped
+
+                // The ViewEventMapper contract requires the same instance to be returned;
+                // if a different reference comes back, ignore it and use the original event
+                // (matches the identity check historically enforced in
+                // RumEventMapper.resolveEvent() for the raw ViewEvent / crash-recovery path).
+                val safeMapped = if (mapped !== viewEvent) {
+                    sdkCore.internalLogger.log(
+                        level = InternalLogger.Level.ERROR,
+                        target = InternalLogger.Target.USER,
+                        messageBuilder = { VIEW_EVENT_MAPPER_NOT_SAME_INSTANCE_WARNING_MESSAGE }
+                    )
+                    viewEvent
+                } else {
+                    mapped
+                }
+
+                mappedViewEvent = safeMapped
                 val prev = prevViewEvent
 
                 when (config) {
-                    RumViewEventWriteConfig.AlwaysFullView -> MappedViewEvent(mapped)
+                    RumViewEventWriteConfig.AlwaysFullView -> MappedViewEvent(safeMapped)
                     RumViewEventWriteConfig.FullViewOnlyAtStart -> {
                         if (prev == null) {
-                            MappedViewEvent(mapped)
-                        } else if (shouldWriteFullView(mapped.dd.documentVersion, mapped.view.isActive)) {
+                            MappedViewEvent(safeMapped)
+                        } else if (shouldWriteFullView(safeMapped.dd.documentVersion, safeMapped.view.isActive)) {
                             // Send the last partial diff followed immediately by the full view checkpoint
                             DiffThenFullView(
-                                viewUpdate = diffViewEvent(prev, mapped),
-                                viewEvent = mapped
+                                viewUpdate = diffViewEvent(prev, safeMapped),
+                                viewEvent = safeMapped
                             )
                         } else {
                             RumViewUpdateData(
-                                viewUpdate = diffViewEvent(prev, mapped),
-                                viewEvent = mapped
+                                viewUpdate = diffViewEvent(prev, safeMapped),
+                                viewEvent = safeMapped
                             )
                         }
                     }
@@ -129,6 +145,9 @@ internal class RumViewEventWriterImpl(
     companion object {
         internal const val VIEW_EVENT_MAPPER_FALLBACK_WARNING_MESSAGE =
             "ViewEventMapper failed, using original ViewEvent."
+        internal const val VIEW_EVENT_MAPPER_NOT_SAME_INSTANCE_WARNING_MESSAGE =
+            "ViewEventMapper returned a different ViewEvent instance than the one passed in; " +
+                "the original ViewEvent will be used instead."
         internal const val FULL_VIEW_EVERY_N_UPDATES = 4L
     }
 }

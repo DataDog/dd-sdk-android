@@ -33,10 +33,12 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -315,6 +317,45 @@ internal class RumViewEventWriterTest {
         // Then
         assertThat(writtenEvents).hasSize(1)
         assertThat(writtenEvents[0]).isEqualTo(MappedViewEvent(fakeViewEvent))
+    }
+
+    @Test
+    fun `M fallback to original view event W mapper returns different instance`(
+        @Forgery fakeViewEvent: ViewEvent
+    ) {
+        // Given
+        val differentInstance = fakeViewEvent.copy() // same field values, different reference
+        whenever(mockViewEventMapper.map(fakeViewEvent)) doReturn differentInstance
+        val writtenEvents = mutableListOf<Any>()
+        whenever(mockDataWriter.write(eq(mockEventBatchWriter), any(), eq(fakeEventType))) doAnswer {
+            writtenEvents += it.getArgument<Any>(1)
+            true
+        }
+
+        // When
+        testedWriter.writeViewEvent(
+            viewEvent = fakeViewEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockDataWriter,
+            eventType = fakeEventType
+        )
+
+        // Then
+        assertThat(writtenEvents).hasSize(1)
+        assertThat(writtenEvents[0]).isEqualTo(MappedViewEvent(fakeViewEvent))
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                level = eq(InternalLogger.Level.ERROR),
+                target = eq(InternalLogger.Target.USER),
+                messageBuilder = capture(),
+                throwable = eq(null),
+                onlyOnce = eq(false),
+                additionalProperties = eq(null)
+            )
+            assertThat(firstValue())
+                .isEqualTo(RumViewEventWriterImpl.VIEW_EVENT_MAPPER_NOT_SAME_INSTANCE_WARNING_MESSAGE)
+        }
     }
 
     @Test
