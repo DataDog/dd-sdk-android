@@ -19,6 +19,7 @@ variables:
   ANDROID_SDK_VERSION: "commandlinetools-mac-13114758_latest"
 
   CACHE_FALLBACK_KEY: "develop"
+  SLACK_OPS_CHANNEL: "#dd-sdk-android-ops"
 
   # Magic Mirror Depot proxy URLs. The depot proxies both Maven Central and the Gradle
   # Plugin Portal for the Java ecosystem from the same endpoint. Setting these routes
