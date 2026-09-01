@@ -23,6 +23,7 @@ import com.datadog.android.internal.data.SharedPreferencesStorage
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingAnomalyDetectedEvent
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
+import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.rum.RumSessionConstants
 import com.datadog.android.internal.sampling.SessionSamplingIdProvider
 import com.datadog.android.internal.system.BuildSdkVersionProvider
@@ -68,6 +69,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doAnswer
@@ -203,6 +205,7 @@ internal class ProfilingFeatureTest {
         ) doReturn mockPackageInfo
         whenever(mockSdkCore.name) doReturn fakeInstanceName
         whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mockProfilingExecutor
+        whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn mockSchedulerExecutor
         whenever(mockProfiler.timeProvider) doReturn mockMutableTimeProvider
         whenever(mockSdkCore.createOkHttpCallFactory(any())) doReturn mockCallFactory
         whenever(mockProfiler.scheduledExecutorService) doReturn mockSchedulerExecutor
@@ -1477,6 +1480,29 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
+    fun `M not add capture to pendingTriggerProfiles W onAnrDetected {ANR stays synchronous}`() {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+
+        // When — ANR forwards a thread dump to RUM synchronously; it must NOT enter the
+        // pending-trigger-profiles buffer (reserved future slot, unused today).
+        val anrEvent = ProfilingAnrDetectedEvent(
+            detectedAtMs = 1_000L,
+            anrThreadStack = Thread.currentThread().stackTrace.toList(),
+            anrThreadName = "main",
+            anrThreadState = Thread.State.RUNNABLE,
+            allThreads = emptyList()
+        )
+        testedFeature.onAnrDetected(anrEvent)
+
+        // Then — no capture was added, so a later sweep has nothing to discard.
+        testedFeature.sweepPendingHeapHistograms()
+        verify(mockDataWriter, never()).discard(any())
+        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any())
+    }
+
+    @Test
     fun `M not stop Profiling W receive illegal event`(@StringForgery fakeIllegalValue: String) {
         // When
         testedFeature.onReceive(fakeIllegalValue)
@@ -1726,6 +1752,137 @@ internal class ProfilingFeatureTest {
     // dispatchRumSession defaults the session state to TRACKED, so any UUID dispatched
     // through it is treated as a sampled-in RUM session.
     private fun sampledInSessionId(): String = UUID.randomUUID().toString()
+
+    @Test
+    fun `M write heap histogram W onMemoryAnomalyDetected then RumAnomalyErrorEvent {matched pair}`() {
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+
+        val captureMs = 1_000L
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(captureMs)
+        val path = "/tmp/anomaly.proto"
+        testedFeature.onMemoryAnomalyDetected(
+            PerfettoResult(
+                start = captureMs,
+                startReason = ProfilingStartReason.MEMORY_ANOMALY,
+                end = captureMs,
+                resultFilePath = path
+            )
+        )
+
+        // anomaly event forwarded to RUM (no gating signal pending yet)
+        verify(mockRumFeatureScope).sendEvent(ProfilingAnomalyDetectedEvent(captureMs))
+
+        // RUM writes the error and sends back the gating signal
+        val gatingMs = captureMs + 200L
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(gatingMs)
+        val gating = ProfilerEvent.RumAnomalyErrorEvent(
+            id = "err-anomaly",
+            timestamp = gatingMs,
+            rumContext = ProfilingRumContext("app", "sess", "view-1", "View-1")
+        )
+        testedFeature.onReceive(gating)
+
+        verify(mockDataWriter).writeTriggerProfile(
+            argThat<PerfettoResult> {
+                start == captureMs &&
+                    end == captureMs &&
+                    startReason == ProfilingStartReason.MEMORY_ANOMALY &&
+                    resultFilePath == path
+            },
+            eq("err-anomaly"),
+            any()
+        )
+    }
+
+    @Test
+    fun `M write heap histogram W RumOomErrorEvent then onOutOfMemoryDetected {matched pair}`() {
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+
+        val signalMs = 2_000L
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(signalMs)
+        val gating = ProfilerEvent.RumOomErrorEvent(
+            id = "err-oom",
+            timestamp = signalMs,
+            rumContext = ProfilingRumContext("app", "sess", "view-1", "View-1")
+        )
+        testedFeature.onReceive(gating) // signal first
+
+        val captureMs = signalMs + 100L
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(captureMs)
+        val path = "/tmp/oom.proto"
+        testedFeature.onOutOfMemoryDetected(
+            PerfettoResult(
+                start = captureMs,
+                startReason = ProfilingStartReason.OUT_OF_MEMORY,
+                end = captureMs,
+                resultFilePath = path
+            )
+        ) // capture second
+
+        verify(mockDataWriter).writeTriggerProfile(
+            argThat<PerfettoResult> {
+                start == captureMs &&
+                    end == captureMs &&
+                    startReason == ProfilingStartReason.OUT_OF_MEMORY &&
+                    resultFilePath == path
+            },
+            eq("err-oom"),
+            any()
+        )
+    }
+
+    @Test
+    fun `M discard histogram W sweepPendingHeapHistograms {capture expired, no signal}`() {
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+
+        val captureMs = 1_000L
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(captureMs)
+        val path = "/tmp/oom.proto"
+        testedFeature.onOutOfMemoryDetected(
+            PerfettoResult(
+                start = captureMs,
+                startReason = ProfilingStartReason.OUT_OF_MEMORY,
+                end = captureMs,
+                resultFilePath = path
+            )
+        )
+
+        // advance time past the pending-histogram timeout and trigger the sweep
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(captureMs + 10_000L)
+        testedFeature.sweepPendingHeapHistograms()
+
+        verify(mockDataWriter).discard(argThat<PerfettoResult> { resultFilePath == path })
+        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any())
+    }
+
+    @Test
+    fun `M discard pending histograms W onStop {capture pending}`() {
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+
+        val captureMs = 1_000L
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(captureMs)
+        val path = "/tmp/oom.proto"
+        testedFeature.onOutOfMemoryDetected(
+            PerfettoResult(
+                start = captureMs,
+                startReason = ProfilingStartReason.OUT_OF_MEMORY,
+                end = captureMs,
+                resultFilePath = path
+            )
+        )
+
+        testedFeature.onStop()
+
+        verify(mockDataWriter).discard(argThat<PerfettoResult> { resultFilePath == path })
+    }
 
     companion object {
         private val mainLooper = MainLooperTestConfiguration()

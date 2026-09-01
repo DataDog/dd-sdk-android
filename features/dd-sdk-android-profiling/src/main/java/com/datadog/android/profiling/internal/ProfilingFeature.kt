@@ -32,8 +32,10 @@ import com.datadog.android.profiling.internal.quota.NoOpQuotaChecker
 import com.datadog.android.profiling.internal.quota.ProfilingQuotaChecker
 import com.datadog.android.profiling.internal.quota.QuotaChecker
 import com.datadog.android.profiling.internal.quota.QuotaResult
+import com.datadog.android.profiling.internal.trigger.PendingTriggerProfiles
 import java.util.Locale
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -51,6 +53,9 @@ internal class ProfilingFeature(
     internal var dataWriter: ProfilingWriter = NoOpProfilingWriter()
 
     internal val pendingRumEvents = PendingRumEventsBuffer()
+
+    @Volatile
+    internal var pendingTriggerProfiles: PendingTriggerProfiles = createPendingTriggerProfiles(executor = null)
 
     @Volatile
     private var isLaunchProfilingActive: Boolean = false
@@ -106,7 +111,7 @@ internal class ProfilingFeature(
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
             context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning()
         }
-        dataWriter = createDataWriter(sdkCore)
+        dataWriter = ProfilingDataWriter(sdkCore)
 
         val quotaCallFactory = sdkCore.createOkHttpCallFactory {
             callTimeout(QUOTA_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
@@ -131,6 +136,10 @@ internal class ProfilingFeature(
             start(launchProfilingActive = profiler.isRunning())
         }
         continuousProfilingScheduler = scheduler
+
+        pendingTriggerProfiles = createPendingTriggerProfiles(
+            executor = profiler.scheduledExecutorService
+        )
 
         sdkCore.setContextUpdateReceiver(this)
 
@@ -158,6 +167,8 @@ internal class ProfilingFeature(
         quotaChecker = NoOpQuotaChecker()
         quotaExecutor?.shutdownNow()
         quotaExecutor = null
+        pendingTriggerProfiles.stop()
+        pendingTriggerProfiles = createPendingTriggerProfiles(executor = null)
         lastQuotaResult = null
         lastSeenRumSessionId = null
         pendingRumEvents.clear()
@@ -187,6 +198,15 @@ internal class ProfilingFeature(
                 if (isRecordingProfile()) {
                     pendingRumEvents.add(event)
                 }
+            }
+
+            is ProfilerEvent.RumOomErrorEvent -> {
+                // TODO RUM-18334: Persist OOM signal to survive from process kill
+                pendingTriggerProfiles.addGatingSignal(event)
+            }
+
+            is ProfilerEvent.RumAnomalyErrorEvent -> {
+                pendingTriggerProfiles.addGatingSignal(event)
             }
 
             else -> sdkCore.internalLogger.log(
@@ -230,19 +250,20 @@ internal class ProfilingFeature(
         if (isLaunchProfilingActive || continuousProfilingScheduler?.isActive == true) {
             sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.sendEvent(event)
         }
-        // TODO RUM-18154: Wire resultFilePath with ProfilingDataWriter
     }
 
     override fun onOutOfMemoryDetected(result: PerfettoResult) {
         // RUM already generates its own OOM error event, so the profiling feature
-        // does not forward a separate OOM event.
-        // TODO RUM-18154: Wire resultFilePath with ProfilingDataWriter
+        // does not forward a separate OOM event. The gating signal (RumOomErrorEvent)
+        // will arrive from RUM and complete the pair.
+        pendingTriggerProfiles.addCapture(result)
     }
 
     override fun onMemoryAnomalyDetected(result: PerfettoResult) {
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.sendEvent(
             ProfilingAnomalyDetectedEvent(result.start)
         )
+        pendingTriggerProfiles.addCapture(result)
     }
 
     private fun onTtidEvent() {
@@ -376,9 +397,39 @@ internal class ProfilingFeature(
         )
     }
 
-    private fun createDataWriter(sdkCore: FeatureSdkCore): ProfilingDataWriter {
-        return ProfilingDataWriter(sdkCore)
+    /**
+     * Testable seam driving one expiry sweep. Delegates to
+     * [PendingTriggerProfiles.sweepAndDiscard].
+     */
+    internal fun sweepPendingHeapHistograms() {
+        pendingTriggerProfiles.sweepAndDiscard()
     }
+
+    /**
+     * Builds a [PendingTriggerProfiles] wired to dispatch matched pairs to [dataWriter].
+     * [executor] is null before [onInitialize] runs and after [onStop] — the sweep simply
+     * never runs in that case.
+     */
+    private fun createPendingTriggerProfiles(
+        executor: ScheduledExecutorService?
+    ): PendingTriggerProfiles = PendingTriggerProfiles(
+        executor = executor,
+        timeProvider = sdkCore.timeProvider,
+        onMatch = { capture: PerfettoResult, signal: ProfilerEvent ->
+            when (signal) {
+                is ProfilerEvent.RumOomErrorEvent ->
+                    dataWriter.writeTriggerProfile(capture, signal.id, signal.rumContext)
+
+                is ProfilerEvent.RumAnomalyErrorEvent ->
+                    dataWriter.writeTriggerProfile(capture, signal.id, signal.rumContext)
+
+                else -> {
+                    /* unreachable: addGatingSignal filters non-OOM/Anomaly */
+                }
+            }
+        },
+        onExpired = { dataWriter.discard(it) }
+    )
 
     internal fun propagateQuotaResult(result: QuotaResult) {
         this.lastQuotaResult = result
