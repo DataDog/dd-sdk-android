@@ -75,7 +75,7 @@ internal class RumSessionScope(
     internal val sessionSampleRate: Float = sessionSampler.getSampleRate() ?: RumContext.SAMPLE_ALL_RATE
     private var startReason: StartReason = StartReason.USER_APP_LAUNCH
     internal var isActive: Boolean = true
-    private val sessionStartNs = AtomicLong(sdkCore.timeProvider.getDeviceElapsedTimeNanos())
+    private val sessionStartNs = AtomicLong(sdkCore.timeProvider.getDeviceElapsedRealtimeNanos())
 
     private val lastUserInteractionNs = AtomicLong(0L)
 
@@ -263,7 +263,7 @@ internal class RumSessionScope(
 
     @Suppress("ComplexMethod")
     private fun updateSession(event: RumRawEvent) {
-        val nanoTime = sdkCore.timeProvider.getDeviceElapsedTimeNanos()
+        val nanoTime = sdkCore.timeProvider.getDeviceElapsedRealtimeNanos()
         val isNewSession = sessionId == RumContext.NULL_UUID
 
         val timeSinceLastInteractionNs = nanoTime - lastUserInteractionNs.get()
@@ -318,7 +318,7 @@ internal class RumSessionScope(
         startReason = reason
         sessionState = if (keepSession) State.TRACKED else State.NOT_TRACKED
         sessionId = newSessionId
-        sessionStartNs.set(time.nanoTime)
+        sessionStartNs.set(sdkCore.timeProvider.getDeviceElapsedRealtimeNanos())
         rumSessionScopeStartupManager = rumSessionScopeStartupManagerFactory()
         childScope?.renewViewScopes(time)
         if (keepSession) {

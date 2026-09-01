@@ -184,6 +184,7 @@ class StubSDKCore(
         override fun getServerOffsetNanos(): Long = 0L
         override fun getServerOffsetMillis(): Long = 0L
         override fun getDeviceElapsedRealtimeMillis(): Long = SystemClock.elapsedRealtime()
+        override fun getDeviceElapsedRealtimeNanos(): Long = SystemClock.elapsedRealtimeNanos()
         override fun getDeviceUptimeMillis(): Long = SystemClock.uptimeMillis()
     }
 
