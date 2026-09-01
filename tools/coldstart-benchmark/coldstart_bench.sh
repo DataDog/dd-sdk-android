@@ -791,7 +791,11 @@ measure() {
     # collection window has already elapsed, so it cannot perturb the timing.
     local dd_thr=NA _pids
     _pids=$(dd_pkg_pids "$PKG")
-    [ -z "$_pids" ] || dd_thr=$(dd_datadog_threads "$_pids")
+    if [ -n "$_pids" ]; then
+      if ! dd_thr=$(dd_datadog_threads "$_pids"); then
+        dd_thr=NA
+      fi
+    fi
     # Host-app metric, if one was requested. Absent is not fatal: it lands as NA and
     # ab_stats.py counts it in the missing-value warning rather than silently dropping it.
     local app_tr=""
@@ -841,8 +845,10 @@ measure() {
       elif [ "$fg" != ok ] && [ "$fg" != NA ]; then
         reject="ended with '$fg' in the foreground, not $PKG (dialog/crash/ANR?)"
       elif [ "${dd_thr:-NA}" = NA ]; then
-        reject="the package owned no process at the end of the collection window, so SDK
-       liveness could not be rechecked on the MEASURED process (crash during startup?)."
+        reject="SDK liveness could not be verified on every package process at the end
+       of the collection window. The app may have crashed, a process may have exited
+       during enumeration, /proc may be unreadable, or adb may have failed. Unknown
+       liveness is never accepted as proof that Datadog is absent."
       elif [ "${expect_dd:-}" = 1 ] && [ "${dd_thr:-0}" -eq 0 ]; then
         reject="no datadog-* thread in the measured process. probe_datadog proved the SDK
        live once, before this cell's warm-ups; this launch did not initialize it. Init

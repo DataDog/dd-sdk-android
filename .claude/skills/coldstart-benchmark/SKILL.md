@@ -294,7 +294,9 @@ other way is neither.
   all of the package's processes, and a contradiction with the arm aborts the run. The per-cell
   probe cannot cover it: initialization that is first-launch-only, consent-gated or
   remote-config-gated passes the probe and then never happens again, and the app's own log
-  marker is absent in most apps, so that gate passes vacuously.
+  marker is absent in most apps, so that gate passes vacuously. Zero means every discovered PID
+  returned a readable thread list with no match; a failed or empty read from any PID is unknown
+  and rejects both arms rather than proving SDK absence.
 - The liveness probe is itself a conditioning launch. Give it a post-settle logcat boundary,
   target/foreign-display scan and final-foreground check before its thread result can count.
 - A launch whose logcat buffer holds no `ActivityTaskManager: Displayed <pkg>/` line is
@@ -308,7 +310,10 @@ other way is neither.
 - Apply that contract to every `capture_trace.sh` conditioning launch too: each gets its own
   verified boundary, target marker, foreign-display scan and final-foreground check before its
   SDK-liveness result can count. Abort rather than replacing a contaminated launch, because the
-  requested `WARMUP + 1` position is part of the trace protocol.
+  requested `WARMUP + 1` position is part of the trace protocol. Discard 1 uses the benchmark
+  probe's 3-second pre-launch/8-second validation cadence; later discards use its warm-up cadence
+  (5 seconds before launch, validation after 6, then the final 4-second wait). Matching launch
+  count without matching elapsed conditioning time does not reproduce the same ramp.
 - The order-effect test **refuses to report** when arm and position are confounded. With a
   single block, arm A is always first, so any "order effect" *is* the treatment effect —
   previously this reported a genuine +30 ms regression as an ordering artifact. It is also
@@ -331,6 +336,9 @@ other way is neither.
   `results.csv` and `./results.csv`, a symlink/hard link, or an archived copy is not another run;
   counting it twice would narrow the interval without adding evidence. This catches accidental
   duplicate input, not deliberate tampering with operator-owned files or code.
+- **Every selected arm/block must contain each declared run ID exactly once.** A cell with two
+  `run=1` rows and no `run=2` has the expected row count but ambiguous evidence; it is an
+  incomplete matrix, not a reportable experiment. Unselected labels cannot satisfy this gate.
 - **Pooling CSVs whose `baseline_md5` / `treatment_md5` disagree is refused** as well. Two runs
   from successive APK pairs on the same device agree on every other metadata field, so without
   the digests they pool silently.

@@ -305,7 +305,9 @@ Enumerate the processes rather than calling `pidof <your.app.id>`: `pidof` match
 process name, so on an app that initializes the SDK in a private process (`<your.app.id>:startup`
 is a common one for a startup-work provider) it reports the default process and you conclude the
 SDK is dead in a build where it is live. `adb shell` output carries `\r` on many devices, hence
-the `tr`.
+the `tr`. Absence is proven only when every discovered PID returns a readable, non-empty thread
+list. If one process exits during enumeration, `/proc` is denied or adb fails, liveness is unknown;
+the harness rejects that launch rather than converting the failed read to zero.
 
 Expected on a working build:
 
@@ -677,7 +679,8 @@ every process the package owns, not only once per cell. A probe launch cannot an
 for the launches that follow it: initialization that is first-launch-only, consent-gated or
 remote-config-gated passes the probe and then never happens again, and every such launch measures
 an SDK-absent start as treatment. The app's own log marker is not a substitute, because most apps
-never emit one and that gate passes vacuously.
+never emit one and that gate passes vacuously. A zero count is accepted only after every package
+process was readable; partial enumeration aborts for both arms.
 
 **Give heavy features their own arm.** Run a third arm with Session Replay disabled, so you
 can attribute cost to the feature that carries it and make an informed trade rather than a
@@ -1018,10 +1021,14 @@ reserved before the script changes device state, so an existing or concurrently 
 launches before the traced one, reproducing the benchmark's liveness probe plus its warm-ups, so
 the traced launch sits at the same position in the post-install JIT/profile ramp as a measured
 one. That matters most under the default fresh-install `speed-profile`, where the profile is
-empty at install and each launch adds to it. Every discarded launch gets a fresh post-settle
-logcat boundary and must draw the target without a foreign activity drawing, end with the target
-in the foreground, and satisfy the arm's SDK-liveness expectation. A contaminated conditioning
-launch aborts the capture instead of silently preparing a different ramp.
+empty at install and each launch adds to it. The first discard uses the probe's 3-second
+pre-launch/8-second validation cadence; later discards use each warm-up's 5-second pre-launch,
+6-second validation and final 4-second wait. Matching only the launch count is insufficient while
+asynchronous migrations, profile persistence and deferred work continue between launches. Every
+discard gets a fresh post-settle logcat boundary and must draw the target without a foreign
+activity drawing, end with the target in the foreground, and satisfy the arm's SDK-liveness
+expectation. A contaminated or unreadable conditioning launch aborts the capture instead of
+silently preparing a different ramp.
 
 `verify_trace.py` exits `0` if the SDK is demonstrably active (or correctly absent), `1` if it
 is not detected, and `3` if the trace is unusable: no `bindApplication` slice, meaning the

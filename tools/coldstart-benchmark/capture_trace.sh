@@ -322,7 +322,24 @@ log "settling: $SETTLE_LAUNCHES discarded launches (WARMUP=$WARMUP + 1 liveness 
 log "          so the traced launch is the $((SETTLE_LAUNCHES + 1))th after install -- the same"
 log "          position as the benchmark's first measured launch"
 for ((_i=1; _i<=SETTLE_LAUNCHES; _i++)); do
-  "$ADB" shell am force-stop --user "$DD_ANDROID_USER" "$PKG"; sleep 3
+  # Discard 1 is coldstart_bench.sh's liveness probe. The rest are its warm-ups.
+  # Reproduce both cadences, not just the ordinal launch: async migrations,
+  # profile persistence, deferred SDK work and cache cooling all continue between
+  # launches. The warm-up check happens after 6s and its final 4s wait happens only
+  # after the evidence below is sampled, exactly as measure(..., phase=warmup) does.
+  if [ "$_i" -eq 1 ]; then
+    _SETTLE_KIND="liveness probe"
+    _SETTLE_PRE_SLEEP=3
+    _SETTLE_CHECK_SLEEP=8
+    _SETTLE_FINAL_SLEEP=0
+  else
+    _SETTLE_KIND="warm-up"
+    _SETTLE_PRE_SLEEP=5
+    _SETTLE_CHECK_SLEEP=6
+    _SETTLE_FINAL_SLEEP=4
+  fi
+  "$ADB" shell am force-stop --user "$DD_ANDROID_USER" "$PKG"
+  sleep "$_SETTLE_PRE_SLEEP"
   "$ADB" shell logcat -c >/dev/null 2>&1 || true
   _SETTLE_POST_CLEAR=$("$ADB" shell logcat -d 2>/dev/null | tr -d '\r') || true
   _SETTLE_STALE=$(printf '%s\n' "$_SETTLE_POST_CLEAR" \
@@ -341,8 +358,8 @@ for ((_i=1; _i<=SETTLE_LAUNCHES; _i++)); do
     || die "settle launch $_i/$SETTLE_LAUNCHES: am start -W failed"
   dd_validate_cold_launch_output "$_SETTLE_OUT" \
     || die "settle launch $_i/$SETTLE_LAUNCHES: $DD_LAUNCH_ERROR"
-  log "settle launch $_i/$SETTLE_LAUNCHES: Status=$DD_LAUNCH_STATUS LaunchState=$DD_LAUNCH_STATE TotalTime=${DD_LAUNCH_TOTAL}ms"
-  sleep 8
+  log "settle launch $_i/$SETTLE_LAUNCHES ($_SETTLE_KIND cadence): Status=$DD_LAUNCH_STATUS LaunchState=$DD_LAUNCH_STATE TotalTime=${DD_LAUNCH_TOTAL}ms"
+  sleep "$_SETTLE_CHECK_SLEEP"
   _SETTLE_LOG=$("$ADB" shell logcat -d 2>/dev/null | tr -d '\r') || true
   _SETTLE_TARGET_DISPLAYED=$(printf '%s\n' "$_SETTLE_LOG" \
     | grep -cE "ActivityTaskManager: Displayed $PKG_RE/" || true)
@@ -360,13 +377,19 @@ for ((_i=1; _i<=SETTLE_LAUNCHES; _i++)); do
   _SETTLE_PIDS=$(dd_pkg_pids "$PKG")
   [ -n "$_SETTLE_PIDS" ] \
     || die "settle launch $_i/$SETTLE_LAUNCHES: app owns no running process"
-  _SETTLE_DD=$(dd_datadog_threads "$_SETTLE_PIDS")
+  if ! _SETTLE_DD=$(dd_datadog_threads "$_SETTLE_PIDS"); then
+    die "settle launch $_i/$SETTLE_LAUNCHES: could not read every package process's
+         thread list, so SDK liveness is unverified"
+  fi
   log "settle launch $_i/$SETTLE_LAUNCHES: processes=$(printf '%s' "$_SETTLE_PIDS" | tr '\n' ' ') datadog-*=$_SETTLE_DD"
   if [ "$EXPECT_DD" = 1 ] && [ "$_SETTLE_DD" -eq 0 ]; then
     die "settle launch $_i/$SETTLE_LAUNCHES: expected Datadog ACTIVE, found none"
   fi
   if [ "$EXPECT_DD" = 0 ] && [ "$_SETTLE_DD" -ne 0 ]; then
     die "settle launch $_i/$SETTLE_LAUNCHES: expected Datadog ABSENT, found $_SETTLE_DD datadog-* threads"
+  fi
+  if [ "$_SETTLE_FINAL_SLEEP" -gt 0 ]; then
+    sleep "$_SETTLE_FINAL_SLEEP"
   fi
 done
 

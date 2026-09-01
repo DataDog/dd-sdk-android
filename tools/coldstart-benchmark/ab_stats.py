@@ -639,23 +639,48 @@ def main():
             want_blocks, want_runs = int(kv["blocks"]), int(kv["runs"])
         except (KeyError, ValueError):
             continue                      # pre-metadata CSV; nothing to check against
-        cells = defaultdict(int)
+        cell_runs = defaultdict(list)
         for r in csv.DictReader(body):
             if r.get("phase") in ("measure", "measure_rejected"):
                 block = r.get("block") or "<missing>"
-                cells[(r.get("label"), block)] += 1
+                run = r.get("run") or "<missing>"
+                cell_runs[(r.get("label"), block)].append(run)
         name = path if len(per_file) > 1 else "this CSV"
         expected_blocks = {str(block) for block in range(1, want_blocks + 1)}
+        expected_runs = Counter(str(run) for run in range(1, want_runs + 1))
         short = []
         for label in (a.baseline, a.treatment):
             for block in range(1, want_blocks + 1):
-                count = cells.get((label, str(block)), 0)
+                runs = cell_runs.get((label, str(block)), [])
+                count = len(runs)
                 if count != want_runs:
                     short.append(
                         f"{label} block {block}: {count}/{want_runs} launches"
                     )
+                elif Counter(runs) != expected_runs:
+                    observed = Counter(runs)
+                    # Both lists walk `expected_runs`, which is already in declared
+                    # order, so they read 1,2,...,10 rather than the lexicographic
+                    # 1,10,2 that sorting the observed string keys would give.
+                    missing = [run for run in expected_runs if observed[run] == 0]
+                    duplicate = [f"{run}x{observed[run]}" for run in expected_runs
+                                 if observed[run] > 1]
+                    # Named apart from the per-label `unexpected` blocks below: the two
+                    # count different things and shared one name in the same scope.
+                    unexpected_runs = sorted(r for r in observed if r not in expected_runs)
+                    detail = []
+                    if missing:
+                        detail.append(f"missing {','.join(missing)}")
+                    if duplicate:
+                        detail.append(f"duplicate {','.join(duplicate)}")
+                    if unexpected_runs:
+                        detail.append(f"unexpected {','.join(unexpected_runs)}")
+                    short.append(
+                        f"{label} block {block}: invalid run IDs ({'; '.join(detail)}); "
+                        f"expected 1..{want_runs} exactly once"
+                    )
             unexpected = sorted(
-                block for label_in_file, block in cells
+                block for label_in_file, block in cell_runs
                 if label_in_file == label and block not in expected_blocks
             )
             if unexpected:

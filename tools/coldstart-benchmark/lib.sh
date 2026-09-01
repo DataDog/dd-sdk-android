@@ -420,13 +420,34 @@ dd_pkg_pids() {
 # immediately), so this is the harness's liveness oracle. Reading
 # /proc/<pid>/task/*/comm is the cheapest reliable probe.
 dd_datadog_threads() {
-  local pid names all=""
-  for pid in $1; do
-    names=$("$ADB" shell "cat /proc/$pid/task/*/comm 2>/dev/null" | tr -d '\r') || true
+  local pids="$1" pid names all="" count
+  if [ -z "$pids" ]; then
+    echo "ERROR: cannot verify SDK liveness: no package process IDs were provided." >&2
+    return 1
+  fi
+  for pid in $pids; do
+    case "$pid" in
+      ''|*[!0-9]*)
+        echo "ERROR: cannot verify SDK liveness: invalid package PID '$pid'." >&2
+        return 1 ;;
+    esac
+    # No pipeline around adb: this helper must preserve its failure even when a
+    # caller does not happen to enable pipefail. A PID that exits between process
+    # discovery and this read is unknown liveness, not a successful count of zero.
+    if ! names=$("$ADB" shell "cat /proc/$pid/task/*/comm 2>/dev/null"); then
+      echo "ERROR: cannot verify SDK liveness: thread enumeration failed for PID $pid." >&2
+      return 1
+    fi
+    names=$(printf '%s' "$names" | tr -d '\r')
+    if [ -z "$names" ]; then
+      echo "ERROR: cannot verify SDK liveness: PID $pid returned no thread names." >&2
+      return 1
+    fi
     all="$all$names
 "
   done
-  printf '%s' "$all" | grep -c '^datadog-' || true
+  count=$(printf '%s' "$all" | grep -c '^datadog-' || true)
+  printf '%s\n' "$count"
 }
 
 # Grant every runtime permission declared by an installed package.

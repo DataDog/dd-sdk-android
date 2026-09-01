@@ -1206,6 +1206,100 @@ class HarnessRegressionTests(unittest.TestCase):
         self.assertLess(probe_liveness, probe_end)
         self.assertLess(abort, probe_end)
 
+    def test_trace_settle_reproduces_probe_and_warmup_cadences(self) -> None:
+        capture = (HARNESS / "capture_trace.sh").read_text(encoding="utf-8")
+        loop = capture.index("for ((_i=1; _i<=SETTLE_LAUNCHES; _i++)); do")
+        loop_end = capture.index("\ndone", loop)
+        body = capture[loop:loop_end]
+
+        for assignment in (
+            '_SETTLE_KIND="liveness probe"',
+            "_SETTLE_PRE_SLEEP=3",
+            "_SETTLE_CHECK_SLEEP=8",
+            "_SETTLE_FINAL_SLEEP=0",
+            '_SETTLE_KIND="warm-up"',
+            "_SETTLE_PRE_SLEEP=5",
+            "_SETTLE_CHECK_SLEEP=6",
+            "_SETTLE_FINAL_SLEEP=4",
+        ):
+            self.assertIn(assignment, body)
+
+        force_stop = body.index("shell am force-stop")
+        pre_sleep = body.index('sleep "$_SETTLE_PRE_SLEEP"', force_stop)
+        launch = body.index('shell am start -W "${START_ARGS[@]}"', pre_sleep)
+        check_sleep = body.index('sleep "$_SETTLE_CHECK_SLEEP"', launch)
+        liveness = body.index('dd_datadog_threads "$_SETTLE_PIDS"', check_sleep)
+        final_sleep = body.index('sleep "$_SETTLE_FINAL_SLEEP"', liveness)
+        self.assertLess(force_stop, pre_sleep)
+        self.assertLess(pre_sleep, launch)
+        self.assertLess(launch, check_sleep)
+        self.assertLess(check_sleep, liveness)
+        self.assertLess(liveness, final_sleep)
+
+        benchmark = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
+        probe = benchmark[benchmark.index("probe_datadog() {"):
+                          benchmark.index("\n}", benchmark.index("probe_datadog() {"))]
+        measure = benchmark[benchmark.index("measure() {"):
+                            benchmark.index("\n}", benchmark.index("measure() {"))]
+        self.assertIn("sleep 3", probe)
+        self.assertIn("sleep 8", probe)
+        self.assertIn("sleep 5", measure)
+        self.assertIn("sleep 6", measure)
+        self.assertIn("sleep 4", measure)
+
+    def test_thread_liveness_fails_closed_on_unreadable_processes(self) -> None:
+        success = self.run_with_fake_adb(
+            """
+            set -euo pipefail
+            . "$LIB"
+            dd_datadog_threads "123 456"
+            """,
+            """
+            #!/usr/bin/env bash
+            case "$2" in
+              "cat /proc/123/task/*/comm 2>/dev/null") printf 'main\nRenderThread\n' ;;
+              "cat /proc/456/task/*/comm 2>/dev/null") printf 'datadog-storage\ndatadog-worker\n' ;;
+              *) exit 90 ;;
+            esac
+            """,
+        )
+        self.assertEqual(success.returncode, 0, success.stderr)
+        self.assertEqual(success.stdout.strip(), "2")
+
+        partial = self.run_with_fake_adb(
+            """
+            set -euo pipefail
+            . "$LIB"
+            dd_datadog_threads "123 456"
+            """,
+            """
+            #!/usr/bin/env bash
+            case "$2" in
+              "cat /proc/123/task/*/comm 2>/dev/null") printf 'main\n' ;;
+              "cat /proc/456/task/*/comm 2>/dev/null") exit 17 ;;
+              *) exit 90 ;;
+            esac
+            """,
+        )
+        self.assertNotEqual(partial.returncode, 0)
+        self.assertIn("thread enumeration failed for PID 456", partial.stderr)
+
+        empty = self.run_with_fake_adb(
+            '. "$LIB"; dd_datadog_threads "123"',
+            """
+            #!/usr/bin/env bash
+            exit 0
+            """,
+        )
+        self.assertNotEqual(empty.returncode, 0)
+        self.assertIn("PID 123 returned no thread names", empty.stderr)
+
+        benchmark = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
+        capture = (HARNESS / "capture_trace.sh").read_text(encoding="utf-8")
+        self.assertIn('if ! dd_thr=$(dd_datadog_threads "$_pids"); then', benchmark)
+        self.assertIn('if ! _SETTLE_DD=$(dd_datadog_threads "$_SETTLE_PIDS"); then', capture)
+        self.assertIn("Unknown\n       liveness is never accepted", benchmark)
+
 
 class AbStatsRegressionTests(unittest.TestCase):
     COMPATIBLE_META = (
@@ -1371,6 +1465,24 @@ class AbStatsRegressionTests(unittest.TestCase):
         self.assertIn("A_noDD block 5: 0/1 launches", result.stdout)
         self.assertIn("B_withDD block 6: 0/1 launches", result.stdout)
         self.assertIn("refusing to analyze a truncated run", result.stderr)
+
+    def test_duplicate_run_id_cannot_satisfy_the_declared_matrix(self) -> None:
+        csv_body = self.benchmark_csv(
+            metadata=f"{self.COMPATIBLE_META} blocks=4 runs=2",
+            runs_per_cell=2,
+        ).replace(
+            "A_noDD,1,1,measure,2,101,COLD,ok,ok,101",
+            "A_noDD,1,1,measure,1,101,COLD,ok,ok,101",
+        )
+
+        result = self.run_stats(csv_body)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("INCOMPLETE EXPERIMENT MATRIX", result.stdout)
+        self.assertIn("A_noDD block 1: invalid run IDs", result.stdout)
+        self.assertIn("missing 2", result.stdout)
+        self.assertIn("duplicate 1x2", result.stdout)
+        self.assertNotIn("PRIMARY ENDPOINT", result.stdout)
 
     def test_complete_selected_endpoint_still_reports_primary_interval(self) -> None:
         result = self.run_stats(self.benchmark_csv())
