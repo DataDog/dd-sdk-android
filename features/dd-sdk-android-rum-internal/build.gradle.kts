@@ -38,12 +38,11 @@ plugins {
 }
 
 android {
-    namespace = "com.datadog.android.rumprelaunch"
+    namespace = "com.datadog.android.rum.internal"
 }
 
 dependencies {
     implementation(project(":dd-sdk-android-internal"))
-    implementation(project(":features:dd-sdk-android-rum-internal"))
     implementation(libs.kotlin)
 
     testImplementation(project(":tools:unit")) {
@@ -61,10 +60,23 @@ dependencies {
 
 unMock {
     keepStartingWith("org.json")
+    keepStartingWith("android.util.")
+    keepStartingWith("com.android.internal.util.")
+    keep("android.content.ComponentName")
     keep("android.content.ContentProvider")
-    keep("android.content.IContentProvider")
     keep("android.content.ContentProviderNative")
+    keep("android.content.IContentProvider")
     keep("android.net.Uri")
+    keep("android.os.BaseBundle")
+    keep("android.os.Bundle")
+    keep("android.os.Handler")
+    keep("android.os.IMessenger")
+    keep("android.os.Looper")
+    keep("android.os.Message")
+    keep("android.os.MessageQueue")
+    keep("android.os.Parcel")
+    keep("android.os.SystemProperties")
+    keep("android.view.DisplayEventReceiver")
 }
 
 datadogBuild {
@@ -73,7 +85,6 @@ datadogBuild {
     applyJunitConfig()
     applyJavadocConfig()
     applyPublishingConfig(
-        "The RUM pre-launch module that captures app launch timing data before " +
-            "the Datadog SDK is initialized."
+        "Internal RUM startup detection shared between dd-sdk-android-rum and dd-sdk-android-rum-prelaunch."
     )
 }

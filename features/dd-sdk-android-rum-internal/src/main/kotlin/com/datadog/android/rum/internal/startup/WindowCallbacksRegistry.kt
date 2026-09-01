@@ -4,7 +4,17 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.startup
+// These types are public only so that :features:dd-sdk-android-rum and
+// :features:dd-sdk-android-rum-prelaunch can share them across module boundaries. They are not
+// part of the SDK's public API and carry no KDoc for that reason.
+@file:Suppress(
+    "PackageNameVisibility",
+    "UndocumentedPublicClass",
+    "UndocumentedPublicFunction",
+    "UndocumentedPublicProperty"
+)
+
+package com.datadog.android.rum.internal.startup
 
 import android.app.Activity
 import android.view.Window

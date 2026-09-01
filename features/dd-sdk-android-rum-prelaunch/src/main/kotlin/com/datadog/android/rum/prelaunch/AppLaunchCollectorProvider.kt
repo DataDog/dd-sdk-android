@@ -12,17 +12,16 @@ import android.content.ContentProvider
 import android.content.ContentValues
 import android.database.Cursor
 import android.net.Uri
-import com.datadog.android.rum.AppLaunchPreInitCollector
 import com.datadog.android.rum.DdRumContentProvider
+import com.datadog.android.rum.internal.startup.PreLaunchRumAppStartupDetector
 
 /**
- * [ContentProvider] that auto-installs [AppLaunchPreInitCollector] at process start.
+ * [ContentProvider] that auto-installs [PreLaunchRumAppStartupDetector] at process start.
  *
  * Declared in this module's AndroidManifest so it is automatically merged into any
  * app that declares a dependency on `dd-sdk-android-rum-prelaunch`. Apps that do not
- * include this module are unaffected: [AppLaunchPreInitCollector] remains in its
- * initial [AppLaunchPreInitCollector.State.NOT_INSTALLED] state and the full legacy
- * `RumAppStartupDetector` path runs unchanged.
+ * include this module are unaffected: the normal `RumAppStartupDetectorImpl` path runs
+ * unchanged during [Rum.enable].
  *
  * No public API is exposed by this class; users interact with this module by adding
  * it as a Gradle dependency only.
@@ -32,12 +31,15 @@ internal class AppLaunchCollectorProvider : ContentProvider() {
 
     @Suppress("ReturnCount")
     override fun onCreate(): Boolean {
-        val application = context?.applicationContext as? Application ?: return false
+        val application = context?.applicationContext as? Application
+        if (application == null) {
+            return false
+        }
         val importance = DdRumContentProvider.processImportance
         if (importance != ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
             return false
         }
-        AppLaunchPreInitCollector.install(application)
+        PreLaunchRumAppStartupDetector.install(application)
         return true
     }
 

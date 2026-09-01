@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.startup
+package com.datadog.android.rum.internal.startup
 
 import android.app.Activity
 import android.os.Handler

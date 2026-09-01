@@ -4,6 +4,16 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+// These types are public only so that :features:dd-sdk-android-rum and
+// :features:dd-sdk-android-rum-prelaunch can share them across module boundaries. They are not
+// part of the SDK's public API and carry no KDoc for that reason.
+@file:Suppress(
+    "PackageNameVisibility",
+    "UndocumentedPublicClass",
+    "UndocumentedPublicFunction",
+    "UndocumentedPublicProperty"
+)
+
 package com.datadog.android.rum.internal.startup
 
 import android.app.Activity
@@ -11,7 +21,7 @@ import com.datadog.android.rum.internal.domain.Time
 import java.lang.ref.WeakReference
 import kotlin.time.Duration.Companion.seconds
 
-internal sealed interface RumStartupScenario {
+sealed interface RumStartupScenario {
     val initialTime: Time
     val hasSavedInstanceStateBundle: Boolean
     val activity: WeakReference<Activity>
@@ -37,14 +47,8 @@ internal sealed interface RumStartupScenario {
     ) : RumStartupScenario
 
     companion object {
-        internal val START_GAP_THRESHOLD_NS = 10.seconds.inWholeNanoseconds
+        val START_GAP_THRESHOLD_NS: Long = 10.seconds.inWholeNanoseconds
 
-        /**
-         * Builds the correct [RumStartupScenario] subtype from the raw timing data captured at
-         * Activity creation time. This is the single source of truth for the Cold / WarmFirstActivity
-         * / WarmAfterActivityDestroyed classification, shared by [RumAppStartupDetectorImpl] and
-         * [com.datadog.android.rum.internal.RumFeature].
-         */
         fun build(
             isFirstActivityForProcess: Boolean,
             hasSavedInstanceStateBundle: Boolean,
@@ -80,13 +84,13 @@ internal sealed interface RumStartupScenario {
     }
 }
 
-internal val RumStartupScenario.name: String get() = when (this) {
+val RumStartupScenario.name: String get() = when (this) {
     is RumStartupScenario.Cold -> "cold"
     is RumStartupScenario.WarmAfterActivityDestroyed -> "warm_after_activity_destroyed"
     is RumStartupScenario.WarmFirstActivity -> "warm_first_activity"
 }
 
-internal val RumStartupScenario.appStartActivityOnCreateGapNs: Long? get() = when (this) {
+val RumStartupScenario.appStartActivityOnCreateGapNs: Long? get() = when (this) {
     is RumStartupScenario.Cold -> appStartActivityOnCreateGapNs
     is RumStartupScenario.WarmFirstActivity -> appStartActivityOnCreateGapNs
     is RumStartupScenario.WarmAfterActivityDestroyed -> null

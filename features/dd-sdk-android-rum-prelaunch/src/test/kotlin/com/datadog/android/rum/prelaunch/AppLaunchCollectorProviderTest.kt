@@ -10,8 +10,8 @@ import android.app.ActivityManager
 import android.app.Application
 import android.content.Context
 import android.net.Uri
-import com.datadog.android.rum.AppLaunchPreInitCollector
 import com.datadog.android.rum.DdRumContentProvider
+import com.datadog.android.rum.internal.startup.PreLaunchRumAppStartupDetector
 import com.datadog.android.rum.prelaunch.forge.Configurator
 import com.datadog.tools.unit.setFieldValue
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -28,7 +28,6 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.concurrent.atomic.AtomicReference
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -51,14 +50,7 @@ internal class AppLaunchCollectorProviderTest {
         DdRumContentProvider.processImportance =
             ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
 
-        // Reset collector state via reflection since reset() is internal to dd-sdk-android-internal
-        val stateField = AppLaunchPreInitCollector::class.java.getDeclaredField("_state")
-        stateField.isAccessible = true
-        @Suppress("UNCHECKED_CAST")
-        (stateField.get(AppLaunchPreInitCollector) as AtomicReference<Any>)
-            .set(AppLaunchPreInitCollector.State.NOT_INSTALLED)
-        // Clear any stored application reference
-        AppLaunchPreInitCollector.setFieldValue("_application", null)
+        resetDetector()
 
         testedProvider = AppLaunchCollectorProvider()
         testedProvider.setFieldValue("mContext", mockContext)
@@ -69,13 +61,16 @@ internal class AppLaunchCollectorProviderTest {
     fun `tear down`() {
         DdRumContentProvider.processImportance = 0
 
-        // Reset collector state via reflection
-        val stateField = AppLaunchPreInitCollector::class.java.getDeclaredField("_state")
-        stateField.isAccessible = true
-        @Suppress("UNCHECKED_CAST")
-        (stateField.get(AppLaunchPreInitCollector) as AtomicReference<Any>)
-            .set(AppLaunchPreInitCollector.State.NOT_INSTALLED)
-        AppLaunchPreInitCollector.setFieldValue("_application", null)
+        resetDetector()
+    }
+
+    /**
+     * [PreLaunchRumAppStartupDetector] is a process-scoped singleton, so its state has to be
+     * cleared between tests. Its backing field is private, hence the reflection.
+     */
+    private fun resetDetector() {
+        PreLaunchRumAppStartupDetector.setFieldValue("detectorImpl", null)
+        PreLaunchRumAppStartupDetector.detach()
     }
 
     // region onCreate
@@ -90,8 +85,7 @@ internal class AppLaunchCollectorProviderTest {
 
         // Then
         assertThat(result).isFalse()
-        assertThat(AppLaunchPreInitCollector.state)
-            .isEqualTo(AppLaunchPreInitCollector.State.NOT_INSTALLED)
+        assertThat(PreLaunchRumAppStartupDetector.isInstalled).isFalse()
     }
 
     @Test
@@ -105,8 +99,7 @@ internal class AppLaunchCollectorProviderTest {
 
         // Then
         assertThat(result).isFalse()
-        assertThat(AppLaunchPreInitCollector.state)
-            .isEqualTo(AppLaunchPreInitCollector.State.NOT_INSTALLED)
+        assertThat(PreLaunchRumAppStartupDetector.isInstalled).isFalse()
     }
 
     @Test
@@ -120,8 +113,7 @@ internal class AppLaunchCollectorProviderTest {
 
         // Then
         assertThat(result).isTrue()
-        assertThat(AppLaunchPreInitCollector.state)
-            .isEqualTo(AppLaunchPreInitCollector.State.IDLE)
+        assertThat(PreLaunchRumAppStartupDetector.isInstalled).isTrue()
     }
 
     @Test
@@ -134,8 +126,7 @@ internal class AppLaunchCollectorProviderTest {
 
         // Then
         assertThat(result).isFalse()
-        assertThat(AppLaunchPreInitCollector.state)
-            .isEqualTo(AppLaunchPreInitCollector.State.NOT_INSTALLED)
+        assertThat(PreLaunchRumAppStartupDetector.isInstalled).isFalse()
     }
 
     // endregion

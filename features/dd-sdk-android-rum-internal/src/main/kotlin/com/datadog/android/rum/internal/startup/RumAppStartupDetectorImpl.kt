@@ -4,6 +4,16 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+// These types are public only so that :features:dd-sdk-android-rum and
+// :features:dd-sdk-android-rum-prelaunch can share them across module boundaries. They are not
+// part of the SDK's public API and carry no KDoc for that reason.
+@file:Suppress(
+    "PackageNameVisibility",
+    "UndocumentedPublicClass",
+    "UndocumentedPublicFunction",
+    "UndocumentedPublicProperty"
+)
+
 package com.datadog.android.rum.internal.startup
 
 import android.app.Activity
@@ -11,19 +21,19 @@ import android.app.Application
 import android.os.Bundle
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManagerImpl.Companion.MAX_TTID_DURATION_NS
-import com.datadog.android.rum.startup.AppStartupActivityPredicate
 import java.lang.ref.WeakReference
 import java.util.Collections
 import java.util.WeakHashMap
+import kotlin.time.Duration.Companion.minutes
 
-internal class RumAppStartupDetectorImpl(
+class RumAppStartupDetectorImpl(
     private val application: Application,
     private val buildSdkVersionProvider: BuildSdkVersionProvider,
     private val appStartupTime: () -> Time,
     private val currentTime: () -> Time,
     private val listener: RumAppStartupDetector.Listener,
-    private val appStartupActivityPredicate: AppStartupActivityPredicate
+    private val appStartupActivityPredicate: (Activity) -> Boolean,
+    private val rumFirstDrawTimeReporter: RumFirstDrawTimeReporter
 ) : RumAppStartupDetector, Application.ActivityLifecycleCallbacks {
 
     private var numberOfActivities: Int = 0
@@ -33,6 +43,9 @@ internal class RumAppStartupDetectorImpl(
 
     @Suppress("UnsafeThirdPartyFunctionCall") // map is initialized empty
     private val trackedActivities = Collections.newSetFromMap(WeakHashMap<Activity, Boolean>())
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // map is initialized empty
+    private val firstFrameHandles = WeakHashMap<Activity, RumFirstDrawTimeReporter.Handle>()
 
     init {
         application.registerActivityLifecycleCallbacks(this)
@@ -53,40 +66,33 @@ internal class RumAppStartupDetectorImpl(
     override fun onActivityDestroyed(activity: Activity) {
         numberOfActivities--
         trackedActivities.remove(activity)
-        listener.onActivityDestroyed(activity)
+        firstFrameHandles.remove(activity)?.unsubscribe()
 
         if (numberOfActivities == 0) {
             isChangingConfigurations = activity.isChangingConfigurations
         }
     }
 
-    override fun onActivityPaused(activity: Activity) {
-    }
+    override fun onActivityPaused(activity: Activity) {}
 
-    override fun onActivityResumed(activity: Activity) {
-    }
+    override fun onActivityResumed(activity: Activity) {}
 
-    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
-    }
+    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
 
-    override fun onActivityStarted(activity: Activity) {
-    }
+    override fun onActivityStarted(activity: Activity) {}
 
-    override fun onActivityStopped(activity: Activity) {
-    }
+    override fun onActivityStopped(activity: Activity) {}
 
     private fun onBeforeActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
         numberOfActivities++
         val now = currentTime()
 
-        val shouldTrackStartup = appStartupActivityPredicate.shouldTrackStartup(activity)
+        val shouldTrackStartup = appStartupActivityPredicate(activity)
 
         if (shouldTrackStartup) {
             trackedActivities.add(activity)
         }
 
-        // Clear a stale pending scenario so a re-launch in the same process
-        // is not blocked by an interstitial that never forwarded TTID.
         val stalePending = pendingScenario
         if (stalePending != null &&
             now.nanoTime - stalePending.initialTime.nanoTime > MAX_TTID_DURATION_NS
@@ -112,27 +118,53 @@ internal class RumAppStartupDetectorImpl(
 
             pendingScenario = scenario
             listener.onAppStartupDetected(scenario)
+            subscribeToFirstFrameDrawn(scenario, activity, wasForwarded = false)
             isFirstActivityForProcess = false
         }
 
-        // If a pending scenario exists and this is a different qualifying activity,
-        // notify the listener so it can subscribe to this activity's first frame too.
         val currentPendingScenario = pendingScenario
         if (currentPendingScenario != null && shouldTrackStartup &&
             currentPendingScenario.activity.get() !== activity
         ) {
-            listener.onNextActivityCreated(currentPendingScenario, activity)
+            subscribeToFirstFrameDrawn(currentPendingScenario, activity, wasForwarded = true)
         }
     }
 
-    override fun getPendingScenario(): RumStartupScenario? = pendingScenario
+    private fun subscribeToFirstFrameDrawn(
+        scenario: RumStartupScenario,
+        activity: Activity,
+        wasForwarded: Boolean
+    ) {
+        val callback = object : RumFirstDrawTimeReporter.Callback {
+            override fun onFirstFrameDrawn(timestampNs: Long) {
+                firstFrameHandles.remove(activity)
 
-    override fun clearPendingScenario() {
-        pendingScenario = null
+                if (pendingScenario !== scenario) return
+
+                val durationNs = timestampNs - scenario.initialTime.nanoTime
+                listener.onTTIDComputed(
+                    scenario = scenario,
+                    durationNs = durationNs,
+                    wasForwarded = wasForwarded
+                )
+                pendingScenario = null
+            }
+        }
+
+        firstFrameHandles[activity] = rumFirstDrawTimeReporter.subscribeToFirstFrameDrawn(
+            activity = activity,
+            callback = callback
+        )
     }
 
     override fun destroy() {
         pendingScenario = null
         application.unregisterActivityLifecycleCallbacks(this)
+        firstFrameHandles.forEach { (_, handle) -> handle.unsubscribe() }
+        firstFrameHandles.clear()
+    }
+
+    companion object {
+        private val MAX_TTID_DURATION_NS = 1.minutes.inWholeNanoseconds
     }
 }

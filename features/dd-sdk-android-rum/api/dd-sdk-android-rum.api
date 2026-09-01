@@ -11964,7 +11964,7 @@ public abstract class com/datadog/android/rum/tracking/ActivityLifecycleTracking
 	protected final fun withSdkCore (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
 }
 
-public final class com/datadog/android/rum/tracking/ActivityViewTrackingStrategy : com/datadog/android/rum/tracking/ActivityLifecycleTrackingStrategy, com/datadog/android/rum/internal/tracking/ReplayableViewTrackingStrategy, com/datadog/android/rum/tracking/ViewTrackingStrategy {
+public final class com/datadog/android/rum/tracking/ActivityViewTrackingStrategy : com/datadog/android/rum/tracking/ActivityLifecycleTrackingStrategy, com/datadog/android/rum/tracking/ViewTrackingStrategy {
 	public fun <init> (Z)V
 	public fun <init> (ZLcom/datadog/android/rum/tracking/ComponentPredicate;)V
 	public synthetic fun <init> (ZLcom/datadog/android/rum/tracking/ComponentPredicate;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
@@ -11972,7 +11972,6 @@ public final class com/datadog/android/rum/tracking/ActivityViewTrackingStrategy
 	public fun hashCode ()I
 	public fun onActivityResumed (Landroid/app/Activity;)V
 	public fun onActivityStopped (Landroid/app/Activity;)V
-	public fun onLateActivityReady (Landroid/app/Activity;)V
 }
 
 public final class com/datadog/android/rum/tracking/BundleExtKt {
@@ -12011,14 +12010,13 @@ public final class com/datadog/android/rum/tracking/MixedViewTrackingStrategy : 
 	public fun unregister (Landroid/content/Context;)V
 }
 
-public final class com/datadog/android/rum/tracking/NavigationViewTrackingStrategy : com/datadog/android/rum/tracking/ActivityLifecycleTrackingStrategy, androidx/navigation/NavController$OnDestinationChangedListener, com/datadog/android/rum/internal/tracking/ReplayableViewTrackingStrategy, com/datadog/android/rum/tracking/ViewTrackingStrategy {
+public final class com/datadog/android/rum/tracking/NavigationViewTrackingStrategy : com/datadog/android/rum/tracking/ActivityLifecycleTrackingStrategy, androidx/navigation/NavController$OnDestinationChangedListener, com/datadog/android/rum/tracking/ViewTrackingStrategy {
 	public fun <init> (IZLcom/datadog/android/rum/tracking/ComponentPredicate;)V
 	public synthetic fun <init> (IZLcom/datadog/android/rum/tracking/ComponentPredicate;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun onActivityPaused (Landroid/app/Activity;)V
 	public fun onActivityStarted (Landroid/app/Activity;)V
 	public fun onActivityStopped (Landroid/app/Activity;)V
 	public fun onDestinationChanged (Landroidx/navigation/NavController;Landroidx/navigation/NavDestination;Landroid/os/Bundle;)V
-	public fun onLateActivityReady (Landroid/app/Activity;)V
 	public final fun startTracking ()V
 	public final fun stopTracking ()V
 }
