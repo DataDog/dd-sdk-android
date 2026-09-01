@@ -16,7 +16,7 @@ dependencies {
 }
 ```
 
-**Note**: Datadog uses `cronet-api` version `141.7340.3` and has verified compatibility with the `play-services-cronet` implementation at version `17.0.1`.
+**Note**: Datadog uses `cronet-api` version `143.7445.0` and has verified compatibility with the `play-services-cronet` implementation at version `17.0.1`.
 
 ## Configuration
 

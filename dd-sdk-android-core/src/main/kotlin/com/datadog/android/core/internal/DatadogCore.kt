@@ -30,6 +30,13 @@ import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.logger.SdkInternalLogger
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.remote.NoOpRemoteConfigFetcher
+import com.datadog.android.core.internal.remote.RemoteConfigLifecycleCallback
+import com.datadog.android.core.internal.remote.RemoteConfigNetworkFetcher
+import com.datadog.android.core.internal.remote.RemoteConfigService
+import com.datadog.android.core.internal.remote.RemoteConfigServiceImpl
+import com.datadog.android.core.internal.remote.model.RemoteConfigSyncMetadata
+import com.datadog.android.core.internal.remote.model.RemoteConfiguration
 import com.datadog.android.core.internal.time.DefaultAppStartTimeProvider
 import com.datadog.android.core.internal.time.composeTimeInfo
 import com.datadog.android.core.internal.utils.executeSafe
@@ -66,6 +73,7 @@ import java.util.concurrent.TimeUnit
  * @param internalLoggerProvider Provider for [InternalLogger] instance.
  * @param executorServiceFactory Custom factory for executors, used only in unit-tests
  * @param buildSdkVersionProvider Build.VERSION.SDK_INT provider used for the test
+ * @param remoteConfigServiceFactory Factory for creating the remote config service, defaults to the real implementation
  */
 @Suppress("TooManyFunctions")
 internal class DatadogCore(
@@ -75,10 +83,15 @@ internal class DatadogCore(
     internalLoggerProvider: (FeatureSdkCore) -> InternalLogger = { SdkInternalLogger(it) },
     // only for unit tests
     private val executorServiceFactory: FlushableExecutorService.Factory? = null,
-    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
+    private val remoteConfigServiceFactory: RemoteConfigService.Factory = DEFAULT_REMOTE_CONFIG_SERVICE_FACTORY
 ) : InternalSdkCore {
 
     internal lateinit var coreFeature: CoreFeature
+
+    internal var remoteConfigService: RemoteConfigService? = null
+
+    internal var rcLifecycleMonitor: ProcessLifecycleMonitor? = null
 
     private lateinit var shutdownHook: Thread
 
@@ -433,6 +446,12 @@ internal class DatadogCore(
             .getSafe("getDatadogContext", internalLogger)
     }
 
+    override val remoteConfiguration: RemoteConfiguration?
+        get() = remoteConfigService?.getCurrentConfig()
+
+    override val remoteConfigurationSyncMetadata: RemoteConfigSyncMetadata?
+        get() = remoteConfigService?.getSyncMetadata()
+
     // endregion
 
     // region Internal
@@ -479,10 +498,55 @@ internal class DatadogCore(
             initializeCrashReportFeature()
         }
 
+        setupRemoteConfiguration(mutableConfig)
+
         setupLifecycleMonitorCallback(appContext)
 
         setupShutdownHook()
         sendCoreConfigurationTelemetryEvent(configuration)
+    }
+
+    internal fun setupRemoteConfiguration(configuration: Configuration) {
+        val id = configuration.coreConfig.remoteConfigurationId ?: return
+        val fetcher = if (coreFeature.isMainProcess) {
+            RemoteConfigNetworkFetcher(
+                callFactoryProvider = { httpCache ->
+                    coreFeature.createOkHttpCallFactory {
+                        cache(httpCache)
+                        val proxy = configuration.coreConfig.proxy
+                        if (proxy != null) {
+                            proxy(proxy)
+                            proxyAuthenticator(configuration.coreConfig.proxyAuth)
+                        }
+                    }
+                },
+                internalLogger = internalLogger,
+                storageDir = coreFeature.storageDir
+            )
+        } else {
+            // Secondary process: read from the JSON file written by the main process,
+            // but never fetch from the network or create an OkHttp cache.
+            NoOpRemoteConfigFetcher()
+        }
+        remoteConfigService = remoteConfigServiceFactory.create(
+            remoteConfigurationId = id,
+            remoteConfigurationEndpoint = configuration.coreConfig.site.remoteConfigurationEndpoint,
+            fetcher = fetcher,
+            storageDir = coreFeature.storageDir,
+            executor = coreFeature.uploadExecutorService,
+            internalLogger = internalLogger,
+            timeProvider = coreFeature.timeProvider
+        )
+        remoteConfigService?.syncWithRemote()
+
+        val service = remoteConfigService ?: return
+        if (appContext is Application && coreFeature.isMainProcess) {
+            rcLifecycleMonitor = ProcessLifecycleMonitor(
+                RemoteConfigLifecycleCallback(service)
+            ).apply {
+                appContext.registerActivityLifecycleCallbacks(this)
+            }
+        }
     }
 
     private fun initializeCrashReportFeature() {
@@ -645,6 +709,15 @@ internal class DatadogCore(
         if (appContext is Application && lifecycleMonitor != null) {
             appContext.unregisterActivityLifecycleCallbacks(lifecycleMonitor)
         }
+        processLifecycleMonitor = null
+
+        val rcMonitor = rcLifecycleMonitor
+        if (appContext is Application && rcMonitor != null) {
+            appContext.unregisterActivityLifecycleCallbacks(rcMonitor)
+        }
+        rcLifecycleMonitor = null
+        remoteConfigService?.stop()
+        remoteConfigService = null
 
         contextProvider = NoOpContextProvider()
         coreFeature.stop()
@@ -691,5 +764,18 @@ internal class DatadogCore(
             "SDK core already has \"%s\" listener registered."
 
         internal val CONFIGURATION_TELEMETRY_DELAY_MS = TimeUnit.SECONDS.toMillis(5)
+
+        internal val DEFAULT_REMOTE_CONFIG_SERVICE_FACTORY =
+            RemoteConfigService.Factory { id, endpoint, fetcher, storageDir, executor, logger, timeProvider ->
+                RemoteConfigServiceImpl(
+                    remoteConfigurationId = id,
+                    remoteConfigurationEndpoint = endpoint,
+                    fetcher = fetcher,
+                    storageDir = storageDir,
+                    executor = executor,
+                    internalLogger = logger,
+                    timeProvider = timeProvider
+                )
+            }
     }
 }

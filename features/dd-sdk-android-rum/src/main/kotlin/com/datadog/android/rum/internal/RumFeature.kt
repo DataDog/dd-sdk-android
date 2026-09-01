@@ -89,12 +89,16 @@ import com.datadog.android.rum.internal.startup.RumAppStartupDetector
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
+import com.datadog.android.rum.internal.timeseries.DefaultTimeseriesCollectorFactory
+import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollectorFactory
+import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
 import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
 import com.datadog.android.rum.internal.vitals.CPUVitalReader
+import com.datadog.android.rum.internal.vitals.CpuStatReader
 import com.datadog.android.rum.internal.vitals.FPSVitalListener
 import com.datadog.android.rum.internal.vitals.FrameStateListener
 import com.datadog.android.rum.internal.vitals.FrameStatesAggregator
@@ -117,6 +121,7 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
 import com.datadog.android.rum.startup.AppStartupActivityPredicate
+import com.datadog.android.rum.timeseries.TimeseriesConfiguration
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -185,6 +190,7 @@ internal class RumFeature(
     internal val rumContextUpdateReceivers = mutableSetOf<FeatureContextUpdateReceiver>()
     internal var insightsCollector: InsightsCollector = NoOpInsightsCollector()
     override val heatmapIdentifierRegistry: HeatmapIdentifierRegistry = HeatmapIdentifierRegistry.create()
+    internal var timeseriesCollectorFactory: TimeseriesCollector.Factory = NoOpTimeseriesCollectorFactory()
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
     internal var rumAppStartupDetector: RumAppStartupDetector? = null
@@ -254,20 +260,27 @@ internal class RumFeature(
         configuration.longTaskTrackingStrategy?.let { longTaskTrackingStrategy = it }
 
         val frequency = configuration.vitalsMonitorUpdateFrequency
-        val slowFrameListenerConfiguration = configuration.slowFramesConfiguration
-        if (frequency != VitalsUpdateFrequency.NEVER || slowFrameListenerConfiguration != null) {
-            initializeVitalExecutorService(frequency)
+        val vitalsUpdatesRequired = frequency != VitalsUpdateFrequency.NEVER
+
+        // The vital executor backs both the CPU/memory vital monitors and timeseries sampling.
+        if (vitalsUpdatesRequired || configuration.timeseriesConfiguration != null) initializeVitalExecutorService()
+
+        if (vitalsUpdatesRequired) {
+            // CPU/memory monitors schedule on the vital executor, so they are only set up when vitals
+            // are enabled - the same condition that creates the executor above.
             initializeCpuVitalMonitor(frequency)
             initializeMemoryVitalMonitor(frequency)
-            if (!configuration.disableJankStats) {
-                initializeFrameStatesAggregator(
-                    application = appContext as? Application,
-                    listeners = listOfNotNull(
-                        initializeSlowFrameListener(slowFrameListenerConfiguration),
-                        initializeFPSVitalMonitor(frequency)
-                    )
-                )
-            }
+        }
+
+        val fpsVitalMonitor = initializeFPSVitalMonitor(frequency)
+        val slowFrameListener = initializeSlowFrameListener(configuration.slowFramesConfiguration)
+        if (fpsVitalMonitor != null || slowFrameListener != null) {
+            // The aggregator feeds two Choreographer-based listeners (no executor needed): the
+            // FPS frame-rate vital - gated on the vitals frequency, hence vitalsUpdatesRequired - and
+            // the slow-frames listener, gated on its own config.
+            (appContext as? Application)?.initializeFrameStatesAggregator(
+                listOfNotNull(slowFrameListener, fpsVitalMonitor)
+            )
         }
 
         if (configuration.trackNonFatalAnrs) {
@@ -278,6 +291,19 @@ internal class RumFeature(
 
         sessionListener = configuration.sessionListener
 
+        configuration.timeseriesConfiguration?.let { timeseriesConfiguration ->
+            timeseriesCollectorFactory = DefaultTimeseriesCollectorFactory(
+                sdkCore = sdkCore,
+                dataWriter = dataWriter,
+                insightsCollector = insightsCollector,
+                configuration = timeseriesConfiguration,
+                scheduledExecutorService = vitalExecutorService,
+                totalRamBytes = appContext.readTotalRamBytes(sdkCore.internalLogger) ?: 0L,
+                batteryInfoProvider = batteryInfoProvider,
+                displayInfoProvider = displayInfoProvider
+            )
+        }
+
         initRumAppStartupDetector()
 
         sdkCore.setEventReceiver(name, this)
@@ -285,13 +311,13 @@ internal class RumFeature(
         initialized.set(true)
     }
 
-    private fun initializeFrameStatesAggregator(application: Application?, listeners: List<FrameStateListener>) {
+    private fun Application.initializeFrameStatesAggregator(listeners: List<FrameStateListener>) {
         frameStatesAggregator = FrameStatesAggregator(listeners, sdkCore.internalLogger)
-        application?.registerActivityLifecycleCallbacks(frameStatesAggregator)
+        registerActivityLifecycleCallbacks(frameStatesAggregator)
     }
 
     private fun initializeSlowFrameListener(slowFramesConfiguration: SlowFramesConfiguration?): FrameStateListener? {
-        slowFramesListener = if (slowFramesConfiguration != null) {
+        slowFramesListener = if (slowFramesConfiguration != null && !configuration.disableJankStats) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
@@ -342,6 +368,9 @@ internal class RumFeature(
         insightsCollector.unbindSdkCore(sdkCore)
 
         unregisterTrackingStrategies(appContext)
+
+        timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
+        (GlobalRumMonitor.get(sdkCore) as? DatadogRumMonitor)?.stopTimeseries()
 
         dataWriter = NoOpDataWriter()
 
@@ -596,10 +625,7 @@ internal class RumFeature(
         longTaskTrackingStrategy.unregister(appContext)
     }
 
-    private fun initializeVitalExecutorService(frequency: VitalsUpdateFrequency) {
-        if (frequency == VitalsUpdateFrequency.NEVER) {
-            return
-        }
+    private fun initializeVitalExecutorService() {
         @Suppress("UnsafeThirdPartyFunctionCall") // pool size can't be <= 0
         vitalExecutorService = sdkCore.createScheduledExecutorService("rum-vital")
     }
@@ -609,7 +635,7 @@ internal class RumFeature(
 
         cpuVitalMonitor = AggregatingVitalMonitor()
         initializeVitalMonitor(
-            CPUVitalReader(internalLogger = sdkCore.internalLogger),
+            CPUVitalReader(CpuStatReader(internalLogger = sdkCore.internalLogger)),
             cpuVitalMonitor,
             frequency.periodInMs
         )
@@ -627,7 +653,7 @@ internal class RumFeature(
     }
 
     private fun initializeFPSVitalMonitor(frequency: VitalsUpdateFrequency): FPSVitalListener? {
-        if (frequency == VitalsUpdateFrequency.NEVER) return null
+        if (frequency == VitalsUpdateFrequency.NEVER || configuration.disableJankStats) return null
 
         frameRateVitalMonitor = AggregatingVitalMonitor()
         return FPSVitalListener(frameRateVitalMonitor)
@@ -795,7 +821,8 @@ internal class RumFeature(
         val disableJankStats: Boolean,
         val insightsCollector: InsightsCollector,
         val appStartupActivityPredicate: AppStartupActivityPredicate,
-        val rumViewEventWriteConfig: RumViewEventWriteConfig
+        val rumViewEventWriteConfig: RumViewEventWriteConfig,
+        val timeseriesConfiguration: TimeseriesConfiguration?
     )
 
     internal companion object {
@@ -850,7 +877,8 @@ internal class RumFeature(
             disableJankStats = false,
             insightsCollector = NoOpInsightsCollector(),
             appStartupActivityPredicate = DefaultAppStartupActivityPredicate,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.AlwaysFullView
+            rumViewEventWriteConfig = RumViewEventWriteConfig.AlwaysFullView,
+            timeseriesConfiguration = null
         )
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"
@@ -883,6 +911,24 @@ internal class RumFeature(
                 " SDK instance by calling SdkCore#registerFeature method."
         internal const val FAILED_TO_ENABLE_JANK_STATS_TRACKING_MANUALLY =
             "Manually enabling JankStats tracking threw an exception."
+
+        internal fun Context.readTotalRamBytes(internalLogger: InternalLogger): Long? = try {
+            getSystemServiceAs<ActivityManager>(Context.ACTIVITY_SERVICE)
+                ?.run {
+                    // UnsafeThirdPartyFunctionCall: MemoryInfo() and getMemoryInfo() can throw
+                    // RuntimeException on broken Android implementations; fall back to 0.
+                    @Suppress("UnsafeThirdPartyFunctionCall")
+                    ActivityManager.MemoryInfo().also { getMemoryInfo(it) }.totalMem
+                }
+        } catch (@Suppress("TooGenericExceptionCaught") e: RuntimeException) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                { "Failed to read total RAM via ActivityManager" },
+                e
+            )
+            null
+        }
 
         private fun provideUserTrackingStrategy(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider>,

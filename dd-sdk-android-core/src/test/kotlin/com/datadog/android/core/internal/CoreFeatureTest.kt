@@ -522,6 +522,29 @@ internal class CoreFeatureTest {
     }
 
     @Test
+    fun `M initializes remoteConfigurationId W initialize()`(
+        @StringForgery fakeRemoteConfigurationId: String
+    ) {
+        // Given
+        fakeConfig = fakeConfig.copy(
+            coreConfig = fakeConfig.coreConfig.copy(
+                remoteConfigurationId = fakeRemoteConfigurationId
+            )
+        )
+
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(testedFeature.remoteConfigurationId).isEqualTo(fakeRemoteConfigurationId)
+    }
+
+    @Test
     fun `M initializes build ID W initialize() { asset manager is closed }`() {
         // Given
         whenever(

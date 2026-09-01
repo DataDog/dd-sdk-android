@@ -86,6 +86,7 @@ public final class com/datadog/android/flags/model/ErrorCode : java/lang/Enum {
 	public static final field PARSE_ERROR Lcom/datadog/android/flags/model/ErrorCode;
 	public static final field PROVIDER_NOT_READY Lcom/datadog/android/flags/model/ErrorCode;
 	public static final field TYPE_MISMATCH Lcom/datadog/android/flags/model/ErrorCode;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/flags/model/ErrorCode;
 	public static fun values ()[Lcom/datadog/android/flags/model/ErrorCode;
 }
@@ -489,6 +490,7 @@ public final class com/datadog/android/flags/model/ResolutionReason : java/lang/
 	public static final field SPLIT Lcom/datadog/android/flags/model/ResolutionReason;
 	public static final field STATIC Lcom/datadog/android/flags/model/ResolutionReason;
 	public static final field TARGETING_MATCH Lcom/datadog/android/flags/model/ResolutionReason;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/flags/model/ResolutionReason;
 	public static fun values ()[Lcom/datadog/android/flags/model/ResolutionReason;
 }

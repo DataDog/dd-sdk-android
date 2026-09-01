@@ -43,6 +43,8 @@ plugins {
     id("test-pyramid-api-surface")
 }
 
+// TODO RUM-18189 Support new AGP DSL
+@Suppress("DEPRECATION")
 android {
     defaultConfig {
         consumerProguardFiles(
@@ -168,7 +170,9 @@ createJsonModelsGenerationTask("generateRumModelsFromJson") {
         "view_update-schema.json" to "ViewUpdateEvent",
         "long_task-schema.json" to "LongTaskEvent",
         "vital-app-launch-schema.json" to "VitalAppLaunchEvent",
-        "vital-operation-step-schema.json" to "VitalOperationStepEvent"
+        "vital-operation-step-schema.json" to "VitalOperationStepEvent",
+        "timeseries-memory-schema.json" to "TimeseriesMemoryEvent",
+        "timeseries-cpu-schema.json" to "TimeseriesCpuEvent"
     )
 }
 

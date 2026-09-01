@@ -38,10 +38,11 @@ plugins {
     id("test-pyramid-api-surface")
 }
 
+// TODO RUM-18189 Support new AGP DSL
+@Suppress("DEPRECATION")
 android {
 
     defaultConfig {
-        multiDexEnabled = true
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
@@ -71,7 +72,6 @@ dependencies {
     api(project(":dd-sdk-android-core"))
     implementation(libs.kotlin)
     implementation(libs.okHttp)
-    implementation(libs.androidXMultidex)
 
     testImplementation(project(":tools:unit")) {
         attributes {

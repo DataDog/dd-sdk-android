@@ -9,6 +9,7 @@ public final class com/datadog/android/sessionreplay/ImagePrivacy : java/lang/En
 	public static final field MASK_ALL Lcom/datadog/android/sessionreplay/ImagePrivacy;
 	public static final field MASK_LARGE_ONLY Lcom/datadog/android/sessionreplay/ImagePrivacy;
 	public static final field MASK_NONE Lcom/datadog/android/sessionreplay/ImagePrivacy;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/ImagePrivacy;
 	public static fun values ()[Lcom/datadog/android/sessionreplay/ImagePrivacy;
 }
@@ -111,6 +112,7 @@ public final class com/datadog/android/sessionreplay/SessionReplayPrivacy : java
 	public static final field ALLOW Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;
 	public static final field MASK Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;
 	public static final field MASK_USER_INPUT Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;
 	public static fun values ()[Lcom/datadog/android/sessionreplay/SessionReplayPrivacy;
 }
@@ -135,6 +137,7 @@ public final class com/datadog/android/sessionreplay/TextAndInputPrivacy : java/
 	public static final field MASK_ALL Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;
 	public static final field MASK_ALL_INPUTS Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;
 	public static final field MASK_SENSITIVE_INPUTS Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;
 	public static fun values ()[Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;
 }
@@ -142,6 +145,7 @@ public final class com/datadog/android/sessionreplay/TextAndInputPrivacy : java/
 public final class com/datadog/android/sessionreplay/TouchPrivacy : java/lang/Enum, com/datadog/android/sessionreplay/PrivacyLevel {
 	public static final field HIDE Lcom/datadog/android/sessionreplay/TouchPrivacy;
 	public static final field SHOW Lcom/datadog/android/sessionreplay/TouchPrivacy;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/TouchPrivacy;
 	public static fun values ()[Lcom/datadog/android/sessionreplay/TouchPrivacy;
 }
@@ -383,6 +387,7 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$Horizon
 	public static final field LEFT Lcom/datadog/android/sessionreplay/model/MobileSegment$Horizontal;
 	public static final field RIGHT Lcom/datadog/android/sessionreplay/model/MobileSegment$Horizontal;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Horizontal;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Horizontal;
 	public static fun values ()[Lcom/datadog/android/sessionreplay/model/MobileSegment$Horizontal;
@@ -704,6 +709,7 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$Pointer
 	public static final field MOVE Lcom/datadog/android/sessionreplay/model/MobileSegment$PointerEventType;
 	public static final field UP Lcom/datadog/android/sessionreplay/model/MobileSegment$PointerEventType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$PointerEventType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$PointerEventType;
 	public static fun values ()[Lcom/datadog/android/sessionreplay/model/MobileSegment$PointerEventType;
@@ -719,6 +725,7 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$Pointer
 	public static final field PEN Lcom/datadog/android/sessionreplay/model/MobileSegment$PointerType;
 	public static final field TOUCH Lcom/datadog/android/sessionreplay/model/MobileSegment$PointerType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$PointerType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$PointerType;
 	public static fun values ()[Lcom/datadog/android/sessionreplay/model/MobileSegment$PointerType;
@@ -851,6 +858,7 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$Source 
 	public static final field MAUI Lcom/datadog/android/sessionreplay/model/MobileSegment$Source;
 	public static final field REACT_NATIVE Lcom/datadog/android/sessionreplay/model/MobileSegment$Source;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Source;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Source;
 	public static fun values ()[Lcom/datadog/android/sessionreplay/model/MobileSegment$Source;
@@ -918,6 +926,7 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$Truncat
 	public static final field MIDDLE Lcom/datadog/android/sessionreplay/model/MobileSegment$TruncationMode;
 	public static final field TAIL Lcom/datadog/android/sessionreplay/model/MobileSegment$TruncationMode;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$TruncationMode;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$TruncationMode;
 	public static fun values ()[Lcom/datadog/android/sessionreplay/model/MobileSegment$TruncationMode;
@@ -933,6 +942,7 @@ public final class com/datadog/android/sessionreplay/model/MobileSegment$Vertica
 	public static final field Companion Lcom/datadog/android/sessionreplay/model/MobileSegment$Vertical$Companion;
 	public static final field TOP Lcom/datadog/android/sessionreplay/model/MobileSegment$Vertical;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Vertical;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/sessionreplay/model/MobileSegment$Vertical;
 	public static fun values ()[Lcom/datadog/android/sessionreplay/model/MobileSegment$Vertical;

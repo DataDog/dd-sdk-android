@@ -563,7 +563,7 @@ class NoOpFactorySymbolProcessor(
                 }
             }
 
-            returnClassKind == ClassKind.INTERFACE && !returnType.isFunctionType -> {
+            returnClassKind == ClassKind.INTERFACE && !returnType.isFunctionTypeOrAlias -> {
                 // NoOp implementations are always generated at the package root, never nested.
                 // The name concatenates all enclosing class names to avoid collisions
                 // (e.g. Outer.Inner → NoOpOuterInner, not Outer.NoOpInner).
@@ -574,7 +574,7 @@ class NoOpFactorySymbolProcessor(
                 funSpecBuilder.addStatement("return %T()", noOpReturnType)
             }
 
-            returnType.isFunctionType -> {
+            returnType.isFunctionTypeOrAlias -> {
                 val funcReturnTypeName = returnType.returnTypeNameOfFunctionType(typeParamResolver)
                 if (funcReturnTypeName == UNIT) {
                     funSpecBuilder.addStatement("return {}")
@@ -682,6 +682,14 @@ class NoOpFactorySymbolProcessor(
             }
         }
     }
+
+    /**
+     * KSP1 expanded typealiases when resolving a [KSType], so a `typealias Foo = (A) -> Unit`
+     * reported `isFunctionType == true`. KSP2 keeps the alias, so the check has to look through it.
+     */
+    private val KSType.isFunctionTypeOrAlias: Boolean
+        get() = isFunctionType ||
+            (declaration as? KSTypeAlias)?.type?.resolve()?.isFunctionTypeOrAlias == true
 
     /**
      * @return the identifier name of the [KSFunctionDeclaration]

@@ -77,7 +77,11 @@ class JsonSchemaReader(
         val match = knownSchemas[fromFile]
             ?.let {
                 // only explicit properties lookup supported
-                if (type == REF_TYPE_PROPERTIES) it.properties else it.definitions
+                if (type == REF_TYPE_PROPERTIES) {
+                    it.properties
+                } else {
+                    it.definitions.orEmpty() + it.defs.orEmpty()
+                }
             }
             ?.entries
             ?.firstOrNull { matcher(it.key, it.value) } ?: return null
@@ -428,8 +432,10 @@ class JsonSchemaReader(
     companion object {
         private const val REF_TYPE_PROPERTIES = "properties"
         private const val REF_TYPE_DEFINITIONS = "definitions"
+        private const val REF_TYPE_DEFS = "\$defs"
 
-        private val REF_NAME_REGEX = Regex("#/($REF_TYPE_DEFINITIONS|$REF_TYPE_PROPERTIES)/([\\w]+)")
+        private val REF_NAME_REGEX =
+            Regex("#/($REF_TYPE_DEFINITIONS|\\$REF_TYPE_DEFS|$REF_TYPE_PROPERTIES)/([\\w]+)")
         private val REF_ID_REGEX = Regex("#[\\w]+")
         private val REF_FILE_REGEX = Regex("(file:)?(([^/]+/)*([^/]+)\\.json)(#(.*))?")
     }

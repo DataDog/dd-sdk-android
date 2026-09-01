@@ -6,10 +6,10 @@
 
 package com.datadog.android.tv.sample
 
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
-import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.Player
 
 internal class RumPlayerListener : Player.Listener {
 
@@ -52,7 +52,7 @@ internal class RumPlayerListener : Player.Listener {
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
         super.onIsPlayingChanged(isPlaying)
-        currentMediaItem?.let { mediaItem ->
+        currentMediaItem?.let { _ ->
             val name = if (isPlaying) "play" else "pause"
 
             GlobalRumMonitor.get().addAction(
@@ -69,7 +69,7 @@ internal class RumPlayerListener : Player.Listener {
         reason: Int
     ) {
         super.onPositionDiscontinuity(oldPosition, newPosition, reason)
-        currentMediaItem?.let { mediaItem ->
+        currentMediaItem?.let { _ ->
             GlobalRumMonitor.get().addAction(
                 type = RumActionType.CUSTOM,
                 name = "media-seek",
@@ -91,7 +91,7 @@ internal class RumPlayerListener : Player.Listener {
     }
 
     private fun stopMedia(mediaEnded: Boolean) {
-        currentMediaItem?.let { mediaItem ->
+        currentMediaItem?.let { _ ->
             attributes["media.ended"] = mediaEnded
             GlobalRumMonitor.get().addAction(
                 type = RumActionType.CUSTOM,

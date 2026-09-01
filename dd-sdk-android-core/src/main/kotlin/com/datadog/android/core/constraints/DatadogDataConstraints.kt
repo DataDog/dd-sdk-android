@@ -205,7 +205,7 @@ class DatadogDataConstraints(private val internalLogger: InternalLogger) : DataC
         private const val MAX_TAG_LENGTH = 200
         private const val MAX_TAG_COUNT = 100
 
-        private const val MAX_ATTR_COUNT = 128
+        private const val MAX_ATTR_COUNT = 1900
         private const val MAX_DEPTH_LEVEL = 9
 
         internal const val CUSTOM_TIMING_KEY_REPLACED_WARNING = "Invalid timing name: %s," +

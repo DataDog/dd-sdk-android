@@ -13,6 +13,8 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.remote.model.RemoteConfigSyncMetadata
+import com.datadog.android.core.internal.remote.model.RemoteConfiguration
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.privacy.TrackingConsent
 import com.google.gson.JsonObject
@@ -86,6 +88,26 @@ interface InternalSdkCore : FeatureSdkCore {
      */
     @InternalApi
     val appUptimeNs: Long
+
+    /**
+     * The last successfully fetched and cached remote configuration, or `null` if none is
+     * available (first launch, `remoteConfigurationId` not configured, or deserialization failure).
+     *
+     * Features read this synchronously once at enable time to apply remote values on top of their
+     * developer-supplied configuration. Remote values take precedence over in-code values.
+     */
+    @InternalApi
+    val remoteConfiguration: RemoteConfiguration?
+
+    /**
+     * Sync/apply bookkeeping (CDN version, fetch time, first-applied time) for the currently
+     * cached [remoteConfiguration] version, or `null` if [remoteConfiguration] is `null` or was
+     * never actually synced from the CDN (e.g. read from a main-process-written cache file in a
+     * secondary process). Reported on the SDK's configuration telemetry event once per session —
+     * see "RFC - Remote Configuration Telemetry".
+     */
+    @InternalApi
+    val remoteConfigurationSyncMetadata: RemoteConfigSyncMetadata?
 
     /**
      * Writes current RUM view event to the dedicated file for the needs of NDK crash reporting.

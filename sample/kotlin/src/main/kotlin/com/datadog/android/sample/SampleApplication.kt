@@ -15,6 +15,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
+import com.datadog.android._InternalProxy
 import com.datadog.android.compose.enableComposeActionTracking
 import com.datadog.android.core.configuration.BackPressureMitigation
 import com.datadog.android.core.configuration.BackPressureStrategy
@@ -41,6 +42,7 @@ import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
 import com.datadog.android.rum.resource.ResourceHeadersExtractor
+import com.datadog.android.rum.timeseries.TimeseriesConfiguration
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.sample.account.AccountFragment
 import com.datadog.android.sample.data.db.LocalDataSource
@@ -431,6 +433,7 @@ class SampleApplication : Application() {
             .trackAnonymousUser(true)
             .enableComposeActionTracking()
             .collectAccessibility(true)
+            .setTimeseriesConfiguration(TimeseriesConfiguration.DEFAULT)
             .build()
     }
 
@@ -444,6 +447,11 @@ class SampleApplication : Application() {
             .setFirstPartyHosts(tracedHosts)
             .setBatchSize(BatchSize.SMALL)
             .setUploadFrequency(UploadFrequency.FREQUENT)
+            .apply {
+                if (BuildConfig.DD_REMOTE_CONFIGURATION_ID.isNotBlank()) {
+                    _InternalProxy.setRemoteConfigurationId(this, BuildConfig.DD_REMOTE_CONFIGURATION_ID)
+                }
+            }
 
         try {
             configBuilder.useSite(DatadogSite.valueOf(BuildConfig.DD_SITE_NAME))

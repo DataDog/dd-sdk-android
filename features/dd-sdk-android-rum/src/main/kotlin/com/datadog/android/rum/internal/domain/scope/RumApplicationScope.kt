@@ -32,6 +32,7 @@ import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollect
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
+import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -61,7 +62,8 @@ internal class RumApplicationScope(
     private val insightsCollector: InsightsCollector,
     private val viewEventMapper: ViewEventMapper,
     private val rumViewEventWriteConfig: RumViewEventWriteConfig,
-    private val heatmapIdentifierRegistry: HeatmapIdentifierRegistry?
+    private val heatmapIdentifierRegistry: HeatmapIdentifierRegistry?,
+    private val timeseriesCollectorFactory: TimeseriesCollector.Factory
 ) : RumScope, RumViewChangedListener {
 
     override val parentScope: RumScope? = null
@@ -94,7 +96,8 @@ internal class RumApplicationScope(
             insightsCollector = insightsCollector,
             viewEventMapper = viewEventMapper,
             rumViewEventWriteConfig = rumViewEventWriteConfig,
-            heatmapIdentifierRegistry = heatmapIdentifierRegistry
+            heatmapIdentifierRegistry = heatmapIdentifierRegistry,
+            timeseriesCollectorFactory = timeseriesCollectorFactory
         )
     )
 
@@ -219,7 +222,8 @@ internal class RumApplicationScope(
             insightsCollector = insightsCollector,
             viewEventMapper = viewEventMapper,
             rumViewEventWriteConfig = rumViewEventWriteConfig,
-            heatmapIdentifierRegistry = heatmapIdentifierRegistry
+            heatmapIdentifierRegistry = heatmapIdentifierRegistry,
+            timeseriesCollectorFactory = timeseriesCollectorFactory
         )
         childScopes.add(newSession)
         if (event !is RumRawEvent.StartView) {

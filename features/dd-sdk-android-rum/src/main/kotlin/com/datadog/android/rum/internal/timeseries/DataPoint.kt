@@ -4,6 +4,6 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.data.upload
+package com.datadog.android.rum.internal.timeseries
 
-internal interface UploadRunnable : Runnable
+internal data class DataPoint<T : Any>(val timestampNs: Long, val value: T)

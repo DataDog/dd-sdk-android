@@ -19,6 +19,8 @@ plugins {
     id("test-pyramid-api-usage")
 }
 
+// TODO RUM-18189 Support new AGP DSL
+@Suppress("DEPRECATION")
 android {
     namespace = "com.datadog.android.api.feature.stub"
 }

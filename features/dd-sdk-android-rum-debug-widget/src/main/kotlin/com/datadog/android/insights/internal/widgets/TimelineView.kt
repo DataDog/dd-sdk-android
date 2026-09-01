@@ -16,7 +16,6 @@ import android.view.ViewOutlineProvider
 import androidx.core.graphics.withRotation
 import com.datadog.android.insights.internal.domain.TimelineEvent
 import com.datadog.android.insights.internal.extensions.color
-import com.datadog.android.insights.internal.extensions.ms
 import com.datadog.android.insights.internal.extensions.px
 import com.datadog.android.rumdebugwidget.R
 
@@ -47,6 +46,9 @@ internal class TimelineView @JvmOverloads constructor(
 
     private val resourceFramesPaint: Paint
         get() = paint.apply { color = color(R.color.timeline_resource) }
+
+    private val timeseriesFramesPaint: Paint
+        get() = paint.apply { color = color(R.color.timeline_timeseries) }
 
     private val slowFramesPaint: Paint
         get() = paint.apply { color = color(R.color.timeline_slow_frame) }
@@ -90,17 +92,16 @@ internal class TimelineView @JvmOverloads constructor(
                 is TimelineEvent.Tick -> tickPaint
                 is TimelineEvent.LongTask -> longTaskPaint
                 is TimelineEvent.Action -> actionsFramesPaint
+                is TimelineEvent.TimeSeries -> timeseriesFramesPaint
                 is TimelineEvent.SlowFrame -> slowFramesPaint
                 is TimelineEvent.Resource -> resourceFramesPaint
             }
             canvas.drawRect(xOffset, 0f, xOffset + barSize, height.toFloat(), paint)
-            if (item.durationNs.ms > 0 || (item !is TimelineEvent.Tick && item !is TimelineEvent.Action)) {
+            if (item.text.isNotEmpty()) {
                 canvas.withRotation(degrees = 90f, pivotX = xOffset, pivotY = 0f) {
-                    val text = item.durationNs.ms.toString()
-
                     @Suppress("UnsafeThirdPartyFunctionCall") // measureText() is called on a non-null string
-                    val textWidth = durationPaint.measureText(text)
-                    drawText(text, xOffset + height.toFloat() - textWidth, 0f, durationPaint)
+                    val textWidth = durationPaint.measureText(item.text)
+                    drawText(item.text, xOffset + height.toFloat() - textWidth, 0f, durationPaint)
                 }
             }
 

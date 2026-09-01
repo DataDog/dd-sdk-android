@@ -15,7 +15,7 @@
       "$ref": "_common-schema.json"
     },
     {
-      "required": ["type"],
+      "required": ["type", "view"],
       "properties": {
         "type": {
           "type": "string",

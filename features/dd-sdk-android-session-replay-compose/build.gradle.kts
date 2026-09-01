@@ -4,7 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+import com.datadog.gradle.config.taskConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     // Build
@@ -38,6 +40,8 @@ plugins {
     id("test-pyramid-api-surface")
 }
 
+// TODO RUM-18189 Support new AGP DSL
+@Suppress("DEPRECATION")
 android {
     namespace = "com.datadog.android.sessionreplay.compose"
 
@@ -83,4 +87,11 @@ datadogBuild {
     applyPublishingConfig(
         "Session Replay Extension Support for Jetpack Compose."
     )
+}
+
+taskConfig<KotlinCompile> {
+    compilerOptions {
+        // TODO RUM-18190
+        freeCompilerArgs.add("-Xwarning-level=ERROR_SUPPRESSION:disabled")
+    }
 }

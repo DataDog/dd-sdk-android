@@ -22,6 +22,8 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.TimeseriesCpuEvent
+import com.datadog.android.rum.model.TimeseriesMemoryEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.ViewUpdateEvent
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
@@ -56,6 +58,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -221,6 +224,32 @@ internal class RumDataWriterTest {
             captor.capture()
         )
         assertThat(captor.firstValue.eventType).isEqualTo("unknown")
+    }
+
+    @Test
+    fun `M resolve timeseries event type W write() { generated timeseries events }`() {
+        // Given
+        val fakeEvents = listOf(
+            mock<TimeseriesCpuEvent> { on { type } doReturn "timeseries" },
+            mock<TimeseriesMemoryEvent> { on { type } doReturn "timeseries" }
+        )
+        fakeEvents.forEach {
+            whenever(mockEventMapper.map(it)) doReturn it
+            whenever(mockEventSerializer.serialize(it)) doReturn fakeSerializedEvent
+        }
+
+        // When
+        fakeEvents.forEach { testedWriter.write(mockEventBatchWriter, it, fakeEventType) }
+
+        // Then
+        val captor = argumentCaptor<TelemetryContext>()
+        verify(mockEventBatchWriter, times(fakeEvents.size)).write(
+            any(),
+            anyOrNull<ByteArray>(),
+            any<EventType>(),
+            captor.capture()
+        )
+        assertThat(captor.allValues.map { it.eventType }).containsOnly("timeseries")
     }
 
     @Test

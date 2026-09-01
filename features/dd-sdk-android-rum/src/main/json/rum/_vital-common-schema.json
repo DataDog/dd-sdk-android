@@ -12,12 +12,16 @@
       "$ref": "_view-container-schema.json"
     },
     {
-      "required": ["type", "vital"],
+      "required": ["type", "view", "vital"],
       "properties": {
         "type": {
           "type": "string",
           "description": "RUM event type",
           "const": "vital",
+          "readOnly": true
+        },
+        "view": {
+          "type": "object",
           "readOnly": true
         },
         "vital": {

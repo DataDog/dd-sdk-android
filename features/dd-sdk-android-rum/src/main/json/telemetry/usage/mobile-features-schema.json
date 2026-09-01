@@ -40,6 +40,17 @@
       }
     },
     {
+      "required": ["feature"],
+      "title": "Timeseries",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "Timeseries tracking enabled",
+          "const": "timeseries"
+        }
+      }
+    },
+    {
       "required": ["feature", "type"],
       "title": "AndroidNetworkInstrumentation",
       "properties": {
