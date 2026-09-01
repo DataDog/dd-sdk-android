@@ -323,7 +323,7 @@ internal class ProfilingFeature(
                         pendingRumEvents.clear()
                     } else {
                         val (longTasks, anrEvents, vitalEvents) = pendingRumEvents.drain()
-                        dataWriter.write(
+                        dataWriter.writeManualProfile(
                             profilingResult = result,
                             longTasks = longTasks,
                             anrEvents = anrEvents,
@@ -340,7 +340,7 @@ internal class ProfilingFeature(
                 val scheduler = continuousProfilingScheduler ?: return
                 scheduler.onActiveWindowEnded()
                 val (longTasks, anrEvents, vitalEvents) = pendingRumEvents.drain()
-                dataWriter.write(
+                dataWriter.writeManualProfile(
                     profilingResult = result,
                     longTasks = longTasks,
                     anrEvents = anrEvents,

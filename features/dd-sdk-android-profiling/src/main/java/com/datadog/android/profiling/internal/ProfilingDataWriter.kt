@@ -30,7 +30,7 @@ import kotlin.math.abs
 internal class ProfilingDataWriter(
     private val sdkCore: FeatureSdkCore
 ) : ProfilingWriter {
-    override fun write(
+    override fun writeManualProfile(
         profilingResult: PerfettoResult,
         longTasks: List<ProfilerEvent.RumLongTaskEvent>,
         anrEvents: List<ProfilerEvent.RumAnrEvent>,
@@ -57,11 +57,6 @@ internal class ProfilingDataWriter(
                             eventType = EventType.DEFAULT
                         )
                     }
-                    // TODO RUM-17263: when multiple SDK instances share the same resultFilePath,
-                    // the first writer to reach here deletes the file out from under the others,
-                    // so their reads fail and their profiles are dropped as perfetto_unreadable.
-                    // Deletion ownership needs to move to a single coordinator (read-once-and-fan-out
-                    // bytes, or reference-count across instances) before multi-instance is supported.
                     safeDelete(profilingResult.resultFilePath)
                 }
             }
@@ -70,6 +65,69 @@ internal class ProfilingDataWriter(
 
     override fun discard(profilingResult: PerfettoResult) {
         safeDelete(profilingResult.resultFilePath)
+    }
+
+    override fun writeTriggerProfile(
+        perfettoResult: PerfettoResult,
+        rumErrorId: String,
+        rumContext: ProfilingRumContext
+    ) {
+        val resultFilePath = perfettoResult.resultFilePath
+        val operation = perfettoResult.startReason.value
+        val detectedAtMs = perfettoResult.start
+        val feature = sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)
+        if (feature == null) {
+            safeDelete(resultFilePath)
+            return
+        }
+        feature.withWriteContext { context, writeScope ->
+            writeScope { writer ->
+                synchronized(this) {
+                    val profileBytes = readProfilingData(resultFilePath)
+                    if (profileBytes == null || profileBytes.isEmpty()) {
+                        logWriteResultMetric(
+                            dropped = true,
+                            dropReason = DROP_REASON_PERFETTO_UNREADABLE,
+                            startReason = operation,
+                            hasRumErrorId = rumErrorId.isNotEmpty()
+                        )
+                        safeDelete(resultFilePath)
+                        return@synchronized
+                    }
+                    val profileEvent = ProfileEvent(
+                        start = formatIsoUtc(detectedAtMs),
+                        end = formatIsoUtc(perfettoResult.end),
+                        attachments = listOf(PERFETTO_ATTACHMENT_NAME, RUM_MOBILE_EVENTS_ATTACHMENT_NAME),
+                        family = ProfileEvent.Family.ANDROID,
+                        runtime = ProfileEvent.Family.ANDROID,
+                        version = VERSION_NUMBER,
+                        tagsProfiler = buildTags(context, operation),
+                        application = ProfileEvent.Application(id = rumContext.applicationId),
+                        session = ProfileEvent.Session(id = rumContext.sessionId),
+                        view = ProfileEvent.View(
+                            id = listOfNotNull(rumContext.viewId),
+                            name = listOfNotNull(rumContext.viewName)
+                        ),
+                        error = ProfileEvent.Error(id = listOfNotNull(rumErrorId.ifEmpty { null }))
+                    )
+                    val serialized = profileEvent.toJson().toString().toByteArray(Charsets.UTF_8)
+                    val rumMobileEventsJson = buildTriggerRumMobileEventsJson(rumErrorId, detectedAtMs)
+                    val metadata = ProfilingBatchMetadata(profileBytes, rumMobileEventsJson).toBytes()
+                    logWriteResultMetric(
+                        dropped = false,
+                        dropReason = null,
+                        startReason = operation,
+                        hasRumErrorId = rumErrorId.isNotEmpty()
+                    )
+                    writer.write(
+                        event = RawBatchEvent(data = serialized, metadata = metadata),
+                        batchMetadata = null,
+                        eventType = EventType.DEFAULT
+                    )
+                    safeDelete(resultFilePath)
+                }
+            }
+        }
     }
 
     private fun buildRawBatchEvent(
@@ -172,25 +230,28 @@ internal class ProfilingDataWriter(
     private fun logWriteResultMetric(
         dropped: Boolean,
         dropReason: String?,
-        driftMs: Long,
+        driftMs: Long? = null,
         startReason: String,
-        longTaskEvents: List<ProfilerEvent.RumLongTaskEvent>,
-        anrEvents: List<ProfilerEvent.RumAnrEvent>,
-        vitalEvents: List<ProfilerEvent.RumVitalEvent>
+        longTaskEvents: List<ProfilerEvent.RumLongTaskEvent>? = null,
+        anrEvents: List<ProfilerEvent.RumAnrEvent>? = null,
+        vitalEvents: List<ProfilerEvent.RumVitalEvent>? = null,
+        hasRumErrorId: Boolean? = null
     ) {
+        val writeResult = buildMap {
+            put(KEY_DROPPED, dropped)
+            put(KEY_DROP_REASON, dropReason)
+            put(ProfilingTelemetry.KEY_START_REASON, startReason)
+            driftMs?.let { put(KEY_CLIENT_CLOCK_DRIFT, it) }
+            longTaskEvents?.let { put(KEY_LONG_TASK_COUNT, it.size) }
+            anrEvents?.let { put(KEY_ANR_COUNT, it.size) }
+            vitalEvents?.let { put(KEY_VITAL_COUNT, it.size) }
+            hasRumErrorId?.let { put(KEY_HAS_RUM_ERROR_ID, it) }
+        }
         sdkCore.internalLogger.logMetric(
             messageBuilder = { ProfilingTelemetry.TELEMETRY_MSG_PROFILING_SESSION },
             additionalProperties = mapOf(
                 ProfilingTelemetry.KEY_METRIC_TYPE to METRIC_TYPE_PROFILING_WRITE,
-                KEY_PROFILING_WRITE to mapOf(
-                    KEY_DROPPED to dropped,
-                    KEY_DROP_REASON to dropReason,
-                    KEY_CLIENT_CLOCK_DRIFT to driftMs,
-                    ProfilingTelemetry.KEY_START_REASON to startReason,
-                    KEY_LONG_TASK_COUNT to longTaskEvents.size,
-                    KEY_ANR_COUNT to anrEvents.size,
-                    KEY_VITAL_COUNT to vitalEvents.size
-                )
+                KEY_PROFILING_WRITE to writeResult
             ),
             samplingRate = MethodCallSamplingRate.ALL.rate
         )
@@ -282,6 +343,24 @@ internal class ProfilingDataWriter(
                 durationNs = it.durationNs
             )
         }
+        return serializeRumMobileEvents(rumMobileEvents)
+    }
+
+    private fun buildTriggerRumMobileEventsJson(rumErrorId: String, detectedAtMs: Long): ByteArray {
+        val rumMobileEvents = listOfNotNull(
+            rumErrorId.ifEmpty { null }?.let {
+                RumMetadataEvent(
+                    id = it,
+                    type = RumMetadataEvent.Type.ERROR,
+                    startNs = TimeUnit.MILLISECONDS.toNanos(detectedAtMs),
+                    durationNs = 0L
+                )
+            }
+        )
+        return serializeRumMobileEvents(rumMobileEvents)
+    }
+
+    private fun serializeRumMobileEvents(rumMobileEvents: List<RumMetadataEvent>): ByteArray {
         return JsonArray(rumMobileEvents.size).apply {
             rumMobileEvents.forEach {
                 add(it.toJson())
@@ -352,6 +431,7 @@ internal class ProfilingDataWriter(
         internal const val DROP_REASON_CLOCK_DRIFT = "clock_drift_exceeded"
         internal const val DROP_REASON_PERFETTO_UNREADABLE = "perfetto_unreadable"
         internal const val DROP_REASON_NO_RUM_CONTEXT = "no_rum_context"
+        internal const val KEY_HAS_RUM_ERROR_ID = "has_rum_error_id"
 
         private const val TAG_KEY_SERVICE = "service"
         private const val TAG_KEY_VERSION = "version"

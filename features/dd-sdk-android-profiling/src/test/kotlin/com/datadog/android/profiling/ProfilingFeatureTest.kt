@@ -823,7 +823,7 @@ internal class ProfilingFeatureTest {
         )
 
         // Then
-        verify(mockDataWriter).write(
+        verify(mockDataWriter).writeManualProfile(
             profilingResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.CONTINUOUS),
             longTasks = emptyList(),
             anrEvents = emptyList(),
@@ -875,7 +875,7 @@ internal class ProfilingFeatureTest {
         )
 
         // Then
-        verify(mockDataWriter).write(
+        verify(mockDataWriter).writeManualProfile(
             profilingResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.CONTINUOUS),
             longTasks = listOf(fakeRumLongTaskEvent),
             anrEvents = emptyList(),
@@ -916,7 +916,7 @@ internal class ProfilingFeatureTest {
         )
 
         // Then
-        verify(mockDataWriter).write(
+        verify(mockDataWriter).writeManualProfile(
             profilingResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.CONTINUOUS),
             longTasks = emptyList(),
             anrEvents = listOf(fakeRumAnrEvent),
@@ -1258,7 +1258,7 @@ internal class ProfilingFeatureTest {
         )
 
         // Then
-        verify(mockDataWriter).write(
+        verify(mockDataWriter).writeManualProfile(
             profilingResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH),
             longTasks = listOf(fakeRumLongTaskEvent),
             anrEvents = emptyList(),
@@ -1290,7 +1290,7 @@ internal class ProfilingFeatureTest {
 
         // Then
         verify(mockDataWriter).discard(launchResult)
-        verify(mockDataWriter, never()).write(any(), any(), any(), any())
+        verify(mockDataWriter, never()).writeManualProfile(any(), any(), any(), any())
     }
 
     @Test
@@ -1317,7 +1317,7 @@ internal class ProfilingFeatureTest {
         )
 
         // Then
-        verify(mockDataWriter).write(
+        verify(mockDataWriter).writeManualProfile(
             profilingResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH),
             longTasks = emptyList(),
             anrEvents = listOf(fakeRumAnrEvent),
@@ -1619,7 +1619,7 @@ internal class ProfilingFeatureTest {
         )
 
         // Then
-        verify(mockDataWriter, never()).write(
+        verify(mockDataWriter, never()).writeManualProfile(
             profilingResult = any(),
             longTasks = any(),
             anrEvents = any(),
@@ -1651,7 +1651,7 @@ internal class ProfilingFeatureTest {
         )
 
         // Then
-        verify(mockDataWriter).write(
+        verify(mockDataWriter).writeManualProfile(
             profilingResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH),
             longTasks = listOf(fakeRumLongTaskEvent),
             anrEvents = emptyList(),
@@ -1681,7 +1681,7 @@ internal class ProfilingFeatureTest {
         )
 
         // Then — nothing is written while the quota decision is still pending
-        verify(mockDataWriter, never()).write(
+        verify(mockDataWriter, never()).writeManualProfile(
             profilingResult = any(),
             longTasks = any(),
             anrEvents = any(),
@@ -1692,7 +1692,7 @@ internal class ProfilingFeatureTest {
         testedFeature.simulateQuotaAllowed()
 
         // Then — the buffered launch event is now written
-        verify(mockDataWriter).write(
+        verify(mockDataWriter).writeManualProfile(
             profilingResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH),
             longTasks = listOf(fakeRumLongTaskEvent),
             anrEvents = emptyList(),
