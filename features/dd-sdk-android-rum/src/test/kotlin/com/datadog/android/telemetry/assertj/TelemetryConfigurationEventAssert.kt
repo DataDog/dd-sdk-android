@@ -469,6 +469,32 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
 
     // endregion
 
+    // region Remote Configuration
+
+    fun hasRemoteConfigurationId(expected: String?): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.remoteConfigurationId)
+            .overridingErrorMessage(
+                "Expected telemetry configuration to have remoteConfigurationId $expected but was " +
+                    "${actual.telemetry.configuration.remoteConfigurationId}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasRemoteConfiguration(
+        expected: TelemetryConfigurationEvent.RemoteConfiguration?
+    ): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.remoteConfiguration)
+            .overridingErrorMessage(
+                "Expected telemetry configuration to have remoteConfiguration $expected but was " +
+                    "${actual.telemetry.configuration.remoteConfiguration}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    // endregion
+
     companion object {
         fun assertThat(actual: TelemetryConfigurationEvent) =
             TelemetryConfigurationEventAssert(actual)

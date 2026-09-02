@@ -4,20 +4,19 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.config.androidLibraryConfig
-import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.javadocConfig
-import com.datadog.gradle.config.junitConfig
-import com.datadog.gradle.config.kotlinConfig
-import com.datadog.gradle.config.publishingConfig
+import com.datadog.gradle.config.taskConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("ktlint")
     // Build
     id("com.android.library")
+    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
+    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
+    id("ktlint")
     kotlin("android")
     alias(libs.plugins.composeCompilerPlugin)
+    id("datadogBuildConfig")
 
     // Publish
     `maven-publish`
@@ -25,7 +24,7 @@ plugins {
     id("org.jetbrains.dokka-javadoc")
 
     // Analysis tools
-    id("com.github.ben-manes.versions")
+    id("detekt-conventions")
 
     // Tests
     id("de.mobilej.unmock")
@@ -34,13 +33,15 @@ plugins {
 
     // Internal Generation
     id("apiSurface")
+    id("aarMetadata")
     id("transitiveDependencies")
     id("verificationXml")
     id("binary-compatibility-validator")
-    id("detekt-conventions")
     id("test-pyramid-api-surface")
 }
 
+// TODO RUM-18189 Support new AGP DSL
+@Suppress("DEPRECATION")
 android {
     namespace = "com.datadog.android.sessionreplay.compose"
 
@@ -78,11 +79,20 @@ unMock {
     keep("android.graphics.Color")
 }
 
-kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
-androidLibraryConfig()
-junitConfig()
-javadocConfig()
-dependencyUpdateConfig()
-publishingConfig(
-    "Session Replay Extension Support for Jetpack Compose."
-)
+datadogBuild {
+    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyAndroidLibraryConfig()
+    applyJunitConfig()
+    applyJavadocConfig()
+    applyPublishingConfig(
+        "Session Replay Extension Support for Jetpack Compose."
+    )
+}
+
+taskConfig<KotlinCompile> {
+    compilerOptions {
+        // This integration intentionally accesses Kotlin-internal Compose APIs via INVISIBLE_*
+        // suppressions, which KGP 2.2 reports with the ERROR_SUPPRESSION diagnostic.
+        freeCompilerArgs.add("-Xwarning-level=ERROR_SUPPRESSION:disabled")
+    }
+}

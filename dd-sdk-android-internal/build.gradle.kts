@@ -4,20 +4,18 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.config.androidLibraryConfig
-import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.java11
-import com.datadog.gradle.config.javadocConfig
-import com.datadog.gradle.config.junitConfig
-import com.datadog.gradle.config.kotlinConfig
-import com.datadog.gradle.config.publishingConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    id("ktlint")
+    // Build
     id("com.android.library")
+    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
+    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
+    id("ktlint")
     kotlin("android")
     id("com.google.devtools.ksp")
+    id("datadogBuildConfig")
 
     // Publish
     `maven-publish`
@@ -25,7 +23,7 @@ plugins {
     id("org.jetbrains.dokka-javadoc")
 
     // Analysis tools
-    id("com.github.ben-manes.versions")
+    id("detekt-conventions")
 
     // Tests
     id("de.mobilej.unmock")
@@ -34,12 +32,14 @@ plugins {
 
     // Internal Generation
     id("apiSurface")
+    id("aarMetadata")
     id("transitiveDependencies")
     id("verificationXml")
     id("binary-compatibility-validator")
-    id("detekt-conventions")
 }
 
+// TODO RUM-18189 Support new AGP DSL
+@Suppress("DEPRECATION")
 android {
     namespace = "com.datadog.android.internal"
     compileOptions {
@@ -79,14 +79,15 @@ dependencies {
     unmock(libs.robolectric)
 }
 
-kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
-androidLibraryConfig()
-junitConfig()
-javadocConfig()
-dependencyUpdateConfig()
-publishingConfig(
-    "Internal library to be used by the Datadog SDK modules."
-)
+datadogBuild {
+    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyAndroidLibraryConfig()
+    applyJunitConfig()
+    applyJavadocConfig()
+    applyPublishingConfig(
+        "Internal library to be used by the Datadog SDK modules."
+    )
+}
 
 unMock {
     keep("android.os.BaseBundle")

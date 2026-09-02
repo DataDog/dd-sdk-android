@@ -16,6 +16,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.internal.remote.model.RemoteConfigSyncMetadata
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.attributes.LocalAttribute
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
@@ -222,6 +223,7 @@ internal class TelemetryEventHandlerTest {
         }
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.appUptimeNs) doReturn fakeAppUptimeNs
+        whenever(mockSdkCore.remoteConfigurationSyncMetadata) doReturn null
 
         testedTelemetryHandler = TelemetryEventHandler(
             mockSdkCore,
@@ -862,6 +864,74 @@ internal class TelemetryEventHandlerTest {
             assertThat(firstValue).hasSessionReplayImagePrivacy(null)
             assertThat(firstValue).hasSessionReplayTouchPrivacy(null)
             assertThat(firstValue).hasSessionReplayTextAndInputPrivacy(null)
+        }
+    }
+
+    // endregion
+
+    // region configuration event — remote configuration metadata
+
+    @Test
+    fun `M include remote_configuration W handleEvent() { remoteConfigurationSyncMetadata present }`(
+        @Forgery fakeConfiguration: InternalTelemetryEvent.Configuration,
+        @Forgery fakeSyncMetadata: RemoteConfigSyncMetadata
+    ) {
+        // Given
+        whenever(mockSdkCore.remoteConfigurationSyncMetadata) doReturn fakeSyncMetadata
+        val configRawEvent = RumRawEvent.TelemetryEventWrapper(fakeConfiguration, eventTime = fakeEventTime)
+
+        // When
+        testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
+
+        // Then
+        argumentCaptor<TelemetryConfigurationEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            val expectedRcBlock = TelemetryConfigurationEvent.RemoteConfiguration(
+                configId = fakeSyncMetadata.configId,
+                versionId = fakeSyncMetadata.versionId,
+                lastModified = fakeSyncMetadata.lastModified,
+                lastSynced = fakeSyncMetadata.lastSynced,
+                firstApplied = fakeSyncMetadata.firstApplied,
+                syncId = fakeSyncMetadata.syncId
+            )
+            assertThat(firstValue).hasRemoteConfiguration(expectedRcBlock)
+        }
+    }
+
+    @Test
+    fun `M omit remote_configuration W handleEvent() { remoteConfigurationSyncMetadata null }`(
+        @Forgery fakeConfiguration: InternalTelemetryEvent.Configuration
+    ) {
+        // Given
+        whenever(mockSdkCore.remoteConfigurationSyncMetadata) doReturn null
+        val configRawEvent = RumRawEvent.TelemetryEventWrapper(fakeConfiguration, eventTime = fakeEventTime)
+
+        // When
+        testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
+
+        // Then
+        argumentCaptor<TelemetryConfigurationEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            assertThat(firstValue).hasRemoteConfiguration(null)
+        }
+    }
+
+    @Test
+    fun `M include remoteConfigurationId W handleEvent() { context has remoteConfigurationId }`(
+        @Forgery fakeConfiguration: InternalTelemetryEvent.Configuration,
+        @StringForgery fakeRcId: String
+    ) {
+        // Given
+        fakeDatadogContext = fakeDatadogContext.copy(remoteConfigurationId = fakeRcId)
+        val configRawEvent = RumRawEvent.TelemetryEventWrapper(fakeConfiguration, eventTime = fakeEventTime)
+
+        // When
+        testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
+
+        // Then
+        argumentCaptor<TelemetryConfigurationEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            assertThat(firstValue).hasRemoteConfigurationId(fakeRcId)
         }
     }
 
@@ -1767,6 +1837,7 @@ internal class TelemetryEventHandlerTest {
                 (traceContext[OKHTTP_INTERCEPTOR_HEADER_TYPES] as? TracingHeaderTypesSet)
                     ?.toSelectedTracingPropagators()
             )
+            .hasRemoteConfigurationId(fakeDatadogContext.remoteConfigurationId)
     }
 
     private fun assertConfigEventMatchesInternalEvent(
@@ -1794,6 +1865,7 @@ internal class TelemetryEventHandlerTest {
                 (traceContext[OKHTTP_INTERCEPTOR_HEADER_TYPES] as? TracingHeaderTypesSet)
                     ?.toSelectedTracingPropagators()
             )
+            .hasRemoteConfigurationId(fakeDatadogContext.remoteConfigurationId)
     }
 
     private fun Forge.forgeWritableInternalTelemetryEvent(

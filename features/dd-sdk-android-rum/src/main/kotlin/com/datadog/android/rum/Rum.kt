@@ -18,8 +18,11 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.internal.sampling.SessionSamplingIdProvider
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.internal.RumAnonymousIdentifierManager
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.RumFeature.Configuration
+import com.datadog.android.rum.internal.applyRemoteConfiguration
 import com.datadog.android.rum.internal.domain.scope.RumVitalAppLaunchEventHelper
 import com.datadog.android.rum.internal.metric.SessionEndedMetricDispatcher
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
@@ -71,17 +74,19 @@ object Rum {
             return
         }
 
+        val effectiveConfiguration = rumConfiguration.applyRemoteConfiguration(sdkCore.remoteConfiguration)
+
         val rumFeature = RumFeature(
             sdkCore = sdkCore,
-            applicationId = rumConfiguration.applicationId,
-            configuration = rumConfiguration.featureConfiguration
+            applicationId = effectiveConfiguration.applicationId,
+            configuration = effectiveConfiguration.featureConfiguration
         )
 
         sdkCore.registerFeature(rumFeature)
 
         sdkCore.getFeature(rumFeature.name)?.dataStore?.let {
             RumAnonymousIdentifierManager(it, sdkCore).manageAnonymousId(
-                rumConfiguration.featureConfiguration.trackAnonymousUser
+                effectiveConfiguration.featureConfiguration.trackAnonymousUser
             )
         }
 
@@ -106,6 +111,12 @@ object Rum {
         //  and before it is registered, but with current code (internal RUM scopes using the
         //  `GlobalRumMonitor`) it is impossible to break cycle dependency.
         rumMonitor.start()
+
+        // Reported here and not in RumFeature.onInitialize: telemetry events are dropped while the
+        // global RUM monitor is not registered yet (see RumFeature.handleTelemetryEvent).
+        if (rumConfiguration.featureConfiguration.isTimeseriesConfigured()) {
+            sdkCore.internalLogger.logApiUsage { InternalTelemetryEvent.ApiUsage.Timeseries() }
+        }
     }
 
     // region private
@@ -142,14 +153,7 @@ object Rum {
             sessionSampler = sessionSampler,
             writer = rumFeature.dataWriter,
             handler = Handler(Looper.getMainLooper()),
-            telemetryEventHandler = TelemetryEventHandler(
-                sdkCore = sdkCore,
-                eventSampler = RateBasedSampler(rumFeature.telemetrySampleRate),
-                sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
-                configurationExtraSampler = RateBasedSampler(
-                    rumFeature.telemetryConfigurationSampleRate
-                )
-            ),
+            telemetryEventHandler = createTelemetryEventHandler(sdkCore, rumFeature, sessionEndedMetricDispatcher),
             firstPartyHostHeaderTypeResolver = sdkCore.firstPartyHostResolver,
             cpuVitalMonitor = rumFeature.cpuVitalMonitor,
             memoryVitalMonitor = rumFeature.memoryVitalMonitor,
@@ -173,9 +177,23 @@ object Rum {
                 )
             },
             insightsCollector = rumFeature.insightsCollector,
-            heatmapIdentifierRegistry = rumFeature.heatmapIdentifierRegistry
+            heatmapIdentifierRegistry = rumFeature.heatmapIdentifierRegistry,
+            timeseriesCollectorFactory = rumFeature.timeseriesCollectorFactory
         )
     }
+
+    private fun createTelemetryEventHandler(
+        sdkCore: InternalSdkCore,
+        rumFeature: RumFeature,
+        sessionEndedMetricDispatcher: SessionEndedMetricDispatcher
+    ) = TelemetryEventHandler(
+        sdkCore = sdkCore,
+        eventSampler = RateBasedSampler(rumFeature.telemetrySampleRate),
+        sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
+        configurationExtraSampler = RateBasedSampler(
+            rumFeature.telemetryConfigurationSampleRate
+        )
+    )
 
     // endregion
 
@@ -190,6 +208,10 @@ object Rum {
 
     internal const val RUM_FEATURE_ALREADY_ENABLED =
         "RUM Feature is already enabled in this SDK core, ignoring the call to enable it."
+
+    private fun Configuration.isTimeseriesConfigured(): Boolean {
+        return timeseriesConfiguration?.enabledTypes?.isNotEmpty() == true
+    }
 
     // endregion
 }

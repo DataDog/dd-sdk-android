@@ -181,6 +181,11 @@ internal class TelemetryUsageEventAssert(actual: TelemetryUsageEvent) :
                     .isInstanceOf(TelemetryUsageEvent.Usage.TrackWebView::class.java)
             }
 
+            is InternalTelemetryEvent.ApiUsage.Timeseries -> {
+                assertThat(actual.telemetry.usage)
+                    .isInstanceOf(TelemetryUsageEvent.Usage.Timeseries::class.java)
+            }
+
             is InternalTelemetryEvent.ApiUsage.NetworkInstrumentation -> {
                 val actualUsage =
                     actual.telemetry.usage as TelemetryUsageEvent.Usage.AndroidNetworkInstrumentation

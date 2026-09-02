@@ -7,15 +7,22 @@
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.depotProxied
 import com.datadog.gradle.config.java17
-import com.datadog.gradle.config.kotlinConfig
+import com.datadog.gradle.config.taskConfig
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("ktlint")
+    // Build
     id("com.android.application")
+    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
+    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
+    id("ktlint")
     kotlin("android")
     alias(libs.plugins.composeCompilerPlugin)
+    id("datadogBuildConfig")
 }
 
+// TODO RUM-18189 Support new AGP DSL
+@Suppress("DEPRECATION")
 android {
 
     compileSdk = AndroidConfig.TARGET_SDK
@@ -33,7 +40,6 @@ android {
             compose = true
         }
 
-        multiDexEnabled = true
         vectorDrawables.useSupportLibrary = true
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -111,7 +117,6 @@ dependencies {
     implementation(libs.gson)
     implementation(libs.kotlin)
     implementation(libs.bundles.androidXSupportBase)
-    implementation(libs.androidXMultidex)
     implementation(libs.elmyr)
     implementation(libs.leakCanaryAndroid)
 
@@ -141,4 +146,14 @@ dependencies {
     }
 }
 
-kotlinConfig()
+datadogBuild {
+    applyKotlinConfig()
+}
+
+taskConfig<KotlinCompile> {
+    compilerOptions {
+        // Integration fixtures intentionally access Kotlin-internal SDK APIs via INVISIBLE_*
+        // suppressions, which KGP 2.2 reports with the ERROR_SUPPRESSION diagnostic.
+        freeCompilerArgs.add("-Xwarning-level=ERROR_SUPPRESSION:disabled")
+    }
+}

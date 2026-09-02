@@ -7,7 +7,6 @@
 package com.datadog.android.sessionreplay.internal.recorder.listener
 
 import android.view.View
-import android.view.ViewTreeObserver
 import androidx.annotation.MainThread
 import androidx.annotation.UiThread
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -18,6 +17,7 @@ import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
+import com.datadog.android.sessionreplay.internal.recorder.OnDemandCaptureListener
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.internal.recorder.withinSRBenchmarkSpan
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
@@ -40,7 +40,7 @@ internal class WindowsOnDrawListener(
     ),
     private val methodCallSamplingRate: Float,
     private val rumContextProvider: RumContextProvider
-) : ViewTreeObserver.OnDrawListener {
+) : OnDemandCaptureListener {
 
     internal val weakReferencedDecorViews: List<WeakReference<View>> = zOrderedDecorViews.map { WeakReference(it) }
 
@@ -49,54 +49,74 @@ internal class WindowsOnDrawListener(
         debouncer.debounce(snapshotRunnable)
     }
 
+    @MainThread
+    override fun captureNow(): Boolean = takeSnapshot()
+
     // Note: we declare the anonymous object explicitly to annotate the run method as @UiThread
     @Suppress("ObjectLiteralToLambda")
     private val snapshotRunnable: Runnable = object : Runnable {
 
         @UiThread
         override fun run() {
-            val rootViews = weakReferencedDecorViews.mapNotNull { it.get() }
-
-            // is is very important to have the windows sorted by their z-order
-            val context = rootViews.firstOrNull()?.context ?: return
-            val systemInformation = miscUtils.resolveSystemInformation(context)
-            val item = recordedDataQueueHandler.addSnapshotItem(systemInformation) ?: return
-
-            val currentViewUrl = rumContextProvider.getRumContext().viewUrl
-
-            val nodes = sdkCore.internalLogger.measureMethodCallPerf(
-                METHOD_CALL_CALLER_CLASS,
-                METHOD_CALL_CAPTURE_RECORD,
-                methodCallSamplingRate
-            ) {
-                withinSRBenchmarkSpan(BENCHMARK_SPAN_SNAPSHOT_PRODUCER, isContainer = true) {
-                    val recordedDataQueueRefs = RecordedDataQueueRefs(recordedDataQueueHandler)
-                    recordedDataQueueRefs.recordedDataQueueItem = item
-                    rootViews.mapNotNull {
-                        snapshotProducer.produce(
-                            rootView = it,
-                            systemInformation = systemInformation,
-                            textAndInputPrivacy = textAndInputPrivacy,
-                            imagePrivacy = imagePrivacy,
-                            recordedDataQueueRefs = recordedDataQueueRefs,
-                            activeRumViewUrl = currentViewUrl
-                        )
-                    }
-                }
-            }
-
-            if (nodes.isNotEmpty()) {
-                item.nodes = nodes
-            }
-
-            item.isFinishedTraversal = true
-
-            if (item.isReady()) {
-                recordedDataQueueHandler.tryToConsumeItems()
-            }
-
-            touchPrivacyManager.updateCurrentTouchOverrideAreas()
+            takeSnapshot()
         }
+    }
+
+    /**
+     * @return whether a snapshot item was in fact queued: there may be no window left to traverse,
+     * or the queue may have refused the item.
+     */
+    @UiThread
+    @Suppress("ReturnCount")
+    private fun takeSnapshot(): Boolean {
+        val rootViews = weakReferencedDecorViews.mapNotNull { it.get() }
+
+        // is is very important to have the windows sorted by their z-order
+        val context = rootViews.firstOrNull()?.context ?: return false
+        val systemInformation = miscUtils.resolveSystemInformation(context)
+        val item = recordedDataQueueHandler.addSnapshotItem(systemInformation) ?: return false
+
+        val currentViewUrl = rumContextProvider.getRumContext().viewUrl
+
+        val nodes = sdkCore.internalLogger.measureMethodCallPerf(
+            METHOD_CALL_CALLER_CLASS,
+            METHOD_CALL_CAPTURE_RECORD,
+            methodCallSamplingRate
+        ) {
+            withinSRBenchmarkSpan(BENCHMARK_SPAN_SNAPSHOT_PRODUCER, isContainer = true) {
+                val recordedDataQueueRefs = RecordedDataQueueRefs(recordedDataQueueHandler)
+                recordedDataQueueRefs.recordedDataQueueItem = item
+                snapshotProducer.beginSnapshot()
+                val snapshotNodes = rootViews.mapNotNull {
+                    snapshotProducer.produce(
+                        rootView = it,
+                        systemInformation = systemInformation,
+                        textAndInputPrivacy = textAndInputPrivacy,
+                        imagePrivacy = imagePrivacy,
+                        recordedDataQueueRefs = recordedDataQueueRefs,
+                        activeRumViewUrl = currentViewUrl
+                    )
+                }
+                snapshotProducer.finishSnapshot()?.let {
+                    @Suppress("UnsafeThirdPartyFunctionCall") // Kotlin listOf cannot fail for this local value.
+                    val finishSnapshotNodes = listOf(it)
+                    finishSnapshotNodes + snapshotNodes
+                } ?: snapshotNodes
+            }
+        }
+
+        if (nodes.isNotEmpty()) {
+            item.nodes = nodes
+        }
+
+        item.isFinishedTraversal = true
+
+        if (item.isReady()) {
+            recordedDataQueueHandler.tryToConsumeItems()
+        }
+
+        touchPrivacyManager.updateCurrentTouchOverrideAreas()
+        return true
     }
 
     companion object {

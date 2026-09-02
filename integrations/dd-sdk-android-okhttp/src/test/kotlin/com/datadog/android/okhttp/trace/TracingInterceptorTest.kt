@@ -10,6 +10,7 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.remote.model.RemoteConfiguration
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
@@ -190,6 +191,7 @@ internal open class TracingInterceptorTest {
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(rumMonitor.mockSdkCore.firstPartyHostResolver) doReturn mockResolver
+        whenever(rumMonitor.mockSdkCore.remoteConfiguration) doReturn null
         testedInterceptor = instantiateTestedInterceptor(
             fakeLocalHosts,
             globalTracerProvider = { mockTracer },
@@ -1884,6 +1886,153 @@ internal open class TracingInterceptorTest {
         configure(builder)
 
         return builder.build()
+    }
+
+    // endregion
+
+    // region Remote Configuration
+
+    @Test
+    fun `M override traceSampler W onSdkInstanceReady { RC provides sampleRate }`(
+        @FloatForgery(min = 0f, max = 100f) fakeRcSampleRate: Float
+    ) {
+        // Given — set RC before constructing the interceptor so onSdkInstanceReady fires with it
+        val fakeRc = RemoteConfiguration(
+            trace = RemoteConfiguration.Trace(sampleRate = fakeRcSampleRate)
+        )
+        whenever(rumMonitor.mockSdkCore.remoteConfiguration) doReturn fakeRc
+        testedInterceptor = instantiateTestedInterceptor(
+            fakeLocalHosts,
+            globalTracerProvider = { mockTracer },
+            localTracerFactory = { _, _ -> mockLocalTracer }
+        )
+
+        // Then
+        assertThat(testedInterceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
+        assertThat(testedInterceptor.traceSampler.getSampleRate()).isEqualTo(fakeRcSampleRate)
+    }
+
+    @Test
+    fun `M override traceContextInjection W onSdkInstanceReady { RC provides ALL injection }`() {
+        // Given — set RC before constructing the interceptor so onSdkInstanceReady fires with it
+        val fakeRc = RemoteConfiguration(
+            trace = RemoteConfiguration.Trace(
+                traceContextInjection = RemoteConfiguration.TraceContextInjection.ALL
+            )
+        )
+        whenever(rumMonitor.mockSdkCore.remoteConfiguration) doReturn fakeRc
+        testedInterceptor = instantiateTestedInterceptor(
+            fakeLocalHosts,
+            globalTracerProvider = { mockTracer },
+            localTracerFactory = { _, _ -> mockLocalTracer }
+        )
+
+        // Then
+        assertThat(testedInterceptor.traceContextInjection).isEqualTo(TraceContextInjection.ALL)
+    }
+
+    @Test
+    fun `M not apply RC on second onSdkInstanceReady W onSdkInstanceReady { called multiple times }`(
+        @FloatForgery(min = 0f, max = 100f) fakeRcSampleRate: Float,
+        @FloatForgery(min = 0f, max = 100f) fakeSecondRcSampleRate: Float
+    ) {
+        // Given — first RC set at construction time
+        val fakeRc = RemoteConfiguration(
+            trace = RemoteConfiguration.Trace(sampleRate = fakeRcSampleRate)
+        )
+        whenever(rumMonitor.mockSdkCore.remoteConfiguration) doReturn fakeRc
+        testedInterceptor = instantiateTestedInterceptor(
+            fakeLocalHosts,
+            globalTracerProvider = { mockTracer },
+            localTracerFactory = { _, _ -> mockLocalTracer }
+        )
+
+        // When — second onSdkInstanceReady with different RC
+        val fakeSecondRc = RemoteConfiguration(
+            trace = RemoteConfiguration.Trace(sampleRate = fakeSecondRcSampleRate)
+        )
+        whenever(rumMonitor.mockSdkCore.remoteConfiguration) doReturn fakeSecondRc
+        testedInterceptor.onSdkInstanceReady(rumMonitor.mockSdkCore)
+
+        // Then — rate from first call is preserved, second RC ignored
+        assertThat(testedInterceptor.traceSampler.getSampleRate()).isEqualTo(fakeRcSampleRate)
+    }
+
+    @Test
+    fun `M keep in-code values W onSdkInstanceReady { null RC }`() {
+        // Given — null RC at construction, so in-code values are preserved
+        whenever(rumMonitor.mockSdkCore.remoteConfiguration) doReturn null
+        testedInterceptor = instantiateTestedInterceptor(
+            fakeLocalHosts,
+            globalTracerProvider = { mockTracer },
+            localTracerFactory = { _, _ -> mockLocalTracer }
+        )
+        val originalSampler = testedInterceptor.traceSampler
+        val originalInjection = testedInterceptor.traceContextInjection
+
+        // When — second call also with null RC
+        testedInterceptor.onSdkInstanceReady(rumMonitor.mockSdkCore)
+
+        // Then
+        assertThat(testedInterceptor.traceSampler).isSameAs(originalSampler)
+        assertThat(testedInterceptor.traceContextInjection).isEqualTo(originalInjection)
+    }
+
+    @Test
+    fun `M replace localFirstPartyHostHeaderTypeResolver W onSdkInstanceReady { RC provides tracedHosts }`(
+        forge: Forge
+    ) {
+        // Given — RC provides a host not in the developer's in-code list
+        val fakeRcHost = forge.aStringMatching("[a-z]+\\.[a-z]{2,3}")
+        val fakeRc = RemoteConfiguration(
+            trace = RemoteConfiguration.Trace(
+                tracedHosts = listOf(
+                    RemoteConfiguration.TracedHost(
+                        host = fakeRcHost,
+                        propagatorTypes = listOf(RemoteConfiguration.PropagatorType.DATADOG)
+                    )
+                )
+            )
+        )
+        whenever(rumMonitor.mockSdkCore.remoteConfiguration) doReturn fakeRc
+        testedInterceptor = instantiateTestedInterceptor(
+            fakeLocalHosts,
+            globalTracerProvider = { mockTracer },
+            localTracerFactory = { _, _ -> mockLocalTracer }
+        )
+
+        // Then — RC host is resolvable, developer hosts are replaced
+        assertThat(
+            testedInterceptor.localFirstPartyHostHeaderTypeResolver
+                .headerTypesForUrl("https://$fakeRcHost/path")
+        ).containsExactly(TracingHeaderType.DATADOG)
+    }
+
+    @Test
+    fun `M keep in-code values W onSdkInstanceReady { RC trace namespace present but all fields null }`() {
+        // Given — RC has a trace namespace but every field inside it is null
+        val fakeRc = RemoteConfiguration(
+            trace = RemoteConfiguration.Trace(
+                sampleRate = null,
+                traceContextInjection = null,
+                tracedHosts = null
+            )
+        )
+        whenever(rumMonitor.mockSdkCore.remoteConfiguration) doReturn fakeRc
+        testedInterceptor = instantiateTestedInterceptor(
+            fakeLocalHosts,
+            globalTracerProvider = { mockTracer },
+            localTracerFactory = { _, _ -> mockLocalTracer }
+        )
+        val originalSampler = testedInterceptor.traceSampler
+        val originalInjection = testedInterceptor.traceContextInjection
+
+        // Then — all fields preserved, rcApplied is true so further calls are no-ops too
+        assertThat(testedInterceptor.traceSampler).isSameAs(originalSampler)
+        assertThat(testedInterceptor.traceContextInjection).isEqualTo(originalInjection)
+        testedInterceptor.onSdkInstanceReady(rumMonitor.mockSdkCore)
+        assertThat(testedInterceptor.traceSampler).isSameAs(originalSampler)
+        assertThat(testedInterceptor.traceContextInjection).isEqualTo(originalInjection)
     }
 
     // endregion

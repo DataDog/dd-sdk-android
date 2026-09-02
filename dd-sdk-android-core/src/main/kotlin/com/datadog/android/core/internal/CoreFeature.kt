@@ -201,6 +201,9 @@ internal class CoreFeature(
 
     @Volatile
     internal var appBuildId: String? = null
+
+    @Volatile
+    internal var remoteConfigurationId: String? = null
     internal var customUploadSchedulerStrategy: UploadSchedulerStrategy? = null
 
     internal lateinit var uploadExecutorService: ScheduledThreadPoolExecutor
@@ -605,6 +608,7 @@ internal class CoreFeature(
         site = configuration.site
         backpressureStrategy = configuration.backpressureStrategy
         customUploadSchedulerStrategy = configuration.uploadSchedulerStrategy
+        remoteConfigurationId = configuration.remoteConfigurationId
     }
 
     private fun setupInfoProviders(

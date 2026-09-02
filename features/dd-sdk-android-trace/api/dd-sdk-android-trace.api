@@ -20,6 +20,7 @@ public final class com/datadog/android/trace/ApmNetworkInstrumentationConfigurat
 public final class com/datadog/android/trace/ApmNetworkTracingScope : java/lang/Enum {
 	public static final field ALL Lcom/datadog/android/trace/ApmNetworkTracingScope;
 	public static final field EXCLUDE_INTERNAL_REDIRECTS Lcom/datadog/android/trace/ApmNetworkTracingScope;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/trace/ApmNetworkTracingScope;
 	public static fun values ()[Lcom/datadog/android/trace/ApmNetworkTracingScope;
 }
@@ -88,6 +89,7 @@ public final class com/datadog/android/trace/TraceConfiguration$Builder {
 public final class com/datadog/android/trace/TraceContextInjection : java/lang/Enum {
 	public static final field ALL Lcom/datadog/android/trace/TraceContextInjection;
 	public static final field SAMPLED Lcom/datadog/android/trace/TraceContextInjection;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/trace/TraceContextInjection;
 	public static fun values ()[Lcom/datadog/android/trace/TraceContextInjection;
 }
@@ -158,6 +160,13 @@ public final class com/datadog/android/trace/internal/RumContextPropagator {
 public final class com/datadog/android/trace/internal/RumContextPropagator$Companion {
 	public final fun extractRumContext (Lcom/datadog/android/trace/api/span/DatadogSpan;Lcom/datadog/android/trace/internal/RumContextPropagator;Z)Lcom/datadog/android/trace/api/span/DatadogSpan;
 	public static synthetic fun extractRumContext$default (Lcom/datadog/android/trace/internal/RumContextPropagator$Companion;Lcom/datadog/android/trace/api/span/DatadogSpan;Lcom/datadog/android/trace/internal/RumContextPropagator;ZILjava/lang/Object;)Lcom/datadog/android/trace/api/span/DatadogSpan;
+}
+
+public final class com/datadog/android/trace/internal/TraceRemoteConfigExtKt {
+	public static final fun applyRcSampleRate (Lcom/datadog/android/core/sampling/Sampler;F)Lcom/datadog/android/core/sampling/Sampler;
+	public static final fun buildRcHostResolver (Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Trace;)Lcom/datadog/android/core/internal/net/DefaultFirstPartyHostHeaderTypeResolver;
+	public static final fun toSdkHeaderType (Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$PropagatorType;)Lcom/datadog/android/trace/TracingHeaderType;
+	public static final fun toSdkInjection (Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Trace;)Lcom/datadog/android/trace/TraceContextInjection;
 }
 
 public final class com/datadog/android/trace/internal/_TraceInternalProxy {
@@ -633,6 +642,7 @@ public final class com/datadog/android/trace/model/SpanEvent$Type : java/lang/En
 	public static final field TABLET Lcom/datadog/android/trace/model/SpanEvent$Type;
 	public static final field TV Lcom/datadog/android/trace/model/SpanEvent$Type;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/trace/model/SpanEvent$Type;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/trace/model/SpanEvent$Type;
 	public static fun values ()[Lcom/datadog/android/trace/model/SpanEvent$Type;

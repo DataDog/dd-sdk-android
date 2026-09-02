@@ -12,6 +12,7 @@ import com.datadog.android.trace.event.SpanEventMapper
 /**
  * Describes configuration to be used for the Traces feature.
  */
+@ExposedCopyVisibility
 data class TraceConfiguration internal constructor(
     internal val customEndpointUrl: String?,
     internal val eventMapper: SpanEventMapper,

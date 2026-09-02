@@ -20,6 +20,7 @@ import com.datadog.android.internal.collections.EvictingQueue
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
 import java.util.concurrent.CopyOnWriteArraySet
+import kotlin.reflect.KClass
 
 /**
  * Default implementation of [InsightsCollector] that collects performance related events and notifies
@@ -49,6 +50,7 @@ internal class DefaultInsightsCollector internal constructor(
 
     private var events = EvictingQueue<TimelineEvent>(maxSize)
     internal val eventsState: List<TimelineEvent> get() = events.toList()
+    internal val eventTypeCounters = mutableMapOf<KClass<out TimelineEvent>, Int>()
     private val updatesListeners = CopyOnWriteArraySet<InsightsUpdatesListener>()
     private val ticksProducer = Runnable {
         registerEvent(TimelineEvent.Tick)
@@ -78,6 +80,7 @@ internal class DefaultInsightsCollector internal constructor(
         set(value) {
             field = value
             events = EvictingQueue(value)
+            eventTypeCounters.clear()
         }
 
     override var updateIntervalMs: Long = updateIntervalMs
@@ -112,6 +115,10 @@ internal class DefaultInsightsCollector internal constructor(
 
     override fun onNetworkRequest(durationNs: Long) = registerEvent(
         TimelineEvent.Resource(durationNs)
+    )
+
+    override fun onTimeseries(name: String) = registerEvent(
+        TimelineEvent.TimeSeries(name)
     )
 
     override fun addUpdateListener(listener: InsightsUpdatesListener) {
@@ -151,13 +158,14 @@ internal class DefaultInsightsCollector internal constructor(
             }
         }
     }
-
     private fun clear() = withListenersUpdate {
         events.clear()
+        eventTypeCounters.clear()
     }
 
     private fun registerEvent(event: TimelineEvent) = withListenersUpdate {
         events += event
+        eventTypeCounters += event::class
     }
 
     private fun withListenersUpdate(block: () -> Unit) {
@@ -197,5 +205,12 @@ internal class DefaultInsightsCollector internal constructor(
         internal const val PRECISION = 2
         internal const val GC_COUNT = "art.gc.gc-count"
         internal const val ONE_SECOND_NS = 1_000_000_000L
+        internal const val MAX_EVENTS_COUNT = 100
+
+        internal operator fun <T> MutableMap<T, Int>.plusAssign(key: T) {
+            val currentCount = this[key] ?: 0
+            if (currentCount > MAX_EVENTS_COUNT) return
+            this[key] = currentCount + 1
+        }
     }
 }

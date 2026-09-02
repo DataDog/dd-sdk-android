@@ -425,6 +425,7 @@ public final class com/datadog/android/log/model/LogEvent$Status : java/lang/Enu
 	public static final field TRACE Lcom/datadog/android/log/model/LogEvent$Status;
 	public static final field WARN Lcom/datadog/android/log/model/LogEvent$Status;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/log/model/LogEvent$Status;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/log/model/LogEvent$Status;
 	public static fun values ()[Lcom/datadog/android/log/model/LogEvent$Status;
@@ -471,6 +472,7 @@ public final class com/datadog/android/log/model/LogEvent$Type : java/lang/Enum 
 	public static final field TABLET Lcom/datadog/android/log/model/LogEvent$Type;
 	public static final field TV Lcom/datadog/android/log/model/LogEvent$Type;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/log/model/LogEvent$Type;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/log/model/LogEvent$Type;
 	public static fun values ()[Lcom/datadog/android/log/model/LogEvent$Type;

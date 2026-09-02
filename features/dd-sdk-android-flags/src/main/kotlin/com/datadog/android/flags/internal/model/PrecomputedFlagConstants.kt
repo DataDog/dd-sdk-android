@@ -23,7 +23,8 @@ internal enum class JsonKeys(val value: String) {
     ALLOCATION_KEY("allocationKey"),
     VARIATION_KEY("variationKey"),
     EXTRA_LOGGING("extraLogging"),
-    REASON("reason")
+    REASON("reason"),
+    SERIAL_ID("serialId")
 }
 
 internal enum class VariationType(val value: String) {

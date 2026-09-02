@@ -23,7 +23,8 @@ internal class ExposureEventsProcessor(private val writer: RecordWriter, private
 
     private data class CacheValue(
         val allocationKey: String,
-        val variationKey: String
+        val variationKey: String,
+        val serialId: Long?
     )
 
     @Suppress("UnsafeThirdPartyFunctionCall") // maxSize > 0
@@ -36,7 +37,8 @@ internal class ExposureEventsProcessor(private val writer: RecordWriter, private
         )
         val cacheValue = CacheValue(
             allocationKey = data.allocationKey,
-            variationKey = data.variationKey
+            variationKey = data.variationKey,
+            serialId = data.serialId
         )
 
         synchronized(exposuresSentCache) {
@@ -62,7 +64,8 @@ internal class ExposureEventsProcessor(private val writer: RecordWriter, private
                 attributes = ExposureEvent.Attributes(
                     additionalProperties = context.attributes.toMutableMap()
                 )
-            )
+            ),
+            serialId = data.serialId
         )
     }
 

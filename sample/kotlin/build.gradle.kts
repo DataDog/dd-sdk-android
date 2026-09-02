@@ -8,23 +8,22 @@ import com.datadog.gradle.Dependencies
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.SAMPLE_APP_REGIONS
 import com.datadog.gradle.config.configureFlavorForSampleApp
-import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.java17
-import com.datadog.gradle.config.javadocConfig
-import com.datadog.gradle.config.junitConfig
-import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.taskConfig
 import com.datadog.gradle.plugin.InstrumentationMode
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("ktlint")
+    // Build
     id("com.android.application")
+    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
+    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
+    id("ktlint")
     kotlin("android")
     alias(libs.plugins.composeCompilerPlugin)
-    id("com.github.ben-manes.versions")
-    id("org.jetbrains.dokka-javadoc")
-    id("com.squareup.sqldelight")
+    alias(libs.plugins.sqlDelightGradlePlugin)
     id("com.google.devtools.ksp")
+    id("datadogBuildConfig")
     alias(libs.plugins.datadogGradlePlugin)
 }
 
@@ -36,7 +35,8 @@ sqldelight {
     }
 }
 
-@Suppress("StringLiteralDuplication")
+// TODO RUM-18189 Support new AGP DSL
+@Suppress("DEPRECATION", "StringLiteralDuplication")
 android {
     compileSdk = AndroidConfig.TARGET_SDK
     buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
@@ -46,7 +46,6 @@ android {
         targetSdk = AndroidConfig.TARGET_SDK
         versionCode = AndroidConfig.VERSION.code
         versionName = AndroidConfig.VERSION.name
-        multiDexEnabled = true
 
         buildFeatures {
             buildConfig = true
@@ -184,11 +183,11 @@ dependencies {
     implementation(libs.kotlin)
 
     // Android dependencies
-    implementation(libs.androidXMultidex)
     implementation(libs.cronetPlayServices)
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.androidXAppCompat)
     implementation(libs.bundles.androidXCompose)
+    implementation(libs.androidXLifecycleCompose)
     implementation(libs.material3Android)
     implementation(libs.googleAccompanistAppCompatTheme)
     implementation(libs.googleAccompanistPager)
@@ -241,12 +240,13 @@ dependencies {
     debugImplementation(libs.leakCanaryAndroid)
 }
 
-kotlinConfig(evaluateWarningsAsErrors = false)
-taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+datadogBuild {
+    applyKotlinConfig(evaluateWarningsAsErrors = false)
+    applyJunitConfig()
+}
+
+taskConfig<KotlinCompile> {
     compilerOptions {
         optIn.add("kotlin.RequiresOptIn")
     }
 }
-junitConfig()
-javadocConfig()
-dependencyUpdateConfig()

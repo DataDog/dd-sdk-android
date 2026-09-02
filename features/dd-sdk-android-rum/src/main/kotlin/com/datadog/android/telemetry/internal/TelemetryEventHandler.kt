@@ -351,6 +351,7 @@ internal class TelemetryEventHandler(
             ?.timeThresholdInMilliseconds
         val tnsTimeBasedThreshold = (rumConfig?.initialResourceIdentifier as? TimeBasedInitialResourceIdentifier)
             ?.timeThresholdInMilliseconds
+        val rcMeta = sdkCore.remoteConfigurationSyncMetadata
 
         return TelemetryConfigurationEvent(
             dd = TelemetryConfigurationEvent.Dd(),
@@ -412,7 +413,18 @@ internal class TelemetryEventHandler(
                     traceSampleRate = okhttpInterceptorSampleRate?.toLong(),
                     selectedTracingPropagators = tracingHeaderTypes?.toSelectedTracingPropagators(),
                     trackResourceHeaders = trackResourceHeaders,
-                    useClientSideStats = useClientSideStats
+                    useClientSideStats = useClientSideStats,
+                    remoteConfigurationId = datadogContext.remoteConfigurationId,
+                    remoteConfiguration = rcMeta?.let {
+                        TelemetryConfigurationEvent.RemoteConfiguration(
+                            configId = it.configId,
+                            versionId = it.versionId,
+                            lastModified = it.lastModified,
+                            lastSynced = it.lastSynced,
+                            firstApplied = it.firstApplied,
+                            syncId = it.syncId
+                        )
+                    }
                 )
             )
         )
@@ -447,6 +459,9 @@ internal class TelemetryEventHandler(
             }
             is InternalTelemetryEvent.ApiUsage.TrackWebView -> {
                 TelemetryUsageEvent.Usage.TrackWebView()
+            }
+            is InternalTelemetryEvent.ApiUsage.Timeseries -> {
+                TelemetryUsageEvent.Usage.Timeseries()
             }
             is InternalTelemetryEvent.ApiUsage.NetworkInstrumentation -> {
                 TelemetryUsageEvent.Usage.AndroidNetworkInstrumentation(

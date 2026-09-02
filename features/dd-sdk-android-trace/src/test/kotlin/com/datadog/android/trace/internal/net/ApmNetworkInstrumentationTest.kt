@@ -17,9 +17,11 @@ import com.datadog.android.api.instrumentation.network.HttpResponseInfo
 import com.datadog.android.api.instrumentation.network.MutableHttpRequestInfo
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.remote.model.RemoteConfiguration
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.ApmNetworkTracingScope
+import com.datadog.android.trace.DeterministicTraceSampler
 import com.datadog.android.trace.NetworkTracedRequestListener
 import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
@@ -149,6 +151,7 @@ internal class ApmNetworkInstrumentationTest {
             on { getFeature(Feature.TRACING_FEATURE_NAME) } doReturn mockTracingFeature
             on { getFeature(Feature.RUM_FEATURE_NAME) } doReturn mockRumFeature
             on { firstPartyHostResolver } doReturn mock()
+            on { remoteConfiguration } doReturn null
         }
         datadogRegistryRegisterMethod.invoke(datadogRegistryField.get(null), null, mockSdkCore)
 
@@ -1200,6 +1203,165 @@ internal class ApmNetworkInstrumentationTest {
         sampleRate = fakeSampleRate,
         isDefaultTracer = isDefaultTracer
     )
+
+    // region Remote Configuration
+
+    @Test
+    fun `M override traceSampler W onSdkInstanceReady { RC provides sampleRate }`(
+        @FloatForgery(min = 0f, max = 100f) fakeRcSampleRate: Float
+    ) {
+        // Given
+        val fakeRc = RemoteConfiguration(
+            trace = RemoteConfiguration.Trace(sampleRate = fakeRcSampleRate)
+        )
+        whenever(mockSdkCore.remoteConfiguration) doReturn fakeRc
+        val instrumentation = createInstrumentation()
+
+        // When
+        instrumentation.onSdkInstanceReady(mockSdkCore)
+
+        // Then
+        assertThat(instrumentation.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
+        assertThat(instrumentation.traceSampler.getSampleRate()).isEqualTo(fakeRcSampleRate)
+    }
+
+    @Test
+    fun `M preserve SessionRebasedSampler W onSdkInstanceReady { RC provides sampleRate, headerPropagationOnly }`(
+        @FloatForgery(min = 0f, max = 100f) fakeRcSampleRate: Float
+    ) {
+        // Given — headerPropagationOnly wraps sampler in SessionRebasedSampler at construction
+        val fakeRc = RemoteConfiguration(
+            trace = RemoteConfiguration.Trace(sampleRate = fakeRcSampleRate)
+        )
+        whenever(mockSdkCore.remoteConfiguration) doReturn fakeRc
+        val instrumentation = _TraceInternalProxy.createApmNetworkInstrumentation(
+            "test",
+            ApmNetworkInstrumentationConfiguration(emptyList<String>())
+                .setHeaderPropagationOnly()
+        )
+
+        // When
+        instrumentation.onSdkInstanceReady(mockSdkCore)
+
+        // Then — wrapper preserved, inner rate updated
+        assertThat(instrumentation.traceSampler).isInstanceOf(SessionRebasedSampler::class.java)
+        assertThat(instrumentation.traceSampler.getSampleRate()).isEqualTo(fakeRcSampleRate)
+    }
+
+    @Test
+    fun `M override injectionType W onSdkInstanceReady { RC provides ALL traceContextInjection }`() {
+        // Given
+        val fakeRc = RemoteConfiguration(
+            trace = RemoteConfiguration.Trace(
+                traceContextInjection = RemoteConfiguration.TraceContextInjection.ALL
+            )
+        )
+        whenever(mockSdkCore.remoteConfiguration) doReturn fakeRc
+        val instrumentation = createInstrumentation()
+
+        // When
+        instrumentation.onSdkInstanceReady(mockSdkCore)
+
+        // Then
+        assertThat(instrumentation.injectionType).isEqualTo(TraceContextInjection.ALL)
+    }
+
+    @Test
+    fun `M replace localFirstPartyHostHeaderTypeResolver W onSdkInstanceReady { RC provides tracedHosts }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeRcHost = forge.aStringMatching("[a-z]+\\.[a-z]{2,3}")
+        val fakeRc = RemoteConfiguration(
+            trace = RemoteConfiguration.Trace(
+                tracedHosts = listOf(
+                    RemoteConfiguration.TracedHost(
+                        host = fakeRcHost,
+                        propagatorTypes = listOf(RemoteConfiguration.PropagatorType.DATADOG)
+                    )
+                )
+            )
+        )
+        whenever(mockSdkCore.remoteConfiguration) doReturn fakeRc
+        val instrumentation = createInstrumentation()
+
+        // When
+        instrumentation.onSdkInstanceReady(mockSdkCore)
+
+        // Then — RC host is resolvable
+        assertThat(
+            instrumentation.localFirstPartyHostHeaderTypeResolver
+                .headerTypesForUrl("https://$fakeRcHost/path")
+        ).containsExactly(TracingHeaderType.DATADOG)
+    }
+
+    @Test
+    fun `M not apply RC on second onSdkInstanceReady W { called multiple times }`(
+        @FloatForgery(min = 0f, max = 100f) fakeRcSampleRate: Float,
+        @FloatForgery(min = 0f, max = 100f) fakeSecondRcSampleRate: Float
+    ) {
+        // Given — first RC applied
+        val fakeRc = RemoteConfiguration(
+            trace = RemoteConfiguration.Trace(sampleRate = fakeRcSampleRate)
+        )
+        whenever(mockSdkCore.remoteConfiguration) doReturn fakeRc
+        val instrumentation = createInstrumentation()
+        instrumentation.onSdkInstanceReady(mockSdkCore)
+
+        // When — second call with different RC
+        val fakeSecondRc = RemoteConfiguration(
+            trace = RemoteConfiguration.Trace(sampleRate = fakeSecondRcSampleRate)
+        )
+        whenever(mockSdkCore.remoteConfiguration) doReturn fakeSecondRc
+        instrumentation.onSdkInstanceReady(mockSdkCore)
+
+        // Then — rate from first call preserved
+        assertThat(instrumentation.traceSampler.getSampleRate()).isEqualTo(fakeRcSampleRate)
+    }
+
+    @Test
+    fun `M keep in-code values W onSdkInstanceReady { null RC }`() {
+        // Given
+        whenever(mockSdkCore.remoteConfiguration) doReturn null
+        val instrumentation = createInstrumentation()
+        val originalSampler = instrumentation.traceSampler
+        val originalInjection = instrumentation.injectionType
+
+        // When
+        instrumentation.onSdkInstanceReady(mockSdkCore)
+
+        // Then
+        assertThat(instrumentation.traceSampler).isSameAs(originalSampler)
+        assertThat(instrumentation.injectionType).isEqualTo(originalInjection)
+    }
+
+    @Test
+    fun `M keep in-code values W onSdkInstanceReady { RC trace namespace present but all fields null }`() {
+        // Given
+        val fakeRc = RemoteConfiguration(
+            trace = RemoteConfiguration.Trace(
+                sampleRate = null,
+                traceContextInjection = null,
+                tracedHosts = null
+            )
+        )
+        whenever(mockSdkCore.remoteConfiguration) doReturn fakeRc
+        val instrumentation = createInstrumentation()
+        val originalSampler = instrumentation.traceSampler
+        val originalInjection = instrumentation.injectionType
+
+        // When
+        instrumentation.onSdkInstanceReady(mockSdkCore)
+
+        // Then — all fields preserved
+        assertThat(instrumentation.traceSampler).isSameAs(originalSampler)
+        assertThat(instrumentation.injectionType).isEqualTo(originalInjection)
+        // rcApplied=true so second call is also no-op
+        instrumentation.onSdkInstanceReady(mockSdkCore)
+        assertThat(instrumentation.traceSampler).isSameAs(originalSampler)
+    }
+
+    // endregion
 
     private fun createInstrumentation(
         canSendSpan: Boolean = true,
