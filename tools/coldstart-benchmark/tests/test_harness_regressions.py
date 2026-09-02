@@ -1558,6 +1558,41 @@ class HarnessRegressionTests(unittest.TestCase):
         self.assertIn('if ! _SETTLE_DD=$(dd_datadog_threads "$_SETTLE_PIDS"); then', capture)
         self.assertIn("Unknown\n       liveness is never accepted", benchmark)
 
+    def test_probe_refusal_still_aborts_through_the_pipeline(self) -> None:
+        """A documented dependency that nothing enforced is not enforced.
+
+        probe_datadog runs on the LEFT of `| tail -1`, so it is a subshell and its
+        `die` exits only that subshell -- `tail` then exits 0. `set -o pipefail` is
+        the only reason the failure reaches the assignment and `set -e`. Drop it and
+        an unverifiable liveness probe becomes a count, which is the false negative
+        the fail-closed oracle exists to prevent.
+        """
+        source = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
+        self.assertIn("set -euo pipefail", source)
+        self.assertIn('dd_count=$(probe_datadog "$arm" "$b" "$pos" | tail -1)', source)
+
+        # And prove the propagation itself, rather than trusting the reading of it.
+        script = (
+            'set -euo pipefail\n'
+            'die() { echo "FATAL: liveness unverifiable" >&2; exit 1; }\n'
+            'probe() { echo "log line"; die; echo "never reached"; }\n'
+            'trap \'rc=$?; echo "TRAP rc=$rc"\' EXIT\n'
+            'dd_count=$(probe | tail -1)\n'
+            'echo "SURVIVED dd_count=$dd_count"\n'
+        )
+        aborted = subprocess.run(["bash", "-c", script], capture_output=True, text=True)
+        self.assertEqual(aborted.returncode, 1)
+        self.assertIn("FATAL: liveness unverifiable", aborted.stderr)
+        self.assertIn("TRAP rc=1", aborted.stdout)
+        self.assertNotIn("SURVIVED", aborted.stdout)
+
+        # The same script without pipefail is what the comment warns about.
+        survived = subprocess.run(
+            ["bash", "-c", script.replace("set -euo pipefail", "set -eu")],
+            capture_output=True, text=True,
+        )
+        self.assertIn("SURVIVED dd_count=log line", survived.stdout)
+
     def test_liveness_oracle_separates_thread_churn_from_a_dead_process(self) -> None:
         """`cat /proc/<pid>/task/*/comm` fails when ONE thread exits under the glob.
 

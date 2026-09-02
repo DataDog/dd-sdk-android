@@ -970,6 +970,16 @@ for ((b=1; b<=BLOCKS; b++)); do
     install_and_attest "$apk" "$arm"
     write_header_once
     record_permission_state "$arm_key" "$arm"
+    # LOAD-BEARING: `set -o pipefail` (top of this file) is what makes probe_datadog's
+    # refusals stop the run. It executes on the LEFT of this pipe, so it runs in a
+    # subshell and its `die` exits only that subshell; `tail` then exits 0. Without
+    # pipefail the pipeline's status would be tail's, this assignment would succeed,
+    # and a probe that could not verify liveness would be treated as a count -- the
+    # exact false negative the fail-closed oracle exists to prevent. With pipefail the
+    # subshell's 1 becomes the pipeline's, the assignment fails, `set -e` aborts, and
+    # the EXIT trap still restores the device and writes the abort trailer (verified:
+    # FATAL printed, trap fired with rc=1, script exited 1). A regression test asserts
+    # both `set -o pipefail` and the shape of this call for that reason.
     dd_count=$(probe_datadog "$arm" "$b" "$pos" | tail -1)
     if [ "$expect_dd" = "1" ] && [ "$dd_count" -eq 0 ]; then
       die "[$arm] expected Datadog ACTIVE but found 0 datadog-* threads. \
