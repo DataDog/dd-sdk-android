@@ -204,7 +204,10 @@ internal class RumSessionScopeTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        stubTimeProvider = StubTimeProvider(elapsedTimeNs = TEST_INACTIVITY_NS + 1)
+        stubTimeProvider = StubTimeProvider(
+            elapsedTimeNs = TEST_INACTIVITY_NS + 1,
+            elapsedRealtimeNs = TEST_INACTIVITY_NS + 1
+        )
         fakeInitialViewEvent = forge.startViewEvent()
         fakeParentContext = fakeParentContext.copy(viewType = RumViewType.NONE)
 
@@ -996,6 +999,96 @@ internal class RumSessionScopeTest {
             .isNotEqualTo(RumContext.NULL_UUID)
         assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
         assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.MAX_DURATION)
+    }
+
+    @Test
+    fun `M start new session W max duration exceeded in wall-clock but monotonic frozen by deep sleep`(
+        forge: Forge
+    ) {
+        // Given — a tracked session is started
+        testedScope.handleEvent(
+            forge.startViewEvent(eventTime = currentFakeTime()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        val initialContext = testedScope.getRumContext()
+
+        // The session runs awake for almost the full max duration, with frequent
+        // interactions so that the inactivity threshold is NOT crossed during the
+        // awake period.
+        val awakeSteps = (TEST_MAX_DURATION_MS / TEST_SLEEP_MS).toInt() - 1
+        repeat(awakeSteps) {
+            advanceTimeByMs(TEST_SLEEP_MS)
+            testedScope.handleEvent(
+                forge.startActionEvent(continuous = false, eventTime = currentFakeTime()),
+                fakeDatadogContext,
+                mockEventWriteScope,
+                mockWriter
+            )
+        }
+
+        // When — the device then deep-sleeps past the max duration in wall-clock time,
+        //        but the monotonic clock the SDK previously read (getDeviceElapsedTimeNanos /
+        //        System.nanoTime / CLOCK_MONOTONIC) is frozen during deep sleep. The sleep is
+        //        short enough that the inactivity threshold is still NOT crossed (so the only
+        //        condition that should fire is the max-duration timeout).
+        //        See RUMS-6221: before the fix the SDK reused the old session id because the
+        //        frozen monotonic clock never crossed the 4h threshold.
+        simulateDeepSleepByMs(TEST_SLEEP_MS * 2)
+        val result = testedScope.handleEvent(
+            forge.startViewEvent(eventTime = currentFakeTime()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        val context = testedScope.getRumContext()
+
+        // Then — a new session must be started with the MAX_DURATION reason, because the
+        //         wall-clock (sleep-including) time exceeded the max duration while the
+        //         inactivity threshold was not crossed.
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId)
+            .isNotEqualTo(initialContext.sessionId)
+            .isNotEqualTo(RumContext.NULL_UUID)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.MAX_DURATION)
+    }
+
+    @Test
+    fun `M start new session W inactivity exceeded in wall-clock but monotonic frozen by deep sleep`(
+        forge: Forge
+    ) {
+        // Given — a tracked session is started
+        testedScope.handleEvent(
+            forge.startViewEvent(eventTime = currentFakeTime()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        val initialContext = testedScope.getRumContext()
+
+        // When — the device sleeps for longer than the inactivity threshold in wall-clock
+        //        time, but the monotonic clock the SDK reads is frozen during deep sleep.
+        simulateDeepSleepByMs(TEST_INACTIVITY_MS + TEST_SLEEP_MS)
+        val result = testedScope.handleEvent(
+            forge.startViewEvent(eventTime = currentFakeTime()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        val context = testedScope.getRumContext()
+
+        // Then — a new session must be started after the wall-clock inactivity exceeded
+        //         the inactivity threshold, regardless of the frozen monotonic clock.
+        //         See RUMS-6221: currently this assertion FAILS because the SDK reuses the
+        //         old session id (the defect under investigation).
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId)
+            .isNotEqualTo(initialContext.sessionId)
+            .isNotEqualTo(RumContext.NULL_UUID)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.INACTIVITY_TIMEOUT)
     }
 
     @Test
@@ -2096,6 +2189,25 @@ internal class RumSessionScopeTest {
 
     private fun advanceTimeByMs(ms: Long) {
         stubTimeProvider.elapsedTimeNs += TimeUnit.MILLISECONDS.toNanos(ms)
+        stubTimeProvider.elapsedRealtimeNs += TimeUnit.MILLISECONDS.toNanos(ms)
+    }
+
+    /**
+     * Simulates device deep sleep: the wall-clock (elapsedRealtime / device timestamp)
+     * advances by [ms], but the monotonic clock (System.nanoTime / CLOCK_MONOTONIC,
+     * exposed via [TimeProvider.getDeviceElapsedTimeNanos]) is frozen — exactly as it is
+     * on a real Android device in deep sleep.
+     *
+     * This is the scenario reported in RUMS-6221: the app stays inactive for several
+     * hours, mostly in deep sleep, so the monotonic clock the SDK currently uses for
+     * session timeout/inactivity never crosses the 4h / 15min thresholds even though
+     * wall-clock time has long passed them.
+     */
+    private fun simulateDeepSleepByMs(ms: Long) {
+        stubTimeProvider.elapsedRealtimeMs += ms
+        stubTimeProvider.elapsedRealtimeNs += TimeUnit.MILLISECONDS.toNanos(ms)
+        stubTimeProvider.deviceTimestampMs += ms
+        // elapsedTimeNs intentionally NOT advanced — mirrors CLOCK_MONOTONIC during sleep
     }
 
     private fun currentFakeTime(): Time {

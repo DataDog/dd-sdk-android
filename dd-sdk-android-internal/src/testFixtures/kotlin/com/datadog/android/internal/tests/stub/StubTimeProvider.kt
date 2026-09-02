@@ -17,6 +17,7 @@ import com.datadog.android.internal.time.TimeProvider
  * @property serverOffsetNs The server time offset in nanoseconds. Defaults to `0`.
  * @property serverOffsetMs The server time offset in milliseconds. Defaults to `0`.
  * @property elapsedRealtimeMs The elapsed realtime in milliseconds (includes time in sleep). Defaults to `0`.
+ * @property elapsedRealtimeNs The elapsed realtime in nanoseconds (includes time in sleep). Defaults to `0`.
  * @property uptimeMs The uptime in milliseconds (excludes time in sleep). Defaults to `0`.
  */
 class StubTimeProvider(
@@ -26,6 +27,7 @@ class StubTimeProvider(
     var serverOffsetNs: Long = 0L,
     var serverOffsetMs: Long = 0L,
     var elapsedRealtimeMs: Long = 0L,
+    var elapsedRealtimeNs: Long = 0L,
     var uptimeMs: Long = 0L
 ) : TimeProvider {
 
@@ -40,6 +42,8 @@ class StubTimeProvider(
     override fun getServerOffsetMillis(): Long = serverOffsetMs
 
     override fun getDeviceElapsedRealtimeMillis(): Long = elapsedRealtimeMs
+
+    override fun getDeviceElapsedRealtimeNanos(): Long = elapsedRealtimeNs
 
     override fun getDeviceUptimeMillis(): Long = uptimeMs
 }

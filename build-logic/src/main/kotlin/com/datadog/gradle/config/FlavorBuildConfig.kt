@@ -97,6 +97,11 @@ fun configureFlavorForSampleApp(
     )
     flavor.buildConfigField(
         "String",
+        "DD_REMOTE_CONFIGURATION_ID",
+        "\"${config.remoteConfigurationId}\""
+    )
+    flavor.buildConfigField(
+        "String",
         "DD_CLIENT_TOKEN",
         "\"${config.token}\""
     )

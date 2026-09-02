@@ -67,10 +67,6 @@ internal class OpenFeatureFragment :
 
     private fun observeProviderState() {
         val provider = OpenFeatureAPI.getProvider()
-        if (provider == null) {
-            updateProviderState(STATE_NOT_SET)
-            return
-        }
 
         // Display initial state
         updateProviderState(STATE_INITIALIZING)
@@ -231,7 +227,6 @@ internal class OpenFeatureFragment :
         private const val FLAG_TYPE_INTEGER = 2
         private const val FLAG_TYPE_DOUBLE = 3
 
-        private const val STATE_NOT_SET = "NOT_SET"
         private const val STATE_INITIALIZING = "INITIALIZING"
         private const val STATE_READY = "READY"
         private const val STATE_STALE = "STALE"

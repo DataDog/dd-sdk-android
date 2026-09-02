@@ -8,14 +8,18 @@ package com.datadog.android.insights.internal
 
 import android.os.Handler
 import com.datadog.android.insights.internal.DefaultInsightsCollector.Companion.GC_COUNT
+import com.datadog.android.insights.internal.DefaultInsightsCollector.Companion.MAX_EVENTS_COUNT
 import com.datadog.android.insights.internal.DefaultInsightsCollector.Companion.ONE_SECOND_NS
+import com.datadog.android.insights.internal.DefaultInsightsCollector.Companion.plusAssign
 import com.datadog.android.insights.internal.domain.TimelineEvent
 import com.datadog.android.insights.internal.extensions.Mb
 import com.datadog.android.insights.internal.platform.Platform
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
+import com.datadog.tools.unit.assertj.containsInstanceOf
 import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
@@ -32,6 +36,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import kotlin.reflect.KClass
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -137,16 +142,15 @@ internal class DefaultInsightsCollectorTest {
     }
 
     @Test
-    fun `M append Timeseries event W onTimeseries()`() {
-        // Given
-        val fakeName = "view.memory"
-
+    fun `M append Timeseries event W onTimeseries()`(
+        @StringForgery fakeName: String
+    ) {
         // When
         testedInsightsCollector.onTimeseries(fakeName)
 
         // Then
         verify(mockInsightsUpdatesListener).onDataUpdated()
-        assertThat(testedInsightsCollector.eventsState).containsExactly(TimelineEvent.Timeseries(fakeName))
+        assertThat(testedInsightsCollector.eventsState).containsInstanceOf(TimelineEvent.TimeSeries::class.java)
     }
 
     @Test
@@ -226,6 +230,158 @@ internal class DefaultInsightsCollectorTest {
 
         // Then
         assertThat(testedInsightsCollector.eventsState).isEmpty()
+    }
+
+    @Test
+    fun `M increment event count per type W registerEvent()`() {
+        // When
+        testedInsightsCollector.onAction()
+        testedInsightsCollector.onAction()
+        testedInsightsCollector.onSlowFrame(durationNs = 10L)
+        testedInsightsCollector.onNetworkRequest(durationNs = 20L)
+        testedInsightsCollector.onLongTask(durationNs = 30L)
+
+        // Then
+        assertThat(testedInsightsCollector.eventTypeCounters).containsExactlyInAnyOrderEntriesOf(
+            mapOf(
+                TimelineEvent.Action::class to 2,
+                TimelineEvent.SlowFrame::class to 1,
+                TimelineEvent.Resource::class to 1,
+                TimelineEvent.LongTask::class to 1
+            )
+        )
+    }
+
+    @Test
+    fun `M count registered events per type W maxSize exceeded`(@IntForgery(min = 2, max = 10) fakeMaxSize: Int) {
+        // Given
+        testedInsightsCollector.maxSize = fakeMaxSize
+
+        // When
+        repeat(fakeMaxSize + 2) {
+            testedInsightsCollector.onAction()
+        }
+
+        // Then
+        assertThat(testedInsightsCollector.eventsState).hasSize(fakeMaxSize)
+        assertThat(testedInsightsCollector.eventTypeCounters[TimelineEvent.Action::class]).isEqualTo(fakeMaxSize + 2)
+    }
+
+    @Test
+    fun `M count events per type W mixed events registered`() {
+        // Given
+        testedInsightsCollector.maxSize = 2
+
+        // When
+        testedInsightsCollector.onAction()
+        testedInsightsCollector.onSlowFrame(durationNs = 10L)
+        testedInsightsCollector.onNetworkRequest(durationNs = 20L)
+        testedInsightsCollector.onLongTask(durationNs = 30L)
+
+        // Then
+        assertThat(testedInsightsCollector.eventsState).hasSize(2)
+        assertThat(testedInsightsCollector.eventTypeCounters).containsExactlyInAnyOrderEntriesOf(
+            mapOf(
+                TimelineEvent.Action::class to 1,
+                TimelineEvent.SlowFrame::class to 1,
+                TimelineEvent.Resource::class to 1,
+                TimelineEvent.LongTask::class to 1
+            )
+        )
+    }
+
+    @Test
+    fun `M reset event counts W onNewView()`() {
+        // Given
+        testedInsightsCollector.onAction()
+        testedInsightsCollector.onSlowFrame(durationNs = 10L)
+        assertThat(testedInsightsCollector.eventTypeCounters).isNotEmpty()
+
+        // When
+        testedInsightsCollector.onNewView(name = "Home")
+
+        // Then
+        assertThat(testedInsightsCollector.eventTypeCounters).isEmpty()
+    }
+
+    @Test
+    fun `M reset event counts W maxSize setter`(@IntForgery(min = 2) fakeMaxSize: Int) {
+        // Given
+        repeat(3) { testedInsightsCollector.onAction() }
+        assertThat(testedInsightsCollector.eventTypeCounters).isNotEmpty()
+
+        // When
+        testedInsightsCollector.maxSize = fakeMaxSize
+
+        // Then
+        assertThat(testedInsightsCollector.eventTypeCounters).isEmpty()
+    }
+
+    @Test
+    fun `M increment counter by one W plusAssign() {key absent}`() {
+        // Given
+        val fakeCounters = mutableMapOf<KClass<out TimelineEvent>, Int>()
+
+        // When
+        fakeCounters += TimelineEvent.Action::class
+
+        // Then
+        assertThat(fakeCounters[TimelineEvent.Action::class]).isEqualTo(1)
+    }
+
+    @Test
+    fun `M increment existing counter W plusAssign()`(
+        @IntForgery(min = 0, max = MAX_EVENTS_COUNT - 1) fakeCurrentCount: Int
+    ) {
+        // Given
+        val fakeCounters = mutableMapOf<KClass<out TimelineEvent>, Int>(TimelineEvent.Action::class to fakeCurrentCount)
+
+        // When
+        fakeCounters += TimelineEvent.Action::class
+
+        // Then
+        assertThat(fakeCounters[TimelineEvent.Action::class]).isEqualTo(fakeCurrentCount + 1)
+    }
+
+    @Test
+    fun `M stop incrementing counter W plusAssign() {count above max}`(
+        @IntForgery(min = MAX_EVENTS_COUNT + 1) fakeCurrentCount: Int
+    ) {
+        // Given
+        val fakeCounters = mutableMapOf<KClass<out TimelineEvent>, Int>(TimelineEvent.Action::class to fakeCurrentCount)
+
+        // When
+        fakeCounters += TimelineEvent.Action::class
+
+        // Then
+        assertThat(fakeCounters[TimelineEvent.Action::class]).isEqualTo(fakeCurrentCount)
+    }
+
+    @Test
+    fun `M keep incrementing counter W plusAssign() {count at max}`() {
+        // Given
+        val fakeCounters = mutableMapOf<KClass<out TimelineEvent>, Int>(TimelineEvent.Action::class to MAX_EVENTS_COUNT)
+
+        // When
+        fakeCounters += TimelineEvent.Action::class
+
+        // Then
+        assertThat(fakeCounters[TimelineEvent.Action::class]).isEqualTo(MAX_EVENTS_COUNT + 1)
+    }
+
+    @Test
+    fun `M stop incrementing counters W registerEvent() {count above max}`() {
+        // Given
+        testedInsightsCollector.maxSize = Int.MAX_VALUE
+        repeat(MAX_EVENTS_COUNT + 1) { testedInsightsCollector.onAction() }
+
+        // When
+        testedInsightsCollector.onAction()
+
+        // Then
+        assertThat(testedInsightsCollector.eventTypeCounters[TimelineEvent.Action::class]).isEqualTo(
+            MAX_EVENTS_COUNT + 1
+        )
     }
 
     @Test

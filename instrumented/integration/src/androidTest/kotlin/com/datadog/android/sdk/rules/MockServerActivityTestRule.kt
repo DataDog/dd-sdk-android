@@ -22,9 +22,11 @@ import com.datadog.android.sdk.utils.addForgeSeed
 import com.datadog.android.sdk.utils.addTrackingConsent
 import com.datadog.android.sdk.utils.overrideProcessImportance
 import fr.xgouchet.elmyr.Forge
+import leakcanary.LeakCanary
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
+import shark.AndroidReferenceMatchers
 import java.io.File
 import java.util.concurrent.CopyOnWriteArrayList
 
@@ -53,6 +55,15 @@ internal open class MockServerActivityTestRule<T : Activity>(
     }
 
     override fun beforeActivityLaunched() {
+        // This configures some well know cases for Android when memory leaks shouldn't be detected plus
+        // one case that we encountered in CI.
+        LeakCanary.config = LeakCanary.config.copy(
+            referenceMatchers = AndroidReferenceMatchers.appDefaults + AndroidReferenceMatchers.ignoredInstanceField(
+                className = "android.app.job.JobService\$1",
+                fieldName = "this\$0"
+            )
+        )
+
         InstrumentationRegistry
             .getInstrumentation()
             .targetContext

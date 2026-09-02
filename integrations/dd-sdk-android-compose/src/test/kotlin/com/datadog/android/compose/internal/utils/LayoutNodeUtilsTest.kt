@@ -40,7 +40,6 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -64,6 +63,8 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.stream.Stream
 
+// Keep explicit LayoutNode types on helper results: KGP 2.2.10 otherwise emits
+// error.NonExistentClass casts for this suppressed internal Compose type.
 @Extensions(
     ExtendWith(
         MockitoExtension::class,
@@ -97,8 +98,6 @@ class LayoutNodeUtilsTest {
 
     // region Legacy Compose (SemanticsModifier)
 
-    // TODO RUM-18190 Access to the internal classes
-    @Disabled
     @Test
     fun `M return correct target node W call resolveLayoutNode {legacy compose}`(
         forge: Forge
@@ -107,7 +106,7 @@ class LayoutNodeUtilsTest {
         val fakeTagName = forge.aString()
         val isClickable = forge.aBool()
         val isScrollable = forge.aBool()
-        val mockNode = mockLegacyLayoutNode(
+        val mockNode: LayoutNode = mockLegacyLayoutNode(
             fakeTagName,
             isClickable,
             isScrollable
@@ -130,8 +129,6 @@ class LayoutNodeUtilsTest {
 
     // region Clickable Modifier Elements
 
-    // TODO RUM-18190 Access to the internal classes
-    @Disabled
     @ParameterizedTest
     @MethodSource("clickableModifierElements")
     fun `M return clickable target node W resolveLayoutNode {clickable modifier element}`(
@@ -139,7 +136,7 @@ class LayoutNodeUtilsTest {
         @StringForgery fakeTagName: String
     ) {
         // Given
-        val mockNode = mockLayoutNodeWithModifiers(fakeTagName, testCase.modifier)
+        val mockNode: LayoutNode = mockLayoutNodeWithModifiers(fakeTagName, testCase.modifier)
 
         // When
         val result = testedLayoutNodeUtils.resolveLayoutNode(mockNode)
@@ -155,8 +152,6 @@ class LayoutNodeUtilsTest {
 
     // region Scrollable Modifier Elements
 
-    // TODO RUM-18190 Access to the internal classes
-    @Disabled
     @ParameterizedTest
     @MethodSource("scrollableModifierElements")
     fun `M return scrollable target node W resolveLayoutNode {scrollable modifier element}`(
@@ -164,7 +159,7 @@ class LayoutNodeUtilsTest {
         @StringForgery fakeTagName: String
     ) {
         // Given
-        val mockNode = mockLayoutNodeWithModifiers(fakeTagName, testCase.modifier)
+        val mockNode: LayoutNode = mockLayoutNodeWithModifiers(fakeTagName, testCase.modifier)
 
         // When
         val result = testedLayoutNodeUtils.resolveLayoutNode(mockNode)
@@ -234,12 +229,10 @@ class LayoutNodeUtilsTest {
 
     // region Reflection Fallback State Machine
 
-    // TODO RUM-18190 Access to the internal classes
-    @Disabled
     @Test
     fun `M keep skipping reflection path W getLayoutNodeBoundsInWindow() {repeated, internal succeeds}`() {
         // Given
-        val mockNode = mockLayoutNodeWithValidInternalPath()
+        val mockNode: LayoutNode = mockLayoutNodeWithValidInternalPath()
 
         // When
         repeat(5) { testedLayoutNodeUtils.getLayoutNodeBoundsInWindow(mockNode) }
@@ -283,15 +276,13 @@ class LayoutNodeUtilsTest {
             .doesNotContainValue(null)
     }
 
-    // TODO RUM-18190 Access to the internal classes
-    @Disabled
     @Test
     fun `M not grow suffix cache W getLayoutNodeBoundsInWindow() {repeated reflection calls}`() {
         // Given
         // Force reflection path so all three levels (LayoutNode, LayoutNodeLayoutDelegate,
         // NodeCoordinator) are traversed and cached — the maximum cache size for this chain.
         testedLayoutNodeUtils.methodResolver().state = LayoutNodeUtils.MethodResolver.State.MANGLING_FAILED
-        val mockNode = mockLayoutNodeWithValidInternalPath()
+        val mockNode: LayoutNode = mockLayoutNodeWithValidInternalPath()
         testedLayoutNodeUtils.getLayoutNodeBoundsInWindow(mockNode)
         val cache = testedLayoutNodeUtils.methodResolver().classPrefixMethodsCache
         val sizeAfterFirstCall = cache.size
@@ -333,13 +324,11 @@ class LayoutNodeUtilsTest {
         verify(testedLayoutNodeUtils, never()).getLayoutNodeBoundsInWindowReflection(any<LayoutNode>())
     }
 
-    // TODO RUM-18190 Access to the internal classes
-    @Disabled
     @Test
     fun `M stay on internal W getLayoutNodeBoundsInWindow() {first call resolved via internal, repeated}`() {
         // Given
         // First call resolves through the internal path — state stays UNKNOWN, cache stays empty.
-        val mockNode = mockLayoutNodeWithValidInternalPath()
+        val mockNode: LayoutNode = mockLayoutNodeWithValidInternalPath()
         testedLayoutNodeUtils.getLayoutNodeBoundsInWindow(mockNode)
 
         // When
@@ -407,12 +396,10 @@ class LayoutNodeUtilsTest {
             .isEqualTo(LayoutNodeUtils.MethodResolver.State.MANGLING_FAILED)
     }
 
-    // TODO RUM-18190 Access to the internal classes
-    @Disabled
     @Test
     fun `M keep state UNKNOWN W getLayoutNodeBoundsInWindow() {internal path succeeds}`() {
         // Given
-        val mockNode = mockLayoutNodeWithValidInternalPath()
+        val mockNode: LayoutNode = mockLayoutNodeWithValidInternalPath()
 
         // When
         testedLayoutNodeUtils.getLayoutNodeBoundsInWindow(mockNode)
@@ -619,7 +606,7 @@ class LayoutNodeUtilsTest {
 
     // Method names mirror the JVM-mangled accessors emitted for Kotlin `internal` members
     // in the androidx.compose.ui module. Used to exercise SUPPORTED_MANGLING_SUFFIXES resolution.
-    @Suppress("FunctionName", "unused")
+    @Suppress("unused")
     internal class SuffixFixture {
         fun foo() = Unit
         fun `foo$ui_release`() = Unit

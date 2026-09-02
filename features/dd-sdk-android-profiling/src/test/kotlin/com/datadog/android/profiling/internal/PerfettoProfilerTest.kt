@@ -1359,6 +1359,8 @@ internal class PerfettoProfilerTest {
 
         override fun getDeviceElapsedTimeNanos(): Long = 0L
 
+        override fun getDeviceElapsedRealtimeNanos(): Long = 0L
+
         override fun getServerOffsetNanos(): Long = 0L
 
         override fun getServerOffsetMillis(): Long = 0L
