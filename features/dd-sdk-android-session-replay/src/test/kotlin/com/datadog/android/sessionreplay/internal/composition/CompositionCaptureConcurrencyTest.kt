@@ -18,13 +18,17 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -129,6 +133,62 @@ internal class CompositionCaptureConcurrencyTest {
     }
 
     @Test
+    fun `M register a draw listener at most once per view W intercept calls race on the same view`() {
+        // Given
+        // Forced interleaving: thread A is parked exactly where addListener reads the view's
+        // ViewTreeObserver - after intercept()'s synchronized "is this view new" check already said
+        // yes, but before anything is registered or recorded. Thread B then runs intercept() for the
+        // same view while thread A is parked there, so both threads independently decide the view is
+        // new and both proceed to register a listener for it.
+        val enteredViewTreeObserver = CountDownLatch(1)
+        val releaseViewTreeObserver = CountDownLatch(1)
+        val blockNextAccess = AtomicBoolean(true)
+        val mockObserver = mock<ViewTreeObserver>()
+        whenever(mockObserver.isAlive).thenReturn(true)
+        val fakeView = mock<View>()
+        whenever(fakeView.viewTreeObserver).thenAnswer {
+            if (blockNextAccess.compareAndSet(true, false)) {
+                enteredViewTreeObserver.countDown()
+                releaseViewTreeObserver.await(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            }
+            mockObserver
+        }
+        val testedInterceptor = CompositionViewOnDrawInterceptor(
+            windowSource = ActiveWindowSource(),
+            onWindowsChanged = CompositionChangeListener { },
+            internalLogger = mock()
+        )
+        val failures = CopyOnWriteArrayList<Throwable>()
+
+        // When
+        val threadA = Thread {
+            try {
+                testedInterceptor.intercept(listOf(fakeView))
+            } catch (e: Throwable) {
+                failures += e
+            }
+        }
+        threadA.start()
+        assertThat(enteredViewTreeObserver.await(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue()
+
+        val threadB = Thread {
+            try {
+                testedInterceptor.intercept(listOf(fakeView))
+            } catch (e: Throwable) {
+                failures += e
+            }
+        }
+        threadB.start()
+        threadB.join(AWAIT_TIMEOUT_MS)
+        releaseViewTreeObserver.countDown()
+        threadA.join(AWAIT_TIMEOUT_MS)
+
+        // Then
+        assertThat(failures).isEmpty()
+        verify(mockObserver, times(1)).addOnDrawListener(any())
+    }
+
+    @Test
     fun `M keep one generation active W draw signals arrive from multiple window threads`(
         @IntForgery(min = 2, max = 5) fakeWindowThreadCount: Int,
         forge: Forge
@@ -158,6 +218,81 @@ internal class CompositionCaptureConcurrencyTest {
         assertThat(failures).isEmpty()
         assertThat(overlappingCaptures).hasValue(0)
         assertThat(fixture.generationIds()).doesNotHaveDuplicates()
+    }
+
+    @Test
+    fun `M resolve every generation exactly once W expiry races a real async processor`(
+        @IntForgery(min = 2, max = 4) fakeWindowThreadCount: Int,
+        forge: Forge
+    ) {
+        // Given
+        // Both schedulers below are real thread pools, distinct from the window threads and from
+        // each other: the expiry timer and the processor's completion callback genuinely race on
+        // separate threads for the same generation, unlike the other tests in this file which keep
+        // one of the two synchronous to test ordering instead.
+        val expiryExecutor = Executors.newScheduledThreadPool(2)
+        val processorExecutor = Executors.newFixedThreadPool(2)
+        val createdGenerations = CopyOnWriteArrayList<CaptureGenerationContext>()
+        val consumedGenerationIds = ConcurrentLinkedQueue<Long>()
+        val failures = CopyOnWriteArrayList<Throwable>()
+        val snapshot = forge.aCompositionTestTree().snapshot
+        val testedOrchestrator = SnapshotCaptureOrchestrator(
+            producer = CapturedSnapshotProducer { generation, _ ->
+                createdGenerations += generation
+                snapshot
+            },
+            processor = CapturedSnapshotProcessor { request, callback ->
+                val future = processorExecutor.submit {
+                    Thread.sleep(PROCESSOR_DELAY_RANGE_MS.random())
+                    callback.onProcessed(
+                        SnapshotProcessingResult.Completed(request.generation.id, request.snapshot)
+                    )
+                }
+                CancellableCaptureWork { future.cancel(false) }
+            },
+            consumer = CompletedSnapshotConsumer { capture -> consumedGenerationIds += capture.generation.id },
+            timeProvider = { System.nanoTime() },
+            captureScheduler = { _, task ->
+                task()
+                CancellableCaptureWork.NONE
+            },
+            mainThreadExecutor = { task ->
+                task()
+                CancellableCaptureWork.NONE
+            },
+            expiryScheduler = ScheduledExecutorCaptureTaskScheduler(
+                executorService = expiryExecutor,
+                internalLogger = mock()
+            ),
+            generationBudgetNs = RACE_GENERATION_BUDGET_NS,
+            internalLogger = mock()
+        )
+        testedOrchestrator.start()
+
+        // When
+        val deadlineNs = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(RACE_DURATION_MS)
+        hammer(fakeWindowThreadCount, failures) {
+            while (System.nanoTime() < deadlineNs) {
+                testedOrchestrator.requestCapture(CompositionChangeset.of(listOf(mock<View>())))
+            }
+        }
+        // Lets whichever generation is still in flight resolve, via either the expiry timer or the
+        // processor callback, before the pipeline is torn down.
+        Thread.sleep(SETTLE_MS)
+        testedOrchestrator.stop()
+        processorExecutor.shutdown()
+        expiryExecutor.shutdownNow()
+        assertThat(processorExecutor.awaitTermination(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue()
+
+        // Then
+        assertThat(failures).isEmpty()
+        assertThat(createdGenerations).isNotEmpty()
+        assertThat(consumedGenerationIds)
+            .describedAs("a generation resolved by both expiry and the processor would be consumed twice")
+            .doesNotHaveDuplicates()
+        assertThat(createdGenerations.filter { it.isActive() })
+            .describedAs("no generation may stay active once the pipeline is stopped and in-flight work settles")
+            .isEmpty()
     }
 
     @Test
@@ -369,5 +504,9 @@ internal class CompositionCaptureConcurrencyTest {
         const val INVALIDATION_INTERVAL = 50
         const val WINDOW_SET_SIZE = 3
         const val AWAIT_TIMEOUT_MS = 10_000L
+        const val RACE_DURATION_MS = 300L
+        const val SETTLE_MS = 200L
+        val RACE_GENERATION_BUDGET_NS = TimeUnit.MICROSECONDS.toNanos(500)
+        val PROCESSOR_DELAY_RANGE_MS = 0L..2L
     }
 }

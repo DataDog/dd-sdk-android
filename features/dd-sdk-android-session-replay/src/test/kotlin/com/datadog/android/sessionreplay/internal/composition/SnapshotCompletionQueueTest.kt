@@ -26,6 +26,8 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -224,6 +226,47 @@ internal class SnapshotCompletionQueueTest {
                 SnapshotCompletionQueue.DROPPED_CAPTURE_COUNT_PROPERTY to fakeDroppedCount.toLong()
             )
         )
+    }
+
+    @Test
+    fun `M report an error and keep draining W consume { processor throws }`(forge: Forge) {
+        // Given
+        val fixture = QueueFixture(forge)
+        val fakeThrowingCapture = fixture.aCapture(generationId = 1L)
+        val fakeFailure = IllegalStateException("boom")
+        doThrow(fakeFailure).whenever(fixture.mockProcessor).process(fakeThrowingCapture)
+        val fakeFollowingCapture = fixture.aCapture(generationId = 2L)
+
+        // When
+        fixture.testedQueue.consume(fakeThrowingCapture)
+        fixture.testedQueue.consume(fakeFollowingCapture)
+        fixture.runQueuedTask()
+
+        // Then
+        verify(fixture.mockProcessor).process(fakeFollowingCapture)
+        fixture.mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.TELEMETRY,
+            "Composition snapshot completion processing threw an exception",
+            fakeFailure
+        )
+    }
+
+    @Test
+    fun `M expire the in-flight capture W stop { called during processing }`(forge: Forge) {
+        // Given
+        val fixture = QueueFixture(forge)
+        val fakeCapture = fixture.aCapture()
+        doAnswer { fixture.testedQueue.stop() }.whenever(fixture.mockProcessor).process(fakeCapture)
+
+        // When
+        fixture.testedQueue.consume(fakeCapture)
+        fixture.runQueuedTask()
+
+        // Then
+        assertThat(fakeCapture.generation.isActive())
+            .describedAs("stop() must expire the capture that was mid-processing when it was called")
+            .isFalse()
     }
 
     @Test

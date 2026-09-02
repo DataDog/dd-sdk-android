@@ -401,6 +401,7 @@ datadog:
       - "java.util.UUID.randomUUID()"
       - "java.util.WeakHashMap.clear()"
       - "java.util.WeakHashMap.constructor()"
+      - "java.util.WeakHashMap.containsKey(android.view.View?)"
       - "java.util.WeakHashMap.containsKey(android.view.Window?)"
       - "java.util.WeakHashMap.forEach(kotlin.Function1)"
       - "java.util.WeakHashMap.getOrPut(android.app.Activity?, kotlin.Function0)"

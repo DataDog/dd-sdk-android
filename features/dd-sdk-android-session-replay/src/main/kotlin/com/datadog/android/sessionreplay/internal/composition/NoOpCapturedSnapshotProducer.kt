@@ -6,12 +6,8 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
-internal fun interface CaptureMainThreadExecutor {
-    fun execute(task: () -> Unit): CancellableCaptureWork
-}
-
-internal fun interface CaptureTaskScheduler {
-    fun schedule(delayNs: Long, task: () -> Unit): CancellableCaptureWork
-
-    fun shutdown() = Unit
+/** Stands in for the traversal implementation until it lands; captures nothing. */
+internal class NoOpCapturedSnapshotProducer : CapturedSnapshotProducer {
+    override fun capture(context: CaptureGenerationContext, changeset: CaptureChangeset): CapturedFullSnapshot? =
+        null
 }

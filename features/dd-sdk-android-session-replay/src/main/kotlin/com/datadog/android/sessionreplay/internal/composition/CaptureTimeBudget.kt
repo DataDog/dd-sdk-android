@@ -6,31 +6,16 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
-import com.datadog.android.sessionreplay.internal.recorder.TimeBank
-
-internal fun interface CaptureTimeProvider {
-    fun elapsedRealtimeNanos(): Long
-}
-
 internal interface CaptureTimeBudget {
     fun canStart(timestampNs: Long): Boolean
     fun consume(durationNs: Long)
 
     companion object {
-        val UNLIMITED = object : CaptureTimeBudget {
-            override fun canStart(timestampNs: Long): Boolean = true
-            override fun consume(durationNs: Long) = Unit
-        }
+        val UNLIMITED: CaptureTimeBudget = UnlimitedCaptureTimeBudget()
     }
 }
 
-internal class TimeBankCaptureTimeBudget(
-    private val timeBank: TimeBank,
-    private val onAdmissionDenied: () -> Unit = {}
-) : CaptureTimeBudget {
-    override fun canStart(timestampNs: Long): Boolean = timeBank.updateAndCheck(timestampNs).also { admitted ->
-        if (!admitted) onAdmissionDenied()
-    }
-
-    override fun consume(durationNs: Long) = timeBank.consume(durationNs)
+private class UnlimitedCaptureTimeBudget : CaptureTimeBudget {
+    override fun canStart(timestampNs: Long): Boolean = true
+    override fun consume(durationNs: Long) = Unit
 }

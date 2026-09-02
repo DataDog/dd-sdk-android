@@ -9,14 +9,6 @@ package com.datadog.android.sessionreplay.internal.composition
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
 
-internal class CapturePipelineSelector(
-    private val compositionEnabled: Boolean,
-    private val legacyFactory: () -> Recorder,
-    private val compositionFactory: () -> Recorder
-) {
-    fun create(): Recorder = if (compositionEnabled) compositionFactory() else legacyFactory()
-}
-
 /**
  * Lifecycle entry point for the composition capture pipeline. Platform callback wiring and
  * traversal are added by later workstreams; keeping this recorder and its orchestration isolated

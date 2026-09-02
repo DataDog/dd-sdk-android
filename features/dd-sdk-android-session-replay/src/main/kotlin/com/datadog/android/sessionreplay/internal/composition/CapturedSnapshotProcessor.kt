@@ -24,11 +24,6 @@ internal sealed interface SnapshotProcessingResult {
     ) : SnapshotProcessingResult
 }
 
-internal data class CompletedSnapshotCapture(
-    val generation: CaptureGenerationContext,
-    val snapshot: CapturedFullSnapshot
-)
-
 internal fun interface SnapshotProcessingCallback {
     fun onProcessed(result: SnapshotProcessingResult)
 }
@@ -42,22 +37,4 @@ internal fun interface CapturedSnapshotProcessor {
         request: SnapshotProcessingRequest,
         callback: SnapshotProcessingCallback
     ): CancellableCaptureWork
-}
-
-/** Default processing scope until asynchronous enrichers are supplied by capture implementations. */
-internal class ImmediateCapturedSnapshotProcessor : CapturedSnapshotProcessor {
-    override fun process(
-        request: SnapshotProcessingRequest,
-        callback: SnapshotProcessingCallback
-    ): CancellableCaptureWork {
-        callback.onProcessed(
-            SnapshotProcessingResult.Completed(request.generation.id, request.snapshot)
-        )
-        return CancellableCaptureWork.NONE
-    }
-}
-
-/** Receives only complete snapshots; traversal and enrichment never enter the downstream queue. */
-internal fun interface CompletedSnapshotConsumer {
-    fun consume(capture: CompletedSnapshotCapture)
 }

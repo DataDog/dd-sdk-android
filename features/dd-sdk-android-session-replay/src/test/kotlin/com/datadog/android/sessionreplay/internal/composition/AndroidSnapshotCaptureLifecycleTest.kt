@@ -11,8 +11,10 @@ import android.os.Handler
 import android.view.View
 import android.view.ViewTreeObserver
 import android.view.Window
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -23,6 +25,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -69,6 +72,91 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         verify(observer).removeOnDrawListener(addedListener.firstValue)
         assertThat(source.currentWindows()).isEmpty()
         assertThat(changedWindows).containsExactly(listOf(view), emptyList())
+    }
+
+    @Test
+    fun `M skip listener registration W intercept { viewTreeObserver is not alive }`() {
+        // Given
+        val mockObserver = mock<ViewTreeObserver>()
+        whenever(mockObserver.isAlive).thenReturn(false)
+        val mockView = mock<View>()
+        whenever(mockView.viewTreeObserver).thenReturn(mockObserver)
+        val source = ActiveWindowSource()
+        val testedInterceptor = CompositionViewOnDrawInterceptor(source, { }, mock())
+
+        // When
+        testedInterceptor.intercept(listOf(mockView))
+
+        // Then
+        verify(mockObserver, never()).addOnDrawListener(any())
+        assertThat(source.currentWindows()).containsExactly(mockView)
+    }
+
+    @Test
+    fun `M report a maintainer warning W intercept { addOnDrawListener throws }`() {
+        // Given
+        val mockObserver = mock<ViewTreeObserver>()
+        whenever(mockObserver.isAlive).thenReturn(true)
+        val fakeError = IllegalStateException("addOnDrawListener failed")
+        whenever(mockObserver.addOnDrawListener(any())).doThrow(fakeError)
+        val mockView = mock<View>()
+        whenever(mockView.viewTreeObserver).thenReturn(mockObserver)
+        val mockInternalLogger = mock<InternalLogger>()
+        val testedInterceptor = CompositionViewOnDrawInterceptor(ActiveWindowSource(), { }, mockInternalLogger)
+
+        // When
+        testedInterceptor.intercept(listOf(mockView))
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.TELEMETRY,
+            "Unable to add composition onDrawListener on viewTreeObserver",
+            fakeError
+        )
+    }
+
+    @Test
+    fun `M skip listener removal W stop { viewTreeObserver is not alive }`() {
+        // Given
+        val mockObserver = mock<ViewTreeObserver>()
+        whenever(mockObserver.isAlive).thenReturn(true)
+        val mockView = mock<View>()
+        whenever(mockView.viewTreeObserver).thenReturn(mockObserver)
+        val testedInterceptor = CompositionViewOnDrawInterceptor(ActiveWindowSource(), { }, mock())
+        testedInterceptor.intercept(listOf(mockView))
+
+        // When
+        whenever(mockObserver.isAlive).thenReturn(false)
+        testedInterceptor.stop()
+
+        // Then
+        verify(mockObserver, never()).removeOnDrawListener(any())
+    }
+
+    @Test
+    fun `M report a maintainer warning W stop { removeOnDrawListener throws }`() {
+        // Given
+        val mockObserver = mock<ViewTreeObserver>()
+        whenever(mockObserver.isAlive).thenReturn(true)
+        val mockView = mock<View>()
+        whenever(mockView.viewTreeObserver).thenReturn(mockObserver)
+        val mockInternalLogger = mock<InternalLogger>()
+        val testedInterceptor = CompositionViewOnDrawInterceptor(ActiveWindowSource(), { }, mockInternalLogger)
+        testedInterceptor.intercept(listOf(mockView))
+        val fakeError = IllegalStateException("removeOnDrawListener failed")
+        whenever(mockObserver.removeOnDrawListener(any())).doThrow(fakeError)
+
+        // When
+        testedInterceptor.stop()
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.TELEMETRY,
+            "Unable to remove composition onDrawListener on viewTreeObserver",
+            fakeError
+        )
     }
 
     @Test
