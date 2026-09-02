@@ -799,6 +799,7 @@ datadog:
       - "kotlin.collections.listOf(kotlin.String)"
       - "kotlin.collections.listOf(okhttp3.ConnectionSpec)"
       - "kotlin.collections.listOfNotNull(com.datadog.android.sessionreplay.model.MobileSegment.Wireframe?)"
+      - "kotlin.collections.listOfNotNull(com.datadog.android.profiling.model.RumMetadataEvent?)"
       - "kotlin.collections.listOfNotNull(kotlin.Array)"
       - "kotlin.collections.listOfNotNull(kotlin.String?)"
       - "kotlin.collections.mapOf()"

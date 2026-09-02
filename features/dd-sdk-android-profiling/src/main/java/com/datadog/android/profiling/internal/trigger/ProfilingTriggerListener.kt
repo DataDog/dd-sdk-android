@@ -4,10 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.profiling.internal.anr
+package com.datadog.android.profiling.internal.trigger
 
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 
-internal fun interface AnrListener {
+internal fun interface ProfilingTriggerListener {
     fun onAnrDetected(event: ProfilingAnrDetectedEvent)
 }

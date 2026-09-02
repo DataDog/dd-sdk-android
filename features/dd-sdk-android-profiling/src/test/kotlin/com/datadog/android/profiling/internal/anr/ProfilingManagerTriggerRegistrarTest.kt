@@ -15,6 +15,8 @@ import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
+import com.datadog.android.profiling.internal.trigger.ProfilingManagerTriggerRegistrar
+import com.datadog.android.profiling.internal.trigger.ProfilingTriggerListener
 import com.datadog.android.profiling.internal.utils.ThreadDumper
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -54,7 +56,7 @@ import java.util.function.Consumer
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-internal class AnrProfilingTriggerRegistrarTest {
+internal class ProfilingManagerTriggerRegistrarTest {
 
     @Mock
     private lateinit var mockContext: Context
@@ -69,7 +71,7 @@ internal class AnrProfilingTriggerRegistrarTest {
     private lateinit var mockExecutorService: ExecutorService
 
     @Mock
-    private lateinit var mockAnrListener: AnrListener
+    private lateinit var mockListener: ProfilingTriggerListener
 
     @Mock
     private lateinit var mockTimeProvider: TimeProvider
@@ -77,12 +79,12 @@ internal class AnrProfilingTriggerRegistrarTest {
     @Mock
     private lateinit var mockProfilingTelemetry: ProfilingTelemetry
 
-    private lateinit var testedRegistrar: AnrProfilingTriggerRegistrar
+    private lateinit var testedRegistrar: ProfilingManagerTriggerRegistrar
 
     @BeforeEach
     fun `set up`() {
         whenever(mockContext.getSystemService(ProfilingManager::class.java)).doReturn(mockService)
-        testedRegistrar = AnrProfilingTriggerRegistrar(
+        testedRegistrar = ProfilingManagerTriggerRegistrar(
             timeProvider = mockTimeProvider,
             executorService = mockExecutorService,
             profilingTelemetry = mockProfilingTelemetry
@@ -100,7 +102,7 @@ internal class AnrProfilingTriggerRegistrarTest {
     @Test
     fun `M register system ANR trigger W register()`() {
         // When
-        testedRegistrar.register(mockContext, mockAnrListener)
+        testedRegistrar.register(mockContext, mockListener)
 
         // Then
         val triggersCaptor = argumentCaptor<List<ProfilingTrigger>>()
@@ -118,8 +120,8 @@ internal class AnrProfilingTriggerRegistrarTest {
     @Test
     fun `M register only once W register() {called twice}`() {
         // When
-        testedRegistrar.register(mockContext, mockAnrListener)
-        testedRegistrar.register(mockContext, mockAnrListener)
+        testedRegistrar.register(mockContext, mockListener)
+        testedRegistrar.register(mockContext, mockListener)
 
         // Then
         verify(mockService).addProfilingTriggers(any())
@@ -132,7 +134,7 @@ internal class AnrProfilingTriggerRegistrarTest {
     @Test
     fun `M ignore result W trigger callback fires {non-ANR trigger type}`() {
         // Given
-        testedRegistrar.register(mockContext, mockAnrListener)
+        testedRegistrar.register(mockContext, mockListener)
         val triggerCallbackCaptor = argumentCaptor<Consumer<ProfilingResult>>()
         verify(mockService).registerForAllProfilingResults(any(), triggerCallbackCaptor.capture())
         val nonAnrResult = mock<ProfilingResult> {
@@ -143,7 +145,7 @@ internal class AnrProfilingTriggerRegistrarTest {
         triggerCallbackCaptor.firstValue.accept(nonAnrResult)
 
         // Then
-        verify(mockAnrListener, never()).onAnrDetected(any())
+        verify(mockListener, never()).onAnrDetected(any())
     }
 
     @Test
@@ -152,7 +154,7 @@ internal class AnrProfilingTriggerRegistrarTest {
     ) {
         // Given a path that doesn't exist on disk: getFileCreationTimeMs returns null, so the
         // registrar can't compute callbackDelayMs and treats droppedAsStale as false.
-        testedRegistrar.register(mockContext, mockAnrListener)
+        testedRegistrar.register(mockContext, mockListener)
         val triggerCallbackCaptor = argumentCaptor<Consumer<ProfilingResult>>()
         verify(mockService).registerForAllProfilingResults(any(), triggerCallbackCaptor.capture())
         val anrResult = mock<ProfilingResult> {
@@ -185,7 +187,7 @@ internal class AnrProfilingTriggerRegistrarTest {
         @StringForgery fakePath: String
     ) {
         // Given
-        testedRegistrar.register(mockContext, mockAnrListener)
+        testedRegistrar.register(mockContext, mockListener)
         val triggerCallbackCaptor = argumentCaptor<Consumer<ProfilingResult>>()
         verify(mockService).registerForAllProfilingResults(any(), triggerCallbackCaptor.capture())
         val anrResult = mock<ProfilingResult> {
@@ -226,7 +228,7 @@ internal class AnrProfilingTriggerRegistrarTest {
             mainThreadProvider = { Thread.currentThread() },
             allStackTracesProvider = { throw RuntimeException("boom") }
         )
-        testedRegistrar.register(mockContext, mockAnrListener)
+        testedRegistrar.register(mockContext, mockListener)
         val triggerCallbackCaptor = argumentCaptor<Consumer<ProfilingResult>>()
         verify(mockService).registerForAllProfilingResults(any(), triggerCallbackCaptor.capture())
         val anrResult = mock<ProfilingResult> {
@@ -239,14 +241,14 @@ internal class AnrProfilingTriggerRegistrarTest {
 
         // Then
         val captor = argumentCaptor<ProfilingAnrDetectedEvent>()
-        verify(mockAnrListener).onAnrDetected(captor.capture())
+        verify(mockListener).onAnrDetected(captor.capture())
         assertThat(captor.firstValue.allThreads).isEmpty()
     }
 
     @Test
     fun `M remove system trigger W unregister()`() {
         // Given
-        testedRegistrar.register(mockContext, mockAnrListener)
+        testedRegistrar.register(mockContext, mockListener)
 
         // When
         testedRegistrar.unregister(mockContext)
@@ -271,11 +273,11 @@ internal class AnrProfilingTriggerRegistrarTest {
     @Test
     fun `M re-register after unregister W register() called again`() {
         // Given
-        testedRegistrar.register(mockContext, mockAnrListener)
+        testedRegistrar.register(mockContext, mockListener)
         testedRegistrar.unregister(mockContext)
 
         // When
-        testedRegistrar.register(mockContext, mockAnrListener)
+        testedRegistrar.register(mockContext, mockListener)
 
         // Then
         verify(mockService, times(2)).addProfilingTriggers(any())
@@ -288,7 +290,7 @@ internal class AnrProfilingTriggerRegistrarTest {
         whenever(mockContext.getSystemService(ProfilingManager::class.java)).doReturn(null)
 
         // When
-        testedRegistrar.register(mockContext, mockAnrListener)
+        testedRegistrar.register(mockContext, mockListener)
 
         // Then
         verify(mockService, never()).addProfilingTriggers(any())
@@ -306,7 +308,7 @@ internal class AnrProfilingTriggerRegistrarTest {
     @Test
     fun `M log warning and keep registered W unregister() {ProfilingManager service unavailable}`() {
         // Given
-        testedRegistrar.register(mockContext, mockAnrListener)
+        testedRegistrar.register(mockContext, mockListener)
         whenever(mockContext.getSystemService(ProfilingManager::class.java)).doReturn(null)
 
         // When
@@ -335,7 +337,7 @@ internal class AnrProfilingTriggerRegistrarTest {
     ) {
         // Given
         val tmpFile = File(tempDir, "result.trace").apply { writeText("placeholder") }
-        testedRegistrar.register(mockContext, mockAnrListener)
+        testedRegistrar.register(mockContext, mockListener)
         val triggerCallbackCaptor = argumentCaptor<Consumer<ProfilingResult>>()
         verify(mockService).registerForAllProfilingResults(any(), triggerCallbackCaptor.capture())
         val anrResult = mock<ProfilingResult> {
@@ -353,7 +355,7 @@ internal class AnrProfilingTriggerRegistrarTest {
     @Test
     fun `M drop ANR event and log warning W trigger callback fires {result file missing}`() {
         // Given
-        testedRegistrar.register(mockContext, mockAnrListener)
+        testedRegistrar.register(mockContext, mockListener)
         val triggerCallbackCaptor = argumentCaptor<Consumer<ProfilingResult>>()
         verify(mockService).registerForAllProfilingResults(any(), triggerCallbackCaptor.capture())
         val anrResult = mock<ProfilingResult> {
@@ -365,7 +367,7 @@ internal class AnrProfilingTriggerRegistrarTest {
         triggerCallbackCaptor.firstValue.accept(anrResult)
 
         // Then
-        verify(mockAnrListener, never()).onAnrDetected(any())
+        verify(mockListener, never()).onAnrDetected(any())
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.WARN),
             eq(InternalLogger.Target.MAINTAINER),
@@ -401,7 +403,7 @@ internal class AnrProfilingTriggerRegistrarTest {
         ).creationTime().toMillis()
         val fakeNow = creationTimeMs + fakeDelayMs
         whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(fakeNow)
-        testedRegistrar.register(mockContext, mockAnrListener)
+        testedRegistrar.register(mockContext, mockListener)
         val triggerCallbackCaptor = argumentCaptor<Consumer<ProfilingResult>>()
         verify(mockService).registerForAllProfilingResults(any(), triggerCallbackCaptor.capture())
         val anrResult = mock<ProfilingResult> {
@@ -416,7 +418,7 @@ internal class AnrProfilingTriggerRegistrarTest {
         triggerCallbackCaptor.firstValue.accept(anrResult)
 
         // Then
-        verify(mockAnrListener).onAnrDetected(any())
+        verify(mockListener).onAnrDetected(any())
         verify(mockProfilingTelemetry).report(
             ProfilingTelemetryEvent.AnrTriggerResult(
                 errorCode = ProfilingResult.ERROR_NONE,
@@ -442,7 +444,7 @@ internal class AnrProfilingTriggerRegistrarTest {
         ).creationTime().toMillis()
         val fakeNow = creationTimeMs + fakeDelayMs
         whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(fakeNow)
-        testedRegistrar.register(mockContext, mockAnrListener)
+        testedRegistrar.register(mockContext, mockListener)
         val triggerCallbackCaptor = argumentCaptor<Consumer<ProfilingResult>>()
         verify(mockService).registerForAllProfilingResults(any(), triggerCallbackCaptor.capture())
         val anrResult = mock<ProfilingResult> {
@@ -457,7 +459,7 @@ internal class AnrProfilingTriggerRegistrarTest {
         triggerCallbackCaptor.firstValue.accept(anrResult)
 
         // Then
-        verify(mockAnrListener, never()).onAnrDetected(any())
+        verify(mockListener, never()).onAnrDetected(any())
         verify(mockProfilingTelemetry).report(
             ProfilingTelemetryEvent.AnrTriggerResult(
                 errorCode = ProfilingResult.ERROR_NONE,

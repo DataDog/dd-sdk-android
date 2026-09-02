@@ -20,7 +20,6 @@ import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.forge.Configurator
-import com.datadog.android.profiling.internal.anr.AnrTriggerRegistrar
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companion.APP_LAUNCH_PROFILING_MAX_DURATION_MS
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companion.PROFILING_SAMPLING_RATE_APP_LAUNCH
@@ -28,6 +27,7 @@ import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companio
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.time.MutableTimeProvider
+import com.datadog.android.profiling.internal.trigger.ProfilingTriggerRegistrar
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -97,7 +97,7 @@ class PerfettoProfilerTest {
     private lateinit var mockProfilerCallback: ProfilerCallback
 
     @Mock
-    private lateinit var mockAnrRegistrar: AnrTriggerRegistrar
+    private lateinit var mockRegistrar: ProfilingTriggerRegistrar
 
     @Mock
     private lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
@@ -124,7 +124,7 @@ class PerfettoProfilerTest {
         testedProfiler = PerfettoProfiler(
             timeProvider = stubTimeProvider,
             scheduledExecutorService = mockExecutorService,
-            anrTriggerRegistrar = mockAnrRegistrar,
+            triggerRegistrar = mockRegistrar,
             buildSdkVersionProvider = mockBuildSdkVersionProvider,
             profilingTelemetry = ProfilingTelemetry().apply {
                 profilingPackageVersionCode = fakeProfilingPackageLongVersionCode
@@ -1034,7 +1034,7 @@ class PerfettoProfilerTest {
     fun `M delegate to registrar W registerProfilingCallback`() {
         // Set-up performs 1 registerProfilingCallback call, which delegates to the registrar,
         // passing the profiler's listener.
-        verify(mockAnrRegistrar).register(mockContext, testedProfiler.anrListener)
+        verify(mockRegistrar).register(mockContext, testedProfiler.triggerListener)
     }
 
     @Test
@@ -1043,22 +1043,22 @@ class PerfettoProfilerTest {
         testedProfiler.unregisterProfilingCallback(mockContext)
 
         // Then
-        verify(mockAnrRegistrar).unregister(mockContext)
+        verify(mockRegistrar).unregister(mockContext)
     }
 
     @Test
-    fun `M dispatch to registered callback W AnrListener fires`(
+    fun `M dispatch to registered callback W triggerListener fires`(
         @Forgery fakeEvent: ProfilingAnrDetectedEvent
     ) {
         // When
-        testedProfiler.anrListener.onAnrDetected(fakeEvent)
+        testedProfiler.triggerListener.onAnrDetected(fakeEvent)
 
         // Then
         verify(mockProfilerCallback).onAnrDetected(fakeEvent)
     }
 
     @Test
-    fun `M propagate logger to anrTriggerRegistrar W internalLogger setter`() {
+    fun `M propagate logger to triggerRegistrar W internalLogger setter`() {
         // Given
         val anotherLogger = mock<InternalLogger>()
 
@@ -1066,21 +1066,21 @@ class PerfettoProfilerTest {
         testedProfiler.internalLogger = anotherLogger
 
         // Then
-        verify(mockAnrRegistrar).internalLogger = anotherLogger
+        verify(mockRegistrar).internalLogger = anotherLogger
     }
 
     @Test
     fun `M not delegate to registrar W registerProfilingCallback {SDK below BAKLAVA}`() {
         // Given
         // Drop interactions recorded by the BAKLAVA-stubbed set-up call.
-        reset(mockAnrRegistrar)
+        reset(mockRegistrar)
         whenever(mockBuildSdkVersionProvider.isAtLeastBaklava) doReturn false
 
         // When
         testedProfiler.registerProfilingCallback(mockContext, mockProfilerCallback)
 
         // Then
-        verify(mockAnrRegistrar, never()).register(any(), any())
+        verify(mockRegistrar, never()).register(any(), any())
     }
 
     @Test
@@ -1092,7 +1092,7 @@ class PerfettoProfilerTest {
         testedProfiler.unregisterProfilingCallback(mockContext)
 
         // Then
-        verify(mockAnrRegistrar, never()).unregister(any())
+        verify(mockRegistrar, never()).unregister(any())
     }
 
     // endregion
@@ -1176,7 +1176,7 @@ class PerfettoProfilerTest {
         val profiler = PerfettoProfiler(
             timeProvider = stubTimeProvider,
             scheduledExecutorService = mockExecutorService,
-            anrTriggerRegistrar = mockAnrRegistrar,
+            triggerRegistrar = mockRegistrar,
             buildSdkVersionProvider = mockBuildSdkVersionProvider,
             profilingTelemetry = ProfilingTelemetry()
         )
