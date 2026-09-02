@@ -14,6 +14,8 @@ import android.os.ProfilingTrigger
 import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.profiling.internal.ProfilingStartReason
+import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
 import com.datadog.android.profiling.internal.utils.ThreadDumper
@@ -123,14 +125,14 @@ internal class ProfilingManagerTriggerRegistrar(
             if (creationTimeMs != null) {
                 val delayMs = detectedAtMs - creationTimeMs
                 callbackDelayMs = delayMs
-                if (delayMs > MAX_CALLBACK_DELAY_MS) {
-                    droppedAsStale = true
-                } else {
-                    currentListener.onAnrDetected(threadDumper.dump(detectedAtMs))
-                }
+                droppedAsStale = delayMs > MAX_CALLBACK_DELAY_MS
             }
-            // We currently don't use the result profile, just delete it.
-            safeDelete(resultPath)
+            if (callbackDelayMs != null && !droppedAsStale) {
+                forwardTriggerResult(currentListener, detectedAtMs, resultPath)
+            } else {
+                // Not forwarded (stale, or could not compute staleness): delete to avoid leaking.
+                safeDelete(resultPath)
+            }
         }
         profilingTelemetry.report(
             ProfilingTelemetryEvent.AnrTriggerResult(
@@ -140,6 +142,23 @@ internal class ProfilingManagerTriggerRegistrar(
                 callbackDelayMs = callbackDelayMs,
                 clientClockDriftMs = timeProvider.getServerOffsetMillis(),
                 droppedAsStale = droppedAsStale
+            )
+        )
+    }
+
+    @RequiresApi(Build.VERSION_CODES.BAKLAVA)
+    private fun forwardTriggerResult(
+        listener: ProfilingTriggerListener,
+        detectedAtMs: Long,
+        resultPath: String
+    ) {
+        listener.onAnrDetected(
+            event = threadDumper.dump(detectedAtMs),
+            result = PerfettoResult(
+                start = detectedAtMs,
+                startReason = ProfilingStartReason.ANR,
+                end = detectedAtMs,
+                resultFilePath = resultPath
             )
         )
     }

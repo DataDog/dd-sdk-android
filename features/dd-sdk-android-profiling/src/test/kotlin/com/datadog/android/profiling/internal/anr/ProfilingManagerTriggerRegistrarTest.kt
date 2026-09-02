@@ -13,6 +13,8 @@ import android.os.ProfilingTrigger
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.profiling.internal.ProfilingStartReason
+import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
 import com.datadog.android.profiling.internal.trigger.ProfilingManagerTriggerRegistrar
@@ -145,7 +147,7 @@ internal class ProfilingManagerTriggerRegistrarTest {
         triggerCallbackCaptor.firstValue.accept(nonAnrResult)
 
         // Then
-        verify(mockListener, never()).onAnrDetected(any())
+        verify(mockListener, never()).onAnrDetected(any(), any())
     }
 
     @Test
@@ -241,7 +243,7 @@ internal class ProfilingManagerTriggerRegistrarTest {
 
         // Then
         val captor = argumentCaptor<ProfilingAnrDetectedEvent>()
-        verify(mockListener).onAnrDetected(captor.capture())
+        verify(mockListener).onAnrDetected(captor.capture(), any())
         assertThat(captor.firstValue.allThreads).isEmpty()
     }
 
@@ -332,7 +334,7 @@ internal class ProfilingManagerTriggerRegistrarTest {
     }
 
     @Test
-    fun `M delete result file W trigger callback fires {ANR result has filePath}`(
+    fun `M keep result file W trigger callback fires {ANR result has filePath}`(
         @TempDir tempDir: File
     ) {
         // Given
@@ -348,8 +350,8 @@ internal class ProfilingManagerTriggerRegistrarTest {
         // When
         triggerCallbackCaptor.firstValue.accept(anrResult)
 
-        // Then
-        assertThat(tmpFile.exists()).isFalse
+        // Then — the listener owns the file lifetime now; registrar must not delete it.
+        assertThat(tmpFile.exists()).isTrue
     }
 
     @Test
@@ -367,7 +369,7 @@ internal class ProfilingManagerTriggerRegistrarTest {
         triggerCallbackCaptor.firstValue.accept(anrResult)
 
         // Then
-        verify(mockListener, never()).onAnrDetected(any())
+        verify(mockListener, never()).onAnrDetected(any(), any())
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.WARN),
             eq(InternalLogger.Target.MAINTAINER),
@@ -418,7 +420,14 @@ internal class ProfilingManagerTriggerRegistrarTest {
         triggerCallbackCaptor.firstValue.accept(anrResult)
 
         // Then
-        verify(mockListener).onAnrDetected(any())
+        val resultCaptor = argumentCaptor<PerfettoResult>()
+        verify(mockListener).onAnrDetected(any(), resultCaptor.capture())
+        val forwardedResult = resultCaptor.firstValue
+        assertThat(forwardedResult.start).isEqualTo(fakeNow)
+        assertThat(forwardedResult.end).isEqualTo(fakeNow)
+        assertThat(forwardedResult.startReason).isEqualTo(ProfilingStartReason.ANR)
+        assertThat(forwardedResult.resultFilePath).isEqualTo(tmpFile.absolutePath)
+        assertThat(tmpFile.exists()).isTrue // registrar keeps the file; the listener owns its lifetime
         verify(mockProfilingTelemetry).report(
             ProfilingTelemetryEvent.AnrTriggerResult(
                 errorCode = ProfilingResult.ERROR_NONE,
@@ -459,7 +468,7 @@ internal class ProfilingManagerTriggerRegistrarTest {
         triggerCallbackCaptor.firstValue.accept(anrResult)
 
         // Then
-        verify(mockListener, never()).onAnrDetected(any())
+        verify(mockListener, never()).onAnrDetected(any(), any())
         verify(mockProfilingTelemetry).report(
             ProfilingTelemetryEvent.AnrTriggerResult(
                 errorCode = ProfilingResult.ERROR_NONE,

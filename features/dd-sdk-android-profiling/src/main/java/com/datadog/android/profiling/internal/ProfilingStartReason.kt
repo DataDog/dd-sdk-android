@@ -14,5 +14,7 @@ internal enum class ProfilingStartReason(val value: String) {
 
     CONTINUOUS("continuous"),
 
+    ANR("anr"),
+
     UNKNOWN("unknown")
 }

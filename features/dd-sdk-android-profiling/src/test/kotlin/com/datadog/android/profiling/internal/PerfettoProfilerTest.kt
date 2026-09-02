@@ -73,7 +73,7 @@ import java.util.function.Consumer
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-class PerfettoProfilerTest {
+internal class PerfettoProfilerTest {
 
     @Mock
     private lateinit var mockContext: Context
@@ -725,7 +725,7 @@ class PerfettoProfilerTest {
 
     @ParameterizedTest(name = "startReason: {0}")
     @EnumSource(ProfilingStartReason::class)
-    internal fun `M include start_reason in telemetry W profiling finishes { startReason }`(
+    fun `M include start_reason in telemetry W profiling finishes { startReason }`(
         startReason: ProfilingStartReason,
         @LongForgery(min = 0L) fakeStartTime: Long,
         @LongForgery(min = 0L) fakeDuration: Long
@@ -1048,13 +1048,14 @@ class PerfettoProfilerTest {
 
     @Test
     fun `M dispatch to registered callback W triggerListener fires`(
-        @Forgery fakeEvent: ProfilingAnrDetectedEvent
+        @Forgery fakeEvent: ProfilingAnrDetectedEvent,
+        @Forgery fakeResult: PerfettoResult
     ) {
         // When
-        testedProfiler.triggerListener.onAnrDetected(fakeEvent)
+        testedProfiler.triggerListener.onAnrDetected(fakeEvent, fakeResult)
 
         // Then
-        verify(mockProfilerCallback).onAnrDetected(fakeEvent)
+        verify(mockProfilerCallback).onAnrDetected(fakeEvent, fakeResult)
     }
 
     @Test
