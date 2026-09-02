@@ -18,13 +18,6 @@ import com.datadog.android.sessionreplay.internal.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.recorder.WindowInspector
 import com.datadog.android.sessionreplay.internal.recorder.callback.OnWindowRefreshedCallback
 
-internal interface CompositionCaptureLifecycle {
-    fun registerCallbacks()
-    fun unregisterCallbacks()
-    fun start()
-    fun stop()
-}
-
 internal class AndroidSnapshotCaptureLifecycle(
     private val application: Application,
     private val interceptor: CompositionViewOnDrawInterceptor,
