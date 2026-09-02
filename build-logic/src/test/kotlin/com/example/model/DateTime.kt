@@ -220,7 +220,7 @@ public data class DateTime(
 
         public companion object {
             @JvmStatic
-            public fun fromJson(jsonString: String): Month = values().first {
+            public fun fromJson(jsonString: String): Month = entries.first {
                 it.jsonValue == jsonString
             }
         }

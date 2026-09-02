@@ -22,7 +22,7 @@ class TimeseriesConfiguration internal constructor(
     @ExperimentalRumApi
     class Builder {
 
-        private var enabledTypes: Set<TimeseriesType> = TimeseriesType.values().toSet()
+        private var enabledTypes: Set<TimeseriesType> = TimeseriesType.entries.toSet()
 
         /**
          * Restricts collection to the provided timeseries types.

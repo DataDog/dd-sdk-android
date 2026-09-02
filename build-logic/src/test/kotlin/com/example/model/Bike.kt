@@ -100,7 +100,7 @@ public data class Bike(
 
         public companion object {
             @JvmStatic
-            public fun fromJson(jsonString: String): FrameMaterial = values().first {
+            public fun fromJson(jsonString: String): FrameMaterial = entries.first {
                 it.jsonValue == jsonString
             }
         }
@@ -121,7 +121,7 @@ public data class Bike(
 
         public companion object {
             @JvmStatic
-            public fun fromJson(jsonString: String): Color = values().first {
+            public fun fromJson(jsonString: String): Color = entries.first {
                 it.jsonValue == jsonString
             }
         }

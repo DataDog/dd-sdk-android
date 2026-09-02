@@ -195,7 +195,8 @@ data class NetworkInfo(
             @Throws(JsonParseException::class)
             fun fromJson(jsonString: String): Connectivity {
                 try {
-                    return values().first {
+                    @Suppress("UnsafeThirdPartyFunctionCall") // there is at least one entry
+                    return entries.first {
                         it.jsonValue == jsonString
                     }
                 } catch (e: NoSuchElementException) {

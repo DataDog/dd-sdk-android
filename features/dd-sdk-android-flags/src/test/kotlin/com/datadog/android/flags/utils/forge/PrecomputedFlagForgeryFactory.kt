@@ -15,7 +15,7 @@ import org.json.JSONObject
 
 internal class PrecomputedFlagForgeryFactory : ForgeryFactory<PrecomputedFlag> {
     override fun getForgery(forge: Forge): PrecomputedFlag {
-        val variationTypeEnum = forge.anElementFrom(*VariationType.values())
+        val variationTypeEnum = forge.aValueFrom(VariationType::class.java)
         val variationType = variationTypeEnum.value
 
         val variationValue = when (variationTypeEnum) {

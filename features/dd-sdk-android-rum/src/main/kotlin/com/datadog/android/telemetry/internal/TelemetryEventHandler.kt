@@ -589,7 +589,7 @@ internal class TelemetryEventHandler(
     private fun Map<String, Any?>.getFloat(key: LocalAttribute.Key) = get(key.toString()) as? Float
 
     private fun MutableMap<String, Any?>.cleanUpInternalAttributes() = toMutableMap().apply {
-        LocalAttribute.Key.values().forEach { key -> remove(key.toString()) }
+        LocalAttribute.Key.entries.forEach { key -> remove(key.toString()) }
     }
 
     private fun MutableMap<String, Any?>.addDiagnosticsAttributes() = apply {

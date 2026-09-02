@@ -122,7 +122,7 @@ internal class RumSessionScope(
 
         companion object {
             fun fromString(string: String?): State? {
-                return values().firstOrNull { it.asString == string }
+                return entries.firstOrNull { it.asString == string }
             }
         }
     }
@@ -139,7 +139,7 @@ internal class RumSessionScope(
 
         companion object {
             fun fromString(string: String?): StartReason? {
-                return values().firstOrNull { it.asString == string }
+                return entries.firstOrNull { it.asString == string }
             }
         }
     }

@@ -262,7 +262,7 @@ internal class RemoteConfigServiceImpl(
             )
             null
         } catch (e: NoSuchElementException) {
-            // Generated enum readers use values().first { } which throws NoSuchElementException
+            // Generated enum readers use entries.first { } which throws NoSuchElementException
             // for unknown enum values — treat the same as a parse failure.
             internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -300,7 +300,7 @@ internal class RemoteConfigServiceImpl(
             deleteRemoteConfigFiles()
             null
         } catch (e: NoSuchElementException) {
-            // Generated enum readers use values().first { } which throws NoSuchElementException
+            // Generated enum readers use entries.first { } which throws NoSuchElementException
             // for unknown enum values — treat the same as a parse failure.
             internalLogger.log(
                 InternalLogger.Level.ERROR,
