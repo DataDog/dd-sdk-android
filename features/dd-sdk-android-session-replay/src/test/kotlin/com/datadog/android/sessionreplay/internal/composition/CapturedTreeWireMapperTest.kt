@@ -323,6 +323,53 @@ internal class CapturedTreeWireMapperTest {
     }
 
     @Test
+    fun `M map webview wireframe with slotId equal to wire id W mapFullSnapshot`() {
+        // Given
+        val tree = compositionTestTree()
+        val webViewIdentity = tree.factory.webViewWireframe(tree.layer.identity, slotId = 42L)
+        val layer = tree.layer.copy(children = listOf(CapturedChild.Wireframe(webViewIdentity)))
+        val bounds = CapturedBounds(1, 2, 3, 4)
+        val webViewWireframe = CapturedWireframe.WebView(
+            identity = webViewIdentity,
+            bounds = bounds,
+            isVisible = true
+        )
+        val snapshot = tree.snapshot.copy(layers = listOf(layer), wireframes = listOf(webViewWireframe))
+
+        // When
+        val result = testedMapper.mapFullSnapshot(snapshot)
+
+        // Then
+        val wireframe = (result as CaptureWireMappingResult.Success).value.data.wireframes.single()
+            as MobileSegment.Wireframe.WebviewWireframe
+        assertThat(wireframe.id).isEqualTo(webViewIdentity.wireId)
+        assertThat(wireframe.slotId).isEqualTo(webViewIdentity.wireId.toString())
+        assertThat(wireframe.isVisible).isTrue()
+        assertThat(wireframe.width).isEqualTo(bounds.width)
+        assertThat(wireframe.height).isEqualTo(bounds.height)
+    }
+
+    @Test
+    fun `M return structured failures W mapMutation { invalid mutation }`() {
+        // Given
+        val tree = compositionTestTree()
+        val unknownIdentity = tree.factory.layer(tree.window, "unknown")
+        val mutation = CapturedMutationSet(
+            timestamp = 456,
+            scope = tree.scope,
+            removes = CapturedChange.Set(listOf(unknownIdentity))
+        )
+
+        // When
+        val result = testedMapper.mapMutation(mutation, tree.snapshot)
+
+        // Then
+        assertThat(result).isInstanceOf(CaptureWireMappingResult.Invalid::class.java)
+        assertThat((result as CaptureWireMappingResult.Invalid).failures.map { it.code })
+            .containsExactly(CaptureValidationErrorCode.UNKNOWN_MUTATION_TARGET)
+    }
+
+    @Test
     fun `M return structured failures W mapFullSnapshot { invalid snapshot }`() {
         // Given
         val snapshot = compositionTestTree().snapshot.copy(root = null)
