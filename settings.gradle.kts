@@ -80,6 +80,9 @@ include(":reliability:single-fit:profiling")
 // CORE INTEGRATION TESTS
 include(":reliability:core-it")
 
+// BACKEND INTEGRATION TESTS
+include(":reliability:with-backend")
+
 // LEGACY TESTS
 include(":instrumented:integration")
 

@@ -12,7 +12,12 @@ import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.storage.TelemetryAwareEventBatchWriter
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.internal.telemetry.TelemetryContext
+import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.domain.event.RumEventMeta
+import com.datadog.android.rum.internal.domain.event.RumEventSerializer
+import com.datadog.android.rum.internal.domain.scope.DiffThenFullView
+import com.datadog.android.rum.internal.domain.scope.MappedViewEvent
+import com.datadog.android.rum.internal.domain.scope.RumViewUpdateData
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -20,6 +25,7 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.TimeseriesCpuEvent
 import com.datadog.android.rum.model.TimeseriesMemoryEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.ViewUpdateEvent
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
@@ -47,8 +53,11 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -69,7 +78,10 @@ internal class RumDataWriterTest {
     private lateinit var testedWriter: RumDataWriter
 
     @Mock
-    lateinit var mockSerializer: Serializer<Any>
+    lateinit var mockEventMapper: RumEventMapper
+
+    @Mock
+    lateinit var mockEventSerializer: RumEventSerializer
 
     @Mock
     lateinit var mockEventMetaSerializer: Serializer<RumEventMeta>
@@ -108,9 +120,11 @@ internal class RumDataWriterTest {
             )
         ) doReturn true
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockEventMapper.map(any<ViewEvent>())) doAnswer { it.getArgument<ViewEvent>(0) }
 
         testedWriter = RumDataWriter(
-            mockSerializer,
+            mockEventMapper,
+            mockEventSerializer,
             mockEventMetaSerializer,
             rumMonitor.mockSdkCore
         )
@@ -129,7 +143,8 @@ internal class RumDataWriterTest {
             forge.getForgery(ErrorEvent::class.java)
         )
 
-        whenever(mockSerializer.serialize(fakeEvent)) doReturn fakeSerializedEvent
+        whenever(mockEventMapper.map(fakeEvent)) doReturn fakeEvent
+        whenever(mockEventSerializer.serialize(fakeEvent)) doReturn fakeSerializedEvent
 
         // When
         val result = testedWriter.write(mockEventBatchWriter, fakeEvent, fakeEventType)
@@ -167,7 +182,8 @@ internal class RumDataWriterTest {
             fakeUsageEvent.type
         )
         fakeEvents.forEach {
-            whenever(mockSerializer.serialize(it)) doReturn fakeSerializedEvent
+            whenever(mockEventMapper.map(it)) doReturn it
+            whenever(mockEventSerializer.serialize(it)) doReturn fakeSerializedEvent
         }
 
         // When
@@ -193,7 +209,8 @@ internal class RumDataWriterTest {
     ) {
         // Given
         val fakeEvent = FakeEventWithoutType(fakeValue)
-        whenever(mockSerializer.serialize(fakeEvent)) doReturn fakeSerializedEvent
+        whenever(mockEventMapper.map(fakeEvent)) doReturn fakeEvent
+        whenever(mockEventSerializer.serialize(fakeEvent)) doReturn fakeSerializedEvent
 
         // When
         testedWriter.write(mockEventBatchWriter, fakeEvent, fakeEventType)
@@ -216,7 +233,10 @@ internal class RumDataWriterTest {
             mock<TimeseriesCpuEvent> { on { type } doReturn "timeseries" },
             mock<TimeseriesMemoryEvent> { on { type } doReturn "timeseries" }
         )
-        fakeEvents.forEach { whenever(mockSerializer.serialize(it)) doReturn fakeSerializedEvent }
+        fakeEvents.forEach {
+            whenever(mockEventMapper.map(it)) doReturn it
+            whenever(mockEventSerializer.serialize(it)) doReturn fakeSerializedEvent
+        }
 
         // When
         fakeEvents.forEach { testedWriter.write(mockEventBatchWriter, it, fakeEventType) }
@@ -238,12 +258,11 @@ internal class RumDataWriterTest {
         forge: Forge
     ) {
         // Given
-        whenever(mockSerializer.serialize(fakeViewEvent)) doReturn fakeSerializedEvent
-        val hasAccessibility = fakeViewEvent.view.accessibility != null
+        whenever(mockEventSerializer.serialize(fakeViewEvent)) doReturn fakeSerializedEvent
         val eventMeta = RumEventMeta.View(
             viewId = fakeViewEvent.view.id,
             documentVersion = fakeViewEvent.dd.documentVersion,
-            hasAccessibility = hasAccessibility
+            hasAccessibility = fakeViewEvent.view.accessibility != null
         )
         val fakeSerializedViewEventMeta = forge.aString()
         whenever(mockEventMetaSerializer.serialize(eventMeta)) doReturn fakeSerializedViewEventMeta
@@ -264,12 +283,65 @@ internal class RumDataWriterTest {
     }
 
     @Test
+    fun `M map raw view event W write() { ViewEvent }`(
+        @Forgery fakeViewEvent: ViewEvent,
+        @StringForgery fakeMappedSerializedEvent: String,
+        forge: Forge
+    ) {
+        // Given
+        val mappedViewEvent = fakeViewEvent.copy(
+            dd = fakeViewEvent.dd.copy(documentVersion = fakeViewEvent.dd.documentVersion + 1)
+        )
+        whenever(mockEventMapper.map(fakeViewEvent)) doReturn mappedViewEvent
+        whenever(mockEventSerializer.serialize(mappedViewEvent)) doReturn fakeMappedSerializedEvent
+        val eventMeta = RumEventMeta.View(
+            viewId = mappedViewEvent.view.id,
+            documentVersion = mappedViewEvent.dd.documentVersion,
+            hasAccessibility = mappedViewEvent.view.accessibility != null
+        )
+        val fakeSerializedViewEventMeta = forge.aString()
+        whenever(mockEventMetaSerializer.serialize(eventMeta)) doReturn fakeSerializedViewEventMeta
+
+        // When
+        val result = testedWriter.write(mockEventBatchWriter, fakeViewEvent, fakeEventType)
+
+        // Then
+        assertThat(result).isTrue
+        verify(mockEventMapper).map(fakeViewEvent)
+    }
+
+    @Test
+    fun `M bypass mapper W write() { MappedViewEvent }`(
+        @Forgery fakeViewEvent: ViewEvent,
+        @StringForgery fakeMappedSerializedEvent: String,
+        forge: Forge
+    ) {
+        // Given
+        val mappedViewEvent = MappedViewEvent(fakeViewEvent)
+        whenever(mockEventSerializer.serialize(fakeViewEvent)) doReturn fakeMappedSerializedEvent
+        val eventMeta = RumEventMeta.View(
+            viewId = fakeViewEvent.view.id,
+            documentVersion = fakeViewEvent.dd.documentVersion,
+            hasAccessibility = fakeViewEvent.view.accessibility != null
+        )
+        val fakeSerializedViewEventMeta = forge.aString()
+        whenever(mockEventMetaSerializer.serialize(eventMeta)) doReturn fakeSerializedViewEventMeta
+
+        // When
+        val result = testedWriter.write(mockEventBatchWriter, mappedViewEvent, fakeEventType)
+
+        // Then
+        assertThat(result).isTrue
+        verifyNoInteractions(mockEventMapper)
+    }
+
+    @Test
     fun `M write data with empty event meta W write() {View Event, meta serialization fails}`(
         @Forgery fakeViewEvent: ViewEvent,
         forge: Forge
     ) {
         // Given
-        whenever(mockSerializer.serialize(fakeViewEvent)) doReturn fakeSerializedEvent
+        whenever(mockEventSerializer.serialize(fakeViewEvent)) doReturn fakeSerializedEvent
         val hasAccessibility = fakeViewEvent.view.accessibility != null
         val eventMeta = RumEventMeta.View(
             viewId = fakeViewEvent.view.id,
@@ -306,7 +378,8 @@ internal class RumDataWriterTest {
             forge.getForgery(ErrorEvent::class.java)
         )
 
-        whenever(mockSerializer.serialize(fakeEvent)) doReturn null
+        whenever(mockEventMapper.map(fakeEvent)) doReturn fakeEvent
+        whenever(mockEventSerializer.serialize(fakeEvent)) doThrow RuntimeException("serialization error")
 
         // When
         val result = testedWriter.write(mockEventBatchWriter, fakeEvent, fakeEventType)
@@ -330,7 +403,8 @@ internal class RumDataWriterTest {
             forge.getForgery(ErrorEvent::class.java)
         )
 
-        whenever(mockSerializer.serialize(fakeEvent)) doReturn fakeSerializedEvent
+        whenever(mockEventMapper.map(fakeEvent)) doReturn fakeEvent
+        whenever(mockEventSerializer.serialize(fakeEvent)) doReturn fakeSerializedEvent
         whenever(
             mockEventBatchWriter.write(
                 any<RawBatchEvent>(),
@@ -610,6 +684,573 @@ internal class RumDataWriterTest {
 
     // endregion
 
+    // region writeViewEvent edge cases
+
+    @Test
+    fun `M return false W write() { ViewEvent, serialization fails }`(
+        @Forgery fakeViewEvent: ViewEvent
+    ) {
+        // Given
+        whenever(mockEventSerializer.serialize(fakeViewEvent)) doThrow RuntimeException("serialization error")
+
+        // When
+        val result = testedWriter.write(mockEventBatchWriter, fakeViewEvent, fakeEventType)
+
+        // Then
+        assertThat(result).isFalse
+        verifyNoInteractions(mockEventBatchWriter)
+    }
+
+    @Test
+    fun `M return false W write() { ViewEvent, batch write returns false }`(
+        @Forgery fakeViewEvent: ViewEvent,
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockEventSerializer.serialize(fakeViewEvent)) doReturn fakeSerializedEvent
+        val fakeSerializedMeta = forge.aString()
+        val eventMeta = RumEventMeta.View(
+            viewId = fakeViewEvent.view.id,
+            documentVersion = fakeViewEvent.dd.documentVersion,
+            hasAccessibility = fakeViewEvent.view.accessibility != null
+        )
+        whenever(mockEventMetaSerializer.serialize(eventMeta)) doReturn fakeSerializedMeta
+        whenever(
+            mockEventBatchWriter.write(
+                any<RawBatchEvent>(),
+                anyOrNull<ByteArray>(),
+                any<EventType>(),
+                any<TelemetryContext>()
+            )
+        ) doReturn false
+
+        // When
+        val result = testedWriter.write(mockEventBatchWriter, fakeViewEvent, fakeEventType)
+
+        // Then
+        assertThat(result).isFalse
+    }
+
+    // endregion
+
+    // region writeViewUpdateEvent edge cases
+
+    @Test
+    fun `M return false W write() { RumViewUpdateData, serialization fails }`(
+        @Forgery fakeViewUpdateEvent: ViewUpdateEvent,
+        @Forgery fakeViewEvent: ViewEvent
+    ) {
+        // Given
+        val fakeViewUpdateData = RumViewUpdateData(
+            viewUpdate = fakeViewUpdateEvent,
+            viewEvent = fakeViewEvent
+        )
+        whenever(mockEventSerializer.serialize(fakeViewUpdateEvent)) doThrow RuntimeException("serialization error")
+
+        // When
+        val result = testedWriter.write(mockEventBatchWriter, fakeViewUpdateData, fakeEventType)
+
+        // Then
+        assertThat(result).isFalse
+        verifyNoInteractions(mockEventBatchWriter)
+    }
+
+    @Test
+    fun `M write data with empty event meta W write() { RumViewUpdateData, meta serialization fails }`(
+        @Forgery fakeViewUpdateEvent: ViewUpdateEvent,
+        @Forgery fakeViewEvent: ViewEvent,
+        @StringForgery fakeDiffSerializedEvent: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeViewUpdateData = RumViewUpdateData(
+            viewUpdate = fakeViewUpdateEvent,
+            viewEvent = fakeViewEvent
+        )
+        val fakeDiffSerializedData = fakeDiffSerializedEvent.toByteArray(Charsets.UTF_8)
+        whenever(mockEventSerializer.serialize(fakeViewUpdateEvent)) doReturn fakeDiffSerializedEvent
+        val eventMeta = RumEventMeta.ViewUpdate(
+            viewId = fakeViewUpdateEvent.view.id,
+            documentVersion = fakeViewUpdateEvent.dd.documentVersion
+        )
+        whenever(mockEventMetaSerializer.serialize(eventMeta)) doThrow forge.aThrowable()
+
+        // When
+        testedWriter.write(mockEventBatchWriter, fakeViewUpdateData, fakeEventType)
+
+        // Then
+        verify(mockEventBatchWriter).write(
+            eq(RawBatchEvent(data = fakeDiffSerializedData)),
+            isNull(),
+            eq(fakeEventType),
+            any<TelemetryContext>()
+        )
+    }
+
+    @Test
+    fun `M NOT call writeLastViewEvent W write() { RumViewUpdateData, full ViewEvent serialization fails }`(
+        @Forgery fakeViewUpdateEvent: ViewUpdateEvent,
+        @Forgery fakeViewEvent: ViewEvent,
+        @StringForgery fakeDiffSerializedEvent: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeViewUpdateData = RumViewUpdateData(
+            viewUpdate = fakeViewUpdateEvent,
+            viewEvent = fakeViewEvent
+        )
+        whenever(mockEventSerializer.serialize(fakeViewUpdateEvent)) doReturn fakeDiffSerializedEvent
+        whenever(mockEventSerializer.serialize(fakeViewEvent)) doThrow RuntimeException("serialization error")
+        val fakeSerializedMeta = forge.aString()
+        val eventMeta = RumEventMeta.ViewUpdate(
+            viewId = fakeViewUpdateEvent.view.id,
+            documentVersion = fakeViewUpdateEvent.dd.documentVersion
+        )
+        whenever(mockEventMetaSerializer.serialize(eventMeta)) doReturn fakeSerializedMeta
+
+        // When
+        testedWriter.write(mockEventBatchWriter, fakeViewUpdateData, fakeEventType)
+
+        // Then
+        verify(rumMonitor.mockSdkCore, never()).writeLastViewEvent(any<ByteArray>())
+    }
+
+    @Test
+    fun `M call writeLastViewEvent with full ViewEvent W write() { RumViewUpdateData, current view }`(
+        @Forgery fakeViewUpdateEvent: ViewUpdateEvent,
+        @Forgery fakeViewEvent: ViewEvent,
+        @StringForgery fakeDiffSerializedEvent: String,
+        @StringForgery fakeFullSerializedEvent: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeViewUpdateData = RumViewUpdateData(
+            viewUpdate = fakeViewUpdateEvent,
+            viewEvent = fakeViewEvent
+        )
+        val fakeFullSerializedData = fakeFullSerializedEvent.toByteArray(Charsets.UTF_8)
+        whenever(mockEventSerializer.serialize(fakeViewUpdateEvent)) doReturn fakeDiffSerializedEvent
+        whenever(mockEventSerializer.serialize(fakeViewEvent)) doReturn fakeFullSerializedEvent
+        val fakeSerializedMeta = forge.aString()
+        val eventMeta = RumEventMeta.ViewUpdate(
+            viewId = fakeViewUpdateEvent.view.id,
+            documentVersion = fakeViewUpdateEvent.dd.documentVersion
+        )
+        whenever(mockEventMetaSerializer.serialize(eventMeta)) doReturn fakeSerializedMeta
+        // the checkpointed view is the current view, so its crash-recovery write is not gated out
+        testedWriter.onViewEventSubmitted(
+            fakeViewEvent.copy(dd = fakeViewEvent.dd.copy(documentVersion = RumDataWriter.FIRST_VIEW_DOCUMENT_VERSION))
+        )
+
+        // When
+        testedWriter.write(mockEventBatchWriter, fakeViewUpdateData, fakeEventType)
+
+        // Then
+        verify(rumMonitor.mockSdkCore).writeLastViewEvent(fakeFullSerializedData)
+    }
+
+    @Test
+    fun `M NOT call writeLastViewEvent W write() { RumViewUpdateData, stale view }`(
+        @Forgery fakeViewUpdateEvent: ViewUpdateEvent,
+        @Forgery fakeViewEvent: ViewEvent,
+        @StringForgery fakeDiffSerializedEvent: String,
+        @StringForgery fakeFullSerializedEvent: String,
+        forge: Forge
+    ) {
+        // Given — a newer view (view B) is current; this RumViewUpdateData belongs to a stale view
+        // (view A) whose crash-recovery write must not overwrite view B's snapshot
+        val staleViewEvent = fakeViewEvent.copy(view = fakeViewEvent.view.copy(id = VIEW_A_ID))
+        val staleViewUpdateEvent = fakeViewUpdateEvent.copy(view = fakeViewUpdateEvent.view.copy(id = VIEW_A_ID))
+        val fakeViewUpdateData = RumViewUpdateData(
+            viewUpdate = staleViewUpdateEvent,
+            viewEvent = staleViewEvent
+        )
+        val fakeFullSerializedData = fakeFullSerializedEvent.toByteArray(Charsets.UTF_8)
+        whenever(mockEventSerializer.serialize(staleViewUpdateEvent)) doReturn fakeDiffSerializedEvent
+        whenever(mockEventSerializer.serialize(staleViewEvent)) doReturn fakeFullSerializedEvent
+        val fakeSerializedMeta = forge.aString()
+        val eventMeta = RumEventMeta.ViewUpdate(
+            viewId = staleViewUpdateEvent.view.id,
+            documentVersion = staleViewUpdateEvent.dd.documentVersion
+        )
+        whenever(mockEventMetaSerializer.serialize(eventMeta)) doReturn fakeSerializedMeta
+        // view B is the current view — established after view A's own update would have started
+        testedWriter.onViewEventSubmitted(
+            fakeViewEvent.copy(
+                view = fakeViewEvent.view.copy(id = VIEW_B_ID),
+                dd = fakeViewEvent.dd.copy(documentVersion = RumDataWriter.FIRST_VIEW_DOCUMENT_VERSION)
+            )
+        )
+
+        // When
+        testedWriter.write(mockEventBatchWriter, fakeViewUpdateData, fakeEventType)
+
+        // Then
+        verify(rumMonitor.mockSdkCore, never()).writeLastViewEvent(fakeFullSerializedData)
+    }
+
+    // endregion
+
+    // region writeDiffThenFullView
+
+    @Test
+    fun `M write diff then full view W write() { DiffThenFullView, diff succeeds }`(
+        @Forgery fakeViewUpdateEvent: ViewUpdateEvent,
+        @Forgery fakeViewEvent: ViewEvent,
+        @StringForgery fakeDiffSerializedEvent: String,
+        @StringForgery fakeFullSerializedEvent: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeData = DiffThenFullView(
+            viewUpdate = fakeViewUpdateEvent,
+            viewEvent = fakeViewEvent
+        )
+        val fakeDiffBytes = fakeDiffSerializedEvent.toByteArray(Charsets.UTF_8)
+        val fakeFullBytes = fakeFullSerializedEvent.toByteArray(Charsets.UTF_8)
+        val fakeSerializedMeta = forge.aString()
+        val fakeFullMeta = forge.aString()
+        val diffMeta = RumEventMeta.ViewUpdate(
+            viewId = fakeViewUpdateEvent.view.id,
+            documentVersion = fakeViewUpdateEvent.dd.documentVersion
+        )
+        val fullMeta = RumEventMeta.View(
+            viewId = fakeViewEvent.view.id,
+            documentVersion = fakeViewEvent.dd.documentVersion,
+            hasAccessibility = fakeViewEvent.view.accessibility != null
+        )
+        whenever(mockEventSerializer.serialize(fakeViewUpdateEvent)) doReturn fakeDiffSerializedEvent
+        whenever(mockEventSerializer.serialize(fakeViewEvent)) doReturn fakeFullSerializedEvent
+        whenever(mockEventMetaSerializer.serialize(diffMeta)) doReturn fakeSerializedMeta
+        whenever(mockEventMetaSerializer.serialize(fullMeta)) doReturn fakeFullMeta
+
+        // When
+        val result = testedWriter.write(mockEventBatchWriter, fakeData, fakeEventType)
+
+        // Then
+        assertThat(result).isTrue()
+        val captor = argumentCaptor<RawBatchEvent>()
+        verify(mockEventBatchWriter, times(2)).write(
+            captor.capture(),
+            isNull(),
+            eq(fakeEventType),
+            any<TelemetryContext>()
+        )
+        // diff is written first, then the full view
+        assertThat(captor.firstValue.data).isEqualTo(fakeDiffBytes)
+        assertThat(captor.secondValue.data).isEqualTo(fakeFullBytes)
+    }
+
+    @Test
+    fun `M NOT call writeLastViewEvent for diff W write() { DiffThenFullView, diff succeeds }`(
+        @Forgery fakeViewUpdateEvent: ViewUpdateEvent,
+        @Forgery fakeViewEvent: ViewEvent,
+        @StringForgery fakeDiffSerializedEvent: String,
+        @StringForgery fakeFullSerializedEvent: String,
+        forge: Forge
+    ) {
+        // Given — the diff write succeeds but crash-recovery must NOT fire for the diff step
+        val fakeData = DiffThenFullView(
+            viewUpdate = fakeViewUpdateEvent,
+            viewEvent = fakeViewEvent
+        )
+        val fakeFullBytes = fakeFullSerializedEvent.toByteArray(Charsets.UTF_8)
+        val fakeSerializedMeta = forge.aString()
+        val fakeFullMeta = forge.aString()
+        val diffMeta = RumEventMeta.ViewUpdate(
+            viewId = fakeViewUpdateEvent.view.id,
+            documentVersion = fakeViewUpdateEvent.dd.documentVersion
+        )
+        val fullMeta = RumEventMeta.View(
+            viewId = fakeViewEvent.view.id,
+            documentVersion = fakeViewEvent.dd.documentVersion,
+            hasAccessibility = fakeViewEvent.view.accessibility != null
+        )
+        whenever(mockEventSerializer.serialize(fakeViewUpdateEvent)) doReturn fakeDiffSerializedEvent
+        whenever(mockEventSerializer.serialize(fakeViewEvent)) doReturn fakeFullSerializedEvent
+        whenever(mockEventMetaSerializer.serialize(diffMeta)) doReturn fakeSerializedMeta
+        whenever(mockEventMetaSerializer.serialize(fullMeta)) doReturn fakeFullMeta
+        // the checkpointed view is the current view, so its crash-recovery write is not gated out
+        testedWriter.onViewEventSubmitted(
+            fakeViewEvent.copy(dd = fakeViewEvent.dd.copy(documentVersion = RumDataWriter.FIRST_VIEW_DOCUMENT_VERSION))
+        )
+
+        // When
+        testedWriter.write(mockEventBatchWriter, fakeData, fakeEventType)
+
+        // Then — writeLastViewEvent is called exactly once: for the full view via the checkpoint write
+        verify(rumMonitor.mockSdkCore).writeLastViewEvent(fakeFullBytes)
+    }
+
+    @Test
+    fun `M NOT call writeLastViewEvent for full view W write() { DiffThenFullView, stale view }`(
+        @Forgery fakeViewUpdateEvent: ViewUpdateEvent,
+        @Forgery fakeViewEvent: ViewEvent,
+        @StringForgery fakeDiffSerializedEvent: String,
+        @StringForgery fakeFullSerializedEvent: String,
+        forge: Forge
+    ) {
+        // Given — a newer view (view B) is current; this DiffThenFullView belongs to a stale view
+        // (view A) whose checkpoint must not overwrite view B's crash-recovery snapshot
+        val staleViewEvent = fakeViewEvent.copy(view = fakeViewEvent.view.copy(id = VIEW_A_ID))
+        val staleViewUpdateEvent = fakeViewUpdateEvent.copy(view = fakeViewUpdateEvent.view.copy(id = VIEW_A_ID))
+        val fakeData = DiffThenFullView(
+            viewUpdate = staleViewUpdateEvent,
+            viewEvent = staleViewEvent
+        )
+        val fakeFullBytes = fakeFullSerializedEvent.toByteArray(Charsets.UTF_8)
+        val fakeSerializedMeta = forge.aString()
+        val fakeFullMeta = forge.aString()
+        val diffMeta = RumEventMeta.ViewUpdate(
+            viewId = staleViewUpdateEvent.view.id,
+            documentVersion = staleViewUpdateEvent.dd.documentVersion
+        )
+        val fullMeta = RumEventMeta.View(
+            viewId = staleViewEvent.view.id,
+            documentVersion = staleViewEvent.dd.documentVersion,
+            hasAccessibility = staleViewEvent.view.accessibility != null
+        )
+        whenever(mockEventSerializer.serialize(staleViewUpdateEvent)) doReturn fakeDiffSerializedEvent
+        whenever(mockEventSerializer.serialize(staleViewEvent)) doReturn fakeFullSerializedEvent
+        whenever(mockEventMetaSerializer.serialize(diffMeta)) doReturn fakeSerializedMeta
+        whenever(mockEventMetaSerializer.serialize(fullMeta)) doReturn fakeFullMeta
+        // view B is the current view — established after view A's own checkpoint would have started
+        testedWriter.onViewEventSubmitted(
+            fakeViewEvent.copy(
+                view = fakeViewEvent.view.copy(id = VIEW_B_ID),
+                dd = fakeViewEvent.dd.copy(documentVersion = RumDataWriter.FIRST_VIEW_DOCUMENT_VERSION)
+            )
+        )
+
+        // When
+        testedWriter.write(mockEventBatchWriter, fakeData, fakeEventType)
+
+        // Then — the stale view's checkpoint does not overwrite view B's crash-recovery snapshot
+        verify(rumMonitor.mockSdkCore, never()).writeLastViewEvent(fakeFullBytes)
+    }
+
+    @Test
+    fun `M call writeLastViewEvent with full ViewEvent W write() { DiffThenFullView, diff and full succeed }`(
+        @Forgery fakeViewUpdateEvent: ViewUpdateEvent,
+        @Forgery fakeViewEvent: ViewEvent,
+        @StringForgery fakeDiffSerializedEvent: String,
+        @StringForgery fakeFullSerializedEvent: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeData = DiffThenFullView(
+            viewUpdate = fakeViewUpdateEvent,
+            viewEvent = fakeViewEvent
+        )
+        val fakeFullBytes = fakeFullSerializedEvent.toByteArray(Charsets.UTF_8)
+        val fakeSerializedMeta = forge.aString()
+        val fakeFullMeta = forge.aString()
+        val diffMeta = RumEventMeta.ViewUpdate(
+            viewId = fakeViewUpdateEvent.view.id,
+            documentVersion = fakeViewUpdateEvent.dd.documentVersion
+        )
+        val fullMeta = RumEventMeta.View(
+            viewId = fakeViewEvent.view.id,
+            documentVersion = fakeViewEvent.dd.documentVersion,
+            hasAccessibility = fakeViewEvent.view.accessibility != null
+        )
+        whenever(mockEventSerializer.serialize(fakeViewUpdateEvent)) doReturn fakeDiffSerializedEvent
+        whenever(mockEventSerializer.serialize(fakeViewEvent)) doReturn fakeFullSerializedEvent
+        whenever(mockEventMetaSerializer.serialize(diffMeta)) doReturn fakeSerializedMeta
+        whenever(mockEventMetaSerializer.serialize(fullMeta)) doReturn fakeFullMeta
+        // the checkpointed view is the current view, so its crash-recovery write is not gated out
+        testedWriter.onViewEventSubmitted(
+            fakeViewEvent.copy(dd = fakeViewEvent.dd.copy(documentVersion = RumDataWriter.FIRST_VIEW_DOCUMENT_VERSION))
+        )
+
+        // When
+        testedWriter.write(mockEventBatchWriter, fakeData, fakeEventType)
+
+        // Then
+        verify(rumMonitor.mockSdkCore).writeLastViewEvent(fakeFullBytes)
+    }
+
+    @Test
+    fun `M return true W write() { DiffThenFullView, diff succeeds, full view write fails }`(
+        @Forgery fakeViewUpdateEvent: ViewUpdateEvent,
+        @Forgery fakeViewEvent: ViewEvent,
+        @StringForgery fakeDiffSerializedEvent: String,
+        @StringForgery fakeFullSerializedEvent: String,
+        forge: Forge
+    ) {
+        // Given — diff persisted, full view batch write fails; return value must still be true
+        val fakeData = DiffThenFullView(
+            viewUpdate = fakeViewUpdateEvent,
+            viewEvent = fakeViewEvent
+        )
+        val fakeFullBytes = fakeFullSerializedEvent.toByteArray(Charsets.UTF_8)
+        val fakeSerializedMeta = forge.aString()
+        val fakeFullMeta = forge.aString()
+        val diffMeta = RumEventMeta.ViewUpdate(
+            viewId = fakeViewUpdateEvent.view.id,
+            documentVersion = fakeViewUpdateEvent.dd.documentVersion
+        )
+        val fullMeta = RumEventMeta.View(
+            viewId = fakeViewEvent.view.id,
+            documentVersion = fakeViewEvent.dd.documentVersion,
+            hasAccessibility = fakeViewEvent.view.accessibility != null
+        )
+        whenever(mockEventSerializer.serialize(fakeViewUpdateEvent)) doReturn fakeDiffSerializedEvent
+        whenever(mockEventSerializer.serialize(fakeViewEvent)) doReturn fakeFullSerializedEvent
+        whenever(mockEventMetaSerializer.serialize(diffMeta)) doReturn fakeSerializedMeta
+        whenever(mockEventMetaSerializer.serialize(fullMeta)) doReturn fakeFullMeta
+        whenever(
+            mockEventBatchWriter.write(
+                eq(RawBatchEvent(data = fakeFullBytes, metadata = fakeFullMeta.toByteArray(Charsets.UTF_8))),
+                isNull(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
+            )
+        ) doReturn false
+
+        // When
+        val result = testedWriter.write(mockEventBatchWriter, fakeData, fakeEventType)
+
+        // Then — diffWritten=true, so result is true even though full view write failed
+        assertThat(result).isTrue()
+        verify(rumMonitor.mockSdkCore, never()).writeLastViewEvent(any<ByteArray>())
+    }
+
+    @Test
+    fun `M NOT write full view W write() { DiffThenFullView, diff write fails }`(
+        @Forgery fakeViewUpdateEvent: ViewUpdateEvent,
+        @Forgery fakeViewEvent: ViewEvent,
+        @StringForgery fakeDiffSerializedEvent: String,
+        forge: Forge
+    ) {
+        // Given — diff write fails; the full view checkpoint must not be attempted at all
+        val fakeData = DiffThenFullView(
+            viewUpdate = fakeViewUpdateEvent,
+            viewEvent = fakeViewEvent
+        )
+        val fakeDiffBytes = fakeDiffSerializedEvent.toByteArray(Charsets.UTF_8)
+        val fakeSerializedMeta = forge.aString()
+        val diffMeta = RumEventMeta.ViewUpdate(
+            viewId = fakeViewUpdateEvent.view.id,
+            documentVersion = fakeViewUpdateEvent.dd.documentVersion
+        )
+        whenever(mockEventSerializer.serialize(fakeViewUpdateEvent)) doReturn fakeDiffSerializedEvent
+        whenever(mockEventMetaSerializer.serialize(diffMeta)) doReturn fakeSerializedMeta
+        whenever(
+            mockEventBatchWriter.write(
+                eq(RawBatchEvent(data = fakeDiffBytes, metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8))),
+                isNull(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
+            )
+        ) doReturn false
+
+        // When
+        testedWriter.write(mockEventBatchWriter, fakeData, fakeEventType)
+
+        // Then — only one batch write (the diff); full view batch write never attempted
+        verify(mockEventBatchWriter, times(1)).write(any(), isNull(), any(), any<TelemetryContext>())
+    }
+
+    @Test
+    fun `M NOT call writeLastViewEvent W write() { DiffThenFullView, diff write fails }`(
+        @Forgery fakeViewUpdateEvent: ViewUpdateEvent,
+        @Forgery fakeViewEvent: ViewEvent,
+        @StringForgery fakeDiffSerializedEvent: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeData = DiffThenFullView(
+            viewUpdate = fakeViewUpdateEvent,
+            viewEvent = fakeViewEvent
+        )
+        val fakeDiffBytes = fakeDiffSerializedEvent.toByteArray(Charsets.UTF_8)
+        val fakeSerializedMeta = forge.aString()
+        val diffMeta = RumEventMeta.ViewUpdate(
+            viewId = fakeViewUpdateEvent.view.id,
+            documentVersion = fakeViewUpdateEvent.dd.documentVersion
+        )
+        whenever(mockEventSerializer.serialize(fakeViewUpdateEvent)) doReturn fakeDiffSerializedEvent
+        whenever(mockEventMetaSerializer.serialize(diffMeta)) doReturn fakeSerializedMeta
+        whenever(
+            mockEventBatchWriter.write(
+                eq(RawBatchEvent(data = fakeDiffBytes, metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8))),
+                isNull(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
+            )
+        ) doReturn false
+
+        // When
+        testedWriter.write(mockEventBatchWriter, fakeData, fakeEventType)
+
+        // Then
+        verify(rumMonitor.mockSdkCore, never()).writeLastViewEvent(any<ByteArray>())
+    }
+
+    @Test
+    fun `M return false W write() { DiffThenFullView, diff write fails }`(
+        @Forgery fakeViewUpdateEvent: ViewUpdateEvent,
+        @Forgery fakeViewEvent: ViewEvent,
+        @StringForgery fakeDiffSerializedEvent: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeData = DiffThenFullView(
+            viewUpdate = fakeViewUpdateEvent,
+            viewEvent = fakeViewEvent
+        )
+        val fakeDiffBytes = fakeDiffSerializedEvent.toByteArray(Charsets.UTF_8)
+        val fakeSerializedMeta = forge.aString()
+        val diffMeta = RumEventMeta.ViewUpdate(
+            viewId = fakeViewUpdateEvent.view.id,
+            documentVersion = fakeViewUpdateEvent.dd.documentVersion
+        )
+        whenever(mockEventSerializer.serialize(fakeViewUpdateEvent)) doReturn fakeDiffSerializedEvent
+        whenever(mockEventMetaSerializer.serialize(diffMeta)) doReturn fakeSerializedMeta
+        whenever(
+            mockEventBatchWriter.write(
+                eq(RawBatchEvent(data = fakeDiffBytes, metadata = fakeSerializedMeta.toByteArray(Charsets.UTF_8))),
+                isNull(),
+                eq(fakeEventType),
+                any<TelemetryContext>()
+            )
+        ) doReturn false
+
+        // When
+        val result = testedWriter.write(mockEventBatchWriter, fakeData, fakeEventType)
+
+        // Then
+        assertThat(result).isFalse()
+    }
+
+    // endregion
+
+    // region writeOtherEvent edge cases
+
+    @Test
+    fun `M return false W write() { other event, mapper returns null }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeEvent = forge.anElementFrom(
+            forge.getForgery(ActionEvent::class.java),
+            forge.getForgery(ResourceEvent::class.java),
+            forge.getForgery(LongTaskEvent::class.java),
+            forge.getForgery(ErrorEvent::class.java)
+        )
+        whenever(mockEventMapper.map(fakeEvent)) doReturn null
+
+        // When
+        val result = testedWriter.write(mockEventBatchWriter, fakeEvent, fakeEventType)
+
+        // Then
+        assertThat(result).isFalse
+        verifyNoInteractions(mockEventBatchWriter)
+    }
+
+    // endregion
+
     // region accessibility
 
     @Test
@@ -625,7 +1266,8 @@ internal class RumDataWriterTest {
             view = newView
         )
 
-        whenever(mockSerializer.serialize(newViewEvent)) doReturn fakeSerializedEvent
+        whenever(mockEventMapper.map(newViewEvent)) doReturn newViewEvent
+        whenever(mockEventSerializer.serialize(newViewEvent)) doReturn fakeSerializedEvent
 
         // When
         testedWriter.write(mockEventBatchWriter, newViewEvent, fakeEventType)
@@ -650,7 +1292,8 @@ internal class RumDataWriterTest {
             view = newView
         )
 
-        whenever(mockSerializer.serialize(newViewEvent)) doReturn fakeSerializedEvent
+        whenever(mockEventMapper.map(newViewEvent)) doReturn newViewEvent
+        whenever(mockEventSerializer.serialize(newViewEvent)) doReturn fakeSerializedEvent
 
         // When
         testedWriter.write(mockEventBatchWriter, newViewEvent, fakeEventType)
@@ -660,6 +1303,145 @@ internal class RumDataWriterTest {
         verify(mockEventMetaSerializer).serialize(captor.capture())
         val metaData = captor.firstValue
         assertThat(metaData.hasAccessibility).isTrue
+    }
+
+    @Test
+    fun `M hasAccessibility false W write() { second write, same accessibility }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeAccessibility = forge.getForgery<ViewEvent.Accessibility>()
+        val baseViewEvent = forge.getForgery<ViewEvent>()
+        val firstWrite = baseViewEvent.copy(
+            view = baseViewEvent.view.copy(accessibility = fakeAccessibility, isActive = true)
+        )
+        val secondWrite = firstWrite.copy(
+            dd = firstWrite.dd.copy(documentVersion = firstWrite.dd.documentVersion + 1)
+        )
+        listOf(firstWrite, secondWrite).forEach {
+            whenever(mockEventMapper.map(it)) doReturn it
+            whenever(mockEventSerializer.serialize(it)) doReturn fakeSerializedEvent
+        }
+
+        // When
+        testedWriter.write(mockEventBatchWriter, firstWrite, fakeEventType)
+        testedWriter.write(mockEventBatchWriter, secondWrite, fakeEventType)
+
+        // Then
+        val captor = argumentCaptor<RumEventMeta.View>()
+        verify(mockEventMetaSerializer, times(2)).serialize(captor.capture())
+        assertThat(captor.allValues[0].hasAccessibility).isTrue // no prior write for this view yet
+        assertThat(captor.allValues[1].hasAccessibility).isFalse // unchanged since the first write
+    }
+
+    @Test
+    fun `M hasAccessibility true W write() { second write, different accessibility }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeAccessibility1 = forge.getForgery<ViewEvent.Accessibility>().copy(screenReaderEnabled = true)
+        val fakeAccessibility2 = fakeAccessibility1.copy(screenReaderEnabled = false)
+        val baseViewEvent = forge.getForgery<ViewEvent>()
+        val firstWrite = baseViewEvent.copy(
+            view = baseViewEvent.view.copy(accessibility = fakeAccessibility1, isActive = true)
+        )
+        val secondWrite = firstWrite.copy(
+            view = firstWrite.view.copy(accessibility = fakeAccessibility2),
+            dd = firstWrite.dd.copy(documentVersion = firstWrite.dd.documentVersion + 1)
+        )
+        listOf(firstWrite, secondWrite).forEach {
+            whenever(mockEventMapper.map(it)) doReturn it
+            whenever(mockEventSerializer.serialize(it)) doReturn fakeSerializedEvent
+        }
+
+        // When
+        testedWriter.write(mockEventBatchWriter, firstWrite, fakeEventType)
+        testedWriter.write(mockEventBatchWriter, secondWrite, fakeEventType)
+
+        // Then
+        val captor = argumentCaptor<RumEventMeta.View>()
+        verify(mockEventMetaSerializer, times(2)).serialize(captor.capture())
+        assertThat(captor.allValues[0].hasAccessibility).isTrue
+        assertThat(captor.allValues[1].hasAccessibility).isTrue // accessibility changed between writes
+    }
+
+    @Test
+    fun `M track accessibility independently per view W write() { interleaved views }`(
+        forge: Forge
+    ) {
+        // Given — two distinct views, A and B, with different accessibility snapshots
+        val fakeAccessibilityA = forge.getForgery<ViewEvent.Accessibility>().copy(screenReaderEnabled = true)
+        val fakeAccessibilityB = fakeAccessibilityA.copy(screenReaderEnabled = false)
+
+        val baseViewEventA = forge.getForgery<ViewEvent>()
+        val viewEventA1 = baseViewEventA.copy(
+            view = baseViewEventA.view.copy(accessibility = fakeAccessibilityA, isActive = true)
+        )
+        val viewEventA2 = viewEventA1.copy(
+            dd = viewEventA1.dd.copy(documentVersion = viewEventA1.dd.documentVersion + 1)
+        )
+
+        val baseViewEventB = forge.getForgery<ViewEvent>()
+        val viewEventB1 = baseViewEventB.copy(
+            view = baseViewEventB.view.copy(accessibility = fakeAccessibilityB, isActive = true)
+        )
+
+        listOf(viewEventA1, viewEventB1, viewEventA2).forEach {
+            whenever(mockEventMapper.map(it)) doReturn it
+            whenever(mockEventSerializer.serialize(it)) doReturn fakeSerializedEvent
+        }
+
+        // When — view A's first update, then an interleaved write for a completely different
+        // view B, then view A's second update (same accessibility as its own first write)
+        testedWriter.write(mockEventBatchWriter, viewEventA1, fakeEventType)
+        testedWriter.write(mockEventBatchWriter, viewEventB1, fakeEventType)
+        testedWriter.write(mockEventBatchWriter, viewEventA2, fakeEventType)
+
+        // Then
+        val captor = argumentCaptor<RumEventMeta.View>()
+        verify(mockEventMetaSerializer, times(3)).serialize(captor.capture())
+        assertThat(captor.allValues[0].hasAccessibility).isTrue // A1: first write for view A
+        assertThat(captor.allValues[1].hasAccessibility).isTrue // B1: first write for view B
+        // A2 must be compared against A1's own accessibility, not B1's — proves per-viewId tracking
+        assertThat(captor.allValues[2].hasAccessibility).isFalse
+    }
+
+    @Test
+    fun `M reset accessibility tracking W write() { view closes, isActive false }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeAccessibility = forge.getForgery<ViewEvent.Accessibility>()
+        val baseViewEvent = forge.getForgery<ViewEvent>()
+        val firstWrite = baseViewEvent.copy(
+            view = baseViewEvent.view.copy(accessibility = fakeAccessibility, isActive = true)
+        )
+        val closingWrite = firstWrite.copy(
+            view = firstWrite.view.copy(isActive = false),
+            dd = firstWrite.dd.copy(documentVersion = firstWrite.dd.documentVersion + 1)
+        )
+        // A late write for the same viewId after it was closed (e.g. crash-recovery raw ViewEvent),
+        // with the same accessibility snapshot as before
+        val lateWrite = closingWrite.copy(
+            dd = closingWrite.dd.copy(documentVersion = closingWrite.dd.documentVersion + 1)
+        )
+        listOf(firstWrite, closingWrite, lateWrite).forEach {
+            whenever(mockEventMapper.map(it)) doReturn it
+            whenever(mockEventSerializer.serialize(it)) doReturn fakeSerializedEvent
+        }
+
+        // When
+        testedWriter.write(mockEventBatchWriter, firstWrite, fakeEventType)
+        testedWriter.write(mockEventBatchWriter, closingWrite, fakeEventType)
+        testedWriter.write(mockEventBatchWriter, lateWrite, fakeEventType)
+
+        // Then
+        val captor = argumentCaptor<RumEventMeta.View>()
+        verify(mockEventMetaSerializer, times(3)).serialize(captor.capture())
+        assertThat(captor.allValues[0].hasAccessibility).isTrue // first write for this view
+        assertThat(captor.allValues[1].hasAccessibility).isFalse // unchanged, but this write closes the view
+        // tracking was evicted when the view closed, so this is treated as unseen again
+        assertThat(captor.allValues[2].hasAccessibility).isTrue
     }
 
     // endregion

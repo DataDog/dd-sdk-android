@@ -686,6 +686,7 @@ datadog:
       - "kotlin.collections.MutableMap.map(kotlin.Function1)"
       - "kotlin.collections.MutableMap.mapValues(kotlin.Function1)"
       - "kotlin.collections.MutableMap.put(java.lang.Class, kotlin.String?)"
+      - "kotlin.collections.MutableMap.put(kotlin.Any, kotlin.Any?)"
       - "kotlin.collections.MutableMap.put(kotlin.Any?, kotlin.Any?)"
       - "kotlin.collections.MutableMap.put(kotlin.String, kotlin.Any)"
       - "kotlin.collections.MutableMap.put(kotlin.String, kotlin.Any?)"

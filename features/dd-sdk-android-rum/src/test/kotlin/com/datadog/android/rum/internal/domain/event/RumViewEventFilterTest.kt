@@ -289,6 +289,187 @@ internal class RumViewEventFilterTest {
 
     // endregion
 
+    // region ViewUpdate filtering
+
+    @Test
+    fun `M keep ViewUpdate W filterOutRedundantViewEvents() { no View event for same viewId }`(
+        forge: Forge
+    ) {
+        // Given
+        val viewUpdateMeta = RumEventMeta.ViewUpdate(
+            viewId = forge.aString(),
+            documentVersion = forge.aLong(min = 1)
+        )
+        val viewUpdateEvent = RawBatchEvent(
+            data = forge.aString().toByteArray(),
+            metadata = viewUpdateMeta.toBytes()
+        )
+        whenever(mockEventMetaDeserializer.deserialize(viewUpdateMeta.toBytes())) doReturn viewUpdateMeta
+
+        // When
+        val result = testedFilter.filterOutRedundantViewEvents(listOf(viewUpdateEvent))
+
+        // Then
+        assertThat(result).containsOnly(viewUpdateEvent)
+    }
+
+    @Test
+    fun `M drop ViewUpdate W filterOutRedundantViewEvents() { View event has bigger docVersion }`(
+        forge: Forge
+    ) {
+        // Given
+        val viewId = forge.aString()
+        val viewUpdateMeta = RumEventMeta.ViewUpdate(viewId = viewId, documentVersion = 5L)
+        val viewMeta = RumEventMeta.View(viewId = viewId, documentVersion = 10L)
+
+        val viewUpdateEvent = RawBatchEvent(
+            data = forge.aString().toByteArray(),
+            metadata = viewUpdateMeta.toBytes()
+        )
+        val viewEvent = RawBatchEvent(
+            data = forge.aString().toByteArray(),
+            metadata = viewMeta.toBytes()
+        )
+        whenever(mockEventMetaDeserializer.deserialize(viewUpdateMeta.toBytes())) doReturn viewUpdateMeta
+        whenever(mockEventMetaDeserializer.deserialize(viewMeta.toBytes())) doReturn viewMeta
+
+        // When
+        val result = testedFilter.filterOutRedundantViewEvents(listOf(viewUpdateEvent, viewEvent))
+
+        // Then
+        assertThat(result).containsOnly(viewEvent)
+        assertThat(result).doesNotContain(viewUpdateEvent)
+    }
+
+    @Test
+    fun `M keep ViewUpdate W filterOutRedundantViewEvents() { View event has equal docVersion }`(
+        forge: Forge
+    ) {
+        // Given
+        val viewId = forge.aString()
+        val viewUpdateMeta = RumEventMeta.ViewUpdate(viewId = viewId, documentVersion = 10L)
+        val viewMeta = RumEventMeta.View(viewId = viewId, documentVersion = 10L)
+
+        val viewUpdateEvent = RawBatchEvent(
+            data = forge.aString().toByteArray(),
+            metadata = viewUpdateMeta.toBytes()
+        )
+        val viewEvent = RawBatchEvent(
+            data = forge.aString().toByteArray(),
+            metadata = viewMeta.toBytes()
+        )
+        whenever(mockEventMetaDeserializer.deserialize(viewUpdateMeta.toBytes())) doReturn viewUpdateMeta
+        whenever(mockEventMetaDeserializer.deserialize(viewMeta.toBytes())) doReturn viewMeta
+
+        // When
+        val result = testedFilter.filterOutRedundantViewEvents(listOf(viewUpdateEvent, viewEvent))
+
+        // Then
+        assertThat(result).contains(viewUpdateEvent)
+    }
+
+    @Test
+    fun `M keep ViewUpdate W filterOutRedundantViewEvents() { View event has smaller docVersion }`(
+        forge: Forge
+    ) {
+        // Given
+        val viewId = forge.aString()
+        val viewUpdateMeta = RumEventMeta.ViewUpdate(viewId = viewId, documentVersion = 10L)
+        val viewMeta = RumEventMeta.View(viewId = viewId, documentVersion = 5L)
+
+        val viewUpdateEvent = RawBatchEvent(
+            data = forge.aString().toByteArray(),
+            metadata = viewUpdateMeta.toBytes()
+        )
+        val viewEvent = RawBatchEvent(
+            data = forge.aString().toByteArray(),
+            metadata = viewMeta.toBytes()
+        )
+        whenever(mockEventMetaDeserializer.deserialize(viewUpdateMeta.toBytes())) doReturn viewUpdateMeta
+        whenever(mockEventMetaDeserializer.deserialize(viewMeta.toBytes())) doReturn viewMeta
+
+        // When
+        val result = testedFilter.filterOutRedundantViewEvents(listOf(viewUpdateEvent, viewEvent))
+
+        // Then
+        assertThat(result).contains(viewUpdateEvent)
+    }
+
+    @Test
+    fun `M drop only stale ViewUpdates W filterOutRedundantViewEvents() { mixed ViewUpdate versions }`(
+        forge: Forge
+    ) {
+        // Given
+        val viewId = forge.aString()
+        val staleViewUpdateMeta = RumEventMeta.ViewUpdate(viewId = viewId, documentVersion = 3L)
+        val freshViewUpdateMeta = RumEventMeta.ViewUpdate(viewId = viewId, documentVersion = 15L)
+        val viewMeta = RumEventMeta.View(viewId = viewId, documentVersion = 10L)
+
+        val staleViewUpdateEvent = RawBatchEvent(
+            data = forge.aString().toByteArray(),
+            metadata = staleViewUpdateMeta.toBytes()
+        )
+        val freshViewUpdateEvent = RawBatchEvent(
+            data = forge.aString().toByteArray(),
+            metadata = freshViewUpdateMeta.toBytes()
+        )
+        val viewEvent = RawBatchEvent(
+            data = forge.aString().toByteArray(),
+            metadata = viewMeta.toBytes()
+        )
+        whenever(mockEventMetaDeserializer.deserialize(staleViewUpdateMeta.toBytes())) doReturn staleViewUpdateMeta
+        whenever(mockEventMetaDeserializer.deserialize(freshViewUpdateMeta.toBytes())) doReturn freshViewUpdateMeta
+        whenever(mockEventMetaDeserializer.deserialize(viewMeta.toBytes())) doReturn viewMeta
+
+        // When
+        val result = testedFilter.filterOutRedundantViewEvents(
+            listOf(staleViewUpdateEvent, freshViewUpdateEvent, viewEvent)
+        )
+
+        // Then
+        assertThat(result).contains(viewEvent, freshViewUpdateEvent)
+        assertThat(result).doesNotContain(staleViewUpdateEvent)
+    }
+
+    @Test
+    fun `M not affect ViewUpdates for other viewIds W filterOutRedundantViewEvents()`(
+        forge: Forge
+    ) {
+        // Given
+        val viewIdA = forge.aString()
+        val viewIdB = forge.aString()
+        val viewUpdateMetaA = RumEventMeta.ViewUpdate(viewId = viewIdA, documentVersion = 5L)
+        val viewMetaA = RumEventMeta.View(viewId = viewIdA, documentVersion = 10L)
+        val viewUpdateMetaB = RumEventMeta.ViewUpdate(viewId = viewIdB, documentVersion = 5L)
+
+        val viewUpdateEventA = RawBatchEvent(
+            data = forge.aString().toByteArray(),
+            metadata = viewUpdateMetaA.toBytes()
+        )
+        val viewEventA = RawBatchEvent(
+            data = forge.aString().toByteArray(),
+            metadata = viewMetaA.toBytes()
+        )
+        val viewUpdateEventB = RawBatchEvent(
+            data = forge.aString().toByteArray(),
+            metadata = viewUpdateMetaB.toBytes()
+        )
+        whenever(mockEventMetaDeserializer.deserialize(viewUpdateMetaA.toBytes())) doReturn viewUpdateMetaA
+        whenever(mockEventMetaDeserializer.deserialize(viewMetaA.toBytes())) doReturn viewMetaA
+        whenever(mockEventMetaDeserializer.deserialize(viewUpdateMetaB.toBytes())) doReturn viewUpdateMetaB
+
+        // When
+        val result = testedFilter.filterOutRedundantViewEvents(
+            listOf(viewUpdateEventA, viewEventA, viewUpdateEventB)
+        )
+
+        // Then
+        assertThat(result).contains(viewEventA, viewUpdateEventB)
+        assertThat(result).doesNotContain(viewUpdateEventA)
+    }
+
+    // endregion
+
     // region Internal
 
     private fun Forge.aViewEventMetaList(
@@ -308,6 +489,8 @@ internal class RumViewEventFilterTest {
     }
 
     private fun RumEventMeta.View.toBytes() = toJson().toString().toByteArray()
+
+    private fun RumEventMeta.ViewUpdate.toBytes() = toJson().toString().toByteArray()
 
     // endregion
 }
