@@ -6,21 +6,24 @@
 
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.configureFlavorForTvApp
-import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.depotProxied
 import com.datadog.gradle.config.java17
-import com.datadog.gradle.config.junitConfig
-import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.taskConfig
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("ktlint")
+    // Build
     id("com.android.application")
+    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
+    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
+    id("ktlint")
     kotlin("android")
-    id("com.github.ben-manes.versions")
+    id("datadogBuildConfig")
     alias(libs.plugins.datadogGradlePlugin)
 }
 
+// TODO RUM-18189 Support new AGP DSL
+@Suppress("DEPRECATION")
 android {
     namespace = "com.datadog.android.tv.sample"
     compileSdk = AndroidConfig.TARGET_SDK
@@ -31,7 +34,6 @@ android {
         targetSdk = AndroidConfig.TARGET_SDK
         versionCode = AndroidConfig.VERSION.code
         versionName = AndroidConfig.VERSION.name
-        multiDexEnabled = true
 
         vectorDrawables.useSupportLibrary = true
 
@@ -101,15 +103,17 @@ dependencies {
     implementation(libs.timber)
 
     // Video
-    implementation(libs.bundles.exoplayer)
+    implementation(libs.bundles.media3)
     implementation(libs.newPipeExtractor)
 }
 
-kotlinConfig(evaluateWarningsAsErrors = false)
-taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+datadogBuild {
+    applyKotlinConfig()
+    applyJunitConfig()
+}
+
+taskConfig<KotlinCompile> {
     compilerOptions {
         optIn.add("kotlin.RequiresOptIn")
     }
 }
-junitConfig()
-dependencyUpdateConfig()

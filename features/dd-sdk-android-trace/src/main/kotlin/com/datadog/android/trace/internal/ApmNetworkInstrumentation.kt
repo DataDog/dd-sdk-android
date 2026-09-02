@@ -37,6 +37,7 @@ import com.datadog.android.trace.internal.net.finishRumAware
 import com.datadog.android.trace.internal.net.sample
 import java.net.HttpURLConnection
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * For internal usage only.
@@ -58,7 +59,7 @@ import java.util.Locale
  * @param networkingLibraryName the name identifying the network instrumentation (e.g., "OkHttp", "Cronet").
  * @param networkTracingScope Tracing scope for the instrumentation. See [ApmNetworkTracingScope] enum for more details.
  */
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 @InternalApi
 class ApmNetworkInstrumentation internal constructor(
     internal val canSendSpan: Boolean,
@@ -66,13 +67,15 @@ class ApmNetworkInstrumentation internal constructor(
     val traceOrigin: String?,
     internal val tracerProvider: TracerProvider,
     internal val redacted404ResourceName: Boolean,
-    internal val traceSampler: Sampler<DatadogSpan>,
-    internal val injectionType: TraceContextInjection,
+    @Volatile internal var traceSampler: Sampler<DatadogSpan>,
+    @Volatile internal var injectionType: TraceContextInjection,
     internal val tracedRequestListener: NetworkTracedRequestListener,
-    internal val localFirstPartyHostHeaderTypeResolver: DefaultFirstPartyHostHeaderTypeResolver,
+    @Volatile internal var localFirstPartyHostHeaderTypeResolver: DefaultFirstPartyHostHeaderTypeResolver,
     private val networkingLibraryName: String,
     val networkTracingScope: ApmNetworkTracingScope = ApmNetworkTracingScope.ALL
 ) {
+    private val rcApplied = AtomicBoolean(false)
+
     private val rumContextPropagator = RumContextPropagator { internalSdkCore }
     private val internalSdkCore: InternalSdkCore?
         get() = sdkCoreReference.get() as? InternalSdkCore
@@ -83,7 +86,17 @@ class ApmNetworkInstrumentation internal constructor(
 
     /** Reference to the SDK core instance. */
     val sdkCoreReference: SdkReference = SdkReference(sdkInstanceName) {
-        val sdkCore = it as InternalSdkCore
+        onSdkInstanceReady(it as InternalSdkCore)
+    }
+
+    internal fun onSdkInstanceReady(sdkCore: InternalSdkCore) {
+        if (rcApplied.compareAndSet(false, true)) {
+            sdkCore.remoteConfiguration?.trace?.let { trace ->
+                trace.sampleRate?.toFloat()?.let { traceSampler = applyRcSampleRate(traceSampler, it) }
+                trace.toSdkInjection()?.let { injectionType = it }
+                trace.buildRcHostResolver()?.let { localFirstPartyHostHeaderTypeResolver = it }
+            }
+        }
         if (localFirstPartyHostHeaderTypeResolver.isEmpty() && sdkCore.firstPartyHostResolver.isEmpty()) {
             sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN, onlyOnce = true) {
                 WARNING_TRACING_NO_HOSTS.format(Locale.US, networkingLibraryName)

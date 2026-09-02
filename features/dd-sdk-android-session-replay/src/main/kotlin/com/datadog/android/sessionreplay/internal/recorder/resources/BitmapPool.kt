@@ -106,6 +106,7 @@ internal class BitmapPool(
 
     override fun onConfigurationChanged(newConfig: Configuration) {}
 
+    @Deprecated("Deprecated in Java")
     @Synchronized
     override fun onLowMemory() {
         bitmapPoolHelper.safeCall {

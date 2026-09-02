@@ -14,12 +14,11 @@ import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Spinner
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProviders
+import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.log.Logger
 import com.datadog.android.sample.BuildConfig
 import com.datadog.android.sample.R
 
-@Suppress("DEPRECATION")
 internal class LogsFragment :
     Fragment(),
     View.OnClickListener {
@@ -66,10 +65,9 @@ internal class LogsFragment :
         return rootView
     }
 
-    @Deprecated("Deprecated in parent Java class")
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
-        viewModel = ViewModelProviders.of(this).get(LogsViewModel::class.java)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        viewModel = ViewModelProvider(this)[LogsViewModel::class.java]
     }
 
     // endregion

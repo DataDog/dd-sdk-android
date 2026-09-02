@@ -68,6 +68,7 @@ public final class com/datadog/android/DatadogSite : java/lang/Enum {
 	public static final field US2_FED Lcom/datadog/android/DatadogSite;
 	public static final field US3 Lcom/datadog/android/DatadogSite;
 	public static final field US5 Lcom/datadog/android/DatadogSite;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun getIntakeEndpoint ()Ljava/lang/String;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/DatadogSite;
 	public static fun values ()[Lcom/datadog/android/DatadogSite;
@@ -83,6 +84,7 @@ public final class com/datadog/android/_InternalProxy {
 
 public final class com/datadog/android/_InternalProxy$Companion {
 	public final fun allowClearTextHttp (Lcom/datadog/android/core/configuration/Configuration$Builder;)Lcom/datadog/android/core/configuration/Configuration$Builder;
+	public final fun setRemoteConfigurationId (Lcom/datadog/android/core/configuration/Configuration$Builder;Ljava/lang/String;)Lcom/datadog/android/core/configuration/Configuration$Builder;
 }
 
 public final class com/datadog/android/_InternalProxy$_TelemetryProxy {
@@ -118,6 +120,7 @@ public final class com/datadog/android/api/InternalLogger$Level : java/lang/Enum
 	public static final field INFO Lcom/datadog/android/api/InternalLogger$Level;
 	public static final field VERBOSE Lcom/datadog/android/api/InternalLogger$Level;
 	public static final field WARN Lcom/datadog/android/api/InternalLogger$Level;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/api/InternalLogger$Level;
 	public static fun values ()[Lcom/datadog/android/api/InternalLogger$Level;
 }
@@ -126,6 +129,7 @@ public final class com/datadog/android/api/InternalLogger$Target : java/lang/Enu
 	public static final field MAINTAINER Lcom/datadog/android/api/InternalLogger$Target;
 	public static final field TELEMETRY Lcom/datadog/android/api/InternalLogger$Target;
 	public static final field USER Lcom/datadog/android/api/InternalLogger$Target;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/api/InternalLogger$Target;
 	public static fun values ()[Lcom/datadog/android/api/InternalLogger$Target;
 }
@@ -172,7 +176,7 @@ public final class com/datadog/android/api/context/AccountInfo {
 }
 
 public final class com/datadog/android/api/context/DatadogContext {
-	public fun <init> (Lcom/datadog/android/DatadogSite;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/api/context/TimeInfo;Lcom/datadog/android/api/context/ProcessInfo;Lcom/datadog/android/api/context/NetworkInfo;Lcom/datadog/android/api/context/DeviceInfo;Lcom/datadog/android/api/context/UserInfo;Lcom/datadog/android/api/context/AccountInfo;Lcom/datadog/android/privacy/TrackingConsent;Ljava/lang/String;Ljava/util/Map;)V
+	public fun <init> (Lcom/datadog/android/DatadogSite;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/api/context/TimeInfo;Lcom/datadog/android/api/context/ProcessInfo;Lcom/datadog/android/api/context/NetworkInfo;Lcom/datadog/android/api/context/DeviceInfo;Lcom/datadog/android/api/context/UserInfo;Lcom/datadog/android/api/context/AccountInfo;Lcom/datadog/android/privacy/TrackingConsent;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
 	public final fun component1 ()Lcom/datadog/android/DatadogSite;
 	public final fun component10 ()Lcom/datadog/android/api/context/TimeInfo;
 	public final fun component11 ()Lcom/datadog/android/api/context/ProcessInfo;
@@ -182,7 +186,8 @@ public final class com/datadog/android/api/context/DatadogContext {
 	public final fun component15 ()Lcom/datadog/android/api/context/AccountInfo;
 	public final fun component16 ()Lcom/datadog/android/privacy/TrackingConsent;
 	public final fun component17 ()Ljava/lang/String;
-	public final fun component18 ()Ljava/util/Map;
+	public final fun component18 ()Ljava/lang/String;
+	public final fun component19 ()Ljava/util/Map;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/lang/String;
@@ -191,8 +196,8 @@ public final class com/datadog/android/api/context/DatadogContext {
 	public final fun component7 ()Ljava/lang/String;
 	public final fun component8 ()Ljava/lang/String;
 	public final fun component9 ()Ljava/lang/String;
-	public final fun copy (Lcom/datadog/android/DatadogSite;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/api/context/TimeInfo;Lcom/datadog/android/api/context/ProcessInfo;Lcom/datadog/android/api/context/NetworkInfo;Lcom/datadog/android/api/context/DeviceInfo;Lcom/datadog/android/api/context/UserInfo;Lcom/datadog/android/api/context/AccountInfo;Lcom/datadog/android/privacy/TrackingConsent;Ljava/lang/String;Ljava/util/Map;)Lcom/datadog/android/api/context/DatadogContext;
-	public static synthetic fun copy$default (Lcom/datadog/android/api/context/DatadogContext;Lcom/datadog/android/DatadogSite;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/api/context/TimeInfo;Lcom/datadog/android/api/context/ProcessInfo;Lcom/datadog/android/api/context/NetworkInfo;Lcom/datadog/android/api/context/DeviceInfo;Lcom/datadog/android/api/context/UserInfo;Lcom/datadog/android/api/context/AccountInfo;Lcom/datadog/android/privacy/TrackingConsent;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/api/context/DatadogContext;
+	public final fun copy (Lcom/datadog/android/DatadogSite;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/api/context/TimeInfo;Lcom/datadog/android/api/context/ProcessInfo;Lcom/datadog/android/api/context/NetworkInfo;Lcom/datadog/android/api/context/DeviceInfo;Lcom/datadog/android/api/context/UserInfo;Lcom/datadog/android/api/context/AccountInfo;Lcom/datadog/android/privacy/TrackingConsent;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lcom/datadog/android/api/context/DatadogContext;
+	public static synthetic fun copy$default (Lcom/datadog/android/api/context/DatadogContext;Lcom/datadog/android/DatadogSite;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/api/context/TimeInfo;Lcom/datadog/android/api/context/ProcessInfo;Lcom/datadog/android/api/context/NetworkInfo;Lcom/datadog/android/api/context/DeviceInfo;Lcom/datadog/android/api/context/UserInfo;Lcom/datadog/android/api/context/AccountInfo;Lcom/datadog/android/privacy/TrackingConsent;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/api/context/DatadogContext;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAccountInfo ()Lcom/datadog/android/api/context/AccountInfo;
 	public final fun getAppBuildId ()Ljava/lang/String;
@@ -202,6 +207,7 @@ public final class com/datadog/android/api/context/DatadogContext {
 	public final fun getFeaturesContext ()Ljava/util/Map;
 	public final fun getNetworkInfo ()Lcom/datadog/android/api/context/NetworkInfo;
 	public final fun getProcessInfo ()Lcom/datadog/android/api/context/ProcessInfo;
+	public final fun getRemoteConfigurationId ()Ljava/lang/String;
 	public final fun getSdkVersion ()Ljava/lang/String;
 	public final fun getService ()Ljava/lang/String;
 	public final fun getSite ()Lcom/datadog/android/DatadogSite;
@@ -261,6 +267,7 @@ public final class com/datadog/android/api/context/DeviceType : java/lang/Enum {
 	public static final field OTHER Lcom/datadog/android/api/context/DeviceType;
 	public static final field TABLET Lcom/datadog/android/api/context/DeviceType;
 	public static final field TV Lcom/datadog/android/api/context/DeviceType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/api/context/DeviceType;
 	public static fun values ()[Lcom/datadog/android/api/context/DeviceType;
 }
@@ -321,6 +328,7 @@ public final class com/datadog/android/api/context/NetworkInfo$Connectivity : ja
 	public static final field NETWORK_WIFI Lcom/datadog/android/api/context/NetworkInfo$Connectivity;
 	public static final field NETWORK_WIMAX Lcom/datadog/android/api/context/NetworkInfo$Connectivity;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/api/context/NetworkInfo$Connectivity;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/api/context/NetworkInfo$Connectivity;
 	public static fun values ()[Lcom/datadog/android/api/context/NetworkInfo$Connectivity;
 }
@@ -590,6 +598,7 @@ public final class com/datadog/android/api/storage/EventType : java/lang/Enum {
 	public static final field CRASH Lcom/datadog/android/api/storage/EventType;
 	public static final field DEFAULT Lcom/datadog/android/api/storage/EventType;
 	public static final field TELEMETRY Lcom/datadog/android/api/storage/EventType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/api/storage/EventType;
 	public static fun values ()[Lcom/datadog/android/api/storage/EventType;
 }
@@ -677,6 +686,8 @@ public abstract interface class com/datadog/android/core/InternalSdkCore : com/d
 	public abstract fun getLastViewEvent ()Lcom/google/gson/JsonObject;
 	public abstract fun getNetworkInfo ()Lcom/datadog/android/api/context/NetworkInfo;
 	public abstract fun getPersistenceExecutorService ()Ljava/util/concurrent/ExecutorService;
+	public abstract fun getRemoteConfiguration ()Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration;
+	public abstract fun getRemoteConfigurationSyncMetadata ()Lcom/datadog/android/core/internal/remote/model/RemoteConfigSyncMetadata;
 	public abstract fun getRootStorageDir ()Ljava/io/File;
 	public abstract fun getTrackingConsent ()Lcom/datadog/android/privacy/TrackingConsent;
 	public abstract fun isDeveloperModeEnabled ()Z
@@ -708,6 +719,7 @@ public final class com/datadog/android/core/UploadWorker$Companion {
 public final class com/datadog/android/core/configuration/BackPressureMitigation : java/lang/Enum {
 	public static final field DROP_OLDEST Lcom/datadog/android/core/configuration/BackPressureMitigation;
 	public static final field IGNORE_NEWEST Lcom/datadog/android/core/configuration/BackPressureMitigation;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/configuration/BackPressureMitigation;
 	public static fun values ()[Lcom/datadog/android/core/configuration/BackPressureMitigation;
 }
@@ -733,6 +745,7 @@ public final class com/datadog/android/core/configuration/BatchProcessingLevel :
 	public static final field HIGH Lcom/datadog/android/core/configuration/BatchProcessingLevel;
 	public static final field LOW Lcom/datadog/android/core/configuration/BatchProcessingLevel;
 	public static final field MEDIUM Lcom/datadog/android/core/configuration/BatchProcessingLevel;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun getMaxBatchesPerUploadJob ()I
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/configuration/BatchProcessingLevel;
 	public static fun values ()[Lcom/datadog/android/core/configuration/BatchProcessingLevel;
@@ -742,6 +755,7 @@ public final class com/datadog/android/core/configuration/BatchSize : java/lang/
 	public static final field LARGE Lcom/datadog/android/core/configuration/BatchSize;
 	public static final field MEDIUM Lcom/datadog/android/core/configuration/BatchSize;
 	public static final field SMALL Lcom/datadog/android/core/configuration/BatchSize;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/configuration/BatchSize;
 	public static fun values ()[Lcom/datadog/android/core/configuration/BatchSize;
 }
@@ -797,6 +811,7 @@ public final class com/datadog/android/core/configuration/UploadFrequency : java
 	public static final field AVERAGE Lcom/datadog/android/core/configuration/UploadFrequency;
 	public static final field FREQUENT Lcom/datadog/android/core/configuration/UploadFrequency;
 	public static final field RARE Lcom/datadog/android/core/configuration/UploadFrequency;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/configuration/UploadFrequency;
 	public static fun values ()[Lcom/datadog/android/core/configuration/UploadFrequency;
 }
@@ -895,6 +910,326 @@ public final class com/datadog/android/core/internal/persistence/file/FileExtKt 
 	public static synthetic fun readTextSafe$default (Ljava/io/File;Ljava/nio/charset/Charset;Lcom/datadog/android/api/InternalLogger;ILjava/lang/Object;)Ljava/lang/String;
 }
 
+public final class com/datadog/android/core/internal/remote/model/RemoteConfigSyncMetadata {
+	public static final field Companion Lcom/datadog/android/core/internal/remote/model/RemoteConfigSyncMetadata$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;JLjava/lang/Long;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/Long;
+	public final fun component4 ()J
+	public final fun component5 ()Ljava/lang/Long;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;JLjava/lang/Long;Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfigSyncMetadata;
+	public static synthetic fun copy$default (Lcom/datadog/android/core/internal/remote/model/RemoteConfigSyncMetadata;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;JLjava/lang/Long;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/core/internal/remote/model/RemoteConfigSyncMetadata;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfigSyncMetadata;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/core/internal/remote/model/RemoteConfigSyncMetadata;
+	public final fun getConfigId ()Ljava/lang/String;
+	public final fun getFirstApplied ()Ljava/lang/Long;
+	public final fun getLastModified ()Ljava/lang/Long;
+	public final fun getLastSynced ()J
+	public final fun getSyncId ()Ljava/lang/String;
+	public final fun getVersionId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfigSyncMetadata$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfigSyncMetadata;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/core/internal/remote/model/RemoteConfigSyncMetadata;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration {
+	public static final field Companion Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Companion;
+	public fun <init> ()V
+	public fun <init> (Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Rum;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$SessionReplay;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Profiling;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Trace;)V
+	public synthetic fun <init> (Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Rum;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$SessionReplay;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Profiling;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Trace;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Rum;
+	public final fun component2 ()Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$SessionReplay;
+	public final fun component3 ()Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Profiling;
+	public final fun component4 ()Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Trace;
+	public final fun copy (Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Rum;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$SessionReplay;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Profiling;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Trace;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration;
+	public static synthetic fun copy$default (Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Rum;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$SessionReplay;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Profiling;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Trace;ILjava/lang/Object;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration;
+	public final fun getPlatform ()Ljava/lang/String;
+	public final fun getProfiling ()Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Profiling;
+	public final fun getRum ()Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Rum;
+	public final fun getSessionReplay ()Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$SessionReplay;
+	public final fun getTrace ()Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Trace;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration$ImagePrivacy : java/lang/Enum {
+	public static final field Companion Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$ImagePrivacy$Companion;
+	public static final field MASK_ALL Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$ImagePrivacy;
+	public static final field MASK_LARGE_ONLY Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$ImagePrivacy;
+	public static final field MASK_NONE Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$ImagePrivacy;
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$ImagePrivacy;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$ImagePrivacy;
+	public static fun values ()[Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$ImagePrivacy;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration$ImagePrivacy$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$ImagePrivacy;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration$LongTask {
+	public static final field Companion Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$LongTask$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/Boolean;Ljava/lang/Number;)V
+	public synthetic fun <init> (Ljava/lang/Boolean;Ljava/lang/Number;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/Boolean;
+	public final fun component2 ()Ljava/lang/Number;
+	public final fun copy (Ljava/lang/Boolean;Ljava/lang/Number;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$LongTask;
+	public static synthetic fun copy$default (Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$LongTask;Ljava/lang/Boolean;Ljava/lang/Number;ILjava/lang/Object;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$LongTask;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$LongTask;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$LongTask;
+	public final fun getEnabled ()Ljava/lang/Boolean;
+	public final fun getThreshold ()Ljava/lang/Number;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration$LongTask$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$LongTask;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$LongTask;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration$Profiling {
+	public static final field Companion Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Profiling$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/Number;Ljava/lang/Number;)V
+	public synthetic fun <init> (Ljava/lang/Number;Ljava/lang/Number;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/Number;
+	public final fun component2 ()Ljava/lang/Number;
+	public final fun copy (Ljava/lang/Number;Ljava/lang/Number;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Profiling;
+	public static synthetic fun copy$default (Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Profiling;Ljava/lang/Number;Ljava/lang/Number;ILjava/lang/Object;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Profiling;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Profiling;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Profiling;
+	public final fun getApplicationLaunchSampleRate ()Ljava/lang/Number;
+	public final fun getContinuousSampleRate ()Ljava/lang/Number;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration$Profiling$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Profiling;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Profiling;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration$PropagatorType : java/lang/Enum {
+	public static final field B3 Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$PropagatorType;
+	public static final field B3MULTI Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$PropagatorType;
+	public static final field Companion Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$PropagatorType$Companion;
+	public static final field DATADOG Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$PropagatorType;
+	public static final field TRACECONTEXT Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$PropagatorType;
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$PropagatorType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$PropagatorType;
+	public static fun values ()[Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$PropagatorType;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration$PropagatorType$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$PropagatorType;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration$Rum {
+	public static final field Companion Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Rum$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$LongTask;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$VitalsUpdateFrequency;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$LongTask;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$VitalsUpdateFrequency;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component10 ()Ljava/lang/Boolean;
+	public final fun component11 ()Ljava/lang/Boolean;
+	public final fun component2 ()Ljava/lang/Number;
+	public final fun component3 ()Ljava/lang/Boolean;
+	public final fun component4 ()Ljava/lang/Boolean;
+	public final fun component5 ()Ljava/lang/Boolean;
+	public final fun component6 ()Ljava/lang/Boolean;
+	public final fun component7 ()Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$LongTask;
+	public final fun component8 ()Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$VitalsUpdateFrequency;
+	public final fun component9 ()Ljava/lang/Boolean;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$LongTask;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$VitalsUpdateFrequency;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Rum;
+	public static synthetic fun copy$default (Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Rum;Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$LongTask;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$VitalsUpdateFrequency;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Rum;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Rum;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Rum;
+	public final fun getApplicationId ()Ljava/lang/String;
+	public final fun getCrashReportsEnabled ()Ljava/lang/Boolean;
+	public final fun getLongTask ()Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$LongTask;
+	public final fun getTelemetrySampleRate ()Ljava/lang/Number;
+	public final fun getTrackAnonymousUser ()Ljava/lang/Boolean;
+	public final fun getTrackBackgroundEvents ()Ljava/lang/Boolean;
+	public final fun getTrackFrustrations ()Ljava/lang/Boolean;
+	public final fun getTrackNonFatalAnrs ()Ljava/lang/Boolean;
+	public final fun getTrackSlowFrames ()Ljava/lang/Boolean;
+	public final fun getTrackUserInteractions ()Ljava/lang/Boolean;
+	public final fun getVitalsUpdateFrequency ()Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$VitalsUpdateFrequency;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration$Rum$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Rum;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Rum;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration$SessionReplay {
+	public static final field Companion Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$SessionReplay$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/Number;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TextAndInputPrivacy;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TouchPrivacy;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$ImagePrivacy;)V
+	public synthetic fun <init> (Ljava/lang/Number;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TextAndInputPrivacy;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TouchPrivacy;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$ImagePrivacy;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/Number;
+	public final fun component2 ()Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TextAndInputPrivacy;
+	public final fun component3 ()Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TouchPrivacy;
+	public final fun component4 ()Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$ImagePrivacy;
+	public final fun copy (Ljava/lang/Number;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TextAndInputPrivacy;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TouchPrivacy;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$ImagePrivacy;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$SessionReplay;
+	public static synthetic fun copy$default (Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$SessionReplay;Ljava/lang/Number;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TextAndInputPrivacy;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TouchPrivacy;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$ImagePrivacy;ILjava/lang/Object;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$SessionReplay;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$SessionReplay;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$SessionReplay;
+	public final fun getImagePrivacy ()Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$ImagePrivacy;
+	public final fun getSampleRate ()Ljava/lang/Number;
+	public final fun getTextAndInputPrivacy ()Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TextAndInputPrivacy;
+	public final fun getTouchPrivacy ()Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TouchPrivacy;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration$SessionReplay$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$SessionReplay;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$SessionReplay;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration$TextAndInputPrivacy : java/lang/Enum {
+	public static final field Companion Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TextAndInputPrivacy$Companion;
+	public static final field MASK_ALL Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TextAndInputPrivacy;
+	public static final field MASK_ALL_INPUTS Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TextAndInputPrivacy;
+	public static final field MASK_SENSITIVE_INPUTS Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TextAndInputPrivacy;
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TextAndInputPrivacy;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TextAndInputPrivacy;
+	public static fun values ()[Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TextAndInputPrivacy;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration$TextAndInputPrivacy$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TextAndInputPrivacy;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration$TouchPrivacy : java/lang/Enum {
+	public static final field Companion Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TouchPrivacy$Companion;
+	public static final field HIDE Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TouchPrivacy;
+	public static final field SHOW Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TouchPrivacy;
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TouchPrivacy;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TouchPrivacy;
+	public static fun values ()[Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TouchPrivacy;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration$TouchPrivacy$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TouchPrivacy;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration$Trace {
+	public static final field Companion Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Trace$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/Number;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TraceContextInjection;Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/lang/Number;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TraceContextInjection;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/Number;
+	public final fun component2 ()Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TraceContextInjection;
+	public final fun component3 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/Number;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TraceContextInjection;Ljava/util/List;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Trace;
+	public static synthetic fun copy$default (Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Trace;Ljava/lang/Number;Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TraceContextInjection;Ljava/util/List;ILjava/lang/Object;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Trace;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Trace;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Trace;
+	public final fun getSampleRate ()Ljava/lang/Number;
+	public final fun getTraceContextInjection ()Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TraceContextInjection;
+	public final fun getTracedHosts ()Ljava/util/List;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration$Trace$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Trace;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Trace;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration$TraceContextInjection : java/lang/Enum {
+	public static final field ALL Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TraceContextInjection;
+	public static final field Companion Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TraceContextInjection$Companion;
+	public static final field SAMPLED Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TraceContextInjection;
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TraceContextInjection;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TraceContextInjection;
+	public static fun values ()[Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TraceContextInjection;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration$TraceContextInjection$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TraceContextInjection;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration$TracedHost {
+	public static final field Companion Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TracedHost$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/util/List;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/String;Ljava/util/List;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TracedHost;
+	public static synthetic fun copy$default (Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TracedHost;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TracedHost;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TracedHost;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TracedHost;
+	public final fun getHost ()Ljava/lang/String;
+	public final fun getPropagatorTypes ()Ljava/util/List;
+	public fun hashCode ()I
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration$TracedHost$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TracedHost;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$TracedHost;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration$VitalsUpdateFrequency : java/lang/Enum {
+	public static final field AVERAGE Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$VitalsUpdateFrequency;
+	public static final field Companion Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$VitalsUpdateFrequency$Companion;
+	public static final field FREQUENT Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$VitalsUpdateFrequency;
+	public static final field NEVER Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$VitalsUpdateFrequency;
+	public static final field RARE Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$VitalsUpdateFrequency;
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$VitalsUpdateFrequency;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$VitalsUpdateFrequency;
+	public static fun values ()[Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$VitalsUpdateFrequency;
+}
+
+public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration$VitalsUpdateFrequency$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$VitalsUpdateFrequency;
+}
+
 public abstract interface class com/datadog/android/core/internal/storage/TelemetryAwareEventBatchWriter : com/datadog/android/api/storage/EventBatchWriter {
 	public abstract fun write (Lcom/datadog/android/api/storage/RawBatchEvent;[BLcom/datadog/android/api/storage/EventType;Lcom/datadog/android/internal/telemetry/TelemetryContext;)Z
 }
@@ -934,6 +1269,7 @@ public final class com/datadog/android/core/metrics/MethodCallSamplingRate : jav
 	public static final field MEDIUM Lcom/datadog/android/core/metrics/MethodCallSamplingRate;
 	public static final field RARE Lcom/datadog/android/core/metrics/MethodCallSamplingRate;
 	public static final field REDUCED Lcom/datadog/android/core/metrics/MethodCallSamplingRate;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun getRate ()F
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/metrics/MethodCallSamplingRate;
 	public static fun values ()[Lcom/datadog/android/core/metrics/MethodCallSamplingRate;
@@ -951,6 +1287,7 @@ public final class com/datadog/android/core/metrics/PerformanceMetric$Companion 
 
 public final class com/datadog/android/core/metrics/TelemetryMetricType : java/lang/Enum {
 	public static final field MethodCalled Lcom/datadog/android/core/metrics/TelemetryMetricType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/metrics/TelemetryMetricType;
 	public static fun values ()[Lcom/datadog/android/core/metrics/TelemetryMetricType;
 }
@@ -1129,6 +1466,7 @@ public final class com/datadog/android/privacy/TrackingConsent : java/lang/Enum 
 	public static final field GRANTED Lcom/datadog/android/privacy/TrackingConsent;
 	public static final field NOT_GRANTED Lcom/datadog/android/privacy/TrackingConsent;
 	public static final field PENDING Lcom/datadog/android/privacy/TrackingConsent;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/privacy/TrackingConsent;
 	public static fun values ()[Lcom/datadog/android/privacy/TrackingConsent;
 }
@@ -1147,6 +1485,7 @@ public final class com/datadog/android/trace/TracingHeaderType : java/lang/Enum 
 	public static final field B3MULTI Lcom/datadog/android/trace/TracingHeaderType;
 	public static final field DATADOG Lcom/datadog/android/trace/TracingHeaderType;
 	public static final field TRACECONTEXT Lcom/datadog/android/trace/TracingHeaderType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun getHeaderType ()Ljava/lang/String;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/trace/TracingHeaderType;
 	public static fun values ()[Lcom/datadog/android/trace/TracingHeaderType;

@@ -1,6 +1,6 @@
 Dependencies List
 
-androidx.annotation:annotation-jvm:1.9.1                        :   59 Kb
+androidx.annotation:annotation-jvm:1.8.1                        :   54 Kb
 androidx.arch.core:core-common:2.2.0                            :   11 Kb
 androidx.lifecycle:lifecycle-common-jvm:2.8.7                   :   55 Kb
 androidx.lifecycle:lifecycle-runtime-android:2.8.7              :   80 Kb

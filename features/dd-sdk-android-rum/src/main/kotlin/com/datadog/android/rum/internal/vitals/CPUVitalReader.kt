@@ -6,41 +6,16 @@
 
 package com.datadog.android.rum.internal.vitals
 
-import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.internal.persistence.file.canReadSafe
-import com.datadog.android.core.internal.persistence.file.existsSafe
-import com.datadog.android.core.internal.persistence.file.readTextSafe
-import java.io.File
+import androidx.annotation.WorkerThread
 
 /**
- * Reads the CPU `utime` based on the `/proc/self/stat` file.
- * cf. documentation https://man7.org/linux/man-pages/man5/procfs.5.html
+ * Reads the CPU `utime` based on the `/proc/self/stat` file, delegating the file access and
+ * parsing to [CpuStatReader].
  */
 internal class CPUVitalReader(
-    internal val statFile: File = STAT_FILE,
-    internal val internalLogger: InternalLogger
+    private val cpuStatReader: CpuStatReader
 ) : VitalReader {
 
-    @Suppress("ReturnCount")
-    override fun readVitalData(): Double? {
-        if (!(statFile.existsSafe(internalLogger) && statFile.canReadSafe(internalLogger))) {
-            return null
-        }
-
-        val stat = statFile.readTextSafe(internalLogger = internalLogger) ?: return null
-        val tokens = stat.split(' ')
-        return if (tokens.size > UTIME_IDX) {
-            tokens[UTIME_IDX].toDoubleOrNull()
-        } else {
-            null
-        }
-    }
-
-    companion object {
-
-        private const val STAT_PATH = "/proc/self/stat"
-        internal val STAT_FILE = File(STAT_PATH)
-
-        private const val UTIME_IDX = 13
-    }
+    @WorkerThread
+    override fun readVitalData(): Double? = cpuStatReader.readUserTime()
 }

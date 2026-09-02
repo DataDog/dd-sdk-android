@@ -22,6 +22,7 @@ stages:
   - test-pyramid
   - publish
   - notify
+  - post-release
 
 .snippets:
   source-secrets:
@@ -178,7 +179,7 @@ analysis:ktlint:
   timeout: 30m
   script:
     - !reference [.snippets, setup-gradle]
-    - ./gradlew ktlintCheck :buildSrc:ktlintCheck
+    - ./gradlew ktlintCheck :build-logic:ktlintCheck
 
 analysis:detekt:
   extends:
@@ -236,6 +237,28 @@ test:tools:
     - !reference [.snippets, setup-gradle]
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
     - ./gradlew :unitTestTools
+  artifacts:
+    when: always
+    expire_in: 1 week
+    reports:
+      junit: "tools/**/build/test-results/test/*.xml"
+
+test:build-logic:
+  extends:
+    - .base-cache-pull-job
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  stage: verify
+  timeout: 30m
+  script:
+    - !reference [.snippets, setup-gradle]
+    - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
+    - ./gradlew :build-logic:test
+  artifacts:
+    when: always
+    expire_in: 1 week
+    reports:
+      junit: "build-logic/build/test-results/test/*.xml"
 
 test:kover:
   tags: [ "arch:amd64" ]
@@ -244,6 +267,9 @@ test:kover:
   timeout: 1h
   variables:
     GRADLE_CACHE_CLEANUP: "true"
+  id_tokens:
+    DD_STS_OIDC_TOKEN:
+      aud: dd-sts
   cache:
     key: $CI_COMMIT_REF_SLUG
     paths:
@@ -254,17 +280,13 @@ test:kover:
     - !reference [.snippets, source-secrets]
     - !reference [.snippets, setup-gradle]
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
-    - export DD_API_KEY=$(get_secret $DD_ANDROID_SECRET__API_KEY)
-    - export DD_APP_KEY=$(get_secret $DD_ANDROID_SECRET__APP_KEY)
-    - CODECOV_TOKEN=$(get_secret $DD_ANDROID_SECRET__CODECOV_TOKEN)
     - >-
         DD_TAGS="test.configuration.variant:release" ./gradlew
         :dd-sdk-android-core:koverXmlReportRelease
         :dd-sdk-android-internal:koverXmlReportRelease
         :koverReportFeatures
         :koverReportIntegrations
-    - bash <(cat ./ci/scripts/codecov.sh) -t $CODECOV_TOKEN
-    - datadog-ci coverage upload . || true
+    - dd-sts exchange --policy dd-sdk-android -- datadog-ci coverage upload . || true
   artifacts:
     when: always
     expire_in: 1 week
@@ -606,7 +628,7 @@ notify:publish-develop-success:
     - develop
   script:
     - 'MESSAGE_TEXT=":package: $CI_PROJECT_NAME develop $CI_COMMIT_TAG: Snapshot published on :maven:, Sample app published on :synthetics:"'
-    - postmessage "#mobile-sdk-ops" "$MESSAGE_TEXT"
+    - postmessage "$SLACK_OPS_CHANNEL" "$MESSAGE_TEXT"
 
 notify:publish-develop-failure:
   extends: .slack-notifier-base
@@ -618,7 +640,7 @@ notify:publish-develop-failure:
   script:
     - BUILD_URL="$CI_PROJECT_URL/pipelines/$CI_PIPELINE_ID"
     - 'MESSAGE_TEXT=":status_alert: $CI_PROJECT_NAME $CI_COMMIT_TAG develop pipeline <$BUILD_URL|$COMMIT_MESSAGE> failed."'
-    - postmessage "#mobile-sdk-ops" "$MESSAGE_TEXT"
+    - postmessage "$SLACK_OPS_CHANNEL" "$MESSAGE_TEXT"
 
 notify:publish-release-success:
   extends: .slack-notifier-base
@@ -630,7 +652,7 @@ notify:publish-release-success:
   script:
     - MAVEN_URL="https://search.maven.org/artifact/com.datadoghq/dd-sdk-android-core/$CI_COMMIT_TAG/aar"
     - 'MESSAGE_TEXT=":rocket: $CI_PROJECT_NAME $CI_COMMIT_TAG published on :maven: $MAVEN_URL"'
-    - postmessage "#mobile-sdk-ops" "$MESSAGE_TEXT"
+    - postmessage "$SLACK_OPS_CHANNEL" "$MESSAGE_TEXT"
 
 notify:publish-release-failure:
   extends: .slack-notifier-base
@@ -642,7 +664,7 @@ notify:publish-release-failure:
   script:
     - BUILD_URL="$CI_PROJECT_URL/pipelines/$CI_PIPELINE_ID"
     - 'MESSAGE_TEXT=":status_alert: $CI_PROJECT_NAME $CI_COMMIT_TAG publish pipeline <$BUILD_URL|$COMMIT_MESSAGE> failed."'
-    - postmessage "#mobile-sdk-ops" "$MESSAGE_TEXT"
+    - postmessage "$SLACK_OPS_CHANNEL" "$MESSAGE_TEXT"
 
 notify:dogfood-app:
   tags: [ "arch:amd64" ]
@@ -740,4 +762,19 @@ notify:github-release:
       
           gh release create "$CI_COMMIT_TAG" --repo DataDog/dd-sdk-android --draft --verify-tag --title "$CI_COMMIT_TAG" --notes-file release-notes.md verification-metadata.xml;
         fi
+
+post-release:merge-develop:
+  tags: [ "arch:amd64" ]
+  interruptible: false
+  only:
+    - tags
+  image: $CI_IMAGE_DOCKER
+  id_tokens:
+    DDOCTOSTS_ID_TOKEN:
+      aud: dd-octo-sts
+  stage: post-release
+  when: on_success
+  script:
+    - export GITHUB_TOKEN=$(dd-octo-sts token --scope DataDog/dd-sdk-android --policy self.gitlab.release.create-release)
+    - bash ./ci/scripts/merge-release-develop.sh "$CI_COMMIT_TAG"
 

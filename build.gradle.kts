@@ -11,6 +11,7 @@ import com.datadog.gradle.config.registerSubModuleAggregationTask
 
 plugins {
     `maven-publish`
+    alias(libs.plugins.ktlintGradlePlugin) apply false
     id("ktlint")
     id("test-pyramid-aggregation")
     alias(libs.plugins.nexusPublishGradlePlugin)
@@ -19,17 +20,13 @@ plugins {
     // just load into the classpath, so that we can use version-less id(string) in submodules
     // ideally we need to use aliases in submodules
     alias(libs.plugins.kotlinSPGradlePlugin) apply false
-    alias(libs.plugins.sqlDelightGradlePlugin) apply false
     alias(libs.plugins.binaryCompatibilityGradlePlugin) apply false
     alias(libs.plugins.kotlinxSerializationPlugin) apply false
     alias(libs.plugins.koverPlugin) apply false
-
-    // don't add these to the classpath, otherwise there will be a conflict, because they are already coming
-    // from buildSrc classpath. May be solved with convention plugins though.
-    // alias(libs.plugins.androidLibraryPlugin) apply false
-    // alias(libs.plugins.kotlinAndroidPlugin) apply false
-    // alias(libs.plugins.dokkaGradlePlugin) apply false
-    // alias(libs.plugins.versionsGradlePlugin) apply false
+    alias(libs.plugins.androidLibraryPlugin) apply false
+    alias(libs.plugins.kotlinAndroidPlugin) apply false
+    alias(libs.plugins.dokkaGradlePlugin) apply false
+    alias(libs.plugins.detektGradlePlugin) apply false
 }
 
 version = AndroidConfig.VERSION.name
@@ -37,13 +34,14 @@ version = AndroidConfig.VERSION.name
 buildscript {
     repositories {
         // Magic Mirror Depot proxy (only set in CI via `.gitlab-ci.yml`).
-        // Inlined here because `buildscript {}` runs before buildSrc classes are on the classpath.
+        // Inlined here because `buildscript {}` is resolved before the `build-logic`
+        // convention plugins are on the classpath.
         listOf("gradlePluginProxy", "mavenRepositoryProxy")
             .mapNotNull { providers.gradleProperty(it).orNull?.takeIf { url -> url.isNotBlank() } }
             .forEach { url -> maven { setUrl(url) } }
         google()
         mavenCentral()
-        maven { setUrl(com.datadog.gradle.Dependencies.Repositories.Gradle) }
+        gradlePluginPortal()
     }
 
     dependencies {
@@ -155,6 +153,12 @@ registerSubModuleAggregationTask(
     dependsOn(":tools:lint:lint")
 }
 
+tasks.register("ktlintFormatAll") {
+    description = "Runs code formatting with ktlint for both main and included (`:build-logic`) builds."
+    dependsOn(allprojects.mapNotNull { it.tasks.named { it == "ktlintFormat" } })
+    dependsOn(gradle.includedBuild("build-logic").task(":ktlintFormat"))
+}
+
 registerSubModuleAggregationTask(
     "checkDependencyLicensesAll",
     "checkDependencyLicenses",
@@ -166,12 +170,15 @@ registerSubModuleAggregationTask("checkApiSurfaceChangesAll", "checkApiSurfaceCh
 
 registerSubModuleAggregationTask("checkCompilerMetadataChangesAll", "checkCompilerMetadataChanges")
 
+registerSubModuleAggregationTask("checkAarMetadataInfoChangesAll", "checkAarMetadataInfoChanges")
+
 registerSubModuleAggregationTask("checkTransitiveDependenciesListAll", "checkTransitiveDependenciesList")
 
 tasks.register("checkGeneratedFiles") {
     dependsOn("checkDependencyLicensesAll")
     dependsOn("checkApiSurfaceChangesAll")
     dependsOn("checkCompilerMetadataChangesAll")
+    dependsOn("checkAarMetadataInfoChangesAll")
     dependsOn("checkTransitiveDependenciesListAll")
 }
 
@@ -181,17 +188,6 @@ registerSubModuleAggregationTask("koverReportIntegrations", "koverXmlReportRelea
 
 tasks.register("instrumentTestAll") {
     dependsOn(":instrumented:integration:connectedCheck")
-}
-
-tasks.register("buildIntegrationTestsArtifacts") {
-    dependsOn(":instrumented:integration:assembleDebugAndroidTest")
-    dependsOn(":instrumented:integration:assembleDebug")
-}
-
-tasks.register("buildNdkIntegrationTestsArtifacts") {
-    dependsOn(":features:dd-sdk-android-ndk:assembleDebugAndroidTest")
-    // we need this artifact to trick Bitrise
-    dependsOn(":instrumented:integration:assembleDebug")
 }
 
 tasks.register("listAllPublishedArtifactIds") {

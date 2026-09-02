@@ -6,12 +6,23 @@
 
 package com.datadog.android.insights.internal.domain
 
-internal sealed class TimelineEvent(
-    val durationNs: Long
-) {
-    object Action : TimelineEvent(0L)
-    object Tick : TimelineEvent(0L)
-    class SlowFrame(durationNs: Long) : TimelineEvent(durationNs)
-    class Resource(durationNs: Long) : TimelineEvent(durationNs)
-    class LongTask(durationNs: Long) : TimelineEvent(durationNs)
+internal sealed class TimelineEvent(val text: String) {
+
+    object Action : TimelineEvent("")
+
+    object Tick : TimelineEvent("")
+
+    class TimeSeries(name: String) : TimelineEvent(name)
+
+    class SlowFrame(durationNs: Long) : TimelineEvent(durationNs.toMsText())
+
+    class Resource(durationNs: Long) : TimelineEvent(durationNs.toMsText())
+
+    class LongTask(durationNs: Long) : TimelineEvent(durationNs.toMsText())
+
+    private companion object {
+        private const val NANOS_PER_MILLI = 1_000_000L
+
+        private fun Long.toMsText(): String = (this / NANOS_PER_MILLI).toString()
+    }
 }

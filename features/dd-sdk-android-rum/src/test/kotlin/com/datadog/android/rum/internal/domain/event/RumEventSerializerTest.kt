@@ -14,6 +14,8 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.TimeseriesCpuEvent
+import com.datadog.android.rum.model.TimeseriesMemoryEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
@@ -92,8 +94,8 @@ internal class RumEventSerializerTest {
                 hasField("type", event.session.type.name.lowercase(Locale.US))
             }
             .hasField("view") {
-                hasField("id", event.view.id)
-                hasField("url", event.view.url)
+                hasNullableField("id", event.view.id)
+                hasNullableField("url", event.view.url)
             }
             .hasField("_dd") {
                 hasField("format_version", 2L)
@@ -209,8 +211,8 @@ internal class RumEventSerializerTest {
                 hasField("type", event.session.type.name.lowercase(Locale.US))
             }
             .hasField("view") {
-                hasField("id", event.view.id)
-                hasField("url", event.view.url)
+                hasNullableField("id", event.view.id)
+                hasNullableField("url", event.view.url)
             }
             .hasField("_dd") {
                 hasField("format_version", 2L)
@@ -401,8 +403,8 @@ internal class RumEventSerializerTest {
                 hasField("type", event.session.type.name.lowercase(Locale.US))
             }
             .hasField("view") {
-                hasField("id", event.view.id)
-                hasField("url", event.view.url)
+                hasNullableField("id", event.view.id)
+                hasNullableField("url", event.view.url)
             }
             .hasField("_dd") {
                 hasField("format_version", 2L)
@@ -488,8 +490,8 @@ internal class RumEventSerializerTest {
                 hasField("type", event.session.type.name.lowercase(Locale.US))
             }
             .hasField("view") {
-                hasField("id", event.view.id)
-                hasField("url", event.view.url)
+                hasNullableField("id", event.view.id)
+                hasNullableField("url", event.view.url)
             }
             .hasField("_dd") {
                 hasField("format_version", 2L)
@@ -1196,6 +1198,19 @@ internal class RumEventSerializerTest {
     ) {
         val serialized = testedSerializer.serialize(fakeJsonObject)
         assertThat(serialized).isEqualTo(fakeJsonObject.toString())
+    }
+
+    @Test
+    fun `M serialize generated event W serialize() { timeseries events }`() {
+        // Given
+        val fakeEvents = createTimeseriesEvents()
+
+        // When
+        val serializedEvents = fakeEvents.map(testedSerializer::serialize)
+
+        // Then
+        assertThat(serializedEvents.map { JsonParser.parseString(it).asJsonObject.get("type").asString })
+            .containsOnly("timeseries")
     }
 
     @Test
@@ -2175,6 +2190,50 @@ internal class RumEventSerializerTest {
     }
 
     // region Internal
+
+    private fun createTimeseriesEvents(): List<Any> {
+        return listOf(
+            TimeseriesCpuEvent(
+                date = 0L,
+                application = TimeseriesCpuEvent.Application(id = "application-id"),
+                session = TimeseriesCpuEvent.TimeseriesCpuEventSession(
+                    id = "session-id",
+                    type = TimeseriesCpuEvent.TimeseriesCpuEventSessionType.USER
+                ),
+                dd = TimeseriesCpuEvent.Dd(),
+                timeseries = TimeseriesCpuEvent.Timeseries(
+                    id = "timeseries-id",
+                    start = 0L,
+                    end = 0L,
+                    data = TimeseriesCpuEvent.Data(
+                        timestamps = emptyList(),
+                        values = TimeseriesCpuEvent.Values(cpuUsage = emptyList())
+                    )
+                )
+            ),
+            TimeseriesMemoryEvent(
+                date = 0L,
+                application = TimeseriesMemoryEvent.Application(id = "application-id"),
+                session = TimeseriesMemoryEvent.TimeseriesMemoryEventSession(
+                    id = "session-id",
+                    type = TimeseriesMemoryEvent.TimeseriesMemoryEventSessionType.USER
+                ),
+                dd = TimeseriesMemoryEvent.Dd(),
+                timeseries = TimeseriesMemoryEvent.Timeseries(
+                    id = "timeseries-id",
+                    start = 0L,
+                    end = 0L,
+                    data = TimeseriesMemoryEvent.Data(
+                        timestamps = emptyList(),
+                        values = TimeseriesMemoryEvent.Values(
+                            memoryFootprint = emptyList(),
+                            memoryPercent = emptyList()
+                        )
+                    )
+                )
+            )
+        )
+    }
 
     private fun Forge.forgeRumEvent(
         attributes: MutableMap<String, Any?> = mutableMapOf(),

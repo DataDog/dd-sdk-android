@@ -508,6 +508,43 @@
                   "description": "Whether a proxy is used for remote configuration",
                   "readOnly": false
                 },
+                "remote_configuration": {
+                  "type": "object",
+                  "description": "Metadata of the remote configuration currently applied for this session",
+                  "readOnly": false,
+                  "properties": {
+                    "config_id": {
+                      "type": "string",
+                      "description": "Identifier of the remote configuration bundle this metadata belongs to",
+                      "readOnly": false
+                    },
+                    "version_id": {
+                      "type": "string",
+                      "description": "CDN version identifier of the applied configuration",
+                      "readOnly": false
+                    },
+                    "last_modified": {
+                      "type": "integer",
+                      "description": "CDN publish timestamp of the applied configuration, in ms from epoch",
+                      "readOnly": false
+                    },
+                    "last_synced": {
+                      "type": "integer",
+                      "description": "Timestamp at which the device fetched and cached this configuration version, in ms from epoch",
+                      "readOnly": false
+                    },
+                    "first_applied": {
+                      "type": "integer",
+                      "description": "Timestamp at which this configuration version was first observed as applied by the device, in ms from epoch. Stamped once and reused on every subsequent session that runs on the same version",
+                      "readOnly": false
+                    },
+                    "sync_id": {
+                      "type": "string",
+                      "description": "Identifier of the sync that produced this configuration version, used to deduplicate repeat sessions from the same device without a persistent identifier",
+                      "readOnly": false
+                    }
+                  }
+                },
                 "profiling_sample_rate": {
                   "type": "number",
                   "description": "The percentage of sessions with Profiling enabled",

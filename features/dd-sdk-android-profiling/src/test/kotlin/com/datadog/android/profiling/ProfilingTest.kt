@@ -10,8 +10,11 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.ProfilingManager
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.internal.remote.model.RemoteConfiguration
 import com.datadog.android.internal.data.SharedPreferencesStorage
+import com.datadog.android.profiling.Profiling.UNEXPECTED_SDK_CORE_TYPE
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.NoOpProfiler
 import com.datadog.android.profiling.internal.Profiler
@@ -89,6 +92,7 @@ class ProfilingTest {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.name) doReturn fakeInstanceName
         whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mockProfilingExecutor
+        whenever(mockSdkCore.remoteConfiguration) doReturn null
         whenever(mockContext.getSystemService(ProfilingManager::class.java)) doReturn mockProfilingManager
         whenever(mockContext.packageManager) doReturn mockPackageManager
         ProfilingStorage.sharedPreferencesStorage = mockSharedPreferencesStorage
@@ -235,6 +239,60 @@ class ProfilingTest {
         verify(mockCore2).registerFeature(any<ProfilingFeature>())
         assertThat(Profiling.currentRegisteredCore?.get()).isEqualTo(mockCore2)
     }
+
+    // region Remote Configuration
+
+    @Test
+    fun `M log error and not register W enable { sdkCore is not InternalSdkCore }`(
+        @Forgery fakeConfiguration: ProfilingConfiguration
+    ) {
+        // Given
+        val mockNonInternalCore = mock<FeatureSdkCore>()
+        val mockLogger = mock<InternalLogger>()
+        whenever(mockNonInternalCore.internalLogger) doReturn mockLogger
+
+        // When
+        Profiling.enable(fakeConfiguration, mockNonInternalCore)
+
+        // Then
+        mockLogger.verifyLog(
+            level = InternalLogger.Level.ERROR,
+            target = InternalLogger.Target.USER,
+            message = UNEXPECTED_SDK_CORE_TYPE
+        )
+        assertThat(Profiling.profiler).isInstanceOf(NoOpProfiler::class.java)
+    }
+
+    @Test
+    fun `M register feature W enable { RC provides profiling values }`(
+        @Forgery fakeConfiguration: ProfilingConfiguration,
+        @Forgery fakeRemoteConfiguration: RemoteConfiguration
+    ) {
+        // Given
+        whenever(mockSdkCore.remoteConfiguration) doReturn fakeRemoteConfiguration
+
+        // When
+        Profiling.enable(fakeConfiguration, mockSdkCore)
+
+        // Then
+        verify(mockSdkCore).registerFeature(any<ProfilingFeature>())
+    }
+
+    @Test
+    fun `M register feature with in-code configuration W enable { null remote configuration }`(
+        @Forgery fakeConfiguration: ProfilingConfiguration
+    ) {
+        // Given
+        whenever(mockSdkCore.remoteConfiguration) doReturn null
+
+        // When
+        Profiling.enable(fakeConfiguration, mockSdkCore)
+
+        // Then
+        verify(mockSdkCore).registerFeature(any<ProfilingFeature>())
+    }
+
+    // endregion
 
     private fun resetProfilerField() {
         Profiling.profiler = NoOpProfiler()

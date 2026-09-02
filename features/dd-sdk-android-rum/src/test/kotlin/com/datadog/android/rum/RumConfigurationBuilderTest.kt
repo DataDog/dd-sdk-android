@@ -30,6 +30,8 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalAppLaunchEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent
+import com.datadog.android.rum.timeseries.TimeseriesConfiguration
+import com.datadog.android.rum.timeseries.TimeseriesType
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -65,6 +67,7 @@ import java.util.UUID
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
+@OptIn(ExperimentalRumApi::class)
 internal class RumConfigurationBuilderTest {
 
     private lateinit var testedBuilder: RumConfiguration.Builder
@@ -738,5 +741,20 @@ internal class RumConfigurationBuilderTest {
         // Then
         assertThat(rumConfiguration.featureConfiguration.insightsCollector)
             .isInstanceOf(NoOpInsightsCollector::class.java)
+    }
+
+    @Test
+    fun `M store provided configuration W setTimeseriesConfiguration(config)`(forge: Forge) {
+        // Given
+        val fakeConfig = TimeseriesConfiguration.Builder()
+            .collectOnly(forge.aValueFrom(TimeseriesType::class.java))
+            .build()
+
+        // When
+        val rumConfiguration = testedBuilder.setTimeseriesConfiguration(fakeConfig).build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration.timeseriesConfiguration)
+            .isSameAs(fakeConfig)
     }
 }

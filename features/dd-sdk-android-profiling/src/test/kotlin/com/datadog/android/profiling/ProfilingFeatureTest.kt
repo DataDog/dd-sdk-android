@@ -34,7 +34,6 @@ import com.datadog.android.profiling.internal.ProfilingRequestFactory
 import com.datadog.android.profiling.internal.ProfilingStartReason
 import com.datadog.android.profiling.internal.ProfilingStorage
 import com.datadog.android.profiling.internal.ProfilingWriter
-import com.datadog.android.profiling.internal.anr.AnrTriggerRegistrar
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.quota.NoOpQuotaChecker
@@ -44,6 +43,7 @@ import com.datadog.android.profiling.internal.quota.QuotaResult
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
 import com.datadog.android.profiling.internal.time.MutableTimeProvider
+import com.datadog.android.profiling.internal.trigger.ProfilingTriggerRegistrar
 import com.datadog.android.profiling.utils.config.MainLooperTestConfiguration
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -151,7 +151,7 @@ internal class ProfilingFeatureTest {
     private lateinit var mockPackageManager: PackageManager
 
     @Mock
-    private lateinit var mockAnrTriggerRegistrar: AnrTriggerRegistrar
+    private lateinit var mockTriggerRegistrar: ProfilingTriggerRegistrar
 
     @Mock
     private lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
@@ -272,7 +272,7 @@ internal class ProfilingFeatureTest {
             timeProvider = MutableTimeProvider.create(mockTimeProvider),
             scheduledExecutorService = mockSchedulerExecutor,
             profilingTelemetry = ProfilingTelemetry(),
-            anrTriggerRegistrar = mockAnrTriggerRegistrar,
+            triggerRegistrar = mockTriggerRegistrar,
             buildSdkVersionProvider = mockBuildSdkVersionProvider
         )
         val feature = ProfilingFeature(
@@ -302,7 +302,7 @@ internal class ProfilingFeatureTest {
             timeProvider = MutableTimeProvider.create(mockTimeProvider),
             scheduledExecutorService = mockSchedulerExecutor,
             profilingTelemetry = profilingTelemetry,
-            anrTriggerRegistrar = mockAnrTriggerRegistrar,
+            triggerRegistrar = mockTriggerRegistrar,
             buildSdkVersionProvider = mockBuildSdkVersionProvider
         )
         profilingTelemetry.report(
@@ -711,7 +711,7 @@ internal class ProfilingFeatureTest {
         )
 
         // Then
-        verify(mockDataWriter).write(
+        verify(mockDataWriter).writeManualProfile(
             profilingResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.CONTINUOUS),
             longTasks = emptyList(),
             anrEvents = emptyList(),
@@ -763,7 +763,7 @@ internal class ProfilingFeatureTest {
         )
 
         // Then
-        verify(mockDataWriter).write(
+        verify(mockDataWriter).writeManualProfile(
             profilingResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.CONTINUOUS),
             longTasks = listOf(fakeRumLongTaskEvent),
             anrEvents = emptyList(),
@@ -804,7 +804,7 @@ internal class ProfilingFeatureTest {
         )
 
         // Then
-        verify(mockDataWriter).write(
+        verify(mockDataWriter).writeManualProfile(
             profilingResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.CONTINUOUS),
             longTasks = emptyList(),
             anrEvents = listOf(fakeRumAnrEvent),
@@ -1146,7 +1146,7 @@ internal class ProfilingFeatureTest {
         )
 
         // Then
-        verify(mockDataWriter).write(
+        verify(mockDataWriter).writeManualProfile(
             profilingResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH),
             longTasks = listOf(fakeRumLongTaskEvent),
             anrEvents = emptyList(),
@@ -1178,7 +1178,7 @@ internal class ProfilingFeatureTest {
 
         // Then
         verify(mockDataWriter).discard(launchResult)
-        verify(mockDataWriter, never()).write(any(), any(), any(), any())
+        verify(mockDataWriter, never()).writeManualProfile(any(), any(), any(), any())
     }
 
     @Test
@@ -1205,7 +1205,7 @@ internal class ProfilingFeatureTest {
         )
 
         // Then
-        verify(mockDataWriter).write(
+        verify(mockDataWriter).writeManualProfile(
             profilingResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH),
             longTasks = emptyList(),
             anrEvents = listOf(fakeRumAnrEvent),
@@ -1476,7 +1476,7 @@ internal class ProfilingFeatureTest {
         )
 
         // Then
-        verify(mockDataWriter, never()).write(
+        verify(mockDataWriter, never()).writeManualProfile(
             profilingResult = any(),
             longTasks = any(),
             anrEvents = any(),
@@ -1508,7 +1508,7 @@ internal class ProfilingFeatureTest {
         )
 
         // Then
-        verify(mockDataWriter).write(
+        verify(mockDataWriter).writeManualProfile(
             profilingResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH),
             longTasks = listOf(fakeRumLongTaskEvent),
             anrEvents = emptyList(),
@@ -1538,7 +1538,7 @@ internal class ProfilingFeatureTest {
         )
 
         // Then — nothing is written while the quota decision is still pending
-        verify(mockDataWriter, never()).write(
+        verify(mockDataWriter, never()).writeManualProfile(
             profilingResult = any(),
             longTasks = any(),
             anrEvents = any(),
@@ -1549,7 +1549,7 @@ internal class ProfilingFeatureTest {
         testedFeature.simulateQuotaAllowed()
 
         // Then — the buffered launch event is now written
-        verify(mockDataWriter).write(
+        verify(mockDataWriter).writeManualProfile(
             profilingResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH),
             longTasks = listOf(fakeRumLongTaskEvent),
             anrEvents = emptyList(),

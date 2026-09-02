@@ -20,10 +20,14 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.measureMethodCallPerf
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.sessionreplay.MapperTypeWrapper
+import com.datadog.android.sessionreplay.R
+import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.TreeViewTraversal.Companion.METHOD_CALL_MAP_PREFIX
+import com.datadog.android.sessionreplay.internal.recorder.callback.DefaultInteropViewCallback
 import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.EmbeddedContentViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.HiddenViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ViewWireframeMapper
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -46,7 +50,9 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -145,6 +151,126 @@ internal class TreeViewTraversalTest {
         assertThat(traversedTreeView.mappedWireframes).isEqualTo(fakeViewMappedWireframes)
         assertThat(traversedTreeView.nextActionStrategy)
             .isEqualTo(TraversalStrategy.STOP_AND_RETURN_NODE)
+    }
+
+    @Test
+    fun `M use embedded mapper W traverse { tagged view has specialized mapper }`(forge: Forge) {
+        // Given
+        val mockView = forge.aMockView<TextView>()
+        val mockCustomMapper = mock<WireframeMapper<TextView>>()
+        val mockEmbeddedContentViewMapper = mock<EmbeddedContentViewMapper>()
+        val fakeWireframes: List<MobileSegment.Wireframe> = forge.aList { getForgery() }
+        whenever(mockEmbeddedContentViewMapper.hasSlotId(mockView)) doReturn true
+        whenever(
+            mockEmbeddedContentViewMapper.map(
+                eq(mockView),
+                eq(fakeMappingContext),
+                any(),
+                eq(mockInternalLogger)
+            )
+        ) doReturn fakeWireframes
+        testedTreeViewTraversal = TreeViewTraversal(
+            mappers = listOf(MapperTypeWrapper(TextView::class.java, mockCustomMapper)),
+            defaultViewMapper = mockDefaultViewMapper,
+            hiddenViewMapper = mockHiddenViewMapper,
+            decorViewMapper = mockDecorViewMapper,
+            viewUtilsInternal = mockViewUtilsInternal,
+            internalLogger = mockInternalLogger,
+            embeddedContentViewMapper = mockEmbeddedContentViewMapper
+        )
+
+        // When
+        val result = testedTreeViewTraversal.traverse(
+            mockView,
+            fakeMappingContext,
+            mockRecordedDataQueueRefs
+        )
+
+        // Then
+        assertThat(result.mappedWireframes).isEqualTo(fakeWireframes)
+        assertThat(result.nextActionStrategy).isEqualTo(TraversalStrategy.STOP_AND_RETURN_NODE)
+        verifyNoInteractions(mockCustomMapper)
+    }
+
+    @Test
+    fun `M use embedded mapper W map { Compose interop view has slot ID }`(forge: Forge) {
+        // Given
+        val mockInteropView = forge.aMockView<View>()
+        val mockEmbeddedContentViewMapper = mock<EmbeddedContentViewMapper>()
+        val fakeEmbeddedWireframe: MobileSegment.Wireframe.EmbeddedContentWireframe = forge.getForgery()
+        whenever(mockEmbeddedContentViewMapper.hasSlotId(mockInteropView)) doReturn true
+        whenever(
+            mockEmbeddedContentViewMapper.map(
+                eq(mockInteropView),
+                eq(fakeMappingContext),
+                any(),
+                eq(mockInternalLogger)
+            )
+        ) doReturn listOf(fakeEmbeddedWireframe)
+        testedTreeViewTraversal = TreeViewTraversal(
+            mappers = emptyList(),
+            defaultViewMapper = mockDefaultViewMapper,
+            hiddenViewMapper = mockHiddenViewMapper,
+            decorViewMapper = mockDecorViewMapper,
+            viewUtilsInternal = mockViewUtilsInternal,
+            internalLogger = mockInternalLogger,
+            embeddedContentViewMapper = mockEmbeddedContentViewMapper
+        )
+        val interopViewCallback = DefaultInteropViewCallback(
+            treeViewTraversal = testedTreeViewTraversal,
+            recordedDataQueueRefs = mockRecordedDataQueueRefs
+        )
+
+        // When
+        val result = interopViewCallback.map(mockInteropView, fakeMappingContext)
+
+        // Then
+        assertThat(result).containsExactly(fakeEmbeddedWireframe)
+        verify(mockEmbeddedContentViewMapper).map(
+            eq(mockInteropView),
+            eq(fakeMappingContext),
+            any(),
+            eq(mockInternalLogger)
+        )
+        verifyNoInteractions(mockDefaultViewMapper, mockHiddenViewMapper, mockDecorViewMapper)
+    }
+
+    @Test
+    fun `M use hidden mapper W traverse { tagged view has privacy hide override }`(forge: Forge) {
+        // Given
+        val mockView = forge.aMockView<View>()
+        val mockEmbeddedContentViewMapper = mock<EmbeddedContentViewMapper>()
+        val fakeWireframes: List<MobileSegment.Wireframe> = forge.aList { getForgery() }
+        whenever(mockView.getTag(R.id.datadog_hidden)) doReturn true
+        whenever(
+            mockHiddenViewMapper.map(
+                eq(mockView),
+                eq(fakeMappingContext),
+                any(),
+                eq(mockInternalLogger)
+            )
+        ) doReturn fakeWireframes
+        testedTreeViewTraversal = TreeViewTraversal(
+            mappers = emptyList(),
+            defaultViewMapper = mockDefaultViewMapper,
+            hiddenViewMapper = mockHiddenViewMapper,
+            decorViewMapper = mockDecorViewMapper,
+            viewUtilsInternal = mockViewUtilsInternal,
+            internalLogger = mockInternalLogger,
+            embeddedContentViewMapper = mockEmbeddedContentViewMapper
+        )
+
+        // When
+        val result = testedTreeViewTraversal.traverse(
+            mockView,
+            fakeMappingContext,
+            mockRecordedDataQueueRefs
+        )
+
+        // Then
+        assertThat(result.mappedWireframes).isEqualTo(fakeWireframes)
+        assertThat(result.nextActionStrategy).isEqualTo(TraversalStrategy.STOP_AND_RETURN_NODE)
+        verify(mockEmbeddedContentViewMapper, never()).map(any(), any(), any(), any())
     }
 
     @Test
@@ -357,6 +483,76 @@ internal class TreeViewTraversalTest {
         assertThat(traversedTreeView.mappedWireframes).isEmpty()
         assertThat(traversedTreeView.nextActionStrategy)
             .isEqualTo(TraversalStrategy.STOP_AND_DROP_NODE)
+    }
+
+    @Test
+    fun `M preserve native traversal W traverse { unmarked view is not visible }`(forge: Forge) {
+        // Given
+        val mockEmbeddedContentViewMapper = mock<EmbeddedContentViewMapper>()
+        val fakeRoot = forge.aMockView<View>().apply {
+            whenever(mockViewUtilsInternal.isNotVisible(this)).thenReturn(true)
+            whenever(getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.HIDE.name)
+        }
+        testedTreeViewTraversal = TreeViewTraversal(
+            mappers = emptyList(),
+            defaultViewMapper = mockDefaultViewMapper,
+            hiddenViewMapper = mockHiddenViewMapper,
+            decorViewMapper = mockDecorViewMapper,
+            viewUtilsInternal = mockViewUtilsInternal,
+            internalLogger = mockInternalLogger,
+            embeddedContentViewMapper = mockEmbeddedContentViewMapper
+        )
+
+        // When
+        val result = testedTreeViewTraversal.traverse(
+            fakeRoot,
+            fakeMappingContext,
+            mockRecordedDataQueueRefs
+        )
+
+        // Then
+        assertThat(result.mappedWireframes).isEmpty()
+        assertThat(result.nextActionStrategy).isEqualTo(TraversalStrategy.STOP_AND_DROP_NODE)
+        verifyNoInteractions(fakeMappingContext.touchPrivacyManager)
+        verifyNoInteractions(mockDefaultViewMapper, mockHiddenViewMapper, mockDecorViewMapper)
+    }
+
+    @Test
+    fun `M map embedded content W traverse { marked view is not visible }`(forge: Forge) {
+        // Given
+        val fakeRoot = forge.aMockView<View>()
+        val mockEmbeddedContentViewMapper = mock<EmbeddedContentViewMapper>()
+        val fakeWireframes: List<MobileSegment.Wireframe> = forge.aList { getForgery() }
+        whenever(mockViewUtilsInternal.isNotVisible(fakeRoot)).thenReturn(true)
+        whenever(mockEmbeddedContentViewMapper.hasSlotId(fakeRoot)).thenReturn(true)
+        whenever(
+            mockEmbeddedContentViewMapper.map(
+                eq(fakeRoot),
+                eq(fakeMappingContext),
+                any(),
+                eq(mockInternalLogger)
+            )
+        ).thenReturn(fakeWireframes)
+        testedTreeViewTraversal = TreeViewTraversal(
+            mappers = emptyList(),
+            defaultViewMapper = mockDefaultViewMapper,
+            hiddenViewMapper = mockHiddenViewMapper,
+            decorViewMapper = mockDecorViewMapper,
+            viewUtilsInternal = mockViewUtilsInternal,
+            internalLogger = mockInternalLogger,
+            embeddedContentViewMapper = mockEmbeddedContentViewMapper
+        )
+
+        // When
+        val result = testedTreeViewTraversal.traverse(
+            fakeRoot,
+            fakeMappingContext,
+            mockRecordedDataQueueRefs
+        )
+
+        // Then
+        assertThat(result.mappedWireframes).isEqualTo(fakeWireframes)
+        assertThat(result.nextActionStrategy).isEqualTo(TraversalStrategy.STOP_AND_RETURN_NODE)
     }
 
     // endregion
