@@ -116,7 +116,7 @@ internal class PerfettoProfiler(
             val duration = effectiveStopTime - profilingStartTime
             val resultCallbackDelayMs =
                 if (profilingStopTime > 0L) resultCallbackTime - profilingStopTime else 0L
-            val startReason = ProfilingStartReason.values().firstOrNull { it.value == result.tag.orEmpty() }
+            val startReason = ProfilingStartReason.entries.firstOrNull { it.value == result.tag.orEmpty() }
                 ?: ProfilingStartReason.UNKNOWN
             if (result.errorCode == ProfilingResult.ERROR_NONE) {
                 // TODO RUM-13679: need to delete the file after it is no longer needed

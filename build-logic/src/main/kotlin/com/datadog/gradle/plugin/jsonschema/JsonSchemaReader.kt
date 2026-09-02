@@ -171,7 +171,7 @@ class JsonSchemaReader(
                 if (type == null) {
                     error("additionalProperties object is missing a `type`")
                 } else {
-                    val jsonType = JsonType.values().firstOrNull { it.name.equals(type, true) }
+                    val jsonType = JsonType.entries.firstOrNull { it.name.equals(type, true) }
                     val typeDef = transform(JsonDefinition.ANY.copy(type = jsonType), "?", fromFile)
                     TypeProperty(
                         name = "",

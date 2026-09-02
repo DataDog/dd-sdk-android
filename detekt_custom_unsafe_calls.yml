@@ -221,6 +221,7 @@ datadog:
       - "kotlin.collections.MutableIterator.remove():java.lang.UnsupportedOperationException,java.lang.IllegalStateException"
       - "kotlin.collections.MutableSet.first():java.util.NoSuchElementException"
       - "kotlin.collections.MutableSet.last():java.util.NoSuchElementException"
+      - "kotlin.enums.EnumEntries.first(kotlin.Function1):java.util.NoSuchElementException"
       # endregion
       # region Kotlin Coroutines
       - "kotlinx.coroutines.Deferred.await():java.util.concurrent.CancellationException"

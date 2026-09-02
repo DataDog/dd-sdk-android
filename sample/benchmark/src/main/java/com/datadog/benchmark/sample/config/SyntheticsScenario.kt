@@ -28,7 +28,7 @@ internal enum class SyntheticsScenario(val value: String) {
 
     companion object {
         fun from(value: String): SyntheticsScenario? {
-            return values().firstOrNull { it.value == value }
+            return entries.firstOrNull { it.value == value }
         }
     }
 }
