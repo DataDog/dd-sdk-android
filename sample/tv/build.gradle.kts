@@ -66,9 +66,7 @@ android {
     }
 }
 
-repositories.depotProxied(providers) {
-    maven { setUrl("https://jitpack.io") }
-}
+repositories.depotProxied(providers) {}
 
 dependencies {
 

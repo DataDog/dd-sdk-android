@@ -13,14 +13,6 @@ pluginManagement {
         gradlePluginPortal()
         google()
         mavenCentral()
-        // `build-logic` pulls the Kotlin grammar parser from Jitpack; its transitive
-        // dependencies are resolved against these repositories when its plugins are applied.
-        maven {
-            setUrl("https://jitpack.io")
-            mavenContent {
-                includeGroupByRegex("com\\.github\\..*")
-            }
-        }
     }
 
     // Build logic (convention plugins + build-time code generators) lives in its own build so that

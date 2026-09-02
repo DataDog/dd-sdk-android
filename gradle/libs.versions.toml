@@ -79,7 +79,7 @@ nexusPublishGradlePlugin = "2.0.0"
 datadogPlugin = "1.27.0"
 
 kotlinPoet = "1.14.2"
-jsonSchemaValidator = "1.12.1"
+jsonSchemaValidator = "1.14.6"
 binaryCompatibility = "0.18.1"
 dependencyLicense = "0.7.0"
 kotlinXmlBuilder = "1.9.3"
@@ -227,7 +227,7 @@ kotlinPoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinPoet" }
 kotlinPoetKsp = { module = "com.squareup:kotlinpoet-ksp", version.ref = "kotlinPoet" }
 kotlinSP = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "kotlinSP" }
 kotlinCompilerEmbeddable = { module = "org.jetbrains.kotlin:kotlin-compiler-embeddable", version.ref = "kotlin" }
-jsonSchemaValidator = { module = "com.github.everit-org.json-schema:org.everit.json.schema", version.ref = "jsonSchemaValidator" }
+jsonSchemaValidator = { module = "com.github.erosb:everit-json-schema", version.ref = "jsonSchemaValidator" }
 kotlinXmlBuilder = { module = "org.redundent:kotlin-xml-builder", version.ref = "kotlinXmlBuilder" }
 
 # Integrations
