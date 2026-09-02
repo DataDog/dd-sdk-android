@@ -5,6 +5,15 @@ cronetApi = "143.7445.0"
 cronetPlayServices = "18.1.1"
 gson = "2.10.1"
 kotlin = "2.0.21"
+# Deliberately not `version.ref = "kotlin"`: this must match the Kotlin Gradle Plugin that is actually
+# loaded, which is AGP's. `androidToolsPlugin` (below) depends on KGP 2.2.10, and that outranks the
+# `kotlin` version above in conflict resolution (`kotlin-gradle-plugin:2.0.21 -> 2.2.10`).
+# The Compose *compiler* is always resolved at the loaded KGP's version and never at this one, so the
+# two drift apart silently. An older plugin against a newer compiler passes options the compiler has
+# since deprecated (RUM-18191, `generateFunctionKeyMetaClasses`), and the version also decides which
+# options are sent at all — 2.2.10 turns on `sourceInformation`, which changes generated Compose code.
+# Re-check this whenever `androidToolsPlugin` moves.
+composeCompilerPlugin = "2.2.10"
 kotlinSP = "2.0.21-1.0.28"
 kronosNTP = "0.0.1-alpha11"
 kotlinxSerialization = "1.6.3"
@@ -70,7 +79,7 @@ nexusPublishGradlePlugin = "2.0.0"
 datadogPlugin = "1.27.0"
 
 kotlinPoet = "1.14.2"
-jsonSchemaValidator = "1.12.1"
+jsonSchemaValidator = "1.14.6"
 binaryCompatibility = "0.18.1"
 dependencyLicense = "0.7.0"
 kotlinXmlBuilder = "1.9.3"
@@ -87,7 +96,7 @@ room = "2.5.1"
 rxJava3 = "3.0.0"
 timber = "5.0.1"
 coroutines = "1.7.3"
-exoplayer = "2.19.1"
+media3 = "1.1.1"
 newPipeExtractor = "v0.24.6"
 navigation3 = "1.0.0-alpha01"
 kotlinxSerializationCore = "1.8.1"
@@ -218,7 +227,7 @@ kotlinPoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinPoet" }
 kotlinPoetKsp = { module = "com.squareup:kotlinpoet-ksp", version.ref = "kotlinPoet" }
 kotlinSP = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "kotlinSP" }
 kotlinCompilerEmbeddable = { module = "org.jetbrains.kotlin:kotlin-compiler-embeddable", version.ref = "kotlin" }
-jsonSchemaValidator = { module = "com.github.everit-org.json-schema:org.everit.json.schema", version.ref = "jsonSchemaValidator" }
+jsonSchemaValidator = { module = "com.github.erosb:everit-json-schema", version.ref = "jsonSchemaValidator" }
 kotlinXmlBuilder = { module = "org.redundent:kotlin-xml-builder", version.ref = "kotlinXmlBuilder" }
 
 # Integrations
@@ -248,9 +257,9 @@ openFeatureKotlinSdk = { module = "dev.openfeature:kotlin-sdk", version.ref = "o
 coroutinesCore = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 coroutinesTest = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 
-exoplayer = { module = "com.google.android.exoplayer:exoplayer", version.ref = "exoplayer" }
-exoplayerDataSource = { module = "com.google.android.exoplayer:exoplayer-datasource", version.ref = "exoplayer" }
-exoplayerOkHttp = { module = "com.google.android.exoplayer:extension-okhttp", version.ref = "exoplayer" }
+media3Exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3" }
+media3DataSourceOkHttp = { module = "androidx.media3:media3-datasource-okhttp", version.ref = "media3" }
+media3Ui = { module = "androidx.media3:media3-ui", version.ref = "media3" }
 newPipeExtractor = { module = "com.github.TeamNewPipe.NewPipeExtractor:extractor", version.ref = "newPipeExtractor" }
 
 # Core Navigation 3 libraries
@@ -341,10 +350,10 @@ glide = [
     "glideOkHttp3",
 ]
 
-exoplayer = [
-    "exoplayer",
-    "exoplayerDataSource",
-    "exoplayerOkHttp"
+media3 = [
+    "media3Exoplayer",
+    "media3DataSourceOkHttp",
+    "media3Ui"
 ]
 
 ktor = [
@@ -371,7 +380,7 @@ traceCore = [
 [plugins]
 nexusPublishGradlePlugin = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexusPublishGradlePlugin" }
 datadogGradlePlugin = { id = "com.datadoghq.dd-sdk-android-gradle-plugin", version.ref = "datadogPlugin" }
-composeCompilerPlugin = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+composeCompilerPlugin = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "composeCompilerPlugin" }
 apolloPlugin = { id = "com.apollographql.apollo", version.ref = "apollo" }
 dependencyLicenseGradlePlugin = { id = "com.datadoghq.dependency-license", version.ref = "dependencyLicense" }
 kotlinAndroidPlugin = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

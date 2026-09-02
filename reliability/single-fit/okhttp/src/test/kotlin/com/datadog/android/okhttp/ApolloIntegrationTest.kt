@@ -172,7 +172,7 @@ class ApolloIntegrationTest {
 
         // Then
         val requestSent = mockServer.takeRequest()
-        GraphQLHeaders.values().forEach {
+        GraphQLHeaders.entries.forEach {
             val header = requestSent.getHeader(it.headerValue)
             assertThat(header).isNull()
         }
@@ -185,7 +185,7 @@ class ApolloIntegrationTest {
 
         // Then
         val requestSent = mockServer.takeRequest()
-        GraphQLHeaders.values().forEach {
+        GraphQLHeaders.entries.forEach {
             val header = requestSent.getHeader(it.headerValue)
             assertThat(header).isNull()
         }
@@ -232,7 +232,7 @@ class ApolloIntegrationTest {
 
         // Then
         val requestSent = mockServer.takeRequest()
-        GraphQLHeaders.values().forEach {
+        GraphQLHeaders.entries.forEach {
             val header = requestSent.getHeader(it.headerValue)
             assertThat(header).isNull()
         }

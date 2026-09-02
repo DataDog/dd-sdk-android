@@ -129,18 +129,17 @@ internal class TimeseriesCollectionTest {
 
         // Sized so the flush lands in the middle of a sampling interval, leaving half an interval
         // of room on either side before the expected data point count changes.
-        private const val FOREGROUND_COLLECTION_DURATION_MS =
-            SAMPLE_INTERVAL_MS * 3 + SAMPLE_INTERVAL_MS / 2 - FLUSH_DELAY_MS
+        private const val FOREGROUND_COLLECTION_DURATION_MS = SAMPLE_INTERVAL_MS * 3 +
+            SAMPLE_INTERVAL_MS / 2 - FLUSH_DELAY_MS
         private const val UPLOAD_GRACE_PERIOD_MS = 500L
-        private const val BACKGROUND_OBSERVATION_DURATION_MS =
-            SAMPLE_INTERVAL_MS + UPLOAD_GRACE_PERIOD_MS
+        private const val BACKGROUND_OBSERVATION_DURATION_MS = SAMPLE_INTERVAL_MS + UPLOAD_GRACE_PERIOD_MS
 
         private const val EXPECTED_FOREGROUND_MEMORY_DATA_POINTS =
             ((FOREGROUND_COLLECTION_DURATION_MS + FLUSH_DELAY_MS) / SAMPLE_INTERVAL_MS).toInt()
 
         // Sampling shares a single executor with the other vitals on a device the test does not
         // own, so a stalled tick costs a data point and a late flush adds one. Keeps the lower
-        // bound at two points, so the CPU event — which trails memory by one — always exists.
+        // bound at one CPU point, so both timeseries events are always emitted.
         private const val DATA_POINTS_TOLERANCE = 1
 
         private val JsonObject.timeseriesName: String?
@@ -155,22 +154,26 @@ internal class TimeseriesCollectionTest {
             filterByName(MEMORY_TIMESERIES_NAME).map(TimeseriesMemoryEvent::fromJsonObject)
 
         /**
-         * Asserts the data point count of every foreground batch: memory within the tolerance of
-         * the collection window, CPU exactly one point behind memory, because the first CPU read
-         * only establishes the delta baseline and yields no data point.
+         * Asserts the data point count of every foreground batch. CPU and memory use independent
+         * scheduling chains, so their tolerated delays do not necessarily happen on the same tick.
+         * The first CPU read only establishes the delta baseline and yields no data point.
          */
         private fun List<JsonObject>.assertForegroundDataPointCounts(
-            expected: Int,
+            expectedMemory: Int,
             tolerance: Int = DATA_POINTS_TOLERANCE
         ) {
+            val expectedCpu = expectedMemory - 1
             val memoryDataPointCounts = memoryEvents().map { it.timeseries.data.timestamps.size }
             val cpuDataPointCounts = cpuEvents().map { it.timeseries.data.timestamps.size }
 
+            assertThat(memoryDataPointCounts).isNotEmpty()
+            assertThat(cpuDataPointCounts).hasSameSizeAs(memoryDataPointCounts)
             memoryDataPointCounts.forEach { count ->
-                assertThat(count).isBetween(expected - tolerance, expected + tolerance)
+                assertThat(count).isBetween(expectedMemory - tolerance, expectedMemory + tolerance)
             }
-            assertThat(cpuDataPointCounts)
-                .containsExactlyElementsOf(memoryDataPointCounts.map { it - 1 })
+            cpuDataPointCounts.forEach { count ->
+                assertThat(count).isBetween(expectedCpu - tolerance, expectedCpu + tolerance)
+            }
         }
     }
 }

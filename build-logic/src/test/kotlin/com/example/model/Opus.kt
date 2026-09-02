@@ -182,7 +182,7 @@ public data class Opus(
 
         public companion object {
             @JvmStatic
-            public fun fromJson(jsonString: String): Role = values().first {
+            public fun fromJson(jsonString: String): Role = entries.first {
                 it.jsonValue == jsonString
             }
         }

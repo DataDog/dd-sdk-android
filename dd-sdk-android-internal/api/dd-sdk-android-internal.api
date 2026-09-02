@@ -714,6 +714,7 @@ public final class com/datadog/android/internal/thread/ThreadUtilsKt {
 public abstract class com/datadog/android/internal/time/BaseTimeProvider : com/datadog/android/internal/time/TimeProvider {
 	public fun <init> ()V
 	public final fun getDeviceElapsedRealtimeMillis ()J
+	public final fun getDeviceElapsedRealtimeNanos ()J
 	public final fun getDeviceElapsedTimeNanos ()J
 	public final fun getDeviceTimestampMillis ()J
 	public final fun getDeviceUptimeMillis ()J
@@ -728,6 +729,7 @@ public final class com/datadog/android/internal/time/DefaultTimeProvider : com/d
 
 public abstract interface class com/datadog/android/internal/time/TimeProvider {
 	public abstract fun getDeviceElapsedRealtimeMillis ()J
+	public abstract fun getDeviceElapsedRealtimeNanos ()J
 	public abstract fun getDeviceElapsedTimeNanos ()J
 	public abstract fun getDeviceTimestampMillis ()J
 	public abstract fun getDeviceUptimeMillis ()J
@@ -762,6 +764,20 @@ public abstract interface class com/datadog/android/internal/utils/DDCoreSubscri
 
 public final class com/datadog/android/internal/utils/DDCoreSubscription$Companion {
 	public final fun create ()Lcom/datadog/android/internal/utils/DDCoreSubscription;
+}
+
+public abstract interface class com/datadog/android/internal/utils/DiffBuilder {
+	public abstract fun anythingChanged ()Z
+	public abstract fun diffEquals (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public abstract fun diffList (Lkotlin/jvm/functions/Function1;)Ljava/util/List;
+	public abstract fun diffMap (Lkotlin/jvm/functions/Function1;)Ljava/util/Map;
+	public abstract fun diffMerge (Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;)Ljava/lang/Object;
+	public abstract fun diffRequired (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+}
+
+public final class com/datadog/android/internal/utils/DiffBuilderKt {
+	public static final fun computeDiffIfChanged (Ljava/lang/Object;Ljava/lang/Object;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static final fun computeDiffRequired (Ljava/lang/Object;Ljava/lang/Object;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
 }
 
 public class com/datadog/android/internal/utils/FixedWindowCallback : android/view/Window$Callback {

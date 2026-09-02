@@ -39,6 +39,7 @@ import com.datadog.android.rum.assertj.LongTaskEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ViewEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.VitalEventAssert
 import com.datadog.android.rum.assertj.VitalOperationPropertiesAssert
+import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
@@ -46,7 +47,7 @@ import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.state.SlowFrameRecord
@@ -172,7 +173,13 @@ internal class RumViewScopeTest {
     lateinit var mockCpuVitalMonitor: VitalMonitor
 
     @Mock
-    lateinit var mockAccessibilitySnapshotManager: AccessibilitySnapshotManager
+    lateinit var mockAccessibilityInfoProvider: InfoProvider<AccessibilityInfo>
+
+    @Mock
+    lateinit var mockViewEventMapper: ViewEventMapper
+
+    @Mock
+    lateinit var mockRumViewEventWriter: RumViewEventWriter
 
     @Mock
     lateinit var mockBatteryInfoProvider: InfoProvider<BatteryInfo>
@@ -304,11 +311,11 @@ internal class RumViewScopeTest {
         whenever(mockInteractionToNextViewMetricResolver.resolveMetric(any())) doReturn
             fakeInteractionToNextViewMetricValue
         val isValidSource = forge.aBool()
-        whenever(mockAccessibilitySnapshotManager.getIfChanged()) doReturn mock()
+        whenever(mockAccessibilityInfoProvider.getState()) doReturn mock()
 
         val fakeSource = if (isValidSource) {
             forge.anElementFrom(
-                ViewEvent.ViewEventSource.values().map { it.toJson().asString }
+                ViewEvent.ViewEventSource.entries.map { it.toJson().asString }
             )
         } else {
             forge.anAlphabeticalString()
@@ -399,6 +406,13 @@ internal class RumViewScopeTest {
             callback.invoke(mockEventBatchWriter)
         }
         whenever(mockWriter.write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))) doReturn true
+        whenever(mockRumViewEventWriter.writeViewEvent(any(), any(), any(), any(), any())) doAnswer {
+            val viewEvent = it.getArgument<ViewEvent>(0)
+            val writer = it.getArgument<DataWriter<Any>>(3)
+            val eventType = it.getArgument<EventType>(4)
+            writer.write(mockEventBatchWriter, viewEvent, eventType)
+            Unit
+        }
         fakeReplayStats = ViewEvent.ReplayStats(recordsCount = fakeReplayRecordsCount)
 
         // Mock battery and brightness providers
@@ -9953,6 +9967,25 @@ internal class RumViewScopeTest {
         assertThat(newScope.stopped).isEqualTo(false)
     }
 
+    @Test
+    fun `M create fresh RumViewEventWriter W renew the current scope`() {
+        // Given
+        var createdWritersCount = 0
+        testedScope = newRumViewScope(
+            rumViewEventWriterFactory = {
+                createdWritersCount++
+                mock<RumViewEventWriter>()
+            }
+        )
+
+        // When
+        val newScope = testedScope.renew(fakeEventTime)
+
+        // Then
+        assertThat(extractWriter(newScope)).isNotSameAs(extractWriter(testedScope))
+        assertThat(createdWritersCount).isEqualTo(2)
+    }
+
     // endregion
 
     // region Operations
@@ -10815,6 +10848,13 @@ internal class RumViewScopeTest {
         return event
     }
 
+    private fun extractWriter(scope: RumViewScope): RumViewEventWriter {
+        val field = RumViewScope::class.java.getDeclaredField("rumViewEventWriter")
+        field.isAccessible = true
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        return field.get(scope) as RumViewEventWriter
+    }
+
     // Builds an event time that is strictly after the scope start (fakeEventTime), so that the
     // resolved view duration is positive. Used by tests that assert a non-zero view duration.
     private fun laterEventTime(offsetMs: Long = 10L) = Time(
@@ -10879,6 +10919,7 @@ internal class RumViewScopeTest {
         networkSettledMetricResolver: NetworkSettledMetricResolver = mockNetworkSettledMetricResolver,
         viewEndedMetricDispatcher: ViewMetricDispatcher = mockViewEndedMetricDispatcher,
         slowFramesMetricListener: SlowFramesListener = mockSlowFramesListener,
+        rumViewEventWriterFactory: () -> RumViewEventWriter = { mockRumViewEventWriter },
         heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null
     ) = RumViewScope(
         parentScope = parentScope,
@@ -10901,10 +10942,11 @@ internal class RumViewScopeTest {
         slowFramesListener = slowFramesMetricListener,
         viewEndedMetricDispatcher = viewEndedMetricDispatcher,
         rumSessionTypeOverride = fakeRumSessionType,
-        accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+        accessibilityInfoProvider = mockAccessibilityInfoProvider,
         batteryInfoProvider = mockBatteryInfoProvider,
         displayInfoProvider = mockDisplayInfoProvider,
         insightsCollector = mockInsightsCollector,
+        rumViewEventWriterFactory = rumViewEventWriterFactory,
         heatmapIdentifierRegistry = heatmapIdentifierRegistry
     )
 

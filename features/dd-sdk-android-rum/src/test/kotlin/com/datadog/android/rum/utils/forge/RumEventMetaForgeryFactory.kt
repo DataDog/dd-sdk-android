@@ -12,6 +12,9 @@ import fr.xgouchet.elmyr.ForgeryFactory
 
 internal class RumEventMetaForgeryFactory : ForgeryFactory<RumEventMeta> {
     override fun getForgery(forge: Forge): RumEventMeta {
-        return forge.getForgery<RumEventMeta.View>()
+        return forge.anElementFrom(
+            forge.getForgery<RumEventMeta.View>(),
+            forge.getForgery<RumEventMeta.ViewUpdate>()
+        )
     }
 }

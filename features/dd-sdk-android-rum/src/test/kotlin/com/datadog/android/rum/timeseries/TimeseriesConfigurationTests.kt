@@ -21,7 +21,7 @@ internal class TimeseriesConfigurationTests {
         val config = TimeseriesConfiguration.Builder().build()
 
         // Then
-        assertThat(config.enabledTypes).containsExactlyInAnyOrderElementsOf(TimeseriesType.values().toList())
+        assertThat(config.enabledTypes).containsExactlyInAnyOrderElementsOf(TimeseriesType.entries.toList())
     }
 
     @ParameterizedTest

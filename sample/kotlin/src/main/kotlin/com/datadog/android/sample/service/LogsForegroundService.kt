@@ -144,7 +144,7 @@ class LogsForegroundService : Service() {
     }
 
     private fun randomErrorSource(): RumErrorSource {
-        return when (random.nextInt() % RumErrorSource.values().size) {
+        return when (random.nextInt() % RumErrorSource.entries.size) {
             0 -> RumErrorSource.NETWORK
             1 -> RumErrorSource.SOURCE
             2 -> RumErrorSource.AGENT

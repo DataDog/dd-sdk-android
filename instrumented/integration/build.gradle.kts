@@ -7,6 +7,8 @@
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.depotProxied
 import com.datadog.gradle.config.java17
+import com.datadog.gradle.config.taskConfig
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     // Build
@@ -145,10 +147,13 @@ dependencies {
 }
 
 datadogBuild {
-    applyKotlinConfig(
-        // TODO RUM-18191
-        // Suppress -> generateFunctionKeyMetaClasses is deprecated. It was replaced by emitting annotations on functions
-        // instead. Use generateFunctionKeyMetaAnnotations instead. Seems to Compose <-> Kotlin mismatch.
-        evaluateWarningsAsErrors = false
-    )
+    applyKotlinConfig()
+}
+
+taskConfig<KotlinCompile> {
+    compilerOptions {
+        // Integration fixtures intentionally access Kotlin-internal SDK APIs via INVISIBLE_*
+        // suppressions, which KGP 2.2 reports with the ERROR_SUPPRESSION diagnostic.
+        freeCompilerArgs.add("-Xwarning-level=ERROR_SUPPRESSION:disabled")
+    }
 }

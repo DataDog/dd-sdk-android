@@ -30,7 +30,6 @@ repositories {
     mavenCentral()
     google()
     gradlePluginPortal()
-    maven { setUrl("https://jitpack.io") }
 }
 
 dependencies {

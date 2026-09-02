@@ -193,7 +193,7 @@ public sealed class Animal {
 
         public companion object {
             @JvmStatic
-            public fun fromJson(jsonString: String): Water = values().first {
+            public fun fromJson(jsonString: String): Water = entries.first {
                 it.jsonValue == jsonString
             }
         }
@@ -215,7 +215,7 @@ public sealed class Animal {
 
         public companion object {
             @JvmStatic
-            public fun fromJson(jsonString: String): Food = values().first {
+            public fun fromJson(jsonString: String): Food = entries.first {
                 it.jsonValue == jsonString
             }
         }

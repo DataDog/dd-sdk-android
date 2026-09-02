@@ -4,11 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.domain.accessibility
+package com.datadog.android.profiling.internal.trigger
 
-import com.datadog.tools.annotation.NoOpImplementation
+import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 
-@NoOpImplementation
-internal interface AccessibilitySnapshotManager {
-    fun getIfChanged(): AccessibilityInfo?
+internal fun interface ProfilingTriggerListener {
+    fun onAnrDetected(event: ProfilingAnrDetectedEvent)
 }
