@@ -992,6 +992,48 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `M send view event with remoteConfigurationId W handleEvent(StopView) { RC ID configured }`(
+        @StringForgery fakeRcId: String
+    ) {
+        // Given
+        val contextWithRcId = fakeDatadogContext.copy(remoteConfigurationId = fakeRcId)
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, emptyMap(), eventTime = fakeEventTime),
+            contextWithRcId,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue).hasRemoteConfigurationId(fakeRcId)
+        }
+    }
+
+    @Test
+    fun `M send view event with null remoteConfigurationId W handleEvent(StopView) { no RC ID }`() {
+        // Given
+        val contextWithoutRcId = fakeDatadogContext.copy(remoteConfigurationId = null)
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, emptyMap(), eventTime = fakeEventTime),
+            contextWithoutRcId,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue).hasRemoteConfigurationId(null)
+        }
+    }
+
+    @Test
     fun `M send event W handleEvent(StopView) on active view { pending attributes are negative }`(
         forge: Forge
     ) {
@@ -10750,8 +10792,8 @@ internal class RumViewScopeTest {
 
         assertThat(profilerEvent.rumContext.applicationId).isEqualTo(writtenVital.application.id)
         assertThat(profilerEvent.rumContext.sessionId).isEqualTo(writtenVital.session.id)
-        assertThat(profilerEvent.rumContext.viewId).isEqualTo(writtenVital.view?.id)
-        assertThat(profilerEvent.rumContext.viewName).isEqualTo(writtenVital.view?.name)
+        assertThat(profilerEvent.rumContext.viewId).isEqualTo(writtenVital.view.id)
+        assertThat(profilerEvent.rumContext.viewName).isEqualTo(writtenVital.view.name)
     }
 
     @Test

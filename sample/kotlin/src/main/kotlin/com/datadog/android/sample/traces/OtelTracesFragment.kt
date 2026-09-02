@@ -13,7 +13,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ProgressBar
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProviders
+import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.sample.R
 import com.datadog.android.sample.SampleApplication
 
@@ -47,11 +47,10 @@ internal class OtelTracesFragment : Fragment(), View.OnClickListener {
         super.onPause()
     }
 
-    @Suppress("UnsafeCallOnNullableType") // not an issue in the sample
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         val factory = SampleApplication.getViewModelFactory(requireContext())
-        viewModel = ViewModelProviders.of(this, factory).get(OtelTracesViewModel::class.java)
+        viewModel = ViewModelProvider(this, factory)[OtelTracesViewModel::class.java]
     }
 
     override fun onDetach() {

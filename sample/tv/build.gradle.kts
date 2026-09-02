@@ -9,6 +9,7 @@ import com.datadog.gradle.config.configureFlavorForTvApp
 import com.datadog.gradle.config.depotProxied
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.taskConfig
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     // Build
@@ -102,16 +103,16 @@ dependencies {
     implementation(libs.timber)
 
     // Video
-    implementation(libs.bundles.exoplayer)
+    implementation(libs.bundles.media3)
     implementation(libs.newPipeExtractor)
 }
 
 datadogBuild {
-    applyKotlinConfig(evaluateWarningsAsErrors = false)
+    applyKotlinConfig()
     applyJunitConfig()
 }
 
-taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+taskConfig<KotlinCompile> {
     compilerOptions {
         optIn.add("kotlin.RequiresOptIn")
     }

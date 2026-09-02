@@ -22,6 +22,7 @@ import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.internal.RumAnonymousIdentifierManager
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.RumFeature.Configuration
+import com.datadog.android.rum.internal.applyRemoteConfiguration
 import com.datadog.android.rum.internal.domain.scope.RumVitalAppLaunchEventHelper
 import com.datadog.android.rum.internal.metric.SessionEndedMetricDispatcher
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
@@ -73,17 +74,19 @@ object Rum {
             return
         }
 
+        val effectiveConfiguration = rumConfiguration.applyRemoteConfiguration(sdkCore.remoteConfiguration)
+
         val rumFeature = RumFeature(
             sdkCore = sdkCore,
-            applicationId = rumConfiguration.applicationId,
-            configuration = rumConfiguration.featureConfiguration
+            applicationId = effectiveConfiguration.applicationId,
+            configuration = effectiveConfiguration.featureConfiguration
         )
 
         sdkCore.registerFeature(rumFeature)
 
         sdkCore.getFeature(rumFeature.name)?.dataStore?.let {
             RumAnonymousIdentifierManager(it, sdkCore).manageAnonymousId(
-                rumConfiguration.featureConfiguration.trackAnonymousUser
+                effectiveConfiguration.featureConfiguration.trackAnonymousUser
             )
         }
 
