@@ -1084,6 +1084,32 @@ class PerfettoProfilerTest {
     }
 
     @Test
+    fun `M not delegate to registrar W registerProfilingCallback {ANR trigger disabled}`() {
+        // Given
+        // Drop interactions recorded by the set-up call (which used the default enabled state).
+        reset(mockAnrRegistrar)
+        testedProfiler.setAnrTriggerEnabled(false)
+
+        // When
+        testedProfiler.registerProfilingCallback(mockContext, mockProfilerCallback)
+
+        // Then
+        verify(mockAnrRegistrar, never()).register(any(), any())
+    }
+
+    @Test
+    fun `M not delegate to registrar W unregisterProfilingCallback {ANR trigger disabled}`() {
+        // Given
+        testedProfiler.setAnrTriggerEnabled(false)
+
+        // When
+        testedProfiler.unregisterProfilingCallback(mockContext)
+
+        // Then
+        verify(mockAnrRegistrar, never()).unregister(any())
+    }
+
+    @Test
     fun `M not delegate to registrar W unregisterProfilingCallback {SDK below BAKLAVA}`() {
         // Given
         whenever(mockBuildSdkVersionProvider.isAtLeastBaklava) doReturn false

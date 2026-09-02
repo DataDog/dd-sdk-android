@@ -39,6 +39,8 @@ internal class NoOpProfiler : Profiler {
 
     override fun unregisterProfilingCallback(appContext: Context) = Unit
 
+    override fun setAnrTriggerEnabled(enabled: Boolean) = Unit
+
     override fun setExtendLaunchSession(extend: Boolean) = Unit
 
     override fun resolveProfilingPackageVersionCode(appContext: Context) = Unit

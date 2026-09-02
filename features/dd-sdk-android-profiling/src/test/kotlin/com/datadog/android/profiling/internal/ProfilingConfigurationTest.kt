@@ -30,6 +30,7 @@ internal class ProfilingConfigurationTest {
         // Then
         assertThat(config.customEndpointUrl).isNull()
         assertThat(config.applicationLaunchSampleRate).isEqualTo(15f)
+        assertThat(config.anrTriggerEnabled).isTrue()
     }
 
     @Test
@@ -77,5 +78,19 @@ internal class ProfilingConfigurationTest {
         assertThat(original.applicationLaunchSampleRate).isEqualTo(15f)
         assertThat(modified.customEndpointUrl).isEqualTo(endpoint)
         assertThat(modified.applicationLaunchSampleRate).isEqualTo(sampleRate)
+    }
+
+    @Test
+    fun `M preserve ANR trigger flag W data class copy()`() {
+        // Given
+        val original = ProfilingConfiguration.Builder()
+            .setAnrTriggerEnabled(false)
+            .build()
+
+        // When
+        val copied = original.copy(continuousSampleRate = 50f)
+
+        // Then
+        assertThat(copied.anrTriggerEnabled).isFalse()
     }
 }

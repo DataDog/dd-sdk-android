@@ -478,6 +478,32 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
+    fun `M propagate ANR trigger enabled flag W onInitialize()`() {
+        // Given
+        val config = fakeConfiguration.copy(anrTriggerEnabled = false)
+        testedFeature = ProfilingFeature(mockSdkCore, config, mockProfiler)
+
+        // When
+        testedFeature.onInitialize(mockContext)
+
+        // Then
+        verify(mockProfiler).setAnrTriggerEnabled(false)
+    }
+
+    @Test
+    fun `M propagate ANR trigger enabled flag W onInitialize {enabled}`() {
+        // Given
+        val config = fakeConfiguration.copy(anrTriggerEnabled = true)
+        testedFeature = ProfilingFeature(mockSdkCore, config, mockProfiler)
+
+        // When
+        testedFeature.onInitialize(mockContext)
+
+        // Then
+        verify(mockProfiler).setAnrTriggerEnabled(true)
+    }
+
+    @Test
     fun `M ignore context update W onContextUpdate {non-RUM feature}`(
         @StringForgery fakeOtherFeatureName: String,
         @FloatForgery(min = 0f, max = 100f) fakeSessionRate: Float

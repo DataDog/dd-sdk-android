@@ -44,6 +44,7 @@ internal class ProfilingConfigurationBuilderTest {
         // Then
         assertThat(configuration.customEndpointUrl).isNull()
         assertThat(configuration.continuousSampleRate).isEqualTo(DEFAULT_CONTINUOUS_SAMPLE_RATE)
+        assertThat(configuration.anrTriggerEnabled).isTrue()
     }
 
     @Test
@@ -70,5 +71,27 @@ internal class ProfilingConfigurationBuilderTest {
 
         // Then
         assertThat(configuration.customEndpointUrl).isEqualTo(endpoint)
+    }
+
+    @Test
+    fun `M build config with ANR trigger disabled W setAnrTriggerEnabled(false) and build()`() {
+        // When
+        val configuration = testedBuilder
+            .setAnrTriggerEnabled(false)
+            .build()
+
+        // Then
+        assertThat(configuration.anrTriggerEnabled).isFalse()
+    }
+
+    @Test
+    fun `M build config with ANR trigger enabled W setAnrTriggerEnabled(true) and build()`() {
+        // When
+        val configuration = testedBuilder
+            .setAnrTriggerEnabled(true)
+            .build()
+
+        // Then
+        assertThat(configuration.anrTriggerEnabled).isTrue()
     }
 }
