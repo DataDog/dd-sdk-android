@@ -5,48 +5,20 @@
  */
 package com.datadog.android.rum.timeseries
 
-import com.datadog.android.rum.ExperimentalRumApi
-
 /**
  * Configuration for memory and CPU timeseries collection.
  *
- * Use [Builder] to create an instance.
+ * @param collectTypes the timeseries types to collect. Passing an empty set disables
+ * collection of every timeseries type.
  */
-class TimeseriesConfiguration internal constructor(
-    internal val enabledTypes: Set<TimeseriesType>
-) {
+class TimeseriesConfiguration(collectTypes: Set<TimeseriesType>) {
 
-    /**
-     * A Builder for [TimeseriesConfiguration].
-     */
-    @ExperimentalRumApi
-    class Builder {
-
-        private var enabledTypes: Set<TimeseriesType> = TimeseriesType.entries.toSet()
-
-        /**
-         * Restricts collection to the provided timeseries types.
-         *
-         * By default, all supported timeseries types are collected.
-         * Passing an empty array disables collection of every timeseries type.
-         *
-         * @param types the timeseries types to collect.
-         */
-        fun collectOnly(vararg types: TimeseriesType): Builder = apply {
-            enabledTypes = types.toSet()
-        }
-
-        /** Builds a [TimeseriesConfiguration] from the current builder state. */
-        fun build(): TimeseriesConfiguration = TimeseriesConfiguration(
-            enabledTypes = enabledTypes
-        )
-    }
+    internal val enabledTypes: Set<TimeseriesType> = collectTypes.toSet()
 
     companion object {
 
-        /** Default [TimeseriesConfiguration] built with all default settings. */
-        @ExperimentalRumApi
-        val DEFAULT: TimeseriesConfiguration = Builder().build()
+        /** Default [TimeseriesConfiguration] collecting CPU and MEMORY timeseries types. */
+        val DEFAULT: TimeseriesConfiguration = TimeseriesConfiguration(setOf(TimeseriesType.CPU, TimeseriesType.MEMORY))
 
         /** Default number of samples to accumulate before emitting a timeseries event. */
         internal const val DEFAULT_BUFFER_SIZE: Int = 120

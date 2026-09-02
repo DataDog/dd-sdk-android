@@ -80,7 +80,7 @@ internal class ConfigurationRumForgeryFactory :
             insightsCollector = mock(),
             appStartupActivityPredicate = mock(),
             rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
-            timeseriesConfiguration = forge.aNullable { TimeseriesConfiguration.Builder().build() }
+            timeseriesConfiguration = forge.aNullable { TimeseriesConfiguration.DEFAULT }
         )
     }
 }

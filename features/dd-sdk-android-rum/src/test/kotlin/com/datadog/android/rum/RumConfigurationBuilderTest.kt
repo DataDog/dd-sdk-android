@@ -745,9 +745,7 @@ internal class RumConfigurationBuilderTest {
     @Test
     fun `M store provided configuration W setTimeseriesConfiguration(config)`(forge: Forge) {
         // Given
-        val fakeConfig = TimeseriesConfiguration.Builder()
-            .collectOnly(forge.aValueFrom(TimeseriesType::class.java))
-            .build()
+        val fakeConfig = TimeseriesConfiguration(setOf(forge.aValueFrom(TimeseriesType::class.java)))
 
         // When
         val rumConfiguration = testedBuilder.setTimeseriesConfiguration(fakeConfig).build()

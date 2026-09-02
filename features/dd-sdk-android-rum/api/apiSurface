@@ -90,6 +90,7 @@ data class com.datadog.android.rum.RumConfiguration
     fun setSlowFramesConfiguration(com.datadog.android.rum.configuration.SlowFramesConfiguration?): Builder
     fun trackAnonymousUser(Boolean): Builder
     fun setAppStartupActivityPredicate(com.datadog.android.rum.startup.AppStartupActivityPredicate): Builder
+    fun setTimeseriesConfiguration(com.datadog.android.rum.timeseries.TimeseriesConfiguration): Builder
     fun build(): RumConfiguration
 enum com.datadog.android.rum.RumErrorSource
   - NETWORK
@@ -314,9 +315,7 @@ class com.datadog.android.rum.resource.RumResourceInputStream : java.io.InputStr
 interface com.datadog.android.rum.startup.AppStartupActivityPredicate
   fun shouldTrackStartup(android.app.Activity): Boolean
 class com.datadog.android.rum.timeseries.TimeseriesConfiguration
-  class Builder
-    fun collectOnly(TimeseriesType): Builder
-    fun build(): TimeseriesConfiguration
+  constructor(Set<TimeseriesType>)
   companion object 
     val DEFAULT: TimeseriesConfiguration
 enum com.datadog.android.rum.timeseries.TimeseriesType
