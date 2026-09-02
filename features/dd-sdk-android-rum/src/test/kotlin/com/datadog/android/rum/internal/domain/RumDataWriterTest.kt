@@ -1305,6 +1305,145 @@ internal class RumDataWriterTest {
         assertThat(metaData.hasAccessibility).isTrue
     }
 
+    @Test
+    fun `M hasAccessibility false W write() { second write, same accessibility }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeAccessibility = forge.getForgery<ViewEvent.Accessibility>()
+        val baseViewEvent = forge.getForgery<ViewEvent>()
+        val firstWrite = baseViewEvent.copy(
+            view = baseViewEvent.view.copy(accessibility = fakeAccessibility, isActive = true)
+        )
+        val secondWrite = firstWrite.copy(
+            dd = firstWrite.dd.copy(documentVersion = firstWrite.dd.documentVersion + 1)
+        )
+        listOf(firstWrite, secondWrite).forEach {
+            whenever(mockEventMapper.map(it)) doReturn it
+            whenever(mockEventSerializer.serialize(it)) doReturn fakeSerializedEvent
+        }
+
+        // When
+        testedWriter.write(mockEventBatchWriter, firstWrite, fakeEventType)
+        testedWriter.write(mockEventBatchWriter, secondWrite, fakeEventType)
+
+        // Then
+        val captor = argumentCaptor<RumEventMeta.View>()
+        verify(mockEventMetaSerializer, times(2)).serialize(captor.capture())
+        assertThat(captor.allValues[0].hasAccessibility).isTrue // no prior write for this view yet
+        assertThat(captor.allValues[1].hasAccessibility).isFalse // unchanged since the first write
+    }
+
+    @Test
+    fun `M hasAccessibility true W write() { second write, different accessibility }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeAccessibility1 = forge.getForgery<ViewEvent.Accessibility>().copy(screenReaderEnabled = true)
+        val fakeAccessibility2 = fakeAccessibility1.copy(screenReaderEnabled = false)
+        val baseViewEvent = forge.getForgery<ViewEvent>()
+        val firstWrite = baseViewEvent.copy(
+            view = baseViewEvent.view.copy(accessibility = fakeAccessibility1, isActive = true)
+        )
+        val secondWrite = firstWrite.copy(
+            view = firstWrite.view.copy(accessibility = fakeAccessibility2),
+            dd = firstWrite.dd.copy(documentVersion = firstWrite.dd.documentVersion + 1)
+        )
+        listOf(firstWrite, secondWrite).forEach {
+            whenever(mockEventMapper.map(it)) doReturn it
+            whenever(mockEventSerializer.serialize(it)) doReturn fakeSerializedEvent
+        }
+
+        // When
+        testedWriter.write(mockEventBatchWriter, firstWrite, fakeEventType)
+        testedWriter.write(mockEventBatchWriter, secondWrite, fakeEventType)
+
+        // Then
+        val captor = argumentCaptor<RumEventMeta.View>()
+        verify(mockEventMetaSerializer, times(2)).serialize(captor.capture())
+        assertThat(captor.allValues[0].hasAccessibility).isTrue
+        assertThat(captor.allValues[1].hasAccessibility).isTrue // accessibility changed between writes
+    }
+
+    @Test
+    fun `M track accessibility independently per view W write() { interleaved views }`(
+        forge: Forge
+    ) {
+        // Given — two distinct views, A and B, with different accessibility snapshots
+        val fakeAccessibilityA = forge.getForgery<ViewEvent.Accessibility>().copy(screenReaderEnabled = true)
+        val fakeAccessibilityB = fakeAccessibilityA.copy(screenReaderEnabled = false)
+
+        val baseViewEventA = forge.getForgery<ViewEvent>()
+        val viewEventA1 = baseViewEventA.copy(
+            view = baseViewEventA.view.copy(accessibility = fakeAccessibilityA, isActive = true)
+        )
+        val viewEventA2 = viewEventA1.copy(
+            dd = viewEventA1.dd.copy(documentVersion = viewEventA1.dd.documentVersion + 1)
+        )
+
+        val baseViewEventB = forge.getForgery<ViewEvent>()
+        val viewEventB1 = baseViewEventB.copy(
+            view = baseViewEventB.view.copy(accessibility = fakeAccessibilityB, isActive = true)
+        )
+
+        listOf(viewEventA1, viewEventB1, viewEventA2).forEach {
+            whenever(mockEventMapper.map(it)) doReturn it
+            whenever(mockEventSerializer.serialize(it)) doReturn fakeSerializedEvent
+        }
+
+        // When — view A's first update, then an interleaved write for a completely different
+        // view B, then view A's second update (same accessibility as its own first write)
+        testedWriter.write(mockEventBatchWriter, viewEventA1, fakeEventType)
+        testedWriter.write(mockEventBatchWriter, viewEventB1, fakeEventType)
+        testedWriter.write(mockEventBatchWriter, viewEventA2, fakeEventType)
+
+        // Then
+        val captor = argumentCaptor<RumEventMeta.View>()
+        verify(mockEventMetaSerializer, times(3)).serialize(captor.capture())
+        assertThat(captor.allValues[0].hasAccessibility).isTrue // A1: first write for view A
+        assertThat(captor.allValues[1].hasAccessibility).isTrue // B1: first write for view B
+        // A2 must be compared against A1's own accessibility, not B1's — proves per-viewId tracking
+        assertThat(captor.allValues[2].hasAccessibility).isFalse
+    }
+
+    @Test
+    fun `M reset accessibility tracking W write() { view closes, isActive false }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeAccessibility = forge.getForgery<ViewEvent.Accessibility>()
+        val baseViewEvent = forge.getForgery<ViewEvent>()
+        val firstWrite = baseViewEvent.copy(
+            view = baseViewEvent.view.copy(accessibility = fakeAccessibility, isActive = true)
+        )
+        val closingWrite = firstWrite.copy(
+            view = firstWrite.view.copy(isActive = false),
+            dd = firstWrite.dd.copy(documentVersion = firstWrite.dd.documentVersion + 1)
+        )
+        // A late write for the same viewId after it was closed (e.g. crash-recovery raw ViewEvent),
+        // with the same accessibility snapshot as before
+        val lateWrite = closingWrite.copy(
+            dd = closingWrite.dd.copy(documentVersion = closingWrite.dd.documentVersion + 1)
+        )
+        listOf(firstWrite, closingWrite, lateWrite).forEach {
+            whenever(mockEventMapper.map(it)) doReturn it
+            whenever(mockEventSerializer.serialize(it)) doReturn fakeSerializedEvent
+        }
+
+        // When
+        testedWriter.write(mockEventBatchWriter, firstWrite, fakeEventType)
+        testedWriter.write(mockEventBatchWriter, closingWrite, fakeEventType)
+        testedWriter.write(mockEventBatchWriter, lateWrite, fakeEventType)
+
+        // Then
+        val captor = argumentCaptor<RumEventMeta.View>()
+        verify(mockEventMetaSerializer, times(3)).serialize(captor.capture())
+        assertThat(captor.allValues[0].hasAccessibility).isTrue // first write for this view
+        assertThat(captor.allValues[1].hasAccessibility).isFalse // unchanged, but this write closes the view
+        // tracking was evicted when the view closed, so this is treated as unseen again
+        assertThat(captor.allValues[2].hasAccessibility).isTrue
+    }
+
     // endregion
 
     companion object {
