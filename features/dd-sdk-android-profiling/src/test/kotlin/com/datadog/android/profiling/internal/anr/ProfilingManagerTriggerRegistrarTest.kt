@@ -15,6 +15,8 @@ import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
+import com.datadog.android.profiling.internal.trigger.ProfilingManagerTriggerRegistrar
+import com.datadog.android.profiling.internal.trigger.ProfilingTriggerListener
 import com.datadog.android.profiling.internal.utils.ThreadDumper
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery

@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.profiling.internal.anr
+package com.datadog.android.profiling.internal.trigger
 
 import android.content.Context
 import com.datadog.android.api.InternalLogger

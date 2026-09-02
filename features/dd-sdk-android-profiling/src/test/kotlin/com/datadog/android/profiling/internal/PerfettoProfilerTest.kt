@@ -20,7 +20,6 @@ import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.forge.Configurator
-import com.datadog.android.profiling.internal.anr.ProfilingTriggerRegistrar
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companion.APP_LAUNCH_PROFILING_MAX_DURATION_MS
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companion.PROFILING_SAMPLING_RATE_APP_LAUNCH
@@ -28,6 +27,7 @@ import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companio
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.time.MutableTimeProvider
+import com.datadog.android.profiling.internal.trigger.ProfilingTriggerRegistrar
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery

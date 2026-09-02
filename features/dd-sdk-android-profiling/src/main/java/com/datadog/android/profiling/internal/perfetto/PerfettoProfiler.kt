@@ -20,12 +20,12 @@ import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.profiling.internal.Profiler
 import com.datadog.android.profiling.internal.ProfilerCallback
 import com.datadog.android.profiling.internal.ProfilingStartReason
-import com.datadog.android.profiling.internal.anr.ProfilingManagerTriggerRegistrar
-import com.datadog.android.profiling.internal.anr.ProfilingTriggerListener
-import com.datadog.android.profiling.internal.anr.ProfilingTriggerRegistrar
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
 import com.datadog.android.profiling.internal.time.MutableTimeProvider
+import com.datadog.android.profiling.internal.trigger.ProfilingManagerTriggerRegistrar
+import com.datadog.android.profiling.internal.trigger.ProfilingTriggerListener
+import com.datadog.android.profiling.internal.trigger.ProfilingTriggerRegistrar
 import com.datadog.android.profiling.internal.utils.fileSizeSafe
 import com.datadog.android.profiling.internal.utils.getProfilingModuleLongVersionCode
 import com.datadog.android.profiling.internal.utils.isProfilingModuleVersionBlocked

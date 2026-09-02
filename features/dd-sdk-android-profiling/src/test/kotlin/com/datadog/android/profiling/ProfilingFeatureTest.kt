@@ -34,7 +34,6 @@ import com.datadog.android.profiling.internal.ProfilingRequestFactory
 import com.datadog.android.profiling.internal.ProfilingStartReason
 import com.datadog.android.profiling.internal.ProfilingStorage
 import com.datadog.android.profiling.internal.ProfilingWriter
-import com.datadog.android.profiling.internal.anr.ProfilingTriggerRegistrar
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.quota.NoOpQuotaChecker
@@ -44,6 +43,7 @@ import com.datadog.android.profiling.internal.quota.QuotaResult
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
 import com.datadog.android.profiling.internal.time.MutableTimeProvider
+import com.datadog.android.profiling.internal.trigger.ProfilingTriggerRegistrar
 import com.datadog.android.profiling.utils.config.MainLooperTestConfiguration
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
