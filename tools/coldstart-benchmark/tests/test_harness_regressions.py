@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Regression tests for cross-script cold-start harness contracts."""
 
+import ast
 import importlib.util
 import os
 import re
@@ -10,6 +11,7 @@ import stat
 import subprocess
 import tempfile
 import textwrap
+import types
 import unittest
 
 
@@ -167,7 +169,7 @@ class HarnessRegressionTests(unittest.TestCase):
         main_pin = benchmark.rindex("\npin_device\n")
         first_block = benchmark.index("for ((b=1; b<=BLOCKS; b++))", main_pin)
         self.assertLess(main_pin, first_block)
-        self.assertLess(capture.index(gate), capture.index('log "starting perfetto"'))
+        self.assertLess(capture.index(gate), capture.index("start_perfetto() {"))
 
     def test_fixed_performance_is_a_shared_fail_closed_precollection_gate(self) -> None:
         success = self.run_with_fake_adb(
@@ -224,7 +226,7 @@ class HarnessRegressionTests(unittest.TestCase):
             source = (HARNESS / name).read_text(encoding="utf-8")
             self.assertEqual(source.count(gate), 1, name)
         capture = (HARNESS / "capture_trace.sh").read_text(encoding="utf-8")
-        self.assertLess(capture.index(gate), capture.index('log "starting perfetto"'))
+        self.assertLess(capture.index(gate), capture.index("start_perfetto() {"))
 
     def test_package_process_enumeration_never_falls_back_to_pidof(self) -> None:
         complete = self.run_with_fake_adb(
@@ -363,6 +365,34 @@ class HarnessRegressionTests(unittest.TestCase):
         self.assertIn("compile_status=$RUN_COMPILE_STATUS", benchmark)
         capture = (HARNESS / "capture_trace.sh").read_text(encoding="utf-8")
         self.assertIn('TRACE_COMPILE_STATUS=$(dd_package_compile_status "$PKG")', capture)
+        self.assertIn('EXPECTED_COMPILE_STATUS="${EXPECTED_COMPILE_STATUS:-}"', capture)
+        self.assertIn(
+            '[ "$TRACE_COMPILE_STATUS" = "$EXPECTED_COMPILE_STATUS" ]',
+            capture,
+        )
+        self.assertIn("benchmark CSV header's compile_status", capture)
+
+        env = os.environ.copy()
+        env.update(PKG="com.example.app", EXPECTED_COMPILE_STATUS="verify+speed-profile")
+        compound = subprocess.run(
+            ["bash", str(HARNESS / "capture_trace.sh"), "/missing.apk", "trace", "1"],
+            check=False,
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+        self.assertIn("APK not found", compound.stderr)
+        self.assertNotIn("invalid EXPECTED_COMPILE_STATUS", compound.stderr)
+
+        env["EXPECTED_COMPILE_STATUS"] = "verify/status"
+        malformed = subprocess.run(
+            ["bash", str(HARNESS / "capture_trace.sh"), "/missing.apk", "trace", "1"],
+            check=False,
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+        self.assertIn("invalid EXPECTED_COMPILE_STATUS", malformed.stderr)
 
     def test_enabled_radio_readback_does_not_claim_reachability(self) -> None:
         result = self.run_with_fake_adb(
@@ -388,6 +418,51 @@ class HarnessRegressionTests(unittest.TestCase):
 
         benchmark = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
         self.assertNotIn("echo ONLINE", benchmark)
+
+    def test_known_off_radios_cannot_be_overridden_as_enabled(self) -> None:
+        result = self.run_with_fake_adb(
+            """
+            set -euo pipefail
+            sleep() { :; }
+            ALLOW_UNVERIFIED_RADIOS=1
+            . "$LIB"
+            dd_apply_radio_state 0
+            """,
+            """
+            #!/usr/bin/env bash
+            case "$*" in
+              "shell svc wifi enable") exit 0 ;;
+              "shell settings get global wifi_on") printf '0\n' ;;
+              "shell settings get global mobile_data") printf '0\n' ;;
+              *) exit 1 ;;
+            esac
+            """,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("both controlled radios", result.stderr)
+        self.assertIn("cannot override a readable contradictory", result.stderr)
+        self.assertNotIn("WITHOUT proof a radio was enabled", result.stderr)
+
+        indeterminate = self.run_with_fake_adb(
+            """
+            set -euo pipefail
+            sleep() { :; }
+            ALLOW_UNVERIFIED_RADIOS=1
+            . "$LIB"
+            dd_apply_radio_state 0
+            """,
+            """
+            #!/usr/bin/env bash
+            case "$*" in
+              "shell svc wifi enable") exit 0 ;;
+              "shell settings get global wifi_on") exit 0 ;;
+              "shell settings get global mobile_data") printf '0\n' ;;
+              *) exit 1 ;;
+            esac
+            """,
+        )
+        self.assertEqual(indeterminate.returncode, 0, indeterminate.stderr)
+        self.assertIn("WITHOUT proof a radio was enabled", indeterminate.stderr)
 
     def test_benchmark_and_trace_share_animation_readback_gate(self) -> None:
         for name in ("coldstart_bench.sh", "capture_trace.sh"):
@@ -571,6 +646,10 @@ class HarnessRegressionTests(unittest.TestCase):
         # A run using APP_TRACE_REGEX must carry it over, or the resume CSV stamps
         # app_trace_id=none and --metric app_trace_ms cannot be pooled with it.
         self.assertIn("APP_TRACE_REGEX=%q", block)
+        allow_loop = source[source.index("for _allow in"):
+                            source.index("; do", source.index("for _allow in"))]
+        self.assertIn("ALLOW_DYNAMIC_PERFORMANCE", allow_loop)
+        self.assertIn('echo "             $_ALLOW_IN_EFFECT', block)
 
     def test_abort_trailer_globals_exist_before_the_trap_is_armed(self) -> None:
         """`set -u` inside the EXIT trap would replace the abort message with a crash."""
@@ -1422,14 +1501,21 @@ class HarnessRegressionTests(unittest.TestCase):
         force_stop = body.index("shell am force-stop")
         pre_sleep = body.index('sleep "$_SETTLE_PRE_SLEEP"', force_stop)
         launch = body.index('shell am start -W "${START_ARGS[@]}"', pre_sleep)
-        check_sleep = body.index('sleep "$_SETTLE_CHECK_SLEEP"', launch)
+        probe_split = body.index("_SETTLE_BEFORE_PERFETTO=", launch)
+        probe_perfetto = body.index("start_perfetto", probe_split)
+        ready_sleep = body.index('sleep "$_PERFETTO_READY_WAIT"', probe_perfetto)
+        check_sleep = body.index('sleep "$_SETTLE_CHECK_SLEEP"', ready_sleep)
         liveness = body.index('dd_datadog_threads "$_SETTLE_PIDS"', check_sleep)
-        final_sleep = body.index('sleep "$_SETTLE_FINAL_SLEEP"', liveness)
+        warmup_perfetto = body.index("start_perfetto", liveness)
+        final_sleep = body.index('sleep "$_SETTLE_FINAL_SLEEP"', warmup_perfetto)
         self.assertLess(force_stop, pre_sleep)
         self.assertLess(pre_sleep, launch)
-        self.assertLess(launch, check_sleep)
+        self.assertLess(launch, probe_perfetto)
+        self.assertLess(probe_perfetto, ready_sleep)
+        self.assertLess(ready_sleep, check_sleep)
         self.assertLess(check_sleep, liveness)
-        self.assertLess(liveness, final_sleep)
+        self.assertLess(liveness, warmup_perfetto)
+        self.assertLess(warmup_perfetto, final_sleep)
 
         benchmark = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
         probe = benchmark[benchmark.index("probe_datadog() {"):
@@ -1453,14 +1539,19 @@ class HarnessRegressionTests(unittest.TestCase):
         """
         capture = (HARNESS / "capture_trace.sh").read_text(encoding="utf-8")
         duration_ms = int(re.search(r"duration_ms:\s*(\d+)", capture).group(1))
-        started = capture.index("PERFETTO_PID=$!")
-        launch = capture.index('LAUNCH_OUT=$("$ADB" shell am start -W', started)
-        in_capture_s = sum(
-            int(m.group(1))
-            for m in re.finditer(r"^\s*sleep (\d+)\s*$", capture[started:launch], re.M)
-        )
-        # 4s of Perfetto establishment plus the benchmark's own 5s pre-launch wait.
-        self.assertGreaterEqual(in_capture_s, 9)
+        ready_s = int(re.search(r"_PERFETTO_READY_WAIT=(\d+)", capture).group(1))
+        settle = capture.index("for ((_i=1; _i<=SETTLE_LAUNCHES; _i++)); do")
+        after_settle = capture.index("\ndone", settle) + len("\ndone")
+        force_stop = capture.index("shell am force-stop", after_settle)
+        launch = capture.index('LAUNCH_OUT=$("$ADB" shell am start -W', force_stop)
+        measured_waits = [int(m.group(1)) for m in re.finditer(
+            r"^\s*sleep (\d+)\s*$", capture[force_stop:launch], re.M
+        )]
+        self.assertEqual(measured_waits, [5])
+        # The 4s readiness period is the last conditioning wait, then the measured
+        # launch contributes its own 5s force-stop wait inside the capture.
+        in_capture_s = ready_s + sum(measured_waits)
+        self.assertEqual(in_capture_s, 9)
         post_launch_ms = duration_ms - in_capture_s * 1000
         self.assertGreaterEqual(
             post_launch_ms, 15000,
@@ -1471,20 +1562,25 @@ class HarnessRegressionTests(unittest.TestCase):
 
     def test_traced_launch_reproduces_measured_final_pre_start_cadence(self) -> None:
         capture = (HARNESS / "capture_trace.sh").read_text(encoding="utf-8")
+        perfetto_function = capture.index("start_perfetto() {")
         settle = capture.index("for ((_i=1; _i<=SETTLE_LAUNCHES; _i++)); do")
         after_settle = capture.index("\ndone", settle) + len("\ndone")
-        perfetto = capture.index('log "starting perfetto"', after_settle)
-        perfetto_pid = capture.index("PERFETTO_PID=$!", perfetto)
-        ready_wait = capture.index("sleep 4", perfetto_pid)
-        force_stop = capture.index("shell am force-stop", ready_wait)
+        probe_perfetto = capture.index("start_perfetto", settle)
+        ready_wait = capture.index('sleep "$_PERFETTO_READY_WAIT"', probe_perfetto)
+        liveness = capture.index('dd_datadog_threads "$_SETTLE_PIDS"', ready_wait)
+        warmup_perfetto = capture.index("start_perfetto", liveness)
+        force_stop = capture.index("shell am force-stop", after_settle)
         measured_wait = capture.index("sleep 5", force_stop)
         clear = capture.index("shell logcat -c", measured_wait)
         watcher = capture.index('_ENDPOINT_FILE=$(mktemp', clear)
         launch = capture.index('LAUNCH_OUT=$("$ADB" shell am start -W', watcher)
 
-        self.assertNotIn("shell am force-stop", capture[after_settle:perfetto])
-        self.assertLess(perfetto, perfetto_pid)
-        self.assertLess(perfetto_pid, ready_wait)
+        self.assertLess(perfetto_function, settle)
+        self.assertLess(probe_perfetto, ready_wait)
+        self.assertLess(ready_wait, liveness)
+        self.assertLess(liveness, warmup_perfetto)
+        self.assertLess(warmup_perfetto, after_settle)
+        self.assertNotIn('sleep "$_PERFETTO_READY_WAIT"', capture[after_settle:force_stop])
         self.assertLess(ready_wait, force_stop)
         self.assertLess(force_stop, measured_wait)
         self.assertLess(measured_wait, clear)
@@ -1502,6 +1598,83 @@ class HarnessRegressionTests(unittest.TestCase):
         self.assertLess(bench_stop, bench_wait)
         self.assertLess(bench_wait, bench_clear)
         self.assertLess(bench_clear, bench_launch)
+
+    def test_trace_liveness_uses_only_the_post_force_stop_generation(self) -> None:
+        source = (HARNESS / "verify_trace.py").read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        helper = next(
+            node for node in tree.body
+            if isinstance(node, ast.FunctionDef) and node.name == "final_launch_processes"
+        )
+        namespace: dict[str, object] = {}
+        exec(compile(ast.Module(body=[helper], type_ignores=[]), "verify_trace.py", "exec"),
+             namespace)
+        select = namespace["final_launch_processes"]
+
+        class FakeTraceProcessor:
+            """Answers the boundary query and records what was asked."""
+
+            def __init__(self, boundary):
+                self.boundary = boundary
+                self.queries = []
+
+            def query(self, sql):
+                self.queries.append(sql)
+                return [types.SimpleNamespace(b=self.boundary)]
+
+        # No `end_ts` attribute ANYWHERE in these fixtures, deliberately. A real
+        # capture from this harness has end_ts NULL on every process and every
+        # thread -- it needs `sched/sched_process_free`, which the trace config does
+        # not record -- so a boundary taken from it rejected every capture as
+        # unusable while a fixture that supplied one passed. Reading it again now
+        # raises AttributeError here instead of shipping.
+        old = types.SimpleNamespace(upid=1, start_ts=None)
+        spawned_before_stop = types.SimpleNamespace(upid=2, start_ts=40)
+        final_main = types.SimpleNamespace(upid=3, start_ts=120)
+        final_private = types.SimpleNamespace(upid=4, start_ts=130)
+
+        tp = FakeTraceProcessor(100)
+        scoped, boundary = select(
+            tp, [old, spawned_before_stop, final_main, final_private])
+        self.assertEqual(boundary, 100)
+        # A process spawned after tracing began but BEFORE the force-stop belongs to
+        # the conditioning generation too: it stopped being scheduled there.
+        self.assertEqual([p.upid for p in scoped], [3, 4])
+        self.assertIn("from sched s", tp.queries[0])
+        self.assertNotIn("end_ts", tp.queries[0])
+
+        # Fail closed when the conditioning generation was never scheduled, so the
+        # force-stop cannot be located at all.
+        unbounded, boundary = select(FakeTraceProcessor(None), [old, final_main])
+        self.assertEqual(unbounded, [])
+        self.assertIsNone(boundary)
+
+        # Boundary known, but the traced launch is not in the capture. Also unusable,
+        # and for a different reason the operator has to be able to tell apart.
+        missing, boundary = select(
+            FakeTraceProcessor(200), [old, spawned_before_stop])
+        self.assertEqual(missing, [])
+        self.assertEqual(boundary, 200)
+
+        # A capture taken before Perfetto moved inside the conditioning wait has no
+        # old generation, and needs no boundary query at all.
+        clean = FakeTraceProcessor(999)
+        no_old_generation, boundary = select(clean, [final_main, final_private])
+        self.assertIsNone(no_old_generation)
+        self.assertIsNone(boundary)
+        self.assertEqual(clean.queries, [])
+
+        # The unusable verdict must name which of the two failures it saw.
+        self.assertIn("no scheduling activity", source)
+        self.assertIn("but no package process started after that", source)
+        self.assertNotIn("select upid, pid, name, start_ts, end_ts from process", source)
+
+        self.assertIn(
+            'upids = ",".join(str(r.upid) for r in verdict_procs)',
+            source,
+        )
+        self.assertIn("where upid in ({upids}) and lower(name) glob 'datadog-*'", source)
+        self.assertIn("tp, {r.upid for r in verdict_procs}, args.package", source)
 
     def test_thread_liveness_fails_closed_on_unreadable_processes(self) -> None:
         success = self.run_with_fake_adb(
@@ -2161,6 +2334,29 @@ class AbStatsRegressionTests(unittest.TestCase):
         self.assertIn("DIAGNOSTIC ONLY", result.stdout)
         self.assertIn("NOT REPORTABLE", result.stdout)
         self.assertNotIn("  95% CI                ", result.stdout)
+
+    def test_explicit_unknown_foreground_suppresses_primary_inference(self) -> None:
+        lines = self.benchmark_csv().splitlines()
+        for index, line in enumerate(lines):
+            if line.startswith("B_withDD,"):
+                fields = line.split(",")
+                fields[8] = "NA"
+                lines[index] = ",".join(fields)
+                break
+        result = self.run_stats("\n".join(lines) + "\n")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("foreground=NA", result.stdout)
+        self.assertIn("NOT REPORTABLE", result.stdout)
+        self.assertNotIn("  95% CI                ", result.stdout)
+        self.assertNotIn("  MDE at", result.stdout)
+
+    def test_unknown_foreground_in_unselected_arm_does_not_suppress(self) -> None:
+        csv_body = self.benchmark_csv()
+        csv_body += "THIRD,1,2,measure,1,999,COLD,ok,NA,999\n"
+        result = self.run_stats(csv_body)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn("foreground=NA", result.stdout)
+        self.assertIn("  95% CI                ", result.stdout)
 
     def test_measure_rejected_without_abort_trailer_is_not_reportable(self) -> None:
         csv_body = self.benchmark_csv(

@@ -185,7 +185,8 @@ number, the cost is in the core SDK.
 ### 4. Attribute with a trace (optional)
 
 ```bash
-PKG=<app.id> ./capture_trace.sh treatment.apk treatment 1
+PKG=<app.id> EXPECTED_COMPILE_STATUS=<compile_status from the CSV header> \
+  ./capture_trace.sh treatment.apk treatment 1
 ./.venv/bin/python verify_trace.py treatment.pftrace --package <app.id>
 ```
 
@@ -195,6 +196,8 @@ Set `TRACE_ENDPOINT` to the A/B metric the trace is meant to explain. It default
 marker before Perfetto stops. App-owned regex matches are restricted to the installed package's
 unique UID, so a foreign process cannot provide either the A/B value or the trace endpoint. The
 capture is invalid if the selected endpoint is not reached.
+`EXPECTED_COMPILE_STATUS` is mandatory: the trace APK's achieved dexopt status must equal the
+benchmark header's `compile_status`, not merely use the same requested `COMPILE_FILTER`.
 Capture names are non-destructive: an existing `.pftrace` is never overwritten.
 
 **Do not edit the harness scripts while a run is in flight.** Bash re-reads a running script
@@ -314,7 +317,8 @@ other way is neither.
   **rejected**, not accepted: that line anchors the mid-window foreground check, so without it
   the check did not run and the row carries no evidence of a clean window.
   `ALLOW_NO_DISPLAYED_MARKER=1` accepts the weaker guarantee and records `foreground=NA`, which
-  `ab_stats.py` warns about whatever metric is analyzed.
+  `ab_stats.py` keeps descriptive but makes the selected comparison diagnostic-only: no primary
+  CI, MDE or significance verdict is reportable.
 - Establish the foreground logcat boundary **after** the force-stop settle. From that clear onward,
   any foreign `Displayed` event contaminates the guarded window, including a permission/system
   activity that draws before the app's first frame and hands back before the final snapshot.
@@ -324,9 +328,10 @@ other way is neither.
   requested `WARMUP + 1` position is part of the trace protocol. Discard 1 uses the benchmark
   probe's 3-second pre-launch/8-second validation cadence; later discards use its warm-up cadence
   (5 seconds before launch, validation after 6, then the final 4-second wait). Matching launch
-  count without matching elapsed conditioning time does not reproduce the same ramp. Perfetto must
-  then start before the final traced launch's own force-stop, five-second wait, log boundary and
-  launch, matching the benchmark's measured pre-start cadence too.
+  count without matching elapsed conditioning time does not reproduce the same ramp. Perfetto
+  starts *during* the last registered wait, rather than after it: the warm-up's final four seconds,
+  or the last four seconds of the probe check when `WARMUP=0`. The final force-stop follows
+  immediately, then the benchmark's five-second wait, log boundary and launch.
 - The order-effect test **refuses to report** when arm and position are confounded. With a
   single block, arm A is always first, so any "order effect" *is* the treatment effect —
   previously this reported a genuine +30 ms regression as an ordering artifact. It is also
@@ -442,9 +447,16 @@ events, so an idle `datadog-*` thread is invisible and absence proves nothing.
 to fix this, and `verify_trace.py` reports whether the trace enumerates idle threads so a
 negative can be distinguished from an inconclusive.
 
-The oracle is scoped to the app's own `upid` and **requires** a `datadog-*` thread. Matching
-any slice or path containing "datadog" would false-positive unconditionally on this repo's own
-sample apps.
+The oracle is scoped to the package processes started after the in-trace force-stop and
+**requires** a `datadog-*` thread. The conditioning process is deliberately still alive when
+Perfetto starts, so including every package `upid` would let its stale thread make a final launch
+with no SDK pass. Private processes started by the final launch remain in scope, and one spawned before the
+force-stop is not: it stopped being scheduled there too. The boundary comes from the
+conditioning generation's last scheduled activity, because `process.end_ts` is NULL on
+every process of a real capture from this config. If that generation, its boundary or its
+`bindApplication` cannot be established, the trace is unusable and the verdict says which. Matching any
+slice or path containing "datadog" would false-positive unconditionally on this repo's own sample
+apps.
 
 Also: `am force-stop` before tracing or there is no cold start; keep app content consistent
 (one real pair differed by ~90 ExoPlayer/MediaCodec threads and +24.8% CPU); and never
@@ -493,7 +505,8 @@ improvised probe can still be present in every launch of a real run.
   directions. Under `AIRPLANE=1` both `wifi_on` and `mobile_data` must be exactly `0`;
   `null` or any unreadable value counts as not-provably-off and aborts, overridable with
   `ALLOW_UNVERIFIED_RADIOS=1`, and a literal `1` is never overridable. Under `AIRPLANE=0`
-  at least one radio setting must read back `1`, with the same override for an unrepresented
-  transport. That proves only the controlled setting, not association, validated internet,
-  DNS or reachability of every app/SDK endpoint; the operator must keep those external
-  conditions stable.
+  at least one radio setting must read back `1`. The override can accept an indeterminate read,
+  but literal `wifi_on=0 mobile_data=0` is never overridable; external transports are outside this
+  Wi-Fi/mobile-radio scenario. A `1` proves only the controlled setting, not association,
+  validated internet, DNS or reachability of every app/SDK endpoint; the operator must keep those
+  external conditions stable.

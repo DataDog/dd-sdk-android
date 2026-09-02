@@ -810,7 +810,8 @@ def main():
         # could not run (no `Displayed` anchor line, ALLOW_NO_DISPLAYED_MARKER=1).
         # Counted and reported here so the operator sees it whatever metric is being
         # analyzed; the displayed/ttfd NA warning only fires when that IS the metric.
-        if r.get("foreground") == "NA":
+        if (r.get("foreground") == "NA"
+                and r["label"] in (a.baseline, a.treatment)):
             no_fg += 1
         raw = r.get(a.metric)
         if raw is None and a.metric == "total_ms":
@@ -879,6 +880,8 @@ def main():
               " foreground]")
         print("[         and handed it back inside the window looks exactly like a clean"
               " launch here.]")
+        diagnostic_only_reasons.append(
+            f"{no_fg} measured launch(es) have foreground=NA evidence")
 
     # A requested label missing from a file means that file contributed nothing,
     # while the header line above lists it among the pooled inputs. That is the

@@ -862,7 +862,7 @@ measure() {
        source of the displayed/ttfd metrics, so they are NA here too -- this device's
        log format is not the one the scrapes assume. Fix that, or accept the weaker
        guarantee explicitly with ALLOW_NO_DISPLAYED_MARKER=1 (rows then carry
-       foreground=NA and ab_stats.py warns about them)."
+       foreground=NA and ab_stats.py suppresses primary inference)."
       elif [ "$fg" != ok ] && [ "$fg" != NA ]; then
         reject="ended with '$fg' in the foreground, not $PKG (dialog/crash/ANR?)"
       elif [ "${dd_thr:-NA}" = NA ]; then
@@ -912,7 +912,8 @@ _COMPLETED_BLOCKS=0
 # rediscover them a second time.
 _ALLOW_IN_EFFECT=""
 for _allow in ALLOW_VERSION_MISMATCH ALLOW_UNVERIFIED_PKG ALLOW_UNVERIFIED_RADIOS \
-              ALLOW_NO_DISPLAYED_MARKER ALLOW_PARTIAL_PERMISSIONS; do
+              ALLOW_NO_DISPLAYED_MARKER ALLOW_PARTIAL_PERMISSIONS \
+              ALLOW_DYNAMIC_PERFORMANCE; do
   # `if`, not `[ ... ] && ...`: a failing test as the loop's last command is a
   # non-zero loop status, which `set -e` turns into a silent exit right here.
   if [ "${!_allow:-0}" = 1 ]; then

@@ -1032,7 +1032,12 @@ dd_apply_radio_state() {
     if [ "$w" != 1 ] && [ "$d" != 1 ]; then
       local why
       if [ "$w" = 0 ] && [ "$d" = 0 ]; then
-        why="both radios read back OFF (wifi_on=0 mobile_data=0)"
+        echo "FATAL: AIRPLANE=0 (radio-enabled scenario) but both controlled radios" >&2
+        echo "       read back OFF (wifi_on=0 mobile_data=0)." >&2
+        echo "       ALLOW_UNVERIFIED_RADIOS cannot override a readable contradictory" >&2
+        echo "       state. Enable Wi-Fi or mobile data and re-run; Ethernet and USB" >&2
+        echo "       transports are outside this Wi-Fi/mobile-radio scenario." >&2
+        return 1
       else
         why="no radio is provably on (wifi_on='${w:-<empty>}' mobile_data='${d:-<empty>}')"
       fi

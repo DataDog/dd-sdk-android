@@ -17,11 +17,16 @@
 # variance (the original pair differed by ~90 ExoPlayer/MediaCodec threads
 # because one run played video and the other did not).
 #
-# Usage: ./capture_trace.sh <apk> <name> <expect-datadog:0|1>
+# Usage: EXPECTED_COMPILE_STATUS=<benchmark compile_status> \
+#          ./capture_trace.sh <apk> <name> <expect-datadog:0|1>
 set -euo pipefail
 
 PKG="${PKG:?set PKG to your application id, e.g. PKG=com.example.app}"
 COMPILE_FILTER="${COMPILE_FILTER:-speed-profile}"
+# The trace exists to explain a completed A/B run, whose header records the
+# achieved state separately from COMPILE_FILTER. Requiring that value prevents a
+# verify/speed-profile mismatch from being attributed to the SDK in the trace pair.
+EXPECTED_COMPILE_STATUS="${EXPECTED_COMPILE_STATUS:-}"
 # Must match the ANIMATIONS the A/B was run with. Forcing 0 unconditionally meant a
 # benchmark run with ANIMATIONS=1 was traced with animations OFF -- so the trace omits
 # the per-frame SDK work whose cost that benchmark included, and the two are no longer
@@ -59,6 +64,10 @@ EXPECT_DD="${3:?}"
 
 die() { echo "FATAL: $*" >&2; exit 1; }
 case "$PKG" in *[!a-zA-Z0-9._]*|""|.*|*.) die "invalid application id: '$PKG'" ;; esac
+case "$EXPECTED_COMPILE_STATUS" in
+  "") die "set EXPECTED_COMPILE_STATUS to the benchmark CSV header's compile_status" ;;
+  *[!a-zA-Z0-9_.+-]*) die "invalid EXPECTED_COMPILE_STATUS: '$EXPECTED_COMPILE_STATUS'" ;;
+esac
 case "$EXPECT_DD" in 0|1) ;; *) die "expect-datadog must be 0 or 1 (got '$EXPECT_DD')" ;; esac
 case "$NAME" in */*|*..*|"") die "invalid trace name: '$NAME'" ;; esac
 case "$ANIMATIONS" in 0|1) ;; *) die "ANIMATIONS must be 0 or 1 (got '$ANIMATIONS')" ;; esac
@@ -272,6 +281,10 @@ fi
 TRACE_COMPILE_STATUS=$(dd_package_compile_status "$PKG") \
   || die "achieved compilation state is unreadable after a successful compile"
 log "AOT compile requested -m $COMPILE_FILTER; achieved status=$TRACE_COMPILE_STATUS"
+[ "$TRACE_COMPILE_STATUS" = "$EXPECTED_COMPILE_STATUS" ] \
+  || die "trace APK achieved compile_status=$TRACE_COMPILE_STATUS, but the benchmark
+       this trace is meant to explain recorded compile_status=$EXPECTED_COMPILE_STATUS.
+       Use matching APKs/device state; do not attribute compilation-state work to the SDK."
 
 # Pre-grant every runtime permission the app declares -- the same thing
 # coldstart_bench.sh does before it measures anything.
@@ -320,6 +333,60 @@ START_ARGS=(--user "$DD_ANDROID_USER" -a android.intent.action.MAIN \
   -c android.intent.category.LAUNCHER -n "$ACT")
 log "launcher activity: $ACT"
 
+# Select the host-observed endpoint before the final conditioning wait. Perfetto
+# starts during that already-registered wait, so nothing should be inserted between
+# the end of the wait and the measured launch's force-stop.
+_ENDPOINT_REGEX=""
+_ENDPOINT_UID=""
+case "$TRACE_ENDPOINT" in
+  ttfd) _ENDPOINT_REGEX="Fully drawn $PKG_RE/" ;;
+  app_trace_ms) _ENDPOINT_REGEX="$APP_TRACE_REGEX"; _ENDPOINT_UID="$PKG_UID" ;;
+esac
+
+_PERFETTO_READY_WAIT=4
+start_perfetto() {
+  [ -z "${PERFETTO_PID:-}" ] || die "Perfetto was started more than once"
+  log "starting perfetto during the final conditioning wait"
+  cat <<EOF | "$ADB" shell perfetto -c - --txt -o "$REMOTE_TRACE" &
+buffers: { size_kb: 65536 fill_policy: RING_BUFFER }
+data_sources: {
+  config {
+    name: "linux.ftrace"
+    ftrace_config {
+      ftrace_events: "sched/sched_switch"
+      ftrace_events: "sched/sched_waking"
+      ftrace_events: "sched/sched_blocked_reason"
+      ftrace_events: "sched/sched_process_exit"
+      ftrace_events: "task/task_newtask"
+      ftrace_events: "task/task_rename"
+      ftrace_events: "power/cpu_frequency"
+      ftrace_events: "power/cpu_idle"
+      atrace_categories: "am"
+      atrace_categories: "wm"
+      atrace_categories: "gfx"
+      atrace_categories: "view"
+      atrace_categories: "dalvik"
+      atrace_categories: "binder_driver"
+      atrace_categories: "pm"
+      atrace_categories: "ss"
+      atrace_categories: "res"
+      atrace_categories: "database"
+      atrace_categories: "disk"
+      atrace_categories: "sched"
+      atrace_apps: "$PKG"
+    }
+  }
+}
+data_sources: { config { name: "linux.process_stats"
+  process_stats_config { scan_all_processes_on_start: true proc_stats_poll_ms: 1000
+                         record_thread_names: true } } }
+data_sources: { config { name: "linux.sys_stats"
+  sys_stats_config { stat_period_ms: 1000 stat_counters: STAT_CPU_TIMES } } }
+duration_ms: 25000
+EOF
+  PERFETTO_PID=$!
+}
+
 # settle: $SETTLE_LAUNCHES discarded launches so dex/oat caches and any first-run migrations
 # are done, verifying Datadog liveness after each launch. The count reproduces
 # the benchmark's probe + warm-up launches exactly (see WARMUP above), so the traced
@@ -365,7 +432,19 @@ for ((_i=1; _i<=SETTLE_LAUNCHES; _i++)); do
   dd_validate_cold_launch_output "$_SETTLE_OUT" \
     || die "settle launch $_i/$SETTLE_LAUNCHES: $DD_LAUNCH_ERROR"
   log "settle launch $_i/$SETTLE_LAUNCHES ($_SETTLE_KIND cadence): Status=$DD_LAUNCH_STATUS LaunchState=$DD_LAUNCH_STATE TotalTime=${DD_LAUNCH_TOTAL}ms"
-  sleep "$_SETTLE_CHECK_SLEEP"
+  if [ "$_i" -eq "$SETTLE_LAUNCHES" ] && [ "$_SETTLE_FINAL_SLEEP" -eq 0 ]; then
+    # WARMUP=0: the probe has no post-validation wait. Start Perfetto halfway
+    # through its existing 8s validation delay and use the last 4s for readiness,
+    # so validation still happens at +8s and force-stop follows immediately.
+    _SETTLE_BEFORE_PERFETTO=$((_SETTLE_CHECK_SLEEP - _PERFETTO_READY_WAIT))
+    [ "$_SETTLE_BEFORE_PERFETTO" -ge 0 ] \
+      || die "the final conditioning wait is shorter than Perfetto readiness"
+    [ "$_SETTLE_BEFORE_PERFETTO" -eq 0 ] || sleep "$_SETTLE_BEFORE_PERFETTO"
+    start_perfetto
+    sleep "$_PERFETTO_READY_WAIT"
+  else
+    sleep "$_SETTLE_CHECK_SLEEP"
+  fi
   _SETTLE_LOG=$("$ADB" shell logcat -d 2>/dev/null | tr -d '\r') || true
   _SETTLE_TARGET_DISPLAYED=$(printf '%s\n' "$_SETTLE_LOG" \
     | grep -cE "ActivityTaskManager: Displayed $PKG_RE/" || true)
@@ -398,72 +477,36 @@ for ((_i=1; _i<=SETTLE_LAUNCHES; _i++)); do
     die "settle launch $_i/$SETTLE_LAUNCHES: expected Datadog ABSENT, found $_SETTLE_DD datadog-* threads"
   fi
   if [ "$_SETTLE_FINAL_SLEEP" -gt 0 ]; then
+    # WARMUP>0: this is the benchmark warm-up's own 4s post-validation
+    # wait. Starting Perfetto here reuses it instead of adding another 4s.
+    if [ "$_i" -eq "$SETTLE_LAUNCHES" ]; then
+      [ "$_SETTLE_FINAL_SLEEP" -ge "$_PERFETTO_READY_WAIT" ] \
+        || die "the final warm-up wait is shorter than Perfetto readiness"
+      start_perfetto
+    fi
     sleep "$_SETTLE_FINAL_SLEEP"
   fi
 done
 
-# Select the host-observed endpoint before starting Perfetto. The final app stop,
-# five-second wait and logcat boundary happen only after capture is established,
-# reproducing measure()'s last pre-start cadence inside the trace.
-_ENDPOINT_REGEX=""
-_ENDPOINT_UID=""
-case "$TRACE_ENDPOINT" in
-  ttfd) _ENDPOINT_REGEX="Fully drawn $PKG_RE/" ;;
-  app_trace_ms) _ENDPOINT_REGEX="$APP_TRACE_REGEX"; _ENDPOINT_UID="$PKG_UID" ;;
-esac
-
-log "starting perfetto"
-cat <<EOF | "$ADB" shell perfetto -c - --txt -o "$REMOTE_TRACE" &
-buffers: { size_kb: 65536 fill_policy: RING_BUFFER }
-data_sources: {
-  config {
-    name: "linux.ftrace"
-    ftrace_config {
-      ftrace_events: "sched/sched_switch"
-      ftrace_events: "sched/sched_waking"
-      ftrace_events: "sched/sched_blocked_reason"
-      ftrace_events: "sched/sched_process_exit"
-      ftrace_events: "task/task_newtask"
-      ftrace_events: "task/task_rename"
-      ftrace_events: "power/cpu_frequency"
-      ftrace_events: "power/cpu_idle"
-      atrace_categories: "am"
-      atrace_categories: "wm"
-      atrace_categories: "gfx"
-      atrace_categories: "view"
-      atrace_categories: "dalvik"
-      atrace_categories: "binder_driver"
-      atrace_categories: "pm"
-      atrace_categories: "ss"
-      atrace_categories: "res"
-      atrace_categories: "database"
-      atrace_categories: "disk"
-      atrace_categories: "sched"
-      atrace_apps: "$PKG"
-    }
-  }
-}
-data_sources: { config { name: "linux.process_stats"
-  process_stats_config { scan_all_processes_on_start: true proc_stats_poll_ms: 1000
-                         record_thread_names: true } } }
-data_sources: { config { name: "linux.sys_stats"
-  sys_stats_config { stat_period_ms: 1000 stat_counters: STAT_CPU_TIMES } } }
-duration_ms: 25000
-EOF
-PERFETTO_PID=$!
-
-# Preserve the established capture wait, then reproduce the benchmark's measured
-# launch from its own force-stop boundary. Previously the app was stopped before
-# Perfetto, waited 3s, then waited another 4s after Perfetto: neither interval was
-# the benchmark's final 5s cache-cooling/profile-persistence cadence.
+# Perfetto readiness consumed the conditioning wait above. Reproduce the benchmark's
+# measured launch immediately from its own force-stop boundary; there is no second
+# app-running wait here.
 #
-# BUDGET. Everything from here to `am start -W` runs INSIDE the capture: 4s of
-# Perfetto establishment plus the benchmark's own 5s pre-launch wait. Those 9s come
+# BUDGET. From Perfetto start to `am start -W`, 4s of the conditioning wait plus
+# the benchmark's own 5s pre-launch wait run inside the capture. Those 9s come
 # out of `duration_ms` above, which is why it is 25000 and not 20000 -- the endpoint
 # wait further down is bounded by Perfetto's lifetime, so shrinking the post-launch
 # window is what makes a late `Fully drawn` marker fail. Any change to the cadence
 # here has to be paid for there.
-sleep 4
+#
+# Those 9s are the SLEEPS only. Under WARMUP=0 there is no post-validation wait to
+# reuse, so Perfetto starts mid-wait and the final settle launch's validation --
+# `logcat -d` over a full buffer, the Displayed/foreign scan, `dumpsys` for the top
+# activity, `ps -A`, and a `/proc` read per process -- runs inside the capture too.
+# Those adb round-trips are real seconds that this arithmetic does not model, so
+# treat the post-launch window as a ceiling rather than a measurement. Under
+# WARMUP>0 Perfetto starts after that validation and the 9s is exact.
+[ -n "${PERFETTO_PID:-}" ] || die "Perfetto was not started during conditioning"
 kill -0 "$PERFETTO_PID" >/dev/null 2>&1 \
   || die "Perfetto stopped before the traced launch could be prepared"
 "$ADB" shell am force-stop --user "$DD_ANDROID_USER" "$PKG"

@@ -103,6 +103,51 @@ def parse_args():
     return ap.parse_args()
 
 
+def final_launch_processes(tp, procs):
+    """Return the package processes belonging to the final traced launch.
+
+    capture_trace.sh starts Perfetto during the last conditioning wait, so the trace
+    holds TWO generations of the package: the conditioning one, already alive when
+    tracing began, and the one `am start -W` starts after the in-trace force-stop.
+    Reading liveness across both lets a conditioning process that DID initialize the
+    SDK satisfy the verdict for a traced launch that did not.
+
+    The boundary is the last moment any thread of the conditioning generation was
+    scheduled, which is the force-stop that killed it. A private process spawned
+    after tracing began but before that force-stop is also excluded, because it too
+    stops being scheduled there and so starts before the boundary.
+
+    NOT `process.end_ts`. Populating it needs `sched/sched_process_free`, which this
+    trace config does not record: on a real capture from this harness `end_ts` is
+    NULL on all 822 processes and all 3946 threads, so a boundary taken from it
+    rejects every capture as unusable. `sched` rows always exist -- the config
+    records `sched/sched_switch`, and that same capture holds 162518 of them -- and
+    the traced launch starts a full five seconds after the force-stop, so scheduling
+    granularity is immaterial at that distance.
+
+    Returns (processes, boundary_ts):
+      (None, None)  the trace began with no conditioning generation, so every
+                    package process in it belongs to the traced launch. This is what
+                    a capture taken before Perfetto moved inside the wait looks like.
+      ([], None)    a conditioning generation exists but was never scheduled, so the
+                    force-stop cannot be located.
+      ([], ts)      the boundary is known, but no package process started after it,
+                    so this trace holds no traced launch.
+    """
+    preexisting = [p for p in procs if p.start_ts is None]
+    if not preexisting:
+        return None, None
+    upids = ",".join(str(p.upid) for p in preexisting)
+    boundary = list(tp.query(
+        "select max(s.ts + s.dur) as b from sched s "
+        "join thread t on s.utid = t.utid "
+        f"where t.upid in ({upids})"))[0].b
+    if boundary is None:
+        return [], None
+    return [p for p in procs
+            if p.start_ts is not None and p.start_ts > boundary], boundary
+
+
 def analyze(tp, args):
     # EVERY process of this application, not just the one named exactly after the
     # package. A `android:process=":startup"` component runs as `<pkg>:startup`, and
@@ -113,24 +158,42 @@ def analyze(tp, args):
     # was never checked. Private processes cannot be forged from outside the app:
     # the `<pkg>:` prefix is enforced by the framework.
     procs = list(tp.query(
-        "select upid, pid, name from process "
+        "select upid, pid, name, start_ts from process "
         f"where name = '{args.package}' or name glob '{args.package}:*' order by pid"))
     if not procs:
         print(f"FAIL: process {args.package} not present in trace")
         return 1
-    upids = ",".join(str(r.upid) for r in procs)
 
     def scalar(sql):
         return list(tp.query(sql))[0].c
 
+    final_procs, force_stop_ts = final_launch_processes(tp, procs)
+    if final_procs is not None and not final_procs:
+        # Two different failures, and the operator needs to know which: one says the
+        # trace lacks the scheduling data to locate the force-stop, the other says it
+        # located it and the launch is simply not in the capture.
+        print("  VERDICT: UNUSABLE FOR COLD-START ANALYSIS")
+        if force_stop_ts is None:
+            print("  A package process existed when tracing began, but no scheduling activity")
+            print("  is recorded for it, so the force-stop that ended it cannot be located.")
+        else:
+            print(f"  The conditioning generation stopped being scheduled at ts {force_stop_ts},")
+            print("  but no package process started after that, so this trace holds no traced")
+            print("  launch -- only the conditioning one that preceded it.")
+        print("  SDK liveness from the conditioning process cannot be attributed to the")
+        print("  final traced launch.")
+        return 3
+    verdict_procs = final_procs if final_procs is not None else procs
+    upids = ",".join(str(r.upid) for r in verdict_procs)
+
     # The launch lives in whichever process ran `bindApplication` -- the private one
     # when the launcher activity is private. Reported so the operator can see which
-    # process the verdict is about; the checks themselves span all of them.
-    launch_procs = [r for r in procs if scalar(
+    # process the verdict is about; liveness spans only this final process generation.
+    launch_procs = [r for r in verdict_procs if scalar(
         "select count(*) c from slice s join thread_track tt on s.track_id = tt.id "
         f"join thread t on tt.utid = t.utid where t.upid = {r.upid} "
         "and s.name = 'bindApplication'")]
-    main = (launch_procs or procs)[0]
+    main = (launch_procs or verdict_procs)[0]
     pid = main.pid
 
     total_threads = scalar(f"select count(*) c from thread where upid in ({upids})")
@@ -165,9 +228,11 @@ def analyze(tp, args):
 
     print(f"=== {args.trace} ===")
     print(f"  package                 {args.package} (pid {pid})"
-          + (f"  [+{len(procs) - 1} more process(es): "
-             f"{', '.join(r.name for r in procs if r.upid != main.upid)}]"
-             if len(procs) > 1 else ""))
+          + (f"  [+{len(verdict_procs) - 1} more final-launch process(es): "
+             f"{', '.join(r.name for r in verdict_procs if r.upid != main.upid)}]"
+             if len(verdict_procs) > 1 else ""))
+    if force_stop_ts is not None:
+        print(f"  final process generation after force-stop ts {force_stop_ts}")
     print(f"  threads enumerated      {total_threads}")
     print(f"  datadog-* threads       {len(dd_threads)}"
           + (f"  -> {[(r.name, r.tid) for r in dd_threads]}" if dd_threads else ""))
@@ -225,7 +290,7 @@ def analyze(tp, args):
     # that took over and handed back mid-capture left the shell's final `dumpsys`
     # snapshot clean and the contaminated trace was accepted.
     fg_verdict, fg_detail = foreground_ownership(
-        tp, {r.upid for r in procs}, args.package,
+        tp, {r.upid for r in verdict_procs}, args.package,
         args.allow_missing_launch_marker)
     print(f"  foreground for whole capture  {fg_verdict}"
           + (f" -> {fg_detail[:3]}" if fg_detail else ""))
