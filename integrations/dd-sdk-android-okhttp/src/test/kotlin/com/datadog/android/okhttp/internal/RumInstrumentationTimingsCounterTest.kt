@@ -92,7 +92,7 @@ internal class RumInstrumentationTimingsCounterTest {
             .build()
 
         whenever(mockRequestBuilder.build()) doReturn mockRequestInfo
-        val fakeTracingState = RequestTracingState(requestInfoBuilder = mockRequestBuilder)
+        val fakeTracingState = RequestTracingState(requestInfoBuilder = mockRequestBuilder, isDefaultTracer = false)
         whenever(mockRequestInfoRegistry.get(mockCall)) doReturn fakeTracingState
 
         whenever(mockSdkCore.time).thenReturn(
@@ -285,7 +285,7 @@ internal class RumInstrumentationTimingsCounterTest {
     fun `M send timing W callEnd() { full request lifecycle }`() {
         // Given
         whenever(mockRequestInfoRegistry.remove(mockCall)) doReturn
-            RequestTracingState(requestInfoBuilder = mockRequestBuilder)
+            RequestTracingState(requestInfoBuilder = mockRequestBuilder, isDefaultTracer = false)
 
         // When
         testedListener.callStart(mockCall)
@@ -325,7 +325,7 @@ internal class RumInstrumentationTimingsCounterTest {
     ) {
         // Given
         whenever(mockRequestInfoRegistry.remove(mockCall)) doReturn
-            RequestTracingState(requestInfoBuilder = mockRequestBuilder)
+            RequestTracingState(requestInfoBuilder = mockRequestBuilder, isDefaultTracer = false)
 
         // When
         testedListener.callStart(mockCall)
@@ -390,7 +390,7 @@ internal class RumInstrumentationTimingsCounterTest {
     fun `M send timing with zeroes for missing phases W callEnd() { reused connection }`() {
         // Given
         whenever(mockRequestInfoRegistry.remove(mockCall)) doReturn
-            RequestTracingState(requestInfoBuilder = mockRequestBuilder)
+            RequestTracingState(requestInfoBuilder = mockRequestBuilder, isDefaultTracer = false)
 
         // When
         testedListener.callStart(mockCall)

@@ -19,6 +19,7 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.internal.RumContextPropagator
 import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
+import com.datadog.android.trace.internal.domain.event.FORCE_DROP_SPAN
 import com.datadog.android.trace.internal.storage.ContextAwareSerializer
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.android.trace.utils.RumContextTestsUtils.RUM_CONTEXT_ACTION_ID
@@ -317,6 +318,22 @@ internal class CoreTraceWriterTest {
         ddSpans.forEach {
             it.finish()
         }
+    }
+
+    @Test
+    fun `M not write spans with force drop tag W write()`(forge: Forge) {
+        // GIVEN
+        val ddSpans = createNonEmptyDdSpans(
+            forge = forge,
+            includeDropSamplingPriority = false
+        )
+        ddSpans.forEach { whenever(it.getTag(FORCE_DROP_SPAN)) doReturn true }
+
+        // WHEN
+        testedWriter.write(ddSpans)
+
+        // THEN
+        verifyNoInteractions(mockEventBatchWriter)
     }
 
     @Test
