@@ -176,7 +176,7 @@ internal class CapturedNativeSnapshotBuilder(
             kind = view.kind,
             bounds = view.bounds,
             children = pending.children,
-            modifiers = modifiers
+            modifiers = view.modifiers + modifiers
         )
         layers += layer
         @Suppress("UnsafeThirdPartyFunctionCall") // Null returned for an empty owned deque.

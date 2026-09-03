@@ -9,7 +9,7 @@ package com.datadog.android.sessionreplay.internal.composition
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
-import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewData
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeResult
@@ -52,7 +52,8 @@ internal data class CapturedNativeView(
     val composition: CompositionHostDecomposeResult? = null,
     val foreground: CapturedForeground? = null,
     val viewScale: Float = 1f,
-    val permanentId: String? = null
+    val permanentId: String? = null,
+    val modifiers: List<CapturedModifier> = emptyList()
 )
 
 /** Owned foreground values, with a distinct identity from the view background. */

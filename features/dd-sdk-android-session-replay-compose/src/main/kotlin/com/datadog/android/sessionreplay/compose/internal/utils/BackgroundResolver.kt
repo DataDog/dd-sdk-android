@@ -11,12 +11,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.platform.InspectableValue
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.unit.Density
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils.Companion.COLOR_UNSPECIFIED
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 
+@Suppress("TooManyFunctions") // Each function resolves one distinct modifier-chain property.
 internal class BackgroundResolver(
     private val reflectionUtils: ReflectionUtils,
     private val innerBoundsOf: (SemanticsNode, ComposeWindowOffset) -> GlobalBounds,
@@ -49,9 +51,11 @@ internal class BackgroundResolver(
             } else if (reflectionUtils.isPaddingElement(modifierInfo.modifier)) {
                 currentBounds = shrinkBounds(modifierInfo.modifier, currentBounds)
                 currentBackgroundInfo = currentBackgroundInfo.copy(globalBounds = currentBounds)
-            } else if (reflectionUtils.isGraphicsLayerElement(modifierInfo.modifier)) {
-                val cornerRadius = reflectionUtils.getClipShape(modifierInfo.modifier)
-                    ?.let { resolveCornerRadius(it, currentBounds, density) } ?: 0f
+            } else if (isGraphicsLayerModifier(modifierInfo.modifier)) {
+                val shape = (modifierInfo.modifier as InspectableValue).inspectableElements
+                    .firstOrNull { it.name == SHAPE_PROPERTY_NAME }
+                    ?.value as? Shape
+                val cornerRadius = shape?.let { resolveCornerRadius(it, currentBounds, density) } ?: 0f
                 currentBackgroundInfo = currentBackgroundInfo.copy(cornerRadius = cornerRadius)
             }
         }
@@ -72,6 +76,14 @@ internal class BackgroundResolver(
         }?.modifier
         return backgroundModifier?.let { reflectionUtils.getShape(it) }
     }
+
+    /**
+     * `graphicsLayer` exposes `shape` by name through [InspectableValue.inspectableElements] - the
+     * same public, tooling-sanctioned mechanism `GranularComposeDecomposer` uses for the same
+     * modifier, rather than direct-field reflection.
+     */
+    private fun isGraphicsLayerModifier(modifier: Modifier): Boolean =
+        modifier is InspectableValue && modifier.nameFallback == GRAPHICS_LAYER_NAME_FALLBACK
 
     internal fun resolveCornerRadius(shape: Shape, currentBounds: GlobalBounds, density: Density): Float {
         val size = Size(
@@ -176,5 +188,7 @@ internal class BackgroundResolver(
     private companion object {
         private const val COMPONENT_NAME = "BackgroundResolver"
         private const val COMPONENT_KEY = "component"
+        private const val GRAPHICS_LAYER_NAME_FALLBACK = "graphicsLayer"
+        private const val SHAPE_PROPERTY_NAME = "shape"
     }
 }
