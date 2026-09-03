@@ -5,19 +5,18 @@ data class com.datadog.android.rum.internal.domain.Time
     fun fromTimestampMillis(Long, com.datadog.android.internal.time.TimeProvider): Time
     fun fromNanoTime(Long, com.datadog.android.internal.time.TimeProvider): Time
 object com.datadog.android.rum.internal.startup.PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener
-  val capturedActivity: android.app.Activity?
-  var activityPredicate: (android.app.Activity) -> Boolean
   val isInstalled: Boolean
   val hasPendingEvents: Boolean
+  val attachedListenerCount: Int
   fun install(android.app.Application)
-  fun attach(RumAppStartupDetector.Listener)
-  fun detach()
+  fun attach(RumAppStartupDetector.Listener, (android.app.Activity) -> Boolean)
+  fun detach(RumAppStartupDetector.Listener)
   override fun onAppStartupDetected(RumStartupScenario)
-  override fun onTTIDComputed(RumStartupScenario, Long, Boolean)
+  override fun onTTIDComputed(RumStartupScenario, Long, Boolean, java.lang.ref.WeakReference<android.app.Activity>?)
 interface com.datadog.android.rum.internal.startup.RumAppStartupDetector
   interface Listener
     fun onAppStartupDetected(RumStartupScenario)
-    fun onTTIDComputed(RumStartupScenario, Long, Boolean = false)
+    fun onTTIDComputed(RumStartupScenario, Long, Boolean = false, java.lang.ref.WeakReference<android.app.Activity>? = null)
   fun destroy()
 class com.datadog.android.rum.internal.startup.RumAppStartupDetectorImpl : RumAppStartupDetector, android.app.Application.ActivityLifecycleCallbacks
   constructor(android.app.Application, com.datadog.android.internal.system.BuildSdkVersionProvider, () -> com.datadog.android.rum.internal.domain.Time, () -> com.datadog.android.rum.internal.domain.Time, RumAppStartupDetector.Listener, (android.app.Activity) -> Boolean, RumFirstDrawTimeReporter)

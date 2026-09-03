@@ -145,7 +145,8 @@ class RumAppStartupDetectorImpl(
                 listener.onTTIDComputed(
                     scenario = scenario,
                     durationNs = durationNs,
-                    wasForwarded = wasForwarded
+                    wasForwarded = wasForwarded,
+                    forwardedActivity = if (wasForwarded) WeakReference(activity) else null
                 )
                 pendingScenario = null
             }

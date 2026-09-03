@@ -12,7 +12,8 @@ import android.content.Context
 import android.net.Uri
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.internal.startup.PreLaunchRumAppStartupDetector
-import com.datadog.android.rum.prelaunch.forge.Configurator
+import com.datadog.android.rum.prelaunch.utils.forge.Configurator
+import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.setFieldValue
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -70,7 +71,12 @@ internal class AppLaunchCollectorProviderTest {
      */
     private fun resetDetector() {
         PreLaunchRumAppStartupDetector.setFieldValue("detectorImpl", null)
-        PreLaunchRumAppStartupDetector.detach()
+        PreLaunchRumAppStartupDetector
+            .getFieldValue<MutableList<*>, PreLaunchRumAppStartupDetector>("registrations")
+            .clear()
+        PreLaunchRumAppStartupDetector
+            .getFieldValue<MutableList<*>, PreLaunchRumAppStartupDetector>("pendingEvents")
+            .clear()
     }
 
     // region onCreate

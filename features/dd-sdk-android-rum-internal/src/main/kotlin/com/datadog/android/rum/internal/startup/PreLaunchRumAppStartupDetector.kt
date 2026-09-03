@@ -38,7 +38,10 @@ import kotlin.time.Duration.Companion.seconds
  * may be called after the first Activity has already drawn its first frame. By installing
  * this detector in a [android.content.ContentProvider] that runs before SDK initialization,
  * timing data is captured and buffered. When [attach] is called from [Rum.enable], buffered
- * events are drained to the real listener.
+ * events are replayed to the real listener.
+ *
+ * Being process-scoped, it serves every SDK core that enables RUM in the process: listeners
+ * accumulate, each with the Activity predicate of the core that registered it.
  *
  * **Threading**: [install] and all [RumAppStartupDetector.Listener] callbacks run on the main
  * thread. [attach] is dispatched to the main thread by [Rum.enable], so no synchronization
@@ -48,43 +51,60 @@ import kotlin.time.Duration.Companion.seconds
 object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
 
     private sealed class Event {
-        data class AppStartupDetected(val scenario: RumStartupScenario) : Event()
+        abstract val scenario: RumStartupScenario
+
+        data class AppStartupDetected(override val scenario: RumStartupScenario) : Event()
         data class TTIDComputed(
-            val scenario: RumStartupScenario,
+            override val scenario: RumStartupScenario,
             val durationNs: Long,
-            val wasForwarded: Boolean
+            val wasForwarded: Boolean,
+            val forwardedActivity: WeakReference<Activity>?
         ) : Event()
     }
 
+    /**
+     * A listener paired with the Activity predicate of the SDK core that registered it.
+     *
+     * The predicate cannot live on the singleton: several [com.datadog.android.api.SdkCore]
+     * instances may enable RUM in the same process, each with its own
+     * `appStartupActivityPredicate`, and one core's narrower predicate must not decide what the
+     * others see.
+     */
+    private class Registration(
+        val listener: RumAppStartupDetector.Listener,
+        val activityPredicate: (Activity) -> Boolean
+    ) {
+        /**
+         * The scenario this listener has been told about and is still awaiting a TTID for.
+         *
+         * A TTID is only forwarded to a listener that received the matching AppStart: consumers
+         * index the TTID against the launch it belongs to, and one without its AppStart lands on a
+         * negative index with no scenario to associate a TTFD with.
+         */
+        var startedScenario: RumStartupScenario? = null
+    }
+
     private var detectorImpl: RumAppStartupDetector? = null
+    private val registrations = mutableListOf<Registration>()
+
+    /**
+     * The events of the most recent launch, replayed to every listener that attaches.
+     *
+     * A launch is a unit — an AppStart followed (usually) by its TTID — and a listener joining
+     * part-way through needs the whole of it, whether it attached before the SDK existed or in the
+     * middle of a launch that is still in flight. A new AppStart supersedes the previous launch,
+     * so this holds one launch at a time; it is dropped when the last listener detaches.
+     */
     private val pendingEvents = mutableListOf<Event>()
-    private var attachedListener: RumAppStartupDetector.Listener? = null
-
-    // Weakly held: this singleton lives for the whole process, so a strong Activity reference
-    // here would outlive the Activity and leak it (lint: StaticFieldLeak).
-    private var capturedActivityRef: WeakReference<Activity>? = null
-
-    /**
-     * The activity associated with the most recent [onAppStartupDetected] call, if any.
-     *
-     * Weakly referenced, so this returns `null` once that Activity has been collected.
-     */
-    val capturedActivity: Activity? get() = capturedActivityRef?.get()
-
-    /**
-     * Predicate deciding whether an Activity qualifies as a startup Activity.
-     *
-     * Defaults to accepting every Activity, because the user's RUM configuration is unknown
-     * before the SDK initializes. [attach] overrides it with the configured predicate, which
-     * then applies to any Activity created after that point.
-     */
-    var activityPredicate: (Activity) -> Boolean = { true }
 
     /** `true` if [install] has been called. */
     val isInstalled: Boolean get() = detectorImpl != null
 
-    /** `true` if there are buffered events not yet drained to a listener. */
+    /** `true` if there are buffered events waiting to be replayed to an attaching listener. */
     val hasPendingEvents: Boolean get() = pendingEvents.isNotEmpty()
+
+    /** Number of listeners currently attached. */
+    val attachedListenerCount: Int get() = registrations.size
 
     /**
      * Installs the detector into [application].
@@ -111,7 +131,20 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
             appStartupTime = { Time.fromNanoTime(appStartTimeNs, timeProvider) },
             currentTime = { Time.now(timeProvider) },
             listener = this,
-            appStartupActivityPredicate = { activityPredicate(it) },
+            // Union of the attached cores' predicates — an Activity is worth measuring as long as
+            // at least one of them wants it, and the per-listener filtering in
+            // forwardIfAccepted() decides who actually hears about it. Before any core attaches
+            // nothing is known about the user's configuration, so everything is accepted.
+            //
+            // Known limitation: the underlying detector keeps a single pending scenario, so with
+            // two cores whose predicates disagree, a launch opened for an Activity only core A
+            // wants occupies that slot — a later Activity only core B wants is forwarded into
+            // the same scenario rather than opening one of its own. Core B then sees a launch
+            // measured from A's Activity, and per-listener filtering drops it. Requires two
+            // cores, divergent predicates and a multi-Activity launch to hit.
+            appStartupActivityPredicate = { activity ->
+                registrations.isEmpty() || registrations.any { it.activityPredicate(activity) }
+            },
             rumFirstDrawTimeReporter = RumFirstDrawTimeReporterImpl(
                 timeProviderNs = { System.nanoTime() },
                 windowCallbacksRegistry = WindowCallbacksRegistryImpl(),
@@ -121,69 +154,140 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
     }
 
     /**
-     * Attaches [listener] and drains any buffered events to it.
+     * Attaches [listener] and replays the most recent launch to it.
      *
-     * After this call, future [onAppStartupDetected] and [onTTIDComputed] callbacks from the
-     * underlying detector are forwarded directly to [listener] without buffering.
+     * Several SDK cores may enable RUM in the same process, so listeners accumulate rather than
+     * replace each other, and each keeps its own [activityPredicate]. [pendingEvents] is
+     * *replayed*, not consumed, so a listener attaching after the SDK-less capture — or in the
+     * middle of a launch another core is already hearing about live — still sees the whole launch.
+     *
+     * Events were captured with a permissive predicate, because no core's configuration is known
+     * before the SDK initializes. Each one is therefore re-validated against [activityPredicate]
+     * before it is forwarded, and a TTID whose AppStart this listener did not receive is dropped,
+     * so a launch is never delivered half-way.
      *
      * Must be called on the main thread.
      *
      * @param listener The listener to receive startup events.
+     * @param activityPredicate Decides whether an Activity qualifies as a startup Activity for the
+     * core owning [listener].
      */
-    fun attach(listener: RumAppStartupDetector.Listener) {
-        attachedListener = listener
-        val drained = pendingEvents.toList()
-        pendingEvents.clear()
-        for (event in drained) {
-            when (event) {
-                is Event.AppStartupDetected -> {
-                    listener.onAppStartupDetected(event.scenario)
+    fun attach(
+        listener: RumAppStartupDetector.Listener,
+        activityPredicate: (Activity) -> Boolean
+    ) {
+        val registration = Registration(listener, activityPredicate)
+        registrations.add(registration)
+        pendingEvents.toList().forEach { forwardIfAccepted(registration, it) }
+    }
+
+    /**
+     * Detaches [listener] without tearing down the underlying detector.
+     *
+     * Called when a RUM feature stops so its listener — which holds that feature's SDK core — is
+     * not retained by this process-scoped singleton. Only that one listener is removed; any other
+     * core's listener keeps receiving events.
+     *
+     * When the last listener goes, the buffer is dropped (everything in it has been delivered
+     * already) and events arriving afterwards are buffered again for the next core to attach.
+     *
+     * Must be called on the main thread.
+     *
+     * @param listener The listener to remove.
+     */
+    fun detach(listener: RumAppStartupDetector.Listener) {
+        registrations.removeAll { it.listener === listener }
+        if (registrations.isEmpty()) {
+            pendingEvents.clear()
+        }
+    }
+
+    /**
+     * Re-applies [Registration.activityPredicate] to the Activities an event was measured against.
+     *
+     * Both the Activity the scenario was opened for and — when the measurement was forwarded —
+     * the Activity that actually drew have to qualify. An Activity that has already been garbage
+     * collected cannot be validated; those are accepted rather than dropped, since by the time a
+     * cross-platform SDK calls `Rum.enable()` the launch Activity may well be gone, and silently
+     * discarding every such launch would defeat the purpose of the pre-launch module.
+     */
+    private fun isAcceptedByPredicate(event: Event, registration: Registration): Boolean {
+        val drawingActivity = (event as? Event.TTIDComputed)?.forwardedActivity?.get()
+        return listOfNotNull(event.scenario.activity.get(), drawingActivity)
+            .all { registration.activityPredicate(it) }
+    }
+
+    /**
+     * Forwards [event] to [registration], unless its predicate rejects it or it is a TTID for a
+     * launch this listener never heard the AppStart of.
+     */
+    private fun forwardIfAccepted(registration: Registration, event: Event) {
+        if (!isAcceptedByPredicate(event, registration)) {
+            return
+        }
+        when (event) {
+            is Event.AppStartupDetected -> {
+                registration.startedScenario = event.scenario
+                registration.listener.onAppStartupDetected(event.scenario)
+            }
+            is Event.TTIDComputed -> {
+                if (registration.startedScenario !== event.scenario) {
+                    return
                 }
-                is Event.TTIDComputed -> {
-                    listener.onTTIDComputed(event.scenario, event.durationNs, event.wasForwarded)
-                }
+                registration.startedScenario = null
+                registration.listener.onTTIDComputed(
+                    event.scenario,
+                    event.durationNs,
+                    event.wasForwarded,
+                    event.forwardedActivity
+                )
             }
         }
     }
 
     /**
-     * Detaches the current listener without tearing down the underlying detector.
+     * Records [event] as part of the current launch and forwards it to every attached listener.
      *
-     * Called when the RUM feature stops so the feature's listener — which holds an SDK core
-     * reference — is not retained by this process-scoped singleton. Events arriving after this
-     * call are buffered again.
+     * The event is buffered whether or not anyone is listening: a core that enables RUM in the
+     * middle of a launch — after its AppStart, before its TTID — still needs the launch as a whole.
      */
-    fun detach() {
-        attachedListener = null
-        activityPredicate = { true }
+    private fun dispatch(event: Event) {
+        pendingEvents.add(event)
+        registrations.toList().forEach { forwardIfAccepted(it, event) }
     }
 
     // region RumAppStartupDetector.Listener
 
     override fun onAppStartupDetected(scenario: RumStartupScenario) {
-        capturedActivityRef = scenario.activity
-        val attached = attachedListener
-        if (attached != null) {
-            attached.onAppStartupDetected(scenario)
-        } else {
-            pendingEvents.add(Event.AppStartupDetected(scenario))
-        }
+        // A new launch supersedes the previous one: only the most recent is worth replaying, and
+        // this keeps the buffer bounded over the lifetime of the process.
+        pendingEvents.clear()
+        dispatch(Event.AppStartupDetected(scenario))
     }
 
-    override fun onTTIDComputed(scenario: RumStartupScenario, durationNs: Long, wasForwarded: Boolean) {
-        val attached = attachedListener
-        if (attached != null) {
-            attached.onTTIDComputed(scenario, durationNs, wasForwarded)
-        } else {
-            pendingEvents.add(Event.TTIDComputed(scenario, durationNs, wasForwarded))
-        }
+    override fun onTTIDComputed(
+        scenario: RumStartupScenario,
+        durationNs: Long,
+        wasForwarded: Boolean,
+        forwardedActivity: WeakReference<Activity>?
+    ) {
+        dispatch(Event.TTIDComputed(scenario, durationNs, wasForwarded, forwardedActivity))
     }
 
     // endregion
 
     // region Internal
 
-    // NewApi: Process.getStartElapsedRealtime is guarded by the isAtLeastN check below.
+    /**
+     * Back-projects the process start onto the `System.nanoTime()` timebase.
+     *
+     * Everything downstream of this object measures with `System.nanoTime()`, so the elapsed
+     * delta has to come from the same clock: `SystemClock.uptimeMillis()` and
+     * [Process.getStartUptimeMillis] are both CLOCK_MONOTONIC and both exclude deep sleep.
+     * Pairing them with `elapsedRealtime()` instead would add any deep sleep since process start
+     * to the delta, over-projecting the start time and inflating every TTID measured from it.
+     */
+    // NewApi: Process.getStartUptimeMillis is guarded by the isAtLeastN check below.
     // PreferTimeProvider: see install() — no TimeProvider exists this early in the process.
     @Suppress("NewApi", "PreferTimeProvider")
     internal fun computeProcessStartNs(): Long {
@@ -191,8 +295,8 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
             return DdRumContentProvider.createTimeNs
         }
         val nowNs = System.nanoTime()
-        val nowElapsedMs = SystemClock.elapsedRealtime()
-        val diffMs = nowElapsedMs - Process.getStartElapsedRealtime()
+        val nowUptimeMs = SystemClock.uptimeMillis()
+        val diffMs = nowUptimeMs - Process.getStartUptimeMillis()
         val computed = nowNs - TimeUnit.MILLISECONDS.toNanos(diffMs)
         return guardedProcessStartNs(
             computed = computed,

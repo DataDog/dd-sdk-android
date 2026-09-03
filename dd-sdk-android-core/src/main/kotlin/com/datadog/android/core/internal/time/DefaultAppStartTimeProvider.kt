@@ -24,9 +24,10 @@ internal class DefaultAppStartTimeProvider(
             buildSdkVersionProvider.isAtLeastN -> {
                 val timeProvider = timeProviderFactory()
                 // Uses the uptime clock (excludes device sleep time) to measure the gap between
-                // process start and now, then back-projects to an elapsed-time nanosecond value.
-                // See AppLaunchPreInitCollector.computeProcessStartNs() for the parallel impl that
-                // uses the elapsedRealtime clock instead (required when storing System.nanoTime()).
+                // process start and now, then back-projects it onto getDeviceElapsedTimeNanos() —
+                // the same CLOCK_MONOTONIC base as System.nanoTime(), so the two agree.
+                // PreLaunchRumAppStartupDetector.computeProcessStartNs() is the parallel impl for
+                // the pre-SDK path.
                 val diffMs = timeProvider.getDeviceUptimeMillis() - Process.getStartUptimeMillis()
                 val computed =
                     timeProvider.getDeviceElapsedTimeNanos() - TimeUnit.MILLISECONDS.toNanos(diffMs)

@@ -20,16 +20,14 @@ public final class com/datadog/android/rum/internal/domain/Time$Companion {
 
 public final class com/datadog/android/rum/internal/startup/PreLaunchRumAppStartupDetector : com/datadog/android/rum/internal/startup/RumAppStartupDetector$Listener {
 	public static final field INSTANCE Lcom/datadog/android/rum/internal/startup/PreLaunchRumAppStartupDetector;
-	public final fun attach (Lcom/datadog/android/rum/internal/startup/RumAppStartupDetector$Listener;)V
-	public final fun detach ()V
-	public final fun getActivityPredicate ()Lkotlin/jvm/functions/Function1;
-	public final fun getCapturedActivity ()Landroid/app/Activity;
+	public final fun attach (Lcom/datadog/android/rum/internal/startup/RumAppStartupDetector$Listener;Lkotlin/jvm/functions/Function1;)V
+	public final fun detach (Lcom/datadog/android/rum/internal/startup/RumAppStartupDetector$Listener;)V
+	public final fun getAttachedListenerCount ()I
 	public final fun getHasPendingEvents ()Z
 	public final fun install (Landroid/app/Application;)V
 	public final fun isInstalled ()Z
 	public fun onAppStartupDetected (Lcom/datadog/android/rum/internal/startup/RumStartupScenario;)V
-	public fun onTTIDComputed (Lcom/datadog/android/rum/internal/startup/RumStartupScenario;JZ)V
-	public final fun setActivityPredicate (Lkotlin/jvm/functions/Function1;)V
+	public fun onTTIDComputed (Lcom/datadog/android/rum/internal/startup/RumStartupScenario;JZLjava/lang/ref/WeakReference;)V
 }
 
 public abstract interface class com/datadog/android/rum/internal/startup/RumAppStartupDetector {
@@ -38,11 +36,11 @@ public abstract interface class com/datadog/android/rum/internal/startup/RumAppS
 
 public abstract interface class com/datadog/android/rum/internal/startup/RumAppStartupDetector$Listener {
 	public abstract fun onAppStartupDetected (Lcom/datadog/android/rum/internal/startup/RumStartupScenario;)V
-	public abstract fun onTTIDComputed (Lcom/datadog/android/rum/internal/startup/RumStartupScenario;JZ)V
+	public abstract fun onTTIDComputed (Lcom/datadog/android/rum/internal/startup/RumStartupScenario;JZLjava/lang/ref/WeakReference;)V
 }
 
 public final class com/datadog/android/rum/internal/startup/RumAppStartupDetector$Listener$DefaultImpls {
-	public static synthetic fun onTTIDComputed$default (Lcom/datadog/android/rum/internal/startup/RumAppStartupDetector$Listener;Lcom/datadog/android/rum/internal/startup/RumStartupScenario;JZILjava/lang/Object;)V
+	public static synthetic fun onTTIDComputed$default (Lcom/datadog/android/rum/internal/startup/RumAppStartupDetector$Listener;Lcom/datadog/android/rum/internal/startup/RumStartupScenario;JZLjava/lang/ref/WeakReference;ILjava/lang/Object;)V
 }
 
 public final class com/datadog/android/rum/internal/startup/RumAppStartupDetectorImpl : android/app/Application$ActivityLifecycleCallbacks, com/datadog/android/rum/internal/startup/RumAppStartupDetector {
