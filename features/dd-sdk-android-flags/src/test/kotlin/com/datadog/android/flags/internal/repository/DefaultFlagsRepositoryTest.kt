@@ -31,7 +31,9 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
@@ -146,6 +148,45 @@ internal class DefaultFlagsRepositoryTest {
         // Then
         assertThat(testedRepository.getEvaluationContext()).isNull()
         assertThat(testedRepository.getFlagsSnapshot()).isEmpty()
+    }
+
+    @Test
+    fun `M delete persisted state and ignore late load W clear() { persistence is loading }`() {
+        // Given
+        val persistedEntry = FlagsStateEntry(
+            flags = singleFlagMap,
+            evaluationContext = testContext,
+            lastUpdateTimestamp = 0L
+        )
+        var capturedCallback: DataStoreReadCallback<FlagsStateEntry>? = null
+        doAnswer {
+            capturedCallback = it.getArgument(2)
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(
+            key = any(),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+        val repository = DefaultFlagsRepository(
+            featureSdkCore = mockFeatureSdkCore,
+            dataStore = mockDataStore,
+            instanceName = "async-clear",
+            persistenceLoadTimeoutMs = 1L
+        )
+
+        // When
+        repository.clear()
+        capturedCallback?.onSuccess(DataStoreContent(versionCode = 0, data = persistedEntry))
+
+        // Then
+        assertThat(capturedCallback).isNotNull()
+        assertThat(repository.getEvaluationContext()).isNull()
+        assertThat(repository.getFlagsSnapshot()).isEmpty()
+        verify(mockDataStore).removeValue(
+            key = eq("flags-state-async-clear"),
+            callback = anyOrNull()
+        )
     }
 
     @Test
