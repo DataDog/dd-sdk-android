@@ -85,10 +85,13 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
+import okhttp3.Request
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import timber.log.Timber
+import java.net.InetAddress
+import java.net.URL
 import java.security.SecureRandom
 import java.util.UUID
 
@@ -185,6 +188,7 @@ class SampleApplication : Application() {
         Rum.enable(createRumConfiguration())
 
         initializeFlags()
+        runFlagsDiagnostics()
 
         GlobalRumMonitor.get().debug = true
 
@@ -305,6 +309,98 @@ class SampleApplication : Application() {
                         }
                     }
                 }
+        }
+    }
+
+    @SuppressLint("LogNotTimber")
+    @Suppress("TooGenericExceptionCaught")
+    private fun runFlagsDiagnostics() {
+        applicationScope.launch(Dispatchers.IO) {
+            val tag = "FlagsDiagnostics"
+            Log.i(tag, "========== FLAGS SDK DIAGNOSTICS START ==========")
+
+            // 1. Log configured site
+            val siteName = BuildConfig.DD_SITE_NAME
+            val site = try {
+                DatadogSite.valueOf(siteName)
+            } catch (e: IllegalArgumentException) {
+                Log.e(tag, "Invalid site name: $siteName")
+                null
+            }
+            Log.i(tag, "Configured site: $siteName")
+            Log.i(tag, "Intake endpoint: ${site?.intakeEndpoint ?: "UNKNOWN"}")
+
+            // 2. Compute flags CDN host (mirrors DatadogSiteExtensions logic)
+            val flagsCdnHost = site?.let { computeFlagsCdnHost(it) }
+            val flagsUrl = flagsCdnHost?.let { "https://$it/precompute-assignments" }
+            Log.i(tag, "Flags CDN host: ${flagsCdnHost ?: "UNSUPPORTED for site $siteName"}")
+
+            // 3. DNS resolution checks
+            if (flagsCdnHost != null) {
+                checkDns(tag, "Flags CDN", flagsCdnHost)
+            }
+            site?.let {
+                val intakeHost = URL(it.intakeEndpoint).host
+                checkDns(tag, "Intake", intakeHost)
+            }
+
+            // 4. HTTP reachability check for flags CDN
+            if (flagsUrl != null) {
+                checkHttpReachability(tag, "Flags CDN", flagsUrl)
+            }
+
+            // 5. HTTP reachability check for exposures intake
+            site?.let {
+                val exposuresUrl = "${it.intakeEndpoint}/api/v2/exposures"
+                checkHttpReachability(tag, "Exposures intake", exposuresUrl)
+            }
+
+            Log.i(tag, "========== FLAGS SDK DIAGNOSTICS END ==========")
+        }
+    }
+
+    @SuppressLint("LogNotTimber")
+    @Suppress("TooGenericExceptionCaught")
+    private fun checkDns(tag: String, label: String, host: String) {
+        try {
+            val addresses = InetAddress.getAllByName(host)
+            Log.i(tag, "DNS [$label] $host -> ${addresses.joinToString { it.hostAddress ?: "?" }}")
+        } catch (e: Throwable) {
+            Log.e(tag, "DNS [$label] $host -> FAILED: ${e.javaClass.simpleName}: ${e.message}")
+        }
+    }
+
+    @SuppressLint("LogNotTimber")
+    @Suppress("TooGenericExceptionCaught")
+    private fun checkHttpReachability(tag: String, label: String, url: String) {
+        try {
+            val request = Request.Builder().url(url).head().build()
+            val response = okHttpClient.newCall(request).execute()
+            Log.i(
+                tag,
+                "HTTP [$label] HEAD $url -> ${response.code} (${response.message})"
+            )
+            response.close()
+        } catch (e: Throwable) {
+            Log.e(
+                tag,
+                "HTTP [$label] HEAD $url -> FAILED: ${e.javaClass.simpleName}: ${e.message}"
+            )
+        }
+    }
+
+    private fun computeFlagsCdnHost(site: DatadogSite): String? {
+        val customerDomain = "preview"
+        return when (site) {
+            DatadogSite.US1_FED, DatadogSite.US2_FED -> null
+            DatadogSite.STAGING -> "$customerDomain.ff-cdn.datad0g.com"
+            DatadogSite.EU1 -> "$customerDomain.ff-cdn.datadoghq.eu"
+            DatadogSite.US1 -> "$customerDomain.ff-cdn.datadoghq.com"
+            DatadogSite.US3 -> "$customerDomain.ff-cdn.us3.datadoghq.com"
+            DatadogSite.US5 -> "$customerDomain.ff-cdn.us5.datadoghq.com"
+            DatadogSite.AP1 -> "$customerDomain.ff-cdn.ap1.datadoghq.com"
+            DatadogSite.AP2 -> "$customerDomain.ff-cdn.ap2.datadoghq.com"
+            DatadogSite.UK1 -> "$customerDomain.ff-cdn.uk1.datadoghq.com"
         }
     }
 
