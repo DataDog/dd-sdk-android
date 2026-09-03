@@ -194,6 +194,8 @@ EXPECTED_WARMUP=<warmup from the CSV header> \
 EXPECTED_ANIMATIONS=<animations> \
 EXPECTED_AIRPLANE=<airplane> \
 EXPECTED_FP=<fp> \
+EXPECTED_ANDROID_USER=<android_user> \
+EXPECTED_SDK_LIVENESS=<expect_a or expect_b for this arm> \
   ./capture_trace.sh treatment.apk treatment 1
 ./.venv/bin/python verify_trace.py treatment.pftrace --package <app.id>
 ```
@@ -203,8 +205,9 @@ Set `TRACE_ENDPOINT` to the A/B metric the trace is meant to explain. It default
 `app_trace_ms` together with the same `APP_TRACE_REGEX` as the benchmark, to require that later
 marker before Perfetto stops. App-owned regex matches are restricted to the installed package's
 unique UID, so a foreign process cannot provide either the A/B value or the trace endpoint. The
-capture is invalid if the selected endpoint is not reached.
-All eight expected inputs are mandatory. `EXPECTED_APK_MD5` must equal the selected arm's
+capture is invalid if the selected endpoint is not reached. With `app_trace_ms`, also pass
+`EXPECTED_APP_TRACE_ID=<app_trace_id>` so the capture proves its regex names the benchmarked event.
+All ten expected inputs shown above are mandatory. `EXPECTED_APK_MD5` must equal the selected arm's
 `baseline_md5` or `treatment_md5` before device mutation. `EXPECTED_PERMISSION_STATE_ID` must equal
 that arm's `permission_a` or `permission_b` after permission setup. `EXPECTED_COMPILE_STATUS` must
 equal the benchmark header's achieved `compile_status`, not merely use the same requested
@@ -215,7 +218,9 @@ aborts before device access. `EXPECTED_ANIMATIONS` and `EXPECTED_AIRPLANE` behav
 the two device controls a default of `0` used to let differ from the A/B in silence. `EXPECTED_FP`
 must equal the header's `fp`: it is checked against `ro.build.fingerprint` before anything is
 installed or uninstalled, because nothing else pinned device identity and a capture from another
-model explains nothing about the run it is attached to.
+model explains nothing about the run it is attached to. `EXPECTED_ANDROID_USER` must equal the
+header's `android_user` and the active device user before mutation. `EXPECTED_SDK_LIVENESS` must
+equal both the selected arm's `expect_a` / `expect_b` stamp and the positional `0` / `1` argument.
 Capture names are non-destructive: an existing `.pftrace` is never overwritten.
 
 **Do not edit the harness scripts while a run is in flight.** Bash re-reads a running script
@@ -362,11 +367,14 @@ other way is neither.
   (`--allow-mixed` to override). Two missing values are not evidence that the runs match.
   Namespacing block ids stops blocks merging; it does not make
   two experiments comparable. The achieved `compile_status` and `perf_mode` must agree when
-  both files carry them, and warn when either does not; the
+  stamped files carry them, and warn when any file does not. A legacy missing stamp cannot hide a
+  disagreement among the other stamped files; the
   requested `compile_filter` alone does not prove the same AOT/JIT state. A differing `warmup`
   counts as a differing protocol: every cell
   is a fresh install, so the warm-up count sets where in the post-install JIT/profile ramp the
-  measured launches sit. `blocks` and `runs` may differ, since they only lengthen the tail. The
+  measured launches sit. `blocks` and `runs` may differ between valid files, since they only
+  lengthen the tail, but once either field is present in one header both must be positive integers
+  so that file's declared matrix can be checked. The
   normal protocol keeps one physical device; it does not stamp the adb serial or distinguish two
   same-model devices on the same system build.
 - **Each arm's effective permission outcome is part of pooled identity.** The benchmark stamps a
@@ -380,6 +388,9 @@ other way is neither.
 - **Every selected arm/block must contain each declared run ID exactly once.** A cell with two
   `run=1` rows and no `run=2` has the expected row count but ambiguous evidence; it is an
   incomplete matrix, not a reportable experiment. Unselected labels cannot satisfy this gate.
+- **A selected-arm conditioning launch with `foreground=NA` suppresses primary inference.** Probe
+  and warm-up rows do not enter the estimate, but they prepare permission, migration and
+  JIT/profile state inherited by measured launches; unknown screen ownership there is not a pass.
 - **Pooling CSVs whose `baseline_md5` / `treatment_md5` disagree is refused** as well. Two runs
   from successive APK pairs on the same device agree on every other metadata field, so without
   the digests they pool silently.
@@ -405,9 +416,8 @@ other way is neither.
   complementary `{1}`/`{2}` position pair for the selected arms; missing, same or internally
   mixed positions suppress the CI, MDE and significance verdict. With valid evidence,
   `order` cancels out of the block deltas only when each
-  arm ran first equally often. If they all ran the same arm first the interval is **suppressed** —
-  every delta is then `effect + order` with no way to separate them. Otherwise the residual
-  fraction is printed: with an odd number of contributing blocks it cannot be better than `1/k`.
+  arm ran first equally often. Any imbalance, including 3:1, suppresses the interval: every delta
+  contains `effect + order`, and unequal counts leave a residual order term in the estimate.
 - **The relative percentage uses the same block weighting as the absolute primary delta.** Its
   denominator is the equal-weight mean of contributing baseline cell means, not the mean of every
   baseline launch; pooled files may differ in `runs`, but a high-run-count file must not dominate

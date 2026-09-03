@@ -257,6 +257,16 @@ def parse_meta(lines):
     return kv
 
 
+def present_meta_differences(metas, keys):
+    """Return known disagreements without treating missing values as agreement."""
+    differing = {}
+    for key in keys:
+        present = sorted({meta[key] for meta in metas if key in meta})
+        if len(present) > 1:
+            differing[key] = present
+    return differing
+
+
 def fmt_p(p, iters=200_000):
     """perm_p() floors at 1/(iters+1) so it can never be zero. '%.5f' would still
     render that floor as 0.00000, which reads as 'impossible' rather than 'below
@@ -370,9 +380,7 @@ def main():
             print("[WARNING: --allow-mixed, mandatory device/protocol metadata is absent:]")
             for ln in lines:
                 print(ln)
-        mismatched = {k: sorted({m[k] for m in metas})
-                      for k in _MUST_MATCH
-                      if k not in missing_required and len({m[k] for m in metas}) > 1}
+        mismatched = present_meta_differences(metas, _MUST_MATCH)
         if mismatched:
             lines = [f"    {k}: {' vs '.join(v)}" for k, v in mismatched.items()]
             if not a.allow_mixed:
@@ -387,9 +395,13 @@ def main():
             for ln in lines:
                 print(ln)
         unstamped = [k for k in _BUILD_KEYS if any(k not in m for m in metas)]
-        differing = {k: sorted({m[k] for m in metas})
-                     for k in _BUILD_KEYS
-                     if k not in unstamped and len({m[k] for m in metas}) > 1}
+        if unstamped:
+            print(f"[WARNING: {', '.join(unstamped)} absent from at least one header, so it"
+                  " cannot be]")
+            print("[         checked that these CSVs benchmarked the same two APKs. Older"
+                  " CSVs predate]")
+            print("[         the field; confirm by hand before pooling them.]")
+        differing = present_meta_differences(metas, _BUILD_KEYS)
         if differing:
             lines = [f"    {k}: {' vs '.join(v)}" for k, v in differing.items()]
             if not a.allow_mixed:
@@ -403,17 +415,14 @@ def main():
             print("[WARNING: --allow-mixed, pooling runs built from different APKs:]")
             for ln in lines:
                 print(ln)
-        elif unstamped:
-            print(f"[WARNING: {', '.join(unstamped)} absent from at least one header, so it"
-                  " cannot be]")
-            print("[         checked that these CSVs benchmarked the same two APKs. Older"
-                  " CSVs predate]")
-            print("[         the field; confirm by hand before pooling them.]")
-
         arm_unstamped = [k for k in _ARM_KEYS if any(k not in m for m in metas)]
-        arm_differing = {k: sorted({m[k] for m in metas})
-                         for k in _ARM_KEYS
-                         if k not in arm_unstamped and len({m[k] for m in metas}) > 1}
+        if arm_unstamped:
+            print(f"[WARNING: {', '.join(arm_unstamped)} absent from at least one header, so"
+                  " it cannot be]")
+            print("[         checked that each label names the same arm in every file. The"
+                  " per-file]")
+            print("[         label check below still applies.]")
+        arm_differing = present_meta_differences(metas, _ARM_KEYS)
         if arm_differing:
             lines = [f"    {k}: {' vs '.join(v)}" for k, v in arm_differing.items()]
             if not a.allow_mixed:
@@ -428,18 +437,14 @@ def main():
             print("[WARNING: --allow-mixed, pooling runs whose label -> arm mapping differs:]")
             for ln in lines:
                 print(ln)
-        elif arm_unstamped:
-            print(f"[WARNING: {', '.join(arm_unstamped)} absent from at least one header, so"
-                  " it cannot be]")
-            print("[         checked that each label names the same arm in every file. The"
-                  " per-file]")
-            print("[         label check below still applies.]")
-
         liveness_unstamped = [k for k in _LIVENESS_KEYS if any(k not in m for m in metas)]
-        liveness_differing = {k: sorted({m[k] for m in metas})
-                              for k in _LIVENESS_KEYS
-                              if k not in liveness_unstamped
-                              and len({m[k] for m in metas}) > 1}
+        if liveness_unstamped:
+            print(f"[WARNING: {', '.join(liveness_unstamped)} absent from at least one header,"
+                  " so it cannot be]")
+            print("[         checked that each label represents the same SDK-active or"
+                  " SDK-absent state]")
+            print("[         in every file. Older CSVs predate these expectation stamps.]")
+        liveness_differing = present_meta_differences(metas, _LIVENESS_KEYS)
         if liveness_differing:
             lines = [f"    {k}: {' vs '.join(v)}" for k, v in liveness_differing.items()]
             if not a.allow_mixed:
@@ -453,20 +458,14 @@ def main():
             print("[WARNING: --allow-mixed, pooling runs whose SDK-liveness expectations differ:]")
             for ln in lines:
                 print(ln)
-        elif liveness_unstamped:
-            print(f"[WARNING: {', '.join(liveness_unstamped)} absent from at least one header,"
-                  " so it cannot be]")
-            print("[         checked that each label represents the same SDK-active or"
-                  " SDK-absent state]")
-            print("[         in every file. Older CSVs predate these expectation stamps.]")
-
         permission_unstamped = [k for k in _PERMISSION_KEYS
                                 if any(k not in m for m in metas)]
-        permission_differing = {
-            k: sorted({m[k] for m in metas})
-            for k in _PERMISSION_KEYS
-            if k not in permission_unstamped and len({m[k] for m in metas}) > 1
-        }
+        if permission_unstamped:
+            print(f"[WARNING: {', '.join(permission_unstamped)} absent from at least one"
+                  " header, so it cannot be]")
+            print("[         checked that each arm had the same effective runtime-permission]")
+            print("[         state in every file. Older CSVs predate these outcome stamps.]")
+        permission_differing = present_meta_differences(metas, _PERMISSION_KEYS)
         if permission_differing:
             lines = [f"    {k}: {' vs '.join(v)}"
                      for k, v in permission_differing.items()]
@@ -481,19 +480,18 @@ def main():
             print("[WARNING: --allow-mixed, pooling runs whose permission outcomes differ:]")
             for ln in lines:
                 print(ln)
-        elif permission_unstamped:
-            print(f"[WARNING: {', '.join(permission_unstamped)} absent from at least one"
-                  " header, so it cannot be]")
-            print("[         checked that each arm had the same effective runtime-permission]")
-            print("[         state in every file. Older CSVs predate these outcome stamps.]")
-
         control_unstamped = [k for k in _CONTROL_KEYS
                              if any(k not in m for m in metas)]
-        control_differing = {
-            k: sorted({m[k] for m in metas})
-            for k in _CONTROL_KEYS
-            if k not in control_unstamped and len({m[k] for m in metas}) > 1
-        }
+        if control_unstamped:
+            print(f"[WARNING: {', '.join(control_unstamped)} absent from at least one"
+                  " header, so it cannot be]")
+            print("[         checked that these runs reached the same AOT/JIT state and"
+                  " CPU-scheduling]")
+            print("[         scenario. Older CSVs predate these stamps; the requested"
+                  " compile_filter]")
+            print("[         above is not a substitute. Confirm by hand before pooling"
+                  " them.]")
+        control_differing = present_meta_differences(metas, _CONTROL_KEYS)
         if control_differing:
             lines = [f"    {k}: {' vs '.join(v)}"
                      for k, v in control_differing.items()]
@@ -511,24 +509,14 @@ def main():
                   " runtime controls:]")
             for ln in lines:
                 print(ln)
-        elif control_unstamped:
-            print(f"[WARNING: {', '.join(control_unstamped)} absent from at least one"
-                  " header, so it cannot be]")
-            print("[         checked that these runs reached the same AOT/JIT state and"
-                  " CPU-scheduling]")
-            print("[         scenario. Older CSVs predate these stamps; the requested"
-                  " compile_filter]")
-            print("[         above is not a substitute. Confirm by hand before pooling"
-                  " them.]")
-
         if a.metric == "app_trace_ms":
-            ids = {m.get(_APP_TRACE_KEY, "?") for m in metas}
-            if "?" in ids:
+            ids = {m[_APP_TRACE_KEY] for m in metas if _APP_TRACE_KEY in m}
+            if any(_APP_TRACE_KEY not in m for m in metas):
                 print(f"[WARNING: {_APP_TRACE_KEY} absent from at least one header, so it"
                       " cannot be checked]")
                 print("[         that --metric app_trace_ms means the same app event in every"
                       " file.]")
-            elif len(ids) > 1:
+            if len(ids) > 1:
                 if not a.allow_mixed:
                     raise SystemExit(
                         "refusing to pool --metric app_trace_ms across CSVs recorded with\n"
@@ -688,19 +676,28 @@ def main():
     # wrong label selection can expose the same structural mismatch. Compare the
     # requested arms against the exact matrix declared in each file's header.
     shortfalls = []
+    malformed_matrix_metadata = []
     for (path, body), own_meta in zip(per_file, per_meta):
         kv = parse_meta(own_meta)
-        try:
-            want_blocks, want_runs = int(kv["blocks"]), int(kv["runs"])
-        except (KeyError, ValueError):
+        blocks_value, runs_value = kv.get("blocks"), kv.get("runs")
+        if blocks_value is None and runs_value is None:
             continue                      # pre-metadata CSV; nothing to check against
+        name = path if len(per_file) > 1 else "this CSV"
+        if (blocks_value is None or runs_value is None
+                or not blocks_value.isdigit() or not runs_value.isdigit()
+                or int(blocks_value) < 1 or int(runs_value) < 1):
+            malformed_matrix_metadata.append(
+                f"  {name}: blocks={blocks_value or '<absent>'}, "
+                f"runs={runs_value or '<absent>'}"
+            )
+            continue
+        want_blocks, want_runs = int(blocks_value), int(runs_value)
         cell_runs = defaultdict(list)
         for r in csv.DictReader(body):
             if r.get("phase") in ("measure", "measure_rejected"):
                 block = r.get("block") or "<missing>"
                 run = r.get("run") or "<missing>"
                 cell_runs[(r.get("label"), block)].append(run)
-        name = path if len(per_file) > 1 else "this CSV"
         expected_blocks = {str(block) for block in range(1, want_blocks + 1)}
         expected_runs = Counter(str(run) for run in range(1, want_runs + 1))
         short = []
@@ -747,6 +744,13 @@ def main():
         shortfalls += [f"  {name}: {item}" for item in short[:10]]
         if len(short) > 10:
             shortfalls.append(f"  {name}: ... and {len(short) - 10} more cell(s) not listed")
+    if malformed_matrix_metadata:
+        raise SystemExit(
+            "refusing to analyze malformed experiment matrix metadata:\n"
+            + "\n".join(malformed_matrix_metadata)
+            + "\n  `blocks` and `runs` must either both be absent in a legacy CSV or"
+              "\n  both be positive integers so the declared matrix can be validated."
+        )
     if shortfalls:
         print("!" * 78)
         print("!! INCOMPLETE EXPERIMENT MATRIX -- the selected baseline/treatment do")
@@ -768,6 +772,7 @@ def main():
     arms, blocks, by_pos = defaultdict(list), defaultdict(list), defaultdict(list)
     by_block_pos, positions_by_arm_block = defaultdict(list), defaultdict(set)
     skipped_warmup = skipped_na = skipped_invalid = no_fg = unverified_validity = 0
+    conditioning_no_fg = 0
     missing_validity_fields = set()
     labels_seen = defaultdict(set)
     reader = ((path, r) for path, body in per_file for r in csv.DictReader(body))
@@ -779,6 +784,10 @@ def main():
         # a matrix-complete file with no trailer. Everything else -- warm-ups and
         # the liveness-probe launch -- remains excluded by construction.
         if phase not in ("measure", "measure_rejected"):
+            if (phase in ("probe", "warmup")
+                    and r.get("label") in (a.baseline, a.treatment)
+                    and r.get("foreground") == "NA"):
+                conditioning_no_fg += 1
             skipped_warmup += 1
             continue
         # Belt and braces on top of the phase filter. The harness now labels a
@@ -838,6 +847,12 @@ def main():
 
     if skipped_warmup:
         print(f"[excluded {skipped_warmup} non-measured rows (warm-ups and liveness probes)]")
+    if conditioning_no_fg:
+        print(f"[WARNING: {conditioning_no_fg} selected-arm conditioning launch(es) carry")
+        print(" foreground=NA: nothing proves the app owned the screen while preparing")
+        print(" the permission, migration and JIT/profile state inherited by measurements.]")
+        diagnostic_only_reasons.append(
+            f"{conditioning_no_fg} conditioning launch(es) have foreground=NA evidence")
     if unverified_validity:
         fields = ", ".join(sorted(missing_validity_fields))
         print(f"[WARNING: {unverified_validity} selected-arm measured launch row(s) lack")
@@ -981,11 +996,9 @@ def main():
 
     pri_firsts = Counter(valid_first_arm[b] for b in delta_blocks if b in valid_first_arm)
     # Denominator is the number of blocks whose first arm is KNOWN, not len(deltas):
-    # dividing by the larger figure would report a smaller residual than the evidence
-    # supports whenever some blocks carry no pos_in_block.
+    # comparing with the larger figure could report balance even when some blocks
+    # carry no pos_in_block.
     pri_known = sum(pri_firsts.values())
-    residual = (abs(pri_firsts[a.baseline] - pri_firsts[a.treatment]) / pri_known
-                if pri_known else 0.0)
 
     print("\n--- PRIMARY ENDPOINT: paired block-level delta ---")
     if diagnostic_only_reasons:
@@ -1015,13 +1028,13 @@ def main():
         print("  for the observations entering this estimate, and an order effect may be")
         print("  folded into the apparent treatment effect. The per-block deltas above are")
         print("  retained as diagnostics; re-run with complete pos_in_block evidence.")
-    elif len(deltas) >= 3 and len(pri_firsts) == 1:
-        print(f"  NOT REPORTABLE: all {len(deltas)} contributing block(s) ran the same arm")
-        print(f"  first ({dict(pri_firsts)}), so every delta is")
-        print("  (treatment - baseline) + order and the two cannot be separated. This is")
-        print("  the failure ABBA exists to prevent; it survives here only because the")
-        print("  blocks that would have balanced it were dropped (see the NA warning")
-        print("  above). The per-block deltas are printed above as diagnostics.")
+    elif (len(deltas) >= 3
+          and pri_firsts[a.baseline] != pri_firsts[a.treatment]):
+        print("  NOT REPORTABLE: contributing blocks are not counterbalanced:")
+        print(f"  first-arm counts are {dict(pri_firsts)}. Equal baseline-first and")
+        print("  treatment-first counts are required; otherwise part of any order effect")
+        print("  remains in the treatment estimate. The per-block deltas above are retained")
+        print("  as diagnostics; restore the ABBA schedule and re-run.")
     elif len(deltas) < 3:
         print(f"  NOT ESTIMABLE: {len(deltas)} complete block(s). A paired interval needs")
         print("  >= 3 blocks (at 2 blocks t_crit(df=1) = 12.7, which cannot support any")
@@ -1053,12 +1066,6 @@ def main():
         print(f"  mean of block deltas  {m:+8.1f} ms   ({relative_effect})")
         print(f"  between-block sd      {sd_b:8.1f} ms   (SE {se_b:.2f}, t_crit(df={k-1}) {tc})")
         print(f"  95% CI                [{lo:+.1f}, {hi:+.1f}] ms")
-        if residual:
-            print(f"  !! first-arm counts among contributing blocks: {dict(pri_firsts)}.")
-            print(f"     ABBA does not fully cancel here: {residual:.2f} x any order effect")
-            print("     remains in the estimate above. Read the order diagnostic below and")
-            print("     subtract that fraction of it before believing this number; an odd")
-            print("     number of contributing blocks cannot do better than 1/k.")
         print(f"  median of block deltas {st.median(deltas):+8.1f} ms   "
               f"(the descriptive median for this design)")
         print(f"  MDE at {k} blocks       ~{mde(sd_b, k):.0f} ms  "

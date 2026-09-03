@@ -25,6 +25,9 @@
 #          EXPECTED_ANIMATIONS=<benchmark animations> \
 #          EXPECTED_AIRPLANE=<benchmark airplane> \
 #          EXPECTED_FP=<benchmark fp> \
+#          EXPECTED_ANDROID_USER=<benchmark android_user> \
+#          EXPECTED_SDK_LIVENESS=<selected arm expect_a|expect_b> \
+#          EXPECTED_APP_TRACE_ID=<benchmark app_trace_id; app_trace_ms only> \
 #          ./capture_trace.sh <apk> <name> <expect-datadog:0|1>
 set -euo pipefail
 
@@ -50,6 +53,12 @@ EXPECTED_PERF_MODE="${EXPECTED_PERF_MODE:-}"
 # difference there is, and the one ab_stats.py refuses to pool across -- was accepted
 # as an explanation of that run.
 EXPECTED_FP="${EXPECTED_FP:-}"
+# Android users and work profiles can have different policy, storage and startup
+# state on the same build. Bind the trace to the benchmark's selected user.
+EXPECTED_ANDROID_USER="${EXPECTED_ANDROID_USER:-}"
+# The positional argument drives every runtime liveness gate. This independent
+# expected value binds that choice to the selected benchmark arm's expect_a/b stamp.
+EXPECTED_SDK_LIVENESS="${EXPECTED_SDK_LIVENESS:-}"
 # Must match the ANIMATIONS the A/B was run with. Forcing 0 unconditionally meant a
 # benchmark run with ANIMATIONS=1 was traced with animations OFF -- so the trace omits
 # the per-frame SDK work whose cost that benchmark included, and the two are no longer
@@ -89,6 +98,9 @@ WARMUP="${WARMUP:-$EXPECTED_WARMUP}"
 # the launch never reached the window under study.
 TRACE_ENDPOINT="${TRACE_ENDPOINT:-total_ms}"
 APP_TRACE_REGEX="${APP_TRACE_REGEX:-}"
+# app_trace_ms is defined by the app's regex. Its benchmark header stores the
+# regex's digest because the raw pattern cannot safely fit in whitespace metadata.
+EXPECTED_APP_TRACE_ID="${EXPECTED_APP_TRACE_ID:-}"
 # Escape hatch for a device whose ActivityManager does not emit the global
 # `launching: <pkg>` slice the whole-window foreground check prefers. Forwarded to
 # the verifier, which then runs the lifecycle-only check and reports the capture as
@@ -141,7 +153,19 @@ case "$EXPECTED_FP" in
   "") die "set EXPECTED_FP to the benchmark CSV header's fp value" ;;
   *[!a-zA-Z0-9._:/+-]*) die "invalid EXPECTED_FP: '$EXPECTED_FP'" ;;
 esac
+case "$EXPECTED_ANDROID_USER" in
+  "") die "set EXPECTED_ANDROID_USER to the benchmark CSV header's android_user value" ;;
+  *[!0-9]*) die "EXPECTED_ANDROID_USER must be a non-negative integer (got '$EXPECTED_ANDROID_USER')" ;;
+esac
+case "$EXPECTED_SDK_LIVENESS" in
+  0|1) ;;
+  "") die "set EXPECTED_SDK_LIVENESS to the selected benchmark arm's expect_a or expect_b value" ;;
+  *) die "EXPECTED_SDK_LIVENESS must be 0 or 1 (got '$EXPECTED_SDK_LIVENESS')" ;;
+esac
 case "$EXPECT_DD" in 0|1) ;; *) die "expect-datadog must be 0 or 1 (got '$EXPECT_DD')" ;; esac
+[ "$EXPECT_DD" = "$EXPECTED_SDK_LIVENESS" ] \
+  || die "expect-datadog=$EXPECT_DD, but the selected benchmark arm recorded
+       expect=$EXPECTED_SDK_LIVENESS. The trace must prove the same SDK runtime state."
 case "$NAME" in */*|*..*|"") die "invalid trace name: '$NAME'" ;; esac
 case "$ANIMATIONS" in 0|1) ;; *) die "ANIMATIONS must be 0 or 1 (got '$ANIMATIONS')" ;; esac
 case "$AIRPLANE" in 0|1) ;; *) die "AIRPLANE must be 0 or 1 (got '$AIRPLANE')" ;; esac
@@ -161,7 +185,8 @@ case "$ALLOW_MISSING_LAUNCH_MARKER" in 0|1) ;;
 case "$TRACE_ENDPOINT" in
   total_ms|ttfd) ;;
   app_trace_ms)
-    [ -n "$APP_TRACE_REGEX" ] || die "TRACE_ENDPOINT=app_trace_ms requires APP_TRACE_REGEX" ;;
+    [ -n "$APP_TRACE_REGEX" ] || die "TRACE_ENDPOINT=app_trace_ms requires APP_TRACE_REGEX"
+    require_expected_md5 EXPECTED_APP_TRACE_ID "app_trace_id" ;;
   *) die "TRACE_ENDPOINT must be total_ms, ttfd or app_trace_ms (got '$TRACE_ENDPOINT')" ;;
 esac
 if [ -n "$APP_TRACE_REGEX" ]; then
@@ -170,6 +195,14 @@ if [ -n "$APP_TRACE_REGEX" ]; then
   [ "$_re_rc" -le 1 ] || die "APP_TRACE_REGEX is not a valid POSIX ERE; grep rejected it
        (exit $_re_rc): ${_re_err:-no message}
        Pattern: $APP_TRACE_REGEX"
+fi
+. "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+if [ "$TRACE_ENDPOINT" = app_trace_ms ]; then
+  TRACE_APP_TRACE_ID=$(dd_md5_str "$APP_TRACE_REGEX") \
+    || die "cannot hash APP_TRACE_REGEX"
+  [ "$TRACE_APP_TRACE_ID" = "$EXPECTED_APP_TRACE_ID" ] \
+    || die "APP_TRACE_REGEX hashes to $TRACE_APP_TRACE_ID, but the benchmark recorded
+         app_trace_id=$EXPECTED_APP_TRACE_ID. The trace endpoint is a different app event."
 fi
 # +1 = the benchmark's liveness-probe launch, which precedes its warm-ups.
 # Not named SETTLE: verify_sdk_active.sh already uses that for a number of
@@ -180,7 +213,6 @@ TRACE_FILE="./$NAME.pftrace"
 PKG_RE=$(printf '%s' "$PKG" | sed 's/[.]/\\./g')
 log() { echo "[$(date +%H:%M:%S)] $*" >&2; }
 
-. "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 HOST_MD5=$(dd_md5 "$APK") || die "cannot hash APK: $APK"
 [ "$HOST_MD5" = "$EXPECTED_APK_MD5" ] \
   || die "trace APK md5=$HOST_MD5, but the selected benchmark arm recorded
@@ -191,6 +223,10 @@ dd_resolve_tools || exit 2
 dd_require_device || exit 2
 DD_ANDROID_USER=""
 dd_resolve_android_user || exit 2
+[ "$DD_ANDROID_USER" = "$EXPECTED_ANDROID_USER" ] \
+  || die "this device's active Android user is $DD_ANDROID_USER, but the benchmark
+       recorded android_user=$EXPECTED_ANDROID_USER. A different profile is a different scenario."
+log "benchmark Android user matched: $DD_ANDROID_USER"
 # Before anything is installed or changed. `fp` is one of ab_stats.py's _MUST_MATCH
 # keys precisely because a different build is a different experiment; the same is
 # true of the trace meant to explain it.

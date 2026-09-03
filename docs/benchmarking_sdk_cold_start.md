@@ -456,7 +456,9 @@ every contributing block: exactly one arm at position 1 and the other at positio
 value is missing, both cells claim the same position, or repeated rows disagree, the analyzer
 still prints the block deltas for diagnosis but suppresses the confidence interval, MDE and
 significance verdict: without valid order evidence it cannot prove that the counterbalancing
-contract held for the observations being reported.
+contract held for the observations being reported. Equal baseline-first and treatment-first block
+counts are required as well: a 3:1 schedule is not counterbalanced merely because both orders
+appear, and its residual order effect cannot be separated from the treatment estimate.
 
 The practical consequence: **blocks buy statistical power, launches per block buy less of
 it.** The confidence interval narrows with the square root of the number of blocks. If a run
@@ -635,6 +637,9 @@ rather than take it on trust. The preceding SDK-liveness probe is also a conditi
 Probe, warm-up and measured launches all require `Status=ok`, `LaunchState=COLD`, a numeric
 `TotalTime`, a verified post-settle foreground window and the target in the final foreground;
 an invalid launch is recorded as rejected and aborts instead of advancing the ramp.
+When analyzing a legacy file accepted with a weaker foreground override, an explicit
+`foreground=NA` on a selected-arm probe or warm-up suppresses primary inference too: that launch
+prepared the permission, migration and JIT/profile state inherited by measured launches.
 
 ### Use the real launcher intent
 
@@ -735,6 +740,10 @@ run's compile filter, animation and radio state, warm-up count, labels, arm expe
 between the two files, so dropping one is what makes the second collection unpoolable with the
 first. Note that the run count and block count are positional arguments, not environment
 variables.
+
+Once either matrix header field exists, both `blocks` and `runs` must be positive integers.
+Partially present or malformed values are refused rather than treated as legacy, because the
+analyzer could otherwise skip the declared-matrix completeness check.
 
 That restores the registered design and reports normally. The recovered blocks are whole cells
 with their own installs and their own passed gates, the prefix is floored to an even number so
@@ -1030,12 +1039,17 @@ EXPECTED_WARMUP=<warmup from the CSV header> \
 EXPECTED_ANIMATIONS=<animations from the CSV header> \
 EXPECTED_AIRPLANE=<airplane from the CSV header> \
 EXPECTED_FP=<fp from the CSV header> \
+EXPECTED_ANDROID_USER=<android_user from the CSV header> \
+EXPECTED_SDK_LIVENESS=<expect_a or expect_b for this arm> \
   ./capture_trace.sh app-with-datadog.apk treatment 1
 ./.venv/bin/python verify_trace.py treatment.pftrace --package <your.app.id>
 ```
 
 The third argument to `capture_trace.sh` is the arm's SDK expectation: `1` for the treatment
-arm, `0` for the baseline. The capture is discarded if the expectation is violated.
+arm, `0` for the baseline. `EXPECTED_SDK_LIVENESS` must carry the selected arm's matching
+`expect_a` or `expect_b` header value; the capture is discarded if either identity or runtime
+liveness is violated. `EXPECTED_ANDROID_USER` must equal the CSV header's `android_user` and the
+active device user before any install, permission setup or output reservation.
 `EXPECTED_APK_MD5` ties the local APK to the selected benchmark arm before any device state is
 changed; the later host-to-device check separately proves those bytes were installed.
 `EXPECTED_PERMISSION_STATE_ID` requires permission setup to reproduce that arm's stamped
@@ -1062,7 +1076,9 @@ that first frame occurred before Perfetto stopped. If the trace is meant to expl
 app-owned endpoint, set `TRACE_ENDPOINT=ttfd` or
 `TRACE_ENDPOINT=app_trace_ms APP_TRACE_REGEX='<the same ERE used by the A/B>'`. Those modes stream
 logcat and refuse the capture unless the selected marker occurs inside the trace window. A trace
-that never reaches the metric's endpoint cannot explain that metric. The output path is atomically
+that never reaches the metric's endpoint cannot explain that metric. For `app_trace_ms`, also pass
+`EXPECTED_APP_TRACE_ID=<app_trace_id from the CSV header>`; the capture hashes the ERE and refuses
+a different app-owned endpoint before device access. The output path is atomically
 reserved before the script changes device state, so an existing or concurrently claimed
 `.pftrace` is never overwritten; choose a new capture name or move the old file first.
 

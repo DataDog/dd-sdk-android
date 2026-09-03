@@ -381,6 +381,8 @@ class HarnessRegressionTests(unittest.TestCase):
             EXPECTED_ANIMATIONS="1",
             EXPECTED_AIRPLANE="0",
             EXPECTED_FP="motorola/lisbon/lisbon:12/S3RQS/rel:user/release-keys",
+            EXPECTED_ANDROID_USER="0",
+            EXPECTED_SDK_LIVENESS="1",
             EXPECTED_APK_MD5="a" * 32,
             EXPECTED_PERMISSION_STATE_ID="b" * 32,
             EXPECTED_COMPILE_STATUS="verify+speed-profile",
@@ -441,6 +443,8 @@ class HarnessRegressionTests(unittest.TestCase):
             EXPECTED_ANIMATIONS="1",
             EXPECTED_AIRPLANE="0",
             EXPECTED_FP="motorola/lisbon/lisbon:12/S3RQS/rel:user/release-keys",
+            EXPECTED_ANDROID_USER="0",
+            EXPECTED_SDK_LIVENESS="1",
             EXPECTED_COMPILE_STATUS="verify",
             EXPECTED_PERF_MODE="fixed",
             EXPECTED_WARMUP="3",
@@ -573,6 +577,8 @@ class HarnessRegressionTests(unittest.TestCase):
             EXPECTED_ANIMATIONS="1",
             EXPECTED_AIRPLANE="0",
             EXPECTED_FP="motorola/lisbon/lisbon:12/S3RQS/rel:user/release-keys",
+            EXPECTED_ANDROID_USER="0",
+            EXPECTED_SDK_LIVENESS="1",
             EXPECTED_APK_MD5="a" * 32,
             EXPECTED_PERMISSION_STATE_ID="b" * 32,
             EXPECTED_COMPILE_STATUS="verify",
@@ -731,6 +737,8 @@ class HarnessRegressionTests(unittest.TestCase):
             EXPECTED_COMPILE_STATUS="verify",
             EXPECTED_PERF_MODE="fixed",
             EXPECTED_WARMUP="3",
+            EXPECTED_ANDROID_USER="0",
+            EXPECTED_SDK_LIVENESS="1",
         )
 
         def run(**overrides):
@@ -779,6 +787,127 @@ class HarnessRegressionTests(unittest.TestCase):
         inherited = run(**complete)
         self.assertIn("APK not found", inherited.stderr)
         self.assertNotIn("same scenario", inherited.stderr)
+
+    def test_trace_binds_app_endpoint_liveness_and_android_user(self) -> None:
+        capture_path = HARNESS / "capture_trace.sh"
+        capture = capture_path.read_text(encoding="utf-8")
+        for declaration in (
+            'EXPECTED_APP_TRACE_ID="${EXPECTED_APP_TRACE_ID:-}"',
+            'EXPECTED_SDK_LIVENESS="${EXPECTED_SDK_LIVENESS:-}"',
+            'EXPECTED_ANDROID_USER="${EXPECTED_ANDROID_USER:-}"',
+            '[ "$TRACE_APP_TRACE_ID" = "$EXPECTED_APP_TRACE_ID" ]',
+            '[ "$EXPECT_DD" = "$EXPECTED_SDK_LIVENESS" ]',
+            '[ "$DD_ANDROID_USER" = "$EXPECTED_ANDROID_USER" ]',
+        ):
+            self.assertIn(declaration, capture)
+        user_gate = capture.index('[ "$DD_ANDROID_USER" = "$EXPECTED_ANDROID_USER" ]')
+        self.assertLess(user_gate, capture.index('dd_reserve_output_files "$TRACE_FILE"'))
+        self.assertLess(user_gate, capture.index('dd_apply_animation_scales "$ANIMATIONS"'))
+
+        base_env = os.environ.copy()
+        for name in (
+            "ANDROID_SERIAL", "ANIMATIONS", "AIRPLANE", "WARMUP",
+            "EXPECTED_ANDROID_USER", "EXPECTED_SDK_LIVENESS",
+            "EXPECTED_APP_TRACE_ID", "APP_TRACE_REGEX", "TRACE_ENDPOINT",
+        ):
+            base_env.pop(name, None)
+        base_env.update(
+            PKG="com.example.app",
+            EXPECTED_APK_MD5="a" * 32,
+            EXPECTED_PERMISSION_STATE_ID="b" * 32,
+            EXPECTED_COMPILE_STATUS="verify",
+            EXPECTED_PERF_MODE="fixed",
+            EXPECTED_WARMUP="3",
+            EXPECTED_ANIMATIONS="1",
+            EXPECTED_AIRPLANE="0",
+            EXPECTED_FP="build/fingerprint",
+        )
+
+        def run(env_overrides=None, expect="1", apk="/missing.apk"):
+            env = dict(base_env)
+            env.update(env_overrides or {})
+            return subprocess.run(
+                ["bash", str(capture_path), apk, "trace", expect],
+                check=False,
+                capture_output=True,
+                text=True,
+                env=env,
+            )
+
+        missing_user = run({"EXPECTED_SDK_LIVENESS": "1"})
+        self.assertIn("set EXPECTED_ANDROID_USER", missing_user.stderr)
+        malformed_user = run({
+            "EXPECTED_ANDROID_USER": "owner",
+            "EXPECTED_SDK_LIVENESS": "1",
+        })
+        self.assertIn("EXPECTED_ANDROID_USER must be a non-negative integer",
+                      malformed_user.stderr)
+
+        missing_liveness = run({"EXPECTED_ANDROID_USER": "0"})
+        self.assertIn("set EXPECTED_SDK_LIVENESS", missing_liveness.stderr)
+        malformed_liveness = run({
+            "EXPECTED_ANDROID_USER": "0",
+            "EXPECTED_SDK_LIVENESS": "yes",
+        })
+        self.assertIn("EXPECTED_SDK_LIVENESS must be 0 or 1", malformed_liveness.stderr)
+        mismatched_liveness = run({
+            "EXPECTED_ANDROID_USER": "0",
+            "EXPECTED_SDK_LIVENESS": "0",
+        })
+        self.assertIn("selected benchmark arm recorded", mismatched_liveness.stderr)
+
+        complete = {"EXPECTED_ANDROID_USER": "0", "EXPECTED_SDK_LIVENESS": "1"}
+        regex = "cold launch complete: [0-9]+"
+        regex_id = hashlib.md5(regex.encode()).hexdigest()
+        missing_app_id = run({
+            **complete,
+            "TRACE_ENDPOINT": "app_trace_ms",
+            "APP_TRACE_REGEX": regex,
+        })
+        self.assertIn("set EXPECTED_APP_TRACE_ID", missing_app_id.stderr)
+        malformed_app_id = run({
+            **complete,
+            "TRACE_ENDPOINT": "app_trace_ms",
+            "APP_TRACE_REGEX": regex,
+            "EXPECTED_APP_TRACE_ID": "not-an-md5",
+        })
+        self.assertIn("invalid EXPECTED_APP_TRACE_ID", malformed_app_id.stderr)
+        mismatched_app_id = run({
+            **complete,
+            "TRACE_ENDPOINT": "app_trace_ms",
+            "APP_TRACE_REGEX": regex,
+            "EXPECTED_APP_TRACE_ID": "c" * 32,
+        })
+        self.assertIn(f"APP_TRACE_REGEX hashes to {regex_id}", mismatched_app_id.stderr)
+        matched_app_id = run({
+            **complete,
+            "TRACE_ENDPOINT": "app_trace_ms",
+            "APP_TRACE_REGEX": regex,
+            "EXPECTED_APP_TRACE_ID": regex_id,
+        })
+        self.assertIn("APK not found", matched_app_id.stderr)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            apk = Path(tmp) / "arm.apk"
+            apk.write_bytes(b"benchmarked apk")
+            fake_adb = Path(tmp) / "adb"
+            fake_adb.write_text(
+                "#!/usr/bin/env bash\n"
+                "case \"$*\" in\n"
+                "  devices) printf 'List of devices attached\\nserial\\tdevice\\n' ;;\n"
+                "  'shell am get-current-user') printf '10\\n' ;;\n"
+                "  *) exit 44 ;;\n"
+                "esac\n",
+                encoding="utf-8",
+            )
+            fake_adb.chmod(0o755)
+            wrong_user = run({
+                **complete,
+                "ADB": str(fake_adb),
+                "EXPECTED_APK_MD5": hashlib.md5(apk.read_bytes()).hexdigest(),
+            }, apk=str(apk))
+        self.assertIn("active Android user is 10", wrong_user.stderr)
+        self.assertIn("benchmark\n       recorded android_user=0", wrong_user.stderr)
 
     def test_enabled_radio_readback_does_not_claim_reachability(self) -> None:
         result = self.run_with_fake_adb(
@@ -2521,6 +2650,23 @@ class AbStatsRegressionTests(unittest.TestCase):
         self.assertIn("duplicate 1x2", result.stdout)
         self.assertNotIn("PRIMARY ENDPOINT", result.stdout)
 
+    def test_partially_present_or_malformed_matrix_metadata_is_refused(self) -> None:
+        for declaration in (
+            "blocks=4",
+            "runs=1",
+            "blocks=oops runs=1",
+            "blocks=4 runs=oops",
+            "blocks=4 runs=0",
+        ):
+            with self.subTest(declaration=declaration):
+                result = self.run_stats(self.benchmark_csv(
+                    metadata=f"{self.COMPATIBLE_META} {declaration}"
+                ))
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("malformed experiment matrix metadata", result.stderr)
+                self.assertIn("both be positive integers", result.stderr)
+                self.assertNotIn("PRIMARY ENDPOINT", result.stdout)
+
     def test_complete_selected_endpoint_still_reports_primary_interval(self) -> None:
         result = self.run_stats(self.benchmark_csv())
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -2769,6 +2915,24 @@ class AbStatsRegressionTests(unittest.TestCase):
         self.assertNotIn("  95% CI                ", result.stdout)
         self.assertNotIn("  MDE at", result.stdout)
 
+    def test_unknown_foreground_in_conditioning_suppresses_primary_inference(self) -> None:
+        csv_body = self.benchmark_csv()
+        csv_body += "A_noDD,1,1,warmup,1,101,COLD,ok,NA,101\n"
+        result = self.run_stats(csv_body)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("conditioning launch(es) carry", result.stdout)
+        self.assertIn("foreground=NA", result.stdout)
+        self.assertIn("NOT REPORTABLE", result.stdout)
+        self.assertNotIn("  95% CI                ", result.stdout)
+        self.assertNotIn("  MDE at", result.stdout)
+
+        unselected = self.benchmark_csv()
+        unselected += "THIRD,1,1,probe,1,999,COLD,ok,NA,999\n"
+        unrelated = self.run_stats(unselected)
+        self.assertEqual(unrelated.returncode, 0, unrelated.stderr)
+        self.assertNotIn("conditioning launch(es) carry", unrelated.stdout)
+        self.assertIn("  95% CI                ", unrelated.stdout)
+
     def test_unknown_foreground_in_unselected_arm_does_not_suppress(self) -> None:
         csv_body = self.benchmark_csv()
         csv_body += "THIRD,1,2,measure,1,999,COLD,ok,NA,999\n"
@@ -2919,6 +3083,40 @@ class AbStatsRegressionTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("compile_status: speed-profile vs verify", result.stderr)
 
+    def test_legacy_missing_stamp_cannot_mask_known_newer_disagreement(self) -> None:
+        stats = load_ab_stats_module()
+        soft_keys = (
+            *stats._BUILD_KEYS,
+            *stats._ARM_KEYS,
+            *stats._LIVENESS_KEYS,
+            *stats._PERMISSION_KEYS,
+            *stats._CONTROL_KEYS,
+            stats._APP_TRACE_KEY,
+        )
+        for key in soft_keys:
+            with self.subTest(key=key):
+                self.assertEqual(
+                    stats.present_meta_differences(
+                        [{}, {key: "known-a"}, {key: "known-b"}],
+                        (key,),
+                    ),
+                    {key: ["known-a", "known-b"]},
+                )
+
+        legacy = self.COMPATIBLE_META
+        stamped_a = f"{self.COMPATIBLE_META} baseline_md5=aaa treatment_md5=bbb"
+        stamped_b = f"{self.COMPATIBLE_META} baseline_md5=ccc treatment_md5=bbb"
+        result = self.run_stats_files([
+            self.benchmark_csv(metadata=legacy),
+            self.benchmark_csv(metadata=stamped_a, baseline_offset=140),
+            self.benchmark_csv(metadata=stamped_b, baseline_offset=180),
+        ])
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("baseline_md5, treatment_md5 absent from at least one header",
+                      result.stdout)
+        self.assertIn("different APKs", result.stderr)
+        self.assertIn("baseline_md5: aaa vs ccc", result.stderr)
+
     def test_pooling_without_mandatory_metadata_is_refused(self) -> None:
         result = self.run_stats_files(
             [
@@ -2961,6 +3159,23 @@ class AbStatsRegressionTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("NOT REPORTABLE: 4 contributing block(s)", result.stdout)
         self.assertIn("stable, complementary pos_in_block pair", result.stdout)
+        self.assertNotIn("  95% CI                ", result.stdout)
+        self.assertNotIn("  MDE at", result.stdout)
+        self.assertNotIn("  => Significant", result.stdout)
+
+    def test_imbalanced_first_arm_counts_suppress_primary_inference(self) -> None:
+        lines = self.benchmark_csv().splitlines()
+        for index, line in enumerate(lines):
+            fields = line.split(",")
+            if fields[0] in ("A_noDD", "B_withDD") and fields[1] == "4":
+                fields[2] = "1" if fields[0] == "A_noDD" else "2"
+                lines[index] = ",".join(fields)
+
+        result = self.run_stats("\n".join(lines) + "\n")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("NOT REPORTABLE: contributing blocks are not counterbalanced", result.stdout)
+        self.assertIn("'A_noDD': 3, 'B_withDD': 1", result.stdout)
         self.assertNotIn("  95% CI                ", result.stdout)
         self.assertNotIn("  MDE at", result.stdout)
         self.assertNotIn("  => Significant", result.stdout)
