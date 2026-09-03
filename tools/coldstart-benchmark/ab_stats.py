@@ -189,10 +189,8 @@ _MUST_MATCH = ("fp", "emulator", "android_user", "compile_filter", "animations",
 # digests, block deltas from two different experiments pool into one interval with
 # no warning at all.
 #
-# Kept OUT of _MUST_MATCH because the keys did not always exist: a CSV recorded
-# before them cannot be checked, and turning that into a hard failure would make
-# previously-analyzable files unanalyzable. Missing degrades to a warning; a
-# genuine disagreement is refused like any other incompatibility.
+# Kept separate from _MUST_MATCH so disagreement can explain exactly which
+# measured binaries differ.
 _BUILD_KEYS = ("baseline_md5", "treatment_md5")
 
 # Which LABEL named which arm. The digests above pin the pair of binaries; they do
@@ -201,20 +199,17 @@ _BUILD_KEYS = ("baseline_md5", "treatment_md5")
 # other binary -- so the block deltas pooled here have opposite signs and the
 # interval straddles zero for a reason that has nothing to do with the SDK. Rename
 # them instead of swapping and the second file contributes no rows at all, while the
-# header line still lists it as pooled. Soft-checked like _BUILD_KEYS: absent in
-# CSVs recorded before the field existed.
+# header line still lists it as pooled.
 _ARM_KEYS = ("label_a", "label_b")
 
 # The per-arm SDK-liveness contract. Two otherwise identical APKs can exercise
 # different runtime states when initialization is remotely or consent gated; if
 # one run expects the treatment active and another expects it absent, their deltas
 # estimate different experiments even though the APK digests and labels match.
-# Soft-checked for backwards compatibility with CSVs recorded before these stamps.
 _LIVENESS_KEYS = ("expect_a", "expect_b")
 
 # Identity of each arm's effective runtime-permission result (granted and denied
-# sets), stamped after that arm's first install. Soft-checked because older CSVs
-# predate these keys; when present, a disagreement is a different startup state.
+# sets), stamped after that arm's first install.
 _PERMISSION_KEYS = ("permission_a", "permission_b")
 
 # What the device actually did with the two runtime controls it cannot be asked to
@@ -229,13 +224,8 @@ _PERMISSION_KEYS = ("permission_a", "permission_b")
 #                   `dynamic` under ALLOW_DYNAMIC_PERFORMANCE. Pooling the two
 #                   averages a pinned-CPU experiment with an unpinned one.
 #
-# Soft-checked, NOT in _MUST_MATCH, for exactly the reason spelled out for
-# _BUILD_KEYS above: these keys did not always exist, and a hard failure on absence
-# makes every previously-analyzable CSV unpoolable -- including with
-# --recover-completed-blocks, whose whole purpose is not losing collected blocks.
-# The only escape from a _MUST_MATCH failure is --allow-mixed, which switches off
-# every other compatibility check at once to work around one absent key. Absence
-# therefore warns; a genuine disagreement is refused like any other incompatibility.
+# Kept separate from _MUST_MATCH so disagreement can explain whether the achieved
+# compilation state or performance-mode outcome changed.
 _CONTROL_KEYS = ("compile_status", "perf_mode")
 
 # md5 of APP_TRACE_REGEX, checked ONLY when --metric app_trace_ms is what gets
@@ -244,6 +234,20 @@ _CONTROL_KEYS = ("compile_status", "perf_mode")
 # launch duration under the same column name. Every other metric is defined by us
 # and is unaffected, which is why this is not in _MUST_MATCH.
 _APP_TRACE_KEY = "app_trace_id"
+
+# There is no released legacy CSV format to preserve. Every reportable run must
+# carry enough evidence to bind its binaries, scenario, matrix and selected arm.
+# --allow-mixed may acknowledge a disagreement; it cannot manufacture missing
+# evidence.
+_CURRENT_META_KEYS = (
+    "device", "sdk", *_MUST_MATCH, *_BUILD_KEYS, *_ARM_KEYS, *_LIVENESS_KEYS,
+    *_PERMISSION_KEYS, *_CONTROL_KEYS, _APP_TRACE_KEY, "blocks", "runs"
+)
+
+_CURRENT_COLUMNS = {
+    "label", "block", "pos_in_block", "phase", "run", "total_ms",
+    "launch_state", "status", "foreground"
+}
 
 
 def parse_meta(lines):
@@ -280,14 +284,8 @@ def main():
     ap.add_argument("csv", nargs="+", help="one or more results CSVs (concatenated)")
     ap.add_argument("--baseline", default="A_noDD")
     ap.add_argument("--treatment", default="B_withDD")
-    ap.add_argument("--recover-completed-blocks", action="store_true",
-                    help="analyze the whole blocks an aborted run did finish, as "
-                         "recorded by the harness itself in `# completed_blocks=N`. "
-                         "Pool with a fresh run collecting the remainder to restore "
-                         "the registered design. Only for a one-off failure: if the "
-                         "abort was caused by drift, the earlier blocks are suspect too")
     ap.add_argument("--allow-aborted", action="store_true",
-                    help="inspect an aborted/truncated run or one with legacy invalid rows "
+                    help="inspect an aborted/truncated run or one with invalid rows "
                          "(diagnostic only; primary interval stays suppressed)")
     ap.add_argument("--allow-mixed", action="store_true",
                     help="pool CSVs whose device/protocol metadata disagrees "
@@ -354,6 +352,47 @@ def main():
         per_file.append((path, body))
         per_meta.append(own_meta)
         meta.extend(own_meta)
+    metas = [parse_meta(m) for m in per_meta]
+    format_errors = []
+    for (path, body), own_meta in zip(per_file, metas):
+        missing = [key for key in _CURRENT_META_KEYS if not own_meta.get(key)]
+        if missing:
+            format_errors.append(
+                f"  {path}: missing metadata {', '.join(missing)}"
+            )
+        columns = set(csv.DictReader(body).fieldnames or ())
+        missing_columns = sorted(_CURRENT_COLUMNS - columns)
+        if missing_columns:
+            format_errors.append(
+                f"  {path}: missing columns {', '.join(missing_columns)}"
+            )
+    if format_errors:
+        raise SystemExit(
+            "refusing a CSV that is not in the complete current harness format:\n"
+            + "\n".join(format_errors)
+            + "\n  This benchmark was not released with a legacy format to preserve."
+              "\n  Re-run it with this version of coldstart_bench.sh."
+        )
+
+    incomplete = []
+    for (path, _), own_meta in zip(per_file, per_meta):
+        count = sum(line.strip() == "# RUN COMPLETE" for line in own_meta)
+        if count != 1:
+            incomplete.append(f"  {path}: {count} RUN COMPLETE markers (expected 1)")
+    if incomplete:
+        print("!" * 78)
+        print("!! INCOMPLETE RUN -- positive completion evidence is missing or ambiguous.")
+        for line in incomplete:
+            print("!!" + line)
+        print("!" * 78)
+        if not a.allow_aborted:
+            raise SystemExit(
+                "  refusing to analyze a run that did not positively complete. Re-run it.\n"
+                "  For investigation only, pass --allow-aborted; the output is then\n"
+                "  diagnostic and the primary interval remains suppressed."
+            )
+        diagnostic_only_reasons.append("positive RUN COMPLETE evidence is absent")
+        print("[WARNING: --allow-aborted without positive completion. DIAGNOSTIC ONLY.]")
     if len(per_file) > 1:
         print(f"[{len(per_file)} files: block ids are namespaced per file, so blocks from "
               f"different runs are never merged]")
@@ -361,25 +400,6 @@ def main():
         # comparable. Pooling launches from two device models, or from an
         # animations-on and an animations-off run, yields one confidence interval
         # over two different experiments. Refuse unless told otherwise.
-        metas = [parse_meta(m) for m in per_meta]
-        missing_required = {
-            k: [path for (path, _), m in zip(per_file, metas) if k not in m]
-            for k in _MUST_MATCH
-            if any(k not in m for m in metas)
-        }
-        if missing_required:
-            lines = [f"    {k}: absent from {', '.join(paths)}"
-                     for k, paths in missing_required.items()]
-            if not a.allow_mixed:
-                raise SystemExit(
-                    "refusing to pool CSVs without mandatory device/protocol metadata:\n"
-                    + "\n".join(lines)
-                    + "\n  Missing metadata is not evidence that the runs match. Analyze"
-                      "\n  them separately, or pass --allow-mixed only for an explicitly"
-                      "\n  diagnostic pool whose compatibility you verified another way.")
-            print("[WARNING: --allow-mixed, mandatory device/protocol metadata is absent:]")
-            for ln in lines:
-                print(ln)
         mismatched = present_meta_differences(metas, _MUST_MATCH)
         if mismatched:
             lines = [f"    {k}: {' vs '.join(v)}" for k, v in mismatched.items()]
@@ -394,13 +414,6 @@ def main():
             print("[WARNING: --allow-mixed, pooling runs that disagree on:]")
             for ln in lines:
                 print(ln)
-        unstamped = [k for k in _BUILD_KEYS if any(k not in m for m in metas)]
-        if unstamped:
-            print(f"[WARNING: {', '.join(unstamped)} absent from at least one header, so it"
-                  " cannot be]")
-            print("[         checked that these CSVs benchmarked the same two APKs. Older"
-                  " CSVs predate]")
-            print("[         the field; confirm by hand before pooling them.]")
         differing = present_meta_differences(metas, _BUILD_KEYS)
         if differing:
             lines = [f"    {k}: {' vs '.join(v)}" for k, v in differing.items()]
@@ -415,13 +428,6 @@ def main():
             print("[WARNING: --allow-mixed, pooling runs built from different APKs:]")
             for ln in lines:
                 print(ln)
-        arm_unstamped = [k for k in _ARM_KEYS if any(k not in m for m in metas)]
-        if arm_unstamped:
-            print(f"[WARNING: {', '.join(arm_unstamped)} absent from at least one header, so"
-                  " it cannot be]")
-            print("[         checked that each label names the same arm in every file. The"
-                  " per-file]")
-            print("[         label check below still applies.]")
         arm_differing = present_meta_differences(metas, _ARM_KEYS)
         if arm_differing:
             lines = [f"    {k}: {' vs '.join(v)}" for k, v in arm_differing.items()]
@@ -437,13 +443,6 @@ def main():
             print("[WARNING: --allow-mixed, pooling runs whose label -> arm mapping differs:]")
             for ln in lines:
                 print(ln)
-        liveness_unstamped = [k for k in _LIVENESS_KEYS if any(k not in m for m in metas)]
-        if liveness_unstamped:
-            print(f"[WARNING: {', '.join(liveness_unstamped)} absent from at least one header,"
-                  " so it cannot be]")
-            print("[         checked that each label represents the same SDK-active or"
-                  " SDK-absent state]")
-            print("[         in every file. Older CSVs predate these expectation stamps.]")
         liveness_differing = present_meta_differences(metas, _LIVENESS_KEYS)
         if liveness_differing:
             lines = [f"    {k}: {' vs '.join(v)}" for k, v in liveness_differing.items()]
@@ -458,13 +457,6 @@ def main():
             print("[WARNING: --allow-mixed, pooling runs whose SDK-liveness expectations differ:]")
             for ln in lines:
                 print(ln)
-        permission_unstamped = [k for k in _PERMISSION_KEYS
-                                if any(k not in m for m in metas)]
-        if permission_unstamped:
-            print(f"[WARNING: {', '.join(permission_unstamped)} absent from at least one"
-                  " header, so it cannot be]")
-            print("[         checked that each arm had the same effective runtime-permission]")
-            print("[         state in every file. Older CSVs predate these outcome stamps.]")
         permission_differing = present_meta_differences(metas, _PERMISSION_KEYS)
         if permission_differing:
             lines = [f"    {k}: {' vs '.join(v)}"
@@ -480,17 +472,6 @@ def main():
             print("[WARNING: --allow-mixed, pooling runs whose permission outcomes differ:]")
             for ln in lines:
                 print(ln)
-        control_unstamped = [k for k in _CONTROL_KEYS
-                             if any(k not in m for m in metas)]
-        if control_unstamped:
-            print(f"[WARNING: {', '.join(control_unstamped)} absent from at least one"
-                  " header, so it cannot be]")
-            print("[         checked that these runs reached the same AOT/JIT state and"
-                  " CPU-scheduling]")
-            print("[         scenario. Older CSVs predate these stamps; the requested"
-                  " compile_filter]")
-            print("[         above is not a substitute. Confirm by hand before pooling"
-                  " them.]")
         control_differing = present_meta_differences(metas, _CONTROL_KEYS)
         if control_differing:
             lines = [f"    {k}: {' vs '.join(v)}"
@@ -510,12 +491,7 @@ def main():
             for ln in lines:
                 print(ln)
         if a.metric == "app_trace_ms":
-            ids = {m[_APP_TRACE_KEY] for m in metas if _APP_TRACE_KEY in m}
-            if any(_APP_TRACE_KEY not in m for m in metas):
-                print(f"[WARNING: {_APP_TRACE_KEY} absent from at least one header, so it"
-                      " cannot be checked]")
-                print("[         that --metric app_trace_ms means the same app event in every"
-                      " file.]")
+            ids = {m[_APP_TRACE_KEY] for m in metas}
             if len(ids) > 1:
                 if not a.allow_mixed:
                     raise SystemExit(
@@ -544,115 +520,6 @@ def main():
         print("!! Do not report these as your app's startup cost.")
         print("!" * 78)
 
-    # ---- recover the whole blocks an aborted run did finish -------------------
-    # An abort at block 7 of 8 costs 45 minutes of collection. Blocks 1..N are
-    # complete cells collected under the full protocol, so they are not damaged by
-    # what happened afterwards; only their number changed. Recovering them is
-    # therefore a matter of reading the count the harness recorded and re-declaring
-    # the matrix to match, NOT of relaxing any gate:
-    #   * N comes from the harness's own trailer. Nothing here lets the analyst pick
-    #     a prefix, so a prefix cannot be chosen to suit a result.
-    #   * N is floored to an even number, because the arm order alternates by block
-    #     and an odd prefix is not counterbalanced. Dropping one good block is
-    #     cheaper than carrying a 1/k residual order effect into the estimate.
-    #   * Rows past the prefix, including the rejected launch that caused the abort,
-    #     are excluded here and reported. Every other refusal still applies to what
-    #     remains: matrix completeness for the re-declared block count, validity
-    #     columns, endpoint completeness, position pairs.
-    # What it cannot check is WHY the run aborted. A one-off (a dialog, a foreign
-    # activity) leaves the prefix sound. Drift (heat, storage, an app-side change)
-    # degrades the tail before it aborts, so truncating there selects away the slow
-    # outcomes -- the same outcome-dependent censoring this tool refuses elsewhere.
-    # That judgement needs the abort reason, so the reason is printed and the flag
-    # is opt-in rather than automatic.
-    recovered, declined = [], []
-    if a.recover_completed_blocks:
-        for i, ((path, body), own_meta) in enumerate(zip(per_file, per_meta)):
-            if not any("RUN ABORTED" in m for m in own_meta):
-                continue
-            kv = parse_meta(own_meta)
-            # Named separately so the message below states which line is actually
-            # missing. A run that aborts before the first block writes no `blocks=`
-            # header at all, and reporting that as a missing `completed_blocks=`
-            # would send the operator looking at the wrong thing.
-            unusable = [k for k in ("completed_blocks", "blocks")
-                        if not str(kv.get(k, "")).isdigit()]
-            if unusable:
-                # No count the harness recorded (a kill -9, a power cut, an abort
-                # before the header, a hand-edited file): the refusal stands. Say so.
-                # A flag that quietly does nothing is indistinguishable from one that
-                # was not needed.
-                declined.append((path, "it records no usable `# "
-                                       + "=N`, `# ".join(unusable)
-                                       + "=N` line, so there is no count from the "
-                                         "harness to trust"))
-                continue
-            completed, declared = int(kv["completed_blocks"]), int(kv["blocks"])
-            keep = completed - (completed % 2)
-            if keep < 2:
-                declined.append((path, f"only {completed} block(s) completed, and a "
-                                       "counterbalanced prefix needs at least 2"))
-                continue
-            # The block column is located by NAME. Hardcoding index 1 would silently
-            # mis-slice the file if a column were ever inserted before it, and the
-            # symptom would be a plausible interval over the wrong rows.
-            header, kept, dropped, unreadable = None, [], 0, 0
-            blk_col = None
-            for ln in body:
-                if header is None:
-                    header = ln
-                    cols = [c.strip() for c in header.split(",")]
-                    blk_col = cols.index("block") if "block" in cols else None
-                    continue
-                fields = ln.split(",")
-                try:
-                    in_prefix = int(fields[blk_col]) <= keep
-                except (IndexError, ValueError, TypeError):
-                    # A row whose block cannot be read is NOT classified as "after the
-                    # prefix". Dropping it would delete a row the gates below exist to
-                    # judge, and would report it as one of the rows the abort left
-                    # behind. Keep it and count it separately: whatever refuses on a
-                    # malformed row still refuses.
-                    kept.append(ln)
-                    unreadable += 1
-                    continue
-                if in_prefix:
-                    kept.append(ln)
-                else:
-                    dropped += 1
-            per_file[i] = (path, [header] + kept)
-            # ` blocks=`, with the leading space: `blocks={declared}` alone also
-            # matches the `completed_blocks={declared}` line.
-            per_meta[i] = [m.replace(f" blocks={declared}", f" blocks={keep}")
-                           for m in own_meta if "RUN ABORTED" not in m]
-            recovered.append((path, keep, completed, declared, dropped, unreadable,
-                              [m.strip() for m in own_meta if "RUN ABORTED" in m][0].strip("# ")))
-        for path, why in declined:
-            print("!" * 78)
-            print(f"!! --recover-completed-blocks does NOT apply to {path}:")
-            print(f"!!   {why}.")
-            print("!! That file is treated as the aborted run it is.")
-            print("!" * 78)
-        if recovered:
-            meta = [m for own in per_meta for m in own]
-            print("!" * 78)
-            for path, keep, completed, declared, dropped, unreadable, reason in recovered:
-                print(f"!! RECOVERED {keep} of the {declared} blocks {path} declared.")
-                print(f"!!   the harness recorded {completed} block(s) completed under the full")
-                if keep != completed:
-                    print(f"!!   protocol; using {keep} so the arm order stays counterbalanced.")
-                else:
-                    print("!!   protocol, all of which are used.")
-                print(f"!!   {dropped} row(s) after block {keep} excluded, including the launch")
-                print(f"!!   that aborted the run: {reason}")
-                if unreadable:
-                    print(f"!!   {unreadable} row(s) have no readable block number and were NOT")
-                    print("!!   excluded; the checks below decide what to do with them.")
-            print("!! Sound only if that failure was a one-off. If it was drift, the blocks")
-            print("!! before it are suspect too and the run should be repeated instead.")
-            print("!! Pool with a run collecting the remaining blocks to restore the design.")
-            print("!" * 78)
-
     if any("RUN ABORTED" in m for m in meta):
         print("!" * 78)
         print("!! This CSV is a PARTIAL run: the harness aborted before finishing.")
@@ -671,17 +538,14 @@ def main():
         print("[WARNING: --allow-aborted. This output is DIAGNOSTIC ONLY. Do not report it.]")
 
     # ---- does the CSV contain the experiment its own header describes? ----------
-    # A `kill -9`, host crash or power cut bypasses the harness's EXIT trap, so the
-    # RUN ABORTED marker never gets written and a truncated file looks complete. A
-    # wrong label selection can expose the same structural mismatch. Compare the
-    # requested arms against the exact matrix declared in each file's header.
+    # The completion marker proves the script returned; the matrix check separately
+    # proves that the selected arms contain exactly the experiment the header
+    # declares. A wrong label selection can expose the same structural mismatch.
     shortfalls = []
     malformed_matrix_metadata = []
     for (path, body), own_meta in zip(per_file, per_meta):
         kv = parse_meta(own_meta)
         blocks_value, runs_value = kv.get("blocks"), kv.get("runs")
-        if blocks_value is None and runs_value is None:
-            continue                      # pre-metadata CSV; nothing to check against
         name = path if len(per_file) > 1 else "this CSV"
         if (blocks_value is None or runs_value is None
                 or not blocks_value.isdigit() or not runs_value.isdigit()
@@ -748,8 +612,8 @@ def main():
         raise SystemExit(
             "refusing to analyze malformed experiment matrix metadata:\n"
             + "\n".join(malformed_matrix_metadata)
-            + "\n  `blocks` and `runs` must either both be absent in a legacy CSV or"
-              "\n  both be positive integers so the declared matrix can be validated."
+            + "\n  `blocks` and `runs` must both be positive integers so the declared"
+              "\n  matrix can be validated."
         )
     if shortfalls:
         print("!" * 78)
@@ -780,9 +644,8 @@ def main():
         phase = r.get("phase")
         # Include ONLY accepted measured launches. A rejected measured row is an
         # invalid observation, not an ordinary non-measured phase: the harness
-        # writes it before its EXIT trap appends RUN ABORTED, and kill -9 can leave
-        # a matrix-complete file with no trailer. Everything else -- warm-ups and
-        # the liveness-probe launch -- remains excluded by construction.
+        # writes it before its EXIT trap appends RUN ABORTED. Everything else --
+        # warm-ups and the liveness-probe launch -- remains excluded by construction.
         if phase not in ("measure", "measure_rejected"):
             if (phase in ("probe", "warmup")
                     and r.get("label") in (a.baseline, a.treatment)
@@ -790,11 +653,9 @@ def main():
                 conditioning_no_fg += 1
             skipped_warmup += 1
             continue
-        # Belt and braces on top of the phase filter. The harness now labels a
-        # launch it rejected `measure_rejected`, but a CSV from an older build --
-        # or one edited by hand -- can carry a failed launch as `measure`. These
-        # columns record the harness's own verdict, so honour it here too rather
-        # than trusting the phase label alone.
+        # Belt and braces on top of the phase filter. These columns record the
+        # harness's own verdict, so honour them rather than trusting the phase label
+        # alone.
         labels_seen[path].add(r["label"])
         validity = {field: r.get(field)
                     for field in ("status", "launch_state", "foreground")}
@@ -822,10 +683,7 @@ def main():
         if (r.get("foreground") == "NA"
                 and r["label"] in (a.baseline, a.treatment)):
             no_fg += 1
-        raw = r.get(a.metric)
-        if raw is None and a.metric == "total_ms":
-            raw = r.get("ms")
-        v = parse_ms(raw)
+        v = parse_ms(r.get(a.metric))
         if v is None:
             # Only the two arms under analysis. A pooled file may carry a third
             # label (an A/A cell, a renamed arm) whose rows could never have

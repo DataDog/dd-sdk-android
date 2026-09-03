@@ -188,7 +188,7 @@ number, the cost is in the core SDK.
 PKG=<app.id> BENCHMARK_CSV=results_<ts>.csv BENCHMARK_ARM=<the arm's label> \
   ./capture_trace.sh treatment.apk treatment
 
-# Or give the identities by hand; an explicit value overrides the header:
+# Or capture without CSV binding and assert the identities by hand:
 PKG=<app.id> \
 EXPECTED_APK_MD5=<baseline_md5 or treatment_md5 for this arm> \
 EXPECTED_PERMISSION_STATE_ID=<permission_a or permission_b for this arm> \
@@ -207,13 +207,14 @@ EXPECTED_SDK_LIVENESS=<expect_a or expect_b for this arm> \
 `BENCHMARK_CSV` and `BENCHMARK_ARM` read every expected identity from that run's own header, so
 none of them is transcribed by hand. `BENCHMARK_ARM` is the label the CSV recorded, the same name
 the rows and `ab_stats.py` use, so a typo is an error rather than the silent selection of the
-other arm. An `EXPECTED_*` passed explicitly still overrides the header and still faces the same
-attestation.
+other arm. A matching explicit `EXPECTED_*` may repeat the header value; a conflicting one is
+rejected because the bound CSV is authoritative.
 
 The binding refuses rather than guesses. A file with no `# device=` line is not a benchmark CSV;
 more than one means it pools several runs and cannot identify one; an aborted run has no completed
-A/B result to explain; and a CSV predating a stamp is named rather than defaulted. It is read
-before every gate and changes only where an expected value comes from, never what is compared.
+A/B result to explain; exactly one `# RUN COMPLETE` marker is required; and every current-format
+stamp must be present. It is read before every gate and changes only where an expected value comes
+from, never what is compared.
 
 Set `TRACE_ENDPOINT` to the A/B metric the trace is meant to explain. It defaults to
 `total_ms` and validates a successful cold `am start -W` first frame. Use `ttfd`, or
@@ -225,7 +226,7 @@ capture is invalid if the selected endpoint is not reached. With `app_trace_ms`,
 Omit the positional SDK expectation when `BENCHMARK_CSV` is set: it is derived from the selected
 arm's `expect_a` / `expect_b` stamp. Pass it, and a contradicting value aborts. Without
 `BENCHMARK_CSV` it is required. Never set `WARMUP` for a capture; it is not an input and aborts.
-All ten expected inputs shown above are mandatory. `EXPECTED_APK_MD5` must equal the selected arm's
+All unbound expected inputs shown above are mandatory. `EXPECTED_APK_MD5` must equal the selected arm's
 `baseline_md5` or `treatment_md5` before device mutation. `EXPECTED_PERMISSION_STATE_ID` must equal
 that arm's `permission_a` or `permission_b` after permission setup. `EXPECTED_COMPILE_STATUS` must
 equal the benchmark header's achieved `compile_status`, not merely use the same requested
@@ -239,10 +240,11 @@ A/B in silence. `EXPECTED_FP` must equal the header's `fp`: it is checked agains
 device identity and a capture from another model explains nothing about the run it is attached
 to. `EXPECTED_ANDROID_USER` must equal the header's `android_user` and the active device user
 before mutation. `EXPECTED_SDK_LIVENESS` must equal the selected arm's `expect_a` / `expect_b`
-stamp, and the positional argument when one is given. Of the eleven expected identities, nine are
+stamp, and the positional argument when one is given. A bound capture also requires the recorded
+launcher component to equal the component resolved from the installed APK. Of the twelve expected identities, ten are
 compared against an independent observable; `warmup` and the SDK expectation are not, so the
-capture prints whether each was taken from the CSV header or asserted by the operator. Report that
-line as given rather than describing the capture as fully verified. Capture names are
+bound capture derives both from the CSV and says so; an unbound capture reports them as asserted.
+Report that line as given rather than describing the capture as fully verified. Capture names are
 non-destructive: an existing `.pftrace` is never overwritten.
 
 **Do not edit the harness scripts while a run is in flight.** Bash re-reads a running script
@@ -257,22 +259,10 @@ not see a venv-installed `perfetto`.
 
 ## If a run aborts
 
-Do not restart from zero, and do not report the partial file. The harness stamps
-`# completed_blocks=N` beside the abort marker and prints the command for the remainder.
-
-1. Read the abort reason. A one-off (dialog, foreign activity, one bad launch) means the
-   completed blocks are sound. Drift (heat, storage, an app-side change) means they are not,
-   because the tail degrades before it fails, and truncating there drops the slow outcomes.
-   In that case repeat the run rather than recovering it, and say why.
-2. Fix the named cause.
-3. Collect the missing blocks with the same device, same APK files and same settings, using
-   the block count from the hint.
-4. `ab_stats.py --recover-completed-blocks <aborted csv> <new csv>`.
-
-That yields the registered design and a normal, reportable result. The prefix is floored to an
-even block count so counterbalancing holds, and the count comes from the harness rather than
-from you: a file without that line (a `kill -9`) is refused, and there is no flag that lets you
-nominate a prefix yourself. Fewer blocks widen the interval and raise the MDE, both printed.
+Fix the cause and repeat the complete registered run from the beginning. A reportable CSV ends
+with exactly one `# RUN COMPLETE`; an abort, killed process or host crash does not. Partial-run
+recovery is intentionally unsupported. `--allow-aborted` may inspect the surviving rows, but its
+output is diagnostic only and suppresses the primary interval.
 
 ## What a finished task looks like
 

@@ -938,15 +938,16 @@ class HarnessRegressionTests(unittest.TestCase):
     BENCHMARK_ROWS = (
         "label,block,pos_in_block,phase,run,total_ms,launch_state,status,foreground,ttfd\n"
         "A_noDD,1,1,measure,1,100,COLD,ok,ok,100\n"
+        "# RUN COMPLETE\n"
     )
 
     def test_trace_binds_to_the_benchmark_csv_instead_of_transcription(self) -> None:
-        """One binding replaces eleven hand-copied values, and refuses rather than guess.
+        """One binding replaces twelve hand-copied values, and refuses rather than guess.
 
         Two of those values are 32-character digests and one is a build fingerprint;
         a mistyped one aborted with a message indistinguishable from a real mismatch.
         Reading them from the run's own header removes the transcription without
-        moving a single gate: an explicit value still wins and is still attested.
+        moving a single gate: a conflicting explicit value is rejected as stale.
         """
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -960,10 +961,21 @@ class HarnessRegressionTests(unittest.TestCase):
             aborted = root / "aborted.csv"
             aborted.write_text(self.BENCHMARK_HEADER + self.BENCHMARK_ROWS
                                + "# RUN ABORTED (exit 1) -- dialog\n", encoding="utf-8")
-            legacy = root / "legacy.csv"
-            legacy.write_text(
+            incomplete_format = root / "incomplete-format.csv"
+            incomplete_format.write_text(
                 self.BENCHMARK_HEADER.replace(" perf_mode=fixed", "")
                 + self.BENCHMARK_ROWS, encoding="utf-8")
+            interrupted = root / "interrupted.csv"
+            interrupted.write_text(
+                self.BENCHMARK_HEADER
+                + self.BENCHMARK_ROWS.replace("# RUN COMPLETE\n", ""),
+                encoding="utf-8",
+            )
+            duplicate_completion = root / "duplicate-completion.csv"
+            duplicate_completion.write_text(
+                self.BENCHMARK_HEADER + self.BENCHMARK_ROWS + "# RUN COMPLETE\n",
+                encoding="utf-8",
+            )
 
             def run(expect_dd="1", **env_overrides):
                 env = os.environ.copy()
@@ -994,9 +1006,12 @@ class HarnessRegressionTests(unittest.TestCase):
                  "is not an arm of"),
                 (dict(BENCHMARK_CSV=str(good)), "set BENCHMARK_ARM"),
                 (dict(BENCHMARK_ARM="B_withDD"), "there is no header"),
-                # A CSV predating a stamp cannot supply it, and a default would defeat
-                # the point. Named, not invented.
-                (dict(BENCHMARK_CSV=str(legacy), BENCHMARK_ARM="B_withDD"),
+                (dict(BENCHMARK_CSV=str(interrupted), BENCHMARK_ARM="B_withDD"),
+                 "RUN COMPLETE"),
+                (dict(BENCHMARK_CSV=str(duplicate_completion), BENCHMARK_ARM="B_withDD"),
+                 "has 2 '# RUN COMPLETE' markers"),
+                # There is no unreleased legacy-format contract. Named, not invented.
+                (dict(BENCHMARK_CSV=str(incomplete_format), BENCHMARK_ARM="B_withDD"),
                  "records no perf_mode"),
             ):
                 result = run(**env)
@@ -1014,10 +1029,14 @@ class HarnessRegressionTests(unittest.TestCase):
             baseline = run(BENCHMARK_CSV=str(good), BENCHMARK_ARM="A_noDD")
             self.assertIn("expect-datadog=1, but the selected benchmark arm", baseline.stderr)
 
-            # An explicit value still wins, and still faces its own attestation.
+            # A bound CSV is authoritative; a stale explicit value cannot select a
+            # different binary while still calling the trace bound to this arm.
             override = run(BENCHMARK_CSV=str(good), BENCHMARK_ARM="B_withDD",
                            EXPECTED_APK_MD5="f" * 32)
+            self.assertNotEqual(override.returncode, 0)
+            self.assertIn("conflict with the bound CSV", override.stderr)
             self.assertIn("f" * 32, override.stderr)
+            self.assertIn("c" * 32, override.stderr)
 
             # `app_trace_id=none` is a run with no app-owned endpoint, not a malformed
             # digest; the md5 charset error pointed at the wrong problem entirely.
@@ -1026,6 +1045,12 @@ class HarnessRegressionTests(unittest.TestCase):
             self.assertIn("ran without", no_endpoint.stderr)
             self.assertIn("no app-owned endpoint", no_endpoint.stderr)
             self.assertNotIn("hexadecimal", no_endpoint.stderr)
+
+            capture = (HARNESS / "capture_trace.sh").read_text(encoding="utf-8")
+            launcher_shape = capture.index('case "$ACT" in')
+            launcher_binding = capture.index('[ "$ACT" != "$EXPECTED_LAUNCHER" ]')
+            self.assertLess(launcher_shape, launcher_binding)
+            self.assertIn("trace would exercise a different cold-start", capture)
 
     UNBOUND_IDENTITIES = dict(
         EXPECTED_APK_MD5="a" * 32,
@@ -1041,9 +1066,9 @@ class HarnessRegressionTests(unittest.TestCase):
     )
 
     def test_trace_derives_the_identities_that_have_no_observable(self) -> None:
-        """Two of the eleven identities were accepted twice instead of attested.
+        """Two of the twelve identities are derived because they cannot be attested.
 
-        Nine are each compared against an independent observable: the file's own
+        Ten are each compared against an independent observable: the file's own
         digest, the device, or the state the script achieved. `warmup` and the SDK
         expectation were compared against a second operator-supplied value, so a
         consistently wrong pair passed and the docs presented all eleven uniformly.
@@ -1125,12 +1150,12 @@ class HarnessRegressionTests(unittest.TestCase):
             self.assertIn("asserted, not verified", unbound.stderr)
             self.assertNotIn("(header)", unbound.stderr)
 
-            # Bound but overridden: the override still wins, so the notice must call
-            # it explicit. Claiming derivation there would overstate the guarantee.
+            # Bound but contradicted: explicit input cannot replace the arm metadata.
             overridden = run(**bound, BENCHMARK_ARM="B_withDD",
                              EXPECTED_WARMUP="5", EXPECTED_SDK_LIVENESS="1")
-            self.assertIn("warmup=5 (explicit)", overridden.stderr)
-            self.assertIn("expect-datadog=1 (explicit)", overridden.stderr)
+            self.assertNotEqual(overridden.returncode, 0)
+            self.assertIn("EXPECTED_WARMUP='5'", overridden.stderr)
+            self.assertIn("bound CSV is authoritative", overridden.stderr)
 
             # WARMUP is refused on the bound path too, including when it agrees with
             # the header: it is not an input, and silence would hand the operator a
@@ -1358,53 +1383,15 @@ class HarnessRegressionTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("settings put global window_animation_scale", result.stderr)
 
-    def test_abort_trailer_records_what_completed_and_how_to_recover(self) -> None:
+    def test_run_has_positive_completion_and_no_partial_recovery(self) -> None:
         source = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
-        # The count is set only after BOTH arms of a block finished every gate,
-        # which is what makes the prefix a set of whole cells.
-        loop_end = source.index("_COMPLETED_BLOCKS=$b")
-        measure_call = source.index('measure "$arm" "$b" "measure" "$RUNS" "$pos"')
-        self.assertLess(measure_call, loop_end)
-        self.assertIn('echo "# completed_blocks=$_COMPLETED_BLOCKS" >> "$OUT"', source)
-        self.assertIn("# recover: collect", source)
-        # The recovery hint must not introduce header keys of its own.
-        self.assertNotIn("recover_with=BLOCKS=", source)
-
-    def test_printed_recovery_command_survives_being_pasted(self) -> None:
-        """Every env line needs a continuation, or the settings never reach the run.
-
-        Without one, the leading lines paste as standalone assignments: they become
-        shell variables, are never exported, and the resume run silently falls back
-        to the defaults for WARMUP, COMPILE_FILTER, ANIMATIONS and AIRPLANE -- all
-        `_MUST_MATCH` keys -- so ab_stats.py refuses the pool and the operator has
-        collected a second run for nothing.
-        """
-        source = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
-        block = source[source.index("1. collect the remainder"):
-                       source.index("2. ab_stats.py --recover-completed-blocks")]
-        env_echoes = [ln for ln in block.splitlines()
-                      if "=$" in ln and "echo" in ln and "_ALLOW_IN_EFFECT" not in ln]
-        self.assertTrue(env_echoes)
-        for ln in env_echoes:
-            self.assertIn("\\\\", ln, f"env line lacks a line continuation: {ln.strip()}")
-        # RUNS and BLOCKS are argv 3 and 4; exporting them is silently discarded.
-        self.assertNotIn("RUNS=$RUNS WARMUP=", block)
-        self.assertIn("$RUNS $_resume_missing", block)
-        # A run using APP_TRACE_REGEX must carry it over, or the resume CSV stamps
-        # app_trace_id=none and --metric app_trace_ms cannot be pooled with it.
-        self.assertIn("APP_TRACE_REGEX=%q", block)
-        allow_loop = source[source.index("for _allow in"):
-                            source.index("; do", source.index("for _allow in"))]
-        self.assertIn("ALLOW_DYNAMIC_PERFORMANCE", allow_loop)
-        self.assertIn('echo "             $_ALLOW_IN_EFFECT', block)
-
-    def test_abort_trailer_globals_exist_before_the_trap_is_armed(self) -> None:
-        """`set -u` inside the EXIT trap would replace the abort message with a crash."""
-        source = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
-        self.assertLess(source.index("_COMPLETED_BLOCKS=0"),
-                        source.index("trap restore_device EXIT"))
-        self.assertLess(source.index('_ALLOW_IN_EFFECT=""'),
-                        source.index("trap restore_device EXIT"))
+        completion = source.index('echo "# RUN COMPLETE" >> "$OUT"')
+        measured = source.rindex('measure "$arm" "$b" "measure" "$RUNS" "$pos"')
+        self.assertLess(measured, completion)
+        self.assertIn('echo "# RUN ABORTED (exit $rc)', source)
+        self.assertIn("Partial-run recovery is not a reportable protocol", source)
+        self.assertNotIn("completed_blocks", source)
+        self.assertNotIn("recover-completed-blocks", source)
 
     def test_trace_output_is_reserved_before_the_first_device_mutation(self) -> None:
         source = (HARNESS / "capture_trace.sh").read_text(encoding="utf-8")
@@ -1490,6 +1477,26 @@ class HarnessRegressionTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("paths=[]", result.stdout)
         self.assertIn("ensure_rc=0", result.stdout)
+
+    def test_only_silent_pm_path_exit_one_means_absent(self) -> None:
+        for remote_result, detail in (
+            ("printf '__dd_rc=2\\n'", "exit 2"),
+            ("printf 'permission denied\\n__dd_rc=1\\n'", "ambiguous absence"),
+        ):
+            with self.subTest(remote_result=remote_result):
+                result = self.run_with_fake_adb(
+                    """
+                    . "$LIB"
+                    DD_ANDROID_USER=0
+                    dd_package_path com.example.app
+                    """,
+                    f"""
+                    #!/usr/bin/env bash
+                    {remote_result}
+                    """,
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(detail, result.stderr)
 
     def test_package_path_refuses_a_shell_that_never_ran(self) -> None:
         result = self.run_with_fake_adb(
@@ -2697,14 +2704,17 @@ class HarnessRegressionTests(unittest.TestCase):
 
 class AbStatsRegressionTests(unittest.TestCase):
     COMPATIBLE_META = (
-        "fp=build/fingerprint emulator=0 android_user=0 "
-        "compile_filter=speed-profile compile_status=verify animations=0 "
+        "device=pixel sdk=31 fp=build/fingerprint emulator=0 android_user=0 "
+        "compile_filter=speed-profile compile_status=verify perf_mode=fixed animations=0 "
         "airplane=0 abi=arm64-v8a "
-        "launcher=com.example/.MainActivity warmup=3"
+        "launcher=com.example/.MainActivity warmup=3 "
+        "baseline_md5=aaa treatment_md5=bbb label_a=A_noDD label_b=B_withDD "
+        "expect_a=0 expect_b=1 app_trace_id=none permission_a=p1 permission_b=p2"
     )
 
-    @staticmethod
+    @classmethod
     def benchmark_csv(
+        cls,
         missing_treatment_block: int | None = None,
         invalid_treatment_block: int | None = None,
         rejected_treatment_block: int | None = None,
@@ -2715,11 +2725,12 @@ class AbStatsRegressionTests(unittest.TestCase):
         block_count: int = 4,
         baseline_offset: int = 100,
     ) -> str:
+        if metadata is None:
+            metadata = f"{cls.COMPATIBLE_META} blocks={block_count} runs={runs_per_cell}"
         rows = [
             "label,block,pos_in_block,phase,run,total_ms,launch_state,status,foreground,ttfd"
         ]
-        if metadata is not None:
-            rows.insert(0, f"# {metadata}")
+        rows.insert(0, f"# {metadata}")
         for block in range(1, block_count + 1):
             order = (("A_noDD", 1), ("B_withDD", 2)) if block % 2 else (
                 ("B_withDD", 1),
@@ -2749,6 +2760,7 @@ class AbStatsRegressionTests(unittest.TestCase):
                         f"{label},{block},{position},{phase},{run},{value},"
                         f"COLD,{status},ok,{ttfd}"
                     )
+        rows.append("# RUN COMPLETE")
         return "\n".join(rows) + "\n"
 
     def run_stats(self, csv_body: str, *args: str) -> subprocess.CompletedProcess[str]:
@@ -2798,6 +2810,9 @@ class AbStatsRegressionTests(unittest.TestCase):
         column_index = header.index(column)
         output = lines[:header_index]
         for line in lines[header_index:]:
+            if line.startswith("#"):
+                output.append(line)
+                continue
             fields = line.split(",")
             fields.pop(column_index)
             output.append(",".join(fields))
@@ -2883,13 +2898,15 @@ class AbStatsRegressionTests(unittest.TestCase):
         self.assertNotIn("PRIMARY ENDPOINT", result.stdout)
 
     def test_partially_present_or_malformed_matrix_metadata_is_refused(self) -> None:
-        for declaration in (
-            "blocks=4",
-            "runs=1",
-            "blocks=oops runs=1",
-            "blocks=4 runs=oops",
-            "blocks=4 runs=0",
-        ):
+        for declaration in ("blocks=4", "runs=1"):
+            with self.subTest(declaration=declaration):
+                result = self.run_stats(self.benchmark_csv(
+                    metadata=f"{self.COMPATIBLE_META} {declaration}"
+                ))
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("complete current harness format", result.stderr)
+                self.assertNotIn("PRIMARY ENDPOINT", result.stdout)
+        for declaration in ("blocks=oops runs=1", "blocks=4 runs=oops", "blocks=4 runs=0"):
             with self.subTest(declaration=declaration):
                 result = self.run_stats(self.benchmark_csv(
                     metadata=f"{self.COMPATIBLE_META} {declaration}"
@@ -2905,18 +2922,16 @@ class AbStatsRegressionTests(unittest.TestCase):
         self.assertIn("--- PRIMARY ENDPOINT: paired block-level delta ---", result.stdout)
         self.assertIn("  95% CI                ", result.stdout)
 
-    def test_missing_launch_validity_columns_suppress_primary_inference(self) -> None:
+    def test_missing_launch_validity_columns_are_not_current_format(self) -> None:
         for column in ("status", "launch_state", "foreground"):
             with self.subTest(column=column):
                 result = self.run_stats(
                     self.erase_column(self.benchmark_csv(), column)
                 )
-                self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertIn("launch-validity evidence", result.stdout)
-                self.assertIn("NOT REPORTABLE", result.stdout)
-                self.assertNotIn("  95% CI                ", result.stdout)
-                self.assertNotIn("  MDE at", result.stdout)
-                self.assertNotIn("  => Significant", result.stdout)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("complete current harness format", result.stderr)
+                self.assertIn(f"missing columns {column}", result.stderr)
+                self.assertNotIn("PRIMARY ENDPOINT", result.stdout)
 
     def test_empty_launch_validity_cell_suppresses_primary_inference(self) -> None:
         csv_body = self.benchmark_csv().replace(
@@ -2933,7 +2948,6 @@ class AbStatsRegressionTests(unittest.TestCase):
         self,
         completed_blocks: int,
         declared_blocks: int = 8,
-        with_count: bool = True,
         invalid_treatment_block: int | None = None,
         drop_baseline_block: int | None = None,
     ) -> str:
@@ -2948,6 +2962,7 @@ class AbStatsRegressionTests(unittest.TestCase):
             block_count=completed_blocks,
             invalid_treatment_block=invalid_treatment_block,
         ).rstrip("\n").split("\n")
+        rows = [row for row in rows if row != "# RUN COMPLETE"]
         if drop_baseline_block is not None:
             rows = [r for r in rows
                     if not r.startswith(f"A_noDD,{drop_baseline_block},")]
@@ -2956,112 +2971,38 @@ class AbStatsRegressionTests(unittest.TestCase):
         rows.append(f"B_withDD,{partial},2,measure_rejected,2,NA,NA,ok,OTHER_MID,NA")
         rows.append("# RUN ABORTED (exit 1) -- another activity took the foreground: "
                     "com.android.settings/.homepage.SettingsHomepageActivity")
-        if with_count:
-            rows.append(f"# completed_blocks={completed_blocks}")
         return "\n".join(rows) + "\n"
 
     def recoverable_metadata(self, blocks: int, runs: int = 2) -> str:
         return (f"device=pixel sdk=31 abi=arm64-v8a emulator=0 android_user=0 "
                 f"compile_filter=speed-profile compile_status=verify "
+                f"perf_mode=fixed "
                 f"blocks={blocks} runs={runs} warmup=3 "
                 f"animations=0 fp=fp1 launcher=com.example/.Main airplane=0 "
                 f"baseline_md5=aaa treatment_md5=bbb label_a=A_noDD label_b=B_withDD "
                 f"expect_a=0 expect_b=1 app_trace_id=none permission_a=p1 permission_b=p2")
 
-    def test_aborted_run_is_still_refused_without_the_recovery_flag(self) -> None:
+    def test_aborted_run_is_refused(self) -> None:
         result = self.run_stats(self.aborted_csv(6))
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("refusing to analyze an aborted run", result.stderr)
+        self.assertIn("did not positively complete", result.stderr)
 
-    def test_completed_blocks_of_an_aborted_run_are_recoverable(self) -> None:
-        """45 minutes of valid blocks must not be lost to a failure in block 7.
+    def test_incomplete_run_is_diagnostic_only_when_explicitly_allowed(self) -> None:
+        interrupted = self.benchmark_csv().replace("# RUN COMPLETE\n", "")
+        refused = self.run_stats(interrupted)
+        self.assertNotEqual(refused.returncode, 0)
+        self.assertIn("did not positively complete", refused.stderr)
 
-        The prefix is whole cells collected under the full protocol; only their
-        number changed. Every other refusal still applies to what remains.
-        """
+        diagnostic = self.run_stats(interrupted, "--allow-aborted")
+        self.assertEqual(diagnostic.returncode, 0, diagnostic.stderr)
+        self.assertIn("DIAGNOSTIC ONLY", diagnostic.stdout)
+        self.assertIn("NOT REPORTABLE", diagnostic.stdout)
+        self.assertNotIn("  95% CI                ", diagnostic.stdout)
+
+    def test_partial_run_recovery_option_does_not_exist(self) -> None:
         result = self.run_stats(self.aborted_csv(6), "--recover-completed-blocks")
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("RECOVERED 6 of the 8 blocks", result.stdout)
-        self.assertIn("2 row(s) after block 6 excluded", result.stdout)
-        self.assertIn("com.android.settings", result.stdout)
-        self.assertIn("  blocks                6", result.stdout)
-        self.assertIn("  95% CI                ", result.stdout)
-        self.assertNotIn("NOT REPORTABLE", result.stdout)
-
-    def test_recovered_prefix_is_floored_to_an_even_block_count(self) -> None:
-        """An odd prefix is not counterbalanced, and 1/k of an order effect stays in."""
-        result = self.run_stats(self.aborted_csv(7), "--recover-completed-blocks")
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("using 6 so the arm order stays counterbalanced", result.stdout)
-        self.assertIn("  blocks                6", result.stdout)
-        self.assertIn("{'A_noDD': 3, 'B_withDD': 3}", result.stdout)
-
-    def test_recovered_prefix_pools_to_the_registered_design(self) -> None:
-        fresh = self.benchmark_csv(
-            metadata=self.recoverable_metadata(2),
-            runs_per_cell=2,
-            block_count=2,
-            baseline_offset=106,
-        )
-        result = self.run_stats_files(
-            [self.aborted_csv(6), fresh], "--recover-completed-blocks"
-        )
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("  blocks                8", result.stdout)
-        self.assertIn("{'A_noDD': 4, 'B_withDD': 4}", result.stdout)
-        self.assertIn("  95% CI                ", result.stdout)
-        self.assertNotIn("NOT REPORTABLE", result.stdout)
-
-    def test_recovery_does_not_relax_any_other_refusal(self) -> None:
-        """The banner claims every other gate still applies. Prove it does.
-
-        An invalid launch and an incomplete cell both sit INSIDE the recovered
-        prefix here, so recovering the prefix must not turn either into a result.
-        """
-        invalid = self.aborted_csv(6, invalid_treatment_block=3)
-        result = self.run_stats(invalid, "--recover-completed-blocks")
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("RECOVERED 6 of the 8 blocks", result.stdout)
-        self.assertIn("invalid measured launch", result.stderr)
-
-        short = self.aborted_csv(6, drop_baseline_block=3)
-        result = self.run_stats(short, "--recover-completed-blocks")
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("RECOVERED 6 of the 8 blocks", result.stdout)
-        self.assertIn("truncated run", result.stderr)
-
-    def test_rows_with_an_unreadable_block_are_kept_not_counted_as_excluded(self) -> None:
-        """A row it cannot classify must not be deleted and reported as post-prefix.
-
-        Dropping it would remove a row the gates exist to judge, and would attribute
-        it to the abort. It is kept, counted separately, and left to those gates.
-        """
-        body = self.aborted_csv(6).replace("A_noDD,3,1,measure,1,", "A_noDD,x3,1,measure,1,", 1)
-        result = self.run_stats(body, "--recover-completed-blocks")
-        self.assertIn("2 row(s) after block 6 excluded", result.stdout)
-        self.assertIn("1 row(s) have no readable block number and were NOT", result.stdout)
-        self.assertNotEqual(result.returncode, 0)
-
-    def test_recovery_says_so_when_it_does_not_apply(self) -> None:
-        """A flag that quietly does nothing reads as a flag that was not needed."""
-        result = self.run_stats(self.aborted_csv(1), "--recover-completed-blocks")
-        self.assertIn("--recover-completed-blocks does NOT apply", result.stdout)
-        self.assertIn("only 1 block(s) completed", result.stdout)
-
-        result = self.run_stats(
-            self.aborted_csv(6, with_count=False), "--recover-completed-blocks"
-        )
-        self.assertIn("--recover-completed-blocks does NOT apply", result.stdout)
-        self.assertIn("no usable `# completed_blocks=N` line", result.stdout)
-
-    def test_recovery_requires_the_count_the_harness_recorded(self) -> None:
-        """A kill -9 leaves no count, so there is nothing to trust. Refusal stands."""
-        result = self.run_stats(
-            self.aborted_csv(6, with_count=False), "--recover-completed-blocks"
-        )
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("refusing to analyze an aborted run", result.stderr)
-        self.assertNotIn("RECOVERED", result.stdout)
+        self.assertIn("unrecognized arguments: --recover-completed-blocks", result.stderr)
 
     def test_byte_identical_csv_copy_is_refused(self) -> None:
         csv_body = self.benchmark_csv()
@@ -3176,7 +3117,7 @@ class AbStatsRegressionTests(unittest.TestCase):
     def test_measure_rejected_without_abort_trailer_is_not_reportable(self) -> None:
         csv_body = self.benchmark_csv(
             rejected_treatment_block=4,
-            metadata="blocks=4 runs=1",
+            metadata=f"{self.COMPATIBLE_META} blocks=4 runs=1",
         )
         refused = self.run_stats(csv_body)
         self.assertNotEqual(refused.returncode, 0)
@@ -3191,7 +3132,7 @@ class AbStatsRegressionTests(unittest.TestCase):
 
     def test_aborted_run_override_stays_non_reportable(self) -> None:
         result = self.run_stats(
-            self.benchmark_csv(metadata="RUN ABORTED"),
+            self.benchmark_csv().replace("# RUN COMPLETE", "# RUN ABORTED"),
             "--allow-aborted",
         )
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -3212,10 +3153,11 @@ class AbStatsRegressionTests(unittest.TestCase):
         result = self.run_stats_files(
             [
                 self.benchmark_csv(
-                    metadata=f"{self.COMPATIBLE_META} expect_a=0 expect_b=1"
+                    metadata=f"{self.COMPATIBLE_META} blocks=4 runs=1"
                 ),
                 self.benchmark_csv(
-                    metadata=f"{self.COMPATIBLE_META} expect_a=0 expect_b=0"
+                    metadata=(f"{self.COMPATIBLE_META} blocks=4 runs=1"
+                              .replace("expect_b=1", "expect_b=0"))
                 ),
             ]
         )
@@ -3225,11 +3167,9 @@ class AbStatsRegressionTests(unittest.TestCase):
 
     def test_pooling_different_permission_outcomes_is_refused(self) -> None:
         def stamped(permission_b: str) -> str:
-            lines = self.benchmark_csv(metadata=self.COMPATIBLE_META).splitlines()
-            # The collector learns arm B only after arm A's rows already exist, so
-            # these metadata comments are intentionally inside the CSV body.
-            lines[3:3] = ["# permission_a=aaa", f"# permission_b={permission_b}"]
-            return "\n".join(lines) + "\n"
+            metadata = (f"{self.COMPATIBLE_META} blocks=4 runs=1"
+                        .replace("permission_b=p2", f"permission_b={permission_b}"))
+            return self.benchmark_csv(metadata=metadata)
 
         result = self.run_stats_files(
             [
@@ -3253,46 +3193,32 @@ class AbStatsRegressionTests(unittest.TestCase):
     def test_pooling_different_android_users_is_refused(self) -> None:
         result = self.run_stats_files(
             [
-                self.benchmark_csv(metadata=self.COMPATIBLE_META),
                 self.benchmark_csv(
-                    metadata=self.COMPATIBLE_META.replace("android_user=0", "android_user=10")
+                    metadata=f"{self.COMPATIBLE_META} blocks=4 runs=1"
+                ),
+                self.benchmark_csv(
+                    metadata=(f"{self.COMPATIBLE_META} blocks=4 runs=1"
+                              .replace("android_user=0", "android_user=10"))
                 ),
             ]
         )
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("android_user: 0 vs 10", result.stderr)
 
-    def test_runtime_control_stamps_do_not_break_csvs_that_predate_them(self) -> None:
-        """Absence warns; it must not make previously-analyzable files unpoolable.
-
-        `compile_status` and `perf_mode` were _MUST_MATCH for one commit, which meant
-        two CSVs collected on the same device the day before refused to pool WITH EACH
-        OTHER. The only escape was --allow-mixed, which switches off all nine other
-        compatibility checks to work around one absent key -- and it broke
-        --recover-completed-blocks, whose entire purpose is not losing collected
-        blocks. Same policy as _BUILD_KEYS: missing degrades to a warning.
-        """
-        legacy = (self.COMPATIBLE_META
-                  .replace(" compile_status=verify", ""))
-        result = self.run_stats_files(
-            [self.benchmark_csv(metadata=legacy),
-             self.benchmark_csv(metadata=legacy, baseline_offset=140)]
-        )
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("compile_status, perf_mode absent from at least one header",
-                      result.stdout)
-        self.assertIn("  95% CI                ", result.stdout)
-
-        mixed = self.run_stats_files(
-            [self.benchmark_csv(metadata=legacy),
-             self.benchmark_csv(metadata=self.COMPATIBLE_META, baseline_offset=140)]
-        )
-        self.assertEqual(mixed.returncode, 0, mixed.stderr)
+    def test_missing_current_metadata_is_refused_even_with_allow_mixed(self) -> None:
+        metadata = (f"{self.COMPATIBLE_META} blocks=4 runs=1"
+                    .replace(" compile_status=verify", ""))
+        for args in ((), ("--allow-mixed",)):
+            with self.subTest(args=args):
+                result = self.run_stats(self.benchmark_csv(metadata=metadata), *args)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("complete current harness format", result.stderr)
+                self.assertIn("missing metadata compile_status", result.stderr)
 
     def test_pooling_different_cpu_scheduling_scenarios_is_refused(self) -> None:
         """A pinned-CPU run and a dynamic one are two experiments, not more samples."""
-        fixed = self.COMPATIBLE_META + " perf_mode=fixed"
-        dynamic = self.COMPATIBLE_META + " perf_mode=dynamic"
+        fixed = f"{self.COMPATIBLE_META} blocks=4 runs=1"
+        dynamic = fixed.replace("perf_mode=fixed", "perf_mode=dynamic")
         result = self.run_stats_files(
             [self.benchmark_csv(metadata=fixed),
              self.benchmark_csv(metadata=dynamic, baseline_offset=140)]
@@ -3304,20 +3230,22 @@ class AbStatsRegressionTests(unittest.TestCase):
     def test_pooling_different_achieved_compile_states_is_refused(self) -> None:
         result = self.run_stats_files(
             [
-                self.benchmark_csv(metadata=self.COMPATIBLE_META),
                 self.benchmark_csv(
-                    metadata=self.COMPATIBLE_META.replace(
-                        "compile_status=verify", "compile_status=speed-profile"
-                    )
+                    metadata=f"{self.COMPATIBLE_META} blocks=4 runs=1"
+                ),
+                self.benchmark_csv(
+                    metadata=(f"{self.COMPATIBLE_META} blocks=4 runs=1"
+                              .replace("compile_status=verify",
+                                       "compile_status=speed-profile"))
                 ),
             ]
         )
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("compile_status: speed-profile vs verify", result.stderr)
 
-    def test_legacy_missing_stamp_cannot_mask_known_newer_disagreement(self) -> None:
+    def test_present_meta_differences_still_reports_known_disagreement(self) -> None:
         stats = load_ab_stats_module()
-        soft_keys = (
+        identity_keys = (
             *stats._BUILD_KEYS,
             *stats._ARM_KEYS,
             *stats._LIVENESS_KEYS,
@@ -3325,7 +3253,7 @@ class AbStatsRegressionTests(unittest.TestCase):
             *stats._CONTROL_KEYS,
             stats._APP_TRACE_KEY,
         )
-        for key in soft_keys:
+        for key in identity_keys:
             with self.subTest(key=key):
                 self.assertEqual(
                     stats.present_meta_differences(
@@ -3335,21 +3263,7 @@ class AbStatsRegressionTests(unittest.TestCase):
                     {key: ["known-a", "known-b"]},
                 )
 
-        legacy = self.COMPATIBLE_META
-        stamped_a = f"{self.COMPATIBLE_META} baseline_md5=aaa treatment_md5=bbb"
-        stamped_b = f"{self.COMPATIBLE_META} baseline_md5=ccc treatment_md5=bbb"
-        result = self.run_stats_files([
-            self.benchmark_csv(metadata=legacy),
-            self.benchmark_csv(metadata=stamped_a, baseline_offset=140),
-            self.benchmark_csv(metadata=stamped_b, baseline_offset=180),
-        ])
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("baseline_md5, treatment_md5 absent from at least one header",
-                      result.stdout)
-        self.assertIn("different APKs", result.stderr)
-        self.assertIn("baseline_md5: aaa vs ccc", result.stderr)
-
-    def test_pooling_without_mandatory_metadata_is_refused(self) -> None:
+    def test_csv_without_current_metadata_is_refused(self) -> None:
         result = self.run_stats_files(
             [
                 self.benchmark_csv(metadata="expect_a=0"),
@@ -3357,16 +3271,14 @@ class AbStatsRegressionTests(unittest.TestCase):
             ]
         )
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("without mandatory device/protocol metadata", result.stderr)
-        self.assertIn("fp: absent from", result.stderr)
+        self.assertIn("complete current harness format", result.stderr)
+        self.assertIn("missing metadata device", result.stderr)
 
-    def test_missing_all_order_evidence_suppresses_primary_inference(self) -> None:
+    def test_missing_order_column_is_not_current_format(self) -> None:
         result = self.run_stats(self.erase_positions(self.benchmark_csv()))
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("NOT REPORTABLE: only 0 of 4", result.stdout)
-        self.assertNotIn("  95% CI                ", result.stdout)
-        self.assertNotIn("  MDE at", result.stdout)
-        self.assertNotIn("  => Significant", result.stdout)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("missing columns pos_in_block", result.stderr)
+        self.assertNotIn("PRIMARY ENDPOINT", result.stdout)
 
     def test_partial_order_evidence_suppresses_primary_inference(self) -> None:
         result = self.run_stats(
@@ -3382,6 +3294,8 @@ class AbStatsRegressionTests(unittest.TestCase):
         lines = self.benchmark_csv().splitlines()
         header_index = next(i for i, line in enumerate(lines) if not line.startswith("#"))
         for index in range(header_index + 1, len(lines)):
+            if lines[index].startswith("#"):
+                continue
             fields = lines[index].split(",")
             fields[2] = "1"
             lines[index] = ",".join(fields)

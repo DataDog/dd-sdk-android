@@ -395,47 +395,8 @@ restore_device() {
   # `#` line, so ab_stats.py surfaces it with the rest of the metadata.
   if [ "$rc" -ne 0 ] && [ -s "$OUT" ]; then
     echo "# RUN ABORTED (exit $rc) -- this CSV is a partial run, not a completed one" >> "$OUT"
-    # What DID finish. A block counts only once both arms completed their measured
-    # launches with every gate passed, so blocks 1..N below are whole cells collected
-    # under the full protocol. The number comes from the harness, not from whoever
-    # analyzes the file later: ab_stats.py --recover-completed-blocks trusts this
-    # line and nothing else, so the prefix cannot be chosen to suit a result.
-    echo "# completed_blocks=$_COMPLETED_BLOCKS" >> "$OUT"
-    if [ "$_COMPLETED_BLOCKS" -ge 2 ]; then
-      _resume_missing=$((BLOCKS - _COMPLETED_BLOCKS))
-      [ $((_COMPLETED_BLOCKS % 2)) -eq 0 ] || _resume_missing=$((_resume_missing + 1))
-      # No `key=value` tokens: parse_meta() would otherwise register RUNS and WARMUP
-      # as header keys of their own, which is not what this line is.
-      echo "# recover: collect $_resume_missing more blocks, then pool both CSVs" >> "$OUT"
-      echo "[$(date +%H:%M:%S)] $_COMPLETED_BLOCKS of $BLOCKS blocks completed under the full" >&2
-      echo "         protocol and are recoverable. After fixing the cause above:" >&2
-      echo "           1. collect the remainder, same device, same APKs, same settings:" >&2
-      echo "              WARMUP=$WARMUP COMPILE_FILTER=$COMPILE_FILTER \\" >&2
-      echo "              ANIMATIONS=$ANIMATIONS AIRPLANE=$AIRPLANE EXPECT_A=$EXPECT_A EXPECT_B=$EXPECT_B \\" >&2
-      echo "              LABEL_A=$LABEL_A LABEL_B=$LABEL_B PKG=$PKG \\" >&2
-      # Every relaxation this run needed is still needed: the resume run would
-      # otherwise stop in the same preflight the operator already dealt with. These
-      # are real environment variables, so they go in the command rather than in a
-      # footnote about it.
-      if [ -n "$_ALLOW_IN_EFFECT" ]; then
-        echo "             $_ALLOW_IN_EFFECT \\" >&2
-      fi
-      # APP_TRACE_REGEX is the knob that is easy to lose here, and losing it is silent
-      # until the analysis: the resume CSV stamps `app_trace_id=none`, and
-      # `--metric app_trace_ms` then refuses to pool it with the blocks already
-      # collected -- a second wasted run, which is the cost this trailer exists to
-      # avoid. Emitted only when set, so the default command stays short.
-      if [ -n "$APP_TRACE_REGEX" ]; then
-        printf '              APP_TRACE_REGEX=%q \\\n' "$APP_TRACE_REGEX" >&2
-      fi
-      # RUNS and BLOCKS are positional (argv 3 and 4), not environment variables:
-      # exporting them is silently ignored, so they are passed as arguments here.
-      echo "                ./coldstart_bench.sh $APK_A $APK_B $RUNS $_resume_missing" >&2
-      echo "           2. ab_stats.py --recover-completed-blocks $OUT <the new CSV>" >&2
-      echo "         Do this only if the failure above was a one-off. If it was drift" >&2
-      echo "         (heat, storage, a change in the app), the earlier blocks are suspect" >&2
-      echo "         too and the run should be repeated instead." >&2
-    fi
+    echo "[$(date +%H:%M:%S)] benchmark incomplete; fix the cause and re-run it from" >&2
+    echo "         the beginning. Partial-run recovery is not a reportable protocol." >&2
   fi
   echo "[$(date +%H:%M:%S)] device restored. The app remains installed; 'adb uninstall $PKG' to remove." >&2
   return $rc
@@ -902,24 +863,6 @@ snapshot_device
 # used to restore the device and then carry on benchmarking against an unpinned
 # device -- every launch after the interrupt silently measured a different
 # machine, and the handler ran twice. Exiting routes through the EXIT trap once.
-# Both are read by the EXIT trap, so they are set BEFORE it is armed: `set -u`
-# would otherwise turn an abort during pin_device into `_COMPLETED_BLOCKS:
-# unbound variable` and lose the message explaining what actually failed.
-# Blocks whose BOTH arms finished every gate.
-_COMPLETED_BLOCKS=0
-# Which relaxations this run needed. The resume run needs the same ones or it stops
-# in preflight, so the abort trailer names them instead of leaving the operator to
-# rediscover them a second time.
-_ALLOW_IN_EFFECT=""
-for _allow in ALLOW_VERSION_MISMATCH ALLOW_UNVERIFIED_PKG ALLOW_UNVERIFIED_RADIOS \
-              ALLOW_NO_DISPLAYED_MARKER ALLOW_PARTIAL_PERMISSIONS \
-              ALLOW_DYNAMIC_PERFORMANCE; do
-  # `if`, not `[ ... ] && ...`: a failing test as the loop's last command is a
-  # non-zero loop status, which `set -e` turns into a silent exit right here.
-  if [ "${!_allow:-0}" = 1 ]; then
-    _ALLOW_IN_EFFECT="$_ALLOW_IN_EFFECT $_allow=1"
-  fi
-done
 trap restore_device EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
@@ -995,10 +938,10 @@ Datadog did not initialize — fix before measuring (wrong APK? init gated by fl
     measure "$arm" "$b" "measure" "$RUNS" "$pos"
     log "thermal after $arm block $b: $(thermal_snapshot)"
   done
-  # Both arms of this block are in the CSV and every launch in them passed. Only
-  # now is the block a recoverable unit.
-  _COMPLETED_BLOCKS=$b
 done
 
+# Positive completion evidence distinguishes a fully returned run from a process
+# or host that disappeared before the EXIT trap could stamp RUN ABORTED.
+echo "# RUN COMPLETE" >> "$OUT"
 log "done -> $OUT"
 log "analyze with: ab_stats.py $OUT   (filter phase==measure)"

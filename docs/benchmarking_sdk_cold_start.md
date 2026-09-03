@@ -615,8 +615,8 @@ arms or cells, and stamps it as `compile_status` separately from the requested `
 The stamp covers every code path and ABI in the package, sorted, so a build whose `base.apk`
 reached `speed-profile` while a split stayed at `verify` records `speed-profile+verify` rather
 than the first value it happened to find. `ab_stats.py` refuses to pool runs whose achieved
-statuses differ. Absence only warns: CSVs recorded before the stamp existed have to stay
-analyzable, which matters most for recovering an aborted run collected earlier.
+statuses differ, and rejects a file that omits this or any other current-format identity stamp.
+This benchmark was not released with a legacy CSV contract to preserve.
 A `verify` run is a legitimate condition (it is what a sideloaded or freshly updated install looks
 like) but it is **not**
 what a long-installed Play user experiences, because Play ships a cloud profile and
@@ -724,37 +724,13 @@ assume.
 
 ### If the run aborts part-way
 
-An hour is a long time to lose to one bad launch, so a run that aborts does not throw away what
-it already collected. The harness stamps `# completed_blocks=N` next to the abort marker and
-prints the command to collect the rest. Fix the cause the message names, collect the missing
-blocks with the same settings on the same device, then analyze both files together:
-
-```bash
-PKG=<app.id> WARMUP=3 ./coldstart_bench.sh baseline.apk treatment.apk 4 2   # 4 runs, 2 blocks
-./ab_stats.py --recover-completed-blocks results_<aborted>.csv results_<new>.csv
-```
-
-Use the command the aborted run printed rather than retyping this one: it already carries that
-run's compile filter, animation and radio state, warm-up count, labels, arm expectations, any
-`ALLOW_*` it needed and its `APP_TRACE_REGEX`. Those are the fields the analyzer compares
-between the two files, so dropping one is what makes the second collection unpoolable with the
-first. Note that the run count and block count are positional arguments, not environment
-variables.
-
-Once either matrix header field exists, both `blocks` and `runs` must be positive integers.
-Partially present or malformed values are refused rather than treated as legacy, because the
-analyzer could otherwise skip the declared-matrix completeness check.
-
-That restores the registered design and reports normally. The recovered blocks are whole cells
-with their own installs and their own passed gates, the prefix is floored to an even number so
-the arm order stays counterbalanced, and the block count comes from the harness rather than
-from you. Fewer blocks would mean a wider interval and a larger MDE, both of which the analyzer
-prints; recovery costs precision, never correctness.
-
-Recover only when the abort was a one-off. If the cause was drift, heat, storage or a change in
-the app, the blocks before the failure are suspect too: truncating there keeps the fast
-outcomes and drops the slow ones. Repeat the run instead. The abort reason is printed with the
-recovery banner so this is a decision you make with the evidence in front of you.
+A reportable CSV ends with exactly one `# RUN COMPLETE`. The EXIT handler stamps
+`# RUN ABORTED` when it can, but a killed process or host crash can bypass cleanup, so absence
+of the positive completion marker is independently refused. Fix the cause and repeat the full
+registered run from the beginning. Partial-run recovery is intentionally unsupported: deciding
+that a prefix is unaffected by the event that ended collection would add an analyst judgement
+to a protocol designed to avoid outcome-dependent selection. `--allow-aborted` remains available
+for diagnostic inspection, but it suppresses the primary interval and is not reportable.
 
 ## Step 7 — Interpret the result
 
@@ -1033,7 +1009,7 @@ cd tools/coldstart-benchmark
 PKG=<your.app.id> BENCHMARK_CSV=results_<ts>.csv BENCHMARK_ARM=<the arm's label> \
   ./capture_trace.sh app-with-datadog.apk treatment
 
-# Or give the identities by hand; an explicit value overrides the header:
+# Or capture without CSV binding and assert the identities by hand:
 PKG=<your.app.id> \
 EXPECTED_APK_MD5=<baseline_md5 or treatment_md5 for this arm> \
 EXPECTED_PERMISSION_STATE_ID=<permission_a or permission_b for this arm> \
@@ -1052,21 +1028,23 @@ EXPECTED_SDK_LIVENESS=<expect_a or expect_b for this arm> \
 `BENCHMARK_CSV` and `BENCHMARK_ARM` read every expected identity from that run's own header, so
 none of them is transcribed by hand. `BENCHMARK_ARM` is the label the CSV recorded, the same name
 the rows and `ab_stats.py` use, so a typo is an error rather than the silent selection of the
-other arm. An `EXPECTED_*` passed explicitly still overrides the header and still faces the same
-attestation.
+other arm. A matching explicit `EXPECTED_*` may repeat the header value; a conflicting one is
+rejected because the bound CSV is authoritative.
 
 The binding refuses rather than guesses. A file with no `# device=` line is not a benchmark CSV;
 more than one means it pools several runs and cannot identify one; an aborted run has no completed
-A/B result to explain; and a CSV predating a stamp is named rather than defaulted. It is read
-before every gate and changes only where an expected value comes from, never what is compared.
+A/B result to explain; exactly one `# RUN COMPLETE` marker is required; and every current-format
+stamp must be present. It is read before every gate and changes only where an expected value comes
+from, never what is compared.
 
-Nine of the eleven identities are **attested**: each is compared against an independent
+Ten of the twelve identities are **attested**: each is compared against an independent
 observable, whether that is the APK's own digest, the device fingerprint, the achieved
 permission, dexopt or performance state, the md5 of the regex in use, or a device setting read
-back after it was applied. Two are only **derived**. `warmup` has no trace-time observable at
+back after it was applied, including the resolved launcher component. Two are only **derived**.
+`warmup` has no trace-time observable at
 all, because the settle launches run before Perfetto starts, and the arm's SDK expectation is a
-choice rather than a reading. The capture prints which source each of those two came from, so
-its output does not present all eleven as uniformly verified.
+choice rather than a reading. The bound capture prints that both came from the CSV, so its output
+does not present all twelve as uniformly verified.
 
 The third argument to `capture_trace.sh` is the arm's SDK expectation: `1` for the treatment
 arm, `0` for the baseline. Bound to a CSV it is derived from the selected arm's `expect_a` or
@@ -1077,6 +1055,8 @@ equality is then the only thing standing between the operator and one arm's APK 
 the other arm's expectation. The capture is discarded if either identity or runtime liveness is
 violated. `EXPECTED_ANDROID_USER` must equal the CSV header's `android_user` and the active
 device user before any install, permission setup or output reservation.
+The freshly installed APK must also resolve the header's exact launcher component; a changed
+activity alias is a different cold-start entry point and cannot explain the bound A/B run.
 `EXPECTED_APK_MD5` ties the local APK to the selected benchmark arm before any device state is
 changed; the later host-to-device check separately proves those bytes were installed.
 `EXPECTED_PERMISSION_STATE_ID` requires permission setup to reproduce that arm's stamped
@@ -1324,8 +1304,8 @@ output contain no such data and are safe to share as-is.
 | `TotalTime` empty and `LaunchState=UNKNOWN` on every launch | the device is locked, or the notification shade is on top. Unlock it and leave it on the home screen |
 | every launch reports the wrong foreground activity | your `dumpsys` grep is anchored on `mResumedActivity`; this device prints `ResumedActivity:`. Match `m?ResumedActivity[:=]` |
 | `ab_stats.py` refuses to print a CI | fewer than 3 complete blocks, the selected endpoint is missing, non-finite or negative on an otherwise eligible measured launch, a selected row lacks `status`/`launch_state`/`foreground` or explicitly carries `foreground=NA`, or a contributing block lacks one stable complementary `{1}`/`{2}` `pos_in_block` pair for the selected arms. Missing endpoints can be the slowest launches censored by the collection window, while negative values are impossible elapsed times and unknown or malformed validity/order evidence leaves the protocol unverifiable, so none is silently accepted; fix the CSV/collection and re-run. `--allow-missing-endpoint` is diagnostic only and still suppresses the primary interval |
-| a run aborted at block 7 and you do not want to lose 45 minutes | fix the cause, collect the missing blocks, and pool with `--recover-completed-blocks`; see [If the run aborts part-way](#if-the-run-aborts-part-way) |
-| `ab_stats.py` refuses the file entirely | the run aborted, contains a rejected/invalid measured launch, or holds fewer blocks/launches than its own header says (a `kill -9` or power cut can skip the abort marker). Re-run; `--allow-aborted` inspects it diagnostically without producing a reportable primary interval |
+| a run aborts or the laptop/process stops during collection | fix the cause and repeat the full run. Reportable CSVs end with exactly one `# RUN COMPLETE`; partial-run recovery is intentionally unsupported. `--allow-aborted` inspects surviving rows diagnostically without producing a reportable primary interval |
+| `ab_stats.py` refuses the file entirely | the run lacks complete current-format metadata or positive completion evidence, contains a rejected/invalid measured launch, or holds fewer blocks/launches than its own header says. Re-run with the current harness |
 | the harness refuses to start, naming another Android user | the app is also installed in a work or secondary profile. Host-side `adb uninstall` has no user selector, so continuing would delete that profile's app data, and no user-scoped removal leaves the measured user a genuinely fresh install. Remove it from those profiles, or use a dedicated test device |
 | the harness refuses to start, naming an output path | a results CSV, log or trace of that name already exists, or a parallel run against another device picked the same name. Output paths are atomically reserved before device state is changed, so evidence is never interleaved or overwritten. Move the old file or choose a new name |
 | the harness refuses to start, naming an Android setting snapshot | the setting read failed, or returned empty, `null` or a malformed value. No device mutation occurred. The message distinguishes the two causes: a failed command means the device is gone, while `null` means the key was never set. Write it once (`adb shell settings put global window_animation_scale 1`) and re-run. For `wifi_on`/`mobile_data` on a device that has no such setting, `ALLOW_UNVERIFIED_RADIOS=1` accepts it |

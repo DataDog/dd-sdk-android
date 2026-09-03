@@ -24,8 +24,8 @@
 # the positional is derived from it and may be omitted. Unbound it is required, and
 # is then compared against EXPECTED_SDK_LIVENESS.
 #
-# Every EXPECTED_* below is read from that CSV's header. Passing one explicitly
-# still overrides it, and still faces the same attestation:
+# Every EXPECTED_* below is read from that CSV's complete current-format header.
+# An explicit value may repeat the recorded value, but cannot override it:
 #        EXPECTED_APK_MD5=<benchmark arm digest> \
 #          EXPECTED_PERMISSION_STATE_ID=<benchmark arm permission_a|permission_b> \
 #          EXPECTED_COMPILE_STATUS=<benchmark compile_status> \
@@ -35,6 +35,7 @@
 #          EXPECTED_AIRPLANE=<benchmark airplane> \
 #          EXPECTED_FP=<benchmark fp> \
 #          EXPECTED_ANDROID_USER=<benchmark android_user> \
+#          EXPECTED_LAUNCHER=<benchmark launcher component> \
 #          EXPECTED_SDK_LIVENESS=<selected arm expect_a|expect_b> \
 #          EXPECTED_APP_TRACE_ID=<benchmark app_trace_id; app_trace_ms only> \
 #          ./capture_trace.sh <apk> <name> <expect-datadog:0|1>
@@ -42,7 +43,7 @@ set -euo pipefail
 
 PKG="${PKG:?set PKG to your application id, e.g. PKG=com.example.app}"
 # The benchmark this trace explains. Reading its header removes the transcription of
-# eleven values -- two 32-character digests and a build fingerprint among them --
+# twelve values -- two 32-character digests and a build fingerprint among them --
 # whose failure mode was an abort indistinguishable from a real mismatch.
 BENCHMARK_CSV="${BENCHMARK_CSV:-}"
 # Which arm, by the label the CSV itself recorded.
@@ -71,6 +72,9 @@ EXPECTED_FP="${EXPECTED_FP:-}"
 # Android users and work profiles can have different policy, storage and startup
 # state on the same build. Bind the trace to the benchmark's selected user.
 EXPECTED_ANDROID_USER="${EXPECTED_ANDROID_USER:-}"
+# The user-visible cold-start entry point is part of the measured scenario. Package
+# updates can change an activity-alias while keeping the same application id.
+EXPECTED_LAUNCHER="${EXPECTED_LAUNCHER:-}"
 # The positional argument drives every runtime liveness gate. Bound to a CSV, this
 # value comes from the selected arm's expect_a/b stamp and the positional is derived
 # from it, so the fact has one source. Unbound, both are typed by hand: the equality
@@ -106,7 +110,7 @@ EXPECTED_AIRPLANE="${EXPECTED_AIRPLANE:-}"
 # launches traced the (EXPECTED_WARMUP+1)-th -- one launch earlier in the JIT/profile
 # ramp, which matters most under the default fresh-install `speed-profile` condition,
 # where there is no profile at install time and each launch adds to it.
-# Unlike the other nine identities this one has no trace-time observable at all: the
+# Unlike the other ten identities this one has no trace-time observable at all: the
 # settle launches run before Perfetto starts, so no capture can show how many there
 # were. Derivation from the CSV is the strongest guarantee available, and the output
 # below says so rather than implying a verification.
@@ -143,22 +147,19 @@ require_expected_md5() {
     *[!0-9a-f]*) die "invalid $name: expected 32 lowercase hexadecimal characters" ;;
   esac
 }
-# Which source supplied the two identities that have no independent observable.
-# Snapshotted BEFORE the header read, because that is what distinguishes them: a
-# value taken from the CSV is derived from the run, while an explicit one is the
-# operator stating the same fact a second time. The output must not conflate them.
-_WARMUP_SOURCE=explicit
-[ -n "$EXPECTED_WARMUP" ] || _WARMUP_SOURCE=header
-_LIVENESS_SOURCE=explicit
-[ -n "$EXPECTED_SDK_LIVENESS" ] || _LIVENESS_SOURCE=header
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 # Before every validation below, so a bound value is checked exactly as a typed
 # one is. Nothing here relaxes a gate; it only supplies what the gate compares.
 if [ -n "$BENCHMARK_CSV" ]; then
   dd_read_benchmark_header "$BENCHMARK_CSV" "$BENCHMARK_ARM" || exit 1
+  _WARMUP_SOURCE=header
+  _LIVENESS_SOURCE=header
 elif [ -n "$BENCHMARK_ARM" ]; then
   die "BENCHMARK_ARM is set but BENCHMARK_CSV is not, so there is no header to
        select that arm from."
+else
+  _WARMUP_SOURCE=explicit
+  _LIVENESS_SOURCE=explicit
 fi
 # Resolved here, not at declaration: each takes the benchmark's value when the
 # operator did not set it, and dd_read_benchmark_header above is what supplies that
@@ -286,14 +287,14 @@ log() { echo "[$(date +%H:%M:%S)] $*" >&2; }
 if [ -n "$BENCHMARK_CSV" ]; then
   log "bound to $BENCHMARK_CSV arm $DD_BENCHMARK_LABEL (${DD_BENCHMARK_ARM_KEY})"
 fi
-# Nine of the eleven identities are each compared against an independent observable:
+# Ten of the twelve identities are each compared against an independent observable:
 # the file's own digest, the device, or the state this script achieved. These two have
 # none, and a check may claim only what it can distinguish, so name their source
-# rather than presenting all eleven as uniformly verified.
+# rather than presenting all twelve as uniformly verified.
 if [ -n "$BENCHMARK_CSV" ]; then
   log "no trace-time observable: warmup=$EXPECTED_WARMUP ($_WARMUP_SOURCE),"
-  log "          expect-datadog=$EXPECT_DD ($_LIVENESS_SOURCE). Source 'header' is derived"
-  log "          from the CSV; 'explicit' is asserted by the operator, not verified"
+  log "          expect-datadog=$EXPECT_DD ($_LIVENESS_SOURCE). Both are derived"
+  log "          from the bound CSV rather than independently verified in the trace"
 else
   log "no trace-time observable, and no CSV to derive from: warmup=$EXPECTED_WARMUP and"
   log "          expect-datadog=$EXPECT_DD are asserted, not verified. Bind the capture"
@@ -566,6 +567,11 @@ case "$ACT" in
   "$PKG"/*) ;;
   *) die "could not resolve a launcher activity for $PKG (got '${ACT:-nothing}')." ;;
 esac
+if [ -n "$BENCHMARK_CSV" ] && [ "$ACT" != "$EXPECTED_LAUNCHER" ]; then
+  die "trace launcher=$ACT, but the bound benchmark recorded
+       launcher=$EXPECTED_LAUNCHER. The trace would exercise a different cold-start
+       entry point from the A/B run it is meant to explain."
+fi
 START_ARGS=(--user "$DD_ANDROID_USER" -a android.intent.action.MAIN \
   -c android.intent.category.LAUNCHER -n "$ACT")
 log "launcher activity: $ACT"

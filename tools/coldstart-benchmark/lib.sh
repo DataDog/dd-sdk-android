@@ -147,19 +147,29 @@ dd_package_path_for_user() {
   paths=$(printf '%s\n' "$raw" | grep '^package:' || true)
   noise=$(printf '%s\n' "$raw" | grep -v '^package:' | grep -v '^__dd_rc=' \
           | grep -v '^[[:space:]]*$' || true)
-  if [ "$status" = 0 ]; then
-    if [ -z "$paths" ]; then
-      echo "FATAL: 'pm path' succeeded for '$pkg' but printed no package path." >&2
-      echo "       Refusing to read that as either installed or absent." >&2
+  case "$status" in
+    0)
+      if [ -z "$paths" ]; then
+        echo "FATAL: 'pm path' succeeded for '$pkg' but printed no package path." >&2
+        echo "       Refusing to read that as either installed or absent." >&2
+        return 1
+      fi
+      ;;
+    1)
+      # Android 12 reports an absent package as a silent exit 1. Any path or
+      # diagnostic makes the result ambiguous, so it is not accepted as absence.
+      if [ -n "$paths" ] || [ -n "$noise" ]; then
+        echo "FATAL: 'pm path' returned an ambiguous absence result for '$pkg'" >&2
+        echo "       on user $user (exit 1): ${noise:-$paths}" >&2
+        return 1
+      fi
+      ;;
+    *)
+      echo "FATAL: 'pm path' failed (exit $status) for '$pkg' on user $user:" >&2
+      echo "       ${noise:-no diagnostic output}" >&2
       return 1
-    fi
-  elif [ -n "$noise" ]; then
-    # Silence is how absence is reported. Anything printed alongside the failure
-    # is something this function cannot interpret, so it does not guess.
-    echo "FATAL: 'pm path' failed (exit $status) for '$pkg' on user $user:" >&2
-    echo "       $noise" >&2
-    return 1
-  fi
+      ;;
+  esac
   [ -z "$paths" ] || printf '%s\n' "$paths"
 }
 
@@ -420,29 +430,25 @@ dd_package_compile_status() {
 
 # Bind a trace to the benchmark CSV it is meant to explain, so the expected
 # identities come from that run's own header instead of being transcribed by hand.
-# Eleven values, two of them 32-character digests and one a build fingerprint, is a
+# Twelve values, two of them 32-character digests and one a build fingerprint, is a
 # transcription hazard whose failure mode is an abort indistinguishable from a real
 # mismatch. This changes only WHERE an expected value comes from: every comparison
 # the caller makes against the device, the file or the achieved state is unchanged.
 #
-# Fills each of these only when the caller left it empty, so an explicit value still
-# wins. Nine of them then face an independent observable, so overriding one still
-# leaves it checked against the device, the file or the achieved state. `warmup` and
-# the arm's SDK expectation have no observable, so an explicit value for either is
-# asserted rather than attested: it replaces the header's value without being
-# compared to it, and capture_trace.sh labels it `explicit` in its output for exactly
-# that reason. Comparing an override against a value the header does record would
-# close that gap for all eleven, and is a deliberate open item, not an oversight.
+# A bound CSV is authoritative. A matching explicit value is accepted, while a
+# conflicting one is rejected as stale input rather than allowed to redefine the
+# run being traced.
 #   EXPECTED_APK_MD5 EXPECTED_PERMISSION_STATE_ID EXPECTED_SDK_LIVENESS
 #   EXPECTED_COMPILE_STATUS EXPECTED_PERF_MODE EXPECTED_WARMUP EXPECTED_ANIMATIONS
 #   EXPECTED_AIRPLANE EXPECTED_FP EXPECTED_ANDROID_USER EXPECTED_APP_TRACE_ID
-#   COMPILE_FILTER
+#   EXPECTED_LAUNCHER COMPILE_FILTER
 # and reports the resolved binding through DD_BENCHMARK_ARM_KEY / DD_BENCHMARK_LABEL.
 #
 # It refuses rather than guesses. A convenience that supplies a plausible wrong value
 # is worse than the typing it saves.
 dd_read_benchmark_header() {
-  local csv="$1" want_label="$2" headers aborted tokens label_a label_b arm missing="" pair var key value
+  local csv="$1" want_label="$2" headers aborted completed tokens label_a label_b arm
+  local missing="" conflicts="" pair var key value current
   [ -f "$csv" ] || {
     echo "FATAL: benchmark CSV not found: '$csv'." >&2
     return 1
@@ -465,8 +471,15 @@ dd_read_benchmark_header() {
   aborted=$(grep -c 'RUN ABORTED' "$csv" || true)
   if [ "$aborted" -ne 0 ]; then
     echo "FATAL: '$csv' is an aborted run. A trace explains a completed A/B result;" >&2
-    echo "       this file has none. Re-run the benchmark, or recover its completed" >&2
-    echo "       blocks first (see --recover-completed-blocks) and trace that run." >&2
+    echo "       this file has none. Fix the cause and re-run the benchmark from the" >&2
+    echo "       beginning." >&2
+    return 1
+  fi
+  completed=$(grep -c '^# RUN COMPLETE$' "$csv" || true)
+  if [ "$completed" -ne 1 ]; then
+    echo "FATAL: '$csv' has $completed '# RUN COMPLETE' markers; exactly one is" >&2
+    echo "       required as positive evidence that the benchmark finished." >&2
+    echo "       Fix the cause and re-run the benchmark from the beginning." >&2
     return 1
   fi
   # Header lines only. Row data is never trusted for identity, and only whitespace-
@@ -484,8 +497,8 @@ dd_read_benchmark_header() {
   label_a=$(_dd_header_value label_a)
   label_b=$(_dd_header_value label_b)
   if [ -z "$label_a" ] || [ -z "$label_b" ]; then
-    echo "FATAL: '$csv' records no label_a/label_b, so an arm cannot be selected by" >&2
-    echo "       label. Pass the expected values explicitly for this CSV." >&2
+    echo "FATAL: '$csv' has no label_a/label_b and is not a complete current-format" >&2
+    echo "       benchmark CSV. Re-run the benchmark before capturing a trace." >&2
     return 1
   fi
   # By LABEL, not by a/b: it is the identifier the operator already sees in the CSV
@@ -515,25 +528,30 @@ dd_read_benchmark_header() {
       "EXPECTED_WARMUP:warmup" "EXPECTED_ANIMATIONS:animations" \
       "EXPECTED_AIRPLANE:airplane" "EXPECTED_FP:fp" \
       "EXPECTED_ANDROID_USER:android_user" "EXPECTED_APP_TRACE_ID:app_trace_id" \
-      "COMPILE_FILTER:compile_filter"; do
+      "EXPECTED_LAUNCHER:launcher" "COMPILE_FILTER:compile_filter"; do
     var=${pair%%:*}
     key=${pair#*:}
     value=$(_dd_header_value "$key")
     if [ -z "$value" ]; then
-      # A CSV recorded before a stamp existed cannot supply it, and inventing a
-      # default would be the whole point of this function reversed. ab_stats.py only
-      # WARNS when such a key is absent while pooling; a trace exists to match, so
-      # here it is named and the operator must supply it.
       missing="$missing $key"
       continue
     fi
-    # Explicit wins: the caller may override one field and still face its gate.
-    [ -n "$(eval "printf '%s' \"\${$var:-}\"")" ] || eval "$var=\"\$value\""
+    current=$(eval "printf '%s' \"\${$var:-}\"")
+    if [ -n "$current" ] && [ "$current" != "$value" ]; then
+      conflicts="$conflicts
+       $var='$current' but the CSV records '$value'"
+      continue
+    fi
+    eval "$var=\"\$value\""
   done
   if [ -n "$missing" ]; then
-    echo "FATAL: '$csv' records no$missing, so the trace cannot be bound to it on" >&2
-    echo "       those fields. This CSV predates them; supply the corresponding" >&2
-    echo "       EXPECTED_* values explicitly, or trace a run that stamps them." >&2
+    echo "FATAL: '$csv' records no$missing and is not a complete current-format" >&2
+    echo "       benchmark CSV. Re-run the benchmark before capturing a trace." >&2
+    return 1
+  fi
+  if [ -n "$conflicts" ]; then
+    echo "FATAL: explicit trace expectations conflict with the bound CSV:$conflicts" >&2
+    echo "       Unset the stale values; the bound CSV is authoritative." >&2
     return 1
   fi
   return 0
