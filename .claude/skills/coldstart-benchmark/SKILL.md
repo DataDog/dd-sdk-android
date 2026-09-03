@@ -105,7 +105,7 @@ tools/coldstart-benchmark/verify_sdk_active.sh <apk> <your.app.id>
 
 This installs, md5-attests the install against the local file, launches via the real launcher
 intent, settles (`SETTLE`, default 20s of wall clock, unchanged and distinct from
-`capture_trace.sh`'s settle *launches*, which derive from `WARMUP`), then reads
+`capture_trace.sh`'s settle *launches*, which derive from `EXPECTED_WARMUP`), then reads
 `/proc/<pid>/task/*/comm`. Exit 0 = live,
 1 = not, 2 = setup failure (no adb, no device, missing APK, or a thread list it could
 not read — an unverifiable check exits 2, never 1, so "not live" always means the
@@ -186,7 +186,7 @@ number, the cost is in the core SDK.
 
 ```bash
 PKG=<app.id> BENCHMARK_CSV=results_<ts>.csv BENCHMARK_ARM=<the arm's label> \
-  ./capture_trace.sh treatment.apk treatment 1
+  ./capture_trace.sh treatment.apk treatment
 
 # Or give the identities by hand; an explicit value overrides the header:
 PKG=<app.id> \
@@ -222,21 +222,28 @@ marker before Perfetto stops. App-owned regex matches are restricted to the inst
 unique UID, so a foreign process cannot provide either the A/B value or the trace endpoint. The
 capture is invalid if the selected endpoint is not reached. With `app_trace_ms`, also pass
 `EXPECTED_APP_TRACE_ID=<app_trace_id>` so the capture proves its regex names the benchmarked event.
+Omit the positional SDK expectation when `BENCHMARK_CSV` is set: it is derived from the selected
+arm's `expect_a` / `expect_b` stamp. Pass it, and a contradicting value aborts. Without
+`BENCHMARK_CSV` it is required. Never set `WARMUP` for a capture; it is not an input and aborts.
 All ten expected inputs shown above are mandatory. `EXPECTED_APK_MD5` must equal the selected arm's
 `baseline_md5` or `treatment_md5` before device mutation. `EXPECTED_PERMISSION_STATE_ID` must equal
 that arm's `permission_a` or `permission_b` after permission setup. `EXPECTED_COMPILE_STATUS` must
 equal the benchmark header's achieved `compile_status`, not merely use the same requested
 `COMPILE_FILTER`. `EXPECTED_PERF_MODE` must equal its achieved `fixed` or `dynamic` performance
 mode; `ALLOW_DYNAMIC_PERFORMANCE=1` is not an override for a mismatch. `EXPECTED_WARMUP` must equal
-the header's `warmup`; it supplies the trace's `WARMUP` when unset, and an explicit different value
-aborts before device access. `EXPECTED_ANIMATIONS` and `EXPECTED_AIRPLANE` behave the same way, for
-the two device controls a default of `0` used to let differ from the A/B in silence. `EXPECTED_FP`
-must equal the header's `fp`: it is checked against `ro.build.fingerprint` before anything is
-installed or uninstalled, because nothing else pinned device identity and a capture from another
-model explains nothing about the run it is attached to. `EXPECTED_ANDROID_USER` must equal the
-header's `android_user` and the active device user before mutation. `EXPECTED_SDK_LIVENESS` must
-equal both the selected arm's `expect_a` / `expect_b` stamp and the positional `0` / `1` argument.
-Capture names are non-destructive: an existing `.pftrace` is never overwritten.
+the header's `warmup` and is the only source of the settle count. `EXPECTED_ANIMATIONS` and
+`EXPECTED_AIRPLANE` supply `ANIMATIONS` and `AIRPLANE` when those are unset and abort on an
+explicit disagreement, for the two device controls a default of `0` used to let differ from the
+A/B in silence. `EXPECTED_FP` must equal the header's `fp`: it is checked against
+`ro.build.fingerprint` before anything is installed or uninstalled, because nothing else pinned
+device identity and a capture from another model explains nothing about the run it is attached
+to. `EXPECTED_ANDROID_USER` must equal the header's `android_user` and the active device user
+before mutation. `EXPECTED_SDK_LIVENESS` must equal the selected arm's `expect_a` / `expect_b`
+stamp, and the positional argument when one is given. Of the eleven expected identities, nine are
+compared against an independent observable; `warmup` and the SDK expectation are not, so the
+capture prints whether each was taken from the CSV header or asserted by the operator. Report that
+line as given rather than describing the capture as fully verified. Capture names are
+non-destructive: an existing `.pftrace` is never overwritten.
 
 **Do not edit the harness scripts while a run is in flight.** Bash re-reads a running script
 by byte offset, so adding or removing lines in `coldstart_bench.sh` mid-run makes it resume parsing
@@ -363,15 +370,15 @@ other way is neither.
 - Apply that contract to every `capture_trace.sh` conditioning launch too: each gets its own
   verified boundary, target marker, foreign-display scan and final-foreground check before its
   SDK-liveness result can count. Abort rather than replacing a contaminated launch, because the
-  requested `WARMUP + 1` position is part of the trace protocol. Supply the benchmark header's
-  `warmup` as required `EXPECTED_WARMUP`; it drives an unset `WARMUP`, while an explicit mismatch
-  aborts before device access. Discard 1 uses the benchmark
+  requested `EXPECTED_WARMUP + 1` position is part of the trace protocol. Supply the benchmark
+  header's `warmup` as required `EXPECTED_WARMUP`; it is the only source of that count, and
+  setting `WARMUP` aborts before device access. Discard 1 uses the benchmark
   probe's 3-second pre-launch/8-second validation cadence; later discards use its warm-up cadence
   (5 seconds before launch, validation after 6, then the final 4-second wait). Matching launch
   count without matching elapsed conditioning time does not reproduce the same ramp. Perfetto
   starts *during* the last registered wait, rather than after it: the warm-up's final four seconds,
-  or the last four seconds of the probe check when `WARMUP=0`. The final force-stop follows
-  immediately, then the benchmark's five-second wait, log boundary and launch.
+  or the last four seconds of the probe check when the header's `warmup` is zero. The final
+  force-stop follows immediately, then the benchmark's five-second wait, log boundary and launch.
 - The order-effect test **refuses to report** when arm and position are confounded. With a
   single block, arm A is always first, so any "order effect" *is* the treatment effect —
   previously this reported a genuine +30 ms regression as an ordering artifact. It is also

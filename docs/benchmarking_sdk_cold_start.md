@@ -1031,7 +1031,7 @@ measured cost. That was a useful answer, but not the one the exercise was set up
 ```bash
 cd tools/coldstart-benchmark
 PKG=<your.app.id> BENCHMARK_CSV=results_<ts>.csv BENCHMARK_ARM=<the arm's label> \
-  ./capture_trace.sh app-with-datadog.apk treatment 1
+  ./capture_trace.sh app-with-datadog.apk treatment
 
 # Or give the identities by hand; an explicit value overrides the header:
 PKG=<your.app.id> \
@@ -1060,11 +1060,23 @@ more than one means it pools several runs and cannot identify one; an aborted ru
 A/B result to explain; and a CSV predating a stamp is named rather than defaulted. It is read
 before every gate and changes only where an expected value comes from, never what is compared.
 
+Nine of the eleven identities are **attested**: each is compared against an independent
+observable, whether that is the APK's own digest, the device fingerprint, the achieved
+permission, dexopt or performance state, the md5 of the regex in use, or a device setting read
+back after it was applied. Two are only **derived**. `warmup` has no trace-time observable at
+all, because the settle launches run before Perfetto starts, and the arm's SDK expectation is a
+choice rather than a reading. The capture prints which source each of those two came from, so
+its output does not present all eleven as uniformly verified.
+
 The third argument to `capture_trace.sh` is the arm's SDK expectation: `1` for the treatment
-arm, `0` for the baseline. `EXPECTED_SDK_LIVENESS` must carry the selected arm's matching
-`expect_a` or `expect_b` header value; the capture is discarded if either identity or runtime
-liveness is violated. `EXPECTED_ANDROID_USER` must equal the CSV header's `android_user` and the
-active device user before any install, permission setup or output reservation.
+arm, `0` for the baseline. Bound to a CSV it is derived from the selected arm's `expect_a` or
+`expect_b` stamp and may be omitted, because the stamp already is that expectation and asking
+for it twice only adds a place to mistype it. A contradicting argument still aborts. Unbound,
+the argument is required and `EXPECTED_SDK_LIVENESS` must carry the arm's matching value: that
+equality is then the only thing standing between the operator and one arm's APK traced under
+the other arm's expectation. The capture is discarded if either identity or runtime liveness is
+violated. `EXPECTED_ANDROID_USER` must equal the CSV header's `android_user` and the active
+device user before any install, permission setup or output reservation.
 `EXPECTED_APK_MD5` ties the local APK to the selected benchmark arm before any device state is
 changed; the later host-to-device check separately proves those bytes were installed.
 `EXPECTED_PERMISSION_STATE_ID` requires permission setup to reproduce that arm's stamped
@@ -1079,9 +1091,9 @@ request to continue, but it does not permit that outcome to differ from the benc
 
 `EXPECTED_ANIMATIONS`, `EXPECTED_AIRPLANE` and `EXPECTED_FP` close the last three fields a trace
 could differ on in silence. The first two drive `ANIMATIONS` and `AIRPLANE` when those are unset
-and abort on an explicit disagreement, the way `EXPECTED_WARMUP` drives `WARMUP`; a default of `0`
-was the hazard, because the guide recommends `ANIMATIONS=1` as the honest per-frame measurement, so
-a non-default benchmark value is the expected case. `EXPECTED_FP` is compared against the connected
+and abort on an explicit disagreement; a default of `0` was the hazard, because the guide
+recommends `ANIMATIONS=1` as the honest per-frame measurement, so a non-default benchmark value
+is the expected case. `EXPECTED_FP` is compared against the connected
 device's `ro.build.fingerprint` before anything is installed or uninstalled: a capture from a
 different model explains nothing about the run it is attached to, and it is the one field
 `ab_stats.py` would have refused to pool across while the trace accepted it.
@@ -1097,9 +1109,12 @@ a different app-owned endpoint before device access. The output path is atomical
 reserved before the script changes device state, so an existing or concurrently claimed
 `.pftrace` is never overwritten; choose a new capture name or move the old file first.
 
-**Pass the A/B header's `warmup` as `EXPECTED_WARMUP`.** It drives the trace's `WARMUP` when that
-variable is unset; an explicit different `WARMUP` aborts. The capture performs `WARMUP + 1`
-discarded launches before the traced one, reproducing the benchmark's liveness probe plus its
+**Pass the A/B header's `warmup` as `EXPECTED_WARMUP`.** It is the only source of the trace's
+settle count. `WARMUP` is not an input to `capture_trace.sh` and setting it aborts, including when
+it agrees with the header: the two were compared against each other, both operator-supplied, so a
+consistently wrong pair passed and all the check bought was a second place to mistype the value.
+The capture performs `EXPECTED_WARMUP + 1` discarded launches before the traced one,
+reproducing the benchmark's liveness probe plus its
 warm-ups, so the traced launch sits at the same position in the post-install JIT/profile ramp as a
 measured one. That matters most under the default fresh-install `speed-profile`, where the profile is
 empty at install and each launch adds to it. The first discard uses the probe's 3-second
@@ -1111,8 +1126,8 @@ activity drawing, end with the target in the foreground, and satisfy the arm's S
 expectation. A contaminated or unreadable conditioning launch aborts the capture instead of
 silently preparing a different ramp. Perfetto starts during the last conditioning launch's
 existing wait: the warm-up's four post-validation seconds, or the last four seconds of the probe
-check when `WARMUP=0`. Its readiness therefore adds no second app-running delay before the traced
-launch's force-stop, five-second wait and log boundary.
+check when the header's `warmup` is zero. Its readiness therefore adds no second app-running
+delay before the traced launch's force-stop, five-second wait and log boundary.
 
 `verify_trace.py` exits `0` if the SDK is demonstrably active (or correctly absent), `1` if it
 is not detected, and `3` if the trace is unusable. Four cases reach that code, and the printed

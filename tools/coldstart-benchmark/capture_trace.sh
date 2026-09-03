@@ -18,7 +18,11 @@
 # because one run played video and the other did not).
 #
 # Usage: BENCHMARK_CSV=<the run's results CSV> BENCHMARK_ARM=<its label_a|label_b> \
-#          ./capture_trace.sh <apk> <name> <expect-datadog:0|1>
+#          ./capture_trace.sh <apk> <name>
+#
+# Bound to a CSV, the selected arm's own expect_a/expect_b IS the SDK expectation, so
+# the positional is derived from it and may be omitted. Unbound it is required, and
+# is then compared against EXPECTED_SDK_LIVENESS.
 #
 # Every EXPECTED_* below is read from that CSV's header. Passing one explicitly
 # still overrides it, and still faces the same attestation:
@@ -67,8 +71,11 @@ EXPECTED_FP="${EXPECTED_FP:-}"
 # Android users and work profiles can have different policy, storage and startup
 # state on the same build. Bind the trace to the benchmark's selected user.
 EXPECTED_ANDROID_USER="${EXPECTED_ANDROID_USER:-}"
-# The positional argument drives every runtime liveness gate. This independent
-# expected value binds that choice to the selected benchmark arm's expect_a/b stamp.
+# The positional argument drives every runtime liveness gate. Bound to a CSV, this
+# value comes from the selected arm's expect_a/b stamp and the positional is derived
+# from it, so the fact has one source. Unbound, both are typed by hand: the equality
+# check between them is then the only thing that catches tracing one arm's APK with
+# the other arm's expectation, so the positional stays required there.
 EXPECTED_SDK_LIVENESS="${EXPECTED_SDK_LIVENESS:-}"
 # Must match the ANIMATIONS the A/B was run with. Forcing 0 unconditionally meant a
 # benchmark run with ANIMATIONS=1 was traced with animations OFF -- so the trace omits
@@ -78,9 +85,9 @@ EXPECTED_SDK_LIVENESS="${EXPECTED_SDK_LIVENESS:-}"
 # A DEFAULT of 0 reintroduced that same hazard by a different route: the guide
 # recommends ANIMATIONS=1 as the honest per-frame measurement, so a non-default
 # benchmark value is the expected case, and omitting it here silently traced the
-# other scenario. Driven by the benchmark header like WARMUP: EXPECTED_ANIMATIONS is
-# required, supplies ANIMATIONS when that is unset, and an explicit disagreement
-# aborts before device access.
+# other scenario. Driven by the benchmark header like the warm-up count:
+# EXPECTED_ANIMATIONS is required, supplies ANIMATIONS when that is unset, and an
+# explicit disagreement aborts before device access.
 EXPECTED_ANIMATIONS="${EXPECTED_ANIMATIONS:-}"
 # Same argument as ANIMATIONS: trace and benchmark must use the same controlled
 # Wi-Fi/mobile-radio state. Reachability is not inferred from an enabled setting;
@@ -89,15 +96,20 @@ EXPECTED_ANIMATIONS="${EXPECTED_ANIMATIONS:-}"
 # ab_stats.py's _MUST_MATCH keys, so two CSVs that disagree on it cannot be pooled --
 # and a trace that disagrees with the CSV it explains is the same error, unchecked.
 EXPECTED_AIRPLANE="${EXPECTED_AIRPLANE:-}"
-# The benchmark header is the source of truth for trace conditioning. WARMUP remains
-# accepted as an explicit operator setting, but defaults to EXPECTED_WARMUP and must
-# equal it, so omitting or mistyping a non-default benchmark value cannot silently
-# fall back to three. A benchmark cell runs ONE liveness-probe launch and then
-# $WARMUP warm-ups before its first measured launch, so the launch it measures is the (WARMUP+2)-th
-# after install. Capturing after only $WARMUP settle launches traced the
-# (WARMUP+1)-th -- one launch earlier in the JIT/profile ramp, which matters most
-# under the default fresh-install `speed-profile` condition, where there is no
-# profile at install time and each launch adds to it.
+# The benchmark header is the source of truth for trace conditioning, and now the
+# only source: this value drives the settle count directly. WARMUP was an input that
+# could hold exactly one legal value, checked against this one, so a consistently
+# wrong pair passed and all the check bought was a second place to mistype it.
+# A benchmark cell runs ONE liveness-probe launch and then EXPECTED_WARMUP warm-ups
+# before its first measured launch, so the launch it measures is the
+# (EXPECTED_WARMUP+2)-th after install. Capturing after only EXPECTED_WARMUP settle
+# launches traced the (EXPECTED_WARMUP+1)-th -- one launch earlier in the JIT/profile
+# ramp, which matters most under the default fresh-install `speed-profile` condition,
+# where there is no profile at install time and each launch adds to it.
+# Unlike the other nine identities this one has no trace-time observable at all: the
+# settle launches run before Perfetto starts, so no capture can show how many there
+# were. Derivation from the CSV is the strongest guarantee available, and the output
+# below says so rather than implying a verification.
 EXPECTED_WARMUP="${EXPECTED_WARMUP:-}"
 # The trace must reach the same endpoint as the A/B it is meant to explain.
 # total_ms is the benchmark's default (am start -W TotalTime / first frame).
@@ -115,9 +127,11 @@ EXPECTED_APP_TRACE_ID="${EXPECTED_APP_TRACE_ID:-}"
 # PARTIALLY verified -- never as clean.
 ALLOW_MISSING_LAUNCH_MARKER="${ALLOW_MISSING_LAUNCH_MARKER:-0}"
 REMOTE_TRACE="/data/misc/perfetto-traces/dd-coldstart-$$.pftrace"
-APK="${1:?usage: $0 <apk> <name> <expect-datadog 0|1>}"
+APK="${1:?usage: $0 <apk> <name> [expect-datadog 0|1]}"
 NAME="${2:?}"
-EXPECT_DD="${3:?}"
+# Optional, and resolved below rather than here: derived from the bound arm's stamp,
+# required when there is no CSV to derive it from.
+EXPECT_DD="${3:-}"
 
 die() { echo "FATAL: $*" >&2; exit 1; }
 require_expected_md5() {
@@ -129,6 +143,14 @@ require_expected_md5() {
     *[!0-9a-f]*) die "invalid $name: expected 32 lowercase hexadecimal characters" ;;
   esac
 }
+# Which source supplied the two identities that have no independent observable.
+# Snapshotted BEFORE the header read, because that is what distinguishes them: a
+# value taken from the CSV is derived from the run, while an explicit one is the
+# operator stating the same fact a second time. The output must not conflate them.
+_WARMUP_SOURCE=explicit
+[ -n "$EXPECTED_WARMUP" ] || _WARMUP_SOURCE=header
+_LIVENESS_SOURCE=explicit
+[ -n "$EXPECTED_SDK_LIVENESS" ] || _LIVENESS_SOURCE=header
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 # Before every validation below, so a bound value is checked exactly as a typed
 # one is. Nothing here relaxes a gate; it only supplies what the gate compares.
@@ -143,7 +165,16 @@ fi
 # value. Assigning them earlier read an EXPECTED_* that was still empty.
 ANIMATIONS="${ANIMATIONS:-$EXPECTED_ANIMATIONS}"
 AIRPLANE="${AIRPLANE:-$EXPECTED_AIRPLANE}"
-WARMUP="${WARMUP:-$EXPECTED_WARMUP}"
+# Refused, not ignored. `${WARMUP+set}` rather than `${WARMUP:-}` so an explicitly
+# empty value is caught too, and because a silently discarded environment variable is
+# exactly how a benchmark run lost RUNS and BLOCKS to a positional signature. The
+# operator who exports WARMUP for coldstart_bench.sh and then captures a trace in the
+# same shell gets told, instead of a settle count they did not choose.
+if [ -n "${WARMUP+set}" ]; then
+  die "WARMUP is not an input to capture_trace.sh. The trace must reproduce the
+       benchmark's warm-up count, so the settle count is derived from
+       EXPECTED_WARMUP (here: '${EXPECTED_WARMUP:-unset}'). Unset WARMUP."
+fi
 # The benchmark's requested filter, or the same default it uses. The achieved
 # compile_status is what the gate compares; matching the request too removes one
 # more way the two runs can differ before that point.
@@ -189,6 +220,17 @@ case "$EXPECTED_SDK_LIVENESS" in
   "") die "set EXPECTED_SDK_LIVENESS to the selected benchmark arm's expect_a or expect_b value" ;;
   *) die "EXPECTED_SDK_LIVENESS must be 0 or 1 (got '$EXPECTED_SDK_LIVENESS')" ;;
 esac
+# Bound, the arm's expect_a/expect_b stamp fully determines the positional, so it is
+# derived instead of demanded a second time. Unbound there is nothing to derive it
+# from, so it stays required: comparing it against EXPECTED_SDK_LIVENESS is all that
+# stands between the operator and tracing one arm with the other arm's expectation.
+if [ -z "$EXPECT_DD" ]; then
+  [ -n "$BENCHMARK_CSV" ] || die "usage: $0 <apk> <name> <expect-datadog 0|1>
+       expect-datadog is required for an unbound capture. Bind the trace with
+       BENCHMARK_CSV and BENCHMARK_ARM to derive it from that arm's expect_a or
+       expect_b stamp instead."
+  EXPECT_DD="$EXPECTED_SDK_LIVENESS"
+fi
 case "$EXPECT_DD" in 0|1) ;; *) die "expect-datadog must be 0 or 1 (got '$EXPECT_DD')" ;; esac
 [ "$EXPECT_DD" = "$EXPECTED_SDK_LIVENESS" ] \
   || die "expect-datadog=$EXPECT_DD, but the selected benchmark arm recorded
@@ -196,10 +238,6 @@ case "$EXPECT_DD" in 0|1) ;; *) die "expect-datadog must be 0 or 1 (got '$EXPECT
 case "$NAME" in */*|*..*|"") die "invalid trace name: '$NAME'" ;; esac
 case "$ANIMATIONS" in 0|1) ;; *) die "ANIMATIONS must be 0 or 1 (got '$ANIMATIONS')" ;; esac
 case "$AIRPLANE" in 0|1) ;; *) die "AIRPLANE must be 0 or 1 (got '$AIRPLANE')" ;; esac
-case "$WARMUP" in ''|*[!0-9]*) die "WARMUP must be a non-negative integer (got '$WARMUP')" ;; esac
-[ "$WARMUP" = "$EXPECTED_WARMUP" ] \
-  || die "WARMUP=$WARMUP, but the benchmark recorded warmup=$EXPECTED_WARMUP.
-       The trace must use the same post-install launch ordinal as the A/B."
 [ "$ANIMATIONS" = "$EXPECTED_ANIMATIONS" ] \
   || die "ANIMATIONS=$ANIMATIONS, but the benchmark recorded
        animations=$EXPECTED_ANIMATIONS. Animation scales change how many frames the
@@ -240,13 +278,26 @@ fi
 # +1 = the benchmark's liveness-probe launch, which precedes its warm-ups.
 # Not named SETTLE: verify_sdk_active.sh already uses that for a number of
 # SECONDS, and this is a number of LAUNCHES.
-SETTLE_LAUNCHES=$((WARMUP + 1))
+SETTLE_LAUNCHES=$((EXPECTED_WARMUP + 1))
 [ -f "$APK" ] || die "APK not found: $APK"
 TRACE_FILE="./$NAME.pftrace"
 PKG_RE=$(printf '%s' "$PKG" | sed 's/[.]/\\./g')
 log() { echo "[$(date +%H:%M:%S)] $*" >&2; }
 if [ -n "$BENCHMARK_CSV" ]; then
   log "bound to $BENCHMARK_CSV arm $DD_BENCHMARK_LABEL (${DD_BENCHMARK_ARM_KEY})"
+fi
+# Nine of the eleven identities are each compared against an independent observable:
+# the file's own digest, the device, or the state this script achieved. These two have
+# none, and a check may claim only what it can distinguish, so name their source
+# rather than presenting all eleven as uniformly verified.
+if [ -n "$BENCHMARK_CSV" ]; then
+  log "no trace-time observable: warmup=$EXPECTED_WARMUP ($_WARMUP_SOURCE),"
+  log "          expect-datadog=$EXPECT_DD ($_LIVENESS_SOURCE). Source 'header' is derived"
+  log "          from the CSV; 'explicit' is asserted by the operator, not verified"
+else
+  log "no trace-time observable, and no CSV to derive from: warmup=$EXPECTED_WARMUP and"
+  log "          expect-datadog=$EXPECT_DD are asserted, not verified. Bind the capture"
+  log "          with BENCHMARK_CSV and BENCHMARK_ARM to derive both from the run"
 fi
 
 HOST_MD5=$(dd_md5 "$APK") || die "cannot hash APK: $APK"
@@ -576,9 +627,9 @@ EOF
 
 # settle: $SETTLE_LAUNCHES discarded launches so dex/oat caches and any first-run migrations
 # are done, verifying Datadog liveness after each launch. The count reproduces
-# the benchmark's probe + warm-up launches exactly (see WARMUP above), so the traced
+# the benchmark's probe + warm-up launches exactly (see EXPECTED_WARMUP above), so the traced
 # launch sits at the same point in the post-install ramp as a measured one.
-log "settling: $SETTLE_LAUNCHES discarded launches (WARMUP=$WARMUP + 1 liveness probe),"
+log "settling: $SETTLE_LAUNCHES discarded launches (warmup=$EXPECTED_WARMUP + 1 liveness probe),"
 log "          so the traced launch is the $((SETTLE_LAUNCHES + 1))th after install -- the same"
 log "          position as the benchmark's first measured launch"
 for ((_i=1; _i<=SETTLE_LAUNCHES; _i++)); do
@@ -620,7 +671,7 @@ for ((_i=1; _i<=SETTLE_LAUNCHES; _i++)); do
     || die "settle launch $_i/$SETTLE_LAUNCHES: $DD_LAUNCH_ERROR"
   log "settle launch $_i/$SETTLE_LAUNCHES ($_SETTLE_KIND cadence): Status=$DD_LAUNCH_STATUS LaunchState=$DD_LAUNCH_STATE TotalTime=${DD_LAUNCH_TOTAL}ms"
   if [ "$_i" -eq "$SETTLE_LAUNCHES" ] && [ "$_SETTLE_FINAL_SLEEP" -eq 0 ]; then
-    # WARMUP=0: the probe has no post-validation wait. Start Perfetto halfway
+    # warmup=0: the probe has no post-validation wait. Start Perfetto halfway
     # through its existing 8s validation delay and use the last 4s for readiness,
     # so validation still happens at +8s and force-stop follows immediately.
     _SETTLE_BEFORE_PERFETTO=$((_SETTLE_CHECK_SLEEP - _PERFETTO_READY_WAIT))
@@ -664,7 +715,7 @@ for ((_i=1; _i<=SETTLE_LAUNCHES; _i++)); do
     die "settle launch $_i/$SETTLE_LAUNCHES: expected Datadog ABSENT, found $_SETTLE_DD datadog-* threads"
   fi
   if [ "$_SETTLE_FINAL_SLEEP" -gt 0 ]; then
-    # WARMUP>0: this is the benchmark warm-up's own 4s post-validation
+    # warmup>0: this is the benchmark warm-up's own 4s post-validation
     # wait. Starting Perfetto here reuses it instead of adding another 4s.
     if [ "$_i" -eq "$SETTLE_LAUNCHES" ]; then
       [ "$_SETTLE_FINAL_SLEEP" -ge "$_PERFETTO_READY_WAIT" ] \
@@ -686,13 +737,13 @@ done
 # window is what makes a late `Fully drawn` marker fail. Any change to the cadence
 # here has to be paid for there.
 #
-# Those 9s are the SLEEPS only. Under WARMUP=0 there is no post-validation wait to
+# Those 9s are the SLEEPS only. Under warmup=0 there is no post-validation wait to
 # reuse, so Perfetto starts mid-wait and the final settle launch's validation --
 # `logcat -d` over a full buffer, the Displayed/foreign scan, `dumpsys` for the top
 # activity, `ps -A`, and a `/proc` read per process -- runs inside the capture too.
 # Those adb round-trips are real seconds that this arithmetic does not model, so
 # treat the post-launch window as a ceiling rather than a measurement. Under
-# WARMUP>0 Perfetto starts after that validation and the 9s is exact.
+# warmup>0 Perfetto starts after that validation and the 9s is exact.
 [ -n "${PERFETTO_PID:-}" ] || die "Perfetto was not started during conditioning"
 kill -0 "$PERFETTO_PID" >/dev/null 2>&1 \
   || die "Perfetto stopped before the traced launch could be prepared"

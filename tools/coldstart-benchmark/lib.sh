@@ -426,7 +426,13 @@ dd_package_compile_status() {
 # the caller makes against the device, the file or the achieved state is unchanged.
 #
 # Fills each of these only when the caller left it empty, so an explicit value still
-# wins and still faces the same attestation:
+# wins. Nine of them then face an independent observable, so overriding one still
+# leaves it checked against the device, the file or the achieved state. `warmup` and
+# the arm's SDK expectation have no observable, so an explicit value for either is
+# asserted rather than attested: it replaces the header's value without being
+# compared to it, and capture_trace.sh labels it `explicit` in its output for exactly
+# that reason. Comparing an override against a value the header does record would
+# close that gap for all eleven, and is a deliberate open item, not an oversight.
 #   EXPECTED_APK_MD5 EXPECTED_PERMISSION_STATE_ID EXPECTED_SDK_LIVENESS
 #   EXPECTED_COMPILE_STATUS EXPECTED_PERF_MODE EXPECTED_WARMUP EXPECTED_ANIMATIONS
 #   EXPECTED_AIRPLANE EXPECTED_FP EXPECTED_ANDROID_USER EXPECTED_APP_TRACE_ID

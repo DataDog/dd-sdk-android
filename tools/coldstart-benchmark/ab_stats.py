@@ -172,8 +172,8 @@ def parse_ms(raw):
 # `launcher` belongs here: the harness itself aborts when two ARMS resolve
 # different launcher components, so pooling two FILES that entered through
 # different components would contradict the rule it enforces internally.
-# `warmup` belongs here for the reason capture_trace.sh makes its own settle count
-# track WARMUP: every cell is a fresh install, so the first measured launch sits at
+# `warmup` belongs here for the reason capture_trace.sh derives its own settle count
+# from the header's value: every cell is a fresh install, so the first measured launch sits at
 # post-install position warmup+2, and under the default `speed-profile` filter there
 # is no AOT code on that install -- the profile fills and the JIT warms over the
 # first few launches. Two files with different warmups therefore measure the SDK's

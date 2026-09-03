@@ -564,9 +564,15 @@ class HarnessRegressionTests(unittest.TestCase):
         capture = capture_path.read_text(encoding="utf-8")
         self.assertIn('EXPECTED_PERF_MODE="${EXPECTED_PERF_MODE:-}"', capture)
         self.assertIn('EXPECTED_WARMUP="${EXPECTED_WARMUP:-}"', capture)
-        self.assertIn('WARMUP="${WARMUP:-$EXPECTED_WARMUP}"', capture)
         self.assertIn('[ "$DD_PERF_MODE" = "$EXPECTED_PERF_MODE" ]', capture)
-        self.assertIn('[ "$WARMUP" = "$EXPECTED_WARMUP" ]', capture)
+        # `warmup` is DERIVED, not accepted twice. The old pair -- WARMUP defaulting
+        # to EXPECTED_WARMUP and then checked against it -- compared two operator
+        # inputs, so a consistently wrong pair passed and the only thing the check
+        # added was a second place to mistype the value.
+        self.assertIn("SETTLE_LAUNCHES=$((EXPECTED_WARMUP + 1))", capture)
+        self.assertNotIn('WARMUP="${WARMUP:-$EXPECTED_WARMUP}"', capture)
+        self.assertNotIn('[ "$WARMUP" = "$EXPECTED_WARMUP" ]', capture)
+        self.assertNotIn("post-install launch ordinal", capture)
 
         base_env = os.environ.copy()
         for name in ("EXPECTED_PERF_MODE", "EXPECTED_WARMUP", "WARMUP",
@@ -639,16 +645,25 @@ class HarnessRegressionTests(unittest.TestCase):
         self.assertIn("APK not found", inherited_warmup.stderr)
         self.assertNotIn("post-install launch ordinal", inherited_warmup.stderr)
 
-        base_env["WARMUP"] = "3"
-        mismatched_warmup = subprocess.run(
-            ["bash", str(capture_path), "/missing.apk", "trace", "1"],
-            check=False,
-            capture_output=True,
-            text=True,
-            env=base_env,
-        )
-        self.assertNotEqual(mismatched_warmup.returncode, 0)
-        self.assertIn("post-install launch ordinal", mismatched_warmup.stderr)
+        # Refused rather than ignored, and refused even when it AGREES with the
+        # benchmark: it is no longer an input, and a silently discarded environment
+        # variable is how a run lost RUNS and BLOCKS to a positional signature.
+        # An explicitly empty value is caught too, which `${WARMUP:-}` would not.
+        for leftover in ("3", "9", ""):
+            base_env["WARMUP"] = leftover
+            rejected_warmup = subprocess.run(
+                ["bash", str(capture_path), "/missing.apk", "trace", "1"],
+                check=False,
+                capture_output=True,
+                text=True,
+                env=base_env,
+            )
+            self.assertNotEqual(rejected_warmup.returncode, 0, leftover)
+            self.assertIn("WARMUP is not an input", rejected_warmup.stderr)
+            self.assertIn("derived from\n       EXPECTED_WARMUP", rejected_warmup.stderr)
+            # The settle count is never silently taken from it.
+            self.assertNotIn("settling:", rejected_warmup.stderr)
+        del base_env["WARMUP"]
 
         gate_start = capture.index("attest_performance_mode() {")
         gate_end = capture.index("\n}\n", gate_start) + 3
@@ -774,7 +789,8 @@ class HarnessRegressionTests(unittest.TestCase):
         accepted = run(**complete)
         self.assertNotIn("invalid EXPECTED_FP", accepted.stderr)
 
-        # An explicit disagreement aborts before device access, like WARMUP's.
+        # An explicit disagreement aborts before device access. Unlike `warmup`,
+        # these two are applied to the device and read back, so they stay inputs.
         for override, needle in (
             (dict(ANIMATIONS="0"), "would not be the same scenario"),
             (dict(AIRPLANE="1"), "must be the one the A/B measured"),
@@ -1010,6 +1026,120 @@ class HarnessRegressionTests(unittest.TestCase):
             self.assertIn("ran without", no_endpoint.stderr)
             self.assertIn("no app-owned endpoint", no_endpoint.stderr)
             self.assertNotIn("hexadecimal", no_endpoint.stderr)
+
+    UNBOUND_IDENTITIES = dict(
+        EXPECTED_APK_MD5="a" * 32,
+        EXPECTED_PERMISSION_STATE_ID="b" * 32,
+        EXPECTED_COMPILE_STATUS="verify",
+        EXPECTED_PERF_MODE="fixed",
+        EXPECTED_WARMUP="3",
+        EXPECTED_ANIMATIONS="1",
+        EXPECTED_AIRPLANE="0",
+        EXPECTED_FP="motorola/lisbon/lisbon:12/S3RQS/rel:user/release-keys",
+        EXPECTED_ANDROID_USER="0",
+        EXPECTED_SDK_LIVENESS="1",
+    )
+
+    def test_trace_derives_the_identities_that_have_no_observable(self) -> None:
+        """Two of the eleven identities were accepted twice instead of attested.
+
+        Nine are each compared against an independent observable: the file's own
+        digest, the device, or the state the script achieved. `warmup` and the SDK
+        expectation were compared against a second operator-supplied value, so a
+        consistently wrong pair passed and the docs presented all eleven uniformly.
+        Both are derived from the bound CSV now, the positional survives for the
+        unbound path where it is the only thing that catches the other arm's
+        expectation, and the output names what rests on derivation rather than
+        observation.
+        """
+        capture = (HARNESS / "capture_trace.sh").read_text(encoding="utf-8")
+        # Optional, not defaulted: `${3:?}` aborted before the header could supply it.
+        self.assertIn('EXPECT_DD="${3:-}"', capture)
+        self.assertNotIn('EXPECT_DD="${3:?}"', capture)
+        self.assertIn('[ "$EXPECT_DD" = "$EXPECTED_SDK_LIVENESS" ]', capture)
+        # Derivation happens after the header read and before the value is validated,
+        # so a derived value faces exactly the gates a typed one does.
+        header_read = capture.index("dd_read_benchmark_header")
+        derivation = capture.index('EXPECT_DD="$EXPECTED_SDK_LIVENESS"', header_read)
+        self.assertLess(derivation,
+                        capture.index('case "$EXPECT_DD" in 0|1)', derivation))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            apk = root / "t.apk"
+            apk.write_text("apk", encoding="utf-8")
+            csv = root / "results.csv"
+            csv.write_text(self.BENCHMARK_HEADER + self.BENCHMARK_ROWS, encoding="utf-8")
+
+            def run(*positional, **env_overrides):
+                env = os.environ.copy()
+                for name in ("WARMUP", "ANIMATIONS", "AIRPLANE", "COMPILE_FILTER",
+                             "TRACE_ENDPOINT", "APP_TRACE_REGEX", "BENCHMARK_CSV",
+                             "BENCHMARK_ARM"):
+                    env.pop(name, None)
+                for name in list(env):
+                    if name.startswith("EXPECTED_"):
+                        env.pop(name, None)
+                env.update(PKG="com.example.app", AAPT2="/nonexistent",
+                           ADB="/nonexistent-adb")
+                env.update(env_overrides)
+                return subprocess.run(
+                    ["bash", str(HARNESS / "capture_trace.sh"), str(apk), "trace",
+                     *positional],
+                    check=False, capture_output=True, text=True, env=env,
+                )
+
+            bound = dict(BENCHMARK_CSV=str(csv))
+
+            # Bound and omitted: each arm derives its OWN stamp, not a default.
+            for arm, expect in (("B_withDD", "1"), ("A_noDD", "0")):
+                derived = run(**bound, BENCHMARK_ARM=arm)
+                self.assertIn(f"expect-datadog={expect} (header)", derived.stderr, arm)
+                self.assertIn("warmup=3 (header)", derived.stderr, arm)
+                # Neither the old hard `${3:?}` abort nor a wrong-arm refusal.
+                self.assertNotIn("parameter null or not set", derived.stderr, arm)
+                self.assertNotIn("must prove the same SDK runtime state", derived.stderr, arm)
+
+            # Bound and contradicted: still refused, so the positional is an override
+            # that faces its comparison rather than being ignored once derivable.
+            contradicted = run("1", **bound, BENCHMARK_ARM="A_noDD")
+            self.assertNotEqual(contradicted.returncode, 0)
+            self.assertIn("must prove the same SDK runtime state", contradicted.stderr)
+            agreed = run("0", **bound, BENCHMARK_ARM="A_noDD")
+            self.assertNotIn("must prove the same SDK runtime state", agreed.stderr)
+            malformed = run("yes", **bound, BENCHMARK_ARM="A_noDD")
+            self.assertNotEqual(malformed.returncode, 0)
+            self.assertIn("expect-datadog must be 0 or 1", malformed.stderr)
+
+            # Unbound and omitted: refused. There is nothing to derive it from, and
+            # defaulting it would pick one arm's expectation for the other's APK.
+            unbound_missing = run(**self.UNBOUND_IDENTITIES)
+            self.assertNotEqual(unbound_missing.returncode, 0)
+            self.assertIn("required for an unbound capture", unbound_missing.stderr)
+            self.assertNotIn("no trace-time observable", unbound_missing.stderr)
+
+            # Unbound and supplied: accepted, and reported as asserted rather than
+            # verified, because both values are the operator's.
+            unbound = run("1", **self.UNBOUND_IDENTITIES)
+            self.assertIn("no CSV to derive from", unbound.stderr)
+            self.assertIn("asserted, not verified", unbound.stderr)
+            self.assertNotIn("(header)", unbound.stderr)
+
+            # Bound but overridden: the override still wins, so the notice must call
+            # it explicit. Claiming derivation there would overstate the guarantee.
+            overridden = run(**bound, BENCHMARK_ARM="B_withDD",
+                             EXPECTED_WARMUP="5", EXPECTED_SDK_LIVENESS="1")
+            self.assertIn("warmup=5 (explicit)", overridden.stderr)
+            self.assertIn("expect-datadog=1 (explicit)", overridden.stderr)
+
+            # WARMUP is refused on the bound path too, including when it agrees with
+            # the header: it is not an input, and silence would hand the operator a
+            # settle count they did not choose.
+            for leftover in ("3", "9", ""):
+                refused = run(**bound, BENCHMARK_ARM="B_withDD", WARMUP=leftover)
+                self.assertNotEqual(refused.returncode, 0, leftover)
+                self.assertIn("WARMUP is not an input", refused.stderr)
+                self.assertNotIn("no trace-time observable", refused.stderr)
 
     def test_enabled_radio_readback_does_not_claim_reachability(self) -> None:
         result = self.run_with_fake_adb(
