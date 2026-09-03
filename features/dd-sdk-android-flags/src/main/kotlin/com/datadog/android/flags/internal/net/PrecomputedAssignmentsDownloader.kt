@@ -35,7 +35,8 @@ import kotlin.random.Random
  * @param callFactory Factory for creating HTTP calls
  * @param internalLogger Logger for error and debug messages
  * @param requestFactory Factory for creating precomputed assignments requests
- * @param requestTimeoutMs SDK timeout for each request, in milliseconds. Zero preserves the call's existing timeout
+ * @param requestTimeoutMs SDK timeout for each request, in milliseconds. Zero preserves the call's existing timeout.
+ * If both timeouts are nonzero, the shorter timeout applies
  * @param requestRetryCount Number of retries after the first attempt
  * @param retryScheduler Scheduler for the delay before each retry
  */

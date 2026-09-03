@@ -192,7 +192,8 @@ data class FlagsConfiguration internal constructor(
         /**
          * Sets the timeout for each precomputed assignment request.
          * The timeout includes downloading the response body. A value of zero disables the SDK timeout and preserves
-         * any timeout already configured on the HTTP client.
+         * any timeout already configured on the HTTP client. When the HTTP call already has a nonzero timeout, the
+         * shorter timeout applies.
          *
          * @param timeoutMs The timeout for each request, in milliseconds.
          * @return this [Builder] instance for method chaining.
