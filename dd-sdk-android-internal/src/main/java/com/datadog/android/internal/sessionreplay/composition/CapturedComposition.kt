@@ -213,6 +213,31 @@ sealed interface CapturedWireframe {
         val label: String? = null,
         override val permanentId: String? = null
     ) : CapturedWireframe
+
+    /**
+     * An out-of-band content placeholder correlated by [slotId] - content for this slot is
+     * recorded independently by the embedding SDK and stitched in by the player using [slotId],
+     * the same slot-correlation idea as [WebView] but generalized to any embeddable content type.
+     *
+     * @property identity this wireframe's stable identity.
+     * @property bounds absolute screen-space bounds.
+     * @property clip inset applied per edge where an ancestor clips this wireframe, if any.
+     * @property style background fill shown behind/around the embedded content, if any.
+     * @property border stroke, if any.
+     * @property slotId the identifier of the slot this wireframe hosts, supplied by the embedding SDK.
+     * @property isVisible whether this slot's placeholder is currently visible.
+     * @property permanentId a cross-generation identifier for this same logical element, if known.
+     */
+    data class EmbeddedContent(
+        override val identity: CapturedIdentity,
+        override val bounds: CapturedBounds,
+        override val clip: CapturedClip? = null,
+        val style: CapturedShapeStyle? = null,
+        val border: CapturedShapeBorder? = null,
+        val slotId: String,
+        val isVisible: Boolean? = null,
+        override val permanentId: String? = null
+    ) : CapturedWireframe
 }
 
 /** The backing resource of a [CapturedWireframe.Pixel]. */

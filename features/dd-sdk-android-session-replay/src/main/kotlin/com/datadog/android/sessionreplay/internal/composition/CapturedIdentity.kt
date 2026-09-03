@@ -47,6 +47,9 @@ internal interface CapturedIdentityFactory : CompositionIdentityFactory {
     fun layer(owner: CapturedIdentity, layerId: String): CapturedIdentity
 
     fun webViewWireframe(owner: CapturedIdentity, slotId: Long): CapturedIdentity
+
+    /** Mints the identity for a [CapturedWireframe.EmbeddedContent] owned by [owner]. */
+    fun embeddedContentWireframe(owner: CapturedIdentity): CapturedIdentity
 }
 
 internal class DefaultCapturedIdentityFactory(
@@ -94,6 +97,9 @@ internal class DefaultCapturedIdentityFactory(
 
     override fun placeholderWireframe(owner: CapturedIdentity): CapturedIdentity =
         createNamespacedWireframeIdentity(owner, CapturedWireframeKind.PLACEHOLDER)
+
+    override fun embeddedContentWireframe(owner: CapturedIdentity): CapturedIdentity =
+        createNamespacedWireframeIdentity(owner, CapturedWireframeKind.EMBEDDED_CONTENT)
 
     override fun webViewWireframe(owner: CapturedIdentity, slotId: Long): CapturedIdentity {
         validateLayerOwner(owner)

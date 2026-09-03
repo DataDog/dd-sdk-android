@@ -29,6 +29,7 @@ import com.datadog.android.internal.utils.isValidTapTarget
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedEmbeddedContentMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedHiddenViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMappingContext
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapper
@@ -91,7 +92,8 @@ internal class AndroidWindowTraversal(
     private val internalLogger: InternalLogger = InternalLogger.UNBOUND,
     private val viewsPerCheckpoint: Int = VIEWS_PER_CHECKPOINT,
     private val isComposeHost: (View) -> Boolean = ::isComposeHostByClassName,
-    private val heatmapResolver: HeatmapIdentifierResolver? = null
+    private val heatmapResolver: HeatmapIdentifierResolver? = null,
+    private val embeddedContentMapper: CapturedEmbeddedContentMapper? = null
 ) {
 
     /**
@@ -164,10 +166,7 @@ internal class AndroidWindowTraversal(
         if (state.viewsVisited % viewsPerCheckpoint == 0 && !context.shouldContinue()) {
             return LayerWalkResult.Aborted
         }
-        if (viewUtilsInternal.isNotVisible(view) ||
-            viewUtilsInternal.isSystemNoise(view) ||
-            viewUtilsInternal.isOnSecondaryDisplay(view)
-        ) {
+        if (shouldFilterFromTraversal(view)) {
             return LayerWalkResult.Filtered
         }
 
@@ -254,6 +253,7 @@ internal class AndroidWindowTraversal(
      * [LongMethod]'s budget.
      */
     @Suppress("LongParameterList")
+    @UiThread
     private fun mapNativeView(
         view: View,
         isHidden: Boolean,
@@ -273,9 +273,38 @@ internal class AndroidWindowTraversal(
             textAndInputPrivacy = ownPrivacy.textAndInputPrivacy,
             pendingPixelCaptureSink = PendingPixelCaptureSink { state.pendingPixelCaptures.add(it) }
         )
-        val mapped = (if (isHidden) hiddenViewMapper else mapperRegistry.resolve(view)).map(view, mappingContext)
+        val mapper = resolveMapper(view, isHidden)
+        val mapped = mapper.map(view, mappingContext)
         addWireframes(mapped, ancestorBounds, children, state, heatmapIdentifier)
         return mapped.isPixelFallbackTerminal()
+    }
+
+    /**
+     * A slot-tagged view is never dropped for invisibility - it still needs an explicit hidden
+     * [CapturedWireframe.EmbeddedContent] placeholder (via [resolveMapper]/[CapturedEmbeddedContentMapper]),
+     * not silent omission, mirroring legacy `TreeViewTraversal`'s own `embeddedMapper == null &&
+     * isNotVisible` gate. System noise/secondary-display views are still dropped unconditionally.
+     */
+    @UiThread
+    private fun shouldFilterFromTraversal(view: View): Boolean {
+        val isSlotTagged = embeddedContentMapper?.hasSlotId(view) == true
+        return (!isSlotTagged && viewUtilsInternal.isNotVisible(view)) ||
+            viewUtilsInternal.isSystemNoise(view) ||
+            viewUtilsInternal.isOnSecondaryDisplay(view)
+    }
+
+    /**
+     * [isHidden] (privacy masking) always wins over slot tagging, matching legacy
+     * `TreeViewTraversal`'s own priority - a privacy-hidden view is never exposed via an embedded
+     * content placeholder either. Slot tagging otherwise takes priority over the type-based
+     * [mapperRegistry]: it's orthogonal to a view's concrete class (any [View] subtype can carry the
+     * tag), which [CapturedViewMapperRegistry]'s type-based dispatch can't express.
+     */
+    @UiThread
+    private fun resolveMapper(view: View, isHidden: Boolean): CapturedViewMapper<View> = when {
+        isHidden -> hiddenViewMapper
+        embeddedContentMapper?.hasSlotId(view) == true -> embeddedContentMapper
+        else -> mapperRegistry.resolve(view)
     }
 
     /**
@@ -792,6 +821,7 @@ private fun CapturedWireframe.withClip(clip: CapturedClip?): CapturedWireframe =
     is CapturedWireframe.WebView -> copy(clip = clip)
     is CapturedWireframe.Pixel -> copy(clip = clip)
     is CapturedWireframe.PrivacyPlaceholder -> copy(clip = clip)
+    is CapturedWireframe.EmbeddedContent -> copy(clip = clip)
 }
 
 /** Stateless - kept out of [AndroidWindowTraversal] itself to stay within [TooManyFunctions]'s budget. */
@@ -801,4 +831,5 @@ private fun CapturedWireframe.withPermanentId(permanentId: String): CapturedWire
     is CapturedWireframe.WebView -> copy(permanentId = permanentId)
     is CapturedWireframe.Pixel -> copy(permanentId = permanentId)
     is CapturedWireframe.PrivacyPlaceholder -> copy(permanentId = permanentId)
+    is CapturedWireframe.EmbeddedContent -> copy(permanentId = permanentId)
 }

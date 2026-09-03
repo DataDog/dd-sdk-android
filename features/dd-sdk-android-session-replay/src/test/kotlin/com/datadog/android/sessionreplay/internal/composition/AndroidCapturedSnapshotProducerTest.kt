@@ -16,13 +16,17 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedEmbeddedContentMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedTextViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewGroupFallbackMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistration
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.recorder.HeatmapIdentifierResolver
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.utils.GlobalBounds
@@ -370,5 +374,78 @@ internal class AndroidCapturedSnapshotProducerTest {
         // Then
         val windowWireframe = snapshot!!.wireframes.single()
         assertThat(windowWireframe.permanentId).isNotNull()
+    }
+
+    @Test
+    fun `M emit a hidden EmbeddedContent wireframe W capture { slot not refreshed this round }`(
+        @Forgery fakeWindowBounds: GlobalBounds,
+        @Forgery fakeChildBounds: GlobalBounds,
+        @StringForgery fakeViewId: String,
+        @StringForgery fakeSlotId: String,
+        @LongForgery(min = 0L) fakeOffset: Long,
+        @LongForgery fakeTimestamp: Long
+    ) {
+        // Given: the SAME CapturedEmbeddedContentMapper instance is shared between the traversal
+        // (per-view mapping) and the producer (the beginCapture/finishCapture lifecycle) - exactly
+        // as DefaultRecorderProvider wires them in production.
+        val embeddedContentSlotRegistry = EmbeddedContentSlotRegistry()
+        val embeddedContentMapper = CapturedEmbeddedContentMapper(embeddedContentSlotRegistry)
+        val window = mockWindow(fakeWindowBounds)
+        val taggedChild: View = mock()
+        val registration = EmbeddedContentSlotRegistration(fakeSlotId)
+        whenever(taggedChild.getTag(R.id.datadog_session_replay_slot_id)).thenReturn(fakeSlotId)
+        whenever(taggedChild.getTag(R.id.datadog_session_replay_slot_registration)).thenReturn(registration)
+        whenever(taggedChild.isShown).thenReturn(true)
+        whenever(taggedChild.width).thenReturn(fakeChildBounds.width.toInt())
+        whenever(taggedChild.height).thenReturn(fakeChildBounds.height.toInt())
+        whenever(mockViewIdentifierResolver.resolveViewId(taggedChild)).thenReturn(nextViewId.getAndIncrement())
+        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(taggedChild, fakeDensity)).thenReturn(fakeChildBounds)
+        whenever(window.childCount).thenReturn(1)
+        whenever(window.getChildAt(0)).thenReturn(taggedChild)
+        val timeProvider: TimeProvider = mock()
+        whenever(timeProvider.getDeviceTimestampMillis()).thenReturn(fakeTimestamp)
+        val testedProducer = AndroidCapturedSnapshotProducer(
+            windowSource = ActiveWindowSource().apply { update(listOf(window)) },
+            scopeProvider = RumViewScopeProvider {
+                CapturedRumViewScope(RumViewIdentityScope(fakeViewId), fakeOffset)
+            },
+            timeProvider = timeProvider,
+            traversal = AndroidWindowTraversal(
+                mapperRegistry = CapturedViewMapperRegistry(
+                    mappers = emptyList(),
+                    fallbackMapper = CapturedViewGroupFallbackMapper(internalLogger = mock()),
+                    internalLogger = mock()
+                ),
+                viewIdentifierResolver = mockViewIdentifierResolver,
+                viewBoundsResolver = mockViewBoundsResolver,
+                viewUtilsInternal = ViewUtilsInternal(),
+                embeddedContentMapper = embeddedContentMapper
+            ),
+            viewIdentifierResolver = mockViewIdentifierResolver,
+            embeddedContentMapper = embeddedContentMapper
+        )
+
+        // When: the tagged child is walked (and visible) on the first capture, then absent from the
+        // window entirely on the second - e.g. scrolled off, recycled - while its registration stays
+        // active (never explicitly detached).
+        val firstSnapshot = testedProducer.capture(fakeContext, CaptureChangeset.EMPTY)?.snapshot
+        whenever(window.childCount).thenReturn(0)
+        val secondSnapshot = testedProducer.capture(fakeContext, CaptureChangeset.EMPTY)?.snapshot
+
+        // Then
+        val firstEmbedded = firstSnapshot!!.wireframes
+            .filterIsInstance<CapturedWireframe.EmbeddedContent>().single()
+        assertThat(firstEmbedded.slotId).isEqualTo(fakeSlotId)
+        assertThat(firstEmbedded.isVisible).isTrue()
+
+        val secondEmbedded = secondSnapshot!!.wireframes
+            .filterIsInstance<CapturedWireframe.EmbeddedContent>().single()
+        assertThat(secondEmbedded.slotId).isEqualTo(fakeSlotId)
+        assertThat(secondEmbedded.isVisible).isFalse()
+        assertThat(secondEmbedded.bounds.width).isEqualTo(0L)
+        assertThat(secondEmbedded.bounds.height).isEqualTo(0L)
+        // The same wireframe identity persists across both - the embedding SDK's own placeholder
+        // correlation depends on this id staying stable while the slot registration is still active.
+        assertThat(secondEmbedded.identity).isEqualTo(firstEmbedded.identity)
     }
 }

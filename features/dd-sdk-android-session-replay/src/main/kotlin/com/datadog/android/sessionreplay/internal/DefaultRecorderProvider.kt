@@ -55,6 +55,7 @@ import com.datadog.android.sessionreplay.internal.composition.SnapshotCompletion
 import com.datadog.android.sessionreplay.internal.composition.TimeBankCaptureTimeBudget
 import com.datadog.android.sessionreplay.internal.composition.TimeProviderCaptureTimeProvider
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedEditTextMapper
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedEmbeddedContentMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedPixelFallbackMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedTextViewMapper
@@ -208,7 +209,8 @@ internal class DefaultRecorderProvider(
             recordWriter,
             rumContextProvider,
             internalLogger,
-            resourceResolverBundle.dataQueueHandler
+            resourceResolverBundle.dataQueueHandler,
+            embeddedContentSlotRegistry
         )
         val orchestrator = createCaptureOrchestrator(
             windowSource,
@@ -216,7 +218,8 @@ internal class DefaultRecorderProvider(
             completionQueue,
             resourceResolverBundle.resourceResolver,
             internalLogger,
-            heatmapResolver
+            heatmapResolver,
+            embeddedContentSlotRegistry
         )
         val interceptor = CompositionViewOnDrawInterceptor(
             windowSource = windowSource,
@@ -243,7 +246,8 @@ internal class DefaultRecorderProvider(
         recordWriter: RecordWriter,
         rumContextProvider: RumContextProvider,
         internalLogger: InternalLogger,
-        resourceDataQueueHandler: DataQueueHandler
+        resourceDataQueueHandler: DataQueueHandler,
+        embeddedContentSlotRegistry: EmbeddedContentSlotRegistry
     ): SnapshotCompletionQueue = SnapshotCompletionQueue(
         executorService = sdkCore.createSingleThreadExecutorService("sr-composition-processing"),
         processor = DefaultSnapshotCompletionProcessor(
@@ -252,7 +256,8 @@ internal class DefaultRecorderProvider(
             internalLogger = internalLogger,
             timeProvider = sdkCore.timeProvider,
             orientationProvider = DefaultOrientationProvider(),
-            resourceDataQueueHandler = resourceDataQueueHandler
+            resourceDataQueueHandler = resourceDataQueueHandler,
+            embeddedContentSlotRegistry = embeddedContentSlotRegistry
         ),
         internalLogger = internalLogger
     )
@@ -264,11 +269,17 @@ internal class DefaultRecorderProvider(
         completionQueue: SnapshotCompletionQueue,
         resourceResolver: ResourceResolver,
         internalLogger: InternalLogger,
-        heatmapResolver: HeatmapIdentifierResolver?
+        heatmapResolver: HeatmapIdentifierResolver?,
+        embeddedContentSlotRegistry: EmbeddedContentSlotRegistry
     ): SnapshotCaptureOrchestrator {
         val skippedFrameNotifier = CaptureSkippedFrameNotifier(sdkCore)
         val producer = compositionSnapshotProducerFactory?.invoke(windowSource, rumContextProvider)
-            ?: defaultCompositionSnapshotProducer(windowSource, rumContextProvider, heatmapResolver)
+            ?: defaultCompositionSnapshotProducer(
+                windowSource,
+                rumContextProvider,
+                heatmapResolver,
+                embeddedContentSlotRegistry
+            )
         val mainThreadExecutor = HandlerCaptureMainThreadExecutor()
         // Shared rather than one-per-consumer: sdkCore.createScheduledExecutorService allocates a
         // brand-new background thread with no pooling, and PixelFallbackSnapshotProcessor has no
@@ -314,20 +325,32 @@ internal class DefaultRecorderProvider(
     private fun defaultCompositionSnapshotProducer(
         windowSource: ActiveWindowSource,
         rumContextProvider: RumContextProvider,
-        heatmapResolver: HeatmapIdentifierResolver?
-    ): AndroidCapturedSnapshotProducer = AndroidCapturedSnapshotProducer(
-        windowSource = windowSource,
-        scopeProvider = DefaultRumViewScopeProvider(rumContextProvider),
-        timeProvider = sdkCore.timeProvider,
-        traversal = AndroidWindowTraversal(
-            mapperRegistry = builtInCapturedMappers(),
-            composeHostDecomposer = compositionHostDecomposer,
-            rootImagePrivacy = imagePrivacy,
-            rootTextAndInputPrivacy = textAndInputPrivacy,
-            internalLogger = sdkCore.internalLogger,
-            heatmapResolver = heatmapResolver
+        heatmapResolver: HeatmapIdentifierResolver?,
+        embeddedContentSlotRegistry: EmbeddedContentSlotRegistry
+    ): AndroidCapturedSnapshotProducer {
+        // Shared as the same instance between the traversal (per-view mapping) and the producer
+        // (the beginCapture/finishCapture lifecycle spanning every window in one generation) - see
+        // CapturedEmbeddedContentMapper's own doc for why this must be one instance, not two.
+        val embeddedContentMapper = CapturedEmbeddedContentMapper(
+            embeddedContentSlotRegistry = embeddedContentSlotRegistry,
+            internalLogger = sdkCore.internalLogger
         )
-    )
+        return AndroidCapturedSnapshotProducer(
+            windowSource = windowSource,
+            scopeProvider = DefaultRumViewScopeProvider(rumContextProvider),
+            timeProvider = sdkCore.timeProvider,
+            traversal = AndroidWindowTraversal(
+                mapperRegistry = builtInCapturedMappers(),
+                composeHostDecomposer = compositionHostDecomposer,
+                rootImagePrivacy = imagePrivacy,
+                rootTextAndInputPrivacy = textAndInputPrivacy,
+                internalLogger = sdkCore.internalLogger,
+                heatmapResolver = heatmapResolver,
+                embeddedContentMapper = embeddedContentMapper
+            ),
+            embeddedContentMapper = embeddedContentMapper
+        )
+    }
 
     private fun builtInCapturedMappers(): CapturedViewMapperRegistry {
         val internalLogger = sdkCore.internalLogger

@@ -800,6 +800,7 @@ datadog:
       - "kotlin.collections.listOf(com.datadog.android.rum.model.VitalOperationStepEvent.Interface)"
       - "kotlin.collections.listOf(com.datadog.android.internal.sessionreplay.composition.CapturedChild.Wireframe)"
       - "kotlin.collections.listOf(com.datadog.android.internal.sessionreplay.composition.CapturedModifier.Opacity)"
+      - "kotlin.collections.listOf(com.datadog.android.internal.sessionreplay.composition.CapturedWireframe.EmbeddedContent)"
       - "kotlin.collections.listOf(com.datadog.android.internal.sessionreplay.composition.CapturedWireframe.Pixel)"
       - "kotlin.collections.listOf(com.datadog.android.internal.sessionreplay.composition.CapturedWireframe.PrivacyPlaceholder)"
       - "kotlin.collections.listOf(com.datadog.android.internal.sessionreplay.composition.CapturedWireframe.Shape)"

@@ -235,6 +235,8 @@ sealed interface com.datadog.android.internal.sessionreplay.composition.Captured
     constructor(CapturedIdentity, CapturedBounds, CapturedClip? = null, CapturedShapeStyle? = null, CapturedShapeBorder? = null, PixelResource, Boolean? = null, String? = null)
   data class PrivacyPlaceholder : CapturedWireframe
     constructor(CapturedIdentity, CapturedBounds, CapturedClip? = null, String? = null, String? = null)
+  data class EmbeddedContent : CapturedWireframe
+    constructor(CapturedIdentity, CapturedBounds, CapturedClip? = null, CapturedShapeStyle? = null, CapturedShapeBorder? = null, String, Boolean? = null, String? = null)
 sealed interface com.datadog.android.internal.sessionreplay.composition.PixelResource
   data class Resolved : PixelResource
     constructor(String, String? = null)
@@ -314,6 +316,7 @@ enum com.datadog.android.internal.sessionreplay.composition.CapturedWireframeKin
   - TEXT
   - IMAGE
   - PLACEHOLDER
+  - EMBEDDED_CONTENT
 data class com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
   constructor(RumViewIdentityScope, CapturedIdentityKind, CapturedWireframeKind?, List<String>, String, Long)
   fun path(): List<String>

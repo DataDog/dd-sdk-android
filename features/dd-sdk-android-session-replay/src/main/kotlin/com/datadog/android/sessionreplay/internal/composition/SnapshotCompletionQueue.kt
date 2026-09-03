@@ -8,8 +8,10 @@ package com.datadog.android.sessionreplay.internal.composition
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.internal.async.DataQueueHandler
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
@@ -76,7 +78,8 @@ internal class DefaultSnapshotCompletionProcessor(
     private val timeProvider: TimeProvider,
     private val orientationProvider: OrientationProvider = DefaultOrientationProvider(),
     private val wireMapper: CapturedTreeWireMapper = DefaultCapturedTreeWireMapper(),
-    private val resourceDataQueueHandler: DataQueueHandler? = null
+    private val resourceDataQueueHandler: DataQueueHandler? = null,
+    private val embeddedContentSlotRegistry: EmbeddedContentSlotRegistry? = null
 ) : SnapshotCompletionProcessor {
 
     // Only ever read/written from SnapshotCompletionQueue's single draining thread - same
@@ -116,7 +119,8 @@ internal class DefaultSnapshotCompletionProcessor(
                             sessionId = rumContext.sessionId,
                             viewId = rumContext.viewId,
                             records = records
-                        )
+                        ),
+                        onSuccess = { reportPlaceholders(rumContext, capture.snapshot) }
                     )
                     retained = RetainedSnapshotState(
                         snapshot = capture.snapshot,
@@ -148,6 +152,26 @@ internal class DefaultSnapshotCompletionProcessor(
                 records = listOf(MobileSegment.MobileRecord.ViewEndRecord(timestamp))
             )
         )
+    }
+
+    /**
+     * Reported only once this generation's records have actually been persisted, mirroring legacy
+     * `RecordedDataProcessor.reportPlaceholders` exactly (including why: a rejected write must not
+     * leave the registry claiming a placeholder for this view). Scans [snapshot]'s own flat
+     * [CapturedFullSnapshot.wireframes] - the complete current set, always fully resolved regardless
+     * of whether this particular cycle actually wrote a full snapshot or only an incremental
+     * mutation - rather than whatever this cycle's own [MobileSegment.MobileRecord]s happened to
+     * carry, since an incremental wireframe-content mutation may omit an unchanged
+     * [CapturedWireframe.EmbeddedContent]'s `isVisible` entirely and so can't answer "is this slot
+     * visible right now" on its own.
+     */
+    private fun reportPlaceholders(rumContext: SessionReplayRumContext, snapshot: CapturedFullSnapshot) {
+        val registry = embeddedContentSlotRegistry ?: return
+        val visibleSlotIds = snapshot.wireframes
+            .filterIsInstance<CapturedWireframe.EmbeddedContent>()
+            .filter { it.isVisible == true }
+            .mapTo(mutableSetOf()) { it.slotId }
+        registry.onPlaceholdersWritten(rumContext.viewId, snapshot.timestamp, visibleSlotIds)
     }
 
     private fun viewOpeningRecords(capture: CompletedSnapshotCapture): List<MobileSegment.MobileRecord> {

@@ -23,8 +23,11 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.PixelResource
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
+import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedEmbeddedContentMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMapperTypeWrapper
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMappingContext
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
@@ -51,7 +54,10 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.atomic.AtomicLong
@@ -132,7 +138,8 @@ internal class AndroidWindowTraversalTest {
         typedMappers: List<CapturedMapperTypeWrapper<*>> = emptyList(),
         composeHostDecomposer: CompositionHostDecomposer? = null,
         isComposeHost: (View) -> Boolean = { false },
-        heatmapResolver: HeatmapIdentifierResolver? = null
+        heatmapResolver: HeatmapIdentifierResolver? = null,
+        embeddedContentMapper: CapturedEmbeddedContentMapper? = null
     ) = AndroidWindowTraversal(
         mapperRegistry = CapturedViewMapperRegistry(typedMappers, fallback, mock()),
         viewIdentifierResolver = mockViewIdentifierResolver,
@@ -140,7 +147,8 @@ internal class AndroidWindowTraversalTest {
         viewUtilsInternal = ViewUtilsInternal(),
         composeHostDecomposer = composeHostDecomposer,
         isComposeHost = isComposeHost,
-        heatmapResolver = heatmapResolver
+        heatmapResolver = heatmapResolver,
+        embeddedContentMapper = embeddedContentMapper
     )
 
     private fun makeTapTarget(view: View) {
@@ -377,6 +385,79 @@ internal class AndroidWindowTraversalTest {
         // Given: a plain rectangular outline has no visual effect the existing per-wireframe
         // ancestor-bounds crop doesn't already provide.
         assertThat(resolveNativeClipModifier(0f, fakeChildBounds.toCapturedBounds(), fakeDensity)).isNull()
+    }
+    // endregion
+
+    // region embedded content mapper priority
+
+    @Test
+    fun `M emit the embedded content wireframe W visit { view is slot-tagged }`(
+        @Forgery fakeRootBounds: GlobalBounds,
+        @Forgery fakeChildBounds: GlobalBounds,
+        @StringForgery fakeSlotId: String
+    ) {
+        // Given
+        val root = mockViewGroup(fakeRootBounds)
+        val child = mockView(fakeChildBounds)
+        whenever(root.childCount).thenReturn(1)
+        whenever(root.getChildAt(0)).thenReturn(child)
+        val windowIdentity = identityFactory.window("window")
+        val mockEmbeddedContentMapper: CapturedEmbeddedContentMapper = mock()
+        whenever(mockEmbeddedContentMapper.hasSlotId(child)).thenReturn(true)
+        whenever(mockEmbeddedContentMapper.map(eq(child), any())).thenAnswer { invocation ->
+            val ctx = invocation.getArgument<CapturedMappingContext>(1)
+            CapturedViewMapperResult.Wireframes(
+                listOf(
+                    CapturedWireframe.EmbeddedContent(
+                        identity = ctx.identityFactory.embeddedContentWireframe(ctx.ownerIdentity),
+                        bounds = CapturedBounds(0, 0, 100, 50),
+                        slotId = fakeSlotId,
+                        isVisible = true
+                    )
+                ),
+                pixelFallbackTerminal = true
+            )
+        }
+
+        // When
+        val result = traversal(
+            fallback = markerMapper,
+            embeddedContentMapper = mockEmbeddedContentMapper
+        ).traverseWindow(root, windowIdentity, identityFactory, fakeContext)
+
+        // Then: the embedded content mapper's own wireframe is emitted instead of markerMapper's -
+        // slot tagging takes priority over the type-based registry/fallback.
+        val present = result as WindowWalkResult.Present
+        val embedded = present.wireframes.filterIsInstance<CapturedWireframe.EmbeddedContent>().single()
+        assertThat(embedded.slotId).isEqualTo(fakeSlotId)
+    }
+
+    @Test
+    fun `M not emit the embedded content wireframe W visit { view is privacy-hidden and slot-tagged }`(
+        @Forgery fakeRootBounds: GlobalBounds,
+        @Forgery fakeChildBounds: GlobalBounds
+    ) {
+        // Given: privacy masking always wins over slot tagging - a privacy-hidden view is never
+        // exposed via an embedded content placeholder either.
+        val root = mockViewGroup(fakeRootBounds)
+        val child = mockView(fakeChildBounds)
+        whenever(child.getTag(R.id.datadog_hidden)).thenReturn(true)
+        whenever(root.childCount).thenReturn(1)
+        whenever(root.getChildAt(0)).thenReturn(child)
+        val windowIdentity = identityFactory.window("window")
+        val mockEmbeddedContentMapper: CapturedEmbeddedContentMapper = mock()
+        whenever(mockEmbeddedContentMapper.hasSlotId(child)).thenReturn(true)
+
+        // When
+        val result = traversal(
+            fallback = markerMapper,
+            embeddedContentMapper = mockEmbeddedContentMapper
+        ).traverseWindow(root, windowIdentity, identityFactory, fakeContext)
+
+        // Then
+        val present = result as WindowWalkResult.Present
+        assertThat(present.wireframes.filterIsInstance<CapturedWireframe.EmbeddedContent>()).isEmpty()
+        verify(mockEmbeddedContentMapper, never()).map(eq(child), any())
     }
     // endregion
 

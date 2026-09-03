@@ -15,6 +15,7 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedEmbeddedContentMapper
 import com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
@@ -33,7 +34,8 @@ internal class AndroidCapturedSnapshotProducer(
     private val scopeProvider: RumViewScopeProvider,
     private val timeProvider: TimeProvider,
     private val traversal: AndroidWindowTraversal,
-    private val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver
+    private val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver,
+    private val embeddedContentMapper: CapturedEmbeddedContentMapper? = null
 ) : CapturedSnapshotProducer {
 
     private var retainedIdentityFactory: DefaultCapturedIdentityFactory? = null
@@ -43,6 +45,7 @@ internal class AndroidCapturedSnapshotProducer(
     override fun capture(context: CaptureGenerationContext, changeset: CaptureChangeset): CaptureOutput? {
         val rumViewScope = scopeProvider.currentScope() ?: return null
         val identityFactory = identityFactoryFor(rumViewScope.scope)
+        embeddedContentMapper?.beginCapture()
         val walk = walkWindows(windowSource.currentWindows(), identityFactory, context, rumViewScope.viewUrl)
 
         return walk?.let {
@@ -52,13 +55,17 @@ internal class AndroidCapturedSnapshotProducer(
                 bounds = it.windowLayers.firstOrNull()?.bounds ?: CapturedBounds(0, 0, 0, 0),
                 children = it.windowLayers.map { layer -> CapturedChild.Layer(layer.identity) }
             )
+            // Only reported once every window in this generation was actually walked (not aborted) -
+            // an aborted generation is discarded entirely, so a slot's "not seen this round" state
+            // must not advance for a round that never really happened.
+            val wireframes = it.wireframes + (embeddedContentMapper?.finishCapture() ?: emptyList())
             CaptureOutput(
                 snapshot = CapturedFullSnapshot(
                     timestamp = timeProvider.getDeviceTimestampMillis() + rumViewScope.viewTimeOffsetMs,
                     scope = rumViewScope.scope,
                     root = root,
                     layers = it.layers,
-                    wireframes = it.wireframes
+                    wireframes = wireframes
                 ),
                 pendingPixelCaptures = it.pendingPixelCaptures,
                 identityFactory = identityFactory

@@ -396,6 +396,7 @@ internal class CapturedSnapshotValidation(
     private val CapturedWireframe.isHiddenSlot: Boolean
         get() = when (this) {
             is CapturedWireframe.WebView -> isVisible == false
+            is CapturedWireframe.EmbeddedContent -> isVisible == false
             else -> false
         }
 
@@ -420,6 +421,7 @@ internal class CapturedSnapshotValidation(
             is CapturedWireframe.Pixel -> CapturedWireframeKind.IMAGE
             is CapturedWireframe.PrivacyPlaceholder -> CapturedWireframeKind.PLACEHOLDER
             is CapturedWireframe.WebView -> CapturedWireframeKind.WEB_VIEW
+            is CapturedWireframe.EmbeddedContent -> CapturedWireframeKind.EMBEDDED_CONTENT
         }
 
     private val CapturedWireframe.style: CapturedShapeStyle?
@@ -429,6 +431,7 @@ internal class CapturedSnapshotValidation(
             is CapturedWireframe.WebView -> style
             is CapturedWireframe.Pixel -> style
             is CapturedWireframe.PrivacyPlaceholder -> null
+            is CapturedWireframe.EmbeddedContent -> style
         }
 
     private val CapturedWireframe.border: CapturedShapeBorder?
@@ -438,6 +441,7 @@ internal class CapturedSnapshotValidation(
             is CapturedWireframe.WebView -> border
             is CapturedWireframe.Pixel -> border
             is CapturedWireframe.PrivacyPlaceholder -> null
+            is CapturedWireframe.EmbeddedContent -> border
         }
 
     private companion object {

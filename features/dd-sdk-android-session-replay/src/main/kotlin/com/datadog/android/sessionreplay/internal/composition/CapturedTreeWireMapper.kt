@@ -174,6 +174,7 @@ private fun CapturedWireframe.toWireframeOrNull(): MobileSegment.Wireframe? = wh
     is CapturedWireframe.Pixel -> toWireframeOrNull()
     is CapturedWireframe.PrivacyPlaceholder -> toWireframe()
     is CapturedWireframe.WebView -> toWireframe()
+    is CapturedWireframe.EmbeddedContent -> toWireframe()
 }
 
 private fun CapturedWireframe.Shape.toWireframe() = MobileSegment.Wireframe.ShapeWireframe(
@@ -245,6 +246,20 @@ private fun CapturedWireframe.WebView.toWireframe() = MobileSegment.Wireframe.We
     shapeStyle = style?.toWireShapeStyle(),
     border = border?.toWireBorder(),
     slotId = identity.wireId.toString(),
+    isVisible = isVisible,
+    permanentId = permanentId
+)
+
+private fun CapturedWireframe.EmbeddedContent.toWireframe() = MobileSegment.Wireframe.EmbeddedContentWireframe(
+    id = identity.wireId,
+    x = bounds.x,
+    y = bounds.y,
+    width = bounds.width,
+    height = bounds.height,
+    clip = clip?.toWireClip(),
+    shapeStyle = style?.toWireShapeStyle(),
+    border = border?.toWireBorder(),
+    slotId = slotId,
     isVisible = isVisible,
     permanentId = permanentId
 )

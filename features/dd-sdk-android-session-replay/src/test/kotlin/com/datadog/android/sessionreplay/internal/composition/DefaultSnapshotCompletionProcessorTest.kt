@@ -7,8 +7,10 @@
 package com.datadog.android.sessionreplay.internal.composition
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
@@ -23,6 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -59,15 +62,19 @@ internal class DefaultSnapshotCompletionProcessorTest {
         verify(fixture.wireMapper).mapFullSnapshot(tree.snapshot)
         verify(fixture.wireMapper).mapMutation(any(), eq(tree.snapshot))
         verify(fixture.writer).write(
-            EnrichedRecord(
-                fakeApplicationId,
-                fakeSessionId,
-                tree.scope.value,
-                openingRecords(tree.snapshot) + fullRecord
-            )
+            eq(
+                EnrichedRecord(
+                    fakeApplicationId,
+                    fakeSessionId,
+                    tree.scope.value,
+                    openingRecords(tree.snapshot) + fullRecord
+                )
+            ),
+            any()
         )
         verify(fixture.writer).write(
-            EnrichedRecord(fakeApplicationId, fakeSessionId, tree.scope.value, listOf(incrementalRecord))
+            eq(EnrichedRecord(fakeApplicationId, fakeSessionId, tree.scope.value, listOf(incrementalRecord))),
+            any()
         )
     }
 
@@ -95,12 +102,15 @@ internal class DefaultSnapshotCompletionProcessorTest {
         // Then: both the layer-structure mutation and the independently-computed wireframe-content
         // mutation are written together, in the same cycle - neither one forces a full snapshot.
         verify(fixture.writer).write(
-            EnrichedRecord(
-                fakeApplicationId,
-                fakeSessionId,
-                tree.scope.value,
-                listOf(layerMutationRecord, wireframeMutationRecord)
-            )
+            eq(
+                EnrichedRecord(
+                    fakeApplicationId,
+                    fakeSessionId,
+                    tree.scope.value,
+                    listOf(layerMutationRecord, wireframeMutationRecord)
+                )
+            ),
+            any()
         )
     }
 
@@ -126,7 +136,8 @@ internal class DefaultSnapshotCompletionProcessorTest {
 
         // Then
         verify(fixture.writer).write(
-            EnrichedRecord(fakeApplicationId, fakeSessionId, tree.scope.value, listOf(layerMutationRecord))
+            eq(EnrichedRecord(fakeApplicationId, fakeSessionId, tree.scope.value, listOf(layerMutationRecord))),
+            any()
         )
     }
 
@@ -221,33 +232,39 @@ internal class DefaultSnapshotCompletionProcessorTest {
         // Then: no viewport record on the first (baseline) cycle - there is no prior orientation to
         // have changed from.
         verify(fixture.writer).write(
-            EnrichedRecord(
-                fakeApplicationId,
-                fakeSessionId,
-                tree.scope.value,
-                openingRecords(tree.snapshot) + firstFullRecord
-            )
+            eq(
+                EnrichedRecord(
+                    fakeApplicationId,
+                    fakeSessionId,
+                    tree.scope.value,
+                    openingRecords(tree.snapshot) + firstFullRecord
+                )
+            ),
+            any()
         )
         // Then: the second cycle's orientation change gets a ViewportResizeData record, sized from
         // the current snapshot's root bounds, ahead of the (still forced) full snapshot.
         val bounds = tree.snapshot.root?.bounds
         checkNotNull(bounds)
         verify(fixture.writer).write(
-            EnrichedRecord(
-                fakeApplicationId,
-                fakeSessionId,
-                tree.scope.value,
-                listOf(
-                    MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord(
-                        timestamp = tree.snapshot.timestamp,
-                        data = MobileSegment.MobileIncrementalData.ViewportResizeData(
-                            width = bounds.width,
-                            height = bounds.height
-                        )
-                    ),
-                    secondFullRecord
+            eq(
+                EnrichedRecord(
+                    fakeApplicationId,
+                    fakeSessionId,
+                    tree.scope.value,
+                    listOf(
+                        MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord(
+                            timestamp = tree.snapshot.timestamp,
+                            data = MobileSegment.MobileIncrementalData.ViewportResizeData(
+                                width = bounds.width,
+                                height = bounds.height
+                            )
+                        ),
+                        secondFullRecord
+                    )
                 )
-            )
+            ),
+            any()
         )
     }
 
@@ -271,15 +288,19 @@ internal class DefaultSnapshotCompletionProcessorTest {
 
         // Then
         verify(fixture.writer).write(
-            EnrichedRecord(
-                fakeApplicationId,
-                fakeSessionId,
-                tree.scope.value,
-                openingRecords(tree.snapshot) + fullRecord
-            )
+            eq(
+                EnrichedRecord(
+                    fakeApplicationId,
+                    fakeSessionId,
+                    tree.scope.value,
+                    openingRecords(tree.snapshot) + fullRecord
+                )
+            ),
+            any()
         )
         verify(fixture.writer).write(
-            EnrichedRecord(fakeApplicationId, fakeSessionId, tree.scope.value, listOf(fullRecord))
+            eq(EnrichedRecord(fakeApplicationId, fakeSessionId, tree.scope.value, listOf(fullRecord))),
+            any()
         )
     }
 
@@ -317,12 +338,62 @@ internal class DefaultSnapshotCompletionProcessorTest {
             CapturedMutationSet(timestamp = tree.snapshot.timestamp, scope = tree.scope)
         )
         verify(fixture.writer, times(1)).write(
-            EnrichedRecord(
-                fakeApplicationId,
-                fakeSessionId,
-                tree.scope.value,
-                openingRecords(tree.snapshot) + fullRecord
-            )
+            eq(
+                EnrichedRecord(
+                    fakeApplicationId,
+                    fakeSessionId,
+                    tree.scope.value,
+                    openingRecords(tree.snapshot) + fullRecord
+                )
+            ),
+            any()
+        )
+    }
+
+    @Test
+    fun `M report visible embedded content slots only after a successful write W process()`(
+        @StringForgery fakeApplicationId: String,
+        @StringForgery fakeSessionId: String,
+        @StringForgery fakeVisibleSlotId: String,
+        @StringForgery fakeHiddenSlotId: String
+    ) {
+        // Given
+        val tree = compositionTestTree()
+        val embeddedContentSlotRegistry: EmbeddedContentSlotRegistry = mock()
+        val fixture = Fixture(tree.scope.value, fakeApplicationId, fakeSessionId, embeddedContentSlotRegistry)
+        val visibleEmbedded = CapturedWireframe.EmbeddedContent(
+            identity = tree.factory.embeddedContentWireframe(tree.layer.identity),
+            bounds = tree.layer.bounds,
+            slotId = fakeVisibleSlotId,
+            isVisible = true
+        )
+        val hiddenEmbedded = CapturedWireframe.EmbeddedContent(
+            identity = tree.factory.embeddedContentWireframe(tree.layer.identity),
+            bounds = tree.layer.bounds,
+            slotId = fakeHiddenSlotId,
+            isVisible = false
+        )
+        val snapshotWithSlots = tree.snapshot.copy(
+            wireframes =
+            tree.snapshot.wireframes + visibleEmbedded + hiddenEmbedded
+        )
+        whenever(fixture.wireMapper.mapFullSnapshot(snapshotWithSlots))
+            .thenReturn(CaptureWireMappingResult.Success(mock()))
+        // Simulates the write actually succeeding - the fixture's plain mock RecordWriter never
+        // invokes onSuccess on its own.
+        whenever(fixture.writer.write(any(), any())).doAnswer { invocation ->
+            invocation.getArgument<() -> Unit>(1).invoke()
+        }
+
+        // When
+        fixture.processor.process(fixture.capture(snapshotWithSlots))
+
+        // Then: only the visible slot is reported - the hidden one is excluded, and the reported
+        // timestamp/viewId come from this snapshot/RUM context, not some other source.
+        verify(embeddedContentSlotRegistry).onPlaceholdersWritten(
+            tree.scope.value,
+            snapshotWithSlots.timestamp,
+            setOf(fakeVisibleSlotId)
         )
     }
 
@@ -361,7 +432,8 @@ internal class DefaultSnapshotCompletionProcessorTest {
     private class Fixture(
         initialViewId: String,
         applicationId: String,
-        sessionId: String
+        sessionId: String,
+        embeddedContentSlotRegistry: EmbeddedContentSlotRegistry? = null
     ) {
         val writer: RecordWriter = mock()
         val wireMapper: CapturedTreeWireMapper = mock()
@@ -375,7 +447,8 @@ internal class DefaultSnapshotCompletionProcessorTest {
             internalLogger = mock<InternalLogger>(),
             timeProvider = timeProvider,
             orientationProvider = orientationProvider,
-            wireMapper = wireMapper
+            wireMapper = wireMapper,
+            embeddedContentSlotRegistry = embeddedContentSlotRegistry
         )
 
         init {
