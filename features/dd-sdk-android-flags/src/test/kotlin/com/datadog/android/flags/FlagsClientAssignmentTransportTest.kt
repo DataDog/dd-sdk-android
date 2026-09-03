@@ -32,6 +32,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.io.IOException
+import java.net.SocketTimeoutException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 
@@ -75,8 +76,8 @@ internal class FlagsClientAssignmentTransportTest {
         whenever(secondCall.timeout()).thenReturn(secondTimeout)
         whenever(firstTimeout.timeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS)).thenReturn(firstTimeout)
         whenever(secondTimeout.timeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS)).thenReturn(secondTimeout)
-        whenever(firstCall.execute()).thenThrow(IOException("first attempt"))
-        whenever(secondCall.execute()).thenThrow(IOException("second attempt"))
+        whenever(firstCall.execute()).thenThrow(SocketTimeoutException("first attempt"))
+        whenever(secondCall.execute()).thenThrow(SocketTimeoutException("second attempt"))
         whenever(mockDatadogContext.site).thenReturn(DatadogSite.US1)
         whenever(mockDatadogContext.clientToken).thenReturn(CLIENT_TOKEN)
         whenever(mockDatadogContext.env).thenReturn(ENVIRONMENT)
