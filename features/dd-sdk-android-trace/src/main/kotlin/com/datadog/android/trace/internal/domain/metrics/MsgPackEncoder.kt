@@ -43,11 +43,6 @@ internal class MsgPackEncoder {
         buffer.write(utf8String)
     }
 
-    fun appendRawBytes(encoded: ByteArray) {
-        @Suppress("UnsafeThirdPartyFunctionCall") // safe - non-null array
-        buffer.write(encoded)
-    }
-
     fun writeBinary(binary: ByteArray) {
         writeBinaryHeader(binary.size)
         @Suppress("UnsafeThirdPartyFunctionCall") // safe - non-null array

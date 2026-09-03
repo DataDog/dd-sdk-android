@@ -20,9 +20,7 @@ internal data class ClientStatsPayload(
     internal val sequenceNumber: Long,
     internal val stats: List<ClientStatsBucket>
 ) {
-    fun toMsgPackPayload(): ByteArray {
-        val encoder = MsgPackEncoder()
-
+    fun toMsgPackPayload(encoder: MsgPackEncoder) {
         encoder.startMap(PAYLOAD_MAP_FIELD_COUNT)
 
         encoder.writeRawString(HOSTNAME_FIELD)
@@ -52,8 +50,6 @@ internal data class ClientStatsPayload(
 
         encoder.writeRawString(SERVICE_FIELD)
         encoder.writeString(service)
-
-        return encoder.getBytes()
     }
 
     private companion object {

@@ -189,6 +189,9 @@ datadog:
       # endregion
       # region Java Zip
       - "java.util.zip.Deflater.deflate(kotlin.ByteArray, kotlin.Int, kotlin.Int, kotlin.Int):java.lang.IllegalArgumentException"
+      - "java.util.zip.GZIPOutputStream.constructor(java.io.OutputStream?):java.io.IOException"
+      - "java.util.zip.GZIPOutputStream.use(kotlin.Function1):java.io.IOException"
+      - "java.util.zip.GZIPOutputStream.write(kotlin.ByteArray?):java.io.IOException"
       # endregion
       # region Kotlin primitives
       - "kotlin.ByteArray.copyOf(kotlin.Int):java.lang.NegativeArraySizeException"

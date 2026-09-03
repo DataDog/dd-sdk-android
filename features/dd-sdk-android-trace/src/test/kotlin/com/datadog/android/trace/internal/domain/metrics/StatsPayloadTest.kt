@@ -23,7 +23,7 @@ internal class StatsPayloadTest {
         @BoolForgery fakeSplitPayload: Boolean
     ) {
         // Given
-        val fakeClientStatsBytes = ClientStatsPayload(
+        val fakeClientStats = ClientStatsPayload(
             hostname = "test-host",
             env = "prod",
             version = "1.0.0",
@@ -32,9 +32,9 @@ internal class StatsPayloadTest {
             runtimeID = "abc-123-runtime",
             sequenceNumber = 7L,
             stats = emptyList()
-        ).toMsgPackPayload()
+        )
         val testedPayload = StatsPayload(
-            clientStats = listOf(fakeClientStatsBytes),
+            clientStats = listOf(fakeClientStats),
             splitPayload = fakeSplitPayload
         )
 

@@ -154,20 +154,6 @@ internal class MsgPackEncoderTest {
     }
 
     @Test
-    fun `M write bytes verbatim W appendRawBytes()`(
-        @StringForgery fakeString: String
-    ) {
-        // Given — pre-encode a known value so we can assert the outer envelope sees it correctly
-        val preEncoded = MsgPackEncoder().also { it.writeString(fakeString) }.getBytes()
-
-        // When
-        testedWriter.appendRawBytes(preEncoded)
-
-        // Then — bytes are written with no extra wrapper, decode as the original string
-        assertThat(testedWriter.unpackMessage().unpackString()).isEqualTo(fakeString)
-    }
-
-    @Test
     fun `M encode binary W writeBinary()`(
         @StringForgery fakeString: String
     ) {

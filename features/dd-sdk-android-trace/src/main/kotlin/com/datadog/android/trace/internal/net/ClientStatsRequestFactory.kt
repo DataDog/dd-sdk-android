@@ -6,15 +6,16 @@
 
 package com.datadog.android.trace.internal.net
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.net.Request
 import com.datadog.android.api.net.RequestExecutionContext
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
-import com.datadog.android.trace.internal.domain.metrics.StatsPayload
 import java.util.UUID
 
 internal class ClientStatsRequestFactory(
+    private val internalLogger: InternalLogger,
     internal val customStatsEndpointUrl: String?
 ) : RequestFactory {
 
@@ -23,14 +24,22 @@ internal class ClientStatsRequestFactory(
         executionContext: RequestExecutionContext,
         batchData: List<RawBatchEvent>,
         batchMetadata: ByteArray?
-    ): Request {
-        val requestId = UUID.randomUUID().toString()
-
+    ): Request? {
         val baseUrl = customStatsEndpointUrl ?: (context.site.intakeEndpoint + "/api/v0.2/stats")
-        // Batches can't be split currently due to we can't create more than 1 Request in this class,
-        // nor can the batch building system report back when a batch will be filled before writing it,
-        // so we cant set a splitPayload flag in the batch's metadata.
-        val payload = StatsPayload(batchData.map { it.data }, splitPayload = false)
+        // BatchStatsWriter persists one fully-wrapped, already gzip-compressed StatsPayload
+        // (envelope + splitPayload flag already applied) per batch, and maxItemsPerBatch = 1
+        // guarantees exactly one item here.
+        val payload = batchData.firstOrNull()?.data
+        if (payload == null) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                { EMPTY_BATCH_DATA_MESSAGE }
+            )
+            return null
+        }
+
+        val requestId = UUID.randomUUID().toString()
 
         return Request(
             id = requestId,
@@ -42,7 +51,7 @@ internal class ClientStatsRequestFactory(
                 context.source,
                 context.sdkVersion
             ),
-            body = payload.toMsgPackPayload(),
+            body = payload,
             contentType = "application/msgpack"
         )
     }
@@ -57,7 +66,18 @@ internal class ClientStatsRequestFactory(
             RequestFactory.HEADER_API_KEY to clientToken,
             RequestFactory.HEADER_EVP_ORIGIN to source,
             RequestFactory.HEADER_EVP_ORIGIN_VERSION to sdkVersion,
-            RequestFactory.HEADER_REQUEST_ID to requestId
+            RequestFactory.HEADER_REQUEST_ID to requestId,
+            // Payload is already gzip-compressed by BatchStatsWriter; this tells the shared
+            // upload interceptor not to compress it again.
+            HEADER_CONTENT_ENCODING to ENCODING_GZIP
         )
+    }
+
+    internal companion object {
+        internal const val EMPTY_BATCH_DATA_MESSAGE =
+            "ClientStatsRequestFactory received an empty batch, no request will be created."
+
+        private const val HEADER_CONTENT_ENCODING = "Content-Encoding"
+        private const val ENCODING_GZIP = "gzip"
     }
 }

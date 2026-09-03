@@ -12,10 +12,7 @@ package com.datadog.android.trace.internal.domain.metrics
  * Field names and order match StatsPayload.EncodeMsg in stats_gen.go in datadog-agent.
  */
 internal class StatsPayload(
-    /**
-     * Raw bytes from pre-encoded [ClientStatsPayload].
-     */
-    private val clientStats: List<ByteArray>,
+    private val clientStats: List<ClientStatsPayload>,
     private val splitPayload: Boolean
 ) {
     fun toMsgPackPayload(): ByteArray {
@@ -31,7 +28,7 @@ internal class StatsPayload(
 
         encoder.writeRawString(STATS_FIELD)
         encoder.startArray(clientStats.size)
-        clientStats.forEach { encoder.appendRawBytes(it) }
+        clientStats.forEach { it.toMsgPackPayload(encoder) }
 
         encoder.writeRawString(AGENT_VERSION_FIELD)
         encoder.writeRawString(EMPTY_STRING)

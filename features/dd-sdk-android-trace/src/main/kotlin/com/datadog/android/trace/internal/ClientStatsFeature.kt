@@ -38,11 +38,9 @@ internal class ClientStatsFeature(
     override val name = Feature.TRACING_CLIENT_STATS_FEATURE_NAME
 
     override val storageConfiguration = FeatureStorageConfiguration(
-        // 512 KB
-        maxItemSize = 512L * 1024,
-        maxItemsPerBatch = 4000,
-        // 15 MB
-        maxBatchSize = 15L * 1024 * 1024,
+        maxItemSize = STORAGE_MAX_ITEM_SIZE_BYTES,
+        maxItemsPerBatch = 1,
+        maxBatchSize = STORAGE_MAX_ITEM_SIZE_BYTES,
         // 18 hours
         oldBatchThreshold = 18L * 60L * 60L * 1000L
     )
@@ -53,7 +51,7 @@ internal class ClientStatsFeature(
     private var statsConcentrator: StatsConcentrator? = null
     private var statsExecutor: ScheduledExecutorService? = null
 
-    override val requestFactory = ClientStatsRequestFactory(customEndpointUrl)
+    override val requestFactory = ClientStatsRequestFactory(sdkCore.internalLogger, customEndpointUrl)
 
     override fun onInitialize(appContext: Context) {
         val internalSdkCore = sdkCore as InternalSdkCore
@@ -120,5 +118,9 @@ internal class ClientStatsFeature(
             "Client Stats feature received an event of unsupported type=%s."
         internal const val UNKNOWN_EVENT_TYPE_PROPERTY_VALUE =
             "Client Stats feature received an event with unknown value of \"type\" property=%s."
+
+        // 5 MB — hard persistence/upload cap, since maxItemsPerBatch = 1 makes a persisted item and
+        // its containing batch equivalent.
+        internal const val STORAGE_MAX_ITEM_SIZE_BYTES = 5L * 1024 * 1024
     }
 }

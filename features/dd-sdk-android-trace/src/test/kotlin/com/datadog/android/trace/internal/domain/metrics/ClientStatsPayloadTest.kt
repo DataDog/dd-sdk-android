@@ -65,7 +65,9 @@ internal class ClientStatsPayloadTest {
         )
 
         // When
-        val bytes = testedPayload.toMsgPackPayload()
+        val encoder = MsgPackEncoder()
+        testedPayload.toMsgPackPayload(encoder)
+        val bytes = encoder.getBytes()
 
         // Then
         MsgPackAssert.assertThat(bytes)
