@@ -127,7 +127,7 @@ internal class PrecomputedAssignmentsDownloader(
                 } else {
                     DownloadResult.HttpFailure(
                         statusCode = response.code,
-                        retryAfter = response.header(RETRY_AFTER_HEADER_NAME).takeIf {
+                        retryAfter = response.header(HttpSpec.Header.RETRY_AFTER).takeIf {
                             response.code == HttpSpec.StatusCode.SERVICE_UNAVAILABLE
                         },
                         isRetryable = isRetryableStatus(response.code)
@@ -152,8 +152,16 @@ internal class PrecomputedAssignmentsDownloader(
     )
     private fun applyRequestTimeout(call: Call) {
         val timeout = call.timeout()
+        if (timeout === Timeout.NONE) {
+            internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                messageBuilder = { NO_CONFIGURABLE_TIMEOUT_MESSAGE },
+                onlyOnce = true
+            )
+        }
         check(timeout !== Timeout.NONE) {
-            "A custom assignment request call must provide a configurable timeout"
+            NO_CONFIGURABLE_TIMEOUT_MESSAGE
         }
         val requestTimeoutNanos = TimeUnit.MILLISECONDS.toNanos(requestTimeoutMs)
         val callTimeoutNanos = timeout.timeoutNanos()
@@ -217,7 +225,8 @@ internal class PrecomputedAssignmentsDownloader(
         const val HTTP_SERVER_ERROR_MIN = 500
         const val HTTP_SERVER_ERROR_MAX = 599
         const val OKHTTP_CALL_TIMEOUT_MESSAGE = "timeout"
-        const val RETRY_AFTER_HEADER_NAME = "Retry-After"
+        const val NO_CONFIGURABLE_TIMEOUT_MESSAGE =
+            "A custom assignment request call must provide a configurable timeout"
     }
 }
 

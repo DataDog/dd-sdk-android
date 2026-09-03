@@ -31,8 +31,10 @@ import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -562,6 +564,18 @@ internal class PrecomputedAssignmentsDownloaderRetryTest {
         assertThat(result).isNull()
         verify(mockCallFactory, times(1)).newCall(fakeRequest)
         verify(mockCall, never()).execute()
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY)),
+                capture(),
+                eq(null),
+                eq(true),
+                eq(null)
+            )
+            assertThat(firstValue.invoke())
+                .isEqualTo("A custom assignment request call must provide a configurable timeout")
+        }
     }
 
     @Test

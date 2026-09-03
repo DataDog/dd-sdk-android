@@ -197,10 +197,10 @@ data class FlagsConfiguration internal constructor(
          * disables the SDK timeout and preserves any timeout already configured on the HTTP client. When the HTTP call
          * already has a nonzero timeout, the shorter timeout applies. A custom call factory must provide and honor a
          * configurable call timeout when this value is positive.
+         * Negative values are coerced to zero.
          *
          * @param timeoutMs The timeout for each request, in milliseconds.
          * @return this [Builder] instance for method chaining.
-         * Negative values are coerced to zero.
          */
         fun assignmentRequestTimeout(timeoutMs: Long): Builder {
             assignmentRequestTimeoutMs = timeoutMs.coerceAtLeast(0)
@@ -219,10 +219,10 @@ data class FlagsConfiguration internal constructor(
          * Network time can reach ([retryCount] + 1) times the assignment request timeout, plus retry delays. When the
          * SDK timeout is zero, the HTTP client's call timeout supplies the bound. A custom factory may have no bound
          * only when the SDK timeout is zero.
+         * Values outside the supported range are coerced to the nearest bound.
          *
          * @param retryCount The number of retries after the first attempt.
          * @return this [Builder] instance for method chaining.
-         * Values outside the supported range are coerced to the nearest bound.
          */
         fun assignmentRequestRetryCount(retryCount: Int): Builder {
             assignmentRequestRetryCount = retryCount
