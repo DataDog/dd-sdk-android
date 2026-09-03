@@ -182,6 +182,22 @@ internal class PrecomputedAssignmentsDownloaderRetryTest {
     }
 
     @Test
+    fun `M not retry W readPrecomputedFlags() { call was cancelled }`() {
+        // Given
+        testedDownloader = createDownloader(requestRetryCount = 2)
+        whenever(mockCall.isCanceled()).doReturn(true)
+        whenever(mockCall.execute()).doThrow(IOException("Canceled"))
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+
+        // Then
+        assertThat(result).isNull()
+        verify(mockCallFactory).newCall(fakeRequest)
+        verify(mockCall).execute()
+    }
+
+    @Test
     fun `M use custom request limits W readPrecomputedFlags() { transient failures }`() {
         // Given
         testedDownloader = createDownloader(requestTimeoutMs = 2_500L, requestRetryCount = 2)

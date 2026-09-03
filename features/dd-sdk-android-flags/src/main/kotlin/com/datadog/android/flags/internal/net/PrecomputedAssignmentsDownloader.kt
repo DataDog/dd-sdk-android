@@ -40,7 +40,6 @@ internal class PrecomputedAssignmentsDownloader(
         return executeDownloadRequest(request)
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun executeDownloadRequest(request: Request): String? {
         var attempt = 0
         var result = executeSingleRequest(request)
@@ -82,25 +81,29 @@ internal class PrecomputedAssignmentsDownloader(
         result.isRetryable && attempt < requestRetryCount
 
     @Suppress("TooGenericExceptionCaught", "UnsafeThirdPartyFunctionCall")
-    private fun executeSingleRequest(request: Request): DownloadResult = try {
-        val call = callFactory.newCall(request)
-        if (requestTimeoutMs > 0) {
-            call.timeout().timeout(requestTimeoutMs, TimeUnit.MILLISECONDS)
-        }
-        call.execute().use { response ->
-            if (response.isSuccessful) {
-                DownloadResult.Success(response.body?.string())
-            } else {
-                DownloadResult.HttpFailure(
-                    statusCode = response.code,
-                    isRetryable = isRetryableStatus(response.code)
-                )
+    private fun executeSingleRequest(request: Request): DownloadResult {
+        var call: Call? = null
+        return try {
+            val newCall = callFactory.newCall(request)
+            call = newCall
+            if (requestTimeoutMs > 0) {
+                newCall.timeout().timeout(requestTimeoutMs, TimeUnit.MILLISECONDS)
             }
+            newCall.execute().use { response ->
+                if (response.isSuccessful) {
+                    DownloadResult.Success(response.body?.string())
+                } else {
+                    DownloadResult.HttpFailure(
+                        statusCode = response.code,
+                        isRetryable = isRetryableStatus(response.code)
+                    )
+                }
+            }
+        } catch (e: IOException) {
+            DownloadResult.UnexpectedFailure(e, isRetryable = call?.isCanceled() != true)
+        } catch (e: Throwable) {
+            DownloadResult.UnexpectedFailure(e, isRetryable = false)
         }
-    } catch (e: IOException) {
-        DownloadResult.UnexpectedFailure(e, isRetryable = true)
-    } catch (e: Throwable) {
-        DownloadResult.UnexpectedFailure(e, isRetryable = false)
     }
 
     private fun isRetryableStatus(statusCode: Int): Boolean =
