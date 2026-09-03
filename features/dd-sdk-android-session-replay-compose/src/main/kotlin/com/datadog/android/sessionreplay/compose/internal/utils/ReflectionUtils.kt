@@ -13,6 +13,7 @@ import androidx.compose.animation.core.AnimationState
 import androidx.compose.runtime.Composition
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorProducer
@@ -97,10 +98,6 @@ internal class ReflectionUtils {
         return ComposeReflection.SemanticsOwner?.getSafe(any) as? SemanticsOwner
     }
 
-    fun isGraphicsLayerElement(modifier: Modifier): Boolean {
-        return ComposeReflection.GraphicsLayerElementClass?.isInstance(modifier) == true
-    }
-
     fun getColorProducerColor(modifier: Modifier): Color? {
         return (ComposeReflection.ColorProducerField?.getSafe(modifier) as? ColorProducer)?.invoke()
     }
@@ -161,8 +158,12 @@ internal class ReflectionUtils {
         return ComposeReflection.ShapeField?.getSafe(modifier) as? Shape
     }
 
-    fun getClipShape(modifier: Modifier): Shape? {
-        return ComposeReflection.ClipShapeField?.getSafe(modifier) as? Shape
+    /** [effect]'s (radiusX, radiusY) in raw pixels, or null if either field couldn't be read. */
+    @Suppress("ReturnCount") // Each guard bails out at the point one of the two fields couldn't be read.
+    fun getBlurRadii(effect: BlurEffect): Pair<Float, Float>? {
+        val radiusX = ComposeReflection.RadiusXFieldOfBlurEffect?.getSafe(effect) as? Float ?: return null
+        val radiusY = ComposeReflection.RadiusYFieldOfBlurEffect?.getSafe(effect) as? Float ?: return null
+        return radiusX to radiusY
     }
 
     fun getBitmapInVectorPainter(vectorPainter: VectorPainter): Bitmap? {

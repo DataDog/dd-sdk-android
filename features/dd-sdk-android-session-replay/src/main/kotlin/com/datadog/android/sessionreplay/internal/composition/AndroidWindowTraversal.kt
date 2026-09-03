@@ -4,8 +4,14 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("TooManyFunctions") // Most of these are stateless, directly-testable modifier helpers.
+
 package com.datadog.android.sessionreplay.internal.composition
 
+import android.graphics.Color
+import android.graphics.Outline
+import android.graphics.Rect
+import android.os.Build
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.UiThread
@@ -17,6 +23,7 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedClip
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
+import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.utils.isValidTapTarget
 import com.datadog.android.sessionreplay.ImagePrivacy
@@ -34,12 +41,14 @@ import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDec
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeResult
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposer
 import com.datadog.android.sessionreplay.recorder.composition.CompositionNativeSubtree
+import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import kotlin.math.max
+import kotlin.math.roundToInt
 
 internal sealed interface WindowWalkResult {
     data class Present(
@@ -220,7 +229,20 @@ internal class AndroidWindowTraversal(
         )
         if (mustAbort) return LayerWalkResult.Aborted
 
-        val layer = CapturedLayer(identity = ownIdentity, kind = ownKind, bounds = bounds, children = children)
+        val clipModifier = resolveNativeClipModifier(
+            radiusPx = nativeOutlineRadiusPx(view, internalLogger),
+            bounds = bounds,
+            density = state.screenDensity
+        )
+        val shadowModifier = resolveNativeShadowModifier(view, state.screenDensity)
+
+        val layer = CapturedLayer(
+            identity = ownIdentity,
+            kind = ownKind,
+            bounds = bounds,
+            children = children,
+            modifiers = listOfNotNull(clipModifier, shadowModifier)
+        )
         state.layers.add(layer)
         return LayerWalkResult.Present(layer)
     }
@@ -607,6 +629,161 @@ private fun computeClip(bounds: CapturedBounds, ancestorBounds: List<CapturedBou
         right = clipRight.takeIf { it > 0 }
     )
 }
+
+/**
+ * The corner radius of [view]'s outline in raw pixels, or null if [view] doesn't actually clip to a
+ * rect/rounded-rect outline - either [View.getClipToOutline] is false (the outline, if any, is
+ * shadow-only), the outline is an oval/path shape with no rect to read, or reading it isn't
+ * supported below API 29, where [Outline.getRect]/[Outline.getRadius] became public - there is no
+ * supported way to read an outline's shape back on earlier API levels. Deliberately not
+ * unit-testable: `unitTests.isReturnDefaultValues = true` makes every real `Outline`/
+ * [android.view.ViewOutlineProvider] method silently return its default instead of actually
+ * storing/reporting a shape, so a plain JVM unit test can never observe real outline state through
+ * the genuine Android classes either way - kept as a single small, directly inlined call instead of
+ * introducing a seam whose only purpose would be working around that in tests.
+ * [resolveNativeClipModifier], which this feeds, is the actual decision logic and is fully
+ * unit-tested on its own, with a plain [Float]? input. [android.view.ViewOutlineProvider.getOutline]
+ * is arbitrary app code and can throw; a failure here degrades to null, same as any other
+ * unsupported outline shape, rather than aborting the capture.
+ */
+@Suppress("ReturnCount", "TooGenericExceptionCaught")
+private fun nativeOutlineRadiusPx(view: View, internalLogger: InternalLogger): Float? {
+    if (!view.clipToOutline || Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null
+    val provider = view.outlineProvider ?: return null
+
+    val outline = Outline()
+    try {
+        // Arbitrary third-party ViewOutlineProvider code; any throw is caught below.
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        provider.getOutline(view, outline)
+    } catch (e: Exception) {
+        internalLogger.log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.TELEMETRY,
+            { "Failed to read ViewOutlineProvider outline for composition clip" },
+            e
+        )
+        return null
+    }
+    val isRect = outline.getRect(Rect())
+    if (!isRect) return null
+    return outline.radius
+}
+
+/**
+ * A shadow-only outline, or an outline with no meaningful rounding, is skipped - a plain rectangle
+ * has no visual effect the existing per-wireframe ancestor-bounds crop ([CapturedClip]) doesn't
+ * already provide, matching Compose's own `GranularComposeDecomposer.resolveClipModifier`. Stateless
+ * - kept out of [AndroidWindowTraversal] itself to stay within [TooManyFunctions]'s budget.
+ */
+@Suppress("ReturnCount") // Each guard bails out at the point it's no longer worth a Clip modifier.
+internal fun resolveNativeClipModifier(
+    radiusPx: Float?,
+    bounds: CapturedBounds,
+    density: Float
+): CapturedModifier.Clip? {
+    if (radiusPx == null) return null
+    val radius = (radiusPx / density).toDouble()
+    if (radius <= 0.0) return null
+    val clampedRadius = radius.coerceAtMost(minOf(bounds.width, bounds.height) / 2.0)
+    return CapturedModifier.Clip(path = roundedRectPath(bounds.width, bounds.height, clampedRadius))
+}
+
+/**
+ * A closed SVG path for a [width]x[height] rectangle with all four corners rounded by [radius].
+ * Coordinates are local to the layer's own rectangle, per [CapturedModifier.Clip]'s wire contract.
+ * [radius] is expected to already be clamped to at most half of the shorter side by the caller.
+ * Mirrors `GranularComposeDecomposer`'s own `roundedRectPath` - duplicated rather than shared since
+ * the two live in separate Gradle modules with no existing shared home for this kind of small,
+ * platform-specific geometry helper.
+ */
+private fun roundedRectPath(width: Long, height: Long, radius: Double): String {
+    val w = width.toDouble()
+    val h = height.toDouble()
+    return "M $radius,0 " +
+        "L ${w - radius},0 A $radius,$radius 0 0 1 $w,$radius " +
+        "L $w,${h - radius} A $radius,$radius 0 0 1 ${w - radius},$h " +
+        "L $radius,$h A $radius,$radius 0 0 1 0,${h - radius} " +
+        "L 0,$radius A $radius,$radius 0 0 1 $radius,0 Z"
+}
+
+/**
+ * Android's elevation shadow is a geometric light-source simulation (see hwui/Skia's ambient+spot
+ * shadow renderer), not a simple offset/blur formula - there is no principled way to derive
+ * [CapturedModifier.Shadow]'s offset/radius from elevation directly. This instead looks up
+ * Google's own published Material Design elevation table (the same one Material Components
+ * Web/MUI use to replicate Android shadows in CSS), using only its dominant "key" (umbra) layer -
+ * the table's penumbra/ambient layers and its spread parameter have no equivalent in
+ * [CapturedModifier.Shadow]'s single-shadow model, so this is a visual approximation, not an exact
+ * reconstruction. Skipped entirely for zero/negative Z - a flat view casts no shadow. Mirrors
+ * `GranularComposeDecomposer`'s own `resolveShadowModifier` - duplicated rather than shared for the
+ * same reason as [roundedRectPath].
+ */
+private fun resolveNativeShadowModifier(view: View, density: Float): CapturedModifier.Shadow? {
+    val zPx = view.elevation + view.translationZ
+    if (zPx <= 0f) return null
+    val zDp = zPx / density
+    val level = zDp.roundToInt().coerceIn(1, MAX_ELEVATION_DP)
+    val (offsetYDp, blurDp) = MATERIAL_KEY_SHADOW_DP[level]
+    return CapturedModifier.Shadow(
+        color = shadowColorHex(nativeSpotShadowColor(view)),
+        offsetX = 0.0,
+        offsetY = offsetYDp,
+        radius = blurDp
+    )
+}
+
+/** [View.getOutlineSpotShadowColor] requires API 28 - defaults to black below that, matching the platform's own default. */
+private fun nativeSpotShadowColor(view: View): Int =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) view.outlineSpotShadowColor else Color.BLACK
+
+private fun shadowColorHex(colorInt: Int): String {
+    // Color.alpha is pure bit-shift arithmetic (`color ushr 24`); it never throws.
+    @Suppress("UnsafeThirdPartyFunctionCall")
+    val existingAlpha = Color.alpha(colorInt)
+    val alpha = (existingAlpha * SHADOW_KEY_OPACITY).roundToInt()
+    return DefaultColorStringFormatter.formatColorAndAlphaAsHexString(colorInt, alpha)
+}
+
+private const val SHADOW_KEY_OPACITY = 0.2
+private const val MAX_ELEVATION_DP = 24
+
+/**
+ * (offsetY, blurRadius) in dp per elevation level, 0-24 - the "key"/umbra layer only, from Google's
+ * own Material Design elevation table (values from
+ * https://github.com/material-components/material-components-web/blob/master/packages/mdc-elevation/_variables.scss,
+ * also used by Material Components Web/MUI to replicate these shadows in CSS). offsetX is always 0
+ * at every level; the table's spread parameter has no equivalent in [CapturedModifier.Shadow] and
+ * is dropped. Index 0 is unused - [resolveNativeShadowModifier] never looks up a non-positive Z.
+ */
+@Suppress("MagicNumber") // Every value here is a literal reference-table entry, not an arbitrary constant.
+private val MATERIAL_KEY_SHADOW_DP = listOf(
+    0.0 to 0.0,
+    2.0 to 1.0,
+    3.0 to 1.0,
+    3.0 to 3.0,
+    2.0 to 4.0,
+    3.0 to 5.0,
+    3.0 to 5.0,
+    4.0 to 5.0,
+    5.0 to 5.0,
+    5.0 to 6.0,
+    6.0 to 6.0,
+    6.0 to 7.0,
+    7.0 to 8.0,
+    7.0 to 8.0,
+    7.0 to 9.0,
+    8.0 to 9.0,
+    8.0 to 10.0,
+    8.0 to 11.0,
+    9.0 to 11.0,
+    9.0 to 12.0,
+    10.0 to 13.0,
+    10.0 to 13.0,
+    10.0 to 14.0,
+    11.0 to 14.0,
+    11.0 to 15.0
+)
 
 /** Stateless - kept out of [AndroidWindowTraversal] itself to stay within [TooManyFunctions]'s budget. */
 private fun CapturedWireframe.withClip(clip: CapturedClip?): CapturedWireframe = when (this) {

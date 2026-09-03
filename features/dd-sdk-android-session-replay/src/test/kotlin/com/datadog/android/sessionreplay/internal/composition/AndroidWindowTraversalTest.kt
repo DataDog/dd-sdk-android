@@ -19,6 +19,7 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedClip
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
+import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.PixelResource
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
@@ -320,6 +321,119 @@ internal class AndroidWindowTraversalTest {
         assertThat(childWireframe.clip).isEqualTo(
             CapturedClip(top = null, bottom = fakeBottomOverflow, left = null, right = fakeRightOverflow)
         )
+    }
+
+    // region resolveNativeClipModifier
+    //
+    // resolveNativeClipModifier is a plain top-level function taking a raw Float? radius - no
+    // mocking, no fakes, no traverseWindow()-level integration needed. The only part of native clip
+    // support that isn't unit-tested is nativeOutlineRadiusPx's own few lines of real
+    // Outline/ViewOutlineProvider interop, which unitTests.isReturnDefaultValues=true makes
+    // impossible to observe meaningfully in this environment regardless of how it's structured -
+    // see that function's own doc.
+
+    @Test
+    fun `M emit a Clip modifier W resolveNativeClipModifier { radius is positive }`(
+        @LongForgery(min = 200L, max = 2000L) fakeWidth: Long,
+        @LongForgery(min = 200L, max = 2000L) fakeHeight: Long,
+        @FloatForgery(min = 1f, max = 50f) fakeRadiusPx: Float,
+        @FloatForgery(min = 0.75f, max = 4f) fakeDensity: Float
+    ) {
+        // Given: width/height stay well above any possible radius/density value here (max 50px /
+        // min 0.75 density =~ 66.7, vs. a 100+ half-side floor), so the clamp never engages and the
+        // expected radius stays a simple radiusPx/density conversion.
+        val bounds = CapturedBounds(0, 0, fakeWidth, fakeHeight)
+
+        // When
+        val clip = resolveNativeClipModifier(fakeRadiusPx, bounds, fakeDensity)
+
+        // Then
+        val expectedRadius = (fakeRadiusPx / fakeDensity).toDouble()
+        assertThat(clip?.path).isEqualTo(
+            "M $expectedRadius,0 " +
+                "L ${fakeWidth - expectedRadius},0 A $expectedRadius,$expectedRadius 0 0 1 " +
+                "$fakeWidth.0,$expectedRadius " +
+                "L $fakeWidth.0,${fakeHeight - expectedRadius} A $expectedRadius,$expectedRadius 0 0 1 " +
+                "${fakeWidth - expectedRadius},$fakeHeight.0 " +
+                "L $expectedRadius,$fakeHeight.0 A $expectedRadius,$expectedRadius 0 0 1 " +
+                "0,${fakeHeight - expectedRadius} " +
+                "L 0,$expectedRadius A $expectedRadius,$expectedRadius 0 0 1 $expectedRadius,0 Z"
+        )
+    }
+
+    @Test
+    fun `M return null W resolveNativeClipModifier { radius is null }`(
+        @Forgery fakeChildBounds: GlobalBounds,
+        @FloatForgery(min = 0.75f, max = 4f) fakeDensity: Float
+    ) {
+        assertThat(resolveNativeClipModifier(null, fakeChildBounds.toCapturedBounds(), fakeDensity)).isNull()
+    }
+
+    @Test
+    fun `M return null W resolveNativeClipModifier { radius resolves to zero }`(
+        @Forgery fakeChildBounds: GlobalBounds,
+        @FloatForgery(min = 0.75f, max = 4f) fakeDensity: Float
+    ) {
+        // Given: a plain rectangular outline has no visual effect the existing per-wireframe
+        // ancestor-bounds crop doesn't already provide.
+        assertThat(resolveNativeClipModifier(0f, fakeChildBounds.toCapturedBounds(), fakeDensity)).isNull()
+    }
+    // endregion
+
+    @Test
+    fun `M emit a Shadow modifier W visit { view has positive elevation }`(
+        @Forgery fakeRootBounds: GlobalBounds,
+        @Forgery fakeChildBounds: GlobalBounds
+    ) {
+        // Given: elevationPx is chosen relative to the test's own (randomized) fakeDensity so it
+        // always converts to exactly 4dp, rounding to the Material elevation table's 4dp row -
+        // (offsetY=2, blur=4) for the key/umbra layer.
+        val root = mockViewGroup(fakeRootBounds)
+        val child = mockView(fakeChildBounds)
+        whenever(child.elevation).thenReturn(4f * fakeDensity)
+        whenever(root.childCount).thenReturn(1)
+        whenever(root.getChildAt(0)).thenReturn(child)
+        val windowIdentity = identityFactory.window("window")
+
+        // When
+        val result = traversal(
+            fallback = markerMapper
+        ).traverseWindow(root, windowIdentity, identityFactory, fakeContext)
+
+        // Then
+        val present = result as WindowWalkResult.Present
+        val childLayer = present.layers.first {
+            it.identity.localId == mockViewIdentifierResolver.resolveViewId(child).toString()
+        }
+        val shadow = childLayer.modifiers.filterIsInstance<CapturedModifier.Shadow>().single()
+        assertThat(shadow.offsetX).isEqualTo(0.0)
+        assertThat(shadow.offsetY).isEqualTo(2.0)
+        assertThat(shadow.radius).isEqualTo(4.0)
+    }
+
+    @Test
+    fun `M not emit a Shadow modifier W visit { view has zero elevation and translationZ }`(
+        @Forgery fakeRootBounds: GlobalBounds,
+        @Forgery fakeChildBounds: GlobalBounds
+    ) {
+        // Given: a flat view (no Z) casts no shadow.
+        val root = mockViewGroup(fakeRootBounds)
+        val child = mockView(fakeChildBounds)
+        whenever(root.childCount).thenReturn(1)
+        whenever(root.getChildAt(0)).thenReturn(child)
+        val windowIdentity = identityFactory.window("window")
+
+        // When
+        val result = traversal(
+            fallback = markerMapper
+        ).traverseWindow(root, windowIdentity, identityFactory, fakeContext)
+
+        // Then
+        val present = result as WindowWalkResult.Present
+        val childLayer = present.layers.first {
+            it.identity.localId == mockViewIdentifierResolver.resolveViewId(child).toString()
+        }
+        assertThat(childLayer.modifiers.filterIsInstance<CapturedModifier.Shadow>()).isEmpty()
     }
 
     @Test

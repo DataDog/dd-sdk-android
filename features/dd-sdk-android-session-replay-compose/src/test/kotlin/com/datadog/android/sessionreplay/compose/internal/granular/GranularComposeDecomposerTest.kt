@@ -10,12 +10,22 @@ import android.graphics.Bitmap
 import android.graphics.Rect
 import android.view.View
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.BlurEffect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.RenderEffect
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.LayoutInfo
 import androidx.compose.ui.layout.ModifierInfo
 import androidx.compose.ui.node.DrawModifierNode
+import androidx.compose.ui.platform.InspectableValue
+import androidx.compose.ui.platform.ValueElement
 import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.unit.Density
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentityKind
+import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframeKind
 import com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory
@@ -27,11 +37,14 @@ import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayCompose
 import com.datadog.android.sessionreplay.internal.composition.PendingPixelCapture
 import com.datadog.android.sessionreplay.internal.composition.PendingPixelCaptureSink
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeRequest
+import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.GlobalBounds
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.within
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -44,6 +57,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import kotlin.math.roundToInt
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -439,6 +453,386 @@ internal class GranularComposeDecomposerTest {
         // Then
         assertThat(result).isNull()
         assertThat(fakeRasterizer.callCount).isEqualTo(0)
+    }
+
+    // endregion
+
+    // region clip modifier
+
+    /**
+     * A `graphicsLayer` modifier exposing [properties] through [InspectableValue.inspectableElements] -
+     * the same public mechanism the real `GraphicsLayerElement` uses (see
+     * `GranularComposeDecomposer.resolveGraphicsLayerModifiers`'s doc), not reflection.
+     */
+    private fun mockGraphicsLayerModifier(properties: Map<String, Any?>): Modifier {
+        val modifier = mock<Modifier>(extraInterfaces = arrayOf(InspectableValue::class))
+        val inspectable = modifier as InspectableValue
+        whenever(inspectable.nameFallback).thenReturn("graphicsLayer")
+        whenever(inspectable.inspectableElements).thenReturn(
+            properties.map { (name, value) -> ValueElement(name, value) }.asSequence()
+        )
+        return modifier
+    }
+
+    /** A node with one child (so it isn't treated as a pixel-capture candidate) and a `graphicsLayer` modifier exposing [clipEnabled]/[shape]. */
+    private fun mockClippableNode(clipEnabled: Boolean, shape: Shape?): SemanticsNode {
+        val node = mockLeafNode()
+        val childNode = mockLeafNode()
+        val graphicsLayerModifier = mockGraphicsLayerModifier(mapOf("clip" to clipEnabled, "shape" to shape))
+        val modifierInfo: ModifierInfo = mock()
+        whenever(modifierInfo.modifier).thenReturn(graphicsLayerModifier)
+        whenever(node.layoutInfo.getModifierInfo()).thenReturn(listOf(modifierInfo))
+        whenever(node.layoutInfo.density).thenReturn(Density(1f))
+        whenever(node.children).thenReturn(listOf(childNode))
+        whenever(mockSemanticsUtils.resolveInnerBounds(eq(node), any())).thenReturn(GlobalBounds(0, 0, 100, 50))
+        return node
+    }
+
+    @Test
+    fun `M emit a Clip modifier W decompose() { graphicsLayer clip enabled with a rounded shape }`() {
+        // Given
+        val fakeShape: Shape = mock()
+        val node = mockClippableNode(clipEnabled = true, shape = fakeShape)
+        whenever(mockSemanticsUtils.resolveCornerRadius(eq(fakeShape), any(), any())).thenReturn(10f)
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest())
+
+        // Then
+        checkNotNull(result)
+        val clippedLayer = result.nodes.single { it.bounds.width == 100L && it.bounds.height == 50L }
+        val clip = clippedLayer.modifiers.filterIsInstance<CapturedModifier.Clip>().single()
+        assertThat(clip.path).isEqualTo(
+            "M 10.0,0 L 90.0,0 A 10.0,10.0 0 0 1 100.0,10.0 L 100.0,40.0 A 10.0,10.0 0 0 1 90.0,50.0 " +
+                "L 10.0,50.0 A 10.0,10.0 0 0 1 0,40.0 L 0,10.0 A 10.0,10.0 0 0 1 10.0,0 Z"
+        )
+    }
+
+    @Test
+    fun `M not emit a Clip modifier W decompose() { graphicsLayer shape set but clip disabled }`() {
+        // Given: a shape without clip=true is only used for the shadow outline, not to actually
+        // clip content - emitting a Clip modifier here would be wrong, not just unnecessary.
+        val fakeShape: Shape = mock()
+        val node = mockClippableNode(clipEnabled = false, shape = fakeShape)
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest())
+
+        // Then
+        checkNotNull(result)
+        val clippedLayer = result.nodes.single { it.bounds.width == 100L && it.bounds.height == 50L }
+        assertThat(clippedLayer.modifiers.filterIsInstance<CapturedModifier.Clip>()).isEmpty()
+    }
+
+    @Test
+    fun `M not emit a Clip modifier W decompose() { clip enabled but shape resolves to no rounding }`() {
+        // Given: a plain rectangular clip has no visual effect the existing per-wireframe
+        // ancestor-bounds crop doesn't already provide - not worth a layer-level modifier for it.
+        val fakeShape: Shape = mock()
+        val node = mockClippableNode(clipEnabled = true, shape = fakeShape)
+        whenever(mockSemanticsUtils.resolveCornerRadius(eq(fakeShape), any(), any())).thenReturn(0f)
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest())
+
+        // Then
+        checkNotNull(result)
+        val clippedLayer = result.nodes.single { it.bounds.width == 100L && it.bounds.height == 50L }
+        assertThat(clippedLayer.modifiers.filterIsInstance<CapturedModifier.Clip>()).isEmpty()
+    }
+
+    // endregion
+
+    // region shadow modifier
+
+    /** A node with one child (so it isn't treated as a pixel-capture candidate) and a `graphicsLayer` modifier exposing [elevationPx]/[spotColor]. */
+    private fun mockShadowNode(elevationPx: Float?, spotColor: Color?): SemanticsNode {
+        val node = mockLeafNode()
+        val childNode = mockLeafNode()
+        val graphicsLayerModifier = mockGraphicsLayerModifier(
+            mapOf("shadowElevation" to elevationPx, "spotShadowColor" to spotColor)
+        )
+        val modifierInfo: ModifierInfo = mock()
+        whenever(modifierInfo.modifier).thenReturn(graphicsLayerModifier)
+        whenever(node.layoutInfo.getModifierInfo()).thenReturn(listOf(modifierInfo))
+        whenever(node.layoutInfo.density).thenReturn(Density(1f))
+        whenever(node.children).thenReturn(listOf(childNode))
+        whenever(mockSemanticsUtils.resolveInnerBounds(eq(node), any())).thenReturn(GlobalBounds(0, 0, 100, 50))
+        return node
+    }
+
+    @Test
+    fun `M emit a Shadow modifier W decompose() { graphicsLayer has positive elevation }`() {
+        // Given: elevation 4px at density 1 rounds to the Material elevation table's 4dp row -
+        // (offsetY=2, blur=4) for the key/umbra layer.
+        val node = mockShadowNode(elevationPx = 4f, spotColor = Color.Black)
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest())
+
+        // Then
+        checkNotNull(result)
+        val layer = result.nodes.single { it.bounds.width == 100L && it.bounds.height == 50L }
+        val shadow = layer.modifiers.filterIsInstance<CapturedModifier.Shadow>().single()
+        assertThat(shadow.offsetX).isEqualTo(0.0)
+        assertThat(shadow.offsetY).isEqualTo(2.0)
+        assertThat(shadow.radius).isEqualTo(4.0)
+        val expectedAlpha = (Color.Black.alpha * 0.2f * 255).roundToInt()
+        assertThat(shadow.color).isEqualTo(
+            DefaultColorStringFormatter.formatColorAndAlphaAsHexString(Color.Black.toArgb(), expectedAlpha)
+        )
+    }
+
+    @Test
+    fun `M default the shadow color to black W decompose() { spotShadowColor not resolvable }`() {
+        // Given
+        val node = mockShadowNode(elevationPx = 4f, spotColor = null)
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest())
+
+        // Then
+        checkNotNull(result)
+        val layer = result.nodes.single { it.bounds.width == 100L && it.bounds.height == 50L }
+        val shadow = layer.modifiers.filterIsInstance<CapturedModifier.Shadow>().single()
+        val expectedAlpha = (Color.Black.alpha * 0.2f * 255).roundToInt()
+        assertThat(shadow.color).isEqualTo(
+            DefaultColorStringFormatter.formatColorAndAlphaAsHexString(Color.Black.toArgb(), expectedAlpha)
+        )
+    }
+
+    @Test
+    fun `M not emit a Shadow modifier W decompose() { elevation is zero }`() {
+        // Given: a flat node (no Z) casts no shadow.
+        val node = mockShadowNode(elevationPx = 0f, spotColor = Color.Black)
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest())
+
+        // Then
+        checkNotNull(result)
+        val layer = result.nodes.single { it.bounds.width == 100L && it.bounds.height == 50L }
+        assertThat(layer.modifiers.filterIsInstance<CapturedModifier.Shadow>()).isEmpty()
+    }
+
+    @Test
+    fun `M not emit a Shadow modifier W decompose() { elevation not resolvable }`() {
+        // Given
+        val node = mockShadowNode(elevationPx = null, spotColor = Color.Black)
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest())
+
+        // Then
+        checkNotNull(result)
+        val layer = result.nodes.single { it.bounds.width == 100L && it.bounds.height == 50L }
+        assertThat(layer.modifiers.filterIsInstance<CapturedModifier.Shadow>()).isEmpty()
+    }
+
+    // endregion
+
+    // region blur modifier
+
+    /** A node with one child (so it isn't treated as a pixel-capture candidate) and a `graphicsLayer` modifier exposing [renderEffect]. */
+    private fun mockBlurNode(renderEffect: RenderEffect?): SemanticsNode {
+        val node = mockLeafNode()
+        val childNode = mockLeafNode()
+        val graphicsLayerModifier = mockGraphicsLayerModifier(mapOf("renderEffect" to renderEffect))
+        val modifierInfo: ModifierInfo = mock()
+        whenever(modifierInfo.modifier).thenReturn(graphicsLayerModifier)
+        whenever(node.layoutInfo.getModifierInfo()).thenReturn(listOf(modifierInfo))
+        whenever(node.layoutInfo.density).thenReturn(Density(1f))
+        whenever(node.children).thenReturn(listOf(childNode))
+        whenever(mockSemanticsUtils.resolveInnerBounds(eq(node), any())).thenReturn(GlobalBounds(0, 0, 100, 50))
+        return node
+    }
+
+    @Test
+    fun `M emit a GaussianBlur modifier W decompose() { graphicsLayer has a uniform BlurEffect }`() {
+        // Given
+        val fakeBlurEffect: BlurEffect = mock()
+        val node = mockBlurNode(fakeBlurEffect)
+        whenever(mockReflectionUtils.getBlurRadii(fakeBlurEffect)).thenReturn(8f to 8f)
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest())
+
+        // Then
+        checkNotNull(result)
+        val layer = result.nodes.single { it.bounds.width == 100L && it.bounds.height == 50L }
+        val blur = layer.modifiers.filterIsInstance<CapturedModifier.GaussianBlur>().single()
+        assertThat(blur.radius).isEqualTo(8.0)
+    }
+
+    @Test
+    fun `M not emit a GaussianBlur modifier W decompose() { radiusX and radiusY differ }`() {
+        // Given: CapturedModifier.GaussianBlur has a single radius - an elliptical blur has no
+        // faithful representation, so it's left unrecognized rather than guessed at.
+        val fakeBlurEffect: BlurEffect = mock()
+        val node = mockBlurNode(fakeBlurEffect)
+        whenever(mockReflectionUtils.getBlurRadii(fakeBlurEffect)).thenReturn(8f to 4f)
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest())
+
+        // Then
+        checkNotNull(result)
+        val layer = result.nodes.single { it.bounds.width == 100L && it.bounds.height == 50L }
+        assertThat(layer.modifiers.filterIsInstance<CapturedModifier.GaussianBlur>()).isEmpty()
+    }
+
+    @Test
+    fun `M not emit a GaussianBlur modifier W decompose() { renderEffect is not a BlurEffect }`() {
+        // Given: e.g. an OffsetEffect - no CapturedModifier equivalent.
+        val fakeRenderEffect: RenderEffect = mock()
+        val node = mockBlurNode(fakeRenderEffect)
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest())
+
+        // Then
+        checkNotNull(result)
+        val layer = result.nodes.single { it.bounds.width == 100L && it.bounds.height == 50L }
+        assertThat(layer.modifiers.filterIsInstance<CapturedModifier.GaussianBlur>()).isEmpty()
+    }
+
+    @Test
+    fun `M not emit a GaussianBlur modifier W decompose() { reflection fails to resolve radii }`() {
+        // Given
+        val fakeBlurEffect: BlurEffect = mock()
+        val node = mockBlurNode(fakeBlurEffect)
+        whenever(mockReflectionUtils.getBlurRadii(fakeBlurEffect)).thenReturn(null)
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest())
+
+        // Then
+        checkNotNull(result)
+        val layer = result.nodes.single { it.bounds.width == 100L && it.bounds.height == 50L }
+        assertThat(layer.modifiers.filterIsInstance<CapturedModifier.GaussianBlur>()).isEmpty()
+    }
+
+    // endregion
+
+    // region color matrix modifier
+    //
+    // resolveColorMatrixModifier/resolveSaturateValue/resolveBrightnessValue are plain top-level
+    // functions taking a raw FloatArray - no mocking, no fakes, no decompose()-level integration
+    // needed. The only part of this feature that isn't unit-tested is platformColorMatrixValues' few
+    // lines of real Compose→Android ColorFilter interop, which unitTests.isReturnDefaultValues=true
+    // makes impossible to observe meaningfully in this environment regardless of how it's structured
+    // - see that function's own doc.
+
+    @Test
+    fun `M return null W resolveColorMatrixModifier { values is null }`() {
+        assertThat(resolveColorMatrixModifier(null)).isNull()
+    }
+
+    @Test
+    fun `M return a ColorMatrix modifier W resolveColorMatrixModifier { values is not a saturation matrix }`() {
+        // Given: an arbitrary, deterministic 20-value matrix that doesn't match the saturation shape.
+        val fakeValues = FloatArray(20) { it.toFloat() }
+
+        // When
+        val modifier = resolveColorMatrixModifier(fakeValues)
+
+        // Then
+        assertThat(modifier).isEqualTo(CapturedModifier.ColorMatrix(fakeValues.map { it.toDouble() }))
+    }
+
+    @Test
+    fun `M return a Saturate modifier W resolveColorMatrixModifier { values is a saturation matrix }`() {
+        // Given: ColorMatrix.setToSaturation is real, non-Android-stubbed Compose Kotlin code, so
+        // it behaves correctly (and testably) even under this module's unit test setup.
+        val fakeSaturation = 0.4f
+        val fakeValues = ColorMatrix().apply { setToSaturation(fakeSaturation) }.values
+
+        // When
+        val modifier = resolveColorMatrixModifier(fakeValues)
+
+        // Then
+        val saturate = modifier as CapturedModifier.Saturate
+        assertThat(saturate.value).isCloseTo(fakeSaturation.toDouble(), within(0.001))
+    }
+
+    @Test
+    fun `M return null W resolveSaturateValue { values has the wrong size }`() {
+        assertThat(resolveSaturateValue(FloatArray(4))).isNull()
+    }
+
+    @Test
+    fun `M return null W resolveSaturateValue { values does not match the saturation shape }`() {
+        assertThat(resolveSaturateValue(FloatArray(20) { it.toFloat() })).isNull()
+    }
+
+    @Test
+    fun `M return a BrightnessBias modifier W resolveColorMatrixModifier { values is a brightness matrix }`(
+        @FloatForgery(min = -1f, max = 1f) fakeBrightness: Float
+    ) {
+        // Given
+        val fakeValues = brightnessMatrix(fakeBrightness, alphaOffset = 0f)
+
+        // When
+        val modifier = resolveColorMatrixModifier(fakeValues)
+
+        // Then
+        val brightnessBias = modifier as CapturedModifier.BrightnessBias
+        assertThat(brightnessBias.value).isCloseTo(fakeBrightness.toDouble(), within(0.001))
+    }
+
+    @Test
+    fun `M return null W resolveBrightnessValue { values has the wrong size }`() {
+        assertThat(resolveBrightnessValue(FloatArray(4))).isNull()
+    }
+
+    @Test
+    fun `M return null W resolveBrightnessValue { values does not match the brightness shape }`() {
+        assertThat(resolveBrightnessValue(FloatArray(20) { it.toFloat() })).isNull()
+    }
+
+    @Test
+    fun `M return null W resolveBrightnessValue { alpha translation is non-zero }`(
+        @FloatForgery(min = -1f, max = 1f) fakeBrightness: Float,
+        @FloatForgery(min = 1f, max = 10f) fakeAlphaOffset: Float
+    ) {
+        // Given
+        val fakeValues = brightnessMatrix(fakeBrightness, alphaOffset = fakeAlphaOffset)
+
+        // When + Then
+        assertThat(resolveBrightnessValue(fakeValues)).isNull()
+    }
+
+    /** Matches the production identity-plus-translation brightness matrix shape. */
+    private fun brightnessMatrix(brightness: Float, alphaOffset: Float): FloatArray {
+        val offset = brightness * 255f
+        return floatArrayOf(
+            1f, 0f, 0f, 0f, offset,
+            0f, 1f, 0f, 0f, offset,
+            0f, 0f, 1f, 0f, offset,
+            0f, 0f, 0f, 1f, alphaOffset
+        )
     }
 
     // endregion

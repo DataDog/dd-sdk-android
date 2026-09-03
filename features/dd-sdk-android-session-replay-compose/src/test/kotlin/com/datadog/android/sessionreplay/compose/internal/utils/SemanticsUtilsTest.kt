@@ -28,6 +28,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.LayoutInfo
 import androidx.compose.ui.layout.ModifierInfo
 import androidx.compose.ui.layout.Placeable
+import androidx.compose.ui.platform.InspectableValue
+import androidx.compose.ui.platform.ValueElement
 import androidx.compose.ui.semantics.AccessibilityAction
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsConfiguration
@@ -687,7 +689,7 @@ internal class SemanticsUtilsTest {
         val mockShape = mock<RoundedCornerShape>()
         val mockPaddingModifier = mock<Modifier>()
         val mockBackgroundModifier = mock<Modifier>()
-        val mockShapeModifier = mock<Modifier>()
+        val mockShapeModifier = mockGraphicsLayerModifier(mockShape)
         val mockPaddingModifierInfo = mock<ModifierInfo>()
         val mockBackgroundModifierInfo = mock<ModifierInfo>()
         val mockShapeModifierInfo = mock<ModifierInfo>()
@@ -705,14 +707,12 @@ internal class SemanticsUtilsTest {
         whenever(mockReflectionUtils.getColor(mockBackgroundModifier)) doReturn fakeColorValue
         // alpha = null → applyAlphaToColor is a no-op; color comes back unchanged
         whenever(mockReflectionUtils.getAlpha(mockBackgroundModifier)) doReturn null
-        whenever(mockReflectionUtils.getClipShape(mockShapeModifier)) doReturn mockShape
         whenever(mockReflectionUtils.getTopPadding(mockPaddingModifier)) doReturn topPadding
         whenever(mockReflectionUtils.getStartPadding(mockPaddingModifier)) doReturn startPadding
         whenever(mockReflectionUtils.getBottomPadding(mockPaddingModifier)) doReturn bottomPadding
         whenever(mockReflectionUtils.getEndPadding(mockPaddingModifier)) doReturn endPadding
         whenever(mockReflectionUtils.isPaddingElement(mockPaddingModifier)) doReturn true
         whenever(mockReflectionUtils.isBackgroundElement(mockBackgroundModifier)) doReturn true
-        whenever(mockReflectionUtils.isGraphicsLayerElement(mockShapeModifier)) doReturn true
         whenever(mockLayoutInfo.getModifierInfo()) doReturn listOf(
             mockShapeModifierInfo,
             mockPaddingModifierInfo,
@@ -869,13 +869,11 @@ internal class SemanticsUtilsTest {
         val (fakeRect, fakeBounds) = forgeBackgroundBounds(forge)
         val density = Density(fakeDensity)
         val mockShape = mock<RoundedCornerShape>()
-        val mockShapeModifier = mock<Modifier>()
+        val mockShapeModifier = mockGraphicsLayerModifier(mockShape)
         val mockShapeModifierInfo = mock<ModifierInfo>()
         val fakeCornerSize = CornerSize(fakeCornerSizeValue.dp)
         whenever(mockShape.topStart) doReturn fakeCornerSize
         whenever(mockShapeModifierInfo.modifier) doReturn mockShapeModifier
-        whenever(mockReflectionUtils.isGraphicsLayerElement(mockShapeModifier)) doReturn true
-        whenever(mockReflectionUtils.getClipShape(mockShapeModifier)) doReturn mockShape
         val firstBackground = backgroundModifierStub(color = firstColorValue, brush = null)
         val secondBackground = backgroundModifierStub(color = secondColorValue, brush = null)
         whenever(mockLayoutInfo.getModifierInfo()) doReturn listOf(
@@ -1388,7 +1386,7 @@ internal class SemanticsUtilsTest {
         val density = Density(fakeDensity)
         val mockShape = mock<RoundedCornerShape>()
         val mockPaddingModifier = mock<Modifier>()
-        val mockShapeModifier = mock<Modifier>()
+        val mockShapeModifier = mockGraphicsLayerModifier(mockShape)
         val mockPaddingModifierInfo = mock<ModifierInfo>()
         val mockShapeModifierInfo = mock<ModifierInfo>()
         val fakeCornerSize = CornerSize(fakeCornerSizeValue.dp)
@@ -1406,13 +1404,11 @@ internal class SemanticsUtilsTest {
         whenever(mockShapeModifierInfo.modifier) doReturn mockShapeModifier
         whenever(mockPaddingModifierInfo.modifier) doReturn mockPaddingModifier
         whenever(mockReflectionUtils.getBrushColors(mockBrush)) doReturn listOf(firstStop)
-        whenever(mockReflectionUtils.getClipShape(mockShapeModifier)) doReturn mockShape
         whenever(mockReflectionUtils.getTopPadding(mockPaddingModifier)) doReturn topPadding
         whenever(mockReflectionUtils.getStartPadding(mockPaddingModifier)) doReturn startPadding
         whenever(mockReflectionUtils.getBottomPadding(mockPaddingModifier)) doReturn bottomPadding
         whenever(mockReflectionUtils.getEndPadding(mockPaddingModifier)) doReturn endPadding
         whenever(mockReflectionUtils.isPaddingElement(mockPaddingModifier)) doReturn true
-        whenever(mockReflectionUtils.isGraphicsLayerElement(mockShapeModifier)) doReturn true
         whenever(mockLayoutInfo.getModifierInfo()) doReturn listOf(
             mockShapeModifierInfo,
             mockPaddingModifierInfo,
@@ -1473,6 +1469,18 @@ internal class SemanticsUtilsTest {
         whenever(mockReflectionUtils.getBrush(modifier)) doReturn brush
         whenever(mockReflectionUtils.getAlpha(modifier)) doReturn alpha
         return info
+    }
+
+    /**
+     * A `graphicsLayer` modifier exposing [shape] through [InspectableValue.inspectableElements] -
+     * the public mechanism [BackgroundResolver] reads `shape` through, not reflection.
+     */
+    private fun mockGraphicsLayerModifier(shape: Shape): Modifier {
+        val modifier = mock<Modifier>(extraInterfaces = arrayOf(InspectableValue::class))
+        val inspectable = modifier as InspectableValue
+        whenever(inspectable.nameFallback) doReturn "graphicsLayer"
+        whenever(inspectable.inspectableElements) doReturn sequenceOf(ValueElement("shape", shape))
+        return modifier
     }
 
     @Test

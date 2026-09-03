@@ -53,6 +53,13 @@ internal object ComposeReflection {
     val BrushField = BackgroundElementClass?.getDeclaredFieldSafe("brush", isCritical = false)
     val AlphaField = BackgroundElementClass?.getDeclaredFieldSafe("alpha", isCritical = false)
 
+    // BlurEffect.radiusX/radiusY have no public getter - reached via graphicsLayer's public
+    // InspectableValue mechanism, same as Clip/Shadow/ColorMatrix; only the two Float fields
+    // themselves need reflection.
+    val BlurEffectClass = getClassSafe("androidx.compose.ui.graphics.BlurEffect")
+    val RadiusXFieldOfBlurEffect = BlurEffectClass?.getDeclaredFieldSafe("radiusX")
+    val RadiusYFieldOfBlurEffect = BlurEffectClass?.getDeclaredFieldSafe("radiusY")
+
     val LinearGradientClass = getClassSafe("androidx.compose.ui.graphics.LinearGradient", isCritical = false)
     val LinearGradientColorsField = LinearGradientClass?.getDeclaredFieldSafe("colors", isCritical = false)
     val RadialGradientClass = getClassSafe("androidx.compose.ui.graphics.RadialGradient", isCritical = false)
@@ -78,9 +85,6 @@ internal object ComposeReflection {
     val EndField = PaddingElementClass?.getDeclaredFieldSafe("end")
     val BottomField = PaddingElementClass?.getDeclaredFieldSafe("bottom")
     val TopField = PaddingElementClass?.getDeclaredFieldSafe("top")
-
-    val GraphicsLayerElementClass = getClassSafe("androidx.compose.ui.graphics.GraphicsLayerElement")
-    val ClipShapeField = GraphicsLayerElementClass?.getDeclaredFieldSafe("shape")
 
     val PainterElementClass = getClassSafe("androidx.compose.ui.draw.PainterElement")
     val PainterField = PainterElementClass?.getDeclaredFieldSafe("painter")

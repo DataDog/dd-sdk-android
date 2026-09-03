@@ -10,11 +10,18 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Rect
 import android.view.View
+import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.RenderEffect
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.asAndroidColorFilter
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.node.DrawModifierNode
 import androidx.compose.ui.platform.InspectableValue
 import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.unit.Density
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedChild
@@ -38,7 +45,10 @@ import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
+import kotlin.math.abs
 import kotlin.math.roundToInt
+import android.graphics.ColorMatrix as AndroidColorMatrix
+import android.graphics.ColorMatrixColorFilter as AndroidColorMatrixColorFilter
 
 /**
  * Real implementation of [CompositionHostDecomposer], walking a Compose host's *unmerged* semantics
@@ -122,6 +132,7 @@ internal class GranularComposeDecomposer(
     )
 
     /** One [decompose] call's state - a fresh instance per call, so this class itself stays stateless. */
+    @Suppress("TooManyFunctions") // Each function handles one distinct node kind or modifier extraction step.
     private inner class DecomposeSession(
         private val hostView: View,
         private val request: CompositionHostDecomposeRequest
@@ -200,7 +211,7 @@ internal class GranularComposeDecomposer(
                     nodeIdentity,
                     bounds,
                     listOf(CapturedChild.Wireframe(textId)),
-                    modifiers = resolveModifiers(node)
+                    modifiers = resolveModifiers(node, bounds)
                 )
             }
 
@@ -214,7 +225,7 @@ internal class GranularComposeDecomposer(
             }
             node.children.forEach { child -> walkNode(child)?.let { children += it } }
 
-            return registerLayer(nodeIdentity, bounds, children, modifiers = resolveModifiers(node))
+            return registerLayer(nodeIdentity, bounds, children, modifiers = resolveModifiers(node, bounds))
         }
 
         /**
@@ -370,25 +381,139 @@ internal class GranularComposeDecomposer(
         }
 
         /**
-         * Only `graphicsLayer`'s fixed-value `alpha` is extracted, read via [InspectableValue] the
-         * same way [com.datadog.android.sessionreplay.compose.internal.utils.BackgroundResolver]
-         * already reads `graphicsLayer`'s `clip`/`shape` properties. Does not cover the animated
-         * lambda overload (`Modifier.graphicsLayer { alpha = ... }`), which exposes no public
-         * readable current value.
+         * `graphicsLayer` exposes every constructor parameter it has - `alpha`, `shape`, `clip`,
+         * `shadowElevation`, `spotShadowColor` included - by name through [InspectableValue.inspectableElements],
+         * the same public, tooling-sanctioned mechanism Android Studio's Layout Inspector uses (see
+         * `GraphicsLayerElement.inspectableProperties()` in the Compose UI source). Deliberately
+         * reading everything through this one public API instead of the reflection this pipeline is
+         * meant to move away from - see [com.datadog.android.sessionreplay.compose.internal.utils.BackgroundResolver]
+         * for the (pre-existing, unrelated) case where a comparable direct-field read still exists.
+         * Does not cover `graphicsLayer`'s animated-lambda overload (`Modifier.graphicsLayer { alpha = ... }`),
+         * which exposes no public readable current value at all, reflection or otherwise. Ordered
+         * clip/shadow before opacity to match the iOS composition pipeline's own documented
+         * modifier ordering (clip, filters, shadow, opacity, mask).
          */
-        private fun resolveModifiers(node: SemanticsNode): List<CapturedModifier> {
+        private fun resolveModifiers(node: SemanticsNode, bounds: CapturedBounds): List<CapturedModifier> {
+            val modifiers = mutableListOf<CapturedModifier>()
             for (info in node.layoutInfo.getModifierInfo()) {
                 val modifier = info.modifier
                 if (modifier is InspectableValue && modifier.nameFallback == GRAPHICS_LAYER_NAME_FALLBACK) {
-                    val alpha = modifier.inspectableElements
-                        .firstOrNull { it.name == ALPHA_PROPERTY_NAME }
-                        ?.value as? Float
-                    if (alpha != null && alpha < 1f) {
-                        return listOf(CapturedModifier.Opacity(alpha.toDouble()))
-                    }
+                    modifiers += resolveGraphicsLayerModifiers(modifier, node, bounds)
                 }
             }
-            return emptyList()
+            return modifiers
+        }
+
+        // associate only throws for a null key, and ValueElement.name is a non-null Kotlin String.
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        private fun resolveGraphicsLayerModifiers(
+            modifier: InspectableValue,
+            node: SemanticsNode,
+            bounds: CapturedBounds
+        ): List<CapturedModifier> {
+            val properties = modifier.inspectableElements.associate { it.name to it.value }
+            val modifiers = mutableListOf<CapturedModifier>()
+            if (properties[CLIP_PROPERTY_NAME] as? Boolean == true) {
+                val shape = properties[SHAPE_PROPERTY_NAME] as? Shape
+                resolveClipModifier(shape, bounds, node.layoutInfo.density)?.let { modifiers += it }
+            }
+            resolveColorMatrixModifier(
+                platformColorMatrixValues(properties[COLOR_FILTER_PROPERTY_NAME] as? ColorFilter)
+            )
+                ?.let { modifiers += it }
+            resolveShadowModifier(
+                properties[SHADOW_ELEVATION_PROPERTY_NAME] as? Float,
+                properties[SPOT_SHADOW_COLOR_PROPERTY_NAME] as? Color,
+                node.layoutInfo.density
+            )?.let { modifiers += it }
+            resolveBlurModifier(
+                properties[RENDER_EFFECT_PROPERTY_NAME] as? RenderEffect,
+                node.layoutInfo.density
+            )?.let { modifiers += it }
+            val alpha = properties[ALPHA_PROPERTY_NAME] as? Float
+            if (alpha != null && alpha < 1f) {
+                modifiers += CapturedModifier.Opacity(alpha.toDouble())
+            }
+            return modifiers
+        }
+
+        /**
+         * A shape without meaningful rounding clips to a plain rectangle, which the existing
+         * per-wireframe ancestor-bounds crop ([com.datadog.android.internal.sessionreplay.composition.CapturedClip])
+         * already represents - only a genuinely rounded (or otherwise non-rectangular) shape needs
+         * this layer-level modifier, since that's what the rectangular crop can't express. Only
+         * [androidx.compose.foundation.shape.RoundedCornerShape] (which `CircleShape` is itself an
+         * instance of) is resolved to a real radius today; any other [Shape] - a custom
+         * `GenericShape`, a cut/diagonal shape, etc. - is treated as unsupported and skipped, same
+         * as [com.datadog.android.sessionreplay.compose.internal.utils.BackgroundResolver.resolveCornerRadius].
+         */
+        @Suppress("ReturnCount") // Each guard bails out at the point it's no longer worth a Clip modifier.
+        private fun resolveClipModifier(
+            shape: Shape?,
+            bounds: CapturedBounds,
+            density: Density
+        ): CapturedModifier.Clip? {
+            if (shape == null) return null
+            val radius = semanticsUtils.resolveCornerRadius(
+                shape,
+                GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height),
+                density
+            )
+            if (radius <= 0f) return null
+            val clampedRadius = radius.toDouble().coerceAtMost(minOf(bounds.width, bounds.height) / 2.0)
+            return CapturedModifier.Clip(path = roundedRectPath(bounds.width, bounds.height, clampedRadius))
+        }
+
+        /**
+         * Android's elevation shadow is a geometric light-source simulation (see hwui/Skia's
+         * ambient+spot shadow renderer), not a simple offset/blur formula - there is no principled
+         * way to derive [CapturedModifier.Shadow]'s offset/radius from elevation directly. This
+         * instead looks up Google's own published Material Design elevation table (the same one
+         * Material Components Web/MUI use to replicate Android shadows in CSS), using only its
+         * dominant "key" (umbra) layer - the table's penumbra/ambient layers and its spread
+         * parameter have no equivalent in [CapturedModifier.Shadow]'s single-shadow model, so this
+         * is a visual approximation, not an exact reconstruction. Skipped entirely for
+         * zero/negative elevation - a flat node casts no shadow. [elevationPx] is raw pixels, same
+         * as `graphicsLayer`'s other size-shaped parameters.
+         */
+        @Suppress("ReturnCount") // Each guard bails out at the point it's no longer worth a Shadow modifier.
+        private fun resolveShadowModifier(
+            elevationPx: Float?,
+            spotColor: Color?,
+            density: Density
+        ): CapturedModifier.Shadow? {
+            if (elevationPx == null || elevationPx <= 0f) return null
+            val elevationDp = elevationPx / density.density
+            val level = elevationDp.roundToInt().coerceIn(1, MAX_ELEVATION_DP)
+            val (offsetYDp, blurDp) = MATERIAL_KEY_SHADOW_DP[level]
+            return CapturedModifier.Shadow(
+                color = formatShadowColor(spotColor ?: Color.Black),
+                offsetX = 0.0,
+                offsetY = offsetYDp,
+                radius = blurDp
+            )
+        }
+
+        private fun formatShadowColor(color: Color): String {
+            val alpha = (color.alpha * SHADOW_KEY_OPACITY.toFloat() * OPAQUE_ALPHA_VALUE).roundToInt()
+            return colorStringFormatter.formatColorAndAlphaAsHexString(color.toArgb(), alpha)
+        }
+
+        /**
+         * Only a [BlurEffect] has a [CapturedModifier.GaussianBlur] equivalent - any other
+         * [RenderEffect] (offset, chained, or a raw platform effect) has none and resolves to null.
+         * [CapturedModifier.GaussianBlur] has a single [radius][CapturedModifier.GaussianBlur.radius],
+         * so an elliptical blur (`radiusX != radiusY`) - not producible by [Modifier.blur]'s own
+         * single-radius overload, but possible via its two-radius one - is left unrecognized rather
+         * than guessed at. [radiusX]/[radiusY] are raw pixels, same as `graphicsLayer`'s other
+         * size-shaped parameters.
+         */
+        @Suppress("ReturnCount") // Each guard bails out at the point it's no longer worth a GaussianBlur modifier.
+        private fun resolveBlurModifier(renderEffect: RenderEffect?, density: Density): CapturedModifier.GaussianBlur? {
+            val blurEffect = renderEffect as? BlurEffect ?: return null
+            val (radiusXPx, radiusYPx) = reflectionUtils.getBlurRadii(blurEffect) ?: return null
+            if (radiusXPx != radiusYPx) return null
+            return CapturedModifier.GaussianBlur(radius = (radiusXPx / density.density).toDouble())
         }
     }
 
@@ -399,11 +524,58 @@ internal class GranularComposeDecomposer(
         const val DEFAULT_TEXT_COLOR = "#000000FF"
         const val GRAPHICS_LAYER_NAME_FALLBACK = "graphicsLayer"
         const val ALPHA_PROPERTY_NAME = "alpha"
+        const val CLIP_PROPERTY_NAME = "clip"
+        const val SHAPE_PROPERTY_NAME = "shape"
+        const val SHADOW_ELEVATION_PROPERTY_NAME = "shadowElevation"
+        const val SPOT_SHADOW_COLOR_PROPERTY_NAME = "spotShadowColor"
+        const val RENDER_EFFECT_PROPERTY_NAME = "renderEffect"
+        const val COLOR_FILTER_PROPERTY_NAME = "colorFilter"
         const val COMPOSE_COLOR_SHIFT = 32
         const val NODES_PER_CHECKPOINT = 200
 
         /** Defensive cap on pixel captures per Compose host per cycle - see [isPixelCaptureCandidate]. */
         const val MAX_PIXEL_CAPTURES_PER_HOST = 100
+
+        /** The Material Design elevation table's shared "key" shadow opacity - see [resolveShadowModifier]. */
+        const val SHADOW_KEY_OPACITY = 0.2
+        const val MAX_ELEVATION_DP = 24
+
+        /**
+         * (offsetY, blurRadius) in dp per elevation level, 0-24 - the "key"/umbra layer only, from
+         * Google's own Material Design elevation table (values from
+         * https://github.com/material-components/material-components-web/blob/master/packages/mdc-elevation/_variables.scss,
+         * also used by Material Components Web/MUI to replicate these shadows in CSS). offsetX is
+         * always 0 at every level; the table's spread parameter has no equivalent in
+         * [CapturedModifier.Shadow] and is dropped. Index 0 is unused - [resolveShadowModifier]
+         * never looks up a non-positive elevation.
+         */
+        val MATERIAL_KEY_SHADOW_DP = listOf(
+            0.0 to 0.0,
+            2.0 to 1.0,
+            3.0 to 1.0,
+            3.0 to 3.0,
+            2.0 to 4.0,
+            3.0 to 5.0,
+            3.0 to 5.0,
+            4.0 to 5.0,
+            5.0 to 5.0,
+            5.0 to 6.0,
+            6.0 to 6.0,
+            6.0 to 7.0,
+            7.0 to 8.0,
+            7.0 to 8.0,
+            7.0 to 9.0,
+            8.0 to 9.0,
+            8.0 to 10.0,
+            8.0 to 11.0,
+            9.0 to 11.0,
+            9.0 to 12.0,
+            10.0 to 13.0,
+            10.0 to 13.0,
+            10.0 to 14.0,
+            11.0 to 14.0,
+            11.0 to 15.0
+        )
     }
 }
 
@@ -442,6 +614,121 @@ private fun hostRelativeBoundsPx(node: SemanticsNode): Rect? {
         boundsInRoot.top.roundToInt(),
         boundsInRoot.right.roundToInt(),
         boundsInRoot.bottom.roundToInt()
+    )
+}
+
+/**
+ * A closed SVG path for a [width]x[height] rectangle with all four corners rounded by [radius] -
+ * the same uniform-radius-from-`topStart` simplification [SemanticsUtils.resolveCornerRadius]
+ * already applies for a single wireframe's own corner radius, reused here for a clip path covering
+ * a whole layer. Coordinates are local to the layer's own rectangle, per
+ * [CapturedModifier.Clip]'s wire contract. [radius] is expected to already be clamped to at most
+ * half of the shorter side by the caller.
+ */
+private fun roundedRectPath(width: Long, height: Long, radius: Double): String {
+    val w = width.toDouble()
+    val h = height.toDouble()
+    return "M $radius,0 " +
+        "L ${w - radius},0 A $radius,$radius 0 0 1 $w,$radius " +
+        "L $w,${h - radius} A $radius,$radius 0 0 1 ${w - radius},$h " +
+        "L $radius,$h A $radius,$radius 0 0 1 0,${h - radius} " +
+        "L 0,$radius A $radius,$radius 0 0 1 $radius,0 Z"
+}
+
+/**
+ * `graphicsLayer`'s `colorFilter` is a public [ColorFilter], but at this module's compiled-against
+ * Compose UI version it has no public subtypes or introspection of its own - this bridges to the
+ * real platform [android.graphics.ColorFilter] instead, which *does* have a public, stable,
+ * long-standing introspectable subtype ([android.graphics.ColorMatrixColorFilter.getColorMatrix]).
+ * A platform `BlendModeColorFilter`/`PorterDuffColorFilter` (tint) or
+ * [android.graphics.LightingColorFilter] has no [CapturedModifier] equivalent and resolves to null.
+ * Deliberately not unit-testable: `unitTests.isReturnDefaultValues = true` makes every real
+ * [android.graphics.ColorMatrix]/[android.graphics.ColorMatrixColorFilter] method silently return
+ * its default instead of actually storing/reporting a matrix, so a plain JVM unit test can never
+ * observe real values through the genuine platform classes either way - kept as a single small,
+ * directly inlined call instead of introducing a seam whose only purpose would be working around
+ * that in tests. [resolveColorMatrixModifier], which this feeds, is the actual decision logic and
+ * is fully unit-tested on its own, with plain [FloatArray] inputs.
+ */
+private fun platformColorMatrixValues(colorFilter: ColorFilter?): FloatArray? {
+    val platformFilter = colorFilter?.asAndroidColorFilter() as? AndroidColorMatrixColorFilter ?: return null
+    val matrix = AndroidColorMatrix()
+    platformFilter.getColorMatrix(matrix)
+    return matrix.getArray()
+}
+
+private const val COLOR_MATRIX_SIZE = 20
+
+/** [ColorMatrix.setToSaturation]'s red luminance weight - see [resolveSaturateValue]. */
+private const val RED_LUMINANCE_WEIGHT = 0.213f
+
+/** Row 1, column 0 - the off-diagonal "red" term [ColorMatrix.setToSaturation] writes, used to solve for its saturation value. */
+private const val SATURATION_PROBE_INDEX = 5
+private const val SATURATION_MATCH_EPSILON = 0.001f
+
+/**
+ * Turns a raw color matrix into the most specific [CapturedModifier] it matches -
+ * [resolveSaturateValue] first, then [resolveBrightnessValue], falling back to the general
+ * [CapturedModifier.ColorMatrix] - or null if [values] itself is null (not a color-matrix filter to
+ * begin with).
+ */
+@Suppress("ReturnCount")
+internal fun resolveColorMatrixModifier(values: FloatArray?): CapturedModifier? {
+    if (values == null) return null
+    resolveSaturateValue(values)?.let { return CapturedModifier.Saturate(it) }
+    resolveBrightnessValue(values)?.let { return CapturedModifier.BrightnessBias(it) }
+    return CapturedModifier.ColorMatrix(values.map { it.toDouble() })
+}
+
+/**
+ * Compose has no dedicated saturation parameter - [ColorMatrix.setToSaturation] just builds a
+ * well-known matrix shape from a single value. This reverses that: solves for the saturation value
+ * implied by the matrix's own (1,0) cell, rebuilds the matrix Compose's own formula would produce
+ * for that value, and only reports it as a saturation value if the two genuinely match - a custom
+ * tint, a hand-built brightness shift, a YUV conversion, or any other matrix is correctly left to
+ * [resolveBrightnessValue] or the general [CapturedModifier.ColorMatrix] instead.
+ */
+internal fun resolveSaturateValue(values: FloatArray): Double? {
+    if (values.size != COLOR_MATRIX_SIZE) return null
+    val sat = 1f - values[SATURATION_PROBE_INDEX] / RED_LUMINANCE_WEIGHT
+    val candidate = ColorMatrix().apply { setToSaturation(sat) }
+    val matches = candidate.values.indices.all { i ->
+        abs(candidate.values[i] - values[i]) < SATURATION_MATCH_EPSILON
+    }
+    return sat.toDouble().takeIf { matches }
+}
+
+private const val BRIGHTNESS_OFFSET_INDEX = 4
+
+/** Android's [android.graphics.ColorMatrix] translation terms operate on the 0-255 color range, not 0.0-1.0. */
+private const val BRIGHTNESS_OFFSET_SCALE = 255f
+
+/**
+ * Compose has no dedicated brightness API either - mirrors [resolveSaturateValue]'s own approach,
+ * hand-written rather than calling any Android/Compose API: a brightness-adjusted matrix is conventionally built as an
+ * identity matrix with an equal constant added to the R/G/B translation terms (indices 4, 9, 14),
+ * leaving alpha (index 19) untouched. This solves for the brightness implied by the matrix's own
+ * (row 0, col 4) cell, rebuilds the matrix that value would produce, and only reports it as a
+ * brightness value if the two genuinely match and the value stays within
+ * [CapturedModifier.BrightnessBias]'s documented `-1.0..1.0` range - any other matrix is correctly
+ * left to the general [CapturedModifier.ColorMatrix] instead.
+ */
+internal fun resolveBrightnessValue(values: FloatArray): Double? {
+    if (values.size != COLOR_MATRIX_SIZE) return null
+    val brightness = values[BRIGHTNESS_OFFSET_INDEX] / BRIGHTNESS_OFFSET_SCALE
+    val candidate = brightnessColorMatrix(brightness)
+    val matches = candidate.indices.all { i -> abs(candidate[i] - values[i]) < SATURATION_MATCH_EPSILON }
+    return brightness.toDouble().takeIf { matches && brightness in -1f..1f }
+}
+
+@Suppress("MagicNumber") // A literal identity-plus-translation color matrix shape, not arbitrary constants.
+private fun brightnessColorMatrix(brightness: Float): FloatArray {
+    val offset = brightness * BRIGHTNESS_OFFSET_SCALE
+    return floatArrayOf(
+        1f, 0f, 0f, 0f, offset,
+        0f, 1f, 0f, 0f, offset,
+        0f, 0f, 1f, 0f, offset,
+        0f, 0f, 0f, 1f, 0f
     )
 }
 
