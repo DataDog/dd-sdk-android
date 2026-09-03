@@ -1025,6 +1025,11 @@ PKG=<your.app.id> \
 EXPECTED_APK_MD5=<baseline_md5 or treatment_md5 for this arm> \
 EXPECTED_PERMISSION_STATE_ID=<permission_a or permission_b for this arm> \
 EXPECTED_COMPILE_STATUS=<compile_status from the CSV header> \
+EXPECTED_PERF_MODE=<perf_mode from the CSV header> \
+EXPECTED_WARMUP=<warmup from the CSV header> \
+EXPECTED_ANIMATIONS=<animations from the CSV header> \
+EXPECTED_AIRPLANE=<airplane from the CSV header> \
+EXPECTED_FP=<fp from the CSV header> \
   ./capture_trace.sh app-with-datadog.apk treatment 1
 ./.venv/bin/python verify_trace.py treatment.pftrace --package <your.app.id>
 ```
@@ -1039,6 +1044,18 @@ hard-restricted permission.
 `EXPECTED_COMPILE_STATUS` is required because the requested `COMPILE_FILTER` does not prove the
 state the device reached. Each arm's trace must match the A/B header's achieved `compile_status`;
 a `verify` trace cannot explain a `speed-profile` benchmark, or vice versa.
+`EXPECTED_PERF_MODE` similarly requires the trace's fixed-performance request to reach the same
+`fixed` or `dynamic` outcome as the benchmark. `ALLOW_DYNAMIC_PERFORMANCE=1` permits a rejected
+request to continue, but it does not permit that outcome to differ from the benchmark.
+
+`EXPECTED_ANIMATIONS`, `EXPECTED_AIRPLANE` and `EXPECTED_FP` close the last three fields a trace
+could differ on in silence. The first two drive `ANIMATIONS` and `AIRPLANE` when those are unset
+and abort on an explicit disagreement, the way `EXPECTED_WARMUP` drives `WARMUP`; a default of `0`
+was the hazard, because the guide recommends `ANIMATIONS=1` as the honest per-frame measurement, so
+a non-default benchmark value is the expected case. `EXPECTED_FP` is compared against the connected
+device's `ro.build.fingerprint` before anything is installed or uninstalled: a capture from a
+different model explains nothing about the run it is attached to, and it is the one field
+`ab_stats.py` would have refused to pool across while the trace accepted it.
 
 The default `TRACE_ENDPOINT=total_ms` requires a successful cold `am start -W` result and proves
 that first frame occurred before Perfetto stopped. If the trace is meant to explain TTFD or an
@@ -1049,10 +1066,11 @@ that never reaches the metric's endpoint cannot explain that metric. The output 
 reserved before the script changes device state, so an existing or concurrently claimed
 `.pftrace` is never overwritten; choose a new capture name or move the old file first.
 
-**Set `WARMUP` to whatever the A/B ran with.** The capture performs `WARMUP + 1` discarded
-launches before the traced one, reproducing the benchmark's liveness probe plus its warm-ups, so
-the traced launch sits at the same position in the post-install JIT/profile ramp as a measured
-one. That matters most under the default fresh-install `speed-profile`, where the profile is
+**Pass the A/B header's `warmup` as `EXPECTED_WARMUP`.** It drives the trace's `WARMUP` when that
+variable is unset; an explicit different `WARMUP` aborts. The capture performs `WARMUP + 1`
+discarded launches before the traced one, reproducing the benchmark's liveness probe plus its
+warm-ups, so the traced launch sits at the same position in the post-install JIT/profile ramp as a
+measured one. That matters most under the default fresh-install `speed-profile`, where the profile is
 empty at install and each launch adds to it. The first discard uses the probe's 3-second
 pre-launch/8-second validation cadence; later discards use each warm-up's 5-second pre-launch,
 6-second validation and final 4-second wait. Matching only the launch count is insufficient while

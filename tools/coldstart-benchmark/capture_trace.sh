@@ -20,6 +20,11 @@
 # Usage: EXPECTED_APK_MD5=<benchmark arm digest> \
 #          EXPECTED_PERMISSION_STATE_ID=<benchmark arm permission_a|permission_b> \
 #          EXPECTED_COMPILE_STATUS=<benchmark compile_status> \
+#          EXPECTED_PERF_MODE=<benchmark perf_mode> \
+#          EXPECTED_WARMUP=<benchmark warmup> \
+#          EXPECTED_ANIMATIONS=<benchmark animations> \
+#          EXPECTED_AIRPLANE=<benchmark airplane> \
+#          EXPECTED_FP=<benchmark fp> \
 #          ./capture_trace.sh <apk> <name> <expect-datadog:0|1>
 set -euo pipefail
 
@@ -36,24 +41,47 @@ EXPECTED_APK_MD5="${EXPECTED_APK_MD5:-}"
 # Permission grants can change with device role/exemption state even for the same
 # APK. The benchmark records the effective state per arm; the trace must reproduce it.
 EXPECTED_PERMISSION_STATE_ID="${EXPECTED_PERMISSION_STATE_ID:-}"
+# Fixed-performance mode is an achieved device outcome, not merely a command both
+# workflows request. A transient HAL refusal can otherwise put trace and A/B in
+# different CPU scheduling scenarios.
+EXPECTED_PERF_MODE="${EXPECTED_PERF_MODE:-}"
+# The build fingerprint of the device the A/B ran on. Nothing else here pins device
+# identity, so a trace captured on a different model -- the largest scenario
+# difference there is, and the one ab_stats.py refuses to pool across -- was accepted
+# as an explanation of that run.
+EXPECTED_FP="${EXPECTED_FP:-}"
 # Must match the ANIMATIONS the A/B was run with. Forcing 0 unconditionally meant a
 # benchmark run with ANIMATIONS=1 was traced with animations OFF -- so the trace omits
 # the per-frame SDK work whose cost that benchmark included, and the two are no longer
 # the same scenario, which is the one thing trace comparison requires.
-ANIMATIONS="${ANIMATIONS:-0}"
+#
+# A DEFAULT of 0 reintroduced that same hazard by a different route: the guide
+# recommends ANIMATIONS=1 as the honest per-frame measurement, so a non-default
+# benchmark value is the expected case, and omitting it here silently traced the
+# other scenario. Driven by the benchmark header like WARMUP: EXPECTED_ANIMATIONS is
+# required, supplies ANIMATIONS when that is unset, and an explicit disagreement
+# aborts before device access.
+EXPECTED_ANIMATIONS="${EXPECTED_ANIMATIONS:-}"
+ANIMATIONS="${ANIMATIONS:-$EXPECTED_ANIMATIONS}"
 # Same argument as ANIMATIONS: trace and benchmark must use the same controlled
 # Wi-Fi/mobile-radio state. Reachability is not inferred from an enabled setting;
-# the operator must hold the external network condition stable across both.
-AIRPLANE="${AIRPLANE:-0}"
-# Same name and same default as coldstart_bench.sh, because it has to be the same
-# number. A benchmark cell runs ONE liveness-probe launch and then $WARMUP warm-ups
-# before its first measured launch, so the launch it measures is the (WARMUP+2)-th
+# the operator must hold the external network condition stable across both. Driven by
+# the benchmark header for the same reason as ANIMATIONS above: `airplane` is one of
+# ab_stats.py's _MUST_MATCH keys, so two CSVs that disagree on it cannot be pooled --
+# and a trace that disagrees with the CSV it explains is the same error, unchecked.
+EXPECTED_AIRPLANE="${EXPECTED_AIRPLANE:-}"
+AIRPLANE="${AIRPLANE:-$EXPECTED_AIRPLANE}"
+# The benchmark header is the source of truth for trace conditioning. WARMUP remains
+# accepted as an explicit operator setting, but defaults to EXPECTED_WARMUP and must
+# equal it, so omitting or mistyping a non-default benchmark value cannot silently
+# fall back to three. A benchmark cell runs ONE liveness-probe launch and then
+# $WARMUP warm-ups before its first measured launch, so the launch it measures is the (WARMUP+2)-th
 # after install. Capturing after only $WARMUP settle launches traced the
 # (WARMUP+1)-th -- one launch earlier in the JIT/profile ramp, which matters most
 # under the default fresh-install `speed-profile` condition, where there is no
-# profile at install time and each launch adds to it. Set WARMUP here to whatever
-# the A/B ran with.
-WARMUP="${WARMUP:-3}"
+# profile at install time and each launch adds to it.
+EXPECTED_WARMUP="${EXPECTED_WARMUP:-}"
+WARMUP="${WARMUP:-$EXPECTED_WARMUP}"
 # The trace must reach the same endpoint as the A/B it is meant to explain.
 # total_ms is the benchmark's default (am start -W TotalTime / first frame).
 # TTFD and an app-owned log endpoint need an explicit log marker before the
@@ -88,11 +116,46 @@ case "$EXPECTED_COMPILE_STATUS" in
   "") die "set EXPECTED_COMPILE_STATUS to the benchmark CSV header's compile_status" ;;
   *[!a-zA-Z0-9_.+-]*) die "invalid EXPECTED_COMPILE_STATUS: '$EXPECTED_COMPILE_STATUS'" ;;
 esac
+case "$EXPECTED_PERF_MODE" in
+  fixed|dynamic) ;;
+  "") die "set EXPECTED_PERF_MODE to the benchmark CSV header's perf_mode" ;;
+  *) die "EXPECTED_PERF_MODE must be fixed or dynamic (got '$EXPECTED_PERF_MODE')" ;;
+esac
+case "$EXPECTED_WARMUP" in
+  "") die "set EXPECTED_WARMUP to the benchmark CSV header's warmup value" ;;
+  *[!0-9]*) die "EXPECTED_WARMUP must be a non-negative integer (got '$EXPECTED_WARMUP')" ;;
+esac
+case "$EXPECTED_ANIMATIONS" in
+  0|1) ;;
+  "") die "set EXPECTED_ANIMATIONS to the benchmark CSV header's animations value" ;;
+  *) die "EXPECTED_ANIMATIONS must be 0 or 1 (got '$EXPECTED_ANIMATIONS')" ;;
+esac
+case "$EXPECTED_AIRPLANE" in
+  0|1) ;;
+  "") die "set EXPECTED_AIRPLANE to the benchmark CSV header's airplane value" ;;
+  *) die "EXPECTED_AIRPLANE must be 0 or 1 (got '$EXPECTED_AIRPLANE')" ;;
+esac
+# Fingerprints carry '/' and ':'; only whitespace would break the comparison, and an
+# empty value would make it vacuous.
+case "$EXPECTED_FP" in
+  "") die "set EXPECTED_FP to the benchmark CSV header's fp value" ;;
+  *[!a-zA-Z0-9._:/+-]*) die "invalid EXPECTED_FP: '$EXPECTED_FP'" ;;
+esac
 case "$EXPECT_DD" in 0|1) ;; *) die "expect-datadog must be 0 or 1 (got '$EXPECT_DD')" ;; esac
 case "$NAME" in */*|*..*|"") die "invalid trace name: '$NAME'" ;; esac
 case "$ANIMATIONS" in 0|1) ;; *) die "ANIMATIONS must be 0 or 1 (got '$ANIMATIONS')" ;; esac
 case "$AIRPLANE" in 0|1) ;; *) die "AIRPLANE must be 0 or 1 (got '$AIRPLANE')" ;; esac
 case "$WARMUP" in ''|*[!0-9]*) die "WARMUP must be a non-negative integer (got '$WARMUP')" ;; esac
+[ "$WARMUP" = "$EXPECTED_WARMUP" ] \
+  || die "WARMUP=$WARMUP, but the benchmark recorded warmup=$EXPECTED_WARMUP.
+       The trace must use the same post-install launch ordinal as the A/B."
+[ "$ANIMATIONS" = "$EXPECTED_ANIMATIONS" ] \
+  || die "ANIMATIONS=$ANIMATIONS, but the benchmark recorded
+       animations=$EXPECTED_ANIMATIONS. Animation scales change how many frames the
+       launch draws, so the two would not be the same scenario."
+[ "$AIRPLANE" = "$EXPECTED_AIRPLANE" ] \
+  || die "AIRPLANE=$AIRPLANE, but the benchmark recorded airplane=$EXPECTED_AIRPLANE.
+       The controlled Wi-Fi/mobile-radio state must be the one the A/B measured."
 case "$ALLOW_MISSING_LAUNCH_MARKER" in 0|1) ;;
   *) die "ALLOW_MISSING_LAUNCH_MARKER must be 0 or 1 (got '$ALLOW_MISSING_LAUNCH_MARKER')" ;; esac
 case "$TRACE_ENDPOINT" in
@@ -128,6 +191,17 @@ dd_resolve_tools || exit 2
 dd_require_device || exit 2
 DD_ANDROID_USER=""
 dd_resolve_android_user || exit 2
+# Before anything is installed or changed. `fp` is one of ab_stats.py's _MUST_MATCH
+# keys precisely because a different build is a different experiment; the same is
+# true of the trace meant to explain it.
+DEV_FP=$("$ADB" shell getprop ro.build.fingerprint 2>/dev/null | tr -d '\r') \
+  || die "cannot read this device's build fingerprint"
+[ -n "$DEV_FP" ] || die "this device reported an empty build fingerprint, so it
+       cannot be checked against the benchmark's fp=$EXPECTED_FP."
+[ "$DEV_FP" = "$EXPECTED_FP" ] \
+  || die "this device is $DEV_FP, but the benchmark ran on $EXPECTED_FP.
+       A trace from another build or model does not explain that run's A/B result."
+log "benchmark device fingerprint matched: $DEV_FP"
 log "android user: $DD_ANDROID_USER"
 if [ "$TRACE_ENDPOINT" = app_trace_ms ]; then
   dd_logcat_supports_uid_filter || die "this device's logcat has no --uid filter.
@@ -244,11 +318,18 @@ dd_apply_radio_state "$AIRPLANE" || exit 2
 # Trace the same scheduling/compilation scenario the A/B measured. Leaving these
 # controls out made trace attribution observe dynamic CPU behavior and background
 # dexopt work that every benchmark launch explicitly excluded.
+attest_performance_mode() {
+  [ "$DD_PERF_MODE" = "$EXPECTED_PERF_MODE" ] \
+    || die "trace achieved perf_mode=$DD_PERF_MODE, but the benchmark recorded
+         perf_mode=$EXPECTED_PERF_MODE. These are different CPU scheduling scenarios."
+  log "benchmark performance mode matched: $DD_PERF_MODE"
+}
 dd_enable_fixed_performance_mode || exit 2
 # Only when the device accepted it: see the note in coldstart_bench.sh's pin_device.
 if [ "$DD_PERF_MODE" = fixed ]; then
   _WE_SET_PERF=1
 fi
+attest_performance_mode
 log "CPU scheduling scenario: perf_mode=$DD_PERF_MODE"
 dd_disable_background_dexopt || exit 2
 _WE_SET_DEXOPT=1

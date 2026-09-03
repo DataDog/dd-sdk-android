@@ -374,11 +374,18 @@ class HarnessRegressionTests(unittest.TestCase):
         self.assertIn("benchmark CSV header's compile_status", capture)
 
         env = os.environ.copy()
+        for name in ("WARMUP", "ANIMATIONS", "AIRPLANE"):
+            env.pop(name, None)
         env.update(
             PKG="com.example.app",
+            EXPECTED_ANIMATIONS="1",
+            EXPECTED_AIRPLANE="0",
+            EXPECTED_FP="motorola/lisbon/lisbon:12/S3RQS/rel:user/release-keys",
             EXPECTED_APK_MD5="a" * 32,
             EXPECTED_PERMISSION_STATE_ID="b" * 32,
             EXPECTED_COMPILE_STATUS="verify+speed-profile",
+            EXPECTED_PERF_MODE="fixed",
+            EXPECTED_WARMUP="3",
         )
         compound = subprocess.run(
             ["bash", str(HARNESS / "capture_trace.sh"), "/missing.apk", "trace", "1"],
@@ -426,9 +433,17 @@ class HarnessRegressionTests(unittest.TestCase):
         self.assertLess(permission_gate, capture.index("\nACT=$(", permission_gate))
 
         base_env = os.environ.copy()
+        for name in ("EXPECTED_APK_MD5", "EXPECTED_PERMISSION_STATE_ID", "WARMUP",
+                     "ANIMATIONS", "AIRPLANE"):
+            base_env.pop(name, None)
         base_env.update(
             PKG="com.example.app",
+            EXPECTED_ANIMATIONS="1",
+            EXPECTED_AIRPLANE="0",
+            EXPECTED_FP="motorola/lisbon/lisbon:12/S3RQS/rel:user/release-keys",
             EXPECTED_COMPILE_STATUS="verify",
+            EXPECTED_PERF_MODE="fixed",
+            EXPECTED_WARMUP="3",
         )
 
         missing_digest = subprocess.run(
@@ -539,6 +554,231 @@ class HarnessRegressionTests(unittest.TestCase):
         self.assertNotEqual(permission_mismatch.returncode, 0)
         self.assertIn("trace permission state=", permission_mismatch.stderr)
         self.assertIn("different startup scenario", permission_mismatch.stderr)
+
+    def test_trace_requires_benchmark_performance_mode_and_warmup(self) -> None:
+        capture_path = HARNESS / "capture_trace.sh"
+        capture = capture_path.read_text(encoding="utf-8")
+        self.assertIn('EXPECTED_PERF_MODE="${EXPECTED_PERF_MODE:-}"', capture)
+        self.assertIn('EXPECTED_WARMUP="${EXPECTED_WARMUP:-}"', capture)
+        self.assertIn('WARMUP="${WARMUP:-$EXPECTED_WARMUP}"', capture)
+        self.assertIn('[ "$DD_PERF_MODE" = "$EXPECTED_PERF_MODE" ]', capture)
+        self.assertIn('[ "$WARMUP" = "$EXPECTED_WARMUP" ]', capture)
+
+        base_env = os.environ.copy()
+        for name in ("EXPECTED_PERF_MODE", "EXPECTED_WARMUP", "WARMUP",
+                     "ANIMATIONS", "AIRPLANE"):
+            base_env.pop(name, None)
+        base_env.update(
+            PKG="com.example.app",
+            EXPECTED_ANIMATIONS="1",
+            EXPECTED_AIRPLANE="0",
+            EXPECTED_FP="motorola/lisbon/lisbon:12/S3RQS/rel:user/release-keys",
+            EXPECTED_APK_MD5="a" * 32,
+            EXPECTED_PERMISSION_STATE_ID="b" * 32,
+            EXPECTED_COMPILE_STATUS="verify",
+        )
+
+        missing_perf = subprocess.run(
+            ["bash", str(capture_path), "/missing.apk", "trace", "1"],
+            check=False,
+            capture_output=True,
+            text=True,
+            env=base_env,
+        )
+        self.assertNotEqual(missing_perf.returncode, 0)
+        self.assertIn("set EXPECTED_PERF_MODE", missing_perf.stderr)
+
+        base_env["EXPECTED_PERF_MODE"] = "turbo"
+        malformed_perf = subprocess.run(
+            ["bash", str(capture_path), "/missing.apk", "trace", "1"],
+            check=False,
+            capture_output=True,
+            text=True,
+            env=base_env,
+        )
+        self.assertNotEqual(malformed_perf.returncode, 0)
+        self.assertIn("EXPECTED_PERF_MODE must be fixed or dynamic", malformed_perf.stderr)
+
+        base_env["EXPECTED_PERF_MODE"] = "fixed"
+        missing_warmup = subprocess.run(
+            ["bash", str(capture_path), "/missing.apk", "trace", "1"],
+            check=False,
+            capture_output=True,
+            text=True,
+            env=base_env,
+        )
+        self.assertNotEqual(missing_warmup.returncode, 0)
+        self.assertIn("set EXPECTED_WARMUP", missing_warmup.stderr)
+
+        base_env["EXPECTED_WARMUP"] = "three"
+        malformed_warmup = subprocess.run(
+            ["bash", str(capture_path), "/missing.apk", "trace", "1"],
+            check=False,
+            capture_output=True,
+            text=True,
+            env=base_env,
+        )
+        self.assertNotEqual(malformed_warmup.returncode, 0)
+        self.assertIn("EXPECTED_WARMUP must be a non-negative integer", malformed_warmup.stderr)
+
+        base_env["EXPECTED_WARMUP"] = "0"
+        inherited_warmup = subprocess.run(
+            ["bash", str(capture_path), "/missing.apk", "trace", "1"],
+            check=False,
+            capture_output=True,
+            text=True,
+            env=base_env,
+        )
+        self.assertNotEqual(inherited_warmup.returncode, 0)
+        self.assertIn("APK not found", inherited_warmup.stderr)
+        self.assertNotIn("post-install launch ordinal", inherited_warmup.stderr)
+
+        base_env["WARMUP"] = "3"
+        mismatched_warmup = subprocess.run(
+            ["bash", str(capture_path), "/missing.apk", "trace", "1"],
+            check=False,
+            capture_output=True,
+            text=True,
+            env=base_env,
+        )
+        self.assertNotEqual(mismatched_warmup.returncode, 0)
+        self.assertIn("post-install launch ordinal", mismatched_warmup.stderr)
+
+        gate_start = capture.index("attest_performance_mode() {")
+        gate_end = capture.index("\n}\n", gate_start) + 3
+        performance_gate_function = capture[gate_start:gate_end]
+
+        def run_performance_gate(
+            actual: str,
+            expected: str,
+        ) -> subprocess.CompletedProcess[str]:
+            env = os.environ.copy()
+            env.update(DD_PERF_MODE=actual, EXPECTED_PERF_MODE=expected)
+            return subprocess.run(
+                [
+                    "bash",
+                    "-c",
+                    "die() { echo \"FATAL: $*\" >&2; exit 1; }; "
+                    "log() { echo \"$*\" >&2; };\n"
+                    f"{performance_gate_function}\nattest_performance_mode",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                env=env,
+            )
+
+        for mode in ("fixed", "dynamic"):
+            matched = run_performance_gate(mode, mode)
+            self.assertEqual(matched.returncode, 0, matched.stderr)
+            self.assertIn(f"benchmark performance mode matched: {mode}", matched.stderr)
+
+        for actual, expected in (("fixed", "dynamic"), ("dynamic", "fixed")):
+            mismatched = run_performance_gate(actual, expected)
+            self.assertNotEqual(mismatched.returncode, 0)
+            self.assertIn(f"trace achieved perf_mode={actual}", mismatched.stderr)
+            self.assertIn(
+                f"benchmark recorded\n         perf_mode={expected}",
+                mismatched.stderr,
+            )
+
+        enable = capture.index("\ndd_enable_fixed_performance_mode || exit 2")
+        ownership = capture.index("\n  _WE_SET_PERF=1", enable)
+        attestation = capture.index("\nattest_performance_mode\n", ownership)
+        dexopt = capture.index("\ndd_disable_background_dexopt || exit 2", attestation)
+        self.assertLess(enable, ownership)
+        self.assertLess(ownership, attestation)
+        self.assertLess(attestation, dexopt)
+
+    def test_trace_requires_benchmark_scenario_controls_and_device(self) -> None:
+        """The controls a trace can silently differ on, bound like WARMUP.
+
+        `animations`, `airplane` and `fp` are all _MUST_MATCH keys: ab_stats.py
+        refuses to POOL two CSVs that disagree on them. A trace exists to explain one
+        of those CSVs, and could disagree with it unchecked -- `ANIMATIONS` and
+        `AIRPLANE` defaulted to 0 while the guide recommends ANIMATIONS=1 as the
+        honest per-frame measurement, and nothing compared the device at all.
+        """
+        capture_path = HARNESS / "capture_trace.sh"
+        capture = capture_path.read_text(encoding="utf-8")
+        for decl in ('EXPECTED_ANIMATIONS="${EXPECTED_ANIMATIONS:-}"',
+                     'ANIMATIONS="${ANIMATIONS:-$EXPECTED_ANIMATIONS}"',
+                     'EXPECTED_AIRPLANE="${EXPECTED_AIRPLANE:-}"',
+                     'AIRPLANE="${AIRPLANE:-$EXPECTED_AIRPLANE}"',
+                     'EXPECTED_FP="${EXPECTED_FP:-}"',
+                     '[ "$ANIMATIONS" = "$EXPECTED_ANIMATIONS" ]',
+                     '[ "$AIRPLANE" = "$EXPECTED_AIRPLANE" ]',
+                     '[ "$DEV_FP" = "$EXPECTED_FP" ]'):
+            self.assertIn(decl, capture)
+        # No silent fallback survives for either scale.
+        self.assertNotIn('ANIMATIONS="${ANIMATIONS:-0}"', capture)
+        self.assertNotIn('AIRPLANE="${AIRPLANE:-0}"', capture)
+
+        # The device is checked before anything is installed or uninstalled, so a
+        # wrong-device capture cannot wipe the app's data on the way to failing.
+        fp_gate = capture.index('[ "$DEV_FP" = "$EXPECTED_FP" ]')
+        self.assertLess(fp_gate, capture.index("dd_ensure_uninstalled", fp_gate))
+        self.assertLess(fp_gate, capture.index('"$ADB" install', fp_gate))
+
+        base_env = os.environ.copy()
+        for name in ("EXPECTED_ANIMATIONS", "EXPECTED_AIRPLANE", "EXPECTED_FP",
+                     "ANIMATIONS", "AIRPLANE", "WARMUP"):
+            base_env.pop(name, None)
+        base_env.update(
+            PKG="com.example.app",
+            EXPECTED_APK_MD5="a" * 32,
+            EXPECTED_PERMISSION_STATE_ID="b" * 32,
+            EXPECTED_COMPILE_STATUS="verify",
+            EXPECTED_PERF_MODE="fixed",
+            EXPECTED_WARMUP="3",
+        )
+
+        def run(**overrides):
+            env = dict(base_env)
+            env.update(overrides)
+            return subprocess.run(
+                ["bash", str(capture_path), "/missing.apk", "trace", "1"],
+                check=False, capture_output=True, text=True, env=env,
+            )
+
+        for missing, needle in (
+            (dict(EXPECTED_AIRPLANE="0", EXPECTED_FP="fp1"), "set EXPECTED_ANIMATIONS"),
+            (dict(EXPECTED_ANIMATIONS="1", EXPECTED_FP="fp1"), "set EXPECTED_AIRPLANE"),
+            (dict(EXPECTED_ANIMATIONS="1", EXPECTED_AIRPLANE="0"), "set EXPECTED_FP"),
+        ):
+            result = run(**missing)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(needle, result.stderr)
+
+        complete = dict(EXPECTED_ANIMATIONS="1", EXPECTED_AIRPLANE="0",
+                        EXPECTED_FP="motorola/lisbon/lisbon:12/S3RQS/rel:user/release-keys")
+        for bad, needle in (
+            (dict(EXPECTED_ANIMATIONS="yes"), "EXPECTED_ANIMATIONS must be 0 or 1"),
+            (dict(EXPECTED_AIRPLANE="2"), "EXPECTED_AIRPLANE must be 0 or 1"),
+            (dict(EXPECTED_FP="has space"), "invalid EXPECTED_FP"),
+        ):
+            result = run(**{**complete, **bad})
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(needle, result.stderr)
+
+        # A real fingerprint carries '/', ':', '.' and '-'; the charset must accept
+        # one, or every capture would be refused.
+        accepted = run(**complete)
+        self.assertNotIn("invalid EXPECTED_FP", accepted.stderr)
+
+        # An explicit disagreement aborts before device access, like WARMUP's.
+        for override, needle in (
+            (dict(ANIMATIONS="0"), "would not be the same scenario"),
+            (dict(AIRPLANE="1"), "must be the one the A/B measured"),
+        ):
+            result = run(**{**complete, **override})
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(needle, result.stderr)
+
+        # Unset, each takes the benchmark's value rather than a default of 0.
+        inherited = run(**complete)
+        self.assertIn("APK not found", inherited.stderr)
+        self.assertNotIn("same scenario", inherited.stderr)
 
     def test_enabled_radio_readback_does_not_claim_reachability(self) -> None:
         result = self.run_with_fake_adb(

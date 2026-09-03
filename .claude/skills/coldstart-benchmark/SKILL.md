@@ -189,6 +189,11 @@ PKG=<app.id> \
 EXPECTED_APK_MD5=<baseline_md5 or treatment_md5 for this arm> \
 EXPECTED_PERMISSION_STATE_ID=<permission_a or permission_b for this arm> \
 EXPECTED_COMPILE_STATUS=<compile_status from the CSV header> \
+EXPECTED_PERF_MODE=<perf_mode from the CSV header> \
+EXPECTED_WARMUP=<warmup from the CSV header> \
+EXPECTED_ANIMATIONS=<animations> \
+EXPECTED_AIRPLANE=<airplane> \
+EXPECTED_FP=<fp> \
   ./capture_trace.sh treatment.apk treatment 1
 ./.venv/bin/python verify_trace.py treatment.pftrace --package <app.id>
 ```
@@ -199,11 +204,18 @@ Set `TRACE_ENDPOINT` to the A/B metric the trace is meant to explain. It default
 marker before Perfetto stops. App-owned regex matches are restricted to the installed package's
 unique UID, so a foreign process cannot provide either the A/B value or the trace endpoint. The
 capture is invalid if the selected endpoint is not reached.
-All three expected identities are mandatory. `EXPECTED_APK_MD5` must equal the selected arm's
+All eight expected inputs are mandatory. `EXPECTED_APK_MD5` must equal the selected arm's
 `baseline_md5` or `treatment_md5` before device mutation. `EXPECTED_PERMISSION_STATE_ID` must equal
 that arm's `permission_a` or `permission_b` after permission setup. `EXPECTED_COMPILE_STATUS` must
 equal the benchmark header's achieved `compile_status`, not merely use the same requested
-`COMPILE_FILTER`.
+`COMPILE_FILTER`. `EXPECTED_PERF_MODE` must equal its achieved `fixed` or `dynamic` performance
+mode; `ALLOW_DYNAMIC_PERFORMANCE=1` is not an override for a mismatch. `EXPECTED_WARMUP` must equal
+the header's `warmup`; it supplies the trace's `WARMUP` when unset, and an explicit different value
+aborts before device access. `EXPECTED_ANIMATIONS` and `EXPECTED_AIRPLANE` behave the same way, for
+the two device controls a default of `0` used to let differ from the A/B in silence. `EXPECTED_FP`
+must equal the header's `fp`: it is checked against `ro.build.fingerprint` before anything is
+installed or uninstalled, because nothing else pinned device identity and a capture from another
+model explains nothing about the run it is attached to.
 Capture names are non-destructive: an existing `.pftrace` is never overwritten.
 
 **Do not edit the harness scripts while a run is in flight.** Bash re-reads a running script
@@ -331,7 +343,9 @@ other way is neither.
 - Apply that contract to every `capture_trace.sh` conditioning launch too: each gets its own
   verified boundary, target marker, foreign-display scan and final-foreground check before its
   SDK-liveness result can count. Abort rather than replacing a contaminated launch, because the
-  requested `WARMUP + 1` position is part of the trace protocol. Discard 1 uses the benchmark
+  requested `WARMUP + 1` position is part of the trace protocol. Supply the benchmark header's
+  `warmup` as required `EXPECTED_WARMUP`; it drives an unset `WARMUP`, while an explicit mismatch
+  aborts before device access. Discard 1 uses the benchmark
   probe's 3-second pre-launch/8-second validation cadence; later discards use its warm-up cadence
   (5 seconds before launch, validation after 6, then the final 4-second wait). Matching launch
   count without matching elapsed conditioning time does not reproduce the same ramp. Perfetto
