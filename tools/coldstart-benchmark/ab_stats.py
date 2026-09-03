@@ -244,6 +244,13 @@ _CURRENT_META_KEYS = (
     *_PERMISSION_KEYS, *_CONTROL_KEYS, _APP_TRACE_KEY, "blocks", "runs"
 )
 
+# Must equal lib.sh's DD_RUN_COMPLETE_MARKER; a regression asserts it. Compared
+# against the line with only its newline removed, matching the shell reader's
+# `grep -x -F`: a marker carrying a trailing space or a CR is a different line, not
+# a sloppier spelling of this one. Accepting what the shell refuses would make a
+# file analyzable but un-traceable.
+_RUN_COMPLETE = "# RUN COMPLETE"
+
 _CURRENT_COLUMNS = {
     "label", "block", "pos_in_block", "phase", "run", "total_ms",
     "launch_state", "status", "foreground"
@@ -354,8 +361,11 @@ def main():
         meta.extend(own_meta)
     metas = [parse_meta(m) for m in per_meta]
     format_errors = []
-    for (path, body), own_meta in zip(per_file, metas):
-        missing = [key for key in _CURRENT_META_KEYS if not own_meta.get(key)]
+    # own_kv, not own_meta: the loops below iterate the RAW `#` lines under that
+    # name, and one function using one name for both a parsed dict and the lines it
+    # was parsed from is a rename away from `'dict' object has no attribute 'strip'`.
+    for (path, body), own_kv in zip(per_file, metas):
+        missing = [key for key in _CURRENT_META_KEYS if not own_kv.get(key)]
         if missing:
             format_errors.append(
                 f"  {path}: missing metadata {', '.join(missing)}"
@@ -376,7 +386,13 @@ def main():
 
     incomplete = []
     for (path, _), own_meta in zip(per_file, per_meta):
-        count = sum(line.strip() == "# RUN COMPLETE" for line in own_meta)
+        # An aborted run has no completion marker BY DEFINITION, so reporting that
+        # absence here would replace the specific fact -- the harness aborted, and
+        # the recorded exit status says where -- with a generic one about a missing
+        # line. The abort is reported below, with the CSV's own `RUN ABORTED` line.
+        if any("RUN ABORTED" in line for line in own_meta):
+            continue
+        count = sum(line.rstrip("\n") == _RUN_COMPLETE for line in own_meta)
         if count != 1:
             incomplete.append(f"  {path}: {count} RUN COMPLETE markers (expected 1)")
     if incomplete:
@@ -543,8 +559,7 @@ def main():
     # declares. A wrong label selection can expose the same structural mismatch.
     shortfalls = []
     malformed_matrix_metadata = []
-    for (path, body), own_meta in zip(per_file, per_meta):
-        kv = parse_meta(own_meta)
+    for (path, body), kv in zip(per_file, metas):
         blocks_value, runs_value = kv.get("blocks"), kv.get("runs")
         name = path if len(per_file) > 1 else "this CSV"
         if (blocks_value is None or runs_value is None

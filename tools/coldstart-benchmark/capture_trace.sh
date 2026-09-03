@@ -35,7 +35,7 @@
 #          EXPECTED_AIRPLANE=<benchmark airplane> \
 #          EXPECTED_FP=<benchmark fp> \
 #          EXPECTED_ANDROID_USER=<benchmark android_user> \
-#          EXPECTED_LAUNCHER=<benchmark launcher component> \
+#          EXPECTED_LAUNCHER=<benchmark launcher component; required either way> \
 #          EXPECTED_SDK_LIVENESS=<selected arm expect_a|expect_b> \
 #          EXPECTED_APP_TRACE_ID=<benchmark app_trace_id; app_trace_ms only> \
 #          ./capture_trace.sh <apk> <name> <expect-datadog:0|1>
@@ -74,6 +74,11 @@ EXPECTED_FP="${EXPECTED_FP:-}"
 EXPECTED_ANDROID_USER="${EXPECTED_ANDROID_USER:-}"
 # The user-visible cold-start entry point is part of the measured scenario. Package
 # updates can change an activity-alias while keeping the same application id.
+# Required for every capture, not only a bound one: the component this script
+# resolves on the device is the observable, so an unbound capture can attest it
+# exactly as a bound one does. Gating on BENCHMARK_CSV instead accepted the value
+# and never compared it, which is how RUNS and BLOCKS were lost to a positional
+# signature (see WARMUP below).
 EXPECTED_LAUNCHER="${EXPECTED_LAUNCHER:-}"
 # The positional argument drives every runtime liveness gate. Bound to a CSV, this
 # value comes from the selected arm's expect_a/b stamp and the positional is derived
@@ -152,14 +157,9 @@ require_expected_md5() {
 # one is. Nothing here relaxes a gate; it only supplies what the gate compares.
 if [ -n "$BENCHMARK_CSV" ]; then
   dd_read_benchmark_header "$BENCHMARK_CSV" "$BENCHMARK_ARM" || exit 1
-  _WARMUP_SOURCE=header
-  _LIVENESS_SOURCE=header
 elif [ -n "$BENCHMARK_ARM" ]; then
   die "BENCHMARK_ARM is set but BENCHMARK_CSV is not, so there is no header to
        select that arm from."
-else
-  _WARMUP_SOURCE=explicit
-  _LIVENESS_SOURCE=explicit
 fi
 # Resolved here, not at declaration: each takes the benchmark's value when the
 # operator did not set it, and dd_read_benchmark_header above is what supplies that
@@ -215,6 +215,15 @@ esac
 case "$EXPECTED_ANDROID_USER" in
   "") die "set EXPECTED_ANDROID_USER to the benchmark CSV header's android_user value" ;;
   *[!0-9]*) die "EXPECTED_ANDROID_USER must be a non-negative integer (got '$EXPECTED_ANDROID_USER')" ;;
+esac
+# Shape-checked against PKG for the same reason `resolve-activity --brief` output is:
+# a value that is not this package's component cannot be what the device resolves, so
+# it is a typo rather than a mismatch, and saying so before install is cheaper.
+case "$EXPECTED_LAUNCHER" in
+  "") die "set EXPECTED_LAUNCHER to the benchmark CSV header's launcher value" ;;
+  "$PKG"/?*) ;;
+  *) die "EXPECTED_LAUNCHER must be the <application id>/<component> this run
+       launches, so it has to start with '$PKG/' (got '$EXPECTED_LAUNCHER')" ;;
 esac
 case "$EXPECTED_SDK_LIVENESS" in
   0|1) ;;
@@ -289,12 +298,14 @@ if [ -n "$BENCHMARK_CSV" ]; then
 fi
 # Ten of the twelve identities are each compared against an independent observable:
 # the file's own digest, the device, or the state this script achieved. These two have
-# none, and a check may claim only what it can distinguish, so name their source
-# rather than presenting all twelve as uniformly verified.
+# none, and a check may claim only what it can distinguish, so the capture says so
+# rather than presenting all twelve as uniformly verified. A bound value can only have
+# come from the header, because a conflicting explicit one is refused before this
+# point, so there is no source to name: the distinction that remains is bound (derived
+# from the run) against unbound (asserted by the operator).
 if [ -n "$BENCHMARK_CSV" ]; then
-  log "no trace-time observable: warmup=$EXPECTED_WARMUP ($_WARMUP_SOURCE),"
-  log "          expect-datadog=$EXPECT_DD ($_LIVENESS_SOURCE). Both are derived"
-  log "          from the bound CSV rather than independently verified in the trace"
+  log "no trace-time observable: warmup=$EXPECTED_WARMUP and expect-datadog=$EXPECT_DD are"
+  log "          derived from the bound CSV, not independently verified in the trace"
 else
   log "no trace-time observable, and no CSV to derive from: warmup=$EXPECTED_WARMUP and"
   log "          expect-datadog=$EXPECT_DD are asserted, not verified. Bind the capture"
@@ -567,11 +578,12 @@ case "$ACT" in
   "$PKG"/*) ;;
   *) die "could not resolve a launcher activity for $PKG (got '${ACT:-nothing}')." ;;
 esac
-if [ -n "$BENCHMARK_CSV" ] && [ "$ACT" != "$EXPECTED_LAUNCHER" ]; then
-  die "trace launcher=$ACT, but the bound benchmark recorded
+if [ "$ACT" != "$EXPECTED_LAUNCHER" ]; then
+  die "trace launcher=$ACT, but the benchmark recorded
        launcher=$EXPECTED_LAUNCHER. The trace would exercise a different cold-start
        entry point from the A/B run it is meant to explain."
 fi
+log "benchmark launcher matched: $ACT"
 START_ARGS=(--user "$DD_ANDROID_USER" -a android.intent.action.MAIN \
   -c android.intent.category.LAUNCHER -n "$ACT")
 log "launcher activity: $ACT"

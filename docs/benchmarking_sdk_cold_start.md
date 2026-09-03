@@ -729,7 +729,9 @@ A reportable CSV ends with exactly one `# RUN COMPLETE`. The EXIT handler stamps
 of the positive completion marker is independently refused. Fix the cause and repeat the full
 registered run from the beginning. Partial-run recovery is intentionally unsupported: deciding
 that a prefix is unaffected by the event that ended collection would add an analyst judgement
-to a protocol designed to avoid outcome-dependent selection. `--allow-aborted` remains available
+to a protocol designed to avoid outcome-dependent selection. An aborted run is refused as an
+aborted run, quoting the recorded exit status, rather than as a file missing a marker it cannot
+have. `--allow-aborted` remains available
 for diagnostic inspection, but it suppresses the primary interval and is not reportable.
 
 ## Step 7 — Interpret the result
@@ -1020,6 +1022,7 @@ EXPECTED_ANIMATIONS=<animations from the CSV header> \
 EXPECTED_AIRPLANE=<airplane from the CSV header> \
 EXPECTED_FP=<fp from the CSV header> \
 EXPECTED_ANDROID_USER=<android_user from the CSV header> \
+EXPECTED_LAUNCHER=<launcher from the CSV header> \
 EXPECTED_SDK_LIVENESS=<expect_a or expect_b for this arm> \
   ./capture_trace.sh app-with-datadog.apk treatment 1
 ./.venv/bin/python verify_trace.py treatment.pftrace --package <your.app.id>

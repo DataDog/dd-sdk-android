@@ -5,6 +5,14 @@
 #
 # Shared helpers for the cold-start harness. Source this, don't execute it.
 #
+# The one definition of the benchmark's positive completion evidence. Both the
+# writer (coldstart_bench.sh) and the reader (dd_read_benchmark_header) use this
+# variable, so the marker cannot drift between them. ab_stats.py necessarily
+# restates it in Python; the harness regressions assert the two literals are equal,
+# because a reader that is more permissive than its writer accepts a file the rest
+# of the toolchain refuses.
+DD_RUN_COMPLETE_MARKER="# RUN COMPLETE"
+#
 # Resolves the Android tools WITHOUT depending on the caller's PATH, so the
 # harness works from cron, CI, an IDE terminal, or a shell whose profile has
 # not been fixed. Precedence:
@@ -475,7 +483,10 @@ dd_read_benchmark_header() {
     echo "       beginning." >&2
     return 1
   fi
-  completed=$(grep -c '^# RUN COMPLETE$' "$csv" || true)
+  # -x -F: whole-line, fixed-string. Exactly the marker and nothing else, so a
+  # trailing space or a CR from a file that round-tripped through an editor is a
+  # different line rather than a looser match of the same one.
+  completed=$(grep -c -x -F -- "$DD_RUN_COMPLETE_MARKER" "$csv" || true)
   if [ "$completed" -ne 1 ]; then
     echo "FATAL: '$csv' has $completed '# RUN COMPLETE' markers; exactly one is" >&2
     echo "       required as positive evidence that the benchmark finished." >&2

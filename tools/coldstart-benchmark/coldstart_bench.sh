@@ -942,6 +942,6 @@ done
 
 # Positive completion evidence distinguishes a fully returned run from a process
 # or host that disappeared before the EXIT trap could stamp RUN ABORTED.
-echo "# RUN COMPLETE" >> "$OUT"
+printf '%s\n' "$DD_RUN_COMPLETE_MARKER" >> "$OUT"
 log "done -> $OUT"
 log "analyze with: ab_stats.py $OUT   (filter phase==measure)"

@@ -199,6 +199,7 @@ EXPECTED_ANIMATIONS=<animations> \
 EXPECTED_AIRPLANE=<airplane> \
 EXPECTED_FP=<fp> \
 EXPECTED_ANDROID_USER=<android_user> \
+EXPECTED_LAUNCHER=<launcher> \
 EXPECTED_SDK_LIVENESS=<expect_a or expect_b for this arm> \
   ./capture_trace.sh treatment.apk treatment 1
 ./.venv/bin/python verify_trace.py treatment.pftrace --package <app.id>
@@ -223,7 +224,9 @@ marker before Perfetto stops. App-owned regex matches are restricted to the inst
 unique UID, so a foreign process cannot provide either the A/B value or the trace endpoint. The
 capture is invalid if the selected endpoint is not reached. With `app_trace_ms`, also pass
 `EXPECTED_APP_TRACE_ID=<app_trace_id>` so the capture proves its regex names the benchmarked event.
-Omit the positional SDK expectation when `BENCHMARK_CSV` is set: it is derived from the selected
+`EXPECTED_LAUNCHER` is required on both paths and compared against the component the
+device resolves, so supply it for an unbound capture too; it must start with the application
+id. Omit the positional SDK expectation when `BENCHMARK_CSV` is set: it is derived from the selected
 arm's `expect_a` / `expect_b` stamp. Pass it, and a contradicting value aborts. Without
 `BENCHMARK_CSV` it is required. Never set `WARMUP` for a capture; it is not an input and aborts.
 All unbound expected inputs shown above are mandatory. `EXPECTED_APK_MD5` must equal the selected arm's

@@ -122,6 +122,7 @@ EXPECTED_ANIMATIONS=<animations from the CSV header> \
 EXPECTED_AIRPLANE=<airplane from the CSV header> \
 EXPECTED_FP=<fp from the CSV header> \
 EXPECTED_ANDROID_USER=<android_user from the CSV header> \
+EXPECTED_LAUNCHER=<launcher from the CSV header> \
 EXPECTED_SDK_LIVENESS=<expect_b for this arm> \
   ./capture_trace.sh app-with-datadog.apk treatment 1
 ./.venv/bin/python verify_trace.py treatment.pftrace --package "$PKG"
@@ -182,7 +183,7 @@ interval at all.
 | `EXPECTED_AIRPLANE` | *required for trace* | the `airplane` value from the benchmark CSV header, handled exactly like `EXPECTED_ANIMATIONS`. Both are `ab_stats.py` `_MUST_MATCH` keys, so two CSVs that disagree on them cannot be pooled; a trace disagreeing with the CSV it explains is the same error, and was unchecked |
 | `EXPECTED_FP` | *required for trace* | the `fp` value from the benchmark CSV header. The connected device's `ro.build.fingerprint` must equal it, checked before anything is installed or uninstalled. Nothing else pinned device identity, which is the largest scenario difference there is and one `ab_stats.py` refuses to pool across |
 | `EXPECTED_ANDROID_USER` | *required for trace* | the `android_user` value from the benchmark CSV header. The active user must match before installation, permission setup or output reservation, because Android user profiles have independent package data and permission state |
-| `EXPECTED_LAUNCHER` | *required for a bound trace* | the launcher component from the benchmark CSV header. The freshly installed APK must resolve the same component before capture, so a changed activity alias cannot make the trace exercise a different cold-start entry point from the A/B run |
+| `EXPECTED_LAUNCHER` | *required for trace* | the `launcher` component from the benchmark CSV header. The freshly installed APK must resolve the same component before capture, so a changed activity alias cannot make the trace exercise a different cold-start entry point from the A/B run. Required on both paths, and attested on both: the component the device resolves is the observable, so an unbound capture proves it exactly as a bound one does. It must start with `$PKG/`, because a component of another application id cannot be what this run resolves |
 | `EXPECTED_SDK_LIVENESS` | *required for trace* | the selected arm's `expect_a` or `expect_b` value from the benchmark CSV header, which drives every runtime liveness gate. Bound to a CSV it also supplies the positional SDK expectation, so the third argument may be omitted; passing a contradicting one still aborts. Unbound, that argument is required and the equality between the two is the only thing that catches labeling a trace as the wrong arm while it still passes its own liveness check |
 | `EXPECTED_APP_TRACE_ID` | *required when `TRACE_ENDPOINT=app_trace_ms`* | the benchmark CSV header's `app_trace_id`, which is the md5 of `APP_TRACE_REGEX`. The capture hashes its regex and refuses a mismatch before device access, so the trace cannot stop on a different app-owned endpoint than the metric it explains |
 | `EXPECTED_PERF_MODE` | *required for trace* | the `perf_mode` value from the benchmark CSV header, `fixed` or `dynamic`. The trace aborts unless its fixed-performance request reaches the same outcome; `ALLOW_DYNAMIC_PERFORMANCE=1` only permits a rejected request to continue and does not permit a trace/benchmark mismatch |
@@ -209,6 +210,14 @@ A reportable CSV ends with exactly one `# RUN COMPLETE`. The EXIT handler also s
 positive completion marker covers both cases. Fix the cause and repeat the full registered run
 from the beginning. `--allow-aborted` may inspect surviving rows as diagnostics, but it never
 emits a reportable primary interval. Partial-run recovery is intentionally unsupported.
+
+Where a run did abort, that is what the refusal says, and it prints the `# RUN ABORTED` trailer
+with the exit status the harness recorded: the marker is absent by definition in that case, so
+reporting the absence instead would replace the reason with a symptom. A file with neither
+marker is a killed process, and there the missing completion evidence is the whole of what can
+be said. Both readers compare the marker as a whole line with no whitespace tolerance, so a
+copy that picked up a trailing space or a CR is a different line rather than a looser spelling
+of the same one, and it is refused by the analyzer and the trace binding alike.
 
 ## What the benchmark does per arm, per block
 

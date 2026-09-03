@@ -382,6 +382,7 @@ class HarnessRegressionTests(unittest.TestCase):
             EXPECTED_AIRPLANE="0",
             EXPECTED_FP="motorola/lisbon/lisbon:12/S3RQS/rel:user/release-keys",
             EXPECTED_ANDROID_USER="0",
+            EXPECTED_LAUNCHER="com.example.app/.MainActivity",
             EXPECTED_SDK_LIVENESS="1",
             EXPECTED_APK_MD5="a" * 32,
             EXPECTED_PERMISSION_STATE_ID="b" * 32,
@@ -444,6 +445,7 @@ class HarnessRegressionTests(unittest.TestCase):
             EXPECTED_AIRPLANE="0",
             EXPECTED_FP="motorola/lisbon/lisbon:12/S3RQS/rel:user/release-keys",
             EXPECTED_ANDROID_USER="0",
+            EXPECTED_LAUNCHER="com.example.app/.MainActivity",
             EXPECTED_SDK_LIVENESS="1",
             EXPECTED_COMPILE_STATUS="verify",
             EXPECTED_PERF_MODE="fixed",
@@ -584,6 +586,7 @@ class HarnessRegressionTests(unittest.TestCase):
             EXPECTED_AIRPLANE="0",
             EXPECTED_FP="motorola/lisbon/lisbon:12/S3RQS/rel:user/release-keys",
             EXPECTED_ANDROID_USER="0",
+            EXPECTED_LAUNCHER="com.example.app/.MainActivity",
             EXPECTED_SDK_LIVENESS="1",
             EXPECTED_APK_MD5="a" * 32,
             EXPECTED_PERMISSION_STATE_ID="b" * 32,
@@ -753,6 +756,7 @@ class HarnessRegressionTests(unittest.TestCase):
             EXPECTED_PERF_MODE="fixed",
             EXPECTED_WARMUP="3",
             EXPECTED_ANDROID_USER="0",
+            EXPECTED_LAUNCHER="com.example.app/.MainActivity",
             EXPECTED_SDK_LIVENESS="1",
         )
 
@@ -825,6 +829,7 @@ class HarnessRegressionTests(unittest.TestCase):
             "ANDROID_SERIAL", "ANIMATIONS", "AIRPLANE", "WARMUP",
             "EXPECTED_ANDROID_USER", "EXPECTED_SDK_LIVENESS",
             "EXPECTED_APP_TRACE_ID", "APP_TRACE_REGEX", "TRACE_ENDPOINT",
+            "EXPECTED_LAUNCHER",
         ):
             base_env.pop(name, None)
         base_env.update(
@@ -837,6 +842,7 @@ class HarnessRegressionTests(unittest.TestCase):
             EXPECTED_ANIMATIONS="1",
             EXPECTED_AIRPLANE="0",
             EXPECTED_FP="build/fingerprint",
+            EXPECTED_LAUNCHER="com.example.app/.MainActivity",
         )
 
         def run(env_overrides=None, expect="1", apk="/missing.apk"):
@@ -930,7 +936,7 @@ class HarnessRegressionTests(unittest.TestCase):
         "compile_filter=speed-profile compile_status=verify perf_mode=fixed blocks=8 "
         "runs=4 warmup=3 animations=1 "
         "fp=motorola/lisbon/lisbon:12/S3RQS/rel:user/release-keys "
-        "launcher=com.example/.Main airplane=0 baseline_md5=" + "a" * 32
+        "launcher=com.example.app/.Main airplane=0 baseline_md5=" + "a" * 32
         + " treatment_md5=" + "c" * 32 + " label_a=A_noDD label_b=B_withDD "
         "expect_a=0 expect_b=1 app_trace_id=none\n"
         "# permission_a=" + "d" * 32 + "\n# permission_b=" + "e" * 32 + "\n"
@@ -959,8 +965,16 @@ class HarnessRegressionTests(unittest.TestCase):
             pooled.write_text(self.BENCHMARK_HEADER + self.BENCHMARK_HEADER
                               + self.BENCHMARK_ROWS, encoding="utf-8")
             aborted = root / "aborted.csv"
-            aborted.write_text(self.BENCHMARK_HEADER + self.BENCHMARK_ROWS
-                               + "# RUN ABORTED (exit 1) -- dialog\n", encoding="utf-8")
+            # Built WITHOUT the completion marker, like the harness leaves it: the
+            # EXIT trap stamps RUN ABORTED instead of reaching the completion write,
+            # so no real file carries both. Carrying both made this case pass only
+            # because lib.sh happens to test ABORTED before COMPLETE, and the
+            # assertion would have silently changed meaning if that order changed.
+            aborted_body = (self.BENCHMARK_HEADER
+                            + self.BENCHMARK_ROWS.replace("# RUN COMPLETE\n", "")
+                            + "# RUN ABORTED (exit 1) -- dialog\n")
+            assert "# RUN COMPLETE" not in aborted_body
+            aborted.write_text(aborted_body, encoding="utf-8")
             incomplete_format = root / "incomplete-format.csv"
             incomplete_format.write_text(
                 self.BENCHMARK_HEADER.replace(" perf_mode=fixed", "")
@@ -1062,6 +1076,7 @@ class HarnessRegressionTests(unittest.TestCase):
         EXPECTED_AIRPLANE="0",
         EXPECTED_FP="motorola/lisbon/lisbon:12/S3RQS/rel:user/release-keys",
         EXPECTED_ANDROID_USER="0",
+        EXPECTED_LAUNCHER="com.example.app/.MainActivity",
         EXPECTED_SDK_LIVENESS="1",
     )
 
@@ -1119,8 +1134,9 @@ class HarnessRegressionTests(unittest.TestCase):
             # Bound and omitted: each arm derives its OWN stamp, not a default.
             for arm, expect in (("B_withDD", "1"), ("A_noDD", "0")):
                 derived = run(**bound, BENCHMARK_ARM=arm)
-                self.assertIn(f"expect-datadog={expect} (header)", derived.stderr, arm)
-                self.assertIn("warmup=3 (header)", derived.stderr, arm)
+                self.assertIn(f"expect-datadog={expect} are", derived.stderr, arm)
+                self.assertIn("derived from the bound CSV", derived.stderr, arm)
+                self.assertIn("warmup=3", derived.stderr, arm)
                 # Neither the old hard `${3:?}` abort nor a wrong-arm refusal.
                 self.assertNotIn("parameter null or not set", derived.stderr, arm)
                 self.assertNotIn("must prove the same SDK runtime state", derived.stderr, arm)
@@ -1149,6 +1165,11 @@ class HarnessRegressionTests(unittest.TestCase):
             self.assertIn("no CSV to derive from", unbound.stderr)
             self.assertIn("asserted, not verified", unbound.stderr)
             self.assertNotIn("(header)", unbound.stderr)
+            # One-valued labels were removed with the source variables: a bound
+            # capture cannot report anything but derived-from-the-CSV.
+            capture_src = (HARNESS / "capture_trace.sh").read_text(encoding="utf-8")
+            self.assertNotIn("_WARMUP_SOURCE", capture_src)
+            self.assertNotIn("_LIVENESS_SOURCE", capture_src)
 
             # Bound but contradicted: explicit input cannot replace the arm metadata.
             overridden = run(**bound, BENCHMARK_ARM="B_withDD",
@@ -1165,6 +1186,134 @@ class HarnessRegressionTests(unittest.TestCase):
                 self.assertNotEqual(refused.returncode, 0, leftover)
                 self.assertIn("WARMUP is not an input", refused.stderr)
                 self.assertNotIn("no trace-time observable", refused.stderr)
+
+    def test_launcher_identity_is_required_and_compared_on_every_path(self) -> None:
+        """The entry point is an OBSERVABLE, so an unbound capture can attest it too.
+
+        Gating the comparison on BENCHMARK_CSV accepted EXPECTED_LAUNCHER on the
+        unbound path and never compared it, while the usage block listed it among
+        the values to give by hand. That is the WARMUP trap: a documented input,
+        silently discarded. The device resolves the component either way, so the
+        gate belongs to the expectation, not to where the expectation came from.
+        """
+        capture_path = HARNESS / "capture_trace.sh"
+        capture = capture_path.read_text(encoding="utf-8")
+        self.assertIn('if [ "$ACT" != "$EXPECTED_LAUNCHER" ]; then', capture)
+        self.assertNotIn('[ -n "$BENCHMARK_CSV" ] && [ "$ACT" != "$EXPECTED_LAUNCHER" ]',
+                         capture)
+
+        # The gate itself, both directions, without a device.
+        gate_start = capture.index('if [ "$ACT" != "$EXPECTED_LAUNCHER" ]; then')
+        # Through the success log, so the quiet direction is exercised too and not
+        # merely the refusal: a gate that never confirms a match is a gate whose
+        # passing path nothing reads.
+        gate_end = capture.index("\n", capture.index(
+            'log "benchmark launcher matched', gate_start)) + 1
+        gate = capture[gate_start:gate_end]
+
+        def run_gate(act: str, expected: str) -> subprocess.CompletedProcess[str]:
+            env = os.environ.copy()
+            env.update(ACT=act, EXPECTED_LAUNCHER=expected)
+            return subprocess.run(
+                ["bash", "-c",
+                 'die() { echo "FATAL: $*" >&2; exit 1; }; '
+                 'log() { echo "$*" >&2; };\n' + gate],
+                check=False, capture_output=True, text=True, env=env,
+            )
+
+        matched = run_gate("com.example.app/.Main", "com.example.app/.Main")
+        self.assertEqual(matched.returncode, 0, matched.stderr)
+        self.assertIn("benchmark launcher matched", matched.stderr)
+
+        # An activity-alias change keeps the application id and moves the entry point.
+        mismatched = run_gate("com.example.app/.SplashAlias", "com.example.app/.Main")
+        self.assertNotEqual(mismatched.returncode, 0)
+        self.assertIn("trace launcher=com.example.app/.SplashAlias", mismatched.stderr)
+        self.assertIn("different cold-start", mismatched.stderr)
+
+        # And the preflight, on the UNBOUND path, where it used to do nothing.
+        base_env = os.environ.copy()
+        for name in ("WARMUP", "ANIMATIONS", "AIRPLANE", "BENCHMARK_CSV",
+                     "BENCHMARK_ARM"):
+            base_env.pop(name, None)
+        base_env.update(PKG="com.example.app", **self.UNBOUND_IDENTITIES)
+
+        def run_unbound(**overrides):
+            env = dict(base_env)
+            for key, value in overrides.items():
+                if value is None:
+                    env.pop(key, None)
+                else:
+                    env[key] = value
+            return subprocess.run(
+                ["bash", str(capture_path), "/missing.apk", "trace", "1"],
+                check=False, capture_output=True, text=True, env=env,
+            )
+
+        missing = run_unbound(EXPECTED_LAUNCHER=None)
+        self.assertNotEqual(missing.returncode, 0)
+        self.assertIn("set EXPECTED_LAUNCHER", missing.stderr)
+
+        # A component of another application id cannot be what this run resolves,
+        # so it is a typo rather than a mismatch, and it aborts before install.
+        for bad in ("com.other.app/.Main", ".Main", "com.example.app", "com.example.app/"):
+            wrong_shape = run_unbound(EXPECTED_LAUNCHER=bad)
+            self.assertNotEqual(wrong_shape.returncode, 0, bad)
+            self.assertIn("has to start with 'com.example.app/'", wrong_shape.stderr, bad)
+
+        # Supplied and well-formed: preflight passes it through to the APK check.
+        accepted = run_unbound()
+        self.assertIn("APK not found", accepted.stderr)
+
+    def test_launcher_is_required_of_a_bound_csv_header(self) -> None:
+        """A CSV without `launcher=` is not a current-format file, and is named."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            apk = root / "t.apk"
+            apk.write_text("apk", encoding="utf-8")
+            csv_path = root / "results.csv"
+            csv_path.write_text(
+                self.BENCHMARK_HEADER.replace("launcher=com.example.app/.Main ", "")
+                + self.BENCHMARK_ROWS, encoding="utf-8")
+            env = os.environ.copy()
+            for name in ("WARMUP", "ANIMATIONS", "AIRPLANE", "COMPILE_FILTER"):
+                env.pop(name, None)
+            for name in list(env):
+                if name.startswith("EXPECTED_"):
+                    env.pop(name, None)
+            env.update(PKG="com.example.app", AAPT2="/nonexistent",
+                       BENCHMARK_CSV=str(csv_path), BENCHMARK_ARM="B_withDD")
+            result = subprocess.run(
+                ["bash", str(HARNESS / "capture_trace.sh"), str(apk), "trace"],
+                check=False, capture_output=True, text=True, env=env,
+            )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("records no launcher", result.stderr)
+
+    def test_completion_marker_has_one_definition_across_the_toolchain(self) -> None:
+        """Writer, shell reader and Python reader must spell it identically.
+
+        A reader more permissive than its writer accepts a file the rest of the
+        toolchain refuses: `.strip()` accepted a marker carrying a trailing space or
+        a CR that `grep -x -F` counts as a different line, so the same CSV analyzed
+        as reportable and could not be bound to a trace.
+        """
+        lib = LIB.read_text(encoding="utf-8")
+        bench = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
+        stats = AB_STATS.read_text(encoding="utf-8")
+
+        shell_literal = re.search(r'DD_RUN_COMPLETE_MARKER="([^"]*)"', lib)
+        python_literal = re.search(r'_RUN_COMPLETE = "([^"]*)"', stats)
+        self.assertIsNotNone(shell_literal, "lib.sh defines the marker")
+        self.assertIsNotNone(python_literal, "ab_stats.py restates the marker")
+        self.assertEqual(shell_literal.group(1), python_literal.group(1))
+
+        # Both readers compare the WHOLE line, with no whitespace tolerance.
+        self.assertIn('grep -c -x -F -- "$DD_RUN_COMPLETE_MARKER"', lib)
+        self.assertIn('line.rstrip("\\n") == _RUN_COMPLETE', stats)
+        # The writer uses the shared definition rather than its own copy.
+        self.assertIn('printf \'%s\\n\' "$DD_RUN_COMPLETE_MARKER" >> "$OUT"', bench)
+        self.assertNotIn('echo "# RUN COMPLETE"', bench)
 
     def test_enabled_radio_readback_does_not_claim_reachability(self) -> None:
         result = self.run_with_fake_adb(
@@ -1385,7 +1534,8 @@ class HarnessRegressionTests(unittest.TestCase):
 
     def test_run_has_positive_completion_and_no_partial_recovery(self) -> None:
         source = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
-        completion = source.index('echo "# RUN COMPLETE" >> "$OUT"')
+        completion = source.index(
+            'printf \'%s\\n\' "$DD_RUN_COMPLETE_MARKER" >> "$OUT"')
         measured = source.rindex('measure "$arm" "$b" "measure" "$RUNS" "$pos"')
         self.assertLess(measured, completion)
         self.assertIn('echo "# RUN ABORTED (exit $rc)', source)
@@ -2982,10 +3132,30 @@ class AbStatsRegressionTests(unittest.TestCase):
                 f"baseline_md5=aaa treatment_md5=bbb label_a=A_noDD label_b=B_withDD "
                 f"expect_a=0 expect_b=1 app_trace_id=none permission_a=p1 permission_b=p2")
 
-    def test_aborted_run_is_refused(self) -> None:
+    def test_aborted_run_is_refused_by_naming_the_abort_not_a_missing_marker(self):
+        """An aborted run has no completion marker BY DEFINITION.
+
+        Reporting that absence first replaced "the harness aborted, and here is the
+        exit status it recorded" with "a marker is missing", on the default path,
+        where the operator has no reason to pass a flag yet. The recorded trailer is
+        the only thing that says what to fix before re-running.
+        """
         result = self.run_stats(self.aborted_csv(6))
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("did not positively complete", result.stderr)
+        self.assertIn("refusing to analyze an aborted run", result.stderr)
+        self.assertNotIn("did not positively complete", result.stderr)
+        # The abort banner and the CSV's own trailer, without needing a flag.
+        self.assertIn("This CSV is a PARTIAL run", result.stdout)
+        self.assertIn("RUN ABORTED (exit 1)", result.stdout)
+        self.assertIn("another activity took the foreground", result.stdout)
+
+        # A run killed outright leaves neither marker, and there the missing
+        # completion evidence IS the most specific thing that can be said.
+        killed = self.benchmark_csv().replace("# RUN COMPLETE\n", "")
+        killed_result = self.run_stats(killed)
+        self.assertNotEqual(killed_result.returncode, 0)
+        self.assertIn("did not positively complete", killed_result.stderr)
+        self.assertNotIn("refusing to analyze an aborted run", killed_result.stderr)
 
     def test_incomplete_run_is_diagnostic_only_when_explicitly_allowed(self) -> None:
         interrupted = self.benchmark_csv().replace("# RUN COMPLETE\n", "")
