@@ -43,8 +43,12 @@ internal class PrecomputedAssignmentsDownloaderNetworkTest {
     fun `set up`() {
         mockWebServer = MockWebServer()
         mockWebServer.start()
+        val requestUrl = mockWebServer.url("/precompute-assignments")
+            .newBuilder()
+            .host("127.0.0.1")
+            .build()
         val request = Request.Builder()
-            .url(mockWebServer.url("/precompute-assignments"))
+            .url(requestUrl)
             .build()
         whenever(mockRequestFactory.create(evaluationContext, mockDatadogContext)).thenReturn(request)
     }
@@ -70,6 +74,29 @@ internal class PrecomputedAssignmentsDownloaderNetworkTest {
         // Then
         assertThat(result).isNull()
         assertThat(mockWebServer.requestCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `M retry and succeed W explicit SDK timeout`() {
+        // Given
+        mockWebServer.enqueue(delayedBodyResponse())
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(RESPONSE_BODY))
+        val callFactory = OkHttpClient.Builder()
+            .callTimeout(LONG_CLIENT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            .retryOnConnectionFailure(false)
+            .build()
+        val downloader = createDownloader(
+            callFactory,
+            requestTimeoutMs = EXPLICIT_SDK_TIMEOUT_MS,
+            requestRetryCount = 1
+        )
+
+        // When
+        val result = downloader.readPrecomputedFlags(evaluationContext, mockDatadogContext)
+
+        // Then
+        assertThat(mockWebServer.requestCount).isEqualTo(2)
+        assertThat(result).isEqualTo(RESPONSE_BODY)
     }
 
     @Test
@@ -115,13 +142,14 @@ internal class PrecomputedAssignmentsDownloaderNetworkTest {
 
     private fun createDownloader(
         callFactory: Call.Factory,
-        requestTimeoutMs: Long
+        requestTimeoutMs: Long,
+        requestRetryCount: Int = 0
     ) = PrecomputedAssignmentsDownloader(
         callFactory = callFactory,
         internalLogger = mockInternalLogger,
         requestFactory = mockRequestFactory,
         requestTimeoutMs = requestTimeoutMs,
-        requestRetryCount = 0
+        requestRetryCount = requestRetryCount
     )
 
     private companion object {

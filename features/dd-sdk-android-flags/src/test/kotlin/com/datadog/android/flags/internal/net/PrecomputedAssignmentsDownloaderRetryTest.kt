@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
@@ -39,9 +40,19 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.io.EOFException
 import java.io.IOException
+import java.io.InterruptedIOException
+import java.net.ConnectException
+import java.net.NoRouteToHostException
+import java.net.ProtocolException
+import java.net.SocketException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLHandshakeException
+import javax.net.ssl.SSLPeerUnverifiedException
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -198,13 +209,63 @@ internal class PrecomputedAssignmentsDownloaderRetryTest {
     }
 
     @Test
+    fun `M retry W readPrecomputedFlags() { OkHttp call timeout cancelled call }`() {
+        // Given
+        val timedOutCall = callThrowing(InterruptedIOException("timeout"))
+        whenever(timedOutCall.isCanceled()).doReturn(true)
+        val calls = queueCalls(
+            timedOutCall,
+            callReturning(createPrecomputedSuccessfulResponse(RESPONSE_BODY, FAKE_URL))
+        )
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+
+        // Then
+        assertThat(result).isEqualTo(RESPONSE_BODY)
+        verifyExecutedOnce(calls)
+    }
+
+    @ParameterizedTest
+    @MethodSource("retryableNetworkErrors")
+    fun `M retry W readPrecomputedFlags() { retryable network error }`(error: IOException) {
+        // Given
+        val calls = queueCalls(
+            callThrowing(error),
+            callReturning(createPrecomputedSuccessfulResponse(RESPONSE_BODY, FAKE_URL))
+        )
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+
+        // Then
+        assertThat(result).isEqualTo(RESPONSE_BODY)
+        verifyExecutedOnce(calls)
+    }
+
+    @ParameterizedTest
+    @MethodSource("nonRetryableIOExceptions")
+    fun `M not retry W readPrecomputedFlags() { non-retryable IO error }`(error: IOException) {
+        // Given
+        whenever(mockCall.execute()).doThrow(error)
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+
+        // Then
+        assertThat(result).isNull()
+        verify(mockCallFactory).newCall(fakeRequest)
+        verify(mockCall).execute()
+    }
+
+    @Test
     fun `M use custom request limits W readPrecomputedFlags() { transient failures }`() {
         // Given
         testedDownloader = createDownloader(requestTimeoutMs = 2_500L, requestRetryCount = 2)
         val callsAndTimeouts = List(3) {
             val timeout = mock<Timeout>()
             whenever(timeout.timeout(2_500L, TimeUnit.MILLISECONDS)).doReturn(timeout)
-            callThrowing(IOException("timeout"), timeout) to timeout
+            callThrowing(SocketTimeoutException("timeout"), timeout) to timeout
         }
         queueCalls(*callsAndTimeouts.map { it.first }.toTypedArray())
 
@@ -249,7 +310,7 @@ internal class PrecomputedAssignmentsDownloaderRetryTest {
         whenever(secondCall.timeout()).doReturn(secondTimeout)
         whenever(firstTimeout.timeout(EXPLICIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)).doReturn(firstTimeout)
         whenever(secondTimeout.timeout(EXPLICIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)).doReturn(secondTimeout)
-        whenever(firstCall.execute()).doThrow(IOException("transient"))
+        whenever(firstCall.execute()).doThrow(SocketTimeoutException("transient"))
         whenever(secondCall.execute()).doReturn(createPrecomputedSuccessfulResponse(RESPONSE_BODY, FAKE_URL))
 
         // When
@@ -268,7 +329,7 @@ internal class PrecomputedAssignmentsDownloaderRetryTest {
     fun `M retry body read failure W readPrecomputedFlags()`() {
         // Given
         val failedBody = mock<ResponseBody>()
-        whenever(failedBody.string()).doThrow(IOException("body read failed"))
+        whenever(failedBody.string()).doThrow(EOFException("body read failed"))
         val calls = queueCalls(
             callReturning(createPrecomputedResponse(200, FAKE_URL, failedBody)),
             callReturning(createPrecomputedSuccessfulResponse(RESPONSE_BODY, FAKE_URL))
@@ -339,5 +400,24 @@ internal class PrecomputedAssignmentsDownloaderRetryTest {
         const val FAKE_URL = "https://example.com/flags"
         const val RESPONSE_BODY = "{\"flags\":{}}"
         const val EXPLICIT_TIMEOUT_MS = 1_000L
+
+        @JvmStatic
+        fun retryableNetworkErrors(): List<IOException> = listOf(
+            SocketTimeoutException("read timed out"),
+            UnknownHostException("host not found"),
+            ConnectException("connection refused"),
+            NoRouteToHostException("no route"),
+            SocketException("connection reset"),
+            EOFException("unexpected end of stream")
+        )
+
+        @JvmStatic
+        fun nonRetryableIOExceptions(): List<IOException> = listOf(
+            IOException("generic failure"),
+            ProtocolException("invalid protocol"),
+            SSLHandshakeException("handshake failed"),
+            SSLPeerUnverifiedException("peer not verified"),
+            InterruptedIOException("interrupted")
+        )
     }
 }

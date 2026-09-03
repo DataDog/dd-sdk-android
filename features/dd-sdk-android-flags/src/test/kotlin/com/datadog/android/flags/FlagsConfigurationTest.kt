@@ -107,6 +107,54 @@ internal class FlagsConfigurationTest {
     }
 
     @Test
+    fun `M reject negative assignment timeout W generated copy`() {
+        // Given
+        val configuration = FlagsConfiguration.Builder().build()
+
+        // When + Then
+        assertThatThrownBy {
+            configuration.copy(assignmentRequestTimeoutMs = -1)
+        }
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessage("assignmentRequestTimeoutMs must be greater than or equal to 0")
+    }
+
+    @Test
+    fun `M reject invalid retry counts W generated copy`() {
+        // Given
+        val configuration = FlagsConfiguration.Builder().build()
+
+        // When + Then
+        assertThatThrownBy {
+            configuration.copy(assignmentRequestRetryCount = -1)
+        }
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessage("assignmentRequestRetryCount must be between 0 and 10")
+
+        assertThatThrownBy {
+            configuration.copy(assignmentRequestRetryCount = 11)
+        }
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessage("assignmentRequestRetryCount must be between 0 and 10")
+    }
+
+    @Test
+    fun `M accept assignment request boundaries W generated copy`() {
+        // Given
+        val configuration = FlagsConfiguration.Builder().build()
+
+        // When
+        val copiedConfiguration = configuration.copy(
+            assignmentRequestTimeoutMs = 0,
+            assignmentRequestRetryCount = 10
+        )
+
+        // Then
+        assertThat(copiedConfiguration.assignmentRequestTimeoutMs).isZero()
+        assertThat(copiedConfiguration.assignmentRequestRetryCount).isEqualTo(10)
+    }
+
+    @Test
     fun `M modify builder after build W Builder { }`(
         @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomExposureEndpoint: String,
         @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomFlagEndpoint: String

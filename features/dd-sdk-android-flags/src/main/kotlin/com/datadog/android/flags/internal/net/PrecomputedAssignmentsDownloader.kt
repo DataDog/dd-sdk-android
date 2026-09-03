@@ -13,7 +13,12 @@ import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.internal.network.HttpSpec
 import okhttp3.Call
 import okhttp3.Request
+import java.io.EOFException
 import java.io.IOException
+import java.io.InterruptedIOException
+import java.net.SocketException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
 
 /**
@@ -100,7 +105,10 @@ internal class PrecomputedAssignmentsDownloader(
                 }
             }
         } catch (e: IOException) {
-            DownloadResult.UnexpectedFailure(e, isRetryable = call?.isCanceled() != true)
+            DownloadResult.UnexpectedFailure(
+                e,
+                isRetryable = isRetryableNetworkError(e, call?.isCanceled() == true)
+            )
         } catch (e: Throwable) {
             DownloadResult.UnexpectedFailure(e, isRetryable = false)
         }
@@ -109,6 +117,23 @@ internal class PrecomputedAssignmentsDownloader(
     private fun isRetryableStatus(statusCode: Int): Boolean =
         statusCode == HttpSpec.StatusCode.REQUEST_TIMEOUT ||
             statusCode in HTTP_SERVER_ERROR_MIN..HTTP_SERVER_ERROR_MAX
+
+    private fun isRetryableNetworkError(error: IOException, wasCanceled: Boolean): Boolean {
+        if (wasCanceled && !error.isOkHttpCallTimeout()) return false
+
+        return when (error) {
+            is SocketTimeoutException,
+            is UnknownHostException,
+            is SocketException,
+            is EOFException -> true
+            is InterruptedIOException -> error.isOkHttpCallTimeout()
+            else -> false
+        }
+    }
+
+    // OkHttp 4.12 cancels a call before it reports a call-timeout InterruptedIOException.
+    private fun IOException.isOkHttpCallTimeout(): Boolean =
+        this is InterruptedIOException && message == OKHTTP_CALL_TIMEOUT_MESSAGE
 
     private sealed interface DownloadResult {
         val isRetryable: Boolean
@@ -131,5 +156,6 @@ internal class PrecomputedAssignmentsDownloader(
     private companion object {
         const val HTTP_SERVER_ERROR_MIN = 500
         const val HTTP_SERVER_ERROR_MAX = 599
+        const val OKHTTP_CALL_TIMEOUT_MESSAGE = "timeout"
     }
 }

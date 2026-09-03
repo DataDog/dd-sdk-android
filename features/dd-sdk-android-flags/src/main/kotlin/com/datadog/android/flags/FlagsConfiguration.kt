@@ -29,6 +29,17 @@ data class FlagsConfiguration internal constructor(
     internal val assignmentRequestTimeoutMs: Long,
     internal val assignmentRequestRetryCount: Int
 ) {
+    init {
+        @Suppress("UnsafeThirdPartyFunctionCall") // Enforce the public copy invariant.
+        require(assignmentRequestTimeoutMs >= 0) {
+            "assignmentRequestTimeoutMs must be greater than or equal to 0"
+        }
+        @Suppress("UnsafeThirdPartyFunctionCall") // Enforce the public copy invariant.
+        require(assignmentRequestRetryCount in 0..MAX_ASSIGNMENT_REQUEST_RETRY_COUNT) {
+            "assignmentRequestRetryCount must be between 0 and $MAX_ASSIGNMENT_REQUEST_RETRY_COUNT"
+        }
+    }
+
     /**
      * Copies this configuration while preserving assignment request transport policies.
      *
