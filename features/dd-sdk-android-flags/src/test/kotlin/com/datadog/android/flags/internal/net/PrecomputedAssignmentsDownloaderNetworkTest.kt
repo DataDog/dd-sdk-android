@@ -9,6 +9,7 @@ package com.datadog.android.flags.internal.net
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.internal.network.HttpSpec
 import okhttp3.Call
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -97,6 +98,34 @@ internal class PrecomputedAssignmentsDownloaderNetworkTest {
         // Then
         assertThat(mockWebServer.requestCount).isEqualTo(2)
         assertThat(result).isEqualTo(RESPONSE_BODY)
+    }
+
+    @Test
+    fun `M let SDK control retries W HTTP 503 with immediate Retry-After`() {
+        // Given
+        repeat(4) {
+            mockWebServer.enqueue(
+                MockResponse()
+                    .setResponseCode(503)
+                    .setHeader(HttpSpec.Header.RETRY_AFTER, "0")
+            )
+        }
+        val callFactory = OkHttpClient.Builder()
+            .retryOnConnectionFailure(false)
+            .addNetworkInterceptor(DisableOkHttp503FollowUpInterceptor)
+            .build()
+        val downloader = createDownloader(
+            callFactory,
+            requestTimeoutMs = 0L,
+            requestRetryCount = 1
+        )
+
+        // When
+        val result = downloader.readPrecomputedFlags(evaluationContext, mockDatadogContext)
+
+        // Then
+        assertThat(result).isNull()
+        assertThat(mockWebServer.requestCount).isEqualTo(2)
     }
 
     @Test

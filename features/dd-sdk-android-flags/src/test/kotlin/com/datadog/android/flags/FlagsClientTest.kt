@@ -13,6 +13,7 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.internal.FlagsFeature
 import com.datadog.android.flags.internal.NoOpFlagsClient
+import com.datadog.android.flags.internal.net.DisableOkHttp503FollowUpInterceptor
 import com.datadog.android.flags.model.EvaluationContext
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -314,6 +315,8 @@ internal class FlagsClientTest {
             verify(mockSdkCore).createOkHttpCallFactory(capture())
             val configuredClient = OkHttpClient.Builder().apply(firstValue).build()
             assertThat(configuredClient.retryOnConnectionFailure).isFalse()
+            assertThat(configuredClient.networkInterceptors)
+                .containsExactly(DisableOkHttp503FollowUpInterceptor)
         }
     }
 
@@ -333,6 +336,7 @@ internal class FlagsClientTest {
             verify(mockSdkCore).createOkHttpCallFactory(capture())
             val configuredClient = OkHttpClient.Builder().apply(firstValue).build()
             assertThat(configuredClient.retryOnConnectionFailure).isTrue()
+            assertThat(configuredClient.networkInterceptors).isEmpty()
         }
     }
 

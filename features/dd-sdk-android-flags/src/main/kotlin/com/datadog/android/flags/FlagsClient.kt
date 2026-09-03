@@ -23,6 +23,7 @@ import com.datadog.android.flags.internal.NoOpFlagsClient
 import com.datadog.android.flags.internal.NoOpRumEvaluationLogger
 import com.datadog.android.flags.internal.RumEvaluationLogger
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
+import com.datadog.android.flags.internal.net.DisableOkHttp503FollowUpInterceptor
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsDownloader
 import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
@@ -459,6 +460,7 @@ interface FlagsClient {
             ?: featureSdkCore.createOkHttpCallFactory {
                 if (configuration.assignmentRequestRetryCount > 0) {
                     retryOnConnectionFailure(false)
+                    addNetworkInterceptor(DisableOkHttp503FollowUpInterceptor)
                 }
             }
 

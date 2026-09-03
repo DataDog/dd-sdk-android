@@ -214,8 +214,8 @@ data class FlagsConfiguration internal constructor(
          * Retries use randomized exponential backoff, capped at 30 seconds. For HTTP 503, a valid `Retry-After`
          * value is a minimum delay before the backoff. The SDK does not retry when this value exceeds 30 seconds.
          * The SDK does not retry HTTP 429 responses.
-         * When SDK-managed retries are enabled, the default transport disables OkHttp connection retries. A custom
-         * call factory keeps its own internal retry behavior.
+         * When SDK-managed retries are enabled, the default transport disables automatic OkHttp connection retries
+         * and immediate HTTP 503 follow-ups. A custom call factory keeps its own internal retry behavior.
          * Network time can reach ([retryCount] + 1) times the assignment request timeout, plus retry delays. When the
          * SDK timeout is zero, the HTTP client's call timeout supplies the bound. A custom factory may have no bound
          * only when the SDK timeout is zero.
