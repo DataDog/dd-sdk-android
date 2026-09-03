@@ -25,6 +25,8 @@ import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.privacy.TrackingConsent
 import fr.xgouchet.elmyr.Forge
+import okhttp3.Call
+import okhttp3.OkHttpClient
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.whenever
@@ -244,6 +246,10 @@ class StubSDKCore(
 
     override fun createSingleThreadExecutorService(executorContext: String): ExecutorService {
         return StubExecutorService(executorContext)
+    }
+
+    override fun createOkHttpCallFactory(block: OkHttpClient.Builder.() -> Unit): Call.Factory {
+        return StubCallFactory()
     }
 
     // endregion
