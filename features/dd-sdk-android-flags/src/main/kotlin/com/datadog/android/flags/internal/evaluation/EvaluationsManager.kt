@@ -49,7 +49,7 @@ internal class EvaluationsManager(
      *
      * This method asynchronously fetches precomputed flag evaluations for the given context
      * and atomically updates both the context and flag data in the repository. Network failures
-     * result in an empty flag set being stored with the context, allowing graceful degradation.
+     * keep matching cached flags but clear flags for a different context.
      *
      * The operation is performed on the configured executor service and will not block the
      * calling thread. Errors are logged but do not propagate to the caller.
@@ -100,6 +100,7 @@ internal class EvaluationsManager(
                         if (hadFlags && cachedContextMatches) {
                             flagStateManager.updateState(FlagsClientState.Stale)
                         } else {
+                            flagsRepository.clear()
                             flagStateManager.updateState(FlagsClientState.Error(throwable))
                         }
                         callback?.onFailure(throwable)

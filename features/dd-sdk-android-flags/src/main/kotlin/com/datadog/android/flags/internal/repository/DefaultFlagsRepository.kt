@@ -69,6 +69,11 @@ internal class DefaultFlagsRepository(
         )
     }
 
+    override fun clear() {
+        waitForPersistenceLoad()
+        atomicState.set(null)
+    }
+
     override fun getPrecomputedFlag(key: String): PrecomputedFlag? {
         waitForPersistenceLoad()
         val state = atomicState.get()

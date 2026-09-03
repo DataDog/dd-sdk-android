@@ -136,6 +136,19 @@ internal class DefaultFlagsRepositoryTest {
     }
 
     @Test
+    fun `M clear flags and context W clear()`() {
+        // Given
+        testedRepository.setFlagsAndContext(testContext, singleFlagMap)
+
+        // When
+        testedRepository.clear()
+
+        // Then
+        assertThat(testedRepository.getEvaluationContext()).isNull()
+        assertThat(testedRepository.getFlagsSnapshot()).isEmpty()
+    }
+
+    @Test
     fun `M wait for async persistence callback W getPrecomputedFlag() { persistence fails within timeout }`(
         forge: Forge
     ) {
