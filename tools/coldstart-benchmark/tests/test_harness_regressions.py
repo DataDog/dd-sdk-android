@@ -1378,14 +1378,26 @@ class HarnessRegressionTests(unittest.TestCase):
         bench = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
         ab = load_ab_stats_module()
 
-        # The one `# device=` header line, plus the per-arm permission stamps, are
-        # every `#` metadata site the collector has.
-        header_line = re.search(r'echo "# device=[^"]*" >> "\$OUT"', bench)
-        self.assertIsNotNone(header_line, "coldstart_bench.sh writes a # device= header")
-        written = set(re.findall(r'([a-z_][a-z0-9_]*)=\$', header_line.group(0)))
-        permission_stamps = re.findall(r'echo "# (permission_[ab])=\$[^"]*" >> "\$OUT"', bench)
-        self.assertEqual(sorted(permission_stamps), ["permission_a", "permission_b"])
-        written.update(permission_stamps)
+        # EVERY site that writes a `#` line to the CSV, found generically. Naming the
+        # `# device=` line and the two permission stamps individually made the test
+        # blind to exactly what it exists to catch: a NEW standalone stamp site would
+        # not enter `written`, so the analyzer could keep validating an older
+        # contract while this test passed.
+        writes = re.findall(r'(?:echo|printf)\s+(["\'])(.+?)\1[^\n]*>>\s*"\$OUT"', bench)
+        written = set()
+        metadata_sites = 0
+        for _quote, payload in writes:
+            if not payload.lstrip("'\"%s\\n ").startswith("#"):
+                continue
+            keys = re.findall(r'([a-z_][a-z0-9_]*)=', payload)
+            if keys:
+                metadata_sites += 1
+                written.update(keys)
+        # The header line and the two permission stamps at minimum; more if the
+        # collector grew one, which is the case this test is for.
+        self.assertGreaterEqual(metadata_sites, 3, f"found only {metadata_sites} sites")
+        for stamp in ("device", "permission_a", "permission_b"):
+            self.assertIn(stamp, written, stamp)
 
         self.assertEqual(
             written, set(ab._CURRENT_META_KEYS),
@@ -3333,13 +3345,108 @@ class AbStatsRegressionTests(unittest.TestCase):
         self.assertIn("Block 5 was whole but dropped", result.stdout)
 
     def test_a_block_holding_a_rejected_launch_is_not_whole(self) -> None:
-        """A cell with a rejected launch is not a smaller cell; the block drops."""
-        result = self.run_stats(self.aborted_csv(6, invalid_treatment_block=4))
+        """A cell with a rejected launch is not a smaller cell; the block drops.
+
+        The fixture is the shape the collector actually leaves: the rejection is in
+        the LAST block it reached, because an invalid launch aborts the run. An
+        earlier version put it in block 4 with whole blocks 5 and 6 after it, which
+        no collector run can produce -- and the consecutive-prefix rule now refuses
+        that file, correctly.
+        """
+        rows = self.benchmark_csv(
+            metadata=self.recoverable_metadata(8), block_count=6, runs_per_cell=2
+        ).replace("# RUN COMPLETE\n", "")
+        # One launch of block 6's treatment cell rejected: the cell still holds two
+        # rows, so this is the full-count-with-a-hole case rather than a short cell.
+        target = "B_withDD,6,1,measure,2,"
+        self.assertIn(target, rows)
+        rows = rows.replace(target, "B_withDD,6,1,measure_rejected,2,")
+        rows += "# RUN ABORTED (exit 1) -- launch rejected\n"
+
+        result = self.run_stats(rows)
         self.assertEqual(result.returncode, 0, result.stderr)
-        # Blocks 1-3 survive whole, 4 holds the rejected launch, 5-6 are whole:
-        # an even count of whole blocks is 1,2,3,5,6 floored to four.
+        # Blocks 1-5 are whole, block 6 is not, and five floors to four.
         self.assertIn("ANALYZED OVER 4 WHOLE BLOCKS of the 8", result.stdout)
+        self.assertIn("Block 5 was whole but dropped", result.stdout)
+        self.assertNotIn("not a collected prefix", result.stderr)
+        # The rejected launch is excluded with its block, so it never reaches the
+        # invalid-launch refusal it would otherwise trigger.
         self.assertNotIn("were rejected or failed", result.stdout)
+
+    def test_contradictory_completion_evidence_is_never_recovered(self) -> None:
+        """Recovery needs ZERO completion markers, not "not exactly one".
+
+        An interrupted run has none: the marker is the collector's last act. One
+        marker beside an abort trailer, or two markers, are evidence no collector run
+        can produce, and both reached recovery and emitted a 95% CI while the gate
+        read `!= 1`. Contradictory evidence is a refusal, never an input to a
+        reportable interval.
+        """
+        aborted = self.aborted_csv(6)
+
+        def with_extra_markers(count):
+            lines = aborted.splitlines(True)
+            for _ in range(count):
+                lines.insert(-1, "# RUN COMPLETE\n")
+            return "".join(lines)
+
+        # A completion marker beside the abort trailer.
+        both = self.run_stats(with_extra_markers(1))
+        self.assertNotEqual(both.returncode, 0)
+        self.assertIn("refusing to analyze an aborted run", both.stderr)
+        self.assertNotIn("ANALYZED OVER", both.stdout)
+        self.assertNotIn("95% CI", both.stdout)
+
+        # Two markers beside the abort trailer: the duplicates are the precise fact,
+        # so they are named rather than deferred to the generic abort message.
+        duplicated = self.run_stats(with_extra_markers(2))
+        self.assertNotEqual(duplicated.returncode, 0)
+        self.assertIn("2 RUN COMPLETE markers (expected 1)", duplicated.stdout)
+        self.assertNotIn("ANALYZED OVER", duplicated.stdout)
+
+        # Two markers with no trailer at all, over an otherwise recoverable shortfall.
+        killed = self.benchmark_csv(
+            metadata=self.recoverable_metadata(8), block_count=6, runs_per_cell=2
+        ) + "# RUN COMPLETE\n"
+        twice = self.run_stats(killed)
+        self.assertNotEqual(twice.returncode, 0)
+        self.assertIn("2 RUN COMPLETE markers (expected 1)", twice.stdout)
+        self.assertNotIn("ANALYZED OVER", twice.stdout)
+        self.assertNotIn("95% CI", twice.stdout)
+
+    def test_recovery_requires_a_consecutive_prefix_of_whole_blocks(self) -> None:
+        """A whole block after an incomplete one cannot exist in a collected file.
+
+        The collector runs blocks in order and aborts on an invalid launch. Taking
+        every INDIVIDUALLY whole block analyzed 1,2,4,5 as a counterbalanced design:
+        balanced, reportable, and not an experiment anything ran.
+        """
+        gapped = self.benchmark_csv(
+            metadata=self.recoverable_metadata(8), block_count=5, runs_per_cell=2
+        ).replace("# RUN COMPLETE\n", "")
+        gapped = "".join(line for line in gapped.splitlines(True)
+                         if not line.startswith(("A_noDD,3,", "B_withDD,3,")))
+        result = self.run_stats(gapped)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("not a collected prefix", result.stderr)
+        self.assertIn("whole blocks after the first incomplete one: 4, 5", result.stderr)
+        self.assertIn("consecutive prefix from block 1: 1, 2", result.stderr)
+        self.assertIn("cannot produce a whole block after an incomplete one", result.stderr)
+        self.assertNotIn("ANALYZED OVER", result.stdout)
+        self.assertNotIn("95% CI", result.stdout)
+
+        # The abort trailer still reaches the operator: it is what says whether any
+        # of the file is trustworthy, and this refusal is about the file's shape.
+        gapped_aborted = gapped + "# RUN ABORTED (exit 1) -- dialog\n"
+        with_trailer = self.run_stats(gapped_aborted)
+        self.assertNotEqual(with_trailer.returncode, 0)
+        self.assertIn("RUN ABORTED (exit 1)", with_trailer.stdout)
+        self.assertIn("not a collected prefix", with_trailer.stderr)
+
+        # A genuine prefix is unaffected.
+        clean = self.run_stats(self.aborted_csv(6))
+        self.assertEqual(clean.returncode, 0, clean.stderr)
+        self.assertNotIn("not a collected prefix", clean.stderr)
 
     def test_interrupted_run_below_the_paired_minimum_is_still_refused(self) -> None:
         """Three whole blocks floor to two, and a paired interval needs three."""

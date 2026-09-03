@@ -450,18 +450,47 @@ def main():
     if len(per_file) == 1:
         kv = metas[0]
         blocks_value, runs_value = kv.get("blocks"), kv.get("runs")
-        interrupted = bool(file_abort_lines[0]) or file_completions[0] != 1
+        # ZERO completion markers, not "not exactly one". An interrupted run has
+        # none: the marker is the collector's last act. One marker alongside an abort
+        # trailer, or two markers, are CONTRADICTORY evidence -- no collector run can
+        # produce either -- and contradictory evidence is a refusal, never an input
+        # to a reportable interval. `!= 1` let both through.
+        interrupted = file_completions[0] == 0
         if (interrupted and blocks_value and runs_value
                 and blocks_value.isdigit() and runs_value.isdigit()
                 and int(blocks_value) >= 1 and int(runs_value) >= 1):
             declared = int(blocks_value)
             whole = complete_block_ids(list(csv.DictReader(per_file[0][1])),
                                        a.baseline, a.treatment, int(runs_value))
-            # Numeric order, then floored to an even count: ABBA alternates, so an
-            # even number of leading whole blocks is balanced, and dropping the LAST
-            # one is the only choice that is not outcome-dependent. The existing
-            # first-arm balance gate still runs on whatever survives.
-            ordered = sorted((b for b in whole if b.isdigit()), key=int)
+            # The collector is sequential: it runs block 1, then 2, and an invalid
+            # launch aborts the run. A whole block AFTER an incomplete one therefore
+            # cannot exist in a file it produced, so a gap means this file was edited
+            # or corrupted. Taking every individually whole block would have analyzed
+            # 1,2,4,5 as a counterbalanced design -- balanced, reportable, and not an
+            # experiment anything ran. Only the consecutive prefix from block 1 is a
+            # collected prefix; anything beyond the first gap refuses the file.
+            ordered = []
+            for expected in range(1, len(whole) + 1):
+                if str(expected) not in whole:
+                    break
+                ordered.append(str(expected))
+            stray = sorted(whole - set(ordered), key=lambda b: (not b.isdigit(), b))
+            if stray:
+                for line in file_abort_lines[0]:
+                    print(line)
+                raise SystemExit(
+                    "refusing a run whose whole blocks are not a collected prefix:\n"
+                    f"  whole blocks after the first incomplete one: {', '.join(stray)}\n"
+                    f"  consecutive prefix from block 1: "
+                    f"{', '.join(ordered) if ordered else '<none>'}\n"
+                    "  The collector runs blocks in order and aborts on an invalid launch,\n"
+                    "  so it cannot produce a whole block after an incomplete one. This file\n"
+                    "  was edited or truncated in the middle. Re-run the benchmark."
+                )
+            # Floored to an even count: ABBA alternates, so an even number of leading
+            # whole blocks is balanced, and dropping the LAST one is the only choice
+            # that is not outcome-dependent. The existing first-arm balance gate still
+            # runs on whatever survives.
             dropped_for_parity = ordered.pop() if len(ordered) % 2 else None
             # >= 4, not >= 3: the paired interval needs 3 blocks and an even count
             # needs 4, so 3 whole blocks floor to 2 and are not enough. And strictly
@@ -482,7 +511,10 @@ def main():
         # absence here would replace the specific fact -- the harness aborted, and
         # the recorded exit status says where -- with a generic one about a missing
         # line. The abort is reported below, with the CSV's own `RUN ABORTED` line.
-        if file_abort_lines[index]:
+        # Only ZERO markers is that case: an abort trailer beside two markers is
+        # contradictory evidence, and naming the duplicates is then the precise thing
+        # to say.
+        if file_abort_lines[index] and file_completions[index] == 0:
             continue
         count = file_completions[index]
         if count != 1:
