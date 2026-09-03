@@ -59,10 +59,11 @@ internal class RequestTracingStateRegistry(
         }
 
         requestTracingStateByCall[call] = RequestTracingState(
-            call.request()
+            requestInfoBuilder = call.request()
                 .toHttpRequestInfo()
                 .newBuilder()
-                .addTag(UUID::class.java, UUID.randomUUID())
+                .addTag(UUID::class.java, UUID.randomUUID()),
+            isDefaultTracer = false
         )
     }
 

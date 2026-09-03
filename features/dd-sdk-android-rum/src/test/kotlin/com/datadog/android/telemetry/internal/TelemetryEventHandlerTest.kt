@@ -620,6 +620,7 @@ internal class TelemetryEventHandlerTest {
         useTracer: Boolean,
         tracerApi: TelemetryEventHandler.TracerApi?,
         tracerApiVersion: String?,
+        useClientSideStats: Boolean,
         @Forgery fakeConfiguration: InternalTelemetryEvent.Configuration
     ) {
         // Given
@@ -639,6 +640,9 @@ internal class TelemetryEventHandlerTest {
                 )
             }
         }
+        if (useClientSideStats) {
+            whenever(mockSdkCore.getFeature(Feature.TRACING_CLIENT_STATS_FEATURE_NAME)) doReturn mock()
+        }
 
         // When
         testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
@@ -656,6 +660,7 @@ internal class TelemetryEventHandlerTest {
                 .hasUseTracing(useTracer)
                 .hasTracerApi(tracerApi?.name)
                 .hasTracerApiVersion(tracerApiVersion)
+                .hasUseClientSideStats(useClientSideStats)
         }
     }
 
@@ -1899,14 +1904,16 @@ internal class TelemetryEventHandlerTest {
 
         @JvmStatic
         fun tracingConfigurationParameters() = listOf(
-            // hasTracer, tracerApiName, tracerApiVersion
-            Arguments.of(true, TelemetryEventHandler.TracerApi.OpenTracing, null),
+            // hasTracer, tracerApiName, tracerApiVersion, useClientSideStats
+            Arguments.of(true, TelemetryEventHandler.TracerApi.OpenTracing, null, true),
             Arguments.of(
                 true,
                 TelemetryEventHandler.TracerApi.OpenTelemetry,
-                forge.aStringMatching("[0-9]+\\.[0-9]+\\.[0-9]+")
+                forge.aStringMatching("[0-9]+\\.[0-9]+\\.[0-9]+"),
+                false
             ),
-            Arguments.of(false, null, null)
+            Arguments.of(false, null, null, true),
+            Arguments.of(false, null, null, false)
         )
 
         private const val MAX_EVENTS_PER_SESSION_TEST = 10

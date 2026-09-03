@@ -42,6 +42,7 @@ import com.datadog.android.trace.internal.applyRcSampleRate
 import com.datadog.android.trace.internal.buildRcHostResolver
 import com.datadog.android.trace.internal.net.TraceContext
 import com.datadog.android.trace.internal.net.effectiveSampleRate
+import com.datadog.android.trace.internal.net.finishRumAware
 import com.datadog.android.trace.internal.net.isDropped
 import com.datadog.android.trace.internal.net.isDroppedPriority
 import com.datadog.android.trace.internal.toSdkInjection
@@ -94,7 +95,8 @@ internal constructor(
     @Volatile internal var traceContextInjection: TraceContextInjection,
     internal val redacted404ResourceName: Boolean,
     internal val localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer,
-    private val globalTracerProvider: () -> DatadogTracer?
+    private val globalTracerProvider: () -> DatadogTracer?,
+    internal val defaultTracerCheck: (DatadogTracer) -> Boolean = _TraceInternalProxy::isDefaultTracer
 ) : Interceptor {
 
     private val rcApplied = AtomicBoolean(false)
@@ -263,6 +265,7 @@ internal constructor(
         request: Request,
         tracer: DatadogTracer
     ): Response {
+        val isDefaultTracer = defaultTracerCheck(tracer)
         val span = buildSpan(tracer, request)
         val isSampled = span.extractRumContext(rumContextPropagator, block = true)
             .sample(request, ignoreLocalDroppedParent = !canSendSpan())
@@ -297,10 +300,10 @@ internal constructor(
 
         try {
             val response = chain.proceed(updatedRequest)
-            handleResponse(sdkCore, request, response, span, isSampled)
+            handleResponse(sdkCore, request, response, span, isSampled, isDefaultTracer)
             return response
         } catch (e: Throwable) {
-            handleThrowable(sdkCore, request, e, span, isSampled)
+            handleThrowable(sdkCore, request, e, span, isSampled, isDefaultTracer)
             throw e
         }
     }
@@ -711,22 +714,23 @@ internal constructor(
         request: Request,
         response: Response,
         span: DatadogSpan,
-        isSampled: Boolean
+        isSampled: Boolean,
+        isDefaultTracer: Boolean
     ) {
-        if (!isSampled) {
-            onRequestIntercepted(sdkCore, request, null, response, null)
-        } else {
-            val statusCode = response.code
-            span.setTag(Tags.KEY_HTTP_STATUS, statusCode)
-            if (statusCode in HttpURLConnection.HTTP_BAD_REQUEST until HttpURLConnection.HTTP_INTERNAL_ERROR) {
-                span.isError = true
-            }
-            if (statusCode == HttpURLConnection.HTTP_NOT_FOUND && redacted404ResourceName) {
-                span.resourceName = RESOURCE_NAME_404
-            }
-            onRequestIntercepted(sdkCore, request, span, response, null)
+        val statusCode = response.code
+        span.setTag(Tags.KEY_HTTP_STATUS, statusCode)
+        if (statusCode in HttpURLConnection.HTTP_BAD_REQUEST until HttpURLConnection.HTTP_INTERNAL_ERROR) {
+            span.isError = true
         }
-        span.finishRumAware(isSampled)
+        if (statusCode == HttpURLConnection.HTTP_NOT_FOUND && redacted404ResourceName) {
+            span.resourceName = RESOURCE_NAME_404
+        }
+        if (isSampled) {
+            onRequestIntercepted(sdkCore, request, span, response, null)
+        } else {
+            onRequestIntercepted(sdkCore, request, null, response, null)
+        }
+        span.finishRumAware(isSampled = isSampled, canSendSpan = canSendSpan(), isDefaultTracer = isDefaultTracer)
     }
 
     private fun handleThrowable(
@@ -734,26 +738,19 @@ internal constructor(
         request: Request,
         throwable: Throwable,
         span: DatadogSpan,
-        isSampled: Boolean
+        isSampled: Boolean,
+        isDefaultTracer: Boolean
     ) {
-        if (!isSampled) {
-            onRequestIntercepted(sdkCore, request, null, null, throwable)
-        } else {
-            span.isError = true
+        span.isError = true
+        if (isSampled) {
             span.setTag(Tags.KEY_ERROR_MSG, throwable.message)
             span.setTag(Tags.KEY_ERROR_TYPE, throwable.javaClass.name)
             span.setTag(Tags.KEY_ERROR_STACK, throwable.loggableStackTrace())
             onRequestIntercepted(sdkCore, request, span, null, throwable)
-        }
-        span.finishRumAware(isSampled)
-    }
-
-    private fun DatadogSpan.finishRumAware(isSampled: Boolean) {
-        if (canSendSpan()) {
-            if (isSampled) finish() else drop()
         } else {
-            drop()
+            onRequestIntercepted(sdkCore, request, null, null, throwable)
         }
+        span.finishRumAware(isSampled = isSampled, canSendSpan = canSendSpan(), isDefaultTracer = isDefaultTracer)
     }
 
     private fun DatadogSpan.sample(request: Request, ignoreLocalDroppedParent: Boolean): Boolean {

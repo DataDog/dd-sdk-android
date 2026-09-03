@@ -30,7 +30,8 @@ internal class TracingFeature(
     private val sdkCore: FeatureSdkCore,
     customEndpointUrl: String?,
     internal val spanEventMapper: SpanEventMapper,
-    internal val networkInfoEnabled: Boolean
+    internal val networkInfoEnabled: Boolean,
+    private val clientSideStatsEnabled: Boolean
 ) : InternalCoreWriterProvider, StorageBackedFeature {
 
     internal var coreTracerDataWriter: Writer = NoOpWriter()
@@ -71,7 +72,7 @@ internal class TracingFeature(
         val internalLogger = sdkCore.internalLogger
         return CoreTraceWriter(
             sdkCore,
-            ddSpanToSpanEventMapper = CoreTracerSpanToSpanEventMapper(networkInfoEnabled),
+            ddSpanToSpanEventMapper = CoreTracerSpanToSpanEventMapper(networkInfoEnabled, clientSideStatsEnabled),
             eventMapper = SpanEventMapperWrapper(spanEventMapper, internalLogger),
             serializer = SpanEventSerializer(internalLogger),
             internalLogger = internalLogger

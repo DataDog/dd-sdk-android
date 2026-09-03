@@ -8,6 +8,7 @@ package com.datadog.android.trace.internal
 
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.TracingHeaderType
+import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -18,8 +19,10 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.mock
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -29,6 +32,9 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class TraceInternalProxyTest {
+
+    @Mock
+    lateinit var mockCustomTracer: DatadogTracer
 
     private lateinit var fakeTracedHosts: Map<String, Set<TracingHeaderType>>
 
@@ -82,5 +88,17 @@ internal class TraceInternalProxyTest {
         assertThat(result).isNotNull
         assertThat(result.sdkInstanceName).isEqualTo(fakeSdkInstanceName)
         assertThat(result.traceOrigin).isEqualTo(fakeTraceOrigin)
+    }
+
+    @Test
+    fun `M return false W isDefaultTracer() {custom tracer}`() {
+        assertThat(_TraceInternalProxy.isDefaultTracer(mockCustomTracer)).isFalse()
+    }
+
+    @Test
+    fun `M return true W isDefaultTracer() {SDK DatadogTracerAdapter}`() {
+        val sdkTracer: DatadogTracer = mock<DatadogTracerAdapter>()
+
+        assertThat(_TraceInternalProxy.isDefaultTracer(sdkTracer)).isTrue()
     }
 }
