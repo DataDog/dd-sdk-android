@@ -19,7 +19,14 @@ import java.io.InterruptedIOException
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
+import java.text.ParsePosition
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.TimeZone
 import java.util.concurrent.TimeUnit
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.random.Random
 
 /**
  * Downloads precomputed flag assignments from Datadog Feature Flags service.
@@ -29,13 +36,15 @@ import java.util.concurrent.TimeUnit
  * @param requestFactory Factory for creating precomputed assignments requests
  * @param requestTimeoutMs SDK timeout for each request, in milliseconds. Zero preserves the call's existing timeout
  * @param requestRetryCount Number of retries after the first attempt
+ * @param retryScheduler Scheduler for the delay before each retry
  */
 internal class PrecomputedAssignmentsDownloader(
     private val callFactory: Call.Factory,
     private val internalLogger: InternalLogger,
     private val requestFactory: PrecomputedAssignmentsRequestFactory,
     private val requestTimeoutMs: Long,
-    private val requestRetryCount: Int = 0
+    private val requestRetryCount: Int = 0,
+    private val retryScheduler: AssignmentRequestRetryScheduler = RandomizedAssignmentRequestRetryScheduler()
 ) : PrecomputedAssignmentsReader {
 
     @WorkerThread
@@ -47,10 +56,11 @@ internal class PrecomputedAssignmentsDownloader(
 
     private fun executeDownloadRequest(request: Request): String? {
         var attempt = 0
-        var result = executeSingleRequest(request)
+        var result: DownloadResult
 
-        while (shouldRetry(result, attempt)) {
+        while (true) {
             result = executeSingleRequest(request)
+            if (!shouldRetry(result, attempt) || !awaitRetry(result, attempt)) break
             attempt++
         }
 
@@ -85,6 +95,17 @@ internal class PrecomputedAssignmentsDownloader(
     private fun shouldRetry(result: DownloadResult, attempt: Int): Boolean =
         result.isRetryable && attempt < requestRetryCount
 
+    private fun awaitRetry(result: DownloadResult, attempt: Int): Boolean {
+        val retryAfter = (result as? DownloadResult.HttpFailure)?.retryAfter
+        return try {
+            retryScheduler.awaitRetry(attempt, retryAfter)
+        } catch (e: InterruptedException) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // Preserve the cancellation signal for the executor.
+            Thread.currentThread().interrupt()
+            false
+        }
+    }
+
     @Suppress("TooGenericExceptionCaught", "UnsafeThirdPartyFunctionCall")
     private fun executeSingleRequest(request: Request): DownloadResult {
         var call: Call? = null
@@ -94,15 +115,22 @@ internal class PrecomputedAssignmentsDownloader(
             if (requestTimeoutMs > 0) {
                 newCall.timeout().timeout(requestTimeoutMs, TimeUnit.MILLISECONDS)
             }
-            newCall.execute().use { response ->
+            val response = newCall.execute()
+            try {
                 if (response.isSuccessful) {
                     DownloadResult.Success(response.body?.string())
                 } else {
                     DownloadResult.HttpFailure(
                         statusCode = response.code,
+                        retryAfter = response.header(RETRY_AFTER_HEADER_NAME).takeIf {
+                            response.code == HttpSpec.StatusCode.SERVICE_UNAVAILABLE
+                        },
                         isRetryable = isRetryableStatus(response.code)
                     )
                 }
+            } finally {
+                // A custom Call.Factory can return a response without a body. Response.close() rejects that shape.
+                if (response.body != null) response.close()
             }
         } catch (e: IOException) {
             DownloadResult.UnexpectedFailure(
@@ -144,6 +172,7 @@ internal class PrecomputedAssignmentsDownloader(
 
         data class HttpFailure(
             val statusCode: Int,
+            val retryAfter: String?,
             override val isRetryable: Boolean
         ) : DownloadResult
 
@@ -157,5 +186,100 @@ internal class PrecomputedAssignmentsDownloader(
         const val HTTP_SERVER_ERROR_MIN = 500
         const val HTTP_SERVER_ERROR_MAX = 599
         const val OKHTTP_CALL_TIMEOUT_MESSAGE = "timeout"
+        const val RETRY_AFTER_HEADER_NAME = "Retry-After"
+    }
+}
+
+internal fun interface AssignmentRequestRetryScheduler {
+    /**
+     * Waits before the next retry.
+     *
+     * @return false when the server delay is too long and the request must not be retried
+     */
+    @Throws(InterruptedException::class)
+    fun awaitRetry(attempt: Int, retryAfter: String?): Boolean
+}
+
+internal class RandomizedAssignmentRequestRetryScheduler(
+    private val randomLong: (Long) -> Long = { upperBound ->
+        @Suppress("UnsafeThirdPartyFunctionCall") // The upper bound is always positive.
+        Random.nextLong(upperBound)
+    },
+    private val currentTimeMillis: () -> Long = System::currentTimeMillis,
+    private val sleeper: (Long) -> Unit = Thread::sleep
+) : AssignmentRequestRetryScheduler {
+
+    override fun awaitRetry(attempt: Int, retryAfter: String?): Boolean {
+        val retryAfterDelay = parseRetryAfter(retryAfter)
+        if (retryAfterDelay is RetryAfterDelay.TooLong) return false
+
+        val backoffUpperBound = min(INITIAL_BACKOFF_MS * (1L shl attempt), MAX_BACKOFF_MS)
+        val backoffMs = randomLong(backoffUpperBound)
+        val delayMs = (retryAfterDelay as? RetryAfterDelay.Accepted)?.milliseconds.orZero() + backoffMs
+        if (delayMs > 0) sleeper(delayMs)
+        return true
+    }
+
+    private fun parseRetryAfter(value: String?): RetryAfterDelay {
+        val trimmedValue = value?.trim() ?: return RetryAfterDelay.NotProvided
+        return when {
+            trimmedValue.matches(DIGITS_REGEX) -> parseDeltaSeconds(trimmedValue)
+            trimmedValue.isEmpty() || trimmedValue.toDoubleOrNull() != null -> RetryAfterDelay.NotProvided
+            else -> parseRetryAfterDate(trimmedValue)
+        }
+    }
+
+    private fun parseDeltaSeconds(value: String): RetryAfterDelay {
+        val seconds = value.toLongOrNull()
+        return if (seconds == null || seconds > MAX_RETRY_AFTER_MS / MILLISECONDS_PER_SECOND) {
+            RetryAfterDelay.TooLong
+        } else {
+            RetryAfterDelay.Accepted(seconds * MILLISECONDS_PER_SECOND)
+        }
+    }
+
+    private fun parseRetryAfterDate(value: String): RetryAfterDelay {
+        val dateMs = parseHttpDate(value) ?: return RetryAfterDelay.NotProvided
+        val delayMs = max(dateMs - currentTimeMillis(), 0)
+        return if (delayMs > MAX_RETRY_AFTER_MS) {
+            RetryAfterDelay.TooLong
+        } else {
+            RetryAfterDelay.Accepted(delayMs)
+        }
+    }
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // All parser inputs are non-null and parse failures return null.
+    private fun parseHttpDate(value: String): Long? {
+        HTTP_DATE_FORMATS.forEach { pattern ->
+            val formatter = SimpleDateFormat(pattern, Locale.US).apply {
+                isLenient = false
+                timeZone = TimeZone.getTimeZone("GMT")
+            }
+            val position = ParsePosition(0)
+            val date = formatter.parse(value, position)
+            if (date != null && position.index == value.length) return date.time
+        }
+        return null
+    }
+
+    private fun Long?.orZero(): Long = this ?: 0L
+
+    private sealed interface RetryAfterDelay {
+        data object NotProvided : RetryAfterDelay
+        data object TooLong : RetryAfterDelay
+        data class Accepted(val milliseconds: Long) : RetryAfterDelay
+    }
+
+    private companion object {
+        const val INITIAL_BACKOFF_MS = 100L
+        const val MAX_BACKOFF_MS = 30_000L
+        const val MAX_RETRY_AFTER_MS = 30_000L
+        const val MILLISECONDS_PER_SECOND = 1_000L
+        val DIGITS_REGEX = Regex("^\\d+$")
+        val HTTP_DATE_FORMATS = listOf(
+            "EEE, dd MMM yyyy HH:mm:ss zzz",
+            "EEEE, dd-MMM-yy HH:mm:ss zzz",
+            "EEE MMM d HH:mm:ss yyyy"
+        )
     }
 }

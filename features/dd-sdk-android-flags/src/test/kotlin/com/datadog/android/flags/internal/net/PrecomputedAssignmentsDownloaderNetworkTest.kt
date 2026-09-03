@@ -61,7 +61,7 @@ internal class PrecomputedAssignmentsDownloaderNetworkTest {
     @Test
     fun `M time out while reading response body W explicit SDK timeout`() {
         // Given
-        mockWebServer.enqueue(delayedBodyResponse())
+        mockWebServer.enqueue(slowBodyResponse())
         val callFactory = OkHttpClient.Builder()
             .callTimeout(LONG_CLIENT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
             .retryOnConnectionFailure(false)
@@ -79,7 +79,7 @@ internal class PrecomputedAssignmentsDownloaderNetworkTest {
     @Test
     fun `M retry and succeed W explicit SDK timeout`() {
         // Given
-        mockWebServer.enqueue(delayedBodyResponse())
+        mockWebServer.enqueue(slowBodyResponse())
         mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(RESPONSE_BODY))
         val callFactory = OkHttpClient.Builder()
             .callTimeout(LONG_CLIENT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
@@ -102,7 +102,7 @@ internal class PrecomputedAssignmentsDownloaderNetworkTest {
     @Test
     fun `M preserve client timeout while reading response body W SDK timeout disabled`() {
         // Given
-        mockWebServer.enqueue(delayedBodyResponse())
+        mockWebServer.enqueue(slowBodyResponse())
         val callFactory = OkHttpClient.Builder()
             .callTimeout(CUSTOM_CLIENT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
             .retryOnConnectionFailure(false)
@@ -135,10 +135,15 @@ internal class PrecomputedAssignmentsDownloaderNetworkTest {
         assertThat(mockWebServer.requestCount).isEqualTo(1)
     }
 
-    private fun delayedBodyResponse(bodyDelayMs: Long = BODY_DELAY_MS): MockResponse = MockResponse()
+    private fun delayedBodyResponse(bodyDelayMs: Long): MockResponse = MockResponse()
         .setResponseCode(200)
         .setBody(RESPONSE_BODY)
         .setBodyDelay(bodyDelayMs, TimeUnit.MILLISECONDS)
+
+    private fun slowBodyResponse(): MockResponse = MockResponse()
+        .setResponseCode(200)
+        .setBody(RESPONSE_BODY)
+        .throttleBody(SLOW_BODY_BYTES_PER_PERIOD, SLOW_BODY_PERIOD_MS, TimeUnit.MILLISECONDS)
 
     private fun createDownloader(
         callFactory: Call.Factory,
@@ -154,10 +159,11 @@ internal class PrecomputedAssignmentsDownloaderNetworkTest {
 
     private companion object {
         const val RESPONSE_BODY = "{\"flags\":{}}"
-        const val EXPLICIT_SDK_TIMEOUT_MS = 200L
+        const val EXPLICIT_SDK_TIMEOUT_MS = 1_000L
         const val CUSTOM_CLIENT_TIMEOUT_MS = 200L
         const val LONG_CLIENT_TIMEOUT_MS = 5_000L
-        const val BODY_DELAY_MS = 2_000L
         const val NO_SDK_TIMEOUT_BODY_DELAY_MS = 500L
+        const val SLOW_BODY_BYTES_PER_PERIOD = 1L
+        const val SLOW_BODY_PERIOD_MS = 1_000L
     }
 }

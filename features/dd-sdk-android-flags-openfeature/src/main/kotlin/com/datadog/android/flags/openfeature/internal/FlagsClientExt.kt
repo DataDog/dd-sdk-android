@@ -42,7 +42,7 @@ internal suspend fun FlagsClient.setEvaluationContextSuspend(context: Evaluation
             }
         }
 
-        // setEvaluationContext is guaranteed to return within the configured timeout.
+        // Completion occurs after the assignment transport and configured retry policy finish.
         setEvaluationContext(context, callback)
     }
 }

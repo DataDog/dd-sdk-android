@@ -1,6 +1,6 @@
 # Unreleased
 
-* [IMPROVEMENT] Add an assignment-only HTTP call factory plus optional per-attempt timeout and retry-count configuration for Flags assignment requests. Timeouts and retries are opt-in; the default remains one request with no SDK-added timeout.
+* [IMPROVEMENT] Add an assignment-only HTTP call factory plus optional per-attempt timeout and retry-count configuration for Flags assignment requests. Timeouts and retries are opt-in; the default remains one request with no SDK-added timeout. See [#3693](https://github.com/DataDog/dd-sdk-android/pull/3693)
 
 # 3.13.1 / 2026-08-27
 

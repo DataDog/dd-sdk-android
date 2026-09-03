@@ -45,8 +45,9 @@ data class FlagsConfiguration internal constructor(
      *
      * This overload retains the public JVM signature generated before assignment request settings were added to the
      * primary constructor. Keep its parameter list stable for binary compatibility.
+     * Forward each new primary-constructor property from this instance. A property with a default value can otherwise
+     * reset silently because this overload still compiles when the property is omitted.
      */
-    @Suppress("LongParameterList")
     fun copy(
         trackExposures: Boolean = this.trackExposures,
         trackEvaluations: Boolean = this.trackEvaluations,
@@ -195,31 +196,31 @@ data class FlagsConfiguration internal constructor(
          *
          * @param timeoutMs The timeout for each request, in milliseconds.
          * @return this [Builder] instance for method chaining.
-         * @throws IllegalArgumentException if [timeoutMs] is negative.
+         * Negative values are coerced to zero.
          */
         fun assignmentRequestTimeout(timeoutMs: Long): Builder {
-            @Suppress("UnsafeThirdPartyFunctionCall") // Intentional public argument validation.
-            require(timeoutMs >= 0) { "timeoutMs must be greater than or equal to 0" }
-            assignmentRequestTimeoutMs = timeoutMs
+            assignmentRequestTimeoutMs = timeoutMs.coerceAtLeast(0)
             return this
         }
 
         /**
          * Sets the number of retries after a transient precomputed assignment request failure.
          * The default is zero (no retries). The retry count must be between zero and ten, inclusive.
-         * The SDK retries network errors, timeouts, HTTP 408, and HTTP 5xx responses immediately.
+         * The SDK retries transient network errors, timeouts, HTTP 408, and HTTP 5xx responses.
+         * Retries use randomized exponential backoff, capped at 30 seconds. For HTTP 503, a valid `Retry-After`
+         * value is a minimum delay before the backoff. The SDK does not retry when this value exceeds 30 seconds.
          * The SDK does not retry HTTP 429 responses.
+         * Network time can reach ([retryCount] + 1) times the assignment request timeout, plus retry delays. When the
+         * SDK timeout is zero, the HTTP client's call timeout supplies the bound. A custom factory may have no bound.
          *
          * @param retryCount The number of retries after the first attempt.
          * @return this [Builder] instance for method chaining.
-         * @throws IllegalArgumentException if [retryCount] is outside the supported range.
+         * Values outside the supported range are coerced to the nearest bound.
          */
         fun assignmentRequestRetryCount(retryCount: Int): Builder {
-            @Suppress("UnsafeThirdPartyFunctionCall") // Intentional public argument validation.
-            require(retryCount in 0..MAX_ASSIGNMENT_REQUEST_RETRY_COUNT) {
-                "retryCount must be between 0 and $MAX_ASSIGNMENT_REQUEST_RETRY_COUNT"
-            }
             assignmentRequestRetryCount = retryCount
+                .coerceAtLeast(0)
+                .coerceAtMost(MAX_ASSIGNMENT_REQUEST_RETRY_COUNT)
             return this
         }
 

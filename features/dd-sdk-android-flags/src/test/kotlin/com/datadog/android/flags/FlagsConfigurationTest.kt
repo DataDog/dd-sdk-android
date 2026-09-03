@@ -265,29 +265,29 @@ internal class FlagsConfigurationTest {
     }
 
     @Test
-    fun `M reject negative assignment request timeout W Builder`() {
-        // When + Then
-        assertThatThrownBy {
-            FlagsConfiguration.Builder().assignmentRequestTimeout(-1)
-        }
-            .isInstanceOf(IllegalArgumentException::class.java)
-            .hasMessage("timeoutMs must be greater than or equal to 0")
+    fun `M coerce negative assignment request timeout W Builder`() {
+        // When
+        val configuration = FlagsConfiguration.Builder()
+            .assignmentRequestTimeout(-1)
+            .build()
+
+        // Then
+        assertThat(configuration.assignmentRequestTimeoutMs).isZero()
     }
 
     @Test
-    fun `M reject assignment retry counts outside supported range W Builder`() {
-        // When + Then
-        assertThatThrownBy {
-            FlagsConfiguration.Builder().assignmentRequestRetryCount(-1)
-        }
-            .isInstanceOf(IllegalArgumentException::class.java)
-            .hasMessage("retryCount must be between 0 and 10")
+    fun `M coerce assignment retry counts outside supported range W Builder`() {
+        // When
+        val belowRange = FlagsConfiguration.Builder()
+            .assignmentRequestRetryCount(-1)
+            .build()
+        val aboveRange = FlagsConfiguration.Builder()
+            .assignmentRequestRetryCount(11)
+            .build()
 
-        assertThatThrownBy {
-            FlagsConfiguration.Builder().assignmentRequestRetryCount(11)
-        }
-            .isInstanceOf(IllegalArgumentException::class.java)
-            .hasMessage("retryCount must be between 0 and 10")
+        // Then
+        assertThat(belowRange.assignmentRequestRetryCount).isZero()
+        assertThat(aboveRange.assignmentRequestRetryCount).isEqualTo(10)
     }
 
     // endregion

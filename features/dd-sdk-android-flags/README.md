@@ -97,8 +97,13 @@ val flagsConfig = FlagsConfiguration.Builder()
 
 Precomputed assignment requests make one attempt and have no SDK-added timeout by default. Set an explicit timeout to
 include both receiving the response and downloading its body. A zero timeout keeps the SDK timeout disabled and preserves
-any timeout already configured on the HTTP client. The retry count accepts values from zero to ten. Zero disables retries.
-The SDK retries transient failures immediately.
+any timeout already configured on the HTTP client. Negative timeout values are coerced to zero. The retry count accepts
+values from zero to ten. Values outside this range are coerced to the nearest bound. Zero disables retries.
+The SDK retries transient network errors, timeouts, HTTP 408, and HTTP 5xx responses. It uses randomized exponential
+backoff capped at 30 seconds. For HTTP 503, a valid `Retry-After` value is a minimum delay before the backoff.
+The SDK does not retry when this value exceeds 30 seconds. It does not retry HTTP 429 responses.
+Network time can reach `(retry count + 1) * assignment request timeout`, plus retry delays. With no SDK timeout,
+the HTTP client's call timeout supplies the bound. A custom call factory can have no timeout.
 
 ```kotlin
 val flagsConfig = FlagsConfiguration.Builder()
@@ -109,7 +114,8 @@ val flagsConfig = FlagsConfiguration.Builder()
 
 #### Customize the assignment request transport
 
-Supply an OkHttp `Call.Factory` to customize only precomputed assignment requests. The SDK still constructs the
+Supply an OkHttp `Call.Factory` to customize only precomputed assignment requests. Declare OkHttp as a direct
+application dependency when you use this option. The SDK still constructs the
 request URL, method, body, and authentication headers; the factory must preserve them. Exposure and evaluation
 uploads continue to use the SDK transport. Timeout and retry policies compose independently on top of the supplied
 factory.

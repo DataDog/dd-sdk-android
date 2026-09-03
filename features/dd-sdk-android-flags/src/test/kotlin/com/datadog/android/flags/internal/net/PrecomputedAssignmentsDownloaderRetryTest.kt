@@ -86,6 +86,7 @@ internal class PrecomputedAssignmentsDownloaderRetryTest {
     private lateinit var fakeEvaluationContext: EvaluationContext
     private lateinit var fakeRequest: Request
     private lateinit var testedDownloader: PrecomputedAssignmentsDownloader
+    private val scheduledRetries = mutableListOf<Pair<Int, String?>>()
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -146,6 +147,23 @@ internal class PrecomputedAssignmentsDownloaderRetryTest {
         ordered.verify(secondCall).execute()
     }
 
+    @Test
+    fun `M retry transient status W readPrecomputedFlags() { response has no body }`() {
+        // Given
+        val calls = queueCalls(
+            callReturning(createPrecomputedResponse(503, FAKE_URL, null)),
+            callReturning(createPrecomputedSuccessfulResponse(RESPONSE_BODY, FAKE_URL))
+        )
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+
+        // Then
+        assertThat(result).isEqualTo(RESPONSE_BODY)
+        verify(mockCallFactory, times(2)).newCall(fakeRequest)
+        verifyExecutedOnce(calls)
+    }
+
     @ParameterizedTest
     @ValueSource(ints = [408, 500, 599])
     fun `M retry transient status W readPrecomputedFlags()`(statusCode: Int) {
@@ -165,9 +183,58 @@ internal class PrecomputedAssignmentsDownloaderRetryTest {
     }
 
     @Test
-    fun `M not retry W readPrecomputedFlags() { rate limited response }`() {
+    fun `M pass Retry-After to scheduler W readPrecomputedFlags() { service unavailable }`() {
         // Given
-        whenever(mockCall.execute()).doReturn(createPrecomputedUnsuccessfulResponse(429, FAKE_URL))
+        val firstResponse = createPrecomputedUnsuccessfulResponse(503, FAKE_URL)
+            .newBuilder()
+            .header("Retry-After", "15")
+            .build()
+        val calls = queueCalls(
+            callReturning(firstResponse),
+            callReturning(createPrecomputedSuccessfulResponse(RESPONSE_BODY, FAKE_URL))
+        )
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+
+        // Then
+        assertThat(result).isEqualTo(RESPONSE_BODY)
+        assertThat(scheduledRetries).containsExactly(0 to "15")
+        verifyExecutedOnce(calls)
+    }
+
+    @Test
+    fun `M ignore Retry-After W readPrecomputedFlags() { response is not service unavailable }`() {
+        // Given
+        val firstResponse = createPrecomputedUnsuccessfulResponse(500, FAKE_URL)
+            .newBuilder()
+            .header("Retry-After", "15")
+            .build()
+        queueCalls(
+            callReturning(firstResponse),
+            callReturning(createPrecomputedSuccessfulResponse(RESPONSE_BODY, FAKE_URL))
+        )
+
+        // When
+        testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+
+        // Then
+        assertThat(scheduledRetries).containsExactly(0 to null)
+    }
+
+    @Test
+    fun `M stop retries W readPrecomputedFlags() { scheduler rejects server delay }`() {
+        // Given
+        testedDownloader = createDownloader(
+            requestRetryCount = 1,
+            retryScheduler = AssignmentRequestRetryScheduler { _, _ -> false }
+        )
+        whenever(mockCall.execute()).doReturn(
+            createPrecomputedUnsuccessfulResponse(503, FAKE_URL)
+                .newBuilder()
+                .header("Retry-After", "31")
+                .build()
+        )
 
         // When
         val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
@@ -175,6 +242,46 @@ internal class PrecomputedAssignmentsDownloaderRetryTest {
         // Then
         assertThat(result).isNull()
         verify(mockCallFactory).newCall(fakeRequest)
+        verify(mockCall).execute()
+    }
+
+    @Test
+    fun `M stop retries and restore interruption W readPrecomputedFlags() { retry wait interrupted }`() {
+        // Given
+        testedDownloader = createDownloader(
+            requestRetryCount = 1,
+            retryScheduler = AssignmentRequestRetryScheduler { _, _ -> throw InterruptedException() }
+        )
+        whenever(mockCall.execute()).doReturn(createPrecomputedUnsuccessfulResponse(500, FAKE_URL))
+
+        try {
+            // When
+            val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+
+            // Then
+            assertThat(result).isNull()
+            assertThat(Thread.currentThread().isInterrupted).isTrue()
+            verify(mockCallFactory).newCall(fakeRequest)
+            verify(mockCall).execute()
+        } finally {
+            Thread.interrupted()
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = [400, 404, 429, 499, 600])
+    fun `M not retry non-transient status W readPrecomputedFlags()`(statusCode: Int) {
+        // Given
+        testedDownloader = createDownloader(requestRetryCount = 2)
+        whenever(mockCall.execute()).doReturn(createPrecomputedUnsuccessfulResponse(statusCode, FAKE_URL))
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+
+        // Then
+        assertThat(result).isNull()
+        verify(mockCallFactory).newCall(fakeRequest)
+        verify(mockCall).execute()
     }
 
     @Test
@@ -241,6 +348,27 @@ internal class PrecomputedAssignmentsDownloaderRetryTest {
         // Then
         assertThat(result).isEqualTo(RESPONSE_BODY)
         verifyExecutedOnce(calls)
+    }
+
+    @ParameterizedTest
+    @MethodSource("retryableNetworkErrors")
+    fun `M not retry W readPrecomputedFlags() { cancelled call reports retryable error }`(error: IOException) {
+        // Given
+        testedDownloader = createDownloader(requestRetryCount = 2)
+        val cancelledCall = callThrowing(error)
+        whenever(cancelledCall.isCanceled()).doReturn(true)
+        queueCalls(
+            cancelledCall,
+            callReturning(createPrecomputedSuccessfulResponse(RESPONSE_BODY, FAKE_URL))
+        )
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+
+        // Then
+        assertThat(result).isNull()
+        verify(mockCallFactory).newCall(fakeRequest)
+        verify(cancelledCall).execute()
     }
 
     @ParameterizedTest
@@ -367,13 +495,18 @@ internal class PrecomputedAssignmentsDownloaderRetryTest {
 
     private fun createDownloader(
         requestTimeoutMs: Long = 0L,
-        requestRetryCount: Int = 0
+        requestRetryCount: Int = 0,
+        retryScheduler: AssignmentRequestRetryScheduler = AssignmentRequestRetryScheduler { attempt, retryAfter ->
+            scheduledRetries += attempt to retryAfter
+            true
+        }
     ) = PrecomputedAssignmentsDownloader(
         callFactory = mockCallFactory,
         internalLogger = mockInternalLogger,
         requestFactory = mockRequestFactory,
         requestTimeoutMs = requestTimeoutMs,
-        requestRetryCount = requestRetryCount
+        requestRetryCount = requestRetryCount,
+        retryScheduler = retryScheduler
     )
 
     private fun callReturning(response: Response, timeout: Timeout = mock()): Call = mock<Call>().also { call ->
