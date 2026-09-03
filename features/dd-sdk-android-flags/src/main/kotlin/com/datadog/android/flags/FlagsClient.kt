@@ -451,11 +451,14 @@ interface FlagsClient {
             )
         }
 
+        @Suppress("UnsafeThirdPartyFunctionCall") // OkHttp accepts this constant configuration without validation.
         internal fun resolveAssignmentRequestCallFactory(
             configuration: FlagsConfiguration,
             featureSdkCore: FeatureSdkCore
         ): Call.Factory = configuration.assignmentRequestCallFactory
-            ?: featureSdkCore.createOkHttpCallFactory()
+            ?: featureSdkCore.createOkHttpCallFactory {
+                retryOnConnectionFailure(false)
+            }
 
         private fun createRumEvaluationLogger(featureSdkCore: FeatureSdkCore): RumEvaluationLogger {
             val rumFeatureScope = featureSdkCore.getFeature(RUM_FEATURE_NAME)

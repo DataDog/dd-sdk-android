@@ -18,6 +18,7 @@ import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Call
+import okhttp3.OkHttpClient
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -27,6 +28,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
@@ -295,18 +297,22 @@ internal class FlagsClientTest {
     }
 
     @Test
-    fun `M use SDK assignment call factory W resolveAssignmentRequestCallFactory() { custom factory omitted }`() {
+    fun `M disable transport retries W resolveAssignmentRequestCallFactory() { custom factory omitted }`() {
         // Given
         val sdkCallFactory = mock<Call.Factory>()
         val configuration = FlagsConfiguration.Builder().build()
-        whenever(mockSdkCore.createOkHttpCallFactory()).thenReturn(sdkCallFactory)
+        whenever(mockSdkCore.createOkHttpCallFactory(any())).thenReturn(sdkCallFactory)
 
         // When
         val resolvedFactory = FlagsClient.resolveAssignmentRequestCallFactory(configuration, mockSdkCore)
 
         // Then
         assertThat(resolvedFactory).isSameAs(sdkCallFactory)
-        verify(mockSdkCore).createOkHttpCallFactory()
+        argumentCaptor<OkHttpClient.Builder.() -> Unit> {
+            verify(mockSdkCore).createOkHttpCallFactory(capture())
+            val configuredClient = OkHttpClient.Builder().apply(firstValue).build()
+            assertThat(configuredClient.retryOnConnectionFailure).isFalse()
+        }
     }
 
     @Test
