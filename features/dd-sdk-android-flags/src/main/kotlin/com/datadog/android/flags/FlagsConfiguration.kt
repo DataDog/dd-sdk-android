@@ -192,11 +192,11 @@ data class FlagsConfiguration internal constructor(
         }
 
         /**
-         * Sets the timeout for each precomputed assignment request.
-         * The timeout includes downloading the response body. A value of zero disables the SDK timeout and preserves
-         * any timeout already configured on the HTTP client. When the HTTP call already has a nonzero timeout, the
-         * shorter timeout applies. A custom call factory must provide and honor a configurable call timeout when this
-         * value is positive.
+         * Sets the timeout for each precomputed assignment request attempt.
+         * The timeout applies separately to each attempt and includes downloading the response body. A value of zero
+         * disables the SDK timeout and preserves any timeout already configured on the HTTP client. When the HTTP call
+         * already has a nonzero timeout, the shorter timeout applies. A custom call factory must provide and honor a
+         * configurable call timeout when this value is positive.
          *
          * @param timeoutMs The timeout for each request, in milliseconds.
          * @return this [Builder] instance for method chaining.
@@ -209,11 +209,13 @@ data class FlagsConfiguration internal constructor(
 
         /**
          * Sets the number of retries after a transient precomputed assignment request failure.
-         * The default is zero (no retries). The retry count must be between zero and ten, inclusive.
+         * The default is zero (no SDK-managed retries). The retry count must be between zero and ten, inclusive.
          * The SDK retries transient network errors, timeouts, HTTP 408, and HTTP 5xx responses.
          * Retries use randomized exponential backoff, capped at 30 seconds. For HTTP 503, a valid `Retry-After`
          * value is a minimum delay before the backoff. The SDK does not retry when this value exceeds 30 seconds.
          * The SDK does not retry HTTP 429 responses.
+         * When SDK-managed retries are enabled, the default transport disables OkHttp connection retries. A custom
+         * call factory keeps its own internal retry behavior.
          * Network time can reach ([retryCount] + 1) times the assignment request timeout, plus retry delays. When the
          * SDK timeout is zero, the HTTP client's call timeout supplies the bound. A custom factory may have no bound
          * only when the SDK timeout is zero.

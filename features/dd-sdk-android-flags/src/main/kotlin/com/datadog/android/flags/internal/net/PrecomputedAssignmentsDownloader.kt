@@ -98,12 +98,14 @@ internal class PrecomputedAssignmentsDownloader(
     private fun shouldRetry(result: DownloadResult, attempt: Int): Boolean =
         result.isRetryable && attempt < requestRetryCount
 
+    @Suppress("UnsafeThirdPartyFunctionCall") // Preserve the worker thread interruption signal.
     private fun awaitRetry(result: DownloadResult, attempt: Int): Boolean {
+        if (Thread.currentThread().isInterrupted) return false
+
         val retryAfter = (result as? DownloadResult.HttpFailure)?.retryAfter
         return try {
-            retryScheduler.awaitRetry(attempt, retryAfter)
+            retryScheduler.awaitRetry(attempt, retryAfter) && !Thread.currentThread().isInterrupted
         } catch (e: InterruptedException) {
-            @Suppress("UnsafeThirdPartyFunctionCall") // Preserve the cancellation signal for the executor.
             Thread.currentThread().interrupt()
             false
         }
@@ -176,7 +178,7 @@ internal class PrecomputedAssignmentsDownloader(
             statusCode in HTTP_SERVER_ERROR_MIN..HTTP_SERVER_ERROR_MAX
 
     private fun isRetryableNetworkError(error: IOException, wasCanceled: Boolean): Boolean {
-        if (wasCanceled && !error.isOkHttpCallTimeout()) return false
+        if (wasCanceled && error !is SocketTimeoutException && !error.isOkHttpCallTimeout()) return false
 
         return when (error) {
             is SocketTimeoutException,

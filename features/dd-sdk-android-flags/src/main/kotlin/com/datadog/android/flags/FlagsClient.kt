@@ -457,7 +457,9 @@ interface FlagsClient {
             featureSdkCore: FeatureSdkCore
         ): Call.Factory = configuration.assignmentRequestCallFactory
             ?: featureSdkCore.createOkHttpCallFactory {
-                retryOnConnectionFailure(false)
+                if (configuration.assignmentRequestRetryCount > 0) {
+                    retryOnConnectionFailure(false)
+                }
             }
 
         private fun createRumEvaluationLogger(featureSdkCore: FeatureSdkCore): RumEvaluationLogger {

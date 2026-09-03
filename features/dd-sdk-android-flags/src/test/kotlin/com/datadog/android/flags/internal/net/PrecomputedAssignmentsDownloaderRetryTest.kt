@@ -288,6 +288,61 @@ internal class PrecomputedAssignmentsDownloaderRetryTest {
         }
     }
 
+    @Test
+    fun `M stop retries and preserve interruption W readPrecomputedFlags() { interrupted before zero delay }`() {
+        // Given
+        testedDownloader = createDownloader(
+            requestRetryCount = 1,
+            retryScheduler = RandomizedAssignmentRequestRetryScheduler(randomLong = { 0L })
+        )
+        whenever(mockCall.execute()).doReturn(createPrecomputedUnsuccessfulResponse(500, FAKE_URL))
+
+        try {
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            Thread.currentThread().interrupt()
+
+            // When
+            val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+
+            // Then
+            assertThat(result).isNull()
+            assertThat(Thread.currentThread().isInterrupted).isTrue()
+            verify(mockCallFactory).newCall(fakeRequest)
+            verify(mockCall).execute()
+        } finally {
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            Thread.interrupted()
+        }
+    }
+
+    @Test
+    fun `M stop retries and preserve interruption W readPrecomputedFlags() { scheduler interrupts }`() {
+        // Given
+        testedDownloader = createDownloader(
+            requestRetryCount = 1,
+            retryScheduler = AssignmentRequestRetryScheduler { _, _ ->
+                @Suppress("UnsafeThirdPartyFunctionCall")
+                Thread.currentThread().interrupt()
+                true
+            }
+        )
+        whenever(mockCall.execute()).doReturn(createPrecomputedUnsuccessfulResponse(500, FAKE_URL))
+
+        try {
+            // When
+            val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+
+            // Then
+            assertThat(result).isNull()
+            assertThat(Thread.currentThread().isInterrupted).isTrue()
+            verify(mockCallFactory).newCall(fakeRequest)
+            verify(mockCall).execute()
+        } finally {
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            Thread.interrupted()
+        }
+    }
+
     @ParameterizedTest
     @ValueSource(ints = [400, 404, 429, 499, 600])
     fun `M not retry non-transient status W readPrecomputedFlags()`(statusCode: Int) {
@@ -353,6 +408,24 @@ internal class PrecomputedAssignmentsDownloaderRetryTest {
         verifyExecutedOnce(calls)
     }
 
+    @Test
+    fun `M retry W readPrecomputedFlags() { socket timeout cancelled call }`() {
+        // Given
+        val timedOutCall = callThrowing(SocketTimeoutException("read timed out"))
+        whenever(timedOutCall.isCanceled()).doReturn(true)
+        val calls = queueCalls(
+            timedOutCall,
+            callReturning(createPrecomputedSuccessfulResponse(RESPONSE_BODY, FAKE_URL))
+        )
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+
+        // Then
+        assertThat(result).isEqualTo(RESPONSE_BODY)
+        verifyExecutedOnce(calls)
+    }
+
     @ParameterizedTest
     @MethodSource("retryableNetworkErrors")
     fun `M retry W readPrecomputedFlags() { retryable network error }`(error: IOException) {
@@ -371,7 +444,7 @@ internal class PrecomputedAssignmentsDownloaderRetryTest {
     }
 
     @ParameterizedTest
-    @MethodSource("retryableNetworkErrors")
+    @MethodSource("retryableNetworkErrorsBlockedByCancellation")
     fun `M not retry W readPrecomputedFlags() { cancelled call reports retryable error }`(error: IOException) {
         // Given
         testedDownloader = createDownloader(requestRetryCount = 2)
@@ -612,6 +685,10 @@ internal class PrecomputedAssignmentsDownloaderRetryTest {
             SocketException("connection reset"),
             EOFException("unexpected end of stream")
         )
+
+        @JvmStatic
+        fun retryableNetworkErrorsBlockedByCancellation(): List<IOException> = retryableNetworkErrors()
+            .filterNot { it is SocketTimeoutException }
 
         @JvmStatic
         fun nonRetryableIOExceptions(): List<IOException> = listOf(

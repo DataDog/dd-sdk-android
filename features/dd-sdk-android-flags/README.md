@@ -95,13 +95,16 @@ val flagsConfig = FlagsConfiguration.Builder()
 
 #### Configure assignment request limits
 
-Precomputed assignment requests make one attempt and have no SDK-added timeout by default. Set an explicit timeout to
-include both receiving the response and downloading its body. A zero timeout keeps the SDK timeout disabled and preserves
-any timeout already configured on the HTTP client. Negative timeout values are coerced to zero. The retry count accepts
-values from zero to ten. Values outside this range are coerced to the nearest bound. Zero disables retries.
+Precomputed assignment requests make one SDK-managed attempt and have no SDK-added timeout by default. Set an explicit
+per-attempt timeout to include both receiving the response and downloading its body. A zero timeout keeps the SDK
+timeout disabled and preserves any timeout already configured on the HTTP client. Negative timeout values are coerced
+to zero. The retry count accepts values from zero to ten. Values outside this range are coerced to the nearest bound.
 The SDK retries transient network errors, timeouts, HTTP 408, and HTTP 5xx responses. It uses randomized exponential
 backoff capped at 30 seconds. For HTTP 503, a valid `Retry-After` value is a minimum delay before the backoff.
 The SDK does not retry when this value exceeds 30 seconds. It does not retry HTTP 429 responses.
+Zero disables SDK-managed retries and preserves the default transport's existing OkHttp recovery behavior. When the
+retry count is positive, the default transport disables OkHttp connection retries. A custom call factory keeps its own
+internal retry behavior.
 Network time can reach `(retry count + 1) * assignment request timeout`, plus retry delays. With no SDK timeout,
 the HTTP client's call timeout supplies the bound. A custom call factory can have no timeout only when the SDK timeout
 is zero.

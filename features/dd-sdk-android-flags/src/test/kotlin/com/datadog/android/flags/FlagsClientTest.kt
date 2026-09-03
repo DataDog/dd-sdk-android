@@ -300,7 +300,9 @@ internal class FlagsClientTest {
     fun `M disable transport retries W resolveAssignmentRequestCallFactory() { custom factory omitted }`() {
         // Given
         val sdkCallFactory = mock<Call.Factory>()
-        val configuration = FlagsConfiguration.Builder().build()
+        val configuration = FlagsConfiguration.Builder()
+            .assignmentRequestRetryCount(1)
+            .build()
         whenever(mockSdkCore.createOkHttpCallFactory(any())).thenReturn(sdkCallFactory)
 
         // When
@@ -312,6 +314,25 @@ internal class FlagsClientTest {
             verify(mockSdkCore).createOkHttpCallFactory(capture())
             val configuredClient = OkHttpClient.Builder().apply(firstValue).build()
             assertThat(configuredClient.retryOnConnectionFailure).isFalse()
+        }
+    }
+
+    @Test
+    fun `M preserve transport retries W resolveAssignmentRequestCallFactory() { SDK retries disabled }`() {
+        // Given
+        val sdkCallFactory = mock<Call.Factory>()
+        val configuration = FlagsConfiguration.Builder().build()
+        whenever(mockSdkCore.createOkHttpCallFactory(any())).thenReturn(sdkCallFactory)
+
+        // When
+        val resolvedFactory = FlagsClient.resolveAssignmentRequestCallFactory(configuration, mockSdkCore)
+
+        // Then
+        assertThat(resolvedFactory).isSameAs(sdkCallFactory)
+        argumentCaptor<OkHttpClient.Builder.() -> Unit> {
+            verify(mockSdkCore).createOkHttpCallFactory(capture())
+            val configuredClient = OkHttpClient.Builder().apply(firstValue).build()
+            assertThat(configuredClient.retryOnConnectionFailure).isTrue()
         }
     }
 
