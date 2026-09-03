@@ -257,6 +257,53 @@ _CURRENT_COLUMNS = {
 }
 
 
+def launch_rejected(row):
+    """Is this measured row one the harness itself judged invalid?
+
+    Extracted so the completeness pass and the aggregation loop cannot drift into
+    different ideas of an admissible launch: a block is complete only if it holds
+    the launches this returns False for. Missing evidence is NOT rejection -- it is
+    counted separately as unverified, which suppresses the primary interval through
+    its own reason rather than by silently shrinking the design.
+    """
+    if row.get("phase") == "measure_rejected":
+        return True
+    return (row.get("status") not in (None, "", "ok")
+            or row.get("launch_state") not in (None, "", "COLD")
+            or row.get("foreground") not in (None, "", "ok", "NA"))
+
+
+def complete_block_ids(rows, baseline, treatment, want_runs):
+    """Block ids where BOTH arms hold exactly `want_runs` admissible launches.
+
+    A block is the unit the primary endpoint pairs on, so a block is either a whole
+    counterbalanced pair of cells or it contributes nothing. The block containing
+    whatever ended collection is therefore excluded by construction, without anyone
+    deciding where the run "really" stopped.
+    """
+    cells = defaultdict(list)
+    for row in rows:
+        if row.get("phase") not in ("measure", "measure_rejected"):
+            continue
+        if row.get("label") not in (baseline, treatment):
+            continue
+        if launch_rejected(row):
+            # Recorded so the cell fails its count check below rather than passing
+            # with a hole: an 8-run cell with one rejected launch is not a 7-run cell.
+            cells[(row.get("label"), row.get("block"))].append(None)
+            continue
+        cells[(row.get("label"), row.get("block"))].append(row.get("run"))
+    wanted = Counter(str(run) for run in range(1, want_runs + 1))
+    complete = set()
+    for label, block in list(cells):
+        if label != baseline:
+            continue
+        pair = [cells.get((baseline, block), []), cells.get((treatment, block), [])]
+        if all(Counter(runs) == wanted for runs in pair):
+            complete.add(block)
+    return complete
+
+
 def parse_meta(lines):
     """Pull `key=value` pairs out of a run's `#` header line(s)."""
     kv = {}
@@ -360,6 +407,12 @@ def main():
         per_meta.append(own_meta)
         meta.extend(own_meta)
     metas = [parse_meta(m) for m in per_meta]
+    # Computed once: the completion check, the abort refusal and the sufficiency
+    # decision below all need the same two facts about each file.
+    file_abort_lines = [[ln.strip() for ln in own_meta if "RUN ABORTED" in ln]
+                        for own_meta in per_meta]
+    file_completions = [sum(ln.rstrip("\n") == _RUN_COMPLETE for ln in own_meta)
+                        for own_meta in per_meta]
     format_errors = []
     # own_kv, not own_meta: the loops below iterate the RAW `#` lines under that
     # name, and one function using one name for both a parsed dict and the lines it
@@ -384,15 +437,54 @@ def main():
               "\n  Re-run it with this version of coldstart_bench.sh."
         )
 
+    # ---- did an interrupted run already collect the design it registered? ------
+    # A run that stopped after collecting whole counterbalanced blocks is not a
+    # chosen prefix: the block containing the failure is incomplete and drops out by
+    # construction, and nothing about a later abort biases the blocks before it. The
+    # paired estimator is unbiased at any even k, so the shortfall costs POWER, which
+    # is already reported as the MDE at the k analyzed. What the operator must not be
+    # able to do is pick which prefix to report, so this applies to ONE file only:
+    # combining a prefix with a later top-up run is the recovery protocol that was
+    # deliberately removed, and it stays removed.
+    recovery = None
+    if len(per_file) == 1:
+        kv = metas[0]
+        blocks_value, runs_value = kv.get("blocks"), kv.get("runs")
+        interrupted = bool(file_abort_lines[0]) or file_completions[0] != 1
+        if (interrupted and blocks_value and runs_value
+                and blocks_value.isdigit() and runs_value.isdigit()
+                and int(blocks_value) >= 1 and int(runs_value) >= 1):
+            declared = int(blocks_value)
+            whole = complete_block_ids(list(csv.DictReader(per_file[0][1])),
+                                       a.baseline, a.treatment, int(runs_value))
+            # Numeric order, then floored to an even count: ABBA alternates, so an
+            # even number of leading whole blocks is balanced, and dropping the LAST
+            # one is the only choice that is not outcome-dependent. The existing
+            # first-arm balance gate still runs on whatever survives.
+            ordered = sorted((b for b in whole if b.isdigit()), key=int)
+            dropped_for_parity = ordered.pop() if len(ordered) % 2 else None
+            # >= 4, not >= 3: the paired interval needs 3 blocks and an even count
+            # needs 4, so 3 whole blocks floor to 2 and are not enough. And strictly
+            # fewer than declared: with nothing missing there is no shortfall, so the
+            # abort happened after collection and is unexplained by this file.
+            if len(ordered) >= 4 and len(ordered) < declared:
+                recovery = {
+                    "analyzed": set(ordered),
+                    "declared": declared,
+                    "dropped_for_parity": dropped_for_parity,
+                    "abort_lines": file_abort_lines[0],
+                    "no_completion_marker": file_completions[0] != 1,
+                }
+
     incomplete = []
-    for (path, _), own_meta in zip(per_file, per_meta):
+    for index, ((path, _), own_meta) in enumerate(zip(per_file, per_meta)):
         # An aborted run has no completion marker BY DEFINITION, so reporting that
         # absence here would replace the specific fact -- the harness aborted, and
         # the recorded exit status says where -- with a generic one about a missing
         # line. The abort is reported below, with the CSV's own `RUN ABORTED` line.
-        if any("RUN ABORTED" in line for line in own_meta):
+        if file_abort_lines[index]:
             continue
-        count = sum(line.rstrip("\n") == _RUN_COMPLETE for line in own_meta)
+        count = file_completions[index]
         if count != 1:
             incomplete.append(f"  {path}: {count} RUN COMPLETE markers (expected 1)")
     if incomplete:
@@ -401,14 +493,17 @@ def main():
         for line in incomplete:
             print("!!" + line)
         print("!" * 78)
-        if not a.allow_aborted:
+        if recovery:
+            pass
+        elif not a.allow_aborted:
             raise SystemExit(
                 "  refusing to analyze a run that did not positively complete. Re-run it.\n"
                 "  For investigation only, pass --allow-aborted; the output is then\n"
                 "  diagnostic and the primary interval remains suppressed."
             )
-        diagnostic_only_reasons.append("positive RUN COMPLETE evidence is absent")
-        print("[WARNING: --allow-aborted without positive completion. DIAGNOSTIC ONLY.]")
+        else:
+            diagnostic_only_reasons.append("positive RUN COMPLETE evidence is absent")
+            print("[WARNING: --allow-aborted without positive completion. DIAGNOSTIC ONLY.]")
     if len(per_file) > 1:
         print(f"[{len(per_file)} files: block ids are namespaced per file, so blocks from "
               f"different runs are never merged]")
@@ -545,13 +640,16 @@ def main():
         # same mistake the whole design argues against: an aborted run can stop
         # part-way through an arm, and the block logic accepts a cell with a single
         # sample, so a rejected protocol could still produce a primary endpoint.
-        if not a.allow_aborted:
+        if recovery:
+            pass
+        elif not a.allow_aborted:
             raise SystemExit(
                 "  refusing to analyze an aborted run. Fix the cause and re-run.\n"
                 "  If you need to inspect it anyway, pass --allow-aborted -- the output\n"
                 "  is then diagnostic only and must not be reported as a result.")
-        diagnostic_only_reasons.append("the CSV is marked RUN ABORTED")
-        print("[WARNING: --allow-aborted. This output is DIAGNOSTIC ONLY. Do not report it.]")
+        else:
+            diagnostic_only_reasons.append("the CSV is marked RUN ABORTED")
+            print("[WARNING: --allow-aborted. This output is DIAGNOSTIC ONLY. Do not report it.]")
 
     # ---- does the CSV contain the experiment its own header describes? ----------
     # The completion marker proves the script returned; the matrix check separately
@@ -641,12 +739,34 @@ def main():
         if len(shortfalls) > 10:
             print(f"!!  ... and {len(shortfalls) - 10} more line(s) not listed")
         print("!" * 78)
-        if not a.allow_aborted:
+        if recovery:
+            analyzed = sorted(recovery["analyzed"], key=int)
+            print("!" * 78)
+            print(f"!! INTERRUPTED RUN, ANALYZED OVER {len(analyzed)} WHOLE BLOCKS of the "
+                  f"{recovery['declared']} declared.")
+            print(f"!! Blocks analyzed: {', '.join(analyzed)}. Every one holds a complete")
+            print("!! counterbalanced pair of cells; the block collection stopped inside is")
+            print("!! excluded entirely, as is every launch in it.")
+            if recovery["dropped_for_parity"]:
+                print(f"!! Block {recovery['dropped_for_parity']} was whole but dropped: an odd")
+                print("!! count cannot be counterbalanced, and dropping the last one is the")
+                print("!! only choice that does not depend on the result.")
+            for line in recovery["abort_lines"]:
+                print(f"!! {line}")
+            if recovery["no_completion_marker"] and not recovery["abort_lines"]:
+                print("!! No abort trailer: the run stopped without recording a reason, so")
+                print("!! nothing here says whether the analyzed blocks are trustworthy.")
+            print("!! WHY THE RUN STOPPED DECIDES WHETHER THIS IS USABLE. Thermal drift, a")
+            print("!! swapped device or a storage problem was also acting during the blocks")
+            print("!! above; a one-off foreground intrusion was not.")
+            print("!" * 78)
+        elif not a.allow_aborted:
             raise SystemExit(
                 "  refusing to analyze a truncated run. Re-run it.\n"
                 "  --allow-aborted analyzes it anyway, diagnostic only.")
-        diagnostic_only_reasons.append("the experiment matrix is truncated")
-        print("[WARNING: --allow-aborted over a truncated matrix. DIAGNOSTIC ONLY.]")
+        else:
+            diagnostic_only_reasons.append("the experiment matrix is truncated")
+            print("[WARNING: --allow-aborted over a truncated matrix. DIAGNOSTIC ONLY.]")
 
     arms, blocks, by_pos = defaultdict(list), defaultdict(list), defaultdict(list)
     by_block_pos, positions_by_arm_block = defaultdict(list), defaultdict(set)
@@ -655,7 +775,14 @@ def main():
     missing_validity_fields = set()
     labels_seen = defaultdict(set)
     reader = ((path, r) for path, body in per_file for r in csv.DictReader(body))
+    excluded_partial_rows = 0
     for path, r in reader:
+        # Before every count and gate below: a row in a block that did not complete
+        # is not evidence about the reduced design, and the rejected launch that
+        # ended collection would otherwise refuse the very analysis that excludes it.
+        if recovery and r.get("block") not in recovery["analyzed"]:
+            excluded_partial_rows += 1
+            continue
         phase = r.get("phase")
         # Include ONLY accepted measured launches. A rejected measured row is an
         # invalid observation, not an ordinary non-measured phase: the harness
@@ -675,11 +802,9 @@ def main():
         validity = {field: r.get(field)
                     for field in ("status", "launch_state", "foreground")}
         missing = [field for field, value in validity.items() if value in (None, "")]
-        invalid = phase == "measure_rejected" \
-            or validity["status"] not in (None, "", "ok") \
-            or validity["launch_state"] not in (None, "", "COLD") \
-            or validity["foreground"] not in (None, "", "ok", "NA")
-        if invalid:
+        # The same helper the completeness pass uses, so a block cannot be judged
+        # whole by one rule and its launches admissible by another.
+        if launch_rejected(r):
             # Only rows in the requested comparison can select observations out
             # of its interval. A pooled file may legitimately contain a third A/A
             # label; an invalid row there contributes nothing either way.
@@ -718,6 +843,9 @@ def main():
                 by_pos[pos].append(v)
                 by_block_pos[(blk, pos)].append(v)
 
+    if excluded_partial_rows:
+        print(f"[excluded {excluded_partial_rows} row(s) belonging to blocks that did not "
+              f"complete]")
     if skipped_warmup:
         print(f"[excluded {skipped_warmup} non-measured rows (warm-ups and liveness probes)]")
     if conditioning_no_fg:
@@ -954,6 +1082,16 @@ def main():
         else:
             print(f"  => Significant. Best estimate {m:+.0f} ms, plausible range "
                   f"[{lo:+.0f}, {hi:+.0f}] ms.")
+        if recovery:
+            print()
+            print(f"  !! INTERRUPTED RUN: this is {k} whole blocks of the "
+                  f"{recovery['declared']} the run")
+            print("     registered, so the interval above is honest at "
+                  f"{k} blocks and wider than")
+            print("     the design intended. The MDE above is the power actually achieved,")
+            print(f"     not the {recovery['declared']}-block figure. Re-run the "
+                  "full design before treating")
+            print("     this as the registered experiment; quote it only with this line.")
 
     # ---- DIAGNOSTICS ----------------------------------------------------------
     d_mean, se, df, t = welch(A, B)

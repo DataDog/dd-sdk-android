@@ -727,12 +727,24 @@ assume.
 A reportable CSV ends with exactly one `# RUN COMPLETE`. The EXIT handler stamps
 `# RUN ABORTED` when it can, but a killed process or host crash can bypass cleanup, so absence
 of the positive completion marker is independently refused. Fix the cause and repeat the full
-registered run from the beginning. Partial-run recovery is intentionally unsupported: deciding
-that a prefix is unaffected by the event that ended collection would add an analyst judgement
-to a protocol designed to avoid outcome-dependent selection. An aborted run is refused as an
-aborted run, quoting the recorded exit status, rather than as a file missing a marker it cannot
-have. `--allow-aborted` remains available
-for diagnostic inspection, but it suppresses the primary interval and is not reportable.
+registered run from the beginning if you can. An aborted run is refused as an aborted run,
+quoting the recorded exit status, rather than as a file missing a marker it cannot have.
+
+If the run had already collected whole counterbalanced blocks, those are analyzable and
+reportable over exactly themselves. A block qualifies only as a complete pair of cells that each
+passed every gate, so the block collection stopped inside contributes nothing; the surviving
+count is floored to even, and four is the minimum. The output states the shortfall next to the
+interval, prints the abort trailer, and gives the MDE at the blocks analyzed: the paired estimator
+is unbiased at any even block count, so a shortfall costs power and nothing else, and power is
+what the MDE measures. Re-running the full design is still better, and the result says so.
+
+What that cannot tell you is whether the cause of the abort was also acting during the blocks it
+kept. Thermal drift or a swapped device makes them suspect; a foreground intrusion in the last
+block does not. The refusals that remain are a run below four whole blocks, a run whose declared
+matrix is whole but which aborted anyway (nothing is missing, so this file does not explain the
+abort), and an interrupted run pooled with other CSVs, which would let a prefix be chosen to suit
+a result. `--allow-aborted` remains available
+for diagnostic inspection of any of them, but it suppresses the primary interval.
 
 ## Step 7 — Interpret the result
 
@@ -1307,7 +1319,7 @@ output contain no such data and are safe to share as-is.
 | `TotalTime` empty and `LaunchState=UNKNOWN` on every launch | the device is locked, or the notification shade is on top. Unlock it and leave it on the home screen |
 | every launch reports the wrong foreground activity | your `dumpsys` grep is anchored on `mResumedActivity`; this device prints `ResumedActivity:`. Match `m?ResumedActivity[:=]` |
 | `ab_stats.py` refuses to print a CI | fewer than 3 complete blocks, the selected endpoint is missing, non-finite or negative on an otherwise eligible measured launch, a selected row lacks `status`/`launch_state`/`foreground` or explicitly carries `foreground=NA`, or a contributing block lacks one stable complementary `{1}`/`{2}` `pos_in_block` pair for the selected arms. Missing endpoints can be the slowest launches censored by the collection window, while negative values are impossible elapsed times and unknown or malformed validity/order evidence leaves the protocol unverifiable, so none is silently accepted; fix the CSV/collection and re-run. `--allow-missing-endpoint` is diagnostic only and still suppresses the primary interval |
-| a run aborts or the laptop/process stops during collection | fix the cause and repeat the full run. Reportable CSVs end with exactly one `# RUN COMPLETE`; partial-run recovery is intentionally unsupported. `--allow-aborted` inspects surviving rows diagnostically without producing a reportable primary interval |
+| a run aborts or the laptop/process stops during collection | fix the cause and repeat the full run if you can. If it had already collected four or more whole counterbalanced blocks, `ab_stats.py` analyzes exactly those and reports the shortfall, the abort trailer and the MDE at that block count beside the interval. Below four, or with the declared matrix already whole, or pooled with another CSV, it is refused; `--allow-aborted` then inspects surviving rows diagnostically without a primary interval |
 | `ab_stats.py` refuses the file entirely | the run lacks complete current-format metadata or positive completion evidence, contains a rejected/invalid measured launch, or holds fewer blocks/launches than its own header says. Re-run with the current harness |
 | the harness refuses to start, naming another Android user | the app is also installed in a work or secondary profile. Host-side `adb uninstall` has no user selector, so continuing would delete that profile's app data, and no user-scoped removal leaves the measured user a genuinely fresh install. Remove it from those profiles, or use a dedicated test device |
 | the harness refuses to start, naming an output path | a results CSV, log or trace of that name already exists, or a parallel run against another device picked the same name. Output paths are atomically reserved before device state is changed, so evidence is never interleaved or overwritten. Move the old file or choose a new name |

@@ -1429,7 +1429,7 @@ class HarnessRegressionTests(unittest.TestCase):
 
         # Both readers compare the WHOLE line, with no whitespace tolerance.
         self.assertIn('grep -c -x -F -- "$DD_RUN_COMPLETE_MARKER"', lib)
-        self.assertIn('line.rstrip("\\n") == _RUN_COMPLETE', stats)
+        self.assertIn('.rstrip("\\n") == _RUN_COMPLETE', stats)
         # The writer uses the shared definition rather than its own copy.
         self.assertIn('printf \'%s\\n\' "$DD_RUN_COMPLETE_MARKER" >> "$OUT"', bench)
         self.assertNotIn('echo "# RUN COMPLETE"', bench)
@@ -3259,7 +3259,10 @@ class AbStatsRegressionTests(unittest.TestCase):
         where the operator has no reason to pass a flag yet. The recorded trailer is
         the only thing that says what to fix before re-running.
         """
-        result = self.run_stats(self.aborted_csv(6))
+        # Two whole blocks: below the paired minimum, so the run is refused and the
+        # question is only WHICH refusal speaks. Six whole blocks of eight declared
+        # is reportable now, deliberately, and is covered separately.
+        result = self.run_stats(self.aborted_csv(2))
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("refusing to analyze an aborted run", result.stderr)
         self.assertNotIn("did not positively complete", result.stderr)
@@ -3275,6 +3278,148 @@ class AbStatsRegressionTests(unittest.TestCase):
         self.assertNotEqual(killed_result.returncode, 0)
         self.assertIn("did not positively complete", killed_result.stderr)
         self.assertNotIn("refusing to analyze an aborted run", killed_result.stderr)
+
+    def test_interrupted_run_with_its_registered_design_is_reportable(self) -> None:
+        """A run that collected whole blocks before dying is not a chosen prefix.
+
+        The block collection stopped inside is incomplete and drops out by
+        construction, and nothing about a later abort biases the blocks before it.
+        The paired estimator is unbiased at any even k, so the shortfall costs
+        POWER, which the MDE at k already reports.
+        """
+        result = self.run_stats(self.aborted_csv(6))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("INTERRUPTED RUN, ANALYZED OVER 6 WHOLE BLOCKS of the 8", result.stdout)
+        self.assertIn("Blocks analyzed: 1, 2, 3, 4, 5, 6", result.stdout)
+        # The estimate itself is computed on six blocks, and is reportable.
+        self.assertRegex(result.stdout, r"blocks\s+6\n")
+        self.assertIn("MDE at 6 blocks", result.stdout)
+        self.assertNotIn("NOT REPORTABLE", result.stdout)
+        self.assertNotIn("DIAGNOSTIC ONLY", result.stdout)
+        # Why it stopped is what decides whether the survivors are usable, so the
+        # recorded trailer travels with the result rather than being replaced by it.
+        self.assertIn("another activity took the foreground", result.stdout)
+        self.assertIn("WHY THE RUN STOPPED DECIDES WHETHER THIS IS USABLE", result.stdout)
+        # And the shortfall is in the block that gets copied into a report, not only
+        # in a banner above it.
+        self.assertIn("INTERRUPTED RUN: this is 6 whole blocks of the 8", result.stdout)
+        self.assertIn("Re-run the full design", result.stdout)
+        # The partial block contributes nothing at all.
+        self.assertIn("row(s) belonging to blocks that did not complete", result.stdout)
+        self.assertNotIn("block   7", result.stdout)
+
+    def test_interrupted_run_floors_its_block_count_to_even(self) -> None:
+        """An odd count cannot be counterbalanced; the last block goes, not a chosen one."""
+        result = self.run_stats(self.aborted_csv(5))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("ANALYZED OVER 4 WHOLE BLOCKS of the 8", result.stdout)
+        self.assertIn("Block 5 was whole but dropped", result.stdout)
+        self.assertIn("does not depend on the result", result.stdout)
+        self.assertRegex(result.stdout, r"blocks\s+4\n")
+
+    def test_a_block_missing_one_launch_is_not_whole(self) -> None:
+        """Completeness is per cell, so a hole excludes its whole block.
+
+        Six blocks collected, one launch missing from block 6: five whole blocks,
+        floored to four. Not five, and not six.
+        """
+        body = self.aborted_csv(6)
+        holed = "".join(line for line in body.splitlines(True)
+                        if not line.startswith("A_noDD,6,2,measure,2,"))
+        self.assertNotEqual(body, holed, "the fixture prefix must exist")
+        result = self.run_stats(holed)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("ANALYZED OVER 4 WHOLE BLOCKS of the 8", result.stdout)
+        self.assertIn("Block 5 was whole but dropped", result.stdout)
+
+    def test_a_block_holding_a_rejected_launch_is_not_whole(self) -> None:
+        """A cell with a rejected launch is not a smaller cell; the block drops."""
+        result = self.run_stats(self.aborted_csv(6, invalid_treatment_block=4))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        # Blocks 1-3 survive whole, 4 holds the rejected launch, 5-6 are whole:
+        # an even count of whole blocks is 1,2,3,5,6 floored to four.
+        self.assertIn("ANALYZED OVER 4 WHOLE BLOCKS of the 8", result.stdout)
+        self.assertNotIn("were rejected or failed", result.stdout)
+
+    def test_interrupted_run_below_the_paired_minimum_is_still_refused(self) -> None:
+        """Three whole blocks floor to two, and a paired interval needs three."""
+        refused = self.run_stats(self.aborted_csv(3))
+        self.assertNotEqual(refused.returncode, 0)
+        self.assertIn("refusing to analyze an aborted run", refused.stderr)
+        self.assertNotIn("ANALYZED OVER", refused.stdout)
+
+        diagnostic = self.run_stats(self.aborted_csv(3), "--allow-aborted")
+        self.assertEqual(diagnostic.returncode, 0, diagnostic.stderr)
+        self.assertIn("NOT REPORTABLE", diagnostic.stdout)
+
+    def test_a_completed_run_declaring_a_shortfall_is_still_refused(self) -> None:
+        """RUN COMPLETE and a truncated matrix contradict each other.
+
+        The collector cannot emit both, so this file was edited or the collector is
+        broken. Recovery applies to a run that is INTERRUPTED; it must not become a
+        way to analyze a complete run that is missing rows.
+        """
+        complete = self.benchmark_csv(block_count=4, runs_per_cell=2)
+        short = "".join(line for line in complete.splitlines(True)
+                        if not line.startswith("B_withDD,3,"))
+        result = self.run_stats(short)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("refusing to analyze a truncated run", result.stderr)
+        self.assertNotIn("ANALYZED OVER", result.stdout)
+
+    def test_recovery_never_pools_an_interrupted_run_with_another_file(self) -> None:
+        """Combining a prefix with a top-up run is the protocol that was removed."""
+        meta = self.recoverable_metadata(8)
+        complete = self.benchmark_csv(metadata=meta, block_count=8, runs_per_cell=2)
+        result = self.run_stats_files([self.aborted_csv(6), complete])
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("refusing to analyze an aborted run", result.stderr)
+        self.assertNotIn("ANALYZED OVER", result.stdout)
+
+    def test_a_run_killed_without_a_trailer_says_it_has_no_reason(self) -> None:
+        """No trailer means nothing says whether the analyzed blocks are trustworthy."""
+        killed = self.benchmark_csv(
+            metadata=self.recoverable_metadata(8), block_count=6, runs_per_cell=2
+        ).replace("# RUN COMPLETE\n", "")
+        result = self.run_stats(killed)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("ANALYZED OVER 6 WHOLE BLOCKS of the 8", result.stdout)
+        self.assertIn("No abort trailer", result.stdout)
+        self.assertIn("nothing here says whether the analyzed blocks are trustworthy",
+                      result.stdout)
+
+    def test_a_completed_run_is_unaffected_by_the_recovery_path(self) -> None:
+        """This capability must be invisible when the run finished."""
+        result = self.run_stats(self.benchmark_csv(block_count=4, runs_per_cell=2))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        for needle in ("INTERRUPTED RUN", "ANALYZED OVER", "whole but dropped",
+                       "blocks that did not complete"):
+            self.assertNotIn(needle, result.stdout, needle)
+
+    def test_block_completeness_shares_one_definition_with_the_aggregator(self) -> None:
+        """The completeness pass and the row loop must agree on an admissible launch."""
+        ab = load_ab_stats_module()
+        rows = [
+            {"label": "A", "block": "1", "phase": "measure", "run": "1",
+             "status": "ok", "launch_state": "COLD", "foreground": "ok"},
+            {"label": "B", "block": "1", "phase": "measure", "run": "1",
+             "status": "ok", "launch_state": "COLD", "foreground": "ok"},
+            # Block 2: the treatment cell holds a rejected launch.
+            {"label": "A", "block": "2", "phase": "measure", "run": "1",
+             "status": "ok", "launch_state": "COLD", "foreground": "ok"},
+            {"label": "B", "block": "2", "phase": "measure_rejected", "run": "1",
+             "status": "ok", "launch_state": "COLD", "foreground": "OTHER_MID"},
+            # Block 3: baseline only.
+            {"label": "A", "block": "3", "phase": "measure", "run": "1",
+             "status": "ok", "launch_state": "COLD", "foreground": "ok"},
+        ]
+        self.assertEqual(ab.complete_block_ids(rows, "A", "B", 1), {"1"})
+        self.assertTrue(ab.launch_rejected(rows[3]))
+        self.assertFalse(ab.launch_rejected(rows[0]))
+        # The aggregation loop must use the same helper rather than its own copy.
+        source = AB_STATS.read_text(encoding="utf-8")
+        self.assertIn("if launch_rejected(r):", source)
+        self.assertEqual(source.count("def launch_rejected("), 1)
 
     def test_incomplete_run_is_diagnostic_only_when_explicitly_allowed(self) -> None:
         interrupted = self.benchmark_csv().replace("# RUN COMPLETE\n", "")

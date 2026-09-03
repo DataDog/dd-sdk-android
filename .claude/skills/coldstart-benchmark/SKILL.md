@@ -262,10 +262,19 @@ not see a venv-installed `perfetto`.
 
 ## If a run aborts
 
-Fix the cause and repeat the complete registered run from the beginning. A reportable CSV ends
-with exactly one `# RUN COMPLETE`; an abort, killed process or host crash does not. Partial-run
-recovery is intentionally unsupported. `--allow-aborted` may inspect the surviving rows, but its
-output is diagnostic only and suppresses the primary interval.
+Re-run the complete registered design from the beginning when you can. A completed CSV ends with
+exactly one `# RUN COMPLETE`; an abort, killed process or host crash does not.
+
+`ab_stats.py` will still analyze an interrupted run over the whole counterbalanced blocks it
+collected, if there are at least four after flooring to an even count, and that result is
+reportable. Report it only with the two things the tool prints beside it: the block shortfall
+(analyzed of declared) and the recorded abort trailer. **Quote the MDE it prints, not the
+design's** -- it is the power actually achieved. Never describe such a run as complete, and say
+that re-running the full design is better.
+
+Refused, not reportable: fewer than four whole blocks; a run whose declared matrix is whole but
+which aborted anyway; an interrupted run passed alongside other CSVs. `--allow-aborted` inspects
+any of them diagnostically and suppresses the primary interval.
 
 ## What a finished task looks like
 
