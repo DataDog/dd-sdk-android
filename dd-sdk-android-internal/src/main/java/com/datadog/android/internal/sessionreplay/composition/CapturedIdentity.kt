@@ -44,6 +44,7 @@ private const val SHAPE_WIREFRAME_NAMESPACE = 1L
 private const val TEXT_WIREFRAME_NAMESPACE = 2L
 private const val IMAGE_WIREFRAME_NAMESPACE = 3L
 private const val PLACEHOLDER_WIREFRAME_NAMESPACE = 4L
+private const val EMBEDDED_CONTENT_WIREFRAME_NAMESPACE = 5L
 
 /**
  * Matches the wireframe identifier namespaces used by the iOS Core Animation pipeline.
@@ -76,7 +77,14 @@ enum class CapturedWireframeKind(val wireIdNamespace: Long) {
     IMAGE(IMAGE_WIREFRAME_NAMESPACE),
 
     /** A [CapturedWireframe.PrivacyPlaceholder]. */
-    PLACEHOLDER(PLACEHOLDER_WIREFRAME_NAMESPACE)
+    PLACEHOLDER(PLACEHOLDER_WIREFRAME_NAMESPACE),
+
+    /**
+     * A [CapturedWireframe.EmbeddedContent] - correlated by its own `slotId` string property, not
+     * by wire id, so (unlike [WEB_VIEW]) it uses an ordinary namespace shift like any other
+     * wireframe kind.
+     */
+    EMBEDDED_CONTENT(EMBEDDED_CONTENT_WIREFRAME_NAMESPACE)
 }
 
 /**

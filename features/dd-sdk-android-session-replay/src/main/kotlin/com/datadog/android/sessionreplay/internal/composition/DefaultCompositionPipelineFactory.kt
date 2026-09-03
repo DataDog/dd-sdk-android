@@ -19,6 +19,7 @@ import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedBackgroundShapeStyleResolver
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedEditTextMapper
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedEmbeddedContentMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedPixelFallbackMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedTextViewMapper
@@ -96,7 +97,8 @@ internal class DefaultCompositionPipelineFactory(
                 recordWriter = recordWriter,
                 internalLogger = internalLogger,
                 timeProvider = sdkCore.timeProvider,
-                resourceDataQueueHandler = resourceResolverBundle.dataQueueHandler
+                resourceDataQueueHandler = resourceResolverBundle.dataQueueHandler,
+                embeddedContentSlotRegistry = embeddedContentSlotRegistry
             ),
             internalLogger = internalLogger
         )
@@ -108,7 +110,12 @@ internal class DefaultCompositionPipelineFactory(
         lateinit var orchestrator: SnapshotCaptureOrchestrator
         orchestrator = SnapshotCaptureOrchestrator(
             producer = snapshotProducerFactory?.invoke(windowSource, rumContextProvider)
-                ?: defaultSnapshotProducer(windowSource, rumContextProvider, heatmapResolver),
+                ?: defaultSnapshotProducer(
+                    windowSource,
+                    rumContextProvider,
+                    heatmapResolver,
+                    embeddedContentSlotRegistry
+                ),
             processor = ChainedCapturedSnapshotProcessor(
                 ExecutorCapturedSnapshotProcessor(constructionExecutor, internalLogger),
                 PixelFallbackSnapshotProcessor(
@@ -162,21 +169,30 @@ internal class DefaultCompositionPipelineFactory(
     private fun defaultSnapshotProducer(
         windowSource: ActiveWindowSource,
         rumContextProvider: RumContextProvider,
-        heatmapResolver: HeatmapIdentifierResolver?
-    ): CapturedSnapshotProducer = AndroidCapturedSnapshotProducer(
-        windowSource = windowSource,
-        scopeProvider = DefaultRumViewScopeProvider(rumContextProvider),
-        timeProvider = sdkCore.timeProvider,
-        traversal = AndroidWindowTraversal(
-            mapperRegistry = builtInCapturedMappers(sdkCore.internalLogger, customDrawableMappers),
-            internalLogger = sdkCore.internalLogger,
-            composeHostDecomposer = compositionHostDecomposer,
-            rootImagePrivacy = imagePrivacy,
-            rootTextAndInputPrivacy = textAndInputPrivacy,
-            heatmapResolver = heatmapResolver
-        ),
-        touchPrivacyManager = touchPrivacyManager
-    )
+        heatmapResolver: HeatmapIdentifierResolver?,
+        embeddedContentSlotRegistry: EmbeddedContentSlotRegistry
+    ): CapturedSnapshotProducer {
+        val embeddedContentMapper = CapturedEmbeddedContentMapper(
+            embeddedContentSlotRegistry,
+            internalLogger = sdkCore.internalLogger
+        )
+        return AndroidCapturedSnapshotProducer(
+            windowSource = windowSource,
+            scopeProvider = DefaultRumViewScopeProvider(rumContextProvider),
+            timeProvider = sdkCore.timeProvider,
+            traversal = AndroidWindowTraversal(
+                mapperRegistry = builtInCapturedMappers(sdkCore.internalLogger, customDrawableMappers),
+                internalLogger = sdkCore.internalLogger,
+                composeHostDecomposer = compositionHostDecomposer,
+                rootImagePrivacy = imagePrivacy,
+                rootTextAndInputPrivacy = textAndInputPrivacy,
+                heatmapResolver = heatmapResolver,
+                embeddedContentMapper = embeddedContentMapper
+            ),
+            touchPrivacyManager = touchPrivacyManager,
+            embeddedContentMapper = embeddedContentMapper
+        )
+    }
 
     private fun createTimeBudget(): CaptureTimeBudget = if (dynamicOptimizationEnabled) {
         TimeBankCaptureTimeBudget(recordingTimeBankFactory())

@@ -13,6 +13,7 @@ import com.datadog.android.internal.sessionreplay.composition.RumViewIdentitySco
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedEmbeddedContentMapper
 import com.datadog.android.sessionreplay.internal.putTouchOverrideArea
 import com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
@@ -29,7 +30,8 @@ internal class AndroidCapturedSnapshotProducer(
     private val traversal: AndroidWindowTraversal,
     private val touchPrivacyManager: TouchPrivacyManager,
     private val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver,
-    private val isMainThreadWindow: (View) -> Boolean = ::isAttachedToMainLooper
+    private val isMainThreadWindow: (View) -> Boolean = ::isAttachedToMainLooper,
+    private val embeddedContentMapper: CapturedEmbeddedContentMapper? = null
 ) : CapturedSnapshotProducer {
     private var retainedIdentityFactory: DefaultCapturedIdentityFactory? = null
 
@@ -54,53 +56,74 @@ internal class AndroidCapturedSnapshotProducer(
             return null
         }
         val identityFactory = identityFactoryFor(rumViewScope.scope)
-        val copies = mutableListOf<CapturedNativeWindow>()
-        val capturedWindows = mutableListOf<View>()
-        val touchOverrideAreas = mutableMapOf<Rect, TouchPrivacy>()
-        val touchOverridesByWindow = mutableMapOf<View, Map<Rect, TouchPrivacy>>()
-        val pendingPixelCaptures = mutableListOf<PendingPixelCapture>()
-        for (window in windows) {
-            if (!canContinueCapture(context, rumViewScope, windowSnapshot) || !isMainThreadWindow(window)) {
-                return null
-            }
-            val identity = identityFactory.window(viewIdentifierResolver.resolveViewId(window).toString())
-            when (
-                val result = traversal.traverseWindow(
-                    window,
-                    identity,
-                    identityFactory,
-                    context,
-                    rumViewScope.viewUrl
-                )
-            ) {
-                is WindowCopyResult.Present -> {
-                    copies += result.window
-                    capturedWindows += window
-                    pendingPixelCaptures += result.window.pendingPixelCaptures
-                    result.touchOverrideAreas.forEach { (bounds, privacy) ->
-                        touchOverrideAreas.putTouchOverrideArea(bounds, privacy)
-                    }
-                    touchOverridesByWindow[window] = result.touchOverrideAreas
-                }
-                WindowCopyResult.Filtered -> Unit
-                WindowCopyResult.Aborted -> return null
-            }
-        }
+        embeddedContentMapper?.beginCapture()
+        val captured = copyWindows(windows, identityFactory, context, rumViewScope.viewUrl) {
+            canContinueCapture(context, rumViewScope, windowSnapshot)
+        } ?: return null
         val snapshot = CapturedNativeSnapshot(
             timeProvider.getDeviceTimestampMillis() + rumViewScope.viewTimeOffsetMs,
             rumViewScope.scope,
-            copies,
-            pendingPixelCaptures,
+            captured.windows,
+            captured.pendingPixelCaptures,
             identityFactory
         )
         if (!canContinueCapture(context, rumViewScope, windowSnapshot) || windows.any { !isMainThreadWindow(it) }) {
             return null
         }
         // Only a complete copy publishes touch overrides; abandoned copies leave no staging state.
-        windowSource.publishTouchPrivacy(windowSnapshot, capturedWindows, rumViewScope.scope, touchOverridesByWindow) {
-            touchPrivacyManager.replaceCurrentTouchOverrideAreas(touchOverrideAreas)
+        val completedSnapshot = snapshot.copy(
+            // Hidden slots advance only after every window was copied successfully.
+            hiddenEmbeddedWireframes = embeddedContentMapper?.finishCapture() ?: emptyList()
+        )
+        windowSource.publishTouchPrivacy(
+            windowSnapshot,
+            captured.roots,
+            rumViewScope.scope,
+            captured.touchOverridesByWindow
+        ) {
+            touchPrivacyManager.replaceCurrentTouchOverrideAreas(captured.touchOverrideAreas)
         }
-        return snapshot
+        return completedSnapshot
+    }
+
+    @MainThread
+    @Suppress("ReturnCount") // Stale roots and aborted traversal discard all capture-owned accumulation.
+    private fun copyWindows(
+        windows: List<View>,
+        identityFactory: CapturedIdentityFactory,
+        context: CaptureGenerationContext,
+        viewUrl: String?,
+        canContinue: () -> Boolean
+    ): CopiedWindows? {
+        val captured = CopiedWindows()
+        for (window in windows) {
+            if (!canContinue() || !isMainThreadWindow(window)) return null
+            val identity = identityFactory.window(viewIdentifierResolver.resolveViewId(window).toString())
+            when (val result = traversal.traverseWindow(window, identity, identityFactory, context, viewUrl)) {
+                is WindowCopyResult.Present -> captured.absorb(window, result)
+                WindowCopyResult.Filtered -> Unit
+                WindowCopyResult.Aborted -> return null
+            }
+        }
+        return captured
+    }
+
+    private class CopiedWindows {
+        val windows = mutableListOf<CapturedNativeWindow>()
+        val roots = mutableListOf<View>()
+        val pendingPixelCaptures = mutableListOf<PendingPixelCapture>()
+        val touchOverrideAreas = mutableMapOf<Rect, TouchPrivacy>()
+        val touchOverridesByWindow = mutableMapOf<View, Map<Rect, TouchPrivacy>>()
+
+        fun absorb(root: View, result: WindowCopyResult.Present) {
+            windows += result.window
+            roots += root
+            pendingPixelCaptures += result.window.pendingPixelCaptures
+            result.touchOverrideAreas.forEach { (bounds, privacy) ->
+                touchOverrideAreas.putTouchOverrideArea(bounds, privacy)
+            }
+            touchOverridesByWindow[root] = result.touchOverrideAreas
+        }
     }
 
     private fun identityFactoryFor(scope: RumViewIdentityScope): DefaultCapturedIdentityFactory {

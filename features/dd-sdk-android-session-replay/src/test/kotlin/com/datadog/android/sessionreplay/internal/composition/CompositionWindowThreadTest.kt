@@ -37,6 +37,7 @@ import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.clearInvocations
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -322,7 +323,7 @@ internal class CompositionWindowThreadTest {
         val first = root(Owner.MAIN)
         val next = root(Owner.MAIN)
         val fixture = CaptureFixture(listOf(first, next))
-        whenever(fixture.mockTraversal.traverseWindow(eq(first), any(), any(), any())).thenAnswer {
+        whenever(fixture.mockTraversal.traverseWindow(eq(first), any(), any(), any(), isNull())).thenAnswer {
             setOwner(next, fakeOwner)
             fixture.windowResult(first)
         }
@@ -346,7 +347,7 @@ internal class CompositionWindowThreadTest {
         // Given
         val root = root(Owner.MAIN)
         val fixture = CaptureFixture(listOf(root))
-        whenever(fixture.mockTraversal.traverseWindow(eq(root), any(), any(), any())).thenAnswer {
+        whenever(fixture.mockTraversal.traverseWindow(eq(root), any(), any(), any(), isNull())).thenAnswer {
             setOwner(root, fakeOwner)
             fixture.windowResult(root)
         }
@@ -459,7 +460,7 @@ internal class CompositionWindowThreadTest {
             windows.forEachIndexed { index, window ->
                 whenever(mockIdentifiers.resolveViewId(window)).thenReturn(index + 1L)
             }
-            whenever(mockTraversal.traverseWindow(any(), any(), any(), any())).thenAnswer {
+            whenever(mockTraversal.traverseWindow(any(), any(), any(), any(), isNull())).thenAnswer {
                 windowResult(it.getArgument(0))
             }
         }
@@ -494,7 +495,7 @@ internal class CompositionWindowThreadTest {
 
         fun verifyNotVisited(root: View) {
             verify(mockIdentifiers, never()).resolveViewId(root)
-            verify(mockTraversal, never()).traverseWindow(eq(root), any(), any(), any())
+            verify(mockTraversal, never()).traverseWindow(eq(root), any(), any(), any(), isNull())
         }
     }
 
