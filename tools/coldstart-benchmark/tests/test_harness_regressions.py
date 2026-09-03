@@ -1290,6 +1290,125 @@ class HarnessRegressionTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("records no launcher", result.stderr)
 
+    def test_an_input_set_to_the_empty_string_is_refused(self) -> None:
+        """`${VAR:-}` cannot distinguish "unset" from "expanded to nothing".
+
+        Every identity is declared as `${VAR:-}` before lib.sh runs, so by binding
+        time an operator-supplied empty string is indistinguishable from a declared
+        one and took the CSV's value silently. The substituted value is the
+        authoritative one, so nothing measured came out wrong; what was lost is the
+        operator learning their variable was empty. `BENCHMARK_CSV=` was worse: it
+        silently unbound a capture written to be bound.
+        """
+        capture_path = HARNESS / "capture_trace.sh"
+        capture = capture_path.read_text(encoding="utf-8")
+        # Load-bearing ordering: after the declarations, EVERY identity is set-and-
+        # empty and the guard would refuse every capture.
+        guard = capture.index("for _empty_input in ${!EXPECTED_@}")
+        first_declaration = capture.index('EXPECTED_APK_MD5="${EXPECTED_APK_MD5:-}"')
+        self.assertLess(guard, first_declaration)
+        # Prefix expansion, not a list: a future EXPECTED_* cannot be forgotten.
+        self.assertIn("${!EXPECTED_@} BENCHMARK_CSV BENCHMARK_ARM", capture)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            apk = root / "t.apk"
+            apk.write_text("apk", encoding="utf-8")
+            csv_path = root / "results.csv"
+            csv_path.write_text(self.BENCHMARK_HEADER + self.BENCHMARK_ROWS,
+                                encoding="utf-8")
+
+            def run(*positional, **env_overrides):
+                env = os.environ.copy()
+                for name in ("WARMUP", "ANIMATIONS", "AIRPLANE", "COMPILE_FILTER",
+                             "TRACE_ENDPOINT", "APP_TRACE_REGEX"):
+                    env.pop(name, None)
+                for name in list(env):
+                    if name.startswith("EXPECTED_"):
+                        env.pop(name, None)
+                env.update(PKG="com.example.app", AAPT2="/nonexistent",
+                           ADB="/nonexistent-adb", BENCHMARK_CSV=str(csv_path),
+                           BENCHMARK_ARM="B_withDD")
+                env.update(env_overrides)
+                return subprocess.run(
+                    ["bash", str(capture_path), str(apk), "trace", *positional],
+                    check=False, capture_output=True, text=True, env=env,
+                )
+
+            # An identity the CSV would otherwise have supplied.
+            for name in ("EXPECTED_APK_MD5", "EXPECTED_WARMUP", "EXPECTED_LAUNCHER",
+                         "EXPECTED_SDK_LIVENESS"):
+                empty = run(**{name: ""})
+                self.assertNotEqual(empty.returncode, 0, name)
+                self.assertIn(f"{name} is set to the empty string", empty.stderr)
+                self.assertNotIn("benchmark APK digest matched", empty.stderr)
+
+            # The binding itself: empty used to select the unbound path in silence.
+            unbound_by_accident = run("1", BENCHMARK_CSV="", BENCHMARK_ARM="")
+            self.assertNotEqual(unbound_by_accident.returncode, 0)
+            self.assertIn("BENCHMARK_CSV is set to the empty string",
+                          unbound_by_accident.stderr)
+
+            # A misspelled identity is caught by the same guard rather than ignored.
+            misspelled = run(EXPECTED_LAUNCHR="")
+            self.assertNotEqual(misspelled.returncode, 0)
+            self.assertIn("EXPECTED_LAUNCHR is set to the empty string",
+                          misspelled.stderr)
+
+            # Quiet on the good input: unset stays unset, and the run proceeds to
+            # the gate it was going to reach anyway.
+            accepted = run()
+            self.assertNotIn("empty string", accepted.stderr)
+            self.assertIn("trace APK md5=", accepted.stderr)
+
+    def test_analyzer_requires_exactly_the_metadata_the_collector_writes(self) -> None:
+        """The "complete current format" gate must describe the current collector.
+
+        ab_stats.py restates the collector's header and column contract as
+        _CURRENT_META_KEYS / _CURRENT_COLUMNS, and every CSV fixture in this file is
+        hand-written, so nothing tied the two together: add a stamp to
+        coldstart_bench.sh and the gate keeps accepting files without it; rename a
+        column and the gate refuses legitimate current output. Derive the contract
+        from the producer instead of trusting two copies to stay equal.
+
+        Equality on the metadata side, deliberately. A collector stamp that no gate
+        validates is the same defect as a gate requiring a stamp nobody writes: both
+        mean the declared "current format" is not the one being produced.
+        """
+        bench = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
+        ab = load_ab_stats_module()
+
+        # The one `# device=` header line, plus the per-arm permission stamps, are
+        # every `#` metadata site the collector has.
+        header_line = re.search(r'echo "# device=[^"]*" >> "\$OUT"', bench)
+        self.assertIsNotNone(header_line, "coldstart_bench.sh writes a # device= header")
+        written = set(re.findall(r'([a-z_][a-z0-9_]*)=\$', header_line.group(0)))
+        permission_stamps = re.findall(r'echo "# (permission_[ab])=\$[^"]*" >> "\$OUT"', bench)
+        self.assertEqual(sorted(permission_stamps), ["permission_a", "permission_b"])
+        written.update(permission_stamps)
+
+        self.assertEqual(
+            written, set(ab._CURRENT_META_KEYS),
+            "coldstart_bench.sh and ab_stats._CURRENT_META_KEYS disagree about the "
+            "current header contract; the difference is "
+            f"{written ^ set(ab._CURRENT_META_KEYS)}",
+        )
+
+        # Columns are a SUBSET check: the analyzer requires the launch-validity and
+        # pairing columns, while the metric columns (displayed, ttfd, app_trace_ms)
+        # and the liveness columns are legitimately selected per run.
+        column_line = re.search(r'echo "(label,[^"]*)" >> "\$OUT"', bench)
+        self.assertIsNotNone(column_line, "coldstart_bench.sh writes a CSV column header")
+        emitted = set(column_line.group(1).split(","))
+        missing = ab._CURRENT_COLUMNS - emitted
+        self.assertFalse(
+            missing,
+            f"ab_stats requires columns the collector does not write: {sorted(missing)}",
+        )
+        # And the metric this harness reports by default is one of them, so a rename
+        # of the primary column cannot pass this test quietly.
+        self.assertIn("total_ms", emitted)
+
     def test_completion_marker_has_one_definition_across_the_toolchain(self) -> None:
         """Writer, shell reader and Python reader must spell it identically.
 

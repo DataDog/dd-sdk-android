@@ -41,6 +41,30 @@
 #          ./capture_trace.sh <apk> <name> <expect-datadog:0|1>
 set -euo pipefail
 
+# A set-but-empty input is a caller whose variable did not expand; it is not a
+# request for the default. `${VAR+set}` tells the two apart and `${VAR:-}` cannot,
+# so this runs BEFORE the declarations below, which give every EXPECTED_* an empty
+# value and erase the difference for good. With a bound CSV the substituted value
+# would be the authoritative one, so nothing measured comes out wrong -- what is
+# lost is the operator ever learning their variable was empty, and `BENCHMARK_CSV=`
+# silently unbinds a capture that was written to be bound. Same rule the benchmark
+# applies to LABEL_A/LABEL_B.
+#
+# Prefix expansion rather than a hardcoded list: a future EXPECTED_* cannot be
+# forgotten here, and a misspelled one (EXPECTED_LAUNCHR=) is refused rather than
+# silently ignored. Unquoted on purpose -- with no matches it expands to zero words,
+# verified under `set -u` on bash 3.2 and 5.3.
+for _empty_input in ${!EXPECTED_@} BENCHMARK_CSV BENCHMARK_ARM; do
+  if [ -n "${!_empty_input+set}" ] && [ -z "${!_empty_input}" ]; then
+    echo "FATAL: $_empty_input is set to the empty string. Unset it to take the" >&2
+    echo "       default or the bound CSV's value; an empty value is a caller whose" >&2
+    echo "       variable did not expand, and substituting for it silently would" >&2
+    echo "       hide that rather than fix it." >&2
+    exit 1
+  fi
+done
+unset _empty_input
+
 PKG="${PKG:?set PKG to your application id, e.g. PKG=com.example.app}"
 # The benchmark this trace explains. Reading its header removes the transcription of
 # twelve values -- two 32-character digests and a build fingerprint among them --
