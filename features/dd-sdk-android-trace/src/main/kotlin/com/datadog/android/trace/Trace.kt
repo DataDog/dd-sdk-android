@@ -9,6 +9,7 @@ package com.datadog.android.trace
 import com.datadog.android.Datadog
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.trace.internal.ClientStatsFeature
 import com.datadog.android.trace.internal.TracingFeature
 
 /**
@@ -30,9 +31,21 @@ object Trace {
             sdkCore = sdkCore as FeatureSdkCore,
             customEndpointUrl = traceConfiguration.customEndpointUrl,
             spanEventMapper = traceConfiguration.eventMapper,
-            networkInfoEnabled = traceConfiguration.networkInfoEnabled
+            networkInfoEnabled = traceConfiguration.networkInfoEnabled,
+            clientSideStatsEnabled = traceConfiguration.statsComputationEnabled
         )
 
         sdkCore.registerFeature(tracingFeature)
+
+        if (traceConfiguration.statsComputationEnabled) {
+            val stats = ClientStatsFeature(
+                sdkCore = sdkCore,
+                customEndpointUrl = traceConfiguration.customStatsEndpointUrl,
+                spanEventMapper = traceConfiguration.eventMapper,
+                networkInfoEnabled = traceConfiguration.networkInfoEnabled
+            )
+
+            sdkCore.registerFeature(stats)
+        }
     }
 }

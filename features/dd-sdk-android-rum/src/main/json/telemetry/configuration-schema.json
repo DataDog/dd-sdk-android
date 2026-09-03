@@ -567,6 +567,20 @@
                   "type": "boolean",
                   "description": "Whether the beta encode cookie options is enabled",
                   "readOnly": false
+                },
+                "beta_enable_view_updates": {
+                  "type": "boolean",
+                  "description": "Whether the beta partial view updates feature is enabled",
+                  "readOnly": false
+                },
+                "beta_track_web_sockets": {
+                  "type": "boolean",
+                  "description": "Whether the beta track WebSockets feature is enabled",
+                  "readOnly": false
+                },
+                "use_client_side_stats": {
+                  "type": "boolean",
+                  "description": "Whether tracing feature's client-side-stats generation is enabled"
                 }
               }
             }

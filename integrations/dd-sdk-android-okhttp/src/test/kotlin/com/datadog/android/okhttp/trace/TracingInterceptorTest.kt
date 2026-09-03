@@ -231,6 +231,7 @@ internal open class TracingInterceptorTest {
     open fun instantiateTestedInterceptor(
         tracedHosts: Map<String, Set<TracingHeaderType>> = emptyMap(),
         globalTracerProvider: () -> DatadogTracer? = { null },
+        defaultTracerCheck: (DatadogTracer) -> Boolean = _TraceInternalProxy::isDefaultTracer,
         localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer
     ): TracingInterceptor {
         return TracingInterceptor(
@@ -242,7 +243,8 @@ internal open class TracingInterceptorTest {
             localTracerFactory = localTracerFactory,
             redacted404ResourceName = fakeRedacted404Resources,
             traceContextInjection = TraceContextInjection.ALL,
-            globalTracerProvider = globalTracerProvider
+            globalTracerProvider = globalTracerProvider,
+            defaultTracerCheck = defaultTracerCheck
         )
     }
 
@@ -1263,6 +1265,108 @@ internal open class TracingInterceptorTest {
         verify(mockSpan).setTag("span.kind", "client")
         verify(mockSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
         verify(mockSpan).finish()
+    }
+
+    @Test
+    fun `M force drop span W intercept() {not sampled, successful request, SDK-backed tracer}`(
+        @IntForgery(min = 200, max = 600) statusCode: Int
+    ) {
+        // Given
+        testedInterceptor = instantiateTestedInterceptor(
+            fakeLocalHosts,
+            globalTracerProvider = { mockTracer },
+            defaultTracerCheck = { true },
+            localTracerFactory = { _, _ -> mockLocalTracer }
+        )
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
+        stubChain(mockChain, statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        verify(mockSpan).setTag("_dd.local.force_drop", true)
+        verify(mockSpan).finish()
+        verify(mockSpan, never()).drop()
+    }
+
+    @Test
+    fun `M drop span W intercept() {not sampled, successful request, custom tracer}`(
+        @IntForgery(min = 200, max = 600) statusCode: Int
+    ) {
+        // Given
+        testedInterceptor = instantiateTestedInterceptor(
+            fakeLocalHosts,
+            globalTracerProvider = { mockTracer },
+            defaultTracerCheck = { false },
+            localTracerFactory = { _, _ -> mockLocalTracer }
+        )
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
+        stubChain(mockChain, statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        verify(mockSpan, never()).setTag("_dd.local.force_drop", true)
+        verify(mockSpan, never()).finish()
+        verify(mockSpan).drop()
+    }
+
+    @Test
+    fun `M force drop span W intercept() {not sampled, throwing request, SDK-backed tracer}`(
+        @Forgery throwable: Throwable
+    ) {
+        // Given
+        testedInterceptor = instantiateTestedInterceptor(
+            fakeLocalHosts,
+            globalTracerProvider = { mockTracer },
+            defaultTracerCheck = { true },
+            localTracerFactory = { _, _ -> mockLocalTracer }
+        )
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
+        whenever(mockChain.request()) doReturn fakeRequest
+        whenever(mockChain.proceed(any())) doThrow throwable
+
+        // When
+        assertThrows<Throwable>(throwable.message.orEmpty()) {
+            testedInterceptor.intercept(mockChain)
+        }
+
+        // Then
+        verify(mockSpan).setTag("_dd.local.force_drop", true)
+        verify(mockSpan).finish()
+        verify(mockSpan, never()).drop()
+    }
+
+    @Test
+    fun `M drop span W intercept() {not sampled, throwing request, custom tracer}`(
+        @Forgery throwable: Throwable
+    ) {
+        // Given
+        testedInterceptor = instantiateTestedInterceptor(
+            fakeLocalHosts,
+            globalTracerProvider = { mockTracer },
+            defaultTracerCheck = { false },
+            localTracerFactory = { _, _ -> mockLocalTracer }
+        )
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
+        whenever(mockChain.request()) doReturn fakeRequest
+        whenever(mockChain.proceed(any())) doThrow throwable
+
+        // When
+        assertThrows<Throwable>(throwable.message.orEmpty()) {
+            testedInterceptor.intercept(mockChain)
+        }
+
+        // Then
+        verify(mockSpan, never()).setTag("_dd.local.force_drop", true)
+        verify(mockSpan, never()).finish()
+        verify(mockSpan).drop()
     }
 
     @Test

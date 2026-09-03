@@ -242,6 +242,16 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         return this
     }
 
+    fun hasUseClientSideStats(expected: Boolean?): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.useClientSideStats)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.configuration.useClientSideStats $expected " +
+                    "but was ${actual.telemetry.configuration.useClientSideStats}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasTracerApi(tracerApi: String?): TelemetryConfigurationEventAssert {
         assertThat(actual.telemetry.configuration.tracerApi)
             .overridingErrorMessage(
