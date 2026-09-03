@@ -107,7 +107,11 @@ EXPECT_B=0 LABEL_A=A1 LABEL_B=A2 \
 ./coldstart_bench.sh app-no-datadog.apk app-with-datadog.apk
 ./ab_stats.py results_<timestamp>.csv
 
-# 4. Optional: attribute the cost.
+# 4. Optional: attribute the cost -- bound to the run it explains.
+BENCHMARK_CSV=results_<timestamp>.csv BENCHMARK_ARM=B_withDD \
+  ./capture_trace.sh app-with-datadog.apk treatment 1
+
+# Or give the identities by hand; an explicit value overrides the header:
 EXPECTED_APK_MD5=<treatment_md5> \
 EXPECTED_PERMISSION_STATE_ID=<permission_b> \
 EXPECTED_COMPILE_STATUS=verify \
@@ -121,6 +125,17 @@ EXPECTED_SDK_LIVENESS=<expect_b for this arm> \
   ./capture_trace.sh app-with-datadog.apk treatment 1
 ./.venv/bin/python verify_trace.py treatment.pftrace --package "$PKG"
 ```
+
+`BENCHMARK_CSV` and `BENCHMARK_ARM` read every expected identity from that run's own header, so
+none of them is transcribed by hand. `BENCHMARK_ARM` is the label the CSV recorded, the same name
+the rows and `ab_stats.py` use, so a typo is an error rather than the silent selection of the
+other arm. An `EXPECTED_*` passed explicitly still overrides the header and still faces the same
+attestation.
+
+The binding refuses rather than guesses. A file with no `# device=` line is not a benchmark CSV;
+more than one means it pools several runs and cannot identify one; an aborted run has no completed
+A/B result to explain; and a CSV predating a stamp is named rather than defaulted. It is read
+before every gate and changes only where an expected value comes from, never what is compared.
 
 Each `coldstart_bench.sh` run prints the `results_<timestamp>.csv` it wrote; pass that path
 to `ab_stats.py`. The CSV and matching `bench_<timestamp>.log` are atomically reserved before
@@ -147,6 +162,8 @@ interval at all.
 | `LABEL_A` / `LABEL_B` | `A_noDD` / `B_withDD` | arm labels in the CSV. Use only letters, digits, `.`, `_` and `-`; delimiters and whitespace are rejected before the run. Leaving the variable **unset** takes the default; setting it to the **empty string** is rejected rather than silently defaulted |
 | `WARMUP` | `3` (benchmark); not selectable for a trace | discarded launches at the start of each arm×block cell. The preceding liveness probe and every warm-up must pass the same numeric cold-launch and foreground gates as a measured launch; an invalid conditioning launch is recorded as rejected and aborts instead of silently changing the requested post-install ramp. Pre-registered: nothing else is ever dropped. For `capture_trace.sh`, pass the CSV header's value as required `EXPECTED_WARMUP`; it drives `WARMUP` when that variable is unset, and an explicit different value aborts. The trace performs `WARMUP + 1` settle launches: the first uses the probe's 3-second pre-launch/8-second validation cadence, while later launches use the warm-up's 5-second pre-launch, 6-second validation and 4-second post-validation cadence. Each also gets its own verified logcat boundary, target/foreign-display checks, final-foreground check and SDK-liveness gate. Perfetto readiness consumes the last conditioning wait: the warm-up's final four seconds when `WARMUP>0`, or the final four seconds of the probe check when `WARMUP=0`. The traced launch's force-stop follows immediately, matching the measured launch rather than adding another app-running delay. `ab_stats.py` refuses to pool CSVs recorded with different warm-up values for the same reason |
 | `COMPILE_FILTER` | `speed-profile` | requested AOT filter. `speed-profile` is what Play installs converge to, but a fresh install with no profile commonly achieves `verify`. The harness reads the achieved status after every compile, aborts if it is unreadable or changes across cells, stamps it as `compile_status`, and refuses pooled runs with a different status. `speed` gives lower variance but removes much of the class-load/verify cost the SDK contributes and overrides any Baseline Profile. Use it as a secondary run, not a headline |
+| `BENCHMARK_CSV` | unset | `capture_trace.sh`: the completed benchmark CSV this trace explains. Its header supplies every `EXPECTED_*` below, so none is transcribed. Refuses a file with no `# device=` line, one holding several (a pooled file cannot identify a single run), an aborted run, and a CSV predating a stamp it would have to invent |
+| `BENCHMARK_ARM` | unset | `capture_trace.sh`: which arm, by the `label_a` or `label_b` the CSV recorded. Selecting by label rather than by position means a typo is an error, not the silent selection of the other arm |
 | `EXPECTED_APK_MD5` | *required for trace* | the selected arm's `baseline_md5` or `treatment_md5` from the benchmark CSV header. The host APK must match before any device state changes; host-to-device attestation then separately proves those bytes were installed |
 | `EXPECTED_PERMISSION_STATE_ID` | *required for trace* | the selected arm's `permission_a` or `permission_b` value. `capture_trace.sh` aborts unless permission setup reproduces the benchmark's effective granted/denied identity, including under `ALLOW_PARTIAL_PERMISSIONS=1` |
 | `EXPECTED_COMPILE_STATUS` | *required for trace* | the `compile_status` value from the benchmark CSV header. `capture_trace.sh` aborts unless its freshly installed APK reaches the same achieved dexopt state, so a `verify`/`speed-profile` difference cannot be attributed to the SDK |

@@ -1030,6 +1030,10 @@ measured cost. That was a useful answer, but not the one the exercise was set up
 
 ```bash
 cd tools/coldstart-benchmark
+PKG=<your.app.id> BENCHMARK_CSV=results_<ts>.csv BENCHMARK_ARM=<the arm's label> \
+  ./capture_trace.sh app-with-datadog.apk treatment 1
+
+# Or give the identities by hand; an explicit value overrides the header:
 PKG=<your.app.id> \
 EXPECTED_APK_MD5=<baseline_md5 or treatment_md5 for this arm> \
 EXPECTED_PERMISSION_STATE_ID=<permission_a or permission_b for this arm> \
@@ -1044,6 +1048,17 @@ EXPECTED_SDK_LIVENESS=<expect_a or expect_b for this arm> \
   ./capture_trace.sh app-with-datadog.apk treatment 1
 ./.venv/bin/python verify_trace.py treatment.pftrace --package <your.app.id>
 ```
+
+`BENCHMARK_CSV` and `BENCHMARK_ARM` read every expected identity from that run's own header, so
+none of them is transcribed by hand. `BENCHMARK_ARM` is the label the CSV recorded, the same name
+the rows and `ab_stats.py` use, so a typo is an error rather than the silent selection of the
+other arm. An `EXPECTED_*` passed explicitly still overrides the header and still faces the same
+attestation.
+
+The binding refuses rather than guesses. A file with no `# device=` line is not a benchmark CSV;
+more than one means it pools several runs and cannot identify one; an aborted run has no completed
+A/B result to explain; and a CSV predating a stamp is named rather than defaulted. It is read
+before every gate and changes only where an expected value comes from, never what is compared.
 
 The third argument to `capture_trace.sh` is the arm's SDK expectation: `1` for the treatment
 arm, `0` for the baseline. `EXPECTED_SDK_LIVENESS` must carry the selected arm's matching

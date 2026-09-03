@@ -909,6 +909,108 @@ class HarnessRegressionTests(unittest.TestCase):
         self.assertIn("active Android user is 10", wrong_user.stderr)
         self.assertIn("benchmark\n       recorded android_user=0", wrong_user.stderr)
 
+    BENCHMARK_HEADER = (
+        "# device=moto_g_60_s sdk=31 abi=arm64-v8a emulator=0 android_user=0 "
+        "compile_filter=speed-profile compile_status=verify perf_mode=fixed blocks=8 "
+        "runs=4 warmup=3 animations=1 "
+        "fp=motorola/lisbon/lisbon:12/S3RQS/rel:user/release-keys "
+        "launcher=com.example/.Main airplane=0 baseline_md5=" + "a" * 32
+        + " treatment_md5=" + "c" * 32 + " label_a=A_noDD label_b=B_withDD "
+        "expect_a=0 expect_b=1 app_trace_id=none\n"
+        "# permission_a=" + "d" * 32 + "\n# permission_b=" + "e" * 32 + "\n"
+    )
+    BENCHMARK_ROWS = (
+        "label,block,pos_in_block,phase,run,total_ms,launch_state,status,foreground,ttfd\n"
+        "A_noDD,1,1,measure,1,100,COLD,ok,ok,100\n"
+    )
+
+    def test_trace_binds_to_the_benchmark_csv_instead_of_transcription(self) -> None:
+        """One binding replaces eleven hand-copied values, and refuses rather than guess.
+
+        Two of those values are 32-character digests and one is a build fingerprint;
+        a mistyped one aborted with a message indistinguishable from a real mismatch.
+        Reading them from the run's own header removes the transcription without
+        moving a single gate: an explicit value still wins and is still attested.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            apk = root / "t.apk"
+            apk.write_text("apk", encoding="utf-8")
+            good = root / "results.csv"
+            good.write_text(self.BENCHMARK_HEADER + self.BENCHMARK_ROWS, encoding="utf-8")
+            pooled = root / "pooled.csv"
+            pooled.write_text(self.BENCHMARK_HEADER + self.BENCHMARK_HEADER
+                              + self.BENCHMARK_ROWS, encoding="utf-8")
+            aborted = root / "aborted.csv"
+            aborted.write_text(self.BENCHMARK_HEADER + self.BENCHMARK_ROWS
+                               + "# RUN ABORTED (exit 1) -- dialog\n", encoding="utf-8")
+            legacy = root / "legacy.csv"
+            legacy.write_text(
+                self.BENCHMARK_HEADER.replace(" perf_mode=fixed", "")
+                + self.BENCHMARK_ROWS, encoding="utf-8")
+
+            def run(expect_dd="1", **env_overrides):
+                env = os.environ.copy()
+                for name in ("WARMUP", "ANIMATIONS", "AIRPLANE", "COMPILE_FILTER",
+                             "TRACE_ENDPOINT", "APP_TRACE_REGEX"):
+                    env.pop(name, None)
+                for name in list(env):
+                    if name.startswith("EXPECTED_"):
+                        env.pop(name, None)
+                env.update(PKG="com.example.app", AAPT2="/nonexistent")
+                env.update(env_overrides)
+                return subprocess.run(
+                    ["bash", str(HARNESS / "capture_trace.sh"), str(apk), "trace", expect_dd],
+                    check=False, capture_output=True, text=True, env=env,
+                )
+
+            # Refusals, each naming what it saw.
+            for env, needle in (
+                (dict(BENCHMARK_CSV=str(pooled), BENCHMARK_ARM="B_withDD"),
+                 "pools more"),
+                (dict(BENCHMARK_CSV=str(aborted), BENCHMARK_ARM="B_withDD"),
+                 "is an aborted run"),
+                (dict(BENCHMARK_CSV=str(apk), BENCHMARK_ARM="B_withDD"),
+                 "not a benchmark"),
+                (dict(BENCHMARK_CSV=str(root / "absent.csv"), BENCHMARK_ARM="B_withDD"),
+                 "benchmark CSV not found"),
+                (dict(BENCHMARK_CSV=str(good), BENCHMARK_ARM="B_wrong"),
+                 "is not an arm of"),
+                (dict(BENCHMARK_CSV=str(good)), "set BENCHMARK_ARM"),
+                (dict(BENCHMARK_ARM="B_withDD"), "there is no header"),
+                # A CSV predating a stamp cannot supply it, and a default would defeat
+                # the point. Named, not invented.
+                (dict(BENCHMARK_CSV=str(legacy), BENCHMARK_ARM="B_withDD"),
+                 "records no perf_mode"),
+            ):
+                result = run(**env)
+                self.assertNotEqual(result.returncode, 0, needle)
+                self.assertIn(needle, result.stderr)
+
+            # The arm is selected BY LABEL, so the treatment digest is the one gated.
+            treatment = run(BENCHMARK_CSV=str(good), BENCHMARK_ARM="B_withDD")
+            self.assertIn(f"bound to {good} arm B_withDD (b)", treatment.stderr)
+            self.assertIn("c" * 32, treatment.stderr)
+            self.assertNotIn("a" * 32, treatment.stderr)
+
+            # ...and the baseline arm carries expect_a=0, which the positional
+            # argument must agree with.
+            baseline = run(BENCHMARK_CSV=str(good), BENCHMARK_ARM="A_noDD")
+            self.assertIn("expect-datadog=1, but the selected benchmark arm", baseline.stderr)
+
+            # An explicit value still wins, and still faces its own attestation.
+            override = run(BENCHMARK_CSV=str(good), BENCHMARK_ARM="B_withDD",
+                           EXPECTED_APK_MD5="f" * 32)
+            self.assertIn("f" * 32, override.stderr)
+
+            # `app_trace_id=none` is a run with no app-owned endpoint, not a malformed
+            # digest; the md5 charset error pointed at the wrong problem entirely.
+            no_endpoint = run(BENCHMARK_CSV=str(good), BENCHMARK_ARM="B_withDD",
+                              TRACE_ENDPOINT="app_trace_ms", APP_TRACE_REGEX="x [0-9]+")
+            self.assertIn("ran without", no_endpoint.stderr)
+            self.assertIn("no app-owned endpoint", no_endpoint.stderr)
+            self.assertNotIn("hexadecimal", no_endpoint.stderr)
+
     def test_enabled_radio_readback_does_not_claim_reachability(self) -> None:
         result = self.run_with_fake_adb(
             """

@@ -17,7 +17,12 @@
 # variance (the original pair differed by ~90 ExoPlayer/MediaCodec threads
 # because one run played video and the other did not).
 #
-# Usage: EXPECTED_APK_MD5=<benchmark arm digest> \
+# Usage: BENCHMARK_CSV=<the run's results CSV> BENCHMARK_ARM=<its label_a|label_b> \
+#          ./capture_trace.sh <apk> <name> <expect-datadog:0|1>
+#
+# Every EXPECTED_* below is read from that CSV's header. Passing one explicitly
+# still overrides it, and still faces the same attestation:
+#        EXPECTED_APK_MD5=<benchmark arm digest> \
 #          EXPECTED_PERMISSION_STATE_ID=<benchmark arm permission_a|permission_b> \
 #          EXPECTED_COMPILE_STATUS=<benchmark compile_status> \
 #          EXPECTED_PERF_MODE=<benchmark perf_mode> \
@@ -32,7 +37,13 @@
 set -euo pipefail
 
 PKG="${PKG:?set PKG to your application id, e.g. PKG=com.example.app}"
-COMPILE_FILTER="${COMPILE_FILTER:-speed-profile}"
+# The benchmark this trace explains. Reading its header removes the transcription of
+# eleven values -- two 32-character digests and a build fingerprint among them --
+# whose failure mode was an abort indistinguishable from a real mismatch.
+BENCHMARK_CSV="${BENCHMARK_CSV:-}"
+# Which arm, by the label the CSV itself recorded.
+BENCHMARK_ARM="${BENCHMARK_ARM:-}"
+COMPILE_FILTER="${COMPILE_FILTER:-}"
 # The trace exists to explain a completed A/B run, whose header records the
 # achieved state separately from COMPILE_FILTER. Requiring that value prevents a
 # verify/speed-profile mismatch from being attributed to the SDK in the trace pair.
@@ -71,7 +82,6 @@ EXPECTED_SDK_LIVENESS="${EXPECTED_SDK_LIVENESS:-}"
 # required, supplies ANIMATIONS when that is unset, and an explicit disagreement
 # aborts before device access.
 EXPECTED_ANIMATIONS="${EXPECTED_ANIMATIONS:-}"
-ANIMATIONS="${ANIMATIONS:-$EXPECTED_ANIMATIONS}"
 # Same argument as ANIMATIONS: trace and benchmark must use the same controlled
 # Wi-Fi/mobile-radio state. Reachability is not inferred from an enabled setting;
 # the operator must hold the external network condition stable across both. Driven by
@@ -79,7 +89,6 @@ ANIMATIONS="${ANIMATIONS:-$EXPECTED_ANIMATIONS}"
 # ab_stats.py's _MUST_MATCH keys, so two CSVs that disagree on it cannot be pooled --
 # and a trace that disagrees with the CSV it explains is the same error, unchecked.
 EXPECTED_AIRPLANE="${EXPECTED_AIRPLANE:-}"
-AIRPLANE="${AIRPLANE:-$EXPECTED_AIRPLANE}"
 # The benchmark header is the source of truth for trace conditioning. WARMUP remains
 # accepted as an explicit operator setting, but defaults to EXPECTED_WARMUP and must
 # equal it, so omitting or mistyping a non-default benchmark value cannot silently
@@ -90,7 +99,6 @@ AIRPLANE="${AIRPLANE:-$EXPECTED_AIRPLANE}"
 # under the default fresh-install `speed-profile` condition, where there is no
 # profile at install time and each launch adds to it.
 EXPECTED_WARMUP="${EXPECTED_WARMUP:-}"
-WARMUP="${WARMUP:-$EXPECTED_WARMUP}"
 # The trace must reach the same endpoint as the A/B it is meant to explain.
 # total_ms is the benchmark's default (am start -W TotalTime / first frame).
 # TTFD and an app-owned log endpoint need an explicit log marker before the
@@ -121,6 +129,25 @@ require_expected_md5() {
     *[!0-9a-f]*) die "invalid $name: expected 32 lowercase hexadecimal characters" ;;
   esac
 }
+. "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+# Before every validation below, so a bound value is checked exactly as a typed
+# one is. Nothing here relaxes a gate; it only supplies what the gate compares.
+if [ -n "$BENCHMARK_CSV" ]; then
+  dd_read_benchmark_header "$BENCHMARK_CSV" "$BENCHMARK_ARM" || exit 1
+elif [ -n "$BENCHMARK_ARM" ]; then
+  die "BENCHMARK_ARM is set but BENCHMARK_CSV is not, so there is no header to
+       select that arm from."
+fi
+# Resolved here, not at declaration: each takes the benchmark's value when the
+# operator did not set it, and dd_read_benchmark_header above is what supplies that
+# value. Assigning them earlier read an EXPECTED_* that was still empty.
+ANIMATIONS="${ANIMATIONS:-$EXPECTED_ANIMATIONS}"
+AIRPLANE="${AIRPLANE:-$EXPECTED_AIRPLANE}"
+WARMUP="${WARMUP:-$EXPECTED_WARMUP}"
+# The benchmark's requested filter, or the same default it uses. The achieved
+# compile_status is what the gate compares; matching the request too removes one
+# more way the two runs can differ before that point.
+COMPILE_FILTER="${COMPILE_FILTER:-speed-profile}"
 case "$PKG" in *[!a-zA-Z0-9._]*|""|.*|*.) die "invalid application id: '$PKG'" ;; esac
 require_expected_md5 EXPECTED_APK_MD5 "baseline_md5 or treatment_md5"
 require_expected_md5 EXPECTED_PERMISSION_STATE_ID "permission_a or permission_b"
@@ -186,6 +213,13 @@ case "$TRACE_ENDPOINT" in
   total_ms|ttfd) ;;
   app_trace_ms)
     [ -n "$APP_TRACE_REGEX" ] || die "TRACE_ENDPOINT=app_trace_ms requires APP_TRACE_REGEX"
+    # `none` is what the benchmark stamps when it ran without APP_TRACE_REGEX. That is
+    # not a malformed digest, it is a run with no app-trace endpoint to explain, and
+    # the md5 charset error pointed the operator at the wrong problem.
+    [ "$EXPECTED_APP_TRACE_ID" != none ] || die "this benchmark ran without
+       APP_TRACE_REGEX (app_trace_id=none), so it has no app-owned endpoint for a
+       trace to explain. Trace TRACE_ENDPOINT=total_ms or ttfd, or re-run the
+       benchmark with the APP_TRACE_REGEX you want attributed."
     require_expected_md5 EXPECTED_APP_TRACE_ID "app_trace_id" ;;
   *) die "TRACE_ENDPOINT must be total_ms, ttfd or app_trace_ms (got '$TRACE_ENDPOINT')" ;;
 esac
@@ -196,7 +230,6 @@ if [ -n "$APP_TRACE_REGEX" ]; then
        (exit $_re_rc): ${_re_err:-no message}
        Pattern: $APP_TRACE_REGEX"
 fi
-. "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 if [ "$TRACE_ENDPOINT" = app_trace_ms ]; then
   TRACE_APP_TRACE_ID=$(dd_md5_str "$APP_TRACE_REGEX") \
     || die "cannot hash APP_TRACE_REGEX"
@@ -212,6 +245,9 @@ SETTLE_LAUNCHES=$((WARMUP + 1))
 TRACE_FILE="./$NAME.pftrace"
 PKG_RE=$(printf '%s' "$PKG" | sed 's/[.]/\\./g')
 log() { echo "[$(date +%H:%M:%S)] $*" >&2; }
+if [ -n "$BENCHMARK_CSV" ]; then
+  log "bound to $BENCHMARK_CSV arm $DD_BENCHMARK_LABEL (${DD_BENCHMARK_ARM_KEY})"
+fi
 
 HOST_MD5=$(dd_md5 "$APK") || die "cannot hash APK: $APK"
 [ "$HOST_MD5" = "$EXPECTED_APK_MD5" ] \

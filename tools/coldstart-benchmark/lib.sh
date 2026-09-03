@@ -418,6 +418,121 @@ dd_package_compile_status() {
   printf '%s\n' "$status"
 }
 
+# Bind a trace to the benchmark CSV it is meant to explain, so the expected
+# identities come from that run's own header instead of being transcribed by hand.
+# Eleven values, two of them 32-character digests and one a build fingerprint, is a
+# transcription hazard whose failure mode is an abort indistinguishable from a real
+# mismatch. This changes only WHERE an expected value comes from: every comparison
+# the caller makes against the device, the file or the achieved state is unchanged.
+#
+# Fills each of these only when the caller left it empty, so an explicit value still
+# wins and still faces the same attestation:
+#   EXPECTED_APK_MD5 EXPECTED_PERMISSION_STATE_ID EXPECTED_SDK_LIVENESS
+#   EXPECTED_COMPILE_STATUS EXPECTED_PERF_MODE EXPECTED_WARMUP EXPECTED_ANIMATIONS
+#   EXPECTED_AIRPLANE EXPECTED_FP EXPECTED_ANDROID_USER EXPECTED_APP_TRACE_ID
+#   COMPILE_FILTER
+# and reports the resolved binding through DD_BENCHMARK_ARM_KEY / DD_BENCHMARK_LABEL.
+#
+# It refuses rather than guesses. A convenience that supplies a plausible wrong value
+# is worse than the typing it saves.
+dd_read_benchmark_header() {
+  local csv="$1" want_label="$2" headers aborted tokens label_a label_b arm missing="" pair var key value
+  [ -f "$csv" ] || {
+    echo "FATAL: benchmark CSV not found: '$csv'." >&2
+    return 1
+  }
+  # The `# device=` line carries one run's identity. Zero means this is not a
+  # benchmark CSV. More than one means a pooled or concatenated file, where taking
+  # the first would silently bind the trace to one of several different runs.
+  headers=$(grep -c '^# device=' "$csv" || true)
+  if [ "$headers" -eq 0 ]; then
+    echo "FATAL: '$csv' has no '# device=' metadata line, so it is not a benchmark" >&2
+    echo "       CSV a trace can be bound to." >&2
+    return 1
+  fi
+  if [ "$headers" -gt 1 ]; then
+    echo "FATAL: '$csv' holds $headers '# device=' metadata lines, so it pools more" >&2
+    echo "       than one run and the trace cannot be bound to any one of them." >&2
+    echo "       Pass the single run's own CSV." >&2
+    return 1
+  fi
+  aborted=$(grep -c 'RUN ABORTED' "$csv" || true)
+  if [ "$aborted" -ne 0 ]; then
+    echo "FATAL: '$csv' is an aborted run. A trace explains a completed A/B result;" >&2
+    echo "       this file has none. Re-run the benchmark, or recover its completed" >&2
+    echo "       blocks first (see --recover-completed-blocks) and trace that run." >&2
+    return 1
+  fi
+  # Header lines only. Row data is never trusted for identity, and only whitespace-
+  # separated `key=value` tokens are read, so an abort reason or a recovery hint
+  # cannot contribute a key.
+  tokens=$(awk '/^#/ { for (i = 1; i <= NF; i++)
+                         if ($i ~ /^[A-Za-z_][A-Za-z0-9_]*=/) print $i }' "$csv")
+  # No record rebuild: `$1=""; print` rejoins the fields with OFS and returns the
+  # value with a leading space, which then matched no label. Take the remainder of
+  # the token instead, which also keeps a value containing `=` intact.
+  _dd_header_value() {
+    printf '%s\n' "$tokens" \
+      | awk -v k="$1" 'index($0, k "=") == 1 { print substr($0, length(k) + 2); exit }'
+  }
+  label_a=$(_dd_header_value label_a)
+  label_b=$(_dd_header_value label_b)
+  if [ -z "$label_a" ] || [ -z "$label_b" ]; then
+    echo "FATAL: '$csv' records no label_a/label_b, so an arm cannot be selected by" >&2
+    echo "       label. Pass the expected values explicitly for this CSV." >&2
+    return 1
+  fi
+  # By LABEL, not by a/b: it is the identifier the operator already sees in the CSV
+  # rows and in ab_stats.py's output, and a typo is an error here rather than the
+  # silent selection of the other arm.
+  case "$want_label" in
+    "$label_a") arm=a ;;
+    "$label_b") arm=b ;;
+    "") echo "FATAL: set BENCHMARK_ARM to the arm this trace explains: '$label_a'" >&2
+        echo "       or '$label_b' (from '$csv')." >&2
+        return 1 ;;
+    *)  echo "FATAL: BENCHMARK_ARM='$want_label' is not an arm of '$csv', which" >&2
+        echo "       recorded '$label_a' and '$label_b'." >&2
+        return 1 ;;
+  esac
+  DD_BENCHMARK_ARM_KEY="$arm"
+  DD_BENCHMARK_LABEL="$want_label"
+  if [ "$arm" = a ]; then
+    set -- "EXPECTED_APK_MD5:baseline_md5" "EXPECTED_PERMISSION_STATE_ID:permission_a" \
+           "EXPECTED_SDK_LIVENESS:expect_a"
+  else
+    set -- "EXPECTED_APK_MD5:treatment_md5" "EXPECTED_PERMISSION_STATE_ID:permission_b" \
+           "EXPECTED_SDK_LIVENESS:expect_b"
+  fi
+  for pair in "$@" \
+      "EXPECTED_COMPILE_STATUS:compile_status" "EXPECTED_PERF_MODE:perf_mode" \
+      "EXPECTED_WARMUP:warmup" "EXPECTED_ANIMATIONS:animations" \
+      "EXPECTED_AIRPLANE:airplane" "EXPECTED_FP:fp" \
+      "EXPECTED_ANDROID_USER:android_user" "EXPECTED_APP_TRACE_ID:app_trace_id" \
+      "COMPILE_FILTER:compile_filter"; do
+    var=${pair%%:*}
+    key=${pair#*:}
+    value=$(_dd_header_value "$key")
+    if [ -z "$value" ]; then
+      # A CSV recorded before a stamp existed cannot supply it, and inventing a
+      # default would be the whole point of this function reversed. ab_stats.py only
+      # WARNS when such a key is absent while pooling; a trace exists to match, so
+      # here it is named and the operator must supply it.
+      missing="$missing $key"
+      continue
+    fi
+    # Explicit wins: the caller may override one field and still face its gate.
+    [ -n "$(eval "printf '%s' \"\${$var:-}\"")" ] || eval "$var=\"\$value\""
+  done
+  if [ -n "$missing" ]; then
+    echo "FATAL: '$csv' records no$missing, so the trace cannot be bound to it on" >&2
+    echo "       those fields. This CSV predates them; supply the corresponding" >&2
+    echo "       EXPECTED_* values explicitly, or trace a run that stamps them." >&2
+    return 1
+  fi
+  return 0
+}
+
 # Atomically reserve every evidence path as one set. Bash noclobber turns the
 # redirection into an exclusive create; checking `[ ! -e ]` first would leave a
 # race where two runs pass the check and then append/truncate the same files.
