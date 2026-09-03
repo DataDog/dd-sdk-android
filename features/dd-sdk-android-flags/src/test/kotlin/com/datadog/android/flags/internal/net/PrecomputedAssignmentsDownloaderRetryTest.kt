@@ -148,6 +148,26 @@ internal class PrecomputedAssignmentsDownloaderRetryTest {
     }
 
     @Test
+    fun `M retry when failed response cleanup throws W readPrecomputedFlags()`() {
+        // Given
+        val failedResponseBody = mock<ResponseBody>()
+        doThrow(IllegalStateException("close failed")).whenever(failedResponseBody).close()
+        val calls = queueCalls(
+            callReturning(createPrecomputedResponse(503, FAKE_URL, failedResponseBody)),
+            callReturning(createPrecomputedSuccessfulResponse(RESPONSE_BODY, FAKE_URL))
+        )
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+
+        // Then
+        assertThat(result).isEqualTo(RESPONSE_BODY)
+        verify(failedResponseBody).close()
+        verify(mockCallFactory, times(2)).newCall(fakeRequest)
+        verifyExecutedOnce(calls)
+    }
+
+    @Test
     fun `M retry transient status W readPrecomputedFlags() { response has no body }`() {
         // Given
         val calls = queueCalls(
@@ -420,6 +440,37 @@ internal class PrecomputedAssignmentsDownloaderRetryTest {
         // Then
         assertThat(result).isEqualTo(RESPONSE_BODY)
         verify(mockCall, never()).timeout()
+    }
+
+    @Test
+    fun `M preserve shorter call timeout W readPrecomputedFlags()`() {
+        // Given
+        testedDownloader = createDownloader(requestTimeoutMs = 2_500L)
+        whenever(mockTimeout.timeoutNanos()).doReturn(TimeUnit.MILLISECONDS.toNanos(1_000L))
+        whenever(mockCall.execute()).doReturn(createPrecomputedSuccessfulResponse(RESPONSE_BODY, FAKE_URL))
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+
+        // Then
+        assertThat(result).isEqualTo(RESPONSE_BODY)
+        verify(mockTimeout, never()).timeout(2_500L, TimeUnit.MILLISECONDS)
+    }
+
+    @Test
+    fun `M apply shorter SDK timeout W readPrecomputedFlags()`() {
+        // Given
+        testedDownloader = createDownloader(requestTimeoutMs = 2_500L)
+        whenever(mockTimeout.timeoutNanos()).doReturn(TimeUnit.MILLISECONDS.toNanos(5_000L))
+        whenever(mockTimeout.timeout(2_500L, TimeUnit.MILLISECONDS)).doReturn(mockTimeout)
+        whenever(mockCall.execute()).doReturn(createPrecomputedSuccessfulResponse(RESPONSE_BODY, FAKE_URL))
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+
+        // Then
+        assertThat(result).isEqualTo(RESPONSE_BODY)
+        verify(mockTimeout).timeout(2_500L, TimeUnit.MILLISECONDS)
     }
 
     @Test

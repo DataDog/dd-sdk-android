@@ -13,6 +13,7 @@ import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.internal.network.HttpSpec
 import okhttp3.Call
 import okhttp3.Request
+import okhttp3.Response
 import java.io.EOFException
 import java.io.IOException
 import java.io.InterruptedIOException
@@ -113,7 +114,7 @@ internal class PrecomputedAssignmentsDownloader(
             val newCall = callFactory.newCall(request)
             call = newCall
             if (requestTimeoutMs > 0) {
-                newCall.timeout().timeout(requestTimeoutMs, TimeUnit.MILLISECONDS)
+                applyRequestTimeout(newCall)
             }
             val response = newCall.execute()
             try {
@@ -129,8 +130,7 @@ internal class PrecomputedAssignmentsDownloader(
                     )
                 }
             } finally {
-                // A custom Call.Factory can return a response without a body. Response.close() rejects that shape.
-                if (response.body != null) response.close()
+                closeResponse(response)
             }
         } catch (e: IOException) {
             DownloadResult.UnexpectedFailure(
@@ -139,6 +139,27 @@ internal class PrecomputedAssignmentsDownloader(
             )
         } catch (e: Throwable) {
             DownloadResult.UnexpectedFailure(e, isRetryable = false)
+        }
+    }
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // executeSingleRequest catches custom Call failures.
+    private fun applyRequestTimeout(call: Call) {
+        val timeout = call.timeout()
+        val requestTimeoutNanos = TimeUnit.MILLISECONDS.toNanos(requestTimeoutMs)
+        val callTimeoutNanos = timeout.timeoutNanos()
+        if (callTimeoutNanos == 0L || requestTimeoutNanos < callTimeoutNanos) {
+            timeout.timeout(requestTimeoutMs, TimeUnit.MILLISECONDS)
+        }
+    }
+
+    @Suppress("SwallowedException", "TooGenericExceptionCaught", "UnsafeThirdPartyFunctionCall")
+    private fun closeResponse(response: Response) {
+        // A custom Call.Factory can return a response without a body. Response.close() rejects that shape.
+        if (response.body == null) return
+        try {
+            response.close()
+        } catch (_: Exception) {
+            // Cleanup must not replace the HTTP result or prevent a retry.
         }
     }
 
