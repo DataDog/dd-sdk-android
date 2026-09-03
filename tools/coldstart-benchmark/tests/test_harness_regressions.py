@@ -2,6 +2,7 @@
 """Regression tests for cross-script cold-start harness contracts."""
 
 import ast
+import hashlib
 import importlib.util
 import os
 import re
@@ -373,7 +374,12 @@ class HarnessRegressionTests(unittest.TestCase):
         self.assertIn("benchmark CSV header's compile_status", capture)
 
         env = os.environ.copy()
-        env.update(PKG="com.example.app", EXPECTED_COMPILE_STATUS="verify+speed-profile")
+        env.update(
+            PKG="com.example.app",
+            EXPECTED_APK_MD5="a" * 32,
+            EXPECTED_PERMISSION_STATE_ID="b" * 32,
+            EXPECTED_COMPILE_STATUS="verify+speed-profile",
+        )
         compound = subprocess.run(
             ["bash", str(HARNESS / "capture_trace.sh"), "/missing.apk", "trace", "1"],
             check=False,
@@ -393,6 +399,146 @@ class HarnessRegressionTests(unittest.TestCase):
             env=env,
         )
         self.assertIn("invalid EXPECTED_COMPILE_STATUS", malformed.stderr)
+
+    def test_trace_requires_benchmark_artifact_and_permission_identity(self) -> None:
+        capture_path = HARNESS / "capture_trace.sh"
+        capture = capture_path.read_text(encoding="utf-8")
+        self.assertIn('EXPECTED_APK_MD5="${EXPECTED_APK_MD5:-}"', capture)
+        self.assertIn(
+            'EXPECTED_PERMISSION_STATE_ID="${EXPECTED_PERMISSION_STATE_ID:-}"',
+            capture,
+        )
+        self.assertIn('[ "$HOST_MD5" = "$EXPECTED_APK_MD5" ]', capture)
+        self.assertIn(
+            '[ "$DD_PERMISSION_STATE_ID" = "$EXPECTED_PERMISSION_STATE_ID" ]',
+            capture,
+        )
+        # A wrong host artifact is rejected before the script even requires a device
+        # or applies settings. Permission identity is checked immediately after the
+        # shared grant helper and before any conditioning launch.
+        self.assertLess(
+            capture.index('[ "$HOST_MD5" = "$EXPECTED_APK_MD5" ]'),
+            capture.index("\ndd_require_device || exit 2"),
+        )
+        permission_setup = capture.index("\ngrant_runtime_permissions\n")
+        permission_gate = capture.index("\nattest_permission_state\n", permission_setup)
+        self.assertLess(permission_setup, permission_gate)
+        self.assertLess(permission_gate, capture.index("\nACT=$(", permission_gate))
+
+        base_env = os.environ.copy()
+        base_env.update(
+            PKG="com.example.app",
+            EXPECTED_COMPILE_STATUS="verify",
+        )
+
+        missing_digest = subprocess.run(
+            ["bash", str(capture_path), "/missing.apk", "trace", "1"],
+            check=False,
+            capture_output=True,
+            text=True,
+            env=base_env,
+        )
+        self.assertNotEqual(missing_digest.returncode, 0)
+        self.assertIn("set EXPECTED_APK_MD5", missing_digest.stderr)
+
+        base_env["EXPECTED_APK_MD5"] = "not-an-md5"
+        malformed_digest = subprocess.run(
+            ["bash", str(capture_path), "/missing.apk", "trace", "1"],
+            check=False,
+            capture_output=True,
+            text=True,
+            env=base_env,
+        )
+        self.assertNotEqual(malformed_digest.returncode, 0)
+        self.assertIn("invalid EXPECTED_APK_MD5", malformed_digest.stderr)
+
+        base_env["EXPECTED_APK_MD5"] = "a" * 32
+        missing_permission = subprocess.run(
+            ["bash", str(capture_path), "/missing.apk", "trace", "1"],
+            check=False,
+            capture_output=True,
+            text=True,
+            env=base_env,
+        )
+        self.assertNotEqual(missing_permission.returncode, 0)
+        self.assertIn("set EXPECTED_PERMISSION_STATE_ID", missing_permission.stderr)
+
+        base_env["EXPECTED_PERMISSION_STATE_ID"] = "not-an-md5"
+        malformed_permission = subprocess.run(
+            ["bash", str(capture_path), "/missing.apk", "trace", "1"],
+            check=False,
+            capture_output=True,
+            text=True,
+            env=base_env,
+        )
+        self.assertNotEqual(malformed_permission.returncode, 0)
+        self.assertIn("invalid EXPECTED_PERMISSION_STATE_ID", malformed_permission.stderr)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            apk = Path(tmp) / "arm.apk"
+            apk.write_bytes(b"benchmarked apk")
+            actual_md5 = hashlib.md5(apk.read_bytes()).hexdigest()
+            base_env.update(
+                EXPECTED_PERMISSION_STATE_ID="b" * 32,
+                EXPECTED_APK_MD5="0" * 32,
+                ADB="/bin/false",
+            )
+            mismatch = subprocess.run(
+                ["bash", str(capture_path), str(apk), "trace", "1"],
+                check=False,
+                capture_output=True,
+                text=True,
+                env=base_env,
+            )
+            self.assertNotEqual(mismatch.returncode, 0)
+            self.assertIn(f"trace APK md5={actual_md5}", mismatch.stderr)
+            self.assertIn("selected benchmark arm recorded", mismatch.stderr)
+
+            base_env["EXPECTED_APK_MD5"] = actual_md5
+            matched = subprocess.run(
+                ["bash", str(capture_path), str(apk), "trace", "1"],
+                check=False,
+                capture_output=True,
+                text=True,
+                env=base_env,
+            )
+            self.assertNotEqual(matched.returncode, 0)
+            self.assertNotIn("selected benchmark arm recorded", matched.stderr)
+            self.assertIn("benchmark APK digest matched", matched.stderr)
+
+        gate_start = capture.index("attest_permission_state() {")
+        gate_end = capture.index("\n}\n", gate_start) + 3
+        permission_gate_function = capture[gate_start:gate_end]
+
+        def run_permission_gate(actual: str, expected: str) -> subprocess.CompletedProcess[str]:
+            env = os.environ.copy()
+            env.update(
+                DD_PERMISSION_STATE_ID=actual,
+                EXPECTED_PERMISSION_STATE_ID=expected,
+            )
+            return subprocess.run(
+                [
+                    "bash",
+                    "-c",
+                    "die() { echo \"FATAL: $*\" >&2; exit 1; }; "
+                    "log() { echo \"$*\" >&2; };\n"
+                    f"{permission_gate_function}\nattest_permission_state",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                env=env,
+            )
+
+        permission_id = "b" * 32
+        permission_match = run_permission_gate(permission_id, permission_id)
+        self.assertEqual(permission_match.returncode, 0, permission_match.stderr)
+        self.assertIn("benchmark permission state matched", permission_match.stderr)
+
+        permission_mismatch = run_permission_gate("a" * 32, permission_id)
+        self.assertNotEqual(permission_mismatch.returncode, 0)
+        self.assertIn("trace permission state=", permission_mismatch.stderr)
+        self.assertIn("different startup scenario", permission_mismatch.stderr)
 
     def test_enabled_radio_readback_does_not_claim_reachability(self) -> None:
         result = self.run_with_fake_adb(
@@ -1612,7 +1758,7 @@ class HarnessRegressionTests(unittest.TestCase):
         select = namespace["final_launch_processes"]
 
         class FakeTraceProcessor:
-            """Answers the boundary query and records what was asked."""
+            """Answers the scheduler-boundary query and counts whether it was needed."""
 
             def __init__(self, boundary):
                 self.boundary = boundary
@@ -1622,52 +1768,84 @@ class HarnessRegressionTests(unittest.TestCase):
                 self.queries.append(sql)
                 return [types.SimpleNamespace(b=self.boundary)]
 
-        # No `end_ts` attribute ANYWHERE in these fixtures, deliberately. A real
-        # capture from this harness has end_ts NULL on every process and every
-        # thread -- it needs `sched/sched_process_free`, which the trace config does
-        # not record -- so a boundary taken from it rejected every capture as
-        # unusable while a fixture that supplied one passed. Reading it again now
-        # raises AttributeError here instead of shipping.
-        old = types.SimpleNamespace(upid=1, start_ts=None)
-        spawned_before_stop = types.SimpleNamespace(upid=2, start_ts=40)
-        final_main = types.SimpleNamespace(upid=3, start_ts=120)
-        final_private = types.SimpleNamespace(upid=4, start_ts=130)
+        old = types.SimpleNamespace(upid=1, start_ts=None, end_ts=100)
+        # This private process starts after the old main's hypothetical final sched
+        # slice, but while that process is still alive. It extends the force-stop
+        # boundary, and the next private process proves the closure is transitive.
+        late_conditioning = types.SimpleNamespace(upid=2, start_ts=90, end_ts=110)
+        chained_conditioning = types.SimpleNamespace(upid=3, start_ts=105, end_ts=115)
+        final_main = types.SimpleNamespace(upid=4, start_ts=200, end_ts=None)
+        final_private = types.SimpleNamespace(upid=5, start_ts=210, end_ts=None)
 
-        tp = FakeTraceProcessor(100)
-        scoped, boundary = select(
-            tp, [old, spawned_before_stop, final_main, final_private])
-        self.assertEqual(boundary, 100)
-        # A process spawned after tracing began but BEFORE the force-stop belongs to
-        # the conditioning generation too: it stopped being scheduled there.
-        self.assertEqual([p.upid for p in scoped], [3, 4])
-        self.assertIn("from sched s", tp.queries[0])
-        self.assertNotIn("end_ts", tp.queries[0])
+        exact = FakeTraceProcessor(999)
+        scoped, boundary, basis = select(
+            exact, [old, late_conditioning, chained_conditioning, final_main, final_private])
+        self.assertEqual(boundary, 115)
+        # Both private conditioning processes are excluded; only the launch after
+        # the complete force-stop boundary contributes to liveness.
+        self.assertEqual([p.upid for p in scoped], [4, 5])
+        self.assertEqual(basis, "lifetime")
+        # Complete lifetimes need no scheduler query at all.
+        self.assertEqual(exact.queries, [])
 
-        # Fail closed when the conditioning generation was never scheduled, so the
-        # force-stop cannot be located at all.
-        unbounded, boundary = select(FakeTraceProcessor(None), [old, final_main])
+        # An incomplete lifetime closure DEGRADES rather than discarding the capture.
+        # `end_ts` needs one event per process out of a RING_BUFFER carrying 25s of
+        # sched_switch, and every trace predating sched/sched_process_free has it on
+        # no process at all -- refusing outright made those captures worthless.
+        incomplete_private = types.SimpleNamespace(upid=6, start_ts=95, end_ts=None)
+        degraded = FakeTraceProcessor(120)
+        fallback, boundary, basis = select(
+            degraded, [old, incomplete_private, final_main])
+        self.assertEqual([p.upid for p in fallback], [4])
+        self.assertEqual(boundary, 120)
+        self.assertEqual(basis, "sched")
+        self.assertIn("from sched s", degraded.queries[0])
+
+        # Fail closed only when NEITHER method can locate the boundary.
+        unbounded, boundary, basis = select(
+            FakeTraceProcessor(None), [old, incomplete_private, final_main])
         self.assertEqual(unbounded, [])
         self.assertIsNone(boundary)
+        self.assertIsNone(basis)
 
         # Boundary known, but the traced launch is not in the capture. Also unusable,
         # and for a different reason the operator has to be able to tell apart.
-        missing, boundary = select(
-            FakeTraceProcessor(200), [old, spawned_before_stop])
+        missing, boundary, basis = select(
+            FakeTraceProcessor(999), [old, late_conditioning, chained_conditioning])
         self.assertEqual(missing, [])
-        self.assertEqual(boundary, 200)
+        self.assertEqual(boundary, 115)
 
         # A capture taken before Perfetto moved inside the conditioning wait has no
-        # old generation, and needs no boundary query at all.
-        clean = FakeTraceProcessor(999)
-        no_old_generation, boundary = select(clean, [final_main, final_private])
+        # old generation, and needs no boundary at all.
+        clean = FakeTraceProcessor(1)
+        no_old_generation, boundary, basis = select(clean, [final_main, final_private])
         self.assertIsNone(no_old_generation)
         self.assertIsNone(boundary)
+        self.assertIsNone(basis)
         self.assertEqual(clean.queries, [])
 
+        # A scheduler boundary is checked by the SEPARATION the protocol guarantees,
+        # not refused for being a scheduler boundary. Refusing on the method's name
+        # made the treatment arm permanently unverifiable: `end_ts` is NULL on every
+        # process of a real capture from the target device even with
+        # sched/sched_process_free enabled (measured: 849/849 processes,
+        # 4429/4429 threads), so the basis is "sched" on every real trace and any
+        # gate keyed on it alone fires on every capture that has SDK threads.
+        self.assertIn("MIN_SEPARATION_NS = 1_000_000_000", source)
+        self.assertIn('if boundary_basis == "sched" and separation_ns is not None', source)
+        self.assertIn("separation_ns < MIN_SEPARATION_NS", source)
+        self.assertIn("THE TWO PROCESS GENERATIONS ARE NOT SEPARATED", source)
+        self.assertNotIn('boundary_basis == "sched" and active', source)
+        # The margin is reported whenever a boundary was used, so the number behind
+        # the verdict is visible rather than implied.
+        self.assertIn("s after that boundary", source)
+
         # The unusable verdict must name which of the two failures it saw.
-        self.assertIn("no scheduling activity", source)
+        self.assertIn("nor any scheduler activity", source)
+        self.assertIn('ftrace_events: "sched/sched_process_free"',
+                      (HARNESS / "capture_trace.sh").read_text(encoding="utf-8"))
         self.assertIn("but no package process started after that", source)
-        self.assertNotIn("select upid, pid, name, start_ts, end_ts from process", source)
+        self.assertIn("select upid, pid, name, start_ts, end_ts from process", source)
 
         self.assertIn(
             'upids = ",".join(str(r.upid) for r in verdict_procs)',
@@ -1675,6 +1853,7 @@ class HarnessRegressionTests(unittest.TestCase):
         )
         self.assertIn("where upid in ({upids}) and lower(name) glob 'datadog-*'", source)
         self.assertIn("tp, {r.upid for r in verdict_procs}, args.package", source)
+        self.assertIn("final_launch_processes(tp, procs)", source)
 
     def test_thread_liveness_fails_closed_on_unreadable_processes(self) -> None:
         success = self.run_with_fake_adb(

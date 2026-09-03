@@ -103,6 +103,14 @@ def parse_args():
     return ap.parse_args()
 
 
+# The protocol leaves five seconds between the in-trace force-stop and the traced
+# launch. A scheduler-derived boundary is accurate to one scheduling slice, so a
+# one-second floor is three orders of magnitude above the error and five times below
+# what the protocol provides: it accepts every capture that followed the protocol and
+# refuses any where that gap is not visible.
+MIN_SEPARATION_NS = 1_000_000_000
+
+
 def final_launch_processes(tp, procs):
     """Return the package processes belonging to the final traced launch.
 
@@ -112,40 +120,86 @@ def final_launch_processes(tp, procs):
     Reading liveness across both lets a conditioning process that DID initialize the
     SDK satisfy the verdict for a traced launch that did not.
 
-    The boundary is the last moment any thread of the conditioning generation was
-    scheduled, which is the force-stop that killed it. A private process spawned
-    after tracing began but before that force-stop is also excluded, because it too
-    stops being scheduled there and so starts before the boundary.
+    The boundary is the latest process end in the complete conditioning generation.
+    Seed it with every package process already alive when tracing began, then expand
+    it to every package process whose lifetime starts before the current end boundary.
+    That closure is necessary for a private process created during the conditioning
+    wait: its start can be later than the old main process's last scheduler slice, but
+    it still belongs to the generation killed by the same force-stop.
 
-    NOT `process.end_ts`. Populating it needs `sched/sched_process_free`, which this
-    trace config does not record: on a real capture from this harness `end_ts` is
-    NULL on all 822 processes and all 3946 threads, so a boundary taken from it
-    rejects every capture as unusable. `sched` rows always exist -- the config
-    records `sched/sched_switch`, and that same capture holds 162518 of them -- and
-    the traced launch starts a full five seconds after the force-stop, so scheduling
-    granularity is immaterial at that distance.
+    capture_trace.sh records `sched/sched_process_free`, which populates process.end_ts.
 
-    Returns (processes, boundary_ts):
-      (None, None)  the trace began with no conditioning generation, so every
-                    package process in it belongs to the traced launch. This is what
-                    a capture taken before Perfetto moved inside the wait looks like.
-      ([], None)    a conditioning generation exists but was never scheduled, so the
-                    force-stop cannot be located.
-      ([], ts)      the boundary is known, but no package process started after it,
-                    so this trace holds no traced launch.
+    A LIFETIME BOUNDARY IS NOT AVAILABLE IN PRACTICE, which is why the scheduler
+    boundary below is not a fallback so much as the working path. MEASURED on the
+    target device (moto g(60)s, Android 12, sdk 31) with `sched/sched_process_free`
+    enabled and the app force-stopped INSIDE the capture: `end_ts` is NULL on 849 of
+    849 processes and 4429 of 4429 threads, including both conditioning processes the
+    force-stop killed. Enabling the event does not populate it there. The lifetime
+    path is kept because it is exact where it does work and costs nothing where it
+    does not -- it issues no query at all -- but nothing may depend on it.
+
+    The scheduler boundary is the last moment any thread of the processes alive at
+    trace start was scheduled. On the same capture that is the force-stop to within
+    one scheduling slice: the two conditioning processes last ran at +0.00s and
+    -0.07s relative to it, while the traced launch's processes started at +2.09s and
+    +2.77s.
+
+    What this cannot see is a conditioning process CREATED during the capture whose
+    start falls after every pre-existing process's last scheduler slice; it would be
+    scored as final-launch. That requires the app to go entirely unscheduled between
+    that creation and the force-stop, which does not happen to a foreground app about
+    to be stopped -- but it is not proven by the boundary itself. What IS checkable is
+    the separation: the protocol leaves five seconds between the force-stop and the
+    traced launch, so the caller requires a margin far above scheduling granularity
+    and refuses the verdict when it is absent, rather than assuming the gap was there.
+
+    Returns (processes, boundary_ts, basis):
+      (None, None, None)     the trace began with no conditioning generation, so
+                             every package process in it belongs to the traced
+                             launch. This is what a capture taken before Perfetto
+                             moved inside the wait looks like.
+      (procs, ts, "lifetime") the boundary came from process lifetimes.
+      (procs, ts, "sched")    the boundary came from scheduler activity; the caller
+                              must check the separation margin (see above).
+      ([], None, None)       a conditioning generation exists but NEITHER a lifetime
+                             nor a scheduler boundary could be established.
+      ([], ts, basis)        the boundary is known, but no package process started
+                             after it, so this trace holds no traced launch.
     """
     preexisting = [p for p in procs if p.start_ts is None]
     if not preexisting:
-        return None, None
+        return None, None, None
+    conditioning = {p.upid for p in preexisting}
+    boundary = None
+    while True:
+        members = [p for p in procs if p.upid in conditioning]
+        if any(p.end_ts is None for p in members):
+            conditioning = None
+            break
+        boundary = max(p.end_ts for p in members)
+        expanded = {
+            p.upid for p in procs
+            if p.start_ts is None or p.start_ts <= boundary
+        }
+        if expanded == conditioning:
+            break
+        conditioning = expanded
+    if conditioning is not None:
+        return [p for p in procs
+                if p.upid not in conditioning and p.start_ts is not None
+                and p.start_ts > boundary], boundary, "lifetime"
+
+    # No pipeline, no closure: the fallback can only start from the processes whose
+    # membership needs no boundary to establish, i.e. the ones alive at trace start.
     upids = ",".join(str(p.upid) for p in preexisting)
     boundary = list(tp.query(
         "select max(s.ts + s.dur) as b from sched s "
         "join thread t on s.utid = t.utid "
         f"where t.upid in ({upids})"))[0].b
     if boundary is None:
-        return [], None
+        return [], None, None
     return [p for p in procs
-            if p.start_ts is not None and p.start_ts > boundary], boundary
+            if p.start_ts is not None and p.start_ts > boundary], boundary, "sched"
 
 
 def analyze(tp, args):
@@ -158,7 +212,7 @@ def analyze(tp, args):
     # was never checked. Private processes cannot be forged from outside the app:
     # the `<pkg>:` prefix is enforced by the framework.
     procs = list(tp.query(
-        "select upid, pid, name, start_ts from process "
+        "select upid, pid, name, start_ts, end_ts from process "
         f"where name = '{args.package}' or name glob '{args.package}:*' order by pid"))
     if not procs:
         print(f"FAIL: process {args.package} not present in trace")
@@ -167,17 +221,19 @@ def analyze(tp, args):
     def scalar(sql):
         return list(tp.query(sql))[0].c
 
-    final_procs, force_stop_ts = final_launch_processes(tp, procs)
+    final_procs, force_stop_ts, boundary_basis = final_launch_processes(tp, procs)
     if final_procs is not None and not final_procs:
         # Two different failures, and the operator needs to know which: one says the
-        # trace lacks the scheduling data to locate the force-stop, the other says it
+        # trace lacks the data to locate the force-stop at all, the other says it
         # located it and the launch is simply not in the capture.
         print("  VERDICT: UNUSABLE FOR COLD-START ANALYSIS")
         if force_stop_ts is None:
-            print("  A package process existed when tracing began, but no scheduling activity")
-            print("  is recorded for it, so the force-stop that ended it cannot be located.")
+            print("  A package process existed when tracing began, but neither its process")
+            print("  lifetime nor any scheduler activity for it is recorded, so the")
+            print("  force-stop boundary cannot be located by either method.")
+            print("  Capture with sched/sched_process_free and sched/sched_switch enabled.")
         else:
-            print(f"  The conditioning generation stopped being scheduled at ts {force_stop_ts},")
+            print(f"  The conditioning generation ended at ts {force_stop_ts},")
             print("  but no package process started after that, so this trace holds no traced")
             print("  launch -- only the conditioning one that preceded it.")
         print("  SDK liveness from the conditioning process cannot be attributed to the")
@@ -231,8 +287,14 @@ def analyze(tp, args):
           + (f"  [+{len(verdict_procs) - 1} more final-launch process(es): "
              f"{', '.join(r.name for r in verdict_procs if r.upid != main.upid)}]"
              if len(verdict_procs) > 1 else ""))
+    separation_ns = None
     if force_stop_ts is not None:
-        print(f"  final process generation after force-stop ts {force_stop_ts}")
+        separation_ns = min(r.start_ts for r in verdict_procs) - force_stop_ts
+        print(f"  final process generation after force-stop ts {force_stop_ts}"
+              + ("  [from process lifetimes]" if boundary_basis == "lifetime"
+                 else "  [from scheduler activity]"))
+        print(f"  launch starts {separation_ns / 1e9:+.2f}s after that boundary"
+              f"   (protocol leaves 5s; {MIN_SEPARATION_NS / 1e9:.0f}s required)")
     print(f"  threads enumerated      {total_threads}")
     print(f"  datadog-* threads       {len(dd_threads)}"
           + (f"  -> {[(r.name, r.tid) for r in dd_threads]}" if dd_threads else ""))
@@ -294,6 +356,25 @@ def analyze(tp, args):
         args.allow_missing_launch_marker)
     print(f"  foreground for whole capture  {fg_verdict}"
           + (f" -> {fg_detail[:3]}" if fg_detail else ""))
+
+    # A scheduler boundary separates the two generations only if the protocol's gap
+    # is actually present in the trace. Refusing on the method's NAME instead made
+    # the treatment arm permanently unverifiable, because `end_ts` is unavailable on
+    # the target device and so the basis is "sched" on every real capture. Check the
+    # separation the protocol guarantees: five seconds, against a boundary accurate
+    # to a scheduling slice. Below the floor, a process on the wrong side of the
+    # boundary is possible and no verdict about these processes is reportable.
+    if boundary_basis == "sched" and separation_ns is not None \
+            and separation_ns < MIN_SEPARATION_NS:
+        print()
+        print("  VERDICT: UNUSABLE -- THE TWO PROCESS GENERATIONS ARE NOT SEPARATED")
+        print(f"  The traced launch starts {separation_ns / 1e9:+.2f}s after a boundary read")
+        print("  from scheduler activity, which is not enough to tell it apart from a")
+        print("  conditioning process created just before the force-stop. The protocol")
+        print("  leaves five seconds; this capture does not show them, so neither an")
+        print("  active nor an inactive verdict can be attributed to the traced launch.")
+        print("  Re-capture without inserting work between the force-stop and the launch.")
+        return 3
 
     if args.expect_absent:
         if active:

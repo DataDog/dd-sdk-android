@@ -1021,13 +1021,21 @@ measured cost. That was a useful answer, but not the one the exercise was set up
 
 ```bash
 cd tools/coldstart-benchmark
-PKG=<your.app.id> EXPECTED_COMPILE_STATUS=<compile_status from the CSV header> \
+PKG=<your.app.id> \
+EXPECTED_APK_MD5=<baseline_md5 or treatment_md5 for this arm> \
+EXPECTED_PERMISSION_STATE_ID=<permission_a or permission_b for this arm> \
+EXPECTED_COMPILE_STATUS=<compile_status from the CSV header> \
   ./capture_trace.sh app-with-datadog.apk treatment 1
 ./.venv/bin/python verify_trace.py treatment.pftrace --package <your.app.id>
 ```
 
 The third argument to `capture_trace.sh` is the arm's SDK expectation: `1` for the treatment
 arm, `0` for the baseline. The capture is discarded if the expectation is violated.
+`EXPECTED_APK_MD5` ties the local APK to the selected benchmark arm before any device state is
+changed; the later host-to-device check separately proves those bytes were installed.
+`EXPECTED_PERMISSION_STATE_ID` requires permission setup to reproduce that arm's stamped
+`permission_a` or `permission_b` outcome, including when role or exemption state affects a
+hard-restricted permission.
 `EXPECTED_COMPILE_STATUS` is required because the requested `COMPILE_FILTER` does not prove the
 state the device reached. Each arm's trace must match the A/B header's achieved `compile_status`;
 a `verify` trace cannot explain a `speed-profile` benchmark, or vice versa.
@@ -1058,18 +1066,33 @@ check when `WARMUP=0`. Its readiness therefore adds no second app-running delay 
 launch's force-stop, five-second wait and log boundary.
 
 `verify_trace.py` exits `0` if the SDK is demonstrably active (or correctly absent), `1` if it
-is not detected, and `3` if the trace is unusable, which covers three cases: no
-`bindApplication` slice, so the trace holds no cold start; a conditioning generation whose
-force-stop cannot be located; or a located force-stop with no package process starting after
-it, so the traced launch is not in the capture. In none of them can the question be answered
-either way.
+is not detected, and `3` if the trace is unusable. Four cases reach that code, and the printed
+verdict names which one: no `bindApplication` slice, so the trace holds no cold start; a
+conditioning generation whose force-stop cannot be located by either method; a located
+force-stop with no package process starting after it, so the traced launch is not in the
+capture; or a scheduler boundary the traced launch starts too soon after to be told apart from
+the conditioning generation. In none of them can the question be answered either way.
 
-The force-stop boundary is read from the last moment any thread of the conditioning generation
-was scheduled, not from a process-exit record. `process.end_ts` needs
-`sched/sched_process_free`, which this trace config does not enable, and it is NULL on every
-process of a real capture; `sched/sched_switch` is enabled, so scheduling activity always
-exists. The traced launch begins five seconds after the force-stop, which is far wider than
-scheduling granularity.
+**The force-stop boundary comes from scheduler activity, not from process exit records.**
+`capture_trace.sh` records `sched/sched_process_free`, the event that is supposed to populate
+`process.end_ts`, and on the target device it does not: measured on a moto g(60)s (Android 12,
+sdk 31) with that event enabled and the app force-stopped *inside* the capture, `end_ts` is
+NULL on 849 of 849 processes and 4429 of 4429 threads, both killed conditioning processes
+included. The verifier still prefers a process-lifetime closure where one exists, because it
+is exact and costs nothing when it does not, but nothing depends on it.
+
+The scheduler boundary is the last moment any thread of the package processes alive at trace
+start was scheduled. On that same capture it lands on the force-stop to within one scheduling
+slice: the two conditioning processes last ran at +0.00 s and −0.07 s relative to it, and the
+traced launch's two processes started at +2.09 s and +2.77 s.
+
+What the boundary cannot prove by itself is that nothing was created on the wrong side of it.
+So the verifier checks the separation the protocol provides instead of assuming it: the
+protocol leaves five seconds between the force-stop and the traced launch, and a capture whose
+launch starts less than one second after the boundary is refused, because a conditioning
+process created just before the force-stop could not be told apart from it. The output prints
+which method produced the boundary and how large the margin was, so the number behind the
+verdict is visible.
 
 Three requirements that are easy to get wrong:
 
@@ -1100,8 +1123,10 @@ permissions, proves that the selected endpoint was reached, and `verify_trace.py
 --require-foreground` refuses any capture the app did not own for the *whole* window, judged from
 the trace's own lifecycle and global ActivityManager launch slices rather than from a snapshot
 taken after it. SDK liveness and ownership are scoped to the package processes started after the
-in-trace force-stop, so a `datadog-*` thread from the conditioning process cannot make the final
-launch pass; private processes started by the final launch remain included. Ownership is the set
+in-trace force-stop. The trace records process-free events, and the verifier closes the conditioning
+generation over every package process whose lifetime begins before that generation's latest end;
+therefore even a private process created late in the conditioning wait cannot make the final launch
+pass, while private processes started by the final launch remain included. Ownership is the set
 of activities resumed across that generation, so a
 splash handing over to the next activity reads as held. A gap that closes on the same activity or
 never closes counts as a loss; so does a foreign `launching:` marker during an apparent handoff.

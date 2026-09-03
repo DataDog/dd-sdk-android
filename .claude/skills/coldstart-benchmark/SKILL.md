@@ -185,7 +185,10 @@ number, the cost is in the core SDK.
 ### 4. Attribute with a trace (optional)
 
 ```bash
-PKG=<app.id> EXPECTED_COMPILE_STATUS=<compile_status from the CSV header> \
+PKG=<app.id> \
+EXPECTED_APK_MD5=<baseline_md5 or treatment_md5 for this arm> \
+EXPECTED_PERMISSION_STATE_ID=<permission_a or permission_b for this arm> \
+EXPECTED_COMPILE_STATUS=<compile_status from the CSV header> \
   ./capture_trace.sh treatment.apk treatment 1
 ./.venv/bin/python verify_trace.py treatment.pftrace --package <app.id>
 ```
@@ -196,8 +199,11 @@ Set `TRACE_ENDPOINT` to the A/B metric the trace is meant to explain. It default
 marker before Perfetto stops. App-owned regex matches are restricted to the installed package's
 unique UID, so a foreign process cannot provide either the A/B value or the trace endpoint. The
 capture is invalid if the selected endpoint is not reached.
-`EXPECTED_COMPILE_STATUS` is mandatory: the trace APK's achieved dexopt status must equal the
-benchmark header's `compile_status`, not merely use the same requested `COMPILE_FILTER`.
+All three expected identities are mandatory. `EXPECTED_APK_MD5` must equal the selected arm's
+`baseline_md5` or `treatment_md5` before device mutation. `EXPECTED_PERMISSION_STATE_ID` must equal
+that arm's `permission_a` or `permission_b` after permission setup. `EXPECTED_COMPILE_STATUS` must
+equal the benchmark header's achieved `compile_status`, not merely use the same requested
+`COMPILE_FILTER`.
 Capture names are non-destructive: an existing `.pftrace` is never overwritten.
 
 **Do not edit the harness scripts while a run is in flight.** Bash re-reads a running script
@@ -437,7 +443,7 @@ bound than a worst case. Quote it with that caveat attached.
 |---|---|
 | 0 | SDK active, or correctly absent with `--expect-absent` |
 | 1 | SDK **not** active, or the process/package is not in the trace. Sound as a negative *only* because the trace contains the cold start |
-| 3 | trace unusable — no `bindApplication`, so no launch in it at all |
+| 3 | trace unusable — no `bindApplication`, no force-stop boundary by either method, no final process generation, or a launch too close to the boundary to be told apart from the conditioning generation. The printed verdict names which |
 | 4 | with `--require-foreground`: the app lost the foreground *during* the capture, **or** ownership could not be established from the trace at all. Ownership spans every process of the app (`<pkg>` and `<pkg>:<private>`) and is tracked as the set of resumed activities, so a splash handing over to the next activity is held, while an activity that pauses and returns as itself is lost. Global ActivityManager `launching:` slices catch a foreign permission/system activity followed by a different target activity, which lifecycle gaps alone cannot distinguish from a valid handoff; the check also fails closed if that global launch evidence is unavailable — `ALLOW_MISSING_LAUNCH_MARKER=1` degrades to the lifecycle-only check on a device that never emits the slice, and reports `held-lifecycle-only` so the capture is never called clean. Rejection spans the whole capture, including the tail after the measured endpoint — conservative rather than exact, since the endpoint's timestamp is host-observed and absent from the trace. The detail lines are timestamped relative to the app's first resume: read them before re-capturing. Applies to both the treatment arm and the `--expect-absent` baseline arm. The SDK may be active; the trace is just not demonstrably the scenario the benchmark measured |
 
 Why: the thread oracle's *absence* only proves something when init ran inside the trace
@@ -450,11 +456,14 @@ negative can be distinguished from an inconclusive.
 The oracle is scoped to the package processes started after the in-trace force-stop and
 **requires** a `datadog-*` thread. The conditioning process is deliberately still alive when
 Perfetto starts, so including every package `upid` would let its stale thread make a final launch
-with no SDK pass. Private processes started by the final launch remain in scope, and one spawned before the
-force-stop is not: it stopped being scheduled there too. The boundary comes from the
-conditioning generation's last scheduled activity, because `process.end_ts` is NULL on
-every process of a real capture from this config. If that generation, its boundary or its
-`bindApplication` cannot be established, the trace is unusable and the verdict says which. Matching any
+with no SDK pass. The boundary is the conditioning generation's last scheduler activity;
+`sched/sched_process_free` is recorded but does not populate `process.end_ts` on the target
+device, so the exact process-lifetime closure is used where it works and relied on nowhere.
+Private processes started by the final launch remain in scope. The verifier requires the traced
+launch to start at least a second after the boundary, against the five the protocol leaves, and
+prints both the method and the margin: quote them, and do not treat a refused separation as an
+SDK result. If the boundary or the final `bindApplication` cannot be established at all, the
+trace is unusable and the verdict says which. Matching any
 slice or path containing "datadog" would false-positive unconditionally on this repo's own sample
 apps.
 

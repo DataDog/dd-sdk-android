@@ -17,7 +17,9 @@
 # variance (the original pair differed by ~90 ExoPlayer/MediaCodec threads
 # because one run played video and the other did not).
 #
-# Usage: EXPECTED_COMPILE_STATUS=<benchmark compile_status> \
+# Usage: EXPECTED_APK_MD5=<benchmark arm digest> \
+#          EXPECTED_PERMISSION_STATE_ID=<benchmark arm permission_a|permission_b> \
+#          EXPECTED_COMPILE_STATUS=<benchmark compile_status> \
 #          ./capture_trace.sh <apk> <name> <expect-datadog:0|1>
 set -euo pipefail
 
@@ -27,6 +29,13 @@ COMPILE_FILTER="${COMPILE_FILTER:-speed-profile}"
 # achieved state separately from COMPILE_FILTER. Requiring that value prevents a
 # verify/speed-profile mismatch from being attributed to the SDK in the trace pair.
 EXPECTED_COMPILE_STATUS="${EXPECTED_COMPILE_STATUS:-}"
+# A host-to-device digest match proves installation integrity, but not that this is
+# the APK whose A/B result the trace is meant to explain. Require the selected
+# benchmark arm's digest as that cross-artifact identity.
+EXPECTED_APK_MD5="${EXPECTED_APK_MD5:-}"
+# Permission grants can change with device role/exemption state even for the same
+# APK. The benchmark records the effective state per arm; the trace must reproduce it.
+EXPECTED_PERMISSION_STATE_ID="${EXPECTED_PERMISSION_STATE_ID:-}"
 # Must match the ANIMATIONS the A/B was run with. Forcing 0 unconditionally meant a
 # benchmark run with ANIMATIONS=1 was traced with animations OFF -- so the trace omits
 # the per-frame SDK work whose cost that benchmark included, and the two are no longer
@@ -63,7 +72,18 @@ NAME="${2:?}"
 EXPECT_DD="${3:?}"
 
 die() { echo "FATAL: $*" >&2; exit 1; }
+require_expected_md5() {
+  local name="$1" source="$2" value="${!1}"
+  [ -n "$value" ] || die "set $name to the benchmark CSV's $source value"
+  [ "${#value}" -eq 32 ] \
+    || die "invalid $name: expected 32 lowercase hexadecimal characters"
+  case "$value" in
+    *[!0-9a-f]*) die "invalid $name: expected 32 lowercase hexadecimal characters" ;;
+  esac
+}
 case "$PKG" in *[!a-zA-Z0-9._]*|""|.*|*.) die "invalid application id: '$PKG'" ;; esac
+require_expected_md5 EXPECTED_APK_MD5 "baseline_md5 or treatment_md5"
+require_expected_md5 EXPECTED_PERMISSION_STATE_ID "permission_a or permission_b"
 case "$EXPECTED_COMPILE_STATUS" in
   "") die "set EXPECTED_COMPILE_STATUS to the benchmark CSV header's compile_status" ;;
   *[!a-zA-Z0-9_.+-]*) die "invalid EXPECTED_COMPILE_STATUS: '$EXPECTED_COMPILE_STATUS'" ;;
@@ -98,6 +118,12 @@ PKG_RE=$(printf '%s' "$PKG" | sed 's/[.]/\\./g')
 log() { echo "[$(date +%H:%M:%S)] $*" >&2; }
 
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+HOST_MD5=$(dd_md5 "$APK") || die "cannot hash APK: $APK"
+[ "$HOST_MD5" = "$EXPECTED_APK_MD5" ] \
+  || die "trace APK md5=$HOST_MD5, but the selected benchmark arm recorded
+       md5=$EXPECTED_APK_MD5. Use the exact APK measured by that arm; a rebuilt or
+       substituted binary cannot explain its A/B result."
+log "benchmark APK digest matched: $HOST_MD5"
 dd_resolve_tools || exit 2
 dd_require_device || exit 2
 DD_ANDROID_USER=""
@@ -260,7 +286,6 @@ else
   log "APK declares $APK_PKG, matches PKG"
 fi
 
-HOST_MD5=$(dd_md5 "$APK")
 log "installing $(basename "$APK") md5=$HOST_MD5"
 dd_ensure_uninstalled "$PKG" || die "uninstall did not establish a clean install state"
 "$ADB" install --user "$DD_ANDROID_USER" -r "$APK" >/dev/null || die "install failed"
@@ -312,7 +337,15 @@ grant_runtime_permissions() {
   log "pre-granted $DD_GRANTED_PERMISSION_COUNT/$DD_RUNTIME_PERMISSION_COUNT runtime permissions"
   return 0
 }
+attest_permission_state() {
+  [ "$DD_PERMISSION_STATE_ID" = "$EXPECTED_PERMISSION_STATE_ID" ] \
+    || die "trace permission state=$DD_PERMISSION_STATE_ID, but the selected benchmark
+         arm recorded $EXPECTED_PERMISSION_STATE_ID. Role, exemption or package-policy
+         state changed; this trace would exercise a different startup scenario."
+  log "benchmark permission state matched: $DD_PERMISSION_STATE_ID"
+}
 grant_runtime_permissions
+attest_permission_state
 
 # Measure the REAL user cold start: resolve the launcher activity rather than
 # hardcoding a component. Apps commonly route the launcher through
@@ -357,6 +390,7 @@ data_sources: {
       ftrace_events: "sched/sched_waking"
       ftrace_events: "sched/sched_blocked_reason"
       ftrace_events: "sched/sched_process_exit"
+      ftrace_events: "sched/sched_process_free"
       ftrace_events: "task/task_newtask"
       ftrace_events: "task/task_rename"
       ftrace_events: "power/cpu_frequency"
