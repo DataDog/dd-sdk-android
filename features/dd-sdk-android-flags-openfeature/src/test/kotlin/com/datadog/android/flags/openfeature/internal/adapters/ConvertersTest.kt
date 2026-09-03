@@ -160,15 +160,15 @@ internal class ConvertersTest {
     }
 
     @Test
-    fun `M surface allocationKey in metadata W toProviderEvaluation() {flagMetadata contains allocationKey}`(
-        @BoolForgery fakeValue: Boolean,
-        @StringForgery fakeAllocationKey: String
+    fun `M surface allocationKey in metadata W toProviderEvaluation() {resolution with allocationKey}`(
+        @StringForgery fakeAllocationKey: String,
+        @BoolForgery fakeValue: Boolean
     ) {
         // Given
         val resolution = ResolutionDetails(
             value = fakeValue,
             reason = ResolutionReason.TARGETING_MATCH,
-            flagMetadata = mapOf("allocationKey" to fakeAllocationKey)
+            allocationKey = fakeAllocationKey
         )
 
         // When
@@ -195,6 +195,66 @@ internal class ConvertersTest {
 
         // Then — Long stored as string via putString fallback
         assertThat(result.metadata.getString("count")).isEqualTo("42")
+    }
+
+    @Test
+    fun `M not surface allocationKey in metadata W toProviderEvaluation() {resolution with null allocationKey}`(
+        @BoolForgery fakeValue: Boolean
+    ) {
+        // Given
+        val resolution = ResolutionDetails(
+            value = fakeValue,
+            reason = ResolutionReason.DEFAULT,
+            allocationKey = null
+        )
+
+        // When
+        val result = resolution.toProviderEvaluation()
+
+        // Then
+        assertThat(result.metadata.getString("allocationKey")).isNull()
+    }
+
+    @Test
+    fun `M surface allocationKey and flagMetadata W toProviderEvaluation() {both present}`(
+        @StringForgery fakeAllocationKey: String,
+        @BoolForgery fakeValue: Boolean
+    ) {
+        // Given
+        val resolution = ResolutionDetails(
+            value = fakeValue,
+            reason = ResolutionReason.TARGETING_MATCH,
+            allocationKey = fakeAllocationKey,
+            flagMetadata = mapOf("env" to "prod")
+        )
+
+        // When
+        val result = resolution.toProviderEvaluation()
+
+        // Then — allocationKey and flagMetadata entries both surfaced
+        assertThat(result.metadata.getString("allocationKey")).isEqualTo(fakeAllocationKey)
+        assertThat(result.metadata.getString("env")).isEqualTo("prod")
+    }
+
+    @Test
+    fun `M typed allocationKey wins W toProviderEvaluation() {flagMetadata also contains allocationKey}`(
+        @StringForgery fakeAllocationKey: String,
+        @StringForgery fakeMetadataAllocationKey: String,
+        @BoolForgery fakeValue: Boolean
+    ) {
+        // Given — flagMetadata has an "allocationKey" entry that should be overridden by the typed field
+        val resolution = ResolutionDetails(
+            value = fakeValue,
+            reason = ResolutionReason.TARGETING_MATCH,
+            allocationKey = fakeAllocationKey,
+            flagMetadata = mapOf("allocationKey" to fakeMetadataAllocationKey)
+        )
+
+        // When
+        val result = resolution.toProviderEvaluation()
+
+        // Then — typed allocationKey field wins over flagMetadata entry
+        assertThat(result.metadata.getString("allocationKey")).isEqualTo(fakeAllocationKey)
     }
 
     // endregion
