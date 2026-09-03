@@ -53,7 +53,7 @@ internal class CapturedNativeSnapshotBuilder(
                 windows.map { CapturedChild.Layer(it.rootLayer.identity) }
             ),
             layers = layers,
-            wireframes = wireframes
+            wireframes = wireframes + snapshot.hiddenEmbeddedWireframes
         )
     }
 
@@ -210,6 +210,7 @@ private fun CapturedWireframe.withClip(clip: CapturedClip?): CapturedWireframe {
         is CapturedWireframe.WebView -> copy(clip = combinedClip)
         is CapturedWireframe.Pixel -> copy(clip = combinedClip)
         is CapturedWireframe.PrivacyPlaceholder -> copy(clip = combinedClip)
+        is CapturedWireframe.EmbeddedContent -> copy(clip = combinedClip)
     }
 }
 
@@ -221,6 +222,7 @@ private fun CapturedWireframe.withPermanentId(permanentId: String?): CapturedWir
         is CapturedWireframe.WebView -> copy(permanentId = permanentId)
         is CapturedWireframe.Pixel -> copy(permanentId = permanentId)
         is CapturedWireframe.PrivacyPlaceholder -> copy(permanentId = permanentId)
+        is CapturedWireframe.EmbeddedContent -> copy(permanentId = permanentId)
     }
 }
 

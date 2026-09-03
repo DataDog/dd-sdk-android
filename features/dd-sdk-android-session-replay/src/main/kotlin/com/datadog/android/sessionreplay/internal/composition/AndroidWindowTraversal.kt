@@ -29,6 +29,7 @@ import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedEmbeddedContentMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedHiddenViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMappingContext
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewData
@@ -83,7 +84,8 @@ internal class AndroidWindowTraversal(
     private val isComposeHost: (View) -> Boolean = ::isComposeHostByClassName,
     private val pixelCapture: ViewPixelCapture = ViewPixelCapture(internalLogger),
     private val foregroundCapture: ViewForegroundCapture = ViewForegroundCapture(internalLogger),
-    private val heatmapResolver: HeatmapIdentifierResolver? = null
+    private val heatmapResolver: HeatmapIdentifierResolver? = null,
+    private val embeddedContentMapper: CapturedEmbeddedContentMapper? = null
 ) {
     private val occlusionDetector = ViewOcclusionDetector(drawableToColorMapper, viewUtilsInternal, internalLogger)
 
@@ -155,8 +157,7 @@ internal class AndroidWindowTraversal(
     @UiThread
     private fun tryVisit(item: WorkItem, state: CopyState): Boolean {
         val view = item.view
-        val isFiltered = viewUtilsInternal.isNotVisible(view) || viewUtilsInternal.isSystemNoise(view)
-        if (isFiltered || viewUtilsInternal.isOnSecondaryDisplay(view) ||
+        if (shouldFilterFromTraversal(view) ||
             view.parent !== item.expectedParent
         ) {
             return false
@@ -195,7 +196,11 @@ internal class AndroidWindowTraversal(
             viewScale = viewScale
         )
         val hidden = view.getTag(R.id.datadog_hidden) == true
-        val composition = if (hasTransform) null else decomposeHost(view, kind, hidden, mappingContext, state, context)
+        val composition = if (canTryComposition(view, hasTransform)) {
+            decomposeHost(view, kind, hidden, mappingContext, state, context)
+        } else {
+            null
+        }
         if (!context.shouldContinue()) return
         val viewData = composition?.let { CapturedViewData.Mapped(CapturedViewMapperResult.None) }
             ?: captureViewData(item, mappingContext, hidden, requiresRaster, transform)
@@ -206,7 +211,6 @@ internal class AndroidWindowTraversal(
         // The transformed rasterizer bakes explicit clips in local coordinates into the bitmap.
         val pixelClip = resolvePixelClip(view, pixels, transform, requiresRaster)
         val clip = resolveExplicitClip(view, pixels, pixelClip, state.density, requiresRaster)
-        val geometryIsReliable = view.hasReliableGeometry(kind, item.isGeometryReliable, hasTransform)
         state.views += CapturedNativeView(
             identity,
             item.parentIndex,
@@ -219,7 +223,7 @@ internal class AndroidWindowTraversal(
             pixels,
             pixelClip,
             pixelPaddingClip,
-            geometryIsReliable,
+            view.hasReliableGeometry(kind, item.isGeometryReliable, hasTransform),
             kind,
             composition,
             foreground = captureForeground(view, mappingContext, viewData, hidden),
@@ -228,6 +232,38 @@ internal class AndroidWindowTraversal(
             modifiers = captureNativeModifiers(view, bounds, state.density, internalLogger)
         )
         pushNativeChildren(view, children, hidden, ownPrivacy, stack, state, heatmapIdentity?.viewPath ?: item.nodePath)
+    }
+
+    @UiThread
+    private fun canTryComposition(view: View, hasTransform: Boolean): Boolean =
+        !hasTransform && embeddedContentMapper?.hasSlotId(view) != true
+
+    /**
+     * A slot-tagged view is never dropped for invisibility - it still needs an explicit hidden
+     * [com.datadog.android.internal.sessionreplay.composition.CapturedWireframe.EmbeddedContent] placeholder (via [resolveMapper]/[CapturedEmbeddedContentMapper]),
+     * not silent omission, mirroring legacy `TreeViewTraversal`'s own `embeddedMapper == null &&
+     * isNotVisible` gate. System noise/secondary-display views are still dropped unconditionally.
+     */
+    @UiThread
+    private fun shouldFilterFromTraversal(view: View): Boolean {
+        val isSlotTagged = embeddedContentMapper?.hasSlotId(view) == true
+        return (!isSlotTagged && viewUtilsInternal.isNotVisible(view)) ||
+            viewUtilsInternal.isSystemNoise(view) ||
+            viewUtilsInternal.isOnSecondaryDisplay(view)
+    }
+
+    /**
+     * [isHidden] (privacy masking) always wins over slot tagging, matching legacy
+     * `TreeViewTraversal`'s own priority - a privacy-hidden view is never exposed via an embedded
+     * content placeholder either. Slot tagging otherwise takes priority over the type-based
+     * [mapperRegistry]: it's orthogonal to a view's concrete class (any [View] subtype can carry the
+     * tag), which [CapturedViewMapperRegistry]'s type-based dispatch can't express.
+     */
+    @UiThread
+    private fun resolveMapper(view: View, isHidden: Boolean): CapturedViewMapper<View> = when {
+        isHidden -> hiddenViewMapper
+        embeddedContentMapper?.hasSlotId(view) == true -> embeddedContentMapper
+        else -> mapperRegistry.resolve(view)
     }
 
     @UiThread
@@ -279,6 +315,9 @@ internal class AndroidWindowTraversal(
         transform: ViewTransform?
     ): CapturedViewData = when {
         hidden -> hiddenViewMapper.capture(item.view, context)
+        embeddedContentMapper?.hasSlotId(
+            item.view
+        ) == true -> resolveMapper(item.view, false).capture(item.view, context)
         transformed -> CapturedViewData.Mapped(
             pixelCapture.captureTransformed(item.view, context, transform, item.clipToBounds)
         )

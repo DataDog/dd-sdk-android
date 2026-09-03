@@ -88,6 +88,9 @@ internal class DefaultCapturedIdentityFactory(
         return createNamespacedWireframeIdentity(owner, CapturedWireframeKind.PLACEHOLDER)
     }
 
+    override fun embeddedContentWireframe(owner: CapturedIdentity): CapturedIdentity =
+        createNamespacedWireframeIdentity(owner, CapturedWireframeKind.EMBEDDED_CONTENT)
+
     override fun webViewWireframe(owner: CapturedIdentity, slotId: Long): CapturedIdentity {
         validateLayerOwner(owner)
         return createIdentity(
