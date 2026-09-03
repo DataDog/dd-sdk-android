@@ -97,7 +97,8 @@ val flagsConfig = FlagsConfiguration.Builder()
 
 Precomputed assignment requests make one attempt and have no SDK-added timeout by default. Set an explicit timeout to
 include both receiving the response and downloading its body. A zero timeout keeps the SDK timeout disabled and preserves
-any timeout already configured on the HTTP client. The retry count accepts values from zero to ten; zero disables retries.
+any timeout already configured on the HTTP client. The retry count accepts values from zero to ten. Zero disables retries.
+The SDK retries transient failures immediately.
 
 ```kotlin
 val flagsConfig = FlagsConfiguration.Builder()

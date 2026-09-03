@@ -15,7 +15,6 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.flags.internal.FlagsFeature
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.internal.time.TimeProvider
 import okhttp3.Call
 import okhttp3.Request
 import okio.Timeout
@@ -50,9 +49,6 @@ internal class FlagsClientAssignmentTransportTest {
 
     @Mock
     lateinit var mockExecutorService: ExecutorService
-
-    @Mock
-    lateinit var mockTimeProvider: TimeProvider
 
     @Mock
     lateinit var mockDatadogContext: DatadogContext
@@ -135,7 +131,6 @@ internal class FlagsClientAssignmentTransportTest {
 
     private fun buildClient(configuration: FlagsConfiguration): FlagsClient {
         whenever(mockSdkCore.internalLogger).thenReturn(mockInternalLogger)
-        whenever(mockSdkCore.timeProvider).thenReturn(mockTimeProvider)
         val flagsFeature = FlagsFeature(mockSdkCore, configuration)
         whenever(mockSdkCore.createSingleThreadExecutorService(any())).thenReturn(mockExecutorService)
         whenever(mockSdkCore.getFeature(FLAGS_FEATURE_NAME)).thenReturn(mockFeatureScope)

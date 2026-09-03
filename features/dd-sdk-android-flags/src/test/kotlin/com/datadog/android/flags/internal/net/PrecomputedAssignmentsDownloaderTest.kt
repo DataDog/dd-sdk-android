@@ -11,7 +11,6 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
-import com.datadog.android.internal.time.TimeProvider
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -63,9 +62,6 @@ internal class PrecomputedAssignmentsDownloaderTest {
     @Mock
     lateinit var mockCall: Call
 
-    @Mock
-    lateinit var mockTimeProvider: TimeProvider
-
     private lateinit var testedDownloader: PrecomputedAssignmentsDownloader
 
     @Forgery
@@ -91,10 +87,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
             callFactory = mockCallFactory,
             internalLogger = mockInternalLogger,
             requestFactory = mockRequestFactory,
-            timeProvider = mockTimeProvider,
-            requestTimeoutMs = 0L,
-            retryDelay = { _ -> },
-            jitterSource = { 0L }
+            requestTimeoutMs = 0L
         )
     }
 

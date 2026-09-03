@@ -415,8 +415,7 @@ interface FlagsClient {
                 callFactory = callFactory,
                 requestFactory = flagsFeature.precomputedRequestFactory,
                 requestTimeoutMs = configuration.assignmentRequestTimeoutMs,
-                requestRetryCount = configuration.assignmentRequestRetryCount,
-                timeProvider = featureSdkCore.timeProvider
+                requestRetryCount = configuration.assignmentRequestRetryCount
             )
 
             val precomputeMapper = PrecomputeMapper(featureSdkCore.internalLogger)

@@ -11,7 +11,6 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
-import com.datadog.android.internal.time.TimeProvider
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -67,9 +66,6 @@ internal class PrecomputedAssignmentsDownloaderRetryTest {
     @Mock
     lateinit var mockTimeout: Timeout
 
-    @Mock
-    lateinit var mockTimeProvider: TimeProvider
-
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
@@ -79,7 +75,6 @@ internal class PrecomputedAssignmentsDownloaderRetryTest {
     private lateinit var fakeEvaluationContext: EvaluationContext
     private lateinit var fakeRequest: Request
     private lateinit var testedDownloader: PrecomputedAssignmentsDownloader
-    private val retryDelays = mutableListOf<Long>()
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -92,7 +87,6 @@ internal class PrecomputedAssignmentsDownloaderRetryTest {
             attributes = mapOf("plan" to "premium")
         )
         fakeRequest = Request.Builder().url(FAKE_URL).build()
-        retryDelays.clear()
         testedDownloader = createDownloader(requestRetryCount = 1)
 
         whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext)).doReturn(fakeRequest)
@@ -115,7 +109,6 @@ internal class PrecomputedAssignmentsDownloaderRetryTest {
         assertThat(result).isEqualTo(RESPONSE_BODY)
         verify(mockCallFactory, times(2)).newCall(fakeRequest)
         verifyExecutedOnce(calls)
-        assertThat(retryDelays).containsExactly(0L)
     }
 
     @Test
@@ -171,7 +164,6 @@ internal class PrecomputedAssignmentsDownloaderRetryTest {
         // Then
         assertThat(result).isNull()
         verify(mockCallFactory).newCall(fakeRequest)
-        assertThat(retryDelays).isEmpty()
     }
 
     @Test
@@ -187,7 +179,6 @@ internal class PrecomputedAssignmentsDownloaderRetryTest {
         assertThat(result).isNull()
         verify(mockCallFactory).newCall(fakeRequest)
         verify(mockCall).execute()
-        assertThat(retryDelays).isEmpty()
     }
 
     @Test
@@ -258,129 +249,6 @@ internal class PrecomputedAssignmentsDownloaderRetryTest {
     }
 
     @Test
-    fun `M bound exponential full jitter W readPrecomputedFlags() { maximum retries }`() {
-        // Given
-        val jitterBounds = mutableListOf<Long>()
-        testedDownloader = createDownloader(
-            requestRetryCount = 10,
-            jitterSource = { maximum ->
-                jitterBounds += maximum
-                maximum - 1
-            }
-        )
-        val calls = List(11) { callThrowing(IOException("transient")) }
-        queueCalls(*calls.toTypedArray())
-
-        // When
-        testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
-
-        // Then
-        assertThat(jitterBounds).containsExactly(
-            100L,
-            200L,
-            400L,
-            800L,
-            1_600L,
-            3_200L,
-            6_400L,
-            12_800L,
-            25_600L,
-            30_000L
-        )
-        assertThat(retryDelays).containsExactly(
-            99L,
-            199L,
-            399L,
-            799L,
-            1_599L,
-            3_199L,
-            6_399L,
-            12_799L,
-            25_599L,
-            29_999L
-        )
-        verify(mockCallFactory, times(11)).newCall(fakeRequest)
-        verifyExecutedOnce(calls)
-    }
-
-    @Test
-    fun `M honor Retry-After as delay floor W readPrecomputedFlags() { bounded delta seconds }`() {
-        // Given
-        testedDownloader = createDownloader(
-            requestRetryCount = 1,
-            jitterSource = { it - 1 }
-        )
-        val calls = queueCalls(
-            callReturning(createPrecomputedUnsuccessfulResponse(503, FAKE_URL, retryAfter = "30")),
-            callReturning(createPrecomputedSuccessfulResponse(RESPONSE_BODY, FAKE_URL))
-        )
-
-        // When
-        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
-
-        // Then
-        assertThat(result).isEqualTo(RESPONSE_BODY)
-        assertThat(retryDelays).containsExactly(30_099L)
-        verify(mockCallFactory, times(2)).newCall(fakeRequest)
-        verifyExecutedOnce(calls)
-    }
-
-    @Test
-    fun `M not retry W readPrecomputedFlags() { Retry-After exceeds bound }`() {
-        // Given
-        whenever(mockCall.execute()).doReturn(createPrecomputedUnsuccessfulResponse(503, FAKE_URL, retryAfter = "31"))
-
-        // When
-        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
-
-        // Then
-        assertThat(result).isNull()
-        assertThat(retryDelays).isEmpty()
-        verify(mockCallFactory).newCall(fakeRequest)
-    }
-
-    @Test
-    fun `M honor Retry-After HTTP date W readPrecomputedFlags()`() {
-        // Given
-        whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(10_000L)
-        val calls = queueCalls(
-            callReturning(
-                createPrecomputedUnsuccessfulResponse(
-                    code = 503,
-                    url = FAKE_URL,
-                    retryAfter = "Thu, 01 Jan 1970 00:00:20 GMT"
-                )
-            ),
-            callReturning(createPrecomputedSuccessfulResponse(RESPONSE_BODY, FAKE_URL))
-        )
-
-        // When
-        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
-
-        // Then
-        assertThat(result).isEqualTo(RESPONSE_BODY)
-        assertThat(retryDelays).containsExactly(10_000L)
-        verifyExecutedOnce(calls)
-    }
-
-    @Test
-    fun `M ignore Retry-After W readPrecomputedFlags() { status is not 503 }`() {
-        // Given
-        val calls = queueCalls(
-            callReturning(createPrecomputedUnsuccessfulResponse(500, FAKE_URL, retryAfter = "31")),
-            callReturning(createPrecomputedSuccessfulResponse(RESPONSE_BODY, FAKE_URL))
-        )
-
-        // When
-        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
-
-        // Then
-        assertThat(result).isEqualTo(RESPONSE_BODY)
-        assertThat(retryDelays).containsExactly(0L)
-        verifyExecutedOnce(calls)
-    }
-
-    @Test
     fun `M retry body read failure W readPrecomputedFlags()`() {
         // Given
         val failedBody = mock<ResponseBody>()
@@ -422,17 +290,13 @@ internal class PrecomputedAssignmentsDownloaderRetryTest {
 
     private fun createDownloader(
         requestTimeoutMs: Long = 0L,
-        requestRetryCount: Int = 0,
-        jitterSource: (Long) -> Long = { 0L }
+        requestRetryCount: Int = 0
     ) = PrecomputedAssignmentsDownloader(
         callFactory = mockCallFactory,
         internalLogger = mockInternalLogger,
         requestFactory = mockRequestFactory,
-        timeProvider = mockTimeProvider,
         requestTimeoutMs = requestTimeoutMs,
-        requestRetryCount = requestRetryCount,
-        retryDelay = { retryDelays += it },
-        jitterSource = jitterSource
+        requestRetryCount = requestRetryCount
     )
 
     private fun callReturning(response: Response, timeout: Timeout = mock()): Call = mock<Call>().also { call ->

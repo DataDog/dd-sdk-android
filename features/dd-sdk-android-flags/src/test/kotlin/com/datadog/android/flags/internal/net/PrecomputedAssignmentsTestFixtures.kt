@@ -25,26 +25,21 @@ internal fun createPrecomputedSuccessfulResponseWithNullBody(url: String): Respo
     body = null
 )
 
-internal fun createPrecomputedUnsuccessfulResponse(code: Int, url: String, retryAfter: String? = null): Response =
+internal fun createPrecomputedUnsuccessfulResponse(code: Int, url: String): Response =
     createPrecomputedResponse(
         code = code,
         url = url,
-        body = "".toResponseBody("application/json".toMediaType()),
-        retryAfter = retryAfter
+        body = "".toResponseBody("application/json".toMediaType())
     )
 
 internal fun createPrecomputedResponse(
     code: Int,
     url: String,
-    body: ResponseBody?,
-    retryAfter: String? = null
+    body: ResponseBody?
 ): Response = Response.Builder()
     .request(Request.Builder().url(url).build())
     .protocol(Protocol.HTTP_1_1)
     .code(code)
     .message(if (code in 200..299) "OK" else "Error")
     .body(body)
-    .apply {
-        if (retryAfter != null) header("Retry-After", retryAfter)
-    }
     .build()

@@ -9,7 +9,6 @@ package com.datadog.android.flags.internal.net
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.internal.time.TimeProvider
 import okhttp3.Call
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -33,9 +32,6 @@ internal class PrecomputedAssignmentsDownloaderNetworkTest {
 
     @Mock
     lateinit var mockRequestFactory: PrecomputedAssignmentsRequestFactory
-
-    @Mock
-    lateinit var mockTimeProvider: TimeProvider
 
     @Mock
     lateinit var mockDatadogContext: DatadogContext
@@ -124,7 +120,6 @@ internal class PrecomputedAssignmentsDownloaderNetworkTest {
         callFactory = callFactory,
         internalLogger = mockInternalLogger,
         requestFactory = mockRequestFactory,
-        timeProvider = mockTimeProvider,
         requestTimeoutMs = requestTimeoutMs,
         requestRetryCount = 0
     )

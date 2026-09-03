@@ -196,6 +196,8 @@ data class FlagsConfiguration internal constructor(
         /**
          * Sets the number of retries after a transient precomputed assignment request failure.
          * The default is zero (no retries). The retry count must be between zero and ten, inclusive.
+         * The SDK retries network errors, timeouts, HTTP 408, and HTTP 5xx responses immediately.
+         * The SDK does not retry HTTP 429 responses.
          *
          * @param retryCount The number of retries after the first attempt.
          * @return this [Builder] instance for method chaining.
