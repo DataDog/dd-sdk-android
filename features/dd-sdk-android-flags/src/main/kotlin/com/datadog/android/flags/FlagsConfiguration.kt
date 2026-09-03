@@ -179,7 +179,9 @@ data class FlagsConfiguration internal constructor(
          * uploads continue to use the SDK's own HTTP transport.
          *
          * The SDK does not take ownership of the factory or its resources. The configured assignment timeout and retry
-         * policies are applied on top of calls created by this factory.
+         * policies are applied on top of calls created by this factory. When the assignment timeout is positive, each
+         * call must return and honor a configurable timeout from [Call.timeout]. A call that returns `Timeout.NONE`
+         * fails before execution.
          *
          * @param callFactory Factory used to create precomputed assignment calls.
          * @return this [Builder] instance for method chaining.
@@ -193,7 +195,8 @@ data class FlagsConfiguration internal constructor(
          * Sets the timeout for each precomputed assignment request.
          * The timeout includes downloading the response body. A value of zero disables the SDK timeout and preserves
          * any timeout already configured on the HTTP client. When the HTTP call already has a nonzero timeout, the
-         * shorter timeout applies.
+         * shorter timeout applies. A custom call factory must provide and honor a configurable call timeout when this
+         * value is positive.
          *
          * @param timeoutMs The timeout for each request, in milliseconds.
          * @return this [Builder] instance for method chaining.
@@ -212,7 +215,8 @@ data class FlagsConfiguration internal constructor(
          * value is a minimum delay before the backoff. The SDK does not retry when this value exceeds 30 seconds.
          * The SDK does not retry HTTP 429 responses.
          * Network time can reach ([retryCount] + 1) times the assignment request timeout, plus retry delays. When the
-         * SDK timeout is zero, the HTTP client's call timeout supplies the bound. A custom factory may have no bound.
+         * SDK timeout is zero, the HTTP client's call timeout supplies the bound. A custom factory may have no bound
+         * only when the SDK timeout is zero.
          *
          * @param retryCount The number of retries after the first attempt.
          * @return this [Builder] instance for method chaining.

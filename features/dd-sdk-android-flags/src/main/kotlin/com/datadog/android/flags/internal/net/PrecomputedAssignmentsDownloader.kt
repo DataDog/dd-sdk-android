@@ -14,6 +14,7 @@ import com.datadog.android.internal.network.HttpSpec
 import okhttp3.Call
 import okhttp3.Request
 import okhttp3.Response
+import okio.Timeout
 import java.io.EOFException
 import java.io.IOException
 import java.io.InterruptedIOException
@@ -143,9 +144,15 @@ internal class PrecomputedAssignmentsDownloader(
         }
     }
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // executeSingleRequest catches custom Call failures.
+    @Suppress(
+        "CheckInternal", // Reject an invalid custom Call before an unbounded request starts.
+        "UnsafeThirdPartyFunctionCall" // executeSingleRequest catches custom Call failures.
+    )
     private fun applyRequestTimeout(call: Call) {
         val timeout = call.timeout()
+        check(timeout !== Timeout.NONE) {
+            "A custom assignment request call must provide a configurable timeout"
+        }
         val requestTimeoutNanos = TimeUnit.MILLISECONDS.toNanos(requestTimeoutMs)
         val callTimeoutNanos = timeout.timeoutNanos()
         if (callTimeoutNanos == 0L || requestTimeoutNanos < callTimeoutNanos) {

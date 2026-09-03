@@ -474,6 +474,24 @@ internal class PrecomputedAssignmentsDownloaderRetryTest {
     }
 
     @Test
+    fun `M reject call W readPrecomputedFlags() { SDK timeout enabled and call returns Timeout NONE }`() {
+        // Given
+        testedDownloader = createDownloader(
+            requestTimeoutMs = 2_500L,
+            requestRetryCount = 1
+        )
+        whenever(mockCall.timeout()).doReturn(Timeout.NONE)
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+
+        // Then
+        assertThat(result).isNull()
+        verify(mockCallFactory, times(1)).newCall(fakeRequest)
+        verify(mockCall, never()).execute()
+    }
+
+    @Test
     fun `M create and time out a new call for every attempt W readPrecomputedFlags()`() {
         // Given
         val firstCall = mock<Call>()

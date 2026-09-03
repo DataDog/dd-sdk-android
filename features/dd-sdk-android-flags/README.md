@@ -103,7 +103,8 @@ The SDK retries transient network errors, timeouts, HTTP 408, and HTTP 5xx respo
 backoff capped at 30 seconds. For HTTP 503, a valid `Retry-After` value is a minimum delay before the backoff.
 The SDK does not retry when this value exceeds 30 seconds. It does not retry HTTP 429 responses.
 Network time can reach `(retry count + 1) * assignment request timeout`, plus retry delays. With no SDK timeout,
-the HTTP client's call timeout supplies the bound. A custom call factory can have no timeout.
+the HTTP client's call timeout supplies the bound. A custom call factory can have no timeout only when the SDK timeout
+is zero.
 
 ```kotlin
 val flagsConfig = FlagsConfiguration.Builder()
@@ -118,7 +119,8 @@ Supply an OkHttp `Call.Factory` to customize only precomputed assignment request
 application dependency when you use this option. The SDK still constructs the
 request URL, method, body, and authentication headers; the factory must preserve them. Exposure and evaluation
 uploads continue to use the SDK transport. Timeout and retry policies compose independently on top of the supplied
-factory.
+factory. When the assignment timeout is positive, each call must return and honor a configurable timeout from
+`Call.timeout()`. A call that returns `Timeout.NONE` fails before execution.
 
 ```kotlin
 val customOkHttpClient = OkHttpClient.Builder()
