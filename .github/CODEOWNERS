@@ -9,5 +9,6 @@
 
 ## Feature Flags
 
+/features/dd-sdk-android-flags/ @DataDog/rum-mobile @DataDog/rum-mobile-android @DataDog/feature-flagging-and-experimentation-sdk
 /features/dd-sdk-android-flags-openfeature/ @DataDog/rum-mobile @DataDog/rum-mobile-android @DataDog/feature-flagging-and-experimentation-sdk
 /features/dd-sdk-android-flags-openfeature/README.md @DataDog/documentation @DataDog/rum-mobile @DataDog/rum-mobile-android @DataDog/feature-flagging-and-experimentation-sdk
