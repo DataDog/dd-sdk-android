@@ -7,6 +7,7 @@
 package com.datadog.gradle.config
 
 data class SampleAppConfig(
+    val site: String = "",
     val logsEndpoint: String = "",
     val tracesEndpoint: String = "",
     val rumEndpoint: String = "",

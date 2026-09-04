@@ -68,7 +68,16 @@ fun configureFlavorForSampleApp(
     flavor: ApplicationProductFlavor,
     rootDir: File
 ) {
-    val config = sampleAppConfig("${rootDir.absolutePath}/config/${flavor.name}.json")
+    val flagsConfigPath = "${rootDir.absolutePath}/config/dd_flags.json"
+    val flavorConfigPath = "${rootDir.absolutePath}/config/${flavor.name}.json"
+    val flagsConfig = sampleAppConfig(flagsConfigPath)
+    val flavorConfig = sampleAppConfig(flavorConfigPath)
+    val config = if (File(flagsConfigPath).exists()) {
+        project.logger.info("Using dd_flags.json config (overrides ${flavor.name}.json)")
+        flagsConfig
+    } else {
+        flavorConfig
+    }
     project.logger.info("Configuring flavor: [${flavor.name}] with config: [$config]")
     flavor.buildConfigField(
         "String",
@@ -115,10 +124,11 @@ fun configureFlavorForSampleApp(
         "DD_APPLICATION_KEY",
         "\"${config.applicationKey}\""
     )
+    val siteName = config.site.ifBlank { flavor.name }.uppercase(Locale.US)
     flavor.buildConfigField(
         "String",
         "DD_SITE_NAME",
-        "\"${flavor.name.uppercase(Locale.US)}\""
+        "\"$siteName\""
     )
 }
 
