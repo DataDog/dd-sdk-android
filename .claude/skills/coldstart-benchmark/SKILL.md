@@ -388,9 +388,12 @@ other way is neither.
   previously this reported a genuine +30 ms regression as an ordering artifact. It is also
   **paired on blocks**, like the primary endpoint: one `2nd − 1st` delta per block, so it cannot
   manufacture an order effect out of cell-level shifts. ABBA makes the treatment effect cancel
-  out of those deltas. If every order delta is identical, zero sample variance does not establish
-  zero population variance: keep the mean descriptive and treat the interval and significance
-  verdict as non-estimable rather than reporting a zero-width CI.
+  out of those deltas. If every order delta is identical -- to the precision cell means carry,
+  not only as exactly equal floats -- report no interval and no significance verdict: zero spread
+  does not establish zero population variance. Keep the mean descriptive, and report the ordering
+  warning as given: a repeated offset above 5 ms still raises it, because a shift present in every
+  block is the strongest form of that evidence, while a repeated offset near zero reads as
+  counterbalancing holding and needs no longer run.
 - **Concatenating CSVs that omit or disagree on mandatory device/protocol metadata is refused**
   (`--allow-mixed` to override). Two missing values are not evidence that the runs match.
   Namespacing block ids stops blocks merging; it does not make

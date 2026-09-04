@@ -423,9 +423,13 @@ described in the next section and could manufacture an order effect out of cell-
 One `2nd − 1st` delta is computed per block. Because ABBA alternates which arm runs first, the
 treatment effect cancels out of those deltas and only the ordering term survives, provided the
 first-arm counts are balanced, which `ab_stats.py` checks and warns about if they are not.
-If every block has the same order delta, the integer-millisecond sample has zero variance;
-`ab_stats.py` keeps its mean as a descriptive value but reports the order-effect interval and
-significance verdict as non-estimable rather than manufacturing a zero-width interval.
+If every block has the same order delta, the sample has no spread to estimate from: each delta
+is a difference of cell means, and identical-to-the-data's-precision counts, not just exactly
+equal floats. `ab_stats.py` keeps the mean as a descriptive value and reports no interval or
+significance verdict. It still warns when that repeated offset exceeds 5 ms, because a shift
+present in every block is stronger evidence of an order effect than a noisy one; when the
+repeated offset is around zero it says counterbalancing is holding and does not ask for a longer
+run.
 
 ### Analyze per-block deltas, not pooled launches
 

@@ -113,6 +113,31 @@ def blocks_for(sd_b, target, cap=200):
     return None
 
 
+def degenerate_spread(values):
+    """Is the spread of these block deltas zero to within float representation error?
+
+    `st.stdev(values) == 0` was the obvious test and it is wrong, because a delta is a
+    difference of cell MEANS: with 3 runs per cell, four blocks each showing a
+    mathematically identical +10 ms produced
+    [9.999999999999886, 9.999999999999972, 10.0, 10.000000000000014].
+    The sample variance is then ~1e-27 rather than 0, the guard misses, and the tool
+    prints a zero-width interval labelled `sd 0.0` -- indistinguishable from the case
+    the guard exists to catch.
+
+    A relative threshold is safe by a wide margin here. Observations are integer
+    milliseconds and a delta is a difference of k-run means, so the smallest spread
+    two genuinely different deltas can have is 1/k ms: at k=15 that is 0.067 ms,
+    ~7e-4 relative to a 100 ms delta. Float noise from the same arithmetic is ~1e-14
+    relative. 1e-9 sits five orders of magnitude above the noise and six below the
+    smallest real difference, so nothing measurable is suppressed and nothing
+    imaginary is reported.
+    """
+    if len(values) < 2:
+        return True
+    scale = max(abs(v) for v in values) or 1.0
+    return (max(values) - min(values)) <= scale * 1e-9
+
+
 def welch(a, b):
     m1, m2 = st.mean(a), st.mean(b)
     v1, v2 = st.variance(a), st.variance(b)
@@ -1080,10 +1105,11 @@ def main():
         print("  >= 3 blocks (at 2 blocks t_crit(df=1) = 12.7, which cannot support any")
         print("  significance claim). Re-run with more blocks, e.g. `... 4 8`.")
         print("  Treat this run as diagnostic only.")
-    elif st.stdev(deltas) == 0:
+    elif degenerate_spread(deltas):
         print(f"  NOT ESTIMABLE: all {len(deltas)} contributing block deltas are "
               f"{deltas[0]:+.1f} ms,")
-        print("  so their sample variance is zero. Integer-millisecond observations in a")
+        print("  so their spread is zero to the precision these observations carry.")
+        print("  Integer-millisecond observations in a")
         print("  small run do not establish zero population variance or a zero detectable")
         print("  effect. No primary CI, MDE or significance verdict is reported; re-run")
         print("  with more counterbalanced blocks.")
@@ -1209,12 +1235,34 @@ def main():
         k = len(order_deltas)
         m = st.mean(order_deltas)
         sd_order = st.stdev(order_deltas)
-        if sd_order == 0:
+        if degenerate_spread(order_deltas):
             print(f"  2nd-minus-1st = {m:+.1f} ms over {k} blocks  (descriptive)")
-            print("  NOT ESTIMABLE: every block has the same 2nd-minus-1st delta, so")
-            print("  the sample variance is zero. A few integer-millisecond observations")
-            print("  do not establish zero population variance; no order-effect CI or")
-            print("  significance verdict is reported. Re-run with more blocks.")
+            print("  Every block carries the same 2nd-minus-1st delta to the precision")
+            print("  these observations have, so the spread is zero and no interval or")
+            print("  significance verdict is estimable from them.")
+            # Suppressing the INTERVAL is right; suppressing the WARNING was not. A
+            # delta that repeats in every block is the strongest evidence of an order
+            # effect there is, not the weakest, and the first version of this branch
+            # printed nothing an operator scanning for `!!` would see. The threshold
+            # needs no interval to mean something, so it still fires -- descriptively.
+            if abs(m) > 5:
+                print(f"  !! Ordering moves the measurement: every block shifts by "
+                      f"{m:+.1f} ms")
+                print("     independently of the build. A repeated identical offset is")
+                print("     stronger evidence of that than a noisy one, not weaker; what")
+                print("     is missing is only the interval. ABBA cancels this in the")
+                print("     paired primary endpoint; under a fixed A-then-B order it")
+                print("     would masquerade as a real effect. Re-run with more blocks")
+                print("     to quantify it.")
+            else:
+                # And m ~ 0 is the benign case: a clean A/A on a coarse metric will
+                # keep producing identical zero deltas, so demanding "more blocks"
+                # there asks the operator to fix a run that is already ideal.
+                print("     No order effect is visible at this resolution, so"
+                      " counterbalancing")
+                print("     is holding descriptively. This is not a significance claim,"
+                      " and it")
+                print("     does not need a longer run to become one.")
         else:
             se = sd_order / math.sqrt(k)
             tc = t_crit(k - 1)

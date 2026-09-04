@@ -3568,7 +3568,7 @@ class AbStatsRegressionTests(unittest.TestCase):
                 result = self.run_stats(self.benchmark_csv(constant_delta=delta))
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertIn("NOT ESTIMABLE", result.stdout)
-                self.assertIn("sample variance is zero", result.stdout)
+                self.assertIn("spread is zero to the precision these observations carry", result.stdout)
                 self.assertNotIn("  95% CI                ", result.stdout)
                 self.assertNotIn("  MDE at", result.stdout)
                 self.assertNotIn("  => Significant", result.stdout)
@@ -3895,11 +3895,104 @@ class AbStatsRegressionTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("2nd-minus-1st = +10.0 ms over 4 blocks  (descriptive)", result.stdout)
-        self.assertIn("NOT ESTIMABLE: every block has the same 2nd-minus-1st delta", result.stdout)
-        self.assertIn("sample variance is zero", result.stdout)
+        self.assertIn("Every block carries the same 2nd-minus-1st delta", result.stdout)
+        self.assertIn("no interval or", result.stdout)
         self.assertNotIn("2nd-minus-1st = +10.0 ms over 4 blocks  95% CI", result.stdout)
-        self.assertNotIn("Ordering moves the measurement", result.stdout)
         self.assertNotIn("no significant order effect", result.stdout)
+        # The interval is suppressed; the WARNING is not. A +10 ms shift repeated in
+        # every block is stronger evidence of an order effect than a noisy one, and
+        # 8a15f9b3d asserted its absence -- this assertion is reversed on purpose.
+        self.assertIn("Ordering moves the measurement: every block shifts by +10.0 ms",
+                      result.stdout)
+        self.assertIn("what", result.stdout)
+        self.assertIn("is missing is only the interval", result.stdout)
+        self.assertIn("Re-run with more blocks", result.stdout)
+
+    ROUNDED_CELLS = (1014, 246, 90, 118)
+
+    def rounded_equal_delta_csv(self, constant_effect: int = 10) -> str:
+        """Blocks whose deltas are mathematically equal but float-unequal.
+
+        Three runs per cell, so each cell mean is an integer sum over 3. The bases are
+        chosen to land on different float representations of the same delta, which is
+        how `st.stdev(...) == 0` missed this case entirely.
+        """
+        header = "# " + self.recoverable_metadata(4, runs=3) + "\n"
+        rows = ["label,block,pos_in_block,phase,run,total_ms,launch_state,status,"
+                "foreground,ttfd"]
+        for index, base in enumerate(self.ROUNDED_CELLS, start=1):
+            baseline = [base, base, base + 1]
+            treatment = [value + constant_effect for value in baseline]
+            baseline_pos, treatment_pos = ("1", "2") if index % 2 else ("2", "1")
+            for run, value in enumerate(baseline, 1):
+                rows.append(f"A_noDD,{index},{baseline_pos},measure,{run},{value},"
+                            f"COLD,ok,ok,{value}")
+            for run, value in enumerate(treatment, 1):
+                rows.append(f"B_withDD,{index},{treatment_pos},measure,{run},{value},"
+                            f"COLD,ok,ok,{value}")
+        return header + "\n".join(rows) + "\n# RUN COMPLETE\n"
+
+    def test_rounded_equal_deltas_do_not_produce_a_primary_interval(self) -> None:
+        """`stdev == 0` missed float-unequal deltas, and the PRIMARY result paid.
+
+        A mathematically constant +10 ms effect over 3-run cells gives per-block
+        deltas [9.999999999999886, ..., 10.000000000000014]. The exact test therefore
+        did not fire and the tool printed `between-block sd 0.0 ms`, `95% CI
+        [+10.0, +10.0]`, `MDE ~0 ms` and `=> Significant` -- fake precision in the one
+        number this tool exists to produce, and labelled `sd 0.0` so it read exactly
+        like the case the guard does catch.
+        """
+        result = self.run_stats(self.rounded_equal_delta_csv())
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("NOT ESTIMABLE: all 4 contributing block deltas are +10.0 ms",
+                      result.stdout)
+        self.assertIn("spread is zero to the precision these observations carry",
+                      result.stdout)
+        self.assertNotIn("95% CI                [+10.0, +10.0] ms", result.stdout)
+        self.assertNotIn("MDE at 4 blocks", result.stdout)
+        self.assertNotIn("=> Significant", result.stdout)
+
+    def test_the_degenerate_test_does_not_suppress_a_real_difference(self) -> None:
+        """The tolerance must sit far below the smallest difference the data can hold.
+
+        Deltas are differences of k-run means of integer milliseconds, so the smallest
+        spread two genuinely different deltas can have is 1/k ms. At k=15 that is
+        0.067 ms; float noise from the same arithmetic is ~1e-14 relative. The
+        threshold has to separate the two by orders of magnitude in both directions.
+        """
+        ab = load_ab_stats_module()
+        # Exactly equal, and equal-after-rounding: both degenerate.
+        self.assertTrue(ab.degenerate_spread([10.0, 10.0, 10.0]))
+        self.assertTrue(ab.degenerate_spread(
+            [9.999999999999886, 9.999999999999972, 10.0, 10.000000000000014]))
+        # The smallest real spread at 15 runs per cell, and at 2: not degenerate.
+        self.assertFalse(ab.degenerate_spread([10.0, 10.0 + 1 / 15]))
+        self.assertFalse(ab.degenerate_spread([10.0, 10.5]))
+        # Scale-relative, so a large delta with a real 1/k difference still counts.
+        self.assertFalse(ab.degenerate_spread([5000.0, 5000.0 + 1 / 15]))
+        # All zeros is degenerate, and a single delta has no spread to speak of.
+        self.assertTrue(ab.degenerate_spread([0.0, 0.0]))
+        self.assertTrue(ab.degenerate_spread([7.0]))
+
+    def test_a_clean_aa_order_diagnostic_is_not_asked_to_re_run(self) -> None:
+        """m ~ 0 with zero spread is the ideal A/A, not a run needing more blocks."""
+        lines = self.benchmark_csv(constant_delta=0).splitlines()
+        for index, line in enumerate(lines):
+            fields = line.split(",")
+            if fields[0] not in ("A_noDD", "B_withDD"):
+                continue
+            fields[5] = fields[9] = "100"
+            lines[index] = ",".join(fields)
+        result = self.run_stats("\n".join(lines) + "\n")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("2nd-minus-1st = +0.0 ms over 4 blocks  (descriptive)", result.stdout)
+        self.assertIn("counterbalancing", result.stdout)
+        self.assertIn("does not need a longer run", result.stdout)
+        self.assertNotIn("Ordering moves the measurement", result.stdout)
+        # The order section must not demand a re-run for an ideal input. The primary
+        # section legitimately does, because zero spread there IS non-estimable.
+        order = result.stdout[result.stdout.index("order effect (position"):]
+        self.assertNotIn("Re-run with more blocks", order)
 
     def test_unrelated_label_cannot_overwrite_selected_position_evidence(self) -> None:
         csv_body = self.benchmark_csv()
