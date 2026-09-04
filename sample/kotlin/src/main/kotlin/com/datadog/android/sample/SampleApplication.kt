@@ -25,7 +25,9 @@ import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.flags.Flags
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags._FlagsInternalProxy
+import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.openfeature.asOpenFeatureProvider
 import com.datadog.android.insights.enableRumDebugWidget
 import com.datadog.android.log.Logger
@@ -83,7 +85,6 @@ import io.opentelemetry.api.GlobalOpenTelemetry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
@@ -323,7 +324,7 @@ class SampleApplication : Application() {
     private fun runFlagsDiagnostics() {
         applicationScope.launch(Dispatchers.IO) {
             val tag = "FlagsDiagnostics"
-            Log.i(tag, "========== FLAGS SDK DIAGNOSTICS START ==========")
+            Log.i(tag, "========== FLAGS SDK NETWORK DIAGNOSTICS START ==========")
 
             // 1. Log configured site
             val siteName = BuildConfig.DD_SITE_NAME
@@ -361,10 +362,10 @@ class SampleApplication : Application() {
                 checkHttpReachability(tag, "Exposures intake", exposuresUrl)
             }
 
-            // 6. Wait for flag assignments to load, then log snapshot
-            logFlagAssignmentsSnapshot(tag)
+            Log.i(tag, "========== FLAGS SDK NETWORK DIAGNOSTICS END ==========")
 
-            Log.i(tag, "========== FLAGS SDK DIAGNOSTICS END ==========")
+            // 6. Log flag assignments once client is ready
+            logFlagAssignmentsSnapshot(tag)
         }
     }
 
@@ -399,31 +400,56 @@ class SampleApplication : Application() {
     }
 
     @SuppressLint("LogNotTimber")
-    @Suppress("TooGenericExceptionCaught", "MagicNumber")
-    private suspend fun logFlagAssignmentsSnapshot(tag: String) {
+    @Suppress("TooGenericExceptionCaught")
+    private fun logFlagAssignmentsSnapshot(tag: String) {
         val client = flagsClient
         if (client == null) {
             Log.w(tag, "Flag snapshot: FlagsClient not available")
             return
         }
 
-        val proxy = _FlagsInternalProxy(client)
+        val currentState = client.state.getCurrentState()
+        Log.i(tag, "FlagsClient state: ${currentState::class.simpleName}")
 
-        // Check immediately first
-        var snapshot = proxy.getFlagAssignmentsSnapshot()
-        if (snapshot.isEmpty()) {
-            Log.i(tag, "Flag snapshot: empty (waiting 5s for async fetch...)")
-            delay(5000)
-            snapshot = proxy.getFlagAssignmentsSnapshot()
-        }
-
-        if (snapshot.isEmpty()) {
-            Log.w(tag, "Flag snapshot: still empty after wait. No flags loaded.")
+        if (currentState is FlagsClientState.Ready) {
+            dumpSnapshot(tag, client)
         } else {
-            Log.i(tag, "Flag snapshot: ${snapshot.size} flag(s) loaded")
-            snapshot.forEach { (key, flag) ->
-                Log.i(tag, "  flag: $key | type=${flag.variationType} variant=${flag.variationKey} reason=${flag.reason}")
+            Log.i(tag, "Flag snapshot: waiting for client to become ready...")
+            client.state.addListener(object : FlagsStateListener {
+                override fun onStateChanged(state: FlagsClientState) {
+                    Log.i(tag, "FlagsClient state changed: ${state::class.simpleName}")
+                    when (state) {
+                        is FlagsClientState.Ready -> {
+                            dumpSnapshot(tag, client)
+                            client.state.removeListener(this)
+                        }
+                        is FlagsClientState.Error -> {
+                            Log.e(tag, "Flag snapshot: client entered Error state: ${state.error?.message}")
+                            client.state.removeListener(this)
+                        }
+                        else -> { /* keep waiting */ }
+                    }
+                }
+            })
+        }
+    }
+
+    @SuppressLint("LogNotTimber")
+    @Suppress("TooGenericExceptionCaught")
+    private fun dumpSnapshot(tag: String, client: FlagsClient) {
+        try {
+            val proxy = _FlagsInternalProxy(client)
+            val snapshot = proxy.getFlagAssignmentsSnapshot()
+            if (snapshot.isEmpty()) {
+                Log.w(tag, "Flag snapshot: client is Ready but no flags loaded")
+            } else {
+                Log.i(tag, "Flag snapshot: ${snapshot.size} flag(s) loaded")
+                snapshot.forEach { (key, flag) ->
+                    Log.i(tag, "  flag: $key | type=${flag.variationType} variant=${flag.variationKey} reason=${flag.reason}")
+                }
             }
+        } catch (e: Throwable) {
+            Log.e(tag, "Flag snapshot: error reading: ${e.javaClass.simpleName}: ${e.message}")
         }
     }
 
