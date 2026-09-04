@@ -7,7 +7,8 @@
 package com.datadog.android.profiling.internal.trigger
 
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
+import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 
 internal fun interface ProfilingTriggerListener {
-    fun onAnrDetected(event: ProfilingAnrDetectedEvent)
+    fun onAnrDetected(event: ProfilingAnrDetectedEvent, result: PerfettoResult)
 }

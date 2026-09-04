@@ -96,8 +96,8 @@ internal class PerfettoProfiler(
             profilingTelemetry.internalLogger = value
         }
 
-    internal val triggerListener = ProfilingTriggerListener { event ->
-        callback?.onAnrDetected(event)
+    internal val triggerListener = ProfilingTriggerListener { event, result ->
+        callback?.onAnrDetected(event, result)
     }
 
     @Volatile
