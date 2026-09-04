@@ -1963,6 +1963,7 @@ internal class DatadogRumMonitorTest {
             "flutter" to RumErrorSourceType.FLUTTER,
             "ndk" to RumErrorSourceType.NDK,
             "ndk+il2cpp" to RumErrorSourceType.NDK_IL2CPP,
+            "maui" to RumErrorSourceType.MAUI,
             nonSupportedValue to RumErrorSourceType.ANDROID,
             null to RumErrorSourceType.ANDROID
         )
