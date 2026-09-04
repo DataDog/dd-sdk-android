@@ -460,6 +460,13 @@ def main():
                 and blocks_value.isdigit() and runs_value.isdigit()
                 and int(blocks_value) >= 1 and int(runs_value) >= 1):
             declared = int(blocks_value)
+            if declared % 2 != 0:
+                raise SystemExit(
+                    "refusing to recover an interrupted run whose registered design "
+                    f"declares blocks={declared}.\n"
+                    "  `blocks` must be even so the collector's ABBA schedule is "
+                    "counterbalanced."
+                )
             whole = complete_block_ids(list(csv.DictReader(per_file[0][1])),
                                        a.baseline, a.treatment, int(runs_value))
             # The collector is sequential: it runs block 1, then 2, and an invalid
@@ -1201,17 +1208,25 @@ def main():
         print(f"  first-arm balance {dict(firsts)} -- treatment effect cancels")
         k = len(order_deltas)
         m = st.mean(order_deltas)
-        se = st.stdev(order_deltas) / math.sqrt(k)
-        tc = t_crit(k - 1)
-        lo, hi = m - tc * se, m + tc * se
-        print(f"  2nd-minus-1st = {m:+.1f} ms over {k} blocks  95% CI "
-              f"[{lo:+.1f}, {hi:+.1f}]  (between-block sd {st.stdev(order_deltas):.1f})")
-        if abs(m) > 5 and not (lo <= 0 <= hi):
-            print("  !! Ordering moves the measurement independently of the build.")
-            print("     ABBA cancels this in the paired primary endpoint; it would")
-            print("     masquerade as a real effect under a fixed A-then-B order.")
+        sd_order = st.stdev(order_deltas)
+        if sd_order == 0:
+            print(f"  2nd-minus-1st = {m:+.1f} ms over {k} blocks  (descriptive)")
+            print("  NOT ESTIMABLE: every block has the same 2nd-minus-1st delta, so")
+            print("  the sample variance is zero. A few integer-millisecond observations")
+            print("  do not establish zero population variance; no order-effect CI or")
+            print("  significance verdict is reported. Re-run with more blocks.")
         else:
-            print("  no significant order effect -- counterbalancing is holding.")
+            se = sd_order / math.sqrt(k)
+            tc = t_crit(k - 1)
+            lo, hi = m - tc * se, m + tc * se
+            print(f"  2nd-minus-1st = {m:+.1f} ms over {k} blocks  95% CI "
+                  f"[{lo:+.1f}, {hi:+.1f}]  (between-block sd {sd_order:.1f})")
+            if abs(m) > 5 and not (lo <= 0 <= hi):
+                print("  !! Ordering moves the measurement independently of the build.")
+                print("     ABBA cancels this in the paired primary endpoint; it would")
+                print("     masquerade as a real effect under a fixed A-then-B order.")
+            else:
+                print("  no significant order effect -- counterbalancing is holding.")
 
 
 if __name__ == "__main__":

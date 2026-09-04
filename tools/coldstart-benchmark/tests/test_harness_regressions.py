@@ -3448,6 +3448,16 @@ class AbStatsRegressionTests(unittest.TestCase):
         self.assertEqual(clean.returncode, 0, clean.stderr)
         self.assertNotIn("not a collected prefix", clean.stderr)
 
+    def test_recovery_refuses_an_odd_declared_block_count(self) -> None:
+        """Recovery cannot legitimize a design the collector refuses to register."""
+        interrupted = self.run_stats(self.aborted_csv(4, declared_blocks=5))
+        self.assertNotEqual(interrupted.returncode, 0)
+        self.assertIn("refusing to recover an interrupted run", interrupted.stderr)
+        self.assertIn("blocks=5", interrupted.stderr)
+        self.assertIn("must be even", interrupted.stderr)
+        self.assertNotIn("ANALYZED OVER", interrupted.stdout)
+        self.assertNotIn("95% CI", interrupted.stdout)
+
     def test_interrupted_run_below_the_paired_minimum_is_still_refused(self) -> None:
         """Three whole blocks floor to two, and a paired interval needs three."""
         refused = self.run_stats(self.aborted_csv(3))
@@ -3866,6 +3876,30 @@ class AbStatsRegressionTests(unittest.TestCase):
         self.assertNotIn("  95% CI                ", result.stdout)
         self.assertNotIn("  MDE at", result.stdout)
         self.assertNotIn("  => Significant", result.stdout)
+
+    def test_zero_order_variance_suppresses_the_order_effect_interval(self) -> None:
+        """Rounded equal order deltas do not establish zero population variance."""
+        lines = self.benchmark_csv().splitlines()
+        for index, line in enumerate(lines):
+            fields = line.split(",")
+            if fields[0] not in ("A_noDD", "B_withDD"):
+                continue
+            block = int(fields[1])
+            position = int(fields[2])
+            value = 100 + 20 * block + (10 if position == 2 else 0)
+            fields[5] = str(value)
+            fields[9] = str(value)
+            lines[index] = ",".join(fields)
+
+        result = self.run_stats("\n".join(lines) + "\n")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("2nd-minus-1st = +10.0 ms over 4 blocks  (descriptive)", result.stdout)
+        self.assertIn("NOT ESTIMABLE: every block has the same 2nd-minus-1st delta", result.stdout)
+        self.assertIn("sample variance is zero", result.stdout)
+        self.assertNotIn("2nd-minus-1st = +10.0 ms over 4 blocks  95% CI", result.stdout)
+        self.assertNotIn("Ordering moves the measurement", result.stdout)
+        self.assertNotIn("no significant order effect", result.stdout)
 
     def test_unrelated_label_cannot_overwrite_selected_position_evidence(self) -> None:
         csv_body = self.benchmark_csv()

@@ -381,7 +381,9 @@ because both arms are the baseline APK. If you A/A the *treatment* APK instead, 
 **Pass criteria:**
 
 - the 95% CI on the paired block delta straddles zero
-- the reported order effect is not significant
+- the reported order effect is not significant. A zero-variance order diagnostic is
+  non-estimable rather than significant; inspect its descriptive mean and collect more blocks
+  before calling the A/A clean
 - the interval is **tight enough to be useful**: compare the printed MDE against the
   effect you intend to detect in the A/B. A null from a ±100 ms interval means the
   protocol cannot see anything, not that it is clean
@@ -421,6 +423,9 @@ described in the next section and could manufacture an order effect out of cell-
 One `2nd − 1st` delta is computed per block. Because ABBA alternates which arm runs first, the
 treatment effect cancels out of those deltas and only the ordering term survives, provided the
 first-arm counts are balanced, which `ab_stats.py` checks and warns about if they are not.
+If every block has the same order delta, the integer-millisecond sample has zero variance;
+`ab_stats.py` keeps its mean as a descriptive value but reports the order-effect interval and
+significance verdict as non-estimable rather than manufacturing a zero-width interval.
 
 ### Analyze per-block deltas, not pooled launches
 

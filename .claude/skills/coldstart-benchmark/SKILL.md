@@ -158,7 +158,9 @@ PKG=<app.id> EXPECT_B=0 LABEL_A=A1 LABEL_B=A2 \
 `EXPECT_A=1 EXPECT_B=1`.
 
 Pass: the paired block CI straddles zero, the order effect is not significant, and the MDE is
-small enough to detect the effect the A/B is looking for. **Do NOT require per-block deltas to
+small enough to detect the effect the A/B is looking for. A zero-variance order diagnostic is
+non-estimable, not a significant effect; inspect its descriptive mean and collect more blocks
+before calling the A/A clean. **Do NOT require per-block deltas to
 share a sign**: the true delta is zero, so they should straddle it. Unanimity across 8 blocks
 happens <1% of the time and indicates directional bias, not cleanliness.
 **If A/A fails, no A/B number from that setup means anything.**
@@ -386,7 +388,9 @@ other way is neither.
   previously this reported a genuine +30 ms regression as an ordering artifact. It is also
   **paired on blocks**, like the primary endpoint: one `2nd − 1st` delta per block, so it cannot
   manufacture an order effect out of cell-level shifts. ABBA makes the treatment effect cancel
-  out of those deltas.
+  out of those deltas. If every order delta is identical, zero sample variance does not establish
+  zero population variance: keep the mean descriptive and treat the interval and significance
+  verdict as non-estimable rather than reporting a zero-width CI.
 - **Concatenating CSVs that omit or disagree on mandatory device/protocol metadata is refused**
   (`--allow-mixed` to override). Two missing values are not evidence that the runs match.
   Namespacing block ids stops blocks merging; it does not make

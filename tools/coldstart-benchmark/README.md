@@ -299,7 +299,10 @@ entering through the same path.
 
 Arm order is counterbalanced across blocks (odd blocks baseline→treatment, even blocks
 treatment→baseline) and each launch's position is recorded, so `ab_stats.py` can test for an
-ordering bias rather than assume it away. Device settings are snapshotted before the run and
+ordering bias rather than assume it away. If every paired order delta is identical, its mean stays
+descriptive but the interval and significance verdict are non-estimable: zero sample variance in
+a few integer-millisecond observations does not prove zero population variance. Device settings
+are snapshotted before the run and
 restored from an `EXIT` trap; `INT`/`TERM` exit into it, so Ctrl-C stops the run and restores
 the device exactly once.
 
