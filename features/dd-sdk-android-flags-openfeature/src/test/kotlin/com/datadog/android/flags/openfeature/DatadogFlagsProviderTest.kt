@@ -376,6 +376,56 @@ internal class DatadogFlagsProviderTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
+    fun `M emit recoverable ProviderError before throwing W initialize() {timeout then late recovery}`() = runTest {
+        // Given
+        val timeoutMessage = "Flags initialization timed out after 250ms"
+        val timeoutCause = RuntimeException(timeoutMessage)
+        val events = mutableListOf<OpenFeatureProviderEvents>()
+        val lifecycleOrder = mutableListOf<String>()
+        val observerJob = launch(UnconfinedTestDispatcher(testScheduler)) {
+            provider.observe().collect { event ->
+                events.add(event)
+                lifecycleOrder.add(
+                    when (event) {
+                        is OpenFeatureProviderEvents.ProviderError -> "provider-error"
+                        OpenFeatureProviderEvents.ProviderReady -> "provider-ready"
+                        else -> "other-event"
+                    }
+                )
+            }
+        }
+        whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
+            checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Error(timeoutCause))
+            invocation.getArgument<EvaluationContextCallback>(1).onFailure(timeoutCause)
+            Unit
+        }
+
+        // When
+        val failure = try {
+            provider.initialize(ImmutableContext(targetingKey = "user-123"))
+            null
+        } catch (error: OpenFeatureError) {
+            error
+        }
+        lifecycleOrder.add("initialize-failed")
+        checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Ready)
+        observerJob.cancel()
+
+        // Then
+        assertThat(failure).isInstanceOf(OpenFeatureError.GeneralError::class.java)
+        assertThat(failure).isNotInstanceOf(OpenFeatureError.ProviderFatalError::class.java)
+        assertThat(failure).hasMessage(timeoutMessage)
+        assertThat(events).hasSize(2)
+        val providerError = events[0] as OpenFeatureProviderEvents.ProviderError
+        assertThat(providerError.error).isInstanceOf(OpenFeatureError.GeneralError::class.java)
+        assertThat(providerError.error).isNotInstanceOf(OpenFeatureError.ProviderFatalError::class.java)
+        assertThat(providerError.error).hasMessage(timeoutMessage)
+        assertThat(events[1]).isInstanceOf(OpenFeatureProviderEvents.ProviderReady::class.java)
+        assertThat(lifecycleOrder).containsExactly("provider-error", "initialize-failed", "provider-ready")
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
     fun `M settle with Error status W setProviderAndWait() {initialization times out}`() = runTest {
         // Given
         val timeoutMessage = "Flags initialization timed out after 250ms"
@@ -476,31 +526,6 @@ internal class DatadogFlagsProviderTest {
         // Then - Stale state is converted to ProviderStale event
         assertThat(events).hasSize(1)
         assertThat(events[0]).isInstanceOf(OpenFeatureProviderEvents.ProviderStale::class.java)
-    }
-
-    @Test
-    fun `M emit recoverable ProviderError then ProviderReady W observe() {timeout recovers}`() = runTest {
-        // Given
-        val events = mutableListOf<OpenFeatureProviderEvents>()
-        val timeoutMessage = "Flags initialization timed out after 250ms"
-        val errorState = FlagsClientState.Error(RuntimeException(timeoutMessage))
-
-        // When
-        val job = launch {
-            provider.observe().collect { events.add(it) }
-        }
-        testScheduler.runCurrent()
-        checkNotNull(capturedStateListener).onStateChanged(errorState)
-        checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Ready)
-        testScheduler.runCurrent()
-        job.cancel()
-
-        // Then - the timeout is recoverable and a late result restores readiness
-        assertThat(events).hasSize(2)
-        val providerError = events[0] as OpenFeatureProviderEvents.ProviderError
-        assertThat(providerError.error).isInstanceOf(OpenFeatureError.GeneralError::class.java)
-        assertThat(providerError.error).hasMessage(timeoutMessage)
-        assertThat(events[1]).isInstanceOf(OpenFeatureProviderEvents.ProviderReady::class.java)
     }
 
     @Test
