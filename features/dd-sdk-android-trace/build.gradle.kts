@@ -6,16 +6,16 @@
 @file:Suppress("StringLiteralDuplication")
 
 import com.datadog.gradle.utils.createJsonModelsGenerationTask
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.nio.file.Paths
 
 plugins {
+    // Applied before the Android plugin on purpose (not under "Analysis tools"): AGP 9 applies
+    // the Kotlin plugin itself, and ktlint-gradle 14.2.0 registers its Android source-set tasks
+    // twice when it comes after the Kotlin plugin.
+    id("ktlint")
+
     // Build
     id("com.android.library")
-    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
-    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
-    id("ktlint")
-    kotlin("android")
     id("com.google.devtools.ksp")
     id("datadogBuildConfig")
 
@@ -41,8 +41,6 @@ plugins {
     id("test-pyramid-api-surface")
 }
 
-// TODO RUM-18189 Support new AGP DSL
-@Suppress("DEPRECATION")
 android {
     defaultConfig {
         consumerProguardFiles("consumer-rules.pro")
@@ -62,7 +60,6 @@ dependencies {
     implementation(libs.kotlin)
     implementation(libs.gson)
     implementation(libs.androidXAnnotation)
-    implementation(libs.bundles.traceCore)
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
@@ -84,7 +81,8 @@ dependencies {
 
     unmock(libs.robolectric)
 
-    // Test Fixtures
+    // Test Fixtures — declared explicitly because the testFixtures source set is its own variant
+    // and does not inherit the main `implementation` classpath (nor the auto-added kotlin-stdlib).
     testFixturesImplementation(libs.gson)
     testFixturesImplementation(libs.kotlin)
     testFixturesImplementation(libs.okHttp)
@@ -109,7 +107,7 @@ createJsonModelsGenerationTask("generateTraceModelsFromJson") {
 }
 
 datadogBuild {
-    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyKotlinConfig()
     applyAndroidLibraryConfig()
     applyJunitConfig()
     applyJavadocConfig()

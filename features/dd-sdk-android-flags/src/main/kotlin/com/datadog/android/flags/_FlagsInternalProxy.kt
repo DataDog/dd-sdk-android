@@ -12,17 +12,17 @@ import com.datadog.android.flags.model.UnparsedFlag
 import com.datadog.android.lint.InternalApi
 
 /**
- * This class exposes internal methods that are used by other Datadog modules and cross platform
+ * This class exposes internal methods that are used by other Datadog modules and cross-platform
  * frameworks. It is not meant for public use.
  *
  * DO NOT USE this class or its methods if you are not working on the internals of the Datadog SDK
- * or one of the cross platform frameworks.
+ * or one of the cross-platform frameworks.
  *
  * Methods, members, and functionality of this class are subject to change without notice, as they
  * are not considered part of the public interface of the Datadog SDK.
  */
 @InternalApi
-@Suppress("ClassName", "UndocumentedPublicFunction")
+@Suppress("ClassName", "ClassNaming", "UndocumentedPublicFunction")
 class _FlagsInternalProxy(private val client: FlagsClient) {
     fun getFlagAssignmentsSnapshot(): Map<String, UnparsedFlag> = if (client is DatadogFlagsClient) {
         client.getFlagAssignmentsSnapshot()

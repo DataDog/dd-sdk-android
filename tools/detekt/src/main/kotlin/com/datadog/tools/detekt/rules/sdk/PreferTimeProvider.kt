@@ -6,14 +6,11 @@
 
 package com.datadog.tools.detekt.rules.sdk
 
-import io.gitlab.arturbosch.detekt.api.CodeSmell
-import io.gitlab.arturbosch.detekt.api.Config
-import io.gitlab.arturbosch.detekt.api.Debt
-import io.gitlab.arturbosch.detekt.api.Entity
-import io.gitlab.arturbosch.detekt.api.Issue
-import io.gitlab.arturbosch.detekt.api.Rule
-import io.gitlab.arturbosch.detekt.api.Severity
-import io.gitlab.arturbosch.detekt.api.config
+import dev.detekt.api.Config
+import dev.detekt.api.Entity
+import dev.detekt.api.Finding
+import dev.detekt.api.Rule
+import dev.detekt.api.config
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtFile
@@ -28,20 +25,16 @@ import org.jetbrains.kotlin.psi.KtFile
  */
 class PreferTimeProvider(
     ruleSetConfig: Config = Config.empty
-) : Rule(ruleSetConfig) {
+) : Rule(
+    ruleSetConfig,
+    "Prefer using TimeProvider instead of static system time calls for better testability."
+) {
 
     private val allowedFiles: List<Regex> by config(defaultValue = DEFAULT_ALLOWED_FILES) {
         it.map { pattern -> Regex(pattern) }
     }
 
     private var currentFileName: String = ""
-
-    override val issue: Issue = Issue(
-        javaClass.simpleName,
-        Severity.Defect,
-        "Prefer using TimeProvider instead of static system time calls for better testability.",
-        Debt.TEN_MINS
-    )
 
     override fun visitKtFile(file: KtFile) {
         currentFileName = file.name
@@ -56,8 +49,7 @@ class PreferTimeProvider(
         val calleeName = expression.calleeExpression?.text ?: return
         if (calleeName in KOTLIN_TIME_FUNCTIONS) {
             report(
-                CodeSmell(
-                    issue,
+                Finding(
                     Entity.from(expression),
                     "Use TimeProvider instead of $calleeName() for better testability."
                 )
@@ -74,8 +66,7 @@ class PreferTimeProvider(
         val detectedMethod = detectProhibitedTimeMethod(expressionText)
         if (detectedMethod != null) {
             report(
-                CodeSmell(
-                    issue,
+                Finding(
                     Entity.from(expression),
                     "Use TimeProvider instead of $detectedMethod for better testability."
                 )

@@ -7,7 +7,6 @@
 package com.datadog.android.rum.internal.utils
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
@@ -20,7 +19,6 @@ internal typealias EventOutcomeAction = (rumMonitor: AdvancedRumMonitor) -> Unit
 
 internal class WriteOperation(
     private val sdkCore: FeatureSdkCore,
-    private val datadogContext: DatadogContext,
     private val writeScope: EventWriteScope,
     private val rumDataWriter: DataWriter<Any>,
     private val eventType: EventType,
@@ -108,11 +106,10 @@ internal class WriteOperation(
 }
 
 internal fun FeatureSdkCore.newRumEventWriteOperation(
-    datadogContext: DatadogContext,
     writeScope: EventWriteScope,
     rumDataWriter: DataWriter<Any>,
     eventType: EventType = EventType.DEFAULT,
     eventSource: () -> Any
 ): WriteOperation {
-    return WriteOperation(this, datadogContext, writeScope, rumDataWriter, eventType, eventSource)
+    return WriteOperation(this, writeScope, rumDataWriter, eventType, eventSource)
 }

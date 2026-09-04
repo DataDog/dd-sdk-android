@@ -54,6 +54,7 @@ internal class ProfilingTelemetryTest {
     }
 
     @Test
+    @Suppress
     fun `M dispatch SessionEnd through logMetric W report() {logger set}`(
         @StringForgery fakeErrorMessage: String,
         @LongForgery(min = 0L) fakeDuration: Long,
@@ -94,11 +95,12 @@ internal class ProfilingTelemetryTest {
                 ProfilingTelemetry.KEY_STOPPED_REASON to ProfilingTelemetry.STOPPED_REASON_ERROR,
                 ProfilingTelemetry.KEY_APP_START_INFO to null
             ),
-            ProfilingTelemetry.KEY_PROFILING_CONFIG to mapOf(
-                // toInt here is needed because otherwise compiler may treat them as Long, in this case verify -> eq
-                // below may fail since 5120 != 5120L
-                ProfilingTelemetry.KEY_BUFFER_SIZE to 5120.toInt(),
-                ProfilingTelemetry.KEY_SAMPLING_FREQUENCY to 201.toInt(),
+            // the value type is pinned to Any? so that the literals below stay Int: letting it be
+            // inferred widens them to Long to match the version code, and the verify -> eq further down
+            // then fails since 5120L != 5120
+            ProfilingTelemetry.KEY_PROFILING_CONFIG to mapOf<String, Any?>(
+                ProfilingTelemetry.KEY_BUFFER_SIZE to 5120,
+                ProfilingTelemetry.KEY_SAMPLING_FREQUENCY to 201,
                 ProfilingTelemetry.KEY_PROFILING_PACKAGE_VERSION_CODE to fakeProfilingPackageVersionCode
             )
         )

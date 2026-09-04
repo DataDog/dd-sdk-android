@@ -108,6 +108,7 @@ internal class BitmapPool(
 
     @Deprecated("Deprecated in Java")
     @Synchronized
+    @Suppress("OVERRIDE_DEPRECATION")
     override fun onLowMemory() {
         bitmapPoolHelper.safeCall {
             @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block

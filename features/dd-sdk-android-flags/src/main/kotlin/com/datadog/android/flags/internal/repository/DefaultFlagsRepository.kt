@@ -19,8 +19,8 @@ import java.util.concurrent.atomic.AtomicReference
 
 internal class DefaultFlagsRepository(
     private val featureSdkCore: FeatureSdkCore,
-    private val instanceName: String,
-    private val dataStore: DataStoreHandler,
+    instanceName: String,
+    dataStore: DataStoreHandler,
     private val internalLogger: InternalLogger = featureSdkCore.internalLogger,
     private val persistenceLoadTimeoutMs: Long = PERSISTENCE_LOAD_TIMEOUT_MS
 ) : FlagsRepository {

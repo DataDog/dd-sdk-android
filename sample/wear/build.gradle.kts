@@ -10,16 +10,15 @@ import com.datadog.gradle.config.configureFlavorForSampleApp
 import com.datadog.gradle.config.java17
 
 plugins {
+    // Applied before the Android plugin on purpose (not under "Analysis tools"): AGP 9 applies
+    // the Kotlin plugin itself, and ktlint-gradle 14.2.0 registers its Android source-set tasks
+    // twice when it comes after the Kotlin plugin.
+    id("ktlint")
+
     // Build
     id("com.android.application")
-    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
-    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
-    id("ktlint")
-    id("org.jetbrains.kotlin.android")
 }
 
-// TODO RUM-18189 Support new AGP DSL
-@Suppress("DEPRECATION")
 android {
     compileSdk = AndroidConfig.TARGET_SDK
     buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION

@@ -22,6 +22,9 @@ dependencies {
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.detektTest)
+    // The main source set only has `compileOnly(detektApi)`, so the api types the rules under test
+    // extend have to be put on the test runtime classpath explicitly.
+    testImplementation(libs.detektApi)
     testImplementation(libs.robolectric)
 }
 

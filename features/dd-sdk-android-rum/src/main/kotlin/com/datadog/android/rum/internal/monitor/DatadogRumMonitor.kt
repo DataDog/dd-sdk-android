@@ -110,9 +110,9 @@ internal class DatadogRumMonitor(
     accessibilityInfoProvider: InfoProvider<AccessibilityInfo>,
     batteryInfoProvider: InfoProvider<BatteryInfo>,
     displayInfoProvider: InfoProvider<DisplayInfo>,
-    private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
+    rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
     insightsCollector: InsightsCollector,
-    private val viewEventMapper: ViewEventMapper,
+    viewEventMapper: ViewEventMapper,
     rumViewEventWriteConfig: RumViewEventWriteConfig,
     heatmapIdentifierRegistry: HeatmapIdentifierRegistry?,
     timeseriesCollectorFactory: TimeseriesCollector.Factory
@@ -1029,7 +1029,7 @@ internal class DatadogRumMonitor(
      * Wait for any pending events. This is mostly for integration tests to ensure that the
      * RUM context is in the correct state before proceeding.
      */
-    @Suppress("unused")
+    @Suppress("unused", "UnusedPrivateFunction")
     private fun waitForPendingEvents() {
         if (!executorService.isShutdown) {
             @Suppress("UnsafeThirdPartyFunctionCall") // 1 cannot be negative

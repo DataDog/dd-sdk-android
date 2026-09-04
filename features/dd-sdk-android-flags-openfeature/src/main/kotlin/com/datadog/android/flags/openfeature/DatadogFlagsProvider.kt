@@ -212,6 +212,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
     // Safe: We properly call awaitClose to cleanup listener, satisfying callbackFlow requirements
     @Suppress("UnsafeThirdPartyFunctionCall")
     override fun observe(): Flow<OpenFeatureProviderEvents> = callbackFlow {
+        val scope = this
         val listener = object : FlagsStateListener {
             override fun onStateChanged(newState: FlagsClientState) {
                 val providerEvent: OpenFeatureProviderEvents? = when (newState) {
@@ -223,7 +224,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
                         error = OpenFeatureError.ProviderFatalError()
                     )
                 }
-                providerEvent?.let { trySend(it) }
+                if (providerEvent != null) scope.trySend(providerEvent)
             }
         }
 

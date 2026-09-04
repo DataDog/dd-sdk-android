@@ -256,6 +256,9 @@ internal open class AndroidMDrawableToColorMapper(
 
         // PorterDuffColorFilter.mColor is blocked (max-target-o) on API 28+ and unused on API 29+
         // (AndroidQDrawableToColorMapper overrides resolveGradientDrawable). Skip reflection on P+.
+        // Reflection is guarded by the SDK_INT < P check below, so the blocked field is never
+        // accessed on API 37+; SuppressLint silences the static-only SoonBlockedPrivateApi check.
+        @SuppressLint("SoonBlockedPrivateApi")
         @Suppress("PrivateAPI", "SwallowedException", "TooGenericExceptionCaught")
         internal val mColorField = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
             try {
