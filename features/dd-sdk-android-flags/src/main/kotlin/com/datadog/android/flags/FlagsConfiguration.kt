@@ -6,8 +6,6 @@
 
 package com.datadog.android.flags
 
-private const val DEFAULT_INITIALIZATION_TIMEOUT_MS = 30_000L
-
 /**
  * Describes configuration to be used for the Flags feature.
  */
@@ -21,7 +19,7 @@ data class FlagsConfiguration internal constructor(
     internal val evaluationFlushIntervalMs: Long,
     internal val rumIntegrationEnabled: Boolean,
     internal val gracefulModeEnabled: Boolean,
-    internal val initializationTimeoutMs: Long
+    internal val initializationTimeoutMs: Long?
 ) {
     /**
      * Copies this configuration and preserves the initialization timeout.
@@ -61,7 +59,7 @@ data class FlagsConfiguration internal constructor(
         private var evaluationFlushIntervalMs: Long = DEFAULT_EVALUATION_FLUSH_INTERVAL_MS
         private var rumIntegrationEnabled: Boolean = true
         private var gracefulModeEnabled: Boolean = true
-        private var initializationTimeoutMs: Long = DEFAULT_INITIALIZATION_TIMEOUT_MS
+        private var initializationTimeoutMs: Long? = null
 
         /**
          * Sets whether exposures should be logged to the dedicated exposures intake endpoint.
@@ -156,7 +154,9 @@ data class FlagsConfiguration internal constructor(
          *
          * Negative values are coerced to zero.
          *
-         * @param timeoutMs The initialization timeout in milliseconds. The default is 30,000 milliseconds.
+         * If this method is not called, initialization has no timeout.
+         *
+         * @param timeoutMs The initialization timeout in milliseconds.
          * @return this [Builder] instance for method chaining.
          */
         fun initializationTimeout(timeoutMs: Long): Builder {

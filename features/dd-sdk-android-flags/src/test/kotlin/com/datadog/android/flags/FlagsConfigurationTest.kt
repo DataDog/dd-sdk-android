@@ -29,7 +29,7 @@ internal class FlagsConfigurationTest {
         assertThat(configuration.customExposureEndpoint).isNull()
         assertThat(configuration.customFlagEndpoint).isNull()
         assertThat(configuration.gracefulModeEnabled).isTrue()
-        assertThat(configuration.initializationTimeoutMs).isEqualTo(30_000L)
+        assertThat(configuration.initializationTimeoutMs).isNull()
     }
 
     @Test

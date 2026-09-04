@@ -46,9 +46,9 @@ public final class com/datadog/android/flags/FlagsClient$DefaultImpls {
 
 public final class com/datadog/android/flags/FlagsConfiguration {
 	public final fun copy (ZZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;JZZ)Lcom/datadog/android/flags/FlagsConfiguration;
-	public final fun copy (ZZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;JZZJ)Lcom/datadog/android/flags/FlagsConfiguration;
+	public final fun copy (ZZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;JZZLjava/lang/Long;)Lcom/datadog/android/flags/FlagsConfiguration;
 	public static synthetic fun copy$default (Lcom/datadog/android/flags/FlagsConfiguration;ZZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;JZZILjava/lang/Object;)Lcom/datadog/android/flags/FlagsConfiguration;
-	public static synthetic fun copy$default (Lcom/datadog/android/flags/FlagsConfiguration;ZZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;JZZJILjava/lang/Object;)Lcom/datadog/android/flags/FlagsConfiguration;
+	public static synthetic fun copy$default (Lcom/datadog/android/flags/FlagsConfiguration;ZZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;JZZLjava/lang/Long;ILjava/lang/Object;)Lcom/datadog/android/flags/FlagsConfiguration;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;

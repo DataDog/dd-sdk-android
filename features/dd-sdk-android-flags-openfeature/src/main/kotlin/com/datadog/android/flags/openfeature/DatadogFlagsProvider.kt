@@ -220,7 +220,9 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
                     FlagsClientState.Ready -> OpenFeatureProviderEvents.ProviderReady
                     FlagsClientState.Stale -> OpenFeatureProviderEvents.ProviderStale
                     is FlagsClientState.Error -> OpenFeatureProviderEvents.ProviderError(
-                        error = OpenFeatureError.ProviderFatalError()
+                        error = OpenFeatureError.GeneralError(
+                            newState.error?.message ?: "Unknown provider error"
+                        )
                     )
                 }
                 providerEvent?.let { trySend(it) }

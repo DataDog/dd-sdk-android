@@ -115,7 +115,7 @@ internal class EvaluationsManagerTest {
             assignmentsReader = mockAssignmentsDownloader,
             precomputeMapper = mockPrecomputeMapper,
             flagStateManager = mockFlagsStateManager,
-            initializationTimeoutMs = 30_000L,
+            initializationTimeoutMs = null,
             initializationTimeoutScheduler = InitializationTimeoutScheduler { _, _ -> {} }
         )
 
@@ -466,6 +466,7 @@ internal class EvaluationsManagerTest {
             verify(callback).onFailure(capture())
             assertThat(firstValue).isInstanceOf(FlagsInitializationTimeoutException::class.java)
             assertThat(firstValue.message).isEqualTo("Flags initialization timed out after 2500ms")
+            verify(mockFlagsStateManager).updateState(FlagsClientState.Error(firstValue))
         }
         verify(callback, times(0)).onSuccess()
 
@@ -489,6 +490,7 @@ internal class EvaluationsManagerTest {
             .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(emptyMap())
         val manager = createManager(
+            initializationTimeoutMs = 2_500L,
             scheduler = InitializationTimeoutScheduler { _, action ->
                 timeoutAction = action
                 { cancellationCount += 1 }
@@ -518,6 +520,7 @@ internal class EvaluationsManagerTest {
             emptyMap<String, PrecomputedFlag>()
         }
         val manager = createManager(
+            initializationTimeoutMs = 2_500L,
             scheduler = InitializationTimeoutScheduler { _, action ->
                 timeoutAction = action
                 {}
@@ -543,6 +546,7 @@ internal class EvaluationsManagerTest {
             .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(emptyMap())
         val manager = createManager(
+            initializationTimeoutMs = 2_500L,
             scheduler = InitializationTimeoutScheduler { _, _ ->
                 scheduleCount += 1
                 {}
@@ -556,6 +560,60 @@ internal class EvaluationsManagerTest {
         // Then
         assertThat(scheduleCount).isEqualTo(1)
         verify(callback, times(2)).onSuccess()
+    }
+
+    @Test
+    fun `M not schedule timeout W initialization timeout is not configured`() {
+        // Given
+        val callback = mock<EvaluationContextCallback>()
+        var scheduleCount = 0
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(any(), eq(fakeDatadogContext)))
+            .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
+        whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(emptyMap())
+        val manager = createManager(
+            initializationTimeoutMs = null,
+            scheduler = InitializationTimeoutScheduler { _, _ ->
+                scheduleCount += 1
+                {}
+            }
+        )
+
+        // When
+        manager.updateEvaluationsForContext(EvaluationContext("first", emptyMap()), callback)
+
+        // Then
+        assertThat(scheduleCount).isZero()
+        verify(callback).onSuccess()
+    }
+
+    @Test
+    fun `M update state to ERROR W timeout {callback is null}`() {
+        // Given
+        var timeoutAction: (() -> Unit)? = null
+        var operation: Runnable? = null
+        whenever(mockExecutorService.execute(any())).thenAnswer {
+            operation = it.getArgument(0)
+            null
+        }
+        val manager = createManager(
+            initializationTimeoutMs = 2_500L,
+            scheduler = InitializationTimeoutScheduler { _, action ->
+                timeoutAction = action
+                {}
+            }
+        )
+
+        // When
+        manager.updateEvaluationsForContext(EvaluationContext("first", emptyMap()), callback = null)
+        checkNotNull(timeoutAction).invoke()
+
+        // Then
+        argumentCaptor<FlagsClientState>().apply {
+            verify(mockFlagsStateManager, times(2)).updateState(capture())
+            val errorState = allValues.filterIsInstance<FlagsClientState.Error>().single()
+            assertThat(errorState.error).isInstanceOf(FlagsInitializationTimeoutException::class.java)
+        }
+        assertThat(operation).isNotNull()
     }
 
     @Test
@@ -576,7 +634,7 @@ internal class EvaluationsManagerTest {
             assignmentsReader = mockAssignmentsDownloader,
             precomputeMapper = mockPrecomputeMapper,
             flagStateManager = realStateManager,
-            initializationTimeoutMs = 30_000L,
+            initializationTimeoutMs = null,
             initializationTimeoutScheduler = InitializationTimeoutScheduler { _, _ -> {} }
         )
 
@@ -663,7 +721,7 @@ internal class EvaluationsManagerTest {
             assignmentsReader = mockAssignmentsDownloader,
             precomputeMapper = mockPrecomputeMapper,
             flagStateManager = mockFlagsStateManager,
-            initializationTimeoutMs = 30_000L,
+            initializationTimeoutMs = null,
             initializationTimeoutScheduler = InitializationTimeoutScheduler { _, _ -> {} }
         )
 
@@ -680,7 +738,7 @@ internal class EvaluationsManagerTest {
     // endregion
 
     private fun createManager(
-        initializationTimeoutMs: Long = 30_000L,
+        initializationTimeoutMs: Long? = null,
         scheduler: InitializationTimeoutScheduler
     ): EvaluationsManager = EvaluationsManager(
         sdkCore = mockSdkCore,
