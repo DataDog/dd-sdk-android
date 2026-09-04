@@ -204,7 +204,7 @@ internal class DefaultTimeseriesCollector(
                 foregroundRumContext?.let { block(currentGeneration, it) }
             }
 
-            private fun isCollectionAllowed(): Boolean = synchronized(this) {
+            private fun isCollectionAllowed(): Boolean {
                 return foreground && sessionActive && foregroundRumContext != null
             }
         }
