@@ -878,7 +878,7 @@ internal class RumFeatureTest {
     ) {
         // Given
         fakeConfiguration = fakeConfiguration.copy(
-            timeseriesConfiguration = TimeseriesConfiguration.Builder().build()
+            timeseriesConfiguration = TimeseriesConfiguration.DEFAULT
         )
         testedFeature = RumFeature(
             mockSdkCore,
@@ -930,7 +930,7 @@ internal class RumFeatureTest {
         fakeConfiguration = fakeConfiguration.copy(
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER,
             slowFramesConfiguration = null,
-            timeseriesConfiguration = TimeseriesConfiguration.Builder().build()
+            timeseriesConfiguration = TimeseriesConfiguration.DEFAULT
         )
         testedFeature = RumFeature(
             mockSdkCore,

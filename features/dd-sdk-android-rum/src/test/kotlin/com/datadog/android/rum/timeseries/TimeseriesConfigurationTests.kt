@@ -16,9 +16,9 @@ import org.junit.jupiter.params.provider.EnumSource
 internal class TimeseriesConfigurationTests {
 
     @Test
-    fun `M collect all types W build() { collectOnly not called }`() {
+    fun `M collect all types W constructor() { all types passed }`() {
         // When
-        val config = TimeseriesConfiguration.Builder().build()
+        val config = TimeseriesConfiguration(TimeseriesType.entries.toSet())
 
         // Then
         assertThat(config.enabledTypes).containsExactlyInAnyOrderElementsOf(TimeseriesType.entries.toList())
@@ -26,22 +26,18 @@ internal class TimeseriesConfigurationTests {
 
     @ParameterizedTest
     @EnumSource(TimeseriesType::class)
-    fun `M collect selected type W collectOnly()`(fakeType: TimeseriesType) {
+    fun `M collect selected type W constructor()`(fakeType: TimeseriesType) {
         // When
-        val config = TimeseriesConfiguration.Builder()
-            .collectOnly(fakeType)
-            .build()
+        val config = TimeseriesConfiguration(setOf(fakeType))
 
         // Then
         assertThat(config.enabledTypes).containsExactly(fakeType)
     }
 
     @Test
-    fun `M collect no types W collectOnly() { empty array }`() {
+    fun `M collect no types W constructor() { empty set }`() {
         // When
-        val config = TimeseriesConfiguration.Builder()
-            .collectOnly(*emptyArray())
-            .build()
+        val config = TimeseriesConfiguration(emptySet())
 
         // Then
         assertThat(config.enabledTypes).isEmpty()
