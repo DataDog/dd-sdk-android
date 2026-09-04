@@ -485,13 +485,6 @@ def main():
                 and blocks_value.isdigit() and runs_value.isdigit()
                 and int(blocks_value) >= 1 and int(runs_value) >= 1):
             declared = int(blocks_value)
-            if declared % 2 != 0:
-                raise SystemExit(
-                    "refusing to recover an interrupted run whose registered design "
-                    f"declares blocks={declared}.\n"
-                    "  `blocks` must be even so the collector's ABBA schedule is "
-                    "counterbalanced."
-                )
             whole = complete_block_ids(list(csv.DictReader(per_file[0][1])),
                                        a.baseline, a.treatment, int(runs_value))
             # The collector is sequential: it runs block 1, then 2, and an invalid
@@ -528,7 +521,7 @@ def main():
             # needs 4, so 3 whole blocks floor to 2 and are not enough. And strictly
             # fewer than declared: with nothing missing there is no shortfall, so the
             # abort happened after collection and is unexplained by this file.
-            if len(ordered) >= 4 and len(ordered) < declared:
+            if len(ordered) >= 4 and len(ordered) < declared and declared % 2 == 0:
                 recovery = {
                     "analyzed": set(ordered),
                     "declared": declared,
@@ -732,6 +725,17 @@ def main():
                 f"runs={runs_value or '<absent>'}"
             )
             continue
+        # The collector refuses an odd `blocks` because ABBA cannot counterbalance
+        # one, so an odd declaration is a header it cannot have written. Checked here
+        # rather than in the recovery path: this loop sees every file, including the
+        # pooled case the recovery path never reaches, and it is where the other
+        # impossible declarations are already refused with one message.
+        if int(blocks_value) % 2 != 0:
+            malformed_matrix_metadata.append(
+                f"  {name}: blocks={blocks_value} is odd, so the ABBA schedule it "
+                f"declares cannot be counterbalanced"
+            )
+            continue
         want_blocks, want_runs = int(blocks_value), int(runs_value)
         cell_runs = defaultdict(list)
         for r in csv.DictReader(body):
@@ -789,8 +793,10 @@ def main():
         raise SystemExit(
             "refusing to analyze malformed experiment matrix metadata:\n"
             + "\n".join(malformed_matrix_metadata)
-            + "\n  `blocks` and `runs` must both be positive integers so the declared"
-              "\n  matrix can be validated."
+            + "\n  `blocks` and `runs` must both be positive integers, and `blocks`"
+              "\n  must be even, so the declared matrix can be validated and its ABBA"
+              "\n  schedule counterbalanced. The collector enforces both, so a header"
+              "\n  breaking either is not one it wrote."
         )
     if shortfalls:
         print("!" * 78)

@@ -3448,15 +3448,51 @@ class AbStatsRegressionTests(unittest.TestCase):
         self.assertEqual(clean.returncode, 0, clean.stderr)
         self.assertNotIn("not a collected prefix", clean.stderr)
 
-    def test_recovery_refuses_an_odd_declared_block_count(self) -> None:
-        """Recovery cannot legitimize a design the collector refuses to register."""
+    def test_an_odd_declared_block_count_is_refused_for_every_file(self) -> None:
+        """The collector refuses an odd `blocks`, so such a header is not one it wrote.
+
+        This was first added inside the recovery decision, which put it on one path
+        only: it fired even when recovery was never on the table (two whole blocks
+        against a declared five), it preempted `--allow-aborted` while saying it was
+        refusing "recovery", it skipped the abort trailer its sibling refusal prints
+        deliberately, and it never saw a pooled run at all. It belongs with the other
+        impossible-declaration checks, which run over every file with one message.
+        """
+        # Interrupted, with enough whole blocks that recovery would have engaged.
         interrupted = self.run_stats(self.aborted_csv(4, declared_blocks=5))
         self.assertNotEqual(interrupted.returncode, 0)
-        self.assertIn("refusing to recover an interrupted run", interrupted.stderr)
-        self.assertIn("blocks=5", interrupted.stderr)
-        self.assertIn("must be even", interrupted.stderr)
         self.assertNotIn("ANALYZED OVER", interrupted.stdout)
         self.assertNotIn("95% CI", interrupted.stdout)
+        # The abort is the specific fact and still speaks first, trailer included.
+        self.assertIn("refusing to analyze an aborted run", interrupted.stderr)
+        self.assertIn("RUN ABORTED (exit 1)", interrupted.stdout)
+
+        # Interrupted, with too few whole blocks for recovery to have been considered:
+        # same treatment, not a parity wall raised before anything else runs.
+        too_few = self.run_stats(self.aborted_csv(2, declared_blocks=5))
+        self.assertNotEqual(too_few.returncode, 0)
+        self.assertIn("refusing to analyze an aborted run", too_few.stderr)
+
+        # A COMPLETE run declaring an odd count: previously accepted and analyzed,
+        # caught only downstream as "not counterbalanced".
+        complete = self.run_stats(self.benchmark_csv(
+            metadata=self.recoverable_metadata(3), block_count=3, runs_per_cell=2))
+        self.assertNotEqual(complete.returncode, 0)
+        self.assertIn("malformed experiment matrix metadata", complete.stderr)
+        self.assertIn("blocks=3 is odd", complete.stderr)
+        self.assertIn("must be even", complete.stderr)
+
+        # And a pooled pair, which the recovery path could never see.
+        odd_meta = self.recoverable_metadata(3)
+        pooled = self.run_stats_files([
+            self.benchmark_csv(metadata=odd_meta, block_count=3, runs_per_cell=2),
+            # A different baseline level, so the two files are not byte-identical --
+            # that guard fires earlier and would mask what this case is about.
+            self.benchmark_csv(metadata=odd_meta, block_count=3, runs_per_cell=2,
+                               baseline_offset=200),
+        ])
+        self.assertNotEqual(pooled.returncode, 0)
+        self.assertIn("blocks=3 is odd", pooled.stderr)
 
     def test_interrupted_run_below_the_paired_minimum_is_still_refused(self) -> None:
         """Three whole blocks floor to two, and a paired interval needs three."""

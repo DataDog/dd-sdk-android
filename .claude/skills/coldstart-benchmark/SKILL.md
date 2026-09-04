@@ -274,6 +274,9 @@ reportable. Report it only with the two things the tool prints beside it: the bl
 design's** -- it is the power actually achieved. Never describe such a run as complete, and say
 that re-running the full design is better.
 
+A header the collector cannot have written is refused for every file and regardless of flags:
+an odd `blocks` (ABBA cannot counterbalance one), or a non-positive `blocks`/`runs`.
+
 Refused, not reportable: fewer than four whole blocks; a run whose declared matrix is whole but
 which aborted anyway; an interrupted run passed alongside other CSVs. `--allow-aborted` inspects
 any of them diagnostically and suppresses the primary interval.
