@@ -31,8 +31,11 @@ import com.datadog.android.profiling.internal.quota.NoOpQuotaChecker
 import com.datadog.android.profiling.internal.quota.ProfilingQuotaChecker
 import com.datadog.android.profiling.internal.quota.QuotaChecker
 import com.datadog.android.profiling.internal.quota.QuotaResult
+import com.datadog.android.profiling.internal.trigger.NoOpPendingTriggerProfiles
+import com.datadog.android.profiling.internal.trigger.PendingTriggerProfiles
 import java.util.Locale
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -50,6 +53,9 @@ internal class ProfilingFeature(
     internal var dataWriter: ProfilingWriter = NoOpProfilingWriter()
 
     internal val pendingRumEvents = PendingRumEventsBuffer()
+
+    @Volatile
+    internal var pendingTriggerProfiles: PendingTriggerProfiles = NoOpPendingTriggerProfiles()
 
     @Volatile
     private var isLaunchProfilingActive: Boolean = false
@@ -105,7 +111,7 @@ internal class ProfilingFeature(
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
             context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning()
         }
-        dataWriter = createDataWriter(sdkCore)
+        dataWriter = ProfilingDataWriter(sdkCore)
 
         val quotaCallFactory = sdkCore.createOkHttpCallFactory {
             callTimeout(QUOTA_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
@@ -130,6 +136,10 @@ internal class ProfilingFeature(
             start(launchProfilingActive = profiler.isRunning())
         }
         continuousProfilingScheduler = scheduler
+
+        pendingTriggerProfiles = createPendingTriggerProfiles(
+            executor = profiler.scheduledExecutorService
+        )
 
         sdkCore.setContextUpdateReceiver(this)
 
@@ -156,6 +166,8 @@ internal class ProfilingFeature(
         quotaChecker = NoOpQuotaChecker()
         quotaExecutor?.shutdownNow()
         quotaExecutor = null
+        pendingTriggerProfiles.stop()
+        pendingTriggerProfiles = NoOpPendingTriggerProfiles()
         lastQuotaResult = null
         lastSeenRumSessionId = null
         pendingRumEvents.clear()
@@ -185,6 +197,7 @@ internal class ProfilingFeature(
                 if (isRecordingProfile()) {
                     pendingRumEvents.add(event)
                 }
+                pendingTriggerProfiles.addRumGatingEvent(event)
             }
 
             else -> sdkCore.internalLogger.log(
@@ -223,11 +236,12 @@ internal class ProfilingFeature(
         }
     }
 
-    override fun onAnrDetected(event: ProfilingAnrDetectedEvent) {
+    override fun onAnrDetected(event: ProfilingAnrDetectedEvent, result: PerfettoResult) {
         // The ANR event should be forwarded to RUM only when profiling is actually running.
         if (isLaunchProfilingActive || continuousProfilingScheduler?.isActive == true) {
             sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.sendEvent(event)
         }
+        pendingTriggerProfiles.addProfilingResult(result)
     }
 
     private fun onTtidEvent() {
@@ -345,8 +359,18 @@ internal class ProfilingFeature(
         )
     }
 
-    private fun createDataWriter(sdkCore: FeatureSdkCore): ProfilingDataWriter {
-        return ProfilingDataWriter(sdkCore)
+    /**
+     * Builds a [PendingTriggerProfiles] wired to dispatch matched pairs to [dataWriter].
+     * [executor] is null before [onInitialize] runs and after [onStop] — the sweep simply
+     * never runs in that case.
+     */
+    @Suppress("UnusedParameter")
+    private fun createPendingTriggerProfiles(
+        executor: ScheduledExecutorService?
+    ): PendingTriggerProfiles {
+        // TODO RUM-18341: replace with PendingTriggerProfilesImpl once the buffer
+        // and matching logic is implemented.
+        return NoOpPendingTriggerProfiles()
     }
 
     internal fun propagateQuotaResult(result: QuotaResult) {

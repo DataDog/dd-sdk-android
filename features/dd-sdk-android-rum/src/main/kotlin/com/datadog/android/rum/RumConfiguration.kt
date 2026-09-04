@@ -416,13 +416,10 @@ data class RumConfiguration internal constructor(
         /**
          * Enables device timeseries collection.
          *
-         * By default, all supported timeseries types are collected. Use
-         * [TimeseriesConfiguration.Builder.collectOnly] to restrict collection to specific types.
-         *
          * @param configuration configuration for timeseries collection.
          */
         @ExperimentalRumApi
-        internal fun setTimeseriesConfiguration(
+        fun setTimeseriesConfiguration(
             configuration: TimeseriesConfiguration
         ): Builder {
             rumConfig = rumConfig.copy(timeseriesConfiguration = configuration)

@@ -118,6 +118,7 @@ public final class com/datadog/android/rum/RumConfiguration$Builder {
 	public final fun setSessionSampleRate (F)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setSlowFramesConfiguration (Lcom/datadog/android/rum/configuration/SlowFramesConfiguration;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setTelemetrySampleRate (F)Lcom/datadog/android/rum/RumConfiguration$Builder;
+	public final fun setTimeseriesConfiguration (Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setViewEventMapper (Lcom/datadog/android/rum/event/ViewEventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setVitalEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setVitalEventMapper (Lcom/datadog/android/event/EventMapper;Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
@@ -11886,12 +11887,7 @@ public abstract interface class com/datadog/android/rum/startup/AppStartupActivi
 
 public final class com/datadog/android/rum/timeseries/TimeseriesConfiguration {
 	public static final field Companion Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration$Companion;
-}
-
-public final class com/datadog/android/rum/timeseries/TimeseriesConfiguration$Builder {
-	public fun <init> ()V
-	public final fun build ()Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration;
-	public final fun collectOnly ([Lcom/datadog/android/rum/timeseries/TimeseriesType;)Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration$Builder;
+	public fun <init> (Ljava/util/Set;)V
 }
 
 public final class com/datadog/android/rum/timeseries/TimeseriesConfiguration$Companion {

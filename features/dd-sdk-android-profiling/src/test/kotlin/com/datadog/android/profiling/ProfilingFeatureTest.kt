@@ -43,6 +43,8 @@ import com.datadog.android.profiling.internal.quota.QuotaResult
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
 import com.datadog.android.profiling.internal.time.MutableTimeProvider
+import com.datadog.android.profiling.internal.trigger.NoOpPendingTriggerProfiles
+import com.datadog.android.profiling.internal.trigger.PendingTriggerProfiles
 import com.datadog.android.profiling.internal.trigger.ProfilingTriggerRegistrar
 import com.datadog.android.profiling.utils.config.MainLooperTestConfiguration
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -155,6 +157,9 @@ internal class ProfilingFeatureTest {
 
     @Mock
     private lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
+
+    @Mock
+    private lateinit var mockPendingTriggerProfiles: PendingTriggerProfiles
 
     @Forgery
     private lateinit var fakeConfiguration: ProfilingConfiguration
@@ -594,6 +599,20 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
+    fun `M stop and reset pendingTriggerProfiles W onStop()`() {
+        // Given
+        testedFeature.onInitialize(mockContext)
+        testedFeature.pendingTriggerProfiles = mockPendingTriggerProfiles
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        verify(mockPendingTriggerProfiles).stop()
+        assertThat(testedFeature.pendingTriggerProfiles).isInstanceOf(NoOpPendingTriggerProfiles::class.java)
+    }
+
+    @Test
     fun `M start continuous cycle W profiler result received {TTID session unsampled}`() {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
@@ -872,6 +891,19 @@ internal class ProfilingFeatureTest {
         // Then
         assertThat(testedFeature.pendingRumEvents.pendingLongTasks).isEmpty()
         assertThat(testedFeature.pendingRumEvents.pendingAnrEvents).isEmpty()
+    }
+
+    @Test
+    fun `M forward gating event to pendingTriggerProfiles W onReceive() {RumAnrEvent}`() {
+        // Given
+        testedFeature.onInitialize(mockContext)
+        testedFeature.pendingTriggerProfiles = mockPendingTriggerProfiles
+
+        // When
+        testedFeature.onReceive(fakeRumAnrEvent)
+
+        // Then
+        verify(mockPendingTriggerProfiles).addRumGatingEvent(fakeRumAnrEvent)
     }
 
     @Test
@@ -1304,7 +1336,8 @@ internal class ProfilingFeatureTest {
 
     @Test
     fun `M forward ProfilingAnrDetectedEvent to RUM W onAnrDetected() {launch profiling active}`(
-        @Forgery fakeEvent: ProfilingAnrDetectedEvent
+        @Forgery fakeEvent: ProfilingAnrDetectedEvent,
+        @Forgery fakeResult: PerfettoResult
     ) {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
@@ -1312,7 +1345,7 @@ internal class ProfilingFeatureTest {
         testedFeature.onInitialize(mockContext)
 
         // When
-        testedFeature.onAnrDetected(fakeEvent)
+        testedFeature.onAnrDetected(fakeEvent, fakeResult)
 
         // Then
         verify(mockRumFeatureScope).sendEvent(fakeEvent)
@@ -1320,7 +1353,8 @@ internal class ProfilingFeatureTest {
 
     @Test
     fun `M drop ProfilingAnrDetectedEvent W onAnrDetected() {profiling inactive}`(
-        @Forgery fakeEvent: ProfilingAnrDetectedEvent
+        @Forgery fakeEvent: ProfilingAnrDetectedEvent,
+        @Forgery fakeResult: PerfettoResult
     ) {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
@@ -1328,10 +1362,28 @@ internal class ProfilingFeatureTest {
         testedFeature.onInitialize(mockContext)
 
         // When
-        testedFeature.onAnrDetected(fakeEvent)
+        testedFeature.onAnrDetected(fakeEvent, fakeResult)
 
         // Then
         verify(mockRumFeatureScope, never()).sendEvent(any())
+    }
+
+    @Test
+    fun `M forward profiling result to pendingTriggerProfiles W onAnrDetected()`(
+        @Forgery fakeEvent: ProfilingAnrDetectedEvent,
+        @Forgery fakeResult: PerfettoResult
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning()) doReturn false
+        testedFeature.onInitialize(mockContext)
+        testedFeature.pendingTriggerProfiles = mockPendingTriggerProfiles
+
+        // When
+        testedFeature.onAnrDetected(fakeEvent, fakeResult)
+
+        // Then
+        verify(mockPendingTriggerProfiles).addProfilingResult(fakeResult)
     }
 
     @Test
