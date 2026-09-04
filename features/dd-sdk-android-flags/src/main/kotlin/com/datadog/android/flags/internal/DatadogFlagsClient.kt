@@ -71,7 +71,7 @@ internal class DatadogFlagsClient(
      * @param context The evaluation context containing targeting key and attributes.
      * Must contain a valid targeting key; invalid contexts are logged and ignored.
      * @param callback Optional callback to notify when the operation completes or fails.
-     * Invoked on a background executor thread after the state transition.
+     * Invoked on a background executor thread. See [EvaluationContextCallback] for timeout behavior.
      */
     override fun setEvaluationContext(context: EvaluationContext, callback: EvaluationContextCallback?) {
         evaluationsManager.updateEvaluationsForContext(context, callback)

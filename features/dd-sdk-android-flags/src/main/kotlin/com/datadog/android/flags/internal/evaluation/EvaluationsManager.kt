@@ -19,6 +19,45 @@ import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.atomic.AtomicBoolean
+
+internal fun interface InitializationTimeoutScheduler {
+    fun schedule(timeoutMs: Long, action: () -> Unit): () -> Unit
+}
+
+internal class FlagsInitializationTimeoutException(timeoutMs: Long) :
+    RuntimeException("Flags initialization timed out after ${timeoutMs}ms")
+
+private class InitializationCompletion(private var callback: EvaluationContextCallback?) {
+    private val lock = Any()
+    private var isPending = true
+    private var cancelTimeout: (() -> Unit)? = null
+
+    fun armTimeoutCancellation(cancellation: () -> Unit) {
+        val cancelNow = synchronized(lock) {
+            if (isPending) {
+                cancelTimeout = cancellation
+                false
+            } else {
+                true
+            }
+        }
+        if (cancelNow) cancellation()
+    }
+
+    fun take(): EvaluationContextCallback? {
+        val outcome = synchronized(lock) {
+            if (!isPending) return null
+            isPending = false
+            val outcome = callback to cancelTimeout
+            callback = null
+            cancelTimeout = null
+            outcome
+        }
+        outcome.second?.invoke()
+        return outcome.first
+    }
+}
 
 /**
  * Orchestrates evaluations for a given context and stores the results in the repository.
@@ -34,6 +73,8 @@ import java.util.concurrent.ExecutorService
  * @param assignmentsReader handles reading assignments for the context.
  * @param precomputeMapper transforms network responses into internal flag format
  * @param flagStateManager channel for notifying state change listeners
+ * @param initializationTimeoutMs maximum duration of the first context operation
+ * @param initializationTimeoutScheduler schedules the first context timeout
  */
 internal class EvaluationsManager(
     private val sdkCore: FeatureSdkCore,
@@ -42,8 +83,12 @@ internal class EvaluationsManager(
     private val flagsRepository: FlagsRepository,
     private val assignmentsReader: PrecomputedAssignmentsReader,
     private val precomputeMapper: PrecomputeMapper,
-    private val flagStateManager: FlagsStateManager
+    private val flagStateManager: FlagsStateManager,
+    private val initializationTimeoutMs: Long,
+    private val initializationTimeoutScheduler: InitializationTimeoutScheduler
 ) {
+    private val didStartInitialization = AtomicBoolean(false)
+
     /**
      * Processes a new evaluation context by fetching flags and storing atomically.
      *
@@ -59,6 +104,16 @@ internal class EvaluationsManager(
      * @param callback Optional callback invoked when the context is set and the flags have been fetched successfully or not.
      */
     fun updateEvaluationsForContext(context: EvaluationContext, callback: EvaluationContextCallback? = null) {
+        val initializationCompletion = if (didStartInitialization.compareAndSet(false, true)) {
+            InitializationCompletion(callback).also { completion ->
+                val cancelTimeout = initializationTimeoutScheduler.schedule(initializationTimeoutMs) {
+                    completion.take()?.onFailure(FlagsInitializationTimeoutException(initializationTimeoutMs))
+                }
+                completion.armTimeoutCancellation(cancelTimeout)
+            }
+        } else {
+            null
+        }
         flagStateManager.updateState(FlagsClientState.Reconciling)
 
         sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)
@@ -85,7 +140,9 @@ internal class EvaluationsManager(
                         )
 
                         flagStateManager.updateState(FlagsClientState.Ready)
-                        callback?.onSuccess()
+                        val completionCallback = initializationCompletion?.take()
+                            ?: if (initializationCompletion == null) callback else null
+                        completionCallback?.onSuccess()
                     } else {
                         internalLogger.log(
                             InternalLogger.Level.WARN,
@@ -102,7 +159,9 @@ internal class EvaluationsManager(
                         } else {
                             flagStateManager.updateState(FlagsClientState.Error(throwable))
                         }
-                        callback?.onFailure(throwable)
+                        val completionCallback = initializationCompletion?.take()
+                            ?: if (initializationCompletion == null) callback else null
+                        completionCallback?.onFailure(throwable)
                     }
                 }
             }

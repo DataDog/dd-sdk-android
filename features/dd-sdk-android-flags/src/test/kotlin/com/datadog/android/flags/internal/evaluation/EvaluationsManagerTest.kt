@@ -114,7 +114,9 @@ internal class EvaluationsManagerTest {
             flagsRepository = mockFlagsRepository,
             assignmentsReader = mockAssignmentsDownloader,
             precomputeMapper = mockPrecomputeMapper,
-            flagStateManager = mockFlagsStateManager
+            flagStateManager = mockFlagsStateManager,
+            initializationTimeoutMs = 30_000L,
+            initializationTimeoutScheduler = InitializationTimeoutScheduler { _, _ -> {} }
         )
 
         whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)) doReturn mockFlagsFeatureScope
@@ -431,6 +433,132 @@ internal class EvaluationsManagerTest {
     }
 
     @Test
+    fun `M fail initialization callback W timeout { operation completes late }`() {
+        // Given
+        val context = EvaluationContext(fakeTargetingKey, emptyMap())
+        val callback = mock<EvaluationContextCallback>()
+        var scheduledTimeoutMs: Long? = null
+        var timeoutAction: (() -> Unit)? = null
+        var operation: Runnable? = null
+        whenever(mockExecutorService.execute(any())).thenAnswer {
+            operation = it.getArgument(0)
+            null
+        }
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
+            .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
+        whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(emptyMap())
+        val manager = createManager(
+            initializationTimeoutMs = 2_500L,
+            scheduler = InitializationTimeoutScheduler { timeoutMs, action ->
+                scheduledTimeoutMs = timeoutMs
+                timeoutAction = action
+                {}
+            }
+        )
+
+        // When
+        manager.updateEvaluationsForContext(context, callback)
+        checkNotNull(timeoutAction).invoke()
+
+        // Then
+        assertThat(scheduledTimeoutMs).isEqualTo(2_500L)
+        argumentCaptor<Throwable>().apply {
+            verify(callback).onFailure(capture())
+            assertThat(firstValue).isInstanceOf(FlagsInitializationTimeoutException::class.java)
+            assertThat(firstValue.message).isEqualTo("Flags initialization timed out after 2500ms")
+        }
+        verify(callback, times(0)).onSuccess()
+
+        // When
+        checkNotNull(operation).run()
+
+        // Then
+        verify(mockFlagsStateManager).updateState(FlagsClientState.Ready)
+        verify(callback, times(0)).onSuccess()
+        verify(callback, times(1)).onFailure(any())
+    }
+
+    @Test
+    fun `M cancel initialization timeout W operation completes first`() {
+        // Given
+        val context = EvaluationContext(fakeTargetingKey, emptyMap())
+        val callback = mock<EvaluationContextCallback>()
+        var timeoutAction: (() -> Unit)? = null
+        var cancellationCount = 0
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
+            .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
+        whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(emptyMap())
+        val manager = createManager(
+            scheduler = InitializationTimeoutScheduler { _, action ->
+                timeoutAction = action
+                { cancellationCount += 1 }
+            }
+        )
+
+        // When
+        manager.updateEvaluationsForContext(context, callback)
+        checkNotNull(timeoutAction).invoke()
+
+        // Then
+        assertThat(cancellationCount).isEqualTo(1)
+        verify(callback).onSuccess()
+        verify(callback, times(0)).onFailure(any())
+    }
+
+    @Test
+    fun `M keep initialization timeout active W decoding assignments`() {
+        // Given
+        val context = EvaluationContext(fakeTargetingKey, emptyMap())
+        val callback = mock<EvaluationContextCallback>()
+        var timeoutAction: (() -> Unit)? = null
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
+            .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
+        whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenAnswer {
+            checkNotNull(timeoutAction).invoke()
+            emptyMap<String, PrecomputedFlag>()
+        }
+        val manager = createManager(
+            scheduler = InitializationTimeoutScheduler { _, action ->
+                timeoutAction = action
+                {}
+            }
+        )
+
+        // When
+        manager.updateEvaluationsForContext(context, callback)
+
+        // Then
+        verify(callback).onFailure(any<FlagsInitializationTimeoutException>())
+        verify(callback, times(0)).onSuccess()
+        verify(mockFlagsRepository).setFlagsAndContext(context, emptyMap())
+        verify(mockFlagsStateManager).updateState(FlagsClientState.Ready)
+    }
+
+    @Test
+    fun `M schedule timeout once W context changes after initialization`() {
+        // Given
+        val callback = mock<EvaluationContextCallback>()
+        var scheduleCount = 0
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(any(), eq(fakeDatadogContext)))
+            .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
+        whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(emptyMap())
+        val manager = createManager(
+            scheduler = InitializationTimeoutScheduler { _, _ ->
+                scheduleCount += 1
+                {}
+            }
+        )
+
+        // When
+        manager.updateEvaluationsForContext(EvaluationContext("first", emptyMap()), callback)
+        manager.updateEvaluationsForContext(EvaluationContext("second", emptyMap()), callback)
+
+        // Then
+        assertThat(scheduleCount).isEqualTo(1)
+        verify(callback, times(2)).onSuccess()
+    }
+
+    @Test
     fun `M have state READY when callback invoked W updateEvaluationsForContext() { success }`() {
         // Given
         val realStateManager = FlagsStateManager(
@@ -447,7 +575,9 @@ internal class EvaluationsManagerTest {
             flagsRepository = mockFlagsRepository,
             assignmentsReader = mockAssignmentsDownloader,
             precomputeMapper = mockPrecomputeMapper,
-            flagStateManager = realStateManager
+            flagStateManager = realStateManager,
+            initializationTimeoutMs = 30_000L,
+            initializationTimeoutScheduler = InitializationTimeoutScheduler { _, _ -> {} }
         )
 
         val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
@@ -532,7 +662,9 @@ internal class EvaluationsManagerTest {
             flagsRepository = realRepository,
             assignmentsReader = mockAssignmentsDownloader,
             precomputeMapper = mockPrecomputeMapper,
-            flagStateManager = mockFlagsStateManager
+            flagStateManager = mockFlagsStateManager,
+            initializationTimeoutMs = 30_000L,
+            initializationTimeoutScheduler = InitializationTimeoutScheduler { _, _ -> {} }
         )
 
         // When
@@ -546,6 +678,21 @@ internal class EvaluationsManagerTest {
     }
 
     // endregion
+
+    private fun createManager(
+        initializationTimeoutMs: Long = 30_000L,
+        scheduler: InitializationTimeoutScheduler
+    ): EvaluationsManager = EvaluationsManager(
+        sdkCore = mockSdkCore,
+        executorService = mockExecutorService,
+        internalLogger = mockInternalLogger,
+        flagsRepository = mockFlagsRepository,
+        assignmentsReader = mockAssignmentsDownloader,
+        precomputeMapper = mockPrecomputeMapper,
+        flagStateManager = mockFlagsStateManager,
+        initializationTimeoutMs = initializationTimeoutMs,
+        initializationTimeoutScheduler = scheduler
+    )
 
     companion object {
         private const val EMPTY_FLAGS_RESPONSE_JSON = "{\"data\": {\"attributes\": {\"flags\": {}}}}"

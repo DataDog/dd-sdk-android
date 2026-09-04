@@ -98,7 +98,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
      * The method suspends while the [FlagsClient] in turn, takes the context and fetches the flags from the server.
      *
      * @param initialContext The initial evaluation context to set (optional)
-     * @throws OpenFeatureError if initialization fails
+     * @throws OpenFeatureError if initialization fails or reaches the configured Flags initialization timeout
      */
     override suspend fun initialize(initialContext: OpenFeatureEvaluationContext?) {
         val datadogContext = initialContext?.toDatadogEvaluationContext() ?: DatadogEvaluationContext.EMPTY
