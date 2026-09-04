@@ -789,10 +789,12 @@ internal class RumFeature(
      * the real monitor is registered. Otherwise we create the detector here as usual.
      *
      * Whatever the pre-launch detector captured before this SDK existed was captured with a
-     * permissive predicate, since no core's configuration is known that early. Reusing it is still
-     * correct: [PreLaunchRumAppStartupDetector.attach] re-applies this core's predicate to both
-     * the buffered events and everything the detector observes afterwards, so a detector created
-     * here would see exactly the same launches.
+     * permissive predicate, since no core's configuration is known that early.
+     * [PreLaunchRumAppStartupDetector.attach] re-applies this core's predicate to the buffered
+     * events and to everything the detector observes afterwards, so nothing this core excluded is
+     * ever reported. It does not reconcile the state the detector accumulated under the permissive
+     * predicate, which costs a launch in one narrow case documented on
+     * `PreLaunchRumAppStartupDetector.install()`.
      */
     private fun initRumAppStartupDetector() {
         if (!PreLaunchRumAppStartupDetector.isInstalled) {

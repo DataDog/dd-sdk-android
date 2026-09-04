@@ -136,12 +136,14 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
             // forwardIfAccepted() decides who actually hears about it. Before any core attaches
             // nothing is known about the user's configuration, so everything is accepted.
             //
-            // Known limitation: the underlying detector keeps a single pending scenario, so with
-            // two cores whose predicates disagree, a launch opened for an Activity only core A
-            // wants occupies that slot — a later Activity only core B wants is forwarded into
-            // the same scenario rather than opening one of its own. Core B then sees a launch
-            // measured from A's Activity, and per-listener filtering drops it. Requires two
-            // cores, divergent predicates and a multi-Activity launch to hit.
+            // Known limitation: attach() filters the events a core receives, but leaves the
+            // pending scenario and tracked Activities the detector accumulated under this
+            // permissive predicate untouched. An Activity a core excludes can therefore hold the
+            // single pending scenario slot, so a qualifying Activity created while it is still
+            // alive is folded into that scenario rather than opening its own, and delivery
+            // filtering drops the whole launch. Left as-is: it needs a custom
+            // AppStartupActivityPredicate and a multi-Activity launch, neither of which the
+            // cross-platform SDKs this module exists for produce.
             appStartupActivityPredicate = { activity ->
                 registrations.isEmpty() || registrations.any { it.activityPredicate(activity) }
             },
