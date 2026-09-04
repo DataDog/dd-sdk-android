@@ -24,6 +24,7 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody
 import okhttp3.ResponseBody.Companion.toResponseBody
+import okio.Timeout
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -36,14 +37,17 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.IOException
 import java.net.UnknownHostException
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -140,6 +144,154 @@ internal class PrecomputedAssignmentsDownloaderTest {
 
         // Then
         verify(mockRequestFactory).create(fakeEvaluationContext, fakeDatadogContext)
+    }
+
+    // endregion
+
+    // region readPrecomputedFlags() - Request timeout
+
+    @Test
+    fun `M apply request timeout W readPrecomputedFlags() { no existing timeout }`(
+        @StringForgery fakeResponseBody: String,
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
+    ) {
+        // Given
+        val requestTimeout = mock<Timeout>()
+        val fakeRequest = Request.Builder().url(fakeUrl).build()
+        val fakeResponse = createSuccessfulResponse(fakeResponseBody, fakeUrl)
+        testedDownloader = PrecomputedAssignmentsDownloader(
+            callFactory = mockCallFactory,
+            internalLogger = mockInternalLogger,
+            requestFactory = mockRequestFactory,
+            requestTimeoutMs = 1_500
+        )
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext)).doReturn(fakeRequest)
+        whenever(mockCallFactory.newCall(fakeRequest)).doReturn(mockCall)
+        whenever(mockCall.timeout()).doReturn(requestTimeout)
+        whenever(requestTimeout.timeout(1_500, TimeUnit.MILLISECONDS)).doReturn(requestTimeout)
+        whenever(mockCall.execute()).doReturn(fakeResponse)
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+
+        // Then
+        assertThat(result).isEqualTo(fakeResponseBody)
+        verify(requestTimeout).timeout(1_500, TimeUnit.MILLISECONDS)
+    }
+
+    @Test
+    fun `M preserve shorter call timeout W readPrecomputedFlags()`(
+        @StringForgery fakeResponseBody: String,
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
+    ) {
+        // Given
+        val requestTimeout = mock<Timeout>()
+        val fakeRequest = Request.Builder().url(fakeUrl).build()
+        val fakeResponse = createSuccessfulResponse(fakeResponseBody, fakeUrl)
+        testedDownloader = PrecomputedAssignmentsDownloader(
+            callFactory = mockCallFactory,
+            internalLogger = mockInternalLogger,
+            requestFactory = mockRequestFactory,
+            requestTimeoutMs = 1_500
+        )
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext)).doReturn(fakeRequest)
+        whenever(mockCallFactory.newCall(fakeRequest)).doReturn(mockCall)
+        whenever(mockCall.timeout()).doReturn(requestTimeout)
+        whenever(requestTimeout.timeoutNanos()).doReturn(TimeUnit.MILLISECONDS.toNanos(500))
+        whenever(mockCall.execute()).doReturn(fakeResponse)
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+
+        // Then
+        assertThat(result).isEqualTo(fakeResponseBody)
+        verify(requestTimeout, never()).timeout(1_500, TimeUnit.MILLISECONDS)
+    }
+
+    @Test
+    fun `M preserve call timeout W readPrecomputedFlags() { SDK timeout disabled }`(
+        @StringForgery fakeResponseBody: String,
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
+    ) {
+        // Given
+        val fakeRequest = Request.Builder().url(fakeUrl).build()
+        val fakeResponse = createSuccessfulResponse(fakeResponseBody, fakeUrl)
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext)).doReturn(fakeRequest)
+        whenever(mockCallFactory.newCall(fakeRequest)).doReturn(mockCall)
+        whenever(mockCall.execute()).doReturn(fakeResponse)
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+
+        // Then
+        assertThat(result).isEqualTo(fakeResponseBody)
+        verify(mockCall, never()).timeout()
+    }
+
+    @Test
+    fun `M reject unbounded custom call W readPrecomputedFlags() { timeout enabled }`(
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
+    ) {
+        // Given
+        val fakeRequest = Request.Builder().url(fakeUrl).build()
+        testedDownloader = PrecomputedAssignmentsDownloader(
+            callFactory = mockCallFactory,
+            internalLogger = mockInternalLogger,
+            requestFactory = mockRequestFactory,
+            requestTimeoutMs = 1_500
+        )
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext)).doReturn(fakeRequest)
+        whenever(mockCallFactory.newCall(fakeRequest)).doReturn(mockCall)
+        whenever(mockCall.timeout()).doReturn(Timeout.NONE)
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+
+        // Then
+        assertThat(result).isNull()
+        verify(mockCall, never()).execute()
+    }
+
+    @Test
+    fun `M include response body in call timeout W readPrecomputedFlags()`(
+        @StringForgery fakeResponseBody: String,
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
+    ) {
+        // Given
+        val requestTimeout = mock<Timeout>()
+        val responseBody = mock<ResponseBody>()
+        val fakeRequest = Request.Builder().url(fakeUrl).build()
+        val fakeResponse = Response.Builder()
+            .request(fakeRequest)
+            .protocol(Protocol.HTTP_1_1)
+            .code(200)
+            .message("OK")
+            .body(responseBody)
+            .build()
+        testedDownloader = PrecomputedAssignmentsDownloader(
+            callFactory = mockCallFactory,
+            internalLogger = mockInternalLogger,
+            requestFactory = mockRequestFactory,
+            requestTimeoutMs = 1_500
+        )
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext)).doReturn(fakeRequest)
+        whenever(mockCallFactory.newCall(fakeRequest)).doReturn(mockCall)
+        whenever(mockCall.timeout()).doReturn(requestTimeout)
+        whenever(requestTimeout.timeout(1_500, TimeUnit.MILLISECONDS)).doReturn(requestTimeout)
+        whenever(mockCall.execute()).doReturn(fakeResponse)
+        whenever(responseBody.string()).doReturn(fakeResponseBody)
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+
+        // Then
+        assertThat(result).isEqualTo(fakeResponseBody)
+        inOrder(requestTimeout, mockCall, responseBody) {
+            verify(requestTimeout).timeout(1_500, TimeUnit.MILLISECONDS)
+            verify(mockCall).execute()
+            verify(responseBody).string()
+            verify(responseBody).close()
+        }
     }
 
     // endregion

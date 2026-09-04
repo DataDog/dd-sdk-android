@@ -13,6 +13,8 @@ import com.datadog.android.flags.model.EvaluationContext
 import okhttp3.Call
 import okhttp3.Request
 import okhttp3.Response
+import okio.Timeout
+import java.util.concurrent.TimeUnit
 
 /**
  * Downloads precomputed flag assignments from Datadog Feature Flags service.
@@ -20,11 +22,13 @@ import okhttp3.Response
  * @param callFactory Factory for creating HTTP calls
  * @param internalLogger Logger for error and debug messages
  * @param requestFactory Factory for creating precomputed assignments requests
+ * @param requestTimeoutMs SDK timeout for the request, in milliseconds. Zero preserves the call timeout
  */
 internal class PrecomputedAssignmentsDownloader(
     private val callFactory: Call.Factory,
     private val internalLogger: InternalLogger,
-    private val requestFactory: PrecomputedAssignmentsRequestFactory
+    private val requestFactory: PrecomputedAssignmentsRequestFactory,
+    private val requestTimeoutMs: Long = 0
 ) : PrecomputedAssignmentsReader {
 
     @WorkerThread
@@ -36,7 +40,11 @@ internal class PrecomputedAssignmentsDownloader(
 
     @Suppress("TooGenericExceptionCaught")
     private fun executeDownloadRequest(request: Request): String? = try {
-        val response = callFactory.newCall(request).execute()
+        val call = callFactory.newCall(request)
+        if (requestTimeoutMs > 0) {
+            applyRequestTimeout(call)
+        }
+        val response = call.execute()
         handleResponse(response)
     } catch (e: Throwable) {
         internalLogger.log(
@@ -46,6 +54,23 @@ internal class PrecomputedAssignmentsDownloader(
             e
         )
         null
+    }
+
+    @Suppress(
+        "CheckInternal", // Reject an invalid custom Call before an unbounded request starts.
+        "UnsafeThirdPartyFunctionCall" // The caller catches custom Call failures.
+    )
+    private fun applyRequestTimeout(call: Call) {
+        val timeout = call.timeout()
+        check(timeout !== Timeout.NONE) {
+            "The assignment request Call.Factory must provide a configurable Call.timeout()"
+        }
+
+        val requestTimeoutNanos = TimeUnit.MILLISECONDS.toNanos(requestTimeoutMs)
+        val callTimeoutNanos = timeout.timeoutNanos()
+        if (callTimeoutNanos == 0L || requestTimeoutNanos < callTimeoutNanos) {
+            timeout.timeout(requestTimeoutMs, TimeUnit.MILLISECONDS)
+        }
     }
 
     private fun handleResponse(response: Response): String? = if (response.isSuccessful) {

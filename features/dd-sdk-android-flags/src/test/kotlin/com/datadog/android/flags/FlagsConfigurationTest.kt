@@ -9,9 +9,12 @@ package com.datadog.android.flags
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import okhttp3.Call
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.kotlin.mock
 
 @ExtendWith(ForgeExtension::class)
 internal class FlagsConfigurationTest {
@@ -29,6 +32,86 @@ internal class FlagsConfigurationTest {
         assertThat(configuration.customExposureEndpoint).isNull()
         assertThat(configuration.customFlagEndpoint).isNull()
         assertThat(configuration.gracefulModeEnabled).isTrue()
+        assertThat(configuration.assignmentRequestCallFactory).isNull()
+        assertThat(configuration.assignmentRequestTimeoutMs).isZero()
+    }
+
+    @Test
+    fun `M set assignment request timeout and factory W Builder`() {
+        // Given
+        val callFactory = mock<Call.Factory>()
+
+        // When
+        val configuration = FlagsConfiguration.Builder()
+            .assignmentRequestCallFactory(callFactory)
+            .assignmentRequestTimeout(2_500)
+            .build()
+
+        // Then
+        assertThat(configuration.assignmentRequestCallFactory).isSameAs(callFactory)
+        assertThat(configuration.assignmentRequestTimeoutMs).isEqualTo(2_500)
+    }
+
+    @Test
+    fun `M coerce assignment request timeout to zero W Builder { negative value }`() {
+        // When
+        val configuration = FlagsConfiguration.Builder()
+            .assignmentRequestTimeout(-1)
+            .build()
+
+        // Then
+        assertThat(configuration.assignmentRequestTimeoutMs).isZero()
+    }
+
+    @Test
+    fun `M preserve assignment request settings W copy { legacy overload }`() {
+        // Given
+        val callFactory = mock<Call.Factory>()
+        val configuration = FlagsConfiguration.Builder()
+            .assignmentRequestCallFactory(callFactory)
+            .assignmentRequestTimeout(2_500)
+            .build()
+
+        // When
+        val copy = configuration.copy(trackExposures = false)
+        val defaultCopy = configuration.copy()
+        val configurationWithDifferentTimeout = FlagsConfiguration.Builder()
+            .assignmentRequestTimeout(5_000)
+            .build()
+
+        // Then
+        assertThat(copy.trackExposures).isFalse()
+        assertThat(copy.assignmentRequestCallFactory).isSameAs(callFactory)
+        assertThat(copy.assignmentRequestTimeoutMs).isEqualTo(2_500)
+        assertThat(defaultCopy).isEqualTo(configuration)
+        assertThat(defaultCopy.assignmentRequestCallFactory).isSameAs(callFactory)
+        assertThat(configurationWithDifferentTimeout).isNotEqualTo(configuration)
+    }
+
+    @Test
+    fun `M reject negative assignment request timeout W copy { generated overload }`() {
+        // Given
+        val configuration = FlagsConfiguration.Builder().build()
+
+        // When / Then
+        assertThatThrownBy {
+            configuration.copy(assignmentRequestTimeoutMs = -1)
+        }.isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessage("assignmentRequestTimeoutMs must be greater than or equal to 0")
+    }
+
+    @Test
+    fun `M accept assignment request timeout boundary W copy { generated overload }`() {
+        // Given
+        val configuration = FlagsConfiguration.Builder()
+            .assignmentRequestTimeout(2_500)
+            .build()
+
+        // When
+        val copy = configuration.copy(assignmentRequestTimeoutMs = 0)
+
+        // Then
+        assertThat(copy.assignmentRequestTimeoutMs).isZero()
     }
 
     @Test

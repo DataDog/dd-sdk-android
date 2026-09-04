@@ -6,6 +6,10 @@
 
 package com.datadog.android.flags
 
+import okhttp3.Call
+
+private const val DEFAULT_ASSIGNMENT_REQUEST_TIMEOUT_MS = 0L
+
 /**
  * Describes configuration to be used for the Flags feature.
  */
@@ -18,17 +22,56 @@ data class FlagsConfiguration internal constructor(
     internal val customFlagEndpoint: String?,
     internal val evaluationFlushIntervalMs: Long,
     internal val rumIntegrationEnabled: Boolean,
-    internal val gracefulModeEnabled: Boolean
+    internal val gracefulModeEnabled: Boolean,
+    internal val assignmentRequestCallFactory: Call.Factory?,
+    internal val assignmentRequestTimeoutMs: Long
 ) {
+    init {
+        @Suppress("UnsafeThirdPartyFunctionCall") // Enforce the public copy invariant.
+        require(assignmentRequestTimeoutMs >= 0) {
+            "assignmentRequestTimeoutMs must be greater than or equal to 0"
+        }
+    }
+
+    /**
+     * Copies this configuration while preserving assignment request settings.
+     *
+     * This overload retains the public JVM signature generated before assignment request settings were added.
+     */
+    fun copy(
+        trackExposures: Boolean = this.trackExposures,
+        trackEvaluations: Boolean = this.trackEvaluations,
+        customExposureEndpoint: String? = this.customExposureEndpoint,
+        customEvaluationEndpoint: String? = this.customEvaluationEndpoint,
+        customFlagEndpoint: String? = this.customFlagEndpoint,
+        evaluationFlushIntervalMs: Long = this.evaluationFlushIntervalMs,
+        rumIntegrationEnabled: Boolean = this.rumIntegrationEnabled,
+        gracefulModeEnabled: Boolean = this.gracefulModeEnabled
+    ): FlagsConfiguration = FlagsConfiguration(
+        trackExposures = trackExposures,
+        trackEvaluations = trackEvaluations,
+        customExposureEndpoint = customExposureEndpoint,
+        customEvaluationEndpoint = customEvaluationEndpoint,
+        customFlagEndpoint = customFlagEndpoint,
+        evaluationFlushIntervalMs = evaluationFlushIntervalMs,
+        rumIntegrationEnabled = rumIntegrationEnabled,
+        gracefulModeEnabled = gracefulModeEnabled,
+        assignmentRequestCallFactory = assignmentRequestCallFactory,
+        assignmentRequestTimeoutMs = assignmentRequestTimeoutMs
+    )
+
     /**
      * A Builder class for a [FlagsConfiguration].
      */
+    @Suppress("TooManyFunctions")
     class Builder {
         private var trackExposures: Boolean = true
         private var trackEvaluations: Boolean = true
         private var customExposureEndpoint: String? = null
         private var customEvaluationEndpoint: String? = null
         private var customFlagEndpoint: String? = null
+        private var assignmentRequestCallFactory: Call.Factory? = null
+        private var assignmentRequestTimeoutMs: Long = DEFAULT_ASSIGNMENT_REQUEST_TIMEOUT_MS
         private var evaluationFlushIntervalMs: Long = DEFAULT_EVALUATION_FLUSH_INTERVAL_MS
         private var rumIntegrationEnabled: Boolean = true
         private var gracefulModeEnabled: Boolean = true
@@ -117,6 +160,36 @@ data class FlagsConfiguration internal constructor(
         }
 
         /**
+         * Sets the HTTP call factory used only for precomputed assignment requests.
+         *
+         * The SDK constructs the request before it calls [Call.Factory.newCall]. Exposure and evaluation uploads
+         * continue to use the SDK transport. The application retains ownership of the factory and its resources.
+         * The assignment request timeout applies to calls from this factory.
+         *
+         * @param callFactory Factory used to create precomputed assignment calls.
+         * @return this [Builder] instance for method chaining.
+         */
+        fun assignmentRequestCallFactory(callFactory: Call.Factory): Builder {
+            assignmentRequestCallFactory = callFactory
+            return this
+        }
+
+        /**
+         * Sets the timeout for a precomputed assignment request.
+         *
+         * The timeout includes the complete response-body download. A value of zero disables the SDK timeout and
+         * preserves any timeout already configured on the HTTP call. If the call already has a nonzero timeout, the
+         * shorter timeout applies. Negative values are coerced to zero.
+         *
+         * @param timeoutMs Request timeout in milliseconds.
+         * @return this [Builder] instance for method chaining.
+         */
+        fun assignmentRequestTimeout(timeoutMs: Long): Builder {
+            assignmentRequestTimeoutMs = timeoutMs.coerceAtLeast(0)
+            return this
+        }
+
+        /**
          * Sets whether RUM evaluation logging is enabled.
          * This adds the result of evaluating a feature flag to the view.
          * Enabled by default.
@@ -160,7 +233,9 @@ data class FlagsConfiguration internal constructor(
             customFlagEndpoint = customFlagEndpoint,
             evaluationFlushIntervalMs = evaluationFlushIntervalMs,
             rumIntegrationEnabled = rumIntegrationEnabled,
-            gracefulModeEnabled = gracefulModeEnabled
+            gracefulModeEnabled = gracefulModeEnabled,
+            assignmentRequestCallFactory = assignmentRequestCallFactory,
+            assignmentRequestTimeoutMs = assignmentRequestTimeoutMs
         )
 
         internal companion object {

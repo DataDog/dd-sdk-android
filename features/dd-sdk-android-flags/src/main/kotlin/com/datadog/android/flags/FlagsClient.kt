@@ -31,6 +31,7 @@ import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.internal.utils.DDCoreStateHolder
+import okhttp3.Call
 import org.json.JSONObject
 
 /**
@@ -408,11 +409,13 @@ interface FlagsClient {
                 NoOpFlagsRepository()
             }
 
-            val callFactory = featureSdkCore.createOkHttpCallFactory()
+            val callFactory: Call.Factory = configuration.assignmentRequestCallFactory
+                ?: featureSdkCore.createOkHttpCallFactory()
             val assignmentsDownloader = PrecomputedAssignmentsDownloader(
                 internalLogger = featureSdkCore.internalLogger,
                 callFactory = callFactory,
-                requestFactory = flagsFeature.precomputedRequestFactory
+                requestFactory = flagsFeature.precomputedRequestFactory,
+                requestTimeoutMs = configuration.assignmentRequestTimeoutMs
             )
 
             val precomputeMapper = PrecomputeMapper(featureSdkCore.internalLogger)
