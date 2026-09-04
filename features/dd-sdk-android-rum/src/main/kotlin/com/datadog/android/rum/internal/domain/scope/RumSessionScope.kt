@@ -204,7 +204,9 @@ internal class RumSessionScope(
             }
         }
 
-        timeseriesCollector.onRumContextUpdate(getActiveRumContext())
+        if (timeseriesCollector !is NoOpTimeseriesCollector) {
+            timeseriesCollector.onRumContextUpdate(getActiveRumContext())
+        }
 
         return if (isSessionComplete()) {
             null
