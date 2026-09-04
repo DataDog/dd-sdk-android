@@ -33,6 +33,7 @@ import com.datadog.android.profiling.internal.quota.QuotaChecker
 import com.datadog.android.profiling.internal.quota.QuotaResult
 import com.datadog.android.profiling.internal.trigger.NoOpPendingTriggerProfiles
 import com.datadog.android.profiling.internal.trigger.PendingTriggerProfiles
+import com.datadog.android.profiling.internal.trigger.PendingTriggerProfilesImpl
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
@@ -97,6 +98,10 @@ internal class ProfilingFeature(
 
     override fun onInitialize(appContext: Context) {
         this.appContext = appContext
+        dataWriter = ProfilingDataWriter(sdkCore)
+        pendingTriggerProfiles = createPendingTriggerProfiles(
+            executor = profiler.scheduledExecutorService
+        )
         profiler.apply {
             this.timeProvider.delegate = sdkCore.timeProvider
             resolveProfilingPackageVersionCode(appContext)
@@ -111,7 +116,6 @@ internal class ProfilingFeature(
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
             context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning()
         }
-        dataWriter = ProfilingDataWriter(sdkCore)
 
         val quotaCallFactory = sdkCore.createOkHttpCallFactory {
             callTimeout(QUOTA_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
@@ -136,10 +140,6 @@ internal class ProfilingFeature(
             start(launchProfilingActive = profiler.isRunning())
         }
         continuousProfilingScheduler = scheduler
-
-        pendingTriggerProfiles = createPendingTriggerProfiles(
-            executor = profiler.scheduledExecutorService
-        )
 
         sdkCore.setContextUpdateReceiver(this)
 
@@ -359,18 +359,33 @@ internal class ProfilingFeature(
         )
     }
 
-    /**
-     * Builds a [PendingTriggerProfiles] wired to dispatch matched pairs to [dataWriter].
-     * [executor] is null before [onInitialize] runs and after [onStop] — the sweep simply
-     * never runs in that case.
-     */
-    @Suppress("UnusedParameter")
     private fun createPendingTriggerProfiles(
         executor: ScheduledExecutorService?
     ): PendingTriggerProfiles {
-        // TODO RUM-18341: replace with PendingTriggerProfilesImpl once the buffer
-        // and matching logic is implemented.
-        return NoOpPendingTriggerProfiles()
+        return PendingTriggerProfilesImpl(
+            executor = executor,
+            timeProvider = sdkCore.timeProvider,
+            internalLogger = sdkCore.internalLogger,
+            onMatch = { perfettoResult, profilerEvent ->
+                // Exhaustive on the sealed ProfilerEvent, with no `else`: adding a new trigger
+                // type to PendingTriggerProfilesImpl.triggerType() without handling the match
+                // here (and thus leaking the matched result file) becomes a compile error.
+                when (profilerEvent) {
+                    is ProfilerEvent.RumAnrEvent ->
+                        dataWriter.writeTriggerProfile(
+                            perfettoResult = perfettoResult,
+                            rumErrorId = profilerEvent.id,
+                            rumContext = profilerEvent.rumContext
+                        )
+
+                    is ProfilerEvent.RumLongTaskEvent,
+                    is ProfilerEvent.RumVitalEvent,
+                    ProfilerEvent.TTIDNotTracked -> {
+                        // Not a currently supported trigger-match type: nothing to write.
+                    }
+                }
+            }
+        )
     }
 
     internal fun propagateQuotaResult(result: QuotaResult) {
