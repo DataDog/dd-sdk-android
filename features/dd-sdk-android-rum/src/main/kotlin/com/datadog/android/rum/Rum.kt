@@ -181,7 +181,7 @@ object Rum {
             viewEventMapper = rumFeature.configuration.viewEventMapper,
             rumViewEventWriteConfig = rumFeature.configuration.rumViewEventWriteConfig,
             heatmapIdentifierRegistry = rumFeature.heatmapIdentifierRegistry,
-            timeseriesCollectorFactory = rumFeature.timeseriesCollectorFactory
+            timeseriesCollector = rumFeature.timeseriesCollector
         )
     }
 
