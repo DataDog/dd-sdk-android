@@ -23,7 +23,6 @@ import com.datadog.android.flags.internal.NoOpFlagsClient
 import com.datadog.android.flags.internal.NoOpRumEvaluationLogger
 import com.datadog.android.flags.internal.RumEvaluationLogger
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
-import com.datadog.android.flags.internal.net.DisableOkHttp503FollowUpInterceptor
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsDownloader
 import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
@@ -32,7 +31,6 @@ import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.internal.utils.DDCoreStateHolder
-import okhttp3.Call
 import org.json.JSONObject
 
 /**
@@ -410,13 +408,11 @@ interface FlagsClient {
                 NoOpFlagsRepository()
             }
 
-            val callFactory = resolveAssignmentRequestCallFactory(configuration, featureSdkCore)
+            val callFactory = featureSdkCore.createOkHttpCallFactory()
             val assignmentsDownloader = PrecomputedAssignmentsDownloader(
                 internalLogger = featureSdkCore.internalLogger,
                 callFactory = callFactory,
-                requestFactory = flagsFeature.precomputedRequestFactory,
-                requestTimeoutMs = configuration.assignmentRequestTimeoutMs,
-                requestRetryCount = configuration.assignmentRequestRetryCount
+                requestFactory = flagsFeature.precomputedRequestFactory
             )
 
             val precomputeMapper = PrecomputeMapper(featureSdkCore.internalLogger)
@@ -451,18 +447,6 @@ interface FlagsClient {
                 flagStateManager = flagStateManager
             )
         }
-
-        @Suppress("UnsafeThirdPartyFunctionCall") // OkHttp accepts this constant configuration without validation.
-        internal fun resolveAssignmentRequestCallFactory(
-            configuration: FlagsConfiguration,
-            featureSdkCore: FeatureSdkCore
-        ): Call.Factory = configuration.assignmentRequestCallFactory
-            ?: featureSdkCore.createOkHttpCallFactory {
-                if (configuration.assignmentRequestRetryCount > 0) {
-                    retryOnConnectionFailure(false)
-                    addNetworkInterceptor(DisableOkHttp503FollowUpInterceptor)
-                }
-            }
 
         private fun createRumEvaluationLogger(featureSdkCore: FeatureSdkCore): RumEvaluationLogger {
             val rumFeatureScope = featureSdkCore.getFeature(RUM_FEATURE_NAME)

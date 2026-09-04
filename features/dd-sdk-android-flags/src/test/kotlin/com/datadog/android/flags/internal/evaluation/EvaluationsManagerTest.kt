@@ -354,7 +354,6 @@ internal class EvaluationsManagerTest {
             verify(mockFlagsStateManager).updateState(FlagsClientState.Reconciling)
             verify(mockFlagsStateManager).updateState(argThat { this is FlagsClientState.Error })
         }
-        verify(mockFlagsRepository).clear()
     }
 
     @Test

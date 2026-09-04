@@ -13,13 +13,10 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.internal.FlagsFeature
 import com.datadog.android.flags.internal.NoOpFlagsClient
-import com.datadog.android.flags.internal.net.DisableOkHttp503FollowUpInterceptor
 import com.datadog.android.flags.model.EvaluationContext
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import okhttp3.Call
-import okhttp3.OkHttpClient
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -29,12 +26,10 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -280,65 +275,6 @@ internal class FlagsClientTest {
     // endregion
 
     // region Builder API Tests
-
-    @Test
-    fun `M use custom assignment call factory W resolveAssignmentRequestCallFactory()`() {
-        // Given
-        val customCallFactory = mock<Call.Factory>()
-        val configuration = FlagsConfiguration.Builder()
-            .assignmentRequestCallFactory(customCallFactory)
-            .build()
-
-        // When
-        val resolvedFactory = FlagsClient.resolveAssignmentRequestCallFactory(configuration, mockSdkCore)
-
-        // Then
-        assertThat(resolvedFactory).isSameAs(customCallFactory)
-        verify(mockSdkCore, never()).createOkHttpCallFactory()
-    }
-
-    @Test
-    fun `M disable transport retries W resolveAssignmentRequestCallFactory() { custom factory omitted }`() {
-        // Given
-        val sdkCallFactory = mock<Call.Factory>()
-        val configuration = FlagsConfiguration.Builder()
-            .assignmentRequestRetryCount(1)
-            .build()
-        whenever(mockSdkCore.createOkHttpCallFactory(any())).thenReturn(sdkCallFactory)
-
-        // When
-        val resolvedFactory = FlagsClient.resolveAssignmentRequestCallFactory(configuration, mockSdkCore)
-
-        // Then
-        assertThat(resolvedFactory).isSameAs(sdkCallFactory)
-        argumentCaptor<OkHttpClient.Builder.() -> Unit> {
-            verify(mockSdkCore).createOkHttpCallFactory(capture())
-            val configuredClient = OkHttpClient.Builder().apply(firstValue).build()
-            assertThat(configuredClient.retryOnConnectionFailure).isFalse()
-            assertThat(configuredClient.networkInterceptors)
-                .containsExactly(DisableOkHttp503FollowUpInterceptor)
-        }
-    }
-
-    @Test
-    fun `M preserve transport retries W resolveAssignmentRequestCallFactory() { SDK retries disabled }`() {
-        // Given
-        val sdkCallFactory = mock<Call.Factory>()
-        val configuration = FlagsConfiguration.Builder().build()
-        whenever(mockSdkCore.createOkHttpCallFactory(any())).thenReturn(sdkCallFactory)
-
-        // When
-        val resolvedFactory = FlagsClient.resolveAssignmentRequestCallFactory(configuration, mockSdkCore)
-
-        // Then
-        assertThat(resolvedFactory).isSameAs(sdkCallFactory)
-        argumentCaptor<OkHttpClient.Builder.() -> Unit> {
-            verify(mockSdkCore).createOkHttpCallFactory(capture())
-            val configuredClient = OkHttpClient.Builder().apply(firstValue).build()
-            assertThat(configuredClient.retryOnConnectionFailure).isTrue()
-            assertThat(configuredClient.networkInterceptors).isEmpty()
-        }
-    }
 
     @Test
     fun `M return existing client W Builder#build() {client already exists with default name}`() {

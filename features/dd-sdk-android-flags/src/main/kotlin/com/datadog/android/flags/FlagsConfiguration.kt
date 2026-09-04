@@ -6,12 +6,6 @@
 
 package com.datadog.android.flags
 
-import okhttp3.Call
-
-private const val DEFAULT_ASSIGNMENT_REQUEST_TIMEOUT_MS = 0L
-private const val DEFAULT_ASSIGNMENT_REQUEST_RETRY_COUNT = 0
-private const val MAX_ASSIGNMENT_REQUEST_RETRY_COUNT = 10
-
 /**
  * Describes configuration to be used for the Flags feature.
  */
@@ -24,66 +18,17 @@ data class FlagsConfiguration internal constructor(
     internal val customFlagEndpoint: String?,
     internal val evaluationFlushIntervalMs: Long,
     internal val rumIntegrationEnabled: Boolean,
-    internal val gracefulModeEnabled: Boolean,
-    internal val assignmentRequestCallFactory: Call.Factory?,
-    internal val assignmentRequestTimeoutMs: Long,
-    internal val assignmentRequestRetryCount: Int
+    internal val gracefulModeEnabled: Boolean
 ) {
-    init {
-        @Suppress("UnsafeThirdPartyFunctionCall") // Enforce the public copy invariant.
-        require(assignmentRequestTimeoutMs >= 0) {
-            "assignmentRequestTimeoutMs must be greater than or equal to 0"
-        }
-        @Suppress("UnsafeThirdPartyFunctionCall") // Enforce the public copy invariant.
-        require(assignmentRequestRetryCount in 0..MAX_ASSIGNMENT_REQUEST_RETRY_COUNT) {
-            "assignmentRequestRetryCount must be between 0 and $MAX_ASSIGNMENT_REQUEST_RETRY_COUNT"
-        }
-    }
-
-    /**
-     * Copies this configuration while preserving assignment request transport policies.
-     *
-     * This overload retains the public JVM signature generated before assignment request settings were added to the
-     * primary constructor. Keep its parameter list stable for binary compatibility.
-     * Forward each new primary-constructor property from this instance. A property with a default value can otherwise
-     * reset silently because this overload still compiles when the property is omitted.
-     */
-    fun copy(
-        trackExposures: Boolean = this.trackExposures,
-        trackEvaluations: Boolean = this.trackEvaluations,
-        customExposureEndpoint: String? = this.customExposureEndpoint,
-        customEvaluationEndpoint: String? = this.customEvaluationEndpoint,
-        customFlagEndpoint: String? = this.customFlagEndpoint,
-        evaluationFlushIntervalMs: Long = this.evaluationFlushIntervalMs,
-        rumIntegrationEnabled: Boolean = this.rumIntegrationEnabled,
-        gracefulModeEnabled: Boolean = this.gracefulModeEnabled
-    ): FlagsConfiguration = FlagsConfiguration(
-        trackExposures = trackExposures,
-        trackEvaluations = trackEvaluations,
-        customExposureEndpoint = customExposureEndpoint,
-        customEvaluationEndpoint = customEvaluationEndpoint,
-        customFlagEndpoint = customFlagEndpoint,
-        evaluationFlushIntervalMs = evaluationFlushIntervalMs,
-        rumIntegrationEnabled = rumIntegrationEnabled,
-        gracefulModeEnabled = gracefulModeEnabled,
-        assignmentRequestCallFactory = assignmentRequestCallFactory,
-        assignmentRequestTimeoutMs = assignmentRequestTimeoutMs,
-        assignmentRequestRetryCount = assignmentRequestRetryCount
-    )
-
     /**
      * A Builder class for a [FlagsConfiguration].
      */
-    @Suppress("TooManyFunctions")
     class Builder {
         private var trackExposures: Boolean = true
         private var trackEvaluations: Boolean = true
         private var customExposureEndpoint: String? = null
         private var customEvaluationEndpoint: String? = null
         private var customFlagEndpoint: String? = null
-        private var assignmentRequestCallFactory: Call.Factory? = null
-        private var assignmentRequestTimeoutMs: Long = DEFAULT_ASSIGNMENT_REQUEST_TIMEOUT_MS
-        private var assignmentRequestRetryCount: Int = DEFAULT_ASSIGNMENT_REQUEST_RETRY_COUNT
         private var evaluationFlushIntervalMs: Long = DEFAULT_EVALUATION_FLUSH_INTERVAL_MS
         private var rumIntegrationEnabled: Boolean = true
         private var gracefulModeEnabled: Boolean = true
@@ -172,66 +117,6 @@ data class FlagsConfiguration internal constructor(
         }
 
         /**
-         * Sets the HTTP call factory used only for precomputed assignment requests.
-         *
-         * The SDK constructs each request, including its URL, method, body, and authentication headers, before passing
-         * it to [Call.Factory.newCall]. The factory must preserve those request properties. Exposure and evaluation
-         * uploads continue to use the SDK's own HTTP transport.
-         *
-         * The SDK does not take ownership of the factory or its resources. The configured assignment timeout and retry
-         * policies are applied on top of calls created by this factory. When the assignment timeout is positive, each
-         * call must return and honor a configurable timeout from [Call.timeout]. A call that returns `Timeout.NONE`
-         * fails before execution.
-         *
-         * @param callFactory Factory used to create precomputed assignment calls.
-         * @return this [Builder] instance for method chaining.
-         */
-        fun assignmentRequestCallFactory(callFactory: Call.Factory): Builder {
-            assignmentRequestCallFactory = callFactory
-            return this
-        }
-
-        /**
-         * Sets the timeout for each precomputed assignment request attempt.
-         * The timeout applies separately to each attempt and includes downloading the response body. A value of zero
-         * disables the SDK timeout and preserves any timeout already configured on the HTTP client. When the HTTP call
-         * already has a nonzero timeout, the shorter timeout applies. A custom call factory must provide and honor a
-         * configurable call timeout when this value is positive.
-         * Negative values are coerced to zero.
-         *
-         * @param timeoutMs The timeout for each request, in milliseconds.
-         * @return this [Builder] instance for method chaining.
-         */
-        fun assignmentRequestTimeout(timeoutMs: Long): Builder {
-            assignmentRequestTimeoutMs = timeoutMs.coerceAtLeast(0)
-            return this
-        }
-
-        /**
-         * Sets the number of retries after a transient precomputed assignment request failure.
-         * The default is zero (no SDK-managed retries). The retry count must be between zero and ten, inclusive.
-         * The SDK retries transient network errors, timeouts, HTTP 408, and HTTP 5xx responses.
-         * Retries use randomized exponential backoff, capped at 30 seconds. For HTTP 503, a valid `Retry-After`
-         * value is a minimum delay before the backoff. The SDK does not retry when this value exceeds 30 seconds.
-         * The SDK does not retry HTTP 429 responses.
-         * When SDK-managed retries are enabled, the default transport disables automatic OkHttp connection retries
-         * and immediate HTTP 503 follow-ups. A custom call factory keeps its own internal retry behavior.
-         * Network time can reach ([retryCount] + 1) times the assignment request timeout, plus retry delays. When the
-         * SDK timeout is zero, the HTTP client's call timeout supplies the bound. A custom factory may have no bound
-         * only when the SDK timeout is zero.
-         * Values outside the supported range are coerced to the nearest bound.
-         *
-         * @param retryCount The number of retries after the first attempt.
-         * @return this [Builder] instance for method chaining.
-         */
-        fun assignmentRequestRetryCount(retryCount: Int): Builder {
-            assignmentRequestRetryCount = retryCount
-                .coerceAtLeast(0)
-                .coerceAtMost(MAX_ASSIGNMENT_REQUEST_RETRY_COUNT)
-            return this
-        }
-
-        /**
          * Sets whether RUM evaluation logging is enabled.
          * This adds the result of evaluating a feature flag to the view.
          * Enabled by default.
@@ -275,10 +160,7 @@ data class FlagsConfiguration internal constructor(
             customFlagEndpoint = customFlagEndpoint,
             evaluationFlushIntervalMs = evaluationFlushIntervalMs,
             rumIntegrationEnabled = rumIntegrationEnabled,
-            gracefulModeEnabled = gracefulModeEnabled,
-            assignmentRequestCallFactory = assignmentRequestCallFactory,
-            assignmentRequestTimeoutMs = assignmentRequestTimeoutMs,
-            assignmentRequestRetryCount = assignmentRequestRetryCount
+            gracefulModeEnabled = gracefulModeEnabled
         )
 
         internal companion object {

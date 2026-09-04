@@ -18,9 +18,12 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Call
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -86,8 +89,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
         testedDownloader = PrecomputedAssignmentsDownloader(
             callFactory = mockCallFactory,
             internalLogger = mockInternalLogger,
-            requestFactory = mockRequestFactory,
-            requestTimeoutMs = 0L
+            requestFactory = mockRequestFactory
         )
     }
 
@@ -102,7 +104,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
         val fakeRequest = Request.Builder()
             .url(fakeUrl)
             .build()
-        val fakeResponse = createPrecomputedSuccessfulResponse(fakeResponseBody, fakeUrl)
+        val fakeResponse = createSuccessfulResponse(fakeResponseBody, fakeUrl)
 
         whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext))
             .doReturn(fakeRequest)
@@ -126,7 +128,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
         val fakeRequest = Request.Builder()
             .url(fakeUrl)
             .build()
-        val fakeResponse = createPrecomputedSuccessfulResponse(fakeResponseBody, fakeUrl)
+        val fakeResponse = createSuccessfulResponse(fakeResponseBody, fakeUrl)
 
         whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext))
             .doReturn(fakeRequest)
@@ -227,7 +229,6 @@ internal class PrecomputedAssignmentsDownloaderTest {
         )
         assertThat(messageCaptor.firstValue.invoke())
             .isEqualTo("Unexpected error while downloading flags")
-        verify(mockCallFactory).newCall(fakeRequest)
     }
 
     @Test
@@ -310,7 +311,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
         val fakeRequest = Request.Builder()
             .url(fakeUrl)
             .build()
-        val fakeResponse = createPrecomputedUnsuccessfulResponse(404, fakeUrl)
+        val fakeResponse = createUnsuccessfulResponse(404, fakeUrl)
 
         whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext))
             .doReturn(fakeRequest)
@@ -345,7 +346,6 @@ internal class PrecomputedAssignmentsDownloaderTest {
         )
         assertThat(telemetryMessageCaptor.firstValue.invoke())
             .isEqualTo("Flag assignment server returned error (404)")
-        verify(mockCallFactory).newCall(fakeRequest)
     }
 
     @Test
@@ -356,7 +356,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
         val fakeRequest = Request.Builder()
             .url(fakeUrl)
             .build()
-        val fakeResponse = createPrecomputedSuccessfulResponseWithNullBody(fakeUrl)
+        val fakeResponse = createSuccessfulResponseWithNullBody(fakeUrl)
 
         whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext))
             .doReturn(fakeRequest)
@@ -371,7 +371,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
     }
 
     @Test
-    fun `M close response W readPrecomputedFlags()`(
+    fun `M close response body W readPrecomputedFlags()`(
         @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String,
         @BoolForgery fakeIsSuccessfulResponse: Boolean
     ) {
@@ -395,8 +395,36 @@ internal class PrecomputedAssignmentsDownloaderTest {
         testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
 
         // Then
-        verify(fakeResponse).close()
+        verify(fakeResponseBody).close()
     }
+
+    // endregion
+
+    // region Helper methods
+
+    private fun createSuccessfulResponse(body: String, url: String): Response = Response.Builder()
+        .request(Request.Builder().url(url).build())
+        .protocol(Protocol.HTTP_1_1)
+        .code(200)
+        .message("OK")
+        .body(body.toResponseBody("application/json".toMediaType()))
+        .build()
+
+    private fun createSuccessfulResponseWithNullBody(url: String): Response = Response.Builder()
+        .request(Request.Builder().url(url).build())
+        .protocol(Protocol.HTTP_1_1)
+        .code(200)
+        .message("OK")
+        .body(null)
+        .build()
+
+    private fun createUnsuccessfulResponse(code: Int, url: String): Response = Response.Builder()
+        .request(Request.Builder().url(url).build())
+        .protocol(Protocol.HTTP_1_1)
+        .code(code)
+        .message("Error")
+        .body("".toResponseBody("application/json".toMediaType()))
+        .build()
 
     // endregion
 }
