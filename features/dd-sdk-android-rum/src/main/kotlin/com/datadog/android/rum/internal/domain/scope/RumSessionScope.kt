@@ -31,7 +31,6 @@ import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
 import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollector
-import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollectorFactory
 import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
@@ -69,10 +68,8 @@ internal class RumSessionScope(
     private val viewEventMapper: ViewEventMapper,
     private val rumViewEventWriteConfig: RumViewEventWriteConfig,
     heatmapIdentifierRegistry: HeatmapIdentifierRegistry?,
-    private val timeseriesCollectorFactory: TimeseriesCollector.Factory = NoOpTimeseriesCollectorFactory()
+    private val timeseriesCollector: TimeseriesCollector = NoOpTimeseriesCollector()
 ) : RumScope {
-
-    private var timeseriesCollector: TimeseriesCollector = NoOpTimeseriesCollector()
 
     internal var sessionId = RumContext.NULL_UUID
     internal var sessionState: State = State.NOT_TRACKED
@@ -207,11 +204,7 @@ internal class RumSessionScope(
             }
         }
 
-        // getActiveRumContext() copies the whole context chain, so it is only built when there is a
-        // collector to feed: timeseries collection is opt-in and this runs on every RUM event.
-        if (timeseriesCollector !is NoOpTimeseriesCollector) {
-            timeseriesCollector.onRumContextUpdate(getActiveRumContext())
-        }
+        timeseriesCollector.onRumContextUpdate(getActiveRumContext())
 
         return if (isSessionComplete()) {
             null
@@ -244,17 +237,13 @@ internal class RumSessionScope(
     }
 
     private fun startTimeseries() {
-        val rumContext = getActiveRumContext()
-        timeseriesCollector = timeseriesCollectorFactory.create(
-            rumContext = rumContext,
-            sessionType = rumContext.resolveSessionType(rumSessionTypeOverride)
+        timeseriesCollector.onSessionStart(
+            sessionType = getActiveRumContext().resolveSessionType(rumSessionTypeOverride)
         )
-        timeseriesCollector.onSessionStart()
     }
 
     internal fun stopTimeseries() {
         timeseriesCollector.onSessionStop()
-        timeseriesCollector = NoOpTimeseriesCollector()
     }
 
     private fun stopSession() {

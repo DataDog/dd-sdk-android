@@ -27,6 +27,7 @@ import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.asString
 import com.datadog.android.internal.utils.loggableStackTrace
+import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumAttributes
@@ -52,7 +53,8 @@ import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.startup.RumAppStartupDetector
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
-import com.datadog.android.rum.internal.timeseries.DefaultTimeseriesCollectorFactory
+import com.datadog.android.rum.internal.timeseries.DefaultTimeseriesCollector
+import com.datadog.android.rum.internal.timeseries.PipelineFactory
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
@@ -899,28 +901,106 @@ internal class RumFeatureTest {
         testedFeature.onInitialize(appContext.mockInstance)
 
         // Then
-        val timeseriesFactory = testedFeature.timeseriesCollectorFactory
-        check(timeseriesFactory is DefaultTimeseriesCollectorFactory)
-        assertThat(timeseriesFactory.getFieldValue<DataWriter<*>, DefaultTimeseriesCollectorFactory>("dataWriter"))
+        val timeseriesCollector = testedFeature.timeseriesCollector
+        check(timeseriesCollector is DefaultTimeseriesCollector)
+        assertThat(
+            timeseriesCollector
+                .getFieldValue<ScheduledExecutorService, DefaultTimeseriesCollector>("scheduledExecutorService")
+        ).isSameAs(testedFeature.vitalExecutorService)
+
+        val pipelinesFactory = timeseriesCollector
+            .getFieldValue<PipelineFactory, DefaultTimeseriesCollector>("pipelinesFactory")
+        assertThat(pipelinesFactory.getFieldValue<DataWriter<*>, PipelineFactory>("dataWriter"))
             .isSameAs(testedFeature.dataWriter)
         assertThat(
-            timeseriesFactory.getFieldValue<InsightsCollector, DefaultTimeseriesCollectorFactory>("insightsCollector")
+            pipelinesFactory.getFieldValue<InsightsCollector, PipelineFactory>("insightsCollector")
         )
             .isSameAs(testedFeature.insightsCollector)
-        assertThat(
-            timeseriesFactory
-                .getFieldValue<ScheduledExecutorService, DefaultTimeseriesCollectorFactory>("scheduledExecutorService")
-        ).isSameAs(testedFeature.vitalExecutorService)
-        assertThat(timeseriesFactory.getFieldValue<Long, DefaultTimeseriesCollectorFactory>("totalRamBytes"))
+        assertThat(pipelinesFactory.getFieldValue<Long, PipelineFactory>("totalRamBytes"))
             .isEqualTo(fakeTotalRamBytes)
         assertThat(
-            timeseriesFactory.getFieldValue<InfoProvider<*>, DefaultTimeseriesCollectorFactory>("batteryInfoProvider")
+            pipelinesFactory.getFieldValue<InfoProvider<*>, PipelineFactory>("batteryInfoProvider")
         )
             .isSameAs(testedFeature.batteryInfoProvider)
         assertThat(
-            timeseriesFactory.getFieldValue<InfoProvider<*>, DefaultTimeseriesCollectorFactory>("displayInfoProvider")
+            pipelinesFactory.getFieldValue<InfoProvider<*>, PipelineFactory>("displayInfoProvider")
         )
             .isSameAs(testedFeature.displayInfoProvider)
+    }
+
+    @Test
+    @OptIn(ExperimentalRumApi::class)
+    fun `M prime timeseries collector as foreground W initialize { app already in foreground }`() {
+        // Given
+        DdRumContentProvider.processImportance = ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+        fakeConfiguration = fakeConfiguration.copy(
+            timeseriesConfiguration = TimeseriesConfiguration.DEFAULT
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        val timeseriesCollector = testedFeature.timeseriesCollector
+        check(timeseriesCollector is DefaultTimeseriesCollector)
+        val state = timeseriesCollector.getFieldValue<Any, DefaultTimeseriesCollector>("state")
+        assertThat(state.getFieldValue<Boolean, Any>("foreground")).isTrue()
+    }
+
+    @Test
+    @OptIn(ExperimentalRumApi::class)
+    fun `M not prime timeseries collector as foreground W initialize { app in background }`() {
+        // Given
+        DdRumContentProvider.processImportance = ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHED
+        fakeConfiguration = fakeConfiguration.copy(
+            timeseriesConfiguration = TimeseriesConfiguration.DEFAULT
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        val timeseriesCollector = testedFeature.timeseriesCollector
+        check(timeseriesCollector is DefaultTimeseriesCollector)
+        val state = timeseriesCollector.getFieldValue<Any, DefaultTimeseriesCollector>("state")
+        assertThat(state.getFieldValue<Boolean, Any>("foreground")).isFalse()
+    }
+
+    @Test
+    @OptIn(ExperimentalRumApi::class)
+    fun `M unregister timeseries process lifecycle monitor W onStop() { timeseries enabled }`() {
+        // Given
+        fakeConfiguration = fakeConfiguration.copy(
+            timeseriesConfiguration = TimeseriesConfiguration.DEFAULT
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+        testedFeature.onInitialize(appContext.mockInstance)
+        val listener = testedFeature.timeseriesProcessLifecycleMonitor
+        checkNotNull(listener)
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        verify(appContext.mockInstance).unregisterActivityLifecycleCallbacks(listener)
+        assertThat(testedFeature.timeseriesProcessLifecycleMonitor).isNull()
     }
 
     @Test

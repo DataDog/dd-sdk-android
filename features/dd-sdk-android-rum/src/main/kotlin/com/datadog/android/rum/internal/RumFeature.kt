@@ -36,6 +36,7 @@ import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.heatmaps.HeatmapIdentifierRegistryProvider
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
+import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.profiling.ProfilingThreadDump
 import com.datadog.android.internal.system.BuildSdkVersionProvider
@@ -44,6 +45,7 @@ import com.datadog.android.internal.thread.isMainThread
 import com.datadog.android.internal.utils.asString
 import com.datadog.android.internal.utils.getSystemServiceAs
 import com.datadog.android.internal.utils.loggableStackTrace
+import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -89,8 +91,9 @@ import com.datadog.android.rum.internal.startup.RumAppStartupDetector
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
-import com.datadog.android.rum.internal.timeseries.DefaultTimeseriesCollectorFactory
-import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollectorFactory
+import com.datadog.android.rum.internal.timeseries.DefaultTimeseriesCollector
+import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollector
+import com.datadog.android.rum.internal.timeseries.PipelineFactory
 import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
 import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
@@ -175,6 +178,7 @@ internal class RumFeature(
     internal var debugActivityLifecycleListener =
         AtomicReference<Application.ActivityLifecycleCallbacks>(null)
     internal var frameStatesAggregator: Application.ActivityLifecycleCallbacks? = null
+    internal var timeseriesProcessLifecycleMonitor: Application.ActivityLifecycleCallbacks? = null
     internal var sessionListener: RumSessionListener = NoOpRumSessionListener()
 
     internal var vitalExecutorService: ScheduledExecutorService = NoOpScheduledExecutorService()
@@ -190,7 +194,7 @@ internal class RumFeature(
     internal val rumContextUpdateReceivers = mutableSetOf<FeatureContextUpdateReceiver>()
     internal var insightsCollector: InsightsCollector = NoOpInsightsCollector()
     override val heatmapIdentifierRegistry: HeatmapIdentifierRegistry = HeatmapIdentifierRegistry.create()
-    internal var timeseriesCollectorFactory: TimeseriesCollector.Factory = NoOpTimeseriesCollectorFactory()
+    internal var timeseriesCollector: TimeseriesCollector = NoOpTimeseriesCollector()
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
     internal var rumAppStartupDetector: RumAppStartupDetector? = null
@@ -291,17 +295,8 @@ internal class RumFeature(
 
         sessionListener = configuration.sessionListener
 
-        configuration.timeseriesConfiguration?.let { timeseriesConfiguration ->
-            timeseriesCollectorFactory = DefaultTimeseriesCollectorFactory(
-                sdkCore = sdkCore,
-                dataWriter = dataWriter,
-                insightsCollector = insightsCollector,
-                configuration = timeseriesConfiguration,
-                scheduledExecutorService = vitalExecutorService,
-                totalRamBytes = appContext.readTotalRamBytes(sdkCore.internalLogger) ?: 0L,
-                batteryInfoProvider = batteryInfoProvider,
-                displayInfoProvider = displayInfoProvider
-            )
+        if (appContext is Application) {
+            configuration.timeseriesConfiguration?.let { initializeTimeseriesCollection(appContext, it) }
         }
 
         initRumAppStartupDetector()
@@ -309,6 +304,37 @@ internal class RumFeature(
         sdkCore.setEventReceiver(name, this)
 
         initialized.set(true)
+    }
+
+    private fun initializeTimeseriesCollection(
+        appContext: Application,
+        timeseriesConfiguration: TimeseriesConfiguration
+    ) {
+        val pipelinesFactory = PipelineFactory(
+            totalRamBytes = appContext.readTotalRamBytes(sdkCore.internalLogger) ?: 0L,
+            sdkCore = sdkCore,
+            dataWriter = dataWriter,
+            insightsCollector = insightsCollector,
+            enabledTypes = timeseriesConfiguration.enabledTypes,
+            batteryInfoProvider = batteryInfoProvider,
+            displayInfoProvider = displayInfoProvider
+        )
+
+        // ProcessLifecycleMonitor only reports 0->1 transitions, so an app already in the
+        // foreground at init time (e.g. delayed/consent-gated SDK init) needs priming here.
+        val isAlreadyInForeground = DdRumContentProvider.processImportance ==
+            ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+
+        timeseriesCollector = DefaultTimeseriesCollector(
+            pipelinesFactory = pipelinesFactory,
+            internalLogger = sdkCore.internalLogger,
+            scheduledExecutorService = vitalExecutorService,
+            initialForeground = isAlreadyInForeground
+        ).also { collector ->
+            timeseriesProcessLifecycleMonitor = ProcessLifecycleMonitor(collector).also {
+                appContext.registerActivityLifecycleCallbacks(it)
+            }
+        }
     }
 
     private fun Application.initializeFrameStatesAggregator(listeners: List<FrameStateListener>) {
@@ -369,7 +395,11 @@ internal class RumFeature(
 
         unregisterTrackingStrategies(appContext)
 
-        timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
+        timeseriesCollector = NoOpTimeseriesCollector()
+        timeseriesProcessLifecycleMonitor?.let {
+            (appContext as? Application)?.unregisterActivityLifecycleCallbacks(it)
+        }
+        timeseriesProcessLifecycleMonitor = null
         (GlobalRumMonitor.get(sdkCore) as? DatadogRumMonitor)?.stopTimeseries()
 
         dataWriter = NoOpDataWriter()

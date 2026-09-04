@@ -3,7 +3,6 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-
 package com.datadog.android.rum.internal.timeseries
 
 import com.datadog.android.api.InternalLogger
@@ -11,7 +10,6 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.InfoProvider
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
@@ -23,31 +21,24 @@ import com.datadog.android.rum.internal.vitals.CpuStatReader
 import com.datadog.android.rum.internal.vitals.MemoryVitalReader
 import com.datadog.android.rum.timeseries.TimeseriesConfiguration
 import com.datadog.android.rum.timeseries.TimeseriesType
-import java.util.concurrent.ScheduledExecutorService
 
-@Suppress("LongParameterList")
-internal class DefaultTimeseriesCollectorFactory(
-    private val sdkCore: FeatureSdkCore,
-    private val configuration: TimeseriesConfiguration,
-    private val scheduledExecutorService: ScheduledExecutorService,
-    private val insightsCollector: InsightsCollector,
+internal class PipelineFactory(
     private val totalRamBytes: Long,
+    private val sdkCore: FeatureSdkCore,
     private val dataWriter: DataWriter<Any>,
+    private val insightsCollector: InsightsCollector,
+    private val enabledTypes: Set<TimeseriesType>,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>
-) : TimeseriesCollector.Factory {
-
-    override fun create(
-        sessionType: RumSessionType,
-        rumContext: RumContext
-    ): TimeseriesCollector {
+) {
+    fun create(sessionType: RumSessionType): List<Pipeline<*>> {
         val pipelines = mutableListOf<Pipeline<*>>()
 
-        if (TimeseriesType.CPU in configuration.enabledTypes) {
+        if (TimeseriesType.CPU in enabledTypes) {
             pipelines += createCpuPipeline(sessionType)
         }
 
-        if (TimeseriesType.MEMORY in configuration.enabledTypes) {
+        if (TimeseriesType.MEMORY in enabledTypes) {
             if (totalRamBytes > 0L) {
                 pipelines += createMemoryPipeline(sessionType)
             } else {
@@ -60,12 +51,7 @@ internal class DefaultTimeseriesCollectorFactory(
             }
         }
 
-        return DefaultTimeseriesCollector(
-            internalLogger = sdkCore.internalLogger,
-            scheduledExecutorService = scheduledExecutorService,
-            rumContext = rumContext,
-            pipelines = pipelines
-        )
+        return pipelines
     }
 
     private fun createMemoryPipeline(sessionType: RumSessionType) = Pipeline(
