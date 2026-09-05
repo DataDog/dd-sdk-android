@@ -1126,6 +1126,72 @@ internal class EvaluationsManagerTest {
     }
 
     @Test
+    fun `M complete timeout without waiting W updateEvaluationsForContext() { persistence load is pending }`() {
+        // Given
+        val context = EvaluationContext(fakeTargetingKey, emptyMap())
+        val dataStore = mock<DataStoreHandler>()
+        val persistenceCallback = AtomicReference<DataStoreReadCallback<FlagsStateEntry>>()
+        doAnswer {
+            persistenceCallback.set(it.getArgument(2))
+            null
+        }.whenever(dataStore).value<FlagsStateEntry>(
+            key = any(),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+        whenever(mockSdkCore.internalLogger).thenReturn(mockInternalLogger)
+        val repository = DefaultFlagsRepository(
+            featureSdkCore = mockSdkCore,
+            instanceName = "pending-timeout",
+            dataStore = dataStore,
+            persistenceLoadTimeoutMs = 5_000L
+        )
+        val stateManager = FlagsStateManager(
+            DDCoreStateHolder.create(
+                initialState = FlagsClientState.NotReady,
+                onStateChanged = FlagsStateListener::onStateChanged
+            )
+        )
+        var timeoutAction: (() -> Unit)? = null
+        val timeoutFailure = AtomicReference<Throwable>()
+        val timeoutFinished = CountDownLatch(1)
+        whenever(mockExecutorService.execute(any())).thenAnswer { null }
+        val manager = EvaluationsManager(
+            sdkCore = mockSdkCore,
+            executorService = mockExecutorService,
+            internalLogger = mockInternalLogger,
+            flagsRepository = repository,
+            assignmentsReader = mockAssignmentsDownloader,
+            precomputeMapper = mockPrecomputeMapper,
+            flagStateManager = stateManager,
+            initializationTimeoutMs = 2_500L,
+            initializationTimeoutScheduler = InitializationTimeoutScheduler { _, action ->
+                timeoutAction = action
+                {}
+            }
+        )
+        manager.updateEvaluationsForContext(context, callbackRecordingFailure(timeoutFailure))
+        val timeoutThread = Thread {
+            checkNotNull(timeoutAction).invoke()
+            timeoutFinished.countDown()
+        }
+
+        try {
+            // When
+            timeoutThread.start()
+
+            // Then
+            assertThat(timeoutFinished.await(250, TimeUnit.MILLISECONDS)).isTrue()
+            assertThat(timeoutFailure.get()).isInstanceOf(FlagsInitializationTimeoutException::class.java)
+            assertThat(stateManager.getCurrentState()).isInstanceOf(FlagsClientState.Error::class.java)
+        } finally {
+            persistenceCallback.get().onFailure()
+            timeoutThread.join(1_000)
+        }
+    }
+
+    @Test
     fun `M publish stale W updateEvaluationsForContext() { timeout with matching cache }`() {
         // Given
         val context = EvaluationContext(fakeTargetingKey, emptyMap())

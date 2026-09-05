@@ -139,7 +139,6 @@ internal class DefaultFlagsRepository(
     }
 
     override fun hasFlagsForContext(context: EvaluationContext): Boolean {
-        waitForPersistenceLoad()
         val state = atomicState.get()
         return state?.context == context && state.flags.isNotEmpty()
     }

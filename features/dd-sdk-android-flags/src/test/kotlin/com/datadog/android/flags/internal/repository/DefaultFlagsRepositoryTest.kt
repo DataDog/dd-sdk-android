@@ -37,9 +37,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
 
 @Extensions(
@@ -349,7 +346,7 @@ internal class DefaultFlagsRepositoryTest {
     }
 
     @Test
-    fun `M wait for cached match W hasFlagsForContext() { persistence is pending }`() {
+    fun `M return without cached match W hasFlagsForContext() { persistence is pending }`() {
         // Given
         val readCallback = AtomicReference<DataStoreReadCallback<FlagsStateEntry>>()
         doAnswer {
@@ -364,33 +361,22 @@ internal class DefaultFlagsRepositoryTest {
         val repository = DefaultFlagsRepository(
             featureSdkCore = mockFeatureSdkCore,
             dataStore = mockDataStore,
-            instanceName = "pending",
-            persistenceLoadTimeoutMs = 5_000L
+            instanceName = "pending"
         )
-        val executor = Executors.newSingleThreadExecutor()
 
-        try {
-            // When
-            val result = executor.submit<Boolean> { repository.hasFlagsForContext(testContext) }
+        // When + Then
+        assertThat(repository.hasFlagsForContext(testContext)).isFalse()
 
-            // Then
-            org.junit.jupiter.api.assertThrows<TimeoutException> {
-                result.get(100, TimeUnit.MILLISECONDS)
-            }
-
-            // When
-            readCallback.get().onSuccess(
-                DataStoreContent(
-                    versionCode = 0,
-                    data = FlagsStateEntry(testContext, singleFlagMap, 0L)
-                )
+        // When
+        readCallback.get().onSuccess(
+            DataStoreContent(
+                versionCode = 0,
+                data = FlagsStateEntry(testContext, singleFlagMap, 0L)
             )
+        )
 
-            // Then
-            assertThat(result.get(1, TimeUnit.SECONDS)).isTrue()
-        } finally {
-            executor.shutdownNow()
-        }
+        // Then
+        assertThat(repository.hasFlagsForContext(testContext)).isTrue()
     }
 
     @Test

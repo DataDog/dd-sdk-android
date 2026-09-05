@@ -9,7 +9,7 @@ package com.datadog.android.flags
 /**
  * Describes configuration to be used for the Flags feature.
  */
-@ExposedCopyVisibility
+@ConsistentCopyVisibility
 data class FlagsConfiguration internal constructor(
     internal val trackExposures: Boolean,
     internal val trackEvaluations: Boolean,
