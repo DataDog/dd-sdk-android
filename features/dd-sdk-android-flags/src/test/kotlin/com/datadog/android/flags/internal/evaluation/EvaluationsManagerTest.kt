@@ -458,6 +458,7 @@ internal class EvaluationsManagerTest {
             scheduler = InitializationTimeoutScheduler { timeoutMs, action ->
                 scheduledTimeoutMs = timeoutMs
                 timeoutAction = action
+                {}
             }
         )
 
@@ -509,6 +510,7 @@ internal class EvaluationsManagerTest {
             initializationTimeoutMs = 0,
             scheduler = InitializationTimeoutScheduler { _, action ->
                 action()
+                return@InitializationTimeoutScheduler {}
             }
         )
 
@@ -532,11 +534,12 @@ internal class EvaluationsManagerTest {
     }
 
     @Test
-    fun `M leave timeout task scheduled W updateEvaluationsForContext() { operation completes first }`() {
+    fun `M cancel timeout task W updateEvaluationsForContext() { operation completes first }`() {
         // Given
         val context = EvaluationContext(fakeTargetingKey, emptyMap())
         val callback = mock<EvaluationContextCallback>()
         var timeoutAction: (() -> Unit)? = null
+        var timeoutCancellationCount = 0
         whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
             .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(emptyMap())
@@ -544,6 +547,7 @@ internal class EvaluationsManagerTest {
             initializationTimeoutMs = 2_500L,
             scheduler = InitializationTimeoutScheduler { _, action ->
                 timeoutAction = action
+                { timeoutCancellationCount += 1 }
             }
         )
 
@@ -554,6 +558,7 @@ internal class EvaluationsManagerTest {
         // Then
         verify(callback).onSuccess()
         verify(callback, times(0)).onFailure(any())
+        assertThat(timeoutCancellationCount).isEqualTo(1)
     }
 
     @Test
@@ -570,6 +575,7 @@ internal class EvaluationsManagerTest {
             initializationTimeoutMs = 2_500L,
             scheduler = InitializationTimeoutScheduler { _, action ->
                 timeoutAction = action
+                {}
             }
         )
 
@@ -601,6 +607,7 @@ internal class EvaluationsManagerTest {
             initializationTimeoutMs = 2_500L,
             scheduler = InitializationTimeoutScheduler { _, action ->
                 timeoutAction = action
+                {}
             }
         )
 
@@ -761,6 +768,7 @@ internal class EvaluationsManagerTest {
                     initializationTimeoutMs = 2_500L,
                     initializationTimeoutScheduler = InitializationTimeoutScheduler { _, action ->
                         timeoutAction.set(action)
+                        return@InitializationTimeoutScheduler {}
                     }
                 )
                 val callbackCount = AtomicInteger()
@@ -980,6 +988,47 @@ internal class EvaluationsManagerTest {
     }
 
     @Test
+    fun `M release timeout scheduler W updateEvaluationsForContext() { timeout state listener blocks }`() {
+        // Given
+        val context = EvaluationContext(fakeTargetingKey, emptyMap())
+        var timeoutAction: (() -> Unit)? = null
+        val listenerStarted = CountDownLatch(1)
+        val releaseListener = CountDownLatch(1)
+        val timeoutActionReturned = CountDownLatch(1)
+        whenever(mockExecutorService.execute(any())).thenAnswer { null }
+        whenever(mockFlagsStateManager.updateState(argThat { this is FlagsClientState.Error }))
+            .thenAnswer {
+                listenerStarted.countDown()
+                releaseListener.await()
+            }
+        val manager = createManager(
+            initializationTimeoutMs = 2_500L,
+            scheduler = InitializationTimeoutScheduler { _, action ->
+                timeoutAction = action
+                {}
+            },
+            callbackDispatcher = InitializationTimeoutCallbackDispatcher { action -> Thread(action).start() }
+        )
+        manager.updateEvaluationsForContext(context)
+
+        // When
+        val timeoutThread = Thread {
+            checkNotNull(timeoutAction).invoke()
+            timeoutActionReturned.countDown()
+        }
+        timeoutThread.start()
+        val didStartListener = listenerStarted.await(1, TimeUnit.SECONDS)
+        val didReturnWhileBlocked = timeoutActionReturned.await(250, TimeUnit.MILLISECONDS)
+        releaseListener.countDown()
+        timeoutThread.join(1_000)
+
+        // Then
+        assertThat(didStartListener).isTrue()
+        assertThat(didReturnWhileBlocked).isTrue()
+        assertThat(timeoutThread.isAlive).isFalse()
+    }
+
+    @Test
     fun `M ignore late success W updateEvaluationsForContext() { newer context is pending }`() {
         // Given
         val contextA = EvaluationContext("user-A", emptyMap())
@@ -1050,6 +1099,44 @@ internal class EvaluationsManagerTest {
         // Then
         assertThat(firstSubmission.isAlive).isFalse()
         assertThat(observedState.get()).isEqualTo(FlagsClientState.Ready)
+    }
+
+    @Test
+    fun `M serialize context generation W updateEvaluationsForContext() { reconciling listener blocks }`() {
+        // Given
+        val firstReconcilingStarted = CountDownLatch(1)
+        val releaseFirstReconciling = CountDownLatch(1)
+        val secondSubmissionFinished = CountDownLatch(1)
+        val reconcilingCount = AtomicInteger()
+        whenever(mockExecutorService.execute(any())).thenAnswer { null }
+        whenever(mockFlagsStateManager.updateState(FlagsClientState.Reconciling)).thenAnswer {
+            if (reconcilingCount.incrementAndGet() == 1) {
+                firstReconcilingStarted.countDown()
+                assertThat(releaseFirstReconciling.await(2, TimeUnit.SECONDS)).isTrue()
+            }
+        }
+        val manager = createManager(scheduler = InitializationTimeoutScheduler { _, _ -> {} })
+
+        // When
+        val firstSubmission = Thread {
+            manager.updateEvaluationsForContext(EvaluationContext("user-A", emptyMap()))
+        }
+        firstSubmission.start()
+        assertThat(firstReconcilingStarted.await(1, TimeUnit.SECONDS)).isTrue()
+        val secondSubmission = Thread {
+            manager.updateEvaluationsForContext(EvaluationContext("user-B", emptyMap()))
+            secondSubmissionFinished.countDown()
+        }
+        secondSubmission.start()
+        val secondFinishedBeforeRelease = secondSubmissionFinished.await(250, TimeUnit.MILLISECONDS)
+        releaseFirstReconciling.countDown()
+        firstSubmission.join(1_000)
+        secondSubmission.join(1_000)
+
+        // Then
+        assertThat(secondFinishedBeforeRelease).isFalse()
+        assertThat(firstSubmission.isAlive).isFalse()
+        assertThat(secondSubmission.isAlive).isFalse()
     }
 
     @Test

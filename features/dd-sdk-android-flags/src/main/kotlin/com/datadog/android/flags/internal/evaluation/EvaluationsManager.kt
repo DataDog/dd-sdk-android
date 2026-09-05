@@ -24,23 +24,41 @@ import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import java.util.concurrent.ExecutorService
 
+internal typealias InitializationTimeoutCancellation = () -> Unit
+
 internal fun interface InitializationTimeoutScheduler {
-    fun schedule(timeoutMs: Long, action: () -> Unit)
+    fun schedule(timeoutMs: Long, action: () -> Unit): InitializationTimeoutCancellation
 }
 
 internal fun interface InitializationTimeoutCallbackDispatcher {
     fun dispatch(action: () -> Unit)
 }
 
-private class InitializationCompletion(private var callback: EvaluationContextCallback?) {
-    private val lock = Any()
+private class InitializationCompletion(
+    private val lock: Any,
+    private var callback: EvaluationContextCallback?
+) {
     private var isPending = true
+    private var cancelTimeout: (() -> Unit)? = null
+
+    fun armTimeoutCancellation(cancellation: () -> Unit) {
+        val cancelNow = synchronized(lock) {
+            if (isPending) {
+                cancelTimeout = cancellation
+                false
+            } else {
+                true
+            }
+        }
+        if (cancelNow) cancellation()
+    }
 
     fun complete(
         publishState: (didWin: Boolean) -> Unit,
         notify: (EvaluationContextCallback) -> Unit
     ) {
         var winningCallback: EvaluationContextCallback? = null
+        var timeoutCancellation: (() -> Unit)? = null
         try {
             synchronized(lock) {
                 val didWin = isPending
@@ -48,10 +66,13 @@ private class InitializationCompletion(private var callback: EvaluationContextCa
                     isPending = false
                     winningCallback = callback
                     callback = null
+                    timeoutCancellation = cancelTimeout
+                    cancelTimeout = null
                 }
                 publishState(didWin)
             }
         } finally {
+            timeoutCancellation?.invoke()
             winningCallback?.let(notify)
         }
     }
@@ -113,9 +134,9 @@ internal class EvaluationsManager(
             contextUpdateCount += 1
             val ownsInitialization = !didStartInitialization
             didStartInitialization = true
+            flagStateManager.updateState(FlagsClientState.Reconciling)
             ContextUpdate(contextUpdateCount, ownsInitialization)
         }
-        flagStateManager.updateState(FlagsClientState.Reconciling)
         val initializationCompletion = startInitializationTimeout(context, contextUpdate, callback)
 
         sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)
@@ -221,29 +242,28 @@ internal class EvaluationsManager(
         val timeoutMs = initializationTimeoutMs
         if (!contextUpdate.ownsInitialization || timeoutMs == null) return null
 
-        return InitializationCompletion(callback).also { completion ->
-            initializationTimeoutScheduler.schedule(timeoutMs) {
-                val error = FlagsInitializationTimeoutException(timeoutMs)
-                completion.complete(
-                    publishState = { didWin ->
-                        if (didWin) {
-                            internalLogger.log(
-                                InternalLogger.Level.WARN,
-                                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                                { INITIALIZATION_TIMEOUT_MESSAGE },
-                                error,
-                                onlyOnce = true
-                            )
-                            publishInitializationTimeout(context, error, contextUpdate.generation)
-                        }
-                    },
-                    notify = { timeoutCallback ->
-                        initializationTimeoutCallbackDispatcher.dispatch {
-                            timeoutCallback.onFailure(error)
-                        }
-                    }
-                )
+        return InitializationCompletion(contextUpdateLock, callback).also { completion ->
+            val cancelTimeout = initializationTimeoutScheduler.schedule(timeoutMs) {
+                initializationTimeoutCallbackDispatcher.dispatch {
+                    val error = FlagsInitializationTimeoutException(timeoutMs)
+                    completion.complete(
+                        publishState = { didWin ->
+                            if (didWin) {
+                                internalLogger.log(
+                                    InternalLogger.Level.WARN,
+                                    listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                                    { INITIALIZATION_TIMEOUT_MESSAGE },
+                                    error,
+                                    onlyOnce = true
+                                )
+                                publishInitializationTimeout(context, error, contextUpdate.generation)
+                            }
+                        },
+                        notify = { timeoutCallback -> timeoutCallback.onFailure(error) }
+                    )
+                }
             }
+            completion.armTimeoutCancellation(cancelTimeout)
         }
     }
 

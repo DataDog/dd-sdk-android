@@ -33,6 +33,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -139,7 +140,7 @@ internal class DefaultFlagsRepositoryTest {
     }
 
     @Test
-    fun `M remove memory and persistence W clear()`() {
+    fun `M remove memory and preserve persistence W clear()`() {
         // Given
         testedRepository.setFlagsAndContext(testContext, singleFlagMap)
 
@@ -149,7 +150,7 @@ internal class DefaultFlagsRepositoryTest {
         // Then
         assertThat(testedRepository.getEvaluationContext()).isNull()
         assertThat(testedRepository.getFlagsSnapshot()).isEmpty()
-        verify(mockDataStore).removeValue(key = eq("flags-state-default"), callback = any())
+        verify(mockDataStore, times(0)).removeValue(key = eq("flags-state-default"), callback = any())
     }
 
     @Test

@@ -120,7 +120,7 @@ internal class FlagsFeatureTest {
     }
 
     @Test
-    fun `M preserve pending initialization deadlines W onStop()`() {
+    fun `M cancel pending initialization deadlines W onStop()`() {
         // Given
         val timeoutExecutor = mock<ScheduledExecutorService>()
         whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn timeoutExecutor
@@ -131,11 +131,52 @@ internal class FlagsFeatureTest {
         testedFeature.onStop()
 
         // Then
-        verify(timeoutExecutor).shutdown()
+        verify(timeoutExecutor).shutdownNow()
     }
 
     @Test
-    fun `M execute accepted timeout W onStop() { scheduling races shutdown }`() {
+    fun `M cancel scheduled deadline W timeout cancellation`() {
+        // Given
+        val timeoutExecutor = mock<ScheduledExecutorService>()
+        val scheduledFuture = mock<ScheduledFuture<*>>()
+        whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn timeoutExecutor
+        whenever(timeoutExecutor.schedule(any<Runnable>(), eq(2_500L), eq(TimeUnit.MILLISECONDS)))
+            .thenReturn(scheduledFuture)
+        testedFeature.onInitialize(mockContext)
+        val cancelTimeout = testedFeature.initializationTimeoutScheduler.schedule(2_500L) {}
+
+        // When
+        cancelTimeout()
+
+        // Then
+        verify(scheduledFuture).cancel(false)
+    }
+
+    @Test
+    fun `M terminate timeout scheduler W onStop() { deadline is pending }`() {
+        // Given
+        val timeoutExecutor = ScheduledThreadPoolExecutor(1)
+        whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn timeoutExecutor
+        testedFeature.onInitialize(mockContext)
+        val timeoutExecuted = CountDownLatch(1)
+        testedFeature.initializationTimeoutScheduler.schedule(10_000L) {
+            timeoutExecuted.countDown()
+        }
+
+        try {
+            // When
+            testedFeature.onStop()
+
+            // Then
+            assertThat(timeoutExecutor.awaitTermination(250, TimeUnit.MILLISECONDS)).isTrue()
+            assertThat(timeoutExecuted.count).isEqualTo(1)
+        } finally {
+            timeoutExecutor.shutdownNow()
+        }
+    }
+
+    @Test
+    fun `M cancel accepted timeout W onStop() { scheduling races shutdown }`() {
         // Given
         val timeoutExecutor = BlockingScheduleExecutor()
         whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn timeoutExecutor
@@ -143,7 +184,7 @@ internal class FlagsFeatureTest {
         val timeoutExecuted = CountDownLatch(1)
         val scheduleFinished = CountDownLatch(1)
         val scheduleThread = Thread {
-            testedFeature.initializationTimeoutScheduler.schedule(0) {
+            testedFeature.initializationTimeoutScheduler.schedule(2_500) {
                 timeoutExecuted.countDown()
             }
             scheduleFinished.countDown()
@@ -159,7 +200,7 @@ internal class FlagsFeatureTest {
             timeoutExecutor.releaseSchedule.countDown()
         }
         releaseThread.start()
-        val didExecute = timeoutExecuted.await(1, TimeUnit.SECONDS)
+        val didExecute = timeoutExecuted.await(250, TimeUnit.MILLISECONDS)
 
         // Then
         timeoutExecutor.releaseSchedule.countDown()
@@ -167,14 +208,14 @@ internal class FlagsFeatureTest {
         stopThread.join(1_000)
         releaseThread.join(1_000)
         timeoutExecutor.shutdownNow()
-        assertThat(didExecute).isTrue()
+        assertThat(didExecute).isFalse()
         assertThat(scheduleFinished.count).isZero()
         assertThat(scheduleThread.isAlive).isFalse()
         assertThat(stopThread.isAlive).isFalse()
     }
 
     @Test
-    fun `M execute timeout without creating executor W schedule() { feature is stopped }`() {
+    fun `M cancel timeout without creating executor W schedule() { feature is stopped }`() {
         // Given
         val timeoutExecutor = mock<ScheduledExecutorService>()
         whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn timeoutExecutor
@@ -188,7 +229,7 @@ internal class FlagsFeatureTest {
         }
 
         // Then
-        assertThat(executionCount).isEqualTo(1)
+        assertThat(executionCount).isZero()
         verify(mockSdkCore, times(0)).createScheduledExecutorService(any())
     }
 
@@ -339,8 +380,8 @@ private class BlockingScheduleExecutor : ScheduledThreadPoolExecutor(
         return super.schedule(command, delay, unit)
     }
 
-    override fun shutdown() {
+    override fun shutdownNow(): MutableList<Runnable> {
         shutdownStarted.countDown()
-        super.shutdown()
+        return super.shutdownNow()
     }
 }
