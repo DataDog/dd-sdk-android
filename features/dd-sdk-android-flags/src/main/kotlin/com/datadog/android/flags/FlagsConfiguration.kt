@@ -152,9 +152,14 @@ data class FlagsConfiguration internal constructor(
          * the ready state. It does not change the HTTP client's timeout. The assignment operation continues after
          * this timeout and can update the client to [com.datadog.android.flags.model.FlagsClientState.Ready].
          *
-         * Negative values are coerced to zero.
+         * The timeout applies only to the first [FlagsClient.setEvaluationContext] call. Once that call starts,
+         * the timeout is consumed even if the operation fails; later calls, including retries, are not bounded by
+         * this setting. If matching cached assignments are available when the timeout fires, the client becomes
+         * [com.datadog.android.flags.model.FlagsClientState.Stale]; otherwise it becomes
+         * [com.datadog.android.flags.model.FlagsClientState.Error].
          *
-         * If this method is not called, initialization has no timeout.
+         * A value of zero causes an immediate timeout. Negative values are coerced to zero. If this method is not
+         * called, initialization has no timeout.
          *
          * @param timeoutMs The initialization timeout in milliseconds.
          * @return this [Builder] instance for method chaining.

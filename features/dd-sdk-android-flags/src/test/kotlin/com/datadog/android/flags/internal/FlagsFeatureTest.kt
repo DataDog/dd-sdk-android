@@ -35,6 +35,7 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.ScheduledExecutorService
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -110,6 +111,20 @@ internal class FlagsFeatureTest {
 
         // Then
         assertThat(testedFeature.dataWriter).isInstanceOf(NoOpRecordWriter::class.java)
+    }
+
+    @Test
+    fun `M preserve pending initialization deadlines W onStop()`() {
+        // Given
+        val timeoutExecutor = mock<ScheduledExecutorService>()
+        whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn timeoutExecutor
+        testedFeature.initializationTimeoutScheduler.schedule(2_500L) {}
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        verify(timeoutExecutor).shutdown()
     }
 
     // endregion

@@ -130,7 +130,7 @@ internal class FlagsFeature(
             initializationTimeoutExecutor.also { initializationTimeoutExecutor = null }
         }
         @Suppress("UnsafeThirdPartyFunctionCall") // Android does not use a SecurityManager.
-        timeoutExecutor?.shutdownNow()
+        timeoutExecutor?.shutdown()
         synchronized(registeredClients) {
             registeredClients.clear()
         }

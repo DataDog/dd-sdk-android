@@ -96,6 +96,8 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
      * an empty context will be used in order to initialize the underlying [FlagsClient].
      *
      * The method suspends while the [FlagsClient] in turn, takes the context and fetches the flags from the server.
+     * The configured initialization timeout applies only if this call performs the client's first context operation.
+     * A context operation completed before this provider is created consumes that one-shot timeout.
      *
      * @param initialContext The initial evaluation context to set (optional)
      * @throws OpenFeatureError if initialization fails or reaches the configured Flags initialization timeout

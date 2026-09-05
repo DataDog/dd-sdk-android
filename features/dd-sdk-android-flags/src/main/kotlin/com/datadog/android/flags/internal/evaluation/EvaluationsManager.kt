@@ -6,12 +6,15 @@
 
 package com.datadog.android.flags.internal.evaluation
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.internal.FlagsStateManager
+import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.net.NetworkRequestFailedException
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.repository.FlagsRepository
@@ -19,7 +22,6 @@ import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.atomic.AtomicBoolean
 
 internal fun interface InitializationTimeoutScheduler {
     fun schedule(timeoutMs: Long, action: () -> Unit): () -> Unit
@@ -47,9 +49,9 @@ private class InitializationCompletion(private var callback: EvaluationContextCa
         if (cancelNow) cancellation()
     }
 
-    fun complete(action: (InitializationResult?) -> Unit) {
+    fun complete(action: (InitializationResult?) -> () -> Unit) {
         var timeoutCancellation: (() -> Unit)? = null
-        synchronized(lock) {
+        val callout = synchronized(lock) {
             val result = if (isPending) {
                 isPending = false
                 timeoutCancellation = cancelTimeout
@@ -58,9 +60,10 @@ private class InitializationCompletion(private var callback: EvaluationContextCa
             } else {
                 null
             }
-            timeoutCancellation?.invoke()
             action(result)
         }
+        timeoutCancellation?.invoke()
+        callout()
     }
 }
 
@@ -92,7 +95,11 @@ internal class EvaluationsManager(
     private val initializationTimeoutMs: Long?,
     private val initializationTimeoutScheduler: InitializationTimeoutScheduler
 ) {
-    private val didStartInitialization = AtomicBoolean(false)
+    private val contextUpdateLock = Any()
+    private var didStartInitialization = false
+    private var contextUpdateCount = 0L
+
+    private data class ContextUpdate(val generation: Long, val ownsInitialization: Boolean)
 
     /**
      * Processes a new evaluation context by fetching flags and storing atomically.
@@ -109,8 +116,14 @@ internal class EvaluationsManager(
      * @param callback Optional callback invoked when the context is set and the flags have been fetched successfully or not.
      */
     fun updateEvaluationsForContext(context: EvaluationContext, callback: EvaluationContextCallback? = null) {
+        val contextUpdate = synchronized(contextUpdateLock) {
+            contextUpdateCount += 1
+            val ownsInitialization = !didStartInitialization
+            didStartInitialization = true
+            ContextUpdate(contextUpdateCount, ownsInitialization)
+        }
         flagStateManager.updateState(FlagsClientState.Reconciling)
-        val initializationCompletion = startInitializationTimeout(callback)
+        val initializationCompletion = startInitializationTimeout(context, contextUpdate, callback)
 
         sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)
             ?.withContext(withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)) { datadogContext ->
@@ -118,76 +131,138 @@ internal class EvaluationsManager(
                     operationName = FETCH_AND_STORE_OPERATION_NAME,
                     internalLogger = internalLogger
                 ) {
-                    internalLogger.log(
-                        InternalLogger.Level.DEBUG,
-                        InternalLogger.Target.MAINTAINER,
-                        { "Processing evaluation context: ${context.targetingKey}" }
+                    processContext(
+                        context,
+                        datadogContext,
+                        contextUpdate,
+                        callback,
+                        initializationCompletion
                     )
-
-                    val hadFlags = flagsRepository.hasFlags()
-                    val response = assignmentsReader.readPrecomputedFlags(context, datadogContext)
-                    if (response != null) {
-                        val flagsMap = precomputeMapper.map(response)
-                        flagsRepository.setFlagsAndContext(context, flagsMap)
-                        internalLogger.log(
-                            InternalLogger.Level.DEBUG,
-                            InternalLogger.Target.MAINTAINER,
-                            { "Successfully processed context ${context.targetingKey} with ${flagsMap.size} flags" }
-                        )
-
-                        val finish: (InitializationResult?) -> Unit = { result ->
-                            flagStateManager.updateState(FlagsClientState.Ready)
-                            result?.callback?.onSuccess()
-                        }
-                        if (initializationCompletion == null) {
-                            finish(InitializationResult(callback))
-                        } else {
-                            initializationCompletion.complete(finish)
-                        }
-                    } else {
-                        internalLogger.log(
-                            InternalLogger.Level.WARN,
-                            InternalLogger.Target.USER,
-                            { NETWORK_REQUEST_FAILED_MESSAGE }
-                        )
-
-                        val throwable = NetworkRequestFailedException(NETWORK_REQUEST_FAILED_MESSAGE)
-                        // Only use cached flags if they match the requested context to avoid
-                        // serving flags from a different user/context.
-                        val cachedContextMatches = flagsRepository.getEvaluationContext() == context
-                        val finish: (InitializationResult?) -> Unit = { result ->
-                            if (hadFlags && cachedContextMatches) {
-                                flagStateManager.updateState(FlagsClientState.Stale)
-                            } else {
-                                flagStateManager.updateState(FlagsClientState.Error(throwable))
-                            }
-                            result?.callback?.onFailure(throwable)
-                        }
-                        if (initializationCompletion == null) {
-                            finish(InitializationResult(callback))
-                        } else {
-                            initializationCompletion.complete(finish)
-                        }
-                    }
                 }
             }
     }
 
-    private fun startInitializationTimeout(callback: EvaluationContextCallback?): InitializationCompletion? {
+    @WorkerThread
+    private fun processContext(
+        context: EvaluationContext,
+        datadogContext: DatadogContext,
+        contextUpdate: ContextUpdate,
+        callback: EvaluationContextCallback?,
+        initializationCompletion: InitializationCompletion?
+    ) {
+        internalLogger.log(
+            InternalLogger.Level.DEBUG,
+            InternalLogger.Target.MAINTAINER,
+            { "Processing evaluation context: ${context.targetingKey}" }
+        )
+
+        val hadFlags = flagsRepository.hasFlags()
+        val response = assignmentsReader.readPrecomputedFlags(context, datadogContext)
+        if (response != null) {
+            val flagsMap = precomputeMapper.map(response)
+            internalLogger.log(
+                InternalLogger.Level.DEBUG,
+                InternalLogger.Target.MAINTAINER,
+                { "Successfully processed context ${context.targetingKey} with ${flagsMap.size} flags" }
+            )
+            finish(initializationCompletion, callback) { result ->
+                publishSuccess(context, flagsMap, contextUpdate.generation)
+                val callout: () -> Unit = { result?.callback?.onSuccess() }
+                callout
+            }
+        } else {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { NETWORK_REQUEST_FAILED_MESSAGE }
+            )
+            val error = NetworkRequestFailedException(NETWORK_REQUEST_FAILED_MESSAGE)
+            val cachedContextMatches = flagsRepository.getEvaluationContext() == context
+            finish(initializationCompletion, callback) { result ->
+                publishFailure(hadFlags, cachedContextMatches, error, contextUpdate.generation)
+                val callout: () -> Unit = { result?.callback?.onFailure(error) }
+                callout
+            }
+        }
+    }
+
+    private fun finish(
+        initializationCompletion: InitializationCompletion?,
+        callback: EvaluationContextCallback?,
+        action: (InitializationResult?) -> () -> Unit
+    ) {
+        if (initializationCompletion == null) {
+            action(InitializationResult(callback)).invoke()
+        } else {
+            initializationCompletion.complete(action)
+        }
+    }
+
+    private fun startInitializationTimeout(
+        context: EvaluationContext,
+        contextUpdate: ContextUpdate,
+        callback: EvaluationContextCallback?
+    ): InitializationCompletion? {
         val timeoutMs = initializationTimeoutMs
-        if (!didStartInitialization.compareAndSet(false, true) || timeoutMs == null) return null
+        if (!contextUpdate.ownsInitialization || timeoutMs == null) return null
 
         return InitializationCompletion(callback).also { completion ->
             val cancelTimeout = initializationTimeoutScheduler.schedule(timeoutMs) {
                 completion.complete { result ->
                     if (result != null) {
                         val error = FlagsInitializationTimeoutException(timeoutMs)
-                        flagStateManager.updateState(FlagsClientState.Error(error))
-                        result.callback?.onFailure(error)
+                        publishInitializationTimeout(context, error, contextUpdate.generation)
+                        return@complete { result.callback?.onFailure(error) }
                     }
+                    {}
                 }
             }
             completion.armTimeoutCancellation(cancelTimeout)
+        }
+    }
+
+    private fun publishSuccess(
+        context: EvaluationContext,
+        flags: Map<String, PrecomputedFlag>,
+        contextUpdate: Long
+    ) {
+        synchronized(contextUpdateLock) {
+            if (contextUpdateCount != contextUpdate) return
+            flagsRepository.setFlagsAndContext(context, flags)
+            flagStateManager.updateState(FlagsClientState.Ready)
+        }
+    }
+
+    private fun publishFailure(
+        hadFlags: Boolean,
+        cachedContextMatches: Boolean,
+        error: Throwable,
+        contextUpdate: Long
+    ) {
+        synchronized(contextUpdateLock) {
+            if (contextUpdateCount != contextUpdate) return
+            if (hadFlags && cachedContextMatches) {
+                flagStateManager.updateState(FlagsClientState.Stale)
+            } else {
+                flagStateManager.updateState(FlagsClientState.Error(error))
+            }
+        }
+    }
+
+    private fun publishInitializationTimeout(
+        context: EvaluationContext,
+        error: Throwable,
+        contextUpdate: Long
+    ) {
+        synchronized(contextUpdateLock) {
+            if (contextUpdateCount != contextUpdate) return
+            val hasMatchingCache = flagsRepository.hasFlagsForContext(context)
+            if (hasMatchingCache) {
+                flagStateManager.updateState(FlagsClientState.Stale)
+            } else {
+                flagsRepository.clear()
+                flagStateManager.updateState(FlagsClientState.Error(error))
+            }
         }
     }
 

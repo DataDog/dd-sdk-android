@@ -26,6 +26,8 @@ internal class DefaultFlagsRepository(
 ) : FlagsRepository {
     private data class FlagsState(val context: EvaluationContext, val flags: Map<String, PrecomputedFlag>)
     private val atomicState = AtomicReference<FlagsState?>(null)
+    private val persistenceLoadLock = Any()
+    private var canApplyPersistenceLoad = true
 
     @Suppress("UnsafeThirdPartyFunctionCall") // Safe: count is positive constant (1)
     private val persistenceLoadedLatch = CountDownLatch(1)
@@ -36,9 +38,13 @@ internal class DefaultFlagsRepository(
         internalLogger = internalLogger
     ) { persistedState ->
         try {
-            persistedState?.let {
-                val loadedState = FlagsState(it.evaluationContext, it.flags)
-                atomicState.compareAndSet(null, loadedState)
+            synchronized(persistenceLoadLock) {
+                if (canApplyPersistenceLoad) {
+                    canApplyPersistenceLoad = false
+                    persistedState?.let {
+                        atomicState.set(FlagsState(it.evaluationContext, it.flags))
+                    }
+                }
             }
         } finally {
             persistenceLoadedLatch.countDown()
@@ -47,7 +53,10 @@ internal class DefaultFlagsRepository(
 
     override fun setFlagsAndContext(context: EvaluationContext, flags: Map<String, PrecomputedFlag>) {
         val newState = FlagsState(context, flags)
-        atomicState.set(newState)
+        synchronized(persistenceLoadLock) {
+            canApplyPersistenceLoad = false
+            atomicState.set(newState)
+        }
         persistenceLoadedLatch.countDown()
 
         persistenceManager.saveFlagsState(
@@ -63,6 +72,28 @@ internal class DefaultFlagsRepository(
                         target = InternalLogger.Target.MAINTAINER,
                         level = InternalLogger.Level.WARN,
                         messageBuilder = { ERROR_SAVING_FLAGS_STATE }
+                    )
+                }
+            }
+        )
+    }
+
+    override fun clear() {
+        synchronized(persistenceLoadLock) {
+            canApplyPersistenceLoad = false
+            atomicState.set(null)
+        }
+        persistenceLoadedLatch.countDown()
+        persistenceManager.clearFlagsState(
+            object : DataStoreWriteCallback {
+                override fun onSuccess() {
+                }
+
+                override fun onFailure() {
+                    internalLogger.log(
+                        target = InternalLogger.Target.MAINTAINER,
+                        level = InternalLogger.Level.WARN,
+                        messageBuilder = { ERROR_CLEARING_FLAGS_STATE }
                     )
                 }
             }
@@ -107,6 +138,11 @@ internal class DefaultFlagsRepository(
         return atomicState.get()?.flags?.isNotEmpty() ?: false
     }
 
+    override fun hasFlagsForContext(context: EvaluationContext): Boolean {
+        val state = atomicState.get()
+        return state?.context == context && state.flags.isNotEmpty()
+    }
+
     @Suppress("ReturnCount")
     override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>? {
         waitForPersistenceLoad()
@@ -128,6 +164,7 @@ internal class DefaultFlagsRepository(
         const val WARN_CONTEXT_NOT_SET = "You must call FlagsClientManager.get().setEvaluationContext " +
             "in order to have flags available"
         const val ERROR_SAVING_FLAGS_STATE = "Failed to save flags state to persistent storage"
+        const val ERROR_CLEARING_FLAGS_STATE = "Failed to clear flags state from persistent storage"
         private const val PERSISTENCE_LOAD_TIMEOUT_MS = 100L
     }
 }
