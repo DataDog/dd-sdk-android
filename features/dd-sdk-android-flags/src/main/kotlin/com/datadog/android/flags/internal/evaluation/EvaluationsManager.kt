@@ -34,82 +34,6 @@ internal fun interface InitializationTimeoutCallbackDispatcher {
     fun dispatch(action: () -> Unit)
 }
 
-private class InitializationCompletion(
-    private val lock: Any,
-    private var callback: EvaluationContextCallback?
-) {
-    data class TimeoutClaim(val callback: EvaluationContextCallback?)
-
-    private var isPending = true
-    private var didTimeoutWin = false
-    private var didPublishTimeout = false
-    private var cancelTimeout: (() -> Unit)? = null
-    private var deferredNetworkPublication: (() -> Unit)? = null
-
-    fun armTimeoutCancellation(cancellation: () -> Unit) {
-        val cancelNow = synchronized(lock) {
-            if (isPending) {
-                cancelTimeout = cancellation
-                false
-            } else {
-                true
-            }
-        }
-        if (cancelNow) cancellation()
-    }
-
-    fun complete(
-        publishState: (didWin: Boolean) -> Unit,
-        notify: (EvaluationContextCallback) -> Unit
-    ) {
-        var winningCallback: EvaluationContextCallback? = null
-        var timeoutCancellation: (() -> Unit)? = null
-        try {
-            synchronized(lock) {
-                val didWin = isPending
-                if (didWin) {
-                    isPending = false
-                    winningCallback = callback
-                    callback = null
-                    timeoutCancellation = cancelTimeout
-                    cancelTimeout = null
-                }
-                if (!didWin && didTimeoutWin && !didPublishTimeout) {
-                    deferredNetworkPublication = { publishState(false) }
-                } else {
-                    publishState(didWin)
-                }
-            }
-        } finally {
-            timeoutCancellation?.invoke()
-            winningCallback?.let(notify)
-        }
-    }
-
-    fun claimTimeout(): TimeoutClaim? = synchronized(lock) {
-        if (!isPending) return null
-        isPending = false
-        didTimeoutWin = true
-        val winningCallback = callback
-        callback = null
-        cancelTimeout = null
-        TimeoutClaim(winningCallback)
-    }
-
-    fun publishTimeout(publishState: () -> Unit) {
-        synchronized(lock) {
-            if (!didTimeoutWin || didPublishTimeout) return
-            try {
-                publishState()
-            } finally {
-                didPublishTimeout = true
-                deferredNetworkPublication?.invoke()
-                deferredNetworkPublication = null
-            }
-        }
-    }
-}
-
 /**
  * Orchestrates evaluations for a given context and stores the results in the repository.
  *
@@ -141,9 +65,21 @@ internal class EvaluationsManager(
     private val initializationTimeoutCallbackDispatcher: InitializationTimeoutCallbackDispatcher =
         InitializationTimeoutCallbackDispatcher { it() }
 ) {
+    private enum class InitializationTimeoutPhase {
+        PENDING,
+        CLAIMED,
+        PUBLISHED,
+        COMPLETED
+    }
+
     private val contextUpdateLock = Any()
     private var didStartInitialization = false
     private var contextUpdateCount = 0L
+    private val pendingContextCallbacks = linkedMapOf<Long, EvaluationContextCallback>()
+    private var initializationTimeoutGeneration: Long? = null
+    private var initializationTimeoutPhase: InitializationTimeoutPhase? = null
+    private var initializationTimeoutCancellation: InitializationTimeoutCancellation? = null
+    private var deferredInitializationNetworkCompletion: (() -> Unit)? = null
 
     private data class ContextUpdate(val generation: Long, val ownsInitialization: Boolean)
 
@@ -164,12 +100,18 @@ internal class EvaluationsManager(
     fun updateEvaluationsForContext(context: EvaluationContext, callback: EvaluationContextCallback? = null) {
         val contextUpdate = synchronized(contextUpdateLock) {
             contextUpdateCount += 1
+            val generation = contextUpdateCount
             val ownsInitialization = !didStartInitialization
             didStartInitialization = true
+            callback?.let { pendingContextCallbacks[generation] = it }
+            if (ownsInitialization && initializationTimeoutMs != null) {
+                initializationTimeoutGeneration = generation
+                initializationTimeoutPhase = InitializationTimeoutPhase.PENDING
+            }
             flagStateManager.updateState(FlagsClientState.Reconciling)
-            ContextUpdate(contextUpdateCount, ownsInitialization)
+            ContextUpdate(generation, ownsInitialization)
         }
-        val initializationCompletion = startInitializationTimeout(context, contextUpdate, callback)
+        startInitializationTimeout(context, contextUpdate)
 
         sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)
             ?.withContext(withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)) { datadogContext ->
@@ -180,9 +122,7 @@ internal class EvaluationsManager(
                     processContext(
                         context,
                         datadogContext,
-                        contextUpdate,
-                        callback,
-                        initializationCompletion
+                        contextUpdate
                     )
                 }
             }
@@ -192,9 +132,7 @@ internal class EvaluationsManager(
     private fun processContext(
         context: EvaluationContext,
         datadogContext: DatadogContext,
-        contextUpdate: ContextUpdate,
-        callback: EvaluationContextCallback?,
-        initializationCompletion: InitializationCompletion?
+        contextUpdate: ContextUpdate
     ) {
         internalLogger.log(
             InternalLogger.Level.DEBUG,
@@ -212,14 +150,12 @@ internal class EvaluationsManager(
                 { "Successfully processed context ${context.targetingKey} with ${flagsMap.size} flags" }
             )
             finish(
-                initializationCompletion = initializationCompletion,
-                callback = callback,
-                publishState = { didWin ->
+                contextUpdate = contextUpdate.generation,
+                publishState = {
                     publishSuccess(
                         context,
                         flagsMap,
-                        contextUpdate.generation,
-                        requireLatest = contextUpdate.ownsInitialization && !didWin
+                        contextUpdate.generation
                     )
                 },
                 notify = EvaluationContextCallback::onSuccess
@@ -233,15 +169,13 @@ internal class EvaluationsManager(
             val error = NetworkRequestFailedException(NETWORK_REQUEST_FAILED_MESSAGE)
             val cachedContextMatches = flagsRepository.getEvaluationContext() == context
             finish(
-                initializationCompletion = initializationCompletion,
-                callback = callback,
-                publishState = { didWin ->
+                contextUpdate = contextUpdate.generation,
+                publishState = {
                     publishFailure(
                         hadFlags,
                         cachedContextMatches,
                         error,
-                        contextUpdate.generation,
-                        requireLatest = contextUpdate.ownsInitialization && !didWin
+                        contextUpdate.generation
                     )
                 },
                 notify = { it.onFailure(error) }
@@ -250,63 +184,140 @@ internal class EvaluationsManager(
     }
 
     private fun finish(
-        initializationCompletion: InitializationCompletion?,
-        callback: EvaluationContextCallback?,
-        publishState: (didWin: Boolean) -> Unit,
+        contextUpdate: Long,
+        publishState: () -> Unit,
         notify: (EvaluationContextCallback) -> Unit
     ) {
-        if (initializationCompletion == null) {
-            try {
-                publishState(true)
-            } finally {
-                callback?.let(notify)
+        var timeoutCancellation: InitializationTimeoutCancellation? = null
+        var callbacks: List<EvaluationContextCallback> = emptyList()
+        var deferred = false
+        var publicationFailure: Exception? = null
+        synchronized(contextUpdateLock) {
+            if (contextUpdateCount != contextUpdate) return@synchronized
+
+            if (initializationTimeoutPhase == InitializationTimeoutPhase.CLAIMED) {
+                deferredInitializationNetworkCompletion = {
+                    finish(contextUpdate, publishState, notify)
+                }
+                deferred = true
+                return@synchronized
             }
-        } else {
-            initializationCompletion.complete(publishState, notify)
+
+            if (initializationTimeoutPhase == InitializationTimeoutPhase.PENDING) {
+                initializationTimeoutPhase = InitializationTimeoutPhase.COMPLETED
+                timeoutCancellation = initializationTimeoutCancellation
+                initializationTimeoutCancellation = null
+            }
+
+            try {
+                publishState()
+            } catch (@Suppress("TooGenericExceptionCaught") throwable: Exception) {
+                publicationFailure = throwable
+            } finally {
+                callbacks = drainCallbacksThrough(contextUpdate)
+            }
+        }
+
+        if (deferred) return
+        timeoutCancellation?.invoke()
+        callbacks.forEach(notify)
+        val reportedFailure = publicationFailure
+        if (reportedFailure != null) {
+            @Suppress("ThrowingInternalException") // propagate the state listener's exception
+            throw reportedFailure
+        }
+    }
+
+    private fun drainCallbacksThrough(contextUpdate: Long): List<EvaluationContextCallback> {
+        val completedGenerations = pendingContextCallbacks.keys.filter { it <= contextUpdate }
+        return completedGenerations.mapNotNull { generation ->
+            @Suppress("UnsafeThirdPartyFunctionCall") // the generation key is non-null
+            pendingContextCallbacks.remove(generation)
         }
     }
 
     private fun startInitializationTimeout(
         context: EvaluationContext,
-        contextUpdate: ContextUpdate,
-        callback: EvaluationContextCallback?
-    ): InitializationCompletion? {
+        contextUpdate: ContextUpdate
+    ) {
         val timeoutMs = initializationTimeoutMs
-        if (!contextUpdate.ownsInitialization || timeoutMs == null) return null
+        if (!contextUpdate.ownsInitialization || timeoutMs == null) return
 
-        return InitializationCompletion(contextUpdateLock, callback).also { completion ->
-            val cancelTimeout = initializationTimeoutScheduler.schedule(timeoutMs) {
-                val timeoutClaim = completion.claimTimeout() ?: return@schedule
-                initializationTimeoutCallbackDispatcher.dispatch {
-                    val error = FlagsInitializationTimeoutException(timeoutMs)
+        val cancelTimeout = initializationTimeoutScheduler.schedule(timeoutMs) {
+            initializationDidTimeOut(context, contextUpdate.generation, timeoutMs)
+        }
+
+        val cancelNow = synchronized(contextUpdateLock) {
+            if (initializationTimeoutGeneration == contextUpdate.generation &&
+                initializationTimeoutPhase == InitializationTimeoutPhase.PENDING
+            ) {
+                initializationTimeoutCancellation = cancelTimeout
+                false
+            } else {
+                true
+            }
+        }
+        if (cancelNow) cancelTimeout()
+    }
+
+    private fun initializationDidTimeOut(context: EvaluationContext, contextUpdate: Long, timeoutMs: Long) {
+        val timeoutCallback = synchronized(contextUpdateLock) {
+            if (initializationTimeoutGeneration != contextUpdate ||
+                initializationTimeoutPhase != InitializationTimeoutPhase.PENDING
+            ) {
+                return
+            }
+            initializationTimeoutPhase = InitializationTimeoutPhase.CLAIMED
+            initializationTimeoutCancellation = null
+            @Suppress("UnsafeThirdPartyFunctionCall") // the generation key is non-null
+            pendingContextCallbacks.remove(contextUpdate)
+        }
+
+        initializationTimeoutCallbackDispatcher.dispatch {
+            val error = FlagsInitializationTimeoutException(timeoutMs)
+            var deferredNetworkCompletion: (() -> Unit)? = null
+            var publicationFailure: Exception? = null
+            synchronized(contextUpdateLock) {
+                if (initializationTimeoutGeneration == contextUpdate &&
+                    initializationTimeoutPhase == InitializationTimeoutPhase.CLAIMED
+                ) {
+                    initializationTimeoutPhase = InitializationTimeoutPhase.PUBLISHED
+                    deferredNetworkCompletion = deferredInitializationNetworkCompletion
+                    deferredInitializationNetworkCompletion = null
                     try {
-                        completion.publishTimeout {
-                            internalLogger.log(
-                                InternalLogger.Level.WARN,
-                                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                                { INITIALIZATION_TIMEOUT_MESSAGE },
-                                error,
-                                onlyOnce = true
-                            )
-                            publishInitializationTimeout(context, error, contextUpdate.generation)
-                        }
-                    } finally {
-                        timeoutClaim.callback?.onFailure(error)
+                        internalLogger.log(
+                            InternalLogger.Level.WARN,
+                            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                            { INITIALIZATION_TIMEOUT_MESSAGE },
+                            error,
+                            onlyOnce = true
+                        )
+                        publishInitializationTimeout(context, error, contextUpdate)
+                    } catch (@Suppress("TooGenericExceptionCaught") throwable: Exception) {
+                        publicationFailure = throwable
                     }
                 }
             }
-            completion.armTimeoutCancellation(cancelTimeout)
+            try {
+                deferredNetworkCompletion?.invoke()
+            } finally {
+                timeoutCallback?.onFailure(error)
+            }
+            val reportedFailure = publicationFailure
+            if (reportedFailure != null) {
+                @Suppress("ThrowingInternalException") // propagate the state listener's exception
+                throw reportedFailure
+            }
         }
     }
 
     private fun publishSuccess(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
-        contextUpdate: Long,
-        requireLatest: Boolean
+        contextUpdate: Long
     ) {
         synchronized(contextUpdateLock) {
-            if (requireLatest && contextUpdateCount != contextUpdate) return
+            if (contextUpdateCount != contextUpdate) return
             flagsRepository.setFlagsAndContext(context, flags)
             flagStateManager.updateState(FlagsClientState.Ready)
         }
@@ -316,11 +327,10 @@ internal class EvaluationsManager(
         hadFlags: Boolean,
         cachedContextMatches: Boolean,
         error: Throwable,
-        contextUpdate: Long,
-        requireLatest: Boolean
+        contextUpdate: Long
     ) {
         synchronized(contextUpdateLock) {
-            if (requireLatest && contextUpdateCount != contextUpdate) return
+            if (contextUpdateCount != contextUpdate) return
             if (hadFlags && cachedContextMatches) {
                 flagStateManager.updateState(FlagsClientState.Stale)
             } else {

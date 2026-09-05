@@ -20,6 +20,7 @@ import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.net.NetworkRequestFailedException
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.internal.repository.FlagsRepository
@@ -894,6 +895,67 @@ internal class EvaluationsManagerTest {
     }
 
     @Test
+    fun `M keep nested caller pending W updateEvaluationsForContext() { ready listener starts context }`() {
+        // Given
+        val firstContext = EvaluationContext("first", emptyMap())
+        val nestedContext = EvaluationContext("nested", emptyMap())
+        val operations = mutableListOf<Runnable>()
+        val firstCallback = mock<EvaluationContextCallback>()
+        val nestedCallback = mock<EvaluationContextCallback>()
+        val stateManager = FlagsStateManager(
+            DDCoreStateHolder.create(
+                initialState = FlagsClientState.NotReady,
+                onStateChanged = FlagsStateListener::onStateChanged
+            )
+        )
+        lateinit var manager: EvaluationsManager
+        var didStartNestedCall = false
+        stateManager.addListener(
+            object : FlagsStateListener {
+                override fun onStateChanged(newState: FlagsClientState) {
+                    if (newState == FlagsClientState.Ready && !didStartNestedCall) {
+                        didStartNestedCall = true
+                        manager.updateEvaluationsForContext(nestedContext, nestedCallback)
+                    }
+                }
+            }
+        )
+        whenever(mockExecutorService.execute(any())).thenAnswer {
+            operations += it.getArgument<Runnable>(0)
+            null
+        }
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(any(), eq(fakeDatadogContext)))
+            .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
+        whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(emptyMap())
+        manager = EvaluationsManager(
+            sdkCore = mockSdkCore,
+            executorService = mockExecutorService,
+            internalLogger = mockInternalLogger,
+            flagsRepository = mockFlagsRepository,
+            assignmentsReader = mockAssignmentsDownloader,
+            precomputeMapper = mockPrecomputeMapper,
+            flagStateManager = stateManager,
+            initializationTimeoutMs = null,
+            initializationTimeoutScheduler = InitializationTimeoutScheduler { _, _ -> {} }
+        )
+        manager.updateEvaluationsForContext(firstContext, firstCallback)
+
+        // When
+        operations[0].run()
+
+        // Then — the first operation cannot complete the caller started by its Ready listener
+        verify(firstCallback).onSuccess()
+        verify(nestedCallback, times(0)).onSuccess()
+        verify(nestedCallback, times(0)).onFailure(any())
+
+        // When
+        operations[1].run()
+
+        // Then
+        verify(nestedCallback).onSuccess()
+    }
+
+    @Test
     fun `M publish late ready W updateEvaluationsForContext() { timeout callback blocks }`() {
         // Given
         val context = EvaluationContext(fakeTargetingKey, emptyMap())
@@ -1114,6 +1176,46 @@ internal class EvaluationsManagerTest {
     }
 
     @Test
+    fun `M ignore late failure W updateEvaluationsForContext() { newer context is pending }`() {
+        // Given
+        val contextA = EvaluationContext("user-A", emptyMap())
+        val contextB = EvaluationContext("user-B", emptyMap())
+        val operations = mutableListOf<Runnable>()
+        var timeoutAction: (() -> Unit)? = null
+        whenever(mockExecutorService.execute(any())).thenAnswer {
+            operations += it.getArgument<Runnable>(0)
+            null
+        }
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(contextA, fakeDatadogContext)).thenReturn(null)
+        whenever(mockFlagsRepository.hasFlags()).thenReturn(true)
+        whenever(mockFlagsRepository.getEvaluationContext()).thenReturn(contextA)
+        whenever(mockFlagsRepository.hasFlagsForContext(contextA)).thenReturn(true)
+        val manager = createManager(
+            initializationTimeoutMs = 2_500L,
+            scheduler = InitializationTimeoutScheduler { _, action ->
+                timeoutAction = action
+                {}
+            }
+        )
+
+        // When
+        manager.updateEvaluationsForContext(contextA)
+        checkNotNull(timeoutAction).invoke()
+        manager.updateEvaluationsForContext(contextB)
+        operations[0].run()
+
+        // Then — the superseded failure cannot replace the newer reconciling state
+        argumentCaptor<FlagsClientState>().apply {
+            verify(mockFlagsStateManager, times(3)).updateState(capture())
+            assertThat(allValues).containsExactly(
+                FlagsClientState.Reconciling,
+                FlagsClientState.Stale,
+                FlagsClientState.Reconciling
+            )
+        }
+    }
+
+    @Test
     fun `M reach terminal state W updateEvaluationsForContext() { concurrent submissions reorder reconciling }`() {
         // Given
         val contextA = EvaluationContext("user-A", emptyMap())
@@ -1187,12 +1289,13 @@ internal class EvaluationsManagerTest {
     }
 
     @Test
-    fun `M publish context before success W updateEvaluationsForContext() { ordinary calls overlap }`() {
+    fun `M await latest result W updateEvaluationsForContext() { superseded success }`() {
         // Given
         val contextA = EvaluationContext("user-A", emptyMap())
         val contextB = EvaluationContext("user-B", emptyMap())
         val operations = mutableListOf<Runnable>()
         val callbackA = mock<EvaluationContextCallback>()
+        val callbackB = mock<EvaluationContextCallback>()
         whenever(mockExecutorService.execute(any())).thenAnswer {
             operations += it.getArgument<Runnable>(0)
             null
@@ -1204,13 +1307,170 @@ internal class EvaluationsManagerTest {
 
         // When
         manager.updateEvaluationsForContext(contextA, callbackA)
-        manager.updateEvaluationsForContext(contextB)
+        manager.updateEvaluationsForContext(contextB, callbackB)
         operations[0].run()
 
-        // Then
-        inOrder(mockFlagsRepository, callbackA) {
-            verify(mockFlagsRepository).setFlagsAndContext(eq(contextA), any())
-            verify(callbackA).onSuccess()
+        // Then — the superseded result cannot publish or complete either caller
+        verify(mockFlagsRepository, times(0)).setFlagsAndContext(eq(contextA), any())
+        verify(callbackA, times(0)).onSuccess()
+        verify(callbackA, times(0)).onFailure(any())
+        verify(callbackB, times(0)).onSuccess()
+        verify(callbackB, times(0)).onFailure(any())
+
+        // When
+        operations[1].run()
+
+        // Then — both callers receive the latest result
+        verify(mockFlagsRepository).setFlagsAndContext(eq(contextB), any())
+        verify(callbackA).onSuccess()
+        verify(callbackB).onSuccess()
+        verify(callbackA, times(0)).onFailure(any())
+        verify(callbackB, times(0)).onFailure(any())
+    }
+
+    @Test
+    fun `M await latest success W updateEvaluationsForContext() { superseded failure }`() {
+        // Given
+        val contextA = EvaluationContext("user-A", emptyMap())
+        val contextB = EvaluationContext("user-B", emptyMap())
+        val operations = mutableListOf<Runnable>()
+        val callbackA = mock<EvaluationContextCallback>()
+        val callbackB = mock<EvaluationContextCallback>()
+        whenever(mockExecutorService.execute(any())).thenAnswer {
+            operations += it.getArgument<Runnable>(0)
+            null
+        }
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(contextA, fakeDatadogContext)).thenReturn(null)
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(contextB, fakeDatadogContext))
+            .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
+        whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(emptyMap())
+        val manager = createManager(scheduler = InitializationTimeoutScheduler { _, _ -> {} })
+
+        // When
+        manager.updateEvaluationsForContext(contextA, callbackA)
+        manager.updateEvaluationsForContext(contextB, callbackB)
+        operations[0].run()
+
+        // Then — the superseded failure cannot publish or complete either caller
+        verify(callbackA, times(0)).onSuccess()
+        verify(callbackA, times(0)).onFailure(any())
+        verify(callbackB, times(0)).onSuccess()
+        verify(callbackB, times(0)).onFailure(any())
+        verify(mockFlagsStateManager, times(0)).updateState(argThat { this is FlagsClientState.Error })
+
+        // When
+        operations[1].run()
+
+        // Then — both callers receive the latest success
+        verify(mockFlagsRepository).setFlagsAndContext(eq(contextB), any())
+        verify(callbackA).onSuccess()
+        verify(callbackB).onSuccess()
+        verify(callbackA, times(0)).onFailure(any())
+        verify(callbackB, times(0)).onFailure(any())
+    }
+
+    @Test
+    fun `M return latest failure W updateEvaluationsForContext() { superseded success }`() {
+        // Given
+        val contextA = EvaluationContext("user-A", emptyMap())
+        val contextB = EvaluationContext("user-B", emptyMap())
+        val operations = mutableListOf<Runnable>()
+        val callbackA = mock<EvaluationContextCallback>()
+        val callbackB = mock<EvaluationContextCallback>()
+        whenever(mockExecutorService.execute(any())).thenAnswer {
+            operations += it.getArgument<Runnable>(0)
+            null
+        }
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(contextA, fakeDatadogContext))
+            .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(contextB, fakeDatadogContext)).thenReturn(null)
+        whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(emptyMap())
+        val manager = createManager(scheduler = InitializationTimeoutScheduler { _, _ -> {} })
+
+        // When
+        manager.updateEvaluationsForContext(contextA, callbackA)
+        manager.updateEvaluationsForContext(contextB, callbackB)
+        operations[0].run()
+
+        // Then — the superseded success cannot publish or complete either caller
+        verify(mockFlagsRepository, times(0)).setFlagsAndContext(eq(contextA), any())
+        verify(callbackA, times(0)).onSuccess()
+        verify(callbackA, times(0)).onFailure(any())
+
+        // When
+        operations[1].run()
+
+        // Then — both callers receive the latest failure
+        verify(callbackA).onFailure(any<NetworkRequestFailedException>())
+        verify(callbackB).onFailure(any<NetworkRequestFailedException>())
+        verify(callbackA, times(0)).onSuccess()
+        verify(callbackB, times(0)).onSuccess()
+    }
+
+    @Test
+    fun `M publish latest result W updateEvaluationsForContext() { terminal results race }`() {
+        // Given
+        val iterations = 1_000
+        val contextA = EvaluationContext("user-A", emptyMap())
+        val contextB = EvaluationContext("user-B", emptyMap())
+        val publishedContext = AtomicReference<EvaluationContext>()
+        val raceExecutor = Executors.newFixedThreadPool(2)
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(any(), eq(fakeDatadogContext)))
+            .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
+        whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(emptyMap())
+        doAnswer {
+            publishedContext.set(it.getArgument(0))
+            null
+        }.whenever(mockFlagsRepository).setFlagsAndContext(any(), any())
+
+        try {
+            repeat(iterations) { iteration ->
+                val operations = mutableListOf<Runnable>()
+                whenever(mockExecutorService.execute(any())).thenAnswer {
+                    operations += it.getArgument<Runnable>(0)
+                    null
+                }
+                val callbackCounts = listOf(AtomicInteger(), AtomicInteger())
+                val failureCount = AtomicInteger()
+                fun callback(index: Int) = object : EvaluationContextCallback {
+                    override fun onSuccess() {
+                        callbackCounts[index].incrementAndGet()
+                    }
+
+                    override fun onFailure(error: Throwable) {
+                        failureCount.incrementAndGet()
+                    }
+                }
+                val manager = createManager(scheduler = InitializationTimeoutScheduler { _, _ -> {} })
+                manager.updateEvaluationsForContext(contextA, callback(0))
+                manager.updateEvaluationsForContext(contextB, callback(1))
+
+                val start = CountDownLatch(1)
+                val finished = CountDownLatch(2)
+                operations.forEach { operation ->
+                    raceExecutor.execute {
+                        start.await()
+                        try {
+                            operation.run()
+                        } finally {
+                            finished.countDown()
+                        }
+                    }
+                }
+
+                // When
+                start.countDown()
+
+                // Then
+                assertThat(finished.await(2, TimeUnit.SECONDS)).describedAs("Iteration $iteration").isTrue()
+                assertThat(callbackCounts.map { it.get() }).describedAs("Iteration $iteration")
+                    .containsExactly(1, 1)
+                assertThat(failureCount.get()).describedAs("Iteration $iteration").isZero()
+                assertThat(publishedContext.get()).describedAs("Iteration $iteration").isEqualTo(contextB)
+            }
+        } finally {
+            raceExecutor.shutdownNow()
+            assertThat(raceExecutor.awaitTermination(2, TimeUnit.SECONDS)).isTrue()
         }
     }
 
@@ -1219,8 +1479,11 @@ internal class EvaluationsManagerTest {
         // Given
         val contextA = EvaluationContext("user-A", emptyMap())
         val contextB = EvaluationContext("user-B", emptyMap())
+        val callbackA = mock<EvaluationContextCallback>()
+        val callbackB = mock<EvaluationContextCallback>()
         val operations = mutableListOf<Runnable>()
         var timeoutAction: (() -> Unit)? = null
+        var timeoutCancellationCount = 0
         whenever(mockExecutorService.execute(any())).thenAnswer {
             operations += it.getArgument<Runnable>(0)
             null
@@ -1245,18 +1508,23 @@ internal class EvaluationsManagerTest {
             initializationTimeoutMs = 2_500L,
             initializationTimeoutScheduler = InitializationTimeoutScheduler { _, action ->
                 timeoutAction = action
-                {}
+                { timeoutCancellationCount += 1 }
             }
         )
 
         // When
-        manager.updateEvaluationsForContext(contextA)
-        manager.updateEvaluationsForContext(contextB)
+        manager.updateEvaluationsForContext(contextA, callbackA)
+        manager.updateEvaluationsForContext(contextB, callbackB)
         operations[1].run()
         checkNotNull(timeoutAction).invoke()
 
         // Then
         assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+        assertThat(timeoutCancellationCount).isEqualTo(1)
+        verify(callbackA).onSuccess()
+        verify(callbackB).onSuccess()
+        verify(callbackA, times(0)).onFailure(any())
+        verify(callbackB, times(0)).onFailure(any())
     }
 
     @Test
