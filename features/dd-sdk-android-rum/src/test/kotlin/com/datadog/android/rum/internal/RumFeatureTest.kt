@@ -39,6 +39,7 @@ import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumDataWriter
+import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilityReader
 import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilityReader
 import com.datadog.android.rum.internal.domain.battery.DefaultBatteryInfoProvider
@@ -51,6 +52,9 @@ import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.startup.RumAppStartupDetector
+import com.datadog.android.rum.internal.startup.PreLaunchRumAppStartupDetector
+import com.datadog.android.rum.internal.startup.RumStartupScenario
+import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.rum.internal.timeseries.DefaultTimeseriesCollectorFactory
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
@@ -109,6 +113,7 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -117,6 +122,7 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
 import java.util.UUID
+import java.lang.ref.WeakReference
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
@@ -157,6 +163,7 @@ internal class RumFeatureTest {
 
     @BeforeEach
     fun `set up`() {
+        resetPreLaunchDetector()
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.timeProvider) doReturn mock()
         whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn mockScheduledExecutorService
@@ -182,6 +189,7 @@ internal class RumFeatureTest {
     @AfterEach
     fun `tear down`() {
         GlobalRumMonitor.clear()
+        resetPreLaunchDetector()
     }
 
     @Test
@@ -1887,7 +1895,50 @@ internal class RumFeatureTest {
         }
     }
 
+    @Test
+    fun `M forward prelaunch events and detach W prelaunch detector is installed`() {
+        val preLaunchDetector = mock<RumAppStartupDetector>()
+        setPreLaunchDetector(preLaunchDetector)
+        val scenario = RumStartupScenario.Cold(
+            hasSavedInstanceStateBundle = false,
+            activity = WeakReference(mock<Activity>()),
+            appStartActivityOnCreateGapNs = 10L,
+            initialTime = Time(1L, 2L)
+        )
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        testedFeature.attachPreLaunchRumAppStartupDetector()
+        PreLaunchRumAppStartupDetector.onAppStartupDetected(scenario)
+        PreLaunchRumAppStartupDetector.onTTIDComputed(scenario, 42L, true)
+
+        verify(mockRumMonitor).sendAppStartEvent(scenario)
+        verify(mockRumMonitor).sendTTIDEvent(RumTTIDInfo(scenario, 42L, true))
+        assertThat(testedFeature.rumAppStartupDetector).isNull()
+
+        testedFeature.onStop()
+        PreLaunchRumAppStartupDetector.onAppStartupDetected(scenario)
+        verify(mockRumMonitor, times(1)).sendAppStartEvent(scenario)
+        verify(preLaunchDetector, never()).destroy()
+    }
+
     // endregion
+
+    private fun setPreLaunchDetector(detector: RumAppStartupDetector?) {
+        val field = PreLaunchRumAppStartupDetector::class.java.getDeclaredField("detector")
+        field.isAccessible = true
+        field.set(PreLaunchRumAppStartupDetector, detector)
+    }
+
+    private fun resetPreLaunchDetector() {
+        setPreLaunchDetector(null)
+        val listenerField = PreLaunchRumAppStartupDetector::class.java.getDeclaredField("listener")
+        listenerField.isAccessible = true
+        listenerField.set(PreLaunchRumAppStartupDetector, null)
+        val eventsField = PreLaunchRumAppStartupDetector::class.java.getDeclaredField("pendingEvents")
+        eventsField.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        (eventsField.get(PreLaunchRumAppStartupDetector) as MutableList<Any>).clear()
+    }
 
     private fun verifyFrameStateAggregatorInitialized(
         anyMatchPredicate: Predicate<FrameStateListener> = Predicate { true },

@@ -711,6 +711,17 @@ public final class com/datadog/android/internal/thread/ThreadUtilsKt {
 	public static final fun isMainThread ()Z
 }
 
+public abstract interface class com/datadog/android/internal/time/AppStartTimeProvider {
+	public static final field Companion Lcom/datadog/android/internal/time/AppStartTimeProvider$Companion;
+	public abstract fun getAppStartTimeNs ()J
+	public abstract fun getAppUptimeNs ()J
+}
+
+public final class com/datadog/android/internal/time/AppStartTimeProvider$Companion {
+	public final fun create (Lkotlin/jvm/functions/Function0;Lcom/datadog/android/internal/system/BuildSdkVersionProvider;)Lcom/datadog/android/internal/time/AppStartTimeProvider;
+	public static synthetic fun create$default (Lcom/datadog/android/internal/time/AppStartTimeProvider$Companion;Lkotlin/jvm/functions/Function0;Lcom/datadog/android/internal/system/BuildSdkVersionProvider;ILjava/lang/Object;)Lcom/datadog/android/internal/time/AppStartTimeProvider;
+}
+
 public abstract class com/datadog/android/internal/time/BaseTimeProvider : com/datadog/android/internal/time/TimeProvider {
 	public fun <init> ()V
 	public final fun getDeviceElapsedRealtimeMillis ()J

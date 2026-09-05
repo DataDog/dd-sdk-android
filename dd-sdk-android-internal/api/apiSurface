@@ -292,6 +292,11 @@ class com.datadog.android.internal.thread.NamedCallable<V> : NamedExecutionUnit,
   constructor(String, java.util.concurrent.Callable<V>)
   override val name: String
 fun isMainThread(): Boolean
+interface com.datadog.android.internal.time.AppStartTimeProvider
+  val appStartTimeNs: Long
+  val appUptimeNs: Long
+  companion object 
+    fun create(() -> TimeProvider, com.datadog.android.internal.system.BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT): AppStartTimeProvider
 class com.datadog.android.internal.time.DefaultTimeProvider : BaseTimeProvider
   override fun getServerTimestampMillis(): Long
   override fun getServerOffsetNanos(): Long

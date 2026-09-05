@@ -64,7 +64,7 @@ import com.datadog.android.core.internal.thread.BroadcastReceiverThread
 import com.datadog.android.core.internal.thread.DatadogThreadFactory
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.thread.ScheduledExecutorServiceFactory
-import com.datadog.android.core.internal.time.AppStartTimeProvider
+import com.datadog.android.internal.time.AppStartTimeProvider
 import com.datadog.android.core.internal.time.DatadogNtpEndpoint
 import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.time.LoggingSyncListener

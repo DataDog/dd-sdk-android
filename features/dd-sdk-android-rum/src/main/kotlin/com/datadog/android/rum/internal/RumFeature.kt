@@ -85,6 +85,7 @@ import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.net.RumRequestFactory
 import com.datadog.android.rum.internal.startup.DefaultAppStartupActivityPredicate
+import com.datadog.android.rum.internal.startup.PreLaunchRumAppStartupDetector
 import com.datadog.android.rum.internal.startup.RumAppStartupDetector
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
@@ -194,6 +195,21 @@ internal class RumFeature(
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
     internal var rumAppStartupDetector: RumAppStartupDetector? = null
+    private val rumAppStartupListener = object : RumAppStartupDetector.Listener {
+        override fun onAppStartupDetected(scenario: RumStartupScenario) {
+            (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.sendAppStartEvent(scenario)
+        }
+
+        override fun onTTIDComputed(
+            scenario: RumStartupScenario,
+            durationNs: Long,
+            wasForwarded: Boolean
+        ) {
+            (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.sendTTIDEvent(
+                RumTTIDInfo(scenario, durationNs, wasForwarded)
+            )
+        }
+    }
 
     // region Feature
 
@@ -391,15 +407,11 @@ internal class RumFeature(
         cleanupInfoProviders()
 
         val detector = rumAppStartupDetector
-        if (isMainThread()) {
-            @Suppress("ThreadSafety") // just verified we are on the main thread
+        val cleanupDetector: () -> Unit = {
+            PreLaunchRumAppStartupDetector.detach(rumAppStartupListener)
             detector?.destroy()
-        } else {
-            handler.post {
-                @Suppress("ThreadSafety") // handler posts to the main looper
-                detector?.destroy()
-            }
         }
+        if (isMainThread()) cleanupDetector() else handler.post(cleanupDetector)
 
         rumAppStartupDetector = null
 
@@ -756,33 +768,30 @@ internal class RumFeature(
     }
 
     private fun initRumAppStartupDetector() {
+        if (PreLaunchRumAppStartupDetector.isInstalled) return
         rumAppStartupDetector = RumAppStartupDetector.create(
             application = appContext.applicationContext as Application,
-            sdkCore = sdkCore as InternalSdkCore,
-            listener = object : RumAppStartupDetector.Listener {
-
-                override fun onAppStartupDetected(scenario: RumStartupScenario) {
-                    val rumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor ?: return
-                    rumMonitor.sendAppStartEvent(scenario)
-                }
-
-                override fun onTTIDComputed(
-                    scenario: RumStartupScenario,
-                    durationNs: Long,
-                    wasForwarded: Boolean
-                ) {
-                    val rumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor ?: return
-                    val info = RumTTIDInfo(
-                        scenario = scenario,
-                        durationNs = durationNs,
-                        wasForwarded = wasForwarded
-                    )
-
-                    rumMonitor.sendTTIDEvent(info)
-                }
+            appStartTimeNs = (sdkCore as InternalSdkCore).appStartTimeNs,
+            timeProvider = sdkCore.timeProvider,
+            listener = rumAppStartupListener,
+            activityPredicate = RumAppStartupDetector.ActivityPredicate {
+                configuration.appStartupActivityPredicate.shouldTrackStartup(it)
             },
-            appStartupActivityPredicate = configuration.appStartupActivityPredicate
+            warningLogger = RumAppStartupDetector.WarningLogger { message, throwable ->
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                    { message },
+                    throwable
+                )
+            }
         )
+    }
+
+    internal fun attachPreLaunchRumAppStartupDetector() {
+        if (initialized.get() && PreLaunchRumAppStartupDetector.isInstalled) {
+            PreLaunchRumAppStartupDetector.attach(rumAppStartupListener)
+        }
     }
 
     // endregion
@@ -826,7 +835,6 @@ internal class RumFeature(
     )
 
     internal companion object {
-
         internal const val NDK_CRASH_BUS_MESSAGE_TYPE = "ndk_crash"
         internal const val LOGGER_ERROR_BUS_MESSAGE_TYPE = "logger_error"
         internal const val LOGGER_ERROR_WITH_STACK_TRACE_MESSAGE_TYPE = "logger_error_with_stacktrace"
