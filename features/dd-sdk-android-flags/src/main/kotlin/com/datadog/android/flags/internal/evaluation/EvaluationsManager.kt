@@ -166,7 +166,12 @@ internal class EvaluationsManager(
                 { "Successfully processed context ${context.targetingKey} with ${flagsMap.size} flags" }
             )
             finish(initializationCompletion, callback) { result ->
-                publishSuccess(context, flagsMap, contextUpdate.generation)
+                publishSuccess(
+                    context,
+                    flagsMap,
+                    contextUpdate.generation,
+                    requireLatest = contextUpdate.ownsInitialization && result == null
+                )
                 val callout: () -> Unit = { result?.callback?.onSuccess() }
                 callout
             }
@@ -179,7 +184,13 @@ internal class EvaluationsManager(
             val error = NetworkRequestFailedException(NETWORK_REQUEST_FAILED_MESSAGE)
             val cachedContextMatches = flagsRepository.getEvaluationContext() == context
             finish(initializationCompletion, callback) { result ->
-                publishFailure(hadFlags, cachedContextMatches, error, contextUpdate.generation)
+                publishFailure(
+                    hadFlags,
+                    cachedContextMatches,
+                    error,
+                    contextUpdate.generation,
+                    requireLatest = contextUpdate.ownsInitialization && result == null
+                )
                 val callout: () -> Unit = { result?.callback?.onFailure(error) }
                 callout
             }
@@ -224,10 +235,11 @@ internal class EvaluationsManager(
     private fun publishSuccess(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
-        contextUpdate: Long
+        contextUpdate: Long,
+        requireLatest: Boolean
     ) {
         synchronized(contextUpdateLock) {
-            if (contextUpdateCount != contextUpdate) return
+            if (requireLatest && contextUpdateCount != contextUpdate) return
             flagsRepository.setFlagsAndContext(context, flags)
             flagStateManager.updateState(FlagsClientState.Ready)
         }
@@ -237,10 +249,11 @@ internal class EvaluationsManager(
         hadFlags: Boolean,
         cachedContextMatches: Boolean,
         error: Throwable,
-        contextUpdate: Long
+        contextUpdate: Long,
+        requireLatest: Boolean
     ) {
         synchronized(contextUpdateLock) {
-            if (contextUpdateCount != contextUpdate) return
+            if (requireLatest && contextUpdateCount != contextUpdate) return
             if (hadFlags && cachedContextMatches) {
                 flagStateManager.updateState(FlagsClientState.Stale)
             } else {

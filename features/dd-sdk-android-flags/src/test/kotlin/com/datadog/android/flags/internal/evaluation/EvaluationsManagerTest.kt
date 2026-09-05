@@ -910,6 +910,69 @@ internal class EvaluationsManagerTest {
     }
 
     @Test
+    fun `M reach terminal state W updateEvaluationsForContext() { concurrent submissions reorder reconciling }`() {
+        // Given
+        val contextA = EvaluationContext("user-A", emptyMap())
+        val contextB = EvaluationContext("user-B", emptyMap())
+        val firstReconcilingStarted = CountDownLatch(1)
+        val releaseFirstReconciling = CountDownLatch(1)
+        val reconcilingCount = AtomicInteger()
+        val observedState = AtomicReference<FlagsClientState>(FlagsClientState.NotReady)
+        whenever(mockFlagsStateManager.updateState(any())).thenAnswer { invocation ->
+            val state = invocation.getArgument<FlagsClientState>(0)
+            if (state == FlagsClientState.Reconciling && reconcilingCount.incrementAndGet() == 1) {
+                firstReconcilingStarted.countDown()
+                assertThat(releaseFirstReconciling.await(2, TimeUnit.SECONDS)).isTrue()
+            }
+            observedState.set(state)
+        }
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(any(), eq(fakeDatadogContext)))
+            .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
+        whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(emptyMap())
+        val manager = createManager(scheduler = InitializationTimeoutScheduler { _, _ -> {} })
+
+        // When
+        val firstSubmission = Thread { manager.updateEvaluationsForContext(contextA) }
+        firstSubmission.start()
+        assertThat(firstReconcilingStarted.await(1, TimeUnit.SECONDS)).isTrue()
+        manager.updateEvaluationsForContext(contextB)
+        releaseFirstReconciling.countDown()
+        firstSubmission.join(1_000)
+
+        // Then
+        assertThat(firstSubmission.isAlive).isFalse()
+        assertThat(observedState.get()).isEqualTo(FlagsClientState.Ready)
+    }
+
+    @Test
+    fun `M publish context before success W updateEvaluationsForContext() { ordinary calls overlap }`() {
+        // Given
+        val contextA = EvaluationContext("user-A", emptyMap())
+        val contextB = EvaluationContext("user-B", emptyMap())
+        val operations = mutableListOf<Runnable>()
+        val callbackA = mock<EvaluationContextCallback>()
+        whenever(mockExecutorService.execute(any())).thenAnswer {
+            operations += it.getArgument<Runnable>(0)
+            null
+        }
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(any(), eq(fakeDatadogContext)))
+            .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
+        whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(emptyMap())
+        val manager = createManager(scheduler = InitializationTimeoutScheduler { _, _ -> {} })
+
+        // When
+        manager.updateEvaluationsForContext(contextA, callbackA)
+        manager.updateEvaluationsForContext(contextB)
+        operations[0].run()
+
+        // Then
+        inOrder(mockFlagsRepository, callbackA) {
+            verify(mockFlagsRepository).setFlagsAndContext(eq(contextA), any())
+            verify(callbackA).onSuccess()
+        }
+    }
+
+    @Test
     fun `M keep ready state W updateEvaluationsForContext() { superseded timeout fires }`() {
         // Given
         val contextA = EvaluationContext("user-A", emptyMap())
