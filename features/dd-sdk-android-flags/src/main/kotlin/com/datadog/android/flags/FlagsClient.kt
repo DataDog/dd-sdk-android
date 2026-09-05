@@ -13,6 +13,7 @@ import com.datadog.android.api.feature.Feature.Companion.FLAGS_EVALUATIONS_FEATU
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.internal.DatadogFlagsClient
 import com.datadog.android.flags.internal.DefaultRumEvaluationLogger
 import com.datadog.android.flags.internal.EvaluationsFeature
@@ -23,6 +24,7 @@ import com.datadog.android.flags.internal.NoOpFlagsClient
 import com.datadog.android.flags.internal.NoOpRumEvaluationLogger
 import com.datadog.android.flags.internal.RumEvaluationLogger
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
+import com.datadog.android.flags.internal.evaluation.InitializationTimeoutCallbackDispatcher
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsDownloader
 import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
@@ -70,6 +72,8 @@ interface FlagsClient {
      *
      * This method returns immediately without blocking. The actual context update and flag
      * fetching happen asynchronously on a background thread.
+     * For the first context, the configured initialization timeout bounds the callback wait.
+     * The operation continues after a timeout and can make the client ready later.
      *
      * @param context The [EvaluationContext] containing targeting key and attributes.
      * @param callback Optional callback to notify when the operation completes or fails.
@@ -384,6 +388,8 @@ interface FlagsClient {
         // region Internal
 
         internal const val FLAGS_NETWORK_EXECUTOR_NAME = "flags-network"
+        internal const val FLAGS_INITIALIZATION_TIMEOUT_CALLBACK_EXECUTOR_NAME =
+            "flags-initialization-timeout-callback"
 
         @Suppress("LongMethod")
         internal fun createInternal(
@@ -396,6 +402,25 @@ interface FlagsClient {
             val networkExecutorService = featureSdkCore.createSingleThreadExecutorService(
                 executorContext = FLAGS_NETWORK_EXECUTOR_NAME
             )
+            val initializationTimeoutCallbackDispatcher = configuration.initializationTimeoutMs?.let {
+                val executor = featureSdkCore.createSingleThreadExecutorService(
+                    executorContext = FLAGS_INITIALIZATION_TIMEOUT_CALLBACK_EXECUTOR_NAME
+                )
+                InitializationTimeoutCallbackDispatcher { action ->
+                    executor.executeSafe(
+                        operationName = FLAGS_INITIALIZATION_TIMEOUT_CALLBACK_EXECUTOR_NAME,
+                        internalLogger = featureSdkCore.internalLogger,
+                        runnable = Runnable {
+                            try {
+                                action()
+                            } finally {
+                                @Suppress("UnsafeThirdPartyFunctionCall")
+                                executor.shutdown()
+                            }
+                        }
+                    )
+                }
+            } ?: InitializationTimeoutCallbackDispatcher { it() }
             val datastore = featureSdkCore.getFeature(FLAGS_FEATURE_NAME)
                 ?.dataStore
             val flagsRepository = if (datastore != null) {
@@ -431,7 +456,10 @@ interface FlagsClient {
                 flagsRepository = flagsRepository,
                 assignmentsReader = assignmentsDownloader,
                 precomputeMapper = precomputeMapper,
-                flagStateManager = flagStateManager
+                flagStateManager = flagStateManager,
+                initializationTimeoutMs = configuration.initializationTimeoutMs,
+                initializationTimeoutScheduler = flagsFeature.initializationTimeoutScheduler,
+                initializationTimeoutCallbackDispatcher = initializationTimeoutCallbackDispatcher
             )
 
             val rumEvaluationLogger = createRumEvaluationLogger(featureSdkCore)

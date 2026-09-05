@@ -6,6 +6,8 @@
 
 package com.datadog.android.flags
 
+import android.content.Context
+import android.content.pm.ApplicationInfo
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
@@ -17,6 +19,7 @@ import com.datadog.android.flags.model.EvaluationContext
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import okhttp3.Call
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -26,6 +29,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
@@ -33,6 +37,10 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -275,6 +283,53 @@ internal class FlagsClientTest {
     // endregion
 
     // region Builder API Tests
+
+    @Test
+    fun `M propagate initialization timeout W Builder#build()`() {
+        // Given
+        val networkExecutor = mock<ExecutorService>()
+        val callbackExecutor = mock<ExecutorService>()
+        val timeoutExecutor = mock<ScheduledExecutorService>()
+        val timeoutFuture = mock<ScheduledFuture<*>>()
+        whenever(mockSdkCore.createSingleThreadExecutorService(any()))
+            .thenReturn(networkExecutor, callbackExecutor)
+        whenever(callbackExecutor.execute(any())).thenAnswer {
+            it.getArgument<Runnable>(0).run()
+        }
+        whenever(mockSdkCore.createScheduledExecutorService(any())).thenReturn(timeoutExecutor)
+        whenever(mockSdkCore.createOkHttpCallFactory()).thenReturn(mock<Call.Factory>())
+        whenever(timeoutExecutor.schedule(any<Runnable>(), eq(2_500L), eq(TimeUnit.MILLISECONDS)))
+            .thenReturn(timeoutFuture)
+
+        val configuration = FlagsConfiguration.Builder()
+            .initializationTimeout(2_500L)
+            .trackEvaluations(false)
+            .build()
+        val flagsFeature = FlagsFeature(mockSdkCore, configuration)
+        val appContext = mock<Context>()
+        whenever(appContext.applicationInfo).thenReturn(ApplicationInfo())
+        whenever(mockSdkCore.timeProvider).thenReturn(mock())
+        flagsFeature.onInitialize(appContext)
+        val client = FlagsClient.createInternal(
+            configuration = configuration,
+            featureSdkCore = mockSdkCore,
+            flagsFeature = flagsFeature,
+            evaluationsFeature = null,
+            name = "timeout-client"
+        )
+        val callback = mock<EvaluationContextCallback>()
+
+        // When
+        client.setEvaluationContext(EvaluationContext("user"), callback)
+
+        // Then
+        argumentCaptor<Runnable>().apply {
+            verify(timeoutExecutor).schedule(capture(), eq(2_500L), eq(TimeUnit.MILLISECONDS))
+            firstValue.run()
+        }
+        verify(callback).onFailure(any<FlagsInitializationTimeoutException>())
+        verify(callbackExecutor).shutdown()
+    }
 
     @Test
     fun `M return existing client W Builder#build() {client already exists with default name}`() {

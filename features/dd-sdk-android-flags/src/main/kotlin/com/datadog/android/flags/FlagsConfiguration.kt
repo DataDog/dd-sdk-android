@@ -9,7 +9,7 @@ package com.datadog.android.flags
 /**
  * Describes configuration to be used for the Flags feature.
  */
-@ExposedCopyVisibility
+@ConsistentCopyVisibility
 data class FlagsConfiguration internal constructor(
     internal val trackExposures: Boolean,
     internal val trackEvaluations: Boolean,
@@ -18,8 +18,35 @@ data class FlagsConfiguration internal constructor(
     internal val customFlagEndpoint: String?,
     internal val evaluationFlushIntervalMs: Long,
     internal val rumIntegrationEnabled: Boolean,
-    internal val gracefulModeEnabled: Boolean
+    internal val gracefulModeEnabled: Boolean,
+    internal val initializationTimeoutMs: Long?
 ) {
+    /**
+     * Copies this configuration and preserves the initialization timeout.
+     *
+     * This overload keeps the public JVM signature that existed before the initialization timeout was added.
+     */
+    fun copy(
+        trackExposures: Boolean = this.trackExposures,
+        trackEvaluations: Boolean = this.trackEvaluations,
+        customExposureEndpoint: String? = this.customExposureEndpoint,
+        customEvaluationEndpoint: String? = this.customEvaluationEndpoint,
+        customFlagEndpoint: String? = this.customFlagEndpoint,
+        evaluationFlushIntervalMs: Long = this.evaluationFlushIntervalMs,
+        rumIntegrationEnabled: Boolean = this.rumIntegrationEnabled,
+        gracefulModeEnabled: Boolean = this.gracefulModeEnabled
+    ): FlagsConfiguration = FlagsConfiguration(
+        trackExposures = trackExposures,
+        trackEvaluations = trackEvaluations,
+        customExposureEndpoint = customExposureEndpoint,
+        customEvaluationEndpoint = customEvaluationEndpoint,
+        customFlagEndpoint = customFlagEndpoint,
+        evaluationFlushIntervalMs = evaluationFlushIntervalMs,
+        rumIntegrationEnabled = rumIntegrationEnabled,
+        gracefulModeEnabled = gracefulModeEnabled,
+        initializationTimeoutMs = initializationTimeoutMs
+    )
+
     /**
      * A Builder class for a [FlagsConfiguration].
      */
@@ -32,6 +59,7 @@ data class FlagsConfiguration internal constructor(
         private var evaluationFlushIntervalMs: Long = DEFAULT_EVALUATION_FLUSH_INTERVAL_MS
         private var rumIntegrationEnabled: Boolean = true
         private var gracefulModeEnabled: Boolean = true
+        private var initializationTimeoutMs: Long? = null
 
         /**
          * Sets whether exposures should be logged to the dedicated exposures intake endpoint.
@@ -117,6 +145,34 @@ data class FlagsConfiguration internal constructor(
         }
 
         /**
+         * Sets the maximum time to wait for the first evaluation context to become ready.
+         *
+         * The timeout starts when the first context operation starts. It includes waiting for SDK context,
+         * executor queueing, cached data loading, the assignment request, response processing, and assignment
+         * storage. The operation claims completion when it starts publishing its terminal state. Listener execution
+         * is not part of the timeout. This setting does not change the HTTP client's timeout.
+         *
+         * The assignment operation continues after a timeout. It can update the client to
+         * [com.datadog.android.flags.model.FlagsClientState.Ready].
+         *
+         * The timeout applies only to the first [FlagsClient.setEvaluationContext] call. Once that call starts,
+         * the timeout is consumed even if the operation fails; later calls, including retries, are not bounded by
+         * this setting. If matching cached assignments are available when the timeout fires, the client becomes
+         * [com.datadog.android.flags.model.FlagsClientState.Stale]; otherwise it becomes
+         * [com.datadog.android.flags.model.FlagsClientState.Error].
+         *
+         * A value of zero causes an immediate timeout. Negative values are coerced to zero. If this method is not
+         * called, initialization has no timeout.
+         *
+         * @param timeoutMs The initialization timeout in milliseconds.
+         * @return this [Builder] instance for method chaining.
+         */
+        fun initializationTimeout(timeoutMs: Long): Builder {
+            initializationTimeoutMs = timeoutMs.coerceAtLeast(0)
+            return this
+        }
+
+        /**
          * Sets whether RUM evaluation logging is enabled.
          * This adds the result of evaluating a feature flag to the view.
          * Enabled by default.
@@ -160,7 +216,8 @@ data class FlagsConfiguration internal constructor(
             customFlagEndpoint = customFlagEndpoint,
             evaluationFlushIntervalMs = evaluationFlushIntervalMs,
             rumIntegrationEnabled = rumIntegrationEnabled,
-            gracefulModeEnabled = gracefulModeEnabled
+            gracefulModeEnabled = gracefulModeEnabled,
+            initializationTimeoutMs = initializationTimeoutMs
         )
 
         internal companion object {

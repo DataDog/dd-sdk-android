@@ -29,6 +29,7 @@ internal class FlagsConfigurationTest {
         assertThat(configuration.customExposureEndpoint).isNull()
         assertThat(configuration.customFlagEndpoint).isNull()
         assertThat(configuration.gracefulModeEnabled).isTrue()
+        assertThat(configuration.initializationTimeoutMs).isNull()
     }
 
     @Test
@@ -140,6 +141,42 @@ internal class FlagsConfigurationTest {
 
         // Then
         assertThat(returnedBuilder).isSameAs(builder)
+    }
+
+    @Test
+    fun `M set initialization timeout W initializationTimeout()`() {
+        // When
+        val configuration = FlagsConfiguration.Builder()
+            .initializationTimeout(2_500L)
+            .build()
+
+        // Then
+        assertThat(configuration.initializationTimeoutMs).isEqualTo(2_500L)
+    }
+
+    @Test
+    fun `M coerce initialization timeout to zero W initializationTimeout() { negative value }`() {
+        // When
+        val configuration = FlagsConfiguration.Builder()
+            .initializationTimeout(-1L)
+            .build()
+
+        // Then
+        assertThat(configuration.initializationTimeoutMs).isZero()
+    }
+
+    @Test
+    fun `M preserve initialization timeout W copy() { legacy parameters }`() {
+        // Given
+        val configuration = FlagsConfiguration.Builder()
+            .initializationTimeout(2_500L)
+            .build()
+
+        // When
+        val copiedConfiguration = configuration.copy(trackExposures = false)
+
+        // Then
+        assertThat(copiedConfiguration.initializationTimeoutMs).isEqualTo(2_500L)
     }
 
     // endregion

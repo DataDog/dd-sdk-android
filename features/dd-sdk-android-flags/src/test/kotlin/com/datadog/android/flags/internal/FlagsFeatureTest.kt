@@ -30,11 +30,18 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.RejectedExecutionHandler
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -110,6 +117,119 @@ internal class FlagsFeatureTest {
 
         // Then
         assertThat(testedFeature.dataWriter).isInstanceOf(NoOpRecordWriter::class.java)
+    }
+
+    @Test
+    fun `M cancel pending initialization deadlines W onStop()`() {
+        // Given
+        val timeoutExecutor = mock<ScheduledExecutorService>()
+        whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn timeoutExecutor
+        testedFeature.onInitialize(mockContext)
+        testedFeature.initializationTimeoutScheduler.schedule(2_500L) {}
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        verify(timeoutExecutor).shutdownNow()
+    }
+
+    @Test
+    fun `M cancel scheduled deadline W invoke() { timeout cancellation }`() {
+        // Given
+        val timeoutExecutor = mock<ScheduledExecutorService>()
+        val scheduledFuture = mock<ScheduledFuture<*>>()
+        whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn timeoutExecutor
+        whenever(timeoutExecutor.schedule(any<Runnable>(), eq(2_500L), eq(TimeUnit.MILLISECONDS)))
+            .thenReturn(scheduledFuture)
+        testedFeature.onInitialize(mockContext)
+        val cancelTimeout = testedFeature.initializationTimeoutScheduler.schedule(2_500L) {}
+
+        // When
+        cancelTimeout()
+
+        // Then
+        verify(scheduledFuture).cancel(false)
+    }
+
+    @Test
+    fun `M complete pending timeout W onStop() { deadline is pending }`() {
+        // Given
+        val timeoutExecutor = ScheduledThreadPoolExecutor(1)
+        whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn timeoutExecutor
+        testedFeature.onInitialize(mockContext)
+        val timeoutExecuted = CountDownLatch(1)
+        testedFeature.initializationTimeoutScheduler.schedule(10_000L) {
+            timeoutExecuted.countDown()
+        }
+
+        try {
+            // When
+            testedFeature.onStop()
+
+            // Then
+            assertThat(timeoutExecuted.await(250, TimeUnit.MILLISECONDS)).isTrue()
+            assertThat(timeoutExecutor.awaitTermination(250, TimeUnit.MILLISECONDS)).isTrue()
+        } finally {
+            timeoutExecutor.shutdownNow()
+        }
+    }
+
+    @Test
+    fun `M complete accepted timeout W onStop() { scheduling races shutdown }`() {
+        // Given
+        val timeoutExecutor = BlockingScheduleExecutor()
+        whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn timeoutExecutor
+        testedFeature.onInitialize(mockContext)
+        val timeoutExecuted = CountDownLatch(1)
+        val scheduleFinished = CountDownLatch(1)
+        val scheduleThread = Thread {
+            testedFeature.initializationTimeoutScheduler.schedule(2_500) {
+                timeoutExecuted.countDown()
+            }
+            scheduleFinished.countDown()
+        }
+
+        // When
+        scheduleThread.start()
+        assertThat(timeoutExecutor.scheduleStarted.await(1, TimeUnit.SECONDS)).isTrue()
+        val stopThread = Thread { testedFeature.onStop() }
+        stopThread.start()
+        val releaseThread = Thread {
+            timeoutExecutor.shutdownStarted.await(250, TimeUnit.MILLISECONDS)
+            timeoutExecutor.releaseSchedule.countDown()
+        }
+        releaseThread.start()
+
+        // Then
+        timeoutExecutor.releaseSchedule.countDown()
+        scheduleThread.join(1_000)
+        stopThread.join(1_000)
+        releaseThread.join(1_000)
+        timeoutExecutor.shutdownNow()
+        assertThat(timeoutExecuted.await(250, TimeUnit.MILLISECONDS)).isTrue()
+        assertThat(scheduleFinished.count).isZero()
+        assertThat(scheduleThread.isAlive).isFalse()
+        assertThat(stopThread.isAlive).isFalse()
+    }
+
+    @Test
+    fun `M complete timeout without creating executor W schedule() { feature is stopped }`() {
+        // Given
+        val timeoutExecutor = mock<ScheduledExecutorService>()
+        whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn timeoutExecutor
+        var executionCount = 0
+        testedFeature.onInitialize(mockContext)
+        testedFeature.onStop()
+
+        // When
+        testedFeature.initializationTimeoutScheduler.schedule(2_500L) {
+            executionCount += 1
+        }
+
+        // Then
+        assertThat(executionCount).isEqualTo(1)
+        verify(mockSdkCore, times(0)).createScheduledExecutorService(any())
     }
 
     // endregion
@@ -243,4 +363,24 @@ internal class FlagsFeatureTest {
     }
 
     // endregion
+}
+
+private class BlockingScheduleExecutor : ScheduledThreadPoolExecutor(
+    1,
+    RejectedExecutionHandler { _, _ -> }
+) {
+    val scheduleStarted = CountDownLatch(1)
+    val releaseSchedule = CountDownLatch(1)
+    val shutdownStarted = CountDownLatch(1)
+
+    override fun schedule(command: Runnable, delay: Long, unit: TimeUnit): ScheduledFuture<*> {
+        scheduleStarted.countDown()
+        check(releaseSchedule.await(2, TimeUnit.SECONDS))
+        return super.schedule(command, delay, unit)
+    }
+
+    override fun shutdownNow(): MutableList<Runnable> {
+        shutdownStarted.countDown()
+        return super.shutdownNow()
+    }
 }

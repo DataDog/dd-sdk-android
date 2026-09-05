@@ -14,13 +14,19 @@ import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.internal.evaluation.InitializationTimeoutScheduler
 import com.datadog.android.flags.internal.net.ExposuresRequestFactory
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsRequestFactory
 import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
 import com.datadog.android.flags.internal.storage.NoOpRecordWriter
 import com.datadog.android.flags.internal.storage.RecordWriter
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Type alias for a function that logs a message with a given level.
@@ -42,6 +48,11 @@ internal class FlagsFeature(
 
     @Volatile
     private var isInitialized = false
+
+    @Volatile
+    private var initializationTimeoutExecutor: ScheduledExecutorService? = null
+
+    private val pendingInitializationTimeouts = mutableSetOf<PendingInitializationTimeout>()
 
     /**
      * Indicates whether the app is running in debug mode.
@@ -76,6 +87,39 @@ internal class FlagsFeature(
             customFlagEndpoint = flagsConfiguration.customFlagEndpoint
         )
 
+    internal val initializationTimeoutScheduler = InitializationTimeoutScheduler { timeoutMs, action ->
+        val pendingTimeout = PendingInitializationTimeout(action)
+        val shouldRunNow = synchronized(this) {
+            if (!isInitialized) {
+                true
+            } else {
+                val executor = initializationTimeoutExecutor
+                    ?: sdkCore.createScheduledExecutorService(INITIALIZATION_TIMEOUT_EXECUTOR_NAME).also {
+                        initializationTimeoutExecutor = it
+                    }
+                pendingInitializationTimeouts += pendingTimeout
+                val scheduledFuture = executor.scheduleSafe(
+                    operationName = INITIALIZATION_TIMEOUT_OPERATION_NAME,
+                    delay = timeoutMs.coerceAtLeast(0),
+                    unit = TimeUnit.MILLISECONDS,
+                    internalLogger = sdkCore.internalLogger,
+                    runnable = Runnable { runInitializationTimeout(pendingTimeout) }
+                )
+                pendingTimeout.scheduledFuture = scheduledFuture
+                if (scheduledFuture == null) {
+                    pendingInitializationTimeouts -= pendingTimeout
+                    true
+                } else {
+                    false
+                }
+            }
+        }
+        if (shouldRunNow) pendingTimeout.run()
+        return@InitializationTimeoutScheduler {
+            cancelInitializationTimeout(pendingTimeout)
+        }
+    }
+
     // endregion
 
     override val name: String = FLAGS_FEATURE_NAME
@@ -100,10 +144,32 @@ internal class FlagsFeature(
 
     override fun onStop() {
         dataWriter = NoOpRecordWriter()
-        isInitialized = false // Allow re-initialization if feature is restarted
+        val (timeoutExecutor, pendingTimeouts) = synchronized(this) {
+            isInitialized = false // Allow re-initialization if feature is restarted
+            val executor = initializationTimeoutExecutor
+            initializationTimeoutExecutor = null
+            val timeouts = pendingInitializationTimeouts.toList()
+            pendingInitializationTimeouts.clear()
+            executor to timeouts
+        }
+        pendingTimeouts.forEach(PendingInitializationTimeout::run)
+        @Suppress("UnsafeThirdPartyFunctionCall") // Android does not use a SecurityManager.
+        timeoutExecutor?.shutdownNow()
         synchronized(registeredClients) {
             registeredClients.clear()
         }
+    }
+
+    @Suppress("UnsafeThirdPartyFunctionCall")
+    private fun runInitializationTimeout(pendingTimeout: PendingInitializationTimeout) {
+        val shouldRun = synchronized(this) { pendingInitializationTimeouts.remove(pendingTimeout) }
+        if (shouldRun) pendingTimeout.run()
+    }
+
+    @Suppress("UnsafeThirdPartyFunctionCall")
+    private fun cancelInitializationTimeout(pendingTimeout: PendingInitializationTimeout) {
+        synchronized(this) { pendingInitializationTimeouts.remove(pendingTimeout) }
+        pendingTimeout.cancel()
     }
 
     private fun createDataWriter(): RecordWriter = ExposureEventRecordWriter(sdkCore)
@@ -196,7 +262,26 @@ internal class FlagsFeature(
         }
     }
 
+    private class PendingInitializationTimeout(private val action: () -> Unit) {
+        private val isComplete = AtomicBoolean(false)
+
+        @Volatile
+        var scheduledFuture: ScheduledFuture<*>? = null
+
+        fun run() {
+            if (isComplete.compareAndSet(false, true)) action()
+        }
+
+        fun cancel() {
+            if (!isComplete.compareAndSet(false, true)) return
+            @Suppress("UnsafeThirdPartyFunctionCall") // Android does not use a SecurityManager.
+            scheduledFuture?.cancel(false)
+        }
+    }
+
     internal companion object {
         private const val LOG_TAG = "[Datadog Flags]"
+        private const val INITIALIZATION_TIMEOUT_EXECUTOR_NAME = "flags-initialization-timeout"
+        private const val INITIALIZATION_TIMEOUT_OPERATION_NAME = "Wait for Flags initialization"
     }
 }

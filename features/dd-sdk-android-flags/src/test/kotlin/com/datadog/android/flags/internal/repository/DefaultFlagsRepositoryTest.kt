@@ -31,10 +31,14 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicReference
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -133,6 +137,53 @@ internal class DefaultFlagsRepositoryTest {
 
         // Then
         assertThat(result).isEqualTo(context)
+    }
+
+    @Test
+    fun `M remove memory and preserve persistence W clear()`() {
+        // Given
+        testedRepository.setFlagsAndContext(testContext, singleFlagMap)
+
+        // When
+        testedRepository.clear()
+
+        // Then
+        assertThat(testedRepository.getEvaluationContext()).isNull()
+        assertThat(testedRepository.getFlagsSnapshot()).isEmpty()
+        verify(mockDataStore, times(0)).removeValue(key = eq("flags-state-default"), callback = any())
+    }
+
+    @Test
+    fun `M not restore persisted flags W clear() { persistence completes late }`() {
+        // Given
+        var persistenceCallback: DataStoreReadCallback<FlagsStateEntry>? = null
+        doAnswer {
+            persistenceCallback = it.getArgument(2)
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(
+            key = any(),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+        val repository = DefaultFlagsRepository(
+            featureSdkCore = mockFeatureSdkCore,
+            dataStore = mockDataStore,
+            instanceName = "late-persistence"
+        )
+        val persistedEntry = FlagsStateEntry(
+            flags = singleFlagMap,
+            evaluationContext = testContext,
+            lastUpdateTimestamp = 0L
+        )
+
+        // When
+        repository.clear()
+        checkNotNull(persistenceCallback).onSuccess(DataStoreContent(versionCode = 0, data = persistedEntry))
+
+        // Then
+        assertThat(repository.getEvaluationContext()).isNull()
+        assertThat(repository.getFlagsSnapshot()).isEmpty()
     }
 
     @Test
@@ -293,6 +344,40 @@ internal class DefaultFlagsRepositoryTest {
 
         // When + Then
         assertThat(repository.hasFlags()).isTrue()
+    }
+
+    @Test
+    fun `M return without cached match W hasFlagsForContext() { persistence is pending }`() {
+        // Given
+        val readCallback = AtomicReference<DataStoreReadCallback<FlagsStateEntry>>()
+        doAnswer {
+            readCallback.set(it.getArgument(2))
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(
+            key = any(),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+        val repository = DefaultFlagsRepository(
+            featureSdkCore = mockFeatureSdkCore,
+            dataStore = mockDataStore,
+            instanceName = "pending"
+        )
+
+        // When + Then
+        assertThat(repository.hasFlagsForContext(testContext)).isFalse()
+
+        // When
+        readCallback.get().onSuccess(
+            DataStoreContent(
+                versionCode = 0,
+                data = FlagsStateEntry(testContext, singleFlagMap, 0L)
+            )
+        )
+
+        // Then
+        assertThat(repository.hasFlagsForContext(testContext)).isTrue()
     }
 
     @Test

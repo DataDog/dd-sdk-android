@@ -13,6 +13,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
+import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.model.ErrorCode
@@ -22,14 +23,19 @@ import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.tools.unit.forge.BaseConfigurator
 import dev.openfeature.kotlin.sdk.ImmutableContext
+import dev.openfeature.kotlin.sdk.OpenFeatureAPI
+import dev.openfeature.kotlin.sdk.OpenFeatureStatus
 import dev.openfeature.kotlin.sdk.Value
 import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents
+import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -369,6 +375,107 @@ internal class DatadogFlagsProviderTest {
         assertThat(contextCaptor.firstValue).isEqualTo(EvaluationContext.EMPTY)
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `M emit recoverable ProviderError before throwing W initialize() {timeout then late recovery}`() = runTest {
+        // Given
+        val timeoutMessage = "Flags initialization timed out after 250ms"
+        val timeoutCause = FlagsInitializationTimeoutException(250L)
+        val events = mutableListOf<OpenFeatureProviderEvents>()
+        val lifecycleOrder = mutableListOf<String>()
+        val observerJob = launch(UnconfinedTestDispatcher(testScheduler)) {
+            provider.observe().collect { event ->
+                events.add(event)
+                lifecycleOrder.add(
+                    when (event) {
+                        is OpenFeatureProviderEvents.ProviderError -> "provider-error"
+                        OpenFeatureProviderEvents.ProviderReady -> "provider-ready"
+                        else -> "other-event"
+                    }
+                )
+            }
+        }
+        whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
+            checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Error(timeoutCause))
+            invocation.getArgument<EvaluationContextCallback>(1).onFailure(timeoutCause)
+            Unit
+        }
+
+        // When
+        val failure = try {
+            provider.initialize(ImmutableContext(targetingKey = "user-123"))
+            null
+        } catch (error: OpenFeatureError) {
+            error
+        }
+        lifecycleOrder.add("initialize-failed")
+        checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Ready)
+        observerJob.cancel()
+
+        // Then
+        assertThat(failure).isInstanceOf(OpenFeatureError.GeneralError::class.java)
+        assertThat(failure).isNotInstanceOf(OpenFeatureError.ProviderFatalError::class.java)
+        assertThat(failure).hasMessage(timeoutMessage)
+        assertThat(events).hasSize(2)
+        val providerError = events[0] as OpenFeatureProviderEvents.ProviderError
+        assertThat(providerError.error).isInstanceOf(OpenFeatureError.GeneralError::class.java)
+        assertThat(providerError.error).isNotInstanceOf(OpenFeatureError.ProviderFatalError::class.java)
+        assertThat(providerError.error).hasMessage(timeoutMessage)
+        assertThat(events[1]).isInstanceOf(OpenFeatureProviderEvents.ProviderReady::class.java)
+        assertThat(lifecycleOrder).containsExactly("provider-error", "initialize-failed", "provider-ready")
+    }
+
+    @Test
+    fun `M emit fatal ProviderError W observe() {Error state without cause}`() = runTest {
+        // Given
+        val events = mutableListOf<OpenFeatureProviderEvents>()
+
+        // When
+        val job = launch {
+            provider.observe().collect { events.add(it) }
+        }
+        testScheduler.runCurrent()
+        checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Error())
+        testScheduler.runCurrent()
+        job.cancel()
+
+        // Then
+        assertThat(events).hasSize(1)
+        val error = (events[0] as OpenFeatureProviderEvents.ProviderError).error
+        assertThat(error).isInstanceOf(OpenFeatureError.ProviderFatalError::class.java)
+        assertThat(error).isNotInstanceOf(OpenFeatureError.GeneralError::class.java)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `M settle with Error status W setProviderAndWait() {initialization times out}`() = runTest {
+        // Given
+        val timeoutMessage = "Flags initialization timed out after 250ms"
+        whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
+            val callback = invocation.getArgument<EvaluationContextCallback>(1)
+            callback.onFailure(RuntimeException(timeoutMessage))
+            Unit
+        }
+
+        try {
+            // When
+            OpenFeatureAPI.setProviderAndWait(
+                provider = provider,
+                initialContext = ImmutableContext(targetingKey = "user-123"),
+                dispatcher = UnconfinedTestDispatcher(testScheduler)
+            )
+
+            // Then
+            val status = OpenFeatureAPI.getStatus()
+            assertThat(status).isInstanceOf(OpenFeatureStatus.Error::class.java)
+            val error = (status as OpenFeatureStatus.Error).error
+            assertThat(error).isInstanceOf(OpenFeatureError.GeneralError::class.java)
+            assertThat(error).hasMessage(timeoutMessage)
+        } finally {
+            OpenFeatureAPI.shutdown()
+        }
+    }
+
     @Test
     fun `M delegate to FlagsClient W onContextSet()`() = runTest {
         // Given
@@ -441,26 +548,6 @@ internal class DatadogFlagsProviderTest {
         // Then - Stale state is converted to ProviderStale event
         assertThat(events).hasSize(1)
         assertThat(events[0]).isInstanceOf(OpenFeatureProviderEvents.ProviderStale::class.java)
-    }
-
-    @Test
-    fun `M emit ProviderError event W observe() {state changes to Error}`() = runTest {
-        // Given
-        val events = mutableListOf<OpenFeatureProviderEvents>()
-        val errorState = FlagsClientState.Error(RuntimeException("test error"))
-
-        // When
-        val job = launch {
-            provider.observe().collect { events.add(it) }
-        }
-        testScheduler.runCurrent()
-        checkNotNull(capturedStateListener).onStateChanged(errorState)
-        testScheduler.runCurrent()
-        job.cancel()
-
-        // Then - Error state is converted to ProviderError event
-        assertThat(events).hasSize(1)
-        assertThat(events[0]).isInstanceOf(OpenFeatureProviderEvents.ProviderError::class.java)
     }
 
     @Test

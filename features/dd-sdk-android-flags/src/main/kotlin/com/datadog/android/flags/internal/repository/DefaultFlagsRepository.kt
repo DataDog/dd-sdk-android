@@ -26,6 +26,8 @@ internal class DefaultFlagsRepository(
 ) : FlagsRepository {
     private data class FlagsState(val context: EvaluationContext, val flags: Map<String, PrecomputedFlag>)
     private val atomicState = AtomicReference<FlagsState?>(null)
+    private val persistenceLoadLock = Any()
+    private var canApplyPersistenceLoad = true
 
     @Suppress("UnsafeThirdPartyFunctionCall") // Safe: count is positive constant (1)
     private val persistenceLoadedLatch = CountDownLatch(1)
@@ -36,9 +38,13 @@ internal class DefaultFlagsRepository(
         internalLogger = internalLogger
     ) { persistedState ->
         try {
-            persistedState?.let {
-                val loadedState = FlagsState(it.evaluationContext, it.flags)
-                atomicState.compareAndSet(null, loadedState)
+            synchronized(persistenceLoadLock) {
+                if (canApplyPersistenceLoad) {
+                    canApplyPersistenceLoad = false
+                    persistedState?.let {
+                        atomicState.set(FlagsState(it.evaluationContext, it.flags))
+                    }
+                }
             }
         } finally {
             persistenceLoadedLatch.countDown()
@@ -47,7 +53,10 @@ internal class DefaultFlagsRepository(
 
     override fun setFlagsAndContext(context: EvaluationContext, flags: Map<String, PrecomputedFlag>) {
         val newState = FlagsState(context, flags)
-        atomicState.set(newState)
+        synchronized(persistenceLoadLock) {
+            canApplyPersistenceLoad = false
+            atomicState.set(newState)
+        }
         persistenceLoadedLatch.countDown()
 
         persistenceManager.saveFlagsState(
@@ -67,6 +76,14 @@ internal class DefaultFlagsRepository(
                 }
             }
         )
+    }
+
+    override fun clear() {
+        synchronized(persistenceLoadLock) {
+            canApplyPersistenceLoad = false
+            atomicState.set(null)
+        }
+        persistenceLoadedLatch.countDown()
     }
 
     override fun getPrecomputedFlag(key: String): PrecomputedFlag? {
@@ -105,6 +122,11 @@ internal class DefaultFlagsRepository(
     override fun hasFlags(): Boolean {
         waitForPersistenceLoad()
         return atomicState.get()?.flags?.isNotEmpty() ?: false
+    }
+
+    override fun hasFlagsForContext(context: EvaluationContext): Boolean {
+        val state = atomicState.get()
+        return state?.context == context && state.flags.isNotEmpty()
     }
 
     @Suppress("ReturnCount")
