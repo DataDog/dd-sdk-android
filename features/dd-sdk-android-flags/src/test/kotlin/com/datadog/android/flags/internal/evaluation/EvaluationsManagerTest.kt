@@ -15,6 +15,7 @@ import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.EvaluationContextCallback
+import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.model.FlagsStateEntry
@@ -457,7 +458,6 @@ internal class EvaluationsManagerTest {
             scheduler = InitializationTimeoutScheduler { timeoutMs, action ->
                 scheduledTimeoutMs = timeoutMs
                 timeoutAction = action
-                {}
             }
         )
 
@@ -473,6 +473,14 @@ internal class EvaluationsManagerTest {
             assertThat(firstValue.message).isEqualTo("Flags initialization timed out after 2500ms")
             verify(mockFlagsStateManager).updateState(FlagsClientState.Error(firstValue))
         }
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.WARN),
+            eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY)),
+            argThat { invoke().contains("configured timeout") },
+            any<FlagsInitializationTimeoutException>(),
+            eq(true),
+            anyOrNull()
+        )
         verify(callback, times(0)).onSuccess()
 
         // When
@@ -501,7 +509,6 @@ internal class EvaluationsManagerTest {
             initializationTimeoutMs = 0,
             scheduler = InitializationTimeoutScheduler { _, action ->
                 action()
-                return@InitializationTimeoutScheduler {}
             }
         )
 
@@ -525,12 +532,11 @@ internal class EvaluationsManagerTest {
     }
 
     @Test
-    fun `M cancel initialization timeout W updateEvaluationsForContext() { operation completes first }`() {
+    fun `M leave timeout task scheduled W updateEvaluationsForContext() { operation completes first }`() {
         // Given
         val context = EvaluationContext(fakeTargetingKey, emptyMap())
         val callback = mock<EvaluationContextCallback>()
         var timeoutAction: (() -> Unit)? = null
-        var cancellationCount = 0
         whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
             .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(emptyMap())
@@ -538,7 +544,6 @@ internal class EvaluationsManagerTest {
             initializationTimeoutMs = 2_500L,
             scheduler = InitializationTimeoutScheduler { _, action ->
                 timeoutAction = action
-                { cancellationCount += 1 }
             }
         )
 
@@ -547,9 +552,69 @@ internal class EvaluationsManagerTest {
         checkNotNull(timeoutAction).invoke()
 
         // Then
-        assertThat(cancellationCount).isEqualTo(1)
         verify(callback).onSuccess()
         verify(callback, times(0)).onFailure(any())
+    }
+
+    @Test
+    fun `M invoke callback W updateEvaluationsForContext() { timeout state listener throws }`() {
+        // Given
+        val context = EvaluationContext(fakeTargetingKey, emptyMap())
+        val callback = mock<EvaluationContextCallback>()
+        val listenerFailure = IllegalStateException("listener failure")
+        var timeoutAction: (() -> Unit)? = null
+        whenever(mockExecutorService.execute(any())).thenAnswer { null }
+        whenever(mockFlagsStateManager.updateState(argThat { this is FlagsClientState.Error }))
+            .thenThrow(listenerFailure)
+        val manager = createManager(
+            initializationTimeoutMs = 2_500L,
+            scheduler = InitializationTimeoutScheduler { _, action ->
+                timeoutAction = action
+            }
+        )
+
+        // When
+        manager.updateEvaluationsForContext(context, callback)
+        val thrown = org.junit.jupiter.api.assertThrows<IllegalStateException> {
+            checkNotNull(timeoutAction).invoke()
+        }
+
+        // Then
+        assertThat(thrown).isSameAs(listenerFailure)
+        verify(callback).onFailure(any<FlagsInitializationTimeoutException>())
+    }
+
+    @Test
+    fun `M invoke callback once W updateEvaluationsForContext() { timeout then late network failure }`() {
+        // Given
+        val context = EvaluationContext(fakeTargetingKey, emptyMap())
+        val callback = mock<EvaluationContextCallback>()
+        var timeoutAction: (() -> Unit)? = null
+        var operation: Runnable? = null
+        whenever(mockExecutorService.execute(any())).thenAnswer {
+            operation = it.getArgument(0)
+            null
+        }
+        whenever(mockFlagsRepository.hasFlags()).thenReturn(false)
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext)).thenReturn(null)
+        val manager = createManager(
+            initializationTimeoutMs = 2_500L,
+            scheduler = InitializationTimeoutScheduler { _, action ->
+                timeoutAction = action
+            }
+        )
+
+        // When
+        manager.updateEvaluationsForContext(context, callback)
+        checkNotNull(timeoutAction).invoke()
+        checkNotNull(operation).run()
+
+        // Then
+        argumentCaptor<Throwable>().apply {
+            verify(callback, times(1)).onFailure(capture())
+            assertThat(firstValue).isInstanceOf(FlagsInitializationTimeoutException::class.java)
+        }
+        verify(callback, times(0)).onSuccess()
     }
 
     @Test
@@ -696,7 +761,6 @@ internal class EvaluationsManagerTest {
                     initializationTimeoutMs = 2_500L,
                     initializationTimeoutScheduler = InitializationTimeoutScheduler { _, action ->
                         timeoutAction.set(action)
-                        return@InitializationTimeoutScheduler {}
                     }
                 )
                 val callbackCount = AtomicInteger()

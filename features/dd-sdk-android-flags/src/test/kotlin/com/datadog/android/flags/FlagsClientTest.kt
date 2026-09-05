@@ -6,6 +6,8 @@
 
 package com.datadog.android.flags
 
+import android.content.Context
+import android.content.pm.ApplicationInfo
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
@@ -285,9 +287,15 @@ internal class FlagsClientTest {
     @Test
     fun `M propagate initialization timeout W Builder#build()`() {
         // Given
+        val networkExecutor = mock<ExecutorService>()
+        val callbackExecutor = mock<ExecutorService>()
         val timeoutExecutor = mock<ScheduledExecutorService>()
         val timeoutFuture = mock<ScheduledFuture<*>>()
-        whenever(mockSdkCore.createSingleThreadExecutorService(any())).thenReturn(mock<ExecutorService>())
+        whenever(mockSdkCore.createSingleThreadExecutorService(any()))
+            .thenReturn(networkExecutor, callbackExecutor)
+        whenever(callbackExecutor.execute(any())).thenAnswer {
+            it.getArgument<Runnable>(0).run()
+        }
         whenever(mockSdkCore.createScheduledExecutorService(any())).thenReturn(timeoutExecutor)
         whenever(mockSdkCore.createOkHttpCallFactory()).thenReturn(mock<Call.Factory>())
         whenever(timeoutExecutor.schedule(any<Runnable>(), eq(2_500L), eq(TimeUnit.MILLISECONDS)))
@@ -298,6 +306,10 @@ internal class FlagsClientTest {
             .trackEvaluations(false)
             .build()
         val flagsFeature = FlagsFeature(mockSdkCore, configuration)
+        val appContext = mock<Context>()
+        whenever(appContext.applicationInfo).thenReturn(ApplicationInfo())
+        whenever(mockSdkCore.timeProvider).thenReturn(mock())
+        flagsFeature.onInitialize(appContext)
         val client = FlagsClient.createInternal(
             configuration = configuration,
             featureSdkCore = mockSdkCore,
@@ -305,12 +317,18 @@ internal class FlagsClientTest {
             evaluationsFeature = null,
             name = "timeout-client"
         )
+        val callback = mock<EvaluationContextCallback>()
 
         // When
-        client.setEvaluationContext(EvaluationContext("user"))
+        client.setEvaluationContext(EvaluationContext("user"), callback)
 
         // Then
-        verify(timeoutExecutor).schedule(any<Runnable>(), eq(2_500L), eq(TimeUnit.MILLISECONDS))
+        argumentCaptor<Runnable>().apply {
+            verify(timeoutExecutor).schedule(capture(), eq(2_500L), eq(TimeUnit.MILLISECONDS))
+            firstValue.run()
+        }
+        verify(callback).onFailure(any<FlagsInitializationTimeoutException>())
+        verify(callbackExecutor).shutdown()
     }
 
     @Test

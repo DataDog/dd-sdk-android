@@ -10,6 +10,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.FlagsClient
+import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.openfeature.internal.adapters.convertToValue
@@ -221,11 +222,16 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
                     FlagsClientState.Reconciling -> null // SDK emits PROVIDER_RECONCILING
                     FlagsClientState.Ready -> OpenFeatureProviderEvents.ProviderReady
                     FlagsClientState.Stale -> OpenFeatureProviderEvents.ProviderStale
-                    is FlagsClientState.Error -> OpenFeatureProviderEvents.ProviderError(
-                        error = OpenFeatureError.GeneralError(
-                            newState.error?.message ?: "Unknown provider error"
+                    is FlagsClientState.Error -> {
+                        val cause = newState.error
+                        OpenFeatureProviderEvents.ProviderError(
+                            error = if (cause is FlagsInitializationTimeoutException) {
+                                OpenFeatureError.GeneralError(cause.message.orEmpty())
+                            } else {
+                                OpenFeatureError.ProviderFatalError()
+                            }
                         )
-                    )
+                    }
                 }
                 providerEvent?.let { trySend(it) }
             }

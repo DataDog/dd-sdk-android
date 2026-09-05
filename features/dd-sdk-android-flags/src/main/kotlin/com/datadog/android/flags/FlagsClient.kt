@@ -410,7 +410,14 @@ interface FlagsClient {
                     executor.executeSafe(
                         operationName = FLAGS_INITIALIZATION_TIMEOUT_CALLBACK_EXECUTOR_NAME,
                         internalLogger = featureSdkCore.internalLogger,
-                        runnable = Runnable { action() }
+                        runnable = Runnable {
+                            try {
+                                action()
+                            } finally {
+                                @Suppress("UnsafeThirdPartyFunctionCall")
+                                executor.shutdown()
+                            }
+                        }
                     )
                 }
             } ?: InitializationTimeoutCallbackDispatcher { it() }

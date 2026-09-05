@@ -147,10 +147,13 @@ data class FlagsConfiguration internal constructor(
         /**
          * Sets the maximum time to wait for the first evaluation context to become ready.
          *
-         * This timeout covers the complete initialization operation. It includes loading cached data,
-         * fetching assignments, reading the response body, decoding JSON, storing assignments, and publishing
-         * the ready state. It does not change the HTTP client's timeout. The assignment operation continues after
-         * this timeout and can update the client to [com.datadog.android.flags.model.FlagsClientState.Ready].
+         * The timeout starts when the first context operation starts. It includes waiting for SDK context,
+         * executor queueing, cached data loading, the assignment request, response processing, and assignment
+         * storage. The operation claims completion when it starts publishing its terminal state. Listener execution
+         * is not part of the timeout. This setting does not change the HTTP client's timeout.
+         *
+         * The assignment operation continues after a timeout. It can update the client to
+         * [com.datadog.android.flags.model.FlagsClientState.Ready].
          *
          * The timeout applies only to the first [FlagsClient.setEvaluationContext] call. Once that call starts,
          * the timeout is consumed even if the operation fails; later calls, including retries, are not bounded by

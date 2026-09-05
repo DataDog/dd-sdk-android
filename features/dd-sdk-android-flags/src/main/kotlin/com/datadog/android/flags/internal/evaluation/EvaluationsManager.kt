@@ -13,6 +13,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.EvaluationContextCallback
+import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.net.NetworkRequestFailedException
@@ -24,50 +25,35 @@ import com.datadog.android.flags.model.FlagsClientState
 import java.util.concurrent.ExecutorService
 
 internal fun interface InitializationTimeoutScheduler {
-    fun schedule(timeoutMs: Long, action: () -> Unit): () -> Unit
+    fun schedule(timeoutMs: Long, action: () -> Unit)
 }
 
 internal fun interface InitializationTimeoutCallbackDispatcher {
     fun dispatch(action: () -> Unit)
 }
 
-internal class FlagsInitializationTimeoutException(timeoutMs: Long) :
-    RuntimeException("Flags initialization timed out after ${timeoutMs}ms")
-
-private data class InitializationResult(val callback: EvaluationContextCallback?)
-
 private class InitializationCompletion(private var callback: EvaluationContextCallback?) {
     private val lock = Any()
     private var isPending = true
-    private var cancelTimeout: (() -> Unit)? = null
 
-    fun armTimeoutCancellation(cancellation: () -> Unit) {
-        val cancelNow = synchronized(lock) {
-            if (isPending) {
-                cancelTimeout = cancellation
-                false
-            } else {
-                true
+    fun complete(
+        publishState: (didWin: Boolean) -> Unit,
+        notify: (EvaluationContextCallback) -> Unit
+    ) {
+        var winningCallback: EvaluationContextCallback? = null
+        try {
+            synchronized(lock) {
+                val didWin = isPending
+                if (didWin) {
+                    isPending = false
+                    winningCallback = callback
+                    callback = null
+                }
+                publishState(didWin)
             }
+        } finally {
+            winningCallback?.let(notify)
         }
-        if (cancelNow) cancellation()
-    }
-
-    fun complete(action: (InitializationResult?) -> () -> Unit) {
-        var timeoutCancellation: (() -> Unit)? = null
-        val callout = synchronized(lock) {
-            val result = if (isPending) {
-                isPending = false
-                timeoutCancellation = cancelTimeout
-                cancelTimeout = null
-                InitializationResult(callback).also { callback = null }
-            } else {
-                null
-            }
-            action(result)
-        }
-        timeoutCancellation?.invoke()
-        callout()
     }
 }
 
@@ -172,16 +158,19 @@ internal class EvaluationsManager(
                 InternalLogger.Target.MAINTAINER,
                 { "Successfully processed context ${context.targetingKey} with ${flagsMap.size} flags" }
             )
-            finish(initializationCompletion, callback) { result ->
-                publishSuccess(
-                    context,
-                    flagsMap,
-                    contextUpdate.generation,
-                    requireLatest = contextUpdate.ownsInitialization && result == null
-                )
-                val callout: () -> Unit = { result?.callback?.onSuccess() }
-                callout
-            }
+            finish(
+                initializationCompletion = initializationCompletion,
+                callback = callback,
+                publishState = { didWin ->
+                    publishSuccess(
+                        context,
+                        flagsMap,
+                        contextUpdate.generation,
+                        requireLatest = contextUpdate.ownsInitialization && !didWin
+                    )
+                },
+                notify = EvaluationContextCallback::onSuccess
+            )
         } else {
             internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -190,29 +179,37 @@ internal class EvaluationsManager(
             )
             val error = NetworkRequestFailedException(NETWORK_REQUEST_FAILED_MESSAGE)
             val cachedContextMatches = flagsRepository.getEvaluationContext() == context
-            finish(initializationCompletion, callback) { result ->
-                publishFailure(
-                    hadFlags,
-                    cachedContextMatches,
-                    error,
-                    contextUpdate.generation,
-                    requireLatest = contextUpdate.ownsInitialization && result == null
-                )
-                val callout: () -> Unit = { result?.callback?.onFailure(error) }
-                callout
-            }
+            finish(
+                initializationCompletion = initializationCompletion,
+                callback = callback,
+                publishState = { didWin ->
+                    publishFailure(
+                        hadFlags,
+                        cachedContextMatches,
+                        error,
+                        contextUpdate.generation,
+                        requireLatest = contextUpdate.ownsInitialization && !didWin
+                    )
+                },
+                notify = { it.onFailure(error) }
+            )
         }
     }
 
     private fun finish(
         initializationCompletion: InitializationCompletion?,
         callback: EvaluationContextCallback?,
-        action: (InitializationResult?) -> () -> Unit
+        publishState: (didWin: Boolean) -> Unit,
+        notify: (EvaluationContextCallback) -> Unit
     ) {
         if (initializationCompletion == null) {
-            action(InitializationResult(callback)).invoke()
+            try {
+                publishState(true)
+            } finally {
+                callback?.let(notify)
+            }
         } else {
-            initializationCompletion.complete(action)
+            initializationCompletion.complete(publishState, notify)
         }
     }
 
@@ -225,22 +222,28 @@ internal class EvaluationsManager(
         if (!contextUpdate.ownsInitialization || timeoutMs == null) return null
 
         return InitializationCompletion(callback).also { completion ->
-            val cancelTimeout = initializationTimeoutScheduler.schedule(timeoutMs) {
-                completion.complete { result ->
-                    if (result != null) {
-                        val error = FlagsInitializationTimeoutException(timeoutMs)
-                        publishInitializationTimeout(context, error, contextUpdate.generation)
-                        val timeoutCallback = result.callback ?: return@complete {}
-                        return@complete {
-                            initializationTimeoutCallbackDispatcher.dispatch {
-                                timeoutCallback.onFailure(error)
-                            }
+            initializationTimeoutScheduler.schedule(timeoutMs) {
+                val error = FlagsInitializationTimeoutException(timeoutMs)
+                completion.complete(
+                    publishState = { didWin ->
+                        if (didWin) {
+                            internalLogger.log(
+                                InternalLogger.Level.WARN,
+                                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                                { INITIALIZATION_TIMEOUT_MESSAGE },
+                                error,
+                                onlyOnce = true
+                            )
+                            publishInitializationTimeout(context, error, contextUpdate.generation)
+                        }
+                    },
+                    notify = { timeoutCallback ->
+                        initializationTimeoutCallbackDispatcher.dispatch {
+                            timeoutCallback.onFailure(error)
                         }
                     }
-                    {}
-                }
+                )
             }
-            completion.armTimeoutCancellation(cancelTimeout)
         }
     }
 
@@ -295,5 +298,8 @@ internal class EvaluationsManager(
         private const val FETCH_AND_STORE_OPERATION_NAME = "Fetch and store flags for evaluation context"
         private const val NETWORK_REQUEST_FAILED_MESSAGE =
             "Unable to fetch feature flags. Please check your network connection."
+        private const val INITIALIZATION_TIMEOUT_MESSAGE =
+            "Flags initialization did not complete before the configured timeout. " +
+                "The operation continues and can make the client ready later."
     }
 }

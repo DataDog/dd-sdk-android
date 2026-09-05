@@ -30,6 +30,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -123,6 +124,7 @@ internal class FlagsFeatureTest {
         // Given
         val timeoutExecutor = mock<ScheduledExecutorService>()
         whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn timeoutExecutor
+        testedFeature.onInitialize(mockContext)
         testedFeature.initializationTimeoutScheduler.schedule(2_500L) {}
 
         // When
@@ -137,6 +139,7 @@ internal class FlagsFeatureTest {
         // Given
         val timeoutExecutor = BlockingScheduleExecutor()
         whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn timeoutExecutor
+        testedFeature.onInitialize(mockContext)
         val timeoutExecuted = CountDownLatch(1)
         val scheduleFinished = CountDownLatch(1)
         val scheduleThread = Thread {
@@ -168,6 +171,25 @@ internal class FlagsFeatureTest {
         assertThat(scheduleFinished.count).isZero()
         assertThat(scheduleThread.isAlive).isFalse()
         assertThat(stopThread.isAlive).isFalse()
+    }
+
+    @Test
+    fun `M execute timeout without creating executor W schedule() { feature is stopped }`() {
+        // Given
+        val timeoutExecutor = mock<ScheduledExecutorService>()
+        whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn timeoutExecutor
+        var executionCount = 0
+        testedFeature.onInitialize(mockContext)
+        testedFeature.onStop()
+
+        // When
+        testedFeature.initializationTimeoutScheduler.schedule(2_500L) {
+            executionCount += 1
+        }
+
+        // Then
+        assertThat(executionCount).isEqualTo(1)
+        verify(mockSdkCore, times(0)).createScheduledExecutorService(any())
     }
 
     // endregion

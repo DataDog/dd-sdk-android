@@ -37,6 +37,10 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicReference
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -345,9 +349,13 @@ internal class DefaultFlagsRepositoryTest {
     }
 
     @Test
-    fun `M return cached match without waiting W hasFlagsForContext() { persistence is pending }`() {
+    fun `M wait for cached match W hasFlagsForContext() { persistence is pending }`() {
         // Given
-        doAnswer { null }.whenever(mockDataStore).value<FlagsStateEntry>(
+        val readCallback = AtomicReference<DataStoreReadCallback<FlagsStateEntry>>()
+        doAnswer {
+            readCallback.set(it.getArgument(2))
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(
             key = any(),
             version = anyOrNull(),
             callback = any(),
@@ -359,15 +367,30 @@ internal class DefaultFlagsRepositoryTest {
             instanceName = "pending",
             persistenceLoadTimeoutMs = 5_000L
         )
+        val executor = Executors.newSingleThreadExecutor()
 
-        // When
-        val startedAt = System.nanoTime()
-        val result = repository.hasFlagsForContext(testContext)
-        val elapsedMs = (System.nanoTime() - startedAt) / 1_000_000
+        try {
+            // When
+            val result = executor.submit<Boolean> { repository.hasFlagsForContext(testContext) }
 
-        // Then
-        assertThat(result).isFalse()
-        assertThat(elapsedMs).isLessThan(1_000L)
+            // Then
+            org.junit.jupiter.api.assertThrows<TimeoutException> {
+                result.get(100, TimeUnit.MILLISECONDS)
+            }
+
+            // When
+            readCallback.get().onSuccess(
+                DataStoreContent(
+                    versionCode = 0,
+                    data = FlagsStateEntry(testContext, singleFlagMap, 0L)
+                )
+            )
+
+            // Then
+            assertThat(result.get(1, TimeUnit.SECONDS)).isTrue()
+        } finally {
+            executor.shutdownNow()
+        }
     }
 
     @Test

@@ -84,7 +84,8 @@ internal class FlagsFeature(
         )
 
     internal val initializationTimeoutScheduler = InitializationTimeoutScheduler { timeoutMs, action ->
-        val future = synchronized(this) {
+        val runNow = synchronized(this) {
+            if (!isInitialized) return@synchronized true
             val executor = initializationTimeoutExecutor
                 ?: sdkCore.createScheduledExecutorService(INITIALIZATION_TIMEOUT_EXECUTOR_NAME).also {
                     initializationTimeoutExecutor = it
@@ -96,9 +97,9 @@ internal class FlagsFeature(
                 internalLogger = sdkCore.internalLogger,
                 runnable = Runnable { action() }
             )
+            false
         }
-        val cancellation: () -> Unit = { future?.cancel(false) }
-        cancellation
+        if (runNow) action()
     }
 
     // endregion
@@ -125,8 +126,8 @@ internal class FlagsFeature(
 
     override fun onStop() {
         dataWriter = NoOpRecordWriter()
-        isInitialized = false // Allow re-initialization if feature is restarted
         val timeoutExecutor = synchronized(this) {
+            isInitialized = false // Allow re-initialization if feature is restarted
             initializationTimeoutExecutor.also { initializationTimeoutExecutor = null }
         }
         @Suppress("UnsafeThirdPartyFunctionCall") // Android does not use a SecurityManager.

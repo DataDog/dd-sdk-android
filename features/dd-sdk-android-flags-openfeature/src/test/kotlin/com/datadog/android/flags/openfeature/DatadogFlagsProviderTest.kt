@@ -13,6 +13,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
+import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.model.ErrorCode
@@ -379,7 +380,7 @@ internal class DatadogFlagsProviderTest {
     fun `M emit recoverable ProviderError before throwing W initialize() {timeout then late recovery}`() = runTest {
         // Given
         val timeoutMessage = "Flags initialization timed out after 250ms"
-        val timeoutCause = RuntimeException(timeoutMessage)
+        val timeoutCause = FlagsInitializationTimeoutException(250L)
         val events = mutableListOf<OpenFeatureProviderEvents>()
         val lifecycleOrder = mutableListOf<String>()
         val observerJob = launch(UnconfinedTestDispatcher(testScheduler)) {
@@ -422,6 +423,27 @@ internal class DatadogFlagsProviderTest {
         assertThat(providerError.error).hasMessage(timeoutMessage)
         assertThat(events[1]).isInstanceOf(OpenFeatureProviderEvents.ProviderReady::class.java)
         assertThat(lifecycleOrder).containsExactly("provider-error", "initialize-failed", "provider-ready")
+    }
+
+    @Test
+    fun `M emit fatal ProviderError W observe() {Error state without cause}`() = runTest {
+        // Given
+        val events = mutableListOf<OpenFeatureProviderEvents>()
+
+        // When
+        val job = launch {
+            provider.observe().collect { events.add(it) }
+        }
+        testScheduler.runCurrent()
+        checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Error())
+        testScheduler.runCurrent()
+        job.cancel()
+
+        // Then
+        assertThat(events).hasSize(1)
+        val error = (events[0] as OpenFeatureProviderEvents.ProviderError).error
+        assertThat(error).isInstanceOf(OpenFeatureError.ProviderFatalError::class.java)
+        assertThat(error).isNotInstanceOf(OpenFeatureError.GeneralError::class.java)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
