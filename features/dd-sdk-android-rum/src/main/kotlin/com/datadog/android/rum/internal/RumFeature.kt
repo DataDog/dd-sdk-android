@@ -15,6 +15,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import androidx.annotation.AnyThread
+import androidx.annotation.MainThread
 import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
@@ -58,6 +59,7 @@ import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.debug.UiRumDebugListener
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumDataWriter
+import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilityReader
 import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilityReader
@@ -85,9 +87,14 @@ import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.net.RumRequestFactory
 import com.datadog.android.rum.internal.startup.DefaultAppStartupActivityPredicate
+import com.datadog.android.rum.internal.startup.PreLaunchRumAppStartupDetector
 import com.datadog.android.rum.internal.startup.RumAppStartupDetector
+import com.datadog.android.rum.internal.startup.RumAppStartupDetectorImpl
+import com.datadog.android.rum.internal.startup.RumFirstDrawTimeReporterImpl
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
+import com.datadog.android.rum.internal.startup.WindowCallbacksRegistryImpl
+import com.datadog.android.rum.internal.startup.name
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.rum.internal.timeseries.DefaultTimeseriesCollectorFactory
 import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollectorFactory
@@ -132,6 +139,7 @@ import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
+import java.lang.ref.WeakReference
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
@@ -142,7 +150,7 @@ import java.util.concurrent.atomic.AtomicReference
 /**
  * RUM feature class, which needs to be registered with Datadog SDK instance.
  */
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LargeClass")
 internal class RumFeature(
     private val sdkCore: FeatureSdkCore,
     internal val applicationId: String,
@@ -164,6 +172,11 @@ internal class RumFeature(
     internal var trackFrustrations: Boolean = false
 
     internal var viewTrackingStrategy: ViewTrackingStrategy = NoOpViewTrackingStrategy()
+
+    // Set by initRumAppStartupDetector() when the pre-launch module supplied the detector, in
+    // which case attachPreLaunchRumAppStartupDetector() takes over from Rum.enable() instead of
+    // this feature owning a detector of its own.
+    internal var usePreLaunchDetector: Boolean = false
     internal var actionTrackingStrategy: UserActionTrackingStrategy =
         NoOpUserActionTrackingStrategy()
     internal var longTaskTrackingStrategy: TrackingStrategy = NoOpTrackingStrategy()
@@ -194,6 +207,10 @@ internal class RumFeature(
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
     internal var rumAppStartupDetector: RumAppStartupDetector? = null
+
+    // The listener this feature handed to the process-scoped PreLaunchRumAppStartupDetector, kept
+    // so onStop() can detach exactly this one and leave any other SDK core's listener attached.
+    internal var preLaunchRumAppStartupListener: RumAppStartupDetector.Listener? = null
 
     // region Feature
 
@@ -391,17 +408,24 @@ internal class RumFeature(
         cleanupInfoProviders()
 
         val detector = rumAppStartupDetector
+        // Detach only the listener this feature attached — another SDK core may still be using the
+        // process-scoped pre-launch detector.
+        val preLaunchListener = preLaunchRumAppStartupListener
         if (isMainThread()) {
             @Suppress("ThreadSafety") // just verified we are on the main thread
             detector?.destroy()
+            preLaunchListener?.let { PreLaunchRumAppStartupDetector.detach(it) }
         } else {
             handler.post {
                 @Suppress("ThreadSafety") // handler posts to the main looper
                 detector?.destroy()
+                preLaunchListener?.let { PreLaunchRumAppStartupDetector.detach(it) }
             }
         }
 
         rumAppStartupDetector = null
+        preLaunchRumAppStartupListener = null
+        usePreLaunchDetector = false
 
         GlobalRumMonitor.unregister(sdkCore)
         initialized.set(false)
@@ -755,34 +779,118 @@ internal class RumFeature(
         (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.addSessionReplaySkippedFrame()
     }
 
+    /**
+     * Wires up app-startup (AppStart + TTID) detection.
+     *
+     * When the `dd-sdk-android-rum-prelaunch` module is on the classpath, a
+     * [RumAppStartupDetectorImpl] was already created inside a ContentProvider before this SDK
+     * initialized, and it buffered whatever it observed. In that case we reuse it rather than
+     * creating a second detector — [attachPreLaunchRumAppStartupDetector] drains the buffer once
+     * the real monitor is registered. Otherwise we create the detector here as usual.
+     *
+     * Whatever the pre-launch detector captured before this SDK existed was captured with a
+     * permissive predicate, since no core's configuration is known that early.
+     * [PreLaunchRumAppStartupDetector.attach] re-applies this core's predicate to the buffered
+     * events and to everything the detector observes afterwards, so nothing this core excluded is
+     * ever reported. It does not reconcile the state the detector accumulated under the permissive
+     * predicate, which costs a launch in one narrow case documented on
+     * `PreLaunchRumAppStartupDetector.install()`.
+     */
     private fun initRumAppStartupDetector() {
-        rumAppStartupDetector = RumAppStartupDetector.create(
+        if (!PreLaunchRumAppStartupDetector.isInstalled) {
+            createDefaultRumAppStartupDetector()
+            return
+        }
+
+        usePreLaunchDetector = true
+        sdkCore.internalLogger.log(
+            InternalLogger.Level.DEBUG,
+            InternalLogger.Target.MAINTAINER,
+            {
+                "TTID: reusing pre-launch RumAppStartupDetector" +
+                    " (pendingEvents=${PreLaunchRumAppStartupDetector.hasPendingEvents})"
+            }
+        )
+    }
+
+    private fun createDefaultRumAppStartupDetector() {
+        val internalSdkCore = sdkCore as InternalSdkCore
+        rumAppStartupDetector = RumAppStartupDetectorImpl(
             application = appContext.applicationContext as Application,
-            sdkCore = sdkCore as InternalSdkCore,
-            listener = object : RumAppStartupDetector.Listener {
-
-                override fun onAppStartupDetected(scenario: RumStartupScenario) {
-                    val rumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor ?: return
-                    rumMonitor.sendAppStartEvent(scenario)
+            buildSdkVersionProvider = buildSdkVersionProvider,
+            appStartupTime = {
+                Time.fromNanoTime(internalSdkCore.appStartTimeNs, internalSdkCore.timeProvider)
+            },
+            currentTime = { Time.now(internalSdkCore.timeProvider) },
+            listener = createRumAppStartupListener(),
+            appStartupActivityPredicate = {
+                configuration.appStartupActivityPredicate.shouldTrackStartup(it)
+            },
+            rumFirstDrawTimeReporter = RumFirstDrawTimeReporterImpl(
+                timeProviderNs = { internalSdkCore.timeProvider.getDeviceElapsedTimeNanos() },
+                windowCallbacksRegistry = WindowCallbacksRegistryImpl(),
+                handler = Handler(Looper.getMainLooper()),
+                warnLogger = { message, throwable ->
+                    sdkCore.internalLogger.log(
+                        InternalLogger.Level.WARN,
+                        listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                        { message },
+                        throwable
+                    )
                 }
+            )
+        )
+    }
 
-                override fun onTTIDComputed(
-                    scenario: RumStartupScenario,
-                    durationNs: Long,
-                    wasForwarded: Boolean
-                ) {
-                    val rumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor ?: return
-                    val info = RumTTIDInfo(
+    private fun createRumAppStartupListener(): RumAppStartupDetector.Listener =
+        object : RumAppStartupDetector.Listener {
+            override fun onAppStartupDetected(scenario: RumStartupScenario) {
+                val rumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor
+                if (rumMonitor == null) {
+                    return
+                }
+                rumMonitor.sendAppStartEvent(scenario)
+            }
+
+            override fun onTTIDComputed(
+                scenario: RumStartupScenario,
+                durationNs: Long,
+                wasForwarded: Boolean,
+                forwardedActivity: WeakReference<Activity>?
+            ) {
+                val rumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor
+                if (rumMonitor == null) {
+                    return
+                }
+                rumMonitor.sendTTIDEvent(
+                    RumTTIDInfo(
                         scenario = scenario,
                         durationNs = durationNs,
                         wasForwarded = wasForwarded
                     )
+                )
+            }
+        }
 
-                    rumMonitor.sendTTIDEvent(info)
-                }
-            },
-            appStartupActivityPredicate = configuration.appStartupActivityPredicate
-        )
+    /**
+     * Hands this feature's listener to the pre-launch detector and drains its buffered events.
+     *
+     * Called from [com.datadog.android.rum.Rum.enable] on the main thread, after
+     * `GlobalRumMonitor.registerIfAbsent()`, so the real monitor is guaranteed to be available
+     * regardless of which thread `Rum.enable()` was called on (the main thread for native
+     * Android, a background thread for React Native / Flutter).
+     */
+    @MainThread
+    internal fun attachPreLaunchRumAppStartupDetector() {
+        if (!usePreLaunchDetector) {
+            return
+        }
+
+        val listener = createRumAppStartupListener()
+        preLaunchRumAppStartupListener = listener
+        PreLaunchRumAppStartupDetector.attach(listener) {
+            configuration.appStartupActivityPredicate.shouldTrackStartup(it)
+        }
     }
 
     // endregion

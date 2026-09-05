@@ -19,6 +19,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -27,11 +28,14 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argThat
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -119,7 +123,8 @@ internal class RumAppStartupDetectorImplTest {
             verify(listener).onTTIDComputed(
                 matchingScenario(expectedScenario),
                 eq(3.seconds.inWholeNanoseconds),
-                eq(false)
+                eq(false),
+                isNull()
             )
         }
         verifyNoMoreInteractions(listener)
@@ -155,7 +160,8 @@ internal class RumAppStartupDetectorImplTest {
             verify(listener).onTTIDComputed(
                 matchingScenario(expectedScenario),
                 eq(0.seconds.inWholeNanoseconds),
-                eq(false)
+                eq(false),
+                isNull()
             )
         }
         verifyNoMoreInteractions(listener)
@@ -212,14 +218,16 @@ internal class RumAppStartupDetectorImplTest {
             verify(listener).onTTIDComputed(
                 matchingScenario(expectedColdScenario),
                 eq(3.seconds.inWholeNanoseconds),
-                eq(false)
+                eq(false),
+                isNull()
             )
 
             verify(listener).onAppStartupDetected(matchingScenario(expectedWarmScenario))
             verify(listener).onTTIDComputed(
                 matchingScenario(expectedWarmScenario),
                 eq(0L),
-                eq(false)
+                eq(false),
+                isNull()
             )
         }
         verifyNoMoreInteractions(listener)
@@ -369,14 +377,16 @@ internal class RumAppStartupDetectorImplTest {
             verify(listener).onTTIDComputed(
                 matchingScenario(expectedColdScenario),
                 eq(3.seconds.inWholeNanoseconds),
-                eq(false)
+                eq(false),
+                isNull()
             )
 
             verify(listener).onAppStartupDetected(matchingScenario(expectedWarmScenario))
             verify(listener).onTTIDComputed(
                 matchingScenario(expectedWarmScenario),
                 eq(0L),
-                eq(false)
+                eq(false),
+                isNull()
             )
         }
         verifyNoMoreInteractions(listener)
@@ -456,14 +466,16 @@ internal class RumAppStartupDetectorImplTest {
             verify(listener).onTTIDComputed(
                 matchingScenario(expectedColdScenario),
                 eq(3.seconds.inWholeNanoseconds),
-                eq(false)
+                eq(false),
+                isNull()
             )
 
             verify(listener).onAppStartupDetected(matchingScenario(expectedWarmScenario))
             verify(listener).onTTIDComputed(
                 matchingScenario(expectedWarmScenario),
                 eq(0L),
-                eq(false)
+                eq(false),
+                isNull()
             )
         }
         verifyNoMoreInteractions(listener)
@@ -524,7 +536,8 @@ internal class RumAppStartupDetectorImplTest {
             verify(listener).onTTIDComputed(
                 matchingScenario(expectedScenario),
                 eq(4.seconds.inWholeNanoseconds),
-                eq(false)
+                eq(false),
+                isNull()
             )
         }
 
@@ -622,7 +635,8 @@ internal class RumAppStartupDetectorImplTest {
             verify(listener).onTTIDComputed(
                 matchingScenario(expectedScenario),
                 eq(5.seconds.inWholeNanoseconds),
-                eq(false)
+                eq(false),
+                isNull()
             )
         }
 
@@ -702,7 +716,8 @@ internal class RumAppStartupDetectorImplTest {
         verify(listener).onTTIDComputed(
             matchingScenario(expectedColdScenario),
             eq(3.seconds.inWholeNanoseconds),
-            eq(false)
+            eq(false),
+            isNull()
         )
 
         // When - predicate changes to return false for activity1
@@ -735,7 +750,8 @@ internal class RumAppStartupDetectorImplTest {
         verify(listener).onTTIDComputed(
             matchingScenario(expectedWarmScenario),
             eq(0.seconds.inWholeNanoseconds),
-            eq(false)
+            eq(false),
+            isNull()
         )
 
         verifyNoMoreInteractions(listener)
@@ -841,7 +857,7 @@ internal class RumAppStartupDetectorImplTest {
         inOrder(listener, rumFirstDrawTimeReporter) {
             verify(listener).onAppStartupDetected(any())
             verify(rumFirstDrawTimeReporter).subscribeToFirstFrameDrawn(eq(activity), any())
-            verify(listener).onTTIDComputed(any(), any(), any())
+            verify(listener).onTTIDComputed(any(), any(), any(), anyOrNull())
         }
         verifyNoMoreInteractions(listener, rumFirstDrawTimeReporter)
     }
@@ -916,9 +932,68 @@ internal class RumAppStartupDetectorImplTest {
         // Then
         inOrder(listener) {
             verify(listener).onAppStartupDetected(any())
-            verify(listener).onTTIDComputed(any(), eq(5.seconds.inWholeNanoseconds), eq(true))
+            verify(listener).onTTIDComputed(
+                any(),
+                eq(5.seconds.inWholeNanoseconds),
+                eq(true),
+                anyOrNull()
+            )
         }
         verifyNoMoreInteractions(listener)
+    }
+
+    @Test
+    fun `M report the drawing activity W forwarded activity first frame drawn`(
+        forge: Forge
+    ) {
+        // Given
+        val detector = createDetector()
+        val secondActivity: Activity = mock()
+        autoDrawFirstFrame(secondActivity, delay = 1.seconds)
+
+        currentTime += 3.seconds
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = false
+        )
+
+        // When
+        currentTime += 1.seconds
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = secondActivity,
+            hasSavedInstanceStateBundle = false
+        )
+
+        // Then — consumers that buffer the event need the Activity the measurement was taken on,
+        // which is not the one the scenario was opened for.
+        val captor = argumentCaptor<WeakReference<Activity>>()
+        verify(listener).onTTIDComputed(any(), any(), eq(true), captor.capture())
+        assertThat(captor.firstValue.get()).isSameAs(secondActivity)
+    }
+
+    @Test
+    fun `M not report a drawing activity W scenario activity draws its own first frame`(
+        forge: Forge
+    ) {
+        // Given
+        val detector = createDetector()
+        autoDrawFirstFrame(activity, delay = 1.seconds)
+
+        // When
+        currentTime += 3.seconds
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = false
+        )
+
+        // Then
+        verify(listener).onTTIDComputed(any(), any(), eq(false), isNull())
     }
 
     @Test
@@ -960,7 +1035,8 @@ internal class RumAppStartupDetectorImplTest {
             verify(listener).onTTIDComputed(
                 matchingScenario(expectedScenario),
                 eq(4.seconds.inWholeNanoseconds),
-                eq(false)
+                eq(false),
+                isNull()
             )
         }
         verifyNoMoreInteractions(listener)
@@ -994,7 +1070,7 @@ internal class RumAppStartupDetectorImplTest {
                 )
             },
             listener = listener,
-            appStartupActivityPredicate = appStartupActivityPredicate,
+            appStartupActivityPredicate = { appStartupActivityPredicate.shouldTrackStartup(it) },
             rumFirstDrawTimeReporter = rumFirstDrawTimeReporter
         )
 
