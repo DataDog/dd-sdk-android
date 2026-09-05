@@ -34,8 +34,13 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.RejectedExecutionHandler
 import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -125,6 +130,44 @@ internal class FlagsFeatureTest {
 
         // Then
         verify(timeoutExecutor).shutdown()
+    }
+
+    @Test
+    fun `M execute accepted timeout W onStop() { scheduling races shutdown }`() {
+        // Given
+        val timeoutExecutor = BlockingScheduleExecutor()
+        whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn timeoutExecutor
+        val timeoutExecuted = CountDownLatch(1)
+        val scheduleFinished = CountDownLatch(1)
+        val scheduleThread = Thread {
+            testedFeature.initializationTimeoutScheduler.schedule(0) {
+                timeoutExecuted.countDown()
+            }
+            scheduleFinished.countDown()
+        }
+
+        // When
+        scheduleThread.start()
+        assertThat(timeoutExecutor.scheduleStarted.await(1, TimeUnit.SECONDS)).isTrue()
+        val stopThread = Thread { testedFeature.onStop() }
+        stopThread.start()
+        val releaseThread = Thread {
+            timeoutExecutor.shutdownStarted.await(250, TimeUnit.MILLISECONDS)
+            timeoutExecutor.releaseSchedule.countDown()
+        }
+        releaseThread.start()
+        val didExecute = timeoutExecuted.await(1, TimeUnit.SECONDS)
+
+        // Then
+        timeoutExecutor.releaseSchedule.countDown()
+        scheduleThread.join(1_000)
+        stopThread.join(1_000)
+        releaseThread.join(1_000)
+        timeoutExecutor.shutdownNow()
+        assertThat(didExecute).isTrue()
+        assertThat(scheduleFinished.count).isZero()
+        assertThat(scheduleThread.isAlive).isFalse()
+        assertThat(stopThread.isAlive).isFalse()
     }
 
     // endregion
@@ -258,4 +301,24 @@ internal class FlagsFeatureTest {
     }
 
     // endregion
+}
+
+private class BlockingScheduleExecutor : ScheduledThreadPoolExecutor(
+    1,
+    RejectedExecutionHandler { _, _ -> }
+) {
+    val scheduleStarted = CountDownLatch(1)
+    val releaseSchedule = CountDownLatch(1)
+    val shutdownStarted = CountDownLatch(1)
+
+    override fun schedule(command: Runnable, delay: Long, unit: TimeUnit): ScheduledFuture<*> {
+        scheduleStarted.countDown()
+        check(releaseSchedule.await(2, TimeUnit.SECONDS))
+        return super.schedule(command, delay, unit)
+    }
+
+    override fun shutdown() {
+        shutdownStarted.countDown()
+        super.shutdown()
+    }
 }

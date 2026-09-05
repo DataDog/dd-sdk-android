@@ -27,6 +27,10 @@ internal fun interface InitializationTimeoutScheduler {
     fun schedule(timeoutMs: Long, action: () -> Unit): () -> Unit
 }
 
+internal fun interface InitializationTimeoutCallbackDispatcher {
+    fun dispatch(action: () -> Unit)
+}
+
 internal class FlagsInitializationTimeoutException(timeoutMs: Long) :
     RuntimeException("Flags initialization timed out after ${timeoutMs}ms")
 
@@ -83,6 +87,7 @@ private class InitializationCompletion(private var callback: EvaluationContextCa
  * @param flagStateManager channel for notifying state change listeners
  * @param initializationTimeoutMs optional maximum duration of the first context operation
  * @param initializationTimeoutScheduler schedules the first context timeout
+ * @param initializationTimeoutCallbackDispatcher dispatches a timed-out caller's callback
  */
 internal class EvaluationsManager(
     private val sdkCore: FeatureSdkCore,
@@ -93,7 +98,9 @@ internal class EvaluationsManager(
     private val precomputeMapper: PrecomputeMapper,
     private val flagStateManager: FlagsStateManager,
     private val initializationTimeoutMs: Long?,
-    private val initializationTimeoutScheduler: InitializationTimeoutScheduler
+    private val initializationTimeoutScheduler: InitializationTimeoutScheduler,
+    private val initializationTimeoutCallbackDispatcher: InitializationTimeoutCallbackDispatcher =
+        InitializationTimeoutCallbackDispatcher { it() }
 ) {
     private val contextUpdateLock = Any()
     private var didStartInitialization = false
@@ -223,7 +230,12 @@ internal class EvaluationsManager(
                     if (result != null) {
                         val error = FlagsInitializationTimeoutException(timeoutMs)
                         publishInitializationTimeout(context, error, contextUpdate.generation)
-                        return@complete { result.callback?.onFailure(error) }
+                        val timeoutCallback = result.callback ?: return@complete {}
+                        return@complete {
+                            initializationTimeoutCallbackDispatcher.dispatch {
+                                timeoutCallback.onFailure(error)
+                            }
+                        }
                     }
                     {}
                 }

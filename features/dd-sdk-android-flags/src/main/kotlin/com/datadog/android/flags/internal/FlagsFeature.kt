@@ -84,19 +84,19 @@ internal class FlagsFeature(
         )
 
     internal val initializationTimeoutScheduler = InitializationTimeoutScheduler { timeoutMs, action ->
-        val executor = synchronized(this) {
-            initializationTimeoutExecutor
+        val future = synchronized(this) {
+            val executor = initializationTimeoutExecutor
                 ?: sdkCore.createScheduledExecutorService(INITIALIZATION_TIMEOUT_EXECUTOR_NAME).also {
                     initializationTimeoutExecutor = it
                 }
+            executor.scheduleSafe(
+                operationName = INITIALIZATION_TIMEOUT_OPERATION_NAME,
+                delay = timeoutMs.coerceAtLeast(0),
+                unit = TimeUnit.MILLISECONDS,
+                internalLogger = sdkCore.internalLogger,
+                runnable = Runnable { action() }
+            )
         }
-        val future = executor.scheduleSafe(
-            operationName = INITIALIZATION_TIMEOUT_OPERATION_NAME,
-            delay = timeoutMs.coerceAtLeast(0),
-            unit = TimeUnit.MILLISECONDS,
-            internalLogger = sdkCore.internalLogger,
-            runnable = Runnable { action() }
-        )
         val cancellation: () -> Unit = { future?.cancel(false) }
         cancellation
     }

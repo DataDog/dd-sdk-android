@@ -872,6 +872,50 @@ internal class EvaluationsManagerTest {
     }
 
     @Test
+    fun `M release timeout scheduler W updateEvaluationsForContext() { timeout callback blocks }`() {
+        // Given
+        val context = EvaluationContext(fakeTargetingKey, emptyMap())
+        var timeoutAction: (() -> Unit)? = null
+        val callbackStarted = CountDownLatch(1)
+        val releaseCallback = CountDownLatch(1)
+        val timeoutActionReturned = CountDownLatch(1)
+        whenever(mockExecutorService.execute(any())).thenAnswer { null }
+        val manager = createManager(
+            initializationTimeoutMs = 2_500L,
+            scheduler = InitializationTimeoutScheduler { _, action ->
+                timeoutAction = action
+                {}
+            },
+            callbackDispatcher = InitializationTimeoutCallbackDispatcher { action -> Thread(action).start() }
+        )
+        val callback = object : EvaluationContextCallback {
+            override fun onSuccess() = Unit
+
+            override fun onFailure(error: Throwable) {
+                callbackStarted.countDown()
+                releaseCallback.await()
+            }
+        }
+        manager.updateEvaluationsForContext(context, callback)
+
+        // When
+        val timeoutThread = Thread {
+            checkNotNull(timeoutAction).invoke()
+            timeoutActionReturned.countDown()
+        }
+        timeoutThread.start()
+        val didStartCallback = callbackStarted.await(1, TimeUnit.SECONDS)
+        val didReturnWhileBlocked = timeoutActionReturned.await(250, TimeUnit.MILLISECONDS)
+        releaseCallback.countDown()
+        timeoutThread.join(1_000)
+
+        // Then
+        assertThat(didStartCallback).isTrue()
+        assertThat(didReturnWhileBlocked).isTrue()
+        assertThat(timeoutThread.isAlive).isFalse()
+    }
+
+    @Test
     fun `M ignore late success W updateEvaluationsForContext() { newer context is pending }`() {
         // Given
         val contextA = EvaluationContext("user-A", emptyMap())
@@ -1190,7 +1234,9 @@ internal class EvaluationsManagerTest {
 
     private fun createManager(
         initializationTimeoutMs: Long? = null,
-        scheduler: InitializationTimeoutScheduler
+        scheduler: InitializationTimeoutScheduler,
+        callbackDispatcher: InitializationTimeoutCallbackDispatcher =
+            InitializationTimeoutCallbackDispatcher { it() }
     ): EvaluationsManager = EvaluationsManager(
         sdkCore = mockSdkCore,
         executorService = mockExecutorService,
@@ -1200,7 +1246,8 @@ internal class EvaluationsManagerTest {
         precomputeMapper = mockPrecomputeMapper,
         flagStateManager = mockFlagsStateManager,
         initializationTimeoutMs = initializationTimeoutMs,
-        initializationTimeoutScheduler = scheduler
+        initializationTimeoutScheduler = scheduler,
+        initializationTimeoutCallbackDispatcher = callbackDispatcher
     )
 
     private fun callbackRecordingFailure(target: AtomicReference<Throwable>): EvaluationContextCallback =

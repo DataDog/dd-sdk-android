@@ -13,6 +13,7 @@ import com.datadog.android.api.feature.Feature.Companion.FLAGS_EVALUATIONS_FEATU
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.internal.DatadogFlagsClient
 import com.datadog.android.flags.internal.DefaultRumEvaluationLogger
 import com.datadog.android.flags.internal.EvaluationsFeature
@@ -23,6 +24,7 @@ import com.datadog.android.flags.internal.NoOpFlagsClient
 import com.datadog.android.flags.internal.NoOpRumEvaluationLogger
 import com.datadog.android.flags.internal.RumEvaluationLogger
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
+import com.datadog.android.flags.internal.evaluation.InitializationTimeoutCallbackDispatcher
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsDownloader
 import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
@@ -386,6 +388,8 @@ interface FlagsClient {
         // region Internal
 
         internal const val FLAGS_NETWORK_EXECUTOR_NAME = "flags-network"
+        internal const val FLAGS_INITIALIZATION_TIMEOUT_CALLBACK_EXECUTOR_NAME =
+            "flags-initialization-timeout-callback"
 
         @Suppress("LongMethod")
         internal fun createInternal(
@@ -398,6 +402,18 @@ interface FlagsClient {
             val networkExecutorService = featureSdkCore.createSingleThreadExecutorService(
                 executorContext = FLAGS_NETWORK_EXECUTOR_NAME
             )
+            val initializationTimeoutCallbackDispatcher = configuration.initializationTimeoutMs?.let {
+                val executor = featureSdkCore.createSingleThreadExecutorService(
+                    executorContext = FLAGS_INITIALIZATION_TIMEOUT_CALLBACK_EXECUTOR_NAME
+                )
+                InitializationTimeoutCallbackDispatcher { action ->
+                    executor.executeSafe(
+                        operationName = FLAGS_INITIALIZATION_TIMEOUT_CALLBACK_EXECUTOR_NAME,
+                        internalLogger = featureSdkCore.internalLogger,
+                        runnable = Runnable { action() }
+                    )
+                }
+            } ?: InitializationTimeoutCallbackDispatcher { it() }
             val datastore = featureSdkCore.getFeature(FLAGS_FEATURE_NAME)
                 ?.dataStore
             val flagsRepository = if (datastore != null) {
@@ -435,7 +451,8 @@ interface FlagsClient {
                 precomputeMapper = precomputeMapper,
                 flagStateManager = flagStateManager,
                 initializationTimeoutMs = configuration.initializationTimeoutMs,
-                initializationTimeoutScheduler = flagsFeature.initializationTimeoutScheduler
+                initializationTimeoutScheduler = flagsFeature.initializationTimeoutScheduler,
+                initializationTimeoutCallbackDispatcher = initializationTimeoutCallbackDispatcher
             )
 
             val rumEvaluationLogger = createRumEvaluationLogger(featureSdkCore)
