@@ -612,6 +612,19 @@ test-pyramid:publish-benchmark-synthetics:
     paths:
       - sample/benchmark/build/outputs/apk/release/benchmark-release.apk
 
+# TODO: point branch back at main once DataDog/rum-sdk-integration-test-framework's
+# abrooks/run-specific-commit PR (adds TARGET_SHA_* override support) merges.
+test-pyramid:rum-fit-tests:
+  stage: test-pyramid
+  allow_failure: true
+  trigger:
+    project: DataDog/rum-sdk-integration-test-framework
+    branch: abrooks/run-specific-commit
+    strategy: depend
+  variables:
+    DYNAMIC_BUILD_RENDER_RULES: android
+    TARGET_SHA_DD_SDK_ANDROID: $CI_COMMIT_SHA
+
 # PUBLISH ARTIFACTS ON MAVEN
 
 publish:release-all:
