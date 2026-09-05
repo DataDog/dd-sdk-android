@@ -38,8 +38,13 @@ private class InitializationCompletion(
     private val lock: Any,
     private var callback: EvaluationContextCallback?
 ) {
+    data class TimeoutClaim(val callback: EvaluationContextCallback?)
+
     private var isPending = true
+    private var didTimeoutWin = false
+    private var didPublishTimeout = false
     private var cancelTimeout: (() -> Unit)? = null
+    private var deferredNetworkPublication: (() -> Unit)? = null
 
     fun armTimeoutCancellation(cancellation: () -> Unit) {
         val cancelNow = synchronized(lock) {
@@ -69,11 +74,38 @@ private class InitializationCompletion(
                     timeoutCancellation = cancelTimeout
                     cancelTimeout = null
                 }
-                publishState(didWin)
+                if (!didWin && didTimeoutWin && !didPublishTimeout) {
+                    deferredNetworkPublication = { publishState(false) }
+                } else {
+                    publishState(didWin)
+                }
             }
         } finally {
             timeoutCancellation?.invoke()
             winningCallback?.let(notify)
+        }
+    }
+
+    fun claimTimeout(): TimeoutClaim? = synchronized(lock) {
+        if (!isPending) return null
+        isPending = false
+        didTimeoutWin = true
+        val winningCallback = callback
+        callback = null
+        cancelTimeout = null
+        TimeoutClaim(winningCallback)
+    }
+
+    fun publishTimeout(publishState: () -> Unit) {
+        synchronized(lock) {
+            if (!didTimeoutWin || didPublishTimeout) return
+            try {
+                publishState()
+            } finally {
+                didPublishTimeout = true
+                deferredNetworkPublication?.invoke()
+                deferredNetworkPublication = null
+            }
         }
     }
 }
@@ -244,23 +276,23 @@ internal class EvaluationsManager(
 
         return InitializationCompletion(contextUpdateLock, callback).also { completion ->
             val cancelTimeout = initializationTimeoutScheduler.schedule(timeoutMs) {
+                val timeoutClaim = completion.claimTimeout() ?: return@schedule
                 initializationTimeoutCallbackDispatcher.dispatch {
                     val error = FlagsInitializationTimeoutException(timeoutMs)
-                    completion.complete(
-                        publishState = { didWin ->
-                            if (didWin) {
-                                internalLogger.log(
-                                    InternalLogger.Level.WARN,
-                                    listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                                    { INITIALIZATION_TIMEOUT_MESSAGE },
-                                    error,
-                                    onlyOnce = true
-                                )
-                                publishInitializationTimeout(context, error, contextUpdate.generation)
-                            }
-                        },
-                        notify = { timeoutCallback -> timeoutCallback.onFailure(error) }
-                    )
+                    try {
+                        completion.publishTimeout {
+                            internalLogger.log(
+                                InternalLogger.Level.WARN,
+                                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                                { INITIALIZATION_TIMEOUT_MESSAGE },
+                                error,
+                                onlyOnce = true
+                            )
+                            publishInitializationTimeout(context, error, contextUpdate.generation)
+                        }
+                    } finally {
+                        timeoutClaim.callback?.onFailure(error)
+                    }
                 }
             }
             completion.armTimeoutCancellation(cancelTimeout)

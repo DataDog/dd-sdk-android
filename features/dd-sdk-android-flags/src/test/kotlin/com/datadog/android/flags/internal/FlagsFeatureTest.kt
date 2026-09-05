@@ -153,7 +153,7 @@ internal class FlagsFeatureTest {
     }
 
     @Test
-    fun `M terminate timeout scheduler W onStop() { deadline is pending }`() {
+    fun `M complete pending timeout W onStop() { deadline is pending }`() {
         // Given
         val timeoutExecutor = ScheduledThreadPoolExecutor(1)
         whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn timeoutExecutor
@@ -168,15 +168,15 @@ internal class FlagsFeatureTest {
             testedFeature.onStop()
 
             // Then
+            assertThat(timeoutExecuted.await(250, TimeUnit.MILLISECONDS)).isTrue()
             assertThat(timeoutExecutor.awaitTermination(250, TimeUnit.MILLISECONDS)).isTrue()
-            assertThat(timeoutExecuted.count).isEqualTo(1)
         } finally {
             timeoutExecutor.shutdownNow()
         }
     }
 
     @Test
-    fun `M cancel accepted timeout W onStop() { scheduling races shutdown }`() {
+    fun `M complete accepted timeout W onStop() { scheduling races shutdown }`() {
         // Given
         val timeoutExecutor = BlockingScheduleExecutor()
         whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn timeoutExecutor
@@ -200,7 +200,6 @@ internal class FlagsFeatureTest {
             timeoutExecutor.releaseSchedule.countDown()
         }
         releaseThread.start()
-        val didExecute = timeoutExecuted.await(250, TimeUnit.MILLISECONDS)
 
         // Then
         timeoutExecutor.releaseSchedule.countDown()
@@ -208,14 +207,14 @@ internal class FlagsFeatureTest {
         stopThread.join(1_000)
         releaseThread.join(1_000)
         timeoutExecutor.shutdownNow()
-        assertThat(didExecute).isFalse()
+        assertThat(timeoutExecuted.await(250, TimeUnit.MILLISECONDS)).isTrue()
         assertThat(scheduleFinished.count).isZero()
         assertThat(scheduleThread.isAlive).isFalse()
         assertThat(stopThread.isAlive).isFalse()
     }
 
     @Test
-    fun `M cancel timeout without creating executor W schedule() { feature is stopped }`() {
+    fun `M complete timeout without creating executor W schedule() { feature is stopped }`() {
         // Given
         val timeoutExecutor = mock<ScheduledExecutorService>()
         whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn timeoutExecutor
@@ -229,7 +228,7 @@ internal class FlagsFeatureTest {
         }
 
         // Then
-        assertThat(executionCount).isZero()
+        assertThat(executionCount).isEqualTo(1)
         verify(mockSdkCore, times(0)).createScheduledExecutorService(any())
     }
 

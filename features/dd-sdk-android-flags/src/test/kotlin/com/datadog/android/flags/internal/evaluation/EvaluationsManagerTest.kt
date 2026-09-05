@@ -1029,6 +1029,53 @@ internal class EvaluationsManagerTest {
     }
 
     @Test
+    fun `M claim timeout before callback dispatch W updateEvaluationsForContext() { network completes late }`() {
+        // Given
+        val context = EvaluationContext(fakeTargetingKey, emptyMap())
+        val callback = mock<EvaluationContextCallback>()
+        var operation: Runnable? = null
+        var timeoutAction: (() -> Unit)? = null
+        var timeoutCallbackAction: (() -> Unit)? = null
+        whenever(mockExecutorService.execute(any())).thenAnswer {
+            operation = it.getArgument(0)
+            null
+        }
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
+            .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
+        whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(emptyMap())
+        val manager = createManager(
+            initializationTimeoutMs = 2_500L,
+            scheduler = InitializationTimeoutScheduler { _, action ->
+                timeoutAction = action
+                {}
+            },
+            callbackDispatcher = InitializationTimeoutCallbackDispatcher { action ->
+                timeoutCallbackAction = action
+            }
+        )
+        manager.updateEvaluationsForContext(context, callback)
+
+        // When
+        checkNotNull(timeoutAction).invoke()
+        checkNotNull(operation).run()
+
+        // Then
+        verify(callback, times(0)).onSuccess()
+        verify(callback, times(0)).onFailure(any())
+
+        // When
+        checkNotNull(timeoutCallbackAction).invoke()
+
+        // Then
+        verify(callback).onFailure(any<FlagsInitializationTimeoutException>())
+        verify(callback, times(0)).onSuccess()
+        inOrder(mockFlagsStateManager) {
+            verify(mockFlagsStateManager).updateState(argThat { this is FlagsClientState.Error })
+            verify(mockFlagsStateManager).updateState(FlagsClientState.Ready)
+        }
+    }
+
+    @Test
     fun `M ignore late success W updateEvaluationsForContext() { newer context is pending }`() {
         // Given
         val contextA = EvaluationContext("user-A", emptyMap())
