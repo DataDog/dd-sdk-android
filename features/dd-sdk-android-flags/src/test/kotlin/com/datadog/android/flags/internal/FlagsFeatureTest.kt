@@ -135,7 +135,7 @@ internal class FlagsFeatureTest {
     }
 
     @Test
-    fun `M cancel scheduled deadline W timeout cancellation`() {
+    fun `M cancel scheduled deadline W invoke() { timeout cancellation }`() {
         // Given
         val timeoutExecutor = mock<ScheduledExecutorService>()
         val scheduledFuture = mock<ScheduledFuture<*>>()
