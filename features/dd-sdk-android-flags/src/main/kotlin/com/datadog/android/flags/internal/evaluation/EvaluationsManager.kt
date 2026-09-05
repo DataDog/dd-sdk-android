@@ -23,6 +23,7 @@ import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.atomic.AtomicLong
 
 internal typealias InitializationTimeoutCancellation = () -> Unit
 
@@ -80,6 +81,7 @@ internal class EvaluationsManager(
     private var initializationTimeoutPhase: InitializationTimeoutPhase? = null
     private var initializationTimeoutCancellation: InitializationTimeoutCancellation? = null
     private var deferredInitializationNetworkCompletion: (() -> Unit)? = null
+    private val initializationTimeoutFiredGeneration = AtomicLong(NO_CONTEXT_UPDATE)
 
     private data class ContextUpdate(val generation: Long, val ownsInitialization: Boolean)
 
@@ -107,6 +109,7 @@ internal class EvaluationsManager(
             if (ownsInitialization && initializationTimeoutMs != null) {
                 initializationTimeoutGeneration = generation
                 initializationTimeoutPhase = InitializationTimeoutPhase.PENDING
+                initializationTimeoutFiredGeneration.set(NO_CONTEXT_UPDATE)
             }
             flagStateManager.updateState(FlagsClientState.Reconciling)
             ContextUpdate(generation, ownsInitialization)
@@ -189,6 +192,7 @@ internal class EvaluationsManager(
         notify: (EvaluationContextCallback) -> Unit
     ) {
         var timeoutCancellation: InitializationTimeoutCancellation? = null
+        var timedOutCallback: EvaluationContextCallback? = null
         var callbacks: List<EvaluationContextCallback> = emptyList()
         var deferred = false
         var publicationFailure: Exception? = null
@@ -203,23 +207,38 @@ internal class EvaluationsManager(
                 return@synchronized
             }
 
-            if (initializationTimeoutPhase == InitializationTimeoutPhase.PENDING) {
-                initializationTimeoutPhase = InitializationTimeoutPhase.COMPLETED
-                timeoutCancellation = initializationTimeoutCancellation
-                initializationTimeoutCancellation = null
-            }
-
             try {
                 publishState()
             } catch (@Suppress("TooGenericExceptionCaught") throwable: Exception) {
                 publicationFailure = throwable
             } finally {
+                if (initializationTimeoutPhase == InitializationTimeoutPhase.PENDING) {
+                    initializationTimeoutPhase = InitializationTimeoutPhase.COMPLETED
+                    timeoutCancellation = initializationTimeoutCancellation
+                    initializationTimeoutCancellation = null
+                    val timeoutGeneration = initializationTimeoutGeneration
+                    if (timeoutGeneration != null &&
+                        initializationTimeoutFiredGeneration.get() == timeoutGeneration
+                    ) {
+                        @Suppress("UnsafeThirdPartyFunctionCall") // the generation key is non-null
+                        timedOutCallback = pendingContextCallbacks.remove(timeoutGeneration)
+                    }
+                }
                 callbacks = drainCallbacksThrough(contextUpdate)
             }
         }
 
         if (deferred) return
         timeoutCancellation?.invoke()
+        val expiredCallback = timedOutCallback
+        val configuredTimeoutMs = initializationTimeoutMs
+        if (expiredCallback != null && configuredTimeoutMs != null) {
+            val error = FlagsInitializationTimeoutException(configuredTimeoutMs)
+            initializationTimeoutCallbackDispatcher.dispatch {
+                reportInitializationTimeout(error)
+                expiredCallback.onFailure(error)
+            }
+        }
         callbacks.forEach(notify)
         val reportedFailure = publicationFailure
         if (reportedFailure != null) {
@@ -244,6 +263,7 @@ internal class EvaluationsManager(
         if (!contextUpdate.ownsInitialization || timeoutMs == null) return
 
         val cancelTimeout = initializationTimeoutScheduler.schedule(timeoutMs) {
+            initializationTimeoutFiredGeneration.set(contextUpdate.generation)
             initializationDidTimeOut(context, contextUpdate.generation, timeoutMs)
         }
 
@@ -285,13 +305,7 @@ internal class EvaluationsManager(
                     deferredNetworkCompletion = deferredInitializationNetworkCompletion
                     deferredInitializationNetworkCompletion = null
                     try {
-                        internalLogger.log(
-                            InternalLogger.Level.WARN,
-                            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                            { INITIALIZATION_TIMEOUT_MESSAGE },
-                            error,
-                            onlyOnce = true
-                        )
+                        reportInitializationTimeout(error)
                         publishInitializationTimeout(context, error, contextUpdate)
                     } catch (@Suppress("TooGenericExceptionCaught") throwable: Exception) {
                         publicationFailure = throwable
@@ -309,6 +323,16 @@ internal class EvaluationsManager(
                 throw reportedFailure
             }
         }
+    }
+
+    private fun reportInitializationTimeout(error: FlagsInitializationTimeoutException) {
+        internalLogger.log(
+            InternalLogger.Level.WARN,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            { INITIALIZATION_TIMEOUT_MESSAGE },
+            error,
+            onlyOnce = true
+        )
     }
 
     private fun publishSuccess(
@@ -357,6 +381,7 @@ internal class EvaluationsManager(
     }
 
     companion object {
+        private const val NO_CONTEXT_UPDATE = 0L
         private const val FETCH_AND_STORE_OPERATION_NAME = "Fetch and store flags for evaluation context"
         private const val NETWORK_REQUEST_FAILED_MESSAGE =
             "Unable to fetch feature flags. Please check your network connection."

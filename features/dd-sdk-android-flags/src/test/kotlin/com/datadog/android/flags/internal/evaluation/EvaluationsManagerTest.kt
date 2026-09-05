@@ -563,6 +563,67 @@ internal class EvaluationsManagerTest {
     }
 
     @Test
+    fun `M time out caller W updateEvaluationsForContext() { timeout fires during ready publication }`() {
+        // Given
+        val context = EvaluationContext(fakeTargetingKey, emptyMap())
+        val callback = mock<EvaluationContextCallback>()
+        val publicationStarted = CountDownLatch(1)
+        val releasePublication = CountDownLatch(1)
+        var operation: Runnable? = null
+        var timeoutAction: (() -> Unit)? = null
+        whenever(mockExecutorService.execute(any())).thenAnswer {
+            operation = it.getArgument(0)
+            null
+        }
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
+            .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
+        whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(emptyMap())
+        doAnswer {
+            publicationStarted.countDown()
+            assertThat(releasePublication.await(2, TimeUnit.SECONDS)).isTrue()
+            null
+        }.whenever(mockFlagsRepository).setFlagsAndContext(eq(context), any())
+        val manager = createManager(
+            initializationTimeoutMs = 2_500L,
+            scheduler = InitializationTimeoutScheduler { _, action ->
+                timeoutAction = action
+                {}
+            }
+        )
+        manager.updateEvaluationsForContext(context, callback)
+
+        val operationFinished = CountDownLatch(1)
+        val timeoutFinished = CountDownLatch(1)
+        val raceExecutor = Executors.newFixedThreadPool(2)
+        try {
+            raceExecutor.execute {
+                checkNotNull(operation).run()
+                operationFinished.countDown()
+            }
+            assertThat(publicationStarted.await(1, TimeUnit.SECONDS)).isTrue()
+
+            // When — the timeout fires while ready publication holds the context lock
+            raceExecutor.execute {
+                checkNotNull(timeoutAction).invoke()
+                timeoutFinished.countDown()
+            }
+            assertThat(timeoutFinished.await(100, TimeUnit.MILLISECONDS)).isFalse()
+            releasePublication.countDown()
+
+            // Then — publication can recover to ready, but the bounded caller must time out
+            assertThat(operationFinished.await(1, TimeUnit.SECONDS)).isTrue()
+            assertThat(timeoutFinished.await(1, TimeUnit.SECONDS)).isTrue()
+            verify(callback).onFailure(any<FlagsInitializationTimeoutException>())
+            verify(callback, times(0)).onSuccess()
+            verify(mockFlagsStateManager).updateState(FlagsClientState.Ready)
+        } finally {
+            releasePublication.countDown()
+            raceExecutor.shutdownNow()
+            assertThat(raceExecutor.awaitTermination(2, TimeUnit.SECONDS)).isTrue()
+        }
+    }
+
+    @Test
     fun `M invoke callback W updateEvaluationsForContext() { timeout state listener throws }`() {
         // Given
         val context = EvaluationContext(fakeTargetingKey, emptyMap())
