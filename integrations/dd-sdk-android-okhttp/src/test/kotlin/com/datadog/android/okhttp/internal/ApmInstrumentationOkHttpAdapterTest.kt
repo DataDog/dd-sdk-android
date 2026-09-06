@@ -103,7 +103,7 @@ internal class ApmInstrumentationOkHttpAdapterTest {
     ) {
         // Given
         val modifiedRequest = Request.Builder().url(fakeUrl).addHeader("x-trace", "123").build()
-        val modifiedRequestInfo = OkHttpRequestInfo(modifiedRequest)
+        val modifiedRequestInfo = OkHttpRequestInfo(modifiedRequest, mockInternalLogger)
         val mockRequestBuilder = mockRequestInfoBuilder(modifiedRequestInfo)
         val fakeTracingState = RequestTracingState(
             requestInfoBuilder = mockRequestBuilder,
@@ -136,7 +136,7 @@ internal class ApmInstrumentationOkHttpAdapterTest {
     ) {
         // Given
         val modifiedRequest = Request.Builder().url(fakeUrl).addHeader("x-trace", "123").build()
-        val modifiedRequestInfo = OkHttpRequestInfo(modifiedRequest)
+        val modifiedRequestInfo = OkHttpRequestInfo(modifiedRequest, mockInternalLogger)
         val mockRequestBuilder = mockRequestInfoBuilder(modifiedRequestInfo)
         val fakeTracingState = RequestTracingState(
             requestInfoBuilder = mockRequestBuilder,
@@ -197,7 +197,7 @@ internal class ApmInstrumentationOkHttpAdapterTest {
     @Test
     fun `M call onResponseFailed W intercept() { chain throws with tracing state }`() {
         // Given
-        val modifiedRequestInfo = OkHttpRequestInfo(fakeRequest)
+        val modifiedRequestInfo = OkHttpRequestInfo(fakeRequest, mockInternalLogger)
         val mockRequestBuilder = mockRequestInfoBuilder(modifiedRequestInfo)
         val fakeTracingState = RequestTracingState(
             requestInfoBuilder = mockRequestBuilder,
@@ -312,7 +312,7 @@ internal class ApmInstrumentationOkHttpAdapterTest {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
-        val modifiedRequestInfo = OkHttpRequestInfo(fakeRequest)
+        val modifiedRequestInfo = OkHttpRequestInfo(fakeRequest, mockInternalLogger)
         val mockRequestBuilder = mockRequestInfoBuilder(modifiedRequestInfo)
         val fakeTracingState = RequestTracingState(
             requestInfoBuilder = mockRequestBuilder,
@@ -343,7 +343,7 @@ internal class ApmInstrumentationOkHttpAdapterTest {
         whenever(mockChain.request()) doReturn upstreamRequest
 
         val modifiedRequest = upstreamRequest.newBuilder().addHeader("x-trace", "123").build()
-        val modifiedRequestInfo = OkHttpRequestInfo(modifiedRequest)
+        val modifiedRequestInfo = OkHttpRequestInfo(modifiedRequest, mockInternalLogger)
         val mockRequestBuilder = mockRequestInfoBuilder(modifiedRequestInfo)
         val fakeTracingState = RequestTracingState(
             requestInfoBuilder = mockRequestBuilder,
@@ -382,7 +382,7 @@ internal class ApmInstrumentationOkHttpAdapterTest {
         whenever(mockChain.request()) doReturn upstreamRequest
 
         val modifiedRequest = upstreamRequest.newBuilder().addHeader("x-trace", "123").build()
-        val modifiedRequestInfo = OkHttpRequestInfo(modifiedRequest)
+        val modifiedRequestInfo = OkHttpRequestInfo(modifiedRequest, mockInternalLogger)
         val mockRequestBuilder = mockRequestInfoBuilder(modifiedRequestInfo)
         val fakeTracingState = RequestTracingState(
             requestInfoBuilder = mockRequestBuilder,
@@ -414,7 +414,7 @@ internal class ApmInstrumentationOkHttpAdapterTest {
         whenever(mockChain.request()) doReturn upstreamRequest
 
         val tracedRequest = upstreamRequest.newBuilder().addHeader("x-trace", "123").build()
-        val tracedRequestInfo = OkHttpRequestInfo(tracedRequest)
+        val tracedRequestInfo = OkHttpRequestInfo(tracedRequest, mockInternalLogger)
         val mockRequestBuilder = mockRequestInfoBuilder(tracedRequestInfo)
         val fakeTracingState = RequestTracingState(
             requestInfoBuilder = mockRequestBuilder,
@@ -451,7 +451,7 @@ internal class ApmInstrumentationOkHttpAdapterTest {
             .build()
         whenever(mockChain.request()) doReturn upstreamRequest
 
-        val modifiedRequestInfo = OkHttpRequestInfo(upstreamRequest)
+        val modifiedRequestInfo = OkHttpRequestInfo(upstreamRequest, mockInternalLogger)
         val mockRequestBuilder = mockRequestInfoBuilder(modifiedRequestInfo)
         val fakeTracingState = RequestTracingState(
             requestInfoBuilder = mockRequestBuilder,
