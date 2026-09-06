@@ -481,6 +481,52 @@ internal class EvaluationsManagerTest {
     }
 
     @Test
+    fun `M notify STALE before timeout callback W updateEvaluationsForContext() { cached flags match context }`() {
+        // Given
+        val context = EvaluationContext(fakeTargetingKey, emptyMap())
+        var timeoutAction: (() -> Unit)? = null
+        val stateManager = FlagsStateManager(
+            DDCoreStateHolder.create(
+                initialState = FlagsClientState.NotReady,
+                onStateChanged = FlagsStateListener::onStateChanged
+            )
+        )
+        var stateAtTimeoutCallback: FlagsClientState? = null
+        var callbackError: Throwable? = null
+        val callback = object : EvaluationContextCallback {
+            override fun onSuccess() {
+                fail<Unit>("onSuccess should not be called")
+            }
+
+            override fun onFailure(error: Throwable) {
+                stateAtTimeoutCallback = stateManager.getCurrentState()
+                callbackError = error
+            }
+        }
+        whenever(mockFlagsRepository.hasFlags()).thenReturn(true)
+        whenever(mockFlagsRepository.getEvaluationContext()).thenReturn(context)
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext)).thenAnswer {
+            checkNotNull(timeoutAction).invoke()
+            null
+        }
+        val manager = createManager(
+            flagStateManager = stateManager,
+            initializationTimeoutMs = 2_500L,
+            scheduler = InitializationTimeoutScheduler { _, action ->
+                timeoutAction = action
+                {}
+            }
+        )
+
+        // When
+        manager.updateEvaluationsForContext(context, callback)
+
+        // Then
+        assertThat(callbackError).isInstanceOf(FlagsInitializationTimeoutException::class.java)
+        assertThat(stateAtTimeoutCallback).isEqualTo(FlagsClientState.Stale)
+    }
+
+    @Test
     fun `M keep ready state W updateEvaluationsForContext() { newer request completed before timeout }`() {
         // Given
         val mockFirstCallback = mock<EvaluationContextCallback>()
