@@ -24,6 +24,7 @@ import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
 import com.datadog.android.flags.internal.storage.NoOpRecordWriter
 import com.datadog.android.flags.internal.storage.RecordWriter
 import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 /**
@@ -46,9 +47,6 @@ internal class FlagsFeature(
 
     @Volatile
     private var isInitialized = false
-
-    @Volatile
-    private var initializationTimeoutExecutor: ScheduledExecutorService? = null
 
     /**
      * Indicates whether the app is running in debug mode.
@@ -84,20 +82,27 @@ internal class FlagsFeature(
         )
 
     internal val initializationTimeoutScheduler = InitializationTimeoutScheduler { timeoutMs, action ->
-        val executor = synchronized(this) {
-            initializationTimeoutExecutor
-                ?: sdkCore.createScheduledExecutorService(INITIALIZATION_TIMEOUT_EXECUTOR_NAME).also {
-                    initializationTimeoutExecutor = it
-                }
+        val executor = sdkCore.createScheduledExecutorService(INITIALIZATION_TIMEOUT_EXECUTOR_NAME)
+        if (executor is ScheduledThreadPoolExecutor) {
+            executor.removeOnCancelPolicy = true
         }
         val future = executor.scheduleSafe(
             operationName = INITIALIZATION_TIMEOUT_OPERATION_NAME,
             delay = timeoutMs.coerceAtLeast(0),
             unit = TimeUnit.MILLISECONDS,
             internalLogger = sdkCore.internalLogger,
-            runnable = Runnable { action() }
+            runnable = Runnable {
+                try {
+                    action()
+                } finally {
+                    executor.shutdownSafely()
+                }
+            }
         )
-        val cancellation: () -> Unit = { future?.cancel(false) }
+        val cancellation: () -> Unit = {
+            future?.cancel(false)
+            executor.shutdownSafely()
+        }
         cancellation
     }
 
@@ -126,11 +131,6 @@ internal class FlagsFeature(
     override fun onStop() {
         dataWriter = NoOpRecordWriter()
         isInitialized = false // Allow re-initialization if feature is restarted
-        val timeoutExecutor = synchronized(this) {
-            initializationTimeoutExecutor.also { initializationTimeoutExecutor = null }
-        }
-        @Suppress("UnsafeThirdPartyFunctionCall") // Android does not use a SecurityManager.
-        timeoutExecutor?.shutdownNow()
         synchronized(registeredClients) {
             registeredClients.clear()
         }
@@ -231,4 +231,9 @@ internal class FlagsFeature(
         private const val INITIALIZATION_TIMEOUT_EXECUTOR_NAME = "flags-initialization-timeout"
         private const val INITIALIZATION_TIMEOUT_OPERATION_NAME = "Wait for Flags initialization"
     }
+}
+
+@Suppress("UnsafeThirdPartyFunctionCall") // Android does not use a SecurityManager.
+private fun ScheduledExecutorService.shutdownSafely() {
+    shutdown()
 }

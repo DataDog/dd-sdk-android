@@ -32,6 +32,7 @@ private class InitializationCompletion(private var callback: EvaluationContextCa
     private val lock = Any()
     private var isPending = true
     private var cancelTimeout: (() -> Unit)? = null
+    private var cancelTimeoutWhenArmed = false
 
     fun armTimeoutCancellation(cancellation: () -> Unit) {
         val cancelNow = synchronized(lock) {
@@ -39,17 +40,19 @@ private class InitializationCompletion(private var callback: EvaluationContextCa
                 cancelTimeout = cancellation
                 false
             } else {
-                true
+                cancelTimeoutWhenArmed
             }
         }
         if (cancelNow) cancellation()
     }
 
-    fun take(): InitializationResult? {
+    fun take(shouldCancelTimeout: Boolean = true): InitializationResult? {
         val outcome = synchronized(lock) {
             if (!isPending) return null
             isPending = false
-            val outcome = callback to cancelTimeout
+            val timeoutCancellation = cancelTimeout
+            cancelTimeoutWhenArmed = shouldCancelTimeout && timeoutCancellation == null
+            val outcome = callback to if (shouldCancelTimeout) timeoutCancellation else null
             callback = null
             cancelTimeout = null
             outcome
@@ -104,8 +107,8 @@ internal class EvaluationsManager(
      * @param callback Optional callback invoked when the context is set and the flags have been fetched successfully or not.
      */
     fun updateEvaluationsForContext(context: EvaluationContext, callback: EvaluationContextCallback? = null) {
-        val initializationCompletion = startInitializationTimeout(callback)
         flagStateManager.updateState(FlagsClientState.Reconciling)
+        val initializationCompletion = startInitializationTimeout(callback)
 
         sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)
             ?.withContext(withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)) { datadogContext ->
@@ -130,9 +133,9 @@ internal class EvaluationsManager(
                             { "Successfully processed context ${context.targetingKey} with ${flagsMap.size} flags" }
                         )
 
-                        flagStateManager.updateState(FlagsClientState.Ready)
                         val completionCallback = initializationCompletion?.take()?.callback
                             ?: if (initializationCompletion == null) callback else null
+                        flagStateManager.updateState(FlagsClientState.Ready)
                         completionCallback?.onSuccess()
                     } else {
                         internalLogger.log(
@@ -142,6 +145,8 @@ internal class EvaluationsManager(
                         )
 
                         val throwable = NetworkRequestFailedException(NETWORK_REQUEST_FAILED_MESSAGE)
+                        val completionCallback = initializationCompletion?.take()?.callback
+                            ?: if (initializationCompletion == null) callback else null
                         // Only use cached flags if they match the requested context to avoid
                         // serving flags from a different user/context.
                         val cachedContextMatches = flagsRepository.getEvaluationContext() == context
@@ -150,8 +155,6 @@ internal class EvaluationsManager(
                         } else {
                             flagStateManager.updateState(FlagsClientState.Error(throwable))
                         }
-                        val completionCallback = initializationCompletion?.take()?.callback
-                            ?: if (initializationCompletion == null) callback else null
                         completionCallback?.onFailure(throwable)
                     }
                 }
@@ -164,7 +167,7 @@ internal class EvaluationsManager(
 
         return InitializationCompletion(callback).also { completion ->
             val cancelTimeout = initializationTimeoutScheduler.schedule(timeoutMs) {
-                completion.take()?.let { result ->
+                completion.take(shouldCancelTimeout = false)?.let { result ->
                     val error = FlagsInitializationTimeoutException(timeoutMs)
                     val currentState = flagStateManager.getCurrentState()
                     if (currentState != FlagsClientState.Ready && currentState != FlagsClientState.Stale) {
