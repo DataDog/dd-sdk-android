@@ -9,6 +9,13 @@
 
 ## Feature Flags
 
-/features/dd-sdk-android-flags/ @DataDog/rum-mobile @DataDog/rum-mobile-android @DataDog/feature-flagging-and-experimentation-sdk
-/features/dd-sdk-android-flags-openfeature/ @DataDog/rum-mobile @DataDog/rum-mobile-android @DataDog/feature-flagging-and-experimentation-sdk
+# FFE owns implementation changes. Public API changes also update the API snapshot paths below.
+/features/dd-sdk-android-flags/ @DataDog/feature-flagging-and-experimentation-sdk
+/features/dd-sdk-android-flags-openfeature/ @DataDog/feature-flagging-and-experimentation-sdk
+
+# Mobile SDK and FFE owners review public API changes.
+/features/dd-sdk-android-flags/api/ @DataDog/rum-mobile @DataDog/rum-mobile-android @DataDog/feature-flagging-and-experimentation-sdk
+/features/dd-sdk-android-flags-openfeature/api/ @DataDog/rum-mobile @DataDog/rum-mobile-android @DataDog/feature-flagging-and-experimentation-sdk
+
+/features/dd-sdk-android-flags/README.md @DataDog/documentation @DataDog/rum-mobile @DataDog/rum-mobile-android @DataDog/feature-flagging-and-experimentation-sdk
 /features/dd-sdk-android-flags-openfeature/README.md @DataDog/documentation @DataDog/rum-mobile @DataDog/rum-mobile-android @DataDog/feature-flagging-and-experimentation-sdk
