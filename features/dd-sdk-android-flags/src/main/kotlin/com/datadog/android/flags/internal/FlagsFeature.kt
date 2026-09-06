@@ -14,13 +14,18 @@ import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.internal.evaluation.InitializationTimeoutScheduler
 import com.datadog.android.flags.internal.net.ExposuresRequestFactory
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsRequestFactory
 import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
 import com.datadog.android.flags.internal.storage.NoOpRecordWriter
 import com.datadog.android.flags.internal.storage.RecordWriter
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 /**
  * Type alias for a function that logs a message with a given level.
@@ -75,6 +80,30 @@ internal class FlagsFeature(
             internalLogger = sdkCore.internalLogger,
             customFlagEndpoint = flagsConfiguration.customFlagEndpoint
         )
+
+    internal val initializationTimeoutScheduler = InitializationTimeoutScheduler { timeoutMs, action ->
+        val executor = sdkCore.createScheduledExecutorService(INITIALIZATION_TIMEOUT_EXECUTOR_NAME)
+        if (executor is ScheduledThreadPoolExecutor) {
+            executor.executeExistingDelayedTasksAfterShutdownPolicy = false
+        }
+        executor.scheduleSafe(
+            operationName = INITIALIZATION_TIMEOUT_OPERATION_NAME,
+            delay = timeoutMs.coerceAtLeast(0),
+            unit = TimeUnit.MILLISECONDS,
+            internalLogger = sdkCore.internalLogger,
+            runnable = Runnable {
+                try {
+                    action()
+                } finally {
+                    executor.shutdownSafely()
+                }
+            }
+        )
+        val cancellation: () -> Unit = {
+            executor.shutdownSafely()
+        }
+        cancellation
+    }
 
     // endregion
 
@@ -198,5 +227,12 @@ internal class FlagsFeature(
 
     internal companion object {
         private const val LOG_TAG = "[Datadog Flags]"
+        private const val INITIALIZATION_TIMEOUT_EXECUTOR_NAME = "flags-initialization-timeout"
+        private const val INITIALIZATION_TIMEOUT_OPERATION_NAME = "Wait for Flags initialization"
     }
+}
+
+@Suppress("UnsafeThirdPartyFunctionCall") // Android does not use a SecurityManager.
+private fun ScheduledExecutorService.shutdownSafely() {
+    shutdown()
 }

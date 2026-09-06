@@ -70,6 +70,8 @@ interface FlagsClient {
      *
      * This method returns immediately without blocking. The actual context update and flag
      * fetching happen asynchronously on a background thread.
+     * For the first context, the configured initialization timeout bounds the callback wait.
+     * The operation continues after a timeout and can make the client ready later.
      *
      * @param context The [EvaluationContext] containing targeting key and attributes.
      * @param callback Optional callback to notify when the operation completes or fails.
@@ -431,7 +433,9 @@ interface FlagsClient {
                 flagsRepository = flagsRepository,
                 assignmentsReader = assignmentsDownloader,
                 precomputeMapper = precomputeMapper,
-                flagStateManager = flagStateManager
+                flagStateManager = flagStateManager,
+                initializationTimeoutMs = configuration.initializationTimeoutMs,
+                initializationTimeoutScheduler = flagsFeature.initializationTimeoutScheduler
             )
 
             val rumEvaluationLogger = createRumEvaluationLogger(featureSdkCore)

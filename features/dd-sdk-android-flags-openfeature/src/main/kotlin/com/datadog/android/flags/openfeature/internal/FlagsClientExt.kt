@@ -21,7 +21,8 @@ import kotlin.coroutines.suspendCoroutine
  * to [resume]/[resumeWithException].
  *
  * @param context The evaluation context to set
- * @throws [OpenFeatureError.GeneralError] if setting the context fails or times out.
+ * @throws [OpenFeatureError.GeneralError] if setting the context fails. The first context operation also
+ * fails when the configured Flags initialization timeout elapses.
  */
 internal suspend fun FlagsClient.setEvaluationContextSuspend(context: EvaluationContext) {
     // Subsequent invocation of any resume function will produce
@@ -42,7 +43,6 @@ internal suspend fun FlagsClient.setEvaluationContextSuspend(context: Evaluation
             }
         }
 
-        // setEvaluationContext is guaranteed to return within the configured timeout.
         setEvaluationContext(context, callback)
     }
 }
