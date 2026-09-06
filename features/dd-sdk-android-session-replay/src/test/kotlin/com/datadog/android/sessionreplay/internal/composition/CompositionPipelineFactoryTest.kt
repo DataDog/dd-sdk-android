@@ -83,22 +83,26 @@ internal class CompositionPipelineFactoryTest {
     }
 
     @Test
-    fun `M give the producer the shared window source W create`() {
+    fun `M give the producer the shared window source and RUM context provider W create`() {
         // Given
         val windowSources = mutableListOf<ActiveWindowSource>()
+        val rumContextProviders = mutableListOf<RumContextProvider>()
+        val mockRumContextProvider = mock<RumContextProvider>()
         val testedFactory = createFactory(
             dynamicOptimizationEnabled = false,
-            snapshotProducerFactory = {
-                windowSources += it
+            snapshotProducerFactory = { windowSource, rumContextProvider ->
+                windowSources += windowSource
+                rumContextProviders += rumContextProvider
                 NoOpCapturedSnapshotProducer()
             }
         )
 
         // When
-        testedFactory.create(mock<RecordWriter>(), mock<RumContextProvider>(), mockApplication)
+        testedFactory.create(mock<RecordWriter>(), mockRumContextProvider, mockApplication)
 
         // Then
         assertThat(windowSources).hasSize(1)
+        assertThat(rumContextProviders).containsExactly(mockRumContextProvider)
     }
 
     @Test
@@ -171,7 +175,9 @@ internal class CompositionPipelineFactoryTest {
 
     private fun createFactory(
         dynamicOptimizationEnabled: Boolean,
-        snapshotProducerFactory: (ActiveWindowSource) -> CapturedSnapshotProducer = { NoOpCapturedSnapshotProducer() },
+        snapshotProducerFactory: (ActiveWindowSource, RumContextProvider) -> CapturedSnapshotProducer = { _, _ ->
+            NoOpCapturedSnapshotProducer()
+        },
         recordingTimeBankFactory: () -> TimeBank = { mock() }
     ) = DefaultCompositionPipelineFactory(
         sdkCore = mockSdkCore,
