@@ -17,5 +17,5 @@
 /features/dd-sdk-android-flags/api/ @DataDog/rum-mobile @DataDog/rum-mobile-android @DataDog/feature-flagging-and-experimentation-sdk
 /features/dd-sdk-android-flags-openfeature/api/ @DataDog/rum-mobile @DataDog/rum-mobile-android @DataDog/feature-flagging-and-experimentation-sdk
 
-/features/dd-sdk-android-flags/README.md @DataDog/documentation @DataDog/rum-mobile @DataDog/rum-mobile-android @DataDog/feature-flagging-and-experimentation-sdk
+/features/dd-sdk-android-flags/README.md @DataDog/rum-mobile @DataDog/rum-mobile-android @DataDog/feature-flagging-and-experimentation-sdk
 /features/dd-sdk-android-flags-openfeature/README.md @DataDog/documentation @DataDog/rum-mobile @DataDog/rum-mobile-android @DataDog/feature-flagging-and-experimentation-sdk
