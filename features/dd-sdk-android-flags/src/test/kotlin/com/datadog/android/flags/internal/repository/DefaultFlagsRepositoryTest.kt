@@ -35,6 +35,8 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -133,6 +135,38 @@ internal class DefaultFlagsRepositoryTest {
 
         // Then
         assertThat(result).isEqualTo(context)
+    }
+
+    @Test
+    fun `M not wait for persistence W hasLoadedFlagsForContext() { persistence is loading }`(forge: Forge) {
+        // Given
+        doAnswer { null }.whenever(mockDataStore).value<FlagsStateEntry>(
+            key = any(),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+        val repository = DefaultFlagsRepository(
+            featureSdkCore = mockFeatureSdkCore,
+            dataStore = mockDataStore,
+            instanceName = "loading",
+            persistenceLoadTimeoutMs = TimeUnit.SECONDS.toMillis(10)
+        )
+        val result = AtomicReference<Boolean>()
+        val completed = CountDownLatch(1)
+        val context = EvaluationContext(forge.anAlphabeticalString(), emptyMap())
+        val readThread = Thread {
+            result.set(repository.hasLoadedFlagsForContext(context))
+            completed.countDown()
+        }.apply { isDaemon = true }
+
+        // When
+        readThread.start()
+
+        // Then
+        assertThat(completed.await(1, TimeUnit.SECONDS)).isTrue()
+        readThread.join(TimeUnit.SECONDS.toMillis(1))
+        assertThat(result.get()).isFalse()
     }
 
     @Test

@@ -92,7 +92,6 @@ internal class EvaluationsManager(
 ) {
     private val didStartInitialization = AtomicBoolean(false)
     private val initializationTerminalLock = Any()
-    private var contextGeneration = 0L
 
     /**
      * Processes a new evaluation context by fetching flags and storing atomically.
@@ -110,7 +109,10 @@ internal class EvaluationsManager(
      */
     fun updateEvaluationsForContext(context: EvaluationContext, callback: EvaluationContextCallback? = null) {
         val matchingCachedAssignments = AtomicBoolean(false)
-        val initializationCompletion = startContextUpdate(context, callback, matchingCachedAssignments)
+        val initializationCompletion = startInitializationTimeout(context, callback, matchingCachedAssignments) {
+            flagStateManager.updateState(FlagsClientState.Reconciling)
+        }
+        if (initializationCompletion == null) flagStateManager.updateState(FlagsClientState.Reconciling)
 
         sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)
             ?.withContext(withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)) { datadogContext ->
@@ -171,27 +173,8 @@ internal class EvaluationsManager(
             }
     }
 
-    private fun startContextUpdate(
-        context: EvaluationContext,
-        callback: EvaluationContextCallback?,
-        matchingCachedAssignments: AtomicBoolean
-    ): InitializationCompletion? = synchronized(initializationTerminalLock) {
-        contextGeneration += 1
-        val completion = startInitializationTimeout(
-            context,
-            contextGeneration,
-            callback,
-            matchingCachedAssignments
-        ) {
-            flagStateManager.updateState(FlagsClientState.Reconciling)
-        }
-        if (completion == null) flagStateManager.updateState(FlagsClientState.Reconciling)
-        completion
-    }
-
     private fun startInitializationTimeout(
         context: EvaluationContext,
-        generation: Long,
         callback: EvaluationContextCallback?,
         matchingCachedAssignments: AtomicBoolean,
         beforeScheduling: () -> Unit
@@ -207,13 +190,9 @@ internal class EvaluationsManager(
                     val claimedResult = completion.take(shouldCancelTimeout = false)
                         ?: return@synchronized null
                     val currentState = flagStateManager.getCurrentState()
-                    if (
-                        contextGeneration == generation &&
-                        currentState != FlagsClientState.Ready &&
-                        currentState != FlagsClientState.Stale
-                    ) {
+                    if (currentState != FlagsClientState.Ready && currentState != FlagsClientState.Stale) {
                         val hasMatchingCachedAssignments = matchingCachedAssignments.get() ||
-                            (flagsRepository.hasFlags() && flagsRepository.getEvaluationContext() == context)
+                            flagsRepository.hasLoadedFlagsForContext(context)
                         val timeoutState = if (hasMatchingCachedAssignments) {
                             FlagsClientState.Stale
                         } else {

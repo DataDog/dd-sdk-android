@@ -542,8 +542,8 @@ internal class EvaluationsManagerTest {
                 onStateChanged = FlagsStateListener::onStateChanged
             )
         )
-        whenever(mockFlagsRepository.hasFlags()).thenReturn(false, true)
-        whenever(mockFlagsRepository.getEvaluationContext()).thenReturn(context)
+        whenever(mockFlagsRepository.hasFlags()).thenReturn(false)
+        whenever(mockFlagsRepository.hasLoadedFlagsForContext(context)).thenReturn(true)
         whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext)).thenAnswer {
             checkNotNull(timeoutAction).invoke()
             null
@@ -615,57 +615,48 @@ internal class EvaluationsManagerTest {
     }
 
     @Test
-    fun `M keep reconciling state W updateEvaluationsForContext() { newer request starts before timeout }`() {
+    fun `M not wait for cache W updateEvaluationsForContext() { initialization timeout expires }`() {
         // Given
-        val firstContext = EvaluationContext("first", emptyMap())
-        val newerContext = EvaluationContext("newer", emptyMap())
-        val mockFirstCallback = mock<EvaluationContextCallback>()
-        val operations = mutableListOf<Runnable>()
-        val firstFetchStarted = CountDownLatch(1)
-        val releaseFirstFetch = CountDownLatch(1)
+        val context = EvaluationContext(fakeTargetingKey, emptyMap())
+        val cacheReadStarted = CountDownLatch(1)
+        val releaseCacheRead = CountDownLatch(1)
+        val callbackCompleted = CountDownLatch(1)
         var timeoutAction: (() -> Unit)? = null
-        whenever(mockExecutorService.execute(any())).thenAnswer {
-            operations += it.getArgument<Runnable>(0)
-            null
+        whenever(mockExecutorService.execute(any())).thenAnswer { null }
+        whenever(mockFlagsRepository.hasFlags()).thenAnswer {
+            cacheReadStarted.countDown()
+            check(releaseCacheRead.await(1, TimeUnit.SECONDS))
+            false
         }
-        whenever(mockFlagsRepository.hasFlags()).thenReturn(true)
-        whenever(mockFlagsRepository.getEvaluationContext()).thenReturn(firstContext)
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(firstContext, fakeDatadogContext)).thenAnswer {
-            firstFetchStarted.countDown()
-            check(releaseFirstFetch.await(5, TimeUnit.SECONDS))
-            null
+        val callback = object : EvaluationContextCallback {
+            override fun onSuccess() {
+                fail<Unit>("onSuccess should not be called")
+            }
+
+            override fun onFailure(error: Throwable) {
+                callbackCompleted.countDown()
+            }
         }
-        val stateManager = FlagsStateManager(
-            DDCoreStateHolder.create(
-                initialState = FlagsClientState.NotReady,
-                onStateChanged = FlagsStateListener::onStateChanged
-            )
-        )
         val manager = createManager(
-            flagStateManager = stateManager,
-            initializationTimeoutMs = 2_500L,
+            initializationTimeoutMs = 0,
             scheduler = InitializationTimeoutScheduler { _, action ->
                 timeoutAction = action
                 {}
             }
         )
-
-        manager.updateEvaluationsForContext(firstContext, mockFirstCallback)
-        val firstOperationThread = Thread { operations[0].run() }
-        firstOperationThread.start()
-        check(firstFetchStarted.await(5, TimeUnit.SECONDS))
-        manager.updateEvaluationsForContext(newerContext)
+        manager.updateEvaluationsForContext(context, callback)
+        val timeoutThread = Thread { checkNotNull(timeoutAction).invoke() }
 
         try {
             // When
-            checkNotNull(timeoutAction).invoke()
+            timeoutThread.start()
 
             // Then
-            verify(mockFirstCallback).onFailure(any<FlagsInitializationTimeoutException>())
-            assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Reconciling)
+            assertThat(callbackCompleted.await(250, TimeUnit.MILLISECONDS)).isTrue()
+            assertThat(cacheReadStarted.count).isEqualTo(1)
         } finally {
-            releaseFirstFetch.countDown()
-            firstOperationThread.join(TimeUnit.SECONDS.toMillis(5))
+            releaseCacheRead.countDown()
+            timeoutThread.join(TimeUnit.SECONDS.toMillis(2))
         }
     }
 
