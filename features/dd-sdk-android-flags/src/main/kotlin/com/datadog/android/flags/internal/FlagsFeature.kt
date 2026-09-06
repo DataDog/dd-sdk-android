@@ -84,9 +84,9 @@ internal class FlagsFeature(
     internal val initializationTimeoutScheduler = InitializationTimeoutScheduler { timeoutMs, action ->
         val executor = sdkCore.createScheduledExecutorService(INITIALIZATION_TIMEOUT_EXECUTOR_NAME)
         if (executor is ScheduledThreadPoolExecutor) {
-            executor.removeOnCancelPolicy = true
+            executor.executeExistingDelayedTasksAfterShutdownPolicy = false
         }
-        val future = executor.scheduleSafe(
+        executor.scheduleSafe(
             operationName = INITIALIZATION_TIMEOUT_OPERATION_NAME,
             delay = timeoutMs.coerceAtLeast(0),
             unit = TimeUnit.MILLISECONDS,
@@ -100,7 +100,6 @@ internal class FlagsFeature(
             }
         )
         val cancellation: () -> Unit = {
-            future?.cancel(false)
             executor.shutdownSafely()
         }
         cancellation

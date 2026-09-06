@@ -36,8 +36,10 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Future
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -162,6 +164,45 @@ internal class FlagsFeatureTest {
             assertThat(executor.queue).isEmpty()
             assertThat(executor.isShutdown).isTrue()
         } finally {
+            executor.shutdownNow()
+        }
+    }
+
+    @Test
+    fun `M not cancel running task W initializationTimeoutScheduler() { completion races timeout }`() {
+        // Given
+        val executionError = AtomicReference<Throwable?>()
+        val executor = object : ScheduledThreadPoolExecutor(1) {
+            override fun afterExecute(runnable: Runnable, throwable: Throwable?) {
+                super.afterExecute(runnable, throwable)
+                executionError.set(
+                    throwable ?: runCatching { (runnable as Future<*>).get() }.exceptionOrNull()
+                )
+            }
+        }
+        whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn executor
+        val timeoutStarted = CountDownLatch(1)
+        val releaseTimeout = CountDownLatch(1)
+        val timeoutCompleted = CountDownLatch(1)
+
+        try {
+            val cancelTimeout = testedFeature.initializationTimeoutScheduler.schedule(0) {
+                timeoutStarted.countDown()
+                releaseTimeout.await(1, TimeUnit.SECONDS)
+                timeoutCompleted.countDown()
+            }
+            check(timeoutStarted.await(1, TimeUnit.SECONDS))
+
+            // When
+            cancelTimeout()
+            releaseTimeout.countDown()
+
+            // Then
+            assertThat(timeoutCompleted.await(1, TimeUnit.SECONDS)).isTrue()
+            assertThat(executor.awaitTermination(1, TimeUnit.SECONDS)).isTrue()
+            assertThat(executionError.get()).isNull()
+        } finally {
+            releaseTimeout.countDown()
             executor.shutdownNow()
         }
     }
