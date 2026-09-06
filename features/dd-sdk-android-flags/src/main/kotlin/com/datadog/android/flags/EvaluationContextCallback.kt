@@ -10,8 +10,9 @@ package com.datadog.android.flags
  * Callback interface for asynchronous evaluation context update operations.
  *
  * This callback is invoked on a background thread after the [FlagsClient.setEvaluationContext]
- * operation completes. The callback is guaranteed to be invoked after the corresponding
- * [FlagsClientState] transition.
+ * operation completes. It is normally invoked after the corresponding [FlagsClientState]
+ * transition. The first operation can fail with [FlagsInitializationTimeoutException].
+ * The request continues and can transition the client to [FlagsClientState.Ready] later.
  */
 interface EvaluationContextCallback {
     /**
@@ -26,9 +27,11 @@ interface EvaluationContextCallback {
     /**
      * Invoked when the evaluation context update fails.
      *
-     * This method is called on a background executor thread after the state transitions
+     * This method is normally called on a background executor thread after the state transitions
      * to either [FlagsClientState.Stale] (network failed but cached flags available) or
-     * [FlagsClientState.Error] (network failed with no cached flags).
+     * [FlagsClientState.Error] (network failed with no cached flags). An initialization timeout
+     * also transitions the client to [FlagsClientState.Error]. The request continues and can
+     * transition the client to [FlagsClientState.Ready] later.
      *
      * @param error A [Throwable] containing details about the failure, typically including
      * a message explaining the network request failure.
