@@ -57,7 +57,11 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @ForgeConfiguration(ForgeConfigurator::class)
@@ -565,6 +569,114 @@ internal class EvaluationsManagerTest {
         // Then
         verify(mockFirstCallback).onFailure(any<FlagsInitializationTimeoutException>())
         assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+    }
+
+    @Test
+    fun `M timeout first callback W updateEvaluationsForContext() { reconciling listener re-enters }`() {
+        // Given
+        val firstCallback = mock<EvaluationContextCallback>()
+        val nestedCallback = mock<EvaluationContextCallback>()
+        var timeoutAction: (() -> Unit)? = null
+        whenever(mockExecutorService.execute(any())).thenAnswer { null }
+        val stateManager = FlagsStateManager(
+            DDCoreStateHolder.create(
+                initialState = FlagsClientState.NotReady,
+                onStateChanged = FlagsStateListener::onStateChanged
+            )
+        )
+        lateinit var manager: EvaluationsManager
+        val didReenter = AtomicBoolean(false)
+        stateManager.addListener(
+            object : FlagsStateListener {
+                override fun onStateChanged(newState: FlagsClientState) {
+                    if (newState == FlagsClientState.Reconciling && didReenter.compareAndSet(false, true)) {
+                        manager.updateEvaluationsForContext(
+                            EvaluationContext("nested", emptyMap()),
+                            nestedCallback
+                        )
+                    }
+                }
+            }
+        )
+        manager = createManager(
+            flagStateManager = stateManager,
+            initializationTimeoutMs = 2_500L,
+            scheduler = InitializationTimeoutScheduler { _, action ->
+                timeoutAction = action
+                {}
+            }
+        )
+
+        // When
+        manager.updateEvaluationsForContext(EvaluationContext("first", emptyMap()), firstCallback)
+        checkNotNull(timeoutAction).invoke()
+
+        // Then
+        verify(firstCallback).onFailure(any<FlagsInitializationTimeoutException>())
+        verify(nestedCallback, times(0)).onFailure(any())
+    }
+
+    @Test
+    fun `M keep ready state W updateEvaluationsForContext() { success races timeout publication }`() {
+        // Given
+        val context = EvaluationContext(fakeTargetingKey, emptyMap())
+        val callback = mock<EvaluationContextCallback>()
+        var timeoutAction: (() -> Unit)? = null
+        var operation: Runnable? = null
+        val currentState = AtomicReference<FlagsClientState>(FlagsClientState.NotReady)
+        val timeoutReadState = CountDownLatch(1)
+        val releaseTimeout = CountDownLatch(1)
+        val readyPublished = CountDownLatch(1)
+        whenever(mockExecutorService.execute(any())).thenAnswer {
+            operation = it.getArgument(0)
+            null
+        }
+        whenever(mockFlagsStateManager.getCurrentState()).thenAnswer {
+            val observedState = currentState.get()
+            timeoutReadState.countDown()
+            check(releaseTimeout.await(5, TimeUnit.SECONDS))
+            observedState
+        }
+        doAnswer {
+            val newState = it.getArgument<FlagsClientState>(0)
+            currentState.set(newState)
+            if (newState == FlagsClientState.Ready) readyPublished.countDown()
+            null
+        }.whenever(mockFlagsStateManager).updateState(any())
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
+            .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
+        whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(emptyMap())
+        val manager = createManager(
+            initializationTimeoutMs = 2_500L,
+            scheduler = InitializationTimeoutScheduler { _, action ->
+                timeoutAction = action
+                {}
+            }
+        )
+
+        // When
+        manager.updateEvaluationsForContext(context, callback)
+        val timeoutThread = Thread { checkNotNull(timeoutAction).invoke() }
+        timeoutThread.start()
+        check(timeoutReadState.await(5, TimeUnit.SECONDS))
+        val operationThread = Thread { checkNotNull(operation).run() }
+        operationThread.start()
+        val waitDeadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5)
+        while (
+            readyPublished.count > 0 &&
+            operationThread.state != Thread.State.BLOCKED &&
+            System.nanoTime() < waitDeadline
+        ) {
+            Thread.yield()
+        }
+        releaseTimeout.countDown()
+        timeoutThread.join(TimeUnit.SECONDS.toMillis(5))
+        operationThread.join(TimeUnit.SECONDS.toMillis(5))
+
+        // Then
+        assertThat(timeoutThread.isAlive).isFalse()
+        assertThat(operationThread.isAlive).isFalse()
+        assertThat(currentState.get()).isEqualTo(FlagsClientState.Ready)
     }
 
     @Test
