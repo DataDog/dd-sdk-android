@@ -23,7 +23,6 @@ public final class com/datadog/android/rum/internal/startup/PreLaunchRumAppStart
 	public final fun attach (Lcom/datadog/android/rum/internal/startup/RumAppStartupDetector$Listener;Lkotlin/jvm/functions/Function1;)V
 	public final fun detach (Lcom/datadog/android/rum/internal/startup/RumAppStartupDetector$Listener;)V
 	public final fun getAttachedListenerCount ()I
-	public final fun getHasPendingEvents ()Z
 	public final fun install (Landroid/app/Application;)V
 	public final fun isInstalled ()Z
 	public fun onAppStartupDetected (Lcom/datadog/android/rum/internal/startup/RumStartupScenario;)V

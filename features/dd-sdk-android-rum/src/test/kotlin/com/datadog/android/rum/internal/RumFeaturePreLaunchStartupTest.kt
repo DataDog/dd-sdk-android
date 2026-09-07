@@ -320,6 +320,30 @@ internal class RumFeaturePreLaunchStartupTest {
     }
 
     @Test
+    fun `M still forward the TTID W predicate rejects the scenario activity after the AppStart`() {
+        // Given — a state-dependent predicate, of the kind the AppStartupActivityPredicate KDoc
+        // itself describes (a splash Activity that calls finish() on itself), which accepts the
+        // launch Activity at creation and rejects it by the time the first frame is drawn.
+        var isFinishing = false
+        whenever(mockAppStartupActivityPredicate.shouldTrackStartup(mockActivity))
+            .thenAnswer { !isFinishing }
+
+        installPreLaunchDetector()
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.attachPreLaunchRumAppStartupDetector()
+        emitPreLaunchAppStartup()
+
+        // When — the Activity state flips between Activity creation and the first draw
+        isFinishing = true
+        emitPreLaunchTTID()
+
+        // Then — the predicate decision taken at Activity creation stands for the whole launch,
+        // so the consumer is not left holding an AppStart with no TTID to go with it
+        verify(mockRumMonitor, times(1)).sendAppStartEvent(fakeScenario)
+        verify(mockRumMonitor, times(1)).sendTTIDEvent(any())
+    }
+
+    @Test
     fun `M forward buffered events W attach() {scenario activity already collected}`() {
         // Given — the launch Activity was garbage collected before Rum.enable() ran, so the
         // predicate cannot be applied to it. The capture is still forwarded.
@@ -409,6 +433,89 @@ internal class RumFeaturePreLaunchStartupTest {
         assertThat(PreLaunchRumAppStartupDetector.attachedListenerCount).isEqualTo(1)
         verify(mockRumMonitor, never()).sendAppStartEvent(any())
         verify(mockRumMonitor2, times(1)).sendAppStartEvent(fakeScenario)
+    }
+
+    @Test
+    fun `M keep the in-flight launch W onStop() {last core stops before the first frame}`() {
+        // Given — the only attached core hears the AppStart and then stops before the first frame
+        // is drawn. The pre-launch detector is process-scoped, so it is not torn down and goes on
+        // holding the pending scenario.
+        installPreLaunchDetector()
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.attachPreLaunchRumAppStartupDetector()
+        emitPreLaunchAppStartup()
+        testedFeature.onStop()
+
+        // When — another core enables before the frame draws, and then it draws
+        val secondFeature = createSecondFeature()
+        secondFeature.onInitialize(appContext.mockInstance)
+        secondFeature.attachPreLaunchRumAppStartupDetector()
+        emitPreLaunchTTID()
+
+        // Then — the joiner gets the whole launch, not a TTID it has to drop for want of the
+        // AppStart to index it against
+        verify(mockRumMonitor2, times(1)).sendAppStartEvent(fakeScenario)
+        verify(mockRumMonitor2, times(1)).sendTTIDEvent(any())
+    }
+
+    @Test
+    fun `M keep the in-flight launch W onStop() {frame drawn while no core is attached}`() {
+        // Given — same as above, but nobody is listening at the moment the frame draws
+        installPreLaunchDetector()
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.attachPreLaunchRumAppStartupDetector()
+        emitPreLaunchAppStartup()
+        testedFeature.onStop()
+
+        // When
+        emitPreLaunchTTID()
+        val secondFeature = createSecondFeature()
+        secondFeature.onInitialize(appContext.mockInstance)
+        secondFeature.attachPreLaunchRumAppStartupDetector()
+
+        // Then — the buffered launch is still whole when it is replayed
+        verify(mockRumMonitor2, times(1)).sendAppStartEvent(fakeScenario)
+        verify(mockRumMonitor2, times(1)).sendTTIDEvent(any())
+    }
+
+    @Test
+    fun `M drop the delivered launch W onStop() {last core stops after the first frame}`() {
+        // Given — the launch has been delivered in full to the only attached core
+        installPreLaunchDetector()
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.attachPreLaunchRumAppStartupDetector()
+        emitPreLaunchAppStartup()
+        emitPreLaunchTTID()
+
+        // When
+        testedFeature.onStop()
+        val secondFeature = createSecondFeature()
+        secondFeature.onInitialize(appContext.mockInstance)
+        secondFeature.attachPreLaunchRumAppStartupDetector()
+
+        // Then — a completed launch is not held on to, so it does not land on the session of a
+        // core that enables RUM long afterwards
+        verify(mockRumMonitor2, never()).sendAppStartEvent(any())
+        verify(mockRumMonitor2, never()).sendTTIDEvent(any())
+    }
+
+    @Test
+    fun `M not attach W attachPreLaunchRumAppStartupDetector() {feature already stopped}`() {
+        // Given — Rum.enable() posted the attach to the main thread from a background thread, and
+        // the feature was stopped before that post got a chance to run
+        installPreLaunchDetector()
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.onStop()
+
+        // When — the queued attach finally runs
+        testedFeature.attachPreLaunchRumAppStartupDetector()
+        emitPreLaunchAppStartup()
+
+        // Then — nothing is registered, so the process-scoped singleton does not retain the
+        // stopped feature or its SDK core
+        assertThat(PreLaunchRumAppStartupDetector.attachedListenerCount).isEqualTo(0)
+        assertThat(testedFeature.preLaunchRumAppStartupListener).isNull()
+        verify(mockRumMonitor, never()).sendAppStartEvent(any())
     }
 
     // endregion

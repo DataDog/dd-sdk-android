@@ -44,8 +44,10 @@ import kotlin.time.Duration.Companion.seconds
  * accumulate, each with the Activity predicate of the core that registered it.
  *
  * **Threading**: [install] and all [RumAppStartupDetector.Listener] callbacks run on the main
- * thread. [attach] is dispatched to the main thread by [Rum.enable], so no synchronization
- * is needed.
+ * thread, and [attach]/[detach] are dispatched there by [Rum.enable], so the listener and event
+ * state needs no synchronization. [isInstalled] is the exception: [Rum.enable] reads it from
+ * whichever thread it was called on — a background thread for React Native and Flutter — before
+ * any main-thread hop, so the field behind it is volatile.
  */
 @Suppress("UnsafeThirdPartyFunctionCall")
 object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
@@ -80,10 +82,18 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
          * A TTID is only forwarded to a listener that received the matching AppStart: consumers
          * index the TTID against the launch it belongs to, and one without its AppStart lands on a
          * negative index with no scenario to associate a TTFD with.
+         *
+         * It doubles as the record that [activityPredicate] accepted the scenario Activity, which
+         * is why [forwardIfAccepted] does not test that Activity again when the TTID arrives.
          */
         var startedScenario: RumStartupScenario? = null
     }
 
+    // Volatile: written on the main thread from install(), but read through isInstalled on the
+    // thread that called Rum.enable(). Nothing orders those two, so without this a caller could
+    // observe null after installation and build a second detector, losing the launch this module
+    // exists to capture.
+    @Volatile
     private var detectorImpl: RumAppStartupDetector? = null
     private val registrations = mutableListOf<Registration>()
 
@@ -100,10 +110,7 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
     /** `true` if [install] has been called. */
     val isInstalled: Boolean get() = detectorImpl != null
 
-    /** `true` if there are buffered events waiting to be replayed to an attaching listener. */
-    val hasPendingEvents: Boolean get() = pendingEvents.isNotEmpty()
-
-    /** Number of listeners currently attached. */
+    /** Number of listeners currently attached. Must be read on the main thread. */
     val attachedListenerCount: Int get() = registrations.size
 
     /**
@@ -190,8 +197,12 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
      * not retained by this process-scoped singleton. Only that one listener is removed; any other
      * core's listener keeps receiving events.
      *
-     * When the last listener goes, the buffer is dropped (everything in it has been delivered
-     * already) and events arriving afterwards are buffered again for the next core to attach.
+     * When the last listener goes, a delivered launch is dropped from the buffer and events
+     * arriving afterwards are buffered again for the next core to attach. A launch still awaiting
+     * its first frame is kept instead: the detector is process-scoped and is not torn down here, so
+     * it still holds the matching pending scenario and will emit the TTID, and dropping the AppStart
+     * now would leave that TTID with nothing to be indexed against — [forwardIfAccepted] would
+     * discard it, and the launch would be lost to whichever core enables RUM next.
      *
      * Must be called on the main thread.
      *
@@ -199,50 +210,67 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
      */
     fun detach(listener: RumAppStartupDetector.Listener) {
         registrations.removeAll { it.listener === listener }
-        if (registrations.isEmpty()) {
+        // The buffer holds one launch at a time, so the presence of a TTID means this one is
+        // complete and every attached listener has already had the whole of it.
+        val isLaunchInFlight = pendingEvents.isNotEmpty() &&
+            pendingEvents.none { it is Event.TTIDComputed }
+        if (registrations.isEmpty() && !isLaunchInFlight) {
             pendingEvents.clear()
         }
     }
 
     /**
-     * Re-applies [Registration.activityPredicate] to the Activities an event was measured against.
+     * Applies [Registration.activityPredicate] to an Activity an event was measured against.
      *
-     * Both the Activity the scenario was opened for and — when the measurement was forwarded —
-     * the Activity that actually drew have to qualify. An Activity that has already been garbage
-     * collected cannot be validated; those are accepted rather than dropped, since by the time a
-     * cross-platform SDK calls `Rum.enable()` the launch Activity may well be gone, and silently
-     * discarding every such launch would defeat the purpose of the pre-launch module.
+     * An Activity that has already been garbage collected cannot be validated; those are accepted
+     * rather than dropped, since by the time a cross-platform SDK calls `Rum.enable()` the launch
+     * Activity may well be gone, and silently discarding every such launch would defeat the purpose
+     * of the pre-launch module. A missing reference — no Activity forwarded the draw — is likewise
+     * nothing to reject.
      */
-    private fun isAcceptedByPredicate(event: Event, registration: Registration): Boolean {
-        val drawingActivity = (event as? Event.TTIDComputed)?.forwardedActivity?.get()
-        return listOfNotNull(event.scenario.activity.get(), drawingActivity)
-            .all { registration.activityPredicate(it) }
+    private fun isActivityAccepted(
+        activity: WeakReference<Activity>?,
+        registration: Registration
+    ): Boolean {
+        val resolved = activity?.get()
+        return resolved == null || registration.activityPredicate(resolved)
     }
 
     /**
      * Forwards [event] to [registration], unless its predicate rejects it or it is a TTID for a
      * launch this listener never heard the AppStart of.
+     *
+     * Each Activity is tested exactly once, by the event that introduces it: the scenario Activity
+     * when the AppStart is forwarded, the forwarding Activity when the TTID is. Re-testing the
+     * scenario Activity at TTID time would contradict
+     * [com.datadog.android.rum.startup.AppStartupActivityPredicate], which is documented as being
+     * evaluated during Activity creation, and a predicate reading mutable Activity state — say
+     * `!activity.isFinishing` — could then accept the AppStart and reject the TTID, leaving the
+     * consumer with half a launch.
      */
     private fun forwardIfAccepted(registration: Registration, event: Event) {
-        if (!isAcceptedByPredicate(event, registration)) {
-            return
-        }
         when (event) {
             is Event.AppStartupDetected -> {
-                registration.startedScenario = event.scenario
-                registration.listener.onAppStartupDetected(event.scenario)
+                if (isActivityAccepted(event.scenario.activity, registration)) {
+                    registration.startedScenario = event.scenario
+                    registration.listener.onAppStartupDetected(event.scenario)
+                }
             }
             is Event.TTIDComputed -> {
-                if (registration.startedScenario !== event.scenario) {
-                    return
+                // A startedScenario match is the decision already taken for the scenario Activity
+                // when its AppStart was forwarded, so the predicate is not re-run against it.
+                val startedThisScenario = registration.startedScenario === event.scenario
+                if (startedThisScenario &&
+                    isActivityAccepted(event.forwardedActivity, registration)
+                ) {
+                    registration.startedScenario = null
+                    registration.listener.onTTIDComputed(
+                        event.scenario,
+                        event.durationNs,
+                        event.wasForwarded,
+                        event.forwardedActivity
+                    )
                 }
-                registration.startedScenario = null
-                registration.listener.onTTIDComputed(
-                    event.scenario,
-                    event.durationNs,
-                    event.wasForwarded,
-                    event.forwardedActivity
-                )
             }
         }
     }

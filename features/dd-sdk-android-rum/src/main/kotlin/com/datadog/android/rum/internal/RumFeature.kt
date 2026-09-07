@@ -175,7 +175,9 @@ internal class RumFeature(
 
     // Set by initRumAppStartupDetector() when the pre-launch module supplied the detector, in
     // which case attachPreLaunchRumAppStartupDetector() takes over from Rum.enable() instead of
-    // this feature owning a detector of its own.
+    // this feature owning a detector of its own. Volatile because onStop() clears it from the
+    // stopping thread to neuter an attach Rum.enable() has already posted to the main thread.
+    @Volatile
     internal var usePreLaunchDetector: Boolean = false
     internal var actionTrackingStrategy: UserActionTrackingStrategy =
         NoOpUserActionTrackingStrategy()
@@ -210,6 +212,9 @@ internal class RumFeature(
 
     // The listener this feature handed to the process-scoped PreLaunchRumAppStartupDetector, kept
     // so onStop() can detach exactly this one and leave any other SDK core's listener attached.
+    // Written and read on the main thread; volatile only so a stopping thread that reads it for
+    // logging or assertions cannot see a stale value.
+    @Volatile
     internal var preLaunchRumAppStartupListener: RumAppStartupDetector.Listener? = null
 
     // region Feature
@@ -408,24 +413,21 @@ internal class RumFeature(
         cleanupInfoProviders()
 
         val detector = rumAppStartupDetector
-        // Detach only the listener this feature attached — another SDK core may still be using the
-        // process-scoped pre-launch detector.
-        val preLaunchListener = preLaunchRumAppStartupListener
+        // Cleared before the detach below so that an attachPreLaunchRumAppStartupDetector() this
+        // feature has already posted to the main thread bails out instead of registering a listener
+        // into a feature that is being stopped.
+        usePreLaunchDetector = false
         if (isMainThread()) {
             @Suppress("ThreadSafety") // just verified we are on the main thread
-            detector?.destroy()
-            preLaunchListener?.let { PreLaunchRumAppStartupDetector.detach(it) }
+            tearDownRumAppStartupDetection(detector)
         } else {
             handler.post {
                 @Suppress("ThreadSafety") // handler posts to the main looper
-                detector?.destroy()
-                preLaunchListener?.let { PreLaunchRumAppStartupDetector.detach(it) }
+                tearDownRumAppStartupDetection(detector)
             }
         }
 
         rumAppStartupDetector = null
-        preLaunchRumAppStartupListener = null
-        usePreLaunchDetector = false
 
         GlobalRumMonitor.unregister(sdkCore)
         initialized.set(false)
@@ -806,10 +808,7 @@ internal class RumFeature(
         sdkCore.internalLogger.log(
             InternalLogger.Level.DEBUG,
             InternalLogger.Target.MAINTAINER,
-            {
-                "TTID: reusing pre-launch RumAppStartupDetector" +
-                    " (pendingEvents=${PreLaunchRumAppStartupDetector.hasPendingEvents})"
-            }
+            { "TTID: reusing pre-launch RumAppStartupDetector" }
         )
     }
 
@@ -891,6 +890,26 @@ internal class RumFeature(
         PreLaunchRumAppStartupDetector.attach(listener) {
             configuration.appStartupActivityPredicate.shouldTrackStartup(it)
         }
+    }
+
+    /**
+     * Tears down whichever form of app-startup detection this feature was using.
+     *
+     * [preLaunchRumAppStartupListener] is read here, on the main thread, rather than snapshotted by
+     * [onStop] on the stopping thread. [com.datadog.android.rum.Rum.enable] may have posted
+     * [attachPreLaunchRumAppStartupDetector] without it having run yet, in which case a snapshot
+     * taken on the stopping thread is still `null` and the listener would stay registered on the
+     * process-scoped singleton, retaining this stopped feature and its SDK core for the life of the
+     * process. Posting this to the main thread instead queues it behind that attach, so whatever
+     * the attach stored is what gets removed.
+     *
+     * Only this feature's listener is detached; another SDK core may still be using the detector.
+     */
+    @MainThread
+    private fun tearDownRumAppStartupDetection(detector: RumAppStartupDetector?) {
+        detector?.destroy()
+        preLaunchRumAppStartupListener?.let { PreLaunchRumAppStartupDetector.detach(it) }
+        preLaunchRumAppStartupListener = null
     }
 
     // endregion

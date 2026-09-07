@@ -6,7 +6,6 @@ data class com.datadog.android.rum.internal.domain.Time
     fun fromNanoTime(Long, com.datadog.android.internal.time.TimeProvider): Time
 object com.datadog.android.rum.internal.startup.PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener
   val isInstalled: Boolean
-  val hasPendingEvents: Boolean
   val attachedListenerCount: Int
   fun install(android.app.Application)
   fun attach(RumAppStartupDetector.Listener, (android.app.Activity) -> Boolean)
