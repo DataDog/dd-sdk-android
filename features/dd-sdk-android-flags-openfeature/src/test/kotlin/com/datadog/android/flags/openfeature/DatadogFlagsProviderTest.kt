@@ -411,11 +411,11 @@ internal class DatadogFlagsProviderTest {
     @Test
     fun `M complete initialization W initialize() {timeout with matching cached assignments}`() = runTest {
         // Given
-        val timeoutError = mock<FlagsInitializationTimeoutException>()
+        val fakeTimeoutError = mock<FlagsInitializationTimeoutException>()
         whenever(mockStateObservable.getCurrentState()).thenReturn(FlagsClientState.Stale)
         whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
             val callback = invocation.getArgument<EvaluationContextCallback>(1)
-            callback.onFailure(timeoutError)
+            callback.onFailure(fakeTimeoutError)
             Unit
         }
 
