@@ -6,8 +6,12 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import android.app.Application
+import android.content.res.Resources
+import android.util.DisplayMetrics
 import android.view.View
 import android.view.ViewTreeObserver
+import android.view.Window
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
@@ -130,6 +134,93 @@ internal class CompositionCaptureConcurrencyTest {
 
         // Then
         assertThat(failures).isEmpty()
+    }
+
+    @Test
+    fun `M not throw W touch interception is refreshed and stopped from multiple threads`(
+        @IntForgery(min = 2, max = 4) fakeThreadCount: Int
+    ) {
+        // Given
+        val fakeWindows = List(WINDOW_SET_SIZE) { touchableWindow() }
+        val testedInterceptor = CompositionWindowTouchInterceptor(
+            appContext = touchableAppContext(),
+            recordWriter = mock(),
+            timeProvider = mock(),
+            rumContextProvider = mock(),
+            touchPrivacyManager = mock(),
+            internalLogger = mock()
+        )
+        val failures = CopyOnWriteArrayList<Throwable>()
+
+        // When
+        hammer(fakeThreadCount, failures) { threadIndex ->
+            repeat(ITERATIONS) {
+                if (threadIndex == 0 && it % INVALIDATION_INTERVAL == 0) {
+                    testedInterceptor.stop()
+                } else {
+                    testedInterceptor.intercept(fakeWindows.take(1 + it % WINDOW_SET_SIZE))
+                }
+            }
+        }
+
+        // Then
+        assertThat(failures).isEmpty()
+    }
+
+    @Test
+    fun `M wrap a window at most once W intercept calls race on the same window`() {
+        // Given
+        // Forced interleaving: thread A is parked exactly where wrap() reads the window's existing
+        // callback - after intercept()'s synchronized "is this window new" check already said yes,
+        // but before the reservation is claimed. Thread B then runs intercept() for the same window
+        // while thread A is parked there, so both threads independently decide the window is new.
+        val enteredWindowCallback = CountDownLatch(1)
+        val releaseWindowCallback = CountDownLatch(1)
+        val blockNextAccess = AtomicBoolean(true)
+        val fakeWindow = mock<Window>()
+        whenever(fakeWindow.callback).thenAnswer {
+            if (blockNextAccess.compareAndSet(true, false)) {
+                enteredWindowCallback.countDown()
+                releaseWindowCallback.await(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            }
+            null
+        }
+        val testedInterceptor = CompositionWindowTouchInterceptor(
+            appContext = touchableAppContext(),
+            recordWriter = mock(),
+            timeProvider = mock(),
+            rumContextProvider = mock(),
+            touchPrivacyManager = mock(),
+            internalLogger = mock()
+        )
+        val failures = CopyOnWriteArrayList<Throwable>()
+
+        // When
+        val threadA = Thread {
+            try {
+                testedInterceptor.intercept(listOf(fakeWindow))
+            } catch (e: Throwable) {
+                failures += e
+            }
+        }
+        threadA.start()
+        assertThat(enteredWindowCallback.await(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue()
+
+        val threadB = Thread {
+            try {
+                testedInterceptor.intercept(listOf(fakeWindow))
+            } catch (e: Throwable) {
+                failures += e
+            }
+        }
+        threadB.start()
+        threadB.join(AWAIT_TIMEOUT_MS)
+        releaseWindowCallback.countDown()
+        threadA.join(AWAIT_TIMEOUT_MS)
+
+        // Then
+        assertThat(failures).isEmpty()
+        verify(fakeWindow, times(1)).callback = any()
     }
 
     @Test
@@ -438,6 +529,14 @@ internal class CompositionCaptureConcurrencyTest {
         val mockView = mock<View>()
         whenever(mockView.viewTreeObserver).thenReturn(mockObserver)
         return mockView
+    }
+
+    private fun touchableWindow(): Window = mock()
+
+    private fun touchableAppContext(): Application = mock { mockApplication ->
+        val displayMetrics = DisplayMetrics()
+        val mockResources = mock<Resources> { whenever(it.displayMetrics).thenReturn(displayMetrics) }
+        whenever(mockApplication.resources).thenReturn(mockResources)
     }
 
     private fun Forge.aCompletedCapture(): CompletedSnapshotCapture = CompletedSnapshotCapture(
