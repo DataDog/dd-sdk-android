@@ -190,6 +190,7 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         val lifecycle = AndroidSnapshotCaptureLifecycle(
             application = application,
             interceptor = interceptor,
+            touchInterceptor = mock(),
             internalLogger = mock(),
             uiHandler = handler,
             windowProvider = { views }
@@ -221,6 +222,7 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         val testedLifecycle = AndroidSnapshotCaptureLifecycle(
             application = mock(),
             interceptor = mockInterceptor,
+            touchInterceptor = mock(),
             internalLogger = mock(),
             currentActivity = activityShowing(mockDecorView),
             uiHandler = immediateHandler(),
@@ -243,6 +245,7 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         val testedLifecycle = AndroidSnapshotCaptureLifecycle(
             application = mock(),
             interceptor = mockInterceptor,
+            touchInterceptor = mock(),
             internalLogger = mock(),
             currentActivity = activityShowing(mockActivityDecorView),
             uiHandler = immediateHandler(),
@@ -264,6 +267,7 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         val testedLifecycle = AndroidSnapshotCaptureLifecycle(
             application = mock(),
             interceptor = mockInterceptor,
+            touchInterceptor = mock(),
             internalLogger = mock(),
             currentActivity = activityShowing(mockDecorView),
             uiHandler = immediateHandler(),
@@ -288,6 +292,7 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         val testedLifecycle = AndroidSnapshotCaptureLifecycle(
             application = mockApplication,
             interceptor = mockInterceptor,
+            touchInterceptor = mock(),
             internalLogger = mock(),
             uiHandler = immediateHandler(),
             windowProvider = { emptyList() }
@@ -302,6 +307,174 @@ internal class AndroidSnapshotCaptureLifecycleTest {
 
         // Then
         verify(mockInterceptor).intercept(listOf(mockDecorView))
+    }
+
+    @Test
+    fun `M intercept both sources W start touch { window manager reports an unreported window }`() {
+        // Given
+        val mockActivityDecorView = mock<View>()
+        val mockActivityWindow = mock<Window>()
+        whenever(mockActivityWindow.peekDecorView()).thenReturn(mockActivityDecorView)
+        val mockActivity = mock<android.app.Activity>().also { whenever(it.window).thenReturn(mockActivityWindow) }
+        val mockDialogDecorView = mock<View>()
+        val mockDialogWindow = mock<Window>()
+        val mockTouchInterceptor = mock<CompositionWindowTouchInterceptor>()
+        val testedLifecycle = AndroidSnapshotCaptureLifecycle(
+            application = mock(),
+            interceptor = mock(),
+            touchInterceptor = mockTouchInterceptor,
+            internalLogger = mock(),
+            currentActivity = mockActivity,
+            uiHandler = immediateHandler(),
+            windowProvider = { listOf(mockDialogDecorView) },
+            windowFromDecorView = { if (it === mockDialogDecorView) mockDialogWindow else null }
+        )
+
+        // When
+        testedLifecycle.start()
+
+        // Then
+        verify(mockTouchInterceptor).intercept(listOf(mockActivityWindow, mockDialogWindow))
+    }
+
+    @Test
+    fun `M skip an untracked window W start touch { window cannot be resolved }`() {
+        // Given
+        val mockDialogDecorView = mock<View>()
+        val mockTouchInterceptor = mock<CompositionWindowTouchInterceptor>()
+        val testedLifecycle = AndroidSnapshotCaptureLifecycle(
+            application = mock(),
+            interceptor = mock(),
+            touchInterceptor = mockTouchInterceptor,
+            internalLogger = mock(),
+            uiHandler = immediateHandler(),
+            windowProvider = { listOf(mockDialogDecorView) },
+            windowFromDecorView = { null }
+        )
+
+        // When
+        testedLifecycle.start()
+
+        // Then
+        verify(mockTouchInterceptor).intercept(emptyList())
+    }
+
+    @Test
+    fun `M stop the touch interceptor W stop`() {
+        // Given
+        val mockTouchInterceptor = mock<CompositionWindowTouchInterceptor>()
+        val testedLifecycle = AndroidSnapshotCaptureLifecycle(
+            application = mock(),
+            interceptor = mock(),
+            touchInterceptor = mockTouchInterceptor,
+            internalLogger = mock(),
+            uiHandler = immediateHandler(),
+            windowProvider = { emptyList() }
+        )
+        testedLifecycle.start()
+
+        // When
+        testedLifecycle.stop()
+
+        // Then
+        verify(mockTouchInterceptor).stop()
+    }
+
+    @Test
+    fun `M schedule a periodic refresh W start`() {
+        // Given
+        val handler = immediateHandler()
+        val lifecycle = AndroidSnapshotCaptureLifecycle(
+            application = mock(),
+            interceptor = mock(),
+            touchInterceptor = mock(),
+            internalLogger = mock(),
+            uiHandler = handler,
+            windowProvider = { emptyList() }
+        )
+
+        // When
+        lifecycle.start()
+
+        // Then
+        verify(handler).postDelayed(any<Runnable>(), org.mockito.kotlin.eq(1_000L))
+    }
+
+    @Test
+    fun `M pick up an untracked window W periodic refresh fires`() {
+        // Given
+        val mockInterceptor = mock<CompositionViewOnDrawInterceptor>()
+        val handler = immediateHandler()
+        val delayedRunnable = argumentCaptor<Runnable>()
+        var windows = emptyList<View>()
+        val lifecycle = AndroidSnapshotCaptureLifecycle(
+            application = mock(),
+            interceptor = mockInterceptor,
+            touchInterceptor = mock(),
+            internalLogger = mock(),
+            uiHandler = handler,
+            windowProvider = { windows }
+        )
+        lifecycle.start()
+        verify(handler).postDelayed(delayedRunnable.capture(), any())
+
+        // When
+        val mockDialogDecorView = mock<View>()
+        windows = listOf(mockDialogDecorView)
+        delayedRunnable.firstValue.run()
+
+        // Then
+        verify(mockInterceptor).intercept(listOf(mockDialogDecorView))
+    }
+
+    @Test
+    fun `M reschedule itself W periodic refresh fires { still running }`() {
+        // Given
+        val handler = immediateHandler()
+        val delayedRunnable = argumentCaptor<Runnable>()
+        val lifecycle = AndroidSnapshotCaptureLifecycle(
+            application = mock(),
+            interceptor = mock(),
+            touchInterceptor = mock(),
+            internalLogger = mock(),
+            uiHandler = handler,
+            windowProvider = { emptyList() }
+        )
+        lifecycle.start()
+        verify(handler).postDelayed(delayedRunnable.capture(), any())
+
+        // When
+        delayedRunnable.firstValue.run()
+
+        // Then
+        verify(handler, org.mockito.kotlin.times(2)).postDelayed(any<Runnable>(), any())
+    }
+
+    @Test
+    fun `M stop refreshing and rescheduling W periodic refresh fires { stopped }`() {
+        // Given
+        val mockInterceptor = mock<CompositionViewOnDrawInterceptor>()
+        val handler = immediateHandler()
+        val delayedRunnable = argumentCaptor<Runnable>()
+        val lifecycle = AndroidSnapshotCaptureLifecycle(
+            application = mock(),
+            interceptor = mockInterceptor,
+            touchInterceptor = mock(),
+            internalLogger = mock(),
+            uiHandler = handler,
+            windowProvider = { emptyList() }
+        )
+        lifecycle.start()
+        verify(handler).postDelayed(delayedRunnable.capture(), any())
+        lifecycle.stop()
+        org.mockito.kotlin.clearInvocations(mockInterceptor, handler)
+
+        // When
+        delayedRunnable.firstValue.run()
+
+        // Then
+        verify(mockInterceptor, never()).intercept(any())
+        verify(handler, never()).postDelayed(any<Runnable>(), any())
     }
 
     @Test

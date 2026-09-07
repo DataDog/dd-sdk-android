@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.composition
 import android.app.Application
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.SessionReplayInternalCallback
+import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.datadog.android.sessionreplay.internal.recorder.RecordingTimeBank
 import com.datadog.android.sessionreplay.internal.recorder.TimeBank
@@ -17,11 +18,12 @@ import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 
 /**
  * Wires every collaborator scoped to one composition recording session: the orchestrator and its
- * schedulers, the completion queue and its executor, and the draw-signal interception.
+ * schedulers, the completion queue and its executor, and the draw-signal and touch interception.
  */
 internal class DefaultCompositionPipelineFactory(
     private val sdkCore: FeatureSdkCore,
     private val internalCallback: SessionReplayInternalCallback,
+    private val touchPrivacyManager: TouchPrivacyManager,
     private val dynamicOptimizationEnabled: Boolean,
     private val snapshotProducerFactory: (ActiveWindowSource) -> CapturedSnapshotProducer = {
         NO_OP_CAPTURED_SNAPSHOT_PRODUCER
@@ -66,11 +68,20 @@ internal class DefaultCompositionPipelineFactory(
             },
             internalLogger = internalLogger
         )
+        val touchInterceptor = CompositionWindowTouchInterceptor(
+            appContext = application,
+            recordWriter = recordWriter,
+            timeProvider = sdkCore.timeProvider,
+            rumContextProvider = rumContextProvider,
+            touchPrivacyManager = touchPrivacyManager,
+            internalLogger = internalLogger
+        )
         return CompositionCapturePipeline(
             orchestrator = orchestrator,
             lifecycle = AndroidSnapshotCaptureLifecycle(
                 application = application,
                 interceptor = interceptor,
+                touchInterceptor = touchInterceptor,
                 internalLogger = internalLogger,
                 currentActivity = internalCallback.getCurrentActivity()
             ),
