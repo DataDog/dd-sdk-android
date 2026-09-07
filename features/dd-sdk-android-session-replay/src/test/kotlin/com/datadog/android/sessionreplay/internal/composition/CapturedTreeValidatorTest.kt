@@ -267,6 +267,143 @@ internal class CapturedTreeValidatorTest {
     }
 
     @Test
+    fun `M report invalid modifier W validate { brightness bias out of range }`() {
+        // Given
+        val tree = compositionTestTree()
+        val layer = tree.layer.copy(
+            modifiers = listOf(CapturedModifier.BrightnessBias(value = 1.5))
+        )
+        val snapshot = tree.snapshot.copy(layers = listOf(layer))
+
+        // When
+        val result = testedValidator.validate(snapshot)
+
+        // Then
+        assertThat(result.codes()).contains(CaptureValidationErrorCode.INVALID_MODIFIER)
+    }
+
+    @Test
+    fun `M report invalid modifier W validate { blank clip path }`() {
+        // Given
+        val tree = compositionTestTree()
+        val layer = tree.layer.copy(modifiers = listOf(CapturedModifier.Clip(path = "")))
+        val snapshot = tree.snapshot.copy(layers = listOf(layer))
+
+        // When
+        val result = testedValidator.validate(snapshot)
+
+        // Then
+        assertThat(result.codes()).contains(CaptureValidationErrorCode.INVALID_MODIFIER)
+    }
+
+    @Test
+    fun `M report invalid modifier W validate { blank mask image resource id }`() {
+        // Given
+        val tree = compositionTestTree()
+        val layer = tree.layer.copy(modifiers = listOf(CapturedModifier.MaskImage(resourceId = " ")))
+        val snapshot = tree.snapshot.copy(layers = listOf(layer))
+
+        // When
+        val result = testedValidator.validate(snapshot)
+
+        // Then
+        assertThat(result.codes()).contains(CaptureValidationErrorCode.INVALID_MODIFIER)
+    }
+
+    @Test
+    fun `M report invalid modifier W validate { opacity out of range }`() {
+        // Given
+        val tree = compositionTestTree()
+        val layer = tree.layer.copy(modifiers = listOf(CapturedModifier.Opacity(value = 1.5)))
+        val snapshot = tree.snapshot.copy(layers = listOf(layer))
+
+        // When
+        val result = testedValidator.validate(snapshot)
+
+        // Then
+        assertThat(result.codes()).contains(CaptureValidationErrorCode.INVALID_MODIFIER)
+    }
+
+    @Test
+    fun `M report invalid modifier W validate { invalid shadow color }`() {
+        // Given
+        val tree = compositionTestTree()
+        val shadow = CapturedModifier.Shadow(
+            color = "not-a-color",
+            offsetX = 0.0,
+            offsetY = 0.0,
+            radius = 4.0
+        )
+        val layer = tree.layer.copy(modifiers = listOf(shadow))
+        val snapshot = tree.snapshot.copy(layers = listOf(layer))
+
+        // When
+        val result = testedValidator.validate(snapshot)
+
+        // Then
+        assertThat(result.codes()).contains(CaptureValidationErrorCode.INVALID_MODIFIER)
+    }
+
+    @Test
+    fun `M report invalid bounds W validate { negative layer width }`() {
+        // Given
+        val tree = compositionTestTree()
+        val layer = tree.layer.copy(bounds = CapturedBounds(0, 0, -1, 10))
+        val snapshot = tree.snapshot.copy(layers = listOf(layer))
+
+        // When
+        val result = testedValidator.validate(snapshot)
+
+        // Then
+        assertThat(result.codes()).contains(CaptureValidationErrorCode.INVALID_BOUNDS)
+    }
+
+    @Test
+    fun `M report invalid bounds W validate { negative wireframe height }`() {
+        // Given
+        val tree = compositionTestTree()
+        val wireframe = (tree.wireframe as CapturedWireframe.Shape).copy(bounds = CapturedBounds(0, 0, 10, -1))
+        val snapshot = tree.snapshot.copy(wireframes = listOf(wireframe))
+
+        // When
+        val result = testedValidator.validate(snapshot)
+
+        // Then
+        assertThat(result.codes()).contains(CaptureValidationErrorCode.INVALID_BOUNDS)
+    }
+
+    @Test
+    fun `M report unreferenced layer W validate { layer with no parent }`() {
+        // Given
+        val tree = compositionTestTree()
+        val orphanIdentity = tree.factory.layer(tree.window, "orphan")
+        val orphanLayer = layer(orphanIdentity, CapturedLayerKind.COMPOSITION_LAYER, emptyList())
+        val snapshot = tree.snapshot.copy(layers = tree.snapshot.layers + orphanLayer)
+
+        // When
+        val result = testedValidator.validate(snapshot)
+
+        // Then
+        assertThat(result.codes()).contains(CaptureValidationErrorCode.UNREFERENCED_LAYER)
+    }
+
+    @Test
+    fun `M report wrong scope W validate mutation { mutation scope differs from base scope }`() {
+        // Given
+        val tree = compositionTestTree()
+        val mutation = CapturedMutationSet(
+            timestamp = 456,
+            scope = RumViewIdentityScope("other-view")
+        )
+
+        // When
+        val result = testedValidator.validate(mutation, tree.snapshot)
+
+        // Then
+        assertThat(result.codes()).contains(CaptureValidationErrorCode.WRONG_IDENTITY_SCOPE)
+    }
+
+    @Test
     fun `M report invalid style W validate { non-finite opacity }`() {
         // Given
         val tree = compositionTestTree()
