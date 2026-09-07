@@ -12,10 +12,8 @@ import android.view.View
 import android.view.ViewTreeObserver
 import android.view.Window
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.utils.verifyLog
-import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -110,7 +108,7 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         // Then
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
-            InternalLogger.Target.TELEMETRY,
+            InternalLogger.Target.MAINTAINER,
             "Unable to add composition onDrawListener on viewTreeObserver",
             fakeError
         )
@@ -153,7 +151,7 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         // Then
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
-            InternalLogger.Target.TELEMETRY,
+            InternalLogger.Target.MAINTAINER,
             "Unable to remove composition onDrawListener on viewTreeObserver",
             fakeError
         )
@@ -279,6 +277,92 @@ internal class AndroidSnapshotCaptureLifecycleTest {
 
         // Then
         verify(mockInterceptor).intercept(listOf(mockDecorView))
+    }
+
+    @Test
+    fun `M exclude a paused window W lifecycle removes it before the window manager detaches it`() {
+        // Given
+        // Simulates a window still attached to the window manager - persistently so in
+        // multi-window/split-screen - even after the lifecycle callback below already removed it
+        // (e.g. onActivityPaused). Without exclusion, this would be reclassified as an untracked
+        // dialog instead of staying untracked entirely.
+        val mockDecorView = mock<View>()
+        val mockWindow = mock<Window>()
+        whenever(mockWindow.peekDecorView()).thenReturn(mockDecorView)
+        val mockInterceptor = mock<CompositionViewOnDrawInterceptor>()
+        val testedLifecycle = AndroidSnapshotCaptureLifecycle(
+            application = mock(),
+            interceptor = mockInterceptor,
+            touchInterceptor = mock(),
+            internalLogger = mock(),
+            uiHandler = immediateHandler(),
+            windowProvider = { listOf(mockDecorView) },
+            windowFromDecorView = { null }
+        )
+        testedLifecycle.start()
+
+        // When
+        testedLifecycle.onWindowsRemoved(listOf(mockWindow))
+
+        // Then
+        verify(mockInterceptor).intercept(emptyList())
+    }
+
+    @Test
+    fun `M re-include a window W it is tracked again after being excluded`() {
+        // Given
+        val mockDecorView = mock<View>()
+        val mockWindow = mock<Window>()
+        whenever(mockWindow.peekDecorView()).thenReturn(mockDecorView)
+        val mockInterceptor = mock<CompositionViewOnDrawInterceptor>()
+        val testedLifecycle = AndroidSnapshotCaptureLifecycle(
+            application = mock(),
+            interceptor = mockInterceptor,
+            touchInterceptor = mock(),
+            internalLogger = mock(),
+            uiHandler = immediateHandler(),
+            windowProvider = { listOf(mockDecorView) },
+            windowFromDecorView = { null }
+        )
+        testedLifecycle.start()
+        testedLifecycle.onWindowsRemoved(listOf(mockWindow))
+
+        // When - resumed again before the window manager ever reported it as gone
+        testedLifecycle.onWindowsAdded(listOf(mockWindow))
+
+        // Then - included both before the exclusion (start()) and after re-inclusion
+        verify(mockInterceptor, org.mockito.kotlin.times(2)).intercept(listOf(mockDecorView))
+    }
+
+    @Test
+    fun `M forget an excluded window W it disappears from the window manager`() {
+        // Given
+        val mockDecorView = mock<View>()
+        val mockWindow = mock<Window>()
+        whenever(mockWindow.peekDecorView()).thenReturn(mockDecorView)
+        val mockInterceptor = mock<CompositionViewOnDrawInterceptor>()
+        var reportedDecorViews = listOf(mockDecorView)
+        val testedLifecycle = AndroidSnapshotCaptureLifecycle(
+            application = mock(),
+            interceptor = mockInterceptor,
+            touchInterceptor = mock(),
+            internalLogger = mock(),
+            uiHandler = immediateHandler(),
+            windowProvider = { reportedDecorViews },
+            windowFromDecorView = { null }
+        )
+        testedLifecycle.start()
+        testedLifecycle.onWindowsRemoved(listOf(mockWindow))
+
+        // When - the window manager genuinely detaches it, pruning the stale exclusion entry...
+        reportedDecorViews = emptyList()
+        testedLifecycle.onWindowsAdded(emptyList())
+        // ...so if the same view is reported again later, it isn't wrongly held back
+        reportedDecorViews = listOf(mockDecorView)
+        testedLifecycle.onWindowsAdded(emptyList())
+
+        // Then - included both before the exclusion (start()) and after the prune-and-reappear
+        verify(mockInterceptor, org.mockito.kotlin.times(2)).intercept(listOf(mockDecorView))
     }
 
     @Test
@@ -493,21 +577,6 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         verify(handler).postDelayed(runnable.capture(), org.mockito.kotlin.eq(1L))
         verify(handler).removeCallbacks(runnable.firstValue)
         verify(handler, never()).post(any<Runnable>())
-    }
-
-    @Test
-    fun `M use device elapsed time W read capture clock`(
-        @LongForgery fakeElapsedTimeNs: Long
-    ) {
-        // Given
-        val timeProvider = mock<TimeProvider>()
-        whenever(timeProvider.getDeviceElapsedTimeNanos()).thenReturn(fakeElapsedTimeNs)
-
-        // When
-        val result = TimeProviderCaptureTimeProvider(timeProvider).elapsedRealtimeNanos()
-
-        // Then
-        assertThat(result).isEqualTo(fakeElapsedTimeNs)
     }
 
     private fun activityShowing(decorView: View): android.app.Activity {

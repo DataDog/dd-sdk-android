@@ -27,8 +27,6 @@ internal class HandlerCaptureTaskScheduler(
         }
     }
 
-    private fun Long.toDelayMillis(): Long {
-        val delayMs = TimeUnit.NANOSECONDS.toMillis(this)
-        return if (delayMs < 1L) 1L else delayMs
-    }
+    private fun Long.toDelayMillis(): Long =
+        TimeUnit.NANOSECONDS.toMillis(this).coerceAtLeast(1L)
 }

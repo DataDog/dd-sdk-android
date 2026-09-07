@@ -300,7 +300,7 @@ internal class CompositionCaptureConcurrencyTest {
         // When
         hammer(fakeWindowThreadCount, failures) {
             repeat(ITERATIONS) {
-                fixture.testedOrchestrator.requestCapture(CompositionChangeset.of(listOf(mock<View>())))
+                fixture.testedOrchestrator.requestCapture()
                 fixture.runScheduledCaptures()
             }
         }
@@ -328,7 +328,7 @@ internal class CompositionCaptureConcurrencyTest {
         val failures = CopyOnWriteArrayList<Throwable>()
         val snapshot = forge.aCompositionTestTree().snapshot
         val testedOrchestrator = SnapshotCaptureOrchestrator(
-            producer = CapturedSnapshotProducer { generation, _ ->
+            producer = CapturedSnapshotProducer { generation ->
                 createdGenerations += generation
                 snapshot
             },
@@ -351,7 +351,7 @@ internal class CompositionCaptureConcurrencyTest {
                 task()
                 CancellableCaptureWork.NONE
             },
-            expiryScheduler = ScheduledExecutorCaptureTaskScheduler(
+            expiryScheduler = ExecutorCaptureTaskScheduler(
                 executorService = expiryExecutor,
                 internalLogger = mock()
             ),
@@ -364,7 +364,7 @@ internal class CompositionCaptureConcurrencyTest {
         val deadlineNs = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(RACE_DURATION_MS)
         hammer(fakeWindowThreadCount, failures) {
             while (System.nanoTime() < deadlineNs) {
-                testedOrchestrator.requestCapture(CompositionChangeset.of(listOf(mock<View>())))
+                testedOrchestrator.requestCapture()
             }
         }
         // Lets whichever generation is still in flight resolve, via either the expiry timer or the
@@ -568,7 +568,7 @@ internal class CompositionCaptureConcurrencyTest {
         private val scheduledCaptures = ConcurrentLinkedQueue<() -> Unit>()
         private val snapshot = forge.aCompositionTestTree().snapshot
         val testedOrchestrator = SnapshotCaptureOrchestrator(
-            producer = CapturedSnapshotProducer { generation, _ ->
+            producer = CapturedSnapshotProducer { generation ->
                 createdGenerations += generation
                 onCapture()
                 snapshot

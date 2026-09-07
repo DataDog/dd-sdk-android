@@ -77,7 +77,6 @@ internal class DefaultRecorderProvider(
     private val compositionPipelineFactory: CompositionPipelineFactory = DefaultCompositionPipelineFactory(
         sdkCore = sdkCore,
         internalCallback = internalCallback,
-        touchPrivacyManager = touchPrivacyManager,
         dynamicOptimizationEnabled = dynamicOptimizationEnabled
     )
 ) : RecorderProvider {

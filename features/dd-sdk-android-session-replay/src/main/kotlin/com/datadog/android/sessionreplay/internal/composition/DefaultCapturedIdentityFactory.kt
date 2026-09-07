@@ -18,9 +18,17 @@ import com.datadog.android.api.InternalLogger
  */
 internal const val LAYER_ID_OFFSET = 1L shl 31
 
+/**
+ * Shared across every [DefaultCapturedIdentityFactory] instance that doesn't get its own generator
+ * injected, so two factories minting layer identities at the same time (e.g. one per window or per
+ * RUM view scope) never hand out the same raw id. A factory-local, freshly-constructed generator
+ * would restart from 0 every time and collide with any other instance's ids.
+ */
+private val SHARED_REPLAY_ID_GENERATOR: CapturedReplayIdGenerator = AutoIncrementingCapturedReplayIdGenerator()
+
 internal class DefaultCapturedIdentityFactory(
     override val scope: RumViewIdentityScope,
-    private val replayIdGenerator: CapturedReplayIdGenerator = AutoIncrementingCapturedReplayIdGenerator(),
+    private val replayIdGenerator: CapturedReplayIdGenerator = SHARED_REPLAY_ID_GENERATOR,
     private val internalLogger: InternalLogger = InternalLogger.UNBOUND
 ) : CapturedIdentityFactory {
 

@@ -151,6 +151,9 @@ internal class CompositionWindowTouchCallbackTest {
             "CompositionWindowTouchCallback: intercepted null motion event"
         )
         verify(mockRecordWriter, never()).write(any(), any())
+        // the null event is never forwarded - delegating it would only trip the wrapped callback's
+        // own non-null parameter check, logging a second, redundant error for the same root cause.
+        verify(mockWrappedCallback, never()).dispatchTouchEvent(any())
     }
 
     @Test

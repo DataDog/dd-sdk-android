@@ -36,6 +36,13 @@ internal class AndroidSnapshotCaptureLifecycle(
     private val lifecycleCallback = SessionReplayLifecycleCallback(this)
     private var isRunning = false
 
+    // Decor views whose Window was just removed via lifecycle callback (e.g. onActivityPaused),
+    // before Android necessarily detached them from the window manager - persistently so in
+    // multi-window/split-screen, where a paused activity's window stays fully attached and visible.
+    // Kept out of untracked re-classification in resolveWindows() until they're either tracked
+    // again (onWindowsAdded) or genuinely disappear from windowProvider()'s result.
+    private val excludedDecorViews = mutableSetOf<View>()
+
     init {
         currentActivity?.let {
             lifecycleCallback.setCurrentWindow(it)
@@ -64,16 +71,25 @@ internal class AndroidSnapshotCaptureLifecycle(
     override fun stop() {
         uiHandler.post {
             isRunning = false
+            uiHandler.removeCallbacks(untrackedWindowRefreshRunnable)
             interceptor.stop()
             touchInterceptor.stop()
+            excludedDecorViews.clear()
         }
     }
 
     @MainThread
-    override fun onWindowsAdded(windows: List<Window>) = refreshWindows()
+    override fun onWindowsAdded(windows: List<Window>) {
+        windows.mapNotNull { it.peekDecorView() }.forEach(excludedDecorViews::remove)
+        refreshWindows()
+    }
 
     @MainThread
-    override fun onWindowsRemoved(windows: List<Window>) = refreshWindows()
+    override fun onWindowsRemoved(windows: List<Window>) {
+        @Suppress("UnsafeThirdPartyFunctionCall") // mapNotNullTo never throws for a valid destination set
+        windows.mapNotNullTo(excludedDecorViews) { it.peekDecorView() }
+        refreshWindows()
+    }
 
     @MainThread
     private fun refreshWindows() {
@@ -95,16 +111,42 @@ internal class AndroidSnapshotCaptureLifecycle(
      * lifecycle callback reports, such as dialogs and popups. [windowFromDecorView] resolves those
      * untracked decor views back to a [Window], which touch interception needs but draw
      * interception does not.
+     *
+     * [excludedDecorViews] guards the opposite lag: a lifecycle-removed window (e.g. paused) can
+     * still be attached to the window manager - persistently so in multi-window/split-screen -
+     * so without this, [windowProvider] would keep reporting it and this would immediately
+     * reclassify it as an untracked dialog instead of leaving it untracked entirely.
      */
     @MainThread
     private fun resolveWindows(trackedWindows: List<Window>): ResolvedWindows {
         val trackedDecorViews = trackedWindows.mapNotNull { it.peekDecorView() }
-        val untrackedDecorViews = windowProvider().filterNot(trackedDecorViews::contains)
+        val allDecorViews = windowProvider()
+        // Prune entries that have actually disappeared from the window manager - keeping them
+        // around indefinitely would leak view references and could wrongly exclude an unrelated
+        // future view, if the same identity were ever reused.
+        excludedDecorViews.retainAll(allDecorViews.toSet())
+        val untrackedDecorViews = allDecorViews.filterNot { it in trackedDecorViews || it in excludedDecorViews }
         val untrackedWindows = untrackedDecorViews.mapNotNull(windowFromDecorView)
         return ResolvedWindows(
             decorViews = trackedDecorViews + untrackedDecorViews,
             windows = trackedWindows + untrackedWindows
         )
+    }
+
+    // Kept as a single instance (rather than a fresh lambda per call) so stop() can cancel a
+    // pending refresh via removeCallbacks; otherwise a stop/start before the delay elapses would
+    // leave the old chain running alongside the new one, doubling window scans forever. Declared
+    // as an object with an overridden run() (rather than a lambda) so run() can carry its own
+    // @MainThread annotation, since it always executes as a Handler callback on the main looper.
+    @Suppress("ObjectLiteralToLambda")
+    private val untrackedWindowRefreshRunnable = object : Runnable {
+        @MainThread
+        override fun run() {
+            if (isRunning) {
+                refreshInterceptors()
+                scheduleUntrackedWindowRefresh()
+            }
+        }
     }
 
     /**
@@ -116,15 +158,7 @@ internal class AndroidSnapshotCaptureLifecycle(
     @Suppress("ThreadSafety") // Handler posts this block onto the main looper.
     @MainThread
     private fun scheduleUntrackedWindowRefresh() {
-        uiHandler.postDelayed(
-            {
-                if (isRunning) {
-                    refreshInterceptors()
-                    scheduleUntrackedWindowRefresh()
-                }
-            },
-            UNTRACKED_WINDOW_REFRESH_INTERVAL_MS
-        )
+        uiHandler.postDelayed(untrackedWindowRefreshRunnable, UNTRACKED_WINDOW_REFRESH_INTERVAL_MS)
     }
 
     private data class ResolvedWindows(val decorViews: List<View>, val windows: List<Window>)

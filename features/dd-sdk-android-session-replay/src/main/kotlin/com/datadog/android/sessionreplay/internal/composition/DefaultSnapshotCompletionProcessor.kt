@@ -26,6 +26,10 @@ internal class DefaultSnapshotCompletionProcessor(
 
         when (val mapping = wireMapper.mapFullSnapshot(capture.snapshot)) {
             is CaptureWireMappingResult.Success -> {
+                // A false result here is already fully resolved by tryAccept() itself - either the
+                // deadline passed (it expires the generation), or this generation was already
+                // superseded by a newer one (normal coalescing). Nothing further to do, and no log
+                // level distinguishes those two cases, so nothing to log either.
                 if (capture.generation.tryAccept()) {
                     recordWriter.write(
                         EnrichedRecord(

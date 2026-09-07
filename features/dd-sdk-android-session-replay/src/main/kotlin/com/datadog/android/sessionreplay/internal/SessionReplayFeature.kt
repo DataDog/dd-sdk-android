@@ -26,6 +26,7 @@ import com.datadog.android.sessionreplay.SessionReplayInternalCallback
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
+import com.datadog.android.sessionreplay.internal.composition.CompositionCapturePipeline
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentEvent
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentReceiver
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistration
@@ -194,6 +195,15 @@ internal class SessionReplayFeature(
                 application = appContext,
                 embeddedContentSlotRegistry = embeddedContentSlotRegistry
             )
+        if (sessionReplayRecorder is CompositionCapturePipeline) {
+            // The composition pipeline does not capture embedded content yet (see
+            // CompositionCapturePipeline.requestCapture). Swapping the write sinks to no-ops here —
+            // rather than skipping EmbeddedContentReceiver.receive() entirely — still lets a held
+            // batch's first-in-slot signal reach requestCapture(), which is what emits the pipeline's
+            // one-time "embedded content unsupported" warning; only persistence is suppressed.
+            resourceProcessor = NoOpResourceProcessor()
+            embeddedContentRecordWriter = NoOpEmbeddedContentRecordWriter()
+        }
         sessionReplayRecorder.registerCallbacks()
         initialized.set(true)
         // useContextThread = false, because the read will be on the same caller thread (in a WebViewTracking) during

@@ -12,7 +12,7 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
 /** Expiry runs off the main looper so asynchronous generations can time out while UI is busy. */
-internal class ScheduledExecutorCaptureTaskScheduler(
+internal class ExecutorCaptureTaskScheduler(
     private val executorService: ScheduledExecutorService,
     private val internalLogger: InternalLogger
 ) : CaptureTaskScheduler {

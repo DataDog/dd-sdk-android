@@ -8,6 +8,5 @@ package com.datadog.android.sessionreplay.internal.composition
 
 /** Stands in for the traversal implementation until it lands; captures nothing. */
 internal class NoOpCapturedSnapshotProducer : CapturedSnapshotProducer {
-    override fun capture(context: CaptureGenerationContext, changeset: CaptureChangeset): CapturedFullSnapshot? =
-        null
+    override fun capture(context: CaptureGenerationContext): CapturedFullSnapshot? = null
 }

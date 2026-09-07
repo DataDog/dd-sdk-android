@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
 import java.util.concurrent.TimeUnit
 
@@ -34,7 +35,6 @@ internal class SnapshotCaptureOrchestrator(
     private var captureScheduleId = 0L
     private var nextGenerationId = 1L
     private var activeGeneration: ActiveGeneration? = null
-    private var pendingChangeset: CaptureChangeset = CaptureChangeset.EMPTY
 
     fun start() {
         synchronized(lock) { isRunning = true }
@@ -46,7 +46,6 @@ internal class SnapshotCaptureOrchestrator(
             captureRequested = false
             captureScheduled = false
             captureScheduleId++
-            pendingChangeset = CaptureChangeset.EMPTY
             activeGeneration?.also { activeGeneration = null }
         }
         workToCancel?.cancel()
@@ -58,11 +57,10 @@ internal class SnapshotCaptureOrchestrator(
         if (expiryScheduler !== captureScheduler) expiryScheduler.shutdown()
     }
 
-    fun requestCapture(changeset: CaptureChangeset = CaptureChangeset.EMPTY) {
+    fun requestCapture() {
         val shouldSchedule = synchronized(lock) {
             if (!isRunning) return
             captureRequested = true
-            pendingChangeset = pendingChangeset.mergedWith(changeset)
             activeGeneration == null && !captureScheduled
         }
         if (shouldSchedule) scheduleCapture()
@@ -75,12 +73,14 @@ internal class SnapshotCaptureOrchestrator(
             ++captureScheduleId
         }
         captureScheduler.schedule(captureDelayNs) {
+            @Suppress("ThreadSafety") // mainThreadExecutor posts this block onto the main thread.
             mainThreadExecutor.execute { beginCapture(scheduleId) }
         }
     }
 
+    @MainThread
     private fun beginCapture(scheduleId: Long) {
-        val active = createActiveGeneration(scheduleId) ?: return
+        val active = createActiveGeneration(scheduleId) ?: return scheduleCaptureIfRequested()
 
         val expiration = expiryScheduler.schedule(active.generation.remainingBudgetNs()) {
             expire(active.generation)
@@ -101,7 +101,7 @@ internal class SnapshotCaptureOrchestrator(
         }
 
         val captureResult = active.generation.runMainThreadCaptureUnit(admissionAlreadyGranted = true) {
-            safeCapture(producer, internalLogger, active.generation, active.changeset)
+            safeCapture(producer, internalLogger, active.generation)
         }
         val snapshot = when (captureResult) {
             is MainThreadCaptureResult.Completed -> captureResult.value
@@ -133,14 +133,13 @@ internal class SnapshotCaptureOrchestrator(
         captureScheduled = false
         if (!canScheduleCapture) return@synchronized null
 
-        captureRequested = false
         val eligibilityTimestampNs = timeProvider.elapsedRealtimeNanos()
+        // A denial here must leave captureRequested set - otherwise nothing retries this request
+        // once the time bank replenishes, since no ActiveGeneration exists yet to later trigger
+        // scheduleCaptureIfRequested() via expire()/onProcessed(). beginCapture() calls that itself
+        // when this returns null.
         if (!timeBudget.canStart(eligibilityTimestampNs)) return@synchronized null
-        // Only drain the accumulated changeset once a generation is actually admitted; an
-        // earlier denial here must leave it intact so the next successful generation still sees
-        // everything that changed since the last one it actually processed.
-        val changeset = pendingChangeset
-        pendingChangeset = CaptureChangeset.EMPTY
+        captureRequested = false
         // Nothing that belongs to capture runs before this timestamp. The producer's first action
         // is window/root discovery, so every capture phase shares the deadline created here.
         val startedAtNs = timeProvider.elapsedRealtimeNanos()
@@ -151,8 +150,7 @@ internal class SnapshotCaptureOrchestrator(
                 deadlineNs = saturatedAdd(startedAtNs, generationBudgetNs),
                 timeProvider = timeProvider,
                 mainThreadTimeBudget = timeBudget
-            ),
-            changeset = changeset
+            )
         ).also { activeGeneration = it }
     }
 
@@ -177,16 +175,24 @@ internal class SnapshotCaptureOrchestrator(
             }
         }
 
+        // completed is only non-null when isActive() passed above, while still holding `lock` -
+        // and expire() (below) now only ever mutates generation state while holding that same
+        // lock too, so nothing can flip it out from under us before consume() runs. This used to
+        // be a separate isActive() re-check here, running unsynchronized after the lock above was
+        // already released - which could race a concurrent expire() firing from the expiry
+        // scheduler's own thread: it could see the generation already expired and drop the
+        // snapshot silently, while expire() itself found activeGeneration already cleared. Removed
+        // rather than duplicated: with expire() closing the gap on its side, this decision is final.
         expired?.cancel()
-        completed?.takeIf { it.generation.isActive() }?.let(consumer::consume)
+        completed?.let(consumer::consume)
         scheduleCaptureIfRequested()
     }
 
     private fun expire(generation: CaptureGenerationContext) {
-        generation.expire()
         val expired = synchronized(lock) {
             val active = activeGeneration
             if (active?.generation !== generation) return
+            generation.expire()
             activeGeneration = null
             active
         }
@@ -209,7 +215,6 @@ internal class SnapshotCaptureOrchestrator(
 
     private class ActiveGeneration(
         val generation: CaptureGenerationContext,
-        val changeset: CaptureChangeset,
         var expiration: CancellableCaptureWork = CancellableCaptureWork.NONE,
         var processing: CancellableCaptureWork = CancellableCaptureWork.NONE
     ) {
@@ -236,10 +241,9 @@ internal class SnapshotCaptureOrchestrator(
 private fun safeCapture(
     producer: CapturedSnapshotProducer,
     internalLogger: InternalLogger,
-    generation: CaptureGenerationContext,
-    changeset: CaptureChangeset
+    generation: CaptureGenerationContext
 ): CapturedFullSnapshot? = try {
-    producer.capture(generation, changeset)
+    producer.capture(generation)
 } catch (e: Exception) {
     internalLogger.log(
         InternalLogger.Level.ERROR,

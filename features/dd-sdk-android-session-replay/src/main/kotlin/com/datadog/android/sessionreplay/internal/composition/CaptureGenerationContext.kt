@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import androidx.annotation.MainThread
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
@@ -46,6 +47,7 @@ internal class CaptureGenerationContext(
      * Deadline/cancellation are checked on both sides of the adapter call, and only the time spent
      * actively executing [block] is charged to the recording time bank.
      */
+    @MainThread
     fun <T> runMainThreadCaptureUnit(
         admissionAlreadyGranted: Boolean = false,
         block: () -> T

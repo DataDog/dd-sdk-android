@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.composition
 import android.app.Application
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.SessionReplayInternalCallback
+import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.datadog.android.sessionreplay.internal.recorder.RecordingTimeBank
@@ -23,7 +24,6 @@ import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 internal class DefaultCompositionPipelineFactory(
     private val sdkCore: FeatureSdkCore,
     private val internalCallback: SessionReplayInternalCallback,
-    private val touchPrivacyManager: TouchPrivacyManager,
     private val dynamicOptimizationEnabled: Boolean,
     private val snapshotProducerFactory: (ActiveWindowSource) -> CapturedSnapshotProducer = {
         NO_OP_CAPTURED_SNAPSHOT_PRODUCER
@@ -51,10 +51,10 @@ internal class DefaultCompositionPipelineFactory(
             producer = snapshotProducerFactory(windowSource),
             processor = ImmediateCapturedSnapshotProcessor(),
             consumer = completionQueue,
-            timeProvider = TimeProviderCaptureTimeProvider(sdkCore.timeProvider),
+            timeProvider = CaptureTimeProvider { sdkCore.timeProvider.getDeviceElapsedTimeNanos() },
             captureScheduler = HandlerCaptureTaskScheduler(),
             mainThreadExecutor = HandlerCaptureMainThreadExecutor(),
-            expiryScheduler = ScheduledExecutorCaptureTaskScheduler(
+            expiryScheduler = ExecutorCaptureTaskScheduler(
                 executorService = sdkCore.createScheduledExecutorService(EXPIRY_EXECUTOR_NAME),
                 internalLogger = internalLogger
             ),
@@ -63,9 +63,7 @@ internal class DefaultCompositionPipelineFactory(
         )
         val interceptor = CompositionViewOnDrawInterceptor(
             windowSource = windowSource,
-            onWindowsChanged = CompositionChangeListener { windows ->
-                orchestrator.requestCapture(CompositionChangeset.of(windows))
-            },
+            onWindowsChanged = CompositionChangeListener { orchestrator.requestCapture() },
             internalLogger = internalLogger
         )
         val touchInterceptor = CompositionWindowTouchInterceptor(
@@ -73,7 +71,13 @@ internal class DefaultCompositionPipelineFactory(
             recordWriter = recordWriter,
             timeProvider = sdkCore.timeProvider,
             rumContextProvider = rumContextProvider,
-            touchPrivacyManager = touchPrivacyManager,
+            // Composition has no per-view touch privacy population yet: AndroidWindowTraversal,
+            // which would call addTouchOverrideArea() the way the legacy TreeViewTraversal does,
+            // doesn't exist on this branch (tracked for PANA-8613 / branch 03). Until then, fail
+            // closed with a dedicated, always-HIDE manager rather than accept the caller's
+            // configured one - falling back to its global privacy would silently ignore any
+            // per-view setSessionReplayTouchPrivacy(HIDE) override an app relies on.
+            touchPrivacyManager = TouchPrivacyManager(TouchPrivacy.HIDE),
             internalLogger = internalLogger
         )
         return CompositionCapturePipeline(

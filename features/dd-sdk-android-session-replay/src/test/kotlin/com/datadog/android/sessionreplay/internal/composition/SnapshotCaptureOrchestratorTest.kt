@@ -6,7 +6,6 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
-import android.view.View
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.RecordingTimeBank
 import com.datadog.android.sessionreplay.internal.recorder.TimeBank
@@ -18,7 +17,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.kotlin.mock
 import java.util.concurrent.TimeUnit
 
 @Extensions(
@@ -36,7 +34,7 @@ internal class SnapshotCaptureOrchestratorTest {
         val fakeCaptureScheduler = FakeScheduler()
         val capturedGenerations = mutableListOf<CaptureGenerationContext>()
         val testedOrchestrator = SnapshotCaptureOrchestrator(
-            producer = CapturedSnapshotProducer { context, _ ->
+            producer = CapturedSnapshotProducer { context ->
                 capturedGenerations += context
                 null
             },
@@ -176,85 +174,6 @@ internal class SnapshotCaptureOrchestratorTest {
         assertThat(fixture.producerCaptures).isEqualTo(2)
         assertThat(fixture.fakeProcessor.pending).hasSize(2)
         assertThat(fixture.fakeProcessor.pending.map { it.request.generation.id }).containsExactly(1L, 2L)
-    }
-
-    @Test
-    fun `M pass changeset to producer W requestCapture supplies one`(forge: Forge) {
-        // Given
-        val fixture = Fixture(forge)
-        val fakeView = mock<View>()
-        fixture.testedOrchestrator.start()
-
-        // When
-        fixture.testedOrchestrator.requestCapture(CompositionChangeset.of(listOf(fakeView)))
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
-
-        // Then
-        val changeset = fixture.producerChangesets.single() as CompositionChangeset
-        assertThat(changeset.changedWindows()).containsExactly(fakeView)
-    }
-
-    @Test
-    fun `M merge changesets W multiple draw signals coalesce before generation starts`(forge: Forge) {
-        // Given
-        val fixture = Fixture(forge)
-        val fakeFirstView = mock<View>()
-        val fakeSecondView = mock<View>()
-        fixture.testedOrchestrator.start()
-
-        // When
-        fixture.testedOrchestrator.requestCapture(CompositionChangeset.of(listOf(fakeFirstView)))
-        fixture.testedOrchestrator.requestCapture(CompositionChangeset.of(listOf(fakeSecondView)))
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
-
-        // Then
-        val changeset = fixture.producerChangesets.single() as CompositionChangeset
-        assertThat(changeset.changedWindows()).containsExactlyInAnyOrder(fakeFirstView, fakeSecondView)
-    }
-
-    @Test
-    fun `M keep accumulated changeset W time budget denies admission`(forge: Forge) {
-        // Given
-        val fakeTimeBudget = FakeTimeBudget(canStart = false)
-        val fixture = Fixture(forge, timeBudget = fakeTimeBudget)
-        val fakeDeniedView = mock<View>()
-        val fakeAdmittedView = mock<View>()
-        fixture.testedOrchestrator.start()
-
-        // When
-        fixture.testedOrchestrator.requestCapture(CompositionChangeset.of(listOf(fakeDeniedView)))
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
-
-        // Then
-        assertThat(fixture.producerCaptures).isZero()
-
-        // When
-        fakeTimeBudget.canStart = true
-        fixture.testedOrchestrator.requestCapture(CompositionChangeset.of(listOf(fakeAdmittedView)))
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
-
-        // Then
-        val changeset = fixture.producerChangesets.single() as CompositionChangeset
-        assertThat(changeset.changedWindows()).containsExactlyInAnyOrder(fakeDeniedView, fakeAdmittedView)
-    }
-
-    @Test
-    fun `M drop pending changeset W orchestration stops`(forge: Forge) {
-        // Given
-        val fixture = Fixture(forge)
-        val fakeView = mock<View>()
-        fixture.testedOrchestrator.start()
-        fixture.testedOrchestrator.requestCapture(CompositionChangeset.of(listOf(fakeView)))
-
-        // When
-        fixture.testedOrchestrator.stop()
-        fixture.testedOrchestrator.start()
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
-
-        // Then
-        assertThat(fixture.producerChangesets.single().isEmpty()).isTrue()
     }
 
     @Test
@@ -496,6 +415,28 @@ internal class SnapshotCaptureOrchestratorTest {
     }
 
     @Test
+    fun `M retry without a new request W time budget denies then allows admission`(forge: Forge) {
+        // Given
+        val fakeTimeBudget = FakeTimeBudget(canStart = false)
+        val fixture = Fixture(forge, timeBudget = fakeTimeBudget)
+        fixture.testedOrchestrator.start()
+
+        // When
+        fixture.testedOrchestrator.requestCapture()
+        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+
+        // Then
+        assertThat(fixture.producerCaptures).isZero()
+
+        // When - no further requestCapture() call: only the time budget recovering
+        fakeTimeBudget.canStart = true
+        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+
+        // Then
+        assertThat(fixture.producerCaptures).isEqualTo(1)
+    }
+
+    @Test
     fun `M notify skipped frame W recording time bank denies admission`(
         @LongForgery(min = 0L, max = 1_000_000L) fakeTimestampNs: Long
     ) {
@@ -666,13 +607,11 @@ internal class SnapshotCaptureOrchestratorTest {
         val fakeProcessor = FakeProcessor()
         val consumedCaptures = mutableListOf<CompletedSnapshotCapture>()
         val producerGenerations = mutableListOf<CaptureGenerationContext>()
-        val producerChangesets = mutableListOf<CaptureChangeset>()
         var producerCaptures = 0
         val testedOrchestrator = SnapshotCaptureOrchestrator(
-            producer = CapturedSnapshotProducer { generation, changeset ->
+            producer = CapturedSnapshotProducer { generation ->
                 producerCaptures++
                 producerGenerations += generation
-                producerChangesets += changeset
                 onProducerCapture()
                 fakeClock.nowNs += producerExecutionNs
                 snapshotToProduce

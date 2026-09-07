@@ -62,7 +62,7 @@ internal class AndroidCaptureExecutionTest {
         whenever(
             executorService.schedule(any<Runnable>(), eq(fakeDelayNs), eq(TimeUnit.NANOSECONDS))
         ).thenReturn(future)
-        val scheduler = ScheduledExecutorCaptureTaskScheduler(
+        val scheduler = ExecutorCaptureTaskScheduler(
             executorService,
             mock<InternalLogger>()
         )

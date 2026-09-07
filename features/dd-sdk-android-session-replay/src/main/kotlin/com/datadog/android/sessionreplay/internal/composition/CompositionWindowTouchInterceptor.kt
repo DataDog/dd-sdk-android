@@ -78,10 +78,16 @@ internal class CompositionWindowTouchInterceptor(
         if (reserved) window.callback = callback
     }
 
-    // if something else replaced window.callback since we wrapped it, that replacement — not our
-    // stale reference to it — is what belongs back on the window, so it's left untouched.
+    @MainThread
     private fun unwrap(window: Window) {
         val callback = synchronized(lock) { wrappedWindows.remove(window) } ?: return
+        // Deactivate unconditionally: if something else replaced window.callback with a wrapper
+        // that still delegates to ours, we can no longer remove it from the chain, but it must
+        // still stop recording — otherwise it would keep writing touches after this pipeline
+        // considers itself stopped.
+        callback.deactivate()
+        // If something else replaced window.callback since we wrapped it, that replacement — not
+        // our stale reference to it — is what belongs back on the window, so it's left untouched.
         if (window.callback !== callback) return
         window.callback = callback.wrappedCallback.takeUnless { it is NoOpWindowCallback }
     }
