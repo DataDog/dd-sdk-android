@@ -752,6 +752,8 @@ internal open class RumViewScope(
         val isFatal = errorCustomAttributes.remove(RumAttributes.INTERNAL_ERROR_IS_CRASH) as? Boolean == true ||
             event.isFatal
         val errorFingerprint = errorCustomAttributes.remove(RumAttributes.ERROR_FINGERPRINT) as? String
+        val isTriggeredByProfiling =
+            errorCustomAttributes.remove(RumAttributes.INTERNAL_TRIGGERED_BY_PROFILING) as? Boolean == true
         // if a cross-platform crash was already reported, do not send its native version
         if (crashCount > 0 && isFatal) return
 
@@ -778,8 +780,18 @@ internal open class RumViewScope(
         var profilingStatus: ErrorEvent.Profiling? = null
         // Fatal ANR comes from last session, in this case we don't attach it to Profiling Event.
         // TODO RUM-15344: address non-fatal ANR over Android API 30
-        if (event.throwable is ANRException && !isFatal) {
-            profilingStatus = resolveErrorProfilingStatus(datadogContext)
+        if (!isFatal) {
+            profilingStatus = if (isTriggeredByProfiling) {
+                resolveErrorProfilingStatus(datadogContext)
+                    ?: ErrorEvent.Profiling(
+                        status = ErrorEvent.ProfilingStatus.RUNNING,
+                        clockDrift = datadogContext.time.serverTimeOffsetMs
+                    )
+            } else if (event.throwable is ANRException) {
+                resolveErrorProfilingStatus(datadogContext)
+            } else {
+                null
+            }
         }
         // end region
 

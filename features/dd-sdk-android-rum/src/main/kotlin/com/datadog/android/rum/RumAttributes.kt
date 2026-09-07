@@ -100,6 +100,11 @@ object RumAttributes {
      */
     const val INTERNAL_INSTRUMENTATION_TYPE: String = "_dd.instrumentation_type"
 
+    /**
+     * Marks an error as detected by the trigger-based profiling pipeline.
+     */
+    internal const val INTERNAL_TRIGGERED_BY_PROFILING: String = "_dd.error.triggered_by_profiling"
+
     // endregion
 
     // region Resource
