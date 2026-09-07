@@ -381,11 +381,11 @@ internal class DatadogFlagsProviderTest {
     fun `M settle with Error status W setProviderAndWait() {initialization times out}`() = runTest {
         // Given
         val timeoutMessage = "Flags initialization timed out after 250ms"
-        val timeoutError = mock<FlagsInitializationTimeoutException>()
-        whenever(timeoutError.message).thenReturn(timeoutMessage)
+        val stubTimeoutError = mock<FlagsInitializationTimeoutException>()
+        whenever(stubTimeoutError.message).thenReturn(timeoutMessage)
         whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
             val callback = invocation.getArgument<EvaluationContextCallback>(1)
-            callback.onFailure(timeoutError)
+            callback.onFailure(stubTimeoutError)
             Unit
         }
 
@@ -510,9 +510,9 @@ internal class DatadogFlagsProviderTest {
         // Given
         val events = mutableListOf<OpenFeatureProviderEvents>()
         val timeoutMessage = "Flags initialization timed out after 250ms"
-        val timeoutError = mock<FlagsInitializationTimeoutException>()
-        whenever(timeoutError.message).thenReturn(timeoutMessage)
-        val errorState = FlagsClientState.Error(timeoutError)
+        val stubTimeoutError = mock<FlagsInitializationTimeoutException>()
+        whenever(stubTimeoutError.message).thenReturn(timeoutMessage)
+        val errorState = FlagsClientState.Error(stubTimeoutError)
 
         // When
         val job = launch {
