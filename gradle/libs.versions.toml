@@ -89,7 +89,7 @@ kotlinXmlBuilder = "1.9.3"
 
 # Integrations
 sqlDelight = "1.5.5"
-coil = "1.0.0"
+coil = "2.7.0"
 coilCompose = "2.1.0"
 coil3 = "3.0.4"
 fresco = "2.3.0"
