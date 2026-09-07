@@ -25,7 +25,13 @@ internal class CompositionViewOnDrawInterceptor(
         val newViews = synchronized(lock) { decorViews.filterNot(interceptedViews::containsKey) }
         newViews.forEach(::addListener)
         windowSource.update(decorViews)
-        onWindowsChanged.onWindowsChanged(decorViews)
+        // Per-frame draws are already reported by CompositionOnDrawListener.onDraw on each tracked
+        // view; this notifies only about the window *set* changing. Re-polling for untracked
+        // windows calls intercept() every second regardless of activity, so without this check an
+        // idle screen would request a capture once a second forever.
+        if (staleViews.isNotEmpty() || newViews.isNotEmpty()) {
+            onWindowsChanged.onWindowsChanged(decorViews)
+        }
     }
 
     fun stop() {

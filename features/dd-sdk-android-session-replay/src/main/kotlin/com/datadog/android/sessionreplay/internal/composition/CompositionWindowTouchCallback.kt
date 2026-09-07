@@ -46,6 +46,13 @@ internal class CompositionWindowTouchCallback(
     motionUpdateThresholdInNs: Long = PointerInteractionRecorder.MOTION_UPDATE_DELAY_THRESHOLD_NS,
     flushPositionBufferThresholdInNs: Long = PointerInteractionRecorder.FLUSH_BUFFER_THRESHOLD_NS
 ) : FixedWindowCallback(wrappedCallback) {
+
+    // Set once this callback has been unwrapped, even when a third party has since nested it
+    // deeper in the callback chain and it can no longer be structurally removed — otherwise it
+    // would keep recording and writing touches indefinitely after recording is meant to have
+    // stopped. See CompositionWindowTouchInterceptor.unwrap.
+    private var isActive = true
+
     private val pointerInteractionRecorder = PointerInteractionRecorder(
         pixelsDensity = appContext.resources.displayMetrics.density,
         timeProvider = timeProvider,
@@ -59,9 +66,14 @@ internal class CompositionWindowTouchCallback(
     )
 
     @MainThread
+    fun deactivate() {
+        isActive = false
+    }
+
+    @MainThread
     override fun dispatchTouchEvent(event: MotionEvent?): Boolean {
         if (event != null) {
-            pointerInteractionRecorder.recordTouchEvent(event)
+            if (isActive) pointerInteractionRecorder.recordTouchEvent(event)
         } else {
             internalLogger.log(
                 InternalLogger.Level.ERROR,

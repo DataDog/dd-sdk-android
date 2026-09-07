@@ -163,6 +163,9 @@ internal class SnapshotCaptureOrchestrator(
             if (!isRunning || active?.generation?.id != result.generationId) return
             if (!active.generation.isActive()) {
                 activeGeneration = null
+                // The deadline expired this generation while processing was still in flight, so
+                // its changeset was never captured; retain it for the next generation.
+                pendingChangeset = pendingChangeset.mergedWith(active.changeset)
                 expired = active
                 return@synchronized null
             }
@@ -173,6 +176,10 @@ internal class SnapshotCaptureOrchestrator(
                 CompletedSnapshotCapture(active.generation, result.snapshot)
             } else {
                 active.generation.expire()
+                // Processing failed after traversal succeeded, so nothing was ever handed to the
+                // consumer: retain the changeset or the next generation would treat these windows
+                // as untouched and reuse subtree state that was never actually captured.
+                pendingChangeset = pendingChangeset.mergedWith(active.changeset)
                 null
             }
         }
@@ -188,6 +195,10 @@ internal class SnapshotCaptureOrchestrator(
             val active = activeGeneration
             if (active?.generation !== generation) return
             activeGeneration = null
+            // Traversal never completed (deadline, cooperative drop, no snapshot) or its result
+            // was discarded, so this generation's changeset was never captured; retain it for the
+            // next generation rather than let its windows be treated as untouched.
+            pendingChangeset = pendingChangeset.mergedWith(active.changeset)
             active
         }
         expired.cancel()

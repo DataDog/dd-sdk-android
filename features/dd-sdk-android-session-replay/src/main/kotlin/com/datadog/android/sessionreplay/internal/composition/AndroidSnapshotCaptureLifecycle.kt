@@ -64,6 +64,7 @@ internal class AndroidSnapshotCaptureLifecycle(
     override fun stop() {
         uiHandler.post {
             isRunning = false
+            uiHandler.removeCallbacks(untrackedWindowRefreshRunnable)
             interceptor.stop()
             touchInterceptor.stop()
         }
@@ -107,6 +108,22 @@ internal class AndroidSnapshotCaptureLifecycle(
         )
     }
 
+    // Kept as a single instance (rather than a fresh lambda per call) so stop() can cancel a
+    // pending refresh via removeCallbacks; otherwise a stop/start before the delay elapses would
+    // leave the old chain running alongside the new one, doubling window scans forever. Declared
+    // as an object with an overridden run() (rather than a lambda) so run() can carry its own
+    // @MainThread annotation, since it always executes as a Handler callback on the main looper.
+    @Suppress("ObjectLiteralToLambda")
+    private val untrackedWindowRefreshRunnable = object : Runnable {
+        @MainThread
+        override fun run() {
+            if (isRunning) {
+                refreshInterceptors()
+                scheduleUntrackedWindowRefresh()
+            }
+        }
+    }
+
     /**
      * A plain Dialog or PopupWindow is neither an activity nor a DialogFragment, so nothing calls
      * [refreshWindows] when one is shown or dismissed while the host activity stays resumed.
@@ -116,15 +133,7 @@ internal class AndroidSnapshotCaptureLifecycle(
     @Suppress("ThreadSafety") // Handler posts this block onto the main looper.
     @MainThread
     private fun scheduleUntrackedWindowRefresh() {
-        uiHandler.postDelayed(
-            {
-                if (isRunning) {
-                    refreshInterceptors()
-                    scheduleUntrackedWindowRefresh()
-                }
-            },
-            UNTRACKED_WINDOW_REFRESH_INTERVAL_MS
-        )
+        uiHandler.postDelayed(untrackedWindowRefreshRunnable, UNTRACKED_WINDOW_REFRESH_INTERVAL_MS)
     }
 
     private data class ResolvedWindows(val decorViews: List<View>, val windows: List<Window>)
