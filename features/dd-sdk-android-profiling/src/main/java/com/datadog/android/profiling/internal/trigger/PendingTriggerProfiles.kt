@@ -8,6 +8,7 @@ package com.datadog.android.profiling.internal.trigger
 
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
+import com.datadog.android.profiling.internal.trigger.PendingTriggerProfiles.Companion.EXPIRY_TIMEOUT_MS
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**
@@ -42,6 +43,6 @@ internal interface PendingTriggerProfiles {
          * How long a profiling result or RUM gating event may wait for its counterpart
          * before it is considered stale and dropped.
          */
-        internal const val EXPIRY_TIMEOUT_MS = 5_000L
+        internal const val EXPIRY_TIMEOUT_MS = 30_000L
     }
 }
