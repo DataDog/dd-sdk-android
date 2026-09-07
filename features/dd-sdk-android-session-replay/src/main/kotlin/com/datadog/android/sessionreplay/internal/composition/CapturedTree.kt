@@ -6,12 +6,16 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import com.datadog.android.sessionreplay.utils.GlobalBounds
+
 internal data class CapturedBounds(
     val x: Long,
     val y: Long,
     val width: Long,
     val height: Long
 )
+
+internal fun GlobalBounds.toCaptured() = CapturedBounds(x, y, width, height)
 
 internal enum class CapturedLayerKind {
     SYNTHETIC_SCREEN_ROOT,
