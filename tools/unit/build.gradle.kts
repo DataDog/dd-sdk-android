@@ -35,17 +35,6 @@ android {
         java11()
     }
 
-    sourceSets.named("main") {
-        java.srcDir("src/main/kotlin")
-        java.srcDir("src/main/java")
-    }
-    sourceSets.named("test") {
-        java.srcDir("src/test/kotlin")
-    }
-    sourceSets.named("androidTest") {
-        java.srcDir("src/androidTest/kotlin")
-    }
-
     flavorDimensions += "platform"
     productFlavors {
         register("art") {

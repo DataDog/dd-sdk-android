@@ -51,16 +51,6 @@ android {
         unitTests.isReturnDefaultValues = true
     }
 
-    sourceSets.named("main") {
-        java.srcDir("src/main/kotlin")
-    }
-    sourceSets.named("test") {
-        java.srcDir("src/test/kotlin")
-    }
-    sourceSets.named("androidTest") {
-        java.srcDir("src/androidTest/kotlin")
-    }
-
     compileOptions {
         java17()
         if (project.hasProperty(com.datadog.gradle.Properties.USE_DESUGARING)) {

@@ -53,16 +53,6 @@ android {
         unitTests.isReturnDefaultValues = true
     }
 
-    sourceSets.named("main") {
-        java.srcDir("src/main/kotlin")
-    }
-    sourceSets.named("test") {
-        java.srcDir("src/test/kotlin")
-    }
-    sourceSets.named("androidTest") {
-        java.srcDir("src/androidTest/kotlin")
-    }
-
     packaging {
         resources {
             excludes += "META-INF/*"

@@ -14,10 +14,10 @@ import org.gradle.api.Project
 
 object AndroidConfig {
 
-    const val TARGET_SDK = 36
+    const val TARGET_SDK = 37
     const val MIN_SDK = 23
     const val MIN_SDK_FOR_AUTO = 29
-    const val BUILD_TOOLS_VERSION = "36.0.0"
+    const val BUILD_TOOLS_VERSION = "37.0.0"
 
     val VERSION = Version(3, 14, 0, Version.Type.Snapshot)
 }

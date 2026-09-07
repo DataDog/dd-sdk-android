@@ -54,16 +54,6 @@ android {
     buildFeatures {
         buildConfig = true
     }
-
-    sourceSets.named("main") {
-        java.srcDir("src/main/kotlin")
-    }
-    sourceSets.named("test") {
-        java.srcDir("src/test/kotlin")
-    }
-    sourceSets.named("androidTest") {
-        java.srcDir("src/androidTest/kotlin")
-    }
 }
 
 repositories.depotProxied(providers) {}
