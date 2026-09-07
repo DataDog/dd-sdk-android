@@ -45,7 +45,7 @@ googleMaterial = "1.3.0"
 dagger = "2.56.2"
 
 # JUnit
-jUnitJupiter = "5.9.3"
+jUnitJupiter = "6.1.3"
 jUnitPlatform = "1.9.3"
 jUnitMockitoExt = "5.4.0"
 systemStubsJupiter = "2.1.6"
