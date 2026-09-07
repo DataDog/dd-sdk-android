@@ -52,6 +52,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -380,9 +381,11 @@ internal class DatadogFlagsProviderTest {
     fun `M settle with Error status W setProviderAndWait() {initialization times out}`() = runTest {
         // Given
         val timeoutMessage = "Flags initialization timed out after 250ms"
+        val timeoutError = mock<FlagsInitializationTimeoutException>()
+        whenever(timeoutError.message).thenReturn(timeoutMessage)
         whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
             val callback = invocation.getArgument<EvaluationContextCallback>(1)
-            callback.onFailure(FlagsInitializationTimeoutException(250L))
+            callback.onFailure(timeoutError)
             Unit
         }
 
@@ -403,6 +406,29 @@ internal class DatadogFlagsProviderTest {
         } finally {
             OpenFeatureAPI.shutdown()
         }
+    }
+
+    @Test
+    fun `M complete initialization W initialize() {timeout with matching cached assignments}`() = runTest {
+        // Given
+        val timeoutError = mock<FlagsInitializationTimeoutException>()
+        whenever(mockStateObservable.getCurrentState()).thenReturn(FlagsClientState.Stale)
+        whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
+            val callback = invocation.getArgument<EvaluationContextCallback>(1)
+            callback.onFailure(timeoutError)
+            Unit
+        }
+
+        // When
+        var initializationError: OpenFeatureError.GeneralError? = null
+        try {
+            provider.initialize(ImmutableContext(targetingKey = "user-123"))
+        } catch (error: OpenFeatureError.GeneralError) {
+            initializationError = error
+        }
+
+        // Then
+        assertThat(initializationError).isNull()
     }
 
     @Test
@@ -484,7 +510,9 @@ internal class DatadogFlagsProviderTest {
         // Given
         val events = mutableListOf<OpenFeatureProviderEvents>()
         val timeoutMessage = "Flags initialization timed out after 250ms"
-        val errorState = FlagsClientState.Error(FlagsInitializationTimeoutException(250L))
+        val timeoutError = mock<FlagsInitializationTimeoutException>()
+        whenever(timeoutError.message).thenReturn(timeoutMessage)
+        val errorState = FlagsClientState.Error(timeoutError)
 
         // When
         val job = launch {

@@ -8,7 +8,9 @@ package com.datadog.android.flags.openfeature.internal
 
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
+import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagsClientState
 import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -20,9 +22,11 @@ import kotlin.coroutines.suspendCoroutine
  * Wraps the callback API in a [suspendCoroutine], converting success/failure callbacks
  * to [resume]/[resumeWithException].
  *
+ * A timeout with matching cached assignments completes successfully and leaves the provider stale.
+ *
  * @param context The evaluation context to set
  * @throws [OpenFeatureError.GeneralError] if setting the context fails. The first context operation also
- * fails when the configured Flags initialization timeout elapses.
+ * fails when the configured Flags initialization timeout elapses without matching cached assignments.
  */
 internal suspend fun FlagsClient.setEvaluationContextSuspend(context: EvaluationContext) {
     // Subsequent invocation of any resume function will produce
@@ -35,11 +39,17 @@ internal suspend fun FlagsClient.setEvaluationContextSuspend(context: Evaluation
             }
 
             override fun onFailure(error: Throwable) {
-                continuation.resumeWithException(
-                    OpenFeatureError.GeneralError(
-                        error.message ?: "Unknown error: ${error::class.simpleName}"
+                if (error is FlagsInitializationTimeoutException &&
+                    state.getCurrentState() == FlagsClientState.Stale
+                ) {
+                    continuation.resume(Unit)
+                } else {
+                    continuation.resumeWithException(
+                        OpenFeatureError.GeneralError(
+                            error.message ?: "Unknown error: ${error::class.simpleName}"
+                        )
                     )
-                )
+                }
             }
         }
 

@@ -29,8 +29,8 @@ interface EvaluationContextCallback {
      *
      * This method is normally called on a background executor thread after the state transitions
      * to either [FlagsClientState.Stale] (network failed but cached flags available) or
-     * [FlagsClientState.Error] (network failed with no cached flags). An initialization timeout
-     * also transitions the client to [FlagsClientState.Error]. The request continues and can
+     * [FlagsClientState.Error] (network failed with no cached flags). An initialization timeout uses
+     * the same state selection based on matching cached assignments. The request continues and can
      * transition the client to [FlagsClientState.Ready] later.
      *
      * @param error A [Throwable] containing details about the failure, typically including

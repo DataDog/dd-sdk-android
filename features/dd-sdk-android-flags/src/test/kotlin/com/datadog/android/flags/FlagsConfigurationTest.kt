@@ -155,14 +155,16 @@ internal class FlagsConfigurationTest {
     }
 
     @Test
-    fun `M coerce initialization timeout to zero W initializationTimeout() { negative value }`() {
-        // When
-        val configuration = FlagsConfiguration.Builder()
-            .initializationTimeout(-1L)
-            .build()
+    fun `M disable initialization timeout W initializationTimeout() { non-positive value }`() {
+        listOf(0L, -1L).forEach { timeoutMs ->
+            // When
+            val configuration = FlagsConfiguration.Builder()
+                .initializationTimeout(timeoutMs)
+                .build()
 
-        // Then
-        assertThat(configuration.initializationTimeoutMs).isZero()
+            // Then
+            assertThat(configuration.initializationTimeoutMs).isNull()
+        }
     }
 
     @Test

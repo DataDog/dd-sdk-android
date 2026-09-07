@@ -32,7 +32,6 @@ data class com.datadog.android.flags.FlagsConfiguration
     fun gracefulModeEnabled(Boolean): Builder
     fun build(): FlagsConfiguration
 class com.datadog.android.flags.FlagsInitializationTimeoutException : RuntimeException
-  constructor(Long)
 interface com.datadog.android.flags.FlagsStateListener
   fun onStateChanged(com.datadog.android.flags.model.FlagsClientState)
 interface com.datadog.android.flags.StateObservable

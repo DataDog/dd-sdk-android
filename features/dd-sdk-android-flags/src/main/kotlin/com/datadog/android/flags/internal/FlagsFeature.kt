@@ -83,6 +83,8 @@ internal class FlagsFeature(
 
     internal val initializationTimeoutScheduler = InitializationTimeoutScheduler { timeoutMs, action ->
         val executor = sdkCore.createScheduledExecutorService(INITIALIZATION_TIMEOUT_EXECUTOR_NAME)
+        // Cancellation shuts down this executor. Dropping delayed tasks prevents the worker from
+        // remaining alive until the original timeout and avoids reporting cancellation as an error.
         if (executor is ScheduledThreadPoolExecutor) {
             executor.executeExistingDelayedTasksAfterShutdownPolicy = false
         }

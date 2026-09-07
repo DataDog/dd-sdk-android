@@ -100,6 +100,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
      *
      * @param initialContext The initial evaluation context to set (optional)
      * @throws OpenFeatureError if initialization fails or reaches the configured Flags initialization timeout
+     * without matching cached assignments
      */
     override suspend fun initialize(initialContext: OpenFeatureEvaluationContext?) {
         val datadogContext = initialContext?.toDatadogEvaluationContext() ?: DatadogEvaluationContext.EMPTY

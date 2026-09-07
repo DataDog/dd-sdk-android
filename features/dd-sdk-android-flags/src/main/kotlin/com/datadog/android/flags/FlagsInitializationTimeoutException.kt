@@ -11,5 +11,5 @@ package com.datadog.android.flags
  *
  * The request continues and can make the client ready later.
  */
-class FlagsInitializationTimeoutException(timeoutMs: Long) :
+class FlagsInitializationTimeoutException internal constructor(timeoutMs: Long) :
     RuntimeException("Flags initialization timed out after ${timeoutMs}ms")
