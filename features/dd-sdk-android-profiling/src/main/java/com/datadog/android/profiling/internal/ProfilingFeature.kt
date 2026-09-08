@@ -241,7 +241,10 @@ internal class ProfilingFeature(
         if (isLaunchProfilingActive || continuousProfilingScheduler?.isActive == true) {
             sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.sendEvent(event)
         }
-        pendingTriggerProfiles.addProfilingResult(result)
+        // TODO RUM-18341: route the result through PendingTriggerProfiles for matching and
+        // upload once the buffer is implemented. Until then the trace file would be leaked on
+        // disk, so delete it here.
+        dataWriter.discard(result)
     }
 
     private fun onTtidEvent() {

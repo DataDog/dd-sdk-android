@@ -1369,7 +1369,7 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
-    fun `M forward profiling result to pendingTriggerProfiles W onAnrDetected()`(
+    fun `M discard ANR profiling result W onAnrDetected()`(
         @Forgery fakeEvent: ProfilingAnrDetectedEvent,
         @Forgery fakeResult: PerfettoResult
     ) {
@@ -1377,13 +1377,13 @@ internal class ProfilingFeatureTest {
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
         whenever(mockProfiler.isRunning()) doReturn false
         testedFeature.onInitialize(mockContext)
-        testedFeature.pendingTriggerProfiles = mockPendingTriggerProfiles
+        testedFeature.dataWriter = mockDataWriter
 
         // When
         testedFeature.onAnrDetected(fakeEvent, fakeResult)
 
         // Then
-        verify(mockPendingTriggerProfiles).addProfilingResult(fakeResult)
+        verify(mockDataWriter).discard(fakeResult)
     }
 
     @Test
