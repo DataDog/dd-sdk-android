@@ -204,107 +204,121 @@ internal class ConvertersTest {
     // region toDatadogEvaluationContext
 
     @Test
-    fun `M extract raw string W toDatadogEvaluationContext() {Value_String attribute}`() {
+    fun `M extract raw string W toDatadogEvaluationContext() {Value_String attribute}`(forge: Forge) {
         // Given
+        val fakeKey = forge.anAlphabeticalString()
+        val fakeVersion = forge.aStringMatching("[0-9]+\\.[0-9]+\\.[0-9]+")
+        val fakeTargetingKey = forge.anAlphabeticalString()
         val context = ImmutableContext(
-            targetingKey = "user-123",
-            attributes = mapOf("ld_application.versionName" to Value.String("1.7.0"))
+            targetingKey = fakeTargetingKey,
+            attributes = mapOf(fakeKey to Value.String(fakeVersion))
         )
 
         // When
         val result = context.toDatadogEvaluationContext()
 
-        // Then - must be "1.7.0", not "String(string=1.7.0)"
-        assertThat(result.attributes["ld_application.versionName"]).isEqualTo("1.7.0")
+        // Then - must be raw semver string, not "String(string=<version>)"
+        assertThat(result.attributes[fakeKey]).isEqualTo(fakeVersion)
     }
 
     @Test
-    fun `M extract raw boolean W toDatadogEvaluationContext() {Value_Boolean attribute}`() {
+    fun `M extract raw boolean W toDatadogEvaluationContext() {Value_Boolean attribute}`(forge: Forge) {
         // Given
+        val fakeKey = forge.anAlphabeticalString()
+        val fakeBool = forge.aBool()
+        val fakeTargetingKey = forge.anAlphabeticalString()
         val context = ImmutableContext(
-            targetingKey = "user-123",
+            targetingKey = fakeTargetingKey,
+            attributes = mapOf(fakeKey to Value.Boolean(fakeBool))
+        )
+
+        // When
+        val result = context.toDatadogEvaluationContext()
+
+        // Then - must be "true"/"false", not "Boolean(boolean=<value>)"
+        assertThat(result.attributes[fakeKey]).isEqualTo(fakeBool.toString())
+    }
+
+    @Test
+    fun `M extract raw integer W toDatadogEvaluationContext() {Value_Integer attribute}`(forge: Forge) {
+        // Given
+        val fakeKey = forge.anAlphabeticalString()
+        val fakeInt = forge.anInt()
+        val fakeTargetingKey = forge.anAlphabeticalString()
+        val context = ImmutableContext(
+            targetingKey = fakeTargetingKey,
+            attributes = mapOf(fakeKey to Value.Integer(fakeInt))
+        )
+
+        // When
+        val result = context.toDatadogEvaluationContext()
+
+        // Then - must be raw integer string, not "Integer(integer=<value>)"
+        assertThat(result.attributes[fakeKey]).isEqualTo(fakeInt.toString())
+    }
+
+    @Test
+    fun `M extract raw double W toDatadogEvaluationContext() {Value_Double attribute}`(forge: Forge) {
+        // Given
+        val fakeKey = forge.anAlphabeticalString()
+        val fakeDouble = forge.aDouble()
+        val fakeTargetingKey = forge.anAlphabeticalString()
+        val context = ImmutableContext(
+            targetingKey = fakeTargetingKey,
+            attributes = mapOf(fakeKey to Value.Double(fakeDouble))
+        )
+
+        // When
+        val result = context.toDatadogEvaluationContext()
+
+        // Then - must be raw double string, not "Double(double=<value>)"
+        assertThat(result.attributes[fakeKey]).isEqualTo(fakeDouble.toString())
+    }
+
+    @Test
+    fun `M produce same shape as native EvaluationContext W toDatadogEvaluationContext() {output matches raw string map}`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeTargetingKey = forge.anAlphabeticalString()
+        val fakeVersion = forge.aStringMatching("[0-9]+\\.[0-9]+\\.[0-9]+")
+        val fakeTimestamp = forge.aLong(min = 0).toString()
+        val context = ImmutableContext(
+            targetingKey = fakeTargetingKey,
             attributes = mapOf(
-                "premiumUser" to Value.Boolean(true),
-                "betaEnabled" to Value.Boolean(false)
+                "ld_application.versionName" to Value.String(fakeVersion),
+                "dogfooding.refreshTimestamp" to Value.String(fakeTimestamp)
             )
         )
 
         // When
         val result = context.toDatadogEvaluationContext()
 
-        // Then - must be "true"/"false", not "Boolean(boolean=true)"
-        assertThat(result.attributes["premiumUser"]).isEqualTo("true")
-        assertThat(result.attributes["betaEnabled"]).isEqualTo("false")
-    }
-
-    @Test
-    fun `M extract raw integer W toDatadogEvaluationContext() {Value_Integer attribute}`() {
-        // Given
-        val context = ImmutableContext(
-            targetingKey = "user-123",
-            attributes = mapOf("buildNumber" to Value.Integer(42))
-        )
-
-        // When
-        val result = context.toDatadogEvaluationContext()
-
-        // Then - must be "42", not "Integer(integer=42)"
-        assertThat(result.attributes["buildNumber"]).isEqualTo("42")
-    }
-
-    @Test
-    fun `M extract raw double W toDatadogEvaluationContext() {Value_Double attribute}`() {
-        // Given
-        val context = ImmutableContext(
-            targetingKey = "user-123",
-            attributes = mapOf("score" to Value.Double(3.14))
-        )
-
-        // When
-        val result = context.toDatadogEvaluationContext()
-
-        // Then - must be "3.14", not "Double(double=3.14)"
-        assertThat(result.attributes["score"]).isEqualTo("3.14")
-    }
-
-    @Test
-    fun `M produce same shape as native EvaluationContext W toDatadogEvaluationContext() {output matches raw string map}`() {
-        // Given - OpenFeature context with Value-wrapped attributes
-        val context = ImmutableContext(
-            targetingKey = "user-123",
-            attributes = mapOf(
-                "ld_application.versionName" to Value.String("1.7.0"),
-                "dogfooding.refreshTimestamp" to Value.String("1788879548591")
-            )
-        )
-
-        // When
-        val result = context.toDatadogEvaluationContext()
-
-        // Then - attributes must equal what the caller would write using the native SDK directly:
-        //   EvaluationContext(targetingKey = "user-123",
-        //       attributes = mapOf("ld_application.versionName" to "1.7.0", ...))
+        // Then - output must equal what the caller would write using the native SDK directly:
+        //   EvaluationContext(targetingKey = ..., attributes = mapOf("ld_application.versionName" to fakeVersion, ...))
         assertThat(result.attributes).isEqualTo(
             mapOf(
-                "ld_application.versionName" to "1.7.0",
-                "dogfooding.refreshTimestamp" to "1788879548591"
+                "ld_application.versionName" to fakeVersion,
+                "dogfooding.refreshTimestamp" to fakeTimestamp
             )
         )
     }
 
     @Test
-    fun `M preserve targeting key W toDatadogEvaluationContext() {targeting key set}`() {
+    fun `M preserve targeting key W toDatadogEvaluationContext() {targeting key set}`(forge: Forge) {
         // Given
+        val fakeTargetingKey = forge.anAlphabeticalString()
+        val fakeVersion = forge.aStringMatching("[0-9]+\\.[0-9]+\\.[0-9]+")
         val context = ImmutableContext(
-            targetingKey = "user-456",
-            attributes = mapOf("version" to Value.String("2.0.0"))
+            targetingKey = fakeTargetingKey,
+            attributes = mapOf("version" to Value.String(fakeVersion))
         )
 
         // When
         val result = context.toDatadogEvaluationContext()
 
         // Then
-        assertThat(result.targetingKey).isEqualTo("user-456")
+        assertThat(result.targetingKey).isEqualTo(fakeTargetingKey)
     }
 
     // endregion

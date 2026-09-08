@@ -255,21 +255,23 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
 
     @Test
     fun `M pass raw string attribute unchanged W create() { dot-notation semver attribute key }`(
-        @StringForgery fakeTargetingKey: String
+        forge: Forge
     ) {
         // Given - raw string attributes as callers of the native SDK provide them,
         // e.g. the output of OpenFeatureEvaluationContext.toDatadogEvaluationContext()
+        val fakeTargetingKey = forge.anAlphabeticalString()
+        val fakeVersion = forge.aStringMatching("[0-9]+\\.[0-9]+\\.[0-9]+")
         val context = EvaluationContext(
             targetingKey = fakeTargetingKey,
             attributes = mapOf(
-                "ld_application.versionName" to "1.7.0"
+                "ld_application.versionName" to fakeVersion
             )
         )
 
         // When
         val request = testedFactory.create(context, fakeDatadogContext)
 
-        // Then - value must arrive as the raw string "1.7.0", not wrapped
+        // Then - value must arrive unchanged, not wrapped
         checkNotNull(request)
         val targetingAttributes = JSONObject(extractRequestBodyAsString(request))
             .getJSONObject("data")
@@ -277,21 +279,26 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
             .getJSONObject("subject")
             .getJSONObject("targeting_attributes")
 
-        assertThat(targetingAttributes.getString("ld_application.versionName")).isEqualTo("1.7.0")
+        assertThat(targetingAttributes.getString("ld_application.versionName")).isEqualTo(fakeVersion)
     }
 
     @Test
     fun `M pass raw primitive attributes unchanged W create() { bool int double string values }`(
-        @StringForgery fakeTargetingKey: String
+        forge: Forge
     ) {
         // Given
+        val fakeTargetingKey = forge.anAlphabeticalString()
+        val fakeVersion = forge.aStringMatching("[0-9]+\\.[0-9]+\\.[0-9]+")
+        val fakeTimestamp = forge.aLong(min = 0).toString()
+        val fakeBool = forge.aBool().toString()
+        val fakeScore = forge.aDouble().toString()
         val context = EvaluationContext(
             targetingKey = fakeTargetingKey,
             attributes = mapOf(
-                "ld_application.versionName" to "1.7.0",
-                "dogfooding.refreshTimestamp" to "1788879548591",
-                "premium" to "true",
-                "score" to "3.14"
+                "ld_application.versionName" to fakeVersion,
+                "dogfooding.refreshTimestamp" to fakeTimestamp,
+                "premium" to fakeBool,
+                "score" to fakeScore
             )
         )
 
@@ -306,10 +313,10 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
             .getJSONObject("subject")
             .getJSONObject("targeting_attributes")
 
-        assertThat(targetingAttributes.getString("ld_application.versionName")).isEqualTo("1.7.0")
-        assertThat(targetingAttributes.getString("dogfooding.refreshTimestamp")).isEqualTo("1788879548591")
-        assertThat(targetingAttributes.getString("premium")).isEqualTo("true")
-        assertThat(targetingAttributes.getString("score")).isEqualTo("3.14")
+        assertThat(targetingAttributes.getString("ld_application.versionName")).isEqualTo(fakeVersion)
+        assertThat(targetingAttributes.getString("dogfooding.refreshTimestamp")).isEqualTo(fakeTimestamp)
+        assertThat(targetingAttributes.getString("premium")).isEqualTo(fakeBool)
+        assertThat(targetingAttributes.getString("score")).isEqualTo(fakeScore)
     }
 
     // endregion
