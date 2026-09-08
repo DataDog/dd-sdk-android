@@ -456,7 +456,7 @@ dd_package_compile_status() {
 # It refuses rather than guesses. A convenience that supplies a plausible wrong value
 # is worse than the typing it saves.
 dd_read_benchmark_header() {
-  local csv="$1" want_label="$2" headers aborted completed tokens label_a label_b arm
+  local csv="$1" want_label="$2" headers aborted completed tokens run_id label_a label_b arm
   local missing="" conflicts="" pair var key value current
   [ -f "$csv" ] || {
     echo "FATAL: benchmark CSV not found: '$csv'." >&2
@@ -506,6 +506,22 @@ dd_read_benchmark_header() {
     printf '%s\n' "$tokens" \
       | awk -v k="$1" 'index($0, k "=") == 1 { print substr($0, length(k) + 2); exit }'
   }
+  run_id=$(_dd_header_value run_id)
+  case "$run_id" in
+    ''|*[!0-9a-f]*)
+      echo "FATAL: '$csv' has no valid 32-character run_id and is not a complete" >&2
+      echo "       current-format benchmark CSV. Re-run the benchmark before" >&2
+      echo "       capturing a trace." >&2
+      return 1 ;;
+  esac
+  [ "${#run_id}" -eq 32 ] || {
+    echo "FATAL: '$csv' has no valid 32-character run_id and is not a complete" >&2
+    echo "       current-format benchmark CSV. Re-run the benchmark before" >&2
+    echo "       capturing a trace." >&2
+    return 1
+  }
+  # shellcheck disable=SC2034  # read by capture_trace.sh for the binding log
+  DD_BENCHMARK_RUN_ID="$run_id"
   label_a=$(_dd_header_value label_a)
   label_b=$(_dd_header_value label_b)
   if [ -z "$label_a" ] || [ -z "$label_b" ]; then
@@ -622,6 +638,36 @@ dd_validate_cold_launch_output() {
     esac
   fi
   [ -z "$DD_LAUNCH_ERROR" ]
+}
+
+# Refuse a benchmark-header value that the header's own format cannot carry.
+#
+# ab_stats.py's parse_meta() splits the `#` header on whitespace and keeps only the
+# tokens containing `=`, so a value with a space is silently truncated to its first
+# word and the rest is dropped. MEASURED with two fingerprints differing only after
+# a space: both parse as `fp=Acme/Widget`, the remainder vanishes, and the pooling
+# check that exists to separate two devices passes. Every free-form value that gates
+# pooling therefore has to survive that tokenization, and the failure has to be loud
+# here rather than silent there. `device` takes the other route and is stamped as an
+# md5; these values stay readable because their diagnostics quote them.
+#
+# Sets DD_HEADER_ERROR for the caller to `die` with, like dd_validate_cold_launch_output.
+dd_require_header_value() {
+  local key="$1" value="${2-}"
+  DD_HEADER_ERROR=""
+  case "$value" in
+    '')
+      DD_HEADER_ERROR="the benchmark header value for '$key' is empty, so the run
+       could not be identified by it and two different scenarios would pool as one."
+      ;;
+    *[[:space:]]*)
+      DD_HEADER_ERROR="the benchmark header value for '$key' contains whitespace
+       ('$value'). The results header is whitespace-tokenized, so it would be
+       recorded as '${value%%[[:space:]]*}' and the rest dropped, leaving '$key'
+       unable to tell this run apart from another sharing that first word."
+      ;;
+  esac
+  [ -z "$DD_HEADER_ERROR" ]
 }
 
 # Name of the currently resumed activity, as "pkg/component".

@@ -128,9 +128,14 @@ log "launcher activity: $LAUNCH"
 
 "$ADB" shell am force-stop --user "$DD_ANDROID_USER" "$PKG"; sleep 2
 "$ADB" shell logcat -c >/dev/null 2>&1 || true
-"$ADB" shell am start -W --user "$DD_ANDROID_USER" -a android.intent.action.MAIN \
-  -c android.intent.category.LAUNCHER -n "$LAUNCH" \
-  | tr -d '\r' | sed 's/^/    /'
+LAUNCH_RC=0
+LAUNCH_OUT=$("$ADB" shell am start -W --user "$DD_ANDROID_USER" \
+  -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n "$LAUNCH" 2>&1) \
+  || LAUNCH_RC=$?
+printf '%s\n' "$LAUNCH_OUT" | tr -d '\r' | sed 's/^/    /'
+[ "$LAUNCH_RC" -eq 0 ] \
+  || die "am start -W failed (exit $LAUNCH_RC). The app launch was not verified;
+       this is a setup/transport failure, not evidence that Datadog is absent."
 log "settling ${SETTLE}s so any deferred/async init completes"
 sleep "$SETTLE"
 

@@ -932,7 +932,8 @@ class HarnessRegressionTests(unittest.TestCase):
         self.assertIn("benchmark\n       recorded android_user=0", wrong_user.stderr)
 
     BENCHMARK_HEADER = (
-        "# device=moto_g_60_s sdk=31 abi=arm64-v8a emulator=0 android_user=0 "
+        "# device=" + "f" * 32 + " run_id=" + "1" * 32
+        + " sdk=31 abi=arm64-v8a emulator=0 android_user=0 "
         "compile_filter=speed-profile compile_status=verify perf_mode=fixed blocks=8 "
         "runs=4 warmup=3 animations=1 "
         "fp=motorola/lisbon/lisbon:12/S3RQS/rel:user/release-keys "
@@ -979,6 +980,12 @@ class HarnessRegressionTests(unittest.TestCase):
             incomplete_format.write_text(
                 self.BENCHMARK_HEADER.replace(" perf_mode=fixed", "")
                 + self.BENCHMARK_ROWS, encoding="utf-8")
+            malformed_run_id = root / "malformed-run-id.csv"
+            malformed_run_id.write_text(
+                self.BENCHMARK_HEADER.replace("run_id=" + "1" * 32, "run_id=invalid")
+                + self.BENCHMARK_ROWS,
+                encoding="utf-8",
+            )
             interrupted = root / "interrupted.csv"
             interrupted.write_text(
                 self.BENCHMARK_HEADER
@@ -1027,6 +1034,8 @@ class HarnessRegressionTests(unittest.TestCase):
                 # There is no unreleased legacy-format contract. Named, not invented.
                 (dict(BENCHMARK_CSV=str(incomplete_format), BENCHMARK_ARM="B_withDD"),
                  "records no perf_mode"),
+                (dict(BENCHMARK_CSV=str(malformed_run_id), BENCHMARK_ARM="B_withDD"),
+                 "no valid 32-character run_id"),
             ):
                 result = run(**env)
                 self.assertNotEqual(result.returncode, 0, needle)
@@ -1034,7 +1043,10 @@ class HarnessRegressionTests(unittest.TestCase):
 
             # The arm is selected BY LABEL, so the treatment digest is the one gated.
             treatment = run(BENCHMARK_CSV=str(good), BENCHMARK_ARM="B_withDD")
-            self.assertIn(f"bound to {good} arm B_withDD (b)", treatment.stderr)
+            self.assertIn(
+                f"bound to {good} run {'1' * 32} arm B_withDD (b)",
+                treatment.stderr,
+            )
             self.assertIn("c" * 32, treatment.stderr)
             self.assertNotIn("a" * 32, treatment.stderr)
 
@@ -1726,6 +1738,68 @@ class HarnessRegressionTests(unittest.TestCase):
         self.assertLess(settle, clear)
         self.assertLess(clear, launch)
 
+    def test_failed_measured_force_stop_aborts_before_launch(self) -> None:
+        """A rejected package stop cannot condition a process-cold observation."""
+        source = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
+        start = source.index("measure() {")
+        end = source.index("\n}", start) + len("\n}")
+        measure = source[start:end]
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            adb = root / "adb"
+            calls = root / "calls"
+            adb.write_text(
+                """#!/usr/bin/env bash
+printf '%s\n' "$*" >> "$FAKE_ADB_STATE"
+case "$*" in
+  "shell am force-stop --user 0 com.example.app") exit 17 ;;
+  *) exit 19 ;;
+esac
+""",
+                encoding="utf-8",
+            )
+            adb.chmod(adb.stat().st_mode | stat.S_IXUSR)
+            result = subprocess.run(
+                [
+                    "bash", "-c",
+                    f"""
+                    set -euo pipefail
+                    . "$LIB"
+                    sleep() {{ :; }}
+                    die() {{ echo "FATAL: $*" >&2; exit 1; }}
+                    log() {{ :; }}
+                    PKG=com.example.app
+                    PKG_RE='com\\.example\\.app'
+                    DD_ANDROID_USER=0
+                    APP_TRACE_REGEX=""
+                    DD_MARKER_NATIVE_INIT='Datadog native initialized'
+                    DD_MARKER_RN_INIT='Datadog RN initialized'
+                    DD_MARKER_ENABLED='Datadog native enabled'
+                    DD_MARKERS_RE="$DD_MARKER_NATIVE_INIT|$DD_MARKER_RN_INIT|$DD_MARKER_ENABLED"
+                    START_ARGS=(-W --user 0 -n com.example.app/.Main)
+                    OUT="$FAKE_ADB_STATE.csv"
+                    LOG="$FAKE_ADB_STATE.log"
+                    expect_dd=0
+                    {measure}
+                    measure A_noDD 1 measure 1 1
+                    """,
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                env={
+                    **os.environ,
+                    "ADB": str(adb),
+                    "LIB": str(LIB),
+                    "FAKE_ADB_STATE": str(calls),
+                },
+            )
+            adb_calls = calls.read_text(encoding="utf-8")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("force-stop failed", result.stderr)
+        self.assertIn("shell am force-stop --user 0 com.example.app", adb_calls)
+        self.assertNotIn("shell am start", adb_calls)
+
     def test_absent_package_is_not_read_as_a_failed_query(self) -> None:
         """`pm path` exits 1 for a package that is not installed for this user.
 
@@ -1833,6 +1907,116 @@ class HarnessRegressionTests(unittest.TestCase):
         self.assertIn("rc=1", result.stdout)
         self.assertIn("could not", result.stderr)
         self.assertIn("attribute", result.stderr)
+
+    def test_failed_probe_force_stop_aborts_before_launch(self) -> None:
+        """The probe needs its own gate: errexit cannot reach it.
+
+        probe_datadog runs on the LEFT of a pipeline, and errexit does not apply
+        inside a function body invoked that way, so the bare force-stop this
+        replaced continued to the launch and the pipeline still reported success.
+        LaunchState=COLD does not cover for it either -- that describes the target
+        activity's process, while a surviving `<pkg>:private` process keeps the
+        `datadog-*` threads this probe reads to decide the arm. Invoked here through
+        the same `$(... | tail -1)` shape as the real call site, because the plain
+        call would pass on the broken version too.
+        """
+        source = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
+        start = source.index("probe_datadog() {")
+        end = source.index("\n}", start) + len("\n}")
+        probe = source[start:end]
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            adb = root / "adb"
+            calls = root / "calls"
+            adb.write_text(
+                """#!/usr/bin/env bash
+printf '%s\n' "$*" >> "$FAKE_ADB_STATE"
+case "$*" in
+  "shell am force-stop --user 0 com.example.app") exit 17 ;;
+  *) exit 19 ;;
+esac
+""",
+                encoding="utf-8",
+            )
+            adb.chmod(adb.stat().st_mode | stat.S_IXUSR)
+            result = subprocess.run(
+                [
+                    "bash", "-c",
+                    f"""
+                    set -euo pipefail
+                    . "$LIB"
+                    sleep() {{ :; }}
+                    die() {{ echo "FATAL: $*" >&2; exit 1; }}
+                    log() {{ :; }}
+                    PKG=com.example.app
+                    PKG_RE='com\\.example\\.app'
+                    DD_ANDROID_USER=0
+                    APP_TRACE_REGEX=""
+                    START_ARGS=(-W --user 0 -n com.example.app/.Main)
+                    OUT="$FAKE_ADB_STATE.csv"
+                    LOG="$FAKE_ADB_STATE.log"
+                    expect_dd=0
+                    {probe}
+                    dd_count=$(probe_datadog A_noDD 1 1 | tail -1)
+                    echo "PROBE CONTINUED dd_count=$dd_count"
+                    """,
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                env={
+                    **os.environ,
+                    "ADB": str(adb),
+                    "LIB": str(LIB),
+                    "FAKE_ADB_STATE": str(calls),
+                },
+            )
+            adb_calls = calls.read_text(encoding="utf-8")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("liveness probe: am force-stop failed", result.stderr)
+        self.assertNotIn("PROBE CONTINUED", result.stdout)
+        self.assertIn("shell am force-stop --user 0 com.example.app", adb_calls)
+        self.assertNotIn("am start -W", adb_calls)
+
+    def test_free_form_header_values_must_survive_tokenization(self) -> None:
+        """A spaced value is truncated by parse_meta, and two devices then pool.
+
+        `device` is stamped as an md5 for this reason, but `fp` -- the key that
+        decides whether two runs are the same device -- was still written raw, so
+        two fingerprints differing only after a space parsed identically and the
+        pooling check passed.
+        """
+        for value, expected in (
+            ("Acme/Widget One/x:12/ABC/1:user/release-keys", "contains whitespace"),
+            ("", "is empty"),
+        ):
+            with self.subTest(value=value):
+                rejected = self.run_with_fake_adb(
+                    f'. "$LIB"; dd_require_header_value fp "{value}" '
+                    '&& echo ACCEPTED || printf %s "$DD_HEADER_ERROR"',
+                    "#!/bin/sh\n",
+                )
+                self.assertEqual(rejected.returncode, 0, rejected.stderr)
+                self.assertNotIn("ACCEPTED", rejected.stdout)
+                self.assertIn(expected, rejected.stdout)
+        accepted = self.run_with_fake_adb(
+            '. "$LIB"; dd_require_header_value fp "Acme/Widget/x:12" && echo ACCEPTED',
+            "#!/bin/sh\n",
+        )
+        self.assertEqual(accepted.returncode, 0, accepted.stderr)
+        self.assertIn("ACCEPTED", accepted.stdout)
+
+        # Every free-form key on the header line is gated, and the three knowable
+        # at preflight are gated before the first uninstall deletes app data.
+        source = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
+        for key in ("fp", "abi", "compile_filter"):
+            self.assertIn(f'"{key}=$', source)
+        preflight = source.index("dd_require_header_value")
+        self.assertLess(preflight, source.index("dd_ensure_uninstalled"))
+        header = source.index("echo \"# device=$DEV_MODEL_ID")
+        gate = source.rindex("dd_require_header_value", 0, header)
+        for key in ("launcher", "compile_status"):
+            self.assertIn(f'"{key}=$', source[gate - 200:header])
 
     def test_output_reservation_creates_the_complete_pair(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -2982,16 +3166,89 @@ class HarnessRegressionTests(unittest.TestCase):
         self.assertIn("|| die", source[call:call + 200])
         self.assertIn("die() { echo \"FATAL: $*\" >&2; exit 2; }", source)
 
+    def test_verifier_launch_failure_is_a_setup_failure(self) -> None:
+        """A failed launcher command must not borrow exit 1 from SDK absence."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            verifier = root / "verify_sdk_active.sh"
+            shutil.copy2(HARNESS / "verify_sdk_active.sh", verifier)
+            (root / "lib.sh").write_text(
+                textwrap.dedent(
+                    """
+                    dd_resolve_tools() { :; }
+                    dd_require_device() { :; }
+                    dd_resolve_android_user() { DD_ANDROID_USER=0; }
+                    dd_package_path() { printf 'package:/data/app/base.apk\n'; }
+                    dd_md5() { printf 'abc\n'; }
+                    dd_ensure_uninstalled() { :; }
+                    dd_grant_runtime_permissions() {
+                      DD_GRANTED_PERMISSIONS=""
+                      DD_GRANTED_PERMISSION_COUNT=0
+                      DD_RUNTIME_PERMISSION_COUNT=0
+                    }
+                    """
+                ),
+                encoding="utf-8",
+            )
+            apk = root / "app.apk"
+            apk.write_text("apk", encoding="utf-8")
+            adb = root / "adb"
+            adb.write_text(
+                textwrap.dedent(
+                    """
+                    #!/usr/bin/env bash
+                    case "$*" in
+                      "shell getprop "*) printf 'test\n' ;;
+                      "install --user 0 -r "*) ;;
+                      "shell md5sum /data/app/base.apk") printf 'abc  /data/app/base.apk\n' ;;
+                      "shell dumpsys package com.example.app") printf 'versionName=1\n' ;;
+                      "shell cmd package resolve-activity --brief --user 0 -c android.intent.category.LAUNCHER com.example.app")
+                        printf 'com.example.app/.Main\n' ;;
+                      "shell am force-stop --user 0 com.example.app") ;;
+                      "shell logcat -c") ;;
+                      "shell am start -W "*) printf 'launcher transport failed\n'; exit 1 ;;
+                      *) printf 'unexpected adb call: %s\n' "$*" >&2; exit 90 ;;
+                    esac
+                    """
+                ),
+                encoding="utf-8",
+            )
+            adb.chmod(adb.stat().st_mode | stat.S_IXUSR)
+            result = subprocess.run(
+                ["bash", str(verifier), str(apk), "com.example.app"],
+                check=False,
+                capture_output=True,
+                text=True,
+                env={
+                    **os.environ,
+                    "ADB": str(adb),
+                    "ALLOW_UNVERIFIED_PKG": "1",
+                    "SETTLE": "0",
+                },
+            )
+
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("am start -W failed", result.stderr)
+        self.assertNotIn("RESULT: Datadog is NOT initializing", result.stdout)
+
 
 class AbStatsRegressionTests(unittest.TestCase):
+    _RUN_ID_SEQUENCE = 0
     COMPATIBLE_META = (
-        "device=pixel sdk=31 fp=build/fingerprint emulator=0 android_user=0 "
+        "device=" + "f" * 32 + " sdk=31 fp=build/fingerprint emulator=0 android_user=0 "
         "compile_filter=speed-profile compile_status=verify perf_mode=fixed animations=0 "
         "airplane=0 abi=arm64-v8a "
         "launcher=com.example/.MainActivity warmup=3 "
         "baseline_md5=aaa treatment_md5=bbb label_a=A_noDD label_b=B_withDD "
         "expect_a=0 expect_b=1 app_trace_id=none permission_a=p1 permission_b=p2"
     )
+
+    @classmethod
+    def with_run_id(cls, metadata: str) -> str:
+        if re.search(r"(^| )run_id=", metadata):
+            return metadata
+        cls._RUN_ID_SEQUENCE += 1
+        return f"{metadata} run_id={cls._RUN_ID_SEQUENCE:032x}"
 
     @classmethod
     def benchmark_csv(
@@ -3008,6 +3265,7 @@ class AbStatsRegressionTests(unittest.TestCase):
     ) -> str:
         if metadata is None:
             metadata = f"{cls.COMPATIBLE_META} blocks={block_count} runs={runs_per_cell}"
+        metadata = cls.with_run_id(metadata)
         rows = [
             "label,block,pos_in_block,phase,run,total_ms,launch_state,status,foreground,ttfd"
         ]
@@ -3255,7 +3513,7 @@ class AbStatsRegressionTests(unittest.TestCase):
         return "\n".join(rows) + "\n"
 
     def recoverable_metadata(self, blocks: int, runs: int = 2) -> str:
-        return (f"device=pixel sdk=31 abi=arm64-v8a emulator=0 android_user=0 "
+        return (f"device={'f' * 32} sdk=31 abi=arm64-v8a emulator=0 android_user=0 "
                 f"compile_filter=speed-profile compile_status=verify "
                 f"perf_mode=fixed "
                 f"blocks={blocks} runs={runs} warmup=3 "
@@ -3598,6 +3856,68 @@ class AbStatsRegressionTests(unittest.TestCase):
         self.assertIn("refusing byte-identical CSV inputs", result.stderr)
         self.assertIn("same observations", result.stderr)
 
+    def test_annotated_copy_with_the_same_run_id_is_refused(self) -> None:
+        """A harmless byte change does not turn copied observations into a new run."""
+        csv_body = self.benchmark_csv()
+        result = self.run_stats_files([csv_body, csv_body + "# archived copy\n"])
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("duplicate run_id", result.stderr)
+        self.assertIn("same collected observations", result.stderr)
+
+    def test_selected_roles_must_match_the_recorded_arm_mapping(self) -> None:
+        """Swapping CLI roles cannot reverse the sign of a reportable effect."""
+        result = self.run_stats(
+            self.benchmark_csv(),
+            "--baseline", "B_withDD",
+            "--treatment", "A_noDD",
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("requested arm roles disagree", result.stderr)
+        self.assertIn("label_a=A_noDD", result.stderr)
+        self.assertIn("label_b=B_withDD", result.stderr)
+        self.assertNotIn("95% CI", result.stdout)
+
+    def test_opaque_metadata_identities_require_current_format(self) -> None:
+        for key in ("device", "run_id"):
+            with self.subTest(key=key):
+                csv_body = self.benchmark_csv()
+                csv_body = re.sub(
+                    rf"(?m)^(# .*\b{key}=)[0-9a-f]{{32}}",
+                    r"\1not-an-md5",
+                    csv_body,
+                    count=1,
+                )
+                result = self.run_stats(csv_body)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(f"malformed metadata {key}='not-an-md5'", result.stderr)
+                self.assertNotIn("PRIMARY ENDPOINT", result.stdout)
+
+    def test_collector_stamps_a_whitespace_free_device_model_identity(self) -> None:
+        """Multi-word models must not collapse to their shared first token."""
+        source = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
+        self.assertIn('DEV_MODEL_ID=$(dd_md5_str "$DEV_MODEL")', source)
+        self.assertIn("device=$DEV_MODEL_ID", source)
+        self.assertNotIn("device=$DEV_MODEL ", source)
+
+        helper = HarnessRegressionTests()
+        pixel_6 = helper.run_with_fake_adb('. "$LIB"; dd_md5_str "Pixel 6"', "#!/bin/sh\n")
+        pixel_7 = helper.run_with_fake_adb('. "$LIB"; dd_md5_str "Pixel 7"', "#!/bin/sh\n")
+        self.assertEqual(pixel_6.returncode, 0, pixel_6.stderr)
+        self.assertEqual(pixel_7.returncode, 0, pixel_7.stderr)
+        pixel_6_id = pixel_6.stdout.strip()
+        pixel_7_id = pixel_7.stdout.strip()
+        self.assertRegex(pixel_6_id, r"^[0-9a-f]{32}$")
+        self.assertNotEqual(pixel_6.stdout, pixel_7.stdout)
+
+        metadata = f"{self.COMPATIBLE_META} blocks=4 runs=1"
+        pooled = self.run_stats_files([
+            self.benchmark_csv(metadata=metadata.replace("f" * 32, pixel_6_id, 1)),
+            self.benchmark_csv(metadata=metadata.replace("f" * 32, pixel_7_id, 1)),
+        ])
+        self.assertNotEqual(pooled.returncode, 0)
+        self.assertIn(f"device: {min(pixel_6_id, pixel_7_id)}", pooled.stderr)
+        self.assertIn(f"vs {max(pixel_6_id, pixel_7_id)}", pooled.stderr)
+
     def test_zero_block_variance_suppresses_primary_inference(self) -> None:
         for delta in (0, 12):
             with self.subTest(delta=delta):
@@ -3859,7 +4179,8 @@ class AbStatsRegressionTests(unittest.TestCase):
         )
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("complete current harness format", result.stderr)
-        self.assertIn("missing metadata device", result.stderr)
+        self.assertIn("missing metadata", result.stderr)
+        self.assertIn("device", result.stderr)
 
     def test_missing_order_column_is_not_current_format(self) -> None:
         result = self.run_stats(self.erase_positions(self.benchmark_csv()))
@@ -3953,7 +4274,7 @@ class AbStatsRegressionTests(unittest.TestCase):
         chosen to land on different float representations of the same delta, which is
         how `st.stdev(...) == 0` missed this case entirely.
         """
-        header = "# " + self.recoverable_metadata(4, runs=3) + "\n"
+        header = "# " + self.with_run_id(self.recoverable_metadata(4, runs=3)) + "\n"
         rows = ["label,block,pos_in_block,phase,run,total_ms,launch_state,status,"
                 "foreground,ttfd"]
         for index, base in enumerate(self.ROUNDED_CELLS, start=1):

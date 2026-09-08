@@ -194,6 +194,8 @@ def parse_ms(raw):
 # the same recorded device/protocol metadata is legitimate and is the reason
 # multi-file exists. The harness assumes the operator keeps one physical device;
 # it does not stamp a stable handset identity or implement a multi-device model.
+# `device` is the digest of the complete model string. Keep it alongside `fp`:
+# different models can intentionally carry the same GSI/custom-build fingerprint.
 # `launcher` belongs here: the harness itself aborts when two ARMS resolve
 # different launcher components, so pooling two FILES that entered through
 # different components would contradict the rule it enforces internally.
@@ -204,7 +206,7 @@ def parse_ms(raw):
 # first few launches. Two files with different warmups therefore measure the SDK's
 # cost at different points of that ramp, which is a different startup condition, not
 # a larger sample of one. blocks/runs only lengthen the tail from a common start.
-_MUST_MATCH = ("fp", "emulator", "android_user", "compile_filter", "animations",
+_MUST_MATCH = ("device", "fp", "emulator", "android_user", "compile_filter", "animations",
                "airplane", "abi", "launcher", "warmup")
 
 # The md5 of each arm's APK, stamped by coldstart_bench.sh. Every field in
@@ -265,7 +267,7 @@ _APP_TRACE_KEY = "app_trace_id"
 # --allow-mixed may acknowledge a disagreement; it cannot manufacture missing
 # evidence.
 _CURRENT_META_KEYS = (
-    "device", "sdk", *_MUST_MATCH, *_BUILD_KEYS, *_ARM_KEYS, *_LIVENESS_KEYS,
+    "run_id", "sdk", *_MUST_MATCH, *_BUILD_KEYS, *_ARM_KEYS, *_LIVENESS_KEYS,
     *_PERMISSION_KEYS, *_CONTROL_KEYS, _APP_TRACE_KEY, "blocks", "runs"
 )
 
@@ -448,6 +450,13 @@ def main():
             format_errors.append(
                 f"  {path}: missing metadata {', '.join(missing)}"
             )
+        for key in ("device", "run_id"):
+            value = own_kv.get(key, "")
+            if value and not re.fullmatch(r"[0-9a-f]{32}", value):
+                format_errors.append(
+                    f"  {path}: malformed metadata {key}={value!r} "
+                    "(expected 32 lowercase hexadecimal characters)"
+                )
         columns = set(csv.DictReader(body).fieldnames or ())
         missing_columns = sorted(_CURRENT_COLUMNS - columns)
         if missing_columns:
@@ -461,6 +470,41 @@ def main():
             + "\n  This benchmark was not released with a legacy format to preserve."
               "\n  Re-run it with this version of coldstart_bench.sh."
         )
+
+    # These are authoritative role assignments, not pooling metadata an override
+    # may waive. Enforce them for one file too, before any recovery or statistic
+    # can turn a treatment cost into an improvement by reversing the subtraction.
+    role_errors = []
+    for path, own_kv in zip(a.csv, metas):
+        if own_kv["label_a"] != a.baseline or own_kv["label_b"] != a.treatment:
+            role_errors.append(
+                f"  {path}: label_a={own_kv['label_a']} label_b={own_kv['label_b']}"
+            )
+    if role_errors:
+        raise SystemExit(
+            "refusing analysis because the requested arm roles disagree with the "
+            "recorded mapping:\n"
+            + "\n".join(role_errors)
+            + f"\n  requested baseline={a.baseline} treatment={a.treatment}"
+              "\n  label_a is the collected baseline APK and label_b is the collected"
+              "\n  treatment APK. Reversing them would reverse the reported effect."
+        )
+
+    # File identity and byte identity above catch aliases and exact copies. The
+    # collector identity survives harmless archive comments and normalization.
+    seen_run_ids = {}
+    for path, own_kv in zip(a.csv, metas):
+        run_id = own_kv["run_id"]
+        if run_id in seen_run_ids:
+            raise SystemExit(
+                "refusing duplicate run_id across CSV inputs:\n"
+                f"    {seen_run_ids[run_id]}\n"
+                f"    {path}\n"
+                f"  Both record run_id={run_id}. A copied or annotated archive still"
+                "\n  contains the same collected observations; counting it twice would"
+                "\n  narrow the confidence interval without adding an independent run."
+            )
+        seen_run_ids[run_id] = path
 
     # ---- did an interrupted run already collect the design it registered? ------
     # A run that stopped after collecting whole counterbalanced blocks is not a
@@ -594,21 +638,6 @@ def main():
                       "\n  interval over them estimates nothing. Analyze them separately,"
                       "\n  or pass --allow-mixed if you genuinely intend to pool them.")
             print("[WARNING: --allow-mixed, pooling runs built from different APKs:]")
-            for ln in lines:
-                print(ln)
-        arm_differing = present_meta_differences(metas, _ARM_KEYS)
-        if arm_differing:
-            lines = [f"    {k}: {' vs '.join(v)}" for k, v in arm_differing.items()]
-            if not a.allow_mixed:
-                raise SystemExit(
-                    "refusing to pool CSVs that map their arm LABELS differently:\n"
-                    + "\n".join(lines)
-                    + "\n  Same device, same protocol, same two APKs -- but a label does not"
-                      "\n  name the same binary in every file. If the labels were swapped,"
-                      "\n  the second run's deltas enter this pool with the sign reversed;"
-                      "\n  if they were merely renamed, that file contributes no rows at all"
-                      "\n  while the header above still lists it as pooled.")
-            print("[WARNING: --allow-mixed, pooling runs whose label -> arm mapping differs:]")
             for ln in lines:
                 print(ln)
         liveness_differing = present_meta_differences(metas, _LIVENESS_KEYS)
