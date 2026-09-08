@@ -39,9 +39,12 @@ internal suspend fun FlagsClient.setEvaluationContextSuspend(context: Evaluation
             }
 
             override fun onFailure(error: Throwable) {
-                if (error is FlagsInitializationTimeoutException &&
-                    state.getCurrentState() == FlagsClientState.Stale
-                ) {
+                val isUsableTimeout = error is FlagsInitializationTimeoutException &&
+                    when (state.getCurrentState()) {
+                        FlagsClientState.Ready, FlagsClientState.Stale -> true
+                        else -> false
+                    }
+                if (isUsableTimeout) {
                     continuation.resume(Unit)
                 } else {
                     continuation.resumeWithException(
