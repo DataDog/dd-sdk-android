@@ -452,7 +452,7 @@ internal class EvaluationsManagerTest {
         whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
             .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(emptyMap())
-        val manager = createManager(
+        val testedManager = createManager(
             initializationTimeoutMs = 2_500L,
             scheduler = InitializationTimeoutScheduler { timeoutMs, action ->
                 scheduledTimeoutMs = timeoutMs
@@ -462,7 +462,7 @@ internal class EvaluationsManagerTest {
         )
 
         // When
-        manager.updateEvaluationsForContext(context, mockCallback)
+        testedManager.updateEvaluationsForContext(context, mockCallback)
         checkNotNull(timeoutAction).invoke()
 
         // Then
@@ -513,7 +513,7 @@ internal class EvaluationsManagerTest {
             checkNotNull(timeoutAction).invoke()
             null
         }
-        val manager = createManager(
+        val testedManager = createManager(
             flagStateManager = stateManager,
             initializationTimeoutMs = 2_500L,
             scheduler = InitializationTimeoutScheduler { _, action ->
@@ -523,7 +523,7 @@ internal class EvaluationsManagerTest {
         )
 
         // When
-        manager.updateEvaluationsForContext(context, callback)
+        testedManager.updateEvaluationsForContext(context, callback)
 
         // Then
         assertThat(callbackError).isInstanceOf(FlagsInitializationTimeoutException::class.java)
@@ -557,7 +557,7 @@ internal class EvaluationsManagerTest {
                 stateAtTimeoutCallback = stateManager.getCurrentState()
             }
         }
-        val manager = createManager(
+        val testedManager = createManager(
             flagStateManager = stateManager,
             initializationTimeoutMs = 2_500L,
             scheduler = InitializationTimeoutScheduler { _, action ->
@@ -567,7 +567,7 @@ internal class EvaluationsManagerTest {
         )
 
         // When
-        manager.updateEvaluationsForContext(context, callback)
+        testedManager.updateEvaluationsForContext(context, callback)
 
         // Then
         assertThat(stateAtTimeoutCallback).isEqualTo(FlagsClientState.Stale)
@@ -592,7 +592,7 @@ internal class EvaluationsManagerTest {
                 onStateChanged = FlagsStateListener::onStateChanged
             )
         )
-        val manager = createManager(
+        val testedManager = createManager(
             flagStateManager = stateManager,
             initializationTimeoutMs = 2_500L,
             scheduler = InitializationTimeoutScheduler { _, action ->
@@ -601,8 +601,8 @@ internal class EvaluationsManagerTest {
             }
         )
 
-        manager.updateEvaluationsForContext(EvaluationContext("first", emptyMap()), mockFirstCallback)
-        manager.updateEvaluationsForContext(EvaluationContext("newer", emptyMap()))
+        testedManager.updateEvaluationsForContext(EvaluationContext("first", emptyMap()), mockFirstCallback)
+        testedManager.updateEvaluationsForContext(EvaluationContext("newer", emptyMap()))
 
         // When
         operations[1].run()
@@ -637,14 +637,14 @@ internal class EvaluationsManagerTest {
                 callbackCompleted.countDown()
             }
         }
-        val manager = createManager(
+        val testedManager = createManager(
             initializationTimeoutMs = 0,
             scheduler = InitializationTimeoutScheduler { _, action ->
                 timeoutAction = action
                 {}
             }
         )
-        manager.updateEvaluationsForContext(context, callback)
+        testedManager.updateEvaluationsForContext(context, callback)
         val timeoutThread = Thread { checkNotNull(timeoutAction).invoke() }
 
         try {
@@ -673,13 +673,13 @@ internal class EvaluationsManagerTest {
                 onStateChanged = FlagsStateListener::onStateChanged
             )
         )
-        lateinit var manager: EvaluationsManager
+        lateinit var testedManager: EvaluationsManager
         val didReenter = AtomicBoolean(false)
         stateManager.addListener(
             object : FlagsStateListener {
                 override fun onStateChanged(newState: FlagsClientState) {
                     if (newState == FlagsClientState.Reconciling && didReenter.compareAndSet(false, true)) {
-                        manager.updateEvaluationsForContext(
+                        testedManager.updateEvaluationsForContext(
                             EvaluationContext("nested", emptyMap()),
                             mockNestedCallback
                         )
@@ -687,7 +687,7 @@ internal class EvaluationsManagerTest {
                 }
             }
         )
-        manager = createManager(
+        testedManager = createManager(
             flagStateManager = stateManager,
             initializationTimeoutMs = 2_500L,
             scheduler = InitializationTimeoutScheduler { _, action ->
@@ -697,7 +697,7 @@ internal class EvaluationsManagerTest {
         )
 
         // When
-        manager.updateEvaluationsForContext(EvaluationContext("first", emptyMap()), mockFirstCallback)
+        testedManager.updateEvaluationsForContext(EvaluationContext("first", emptyMap()), mockFirstCallback)
         checkNotNull(timeoutAction).invoke()
 
         // Then
@@ -735,7 +735,7 @@ internal class EvaluationsManagerTest {
         whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
             .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(emptyMap())
-        val manager = createManager(
+        val testedManager = createManager(
             initializationTimeoutMs = 2_500L,
             scheduler = InitializationTimeoutScheduler { _, action ->
                 timeoutAction = action
@@ -744,7 +744,7 @@ internal class EvaluationsManagerTest {
         )
 
         // When
-        manager.updateEvaluationsForContext(context, mockCallback)
+        testedManager.updateEvaluationsForContext(context, mockCallback)
         val timeoutThread = Thread { checkNotNull(timeoutAction).invoke() }
         timeoutThread.start()
         check(timeoutReadState.await(5, TimeUnit.SECONDS))
@@ -778,7 +778,7 @@ internal class EvaluationsManagerTest {
         whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
             .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(emptyMap())
-        val manager = createManager(
+        val testedManager = createManager(
             initializationTimeoutMs = 2_500L,
             scheduler = InitializationTimeoutScheduler { _, action ->
                 timeoutAction = action
@@ -787,7 +787,7 @@ internal class EvaluationsManagerTest {
         )
 
         // When
-        manager.updateEvaluationsForContext(context, mockCallback)
+        testedManager.updateEvaluationsForContext(context, mockCallback)
         checkNotNull(timeoutAction).invoke()
 
         // Then
@@ -808,7 +808,7 @@ internal class EvaluationsManagerTest {
             checkNotNull(timeoutAction).invoke()
             emptyMap<String, PrecomputedFlag>()
         }
-        val manager = createManager(
+        val testedManager = createManager(
             initializationTimeoutMs = 2_500L,
             scheduler = InitializationTimeoutScheduler { _, action ->
                 timeoutAction = action
@@ -817,7 +817,7 @@ internal class EvaluationsManagerTest {
         )
 
         // When
-        manager.updateEvaluationsForContext(context, mockCallback)
+        testedManager.updateEvaluationsForContext(context, mockCallback)
 
         // Then
         verify(mockCallback).onFailure(any<FlagsInitializationTimeoutException>())
@@ -834,7 +834,7 @@ internal class EvaluationsManagerTest {
         whenever(mockAssignmentsDownloader.readPrecomputedFlags(any(), eq(fakeDatadogContext)))
             .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(emptyMap())
-        val manager = createManager(
+        val testedManager = createManager(
             initializationTimeoutMs = 2_500L,
             scheduler = InitializationTimeoutScheduler { _, _ ->
                 scheduleCount += 1
@@ -843,8 +843,8 @@ internal class EvaluationsManagerTest {
         )
 
         // When
-        manager.updateEvaluationsForContext(EvaluationContext("first", emptyMap()), mockCallback)
-        manager.updateEvaluationsForContext(EvaluationContext("second", emptyMap()), mockCallback)
+        testedManager.updateEvaluationsForContext(EvaluationContext("first", emptyMap()), mockCallback)
+        testedManager.updateEvaluationsForContext(EvaluationContext("second", emptyMap()), mockCallback)
 
         // Then
         assertThat(scheduleCount).isEqualTo(1)
@@ -859,7 +859,7 @@ internal class EvaluationsManagerTest {
         whenever(mockAssignmentsDownloader.readPrecomputedFlags(any(), eq(fakeDatadogContext)))
             .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(emptyMap())
-        val manager = createManager(
+        val testedManager = createManager(
             initializationTimeoutMs = null,
             scheduler = InitializationTimeoutScheduler { _, _ ->
                 scheduleCount += 1
@@ -868,7 +868,7 @@ internal class EvaluationsManagerTest {
         )
 
         // When
-        manager.updateEvaluationsForContext(EvaluationContext("first", emptyMap()), mockCallback)
+        testedManager.updateEvaluationsForContext(EvaluationContext("first", emptyMap()), mockCallback)
 
         // Then
         assertThat(scheduleCount).isZero()
@@ -884,7 +884,7 @@ internal class EvaluationsManagerTest {
             operation = it.getArgument(0)
             null
         }
-        val manager = createManager(
+        val testedManager = createManager(
             initializationTimeoutMs = 2_500L,
             scheduler = InitializationTimeoutScheduler { _, action ->
                 timeoutAction = action
@@ -893,7 +893,7 @@ internal class EvaluationsManagerTest {
         )
 
         // When
-        manager.updateEvaluationsForContext(EvaluationContext("first", emptyMap()), callback = null)
+        testedManager.updateEvaluationsForContext(EvaluationContext("first", emptyMap()), callback = null)
         checkNotNull(timeoutAction).invoke()
 
         // Then
@@ -927,7 +927,7 @@ internal class EvaluationsManagerTest {
                 }
             }
         )
-        val manager = createManager(
+        val testedManager = createManager(
             flagStateManager = stateManager,
             initializationTimeoutMs = 2_500L,
             scheduler = InitializationTimeoutScheduler { _, action ->
@@ -937,7 +937,7 @@ internal class EvaluationsManagerTest {
         )
 
         // When
-        manager.updateEvaluationsForContext(context, mockCallback)
+        testedManager.updateEvaluationsForContext(context, mockCallback)
 
         // Then
         verify(mockCallback).onSuccess()
@@ -956,7 +956,7 @@ internal class EvaluationsManagerTest {
                 onStateChanged = FlagsStateListener::onStateChanged
             )
         )
-        val manager = createManager(
+        val testedManager = createManager(
             flagStateManager = stateManager,
             initializationTimeoutMs = 0,
             scheduler = InitializationTimeoutScheduler { _, action ->
@@ -967,7 +967,7 @@ internal class EvaluationsManagerTest {
         )
 
         // When
-        manager.updateEvaluationsForContext(EvaluationContext("first", emptyMap()), mockCallback)
+        testedManager.updateEvaluationsForContext(EvaluationContext("first", emptyMap()), mockCallback)
 
         // Then
         verify(mockCallback).onFailure(any<FlagsInitializationTimeoutException>())
@@ -980,7 +980,7 @@ internal class EvaluationsManagerTest {
         val mockCallback = mock<EvaluationContextCallback>()
         var cancellationCount = 0
         whenever(mockExecutorService.execute(any())).thenAnswer { null }
-        val manager = createManager(
+        val testedManager = createManager(
             initializationTimeoutMs = 2_500L,
             scheduler = InitializationTimeoutScheduler { _, action ->
                 action()
@@ -990,7 +990,7 @@ internal class EvaluationsManagerTest {
         )
 
         // When
-        manager.updateEvaluationsForContext(EvaluationContext("first", emptyMap()), mockCallback)
+        testedManager.updateEvaluationsForContext(EvaluationContext("first", emptyMap()), mockCallback)
 
         // Then
         assertThat(cancellationCount).isZero()
