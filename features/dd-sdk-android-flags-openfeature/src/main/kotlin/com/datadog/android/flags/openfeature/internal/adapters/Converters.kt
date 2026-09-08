@@ -24,6 +24,10 @@ internal fun OpenFeatureEvaluationContext.toDatadogEvaluationContext(): Evaluati
 
     val stringAttributes = this.asMap()
         .mapValues { (_, value) ->
+            // asString/asBoolean/asInteger/asDouble are third-party methods on OpenFeature Value
+            // subtypes. They return null when the value is not of the expected type and do not
+            // throw; the ?: fallback to toString() handles that case.
+            @Suppress("UnsafeThirdPartyFunctionCall")
             when (value) {
                 is Value.String -> value.asString() ?: value.toString()
                 is Value.Boolean -> value.asBoolean()?.toString() ?: value.toString()
