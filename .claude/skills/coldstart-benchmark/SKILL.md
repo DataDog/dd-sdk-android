@@ -107,9 +107,13 @@ This installs, md5-attests the install against the local file, launches via the 
 intent, settles (`SETTLE`, default 20s of wall clock, unchanged and distinct from
 `capture_trace.sh`'s settle *launches*, which derive from `EXPECTED_WARMUP`), then reads
 `/proc/<pid>/task/*/comm`. Exit 0 = live,
-1 = not, 2 = setup failure (no adb, no device, missing APK, or a thread list it could
-not read — an unverifiable check exits 2, never 1, so "not live" always means the
-script actually looked).
+1 = not, 2 = setup failure (no adb, no device, missing APK, failed force-stop, a
+nonzero launcher command, launch output without `Status: ok`, `LaunchState: COLD`
+and a numeric `TotalTime`, or a thread list it could not read). Some vendor builds
+return zero alongside a semantic launcher error such as `Error type 3`, so command
+status alone is not launch evidence. Liveness is inspected only after the semantic
+launch check passes; an unverifiable check exits 2, never 1, so "not live" always
+means the script actually looked.
 
 **Never substitute an ad-hoc `adb` probe for one of the scripts.** A hand-rolled `am start -W`
 plus a `logcat` grep looks equivalent and is not: it skips the runtime-permission pre-grant, the

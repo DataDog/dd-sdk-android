@@ -126,7 +126,13 @@ case "$LAUNCH" in
 esac
 log "launcher activity: $LAUNCH"
 
-"$ADB" shell am force-stop --user "$DD_ANDROID_USER" "$PKG"; sleep 2
+FORCE_STOP_RC=0
+FORCE_STOP_OUT=$("$ADB" shell am force-stop --user "$DD_ANDROID_USER" "$PKG" 2>&1) \
+  || FORCE_STOP_RC=$?
+[ "$FORCE_STOP_RC" -eq 0 ] \
+  || die "am force-stop failed (exit $FORCE_STOP_RC; output: ${FORCE_STOP_OUT:-none}).
+       The process-cold liveness scenario was not established."
+sleep 2
 "$ADB" shell logcat -c >/dev/null 2>&1 || true
 LAUNCH_RC=0
 LAUNCH_OUT=$("$ADB" shell am start -W --user "$DD_ANDROID_USER" \
@@ -136,6 +142,10 @@ printf '%s\n' "$LAUNCH_OUT" | tr -d '\r' | sed 's/^/    /'
 [ "$LAUNCH_RC" -eq 0 ] \
   || die "am start -W failed (exit $LAUNCH_RC). The app launch was not verified;
        this is a setup/transport failure, not evidence that Datadog is absent."
+dd_validate_cold_launch_output "$LAUNCH_OUT" \
+  || die "am start -W returned unusable launch evidence: $DD_LAUNCH_ERROR.
+       The app launch was not established; this is a setup failure, not evidence
+       that Datadog is absent."
 log "settling ${SETTLE}s so any deferred/async init completes"
 sleep "$SETTLE"
 

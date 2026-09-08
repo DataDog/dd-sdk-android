@@ -3166,8 +3166,8 @@ esac
         self.assertIn("|| die", source[call:call + 200])
         self.assertIn("die() { echo \"FATAL: $*\" >&2; exit 2; }", source)
 
-    def test_verifier_launch_failure_is_a_setup_failure(self) -> None:
-        """A failed launcher command must not borrow exit 1 from SDK absence."""
+    def test_verifier_setup_failures_never_borrow_sdk_absence_exit(self) -> None:
+        """Stop and launch failures are unknown liveness, including exit-zero errors."""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             verifier = root / "verify_sdk_active.sh"
@@ -3186,6 +3186,14 @@ esac
                       DD_GRANTED_PERMISSION_COUNT=0
                       DD_RUNTIME_PERMISSION_COUNT=0
                     }
+                    dd_validate_cold_launch_output() {
+                      case "$1" in
+                        *"Status: ok"*"LaunchState: COLD"*"TotalTime: "*)
+                          DD_LAUNCH_ERROR=""; return 0 ;;
+                        *) DD_LAUNCH_ERROR="Status='missing', not ok"; return 1 ;;
+                      esac
+                    }
+                    dd_pkg_pids() { printf 'LIVENESS_REACHED\n' >&2; return 1; }
                     """
                 ),
                 encoding="utf-8",
@@ -3204,9 +3212,19 @@ esac
                       "shell dumpsys package com.example.app") printf 'versionName=1\n' ;;
                       "shell cmd package resolve-activity --brief --user 0 -c android.intent.category.LAUNCHER com.example.app")
                         printf 'com.example.app/.Main\n' ;;
-                      "shell am force-stop --user 0 com.example.app") ;;
+                      "shell am force-stop --user 0 com.example.app")
+                        if [ "$FAKE_FAILURE" = force_stop ]; then
+                          printf 'force-stop transport failed\n'; exit 17
+                        fi ;;
                       "shell logcat -c") ;;
-                      "shell am start -W "*) printf 'launcher transport failed\n'; exit 1 ;;
+                      "shell am start -W "*)
+                        case "$FAKE_FAILURE" in
+                          launch_status) printf 'launcher transport failed\n'; exit 19 ;;
+                          launch_semantic)
+                            printf 'Starting: Intent { cmp=com.example.app/.Main }\n'
+                            printf 'Error type 3\n'
+                            printf 'Error: Activity class does not exist.\n' ;;
+                        esac ;;
                       *) printf 'unexpected adb call: %s\n' "$*" >&2; exit 90 ;;
                     esac
                     """
@@ -3214,22 +3232,29 @@ esac
                 encoding="utf-8",
             )
             adb.chmod(adb.stat().st_mode | stat.S_IXUSR)
-            result = subprocess.run(
-                ["bash", str(verifier), str(apk), "com.example.app"],
-                check=False,
-                capture_output=True,
-                text=True,
-                env={
-                    **os.environ,
-                    "ADB": str(adb),
-                    "ALLOW_UNVERIFIED_PKG": "1",
-                    "SETTLE": "0",
-                },
-            )
-
-        self.assertEqual(result.returncode, 2, result.stderr)
-        self.assertIn("am start -W failed", result.stderr)
-        self.assertNotIn("RESULT: Datadog is NOT initializing", result.stdout)
+            for failure, expected in (
+                ("force_stop", "am force-stop failed"),
+                ("launch_status", "am start -W failed"),
+                ("launch_semantic", "am start -W returned unusable launch evidence"),
+            ):
+                with self.subTest(failure=failure):
+                    result = subprocess.run(
+                        ["bash", str(verifier), str(apk), "com.example.app"],
+                        check=False,
+                        capture_output=True,
+                        text=True,
+                        env={
+                            **os.environ,
+                            "ADB": str(adb),
+                            "ALLOW_UNVERIFIED_PKG": "1",
+                            "SETTLE": "0",
+                            "FAKE_FAILURE": failure,
+                        },
+                    )
+                    self.assertEqual(result.returncode, 2, result.stderr)
+                    self.assertIn(expected, result.stderr)
+                    self.assertNotIn("LIVENESS_REACHED", result.stderr)
+                    self.assertNotIn("RESULT: Datadog is NOT initializing", result.stdout)
 
 
 class AbStatsRegressionTests(unittest.TestCase):
