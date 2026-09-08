@@ -166,9 +166,8 @@ data class FlagsConfiguration internal constructor(
          * @param timeoutMs The initialization timeout in milliseconds. The default is 5,000 milliseconds.
          * @return this [Builder] instance for method chaining.
          */
-        fun initializationTimeout(timeoutMs: Long): Builder {
+        fun initializationTimeout(timeoutMs: Long): Builder = apply {
             initializationTimeoutMs = timeoutMs.takeIf { it > 0 }
-            return this
         }
 
         /**

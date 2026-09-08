@@ -169,6 +169,41 @@ internal class FlagsFeatureTest {
     }
 
     @Test
+    fun `M release executor threads W initializationTimeoutScheduler() { multiple clients finish or time out }`() {
+        // Given
+        val clientCount = 20
+        val executors = mutableListOf<ScheduledThreadPoolExecutor>()
+        whenever(mockSdkCore.createScheduledExecutorService(any())).thenAnswer {
+            ScheduledThreadPoolExecutor(1).also { executor -> executors += executor }
+        }
+        val timedOutClients = CountDownLatch(clientCount / 2)
+
+        try {
+            val cancellations = List(clientCount / 2) {
+                testedFeature.initializationTimeoutScheduler.schedule(60_000) {}
+            }
+            repeat(clientCount / 2) {
+                testedFeature.initializationTimeoutScheduler.schedule(1) {
+                    timedOutClients.countDown()
+                }
+            }
+
+            // When
+            cancellations.forEach { it() }
+
+            // Then
+            assertThat(timedOutClients.await(1, TimeUnit.SECONDS)).isTrue()
+            assertThat(executors).hasSize(clientCount)
+            executors.forEach { executor ->
+                assertThat(executor.awaitTermination(1, TimeUnit.SECONDS)).isTrue()
+                assertThat(executor.queue).isEmpty()
+            }
+        } finally {
+            executors.forEach { it.shutdownNow() }
+        }
+    }
+
+    @Test
     fun `M not cancel running task W initializationTimeoutScheduler() { completion races timeout }`() {
         // Given
         val executionError = AtomicReference<Throwable?>()
