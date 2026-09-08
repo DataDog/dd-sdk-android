@@ -103,7 +103,7 @@ done
 # it here instead: grep exits 0 on match, 1 on no-match, >= 2 only on a bad pattern.
 if [ -n "$APP_TRACE_REGEX" ]; then
   _re_rc=0
-  _re_err=$(printf 'compile test\n' | grep -oE "$APP_TRACE_REGEX" 2>&1) || _re_rc=$?
+  _re_err=$(printf 'compile test\n' | grep -oE -- "$APP_TRACE_REGEX" 2>&1) || _re_rc=$?
   [ "$_re_rc" -le 1 ] || die "APP_TRACE_REGEX is not a valid POSIX ERE; grep rejected it
        (exit $_re_rc): ${_re_err:-no message}
        Pattern: $APP_TRACE_REGEX
@@ -381,31 +381,49 @@ snapshot_device() {
 }
 
 restore_device() {
-  local rc=$? s var orig
+  local rc=$? s var orig restore_failures=""
   echo "[$(date +%H:%M:%S)] restoring device state" >&2
-  "$ADB" shell settings put global stay_on_while_plugged_in "$_ORIG_STAY" >/dev/null 2>&1 || true
-  "$ADB" shell settings put system screen_off_timeout "$_ORIG_TIMEOUT" >/dev/null 2>&1 || true
+  "$ADB" shell settings put global stay_on_while_plugged_in "$_ORIG_STAY" >/dev/null 2>&1 \
+    || restore_failures="$restore_failures stay_on_while_plugged_in"
+  "$ADB" shell settings put system screen_off_timeout "$_ORIG_TIMEOUT" >/dev/null 2>&1 \
+    || restore_failures="$restore_failures screen_off_timeout"
   for s in window_animation_scale transition_animation_scale animator_duration_scale; do
     var="_ORIG_ANIM_$s"; orig="${!var}"
-    "$ADB" shell settings put global "$s" "$orig" >/dev/null 2>&1 || true
+    "$ADB" shell settings put global "$s" "$orig" >/dev/null 2>&1 \
+      || restore_failures="$restore_failures $s"
   done
   # Undo only what this run actually turned on (see pin_device). Still imperfect:
   # with no getter we cannot tell "we enabled it" from "it was already enabled and
   # our call was a no-op", so this is documented as best-effort, not a guarantee.
-  [ "${_WE_SET_PERF:-0}" = 1 ] && { "$ADB" shell cmd power set-fixed-performance-mode-enabled false >/dev/null 2>&1 || true; }
-  [ "${_WE_SET_DEXOPT:-0}" = 1 ] && { "$ADB" shell cmd package bg-dexopt-job --enable >/dev/null 2>&1 || true; }
+  if [ "${_WE_SET_PERF:-0}" = 1 ]; then
+    "$ADB" shell cmd power set-fixed-performance-mode-enabled false >/dev/null 2>&1 \
+      || restore_failures="$restore_failures fixed-performance-mode"
+  fi
+  if [ "${_WE_SET_DEXOPT:-0}" = 1 ]; then
+    "$ADB" shell cmd package bg-dexopt-job --enable >/dev/null 2>&1 \
+      || restore_failures="$restore_failures background-dexopt"
+  fi
   # Radios: pin_device changes these in BOTH modes (it enables Wi-Fi in the
   # default radio-enabled mode), so both are restored from the validated snapshot
   # rather than unconditionally switched back on.
-  case "$_ORIG_WIFI" in 0) "$ADB" shell svc wifi disable >/dev/null 2>&1 || true ;;
-                        1) "$ADB" shell svc wifi enable  >/dev/null 2>&1 || true ;; esac
-  case "$_ORIG_DATA" in 0) "$ADB" shell svc data disable >/dev/null 2>&1 || true ;;
-                        1) "$ADB" shell svc data enable  >/dev/null 2>&1 || true ;; esac
+  case "$_ORIG_WIFI" in
+    0) "$ADB" shell svc wifi disable >/dev/null 2>&1 \
+         || restore_failures="$restore_failures wifi" ;;
+    1) "$ADB" shell svc wifi enable >/dev/null 2>&1 \
+         || restore_failures="$restore_failures wifi" ;;
+  esac
+  case "$_ORIG_DATA" in
+    0) "$ADB" shell svc data disable >/dev/null 2>&1 \
+         || restore_failures="$restore_failures mobile-data" ;;
+    1) "$ADB" shell svc data enable >/dev/null 2>&1 \
+         || restore_failures="$restore_failures mobile-data" ;;
+  esac
   # Hand back exactly the permissions we force-granted. NOT a device-wide
   # `pm reset-permissions`: that also revokes every other app's grants, which is
   # not ours to do on a borrowed or personal device.
   for s in ${_GRANTED:-}; do
-    "$ADB" shell pm revoke --user "$DD_ANDROID_USER" "$PKG" "$s" >/dev/null 2>&1 || true
+    "$ADB" shell pm revoke --user "$DD_ANDROID_USER" "$PKG" "$s" >/dev/null 2>&1 \
+      || restore_failures="$restore_failures permission:$s"
   done
   # Stamp an aborted run so the CSV cannot be mistaken for a complete one. It is a
   # `#` line, so ab_stats.py surfaces it with the rest of the metadata.
@@ -414,7 +432,13 @@ restore_device() {
     echo "[$(date +%H:%M:%S)] benchmark incomplete; fix the cause and re-run it from" >&2
     echo "         the beginning. Partial-run recovery is not a reportable protocol." >&2
   fi
-  echo "[$(date +%H:%M:%S)] device restored. The app remains installed; 'adb uninstall $PKG' to remove." >&2
+  if [ -n "$restore_failures" ]; then
+    echo "[$(date +%H:%M:%S)] WARNING: device restoration INCOMPLETE." >&2
+    echo "         Manually verify:$restore_failures" >&2
+    echo "         The app remains installed; 'adb uninstall $PKG' to remove." >&2
+  else
+    echo "[$(date +%H:%M:%S)] device restored. The app remains installed; 'adb uninstall $PKG' to remove." >&2
+  fi
   return $rc
 }
 thermal_snapshot() {
@@ -709,7 +733,7 @@ measure() {
       # Do not use grep -q here. With pipefail and a large buffer, grep exits on an
       # early match, printf gets SIGPIPE, and the pipeline returns 141 -- turning a
       # real stale match into the false "clean" branch. grep -c consumes the input.
-      _stale_app=$(printf '%s\n' "$_post_clear_app" | grep -cE "$APP_TRACE_REGEX" || true)
+      _stale_app=$(printf '%s\n' "$_post_clear_app" | grep -cE -- "$APP_TRACE_REGEX" || true)
     fi
     [ "$_stale_app" -eq 0 ] || die "[$arm] launch $i: 'logcat -c' left a previous
        APP_TRACE_REGEX match in the buffer. The app_trace_ms scrape takes the first
@@ -821,7 +845,7 @@ measure() {
     # ab_stats.py counts it in the missing-value warning rather than silently dropping it.
     local app_tr=""
     if [ -n "$APP_TRACE_REGEX" ]; then
-      app_tr=$(printf '%s\n' "$app_lg" | grep -m1 -oE "$APP_TRACE_REGEX" \
+      app_tr=$(printf '%s\n' "$app_lg" | grep -m1 -oE -- "$APP_TRACE_REGEX" \
                  | grep -oE '[0-9]+' | tail -1) || true
     fi
     # Decide validity BEFORE the row is written. Both warm-ups and measurements
