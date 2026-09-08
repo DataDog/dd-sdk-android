@@ -138,6 +138,11 @@ dd_reserve_output_files "$OUT" "$LOG" || die "benchmark output reservation faile
 # APP_TRACE_REGEX was stamped with the same identity and incompatible host metrics
 # could be pooled.
 APP_TRACE_ID=$([ -n "$APP_TRACE_REGEX" ] && dd_md5_str "$APP_TRACE_REGEX" || echo none)
+# Stable identity of this collector invocation. The output path is atomically
+# reserved above, so combining it with the process and Bash's per-process random
+# value gives distinct runs an opaque identifier while a copied/annotated CSV keeps
+# the original one. This is bookkeeping protection, not tamper resistance.
+RUN_ID=$(dd_md5_str "output=$OUT;pid=$$;random=$RANDOM")
 # Resolved per install (a reinstall gets a new UID), but declared here so the
 # `set -u` guard in measure() cannot depend on install_and_attest having run.
 PKG_UID=""
@@ -227,8 +232,19 @@ log "treatment md5: $APK_B_MD5"
 
 DEV_FP=$("$ADB" shell getprop ro.build.fingerprint | tr -d '\r')
 DEV_MODEL=$("$ADB" shell getprop ro.product.model | tr -d '\r')
+# Metadata is whitespace-tokenized, while real model names commonly contain
+# spaces. Stamp the full model through the same whitespace-free identity used for
+# other free-form values; keep the readable model in the log below.
+DEV_MODEL_ID=$(dd_md5_str "$DEV_MODEL")
 DEV_SDK=$("$ADB" shell getprop ro.build.version.sdk | tr -d '\r')
 DEV_ABI=$("$ADB" shell getprop ro.product.cpu.abi | tr -d '\r')
+# Checked here, before the first uninstall, because these three are known now and a
+# run that cannot be identified later should not have wiped app data first. launcher
+# and compile_status are only knowable after an install, so they are checked where
+# the header is assembled.
+for _hdr in "fp=$DEV_FP" "abi=$DEV_ABI" "compile_filter=$COMPILE_FILTER"; do
+  dd_require_header_value "${_hdr%%=*}" "${_hdr#*=}" || die "$DD_HEADER_ERROR"
+done
 # Emulator detection. A custom AVD or a third-party emulator can have a fingerprint
 # and model with none of the usual keywords, so the qemu properties are the fallback
 # that matters -- and only `ro.boot.qemu` was read, despite the comment naming
@@ -549,7 +565,24 @@ record_permission_state() {
 # Reading /proc/<pid>/task/*/comm is the cheapest reliable probe.
 probe_datadog() {
   local arm="$1" blk="${2:-0}" pos="${3:-0}"
-  "$ADB" shell am force-stop --user "$DD_ANDROID_USER" "$PKG"; sleep 3
+  # Same gate as measure(): a rejected stop leaves the process-cold precondition
+  # unknown, and LaunchState=COLD below does not restore it -- that word describes
+  # the target activity's process only, so a surviving `<pkg>:private` process
+  # keeps its threads and this probe is what reads them.
+  #
+  # It cannot lean on `set -e` the way a top-level command can. This function runs
+  # on the LEFT of a pipeline (see the call site's LOAD-BEARING note), and errexit
+  # does not apply inside a function body invoked that way: a bare failing command
+  # here continues to the launch and the pipeline still reports success. Only an
+  # explicit `die` exits the subshell for pipefail to propagate.
+  local force_stop_out="" force_stop_rc=0
+  force_stop_out=$("$ADB" shell am force-stop --user "$DD_ANDROID_USER" "$PKG" 2>&1) \
+    || force_stop_rc=$?
+  [ "$force_stop_rc" -eq 0 ] || die "[$arm] liveness probe: am force-stop failed
+       (exit $force_stop_rc; output: ${force_stop_out:-none}). The package-wide stop
+       was not established, so the process-cold precondition is unknown and no
+       launch was attempted. Fix the adb/device failure and re-run the benchmark."
+  sleep 3
   # This IS a real application launch and it precedes every warm-up and measured
   # launch in the cell. It used to happen without leaving a CSV row, which made
   # "every launch is in the CSV" untrue and made WARMUP=0 not a first launch.
@@ -642,7 +675,13 @@ measure() {
   local arm="$1" blk="$2" phase="$3" n="$4" pos="${5:-0}"
   local _post_clear _post_clear_app="" _stale _stale_app
   for ((i=1; i<=n; i++)); do
-    "$ADB" shell am force-stop --user "$DD_ANDROID_USER" "$PKG" >/dev/null 2>&1 || true
+    local force_stop_out="" force_stop_rc=0
+    force_stop_out=$("$ADB" shell am force-stop --user "$DD_ANDROID_USER" "$PKG" 2>&1) \
+      || force_stop_rc=$?
+    [ "$force_stop_rc" -eq 0 ] || die "[$arm] launch $i: am force-stop failed
+       (exit $force_stop_rc; output: ${force_stop_out:-none}). The package-wide stop
+       was not established, so the process-cold precondition is unknown and no
+       launch was attempted. Fix the adb/device failure and re-run the benchmark."
     # Let the launcher/force-stop transition finish before establishing the
     # guarded logcat window. A launcher draw during this settle is pre-launch;
     # after the clear below, every foreign Displayed line is conservatively
@@ -888,7 +927,13 @@ write_header_once() {
     # perf_mode records which scheduling scenario the device actually gave us:
     # `fixed` only if it accepted the mode, `dynamic` under
     # ALLOW_DYNAMIC_PERFORMANCE. ab_stats.py refuses to pool the two.
-    echo "# device=$DEV_MODEL sdk=$DEV_SDK abi=$DEV_ABI emulator=$IS_EMU android_user=$DD_ANDROID_USER compile_filter=$COMPILE_FILTER compile_status=$RUN_COMPILE_STATUS perf_mode=$DD_PERF_MODE blocks=$BLOCKS runs=$RUNS warmup=$WARMUP animations=$ANIMATIONS fp=$DEV_FP launcher=$ACT airplane=$AIRPLANE baseline_md5=$APK_A_MD5 treatment_md5=$APK_B_MD5 label_a=$LABEL_A label_b=$LABEL_B expect_a=$EXPECT_A expect_b=$EXPECT_B app_trace_id=$APP_TRACE_ID" >> "$OUT"
+    # The remaining free-form pooling keys, at the last point before they are
+    # committed to the file. Anything added to this line later belongs here too.
+    local _hdr
+    for _hdr in "launcher=$ACT" "compile_status=$RUN_COMPILE_STATUS"; do
+      dd_require_header_value "${_hdr%%=*}" "${_hdr#*=}" || die "$DD_HEADER_ERROR"
+    done
+    echo "# device=$DEV_MODEL_ID run_id=$RUN_ID sdk=$DEV_SDK abi=$DEV_ABI emulator=$IS_EMU android_user=$DD_ANDROID_USER compile_filter=$COMPILE_FILTER compile_status=$RUN_COMPILE_STATUS perf_mode=$DD_PERF_MODE blocks=$BLOCKS runs=$RUNS warmup=$WARMUP animations=$ANIMATIONS fp=$DEV_FP launcher=$ACT airplane=$AIRPLANE baseline_md5=$APK_A_MD5 treatment_md5=$APK_B_MD5 label_a=$LABEL_A label_b=$LABEL_B expect_a=$EXPECT_A expect_b=$EXPECT_B app_trace_id=$APP_TRACE_ID" >> "$OUT"
     echo "label,block,pos_in_block,phase,run,total_ms,launch_state,status,foreground,displayed,ttfd,app_trace_ms,dd_enabled,dd_threads,dd_native_init_ms,dd_rn_init_ms" >> "$OUT"
     _HEADER_WRITTEN=1
   fi

@@ -318,7 +318,7 @@ TRACE_FILE="./$NAME.pftrace"
 PKG_RE=$(printf '%s' "$PKG" | sed 's/[.]/\\./g')
 log() { echo "[$(date +%H:%M:%S)] $*" >&2; }
 if [ -n "$BENCHMARK_CSV" ]; then
-  log "bound to $BENCHMARK_CSV arm $DD_BENCHMARK_LABEL (${DD_BENCHMARK_ARM_KEY})"
+  log "bound to $BENCHMARK_CSV run $DD_BENCHMARK_RUN_ID arm $DD_BENCHMARK_LABEL (${DD_BENCHMARK_ARM_KEY})"
 fi
 # Ten of the twelve identities are each compared against an independent observable:
 # the file's own digest, the device, or the state this script achieved. These two have

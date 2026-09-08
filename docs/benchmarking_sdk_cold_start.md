@@ -677,6 +677,12 @@ The harness also stamps both APKs' digests into the CSV header as `baseline_md5`
 binaries. Every other header field can agree across two runs from successive APK pairs on the
 same device, so without the digests those runs pool into one interval with no warning.
 
+The header identifies the complete device-model string with a whitespace-free md5 and assigns
+each collector invocation an opaque `run_id`. The readable model remains in the run log. A copied
+CSV retains its `run_id`, so adding an archive comment cannot make the same observations look like
+an independent run and artificially narrow the confidence interval. This prevents accidental
+double-counting; it does not try to protect operator-owned files from deliberate editing.
+
 ### Pin the device state
 
 ```bash
@@ -708,6 +714,11 @@ PKG=<your.app.id> ./coldstart_bench.sh app-no-datadog.apk app-with-datadog.apk
 The defaults are 4 measured launches per block across 8 blocks. To change them, pass them
 positionally: `./coldstart_bench.sh <baseline.apk> <treatment.apk> <launches-per-block>
 <blocks>`. `blocks` must be even, for ABBA.
+
+The first APK and `LABEL_A` are the baseline; the second APK and `LABEL_B` are the treatment.
+`ab_stats.py --baseline` and `--treatment` select those recorded labels but cannot exchange their
+roles. Reversing them would reverse the sign of the reported SDK effect, so the analyzer refuses
+that request even for a single otherwise valid CSV and even with `--allow-mixed`.
 
 The script refuses to proceed if the "with SDK" arm shows no `datadog-*` threads, or if the
 baseline arm unexpectedly shows some, and it rechecks that **after every measured launch**, on
@@ -1342,8 +1353,12 @@ output contain no such data and are safe to share as-is.
 | the harness refuses to start, naming an output path | a results CSV, log or trace of that name already exists, or a parallel run against another device picked the same name. Output paths are atomically reserved before device state is changed, so evidence is never interleaved or overwritten. Move the old file or choose a new name |
 | the harness refuses to start, naming an Android setting snapshot | the setting read failed, or returned empty, `null` or a malformed value. No device mutation occurred. The message distinguishes the two causes: a failed command means the device is gone, while `null` means the key was never set. Write it once (`adb shell settings put global window_animation_scale 1`) and re-run. For `wifi_on`/`mobile_data` on a device that has no such setting, `ALLOW_UNVERIFIED_RADIOS=1` accepts it |
 | the harness aborts on an animation scale read-back | `settings put` reported success and the device applied something else. The run would have been stamped with a rendering scenario it did not measure |
-| `ab_stats.py` refuses to pool two files | mandatory device/protocol metadata is missing or disagrees (device, Android user, compile filter, animations, radios, ABI, launcher, warm-up), their arms were built from different APKs, or they map labels or SDK-liveness expectations to different arms. `--allow-mixed` proceeds if you intend to pool them and will caveat the result |
-| `ab_stats.py` refuses two inputs that look different | they are the same evidence: the same file under two spellings or through a symlink, or a byte-identical copy. Counting it twice would narrow the interval without adding observations |
+| `ab_stats.py` refuses to pool two files | mandatory device/protocol metadata is missing or disagrees (device, Android user, compile filter, animations, radios, ABI, launcher, warm-up), their arms were built from different APKs, or they map SDK-liveness expectations to different arms. `--allow-mixed` proceeds for supported comparability disagreements if you intend to pool them and will caveat the result; it cannot redefine which recorded arm is the baseline or treatment |
+| `ab_stats.py` refuses two inputs that look different | they are the same evidence: the same file under two spellings or through a symlink, a byte-identical copy, or files carrying the same stable `run_id` after one copy was annotated. Counting it twice would narrow the interval without adding observations |
+| `ab_stats.py` says the requested arm roles disagree | `--baseline` does not match the recorded `label_a`, or `--treatment` does not match `label_b`. Use the run's recorded roles; exchanging them would reverse the sign of the effect |
+| a launch aborts on `am force-stop` | the harness could not establish that the previous app process was stopped, so it did not launch or record a value under an unknown process-cold precondition. This applies to the liveness probe as well as to warm-ups and measured launches. Fix the adb/device failure and repeat the run |
+| the harness refuses to start, naming a header value | a value that decides whether two runs are comparable (`fp`, `abi`, `compile_filter`, `launcher`, `compile_status`) is empty or contains whitespace. The results header is whitespace-tokenized, so it would be recorded truncated, leaving that value unable to tell this run apart from another sharing its first word |
+| `verify_sdk_active.sh` exits 2 after `am start -W` | the liveness preflight could not launch the app. This is setup/transport failure, not the exit `1` verdict that Datadog is absent |
 | the harness refuses to start, naming a package mismatch | `PKG` is not the application id the APKs declare. Fix `PKG`; do not work around it, because every block runs `adb uninstall $PKG` |
 | the harness refuses to start on differing `versionCode`/`versionName` | the arms are different app versions, so the SDK is not the only variable. Rebuild both from one commit, or set `ALLOW_VERSION_MISMATCH=1` if you know why they differ |
 | `displayed` or `ttfd` is `NA` on every row | the app doesn't call `reportFullyDrawn()` (for `ttfd`), or a vendor logcat format; `total_ms` is still valid |

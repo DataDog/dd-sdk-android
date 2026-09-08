@@ -375,6 +375,14 @@ other way is neither.
 - Establish the foreground logcat boundary **after** the force-stop settle. From that clear onward,
   any foreign `Displayed` event contaminates the guarded window, including a permission/system
   activity that draws before the app's first frame and hands back before the final snapshot.
+- Require every `am force-stop` to succeed before waiting or launching -- the liveness probe as
+  much as the measured launches. A failed stop leaves the process-cold precondition unknown;
+  continuing can record a warm launch as benchmark evidence, and `LaunchState=COLD` does not
+  cover for it, since that describes the target activity's process while a surviving
+  `<pkg>:private` one keeps the `datadog-*` threads the probe reads. Abort at the stop and prove
+  with a negative test that `am start` was never invoked. A function on the left of a pipeline
+  cannot rely on `set -e` for this: errexit does not apply inside such a body, so route the
+  failure through an explicit abort.
 - Apply that contract to every `capture_trace.sh` conditioning launch too: each gets its own
   verified boundary, target marker, foreign-display scan and final-foreground check before its
   SDK-liveness result can count. Abort rather than replacing a contaminated launch, because the
@@ -401,25 +409,26 @@ other way is neither.
 - **Concatenating CSVs that omit or disagree on mandatory device/protocol metadata is refused**
   (`--allow-mixed` to override). Two missing values are not evidence that the runs match.
   Namespacing block ids stops blocks merging; it does not make
-  two experiments comparable. The achieved `compile_status` and `perf_mode` must agree when
-  stamped files carry them, and warn when any file does not. A legacy missing stamp cannot hide a
-  disagreement among the other stamped files; the
-  requested `compile_filter` alone does not prove the same AOT/JIT state. A differing `warmup`
+  two experiments comparable. The achieved `compile_status` and `perf_mode` must be present and
+  agree; the requested `compile_filter` alone does not prove the same AOT/JIT state. A differing `warmup`
   counts as a differing protocol: every cell
   is a fresh install, so the warm-up count sets where in the post-install JIT/profile ramp the
   measured launches sit. `blocks` and `runs` may differ between valid files, since they only
-  lengthen the tail, but once either field is present in one header both must be positive integers
-  so that file's declared matrix can be checked. The
+  lengthen the tail, but both must be positive integers in every current-format header so that
+  file's declared matrix can be checked. The
   normal protocol keeps one physical device; it does not stamp the adb serial or distinguish two
   same-model devices on the same system build.
 - **Each arm's effective permission outcome is part of pooled identity.** The benchmark stamps a
   hash of its canonical granted/denied sets and aborts if that state changes across fresh installs.
   The analyzer refuses a mismatch because apps can silently branch on grants without showing a
-  dialog; legacy missing stamps produce a warning, not invented equality.
-- **Duplicate aliases and byte-identical copies of the same CSV are refused.** Passing
-  `results.csv` and `./results.csv`, a symlink/hard link, or an archived copy is not another run;
-  counting it twice would narrow the interval without adding evidence. This catches accidental
-  duplicate input, not deliberate tampering with operator-owned files or code.
+  dialog; a missing stamp is not current-format evidence and is refused.
+- **Duplicate aliases, byte-identical copies, and duplicate stable `run_id` values are refused.**
+  Passing `results.csv` and `./results.csv`, a symlink/hard link, or an archived/annotated copy is
+  not another run; counting it twice would narrow the interval without adding evidence. The
+  per-collector identifier survives harmless byte changes, while the full model string is stamped
+  as a whitespace-free digest so `Pixel 6` and `Pixel 7` do not both parse as `Pixel`. These are
+  bookkeeping checks for accidental duplicate input, not tamper resistance for operator-owned
+  files or code.
 - **Every selected arm/block must contain each declared run ID exactly once.** A cell with two
   `run=1` rows and no `run=2` has the expected row count but ambiguous evidence; it is an
   incomplete matrix, not a reportable experiment. Unselected labels cannot satisfy this gate.
@@ -434,6 +443,8 @@ other way is neither.
   while the second file's deltas enter the pool with the sign reversed — a real regression
   cancels to "no effect". Rename them instead and that file contributes no rows at all while
   the output still lists it as pooled, so a file holding neither requested label is refused too.
+  The same rule applies to a single run: requested `--baseline` must equal recorded `label_a` and
+  requested `--treatment` must equal `label_b`. `--allow-mixed` cannot reverse those roles.
 - **`--metric app_trace_ms` additionally requires a matching `app_trace_id`**, the md5 of
   `APP_TRACE_REGEX`. That metric's window is whatever the app's own log line measures, so two
   files captured with different patterns can hold native-init duration and total launch
