@@ -752,17 +752,18 @@ of the positive completion marker is independently refused. Fix the cause and re
 registered run from the beginning if you can. An aborted run is refused as an aborted run,
 quoting the recorded exit status, rather than as a file missing a marker it cannot have.
 
-If the run had already collected whole counterbalanced blocks, those are analyzable and
-reportable over exactly themselves. A block qualifies only as a complete pair of cells that each
-passed every gate, so the block collection stopped inside contributes nothing; the surviving
-count is floored to even, and four is the minimum. The output states the shortfall next to the
-interval, prints the abort trailer, and gives the MDE at the blocks analyzed: the paired estimator
-is unbiased at any even block count, so a shortfall costs power and nothing else, and power is
-what the MDE measures. Re-running the full design is still better, and the result says so.
+If the run had already collected whole counterbalanced blocks, those can be inspected
+diagnostically over exactly themselves. A block qualifies only as a complete pair of cells that
+each passed every gate, so the block collection stopped inside contributes nothing; the surviving
+count is floored to even, and four is the minimum -- not to license an interval, since none is
+emitted, but so that what is printed stays counterbalanced and wide enough to read. The output
+states the shortfall and prints the abort trailer, but suppresses the primary CI, MDE and
+significance verdict. Rows are visible while collection runs, so a favorable prefix can be chosen;
+automatic failures can also correlate with thermal, storage or other measured conditions. The file
+cannot prove an outcome-independent stopping rule. Re-run the complete registered design for
+primary inference.
 
-What that cannot tell you is whether the cause of the abort was also acting during the blocks it
-kept. Thermal drift or a swapped device makes them suspect; a foreground intrusion in the last
-block does not. The refusals that remain are a run below four whole blocks, a run whose declared
+The refusals that remain are a run below four whole blocks, a run whose declared
 matrix is whole but which aborted anyway (nothing is missing, so this file does not explain the
 abort), a run whose whole blocks are not a consecutive prefix from block 1 (the collector stops on
 an invalid launch, so a whole block after an incomplete one means the file was edited or
@@ -1258,14 +1259,15 @@ contending with anything.
 
 ### Benchmarking the app's own startup metric
 
-Most teams already have their own startup trace and quote *that* number, not `TotalTime`. You
-can A/B it directly: set `APP_TRACE_REGEX` to an extended regex matching the log line, and the
-last number in the match is recorded per launch as `app_trace_ms`. The pattern is validated at
-preflight, so a malformed ERE aborts the run rather than silently recording `app_trace_ms=NA`
-for an hour. The scrape and the trace endpoint watcher are restricted to the installed package's
-numeric UID, covering its default and private processes from process birth while excluding every
-unrelated app. A legacy install that shares its UID with another package is refused because its
-custom log line cannot be attributed to one package.
+Most teams already have their own startup trace and quote *that* number, not `TotalTime`. You can
+A/B it directly: set `APP_TRACE_REGEX` to an extended regex matching the log line, and the last
+number in the match is recorded per launch as `app_trace_ms`. The pattern is validated at
+preflight and always passed after `grep`'s end-of-options marker, so a malformed ERE aborts the
+run rather than silently recording `app_trace_ms=NA` for an hour and a leading `-` remains pattern
+data instead of becoming a command option. The scrape and the trace endpoint watcher are
+restricted to the installed package's numeric UID, covering its default and private processes from
+process birth while excluding every unrelated app. An install that shares its UID with another
+package is refused because its custom log line cannot be attributed to one package.
 
 ```bash
 APP_TRACE_REGEX='cold_launch_total duration: [0-9]+' \
@@ -1290,25 +1292,27 @@ Two checks before trusting any app-reported trace:
 
 ### What the harness changes on your device
 
-`coldstart_bench.sh` needs a stable device to produce stable numbers, so it changes state.
-It snapshots the original values first and restores them from an `EXIT` trap; `INT` and `TERM`
-exit into that trap, so Ctrl-C stops the run *and* restores the device, once.
-`capture_trace.sh` does the same for the animation scales, screen settings and its own
-permission grants. It also mirrors the benchmark's fixed-performance and background-dexopt
-controls so the trace observes the same scheduling and compilation scenario. Failure to disable
-background dexopt aborts either workflow before collection, as does a rejected
-fixed-performance mode unless `ALLOW_DYNAMIC_PERFORMANCE=1` accepts dynamic CPU behavior. Either
-way the scenario the device actually gave is stamped as `perf_mode`, because Android offers no
-read-back for the mode: the only evidence is whether the power HAL accepted the request.
-The two controls have no readable prior state, so both scripts can only reverse a command they
-successfully issued, not prove exact restoration. Before any mutation, an empty, `null`, malformed
-or failed read of a restorable numeric setting aborts the workflow; guessing a default would risk
-leaving a borrowed device changed. A key the device has never set reads `null`, so writing it once
-makes it restorable and that value is what the run puts back. The two radio settings are the one
-exception, because a device can genuinely not have one: `ALLOW_UNVERIFIED_RADIOS=1` accepts an
-unreadable radio snapshot and restores nothing for it, which is also the override the read-back
-gate names when it aborts. Trace capture also uninstalls and reinstalls the app, so it destroys
-app data too.
+`coldstart_bench.sh` needs a stable device to produce stable numbers, so it changes state. It
+snapshots the original values first and restores them from an `EXIT` trap; `INT` and `TERM` exit
+into that trap, so Ctrl-C stops the run *and* restores the device, once. `capture_trace.sh` does
+the same for the animation scales, screen settings and its own permission grants. It also mirrors
+the benchmark's fixed-performance and background-dexopt controls so the trace observes the same
+scheduling and compilation scenario. Failure to disable background dexopt aborts either workflow
+before collection, as does a rejected fixed-performance mode unless `ALLOW_DYNAMIC_PERFORMANCE=1`
+accepts dynamic CPU behavior. Either way the scenario the device actually gave is stamped as
+`perf_mode`, because Android offers no read-back for the mode: the only evidence is whether the
+power HAL accepted the request. The two controls have no readable prior state, so both scripts can
+only reverse a command they successfully issued, not prove exact restoration. Every failed
+restoration command is named at exit for manual recovery; the scripts print restoration success
+only when every attempted device restore succeeded. The original collection exit status is
+preserved because a cleanup failure does not retroactively change the samples already recorded.
+Before any mutation, an empty, `null`, malformed or failed read of a restorable numeric setting
+aborts the workflow; guessing a default would risk leaving a borrowed device changed. A key the
+device has never set reads `null`, so writing it once makes it restorable and that value is what
+the run puts back. The two radio settings are the one exception, because a device can genuinely
+not have one: `ALLOW_UNVERIFIED_RADIOS=1` accepts an unreadable radio snapshot and restores
+nothing for it, which is also the override the read-back gate names when it aborts. Trace capture
+also uninstalls and reinstalls the app, so it destroys app data too.
 
 | what | why |
 |---|---|
@@ -1358,7 +1362,8 @@ output contain no such data and are safe to share as-is.
 | `ab_stats.py` says the requested arm roles disagree | `--baseline` does not match the recorded `label_a`, or `--treatment` does not match `label_b`. Use the run's recorded roles; exchanging them would reverse the sign of the effect |
 | a launch aborts on `am force-stop` | the harness could not establish that the previous app process was stopped, so it did not launch or record a value under an unknown process-cold precondition. This applies to the liveness probe as well as to warm-ups and measured launches. Fix the adb/device failure and repeat the run |
 | the harness refuses to start, naming a header value | a value that decides whether two runs are comparable (`fp`, `abi`, `compile_filter`, `launcher`, `compile_status`) is empty or contains whitespace. The results header is whitespace-tokenized, so it would be recorded truncated, leaving that value unable to tell this run apart from another sharing its first word |
-| `verify_sdk_active.sh` exits 2 around force-stop or `am start -W` | the liveness preflight could not establish a process-cold launch. This includes a nonzero command and an exit-zero launcher response without `Status: ok`, `LaunchState: COLD` and a numeric `TotalTime` (some vendors return zero alongside `Error type 3`). It is setup failure, not the exit `1` verdict that Datadog is absent |
+| `verify_sdk_active.sh` exits 2 before liveness | the preflight could not establish its setup: invalid `SETTLE`, failed installed-APK digest, failed force-stop, a nonzero launcher command, or an exit-zero launcher response without `Status: ok`, `LaunchState: COLD` and a numeric `TotalTime` (some vendors return zero alongside `Error type 3`). None is the exit `1` verdict that Datadog is absent |
+| cleanup reports device restoration incomplete | one or more restore commands failed, often because the device disconnected during an abort. The benchmark result keeps its original exit status, but manually verify every named setting, radio, performance/dexopt control or permission before another run |
 | the harness refuses to start, naming a package mismatch | `PKG` is not the application id the APKs declare. Fix `PKG`; do not work around it, because every block runs `adb uninstall $PKG` |
 | the harness refuses to start on differing `versionCode`/`versionName` | the arms are different app versions, so the SDK is not the only variable. Rebuild both from one commit, or set `ALLOW_VERSION_MISMATCH=1` if you know why they differ |
 | `displayed` or `ttfd` is `NA` on every row | the app doesn't call `reportFullyDrawn()` (for `ttfd`), or a vendor logcat format; `total_ms` is still valid |

@@ -104,10 +104,11 @@ tools/coldstart-benchmark/verify_sdk_active.sh <apk> <your.app.id>
 ```
 
 This installs, md5-attests the install against the local file, launches via the real launcher
-intent, settles (`SETTLE`, default 20s of wall clock, unchanged and distinct from
-`capture_trace.sh`'s settle *launches*, which derive from `EXPECTED_WARMUP`), then reads
-`/proc/<pid>/task/*/comm`. Exit 0 = live,
-1 = not, 2 = setup failure (no adb, no device, missing APK, failed force-stop, a
+intent, settles (`SETTLE`, default 20 non-negative integer seconds, validated before device
+access and distinct from `capture_trace.sh`'s settle *launches*, which derive from
+`EXPECTED_WARMUP`), then reads `/proc/<pid>/task/*/comm`. Exit 0 = live,
+1 = not, 2 = setup failure (no adb, no device, missing APK, failed installed-APK
+attestation, failed force-stop, a
 nonzero launcher command, launch output without `Status: ok`, `LaunchState: COLD`
 and a numeric `TotalTime`, or a thread list it could not read). Some vendor builds
 return zero alongside a semantic launcher error such as `Error type 3`, so command
@@ -271,12 +272,12 @@ not see a venv-installed `perfetto`.
 Re-run the complete registered design from the beginning when you can. A completed CSV ends with
 exactly one `# RUN COMPLETE`; an abort, killed process or host crash does not.
 
-`ab_stats.py` will still analyze an interrupted run over the whole counterbalanced blocks it
-collected, if there are at least four after flooring to an even count, and that result is
-reportable. Report it only with the two things the tool prints beside it: the block shortfall
-(analyzed of declared) and the recorded abort trailer. **Quote the MDE it prints, not the
-design's** -- it is the power actually achieved. Never describe such a run as complete, and say
-that re-running the full design is better.
+`ab_stats.py` will still inspect an interrupted run over the whole counterbalanced blocks it
+collected, if there are at least four after flooring to an even count, but the result is always
+diagnostic only. Rows are visible during collection, so the prefix may reflect optional stopping;
+automatic failures may also correlate with thermal, storage or other measured conditions. The
+tool prints the block shortfall and abort trailer but suppresses the primary CI, MDE and
+significance verdict. Re-run the complete registered design for primary inference.
 
 A header the collector cannot have written is refused for every file and regardless of flags:
 an odd `blocks` (ABBA cannot counterbalance one), or a non-positive `blocks`/`runs`.
@@ -325,7 +326,7 @@ other way is neither.
 | require background dexopt to be disabled | accumulated profile data can trigger compilation during a cell and change later launches | — |
 | real launcher intent | `am start -n <component>` isn't an icon tap | wrong code path on apps that route the launcher through activity aliases |
 | pre-registered warm-up count | post-hoc outlier dropping | turned a null into a "finding" in one report |
-| device-state snapshot + restore trap | leaving a device with no lock screen, animations off, Wi-Fi flipped on and permissions granted | — |
+| device-state snapshot + restore trap, with every failed restore named | leaving a device with no lock screen, animations off, Wi-Fi flipped on and permissions granted; a disconnect must not be reported as successful restoration | — |
 | refuse to mutate a setting with no restorable snapshot | a key the device never set reads `null`, and guessing a default leaves a borrowed device changed. Write it once (`settings put`) and re-run. The two radio settings are the exception a device can genuinely lack: `ALLOW_UNVERIFIED_RADIOS=1` accepts an unreadable one and restores nothing for it | — |
 | read back every animation scale after setting it | `settings put` reports success on a device that ignored it, so the header would name a rendering scenario that was never measured | — |
 | reserve the CSV and log before touching the device | two runs started in the same second share the timestamped filenames and interleave or truncate each other's evidence | — |
@@ -452,7 +453,9 @@ other way is neither.
 - **`--metric app_trace_ms` additionally requires a matching `app_trace_id`**, the md5 of
   `APP_TRACE_REGEX`. That metric's window is whatever the app's own log line measures, so two
   files captured with different patterns can hold native-init duration and total launch
-  duration under one column name. Every other metric is defined by the harness.
+  duration under one column name. The pattern is passed after `grep`'s end-of-options marker at
+  preflight and every consumer, so a leading `-` remains part of the ERE rather than changing the
+  command. Every other metric is defined by the harness.
 - **The selected endpoint must be finite and non-negative on every otherwise eligible measured
   launch.** An `NA` can be a slow launch censored by the collection window, while a negative
   sentinel such as `-1` is not an elapsed time. Dropping either and reporting the faster survivors

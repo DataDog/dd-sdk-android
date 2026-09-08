@@ -297,7 +297,7 @@ case "$TRACE_ENDPOINT" in
 esac
 if [ -n "$APP_TRACE_REGEX" ]; then
   _re_rc=0
-  _re_err=$(printf 'compile test\n' | grep -oE "$APP_TRACE_REGEX" 2>&1) || _re_rc=$?
+  _re_err=$(printf 'compile test\n' | grep -oE -- "$APP_TRACE_REGEX" 2>&1) || _re_rc=$?
   [ "$_re_rc" -le 1 ] || die "APP_TRACE_REGEX is not a valid POSIX ERE; grep rejected it
        (exit $_re_rc): ${_re_err:-no message}
        Pattern: $APP_TRACE_REGEX"
@@ -424,7 +424,7 @@ dd_stop_endpoint_watcher() {
 }
 cleanup() {
   local rc=$?
-  local _var _orig
+  local _var _orig restore_failures=""
   # Stop host-side readers before changing the device back. On an early failure
   # Perfetto may still be recording and the endpoint watcher may still own an adb
   # connection; leaving either alive races the remote-trace deletion below.
@@ -435,29 +435,54 @@ cleanup() {
   dd_stop_endpoint_watcher
   for _s in window_animation_scale transition_animation_scale animator_duration_scale; do
     _var="_ORIG_ANIM_$_s"; _orig="${!_var}"
-    "$ADB" shell settings put global "$_s" "$_orig" >/dev/null 2>&1 || true
+    "$ADB" shell settings put global "$_s" "$_orig" >/dev/null 2>&1 \
+      || restore_failures="$restore_failures $_s"
   done
-  "$ADB" shell settings put global stay_on_while_plugged_in "$_ORIG_STAY" >/dev/null 2>&1 || true
-  "$ADB" shell settings put system screen_off_timeout "$_ORIG_TIMEOUT" >/dev/null 2>&1 || true
-  case "$_ORIG_WIFI" in 0) "$ADB" shell svc wifi disable >/dev/null 2>&1 || true ;;
-                        1) "$ADB" shell svc wifi enable  >/dev/null 2>&1 || true ;; esac
-  case "$_ORIG_DATA" in 0) "$ADB" shell svc data disable >/dev/null 2>&1 || true ;;
-                        1) "$ADB" shell svc data enable  >/dev/null 2>&1 || true ;; esac
+  "$ADB" shell settings put global stay_on_while_plugged_in "$_ORIG_STAY" >/dev/null 2>&1 \
+    || restore_failures="$restore_failures stay_on_while_plugged_in"
+  "$ADB" shell settings put system screen_off_timeout "$_ORIG_TIMEOUT" >/dev/null 2>&1 \
+    || restore_failures="$restore_failures screen_off_timeout"
+  case "$_ORIG_WIFI" in
+    0) "$ADB" shell svc wifi disable >/dev/null 2>&1 \
+         || restore_failures="$restore_failures wifi" ;;
+    1) "$ADB" shell svc wifi enable >/dev/null 2>&1 \
+         || restore_failures="$restore_failures wifi" ;;
+  esac
+  case "$_ORIG_DATA" in
+    0) "$ADB" shell svc data disable >/dev/null 2>&1 \
+         || restore_failures="$restore_failures mobile-data" ;;
+    1) "$ADB" shell svc data enable >/dev/null 2>&1 \
+         || restore_failures="$restore_failures mobile-data" ;;
+  esac
   # Android exposes no getter for either control. Match coldstart_bench.sh's
   # best-effort restoration: undo only a command that this capture successfully
   # issued, rather than unconditionally flipping both settings on exit.
-  [ "${_WE_SET_PERF:-0}" = 1 ] && { "$ADB" shell cmd power set-fixed-performance-mode-enabled false >/dev/null 2>&1 || true; }
-  [ "${_WE_SET_DEXOPT:-0}" = 1 ] && { "$ADB" shell cmd package bg-dexopt-job --enable >/dev/null 2>&1 || true; }
+  if [ "${_WE_SET_PERF:-0}" = 1 ]; then
+    "$ADB" shell cmd power set-fixed-performance-mode-enabled false >/dev/null 2>&1 \
+      || restore_failures="$restore_failures fixed-performance-mode"
+  fi
+  if [ "${_WE_SET_DEXOPT:-0}" = 1 ]; then
+    "$ADB" shell cmd package bg-dexopt-job --enable >/dev/null 2>&1 \
+      || restore_failures="$restore_failures background-dexopt"
+  fi
   [ -z "${_ENDPOINT_FILE:-}" ] || rm -f "$_ENDPOINT_FILE"
-  "$ADB" shell rm -f "$REMOTE_TRACE" >/dev/null 2>&1 || true
+  "$ADB" shell rm -f "$REMOTE_TRACE" >/dev/null 2>&1 \
+    || restore_failures="$restore_failures remote-trace:$REMOTE_TRACE"
   # Hand back exactly the permissions we force-granted below -- not a device-wide
   # `pm reset-permissions`, which would also revoke grants for every other app on
   # a borrowed device.
   for _p in ${_GRANTED:-}; do
-    "$ADB" shell pm revoke --user "$DD_ANDROID_USER" "$PKG" "$_p" >/dev/null 2>&1 || true
+    "$ADB" shell pm revoke --user "$DD_ANDROID_USER" "$PKG" "$_p" >/dev/null 2>&1 \
+      || restore_failures="$restore_failures permission:$_p"
   done
   if [ "${_TRACE_RESERVED:-0}" = 1 ]; then
     rm -f "$TRACE_FILE"
+  fi
+  if [ -n "$restore_failures" ]; then
+    echo "[$(date +%H:%M:%S)] WARNING: trace device restoration INCOMPLETE." >&2
+    echo "         Manually verify:$restore_failures" >&2
+  else
+    echo "[$(date +%H:%M:%S)] trace device state restored." >&2
   fi
   return $rc
 }
@@ -802,7 +827,7 @@ if [ -n "$_ENDPOINT_REGEX" ]; then
   else
     _post_clear=$("$ADB" shell logcat -d 2>/dev/null | tr -d '\r') || true
   fi
-  _stale_endpoint=$(printf '%s\n' "$_post_clear" | grep -cE "$_ENDPOINT_REGEX" || true)
+  _stale_endpoint=$(printf '%s\n' "$_post_clear" | grep -cE -- "$_ENDPOINT_REGEX" || true)
   [ "${_stale_endpoint:-0}" -eq 0 ] || die "'logcat -c' left a previous
        TRACE_ENDPOINT=$TRACE_ENDPOINT marker in the buffer. Clearing logcat is
        likely denied on this device; fix that before tracing."
@@ -822,10 +847,10 @@ if [ -n "$_ENDPOINT_REGEX" ]; then
   set -m
   if [ -n "$_ENDPOINT_UID" ]; then
     "$ADB" shell logcat --uid="$_ENDPOINT_UID" 2>/dev/null \
-      | grep -m1 -E "$_ENDPOINT_REGEX" >"$_ENDPOINT_FILE" &
+      | grep -m1 -E -- "$_ENDPOINT_REGEX" >"$_ENDPOINT_FILE" &
   else
     "$ADB" shell logcat 2>/dev/null \
-      | grep -m1 -E "$_ENDPOINT_REGEX" >"$_ENDPOINT_FILE" &
+      | grep -m1 -E -- "$_ENDPOINT_REGEX" >"$_ENDPOINT_FILE" &
   fi
   _ENDPOINT_WATCH_PID=$!
   # With job control, every process in the pipeline joins a new process group led

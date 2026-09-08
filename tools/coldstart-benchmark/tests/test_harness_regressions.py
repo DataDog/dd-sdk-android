@@ -3166,6 +3166,110 @@ esac
         self.assertIn("|| die", source[call:call + 200])
         self.assertIn("die() { echo \"FATAL: $*\" >&2; exit 2; }", source)
 
+    def test_verifier_rejects_invalid_settle_before_device_access(self) -> None:
+        """A delay typo is setup failure, never an SDK-absence exit or skipped wait."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            verifier = root / "verify_sdk_active.sh"
+            shutil.copy2(HARNESS / "verify_sdk_active.sh", verifier)
+            (root / "lib.sh").write_text(
+                "dd_resolve_tools() { echo DEVICE_TOUCHED >&2; return 99; }\n",
+                encoding="utf-8",
+            )
+            apk = root / "app.apk"
+            apk.write_text("apk", encoding="utf-8")
+            for settle in ("", "twenty", "--help"):
+                with self.subTest(settle=settle):
+                    result = subprocess.run(
+                        ["bash", str(verifier), str(apk), "com.example.app"],
+                        check=False,
+                        capture_output=True,
+                        text=True,
+                        env={**os.environ, "SETTLE": settle},
+                    )
+                    self.assertEqual(result.returncode, 2, result.stderr)
+                    self.assertIn("SETTLE must be a non-negative integer", result.stderr)
+                    self.assertNotIn("DEVICE_TOUCHED", result.stderr)
+
+    def test_attestation_reads_the_digest_for_the_path_it_asked_about(self) -> None:
+        """Device stderr noise must not be parsed as the installed APK's digest.
+
+        The md5sum capture folds stderr in so a failure can quote it. Taking the
+        first line's first field then made any warning the device wrote first --
+        vendor toolbox or linker noise, on a call that SUCCEEDED -- the digest, and
+        reported it as `attestation FAILED ... not running the APK you think it is`:
+        a wrong-APK verdict from a line that was never a digest.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            verifier = root / "verify_sdk_active.sh"
+            shutil.copy2(HARNESS / "verify_sdk_active.sh", verifier)
+            (root / "lib.sh").write_text(
+                textwrap.dedent(
+                    """
+                    dd_resolve_tools() { :; }
+                    dd_require_device() { :; }
+                    dd_resolve_android_user() { DD_ANDROID_USER=0; }
+                    dd_package_path() { printf 'package:/data/app/base.apk\n'; }
+                    dd_md5() { printf 'abc\n'; }
+                    dd_ensure_uninstalled() { :; }
+                    dd_grant_runtime_permissions() {
+                      DD_GRANTED_PERMISSIONS=""
+                      DD_GRANTED_PERMISSION_COUNT=0
+                      DD_RUNTIME_PERMISSION_COUNT=0
+                    }
+                    dd_validate_cold_launch_output() { DD_LAUNCH_ERROR=""; return 0; }
+                    dd_pkg_pids() { printf 'ATTESTATION_PASSED\n' >&2; return 1; }
+                    """
+                ),
+                encoding="utf-8",
+            )
+            apk = root / "app.apk"
+            apk.write_text("apk", encoding="utf-8")
+            adb = root / "adb"
+            adb.write_text(
+                textwrap.dedent(
+                    """#!/usr/bin/env bash
+                    case "$*" in
+                      "shell getprop "*) printf 'test\n' ;;
+                      "install --user 0 -r "*) ;;
+                      "shell md5sum /data/app/base.apk")
+                        # Succeeds, but writes to stderr first.
+                        printf 'WARNING: linker: unused DT entry\n' >&2
+                        printf 'abc  /data/app/base.apk\n' ;;
+                      "shell dumpsys package com.example.app") printf 'versionName=1\n' ;;
+                      "shell cmd package resolve-activity --brief --user 0 -c android.intent.category.LAUNCHER com.example.app")
+                        printf 'com.example.app/.Main\n' ;;
+                      "shell am force-stop --user 0 com.example.app") ;;
+                      "shell logcat -c") ;;
+                      "shell am start -W "*)
+                        printf 'Status: ok\nLaunchState: COLD\nTotalTime: 100\n' ;;
+                      *) printf 'unexpected adb call: %s\n' "$*" >&2; exit 90 ;;
+                    esac
+                    """
+                ),
+                encoding="utf-8",
+            )
+            adb.chmod(adb.stat().st_mode | stat.S_IXUSR)
+            result = subprocess.run(
+                ["bash", str(verifier), str(apk), "com.example.app"],
+                check=False,
+                capture_output=True,
+                text=True,
+                env={
+                    **os.environ,
+                    "ADB": str(adb),
+                    "ALLOW_UNVERIFIED_PKG": "1",
+                    "SETTLE": "0",
+                },
+            )
+
+        self.assertIn("APK attested OK", result.stderr)
+        self.assertNotIn("attestation FAILED", result.stderr)
+        self.assertNotIn("cannot attest installed APK", result.stderr)
+        # Got past attestation and reached the liveness read, which is the sentinel.
+        self.assertIn("ATTESTATION_PASSED", result.stderr)
+
     def test_verifier_setup_failures_never_borrow_sdk_absence_exit(self) -> None:
         """Stop and launch failures are unknown liveness, including exit-zero errors."""
         with tempfile.TemporaryDirectory() as tmp:
@@ -3208,7 +3312,11 @@ esac
                     case "$*" in
                       "shell getprop "*) printf 'test\n' ;;
                       "install --user 0 -r "*) ;;
-                      "shell md5sum /data/app/base.apk") printf 'abc  /data/app/base.apk\n' ;;
+                      "shell md5sum /data/app/base.apk")
+                        if [ "$FAKE_FAILURE" = attestation_status ]; then
+                          printf 'md5 transport failed\n'; exit 13
+                        fi
+                        printf 'abc  /data/app/base.apk\n' ;;
                       "shell dumpsys package com.example.app") printf 'versionName=1\n' ;;
                       "shell cmd package resolve-activity --brief --user 0 -c android.intent.category.LAUNCHER com.example.app")
                         printf 'com.example.app/.Main\n' ;;
@@ -3233,6 +3341,7 @@ esac
             )
             adb.chmod(adb.stat().st_mode | stat.S_IXUSR)
             for failure, expected in (
+                ("attestation_status", "cannot attest installed APK"),
                 ("force_stop", "am force-stop failed"),
                 ("launch_status", "am start -W failed"),
                 ("launch_semantic", "am start -W returned unusable launch evidence"),
@@ -3255,6 +3364,170 @@ esac
                     self.assertIn(expected, result.stderr)
                     self.assertNotIn("LIVENESS_REACHED", result.stderr)
                     self.assertNotIn("RESULT: Datadog is NOT initializing", result.stdout)
+
+    def test_device_restore_reports_failures_without_replacing_the_run_status(self) -> None:
+        """Cleanup may be best-effort, but its success message must be evidence-based."""
+        source = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
+        start = source.index("restore_device() {")
+        end = source.index("\n}\nthermal_snapshot()", start) + len("\n}")
+        restore = source[start:end]
+
+        def run_restore(fail: bool) -> subprocess.CompletedProcess[str]:
+            with tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                adb = root / "adb"
+                adb.write_text(
+                    textwrap.dedent(
+                        """
+                        #!/usr/bin/env bash
+                        if [ "$FAIL_RESTORE" = 1 ]; then
+                          case "$*" in
+                            "shell settings put global stay_on_while_plugged_in 1"|"shell svc wifi enable") exit 17 ;;
+                          esac
+                        fi
+                        exit 0
+                        """
+                    ).lstrip(),
+                    encoding="utf-8",
+                )
+                adb.chmod(adb.stat().st_mode | stat.S_IXUSR)
+                return subprocess.run(
+                    [
+                        "bash", "-c",
+                        f"""
+                        set +e
+                        DD_ANDROID_USER=0
+                        PKG=com.example.app
+                        OUT={root / 'results.csv'}
+                        _ORIG_STAY=1
+                        _ORIG_TIMEOUT=30000
+                        _ORIG_WIFI=1
+                        _ORIG_DATA=0
+                        _ORIG_ANIM_window_animation_scale=1
+                        _ORIG_ANIM_transition_animation_scale=1
+                        _ORIG_ANIM_animator_duration_scale=1
+                        _WE_SET_PERF=1
+                        _WE_SET_DEXOPT=1
+                        _GRANTED=android.permission.CAMERA
+                        {restore}
+                        (exit 7)
+                        restore_device
+                        printf 'restored_rc=%s\\n' "$?"
+                        """,
+                    ],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    env={
+                        **os.environ,
+                        "ADB": str(adb),
+                        "FAIL_RESTORE": "1" if fail else "0",
+                    },
+                )
+
+        failed = run_restore(True)
+        self.assertEqual(failed.returncode, 0, failed.stderr)
+        self.assertIn("restored_rc=7", failed.stdout)
+        self.assertIn("device restoration INCOMPLETE", failed.stderr)
+        self.assertIn("stay_on_while_plugged_in", failed.stderr)
+        self.assertIn("wifi", failed.stderr)
+        self.assertNotIn("device restored.", failed.stderr)
+
+        succeeded = run_restore(False)
+        self.assertEqual(succeeded.returncode, 0, succeeded.stderr)
+        self.assertIn("restored_rc=7", succeeded.stdout)
+        self.assertIn("device restored.", succeeded.stderr)
+        self.assertNotIn("device restoration INCOMPLETE", succeeded.stderr)
+
+    def test_trace_cleanup_reports_device_restore_failures_and_preserves_status(self) -> None:
+        """Trace cleanup mutates the same controls and must expose failed restoration."""
+        source = (HARNESS / "capture_trace.sh").read_text(encoding="utf-8")
+        start = source.index("cleanup() {")
+        end = source.index("\n}\n# Restore on EXIT only", start) + len("\n}")
+        cleanup = source[start:end]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            adb = root / "adb"
+            adb.write_text(
+                textwrap.dedent(
+                    """
+                    #!/usr/bin/env bash
+                    case "$*" in
+                      "shell settings put global stay_on_while_plugged_in 1"|"shell svc wifi enable") exit 17 ;;
+                    esac
+                    exit 0
+                    """
+                ).lstrip(),
+                encoding="utf-8",
+            )
+            adb.chmod(adb.stat().st_mode | stat.S_IXUSR)
+            result = subprocess.run(
+                [
+                    "bash", "-c",
+                    f"""
+                    set +e
+                    dd_stop_endpoint_watcher() {{ :; }}
+                    DD_ANDROID_USER=0
+                    PKG=com.example.app
+                    REMOTE_TRACE=/data/local/tmp/coldstart.pftrace
+                    TRACE_FILE={root / 'trace.pftrace'}
+                    PERFETTO_PID=
+                    _ENDPOINT_FILE=
+                    _TRACE_RESERVED=0
+                    _ENDPOINT_WATCH_PID=
+                    _ENDPOINT_WATCH_PGID=
+                    _ORIG_STAY=1
+                    _ORIG_TIMEOUT=30000
+                    _ORIG_WIFI=1
+                    _ORIG_DATA=0
+                    _ORIG_ANIM_window_animation_scale=1
+                    _ORIG_ANIM_transition_animation_scale=1
+                    _ORIG_ANIM_animator_duration_scale=1
+                    _WE_SET_PERF=1
+                    _WE_SET_DEXOPT=1
+                    _GRANTED=android.permission.CAMERA
+                    {cleanup}
+                    (exit 7)
+                    cleanup
+                    printf 'cleanup_rc=%s\\n' "$?"
+                    """,
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                env={**os.environ, "ADB": str(adb)},
+            )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("cleanup_rc=7", result.stdout)
+        self.assertIn("trace device restoration INCOMPLETE", result.stderr)
+        self.assertIn("stay_on_while_plugged_in", result.stderr)
+        self.assertIn("wifi", result.stderr)
+        self.assertNotIn("trace device state restored.", result.stderr)
+
+    def test_leading_dash_app_trace_regex_is_literal_in_every_consumer(self) -> None:
+        """A user ERE must not become grep's -e option and match unrelated digits."""
+        result = subprocess.run(
+            [
+                "bash", "-c",
+                "pattern='-e[0-9]+'; "
+                "printf '%s\\n' 'unrelated 123' '-e42' | grep -m1 -oE -- \"$pattern\"",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), "-e42")
+
+        benchmark = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
+        capture = (HARNESS / "capture_trace.sh").read_text(encoding="utf-8")
+        self.assertIn('grep -oE -- "$APP_TRACE_REGEX"', benchmark)
+        self.assertIn('grep -cE -- "$APP_TRACE_REGEX"', benchmark)
+        self.assertIn('grep -m1 -oE -- "$APP_TRACE_REGEX"', benchmark)
+        self.assertIn('grep -oE -- "$APP_TRACE_REGEX"', capture)
+        self.assertIn('grep -cE -- "$_ENDPOINT_REGEX"', capture)
+        self.assertEqual(capture.count('grep -m1 -E -- "$_ENDPOINT_REGEX"'), 2)
 
 
 class AbStatsRegressionTests(unittest.TestCase):
@@ -3574,43 +3847,37 @@ class AbStatsRegressionTests(unittest.TestCase):
         self.assertIn("did not positively complete", killed_result.stderr)
         self.assertNotIn("refusing to analyze an aborted run", killed_result.stderr)
 
-    def test_interrupted_run_with_its_registered_design_is_reportable(self) -> None:
-        """A run that collected whole blocks before dying is not a chosen prefix.
-
-        The block collection stopped inside is incomplete and drops out by
-        construction, and nothing about a later abort biases the blocks before it.
-        The paired estimator is unbiased at any even k, so the shortfall costs
-        POWER, which the MDE at k already reports.
-        """
+    def test_interrupted_run_with_whole_blocks_is_diagnostic_only(self) -> None:
+        """A balanced prefix is still vulnerable to optional or correlated stopping."""
         result = self.run_stats(self.aborted_csv(6))
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("INTERRUPTED RUN, ANALYZED OVER 6 WHOLE BLOCKS of the 8", result.stdout)
+        self.assertIn("INTERRUPTED RUN, DIAGNOSTIC OVER 6 WHOLE BLOCKS of the 8", result.stdout)
         self.assertIn("Blocks analyzed: 1, 2, 3, 4, 5, 6", result.stdout)
-        # The estimate itself is computed on six blocks, and is reportable.
-        self.assertRegex(result.stdout, r"blocks\s+6\n")
-        self.assertIn("MDE at 6 blocks", result.stdout)
-        self.assertNotIn("NOT REPORTABLE", result.stdout)
-        self.assertNotIn("DIAGNOSTIC ONLY", result.stdout)
+        primary = result.stdout.split(
+            "--- PRIMARY ENDPOINT: paired block-level delta ---", 1
+        )[1].split("--- [diagnostic]", 1)[0]
+        self.assertIn("NOT REPORTABLE", primary)
+        self.assertIn("collection stopped before its registered block count", primary)
+        self.assertNotIn("95% CI", primary)
+        self.assertNotIn("MDE at", primary)
+        self.assertNotIn("=> Significant", primary)
         # Why it stopped is what decides whether the survivors are usable, so the
-        # recorded trailer travels with the result rather than being replaced by it.
+        # recorded trailer travels with the diagnostic rather than being hidden.
         self.assertIn("another activity took the foreground", result.stdout)
-        self.assertIn("WHY THE RUN STOPPED DECIDES WHETHER THIS IS USABLE", result.stdout)
-        # And the shortfall is in the block that gets copied into a report, not only
-        # in a banner above it.
-        self.assertIn("INTERRUPTED RUN: this is 6 whole blocks of the 8", result.stdout)
+        self.assertIn("optional or condition-correlated stopping", result.stdout)
         self.assertIn("Re-run the full design", result.stdout)
         # The partial block contributes nothing at all.
         self.assertIn("row(s) belonging to blocks that did not complete", result.stdout)
         self.assertNotIn("block   7", result.stdout)
 
     def test_interrupted_run_floors_its_block_count_to_even(self) -> None:
-        """An odd count cannot be counterbalanced; the last block goes, not a chosen one."""
+        """An odd prefix is parity-floored for diagnostics, never primary inference."""
         result = self.run_stats(self.aborted_csv(5))
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("ANALYZED OVER 4 WHOLE BLOCKS of the 8", result.stdout)
+        self.assertIn("DIAGNOSTIC OVER 4 WHOLE BLOCKS of the 8", result.stdout)
         self.assertIn("Block 5 was whole but dropped", result.stdout)
         self.assertIn("does not depend on the result", result.stdout)
-        self.assertRegex(result.stdout, r"blocks\s+4\n")
+        self.assertIn("NOT REPORTABLE", result.stdout)
 
     def test_a_block_missing_one_launch_is_not_whole(self) -> None:
         """Completeness is per cell, so a hole excludes its whole block.
@@ -3624,8 +3891,9 @@ class AbStatsRegressionTests(unittest.TestCase):
         self.assertNotEqual(body, holed, "the fixture prefix must exist")
         result = self.run_stats(holed)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("ANALYZED OVER 4 WHOLE BLOCKS of the 8", result.stdout)
+        self.assertIn("DIAGNOSTIC OVER 4 WHOLE BLOCKS of the 8", result.stdout)
         self.assertIn("Block 5 was whole but dropped", result.stdout)
+        self.assertIn("NOT REPORTABLE", result.stdout)
 
     def test_a_block_holding_a_rejected_launch_is_not_whole(self) -> None:
         """A cell with a rejected launch is not a smaller cell; the block drops.
@@ -3649,8 +3917,9 @@ class AbStatsRegressionTests(unittest.TestCase):
         result = self.run_stats(rows)
         self.assertEqual(result.returncode, 0, result.stderr)
         # Blocks 1-5 are whole, block 6 is not, and five floors to four.
-        self.assertIn("ANALYZED OVER 4 WHOLE BLOCKS of the 8", result.stdout)
+        self.assertIn("DIAGNOSTIC OVER 4 WHOLE BLOCKS of the 8", result.stdout)
         self.assertIn("Block 5 was whole but dropped", result.stdout)
+        self.assertIn("NOT REPORTABLE", result.stdout)
         self.assertNotIn("not a collected prefix", result.stderr)
         # The rejected launch is excluded with its block, so it never reaches the
         # invalid-launch refusal it would otherwise trigger.
@@ -3677,7 +3946,7 @@ class AbStatsRegressionTests(unittest.TestCase):
         both = self.run_stats(with_extra_markers(1))
         self.assertNotEqual(both.returncode, 0)
         self.assertIn("refusing to analyze an aborted run", both.stderr)
-        self.assertNotIn("ANALYZED OVER", both.stdout)
+        self.assertNotIn("DIAGNOSTIC OVER", both.stdout)
         self.assertNotIn("95% CI", both.stdout)
 
         # Two markers beside the abort trailer: the duplicates are the precise fact,
@@ -3694,7 +3963,7 @@ class AbStatsRegressionTests(unittest.TestCase):
         twice = self.run_stats(killed)
         self.assertNotEqual(twice.returncode, 0)
         self.assertIn("2 RUN COMPLETE markers (expected 1)", twice.stdout)
-        self.assertNotIn("ANALYZED OVER", twice.stdout)
+        self.assertNotIn("DIAGNOSTIC OVER", twice.stdout)
         self.assertNotIn("95% CI", twice.stdout)
 
     def test_recovery_requires_a_consecutive_prefix_of_whole_blocks(self) -> None:
@@ -3715,7 +3984,7 @@ class AbStatsRegressionTests(unittest.TestCase):
         self.assertIn("whole blocks after the first incomplete one: 4, 5", result.stderr)
         self.assertIn("consecutive prefix from block 1: 1, 2", result.stderr)
         self.assertIn("cannot produce a whole block after an incomplete one", result.stderr)
-        self.assertNotIn("ANALYZED OVER", result.stdout)
+        self.assertNotIn("DIAGNOSTIC OVER", result.stdout)
         self.assertNotIn("95% CI", result.stdout)
 
         # The abort trailer still reaches the operator: it is what says whether any
@@ -3744,7 +4013,7 @@ class AbStatsRegressionTests(unittest.TestCase):
         # Interrupted, with enough whole blocks that recovery would have engaged.
         interrupted = self.run_stats(self.aborted_csv(4, declared_blocks=5))
         self.assertNotEqual(interrupted.returncode, 0)
-        self.assertNotIn("ANALYZED OVER", interrupted.stdout)
+        self.assertNotIn("DIAGNOSTIC OVER", interrupted.stdout)
         self.assertNotIn("95% CI", interrupted.stdout)
         # The abort is the specific fact and still speaks first, trailer included.
         self.assertIn("refusing to analyze an aborted run", interrupted.stderr)
@@ -3819,10 +4088,11 @@ class AbStatsRegressionTests(unittest.TestCase):
         ).replace("# RUN COMPLETE\n", "")
         result = self.run_stats(killed)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("ANALYZED OVER 6 WHOLE BLOCKS of the 8", result.stdout)
+        self.assertIn("DIAGNOSTIC OVER 6 WHOLE BLOCKS of the 8", result.stdout)
         self.assertIn("No abort trailer", result.stdout)
         self.assertIn("nothing here says whether the analyzed blocks are trustworthy",
                       result.stdout)
+        self.assertIn("NOT REPORTABLE", result.stdout)
 
     def test_a_completed_run_is_unaffected_by_the_recovery_path(self) -> None:
         """This capability must be invisible when the run finished."""

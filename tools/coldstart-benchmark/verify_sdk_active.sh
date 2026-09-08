@@ -27,10 +27,13 @@ set -euo pipefail
 
 APK="${1:?usage: $0 <apk> <package>}"
 PKG="${2:?<package> required}"
-SETTLE="${SETTLE:-20}"   # seconds to wait after launch before sampling
+SETTLE="${SETTLE-20}"   # seconds to wait after launch before sampling
 
 die() { echo "FATAL: $*" >&2; exit 2; }
 [ -f "$APK" ] || die "APK not found: $APK"
+case "$SETTLE" in
+  ''|*[!0-9]*) die "SETTLE must be a non-negative integer (got '$SETTLE')" ;;
+esac
 case "$PKG" in *[!a-zA-Z0-9._]*|""|.*|*.) die "invalid application id: '$PKG'" ;; esac
 case "$PKG" in *.*) ;; *) die "application id must be dotted, e.g. com.example.app" ;; esac
 log() { echo "[$(date +%H:%M:%S)] $*" >&2; }
@@ -83,7 +86,23 @@ dd_ensure_uninstalled "$PKG" || die "uninstall did not establish a clean install
 
 REMOTE=$(dd_package_path "$PKG" | head -1 | sed 's/package://') \
   || die "cannot read the installed APK path"
-DEV_MD5=$("$ADB" shell md5sum "$REMOTE" | awk '{print $1}' | tr -d '\r')
+DEV_MD5_RC=0
+DEV_MD5_OUT=$("$ADB" shell md5sum "$REMOTE" 2>&1) || DEV_MD5_RC=$?
+[ "$DEV_MD5_RC" -eq 0 ] \
+  || die "cannot attest installed APK: device md5sum failed (exit $DEV_MD5_RC;
+       output: ${DEV_MD5_OUT:-none}). This is a setup/transport failure, not
+       evidence that Datadog is absent."
+# Anchored on the path we asked about, not on line position. stderr is folded into
+# the capture so the message above can quote it, and a device that writes anything
+# there first -- vendor toolbox or linker noise -- would otherwise have its warning
+# parsed as the digest and reported as a wrong-APK install. No early `exit`, so
+# awk consumes the whole input and printf cannot take a SIGPIPE.
+DEV_MD5=$(printf '%s\n' "$DEV_MD5_OUT" | tr -d '\r' \
+  | awk -v want="$REMOTE" 'found != 1 && index($0, want) { print $1; found = 1 }')
+[ -n "$DEV_MD5" ] \
+  || die "cannot attest installed APK: no md5sum line for $REMOTE in the device's
+       output (${DEV_MD5_OUT:-none}). This is a setup failure, not evidence that
+       Datadog is absent."
 [ "$HOST_MD5" = "$DEV_MD5" ] \
   || die "APK attestation FAILED host=$HOST_MD5 device=$DEV_MD5 — the device is not running the APK you think it is"
 log "APK attested OK  ($REMOTE)"

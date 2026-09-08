@@ -573,6 +573,10 @@ def main():
                     "abort_lines": file_abort_lines[0],
                     "no_completion_marker": file_completions[0] != 1,
                 }
+                diagnostic_only_reasons.append(
+                    "collection stopped before its registered block count; visible rows "
+                    "permit optional or condition-correlated stopping"
+                )
 
     incomplete = []
     for index, ((path, _), own_meta) in enumerate(zip(per_file, per_meta)):
@@ -841,7 +845,7 @@ def main():
         if recovery:
             analyzed = sorted(recovery["analyzed"], key=int)
             print("!" * 78)
-            print(f"!! INTERRUPTED RUN, ANALYZED OVER {len(analyzed)} WHOLE BLOCKS of the "
+            print(f"!! INTERRUPTED RUN, DIAGNOSTIC OVER {len(analyzed)} WHOLE BLOCKS of the "
                   f"{recovery['declared']} declared.")
             print(f"!! Blocks analyzed: {', '.join(analyzed)}. Every one holds a complete")
             print("!! counterbalanced pair of cells; the block collection stopped inside is")
@@ -855,9 +859,10 @@ def main():
             if recovery["no_completion_marker"] and not recovery["abort_lines"]:
                 print("!! No abort trailer: the run stopped without recording a reason, so")
                 print("!! nothing here says whether the analyzed blocks are trustworthy.")
-            print("!! WHY THE RUN STOPPED DECIDES WHETHER THIS IS USABLE. Thermal drift, a")
-            print("!! swapped device or a storage problem was also acting during the blocks")
-            print("!! above; a one-off foreground intrusion was not.")
+            print("!! This prefix is DIAGNOSTIC ONLY: visible rows permit optional or")
+            print("!! condition-correlated stopping, and the file cannot prove the stop was")
+            print("!! independent of the measured values. Re-run the full design for primary")
+            print("!! inference.")
             print("!" * 78)
         elif not a.allow_aborted:
             raise SystemExit(
@@ -1182,16 +1187,6 @@ def main():
         else:
             print(f"  => Significant. Best estimate {m:+.0f} ms, plausible range "
                   f"[{lo:+.0f}, {hi:+.0f}] ms.")
-        if recovery:
-            print()
-            print(f"  !! INTERRUPTED RUN: this is {k} whole blocks of the "
-                  f"{recovery['declared']} the run")
-            print("     registered, so the interval above is honest at "
-                  f"{k} blocks and wider than")
-            print("     the design intended. The MDE above is the power actually achieved,")
-            print(f"     not the {recovery['declared']}-block figure. Re-run the "
-                  "full design before treating")
-            print("     this as the registered experiment; quote it only with this line.")
 
     # ---- DIAGNOSTICS ----------------------------------------------------------
     d_mean, se, df, t = welch(A, B)
