@@ -21,6 +21,8 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import dev.openfeature.kotlin.sdk.ImmutableContext
+import dev.openfeature.kotlin.sdk.Value
 import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
 
 @ExtendWith(ForgeExtension::class)
@@ -195,6 +197,89 @@ internal class ConvertersTest {
 
         // Then — Long stored as string via putString fallback
         assertThat(result.metadata.getString("count")).isEqualTo("42")
+    }
+
+    // endregion
+
+    // region toDatadogEvaluationContext
+
+    @Test
+    fun `M extract raw string W toDatadogEvaluationContext() {Value_String attribute}`() {
+        // Given
+        val context = ImmutableContext(
+            targetingKey = "user-123",
+            attributes = mapOf("ld_application.versionName" to Value.String("1.7.0"))
+        )
+
+        // When
+        val result = context.toDatadogEvaluationContext()
+
+        // Then - must be "1.7.0", not "String(string=1.7.0)"
+        assertThat(result.attributes["ld_application.versionName"]).isEqualTo("1.7.0")
+    }
+
+    @Test
+    fun `M extract raw boolean W toDatadogEvaluationContext() {Value_Boolean attribute}`() {
+        // Given
+        val context = ImmutableContext(
+            targetingKey = "user-123",
+            attributes = mapOf(
+                "premiumUser" to Value.Boolean(true),
+                "betaEnabled" to Value.Boolean(false)
+            )
+        )
+
+        // When
+        val result = context.toDatadogEvaluationContext()
+
+        // Then - must be "true"/"false", not "Boolean(boolean=true)"
+        assertThat(result.attributes["premiumUser"]).isEqualTo("true")
+        assertThat(result.attributes["betaEnabled"]).isEqualTo("false")
+    }
+
+    @Test
+    fun `M extract raw integer W toDatadogEvaluationContext() {Value_Integer attribute}`() {
+        // Given
+        val context = ImmutableContext(
+            targetingKey = "user-123",
+            attributes = mapOf("buildNumber" to Value.Integer(42))
+        )
+
+        // When
+        val result = context.toDatadogEvaluationContext()
+
+        // Then - must be "42", not "Integer(integer=42)"
+        assertThat(result.attributes["buildNumber"]).isEqualTo("42")
+    }
+
+    @Test
+    fun `M extract raw double W toDatadogEvaluationContext() {Value_Double attribute}`() {
+        // Given
+        val context = ImmutableContext(
+            targetingKey = "user-123",
+            attributes = mapOf("score" to Value.Double(3.14))
+        )
+
+        // When
+        val result = context.toDatadogEvaluationContext()
+
+        // Then - must be "3.14", not "Double(double=3.14)"
+        assertThat(result.attributes["score"]).isEqualTo("3.14")
+    }
+
+    @Test
+    fun `M preserve targeting key W toDatadogEvaluationContext() {targeting key set}`() {
+        // Given
+        val context = ImmutableContext(
+            targetingKey = "user-456",
+            attributes = mapOf("version" to Value.String("2.0.0"))
+        )
+
+        // When
+        val result = context.toDatadogEvaluationContext()
+
+        // Then
+        assertThat(result.targetingKey).isEqualTo("user-456")
     }
 
     // endregion
