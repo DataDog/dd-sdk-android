@@ -10,6 +10,8 @@ import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.tools.unit.forge.BaseConfigurator
+import dev.openfeature.kotlin.sdk.ImmutableContext
+import dev.openfeature.kotlin.sdk.Value
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -21,8 +23,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import dev.openfeature.kotlin.sdk.ImmutableContext
-import dev.openfeature.kotlin.sdk.Value
 import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
 
 @ExtendWith(ForgeExtension::class)
@@ -276,7 +276,7 @@ internal class ConvertersTest {
     }
 
     @Test
-    fun `M produce same shape as native EvaluationContext W toDatadogEvaluationContext() {output matches raw string map}`(
+    fun `M produce same shape as native EvaluationContext W toDatadogEvaluationContext() {output matches raw strings}`(
         forge: Forge
     ) {
         // Given
