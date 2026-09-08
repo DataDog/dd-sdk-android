@@ -146,36 +146,36 @@ internal class FlagsConfigurationTest {
     @Test
     fun `M set initialization timeout W initializationTimeout()`() {
         // When
-        val configuration = FlagsConfiguration.Builder()
+        val testedConfiguration = FlagsConfiguration.Builder()
             .initializationTimeout(2_500L)
             .build()
 
         // Then
-        assertThat(configuration.initializationTimeoutMs).isEqualTo(2_500L)
+        assertThat(testedConfiguration.initializationTimeoutMs).isEqualTo(2_500L)
     }
 
     @Test
     fun `M disable initialization timeout W initializationTimeout() { non-positive value }`() {
         listOf(0L, -1L).forEach { timeoutMs ->
             // When
-            val configuration = FlagsConfiguration.Builder()
+            val testedConfiguration = FlagsConfiguration.Builder()
                 .initializationTimeout(timeoutMs)
                 .build()
 
             // Then
-            assertThat(configuration.initializationTimeoutMs).isNull()
+            assertThat(testedConfiguration.initializationTimeoutMs).isNull()
         }
     }
 
     @Test
     fun `M preserve initialization timeout W copy() { legacy parameters }`() {
         // Given
-        val configuration = FlagsConfiguration.Builder()
+        val testedConfiguration = FlagsConfiguration.Builder()
             .initializationTimeout(2_500L)
             .build()
 
         // When
-        val copiedConfiguration = configuration.copy(trackExposures = false)
+        val copiedConfiguration = testedConfiguration.copy(trackExposures = false)
 
         // Then
         assertThat(copiedConfiguration.initializationTimeoutMs).isEqualTo(2_500L)

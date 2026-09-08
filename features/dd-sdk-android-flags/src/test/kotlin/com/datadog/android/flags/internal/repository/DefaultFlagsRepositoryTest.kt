@@ -146,7 +146,7 @@ internal class DefaultFlagsRepositoryTest {
             callback = any(),
             deserializer = any()
         )
-        val repository = DefaultFlagsRepository(
+        val testedRepository = DefaultFlagsRepository(
             featureSdkCore = mockFeatureSdkCore,
             dataStore = mockDataStore,
             instanceName = "loading",
@@ -156,7 +156,7 @@ internal class DefaultFlagsRepositoryTest {
         val completed = CountDownLatch(1)
         val context = EvaluationContext(forge.anAlphabeticalString(), emptyMap())
         val readThread = Thread {
-            result.set(repository.hasLoadedFlagsForContext(context))
+            result.set(testedRepository.hasLoadedFlagsForContext(context))
             completed.countDown()
         }.apply { isDaemon = true }
 
