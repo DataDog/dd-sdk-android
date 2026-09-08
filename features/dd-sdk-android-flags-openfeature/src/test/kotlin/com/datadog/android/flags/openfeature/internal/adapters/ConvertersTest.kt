@@ -268,6 +268,31 @@ internal class ConvertersTest {
     }
 
     @Test
+    fun `M produce same shape as native EvaluationContext W toDatadogEvaluationContext() {output matches raw string map}`() {
+        // Given - OpenFeature context with Value-wrapped attributes
+        val context = ImmutableContext(
+            targetingKey = "user-123",
+            attributes = mapOf(
+                "ld_application.versionName" to Value.String("1.7.0"),
+                "dogfooding.refreshTimestamp" to Value.String("1788879548591")
+            )
+        )
+
+        // When
+        val result = context.toDatadogEvaluationContext()
+
+        // Then - attributes must equal what the caller would write using the native SDK directly:
+        //   EvaluationContext(targetingKey = "user-123",
+        //       attributes = mapOf("ld_application.versionName" to "1.7.0", ...))
+        assertThat(result.attributes).isEqualTo(
+            mapOf(
+                "ld_application.versionName" to "1.7.0",
+                "dogfooding.refreshTimestamp" to "1788879548591"
+            )
+        )
+    }
+
+    @Test
     fun `M preserve targeting key W toDatadogEvaluationContext() {targeting key set}`() {
         // Given
         val context = ImmutableContext(

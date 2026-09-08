@@ -253,6 +253,65 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         assertThat(targetingAttributes.getString("attr4")).isEqualTo("value4")
     }
 
+    @Test
+    fun `M pass raw string attribute unchanged W create() { dot-notation semver attribute key }`(
+        @StringForgery fakeTargetingKey: String
+    ) {
+        // Given - raw string attributes as callers of the native SDK provide them,
+        // e.g. the output of OpenFeatureEvaluationContext.toDatadogEvaluationContext()
+        val context = EvaluationContext(
+            targetingKey = fakeTargetingKey,
+            attributes = mapOf(
+                "ld_application.versionName" to "1.7.0"
+            )
+        )
+
+        // When
+        val request = testedFactory.create(context, fakeDatadogContext)
+
+        // Then - value must arrive as the raw string "1.7.0", not wrapped
+        checkNotNull(request)
+        val targetingAttributes = JSONObject(extractRequestBodyAsString(request))
+            .getJSONObject("data")
+            .getJSONObject("attributes")
+            .getJSONObject("subject")
+            .getJSONObject("targeting_attributes")
+
+        assertThat(targetingAttributes.getString("ld_application.versionName")).isEqualTo("1.7.0")
+    }
+
+    @Test
+    fun `M pass raw primitive attributes unchanged W create() { bool int double string values }`(
+        @StringForgery fakeTargetingKey: String
+    ) {
+        // Given
+        val context = EvaluationContext(
+            targetingKey = fakeTargetingKey,
+            attributes = mapOf(
+                "ld_application.versionName" to "1.7.0",
+                "dogfooding.refreshTimestamp" to "1788879548591",
+                "premium" to "true",
+                "score" to "3.14"
+            )
+        )
+
+        // When
+        val request = testedFactory.create(context, fakeDatadogContext)
+
+        // Then
+        checkNotNull(request)
+        val targetingAttributes = JSONObject(extractRequestBodyAsString(request))
+            .getJSONObject("data")
+            .getJSONObject("attributes")
+            .getJSONObject("subject")
+            .getJSONObject("targeting_attributes")
+
+        assertThat(targetingAttributes.getString("ld_application.versionName")).isEqualTo("1.7.0")
+        assertThat(targetingAttributes.getString("dogfooding.refreshTimestamp")).isEqualTo("1788879548591")
+        assertThat(targetingAttributes.getString("premium")).isEqualTo("true")
+        assertThat(targetingAttributes.getString("score")).isEqualTo("3.14")
+    }
+
     // endregion
 
     // region create() - Error cases
