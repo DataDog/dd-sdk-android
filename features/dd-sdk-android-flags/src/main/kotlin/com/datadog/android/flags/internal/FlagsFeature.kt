@@ -93,7 +93,7 @@ internal class FlagsFeature(
             delay = timeoutMs.coerceAtLeast(0),
             unit = TimeUnit.MILLISECONDS,
             internalLogger = sdkCore.internalLogger,
-            runnable = Runnable {
+            runnable = {
                 try {
                     action()
                 } finally {

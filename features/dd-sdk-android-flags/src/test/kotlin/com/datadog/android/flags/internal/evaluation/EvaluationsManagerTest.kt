@@ -121,7 +121,7 @@ internal class EvaluationsManagerTest {
             precomputeMapper = mockPrecomputeMapper,
             flagStateManager = mockFlagsStateManager,
             initializationTimeoutMs = null,
-            initializationTimeoutScheduler = InitializationTimeoutScheduler { _, _ -> {} }
+            initializationTimeoutScheduler = { _, _ -> {} }
         )
 
         whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)) doReturn mockFlagsFeatureScope
@@ -1016,7 +1016,7 @@ internal class EvaluationsManagerTest {
             precomputeMapper = mockPrecomputeMapper,
             flagStateManager = realStateManager,
             initializationTimeoutMs = null,
-            initializationTimeoutScheduler = InitializationTimeoutScheduler { _, _ -> {} }
+            initializationTimeoutScheduler = { _, _ -> {} }
         )
 
         val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
@@ -1103,7 +1103,7 @@ internal class EvaluationsManagerTest {
             precomputeMapper = mockPrecomputeMapper,
             flagStateManager = mockFlagsStateManager,
             initializationTimeoutMs = null,
-            initializationTimeoutScheduler = InitializationTimeoutScheduler { _, _ -> {} }
+            initializationTimeoutScheduler = { _, _ -> {} }
         )
 
         // When
