@@ -108,7 +108,7 @@ internal class PerfettoProfiler(
 
     init {
         resultCallback = Consumer<ProfilingResult> { result ->
-            val resultCallbackTime = timeProvider.getDeviceTimestampMillis()
+            val resultCallbackTime = timeProvider.getDeviceElapsedRealtimeMillis()
             // profilingStopTime is 0L when profiling ended by timeout (stop() was never called).
             // In that case, fall back to resultCallbackTime so duration is still meaningful.
             val effectiveStopTime =
@@ -203,7 +203,7 @@ internal class PerfettoProfiler(
         }
         // profiling will be launched when no session is currently running.
         if (isRunning.compareAndSet(false, true)) {
-            profilingStartTime = timeProvider.getDeviceTimestampMillis()
+            profilingStartTime = timeProvider.getDeviceElapsedRealtimeMillis()
             profilingStopTime = 0L
             profilingStartReason = startReason
             profilingAppStartInfo = additionalAttributes[ProfilingTelemetry.KEY_APP_START_INFO]
@@ -239,7 +239,7 @@ internal class PerfettoProfiler(
             // overwritten by that time. Probably need to allow a single profiler instance and stop profiler before
             // starting another request.
             stopSignal?.cancel()
-            profilingStopTime = timeProvider.getDeviceTimestampMillis()
+            profilingStopTime = timeProvider.getDeviceElapsedRealtimeMillis()
         }
     }
 
