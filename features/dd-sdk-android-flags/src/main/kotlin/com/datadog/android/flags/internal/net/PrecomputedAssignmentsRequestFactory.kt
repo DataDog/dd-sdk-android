@@ -66,8 +66,17 @@ internal class PrecomputedAssignmentsRequestFactory(
             headersBuilder
                 .add(HEADER_CLIENT_TOKEN, datadogContext.clientToken)
                 .add(HEADER_CONTENT_TYPE, CONTENT_TYPE_VND_JSON)
-                .add(PrecomputedAssignmentsVerifier.SIGNATURE_VERSION_HEADER, PrecomputedAssignmentsVerifier.SIGNATURE_VERSION)
+                .add(
+                    PrecomputedAssignmentsVerifier.SIGNATURE_VERSION_HEADER,
+                    PrecomputedAssignmentsVerifier.SIGNATURE_VERSION
+                )
                 .add(PrecomputedAssignmentsVerifier.REQUEST_NONCE_HEADER, createNonce())
+
+            // This fixed header routes only this POC branch to its Rapid Test Drive.
+            // It is not part of the proposed customer API.
+            if (customFlagEndpoint == CLOUD_TEST_DRIVE_ENDPOINT) {
+                headersBuilder.add(CLOUD_TEST_DRIVE_HEADER, CLOUD_TEST_DRIVE_NAME)
+            }
 
             datadogContext.rumApplicationId?.let {
                 headersBuilder.add(HEADER_APPLICATION_ID, it)
@@ -153,5 +162,9 @@ internal class PrecomputedAssignmentsRequestFactory(
         private const val PREVIEW_CUSTOMER_DOMAIN = "preview"
         private const val SDK_NAME = "dd-sdk-android"
         private const val NONCE_SIZE_BYTES = 16
+        internal const val CLOUD_TEST_DRIVE_ENDPOINT =
+            "https://preview.ff-cdn.datad0g.com/precompute-assignments"
+        internal const val CLOUD_TEST_DRIVE_HEADER = "x-dd-ffe-test-drive"
+        internal const val CLOUD_TEST_DRIVE_NAME = "signed-assignments"
     }
 }

@@ -133,6 +133,51 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         assertThat(request.url.toString()).isEqualTo(fakeCustomEndpoint)
     }
 
+    @Test
+    fun `M add cloud test drive route W create() { cloud POC endpoint configured }`(
+        @StringForgery fakeTargetingKey: String
+    ) {
+        // Given
+        testedFactory = PrecomputedAssignmentsRequestFactory(
+            mockInternalLogger,
+            PrecomputedAssignmentsRequestFactory.CLOUD_TEST_DRIVE_ENDPOINT
+        )
+        val context = EvaluationContext(
+            targetingKey = fakeTargetingKey,
+            attributes = emptyMap()
+        )
+
+        // When
+        val request = testedFactory.create(context, fakeDatadogContext)
+
+        // Then
+        checkNotNull(request)
+        assertThat(request.header(PrecomputedAssignmentsRequestFactory.CLOUD_TEST_DRIVE_HEADER))
+            .isEqualTo(PrecomputedAssignmentsRequestFactory.CLOUD_TEST_DRIVE_NAME)
+    }
+
+    @Test
+    fun `M omit cloud test drive route W create() { other custom endpoint configured }`(
+        @StringForgery fakeTargetingKey: String
+    ) {
+        // Given
+        testedFactory = PrecomputedAssignmentsRequestFactory(
+            mockInternalLogger,
+            "https://custom-proxy.example.com/flags/assignments"
+        )
+        val context = EvaluationContext(
+            targetingKey = fakeTargetingKey,
+            attributes = emptyMap()
+        )
+
+        // When
+        val request = testedFactory.create(context, fakeDatadogContext)
+
+        // Then
+        checkNotNull(request)
+        assertThat(request.header(PrecomputedAssignmentsRequestFactory.CLOUD_TEST_DRIVE_HEADER)).isNull()
+    }
+
     // endregion
 
     // region create() - Request body validation
