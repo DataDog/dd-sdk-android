@@ -17,6 +17,7 @@ import com.datadog.android.flags.model.EvaluationContext
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import okhttp3.Call
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -26,13 +27,16 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.ExecutorService
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -275,6 +279,31 @@ internal class FlagsClientTest {
     // endregion
 
     // region Builder API Tests
+
+    @Test
+    fun `M use custom HTTP client W createInternal()`() {
+        // Given
+        val customCallFactory = mock<Call.Factory>()
+        val networkExecutor = mock<ExecutorService>()
+        val configuration = FlagsConfiguration.Builder()
+            .useCustomFlagAssignmentsHttpClient(customCallFactory)
+            .build()
+        val flagsFeature = FlagsFeature(mockSdkCore, configuration)
+        whenever(mockSdkCore.createSingleThreadExecutorService(any())).thenReturn(networkExecutor)
+
+        // When
+        val client = FlagsClient.createInternal(
+            configuration = configuration,
+            featureSdkCore = mockSdkCore,
+            flagsFeature = flagsFeature,
+            evaluationsFeature = null,
+            name = "custom-http-client"
+        )
+
+        // Then
+        assertThat(client).isNotInstanceOf(NoOpFlagsClient::class.java)
+        verify(mockSdkCore, never()).createOkHttpCallFactory(any())
+    }
 
     @Test
     fun `M return existing client W Builder#build() {client already exists with default name}`() {

@@ -28,6 +28,7 @@ data class com.datadog.android.flags.FlagsConfiguration
     fun evaluationFlushInterval(Long): Builder
     fun useCustomFlagEndpoint(String): Builder
     fun initializationTimeout(Long): Builder
+    fun useCustomFlagAssignmentsHttpClient(okhttp3.Call.Factory): Builder
     fun rumIntegrationEnabled(Boolean): Builder
     fun gracefulModeEnabled(Boolean): Builder
     fun build(): FlagsConfiguration

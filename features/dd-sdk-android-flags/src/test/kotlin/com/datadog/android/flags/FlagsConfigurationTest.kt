@@ -9,9 +9,11 @@ package com.datadog.android.flags
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import okhttp3.Call
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.kotlin.mock
 
 @ExtendWith(ForgeExtension::class)
 internal class FlagsConfigurationTest {
@@ -30,6 +32,7 @@ internal class FlagsConfigurationTest {
         assertThat(configuration.customFlagEndpoint).isNull()
         assertThat(configuration.gracefulModeEnabled).isTrue()
         assertThat(configuration.initializationTimeoutMs).isEqualTo(5_000L)
+        assertThat(configuration.flagAssignmentsHttpClient).isNull()
     }
 
     @Test
@@ -179,6 +182,35 @@ internal class FlagsConfigurationTest {
 
         // Then
         assertThat(copiedConfiguration.initializationTimeoutMs).isEqualTo(2_500L)
+    }
+
+    @Test
+    fun `M set custom HTTP client W useCustomFlagAssignmentsHttpClient()`() {
+        // Given
+        val mockCallFactory = mock<Call.Factory>()
+
+        // When
+        val testedConfiguration = FlagsConfiguration.Builder()
+            .useCustomFlagAssignmentsHttpClient(mockCallFactory)
+            .build()
+
+        // Then
+        assertThat(testedConfiguration.flagAssignmentsHttpClient).isSameAs(mockCallFactory)
+    }
+
+    @Test
+    fun `M preserve custom HTTP client W copy() { legacy parameters }`() {
+        // Given
+        val mockCallFactory = mock<Call.Factory>()
+        val testedConfiguration = FlagsConfiguration.Builder()
+            .useCustomFlagAssignmentsHttpClient(mockCallFactory)
+            .build()
+
+        // When
+        val copiedConfiguration = testedConfiguration.copy(trackExposures = false)
+
+        // Then
+        assertThat(copiedConfiguration.flagAssignmentsHttpClient).isSameAs(mockCallFactory)
     }
 
     // endregion

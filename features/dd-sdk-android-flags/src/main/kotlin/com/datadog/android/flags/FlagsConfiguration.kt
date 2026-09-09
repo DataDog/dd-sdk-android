@@ -6,6 +6,8 @@
 
 package com.datadog.android.flags
 
+import okhttp3.Call
+
 private const val DEFAULT_INITIALIZATION_TIMEOUT_MS = 5_000L
 
 /**
@@ -21,7 +23,8 @@ data class FlagsConfiguration internal constructor(
     internal val evaluationFlushIntervalMs: Long,
     internal val rumIntegrationEnabled: Boolean,
     internal val gracefulModeEnabled: Boolean,
-    internal val initializationTimeoutMs: Long?
+    internal val initializationTimeoutMs: Long?,
+    internal val flagAssignmentsHttpClient: Call.Factory?
 ) {
     /**
      * Copies this configuration and preserves the initialization timeout.
@@ -46,7 +49,8 @@ data class FlagsConfiguration internal constructor(
         evaluationFlushIntervalMs = evaluationFlushIntervalMs,
         rumIntegrationEnabled = rumIntegrationEnabled,
         gracefulModeEnabled = gracefulModeEnabled,
-        initializationTimeoutMs = initializationTimeoutMs
+        initializationTimeoutMs = initializationTimeoutMs,
+        flagAssignmentsHttpClient = flagAssignmentsHttpClient
     )
 
     /**
@@ -62,6 +66,7 @@ data class FlagsConfiguration internal constructor(
         private var rumIntegrationEnabled: Boolean = true
         private var gracefulModeEnabled: Boolean = true
         private var initializationTimeoutMs: Long? = DEFAULT_INITIALIZATION_TIMEOUT_MS
+        private var flagAssignmentsHttpClient: Call.Factory? = null
 
         /**
          * Sets whether exposures should be logged to the dedicated exposures intake endpoint.
@@ -171,6 +176,21 @@ data class FlagsConfiguration internal constructor(
         }
 
         /**
+         * Sets the HTTP client used to retrieve flag assignments.
+         *
+         * The client receives requests created by the Flags SDK. It applies only to flag-assignment
+         * requests. Exposure and evaluation uploads continue to use their existing transports.
+         * Interceptors must preserve the request URL, method, body, and Datadog headers.
+         * The caller owns the client lifecycle. The SDK does not shut it down.
+         *
+         * @param callFactory HTTP call factory used for flag-assignment requests.
+         * @return this [Builder] instance for method chaining.
+         */
+        fun useCustomFlagAssignmentsHttpClient(callFactory: Call.Factory): Builder = apply {
+            flagAssignmentsHttpClient = callFactory
+        }
+
+        /**
          * Sets whether RUM evaluation logging is enabled.
          * This adds the result of evaluating a feature flag to the view.
          * Enabled by default.
@@ -215,7 +235,8 @@ data class FlagsConfiguration internal constructor(
             evaluationFlushIntervalMs = evaluationFlushIntervalMs,
             rumIntegrationEnabled = rumIntegrationEnabled,
             gracefulModeEnabled = gracefulModeEnabled,
-            initializationTimeoutMs = initializationTimeoutMs
+            initializationTimeoutMs = initializationTimeoutMs,
+            flagAssignmentsHttpClient = flagAssignmentsHttpClient
         )
 
         internal companion object {
