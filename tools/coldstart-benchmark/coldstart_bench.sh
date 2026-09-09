@@ -465,6 +465,11 @@ install_and_attest() {
   fi
   log ">>> [$arm] installing $(basename "$apk") (md5 $host_md5)"
   dd_ensure_uninstalled "$PKG" || die "[$arm] uninstall did not establish a clean install state"
+  # The previous installation is now proven absent, so its false-to-true grants no
+  # longer belong to anything cleanup may restore. Clear ownership before installing
+  # the next generation: a later compile/launcher failure must not revoke stale names
+  # from this newly installed APK.
+  _GRANTED=""
   "$ADB" install --user "$DD_ANDROID_USER" -r "$apk" >/dev/null || die "install failed for $apk"
 
   # attest: pull the installed APK back and compare digests
@@ -683,7 +688,7 @@ probe_datadog() {
   # proof ("probe_datadog proved the SDK live once"). Reading /proc here with the
   # failure swallowed let an unreadable process count as zero datadog-* threads,
   # so the BASELINE arm's expectation was confirmed by evidence never obtained.
-  names=$(dd_thread_names "$pids") || die "[$arm] SDK liveness could not be verified on
+  names=$(dd_thread_names "$pids" "$PKG") || die "[$arm] SDK liveness could not be verified on
        every process of $PKG (see the error above). An unreadable thread list is not
        evidence that Datadog is absent, and this probe is what the measured launches
        in this cell are checked against."
@@ -837,7 +842,7 @@ measure() {
     if ! _pids=$(dd_pkg_pids "$PKG"); then
       dd_thr=NA
     elif [ -n "$_pids" ]; then
-      if ! dd_thr=$(dd_datadog_threads "$_pids"); then
+      if ! dd_thr=$(dd_datadog_threads "$_pids" "$PKG"); then
         dd_thr=NA
       fi
     fi

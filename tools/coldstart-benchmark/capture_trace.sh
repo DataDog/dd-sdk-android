@@ -770,7 +770,7 @@ for ((_i=1; _i<=SETTLE_LAUNCHES; _i++)); do
   fi
   [ -n "$_SETTLE_PIDS" ] \
     || die "settle launch $_i/$SETTLE_LAUNCHES: app owns no running process"
-  if ! _SETTLE_DD=$(dd_datadog_threads "$_SETTLE_PIDS"); then
+  if ! _SETTLE_DD=$(dd_datadog_threads "$_SETTLE_PIDS" "$PKG"); then
     die "settle launch $_i/$SETTLE_LAUNCHES: could not read every package process's
          thread list, so SDK liveness is unverified"
   fi
@@ -955,8 +955,10 @@ if [ "$ALLOW_MISSING_LAUNCH_MARKER" = 1 ]; then
   log "  of this app's activities would then be invisible. The verifier will say so."
   VERIFY_ARGS+=(--allow-missing-launch-marker)
 fi
-if [ "$EXPECT_DD" = "1" ]; then VERIFY_ARGS+=(--expect-ndk)
-else VERIFY_ARGS+=(--expect-absent); fi
+# Core SDK liveness says nothing about optional NDK crash reporting. The trace
+# always prints any libdatadog-ndk load it observes, but this benchmark records no
+# NDK configuration from which a missing-library warning could be derived.
+if [ "$EXPECT_DD" = "0" ]; then VERIFY_ARGS+=(--expect-absent); fi
 # Resolve an interpreter that can import perfetto BEFORE judging the trace, so a
 # missing dependency is never reported as a liveness failure. The trace is already
 # on disk at this point and is worth keeping either way.

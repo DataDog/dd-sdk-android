@@ -103,8 +103,11 @@ back a weaker verdict than the capture already produced:
 
 ```bash
 ./.venv/bin/python verify_trace.py treatment.pftrace --package "$PKG" \
-  --require-foreground --expect-ndk
+  --require-foreground
 ```
+
+Add `--expect-ndk` only when the app explicitly enables NDK crash reporting. Core SDK
+liveness does not establish that optional configuration.
 
 ---
 
@@ -347,6 +350,9 @@ the exit status the device reports rather than through the pipeline's: otherwise
 unreadable `maps` prints the same `0` as a build that does not map the library.
 `verify_sdk_active.sh` prints `unknown` for that case, and for a `logcat -d` it could not
 read.
+
+`capture_trace.sh` leaves the NDK load count informational because the benchmark records
+core SDK liveness, not whether this optional feature is configured.
 
 ---
 
@@ -1066,7 +1072,7 @@ EXPECTED_SDK_LIVENESS=<expect_a or expect_b for this arm> \
 # The capture already verified itself with these flags. Re-running by hand is for the
 # timestamped detail lines; keep the flags, or you read back a weaker verdict.
 ./.venv/bin/python verify_trace.py treatment.pftrace --package <your.app.id> \
-  --require-foreground --expect-ndk
+  --require-foreground
 ```
 
 `BENCHMARK_CSV` and `BENCHMARK_ARM` read every expected identity from that run's own header, so
@@ -1351,7 +1357,7 @@ output contain no such data and are safe to share as-is.
 | `TotalTime` empty and `LaunchState=UNKNOWN` on every launch | the device is locked, or the notification shade is on top. Unlock it and leave it on the home screen |
 | every launch reports the wrong foreground activity | your `dumpsys` grep is anchored on `mResumedActivity`; this device prints `ResumedActivity:`. Match `m?ResumedActivity[:=]` |
 | `ab_stats.py` refuses to print a CI | fewer than 3 complete blocks, the selected endpoint is missing, non-finite or negative on an otherwise eligible measured launch, a selected row lacks `status`/`launch_state`/`foreground` or explicitly carries `foreground=NA`, or a contributing block lacks one stable complementary `{1}`/`{2}` `pos_in_block` pair for the selected arms. Missing endpoints can be the slowest launches censored by the collection window, while negative values are impossible elapsed times and unknown or malformed validity/order evidence leaves the protocol unverifiable, so none is silently accepted; fix the CSV/collection and re-run. `--allow-missing-endpoint` is diagnostic only and still suppresses the primary interval |
-| a run aborts or the laptop/process stops during collection | fix the cause and repeat the full run if you can. If it had already collected four or more whole counterbalanced blocks, `ab_stats.py` analyzes exactly those and reports the shortfall, the abort trailer and the MDE at that block count beside the interval. Below four, or with the declared matrix already whole, or pooled with another CSV, it is refused; `--allow-aborted` then inspects surviving rows diagnostically without a primary interval |
+| a run aborts or the laptop/process stops during collection | fix the cause and repeat the full run. With four or more whole counterbalanced leading blocks, `ab_stats.py` may inspect that prefix diagnostically and reports the shortfall and abort trailer, but optional or condition-correlated stopping suppresses the primary CI, MDE and significance verdict. Below four, with the declared matrix already whole, or pooled with another CSV, it is refused; `--allow-aborted` still exposes surviving rows only as diagnostics |
 | `ab_stats.py` refuses the file entirely | the run lacks complete current-format metadata or positive completion evidence, contains a rejected/invalid measured launch, or holds fewer blocks/launches than its own header says. Re-run with the current harness |
 | the harness refuses to start, naming another Android user | the app is also installed in a work or secondary profile. Host-side `adb uninstall` has no user selector, so continuing would delete that profile's app data, and no user-scoped removal leaves the measured user a genuinely fresh install. Remove it from those profiles, or use a dedicated test device |
 | the harness refuses to start, naming an output path | a results CSV, log or trace of that name already exists, or a parallel run against another device picked the same name. Output paths are atomically reserved before device state is changed, so evidence is never interleaved or overwritten. Move the old file or choose a new name |

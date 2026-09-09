@@ -2979,8 +2979,11 @@ esac
 
         benchmark = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
         capture = (HARNESS / "capture_trace.sh").read_text(encoding="utf-8")
-        self.assertIn('if ! dd_thr=$(dd_datadog_threads "$_pids"); then', benchmark)
-        self.assertIn('if ! _SETTLE_DD=$(dd_datadog_threads "$_SETTLE_PIDS"); then', capture)
+        self.assertIn('if ! dd_thr=$(dd_datadog_threads "$_pids" "$PKG"); then', benchmark)
+        self.assertIn(
+            'if ! _SETTLE_DD=$(dd_datadog_threads "$_SETTLE_PIDS" "$PKG"); then',
+            capture,
+        )
         self.assertIn("Unknown\n       liveness is never accepted", benchmark)
 
     def test_probe_refusal_still_aborts_through_the_pipeline(self) -> None:
@@ -3148,8 +3151,12 @@ esac
                 'shell "cat /proc/', source,
                 f"{name} reads thread names itself instead of via dd_thread_names",
             )
-        self.assertIn('names=$(dd_thread_names "$pids")', readers["coldstart_bench.sh"])
-        self.assertIn('ALL=$(dd_thread_names "$PIDS")', readers["verify_sdk_active.sh"])
+        self.assertIn(
+            'names=$(dd_thread_names "$pids" "$PKG")', readers["coldstart_bench.sh"]
+        )
+        self.assertIn(
+            'ALL=$(dd_thread_names "$PIDS" "$PKG")', readers["verify_sdk_active.sh"]
+        )
         # The only remaining direct read, behind the retry/refusal logic.
         lib = LIB.read_text(encoding="utf-8")
         self.assertEqual(lib.count('shell "cat /proc/'), 1)
@@ -3161,8 +3168,8 @@ esac
         `grep .` below under `set -e` and exit 1 with nothing printed at all.
         """
         source = (HARNESS / "verify_sdk_active.sh").read_text(encoding="utf-8")
-        self.assertIn('ALL=$(dd_thread_names "$PIDS")', source)
-        call = source.index('ALL=$(dd_thread_names "$PIDS")')
+        self.assertIn('ALL=$(dd_thread_names "$PIDS" "$PKG")', source)
+        call = source.index('ALL=$(dd_thread_names "$PIDS" "$PKG")')
         self.assertIn("|| die", source[call:call + 200])
         self.assertIn("die() { echo \"FATAL: $*\" >&2; exit 2; }", source)
 
@@ -3504,6 +3511,163 @@ esac
         self.assertIn("stay_on_while_plugged_in", result.stderr)
         self.assertIn("wifi", result.stderr)
         self.assertNotIn("trace device state restored.", result.stderr)
+
+    def test_trace_does_not_infer_ndk_configuration_from_core_liveness(self) -> None:
+        """Core initialization does not mean optional NDK crash reporting is enabled."""
+        source = (HARNESS / "capture_trace.sh").read_text(encoding="utf-8")
+        start = source.index('VERIFY_ARGS=(--package "$PKG" --require-foreground)')
+        end = source.index("# Resolve an interpreter", start)
+        assembly = source[start:end]
+
+        def assembled_args(expect_dd: int) -> list[str]:
+            result = subprocess.run(
+                [
+                    "bash", "-c",
+                    f"""
+                    set -euo pipefail
+                    PKG=com.example.app
+                    ALLOW_MISSING_LAUNCH_MARKER=0
+                    EXPECT_DD={expect_dd}
+                    log() {{ :; }}
+                    {assembly}
+                    printf '%s\\n' "${{VERIFY_ARGS[@]}}"
+                    """,
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            return result.stdout.splitlines()
+
+        active = assembled_args(1)
+        absent = assembled_args(0)
+        self.assertNotIn("--expect-ndk", active)
+        self.assertNotIn("--expect-absent", active)
+        self.assertIn("--expect-absent", absent)
+
+    def test_install_generation_drops_previous_permission_cleanup_ownership(self) -> None:
+        """A newly installed APK must not inherit the prior generation's grant list."""
+        source = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
+        start = source.index("install_and_attest() {")
+        end = source.index("\n}\n\n# Pre-grant every runtime permission", start) + len("\n}")
+        install = source[start:end]
+        result = subprocess.run(
+            [
+                "bash", "-c",
+                f"""
+                set -euo pipefail
+                {install}
+                APK_A=/tmp/a.apk
+                APK_B=/tmp/b.apk
+                APK_A_MD5=digest
+                APK_B_MD5=other
+                APP_TRACE_REGEX=
+                RUN_COMPILE_STATUS=
+                COMPILE_FILTER=speed
+                PKG=com.example.app
+                DD_ANDROID_USER=0
+                _GRANTED=old.permission
+                dd_md5() {{ printf 'digest\\n'; }}
+                dd_ensure_uninstalled() {{ :; }}
+                dd_package_path() {{ printf 'package:/data/app/base.apk\\n'; }}
+                dd_package_compile_status() {{ return 1; }}
+                log() {{ :; }}
+                fake_adb() {{
+                  case "$1" in
+                    install) return 0 ;;
+                    shell) printf 'digest  /data/app/base.apk\\n'; return 0 ;;
+                  esac
+                  return 90
+                }}
+                ADB=fake_adb
+                die() {{
+                  printf 'grant_at_abort=<%s>\\n' "$_GRANTED" >&2
+                  exit 77
+                }}
+                install_and_attest "$APK_A" A
+                """,
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 77, result.stderr)
+        self.assertIn("grant_at_abort=<>", result.stderr)
+        self.assertNotIn("old.permission", result.stderr)
+
+    def test_liveness_completes_or_refuses_a_changing_process_set(self) -> None:
+        """A zero over a stale PID set cannot prove package-wide SDK absence.
+
+        Re-enumerating is not enough on its own: refusing every change turned a
+        short-lived `:startup` process finishing during the read into an aborted
+        hour-long run, which is the same churn the per-PID loop deliberately
+        tolerates. Only ADDITIONS can hide a thread, and there the useful answer is
+        the complete one -- read the new process and count it -- so a false absence
+        is corrected rather than merely refused. A package that keeps spawning has
+        no coverable snapshot and stays unknown.
+        """
+        def oracle(pids, ps_body, extra_case=""):
+            return self.run_with_fake_adb(
+                f'. "$LIB"; dd_datadog_threads "{pids}" com.example.app',
+                f"""
+                #!/usr/bin/env bash
+                N=$(cat "$FAKE_ADB_STATE.n" 2>/dev/null || echo 0)
+                case "$2" in
+                  "ps -A -o PID -o NAME")
+                    echo $((N+1)) > "$FAKE_ADB_STATE.n"
+                    {ps_body} ;;
+                  "cat /proc/111/task/*/comm 2>/dev/null") printf 'main\nRenderThread\n' ;;
+                  "cat /proc/222/task/*/comm 2>/dev/null") printf 'main\n' ;;
+                  "cat /proc/333/task/*/comm 2>/dev/null") printf 'main\ndatadog-storage\n' ;;
+                  {extra_case}
+                  *) exit 90 ;;
+                esac
+                """,
+            )
+
+        ONLY_111 = r"printf 'PID NAME\n111 com.example.app\n'"
+        WITH_LATE = (r"printf 'PID NAME\n111 com.example.app\n"
+                     r"333 com.example.app:startup\n'")
+        KEEPS_SPAWNING = (r"printf 'PID NAME\n111 com.example.app\n%s com.example.app:p%s\n' "
+                          r'$((400+N)) "$N"')
+
+        # Unchanged set: an honest zero.
+        stable = oracle("111", ONLY_111)
+        self.assertEqual(stable.returncode, 0, stable.stderr)
+        self.assertEqual(stable.stdout.strip(), "0")
+
+        # A PID that vanished was already read, so it cannot hide a thread from the
+        # count. It must not abort the run.
+        removed = oracle("111 222", ONLY_111)
+        self.assertEqual(removed.returncode, 0, removed.stderr)
+        self.assertEqual(removed.stdout.strip(), "0")
+        self.assertNotIn("liveness is unknown", removed.stderr)
+
+        # A late private process owning the only datadog-* thread is read and
+        # counted, so the absence path cannot return a confident zero.
+        added = oracle("111", WITH_LATE)
+        self.assertEqual(added.returncode, 0, added.stderr)
+        self.assertEqual(added.stdout.strip(), "1")
+
+        # A package that keeps starting processes has no coverable snapshot.
+        churning = oracle(
+            "111", KEEPS_SPAWNING,
+            extra_case=r"""'cat /proc/4'*) printf 'main\n' ;;""",
+        )
+        self.assertNotEqual(churning.returncode, 0)
+        self.assertIn("kept starting processes", churning.stderr)
+        self.assertIn("liveness is unknown", churning.stderr)
+
+        # Every production caller passes the package, or the re-enumeration above
+        # never runs for it.
+        benchmark = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
+        capture = (HARNESS / "capture_trace.sh").read_text(encoding="utf-8")
+        verifier = (HARNESS / "verify_sdk_active.sh").read_text(encoding="utf-8")
+        self.assertIn('dd_thread_names "$pids" "$PKG"', benchmark)
+        self.assertIn('dd_datadog_threads "$_pids" "$PKG"', benchmark)
+        self.assertIn('dd_datadog_threads "$_SETTLE_PIDS" "$PKG"', capture)
+        self.assertIn('ALL=$(dd_thread_names "$PIDS" "$PKG")', verifier)
 
     def test_leading_dash_app_trace_regex_is_literal_in_every_consumer(self) -> None:
         """A user ERE must not become grep's -e option and match unrelated digits."""
@@ -3869,6 +4033,18 @@ class AbStatsRegressionTests(unittest.TestCase):
         # The partial block contributes nothing at all.
         self.assertIn("row(s) belonging to blocks that did not complete", result.stdout)
         self.assertNotIn("block   7", result.stdout)
+
+        guide = (HARNESS.parents[1] / "docs/benchmarking_sdk_cold_start.md").read_text(
+            encoding="utf-8"
+        )
+        troubleshooting = next(
+            line for line in guide.splitlines()
+            if "laptop/process stops during collection" in line
+        )
+        self.assertIn("diagnostic", troubleshooting)
+        self.assertIn("suppresses the primary CI, MDE and significance verdict", troubleshooting)
+        self.assertNotIn("MDE at that block count", troubleshooting)
+        self.assertNotIn("beside the interval", troubleshooting)
 
     def test_interrupted_run_floors_its_block_count_to_even(self) -> None:
         """An odd prefix is parity-floored for diagnostics, never primary inference."""

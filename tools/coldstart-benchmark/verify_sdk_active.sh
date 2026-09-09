@@ -186,7 +186,7 @@ fi
 # below under `set -e`, exiting 1: this tool's own contract for "not live", printed
 # without a single line of explanation. That is the confident false negative the
 # skill tells agents to come here to avoid.
-ALL=$(dd_thread_names "$PIDS") \
+ALL=$(dd_thread_names "$PIDS" "$PKG") \
   || die "SDK liveness could not be verified on every process of $PKG (see above).
        An unreadable thread list is not evidence that Datadog is absent."
 ALL=$(printf '%s' "$ALL" | grep . | sort)
