@@ -8,6 +8,7 @@ package com.datadog.android.profiling.internal.telemetry
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.metrics.MethodCallSamplingRate
+import java.util.concurrent.TimeUnit
 
 internal class ProfilingTelemetry {
 
@@ -66,7 +67,7 @@ internal class ProfilingTelemetry {
                 KEY_PROFILING_SESSION to mapOf(
                     KEY_ERROR_CODE to event.errorCode,
                     KEY_START_REASON to event.startReason,
-                    KEY_DURATION to event.durationMs,
+                    KEY_DURATION to TimeUnit.MILLISECONDS.toNanos(event.durationMs),
                     KEY_CALLBACK_DELAY to event.resultCallbackDelayMs,
                     KEY_CLIENT_CLOCK_DRIFT to event.clientClockDriftMs,
                     KEY_ERROR_MESSAGE to event.errorMessage,

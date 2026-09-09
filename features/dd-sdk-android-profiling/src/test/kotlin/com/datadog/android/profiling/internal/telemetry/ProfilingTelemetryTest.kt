@@ -30,6 +30,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.quality.Strictness
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -56,7 +57,7 @@ internal class ProfilingTelemetryTest {
     @Test
     fun `M dispatch SessionEnd through logMetric W report() {logger set}`(
         @StringForgery fakeErrorMessage: String,
-        @LongForgery(min = 0L) fakeDuration: Long,
+        @LongForgery(min = 0L, max = Int.MAX_VALUE.toLong()) fakeDuration: Long,
         @LongForgery fakeClientClockDriftMs: Long,
         @IntForgery(min = 1, max = 8) fakeErrorCode: Int
     ) {
@@ -86,7 +87,7 @@ internal class ProfilingTelemetryTest {
             ProfilingTelemetry.KEY_PROFILING_SESSION to mapOf(
                 ProfilingTelemetry.KEY_ERROR_CODE to fakeErrorCode,
                 ProfilingTelemetry.KEY_START_REASON to ProfilingStartReason.APPLICATION_LAUNCH.value,
-                ProfilingTelemetry.KEY_DURATION to fakeDuration,
+                ProfilingTelemetry.KEY_DURATION to TimeUnit.MILLISECONDS.toNanos(fakeDuration),
                 ProfilingTelemetry.KEY_CALLBACK_DELAY to 0L,
                 ProfilingTelemetry.KEY_CLIENT_CLOCK_DRIFT to fakeClientClockDriftMs,
                 ProfilingTelemetry.KEY_ERROR_MESSAGE to fakeErrorMessage,

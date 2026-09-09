@@ -185,7 +185,7 @@ internal class PerfettoProfilerTest {
     fun `M send telemetry W profiling finishes {with timeout}`(
         @StringForgery fakeErrorMessage: String,
         @LongForgery(min = 0L) fakeStartTime: Long,
-        @LongForgery(min = 0L) fakeDuration: Long
+        @LongForgery(min = 0L, max = Int.MAX_VALUE.toLong()) fakeDuration: Long
     ) {
         // Given
         stubTimeProvider.startTime = fakeStartTime
@@ -221,7 +221,7 @@ internal class PerfettoProfilerTest {
                 "error_code" to ProfilingResult.ERROR_NONE,
                 "error_message" to fakeErrorMessage,
                 "start_reason" to ProfilingStartReason.APPLICATION_LAUNCH.value,
-                "duration" to fakeDuration,
+                "duration" to TimeUnit.MILLISECONDS.toNanos(fakeDuration),
                 "callback_delay_ms" to 0L,
                 "client_clock_drift_ms" to 0L,
                 "file_size" to 0L,
@@ -249,7 +249,7 @@ internal class PerfettoProfilerTest {
     fun `M send telemetry W profiling finishes {with error}`(
         @StringForgery fakeErrorMessage: String,
         @LongForgery(min = 0L) fakeStartTime: Long,
-        @LongForgery(min = 0L) fakeDuration: Long,
+        @LongForgery(min = 0L, max = Int.MAX_VALUE.toLong()) fakeDuration: Long,
         @IntForgery(min = 1, max = 8) fakeErrorCode: Int
     ) {
         // Given
@@ -284,7 +284,7 @@ internal class PerfettoProfilerTest {
             "profiling_session" to mapOf(
                 "error_code" to fakeErrorCode,
                 "start_reason" to ProfilingStartReason.APPLICATION_LAUNCH.value,
-                "duration" to fakeDuration,
+                "duration" to TimeUnit.MILLISECONDS.toNanos(fakeDuration),
                 "callback_delay_ms" to 0L,
                 "client_clock_drift_ms" to 0L,
                 "error_message" to fakeErrorMessage,
@@ -313,7 +313,7 @@ internal class PerfettoProfilerTest {
     fun `M send metric telemetry W internalLogger is assigned later`(
         @StringForgery fakeErrorMessage: String,
         @LongForgery(min = 0L) fakeStartTime: Long,
-        @LongForgery(min = 0L) fakeDuration: Long
+        @LongForgery(min = 0L, max = Int.MAX_VALUE.toLong()) fakeDuration: Long
     ) {
         // Given
         stubTimeProvider.startTime = fakeStartTime
@@ -349,7 +349,7 @@ internal class PerfettoProfilerTest {
             "profiling_session" to mapOf(
                 "error_code" to ProfilingResult.ERROR_FAILED_PROFILING_IN_PROGRESS,
                 "start_reason" to ProfilingStartReason.APPLICATION_LAUNCH.value,
-                "duration" to fakeDuration,
+                "duration" to TimeUnit.MILLISECONDS.toNanos(fakeDuration),
                 "callback_delay_ms" to 0L,
                 "client_clock_drift_ms" to 0L,
                 "error_message" to fakeErrorMessage,
@@ -663,7 +663,7 @@ internal class PerfettoProfilerTest {
     fun `M include app_start_info in telemetry W profiling finishes { additionalAttributes contains app_start_info }`(
         @StringForgery fakeAppStartInfo: String,
         @LongForgery(min = 0L) fakeStartTime: Long,
-        @LongForgery(min = 0L) fakeDuration: Long
+        @LongForgery(min = 0L, max = Int.MAX_VALUE.toLong()) fakeDuration: Long
     ) {
         // Given
         stubTimeProvider.startTime = fakeStartTime
@@ -699,7 +699,7 @@ internal class PerfettoProfilerTest {
             "profiling_session" to mapOf(
                 "error_code" to ProfilingResult.ERROR_NONE,
                 "start_reason" to ProfilingStartReason.APPLICATION_LAUNCH.value,
-                "duration" to fakeDuration,
+                "duration" to TimeUnit.MILLISECONDS.toNanos(fakeDuration),
                 "callback_delay_ms" to 0L,
                 "client_clock_drift_ms" to 0L,
                 "error_message" to null,
@@ -728,7 +728,7 @@ internal class PerfettoProfilerTest {
     fun `M include start_reason in telemetry W profiling finishes { startReason }`(
         startReason: ProfilingStartReason,
         @LongForgery(min = 0L) fakeStartTime: Long,
-        @LongForgery(min = 0L) fakeDuration: Long
+        @LongForgery(min = 0L, max = Int.MAX_VALUE.toLong()) fakeDuration: Long
     ) {
         // Given
         stubTimeProvider.startTime = fakeStartTime
@@ -765,7 +765,7 @@ internal class PerfettoProfilerTest {
             "profiling_session" to mapOf(
                 "error_code" to ProfilingResult.ERROR_NONE,
                 "start_reason" to startReason.value,
-                "duration" to fakeDuration,
+                "duration" to TimeUnit.MILLISECONDS.toNanos(fakeDuration),
                 "callback_delay_ms" to 0L,
                 "client_clock_drift_ms" to 0L,
                 "error_message" to null,
@@ -834,7 +834,7 @@ internal class PerfettoProfilerTest {
                 "error_code" to ProfilingResult.ERROR_NONE,
                 "error_message" to fakeErrorMessage,
                 "start_reason" to ProfilingStartReason.APPLICATION_LAUNCH.value,
-                "duration" to fakeStopDelta,
+                "duration" to TimeUnit.MILLISECONDS.toNanos(fakeStopDelta),
                 "callback_delay_ms" to fakeCallbackDelta,
                 "client_clock_drift_ms" to 0L,
                 "file_size" to 0L,
@@ -927,7 +927,7 @@ internal class PerfettoProfilerTest {
                 "error_code" to ProfilingResult.ERROR_NONE,
                 "error_message" to null,
                 "start_reason" to ProfilingStartReason.CONTINUOUS.value,
-                "duration" to fakeDuration2,
+                "duration" to TimeUnit.MILLISECONDS.toNanos(fakeDuration2),
                 "callback_delay_ms" to 0L,
                 "client_clock_drift_ms" to 0L,
                 "file_size" to 0L,
