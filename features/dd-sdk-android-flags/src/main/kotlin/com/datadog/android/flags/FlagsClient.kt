@@ -24,6 +24,7 @@ import com.datadog.android.flags.internal.NoOpRumEvaluationLogger
 import com.datadog.android.flags.internal.RumEvaluationLogger
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsDownloader
+import com.datadog.android.flags.internal.net.PrecomputedAssignmentsVerifier
 import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
@@ -31,6 +32,8 @@ import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.internal.utils.DDCoreStateHolder
+import okhttp3.ConnectionSpec
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.json.JSONObject
 
 /**
@@ -386,6 +389,7 @@ interface FlagsClient {
         // region Internal
 
         internal const val FLAGS_NETWORK_EXECUTOR_NAME = "flags-network"
+        private val LOOPBACK_HOSTS = setOf("127.0.0.1", "localhost", "10.0.2.2")
 
         @Suppress("LongMethod")
         internal fun createInternal(
@@ -410,11 +414,19 @@ interface FlagsClient {
                 NoOpFlagsRepository()
             }
 
-            val callFactory = featureSdkCore.createOkHttpCallFactory()
+            val callFactory = featureSdkCore.createOkHttpCallFactory {
+                // The POC example uses adb reverse to reach a local Compute service.
+                // Production flag endpoints continue to require TLS.
+                val endpoint = configuration.customFlagEndpoint?.toHttpUrlOrNull()
+                if (endpoint?.isHttps == false && endpoint.host in LOOPBACK_HOSTS) {
+                    connectionSpecs(listOf(ConnectionSpec.CLEARTEXT))
+                }
+            }
             val assignmentsDownloader = PrecomputedAssignmentsDownloader(
                 internalLogger = featureSdkCore.internalLogger,
                 callFactory = callFactory,
-                requestFactory = flagsFeature.precomputedRequestFactory
+                requestFactory = flagsFeature.precomputedRequestFactory,
+                payloadVerifier = PrecomputedAssignmentsVerifier()
             )
 
             val precomputeMapper = PrecomputeMapper(featureSdkCore.internalLogger)

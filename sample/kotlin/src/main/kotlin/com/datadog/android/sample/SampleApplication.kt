@@ -245,7 +245,13 @@ class SampleApplication : Application() {
 
     private fun initializeFlags() {
         // Enable Datadog Flags feature
-        val flagsConfig = FlagsConfiguration.Builder().build()
+        val flagsConfig = FlagsConfiguration.Builder().apply {
+            // Run `adb reverse tcp:17676 tcp:17676` before the debug app.
+            // The SDK verifies the local edge payload before it decodes JSON.
+            if (BuildConfig.DEBUG) {
+                useCustomFlagEndpoint("http://127.0.0.1:17676/precompute-assignments")
+            }
+        }.build()
         Flags.enable(flagsConfig)
 
         // Create FlagsClient and convert to OpenFeature provider
@@ -259,6 +265,7 @@ class SampleApplication : Application() {
         val preferences = Preferences.defaultPreferences(this)
         val userId = preferences.getUserId()?.takeIf { it.isNotBlank() } ?: UUID.randomUUID().toString()
         val attributes = buildMap {
+            put("country", Value.String("US"))
             put("userId", Value.String(userId))
             preferences.getUserName()?.takeIf { it.isNotBlank() }?.let {
                 put("userName", Value.String(it))
@@ -289,6 +296,14 @@ class SampleApplication : Application() {
                 .collect { event ->
                     // Track provider errors in RUM
                     when (event) {
+                        is OpenFeatureProviderEvents.ProviderReady -> {
+                            if (BuildConfig.DEBUG) {
+                                val value = OpenFeatureAPI.getClient()
+                                    .getStringDetails("country-message", "unverified")
+                                    .value
+                                Log.i("SignedAssignmentsPOC", "verified country-message=$value")
+                            }
+                        }
                         is OpenFeatureProviderEvents.ProviderError -> {
                             GlobalRumMonitor.get().addError(
                                 "OpenFeature provider error",

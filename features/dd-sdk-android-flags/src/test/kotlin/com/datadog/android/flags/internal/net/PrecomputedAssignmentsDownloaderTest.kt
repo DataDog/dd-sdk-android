@@ -65,6 +65,9 @@ internal class PrecomputedAssignmentsDownloaderTest {
     @Mock
     lateinit var mockCall: Call
 
+    @Mock
+    lateinit var mockPayloadVerifier: AssignmentPayloadVerifier
+
     private lateinit var testedDownloader: PrecomputedAssignmentsDownloader
 
     @Forgery
@@ -89,7 +92,8 @@ internal class PrecomputedAssignmentsDownloaderTest {
         testedDownloader = PrecomputedAssignmentsDownloader(
             callFactory = mockCallFactory,
             internalLogger = mockInternalLogger,
-            requestFactory = mockRequestFactory
+            requestFactory = mockRequestFactory,
+            payloadVerifier = mockPayloadVerifier
         )
     }
 

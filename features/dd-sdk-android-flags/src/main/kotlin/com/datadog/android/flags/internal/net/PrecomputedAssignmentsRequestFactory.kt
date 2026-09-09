@@ -17,6 +17,7 @@ import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONException
 import org.json.JSONObject
+import java.security.SecureRandom
 
 /**
  * Factory for creating HTTP requests to fetch precomputed flag assignments.
@@ -65,6 +66,8 @@ internal class PrecomputedAssignmentsRequestFactory(
             headersBuilder
                 .add(HEADER_CLIENT_TOKEN, datadogContext.clientToken)
                 .add(HEADER_CONTENT_TYPE, CONTENT_TYPE_VND_JSON)
+                .add(PrecomputedAssignmentsVerifier.SIGNATURE_VERSION_HEADER, PrecomputedAssignmentsVerifier.SIGNATURE_VERSION)
+                .add(PrecomputedAssignmentsVerifier.REQUEST_NONCE_HEADER, createNonce())
 
             datadogContext.rumApplicationId?.let {
                 headersBuilder.add(HEADER_APPLICATION_ID, it)
@@ -138,6 +141,10 @@ internal class PrecomputedAssignmentsRequestFactory(
         get() = featuresContext.get(Feature.RUM_FEATURE_NAME)
             ?.get("application_id") as? String
 
+    private fun createNonce(): String = ByteArray(NONCE_SIZE_BYTES)
+        .also { SecureRandom().nextBytes(it) }
+        .joinToString(separator = "") { (it.toInt() and 0xff).toString(16).padStart(2, '0') }
+
     companion object {
         private const val HEADER_APPLICATION_ID = "dd-application-id"
         private const val HEADER_CLIENT_TOKEN = "dd-client-token"
@@ -145,5 +152,6 @@ internal class PrecomputedAssignmentsRequestFactory(
         private const val CONTENT_TYPE_VND_JSON = "application/vnd.api+json"
         private const val PREVIEW_CUSTOMER_DOMAIN = "preview"
         private const val SDK_NAME = "dd-sdk-android"
+        private const val NONCE_SIZE_BYTES = 16
     }
 }
