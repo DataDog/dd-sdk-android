@@ -18,6 +18,8 @@ import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Call
+import okhttp3.CertificatePinner
+import okhttp3.OkHttpClient
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -303,6 +305,41 @@ internal class FlagsClientTest {
         // Then
         assertThat(client).isNotInstanceOf(NoOpFlagsClient::class.java)
         verify(mockSdkCore, never()).createOkHttpCallFactory(any())
+    }
+
+    @Test
+    fun `M configure SDK HTTP client W createInternal()`() {
+        // Given
+        val certificatePinner = CertificatePinner.Builder()
+            .add("example.com", "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
+            .build()
+        val callFactory = mock<Call.Factory>()
+        val networkExecutor = mock<ExecutorService>()
+        val configuration = FlagsConfiguration.Builder()
+            .configureFlagAssignmentsHttpClient {
+                certificatePinner(certificatePinner)
+            }
+            .build()
+        val flagsFeature = FlagsFeature(mockSdkCore, configuration)
+        whenever(mockSdkCore.createSingleThreadExecutorService(any())).thenReturn(networkExecutor)
+        whenever(mockSdkCore.createOkHttpCallFactory(any())).thenReturn(callFactory)
+
+        // When
+        FlagsClient.createInternal(
+            configuration = configuration,
+            featureSdkCore = mockSdkCore,
+            flagsFeature = flagsFeature,
+            evaluationsFeature = null,
+            name = "configured-http-client"
+        )
+
+        // Then
+        argumentCaptor<OkHttpClient.Builder.() -> Unit> {
+            verify(mockSdkCore).createOkHttpCallFactory(capture())
+            val clientBuilder = mock<OkHttpClient.Builder>()
+            lastValue(clientBuilder)
+            verify(clientBuilder).certificatePinner(certificatePinner)
+        }
     }
 
     @Test

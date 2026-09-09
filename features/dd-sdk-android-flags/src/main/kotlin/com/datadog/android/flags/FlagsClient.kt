@@ -411,7 +411,9 @@ interface FlagsClient {
             }
 
             val callFactory = configuration.flagAssignmentsHttpClient
-                ?: featureSdkCore.createOkHttpCallFactory()
+                ?: featureSdkCore.createOkHttpCallFactory {
+                    configuration.flagAssignmentsHttpClientConfiguration?.invoke(this)
+                }
             val assignmentsDownloader = PrecomputedAssignmentsDownloader(
                 internalLogger = featureSdkCore.internalLogger,
                 callFactory = callFactory,

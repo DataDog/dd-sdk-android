@@ -55,6 +55,7 @@ public final class com/datadog/android/flags/FlagsConfiguration {
 public final class com/datadog/android/flags/FlagsConfiguration$Builder {
 	public fun <init> ()V
 	public final fun build ()Lcom/datadog/android/flags/FlagsConfiguration;
+	public final fun configureFlagAssignmentsHttpClient (Lkotlin/jvm/functions/Function1;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun evaluationFlushInterval (J)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun gracefulModeEnabled (Z)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun initializationTimeout (J)Lcom/datadog/android/flags/FlagsConfiguration$Builder;

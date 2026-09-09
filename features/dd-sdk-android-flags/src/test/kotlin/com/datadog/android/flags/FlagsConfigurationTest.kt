@@ -10,6 +10,7 @@ import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Call
+import okhttp3.OkHttpClient
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -33,6 +34,7 @@ internal class FlagsConfigurationTest {
         assertThat(configuration.gracefulModeEnabled).isTrue()
         assertThat(configuration.initializationTimeoutMs).isEqualTo(5_000L)
         assertThat(configuration.flagAssignmentsHttpClient).isNull()
+        assertThat(configuration.flagAssignmentsHttpClientConfiguration).isNull()
     }
 
     @Test
@@ -211,6 +213,62 @@ internal class FlagsConfigurationTest {
 
         // Then
         assertThat(copiedConfiguration.flagAssignmentsHttpClient).isSameAs(mockCallFactory)
+    }
+
+    @Test
+    fun `M set HTTP client configuration W configureFlagAssignmentsHttpClient()`() {
+        // Given
+        val httpClientConfiguration: OkHttpClient.Builder.() -> Unit = {}
+
+        // When
+        val testedConfiguration = FlagsConfiguration.Builder()
+            .configureFlagAssignmentsHttpClient(httpClientConfiguration)
+            .build()
+
+        // Then
+        assertThat(testedConfiguration.flagAssignmentsHttpClient).isNull()
+        assertThat(testedConfiguration.flagAssignmentsHttpClientConfiguration)
+            .isSameAs(httpClientConfiguration)
+    }
+
+    @Test
+    fun `M preserve HTTP client configuration W copy() { legacy parameters }`() {
+        // Given
+        val httpClientConfiguration: OkHttpClient.Builder.() -> Unit = {}
+        val testedConfiguration = FlagsConfiguration.Builder()
+            .configureFlagAssignmentsHttpClient(httpClientConfiguration)
+            .build()
+
+        // When
+        val copiedConfiguration = testedConfiguration.copy(trackExposures = false)
+
+        // Then
+        assertThat(copiedConfiguration.flagAssignmentsHttpClientConfiguration)
+            .isSameAs(httpClientConfiguration)
+    }
+
+    @Test
+    fun `M use last HTTP client option W configure and replace clients()`() {
+        // Given
+        val customCallFactory = mock<Call.Factory>()
+        val httpClientConfiguration: OkHttpClient.Builder.() -> Unit = {}
+
+        // When
+        val replacementLast = FlagsConfiguration.Builder()
+            .configureFlagAssignmentsHttpClient(httpClientConfiguration)
+            .useCustomFlagAssignmentsHttpClient(customCallFactory)
+            .build()
+        val configurationLast = FlagsConfiguration.Builder()
+            .useCustomFlagAssignmentsHttpClient(customCallFactory)
+            .configureFlagAssignmentsHttpClient(httpClientConfiguration)
+            .build()
+
+        // Then
+        assertThat(replacementLast.flagAssignmentsHttpClient).isSameAs(customCallFactory)
+        assertThat(replacementLast.flagAssignmentsHttpClientConfiguration).isNull()
+        assertThat(configurationLast.flagAssignmentsHttpClient).isNull()
+        assertThat(configurationLast.flagAssignmentsHttpClientConfiguration)
+            .isSameAs(httpClientConfiguration)
     }
 
     // endregion

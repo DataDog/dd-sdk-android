@@ -7,6 +7,7 @@
 package com.datadog.android.flags
 
 import okhttp3.Call
+import okhttp3.OkHttpClient
 
 private const val DEFAULT_INITIALIZATION_TIMEOUT_MS = 5_000L
 
@@ -24,10 +25,11 @@ data class FlagsConfiguration internal constructor(
     internal val rumIntegrationEnabled: Boolean,
     internal val gracefulModeEnabled: Boolean,
     internal val initializationTimeoutMs: Long?,
-    internal val flagAssignmentsHttpClient: Call.Factory?
+    internal val flagAssignmentsHttpClient: Call.Factory?,
+    internal val flagAssignmentsHttpClientConfiguration: (OkHttpClient.Builder.() -> Unit)?
 ) {
     /**
-     * Copies this configuration and preserves the initialization timeout.
+     * Copies this configuration and preserves the initialization timeout and HTTP client settings.
      *
      * This overload keeps the public JVM signature that existed before the initialization timeout was added.
      */
@@ -50,7 +52,8 @@ data class FlagsConfiguration internal constructor(
         rumIntegrationEnabled = rumIntegrationEnabled,
         gracefulModeEnabled = gracefulModeEnabled,
         initializationTimeoutMs = initializationTimeoutMs,
-        flagAssignmentsHttpClient = flagAssignmentsHttpClient
+        flagAssignmentsHttpClient = flagAssignmentsHttpClient,
+        flagAssignmentsHttpClientConfiguration = flagAssignmentsHttpClientConfiguration
     )
 
     /**
@@ -67,6 +70,7 @@ data class FlagsConfiguration internal constructor(
         private var gracefulModeEnabled: Boolean = true
         private var initializationTimeoutMs: Long? = DEFAULT_INITIALIZATION_TIMEOUT_MS
         private var flagAssignmentsHttpClient: Call.Factory? = null
+        private var flagAssignmentsHttpClientConfiguration: (OkHttpClient.Builder.() -> Unit)? = null
 
         /**
          * Sets whether exposures should be logged to the dedicated exposures intake endpoint.
@@ -183,11 +187,35 @@ data class FlagsConfiguration internal constructor(
          * Interceptors must preserve the request URL, method, body, and Datadog headers.
          * The caller owns the client lifecycle. The SDK does not shut it down.
          *
+         * Calling this method after [configureFlagAssignmentsHttpClient] selects complete client
+         * replacement. The last HTTP client configuration method called on this builder wins.
+         *
          * @param callFactory HTTP call factory used for flag-assignment requests.
          * @return this [Builder] instance for method chaining.
          */
         fun useCustomFlagAssignmentsHttpClient(callFactory: Call.Factory): Builder = apply {
             flagAssignmentsHttpClient = callFactory
+            flagAssignmentsHttpClientConfiguration = null
+        }
+
+        /**
+         * Customizes the SDK HTTP client used to retrieve flag assignments.
+         *
+         * The SDK applies [configuration] to its shared [OkHttpClient.Builder]. This preserves
+         * the SDK dispatcher, connection pool, TLS settings, timeouts, and DNS resolver unless
+         * the callback replaces them. It applies only to flag-assignment requests.
+         *
+         * Calling this method after [useCustomFlagAssignmentsHttpClient] selects SDK client
+         * customization. The last HTTP client configuration method called on this builder wins.
+         *
+         * @param configuration Callback that customizes the SDK HTTP client builder.
+         * @return this [Builder] instance for method chaining.
+         */
+        fun configureFlagAssignmentsHttpClient(
+            configuration: OkHttpClient.Builder.() -> Unit
+        ): Builder = apply {
+            flagAssignmentsHttpClientConfiguration = configuration
+            flagAssignmentsHttpClient = null
         }
 
         /**
@@ -236,7 +264,8 @@ data class FlagsConfiguration internal constructor(
             rumIntegrationEnabled = rumIntegrationEnabled,
             gracefulModeEnabled = gracefulModeEnabled,
             initializationTimeoutMs = initializationTimeoutMs,
-            flagAssignmentsHttpClient = flagAssignmentsHttpClient
+            flagAssignmentsHttpClient = flagAssignmentsHttpClient,
+            flagAssignmentsHttpClientConfiguration = flagAssignmentsHttpClientConfiguration
         )
 
         internal companion object {

@@ -57,7 +57,7 @@ dependencies {
 
     implementation(libs.gson)
     implementation(libs.kotlin)
-    // Exposed by FlagsConfiguration.Builder.useCustomFlagAssignmentsHttpClient().
+    // Exposed by the FlagsConfiguration HTTP client configuration methods.
     api(libs.okHttp)
     implementation(libs.androidXAnnotation)
     implementation(libs.androidXCollection)
