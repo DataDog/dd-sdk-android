@@ -13,6 +13,7 @@ import com.datadog.android.flags.model.EvaluationContext
 import okhttp3.Call
 import okhttp3.Request
 import okhttp3.Response
+import java.nio.charset.StandardCharsets
 
 /**
  * Downloads precomputed flag assignments from Datadog Feature Flags service.
@@ -24,7 +25,8 @@ import okhttp3.Response
 internal class PrecomputedAssignmentsDownloader(
     private val callFactory: Call.Factory,
     private val internalLogger: InternalLogger,
-    private val requestFactory: PrecomputedAssignmentsRequestFactory
+    private val requestFactory: PrecomputedAssignmentsRequestFactory,
+    private val payloadVerifier: AssignmentPayloadVerifier
 ) : PrecomputedAssignmentsReader {
 
     @WorkerThread
@@ -37,7 +39,7 @@ internal class PrecomputedAssignmentsDownloader(
     @Suppress("TooGenericExceptionCaught")
     private fun executeDownloadRequest(request: Request): String? = try {
         val response = callFactory.newCall(request).execute()
-        handleResponse(response)
+        handleResponse(request, response)
     } catch (e: Throwable) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
@@ -48,9 +50,13 @@ internal class PrecomputedAssignmentsDownloader(
         null
     }
 
-    private fun handleResponse(response: Response): String? = if (response.isSuccessful) {
+    private fun handleResponse(request: Request, response: Response): String? = if (response.isSuccessful) {
         @Suppress("UnsafeThirdPartyFunctionCall") // Safe: wrapped in outer try-catch
-        response.body?.use { it.string() }
+        response.body?.use {
+            val responseBody = it.bytes()
+            payloadVerifier.verify(request, response, responseBody)
+            responseBody.toString(StandardCharsets.UTF_8)
+        }
     } else {
         internalLogger.log(
             InternalLogger.Level.ERROR,
