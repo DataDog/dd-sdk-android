@@ -735,12 +735,15 @@ _dd_thread_names_once() {
 # millisecond of thread churn would abort an hour-long run; with it, a genuine crash
 # still does.
 dd_thread_names() {
-  local pids="$1" pid names all="" alive
+  local pids="$1" pkg="${2:-}" pid names all="" alive
+  local pending read_set="" after_pids added rounds=0
   if [ -z "$pids" ]; then
     echo "ERROR: cannot verify SDK liveness: no package process IDs were provided." >&2
     return 1
   fi
-  for pid in $pids; do
+  pending="$pids"
+  while :; do
+  for pid in $pending; do
     case "$pid" in
       ''|*[!0-9]*)
         echo "ERROR: cannot verify SDK liveness: invalid package PID '$pid'." >&2
@@ -770,6 +773,41 @@ dd_thread_names() {
     fi
     all="$all$names
 "
+    read_set="$read_set $pid"
+  done
+  # A package-private process can start while the earlier set is being read, and a
+  # zero over that stale set is not package-wide absence. Re-enumerate and, if the
+  # package gained a process, read that one too rather than refusing: the answer we
+  # want is the complete one, and a late `<pkg>:private` holding the only `datadog-*`
+  # thread then counts instead of being missed.
+  #
+  # Only ADDITIONS matter. A PID that vanished was already read, or its failed read
+  # was already refused by the /proc re-check above, so it cannot hide a thread from
+  # the count -- and treating its exit as unknown would abort an hour-long run every
+  # time a short-lived `:startup` process finished during the read, which is the same
+  # churn the loop above deliberately tolerates.
+  [ -n "$pkg" ] || break
+  if ! after_pids=$(dd_pkg_pids "$pkg"); then
+    echo "ERROR: cannot verify SDK liveness: package processes could not be" >&2
+    echo "       re-enumerated after thread inspection." >&2
+    return 1
+  fi
+  added=""
+  for pid in $after_pids; do
+    case " $read_set " in
+      *" $pid "*) ;;
+      *) added="$added $pid" ;;
+    esac
+  done
+  [ -n "$added" ] || break
+  rounds=$((rounds + 1))
+  if [ "$rounds" -gt 1 ]; then
+    echo "ERROR: cannot verify SDK liveness: the package kept starting processes" >&2
+    echo "       during thread inspection (still new after a second pass:$added)." >&2
+    echo "       No snapshot covers the whole package, so liveness is unknown." >&2
+    return 1
+  fi
+  pending="$added"
   done
   printf '%s' "$all"
 }
@@ -827,10 +865,12 @@ dd_mapped_lib_count() {
 # during Datadog.initialize() (CoreFeature.setupExecutors submits an NTP task
 # immediately), so this is the harness's liveness oracle. Reading
 # /proc/<pid>/task/*/comm is the cheapest reliable probe. Inherits the refusal
-# above: it returns a count only when every process was actually read.
+# above: it returns a count only when every process was actually read. Production
+# callers also pass the package so the complete PID set is re-enumerated after
+# those reads and must still match.
 dd_datadog_threads() {
   local all count
-  all=$(dd_thread_names "$1") || return 1
+  all=$(dd_thread_names "$1" "${2:-}") || return 1
   count=$(printf '%s' "$all" | grep -c '^datadog-' || true)
   printf '%s\n' "$count"
 }

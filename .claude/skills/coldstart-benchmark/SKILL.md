@@ -147,6 +147,9 @@ adb shell logcat -d | grep -iE 'datadog|DD_SDK'
 plain `System.loadLibrary`, which does not reliably emit a trace slice. That line and the
 Datadog logcat count print `unknown` when their source could not be read; neither is a
 zero you can quote as absence.
+Do not derive `--expect-ndk` from core SDK liveness. Add it to a manual trace verification
+only when the app explicitly enables NDK crash reporting; the benchmark does not record that
+optional feature configuration.
 
 ### 2. Validate the protocol with an A/A run
 
