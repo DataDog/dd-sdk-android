@@ -45,6 +45,12 @@ internal class PrecomputedAssignmentsDownloader(
             { "Unexpected error while downloading flags" },
             e
         )
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            { "Flag fetch failed: ${e.javaClass.simpleName}: ${e.message}" },
+            e
+        )
         null
     }
 
@@ -52,10 +58,19 @@ internal class PrecomputedAssignmentsDownloader(
         @Suppress("UnsafeThirdPartyFunctionCall") // Safe: wrapped in outer try-catch
         response.body?.use { it.string() }
     } else {
+        @Suppress("UnsafeThirdPartyFunctionCall") // Safe: wrapped in outer try-catch
+        val bodySnippet = response.body?.use { it.string() }?.take(RESPONSE_BODY_LOG_LIMIT) ?: ""
+
         internalLogger.log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.MAINTAINER,
             { "Failed to download flags: ${response.code}" }
+        )
+
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            { "Flag fetch failed with HTTP ${response.code}. Response: $bodySnippet" }
         )
 
         internalLogger.log(
@@ -65,9 +80,10 @@ internal class PrecomputedAssignmentsDownloader(
             onlyOnce = true
         )
 
-        @Suppress("UnsafeThirdPartyFunctionCall") // Safe: wrapped in outer try-catch
-        response.body?.close()
-
         null
+    }
+
+    companion object {
+        private const val RESPONSE_BODY_LOG_LIMIT = 500
     }
 }

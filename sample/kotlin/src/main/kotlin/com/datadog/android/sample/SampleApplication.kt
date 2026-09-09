@@ -87,8 +87,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
@@ -362,6 +365,11 @@ class SampleApplication : Application() {
                 checkHttpReachability(tag, "Exposures intake", exposuresUrl)
             }
 
+            // 6. Probe precompute-assignments with real SDK request shape
+            if (flagsUrl != null) {
+                checkFlagsCdnPost(tag, flagsUrl, BuildConfig.DD_CLIENT_TOKEN)
+            }
+
             Log.i(tag, "========== FLAGS SDK NETWORK DIAGNOSTICS END ==========")
 
             // 6. Log flag assignments once client is ready
@@ -396,6 +404,46 @@ class SampleApplication : Application() {
                 tag,
                 "HTTP [$label] HEAD $url -> FAILED: ${e.javaClass.simpleName}: ${e.message}"
             )
+        }
+    }
+
+    @SuppressLint("LogNotTimber")
+    @Suppress("TooGenericExceptionCaught")
+    private fun checkFlagsCdnPost(tag: String, url: String, clientToken: String) {
+        try {
+            val subject = JSONObject()
+                .put("targeting_key", "diagnostic-probe")
+                .put("targeting_attributes", JSONObject())
+            val env = JSONObject().put("dd_env", BuildConfig.BUILD_TYPE)
+            val source = JSONObject()
+                .put("sdk_name", "dd-sdk-android")
+                .put("sdk_version", "diagnostic")
+            val attributes = JSONObject()
+                .put("env", env)
+                .put("source", source)
+                .put("subject", subject)
+            val data = JSONObject()
+                .put("type", "precompute-assignments-request")
+                .put("attributes", attributes)
+            val bodyJson = JSONObject().put("data", data).toString()
+
+            val body = bodyJson.toRequestBody("application/vnd.api+json".toMediaType())
+            val request = Request.Builder()
+                .url(url)
+                .addHeader("dd-client-token", clientToken)
+                .addHeader("Content-Type", "application/vnd.api+json")
+                .post(body)
+                .build()
+
+            val response = okHttpClient.newCall(request).execute()
+            val responseBody = response.body?.string()?.take(500) ?: ""
+            Log.i(tag, "POST [Flags CDN] $url -> HTTP ${response.code}")
+            if (responseBody.isNotBlank()) {
+                Log.i(tag, "POST [Flags CDN] body: $responseBody")
+            }
+            response.close()
+        } catch (e: Throwable) {
+            Log.e(tag, "POST [Flags CDN] FAILED: ${e.javaClass.simpleName}: ${e.message}")
         }
     }
 
