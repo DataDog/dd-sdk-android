@@ -55,14 +55,19 @@ internal class PrecomputedAssignmentsVerifierTest {
     private companion object {
         const val ISSUED_AT = 1_788_925_749L
         const val REQUEST_BODY =
-            "{\"data\":{\"type\":\"precompute-assignments-request\",\"attributes\":{\"env\":{\"dd_env\":\"test-env\"}," +
-                "\"source\":{\"sdk_name\":\"poc-curl\",\"sdk_version\":\"1.0\"},\"subject\":{\"targeting_key\":\"user123\"," +
+            "{\"data\":{\"type\":\"precompute-assignments-request\",\"attributes\":{" +
+                "\"env\":{\"dd_env\":\"test-env\"}," +
+                "\"source\":{\"sdk_name\":\"poc-curl\",\"sdk_version\":\"1.0\"}," +
+                "\"subject\":{\"targeting_key\":\"user123\"," +
                 "\"targeting_attributes\":{\"country\":\"US\"}}}}}"
         const val RESPONSE_BODY =
-            "{\"data\":{\"id\":\"user123\",\"type\":\"precomputed-assignments\",\"attributes\":{\"obfuscated\":false," +
-                "\"createdAt\":\"2026-09-09T03:49:09.973203Z\",\"format\":\"PRECOMPUTED\",\"environment\":{\"name\":\"test-env\"}," +
-                "\"flags\":{\"country-message\":{\"variationType\":\"string\",\"variationValue\":\"hello-us\",\"doLog\":false," +
-                "\"allocationKey\":\"country-allocation\",\"variationKey\":\"us\",\"reason\":\"TARGETING_MATCH\",\"serialId\":11," +
+            "{\"data\":{\"id\":\"user123\",\"type\":\"precomputed-assignments\"," +
+                "\"attributes\":{\"obfuscated\":false," +
+                "\"createdAt\":\"2026-09-09T03:49:09.973203Z\",\"format\":\"PRECOMPUTED\"," +
+                "\"environment\":{\"name\":\"test-env\"},\"flags\":{\"country-message\":{" +
+                "\"variationType\":\"string\",\"variationValue\":\"hello-us\",\"doLog\":false," +
+                "\"allocationKey\":\"country-allocation\",\"variationKey\":\"us\"," +
+                "\"reason\":\"TARGETING_MATCH\",\"serialId\":11," +
                 "\"extraLogging\":{}}}}}}"
         const val LEAF_CERTIFICATE =
             "MIIBlzCCAT2gAwIBAgIBAjAKBggqhkjOPQQDAjAyMTAwLgYDVQQDEydEYXRhZG9nIEZGRSBTaWduZWQg" +

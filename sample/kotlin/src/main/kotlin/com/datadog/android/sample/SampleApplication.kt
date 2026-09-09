@@ -246,10 +246,12 @@ class SampleApplication : Application() {
     private fun initializeFlags() {
         // Enable Datadog Flags feature
         val flagsConfig = FlagsConfiguration.Builder().apply {
-            // Run `adb reverse tcp:17676 tcp:17676` before the debug app.
-            // The SDK verifies the local edge payload before it decodes JSON.
+            // This spike branch uses the cloud E2E service in debug builds.
+            // The SDK verifies the response before it decodes JSON.
             if (BuildConfig.DEBUG) {
-                useCustomFlagEndpoint("http://127.0.0.1:17676/precompute-assignments")
+                useCustomFlagEndpoint(
+                    "https://preview.ff-cdn.datad0g.com/precompute-assignments"
+                )
             }
         }.build()
         Flags.enable(flagsConfig)
@@ -301,7 +303,10 @@ class SampleApplication : Application() {
                                 val value = OpenFeatureAPI.getClient()
                                     .getStringDetails("country-message", "unverified")
                                     .value
-                                Log.i("SignedAssignmentsPOC", "verified country-message=$value")
+                                Log.i(
+                                    "SignedAssignmentsPOC",
+                                    "SIGNED_ASSIGNMENT_E2E: signature verified; country-message=$value"
+                                )
                             }
                         }
                         is OpenFeatureProviderEvents.ProviderError -> {
