@@ -977,10 +977,11 @@ _vrc=$?
 set -e
 case $_vrc in
   0) ;;
-  3) die "the trace cannot answer the question either way. Four causes reach this exit
+  3) die "the trace cannot answer the question either way. Five causes reach this exit
        and the verdict printed above names which: no cold start in the capture, a
        force-stop boundary neither method could locate, no package process after that
-       boundary, or a launch too close to it to be told apart from the conditioning
+       boundary, no unique target launch marker for the scheduler fallback, or a
+       launch too close to the boundary to be told apart from the conditioning
        generation. Kept at $TRACE_FILE. Re-capture." ;;
   4) die "the app did not own the foreground for the whole capture (see above).
        Part of the window was paused or stopped, so this is not the scenario the

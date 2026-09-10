@@ -35,11 +35,12 @@ Exit codes
 0  Datadog demonstrably active -- or correctly absent, under --expect-absent.
 1  Datadog NOT active, or the package is not in the trace. Do not analyze.
    Sound as a negative only because the trace contains the cold start.
-3  Trace unusable, for any of four reasons the printed verdict names: no
+3  Trace unusable, for any of five reasons the printed verdict names: no
    `bindApplication`, so there is no launch in it at all; the conditioning
    generation's force-stop boundary cannot be located by either method; no
-   package process started after that boundary; or the traced launch starts too
-   soon after it to be told apart from the conditioning generation.
+   package process started after that boundary; the scheduler fallback cannot
+   locate one target launch marker; or the traced launch starts too soon after
+   the boundary to be told apart from the conditioning generation.
    Distinct from 1 on purpose -- it says nothing about the SDK either way.
 4  With --require-foreground: something else owned the foreground during the
    capture, OR ownership could not be established from the trace at all. The SDK
@@ -103,7 +104,9 @@ def parse_args():
                     help="run the whole-window check on lifecycle slices alone when "
                          "ActivityManager's `launching: <pkg>` slice is absent. "
                          "Foreign-package takeover detection is then INCOMPLETE and "
-                         "the capture is reported as partially verified, never held")
+                         "the capture is reported as partially verified, never held. "
+                         "This does not relax scheduler-only process-generation "
+                         "attribution")
     return ap.parse_args()
 
 
@@ -115,7 +118,7 @@ def parse_args():
 MIN_SEPARATION_NS = 1_000_000_000
 
 
-def final_launch_processes(tp, procs):
+def final_launch_processes(tp, procs, package):
     """Return the package processes belonging to the final traced launch.
 
     capture_trace.sh starts Perfetto during the last conditioning wait, so the trace
@@ -143,19 +146,12 @@ def final_launch_processes(tp, procs):
     does not -- it issues no query at all -- but nothing may depend on it.
 
     The scheduler boundary is the last moment any thread of the processes alive at
-    trace start was scheduled. On the same capture that is the force-stop to within
-    one scheduling slice: the two conditioning processes last ran at +0.00s and
-    -0.07s relative to it, while the traced launch's processes started at +2.09s and
-    +2.77s.
-
-    What this cannot see is a conditioning process CREATED during the capture whose
-    start falls after every pre-existing process's last scheduler slice; it would be
-    scored as final-launch. That requires the app to go entirely unscheduled between
-    that creation and the force-stop, which does not happen to a foreground app about
-    to be stopped -- but it is not proven by the boundary itself. What IS checkable is
-    the separation: the protocol leaves five seconds between the force-stop and the
-    traced launch, so the caller requires a margin far above scheduling granularity
-    and refuses the verdict when it is absent, rather than assuming the gap was there.
+    trace start was scheduled. On the measured capture that is close to the force-stop,
+    but it is only a lower bound: a conditioning process created after every
+    pre-existing process last ran would otherwise be scored as final-launch. The
+    fallback therefore also requires exactly one ActivityManager `launching: <pkg>`
+    slice after the scheduler boundary and admits only processes starting after that
+    launch marker. The marker is not needed by the exact lifetime path.
 
     Returns (processes, boundary_ts, basis):
       (None, None, None)     the trace began with no conditioning generation, so
@@ -163,8 +159,15 @@ def final_launch_processes(tp, procs):
                              launch. This is what a capture taken before Perfetto
                              moved inside the wait looks like.
       (procs, ts, "lifetime") the boundary came from process lifetimes.
-      (procs, ts, "sched")    the boundary came from scheduler activity; the caller
-                              must check the separation margin (see above).
+      (procs, ts, "sched")    scheduler activity established a lower bound and one
+                              target launch marker scoped the final generation; the
+                              caller must also check the separation margin.
+      ([], ts, "sched-missing-launch") scheduler activity was available but the
+                              target launch marker was absent.
+      ([], ts, "sched-repeated-launch") scheduler activity was available but more
+                              than one target launch marker made attribution ambiguous.
+      ([], ts, "sched-misordered-launch") the only target launch marker was not
+                              after the scheduler boundary.
       ([], None, None)       a conditioning generation exists but NEITHER a lifetime
                              nor a scheduler boundary could be established.
       ([], ts, basis)        the boundary is known, but no package process started
@@ -202,8 +205,20 @@ def final_launch_processes(tp, procs):
         f"where t.upid in ({upids})"))[0].b
     if boundary is None:
         return [], None, None
+
+    launches = list(tp.query(
+        "select ts from slice "
+        f"where name = 'launching: {package}' order by ts"))
+    launches_after_boundary = [r for r in launches if r.ts > boundary]
+    if not launches_after_boundary:
+        if launches:
+            return [], boundary, "sched-misordered-launch"
+        return [], boundary, "sched-missing-launch"
+    if len(launches_after_boundary) != 1:
+        return [], boundary, "sched-repeated-launch"
+    launch_ts = launches_after_boundary[0].ts
     return [p for p in procs
-            if p.start_ts is not None and p.start_ts > boundary], boundary, "sched"
+            if p.start_ts is not None and p.start_ts > launch_ts], boundary, "sched"
 
 
 def analyze(tp, args):
@@ -225,13 +240,28 @@ def analyze(tp, args):
     def scalar(sql):
         return list(tp.query(sql))[0].c
 
-    final_procs, force_stop_ts, boundary_basis = final_launch_processes(tp, procs)
+    final_procs, force_stop_ts, boundary_basis = final_launch_processes(
+        tp, procs, args.package)
     if final_procs is not None and not final_procs:
         # Two different failures, and the operator needs to know which: one says the
         # trace lacks the data to locate the force-stop at all, the other says it
         # located it and the launch is simply not in the capture.
         print("  VERDICT: UNUSABLE FOR COLD-START ANALYSIS")
-        if force_stop_ts is None:
+        if boundary_basis == "sched-missing-launch":
+            print(f"  Scheduler activity gives a conditioning lower bound at ts {force_stop_ts},")
+            print(f"  but no `launching: {args.package}` slice follows it. A conditioning")
+            print("  process could have started after that lower bound, so the final process")
+            print("  generation cannot be attributed. The missing-marker foreground override")
+            print("  cannot weaken SDK-liveness attribution.")
+        elif boundary_basis == "sched-repeated-launch":
+            print(f"  More than one `launching: {args.package}` slice follows the scheduler")
+            print(f"  lower bound at ts {force_stop_ts}. The harness performs one measured")
+            print("  launch, so the final process generation is ambiguous.")
+        elif boundary_basis == "sched-misordered-launch":
+            print(f"  The only `launching: {args.package}` slice is not after the scheduler")
+            print(f"  lower bound at ts {force_stop_ts}, so it cannot identify the measured")
+            print("  launch's process generation.")
+        elif force_stop_ts is None:
             print("  A package process existed when tracing began, but neither its process")
             print("  lifetime nor any scheduler activity for it is recorded, so the")
             print("  force-stop boundary cannot be located by either method.")
@@ -539,10 +569,11 @@ def foreground_gate(args, fg_verdict, fg_detail):
     (atrace category `am` + `atrace_apps: <pkg>`), so `unknown` means the capture
     was not taken the way capture_trace.sh takes it.
 
-    `held-lifecycle-only` exits 0: the operator asked for the degraded check with
-    --allow-missing-launch-marker, so refusing it would make the flag pointless.
-    It is loud instead, and it is a distinct verdict from `held` precisely so that
-    no report can call it clean.
+    `held-lifecycle-only` exits 0 when process-generation attribution was established
+    independently. The operator asked for the degraded foreground check with
+    --allow-missing-launch-marker; it is loud and distinct from `held` precisely so
+    no report can call it clean. The earlier generation gate still rejects a
+    scheduler-only boundary that has no target launch marker.
     """
     if fg_verdict == "lost":
         print()
