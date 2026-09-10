@@ -84,6 +84,12 @@ else
   cd "$worktree_dir"
 fi
 
+if [ -n "${CI:-}" ]; then
+  # git merge requires a committer identity before it starts, even with --no-commit.
+  git config user.name "dd-octo-sts"
+  git config user.email "dd-octo-sts@datadoghq.com"
+fi
+
 echo "Merging develop into a local copy of tag $tag..."
 set +e
 merge_output=$(git merge origin/develop --no-commit --no-ff 2>&1)
@@ -105,10 +111,9 @@ fi
 
 conflicting_files=$(git diff --name-only --diff-filter=U)
 if [ -z "$conflicting_files" ]; then
-  # Merge failed but left no conflict markers to resolve - not the routine
-  # version-file conflict, something else went wrong. Fail loudly instead
-  # of silently treating it as resolved.
-  git merge --abort
+  # Merge failed without producing conflicts. Clean up if Git started a merge,
+  # but preserve the original failure when there is no merge state to abort.
+  git merge --abort 2>/dev/null || true
   echo "Merge failed without leaving any conflicts to resolve, aborting:" >&2
   echo "$merge_output" >&2
   exit 1
@@ -139,12 +144,6 @@ echo "Keeping develop's version in $version_file"
 # whole file is exactly what we want here.
 git checkout --theirs "$version_file"
 git add "$version_file"
-
-if [ -n "${CI:-}" ]; then
-  # CI has no git identity configured by default.
-  git config user.name "dd-octo-sts"
-  git config user.email "dd-octo-sts@datadoghq.com"
-fi
 
 git commit -m "Merge branch 'develop' into '$branch_name'"
 
