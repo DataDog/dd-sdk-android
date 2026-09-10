@@ -38,7 +38,7 @@ internal class RumResourceAttributesProviderCompatibilityAdapter(
         @Suppress("DEPRECATION")
         return delegate.onProvideAttributes(request, response, throwable).ifEmpty {
             delegate.onProvideAttributes(
-                request.toHttpRequestInfo(),
+                request.toHttpRequestInfo(internalLogger),
                 response?.toHttpResponseInfo(internalLogger),
                 throwable
             )

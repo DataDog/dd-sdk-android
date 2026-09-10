@@ -163,7 +163,8 @@ internal class RequestTracingStateRegistryTest {
         testedRegistry.register(mockCall)
         val newRequestBuilder = OkHttpRequestInfoBuilder(
             Request.Builder().url(fakeUrl)
-                .addHeader("x-trace", "123")
+                .addHeader("x-trace", "123"),
+            mockInternalLogger
         )
         val newState = RequestTracingState(
             requestInfoBuilder = newRequestBuilder,
@@ -183,7 +184,8 @@ internal class RequestTracingStateRegistryTest {
         // Given
         val newState = RequestTracingState(
             requestInfoBuilder = OkHttpRequestInfoBuilder(
-                Request.Builder().url(fakeUrl)
+                Request.Builder().url(fakeUrl),
+                mockInternalLogger
             ),
             isSampled = true,
             isDefaultTracer = false
@@ -204,7 +206,8 @@ internal class RequestTracingStateRegistryTest {
             .createRequestInfo().tag(UUID::class.java)
 
         val newRequestBuilder = OkHttpRequestInfoBuilder(
-            Request.Builder().url(fakeUrl).addHeader("x-trace", "123")
+            Request.Builder().url(fakeUrl).addHeader("x-trace", "123"),
+            mockInternalLogger
         )
         val newState = RequestTracingState(
             requestInfoBuilder = newRequestBuilder,
@@ -225,7 +228,8 @@ internal class RequestTracingStateRegistryTest {
         // Given
         testedRegistry.register(mockCall)
         val newRequestBuilder = OkHttpRequestInfoBuilder(
-            Request.Builder().url(fakeUrl).addHeader("x-trace", "123")
+            Request.Builder().url(fakeUrl).addHeader("x-trace", "123"),
+            mockInternalLogger
         )
         val newState = RequestTracingState(
             requestInfoBuilder = newRequestBuilder,
@@ -318,7 +322,8 @@ internal class RequestTracingStateRegistryTest {
         val newRequestBuilder = OkHttpRequestInfoBuilder(
             Request.Builder()
                 .url(fakeUrl)
-                .addHeader("x-trace", "123")
+                .addHeader("x-trace", "123"),
+            mockInternalLogger
         )
         val newState = RequestTracingState(
             requestInfoBuilder = newRequestBuilder,
@@ -369,7 +374,8 @@ internal class RequestTracingStateRegistryTest {
                         call,
                         RequestTracingState(
                             requestInfoBuilder = OkHttpRequestInfoBuilder(
-                                Request.Builder().url(call.request().url.toString())
+                                Request.Builder().url(call.request().url.toString()),
+                                mockInternalLogger
                             ),
                             isSampled = true,
                             isDefaultTracer = false

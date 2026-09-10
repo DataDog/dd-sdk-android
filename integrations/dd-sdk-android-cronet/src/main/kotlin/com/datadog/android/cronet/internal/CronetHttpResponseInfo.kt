@@ -9,6 +9,12 @@ import com.datadog.android.api.instrumentation.network.HttpResponseInfo
 import com.datadog.android.internal.network.HttpSpec
 import org.chromium.net.UrlResponseInfo
 
+// Deliberately does not implement PeekableBodyInfo, so HttpResponseInfo.peekBody() returns null for
+// Cronet responses. CronetRequestCallback.onReadCompleted does see each chunk of the payload, but
+// only in passing, in the buffer the application supplies and then consumes; nothing is retained,
+// and this instance is only built once the request has finished, by which point the chunks are
+// gone. Capturing them would mean copying every chunk of every response up front, at a memory cost
+// paid whether or not a snapshot is ever asked for.
 internal data class CronetHttpResponseInfo(
     private val response: UrlResponseInfo,
     override val request: CronetHttpRequestInfo?

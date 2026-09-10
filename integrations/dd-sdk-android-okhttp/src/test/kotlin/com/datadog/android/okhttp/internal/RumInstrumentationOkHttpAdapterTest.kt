@@ -109,7 +109,7 @@ internal class RumInstrumentationOkHttpAdapterTest {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
-        val fakeRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder())
+        val fakeRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder(), mockInternalLogger)
             .addTag(UUID::class.java, fakeUuid)
         val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder, isDefaultTracer = false)
         whenever(mockRegistry.get(mockCall)) doReturn fakeState
@@ -132,7 +132,7 @@ internal class RumInstrumentationOkHttpAdapterTest {
     @Test
     fun `M start resource and stop with error W intercept() { chain throws }`() {
         // Given
-        val fakeRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder())
+        val fakeRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder(), mockInternalLogger)
             .addTag(UUID::class.java, fakeUuid)
         val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder, isDefaultTracer = false)
         whenever(mockRegistry.get(mockCall)) doReturn fakeState
@@ -203,7 +203,7 @@ internal class RumInstrumentationOkHttpAdapterTest {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
-        val fakeRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder())
+        val fakeRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder(), mockInternalLogger)
             .addTag(UUID::class.java, fakeUuid)
         val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder, isDefaultTracer = false)
         whenever(mockRegistry.get(mockCall)) doReturn fakeState
@@ -226,7 +226,7 @@ internal class RumInstrumentationOkHttpAdapterTest {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
-        val fakeRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder())
+        val fakeRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder(), mockInternalLogger)
             .addTag(UUID::class.java, fakeUuid)
         val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder, isDefaultTracer = false)
         whenever(mockRegistry.get(mockCall)) doReturn fakeState
@@ -253,7 +253,7 @@ internal class RumInstrumentationOkHttpAdapterTest {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
-        val fakeRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder())
+        val fakeRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder(), mockInternalLogger)
             .addTag(UUID::class.java, fakeUuid)
         val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder, isDefaultTracer = false)
         var callCount = 0
@@ -291,7 +291,7 @@ internal class RumInstrumentationOkHttpAdapterTest {
             .build()
         whenever(mockChain.request()) doReturn upstreamRequest
 
-        val fakeRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder())
+        val fakeRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder(), mockInternalLogger)
             .addTag(UUID::class.java, fakeUuid)
         val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder, isDefaultTracer = false)
         whenever(mockRegistry.get(mockCall)) doReturn fakeState
@@ -320,7 +320,7 @@ internal class RumInstrumentationOkHttpAdapterTest {
             .build()
         whenever(mockChain.request()) doReturn upstreamRequest
 
-        val fakeRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder())
+        val fakeRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder(), mockInternalLogger)
             .addTag(UUID::class.java, fakeUuid)
         val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder, isDefaultTracer = false)
         whenever(mockRegistry.get(mockCall)) doReturn fakeState
@@ -347,7 +347,7 @@ internal class RumInstrumentationOkHttpAdapterTest {
         val upstreamRequest = Request.Builder().url(modifiedUrl).get().build()
         whenever(mockChain.request()) doReturn upstreamRequest
 
-        val fakeRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder())
+        val fakeRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder(), mockInternalLogger)
             .addTag(UUID::class.java, fakeUuid)
         val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder, isDefaultTracer = false)
         whenever(mockRegistry.get(mockCall)) doReturn fakeState
@@ -376,7 +376,7 @@ internal class RumInstrumentationOkHttpAdapterTest {
             .build()
         whenever(mockChain.request()) doReturn upstreamRequest
 
-        val fakeRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder())
+        val fakeRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder(), mockInternalLogger)
             .addTag(UUID::class.java, fakeUuid)
         val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder, isDefaultTracer = false)
         whenever(mockRegistry.get(mockCall)) doReturn fakeState
@@ -408,7 +408,7 @@ internal class RumInstrumentationOkHttpAdapterTest {
             mockDistributedTracingInstrumentation
         )
         val fakeDistributedTracingState = RequestTracingState(
-            requestInfoBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder())
+            requestInfoBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder(), mockInternalLogger)
                 .addTag(UUID::class.java, fakeUuid),
             isDefaultTracer = false
         )
@@ -434,7 +434,7 @@ internal class RumInstrumentationOkHttpAdapterTest {
             mockDistributedTracingInstrumentation
         )
         val fakeDistributedTracingState = RequestTracingState(
-            requestInfoBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder())
+            requestInfoBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder(), mockInternalLogger)
                 .addTag(UUID::class.java, fakeUuid)
                 .addHeader("x-datadog-trace-id", fakeTraceId),
             isDefaultTracer = false
@@ -463,7 +463,7 @@ internal class RumInstrumentationOkHttpAdapterTest {
             mockDistributedTracingInstrumentation
         )
         val fakeDistributedTracingState = RequestTracingState(
-            requestInfoBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder())
+            requestInfoBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder(), mockInternalLogger)
                 .addTag(UUID::class.java, fakeUuid),
             isDefaultTracer = false
         )
@@ -489,7 +489,7 @@ internal class RumInstrumentationOkHttpAdapterTest {
             mockDistributedTracingInstrumentation
         )
         val fakeDistributedTracingState = RequestTracingState(
-            requestInfoBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder())
+            requestInfoBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder(), mockInternalLogger)
                 .addTag(UUID::class.java, fakeUuid),
             isDefaultTracer = false
         )
