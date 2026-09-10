@@ -153,8 +153,10 @@ object com.datadog.android.internal.network.HttpSpec
     const val APPLICATION_GRPC: String
     const val APPLICATION_GRPC_PROTO: String
     const val APPLICATION_GRPC_JSON: String
+    const val APPLICATION_OCTET_STREAM: String
     fun values()
     fun isStream(String?): Boolean
+    fun isBinaryMedia(String?): Boolean
 interface com.datadog.android.internal.profiler.BenchmarkCounter
   fun add(Long, Map<String, String>)
 interface com.datadog.android.internal.profiler.BenchmarkMeter
