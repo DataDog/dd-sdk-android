@@ -380,36 +380,37 @@ class SampleApplication : Application() {
     @SuppressLint("LogNotTimber")
     @Suppress("TooGenericExceptionCaught")
     private fun checkDns(tag: String, label: String, host: String) {
+        val start = System.nanoTime()
         try {
             val addresses = InetAddress.getAllByName(host)
-            Log.i(tag, "DNS [$label] $host -> ${addresses.joinToString { it.hostAddress ?: "?" }}")
+            val elapsed = (System.nanoTime() - start) / 1_000_000
+            Log.i(tag, "DNS [$label] $host -> ${addresses.joinToString { it.hostAddress ?: "?" }} (${elapsed}ms)")
         } catch (e: Throwable) {
-            Log.e(tag, "DNS [$label] $host -> FAILED: ${e.javaClass.simpleName}: ${e.message}")
+            val elapsed = (System.nanoTime() - start) / 1_000_000
+            Log.e(tag, "DNS [$label] $host -> FAILED (${elapsed}ms): ${e.javaClass.simpleName}: ${e.message}")
         }
     }
 
     @SuppressLint("LogNotTimber")
     @Suppress("TooGenericExceptionCaught")
     private fun checkHttpReachability(tag: String, label: String, url: String) {
+        val start = System.nanoTime()
         try {
             val request = Request.Builder().url(url).head().build()
             val response = okHttpClient.newCall(request).execute()
-            Log.i(
-                tag,
-                "HTTP [$label] HEAD $url -> ${response.code} (${response.message})"
-            )
+            val elapsed = (System.nanoTime() - start) / 1_000_000
+            Log.i(tag, "HEAD [$label] $url -> ${response.code} (${elapsed}ms)")
             response.close()
         } catch (e: Throwable) {
-            Log.e(
-                tag,
-                "HTTP [$label] HEAD $url -> FAILED: ${e.javaClass.simpleName}: ${e.message}"
-            )
+            val elapsed = (System.nanoTime() - start) / 1_000_000
+            Log.e(tag, "HEAD [$label] $url -> FAILED (${elapsed}ms): ${e.javaClass.simpleName}: ${e.message}")
         }
     }
 
     @SuppressLint("LogNotTimber")
     @Suppress("TooGenericExceptionCaught")
     private fun checkFlagsCdnPost(tag: String, url: String, clientToken: String) {
+        val start = System.nanoTime()
         try {
             val subject = JSONObject()
                 .put("targeting_key", "diagnostic-probe")
@@ -436,14 +437,16 @@ class SampleApplication : Application() {
                 .build()
 
             val response = okHttpClient.newCall(request).execute()
+            val elapsed = (System.nanoTime() - start) / 1_000_000
             val responseBody = response.body?.string()?.take(500) ?: ""
-            Log.i(tag, "POST [Flags CDN] $url -> HTTP ${response.code}")
+            Log.i(tag, "POST [Flags CDN] $url -> HTTP ${response.code} (${elapsed}ms)")
             if (responseBody.isNotBlank()) {
                 Log.i(tag, "POST [Flags CDN] body: $responseBody")
             }
             response.close()
         } catch (e: Throwable) {
-            Log.e(tag, "POST [Flags CDN] FAILED: ${e.javaClass.simpleName}: ${e.message}")
+            val elapsed = (System.nanoTime() - start) / 1_000_000
+            Log.e(tag, "POST [Flags CDN] FAILED (${elapsed}ms): ${e.javaClass.simpleName}: ${e.message}")
         }
     }
 
