@@ -2833,13 +2833,18 @@ esac
         class FakeTraceProcessor:
             """Answers the scheduler-boundary query and counts whether it was needed."""
 
-            def __init__(self, boundary):
+            def __init__(self, boundary, launches=(180,)):
                 self.boundary = boundary
+                self.launches = launches
                 self.queries = []
 
             def query(self, sql):
                 self.queries.append(sql)
-                return [types.SimpleNamespace(b=self.boundary)]
+                if "from sched s" in sql:
+                    return [types.SimpleNamespace(b=self.boundary)]
+                if "where name = 'launching: com.example.app'" in sql:
+                    return [types.SimpleNamespace(ts=ts) for ts in self.launches]
+                raise AssertionError(f"unexpected query: {sql}")
 
         old = types.SimpleNamespace(upid=1, start_ts=None, end_ts=100)
         # This private process starts after the old main's hypothetical final sched
@@ -2852,7 +2857,8 @@ esac
 
         exact = FakeTraceProcessor(999)
         scoped, boundary, basis = select(
-            exact, [old, late_conditioning, chained_conditioning, final_main, final_private])
+            exact, [old, late_conditioning, chained_conditioning, final_main, final_private],
+            "com.example.app")
         self.assertEqual(boundary, 115)
         # Both private conditioning processes are excluded; only the launch after
         # the complete force-stop boundary contributes to liveness.
@@ -2868,15 +2874,69 @@ esac
         incomplete_private = types.SimpleNamespace(upid=6, start_ts=95, end_ts=None)
         degraded = FakeTraceProcessor(120)
         fallback, boundary, basis = select(
-            degraded, [old, incomplete_private, final_main])
+            degraded, [old, incomplete_private, final_main], "com.example.app")
         self.assertEqual([p.upid for p in fallback], [4])
         self.assertEqual(boundary, 120)
         self.assertEqual(basis, "sched")
         self.assertIn("from sched s", degraded.queries[0])
+        self.assertIn("where name = 'launching: com.example.app'", degraded.queries[1])
+
+        # A scheduler boundary covers only processes that were already alive at
+        # trace start. A conditioning process can start after that boundary but
+        # before the final force-stop; if it owns the only Datadog thread, including
+        # it makes an SDK-less measured launch pass liveness verification.
+        late_after_sched = types.SimpleNamespace(upid=7, start_ts=150, end_ts=None)
+        measured_without_dd = types.SimpleNamespace(upid=8, start_ts=400, end_ts=None)
+        misclassified = FakeTraceProcessor(120, launches=(300,))
+        fallback, boundary, basis = select(
+            misclassified,
+            [old, incomplete_private, late_after_sched, measured_without_dd],
+            "com.example.app")
+        self.assertEqual([p.upid for p in fallback], [8])
+        self.assertFalse(any(p.upid == 7 for p in fallback))
+        self.assertEqual(boundary, 120)
+        self.assertEqual(basis, "sched")
+
+        # A conditioning marker before the lower bound is not a second candidate
+        # for the measured launch. Only ambiguity after the boundary matters.
+        prior_conditioning_marker = FakeTraceProcessor(120, launches=(110, 300))
+        fallback, boundary, basis = select(
+            prior_conditioning_marker,
+            [old, incomplete_private, late_after_sched, measured_without_dd],
+            "com.example.app")
+        self.assertEqual([p.upid for p in fallback], [8])
+        self.assertEqual(boundary, 120)
+        self.assertEqual(basis, "sched")
+
+        # The ActivityManager marker is an implementation detail and can be absent
+        # or malformed on vendor traces. That override is acceptable for the
+        # lifecycle-only foreground check, but not for deciding which process owns
+        # the SDK thread. Every ambiguous scheduler fallback is therefore unusable.
+        no_marker, boundary, basis = select(
+            FakeTraceProcessor(120, launches=()),
+            [old, incomplete_private, final_main], "com.example.app")
+        self.assertEqual(no_marker, [])
+        self.assertEqual(boundary, 120)
+        self.assertEqual(basis, "sched-missing-launch")
+
+        repeated_marker, boundary, basis = select(
+            FakeTraceProcessor(120, launches=(180, 190)),
+            [old, incomplete_private, final_main], "com.example.app")
+        self.assertEqual(repeated_marker, [])
+        self.assertEqual(boundary, 120)
+        self.assertEqual(basis, "sched-repeated-launch")
+
+        misordered_marker, boundary, basis = select(
+            FakeTraceProcessor(120, launches=(110,)),
+            [old, incomplete_private, final_main], "com.example.app")
+        self.assertEqual(misordered_marker, [])
+        self.assertEqual(boundary, 120)
+        self.assertEqual(basis, "sched-misordered-launch")
 
         # Fail closed only when NEITHER method can locate the boundary.
         unbounded, boundary, basis = select(
-            FakeTraceProcessor(None), [old, incomplete_private, final_main])
+            FakeTraceProcessor(None), [old, incomplete_private, final_main],
+            "com.example.app")
         self.assertEqual(unbounded, [])
         self.assertIsNone(boundary)
         self.assertIsNone(basis)
@@ -2884,26 +2944,27 @@ esac
         # Boundary known, but the traced launch is not in the capture. Also unusable,
         # and for a different reason the operator has to be able to tell apart.
         missing, boundary, basis = select(
-            FakeTraceProcessor(999), [old, late_conditioning, chained_conditioning])
+            FakeTraceProcessor(999), [old, late_conditioning, chained_conditioning],
+            "com.example.app")
         self.assertEqual(missing, [])
         self.assertEqual(boundary, 115)
 
         # A capture taken before Perfetto moved inside the conditioning wait has no
         # old generation, and needs no boundary at all.
         clean = FakeTraceProcessor(1)
-        no_old_generation, boundary, basis = select(clean, [final_main, final_private])
+        no_old_generation, boundary, basis = select(
+            clean, [final_main, final_private], "com.example.app")
         self.assertIsNone(no_old_generation)
         self.assertIsNone(boundary)
         self.assertIsNone(basis)
         self.assertEqual(clean.queries, [])
 
-        # A scheduler boundary is checked by the SEPARATION the protocol guarantees,
-        # not refused for being a scheduler boundary. Refusing on the method's name
-        # made the treatment arm permanently unverifiable: `end_ts` is NULL on every
-        # process of a real capture from the target device even with
-        # sched/sched_process_free enabled (measured: 849/849 processes,
-        # 4429/4429 threads), so the basis is "sched" on every real trace and any
-        # gate keyed on it alone fires on every capture that has SDK threads.
+        # A scheduler lower bound is usable only when one target launch marker scopes
+        # the final generation and the protocol's separation is still present.
+        # Refusing on the method's name alone made the treatment arm permanently
+        # unverifiable: `end_ts` is NULL on every process of a real capture from the
+        # target device even with sched/sched_process_free enabled (measured: 849/849
+        # processes, 4429/4429 threads), so real traces rely on this guarded fallback.
         self.assertIn("MIN_SEPARATION_NS = 1_000_000_000", source)
         self.assertIn('if boundary_basis == "sched" and separation_ns is not None', source)
         self.assertIn("separation_ns < MIN_SEPARATION_NS", source)
@@ -2926,7 +2987,7 @@ esac
         )
         self.assertIn("where upid in ({upids}) and lower(name) glob 'datadog-*'", source)
         self.assertIn("tp, {r.upid for r in verdict_procs}, args.package", source)
-        self.assertIn("final_launch_processes(tp, procs)", source)
+        self.assertIn("tp, procs, args.package", source)
 
     def test_thread_liveness_fails_closed_on_unreadable_processes(self) -> None:
         success = self.run_with_fake_adb(
