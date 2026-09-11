@@ -25,8 +25,8 @@ import com.datadog.android.profiling.model.RumMetadataEvent
 import com.google.gson.JsonArray
 import java.io.File
 import java.util.concurrent.TimeUnit
-import kotlin.math.abs
 
+@Suppress("TooManyFunctions")
 internal class ProfilingDataWriter(
     private val sdkCore: FeatureSdkCore
 ) : ProfilingWriter {
@@ -108,7 +108,8 @@ internal class ProfilingDataWriter(
                             id = listOfNotNull(rumContext.viewId),
                             name = listOfNotNull(rumContext.viewName)
                         ),
-                        error = ProfileEvent.Error(id = listOfNotNull(rumErrorId.ifEmpty { null }))
+                        error = ProfileEvent.Error(id = listOfNotNull(rumErrorId.ifEmpty { null })),
+                        dd = ProfileEvent.Dd(clockDrift = computeClockDrift())
                     )
                     val serialized = profileEvent.toJson().toString().toByteArray(Charsets.UTF_8)
                     val rumMobileEventsJson = buildTriggerRumMobileEventsJson(rumErrorId, detectedAtMs)
@@ -137,19 +138,17 @@ internal class ProfilingDataWriter(
         anrEvents: List<ProfilerEvent.RumAnrEvent>,
         vitalEvents: List<ProfilerEvent.RumVitalEvent>
     ): RawBatchEvent? {
-        val driftMs = context.time.serverTimeOffsetMs
-        val dropReason = when {
-            longTaskEvents.isEmpty() && anrEvents.isEmpty() && vitalEvents.isEmpty() -> DROP_REASON_NO_RUM_EVENTS
-            profilingResult.startReason != ProfilingStartReason.APPLICATION_LAUNCH &&
-                abs(driftMs) > MAX_CLOCK_DRIFT_MS -> DROP_REASON_CLOCK_DRIFT
-
-            else -> null
+        val dropReason = if (
+            longTaskEvents.isEmpty() && anrEvents.isEmpty() && vitalEvents.isEmpty()
+        ) {
+            DROP_REASON_NO_RUM_EVENTS
+        } else {
+            null
         }
         if (dropReason != null) {
             logWriteResultMetric(
                 dropped = true,
                 dropReason = dropReason,
-                driftMs = driftMs,
                 startReason = profilingResult.startReason.value,
                 longTaskEvents = longTaskEvents,
                 anrEvents = anrEvents,
@@ -158,13 +157,12 @@ internal class ProfilingDataWriter(
             return null
         }
 
-        return assembleBatchEvent(context, profilingResult, driftMs, longTaskEvents, anrEvents, vitalEvents)
+        return assembleBatchEvent(context, profilingResult, longTaskEvents, anrEvents, vitalEvents)
     }
 
     private fun assembleBatchEvent(
         context: DatadogContext,
         profilingResult: PerfettoResult,
-        driftMs: Long,
         longTaskEvents: List<ProfilerEvent.RumLongTaskEvent>,
         anrEvents: List<ProfilerEvent.RumAnrEvent>,
         vitalEvents: List<ProfilerEvent.RumVitalEvent>
@@ -179,7 +177,6 @@ internal class ProfilingDataWriter(
                 logWriteResultMetric(
                     dropped = true,
                     dropReason = DROP_REASON_PERFETTO_UNREADABLE,
-                    driftMs = driftMs,
                     startReason = profilingResult.startReason.value,
                     longTaskEvents = longTaskEvents,
                     anrEvents = anrEvents,
@@ -192,7 +189,6 @@ internal class ProfilingDataWriter(
                 logWriteResultMetric(
                     dropped = true,
                     dropReason = DROP_REASON_NO_RUM_CONTEXT,
-                    driftMs = driftMs,
                     startReason = profilingResult.startReason.value,
                     longTaskEvents = longTaskEvents,
                     anrEvents = anrEvents,
@@ -216,7 +212,6 @@ internal class ProfilingDataWriter(
                 logWriteResultMetric(
                     dropped = false,
                     dropReason = null,
-                    driftMs = driftMs,
                     startReason = profilingResult.startReason.value,
                     longTaskEvents = longTaskEvents,
                     anrEvents = anrEvents,
@@ -230,7 +225,6 @@ internal class ProfilingDataWriter(
     private fun logWriteResultMetric(
         dropped: Boolean,
         dropReason: String?,
-        driftMs: Long? = null,
         startReason: String,
         longTaskEvents: List<ProfilerEvent.RumLongTaskEvent>? = null,
         anrEvents: List<ProfilerEvent.RumAnrEvent>? = null,
@@ -241,7 +235,6 @@ internal class ProfilingDataWriter(
             put(KEY_DROPPED, dropped)
             put(KEY_DROP_REASON, dropReason)
             put(ProfilingTelemetry.KEY_START_REASON, startReason)
-            driftMs?.let { put(KEY_CLIENT_CLOCK_DRIFT, it) }
             longTaskEvents?.let { put(KEY_LONG_TASK_COUNT, it.size) }
             anrEvents?.let { put(KEY_ANR_COUNT, it.size) }
             vitalEvents?.let { put(KEY_VITAL_COUNT, it.size) }
@@ -289,6 +282,7 @@ internal class ProfilingDataWriter(
             event.rumContext.viewId?.let { viewIds.add(it) }
             event.rumContext.viewName?.let { viewNames.add(it) }
         }
+        val clockDrift = computeClockDrift()
         return ProfileEvent(
             start = formatIsoUtc(profilingResult.start),
             end = formatIsoUtc(profilingResult.end),
@@ -308,8 +302,20 @@ internal class ProfilingDataWriter(
             view = ProfileEvent.View(
                 id = viewIds.toList(),
                 name = viewNames.toList()
-            )
+            ),
+            dd = ProfileEvent.Dd(clockDrift = clockDrift)
         )
+    }
+
+    /**
+     * Computes the difference between the NTP-corrected (server) time and the boot time,
+     * in nanoseconds.
+     */
+    private fun computeClockDrift(): Long {
+        val serverTimeNs =
+            TimeUnit.MILLISECONDS.toNanos(sdkCore.timeProvider.getServerTimestampMillis())
+        val bootTimeNs = sdkCore.timeProvider.getDeviceElapsedRealtimeNanos()
+        return serverTimeNs - bootTimeNs
     }
 
     private fun buildRumMobileEventsJson(
@@ -416,19 +422,16 @@ internal class ProfilingDataWriter(
     }
 
     companion object {
-        internal const val MAX_CLOCK_DRIFT_MS = 1000L
         private const val LOG_FILE_DELETE_FAILED = "Failed to delete Perfetto trace file: %s"
 
         internal const val METRIC_TYPE_PROFILING_WRITE = "profiling write"
         internal const val KEY_PROFILING_WRITE = "profiling_write"
         internal const val KEY_DROPPED = "dropped"
         internal const val KEY_DROP_REASON = "drop_reason"
-        internal const val KEY_CLIENT_CLOCK_DRIFT = "client_clock_drift_ms"
         internal const val KEY_LONG_TASK_COUNT = "long_task_count"
         internal const val KEY_ANR_COUNT = "anr_count"
         internal const val KEY_VITAL_COUNT = "vital_count"
         internal const val DROP_REASON_NO_RUM_EVENTS = "no_rum_events"
-        internal const val DROP_REASON_CLOCK_DRIFT = "clock_drift_exceeded"
         internal const val DROP_REASON_PERFETTO_UNREADABLE = "perfetto_unreadable"
         internal const val DROP_REASON_NO_RUM_CONTEXT = "no_rum_context"
         internal const val KEY_HAS_RUM_ERROR_ID = "has_rum_error_id"

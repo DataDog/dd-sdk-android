@@ -10,6 +10,18 @@
     {
       "type": "object",
       "properties": {
+        "_dd": {
+          "type": "object",
+          "description": "Datadog internal metadata.",
+          "properties": {
+            "clock_drift": {
+              "type": "integer",
+              "description": "Difference between the NTP-corrected time and the boot time, in nanoseconds. Used to align profiling samples (which use boot time) with absolute timestamps.",
+              "readOnly": true
+            }
+          },
+          "readOnly": true
+        },
         "error": {
           "type": "object",
           "description": "Error properties.",
