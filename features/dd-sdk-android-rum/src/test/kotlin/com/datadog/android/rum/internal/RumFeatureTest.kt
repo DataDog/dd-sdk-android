@@ -1253,6 +1253,8 @@ internal class RumFeatureTest {
 
         assertThat(attributesCaptor.firstValue[RumAttributes.INTERNAL_TIMESTAMP])
             .isEqualTo(fakeEvent.detectedAtMs)
+        assertThat(attributesCaptor.firstValue[RumAttributes.INTERNAL_TRIGGERED_BY_PROFILING])
+            .isEqualTo(true)
 
         @Suppress("UNCHECKED_CAST")
         val attached = attributesCaptor.firstValue[RumAttributes.INTERNAL_ALL_THREADS] as List<ThreadDump>

@@ -487,7 +487,8 @@ internal class RumFeature(
             anrException,
             mapOf(
                 RumAttributes.INTERNAL_TIMESTAMP to event.detectedAtMs,
-                RumAttributes.INTERNAL_ALL_THREADS to allThreads
+                RumAttributes.INTERNAL_ALL_THREADS to allThreads,
+                RumAttributes.INTERNAL_TRIGGERED_BY_PROFILING to true
             )
         )
     }
