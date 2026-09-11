@@ -9,6 +9,7 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.api.instrumentation.network.HttpResponseInfo
+import com.datadog.android.internal.network.HttpSpec
 import okhttp3.Response
 import okhttp3.ResponseBody
 import java.io.IOException
@@ -33,12 +34,21 @@ internal class OkHttpResponseInfo(
     @get:WorkerThread
     override val contentLength: Long?
         get() = try {
-            // if there is a Content-Length available, we can read it directly
-            // however, OkHttp will drop Content-Length header if transparent compression is
-            // used (since the value reported cannot be applied to decompressed body), so to be
-            // able to still read it, we force decompression by calling peekBody
-            originalResponse.body?.contentLengthOrNull()
-                ?: originalResponse.peekBody(MAX_BODY_PEEK_BYTES).contentLengthOrNull()
+            if (HttpSpec.ContentType.isStream(contentType)) {
+                null
+            } else {
+                // if there is a Content-Length available, we can read it directly
+                // however, OkHttp will drop Content-Length header if transparent compression is
+                // used (since the value reported cannot be applied to decompressed body), so to be
+                // able to still read it, we force decompression by calling peekBody - unless this
+                // is binary media (image/video/audio/octet-stream), which is large and not worth
+                // buffering
+                originalResponse.body?.contentLengthOrNull() ?: if (HttpSpec.ContentType.isBinaryMedia(contentType)) {
+                    null
+                } else {
+                    originalResponse.peekBody(MAX_BODY_PEEK_BYTES).contentLengthOrNull()
+                }
+            }
         } catch (e: IOException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -71,7 +81,7 @@ internal class OkHttpResponseInfo(
     internal companion object {
 
         // We need to limit this value as the body will be loaded in memory
-        private const val MAX_BODY_PEEK_BYTES: Long = 32 * 1024L * 1024L
+        private const val MAX_BODY_PEEK_BYTES: Long = 512L * 1024L
 
         internal const val ERROR_PEEK_BODY = "Unable to peek response body."
 
