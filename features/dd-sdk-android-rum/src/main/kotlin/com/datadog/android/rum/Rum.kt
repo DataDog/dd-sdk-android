@@ -105,6 +105,19 @@ object Rum {
             sdkCore
         )
 
+        // When the pre-launch module supplied the startup detector, hand it this feature's listener
+        // and drain whatever it buffered before the SDK existed. PreLaunchRumAppStartupDetector's
+        // state is main-thread confined and unsynchronized — its lifecycle callbacks write it from
+        // the main thread — so the hand-off is posted there too, regardless of which thread
+        // Rum.enable() was called on (the main thread for native Android, a background thread for
+        // React Native / Flutter).
+        if (rumFeature.usePreLaunchDetector) {
+            Handler(Looper.getMainLooper()).post {
+                @Suppress("ThreadSafety") // handler posts to the main looper
+                rumFeature.attachPreLaunchRumAppStartupDetector()
+            }
+        }
+
         // TODO RUM-3794 there is a small chance of application crashing between RUM monitor
         //  registration and the moment SDK init is processed, in this case we will miss this crash
         //  (it won't activate new session). Ideally we should start session when monitor is created

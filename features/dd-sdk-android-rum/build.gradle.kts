@@ -63,6 +63,7 @@ android {
 dependencies {
     api(project(":dd-sdk-android-core"))
     implementation(project(":dd-sdk-android-internal"))
+    implementation(project(":features:dd-sdk-android-rum-internal"))
     implementation(libs.kotlin)
     implementation(libs.gson)
     implementation(libs.okHttp)
