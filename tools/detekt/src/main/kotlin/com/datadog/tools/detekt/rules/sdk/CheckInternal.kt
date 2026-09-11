@@ -7,26 +7,19 @@
 package com.datadog.tools.detekt.rules.sdk
 
 import com.datadog.tools.detekt.ext.isContainingEntryPointPublic
-import io.gitlab.arturbosch.detekt.api.CodeSmell
-import io.gitlab.arturbosch.detekt.api.Debt
-import io.gitlab.arturbosch.detekt.api.Entity
-import io.gitlab.arturbosch.detekt.api.Issue
-import io.gitlab.arturbosch.detekt.api.Rule
-import io.gitlab.arturbosch.detekt.api.Severity
+import dev.detekt.api.Config
+import dev.detekt.api.Entity
+import dev.detekt.api.Finding
+import dev.detekt.api.Rule
 import org.jetbrains.kotlin.psi.KtCallExpression
 
 /**
  * A rule to detekt `check`, `checkNotNull` calls.
  * @active
  */
-class CheckInternal : Rule() {
-
-    override val issue: Issue = Issue(
-        javaClass.simpleName,
-        Severity.Defect,
-        "This rule reports when an exception is thrown.",
-        Debt.TWENTY_MINS
-    )
+class CheckInternal(
+    config: Config = Config.empty
+) : Rule(config, "This rule reports when an exception is thrown.") {
 
     override fun visitCallExpression(expression: KtCallExpression) {
         val callee = expression.calleeExpression
@@ -37,8 +30,7 @@ class CheckInternal : Rule() {
             !expression.isContainingEntryPointPublic()
         ) {
             report(
-                CodeSmell(
-                    issue,
+                Finding(
                     Entity.from(expression),
                     message = "A check is called from an internal or private part of the code."
                 )

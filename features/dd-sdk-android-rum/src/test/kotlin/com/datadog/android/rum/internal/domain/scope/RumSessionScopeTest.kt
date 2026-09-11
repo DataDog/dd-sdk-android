@@ -304,7 +304,7 @@ internal class RumSessionScopeTest {
     fun `M delegate events to child scope W handleViewEvent() {NOT TRACKED}`() {
         // Given
         testedScope.sessionState = RumSessionScope.State.NOT_TRACKED
-        val mockEvent: RumRawEvent = mock()
+        val mockEvent: RumRawEvent = mock<RumRawEvent.WebViewEvent>()
 
         // When
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -323,7 +323,7 @@ internal class RumSessionScopeTest {
     fun `M delegate events to child scope W handleViewEvent() {EXPIRED}`() {
         // Given
         testedScope.sessionState = RumSessionScope.State.EXPIRED
-        val mockEvent = mock<RumRawEvent>()
+        val mockEvent = RumRawEvent.WebViewEvent(eventTime = currentFakeTime())
 
         // When
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -421,7 +421,7 @@ internal class RumSessionScopeTest {
     fun `M return null from handleEvent W stopped { completed child scopes }`() {
         // Given
         val stopEvent = RumRawEvent.StopSession(eventTime = currentFakeTime())
-        val fakeEvent: RumRawEvent = mock()
+        val fakeEvent: RumRawEvent = RumRawEvent.WebViewEvent(eventTime = currentFakeTime())
         whenever(
             mockChildScope.handleEvent(
                 eq(stopEvent),
@@ -661,7 +661,12 @@ internal class RumSessionScopeTest {
         val initialContext = testedScope.getRumContext()
 
         // When
-        val result = testedScope.handleEvent(mock(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val result = testedScope.handleEvent(
+            mock<RumRawEvent.WebViewEvent>(),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
         val context = testedScope.getRumContext()
 
         // Then
@@ -722,7 +727,12 @@ internal class RumSessionScopeTest {
 
         // When
         advanceTimeByMs(TEST_INACTIVITY_MS)
-        val result = testedScope.handleEvent(mock(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val result = testedScope.handleEvent(
+            mock<RumRawEvent.WebViewEvent>(),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
         val context = testedScope.getRumContext()
 
         // Then
@@ -743,7 +753,12 @@ internal class RumSessionScopeTest {
 
         // When
         advanceTimeByMs(TEST_INACTIVITY_MS)
-        val result = testedScope.handleEvent(mock(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val result = testedScope.handleEvent(
+            mock<RumRawEvent.WebViewEvent>(),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
         val context = testedScope.getRumContext()
 
         // Then
@@ -914,7 +929,12 @@ internal class RumSessionScopeTest {
 
         // When
         advanceTimeByMs(TEST_SLEEP_MS)
-        val result = testedScope.handleEvent(mock(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val result = testedScope.handleEvent(
+            mock<RumRawEvent.WebViewEvent>(),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
         val context = testedScope.getRumContext()
 
         // Then
@@ -2081,7 +2101,15 @@ internal class RumSessionScopeTest {
 
         // When
         advanceTimeByMs(TEST_INACTIVITY_MS)
-        testedScope.handleEvent(mock(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        // A concrete subclass, not the sealed base: at jvmTarget 17 Kotlin emits RumRawEvent as a
+        // real JVM sealed class, which Mockito cannot mock. WebViewEvent does not renew the
+        // session, so the scope still expires, and eventTime is only read on renewal paths.
+        testedScope.handleEvent(
+            mock<RumRawEvent.WebViewEvent>(),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
 
         // Then
         assertThat(testedScope.sessionState).isEqualTo(RumSessionScope.State.EXPIRED)

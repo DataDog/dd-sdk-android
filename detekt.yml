@@ -1,13 +1,9 @@
-build:
-  maxIssues: 0
-  excludeCorrectable: false
-
 config:
   validation: true
   warningsAsErrors: true
   checkExhaustiveness: false
-  # when writing own rules with new properties, exclude the property path e.g.: 'my_rule_set,.*>.*>[my_property]'
-  excludes: ''
+  # when writing own rules with new properties, exclude the property path e.g.: ['my_rule_set', '.*>.*>[my_property]']
+  excludes: []
 
 processors:
   active: true
@@ -16,26 +12,27 @@ console-reports:
   active: true
   exclude:
     - 'ComplexityReport'
-    - 'FileBasedFindingsReport'
-    - 'BuildFailureReport'
-
-output-reports:
-  active: false
+    - 'FileBasedIssuesReport'
 
 comments:
   active: true
   AbsentOrWrongFileLicense:
     active: true
-    licenseTemplateFile: 'license.template'
+    licenseTemplate: |
+      /*
+       * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+       * This product includes software developed at Datadog (https://www.datadoghq.com/).
+       * Copyright 2016-Present Datadog, Inc.
+       */
     licenseTemplateIsRegex: false
     excludes:
       # Gradle build outputs and generated artifacts.
       - '**/build/generated/**'
       # Vendored test files ported from the upstream dd-trace-java library.
       - '**/features/dd-sdk-android-trace-internal/src/test/kotlin/com/datadog/trace/**'
-  CommentOverPrivateFunction:
+  DocumentationOverPrivateFunction:
     active: false
-  CommentOverPrivateProperty:
+  DocumentationOverPrivateProperty:
     active: false
   DeprecatedBlockTag:
     active: true
@@ -113,20 +110,20 @@ complexity:
   excludes: ['**/build/**']
   CognitiveComplexMethod:
     active: false
-    threshold: 15
+    allowedComplexity: 14
   ComplexCondition:
     active: true
-    threshold: 4
+    allowedConditions: 3
   ComplexInterface:
     active: false
-    threshold: 10
+    allowedDefinitions: 9
     includeStaticDeclarations: false
     includePrivateDeclarations: false
     ignoreOverloaded: false
   CyclomaticComplexMethod:
     active: true
     excludes: ['**/test/**', '**/*Test/**', '**/testFixtures/**']
-    threshold: 15
+    allowedComplexity: 14
     ignoreSingleWhenExpression: true
     ignoreSimpleWhenEntries: true
     ignoreNestingFunctions: false
@@ -146,33 +143,33 @@ complexity:
   LargeClass:
     active: true
     excludes: ['**/test/**', '**/*Test/**', '**/testFixtures/**']
-    threshold: 600
+    allowedLines: 599
   LongMethod:
     active: true
     excludes: ['**/test/**', '**/*Test/**', '**/testFixtures/**']
-    threshold: 60
+    allowedLines: 59
   LongParameterList:
     active: true
     excludes: ['**/test/**', '**/*Test/**', '**/testFixtures/**']
-    functionThreshold: 12
-    constructorThreshold: 12
+    allowedFunctionParameters: 11
+    allowedConstructorParameters: 11
     ignoreDefaultParameters: true
     ignoreDataClasses: true
     ignoreAnnotatedParameter: []
     ignoreAnnotated: [ 'Composable' ]
   MethodOverloading:
     active: true
-    threshold: 6
+    allowedOverloads: 5
   NamedArguments:
     active: false
-    threshold: 6
+    allowedArguments: 6
     ignoreArgumentsMatchingNames: true
   NestedBlockDepth:
     active: true
-    threshold: 4
+    allowedDepth: 3
   NestedScopeFunctions:
     active: false
-    threshold: 1
+    allowedDepth: 1
     functions:
       - 'kotlin.apply'
       - 'kotlin.run'
@@ -184,18 +181,18 @@ complexity:
   StringLiteralDuplication:
     active: true
     excludes: ['**/test/**', '**/*Test/**', '**/testFixtures/**']
-    threshold: 3
+    allowedDuplications: 2
     ignoreAnnotation: true
-    excludeStringsWithLessThan5Characters: true
+    allowedWithLengthLessThan: 5
     ignoreStringsRegex: '$^'
   TooManyFunctions:
     active: true
     excludes: ['**/test/**', '**/*Test/**', '**/testFixtures/**']
-    thresholdInFiles: 11
-    thresholdInClasses: 11
-    thresholdInInterfaces: 11
-    thresholdInObjects: 11
-    thresholdInEnums: 11
+    allowedFunctionsPerFile: 10
+    allowedFunctionsPerClass: 10
+    allowedFunctionsPerInterface: 10
+    allowedFunctionsPerObject: 10
+    allowedFunctionsPerEnum: 10
     ignoreDeprecated: true
     ignorePrivate: false
     ignoreOverridden: true
@@ -248,7 +245,7 @@ empty-blocks:
     active: true
   EmptyInitBlock:
     active: true
-  EmptyKtFile:
+  EmptyKotlinFile:
     active: true
   EmptySecondaryConstructor:
     active: true
@@ -356,11 +353,11 @@ naming:
     active: true
     excludes: ['**/test/**', '**/*Test/**', '**/testFixtures/**']
     forbiddenName: []
-  FunctionMaxLength:
+  FunctionNameMaxLength:
     active: true
     excludes: ['**/test/**', '**/*Test/**', '**/testFixtures/**']
     maximumFunctionNameLength: 100
-  FunctionMinLength:
+  FunctionNameMinLength:
     active: true
     excludes: ['**/test/**', '**/*Test/**', '**/testFixtures/**']
     minimumFunctionNameLength: 2
@@ -428,7 +425,8 @@ performance:
     active: true
   CouldBeSequence:
     active: true
-    threshold: 3
+    excludes: ['**/test/**', '**/*Test/**', '**/testFixtures/**']
+    allowedOperations: 2
   ForEachOnRange:
     active: true
     excludes: ['**/test/**', '**/*Test/**', '**/testFixtures/**']
@@ -629,8 +627,8 @@ style:
     allowedPatterns: ''
   ForbiddenImport:
     active: false
-    imports: []
-    forbiddenPatterns: ''
+    forbiddenImports: []
+    allowedImports: []
   ForbiddenMethodCall:
     active: false
     methods:
@@ -683,7 +681,7 @@ style:
     excludeImportStatements: true
     excludeCommentStatements: true
     excludeRawStrings: true
-  MayBeConst:
+  MayBeConstant:
     active: true
   ModifierOrder:
     active: true
@@ -709,15 +707,13 @@ style:
     active: true
   OptionalUnit:
     active: false
-  PreferToOverPairSyntax:
-    active: false
   ProtectedMemberInFinalClass:
     active: true
   RedundantExplicitType:
     active: false
   RedundantHigherOrderMapUsage:
     active: true
-  RedundantVisibilityModifierRule:
+  RedundantVisibilityModifier:
     active: false
   ReturnCount:
     active: true
@@ -731,7 +727,7 @@ style:
     active: true
   SerialVersionUIDInSerializableClass:
     active: true
-  SpacingBetweenPackageAndImports:
+  SpacingAfterPackageAndImports:
     active: false
   StringShouldBeRawString:
     active: false
@@ -753,11 +749,9 @@ style:
     active: false
     acceptableLength: 4
     allowNonStandardGrouping: false
-  UnnecessaryAbstractClass:
+  AbstractClassCanBeConcreteClass:
     active: false
     excludes: ['**/test/**', '**/*Test/**', '**/testFixtures/**', '**/tools/**']
-  UnnecessaryAnnotationUseSiteTarget:
-    active: false
   UnnecessaryApply:
     active: true
   UnnecessaryBackticks:
@@ -775,16 +769,16 @@ style:
   UnnecessaryParentheses:
     active: false
     allowForUnclearPrecedence: false
-  UntilInsteadOfRangeTo:
+  RangeUntilInsteadOfRangeTo:
     active: false
-  UnusedImports:
+  UnusedImport:
     active: true
   UnusedParameter:
     active: true
     allowedNames: 'ignored|expected'
   UnusedPrivateClass:
     active: true
-  UnusedPrivateMember:
+  UnusedPrivateFunction:
     active: true
     allowedNames: ''
     ignoreAnnotated:

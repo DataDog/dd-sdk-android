@@ -7,31 +7,24 @@
 package com.datadog.tools.detekt.rules.sdk
 
 import com.datadog.tools.detekt.ext.fqTypeName
-import com.datadog.tools.detekt.ext.type
-import io.gitlab.arturbosch.detekt.api.CodeSmell
-import io.gitlab.arturbosch.detekt.api.Debt
-import io.gitlab.arturbosch.detekt.api.Entity
-import io.gitlab.arturbosch.detekt.api.Issue
-import io.gitlab.arturbosch.detekt.api.Rule
-import io.gitlab.arturbosch.detekt.api.Severity
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
-import org.jetbrains.kotlin.descriptors.VariableDescriptor
+import com.datadog.tools.detekt.ext.unwrapSmartCast
+import dev.detekt.api.Config
+import dev.detekt.api.Entity
+import dev.detekt.api.Finding
+import dev.detekt.api.RequiresAnalysisApi
+import dev.detekt.api.Rule
+import org.jetbrains.kotlin.analysis.api.KaSession
+import org.jetbrains.kotlin.analysis.api.analyze
+import org.jetbrains.kotlin.analysis.api.resolution.KaExplicitReceiverValue
+import org.jetbrains.kotlin.analysis.api.resolution.KaFunctionCall
+import org.jetbrains.kotlin.analysis.api.resolution.KaReceiverValue
+import org.jetbrains.kotlin.analysis.api.resolution.singleFunctionCallOrNull
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtReferenceExpression
 import org.jetbrains.kotlin.psi.KtStringTemplateExpression
 import org.jetbrains.kotlin.psi.psiUtil.children
-import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.bindingContextUtil.getReferenceTargets
-import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
-import org.jetbrains.kotlin.resolve.calls.model.VarargValueArgument
-import org.jetbrains.kotlin.resolve.calls.util.getResolvedCall
-import org.jetbrains.kotlin.resolve.calls.util.getType
-import org.jetbrains.kotlin.resolve.scopes.receivers.ClassQualifier
-import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver
-import org.jetbrains.kotlin.types.lowerIfFlexible
-import org.jetbrains.kotlin.utils.addToStdlib.firstIsInstanceOrNull
 import java.util.Locale
 
 /**
@@ -40,76 +33,71 @@ import java.util.Locale
  *
  * @active
  */
-class InvalidStringFormat : Rule() {
+class InvalidStringFormat(
+    config: Config = Config.empty
+) : Rule(config, "This rule reports when a String format pattern does not match the provided arguments."),
+    RequiresAnalysisApi {
+
+    /**
+     * The format string and argument types resolved for a `format` call.
+     *
+     * @param formatString the format pattern, when it could be resolved
+     * @param formatArgs the fully qualified type names of the arguments passed to the pattern
+     */
+    private data class ResolvedFormatCall(
+        val formatString: String?,
+        val formatArgs: List<String?>
+    )
 
     // region Rule
 
-    override val issue: Issue = Issue(
-        javaClass.simpleName,
-        Severity.Defect,
-        "This rule reports when a String format pattern does not match the provided arguments.",
-        Debt.TWENTY_MINS
-    )
-
-    @Suppress("ReturnCount")
     override fun visitCallExpression(expression: KtCallExpression) {
         super.visitCallExpression(expression)
-        if (bindingContext == BindingContext.EMPTY) {
-            return
-        }
-
-        val resolvedCall = expression.getResolvedCall(bindingContext) ?: return
-        val call = resolvedCall.call
-
-        // check receiver type
-        val explicitReceiver = call.explicitReceiver
-        val receiverType = explicitReceiver?.type(
-            bindingContext,
-            treatGenericAsSuper = true,
-            includeTypeArguments = true
-        )
-        if (receiverType != STRING_CLASS) return
 
         // check method call
-        val calleeExpression = call.calleeExpression?.node?.text
-        if (calleeExpression != FORMAT_METHOD) return
+        if (expression.calleeExpression?.text != FORMAT_METHOD) return
 
-        val formatString = extractFormatString(resolvedCall)
-        val formatArgs = extractFormatArgs(resolvedCall)
+        val resolved = analyze(expression) { resolveFormatCall(expression) } ?: return
 
-        checkFormat(expression, formatString, formatArgs)
+        checkFormat(expression, resolved.formatString, resolved.formatArgs)
     }
 
     // endregion
 
     // region Internal
 
-    private fun extractFormatString(
-        resolvedCall: ResolvedCall<out CallableDescriptor>
+    @Suppress("ReturnCount")
+    private fun KaSession.resolveFormatCall(expression: KtCallExpression): ResolvedFormatCall? {
+        val call = expression.resolveToCall()?.singleFunctionCallOrNull() ?: return null
+
+        val receiver = call.extensionReceiver ?: call.dispatchReceiver ?: return null
+
+        // check receiver type. `"…".format(…)` is an extension on String, while `String.format(…)`
+        // is an extension on String's companion object.
+        val receiverTypeName = fqTypeName(receiver.type).removeSuffix("?")
+        val isCompanionReceiver = receiverTypeName == STRING_COMPANION_CLASS
+        if (receiverTypeName != STRING_CLASS && !isCompanionReceiver) return null
+
+        return ResolvedFormatCall(
+            formatString = extractFormatString(call, receiver, isCompanionReceiver),
+            formatArgs = extractFormatArgs(call, isCompanionReceiver)
+        )
+    }
+
+    private fun KaSession.extractFormatString(
+        call: KaFunctionCall<*>,
+        receiver: KaReceiverValue,
+        isCompanionReceiver: Boolean
     ): String? {
-        val call = resolvedCall.call
-        val stringExpression = when (val explicitReceiver = call.explicitReceiver) {
-            is ClassQualifier -> {
-                // String.format(…)
-                val arguments = resolvedCall.valueArguments.toList().firstOrNull {
-                    it.first.type.fqTypeName() == STRING_CLASS
-                }?.second?.arguments
-                if (arguments != null && arguments.size == 1) {
-                    arguments.first().getArgumentExpression()
-                } else {
-                    null
-                }
-            }
-
-            is ExpressionReceiver -> {
-                // "…".format(…)
-                explicitReceiver.expression
-            }
-
-            else -> {
-                println("Unknown receiver:$explicitReceiver")
-                null
-            }
+        val stringExpression = if (isCompanionReceiver) {
+            // String.format(…): the pattern is the `format` parameter
+            call.valueArgumentMapping
+                .filterValues { !it.symbol.isVararg && fqTypeName(it.returnType) == STRING_CLASS }
+                .keys
+                .singleOrNull()
+        } else {
+            // "…".format(…): the pattern is the receiver itself
+            (receiver.unwrapSmartCast() as? KaExplicitReceiverValue)?.expression
         }
 
         val expression = if (stringExpression is KtDotQualifiedExpression) {
@@ -121,45 +109,34 @@ class InvalidStringFormat : Rule() {
         return resolveStringExpression(expression)
     }
 
-    private fun resolveStringExpression(stringExpression: KtExpression?): String? {
+    private fun KaSession.resolveStringExpression(stringExpression: KtExpression?): String? {
         return if (stringExpression is KtStringTemplateExpression) {
             stringExpression.node
                 .children()
                 .filter { it.text != "\"" }
                 .joinToString("") { it.text }
         } else if (stringExpression is KtReferenceExpression) {
-            val referenceTarget = stringExpression.getReferenceTargets(bindingContext)
-                .firstIsInstanceOrNull<VariableDescriptor>()
-
-            if (referenceTarget is VariableDescriptor && !referenceTarget.isVar) {
-                val compileTimeInitializer = referenceTarget.compileTimeInitializer
-                if (compileTimeInitializer != null) {
-                    compileTimeInitializer.value as? String
-                } else {
-                    println("Unable to get compileTimeInitializer for $referenceTarget")
-                    null
-                }
-            } else {
-                println("Unknown referenceTarget:$referenceTarget")
-                null
+            val constantValue = stringExpression.evaluate()?.value as? String
+            if (constantValue == null) {
+                println("Unable to resolve a constant value for $stringExpression")
             }
+            constantValue
         } else {
             println("Unknown string expression: $stringExpression")
             null
         }
     }
 
-    private fun extractFormatArgs(
-        resolvedCall: ResolvedCall<out CallableDescriptor>
+    private fun KaSession.extractFormatArgs(
+        call: KaFunctionCall<*>,
+        isCompanionReceiver: Boolean
     ): List<String?> {
-        val receiver = resolvedCall.call.explicitReceiver
-        val formatParams = resolvedCall.valueArgumentsByIndex?.last() as? VarargValueArgument
+        val rawTypes = call.valueArgumentMapping
+            .filterValues { it.symbol.isVararg }
+            .keys
+            .map { argument -> argument.expressionType?.let { fqTypeName(it) } }
 
-        val rawTypes = formatParams?.arguments.orEmpty()
-            .map {
-                it.getArgumentExpression()?.getType(bindingContext)?.lowerIfFlexible()?.fqTypeName()
-            }
-        return if (receiver is ClassQualifier && rawTypes.firstOrNull() == LOCALE_CLASS) {
+        return if (isCompanionReceiver && rawTypes.firstOrNull() == LOCALE_CLASS) {
             rawTypes.drop(1)
         } else {
             rawTypes
@@ -172,9 +149,9 @@ class InvalidStringFormat : Rule() {
         formatArgs: List<String?>
     ) {
         if (formatString == null) {
-            report(CodeSmell(issue, Entity.from(expression), ERROR_UNKNOWN_FORMAT_STRING))
+            report(Finding(Entity.from(expression), ERROR_UNKNOWN_FORMAT_STRING))
         } else if (formatArgs.isEmpty()) {
-            report(CodeSmell(issue, Entity.from(expression), ERROR_UNKNOWN_FORMAT_STRING))
+            report(Finding(Entity.from(expression), ERROR_UNKNOWN_FORMAT_STRING))
         } else {
             val specifiers = SPECIFIER_REGEX.findAll(formatString).toList()
             checkSpecifiers(expression, specifiers, formatArgs)
@@ -194,7 +171,7 @@ class InvalidStringFormat : Rule() {
             val argIndex = (ref ?: ++indexNoRef) - 1
             if (argIndex >= formatArgs.size) {
                 val message = ERROR_INVALID_ARGUMENT_COUNT.format(Locale.US, matchResult.value)
-                report(CodeSmell(issue, Entity.from(expression), message))
+                report(Finding(Entity.from(expression), message))
             } else {
                 val argType = formatArgs[argIndex]
                 checkArgumentType(expression, argType, type)
@@ -230,11 +207,11 @@ class InvalidStringFormat : Rule() {
         if (allowedTypes == null) {
             val message = ERROR_INVALID_ARGUMENT_TYPE +
                 "Unknown specifier %$type."
-            report(CodeSmell(issue, Entity.from(expression), message))
+            report(Finding(Entity.from(expression), message))
         } else if (!allowedTypes.contentEquals(ANY_TYPES) && argType !in allowedTypes) {
             val message = ERROR_INVALID_ARGUMENT_TYPE +
                 " Expected one of ${allowedTypes.joinToString()}; but was $argType."
-            report(CodeSmell(issue, Entity.from(expression), message))
+            report(Finding(Entity.from(expression), message))
         }
     }
 
@@ -243,6 +220,7 @@ class InvalidStringFormat : Rule() {
     companion object {
         private const val LOCALE_CLASS = "java.util.Locale"
         private const val STRING_CLASS = "kotlin.String"
+        private const val STRING_COMPANION_CLASS = "kotlin.String.Companion"
         private const val FORMAT_METHOD = "format"
 
         private const val SPECIFIER_STRING = 's'

@@ -389,6 +389,9 @@ internal class LoggerTest {
     }
 
     @Test
+    // NULL_MAP_VALUE is typed java.lang.Object (RUM-373); mapOf(...) infers Map<_, Object> here.
+    // Suppress at the use site until RUM-373 removes the constant.
+    @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
     fun `add null String attribute to logger`(forge: Forge) {
         val key = forge.anAlphabeticalString()
         val value: String? = null

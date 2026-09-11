@@ -130,7 +130,7 @@ internal class RecordedDataQueueHandlerTest {
             )
         )
 
-        fakeTouchData = forge.aList { mock() }
+        fakeTouchData = forge.aList { getForgery() }
 
         fakeNodeData = forge.aList { mock() }
 

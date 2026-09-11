@@ -6,15 +6,12 @@
 
 package com.datadog.tools.detekt.rules.sdk
 
-import io.gitlab.arturbosch.detekt.api.CodeSmell
-import io.gitlab.arturbosch.detekt.api.Config
-import io.gitlab.arturbosch.detekt.api.Debt
-import io.gitlab.arturbosch.detekt.api.Entity
-import io.gitlab.arturbosch.detekt.api.Issue
-import io.gitlab.arturbosch.detekt.api.Rule
-import io.gitlab.arturbosch.detekt.api.Severity
-import io.gitlab.arturbosch.detekt.api.config
-import org.jetbrains.kotlin.com.intellij.psi.PsiComment
+import com.intellij.psi.PsiComment
+import dev.detekt.api.Config
+import dev.detekt.api.Entity
+import dev.detekt.api.Finding
+import dev.detekt.api.Rule
+import dev.detekt.api.config
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtObjectDeclaration
@@ -25,17 +22,10 @@ import org.jetbrains.kotlin.psi.KtProperty
  * @active
  */
 class TodoWithoutTask(
-    ruleSetConfig: Config
-) : Rule(ruleSetConfig) {
+    ruleSetConfig: Config = Config.empty
+) : Rule(ruleSetConfig, "This rule reports when a TODO comment is missing a task number.") {
 
     private val deprecatedPrefixes: List<String> by config(defaultValue = emptyList())
-
-    override val issue: Issue = Issue(
-        javaClass.simpleName,
-        Severity.Defect,
-        "This rule reports when a TODO comment is missing a task number.",
-        Debt.TEN_MINS
-    )
 
     override fun visitObjectDeclaration(declaration: KtObjectDeclaration) {
         declaration.docComment?.let { reportIfInvalid(it) }
@@ -93,8 +83,7 @@ class TodoWithoutTask(
         message: String
     ) {
         report(
-            CodeSmell(
-                issue,
+            Finding(
                 Entity.from(comment),
                 message
             )

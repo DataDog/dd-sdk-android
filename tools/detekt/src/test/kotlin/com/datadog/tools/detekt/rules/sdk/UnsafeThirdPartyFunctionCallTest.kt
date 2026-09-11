@@ -6,32 +6,20 @@
 
 package com.datadog.tools.detekt.rules.sdk
 
+import dev.detekt.api.Config
+import dev.detekt.test.TestConfig
+import dev.detekt.test.lintWithContext
+import dev.detekt.test.utils.KotlinEnvironmentContainer
+import dev.detekt.test.utils.createEnvironment
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.github.detekt.test.utils.KotlinCoreEnvironmentWrapper
-import io.github.detekt.test.utils.createEnvironment
-import io.gitlab.arturbosch.detekt.api.Config
-import io.gitlab.arturbosch.detekt.test.TestConfig
-import io.gitlab.arturbosch.detekt.test.assertThat
-import io.gitlab.arturbosch.detekt.test.compileAndLintWithContext
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 
 @ExtendWith(ForgeExtension::class)
 internal class UnsafeThirdPartyFunctionCallTest {
 
-    lateinit var kotlinEnv: KotlinCoreEnvironmentWrapper
-
-    @BeforeEach
-    fun setup() {
-        kotlinEnv = createEnvironment()
-    }
-
-    @AfterEach
-    fun tearDown() {
-        kotlinEnv.dispose()
-    }
+    val kotlinEnv: KotlinEnvironmentContainer = createEnvironment()
 
     @Test
     fun `ignore call on internal type`() {
@@ -48,7 +36,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // When
         val findings = UnsafeThirdPartyFunctionCall(config)
-            .compileAndLintWithContext(kotlinEnv.env, code)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(0)
@@ -72,7 +60,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // When
         val findings = UnsafeThirdPartyFunctionCall(config)
-            .compileAndLintWithContext(kotlinEnv.env, code)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -100,7 +88,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // When
         val findings = UnsafeThirdPartyFunctionCall(config)
-            .compileAndLintWithContext(kotlinEnv.env, code)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(0)
@@ -120,7 +108,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // When
         val findings = UnsafeThirdPartyFunctionCall(TestConfig())
-            .compileAndLintWithContext(kotlinEnv.env, code)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -143,7 +131,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // When
         val findings = UnsafeThirdPartyFunctionCall(config)
-            .compileAndLintWithContext(kotlinEnv.env, code)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -163,7 +151,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // When
         val findings = UnsafeThirdPartyFunctionCall(TestConfig())
-            .compileAndLintWithContext(kotlinEnv.env, code)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -184,7 +172,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // When
         val findings = UnsafeThirdPartyFunctionCall(TestConfig())
-            .compileAndLintWithContext(kotlinEnv.env, code)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -214,7 +202,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // When
         val findings = UnsafeThirdPartyFunctionCall(config)
-            .compileAndLintWithContext(kotlinEnv.env, code)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -243,7 +231,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // When
         val findings = UnsafeThirdPartyFunctionCall(config)
-            .compileAndLintWithContext(kotlinEnv.env, code)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -268,7 +256,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // When
         val findings = UnsafeThirdPartyFunctionCall(TestConfig())
-            .compileAndLintWithContext(kotlinEnv.env, code)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -300,7 +288,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // When
         val findings = UnsafeThirdPartyFunctionCall(config)
-            .compileAndLintWithContext(kotlinEnv.env, code)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(0)
@@ -330,7 +318,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // When
         val findings = UnsafeThirdPartyFunctionCall(config)
-            .compileAndLintWithContext(kotlinEnv.env, code)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(0)
@@ -360,7 +348,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // When
         val findings = UnsafeThirdPartyFunctionCall(config)
-            .compileAndLintWithContext(kotlinEnv.env, code)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(0)
@@ -392,7 +380,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // When
         val findings = UnsafeThirdPartyFunctionCall(config)
-            .compileAndLintWithContext(kotlinEnv.env, code)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(0)
@@ -431,7 +419,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // When
         val findings = UnsafeThirdPartyFunctionCall(config)
-            .compileAndLintWithContext(kotlinEnv.env, code)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(0)
@@ -455,7 +443,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // When
         val findings = UnsafeThirdPartyFunctionCall(config)
-            .compileAndLintWithContext(kotlinEnv.env, code)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(0)
@@ -481,7 +469,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // When
         val findings = UnsafeThirdPartyFunctionCall(config)
-            .compileAndLintWithContext(kotlinEnv.env, code)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(0)
@@ -502,7 +490,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // When
         val findings = UnsafeThirdPartyFunctionCall(config)
-            .compileAndLintWithContext(kotlinEnv.env, code)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -523,7 +511,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // When
         val findings = UnsafeThirdPartyFunctionCall(config)
-            .compileAndLintWithContext(kotlinEnv.env, code)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(0)
@@ -544,7 +532,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // When
         val findings = UnsafeThirdPartyFunctionCall(config)
-            .compileAndLintWithContext(kotlinEnv.env, code)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -565,7 +553,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // When
         val findings = UnsafeThirdPartyFunctionCall(config)
-            .compileAndLintWithContext(kotlinEnv.env, code)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(0)
@@ -589,7 +577,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // When
         val findings = UnsafeThirdPartyFunctionCall(Config.empty)
-            .compileAndLintWithContext(kotlinEnv.env, code)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(0)
@@ -598,7 +586,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
     @Test
     fun `ignore kotlin helper calls { with + run + also + println }`() {
         // Given
-        val config = TestConfig("knownSafeThirdPartyCalls" to "java.io.File.readBytes()")
+        val config = TestConfig("knownSafeThirdPartyCalls" to listOf("java.io.File.readBytes()"))
         val code =
             """
                 import java.io.File
@@ -616,7 +604,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // When
         val findings = UnsafeThirdPartyFunctionCall(config)
-            .compileAndLintWithContext(kotlinEnv.env, code)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(0)
@@ -636,7 +624,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
 
         // When
         val findings = UnsafeThirdPartyFunctionCall(Config.empty)
-            .compileAndLintWithContext(kotlinEnv.env, code)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(0)

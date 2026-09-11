@@ -58,7 +58,7 @@ datadog:
       - "androidx.collection.LruCache.get(kotlin.String):java.lang.NullPointerException"
       - "androidx.collection.LruCache.put(java.io.File, kotlin.Unit):java.lang.NullPointerException"
       - "androidx.collection.LruCache.remove(java.io.File):java.lang.NullPointerException"
-      - "androidx.metrics.performance.JankStats.createAndTrack(android.view.Window, androidx.metrics.performance.JankStats.OnFrameListener):java.lang.IllegalStateException"
+      - "androidx.metrics.performance.JankStats.Companion.createAndTrack(android.view.Window, androidx.metrics.performance.JankStats.OnFrameListener):java.lang.IllegalStateException"
       - "androidx.navigation.Navigation.findNavController(android.app.Activity, kotlin.Int):java.lang.IllegalStateException"
       - "androidx.work.WorkManager.enqueueUniqueWork(kotlin.String, androidx.work.ExistingWorkPolicy, androidx.work.OneTimeWorkRequest):java.util.concurrent.RejectedExecutionException,java.lang.NullPointerException"
       - "androidx.work.Data.Builder.build():java.lang.IllegalStateException"
@@ -72,6 +72,7 @@ datadog:
       # endregion
       # region Java File
       - "java.io.ByteArrayOutputStream.write(kotlin.ByteArray, kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException"
+      - "java.io.Closeable.close():java.io.IOException"
       - "java.io.File.canRead():java.lang.SecurityException"
       - "java.io.File.canWrite():java.lang.SecurityException"
       - "java.io.File.delete():java.lang.SecurityException"
@@ -154,7 +155,7 @@ datadog:
       - "java.lang.Character.toChars(kotlin.Int):java.lang.IllegalArgumentException"
       - "java.lang.Class.forName(kotlin.String?):java.lang.LinkageError,java.lang.ExceptionInInitializerError,java.lang.ClassNotFoundException"
       - "java.lang.Class.getDeclaredField(kotlin.String?):java.lang.NoSuchFieldException,java.lang.SecurityException,java.lang.NullPointerException"
-      - "java.lang.Class.getDeclaredMethod(kotlin.String?, kotlin.Array?):java.lang.NoSuchMethodException,java.lang.SecurityException,java.lang.NullPointerException"
+      - "java.lang.Class.getDeclaredMethod(kotlin.String?, kotlin.Array):java.lang.NoSuchMethodException,java.lang.SecurityException,java.lang.NullPointerException"
       - "java.lang.Class.getMethod(kotlin.String?, kotlin.Array?):java.lang.NoSuchMethodException,java.lang.SecurityException,java.lang.NullPointerException"
       - "java.lang.Class.isAssignableFrom(java.lang.Class?):java.lang.NullPointerException"
       - "java.lang.Runtime.addShutdownHook(java.lang.Thread):java.lang.IllegalArgumentException,java.lang.IllegalStateException,java.lang.SecurityException"
@@ -180,6 +181,7 @@ datadog:
       - "java.util.Collections.newSetFromMap(kotlin.collections.MutableMap?):java.lang.IllegalArgumentException"
       - "java.util.LinkedList.add(kotlin.Int, android.view.View):java.lang.IndexOutOfBoundsException"
       - "java.util.LinkedList.add(kotlin.Int, com.datadog.android.webview.internal.rum.domain.WebViewNativeRumViewsCache.ViewEntry):java.lang.IndexOutOfBoundsException"
+      - "java.util.LinkedList.first():java.util.NoSuchElementException"
       - "java.util.LinkedList.offer(com.datadog.android.core.internal.data.upload.UploadWorker.UploadNextBatchTask):java.lang.ClassCastException,java.lang.NullPointerException,java.lang.IllegalArgumentException"
       - "java.util.LinkedList.removeFirst():java.util.NoSuchElementException"
       - "java.util.LinkedList.removeLast():java.util.NoSuchElementException"

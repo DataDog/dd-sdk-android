@@ -51,6 +51,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import java.net.HttpURLConnection
+import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import com.datadog.android.okhttp.TraceContext as DeprecatedTraceContext
@@ -590,6 +591,7 @@ internal constructor(
                 W3C_TRACEPARENT_KEY,
                 @Suppress("UnsafeThirdPartyFunctionCall") // Format string is static
                 W3C_TRACEPARENT_DROP_SAMPLING_DECISION.format(
+                    Locale.US,
                     traceId.padStart(length = W3C_TRACE_ID_LENGTH, padChar = '0'),
                     spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0')
                 )
@@ -597,7 +599,7 @@ internal constructor(
             // TODO RUM-2121 3rd party vendor information will be erased
             @Suppress("UnsafeThirdPartyFunctionCall") // Format string is static
             var traceStateHeader = W3C_TRACESTATE_DROP_SAMPLING_DECISION
-                .format(spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0'))
+                .format(Locale.US, spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0'))
             if (traceOrigin != null) {
                 traceStateHeader += ";o:$traceOrigin"
             }

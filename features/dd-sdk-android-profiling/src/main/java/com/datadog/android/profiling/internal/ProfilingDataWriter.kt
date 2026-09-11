@@ -24,6 +24,7 @@ import com.datadog.android.profiling.model.ProfileEvent
 import com.datadog.android.profiling.model.RumMetadataEvent
 import com.google.gson.JsonArray
 import java.io.File
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 
@@ -402,14 +403,14 @@ internal class ProfilingDataWriter(
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.MAINTAINER,
-                    { LOG_FILE_DELETE_FAILED.format(path) }
+                    { LOG_FILE_DELETE_FAILED.format(Locale.US, path) }
                 )
             }
         } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
-                { LOG_FILE_DELETE_FAILED.format(path) },
+                { LOG_FILE_DELETE_FAILED.format(Locale.US, path) },
                 t
             )
         }

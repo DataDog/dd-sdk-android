@@ -34,16 +34,15 @@ internal class WebViewReplayEventMapper(
         val viewDataObject = event.get(VIEW_OBJECT_KEY)?.asJsonObject
         val viewId = viewDataObject?.get(VIEW_ID_KEY)?.asString
             ?: error(BROWSER_EVENT_MISSING_VIEW_DATA_ERROR_MESSAGE)
-        event.get(EVENT_KEY)?.asJsonObject?.let { record ->
-            val timeOffset = offsetProvider.getOffset(viewId, datadogContext)
-            record.get(TIMESTAMP_KEY)?.let { timestamp ->
-                val asLong = timestamp.asLong
-                val correctedTimestamp = asLong + timeOffset
-                record.addProperty(TIMESTAMP_KEY, correctedTimestamp)
-            }
-            record.addProperty(SLOT_ID_KEY, webViewId)
-            return bundleIntoEnrichedRecord(record, viewId, rumContext)
-        } ?: error(BROWSER_EVENT_MISSING_RECORD_ERROR_MESSAGE)
+        val record = event.get(EVENT_KEY)?.asJsonObject
+            ?: error(BROWSER_EVENT_MISSING_RECORD_ERROR_MESSAGE)
+
+        val timeOffset = offsetProvider.getOffset(viewId, datadogContext)
+        record.get(TIMESTAMP_KEY)?.let { timestamp ->
+            record.addProperty(TIMESTAMP_KEY, timestamp.asLong + timeOffset)
+        }
+        record.addProperty(SLOT_ID_KEY, webViewId)
+        return bundleIntoEnrichedRecord(record, viewId, rumContext)
     }
 
     private fun bundleIntoEnrichedRecord(

@@ -14,7 +14,6 @@ plugins {
     // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
     // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
     id("ktlint")
-    kotlin("android")
     kotlin("plugin.serialization")
     id("datadogBuildConfig")
 }

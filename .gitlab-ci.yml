@@ -21,6 +21,11 @@ variables:
   CACHE_FALLBACK_KEY: "develop"
   SLACK_OPS_CHANNEL: "#dd-sdk-android-ops"
 
+  # Unify the Gradle user home across ALL jobs so every Gradle invocation shares one
+  # GitLab-cacheable location ($CI_PROJECT_DIR/cache) instead of some jobs using the default,
+  # non-cached /root/.gradle. Jobs that pass --gradle-user-home cache/ already match this.
+  GRADLE_USER_HOME: "$CI_PROJECT_DIR/cache"
+
   # Magic Mirror Depot proxy URLs. The depot proxies both Maven Central and the Gradle
   # Plugin Portal for the Java ecosystem from the same endpoint. Setting these routes
   # dependency/plugin resolution through Datadog's internal mirror to avoid HTTP 429

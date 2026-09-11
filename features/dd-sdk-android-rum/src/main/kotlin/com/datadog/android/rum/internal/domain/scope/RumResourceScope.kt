@@ -287,7 +287,7 @@ internal class RumResourceScope(
             ResourceEvent.Response(headers = ResourceEvent.RequestHeaders(it.toMutableMap()))
         }
 
-        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
+        sdkCore.newRumEventWriteOperation(writeScope, writer) {
             val user = datadogContext.userInfo
             val hasReplay = featuresContextResolver.resolveViewHasReplay(
                 datadogContext,
@@ -458,7 +458,7 @@ internal class RumResourceScope(
             else -> ErrorEvent.ErrorEventSessionType.SYNTHETICS
         }
 
-        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
+        sdkCore.newRumEventWriteOperation(writeScope, writer) {
             val user = datadogContext.userInfo
             val hasReplay = featuresContextResolver.resolveViewHasReplay(
                 datadogContext,

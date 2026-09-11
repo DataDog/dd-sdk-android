@@ -118,7 +118,7 @@ object GlobalRumMonitor {
     }
 
     // This method is mainly for test purposes.
-    @Suppress("unused")
+    @Suppress("unused", "UnusedPrivateFunction")
     @JvmStatic
     private fun reset() {
         clear()

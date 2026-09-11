@@ -486,7 +486,7 @@ class ViewLoadingTimeMetricsAlwaysFullViewTests {
                 hasType("resource")
                 hasViewUrl(viewKey)
                 hasViewName(viewName)
-                hasResourceUrl(resourceUrl.toString())
+                hasResourceUrl(resourceUrl)
             }
             .hasRumEvent(index = 2) {
                 // View updated with event

@@ -30,7 +30,7 @@ internal suspend fun trackSwipe(
     isRtl: Boolean,
     attributes: Map<String, Any?>
 ) {
-    trackDragInteraction<SwipeStartProps>(
+    trackDragInteraction(
         interactionSource,
         onStart = { interactions, start ->
             interactions[start] = SwipeStartProps(
@@ -85,6 +85,7 @@ internal suspend fun trackScroll(
     )
 }
 
+@Suppress("ThrowingInternalException")
 internal suspend fun <T> trackDragInteraction(
     interactionSource: InteractionSource,
     onStart: (
@@ -126,7 +127,6 @@ internal suspend fun <T> trackDragInteraction(
             }
         }
     } catch (ce: CancellationException) {
-        @Suppress("ThrowingInternalException")
         throw ce
     } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
         Log.e(LOG_TAG, "Exception during drag interactions tracking", e)

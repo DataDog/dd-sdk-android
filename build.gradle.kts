@@ -24,7 +24,6 @@ plugins {
     alias(libs.plugins.kotlinxSerializationPlugin) apply false
     alias(libs.plugins.koverPlugin) apply false
     alias(libs.plugins.androidLibraryPlugin) apply false
-    alias(libs.plugins.kotlinAndroidPlugin) apply false
     alias(libs.plugins.dokkaGradlePlugin) apply false
     alias(libs.plugins.detektGradlePlugin) apply false
 }

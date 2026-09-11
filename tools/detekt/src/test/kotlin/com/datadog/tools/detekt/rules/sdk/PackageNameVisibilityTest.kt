@@ -7,17 +7,15 @@
 package com.datadog.tools.detekt.rules.sdk
 
 import com.datadog.tools.detekt.rules.test.FakeAnnotation
+import dev.detekt.test.TestConfig
+import dev.detekt.test.lintWithContext
+import dev.detekt.test.utils.KotlinEnvironmentContainer
+import dev.detekt.test.utils.createEnvironment
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.github.detekt.test.utils.KotlinCoreEnvironmentWrapper
-import io.github.detekt.test.utils.createEnvironment
-import io.gitlab.arturbosch.detekt.test.TestConfig
-import io.gitlab.arturbosch.detekt.test.assertThat
-import io.gitlab.arturbosch.detekt.test.lint
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
@@ -28,23 +26,13 @@ import java.util.stream.Stream
 @ExtendWith(ForgeExtension::class)
 class PackageNameVisibilityTest {
 
-    lateinit var kotlinEnv: KotlinCoreEnvironmentWrapper
+    val kotlinEnv: KotlinEnvironmentContainer = createEnvironment()
 
     @BoolForgery
     var fakeWithBreakingChanges: Boolean = false
 
     @StringForgery(StringForgeryType.ALPHABETICAL)
     lateinit var fakeIgnoredAnnotation: String
-
-    @BeforeEach
-    fun setup() {
-        kotlinEnv = createEnvironment()
-    }
-
-    @AfterEach
-    fun tearDown() {
-        kotlinEnv.dispose()
-    }
 
     @ParameterizedTest
     @MethodSource("types")
@@ -58,7 +46,7 @@ class PackageNameVisibilityTest {
             }
             """.trimIndent()
 
-        val findings = PackageNameVisibility(config).lint(code)
+        val findings = PackageNameVisibility(config).lintWithContext(kotlinEnv, code)
         assertThat(findings).hasSize(1)
     }
 
@@ -73,7 +61,7 @@ class PackageNameVisibilityTest {
             }
             """.trimIndent()
 
-        val findings = PackageNameVisibility(config).lint(code)
+        val findings = PackageNameVisibility(config).lintWithContext(kotlinEnv, code)
         assertThat(findings).hasSize(1)
     }
 
@@ -92,7 +80,7 @@ class PackageNameVisibilityTest {
             }
             """.trimIndent()
 
-        val findings = PackageNameVisibility(config).lint(code)
+        val findings = PackageNameVisibility(config).lintWithContext(kotlinEnv, code)
         assertThat(findings).hasSize(1)
     }
 
@@ -107,7 +95,7 @@ class PackageNameVisibilityTest {
             internal $field foo: String = ""
             """.trimIndent()
 
-        val findings = PackageNameVisibility(config).lint(code)
+        val findings = PackageNameVisibility(config).lintWithContext(kotlinEnv, code)
         assertThat(findings).isEmpty()
     }
 
@@ -123,7 +111,7 @@ class PackageNameVisibilityTest {
             }
             """.trimIndent()
 
-        val findings = PackageNameVisibility(config).lint(code)
+        val findings = PackageNameVisibility(config).lintWithContext(kotlinEnv, code)
         assertThat(findings).hasSize(1)
     }
 
@@ -138,7 +126,7 @@ class PackageNameVisibilityTest {
             }
             """.trimIndent()
 
-        val findings = PackageNameVisibility(config).lint(code)
+        val findings = PackageNameVisibility(config).lintWithContext(kotlinEnv, code)
         assertThat(findings).hasSize(1)
     }
 
@@ -153,7 +141,7 @@ class PackageNameVisibilityTest {
             }
             """.trimIndent()
 
-        val findings = PackageNameVisibility(config).lint(code)
+        val findings = PackageNameVisibility(config).lintWithContext(kotlinEnv, code)
         assertThat(findings).hasSize(1)
     }
 
@@ -168,7 +156,7 @@ class PackageNameVisibilityTest {
             $field foo: String = ""
             """.trimIndent()
 
-        val findings = PackageNameVisibility(config).lint(code)
+        val findings = PackageNameVisibility(config).lintWithContext(kotlinEnv, code)
         assertThat(findings).hasSize(1)
     }
 
@@ -184,7 +172,7 @@ class PackageNameVisibilityTest {
             }
             """.trimIndent()
 
-        val findings = PackageNameVisibility(config).lint(code)
+        val findings = PackageNameVisibility(config).lintWithContext(kotlinEnv, code)
         assertThat(findings).isEmpty()
     }
 
@@ -199,7 +187,7 @@ class PackageNameVisibilityTest {
             }
             """.trimIndent()
 
-        val findings = PackageNameVisibility(config).lint(code)
+        val findings = PackageNameVisibility(config).lintWithContext(kotlinEnv, code)
         assertThat(findings).isEmpty()
     }
 
@@ -214,7 +202,7 @@ class PackageNameVisibilityTest {
             }
             """.trimIndent()
 
-        val findings = PackageNameVisibility(config).lint(code)
+        val findings = PackageNameVisibility(config).lintWithContext(kotlinEnv, code)
         assertThat(findings).isEmpty()
     }
 
@@ -229,7 +217,7 @@ class PackageNameVisibilityTest {
             internal $field foo: String = ""
             """.trimIndent()
 
-        val findings = PackageNameVisibility(config).lint(code)
+        val findings = PackageNameVisibility(config).lintWithContext(kotlinEnv, code)
         assertThat(findings).isEmpty()
     }
 
@@ -249,7 +237,7 @@ class PackageNameVisibilityTest {
             }
             """.trimIndent()
 
-        val findings = PackageNameVisibility(config).lint(code)
+        val findings = PackageNameVisibility(config).lintWithContext(kotlinEnv, code)
         assertThat(findings).isEmpty()
     }
 
@@ -268,7 +256,7 @@ class PackageNameVisibilityTest {
             }
             """.trimIndent()
 
-        val findings = PackageNameVisibility(config).lint(code)
+        val findings = PackageNameVisibility(config).lintWithContext(kotlinEnv, code)
         assertThat(findings).isEmpty()
     }
 
@@ -287,7 +275,7 @@ class PackageNameVisibilityTest {
             }
             """.trimIndent()
 
-        val findings = PackageNameVisibility(config).lint(code)
+        val findings = PackageNameVisibility(config).lintWithContext(kotlinEnv, code)
         assertThat(findings).isEmpty()
     }
 
@@ -306,7 +294,7 @@ class PackageNameVisibilityTest {
             internal $field foo: String = ""
             """.trimIndent()
 
-        val findings = PackageNameVisibility(config).lint(code)
+        val findings = PackageNameVisibility(config).lintWithContext(kotlinEnv, code)
         assertThat(findings).isEmpty()
     }
 
@@ -323,7 +311,7 @@ class PackageNameVisibilityTest {
             }
             """.trimIndent()
 
-        val findings = PackageNameVisibility(config).lint(code)
+        val findings = PackageNameVisibility(config).lintWithContext(kotlinEnv, code)
         assertThat(findings).isEmpty()
     }
 
@@ -339,7 +327,7 @@ class PackageNameVisibilityTest {
             }
             """.trimIndent()
 
-        val findings = PackageNameVisibility(config).lint(code)
+        val findings = PackageNameVisibility(config).lintWithContext(kotlinEnv, code)
         assertThat(findings).isEmpty()
     }
 
@@ -355,7 +343,7 @@ class PackageNameVisibilityTest {
             }
             """.trimIndent()
 
-        val findings = PackageNameVisibility(config).lint(code)
+        val findings = PackageNameVisibility(config).lintWithContext(kotlinEnv, code)
         assertThat(findings).isEmpty()
     }
 
@@ -372,7 +360,7 @@ class PackageNameVisibilityTest {
             }
             """.trimIndent()
 
-        val findings = PackageNameVisibility(config).lint(code)
+        val findings = PackageNameVisibility(config).lintWithContext(kotlinEnv, code)
         assertThat(findings).isEmpty()
     }
 
@@ -389,7 +377,7 @@ class PackageNameVisibilityTest {
             }
             """.trimIndent()
 
-        val findings = PackageNameVisibility(config).lint(code)
+        val findings = PackageNameVisibility(config).lintWithContext(kotlinEnv, code)
         assertThat(findings).isEmpty()
     }
 
@@ -405,7 +393,7 @@ class PackageNameVisibilityTest {
             }
             """.trimIndent()
 
-        val findings = PackageNameVisibility(config).lint(code)
+        val findings = PackageNameVisibility(config).lintWithContext(kotlinEnv, code)
         assertThat(findings).isEmpty()
     }
 
@@ -421,7 +409,7 @@ class PackageNameVisibilityTest {
             }
             """.trimIndent()
 
-        val findings = PackageNameVisibility(config).lint(code)
+        val findings = PackageNameVisibility(config).lintWithContext(kotlinEnv, code)
         assertThat(findings).isEmpty()
     }
 
@@ -438,7 +426,7 @@ class PackageNameVisibilityTest {
             }
             """.trimIndent()
 
-        val findings = PackageNameVisibility(config).lint(code)
+        val findings = PackageNameVisibility(config).lintWithContext(kotlinEnv, code)
         assertThat(findings).isEmpty()
     }
 

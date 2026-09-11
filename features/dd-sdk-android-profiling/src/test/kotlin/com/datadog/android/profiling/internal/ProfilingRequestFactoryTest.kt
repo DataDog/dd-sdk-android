@@ -32,6 +32,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
+import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -212,7 +213,7 @@ class ProfilingRequestFactoryTest {
                 eq(null)
             )
             assertThat(firstValue()).isEqualTo(
-                ProfilingRequestFactory.MULTIPLE_BATCH_EVENTS_WARNING_MESSAGE.format(batchData.size)
+                ProfilingRequestFactory.MULTIPLE_BATCH_EVENTS_WARNING_MESSAGE.format(Locale.US, batchData.size)
             )
         }
         assertThat(request.body.containsSubsequence(fakeEvent.data)).isTrue()

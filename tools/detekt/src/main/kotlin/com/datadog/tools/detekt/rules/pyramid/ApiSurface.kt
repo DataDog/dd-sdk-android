@@ -7,13 +7,9 @@
 package com.datadog.tools.detekt.rules.pyramid
 
 import com.datadog.tools.detekt.rules.AbstractTypedRule
-import io.gitlab.arturbosch.detekt.api.Config
-import io.gitlab.arturbosch.detekt.api.Debt
-import io.gitlab.arturbosch.detekt.api.Issue
-import io.gitlab.arturbosch.detekt.api.Severity
-import io.gitlab.arturbosch.detekt.api.config
-import io.gitlab.arturbosch.detekt.api.internal.RequiresTypeResolution
-import io.gitlab.arturbosch.detekt.rules.isOverride
+import dev.detekt.api.Config
+import dev.detekt.api.RequiresAnalysisApi
+import dev.detekt.api.config
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtFunctionType
@@ -33,10 +29,10 @@ import java.io.File
 /**
  * @active
  */
-@RequiresTypeResolution
 class ApiSurface(
-    ruleSetConfig: Config
-) : AbstractTypedRule(ruleSetConfig) {
+    ruleSetConfig: Config = Config.empty
+) : AbstractTypedRule(ruleSetConfig, "This rule reports api surface."),
+    RequiresAnalysisApi {
 
     private val outputFileName: String by config(defaultValue = "apiSurface.log")
     private val outputFile: File by lazy {
@@ -47,13 +43,6 @@ class ApiSurface(
     private val ignoredClasses: List<String> by config(defaultValue = emptyList())
 
     // region Rule
-
-    override val issue: Issue = Issue(
-        javaClass.simpleName,
-        Severity.Maintainability,
-        "This rule reports api surface.",
-        Debt.FIVE_MINS
-    )
 
     override fun visitObjectDeclaration(declaration: KtObjectDeclaration) {
         val hasIgnoredKeyword = ignoredKeywords.any { declaration.hasModifier(it) }
@@ -114,7 +103,7 @@ class ApiSurface(
         val hasIgnoredAnnotation = function.annotationEntries.any {
             it.shortName?.asString()?.resolveFullType() in ignoredAnnotations
         }
-        val isOverride = function.isOverride()
+        val isOverride = function.hasModifier(KtTokens.OVERRIDE_KEYWORD)
 
         @Suppress("ComplexCondition")
         if (hasIgnoredKeyword || hasIgnoredName || hasIgnoredAnnotation || isOverride) {

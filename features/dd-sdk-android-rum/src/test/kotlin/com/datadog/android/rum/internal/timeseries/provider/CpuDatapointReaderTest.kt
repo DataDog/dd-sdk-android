@@ -38,7 +38,11 @@ import java.util.concurrent.TimeUnit
 @ForgeConfiguration(Configurator::class)
 internal class CpuDatapointReaderTest {
 
-    @LongForgery(min = 100L, max = 60_000L)
+    // Min is 2_500 so that intervalMs * MAX_GAP_FACTOR always covers the largest fakeElapsedMs the
+    // tests below forge (5_000 ms). Below that, CpuDatapointReader's "gap too large" guard
+    // (elapsedMs > intervalMs * MAX_GAP_FACTOR) discards the sample and read() returns null,
+    // which made every checkNotNull(result) test fail on unlucky seeds.
+    @LongForgery(min = 2_500L, max = 60_000L)
     var fakeIntervalMs: Long = 0L
 
     @LongForgery(min = 1_000L, max = 1_000_000L)

@@ -603,7 +603,7 @@ class InternalSdkCoreTest : MockServerTest() {
                 getPackageInfo(appContext.packageName, 0)
             }
         }
-    } catch (e: PackageManager.NameNotFoundException) {
+    } catch (_: PackageManager.NameNotFoundException) {
         null
     }
 

@@ -9,6 +9,7 @@
 package com.datadog.android.compose
 
 import android.view.View
+import androidx.compose.runtime.collection.MutableVector
 import androidx.compose.runtime.collection.mutableVectorOf
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.node.LayoutNode
@@ -293,13 +294,21 @@ class ComposeActionTrackingStrategyTest {
                 )
             )
         }
-        whenever(nodeList[0].zSortedChildren) doReturn mutableVectorOf<LayoutNode>(nodeList[1], nodeList[2])
-        whenever(nodeList[1].zSortedChildren) doReturn mutableVectorOf<LayoutNode>(nodeList[3], nodeList[4])
-        whenever(nodeList[2].zSortedChildren) doReturn mutableVectorOf<LayoutNode>()
-        whenever(nodeList[3].zSortedChildren) doReturn mutableVectorOf<LayoutNode>()
-        whenever(nodeList[4].zSortedChildren) doReturn mutableVectorOf<LayoutNode>()
+        val children0: MutableVector<LayoutNode> = childrenOf(nodeList[1], nodeList[2])
+        val children1: MutableVector<LayoutNode> = childrenOf(nodeList[3], nodeList[4])
+        val children2: MutableVector<LayoutNode> = childrenOf(*emptyArray<LayoutNode>())
+        val children3: MutableVector<LayoutNode> = childrenOf(*emptyArray<LayoutNode>())
+        val children4: MutableVector<LayoutNode> = childrenOf(*emptyArray<LayoutNode>())
+        whenever(nodeList[0].zSortedChildren) doReturn children0
+        whenever(nodeList[1].zSortedChildren) doReturn children1
+        whenever(nodeList[2].zSortedChildren) doReturn children2
+        whenever(nodeList[3].zSortedChildren) doReturn children3
+        whenever(nodeList[4].zSortedChildren) doReturn children4
         whenever(mockAndroidComposeView.root) doReturn nodeList[0]
     }
+
+    private fun childrenOf(vararg nodes: LayoutNode): MutableVector<LayoutNode> =
+        mutableVectorOf<LayoutNode>(*nodes)
 
     private fun mockLayoutNode(
         forge: Forge,
