@@ -46,7 +46,7 @@ internal class CsvCollector(
      * Walks each (reader, buffer, factory) triple synchronously: samples until the reader is
      * exhausted, flushing whenever the buffer is full, then emitting any final remainder.
      */
-    override fun onSessionStart() {
+    override fun onSessionStart(sessionType: RumSessionType) {
         for ((reader, buffer, eventFactory) in pipelines) {
             while (reader.hasNext()) {
                 buffer.add(reader.read())
@@ -66,6 +66,10 @@ internal class CsvCollector(
     override fun onSessionStop() = Unit
 
     override fun onRumContextUpdate(newRumContext: RumContext) = Unit
+
+    override fun onResumed() = Unit
+
+    override fun onPaused() = Unit
 
     companion object {
 

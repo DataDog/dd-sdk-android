@@ -56,7 +56,7 @@ internal class TimeseriesCollectorEndToEndTest {
             forge = forge,
             internalLogger = mock()
         )
-        testedTimeseriesCollector.onSessionStart()
+        testedTimeseriesCollector.onSessionStart(RumSessionType.USER)
         capturedMemoryEvents = testedTimeseriesCollector.captured.mapNotNull { serializedPayload ->
             runCatching { TimeseriesMemoryEvent.fromJsonObject(serializedPayload) }
                 .getOrNull()
@@ -76,9 +76,11 @@ internal class TimeseriesCollectorEndToEndTest {
 
     @Test
     fun `M match expected timeseries fixture W memory batch 1`() {
+        // Given
         val expected = loadExpectedMemoryTimeseries("fixtures/timeseries/expected_memory_batch1.json")
         val actual = capturedMemoryEvents[0]
 
+        // Then
         TimeseriesMemoryEventAssert.assertThat(actual)
             .hasDate(expected.date)
             .hasSameTimeseriesAs(expected)
@@ -86,9 +88,11 @@ internal class TimeseriesCollectorEndToEndTest {
 
     @Test
     fun `M match expected timeseries fixture W memory batch 2`() {
+        // Given
         val expected = loadExpectedMemoryTimeseries("fixtures/timeseries/expected_memory_batch2.json")
         val actual = capturedMemoryEvents[1]
 
+        // Then
         TimeseriesMemoryEventAssert.assertThat(actual)
             .hasDate(expected.date)
             .hasSameTimeseriesAs(expected)
@@ -96,9 +100,11 @@ internal class TimeseriesCollectorEndToEndTest {
 
     @Test
     fun `M match expected timeseries fixture W cpu batch 1`() {
+        // Given
         val expected = loadExpectedCpuTimeseries("fixtures/timeseries/expected_cpu_batch1.json")
         val actual = capturedCpuEvents[0]
 
+        // Then
         TimeseriesCpuEventAssert.assertThat(actual)
             .hasDate(expected.date)
             .hasSameTimeseriesAs(expected)
@@ -106,9 +112,11 @@ internal class TimeseriesCollectorEndToEndTest {
 
     @Test
     fun `M match expected timeseries fixture W cpu batch 2`() {
+        // Given
         val expected = loadExpectedCpuTimeseries("fixtures/timeseries/expected_cpu_batch2.json")
         val actual = capturedCpuEvents[1]
 
+        // Then
         TimeseriesCpuEventAssert.assertThat(actual)
             .hasDate(expected.date)
             .hasSameTimeseriesAs(expected)
@@ -116,6 +124,7 @@ internal class TimeseriesCollectorEndToEndTest {
 
     @Test
     fun `M emit valid timeseries id W any batch`() {
+        // Then
         capturedMemoryEvents.forEach { actual ->
             TimeseriesMemoryEventAssert.assertThat(actual)
                 .hasValidTimeseriesId()
@@ -128,6 +137,7 @@ internal class TimeseriesCollectorEndToEndTest {
 
     @Test
     fun `M produce monotonic start lt or eq to end W any batch`() {
+        // Then
         capturedMemoryEvents.forEach { actual ->
             TimeseriesMemoryEventAssert.assertThat(actual)
                 .hasTimeseriesStartNotAfterEnd()

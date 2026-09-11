@@ -115,7 +115,7 @@ internal class DatadogRumMonitor(
     private val viewEventMapper: ViewEventMapper,
     rumViewEventWriteConfig: RumViewEventWriteConfig,
     heatmapIdentifierRegistry: HeatmapIdentifierRegistry?,
-    timeseriesCollectorFactory: TimeseriesCollector.Factory
+    timeseriesCollector: TimeseriesCollector
 ) : RumMonitor, AdvancedRumMonitor {
 
     @Volatile private var cachedViewUrl: String? = null
@@ -144,7 +144,7 @@ internal class DatadogRumMonitor(
         viewEventMapper = viewEventMapper,
         rumViewEventWriteConfig = rumViewEventWriteConfig,
         heatmapIdentifierRegistry = heatmapIdentifierRegistry,
-        timeseriesCollectorFactory = timeseriesCollectorFactory
+        timeseriesCollector = timeseriesCollector
     )
 
     internal var debugListener: RumDebugListener? = null
