@@ -239,9 +239,11 @@ public final class com/datadog/android/internal/network/HttpSpec$ContentType {
 	public static final field APPLICATION_GRPC_JSON Ljava/lang/String;
 	public static final field APPLICATION_GRPC_PROTO Ljava/lang/String;
 	public static final field APPLICATION_JSON Ljava/lang/String;
+	public static final field APPLICATION_OCTET_STREAM Ljava/lang/String;
 	public static final field INSTANCE Lcom/datadog/android/internal/network/HttpSpec$ContentType;
 	public static final field TEXT_EVENT_STREAM Ljava/lang/String;
 	public static final field TEXT_PLAIN Ljava/lang/String;
+	public final fun isBinaryMedia (Ljava/lang/String;)Z
 	public final fun isStream (Ljava/lang/String;)Z
 	public final fun values ()Ljava/util/List;
 }
