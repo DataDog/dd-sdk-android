@@ -10,6 +10,7 @@ import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.flags.AssignmentAuthorization
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
@@ -30,6 +31,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.Date
 import java.util.UUID
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
@@ -176,6 +178,51 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         // Then
         checkNotNull(request)
         assertThat(request.header(PrecomputedAssignmentsRequestFactory.CLOUD_TEST_DRIVE_HEADER)).isNull()
+    }
+
+    @Test
+    fun `M add authorization and signing metadata W create() { valid assignment authorization }`(
+        @StringForgery fakeTargetingKey: String
+    ) {
+        val authorizationStore = AssignmentAuthorizationStore(
+            AssignmentAuthorization("header.payload.signature", Date(System.currentTimeMillis() + 60_000))
+        )
+        testedFactory = PrecomputedAssignmentsRequestFactory(
+            mockInternalLogger,
+            null,
+            authorizationStore
+        )
+
+        val request = testedFactory.create(
+            EvaluationContext(fakeTargetingKey, emptyMap()),
+            fakeDatadogContext
+        )
+
+        checkNotNull(request)
+        assertThat(request.header("Authorization")).isEqualTo("Bearer header.payload.signature")
+        assertThat(request.header(PrecomputedAssignmentsVerifier.SIGNATURE_VERSION_HEADER)).isEqualTo("2")
+        assertThat(request.header(PrecomputedAssignmentsVerifier.REQUEST_NONCE_HEADER))
+            .matches("[0-9a-f]{32}")
+    }
+
+    @Test
+    fun `M return null W create() { expired assignment authorization }`(
+        @StringForgery fakeTargetingKey: String
+    ) {
+        testedFactory = PrecomputedAssignmentsRequestFactory(
+            mockInternalLogger,
+            null,
+            AssignmentAuthorizationStore(
+                AssignmentAuthorization("header.payload.signature", Date(System.currentTimeMillis() - 1))
+            )
+        )
+
+        val request = testedFactory.create(
+            EvaluationContext(fakeTargetingKey, emptyMap()),
+            fakeDatadogContext
+        )
+
+        assertThat(request).isNull()
     }
 
     // endregion

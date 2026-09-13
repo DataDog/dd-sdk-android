@@ -24,7 +24,8 @@ import java.security.SecureRandom
  */
 internal class PrecomputedAssignmentsRequestFactory(
     private val internalLogger: InternalLogger,
-    private val customFlagEndpoint: String?
+    private val customFlagEndpoint: String?,
+    private val authorizationStore: AssignmentAuthorizationStore = AssignmentAuthorizationStore(null)
 ) {
 
     /**
@@ -47,7 +48,9 @@ internal class PrecomputedAssignmentsRequestFactory(
             ?: datadogContext.site.getFlagsEndpoint(PREVIEW_CUSTOMER_DOMAIN)
             ?: return null
 
-        val headers = buildHeaders(datadogContext) ?: return null
+        val authorization = authorizationStore.snapshot()
+        if (authorization.isEnabled && authorization.authorization == null) return null
+        val headers = buildHeaders(datadogContext, authorization) ?: return null
 
         val body = buildRequestBody(context, datadogContext) ?: return null
 
@@ -59,18 +62,25 @@ internal class PrecomputedAssignmentsRequestFactory(
             .build()
     }
 
-    private fun buildHeaders(datadogContext: DatadogContext): Headers? {
+    private fun buildHeaders(
+        datadogContext: DatadogContext,
+        authorization: AssignmentAuthorizationSnapshot
+    ): Headers? {
         val headersBuilder = Headers.Builder()
 
         try {
             headersBuilder
                 .add(HEADER_CLIENT_TOKEN, datadogContext.clientToken)
                 .add(HEADER_CONTENT_TYPE, CONTENT_TYPE_VND_JSON)
-                .add(
-                    PrecomputedAssignmentsVerifier.SIGNATURE_VERSION_HEADER,
-                    PrecomputedAssignmentsVerifier.SIGNATURE_VERSION
-                )
-                .add(PrecomputedAssignmentsVerifier.REQUEST_NONCE_HEADER, createNonce())
+            authorization.authorization?.let {
+                headersBuilder
+                    .add(HEADER_AUTHORIZATION, "Bearer ${it.bearerToken}")
+                    .add(
+                        PrecomputedAssignmentsVerifier.SIGNATURE_VERSION_HEADER,
+                        PrecomputedAssignmentsVerifier.SIGNATURE_VERSION
+                    )
+                    .add(PrecomputedAssignmentsVerifier.REQUEST_NONCE_HEADER, createNonce())
+            }
 
             // This fixed header routes only this POC branch to its Rapid Test Drive.
             // It is not part of the proposed customer API.
@@ -150,18 +160,25 @@ internal class PrecomputedAssignmentsRequestFactory(
         get() = featuresContext.get(Feature.RUM_FEATURE_NAME)
             ?.get("application_id") as? String
 
+    @Suppress("UnsafeThirdPartyFunctionCall") // SecureRandom failures make request construction fail closed.
     private fun createNonce(): String = ByteArray(NONCE_SIZE_BYTES)
         .also { SecureRandom().nextBytes(it) }
-        .joinToString(separator = "") { (it.toInt() and 0xff).toString(16).padStart(2, '0') }
+        .joinToString(separator = "") {
+            (it.toInt() and HEX_BYTE_MASK).toString(HEX_RADIX).padStart(HEX_BYTE_WIDTH, '0')
+        }
 
     companion object {
         private const val HEADER_APPLICATION_ID = "dd-application-id"
         private const val HEADER_CLIENT_TOKEN = "dd-client-token"
         private const val HEADER_CONTENT_TYPE = "Content-Type"
+        private const val HEADER_AUTHORIZATION = "Authorization"
         private const val CONTENT_TYPE_VND_JSON = "application/vnd.api+json"
         private const val PREVIEW_CUSTOMER_DOMAIN = "preview"
         private const val SDK_NAME = "dd-sdk-android"
         private const val NONCE_SIZE_BYTES = 16
+        private const val HEX_BYTE_MASK = 0xff
+        private const val HEX_RADIX = 16
+        private const val HEX_BYTE_WIDTH = 2
         internal const val CLOUD_TEST_DRIVE_ENDPOINT =
             "https://preview.ff-cdn.datad0g.com/precompute-assignments"
         internal const val CLOUD_TEST_DRIVE_HEADER = "x-dd-ffe-test-drive"

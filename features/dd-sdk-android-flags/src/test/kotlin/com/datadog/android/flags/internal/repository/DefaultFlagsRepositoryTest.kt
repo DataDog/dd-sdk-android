@@ -330,6 +330,62 @@ internal class DefaultFlagsRepositoryTest {
     }
 
     @Test
+    fun `M return false W hasFlags() { protected mode rejects persisted flags }`() {
+        val persistedEntry = FlagsStateEntry(
+            flags = singleFlagMap,
+            evaluationContext = testContext,
+            lastUpdateTimestamp = 0L
+        )
+        doAnswer {
+            it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2)
+                .onSuccess(DataStoreContent(versionCode = 0, data = persistedEntry))
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(
+            key = any(),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+        val repository = DefaultFlagsRepository(
+            featureSdkCore = mockFeatureSdkCore,
+            dataStore = mockDataStore,
+            instanceName = "protected",
+            acceptPersistedState = false
+        )
+
+        assertThat(repository.hasFlags()).isFalse()
+    }
+
+    @Test
+    fun `M reject late persisted state W clear() { persistence callback completes after clear }`() {
+        var capturedCallback: DataStoreReadCallback<FlagsStateEntry>? = null
+        doAnswer {
+            capturedCallback = it.getArgument(2)
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(
+            key = any(),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+        val repository = DefaultFlagsRepository(
+            featureSdkCore = mockFeatureSdkCore,
+            dataStore = mockDataStore,
+            instanceName = "late-persistence"
+        )
+        val persistedEntry = FlagsStateEntry(
+            flags = singleFlagMap,
+            evaluationContext = testContext,
+            lastUpdateTimestamp = 0L
+        )
+
+        repository.clear()
+        capturedCallback?.onSuccess(DataStoreContent(versionCode = 0, data = persistedEntry))
+
+        assertThat(repository.hasFlags()).isFalse()
+    }
+
+    @Test
     fun `M return false W hasFlags() { persistence loads with no data }`() {
         // Given
         doAnswer {

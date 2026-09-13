@@ -610,8 +610,39 @@ internal class EvaluationsManagerTest {
         checkNotNull(timeoutAction).invoke()
 
         // Then
-        verify(mockFirstCallback).onFailure(any<FlagsInitializationTimeoutException>())
+        verify(mockFirstCallback, times(0)).onFailure(any())
         assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+    }
+
+    @Test
+    fun `M keep newer assignments W updateEvaluationsForContext() { responses complete in reverse order }`() {
+        val firstContext = EvaluationContext("first", emptyMap())
+        val newerContext = EvaluationContext("newer", emptyMap())
+        val firstResponse = "first-response"
+        val newerResponse = "newer-response"
+        val firstFlags = mapOf("flag" to mock<PrecomputedFlag>())
+        val newerFlags = mapOf("flag" to mock<PrecomputedFlag>())
+        val operations = mutableListOf<Runnable>()
+        whenever(mockExecutorService.execute(any())).thenAnswer {
+            operations += it.getArgument<Runnable>(0)
+            null
+        }
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(firstContext, fakeDatadogContext))
+            .thenReturn(firstResponse)
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(newerContext, fakeDatadogContext))
+            .thenReturn(newerResponse)
+        whenever(mockPrecomputeMapper.map(firstResponse)).thenReturn(firstFlags)
+        whenever(mockPrecomputeMapper.map(newerResponse)).thenReturn(newerFlags)
+        val testedManager = createManager(scheduler = InitializationTimeoutScheduler { _, _ -> {} })
+
+        testedManager.updateEvaluationsForContext(firstContext)
+        testedManager.updateEvaluationsForContext(newerContext)
+
+        operations[1].run()
+        operations[0].run()
+
+        verify(mockFlagsRepository).setFlagsAndContext(newerContext, newerFlags)
+        verify(mockFlagsRepository, times(0)).setFlagsAndContext(firstContext, firstFlags)
     }
 
     @Test
@@ -701,7 +732,7 @@ internal class EvaluationsManagerTest {
         checkNotNull(timeoutAction).invoke()
 
         // Then
-        verify(mockFirstCallback).onFailure(any<FlagsInitializationTimeoutException>())
+        verify(mockFirstCallback, times(0)).onFailure(any())
         verify(mockNestedCallback, times(0)).onFailure(any())
     }
 

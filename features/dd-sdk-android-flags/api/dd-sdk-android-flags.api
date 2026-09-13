@@ -1,3 +1,16 @@
+public final class com/datadog/android/flags/AssignmentAuthorization {
+	public fun <init> (Ljava/lang/String;Ljava/util/Date;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/util/Date;
+	public final fun copy (Ljava/lang/String;Ljava/util/Date;)Lcom/datadog/android/flags/AssignmentAuthorization;
+	public static synthetic fun copy$default (Lcom/datadog/android/flags/AssignmentAuthorization;Ljava/lang/String;Ljava/util/Date;ILjava/lang/Object;)Lcom/datadog/android/flags/AssignmentAuthorization;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBearerToken ()Ljava/lang/String;
+	public final fun getExpiresAt ()Ljava/util/Date;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public abstract interface class com/datadog/android/flags/EvaluationContextCallback {
 	public abstract fun onFailure (Ljava/lang/Throwable;)V
 	public abstract fun onSuccess ()V
@@ -9,6 +22,9 @@ public final class com/datadog/android/flags/Flags {
 	public static final fun enable (Lcom/datadog/android/flags/FlagsConfiguration;)V
 	public static final fun enable (Lcom/datadog/android/flags/FlagsConfiguration;Lcom/datadog/android/api/SdkCore;)V
 	public static synthetic fun enable$default (Lcom/datadog/android/flags/FlagsConfiguration;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
+	public static final fun setAssignmentAuthorization (Lcom/datadog/android/flags/AssignmentAuthorization;)V
+	public static final fun setAssignmentAuthorization (Lcom/datadog/android/flags/AssignmentAuthorization;Lcom/datadog/android/api/SdkCore;)V
+	public static synthetic fun setAssignmentAuthorization$default (Lcom/datadog/android/flags/AssignmentAuthorization;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
 }
 
 public abstract interface class com/datadog/android/flags/FlagsClient {
@@ -54,6 +70,7 @@ public final class com/datadog/android/flags/FlagsConfiguration {
 
 public final class com/datadog/android/flags/FlagsConfiguration$Builder {
 	public fun <init> ()V
+	public final fun assignmentAuthorization (Lcom/datadog/android/flags/AssignmentAuthorization;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun build ()Lcom/datadog/android/flags/FlagsConfiguration;
 	public final fun evaluationFlushInterval (J)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun gracefulModeEnabled (Z)Lcom/datadog/android/flags/FlagsConfiguration$Builder;

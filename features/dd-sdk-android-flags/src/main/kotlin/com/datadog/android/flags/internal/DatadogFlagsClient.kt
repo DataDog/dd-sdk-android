@@ -77,6 +77,10 @@ internal class DatadogFlagsClient(
         evaluationsManager.updateEvaluationsForContext(context, callback)
     }
 
+    internal fun assignmentAuthorizationDidChange(hasAuthorization: Boolean) {
+        evaluationsManager.assignmentAuthorizationDidChange(hasAuthorization)
+    }
+
     /**
      * Resolves a boolean flag value.
      *

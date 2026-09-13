@@ -49,6 +49,10 @@ internal class FlagsPersistenceManager(
         )
     }
 
+    internal fun clearFlagsState() {
+        dataStore.removeValue(flagsStateKey)
+    }
+
     private fun loadFlagsState(onStateLoaded: (FlagsStateEntry?) -> Unit) {
         dataStore.value(
             key = flagsStateKey,

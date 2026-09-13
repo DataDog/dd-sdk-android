@@ -19,4 +19,5 @@ internal interface FlagsRepository {
     fun hasFlags(): Boolean
     fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean
     fun getFlagsSnapshot(): Map<String, PrecomputedFlag>
+    fun clear()
 }

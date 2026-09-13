@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets
  * @param callFactory Factory for creating HTTP calls
  * @param internalLogger Logger for error and debug messages
  * @param requestFactory Factory for creating precomputed assignments requests
+ * @param payloadVerifier Verifier for protected assignment responses
  */
 internal class PrecomputedAssignmentsDownloader(
     private val callFactory: Call.Factory,
@@ -40,6 +41,21 @@ internal class PrecomputedAssignmentsDownloader(
     private fun executeDownloadRequest(request: Request): String? = try {
         val response = callFactory.newCall(request).execute()
         handleResponse(request, response)
+    } catch (e: AssignmentPayloadVerificationException) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            { "Rejected an unverified flag assignments response" },
+            e
+        )
+        internalLogger.log(
+            level = InternalLogger.Level.ERROR,
+            target = InternalLogger.Target.TELEMETRY,
+            messageBuilder = { "Rejected an unverified flag assignments response" },
+            throwable = e,
+            onlyOnce = true
+        )
+        null
     } catch (e: Throwable) {
         internalLogger.log(
             InternalLogger.Level.ERROR,

@@ -21,7 +21,8 @@ data class FlagsConfiguration internal constructor(
     internal val evaluationFlushIntervalMs: Long,
     internal val rumIntegrationEnabled: Boolean,
     internal val gracefulModeEnabled: Boolean,
-    internal val initializationTimeoutMs: Long?
+    internal val initializationTimeoutMs: Long?,
+    internal val assignmentAuthorization: AssignmentAuthorization?
 ) {
     /**
      * Copies this configuration and preserves the initialization timeout.
@@ -46,12 +47,14 @@ data class FlagsConfiguration internal constructor(
         evaluationFlushIntervalMs = evaluationFlushIntervalMs,
         rumIntegrationEnabled = rumIntegrationEnabled,
         gracefulModeEnabled = gracefulModeEnabled,
-        initializationTimeoutMs = initializationTimeoutMs
+        initializationTimeoutMs = initializationTimeoutMs,
+        assignmentAuthorization = assignmentAuthorization
     )
 
     /**
      * A Builder class for a [FlagsConfiguration].
      */
+    @Suppress("TooManyFunctions")
     class Builder {
         private var trackExposures: Boolean = true
         private var trackEvaluations: Boolean = true
@@ -62,6 +65,7 @@ data class FlagsConfiguration internal constructor(
         private var rumIntegrationEnabled: Boolean = true
         private var gracefulModeEnabled: Boolean = true
         private var initializationTimeoutMs: Long? = DEFAULT_INITIALIZATION_TIMEOUT_MS
+        private var assignmentAuthorization: AssignmentAuthorization? = null
 
         /**
          * Sets whether exposures should be logged to the dedicated exposures intake endpoint.
@@ -171,6 +175,16 @@ data class FlagsConfiguration internal constructor(
         }
 
         /**
+         * Sets a cached customer token for protected assignment delivery.
+         *
+         * @param authorization the cached token and its expiration time.
+         * @return this [Builder] instance.
+         */
+        fun assignmentAuthorization(authorization: AssignmentAuthorization): Builder = apply {
+            assignmentAuthorization = authorization
+        }
+
+        /**
          * Sets whether RUM evaluation logging is enabled.
          * This adds the result of evaluating a feature flag to the view.
          * Enabled by default.
@@ -215,7 +229,8 @@ data class FlagsConfiguration internal constructor(
             evaluationFlushIntervalMs = evaluationFlushIntervalMs,
             rumIntegrationEnabled = rumIntegrationEnabled,
             gracefulModeEnabled = gracefulModeEnabled,
-            initializationTimeoutMs = initializationTimeoutMs
+            initializationTimeoutMs = initializationTimeoutMs,
+            assignmentAuthorization = assignmentAuthorization
         )
 
         internal companion object {

@@ -408,7 +408,8 @@ interface FlagsClient {
                 DefaultFlagsRepository(
                     featureSdkCore = featureSdkCore,
                     dataStore = datastore,
-                    instanceName = name
+                    instanceName = name,
+                    acceptPersistedState = !flagsFeature.assignmentAuthorizationStore.snapshot().isEnabled
                 )
             } else {
                 NoOpFlagsRepository()
