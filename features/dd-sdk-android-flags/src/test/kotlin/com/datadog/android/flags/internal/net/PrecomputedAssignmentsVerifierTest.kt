@@ -33,7 +33,7 @@ internal class PrecomputedAssignmentsVerifierTest {
                 requestNonce = NONCE,
                 responseStatus = 200,
                 authorizationPolicyVersion = null,
-                rulesRevision = "",
+                rulesRevision = RULES_REVISION,
                 issuedAt = ISSUED_AT,
                 expiresAt = EXPIRES_AT,
                 certificateId = LEAF_CERTIFICATE_ID,
@@ -163,11 +163,71 @@ internal class PrecomputedAssignmentsVerifierTest {
     }
 
     @Test
+    fun `M reject payload W verify { rules revision is missing }`() {
+        val request = request(AssignmentProtection.SIGNED)
+        val response = response(request, AssignmentProtection.SIGNED)
+            .newBuilder()
+            .removeHeader(PrecomputedAssignmentsVerifier.RULES_REVISION_HEADER)
+            .build()
+
+        assertThatThrownBy {
+            verifier(AssignmentProtection.SIGNED).verify(request, response, RESPONSE_BODY_BYTES)
+        }
+            .isInstanceOf(AssignmentPayloadVerificationException::class.java)
+            .hasMessageContaining("must contain one")
+    }
+
+    @Test
+    fun `M reject payload W verify { rules revision is empty }`() {
+        val request = request(AssignmentProtection.SIGNED)
+        val response = response(request, AssignmentProtection.SIGNED)
+            .newBuilder()
+            .header(PrecomputedAssignmentsVerifier.RULES_REVISION_HEADER, "")
+            .build()
+
+        assertThatThrownBy {
+            verifier(AssignmentProtection.SIGNED).verify(request, response, RESPONSE_BODY_BYTES)
+        }
+            .isInstanceOf(AssignmentPayloadVerificationException::class.java)
+            .hasMessage("Signed assignment rules revision is invalid")
+    }
+
+    @Test
+    fun `M reject payload W verify { rules revision exceeds bound }`() {
+        val request = request(AssignmentProtection.SIGNED)
+        val response = response(request, AssignmentProtection.SIGNED)
+            .newBuilder()
+            .header(PrecomputedAssignmentsVerifier.RULES_REVISION_HEADER, "a".repeat(257))
+            .build()
+
+        assertThatThrownBy {
+            verifier(AssignmentProtection.SIGNED).verify(request, response, RESPONSE_BODY_BYTES)
+        }
+            .isInstanceOf(AssignmentPayloadVerificationException::class.java)
+            .hasMessageContaining("header is too large")
+    }
+
+    @Test
+    fun `M reject payload W verify { rules revision format is invalid }`() {
+        val request = request(AssignmentProtection.SIGNED)
+        val response = response(request, AssignmentProtection.SIGNED)
+            .newBuilder()
+            .header(PrecomputedAssignmentsVerifier.RULES_REVISION_HEADER, "v1/invalid")
+            .build()
+
+        assertThatThrownBy {
+            verifier(AssignmentProtection.SIGNED).verify(request, response, RESPONSE_BODY_BYTES)
+        }
+            .isInstanceOf(AssignmentPayloadVerificationException::class.java)
+            .hasMessage("Signed assignment rules revision is invalid")
+    }
+
+    @Test
     fun `M reject payload W verify { rules revision changed }`() {
         val request = request(AssignmentProtection.SIGNED)
         val response = response(request, AssignmentProtection.SIGNED)
             .newBuilder()
-            .header(PrecomputedAssignmentsVerifier.RULES_REVISION_HEADER, "untrusted-revision")
+            .header(PrecomputedAssignmentsVerifier.RULES_REVISION_HEADER, "v1.untrusted-revision")
             .build()
 
         assertThatThrownBy {
@@ -321,7 +381,7 @@ internal class PrecomputedAssignmentsVerifierTest {
                 header(PrecomputedAssignmentsVerifier.AUTHORIZATION_POLICY_VERSION_HEADER, POLICY_VERSION)
             }
         }
-        .header(PrecomputedAssignmentsVerifier.RULES_REVISION_HEADER, "")
+        .header(PrecomputedAssignmentsVerifier.RULES_REVISION_HEADER, RULES_REVISION)
         .header(PrecomputedAssignmentsVerifier.ISSUED_AT_HEADER, ISSUED_AT.toString())
         .header(PrecomputedAssignmentsVerifier.EXPIRES_AT_HEADER, EXPIRES_AT.toString())
         .header(PrecomputedAssignmentsVerifier.CERTIFICATE_ID_HEADER, LEAF_CERTIFICATE_ID)
@@ -341,6 +401,7 @@ internal class PrecomputedAssignmentsVerifierTest {
         const val EXPIRES_AT = 1_789_097_100L
         const val NONCE = "000102030405060708090a0b0c0d0e0f"
         const val POLICY_VERSION = "ap_test_v2"
+        const val RULES_REVISION = "v1.7QfR3VxN2mK8pT5cW9yH4zLs1aBd6eUg"
         const val REQUEST_BODY = "{\"data\":{\"attributes\":{\"subject\":{\"targeting_key\":\"user-1\"}}}}"
         const val RESPONSE_BODY = "{\"data\":{\"id\":\"user-1\"}}"
         val RESPONSE_BODY_BYTES = RESPONSE_BODY.toByteArray()
@@ -360,8 +421,8 @@ internal class PrecomputedAssignmentsVerifierTest {
                 "SM49BAMCA0cAMEQCIFvqYcK+OAaBdMRuMkSpOVscR1SMdCPt5LNdkQEZyvNCAiBq2rtg8F27nZ2mHyoA" +
                 "L4OT5tCMBKvYytpnRZzwMBYJTQ=="
         const val SIGNED_ONLY_SIGNATURE =
-            "MEUCIBim8DaKFvPtvhHV5yjwyPWZgZVnpz6tkiAUzAOk3bTyAiEA3OsaJ3VjUP+o6iojyD5Fv7D4+9FDNUODiDDA3XUvze4="
+            "MEQCICc101QdcPKu/3zQKN3936v7/fT5WSRtsfQwUj/B2rFfAiAPLA0ajHwEs4s14FClfvhTGCaXbDt51ZmsKcoFTmG6ug=="
         const val SIGNED_AND_AUTHORIZED_SIGNATURE =
-            "MEYCIQDAG5d1Edg2NhaMGfJiMTbjSmhYSsUS65ZbImV/3IeFwQIhAJjHs87OUC6Ni08YguV72YI8rAaT1ehn6da9gWLw7w+R"
+            "MEUCIGptxA2/TcleCTdA0C+EwE1o+jt/oTxdTHYVqJNYA5iLAiEApDejffCwRZ80YEIZIktC93b8CDz/YAq9yWgQcsZQ2Oc="
     }
 }

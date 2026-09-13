@@ -77,7 +77,7 @@ internal class DefaultProtectedAssignmentsCacheVerifierTest {
             .isEqualTo(envelope.requestNonce)
         assertThat(requestSubject(capturedRequest.get())).isEqualTo(context)
         assertThat(capturedResponse.get().header(PrecomputedAssignmentsVerifier.RULES_REVISION_HEADER))
-            .isEqualTo("rules-42")
+            .isEqualTo("v1.fixture")
         assertThat(
             capturedResponse.get().header(PrecomputedAssignmentsVerifier.AUTHORIZATION_POLICY_VERSION_HEADER)
         ).isNull()
@@ -123,6 +123,31 @@ internal class DefaultProtectedAssignmentsCacheVerifierTest {
 
         val flags = testedVerifier.verify(
             entry = protectedEntry(context, envelope),
+            context = context,
+            datadogContext = scopedDatadogContext(fakeDatadogContext)
+        )
+
+        assertThat(flags).isNull()
+    }
+
+    @Test
+    fun `M reject flags W verify() { persisted rules revision differs from verified response }`(
+        @Forgery fakeDatadogContext: DatadogContext
+    ) {
+        val context = EvaluationContext("subject-1", emptyMap())
+        val verifiedEnvelope = protectedEnvelope(AssignmentProtection.SIGNED)
+        val persistedEnvelope = verifiedEnvelope.copy(rulesRevision = "v1.persisted-change")
+        val testedVerifier = cacheVerifier(
+            protection = AssignmentProtection.SIGNED,
+            payloadVerifier = AssignmentPayloadVerifier { _, response, _ ->
+                assertThat(response.header(PrecomputedAssignmentsVerifier.RULES_REVISION_HEADER))
+                    .isEqualTo(persistedEnvelope.rulesRevision)
+                verifiedEnvelope
+            }
+        )
+
+        val flags = testedVerifier.verify(
+            entry = protectedEntry(context, persistedEnvelope),
             context = context,
             datadogContext = scopedDatadogContext(fakeDatadogContext)
         )
@@ -179,7 +204,7 @@ internal class DefaultProtectedAssignmentsCacheVerifierTest {
         } else {
             null
         },
-        rulesRevision = "rules-42",
+        rulesRevision = "v1.fixture",
         issuedAt = 1_789_096_800L,
         expiresAt = 1_789_097_100L,
         certificateId = "certificate-id",

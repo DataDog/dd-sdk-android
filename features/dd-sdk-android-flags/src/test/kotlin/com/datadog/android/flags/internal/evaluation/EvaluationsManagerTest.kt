@@ -1331,7 +1331,7 @@ internal class EvaluationsManagerTest {
         requestNonce = "000102030405060708090a0b0c0d0e0f",
         responseStatus = 200,
         authorizationPolicyVersion = null,
-        rulesRevision = "",
+        rulesRevision = "v1.fixture",
         issuedAt = 1_789_096_800L,
         expiresAt = 1_789_097_100L,
         certificateId = "certificate-id",

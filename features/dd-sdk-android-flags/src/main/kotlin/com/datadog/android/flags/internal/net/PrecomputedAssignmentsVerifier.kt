@@ -157,6 +157,9 @@ internal class PrecomputedAssignmentsVerifier(
         val issuedAt = response.requiredSingleHeader(ISSUED_AT_HEADER, MAX_TIMESTAMP_LENGTH).toLong()
         val expiresAt = response.requiredSingleHeader(EXPIRES_AT_HEADER, MAX_TIMESTAMP_LENGTH).toLong()
         val rulesRevision = response.requiredSingleHeader(RULES_REVISION_HEADER, MAX_RULES_REVISION_LENGTH)
+        require(isValidRulesRevision(rulesRevision)) {
+            "Signed assignment rules revision is invalid"
+        }
         val now = currentTimeSeconds()
         require(issuedAt >= 0) { "Signed assignment response issue time is invalid" }
         require(issuedAt <= now + CLOCK_SKEW_SECONDS) { "Signed assignment response is not valid yet" }
@@ -361,6 +364,21 @@ internal class PrecomputedAssignmentsVerifier(
     private fun ByteArray.toHex(): String = joinToString(separator = "") {
         (it.toInt() and HEX_BYTE_MASK).toString(HEX_RADIX).padStart(HEX_BYTE_WIDTH, '0')
     }
+
+    /**
+     * The origin artifact identifier is opaque to the SDK. The RFC 3986
+     * unreserved character set remains stable across HTTP implementations.
+     */
+    private fun isValidRulesRevision(value: String): Boolean =
+        value.length in 1..MAX_RULES_REVISION_LENGTH && value.all { character ->
+            character in 'A'..'Z' ||
+                character in 'a'..'z' ||
+                character in '0'..'9' ||
+                character == '-' ||
+                character == '.' ||
+                character == '_' ||
+                character == '~'
+        }
 
     private fun decodeHex(value: String): ByteArray {
         require(value.length % HEX_BYTE_WIDTH == 0) { "Hexadecimal value has an invalid size" }

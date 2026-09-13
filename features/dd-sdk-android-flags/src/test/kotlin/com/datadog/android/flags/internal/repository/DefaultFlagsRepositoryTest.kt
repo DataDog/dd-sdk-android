@@ -596,7 +596,7 @@ internal class DefaultFlagsRepositoryTest {
         } else {
             null
         },
-        rulesRevision = "",
+        rulesRevision = "v1.fixture",
         issuedAt = 1_789_096_800L,
         expiresAt = 1_789_097_100L,
         certificateId = "certificate-id",
