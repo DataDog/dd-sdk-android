@@ -11,6 +11,15 @@ public final class com/datadog/android/flags/AssignmentAuthorization {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/datadog/android/flags/AssignmentProtection : java/lang/Enum {
+	public static final field DISABLED Lcom/datadog/android/flags/AssignmentProtection;
+	public static final field SIGNED Lcom/datadog/android/flags/AssignmentProtection;
+	public static final field SIGNED_AND_AUTHORIZED Lcom/datadog/android/flags/AssignmentProtection;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/flags/AssignmentProtection;
+	public static fun values ()[Lcom/datadog/android/flags/AssignmentProtection;
+}
+
 public abstract interface class com/datadog/android/flags/EvaluationContextCallback {
 	public abstract fun onFailure (Ljava/lang/Throwable;)V
 	public abstract fun onSuccess ()V
@@ -71,6 +80,7 @@ public final class com/datadog/android/flags/FlagsConfiguration {
 public final class com/datadog/android/flags/FlagsConfiguration$Builder {
 	public fun <init> ()V
 	public final fun assignmentAuthorization (Lcom/datadog/android/flags/AssignmentAuthorization;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
+	public final fun assignmentProtection (Lcom/datadog/android/flags/AssignmentProtection;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun build ()Lcom/datadog/android/flags/FlagsConfiguration;
 	public final fun evaluationFlushInterval (J)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun gracefulModeEnabled (Z)Lcom/datadog/android/flags/FlagsConfiguration$Builder;

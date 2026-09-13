@@ -9,9 +9,11 @@ package com.datadog.android.flags.internal.net
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.flags.AssignmentProtection
 import com.datadog.android.flags.internal.getFlagsEndpoint
 import com.datadog.android.flags.model.EvaluationContext
 import okhttp3.Headers
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -25,7 +27,13 @@ import java.security.SecureRandom
 internal class PrecomputedAssignmentsRequestFactory(
     private val internalLogger: InternalLogger,
     private val customFlagEndpoint: String?,
-    private val authorizationStore: AssignmentAuthorizationStore = AssignmentAuthorizationStore(null)
+    private val authorizationStore: AssignmentAuthorizationStore = AssignmentAuthorizationStore(null),
+    private val assignmentProtection: AssignmentProtection = if (authorizationStore.snapshot().isEnabled) {
+        AssignmentProtection.SIGNED_AND_AUTHORIZED
+    } else {
+        AssignmentProtection.DISABLED
+    },
+    private val hasValidProtectionConfiguration: Boolean = true
 ) {
 
     /**
@@ -39,20 +47,49 @@ internal class PrecomputedAssignmentsRequestFactory(
      * @param context The evaluation context containing targeting key and custom attributes
      *                for flag evaluation
      * @param datadogContext The [DatadogContext] holding common information about SDK
+     * @param nonceOverride A validated nonce from a persisted signed response. This value is for cache verification.
      * @return A fully-formed OkHttp Request ready for execution, or null if the request
      *         cannot be constructed (e.g., invalid endpoint, JSON serialization error)
      */
-    @Suppress("ReturnCount")
-    fun create(context: EvaluationContext, datadogContext: DatadogContext): Request? {
-        val url = customFlagEndpoint
-            ?: datadogContext.site.getFlagsEndpoint(PREVIEW_CUSTOMER_DOMAIN)
+    @Suppress("CyclomaticComplexMethod", "ReturnCount")
+    fun create(
+        context: EvaluationContext,
+        datadogContext: DatadogContext,
+        nonceOverride: String? = null
+    ): Request? {
+        if (!hasValidProtectionConfiguration) {
+            logInvalidProtectionConfiguration()
+            return null
+        }
+        if (nonceOverride != null && !isValidNonce(nonceOverride)) return null
+        val url = (
+            customFlagEndpoint
+                ?: datadogContext.site.getFlagsEndpoint(PREVIEW_CUSTOMER_DOMAIN)
+                ?: return null
+            ).toHttpUrlOrNull()
             ?: return null
 
-        val authorization = authorizationStore.snapshot()
-        if (authorization.isEnabled && authorization.authorization == null) return null
-        val headers = buildHeaders(datadogContext, authorization) ?: return null
+        if (assignmentProtection != AssignmentProtection.DISABLED && !url.isHttps) {
+            logProtectionError("Protected flag assignment delivery requires an HTTPS endpoint")
+            return null
+        }
 
+        val authorization = authorizationStore.snapshot()
+        if (
+            assignmentProtection == AssignmentProtection.SIGNED_AND_AUTHORIZED &&
+            authorization.authorization == null
+        ) {
+            return null
+        }
         val body = buildRequestBody(context, datadogContext) ?: return null
+        if (
+            assignmentProtection != AssignmentProtection.DISABLED &&
+            body.contentLength() > PrecomputedAssignmentsVerifier.MAX_REQUEST_BODY_BYTES
+        ) {
+            logProtectionError("Protected flag assignment request body is too large")
+            return null
+        }
+        val headers = buildHeaders(datadogContext, authorization, nonceOverride) ?: return null
 
         @Suppress("UnsafeThirdPartyFunctionCall") // Safe: inputs validated, caller handles null
         return Request.Builder()
@@ -62,9 +99,11 @@ internal class PrecomputedAssignmentsRequestFactory(
             .build()
     }
 
+    @Suppress("RequireInternal", "UnsafeThirdPartyFunctionCall") // Failures are caught and return null.
     private fun buildHeaders(
         datadogContext: DatadogContext,
-        authorization: AssignmentAuthorizationSnapshot
+        authorization: AssignmentAuthorizationSnapshot,
+        nonceOverride: String?
     ): Headers? {
         val headersBuilder = Headers.Builder()
 
@@ -72,20 +111,23 @@ internal class PrecomputedAssignmentsRequestFactory(
             headersBuilder
                 .add(HEADER_CLIENT_TOKEN, datadogContext.clientToken)
                 .add(HEADER_CONTENT_TYPE, CONTENT_TYPE_VND_JSON)
-            authorization.authorization?.let {
+            if (assignmentProtection != AssignmentProtection.DISABLED) {
                 headersBuilder
-                    .add(HEADER_AUTHORIZATION, "Bearer ${it.bearerToken}")
                     .add(
                         PrecomputedAssignmentsVerifier.SIGNATURE_VERSION_HEADER,
                         PrecomputedAssignmentsVerifier.SIGNATURE_VERSION
                     )
-                    .add(PrecomputedAssignmentsVerifier.REQUEST_NONCE_HEADER, createNonce())
+                    .add(
+                        PrecomputedAssignmentsVerifier.REQUEST_NONCE_HEADER,
+                        nonceOverride ?: createNonce()
+                    )
             }
-
-            // This fixed header routes only this POC branch to its Rapid Test Drive.
-            // It is not part of the proposed customer API.
-            if (customFlagEndpoint == CLOUD_TEST_DRIVE_ENDPOINT) {
-                headersBuilder.add(CLOUD_TEST_DRIVE_HEADER, CLOUD_TEST_DRIVE_NAME)
+            if (assignmentProtection == AssignmentProtection.SIGNED_AND_AUTHORIZED) {
+                val token = requireNotNull(authorization.authorization).bearerToken
+                require(token.length <= MAX_AUTHORIZATION_TOKEN_LENGTH && token.none(Char::isWhitespace)) {
+                    "Assignment authorization token is invalid"
+                }
+                headersBuilder.add(HEADER_AUTHORIZATION, "Bearer $token")
             }
 
             datadogContext.rumApplicationId?.let {
@@ -167,6 +209,30 @@ internal class PrecomputedAssignmentsRequestFactory(
             (it.toInt() and HEX_BYTE_MASK).toString(HEX_RADIX).padStart(HEX_BYTE_WIDTH, '0')
         }
 
+    @Suppress("UnsafeThirdPartyFunctionCall") // The length check keeps digit conversion within a two-character byte.
+    private fun isValidNonce(value: String): Boolean =
+        value.length == NONCE_SIZE_BYTES * HEX_BYTE_WIDTH && value.all { it.digitToIntOrNull(HEX_RADIX) != null }
+
+    private fun logInvalidProtectionConfiguration() {
+        internalLogger.log(
+            level = InternalLogger.Level.ERROR,
+            target = InternalLogger.Target.USER,
+            messageBuilder = {
+                "Assignment authorization requires SIGNED_AND_AUTHORIZED assignment protection"
+            },
+            onlyOnce = true
+        )
+    }
+
+    private fun logProtectionError(message: String) {
+        internalLogger.log(
+            level = InternalLogger.Level.ERROR,
+            target = InternalLogger.Target.USER,
+            messageBuilder = { message },
+            onlyOnce = true
+        )
+    }
+
     companion object {
         private const val HEADER_APPLICATION_ID = "dd-application-id"
         private const val HEADER_CLIENT_TOKEN = "dd-client-token"
@@ -176,12 +242,9 @@ internal class PrecomputedAssignmentsRequestFactory(
         private const val PREVIEW_CUSTOMER_DOMAIN = "preview"
         private const val SDK_NAME = "dd-sdk-android"
         private const val NONCE_SIZE_BYTES = 16
+        private const val MAX_AUTHORIZATION_TOKEN_LENGTH = 4_096
         private const val HEX_BYTE_MASK = 0xff
         private const val HEX_RADIX = 16
         private const val HEX_BYTE_WIDTH = 2
-        internal const val CLOUD_TEST_DRIVE_ENDPOINT =
-            "https://preview.ff-cdn.datad0g.com/precompute-assignments"
-        internal const val CLOUD_TEST_DRIVE_HEADER = "x-dd-ffe-test-drive"
-        internal const val CLOUD_TEST_DRIVE_NAME = "signed-assignments"
     }
 }

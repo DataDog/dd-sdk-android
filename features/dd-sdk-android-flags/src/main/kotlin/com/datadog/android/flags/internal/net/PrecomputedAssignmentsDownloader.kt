@@ -13,7 +13,9 @@ import com.datadog.android.flags.model.EvaluationContext
 import okhttp3.Call
 import okhttp3.Request
 import okhttp3.Response
+import okio.Buffer
 import java.nio.charset.StandardCharsets
+import kotlin.math.min
 
 /**
  * Downloads precomputed flag assignments from Datadog Feature Flags service.
@@ -31,14 +33,17 @@ internal class PrecomputedAssignmentsDownloader(
 ) : PrecomputedAssignmentsReader {
 
     @WorkerThread
-    override fun readPrecomputedFlags(context: EvaluationContext, datadogContext: DatadogContext): String? {
+    override fun readPrecomputedFlags(
+        context: EvaluationContext,
+        datadogContext: DatadogContext
+    ): PrecomputedAssignmentsPayload? {
         val request = requestFactory.create(context, datadogContext) ?: return null
 
         return executeDownloadRequest(request)
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private fun executeDownloadRequest(request: Request): String? = try {
+    private fun executeDownloadRequest(request: Request): PrecomputedAssignmentsPayload? = try {
         val response = callFactory.newCall(request).execute()
         handleResponse(request, response)
     } catch (e: AssignmentPayloadVerificationException) {
@@ -66,12 +71,17 @@ internal class PrecomputedAssignmentsDownloader(
         null
     }
 
-    private fun handleResponse(request: Request, response: Response): String? = if (response.isSuccessful) {
+    private fun handleResponse(request: Request, response: Response): PrecomputedAssignmentsPayload? = if (
+        response.isSuccessful
+    ) {
         @Suppress("UnsafeThirdPartyFunctionCall") // Safe: wrapped in outer try-catch
         response.body?.use {
-            val responseBody = it.bytes()
-            payloadVerifier.verify(request, response, responseBody)
-            responseBody.toString(StandardCharsets.UTF_8)
+            val responseBody = readBoundedResponseBody(response)
+            val protectedEnvelope = payloadVerifier.verify(request, response, responseBody)
+            PrecomputedAssignmentsPayload(
+                body = responseBody.toString(StandardCharsets.UTF_8),
+                protectedEnvelope = protectedEnvelope
+            )
         }
     } else {
         internalLogger.log(
@@ -91,5 +101,37 @@ internal class PrecomputedAssignmentsDownloader(
         response.body?.close()
 
         null
+    }
+
+    @Suppress(
+        "RequireInternal",
+        "ThrowingInternalException",
+        "UnsafeThirdPartyFunctionCall"
+    ) // The outer request boundary catches these failures and rejects the response.
+    private fun readBoundedResponseBody(response: Response): ByteArray {
+        val body = requireNotNull(response.body)
+        val declaredLength = body.contentLength()
+        if (declaredLength > PrecomputedAssignmentsVerifier.MAX_RESPONSE_BODY_BYTES) {
+            throw AssignmentPayloadVerificationException("Flag assignment response body is too large")
+        }
+
+        val buffer = Buffer()
+        val source = body.source()
+        var total = 0L
+        val maximum = PrecomputedAssignmentsVerifier.MAX_RESPONSE_BODY_BYTES.toLong()
+        while (true) {
+            val remaining = maximum - total + 1
+            val count = source.read(buffer, min(READ_CHUNK_BYTES, remaining))
+            if (count == -1L) break
+            total += count
+            if (total > maximum) {
+                throw AssignmentPayloadVerificationException("Flag assignment response body is too large")
+            }
+        }
+        return buffer.readByteArray()
+    }
+
+    private companion object {
+        const val READ_CHUNK_BYTES = 8_192L
     }
 }

@@ -119,7 +119,8 @@ internal class PrecomputedAssignmentsDownloaderTest {
         val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
 
         // Then
-        assertThat(result).isEqualTo(fakeResponseBody)
+        assertThat(result?.body).isEqualTo(fakeResponseBody)
+        assertThat(result?.protectedEnvelope).isNull()
         verify(mockRequestFactory).create(fakeEvaluationContext, fakeDatadogContext)
     }
 

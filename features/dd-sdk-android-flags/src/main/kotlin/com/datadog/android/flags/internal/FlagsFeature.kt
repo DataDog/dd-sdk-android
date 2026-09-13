@@ -16,6 +16,7 @@ import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.flags.AssignmentAuthorization
+import com.datadog.android.flags.AssignmentProtection
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.internal.evaluation.InitializationTimeoutScheduler
@@ -90,7 +91,9 @@ internal class FlagsFeature(
         PrecomputedAssignmentsRequestFactory(
             internalLogger = sdkCore.internalLogger,
             customFlagEndpoint = flagsConfiguration.customFlagEndpoint,
-            authorizationStore = assignmentAuthorizationStore
+            authorizationStore = assignmentAuthorizationStore,
+            assignmentProtection = flagsConfiguration.assignmentProtection,
+            hasValidProtectionConfiguration = flagsConfiguration.hasValidAssignmentProtectionConfiguration
         )
 
     internal val initializationTimeoutScheduler = InitializationTimeoutScheduler { timeoutMs, action ->
@@ -149,9 +152,10 @@ internal class FlagsFeature(
         }
         dataWriter = NoOpRecordWriter()
         isInitialized = false // Allow re-initialization if feature is restarted
-        synchronized(registeredClients) {
-            registeredClients.clear()
+        val clients = synchronized(registeredClients) {
+            registeredClients.values.toList().also { registeredClients.clear() }
         }
+        clients.forEach { (it as? DatadogFlagsClient)?.reset() }
     }
 
     private fun createDataWriter(): RecordWriter = ExposureEventRecordWriter(sdkCore)
@@ -200,6 +204,17 @@ internal class FlagsFeature(
     }
 
     internal fun setAssignmentAuthorization(authorization: AssignmentAuthorization?) {
+        if (flagsConfiguration.assignmentProtection != AssignmentProtection.SIGNED_AND_AUTHORIZED) {
+            sdkCore.internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                target = InternalLogger.Target.USER,
+                messageBuilder = {
+                    "Assignment authorization requires SIGNED_AND_AUTHORIZED assignment protection"
+                },
+                onlyOnce = true
+            )
+            return
+        }
         synchronized(authorizationExpirationLock) {
             assignmentAuthorizationStore.update(authorization)
             val currentAuthorization = assignmentAuthorizationStore.snapshot().authorization

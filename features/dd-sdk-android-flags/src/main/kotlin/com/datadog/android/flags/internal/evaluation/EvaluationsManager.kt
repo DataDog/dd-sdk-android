@@ -10,12 +10,14 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.flags.AssignmentProtection
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.net.NetworkRequestFailedException
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.repository.FlagsRepository
+import com.datadog.android.flags.internal.repository.ProtectedFlagsCacheRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
@@ -76,6 +78,7 @@ private class InitializationCompletion(private var callback: EvaluationContextCa
  * @param assignmentsReader handles reading assignments for the context.
  * @param precomputeMapper transforms network responses into internal flag format
  * @param flagStateManager channel for notifying state change listeners
+ * @param assignmentProtection local policy for assignment payload verification
  * @param initializationTimeoutMs optional maximum duration of the first context operation
  * @param initializationTimeoutScheduler schedules the first context timeout
  */
@@ -87,6 +90,7 @@ internal class EvaluationsManager(
     private val assignmentsReader: PrecomputedAssignmentsReader,
     private val precomputeMapper: PrecomputeMapper,
     private val flagStateManager: FlagsStateManager,
+    private val assignmentProtection: AssignmentProtection = AssignmentProtection.DISABLED,
     private val initializationTimeoutMs: Long?,
     private val initializationTimeoutScheduler: InitializationTimeoutScheduler
 ) {
@@ -110,13 +114,14 @@ internal class EvaluationsManager(
      * a valid targeting key.
      * @param callback Optional callback invoked when the context is set and the flags have been fetched successfully or not.
      */
-    @Suppress("LongMethod")
+    @Suppress("CyclomaticComplexMethod", "LongMethod")
     fun updateEvaluationsForContext(context: EvaluationContext, callback: EvaluationContextCallback? = null) {
         val generation = synchronized(requestStateLock) {
             desiredContext = context
             requestGeneration += 1
             val currentGeneration = requestGeneration
-            if (flagsRepository.getEvaluationContext() != context) {
+            val loadedContext = flagsRepository.getEvaluationContext()
+            if (loadedContext != null && loadedContext != context) {
                 flagsRepository.clear()
             }
             currentGeneration
@@ -145,16 +150,30 @@ internal class EvaluationsManager(
                         { "Processing evaluation context: ${context.targetingKey}" }
                     )
 
+                    (flagsRepository as? ProtectedFlagsCacheRepository)
+                        ?.restoreProtectedState(context, datadogContext)
+
                     val hadFlags = flagsRepository.hasFlags()
                     matchingCachedAssignments.set(
                         hadFlags && flagsRepository.getEvaluationContext() == context
                     )
                     val response = assignmentsReader.readPrecomputedFlags(context, datadogContext)
                     if (!isCurrent(generation, context)) return@executeSafe
-                    if (response != null) {
-                        val flagsMap = precomputeMapper.map(response)
+                    val hasRequiredProtection = when (assignmentProtection) {
+                        AssignmentProtection.DISABLED -> response?.protectedEnvelope == null
+                        AssignmentProtection.SIGNED,
+                        AssignmentProtection.SIGNED_AND_AUTHORIZED ->
+                            response?.protectedEnvelope?.protection == assignmentProtection
+                    }
+                    if (response != null && hasRequiredProtection) {
+                        val flagsMap = precomputeMapper.map(response.body)
                         val completionCallback = commitIfCurrent(generation, context) {
-                            flagsRepository.setFlagsAndContext(context, flagsMap)
+                            flagsRepository.setFlagsAndContext(
+                                context,
+                                flagsMap,
+                                response.body,
+                                response.protectedEnvelope
+                            )
                             internalLogger.log(
                                 InternalLogger.Level.DEBUG,
                                 InternalLogger.Target.MAINTAINER,
@@ -247,6 +266,15 @@ internal class EvaluationsManager(
             } else {
                 flagStateManager.updateState(FlagsClientState.NotReady)
             }
+        }
+    }
+
+    fun reset() {
+        synchronized(requestStateLock) {
+            requestGeneration += 1
+            desiredContext = null
+            flagsRepository.clear()
+            flagStateManager.updateState(FlagsClientState.NotReady)
         }
     }
 

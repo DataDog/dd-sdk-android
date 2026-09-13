@@ -81,6 +81,10 @@ internal class DatadogFlagsClient(
         evaluationsManager.assignmentAuthorizationDidChange(hasAuthorization)
     }
 
+    internal fun reset() {
+        evaluationsManager.reset()
+    }
+
     /**
      * Resolves a boolean flag value.
      *

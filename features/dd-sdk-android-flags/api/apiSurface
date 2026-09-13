@@ -1,6 +1,10 @@
 data class com.datadog.android.flags.AssignmentAuthorization
   constructor(String, java.util.Date)
   override fun toString(): String
+enum com.datadog.android.flags.AssignmentProtection
+  - DISABLED
+  - SIGNED
+  - SIGNED_AND_AUTHORIZED
 interface com.datadog.android.flags.EvaluationContextCallback
   fun onSuccess()
   fun onFailure(Throwable)
@@ -33,6 +37,7 @@ data class com.datadog.android.flags.FlagsConfiguration
     fun useCustomFlagEndpoint(String): Builder
     fun initializationTimeout(Long): Builder
     fun assignmentAuthorization(AssignmentAuthorization): Builder
+    fun assignmentProtection(AssignmentProtection): Builder
     fun rumIntegrationEnabled(Boolean): Builder
     fun gracefulModeEnabled(Boolean): Builder
     fun build(): FlagsConfiguration

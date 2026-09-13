@@ -26,6 +26,7 @@ import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsDownloader
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsVerifier
 import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
+import com.datadog.android.flags.internal.repository.DefaultProtectedAssignmentsCacheVerifier
 import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
@@ -404,33 +405,45 @@ interface FlagsClient {
             )
             val datastore = featureSdkCore.getFeature(FLAGS_FEATURE_NAME)
                 ?.dataStore
+            val precomputeMapper = PrecomputeMapper(featureSdkCore.internalLogger)
+            val payloadVerifier = PrecomputedAssignmentsVerifier(configuration.assignmentProtection)
             val flagsRepository = if (datastore != null) {
                 DefaultFlagsRepository(
                     featureSdkCore = featureSdkCore,
                     dataStore = datastore,
                     instanceName = name,
-                    acceptPersistedState = !flagsFeature.assignmentAuthorizationStore.snapshot().isEnabled
+                    acceptPersistedState = configuration.assignmentProtection == AssignmentProtection.DISABLED,
+                    assignmentProtection = configuration.assignmentProtection,
+                    protectedCacheVerifier = DefaultProtectedAssignmentsCacheVerifier(
+                        requestFactory = flagsFeature.precomputedRequestFactory,
+                        payloadVerifier = payloadVerifier,
+                        precomputeMapper = precomputeMapper,
+                        internalLogger = featureSdkCore.internalLogger
+                    )
                 )
             } else {
                 NoOpFlagsRepository()
             }
 
+            @Suppress("UnsafeThirdPartyFunctionCall")
             val callFactory = featureSdkCore.createOkHttpCallFactory {
-                // The POC example uses adb reverse to reach a local Compute service.
-                // Production flag endpoints continue to require TLS.
-                val endpoint = configuration.customFlagEndpoint?.toHttpUrlOrNull()
-                if (endpoint?.isHttps == false && endpoint.host in LOOPBACK_HOSTS) {
-                    connectionSpecs(listOf(ConnectionSpec.CLEARTEXT))
+                if (configuration.assignmentProtection == AssignmentProtection.DISABLED) {
+                    // Preserve the existing local custom-endpoint behavior for unprotected delivery.
+                    val endpoint = configuration.customFlagEndpoint?.toHttpUrlOrNull()
+                    if (endpoint?.isHttps == false && endpoint.host in LOOPBACK_HOSTS) {
+                        connectionSpecs(listOf(ConnectionSpec.CLEARTEXT))
+                    }
+                } else {
+                    followRedirects(false)
+                    followSslRedirects(false)
                 }
             }
             val assignmentsDownloader = PrecomputedAssignmentsDownloader(
                 internalLogger = featureSdkCore.internalLogger,
                 callFactory = callFactory,
                 requestFactory = flagsFeature.precomputedRequestFactory,
-                payloadVerifier = PrecomputedAssignmentsVerifier()
+                payloadVerifier = payloadVerifier
             )
-
-            val precomputeMapper = PrecomputeMapper(featureSdkCore.internalLogger)
 
             val flagStateManager = FlagsStateManager(
                 stateHolder = DDCoreStateHolder.create(
@@ -447,6 +460,7 @@ interface FlagsClient {
                 assignmentsReader = assignmentsDownloader,
                 precomputeMapper = precomputeMapper,
                 flagStateManager = flagStateManager,
+                assignmentProtection = configuration.assignmentProtection,
                 initializationTimeoutMs = configuration.initializationTimeoutMs,
                 initializationTimeoutScheduler = flagsFeature.initializationTimeoutScheduler
             )

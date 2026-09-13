@@ -7,12 +7,15 @@
 package com.datadog.android.flags.internal.repository
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.core.persistence.datastore.DataStoreContent
+import com.datadog.android.flags.AssignmentProtection
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.net.ProtectedAssignmentEnvelope
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
@@ -31,7 +34,9 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
@@ -357,6 +362,97 @@ internal class DefaultFlagsRepositoryTest {
     }
 
     @Test
+    fun `M reject network state W setFlagsAndContext() { required envelope is missing }`() {
+        val repository = DefaultFlagsRepository(
+            featureSdkCore = mockFeatureSdkCore,
+            dataStore = mockDataStore,
+            instanceName = "protected-network",
+            acceptPersistedState = false,
+            assignmentProtection = AssignmentProtection.SIGNED
+        )
+
+        repository.setFlagsAndContext(testContext, singleFlagMap)
+
+        assertThat(repository.hasFlags()).isFalse()
+        assertThat(repository.getEvaluationContext()).isNull()
+    }
+
+    @Test
+    fun `M restore flags W restoreProtectedState() { protected cache is verified }`(
+        @fr.xgouchet.elmyr.annotation.Forgery fakeDatadogContext: DatadogContext
+    ) {
+        val envelope = protectedEnvelope(AssignmentProtection.SIGNED)
+        val persistedEntry = FlagsStateEntry(
+            flags = mapOf("untrusted-copy" to singleFlagMap.values.first()),
+            evaluationContext = testContext,
+            lastUpdateTimestamp = 0L,
+            rawResponseBody = "signed-response-body",
+            protectedEnvelope = envelope
+        )
+        doAnswer {
+            it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2)
+                .onSuccess(DataStoreContent(versionCode = 0, data = persistedEntry))
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(
+            key = any(),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+        val cacheVerifier = mock<ProtectedAssignmentsCacheVerifier>()
+        whenever(cacheVerifier.verify(eq(persistedEntry), eq(testContext), eq(fakeDatadogContext))) doReturn
+            singleFlagMap
+        val repository = DefaultFlagsRepository(
+            featureSdkCore = mockFeatureSdkCore,
+            dataStore = mockDataStore,
+            instanceName = "protected-cache",
+            acceptPersistedState = false,
+            assignmentProtection = AssignmentProtection.SIGNED,
+            protectedCacheVerifier = cacheVerifier
+        )
+
+        val restored = repository.restoreProtectedState(testContext, fakeDatadogContext)
+
+        assertThat(restored).isTrue()
+        assertThat(repository.getFlagsSnapshot()).isEqualTo(singleFlagMap)
+        assertThat(repository.getFlagsSnapshot()).doesNotContainKey("untrusted-copy")
+    }
+
+    @Test
+    fun `M reject flags W restoreProtectedState() { persisted protection does not match }`(
+        @fr.xgouchet.elmyr.annotation.Forgery fakeDatadogContext: DatadogContext
+    ) {
+        val persistedEntry = FlagsStateEntry(
+            flags = singleFlagMap,
+            evaluationContext = testContext,
+            lastUpdateTimestamp = 0L,
+            rawResponseBody = "signed-response-body",
+            protectedEnvelope = protectedEnvelope(AssignmentProtection.SIGNED_AND_AUTHORIZED)
+        )
+        doAnswer {
+            it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2)
+                .onSuccess(DataStoreContent(versionCode = 0, data = persistedEntry))
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(
+            key = any(),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+        val repository = DefaultFlagsRepository(
+            featureSdkCore = mockFeatureSdkCore,
+            dataStore = mockDataStore,
+            instanceName = "wrong-protection-cache",
+            acceptPersistedState = false,
+            assignmentProtection = AssignmentProtection.SIGNED,
+            protectedCacheVerifier = mock()
+        )
+
+        assertThat(repository.restoreProtectedState(testContext, fakeDatadogContext)).isFalse()
+        assertThat(repository.hasFlags()).isFalse()
+    }
+
+    @Test
     fun `M reject late persisted state W clear() { persistence callback completes after clear }`() {
         var capturedCallback: DataStoreReadCallback<FlagsStateEntry>? = null
         doAnswer {
@@ -383,6 +479,45 @@ internal class DefaultFlagsRepositoryTest {
         capturedCallback?.onSuccess(DataStoreContent(versionCode = 0, data = persistedEntry))
 
         assertThat(repository.hasFlags()).isFalse()
+    }
+
+    @Test
+    fun `M reject late protected state W clear() { persistence callback completes after reset boundary }`(
+        @fr.xgouchet.elmyr.annotation.Forgery fakeDatadogContext: DatadogContext
+    ) {
+        var capturedCallback: DataStoreReadCallback<FlagsStateEntry>? = null
+        doAnswer {
+            capturedCallback = it.getArgument(2)
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(
+            key = any(),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+        val cacheVerifier = mock<ProtectedAssignmentsCacheVerifier>()
+        val repository = DefaultFlagsRepository(
+            featureSdkCore = mockFeatureSdkCore,
+            dataStore = mockDataStore,
+            instanceName = "late-protected-persistence",
+            acceptPersistedState = false,
+            assignmentProtection = AssignmentProtection.SIGNED,
+            protectedCacheVerifier = cacheVerifier
+        )
+        val persistedEntry = FlagsStateEntry(
+            flags = singleFlagMap,
+            evaluationContext = testContext,
+            lastUpdateTimestamp = 0L,
+            rawResponseBody = "signed-response-body",
+            protectedEnvelope = protectedEnvelope(AssignmentProtection.SIGNED)
+        )
+
+        repository.clear()
+        capturedCallback?.onSuccess(DataStoreContent(versionCode = 0, data = persistedEntry))
+
+        assertThat(repository.restoreProtectedState(testContext, fakeDatadogContext)).isFalse()
+        assertThat(repository.hasFlags()).isFalse()
+        verifyNoInteractions(cacheVerifier)
     }
 
     @Test
@@ -451,4 +586,21 @@ internal class DefaultFlagsRepositoryTest {
     }
 
     // endregion
+
+    private fun protectedEnvelope(protection: AssignmentProtection) = ProtectedAssignmentEnvelope(
+        protection = protection,
+        requestNonce = "000102030405060708090a0b0c0d0e0f",
+        responseStatus = 200,
+        authorizationPolicyVersion = if (protection == AssignmentProtection.SIGNED_AND_AUTHORIZED) {
+            "policy-v2"
+        } else {
+            null
+        },
+        rulesRevision = "",
+        issuedAt = 1_789_096_800L,
+        expiresAt = 1_789_097_100L,
+        certificateId = "certificate-id",
+        certificate = "certificate",
+        signature = "signature"
+    )
 }
