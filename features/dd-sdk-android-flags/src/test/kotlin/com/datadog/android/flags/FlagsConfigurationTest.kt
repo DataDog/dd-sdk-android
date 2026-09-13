@@ -12,6 +12,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import java.util.Date
 
 @ExtendWith(ForgeExtension::class)
 internal class FlagsConfigurationTest {
@@ -30,6 +31,9 @@ internal class FlagsConfigurationTest {
         assertThat(configuration.customFlagEndpoint).isNull()
         assertThat(configuration.gracefulModeEnabled).isTrue()
         assertThat(configuration.initializationTimeoutMs).isEqualTo(5_000L)
+        assertThat(configuration.assignmentProtection).isEqualTo(AssignmentProtection.DISABLED)
+        assertThat(configuration.assignmentAuthorization).isNull()
+        assertThat(configuration.hasValidAssignmentProtectionConfiguration).isTrue()
     }
 
     @Test
@@ -179,6 +183,76 @@ internal class FlagsConfigurationTest {
 
         // Then
         assertThat(copiedConfiguration.initializationTimeoutMs).isEqualTo(2_500L)
+    }
+
+    @Test
+    fun `M select signed and authorized W assignmentAuthorization() { protection not explicit }`() {
+        // Given
+        val authorization = AssignmentAuthorization(
+            bearerToken = "header.payload.signature",
+            expiresAt = Date(System.currentTimeMillis() + 60_000)
+        )
+
+        // When
+        val configuration = FlagsConfiguration.Builder()
+            .assignmentAuthorization(authorization)
+            .build()
+
+        // Then
+        assertThat(configuration.assignmentProtection).isEqualTo(AssignmentProtection.SIGNED_AND_AUTHORIZED)
+        assertThat(configuration.assignmentAuthorization).isEqualTo(authorization)
+        assertThat(configuration.hasValidAssignmentProtectionConfiguration).isTrue()
+    }
+
+    @Test
+    fun `M configure signed-only W assignmentProtection() { no authorization }`() {
+        // When
+        val configuration = FlagsConfiguration.Builder()
+            .assignmentProtection(AssignmentProtection.SIGNED)
+            .build()
+
+        // Then
+        assertThat(configuration.assignmentProtection).isEqualTo(AssignmentProtection.SIGNED)
+        assertThat(configuration.assignmentAuthorization).isNull()
+        assertThat(configuration.hasValidAssignmentProtectionConfiguration).isTrue()
+    }
+
+    @Test
+    fun `M mark configuration invalid W build() { signed-only with authorization }`() {
+        // Given
+        val authorization = AssignmentAuthorization(
+            bearerToken = "header.payload.signature",
+            expiresAt = Date(System.currentTimeMillis() + 60_000)
+        )
+
+        // When
+        val configuration = FlagsConfiguration.Builder()
+            .assignmentProtection(AssignmentProtection.SIGNED)
+            .assignmentAuthorization(authorization)
+            .build()
+
+        // Then
+        assertThat(configuration.assignmentProtection).isEqualTo(AssignmentProtection.SIGNED)
+        assertThat(configuration.hasValidAssignmentProtectionConfiguration).isFalse()
+    }
+
+    @Test
+    fun `M mark configuration invalid W build() { disabled with authorization }`() {
+        // Given
+        val authorization = AssignmentAuthorization(
+            bearerToken = "header.payload.signature",
+            expiresAt = Date(System.currentTimeMillis() + 60_000)
+        )
+
+        // When
+        val configuration = FlagsConfiguration.Builder()
+            .assignmentAuthorization(authorization)
+            .assignmentProtection(AssignmentProtection.DISABLED)
+            .build()
+
+        // Then
+        assertThat(configuration.assignmentProtection).isEqualTo(AssignmentProtection.DISABLED)
+        assertThat(configuration.hasValidAssignmentProtectionConfiguration).isFalse()
     }
 
     // endregion

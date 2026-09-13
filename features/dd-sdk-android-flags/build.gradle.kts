@@ -47,6 +47,10 @@ createJsonModelsGenerationTask("generateFlagsModelsFromJson") {
 // TODO RUM-18189 Support new AGP DSL
 @Suppress("DEPRECATION")
 android {
+    defaultConfig {
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
     namespace = "com.datadog.android.flags"
 }
 
@@ -76,6 +80,8 @@ dependencies {
     testImplementation(testFixtures(project(":features:dd-sdk-android-rum")))
     testImplementation(libs.okHttpMock)
     unmock(libs.robolectric)
+
+    androidTestImplementation(libs.bundles.integrationTests)
 }
 
 unMock {
