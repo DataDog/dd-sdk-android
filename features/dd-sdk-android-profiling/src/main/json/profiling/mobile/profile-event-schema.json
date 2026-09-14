@@ -10,6 +10,18 @@
     {
       "type": "object",
       "properties": {
+        "_dd": {
+          "type": "object",
+          "description": "Datadog internal metadata.",
+          "properties": {
+            "boot_ntp": {
+              "type": "integer",
+              "description": "Offset between the NTP-corrected (server) time and the device boot time, in nanoseconds (NTP time - boot time). Used to align profiling samples (which use boot time) with absolute timestamps.",
+              "readOnly": true
+            }
+          },
+          "readOnly": true
+        },
         "error": {
           "type": "object",
           "description": "Error properties.",
