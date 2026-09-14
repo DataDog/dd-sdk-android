@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.time
 
+import com.datadog.android.internal.time.AppStartTimeProvider
 import android.os.Process
 import android.os.SystemClock
 import com.datadog.android.internal.system.BuildSdkVersionProvider
@@ -24,6 +25,9 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.whenever
 import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.seconds
+
+private val PROCESS_START_TO_CP_START_DIFF_THRESHOLD_NS = 10.seconds.inWholeNanoseconds
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -37,12 +41,12 @@ class DefaultAppStartTimeProviderTest {
     @Mock
     private lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
 
-    private lateinit var testedProvider: DefaultAppStartTimeProvider
+    private lateinit var testedProvider: AppStartTimeProvider
 
     @BeforeEach
     fun `set up`() {
         testedProvider =
-            DefaultAppStartTimeProvider({ mockTimeProvider }, mockBuildSdkVersionProvider)
+            AppStartTimeProvider.create({ mockTimeProvider }, mockBuildSdkVersionProvider)
     }
 
     @Test
@@ -56,7 +60,7 @@ class DefaultAppStartTimeProviderTest {
         val diffMs = stubAndGetUptimeMs() - Process.getStartUptimeMillis()
         val startTimeNs = fakeCurrentTimeNs - TimeUnit.MILLISECONDS.toNanos(diffMs)
         DdRumContentProvider.createTimeNs = startTimeNs +
-            forge.aLong(min = 0, max = DefaultAppStartTimeProvider.PROCESS_START_TO_CP_START_DIFF_THRESHOLD_NS)
+            forge.aLong(min = 0, max = PROCESS_START_TO_CP_START_DIFF_THRESHOLD_NS)
 
         // WHEN
         val providedStartTime = testedProvider.appStartTimeNs
@@ -76,7 +80,7 @@ class DefaultAppStartTimeProviderTest {
         val diffMs = stubAndGetUptimeMs() - Process.getStartUptimeMillis()
         val startTimeNs = fakeCurrentTimeNs - TimeUnit.MILLISECONDS.toNanos(diffMs)
         DdRumContentProvider.createTimeNs = startTimeNs +
-            forge.aLong(min = DefaultAppStartTimeProvider.PROCESS_START_TO_CP_START_DIFF_THRESHOLD_NS)
+            forge.aLong(min = PROCESS_START_TO_CP_START_DIFF_THRESHOLD_NS)
 
         // WHEN
         val providedStartTime = testedProvider.appStartTimeNs
@@ -135,13 +139,13 @@ class DefaultAppStartTimeProviderTest {
         // are distinguishable — if the guard did fire, appStartTimeNs would differ from result
         // and the uptime assertion would fail.
         DdRumContentProvider.createTimeNs = fakeCurrentTimeNs +
-            forge.aLong(min = 1L, max = DefaultAppStartTimeProvider.PROCESS_START_TO_CP_START_DIFF_THRESHOLD_NS)
+            forge.aLong(min = 1L, max = PROCESS_START_TO_CP_START_DIFF_THRESHOLD_NS)
 
         whenever(mockTimeProvider.getDeviceElapsedTimeNanos())
             .doReturn(fakeCurrentTimeNs)
             .doReturn(fakeStartTimeNs + fakeUptimeNs)
 
-        val testedProvider = DefaultAppStartTimeProvider(
+        val testedProvider = AppStartTimeProvider.create(
             { mockTimeProvider },
             mockBuildSdkVersionProvider
         )
@@ -168,7 +172,7 @@ class DefaultAppStartTimeProviderTest {
             .doReturn(fakeStartTimeNs + 100L)
             .doReturn(fakeStartTimeNs + 200L)
 
-        val testedProvider = DefaultAppStartTimeProvider(
+        val testedProvider = AppStartTimeProvider.create(
             { mockTimeProvider },
             mockBuildSdkVersionProvider
         )
@@ -194,7 +198,7 @@ class DefaultAppStartTimeProviderTest {
             .doReturn(fakeStartTimeNs + 200L)
             .doReturn(fakeStartTimeNs + 300L)
 
-        val testedProvider = DefaultAppStartTimeProvider(
+        val testedProvider = AppStartTimeProvider.create(
             { mockTimeProvider },
             mockBuildSdkVersionProvider
         )
@@ -222,7 +226,7 @@ class DefaultAppStartTimeProviderTest {
             .doReturn(fakeStartTimeNs + 100L)
             .doReturn(fakeStartTimeNs + 200L)
 
-        val testedProvider = DefaultAppStartTimeProvider(
+        val testedProvider = AppStartTimeProvider.create(
             { mockTimeProvider },
             mockBuildSdkVersionProvider
         )

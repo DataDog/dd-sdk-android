@@ -8,11 +8,10 @@ package com.datadog.android.rum.internal.startup
 
 import android.app.Activity
 import android.os.Handler
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistry
 
 internal class RumFirstDrawTimeReporterImpl(
-    private val internalLogger: InternalLogger,
+    private val warningLogger: RumAppStartupDetector.WarningLogger,
     private val timeProviderNs: () -> Long,
     private val windowCallbacksRegistry: RumWindowCallbacksRegistry,
     private val handler: Handler
@@ -25,7 +24,7 @@ internal class RumFirstDrawTimeReporterImpl(
         return RumFirstDrawTimeReporterHandleImpl(
             callback = callback,
             activity = activity,
-            internalLogger = internalLogger,
+            warningLogger = warningLogger,
             timeProviderNs = timeProviderNs,
             windowCallbacksRegistry = windowCallbacksRegistry,
             handler = handler

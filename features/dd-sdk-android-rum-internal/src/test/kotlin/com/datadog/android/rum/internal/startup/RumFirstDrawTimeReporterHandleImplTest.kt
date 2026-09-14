@@ -12,13 +12,9 @@ import android.os.Message
 import android.view.View
 import android.view.ViewTreeObserver
 import android.view.Window
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.rum.internal.utils.window.RumWindowCallbackListener
 import com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistry
-import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import fr.xgouchet.elmyr.junit5.ForgeConfiguration
-import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -27,7 +23,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -43,11 +38,9 @@ import kotlin.time.Duration.Companion.seconds
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
 class RumFirstDrawTimeReporterHandleImplTest {
 
     private var currentTime: Duration = 0.seconds
@@ -74,7 +67,7 @@ class RumFirstDrawTimeReporterHandleImplTest {
     private lateinit var viewTreeObserver: ViewTreeObserver
 
     @Mock
-    private lateinit var internalLogger: InternalLogger
+    private lateinit var warningLogger: RumAppStartupDetector.WarningLogger
 
     @BeforeEach
     fun `set up`() {
@@ -242,7 +235,7 @@ class RumFirstDrawTimeReporterHandleImplTest {
     // region error handling
 
     @Test
-    fun `M call internalLogger W addOnDrawListener throws IllegalStateException`() {
+    fun `M call warningLogger W addOnDrawListener throws IllegalStateException`() {
         // Given
         val illegalStateException = IllegalStateException()
         whenever(viewTreeObserver.addOnDrawListener(any())) doThrow illegalStateException
@@ -253,17 +246,13 @@ class RumFirstDrawTimeReporterHandleImplTest {
         // Then
         verifyNoInteractions(callback)
 
-        inOrder(viewTreeObserver, internalLogger) {
+        inOrder(viewTreeObserver, warningLogger) {
             verify(viewTreeObserver).isAlive
             verify(viewTreeObserver).addOnDrawListener(any())
 
-            verify(internalLogger).log(
-                level = eq(InternalLogger.Level.WARN),
-                target = eq(InternalLogger.Target.TELEMETRY),
-                messageBuilder = any(),
-                throwable = eq(illegalStateException),
-                onlyOnce = eq(false),
-                additionalProperties = anyOrNull()
+            verify(warningLogger).logWarning(
+                message = any(),
+                throwable = eq(illegalStateException)
             )
 
             verifyNoMoreInteractions()
@@ -271,7 +260,7 @@ class RumFirstDrawTimeReporterHandleImplTest {
     }
 
     @Test
-    fun `M call internalLogger W removeOnDrawListener throws IllegalStateException`() {
+    fun `M call warningLogger W removeOnDrawListener throws IllegalStateException`() {
         // Given
         val illegalStateException = IllegalStateException()
         whenever(viewTreeObserver.removeOnDrawListener(any())) doThrow illegalStateException
@@ -283,7 +272,7 @@ class RumFirstDrawTimeReporterHandleImplTest {
         // Then
         verifyNoInteractions(callback)
 
-        inOrder(callback, viewTreeObserver, internalLogger) {
+        inOrder(callback, viewTreeObserver, warningLogger) {
             verify(viewTreeObserver).isAlive
 
             argumentCaptor<ViewTreeObserver.OnDrawListener> {
@@ -296,13 +285,9 @@ class RumFirstDrawTimeReporterHandleImplTest {
             verify(viewTreeObserver).isAlive
             verify(viewTreeObserver).removeOnDrawListener(any())
 
-            verify(internalLogger).log(
-                level = eq(InternalLogger.Level.WARN),
-                target = eq(InternalLogger.Target.TELEMETRY),
-                messageBuilder = any(),
-                throwable = eq(illegalStateException),
-                onlyOnce = eq(false),
-                additionalProperties = anyOrNull()
+            verify(warningLogger).logWarning(
+                message = any(),
+                throwable = eq(illegalStateException)
             )
 
             verifyNoMoreInteractions()
@@ -402,7 +387,7 @@ class RumFirstDrawTimeReporterHandleImplTest {
         return RumFirstDrawTimeReporterHandleImpl(
             callback = callback,
             activity = activity,
-            internalLogger = internalLogger,
+            warningLogger = warningLogger,
             timeProviderNs = { currentTime.inWholeNanoseconds },
             windowCallbacksRegistry = windowCallbackRegistry,
             handler = handler

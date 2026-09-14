@@ -37,7 +37,7 @@ import com.datadog.android.core.internal.remote.RemoteConfigService
 import com.datadog.android.core.internal.remote.RemoteConfigServiceImpl
 import com.datadog.android.core.internal.remote.model.RemoteConfigSyncMetadata
 import com.datadog.android.core.internal.remote.model.RemoteConfiguration
-import com.datadog.android.core.internal.time.DefaultAppStartTimeProvider
+import com.datadog.android.internal.time.AppStartTimeProvider
 import com.datadog.android.core.internal.time.composeTimeInfo
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.getSafe
@@ -476,7 +476,7 @@ internal class DatadogCore(
             executorServiceFactory ?: CoreFeature.DEFAULT_FLUSHABLE_EXECUTOR_SERVICE_FACTORY
         coreFeature = CoreFeature(
             internalLogger,
-            DefaultAppStartTimeProvider(timeProviderFactory = { timeProvider }),
+            AppStartTimeProvider.create(timeProviderFactory = { timeProvider }),
             flushableExecutorServiceFactory,
             CoreFeature.DEFAULT_SCHEDULED_EXECUTOR_SERVICE_FACTORY
         )
