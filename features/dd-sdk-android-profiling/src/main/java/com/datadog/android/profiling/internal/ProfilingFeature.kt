@@ -34,7 +34,6 @@ import com.datadog.android.profiling.internal.quota.QuotaResult
 import com.datadog.android.profiling.internal.trigger.NoOpPendingTriggerProfiles
 import com.datadog.android.profiling.internal.trigger.PendingTriggerProfiles
 import java.util.Locale
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -68,9 +67,6 @@ internal class ProfilingFeature(
 
     @Volatile
     internal var quotaChecker: QuotaChecker = NoOpQuotaChecker()
-
-    @Volatile
-    private var quotaExecutor: ExecutorService? = null
 
     private lateinit var appContext: Context
 
@@ -116,11 +112,8 @@ internal class ProfilingFeature(
         val quotaCallFactory = sdkCore.createOkHttpCallFactory {
             callTimeout(QUOTA_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
         }
-        val qExecutor = sdkCore.createSingleThreadExecutorService(QUOTA_EXECUTOR_CONTEXT)
-        quotaExecutor = qExecutor
         quotaChecker = ProfilingQuotaChecker(
             callFactory = quotaCallFactory,
-            executor = qExecutor,
             internalLogger = sdkCore.internalLogger,
             onResult = ::propagateQuotaResult
         )
@@ -164,8 +157,6 @@ internal class ProfilingFeature(
         sdkCore.removeContextUpdateReceiver(this)
         quotaChecker.reset()
         quotaChecker = NoOpQuotaChecker()
-        quotaExecutor?.shutdownNow()
-        quotaExecutor = null
         pendingTriggerProfiles.stop()
         pendingTriggerProfiles = NoOpPendingTriggerProfiles()
         lastQuotaResult = null
@@ -407,7 +398,6 @@ internal class ProfilingFeature(
         private const val LOG_CONTINUOUS_PROFILING_WRITTEN =
             "Continuous profiling result written: %d long task(s), %d ANR event(s)."
         internal const val QUOTA_CHECK_TIMEOUT_MS = 5_000L
-        private const val QUOTA_EXECUTOR_CONTEXT = "profiling-quota"
         internal const val LOG_LAUNCH_PROFILING_DROPPED_QUOTA_DENIED =
             "Launch profiling dropped: quota denied (reason=%s)."
     }

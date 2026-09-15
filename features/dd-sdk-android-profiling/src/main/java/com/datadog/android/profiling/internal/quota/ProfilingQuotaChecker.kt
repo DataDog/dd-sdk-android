@@ -8,69 +8,78 @@ package com.datadog.android.profiling.internal.quota
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
-import com.datadog.android.core.internal.utils.submitSafe
 import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.Request
+import okhttp3.Response
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.IOException
 import java.util.Locale
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicReference
 
 internal class ProfilingQuotaChecker(
     private val callFactory: Call.Factory,
-    private val executor: ExecutorService,
     private val internalLogger: InternalLogger,
     private val onResult: (QuotaResult) -> Unit = {}
 ) : QuotaChecker {
 
-    private val pendingFuture = AtomicReference<Future<QuotaResult>?>()
+    private val pendingCall = AtomicReference<Call?>()
     private val lastSessionId = AtomicReference<String?>(null)
 
     @Volatile
     override var lastResult: QuotaResult? = null
         private set
 
+    @Suppress("TooGenericExceptionCaught")
     override fun checkAsync(sessionId: String, datadogContext: DatadogContext) {
         val previousId = lastSessionId.getAndSet(sessionId)
         if (previousId == sessionId) return // same session: in-flight check (if any) is still valid
-        pendingFuture.getAndSet(null)?.cancel(true)
-        val future = executor.submitSafe(
-            operationName = OPERATION_NAME_QUOTA,
-            internalLogger = internalLogger,
-            callable = {
-                val result = performCheck(sessionId, datadogContext)
-                if (lastSessionId.get() == sessionId) {
-                    lastResult = result
-                    onResult(result)
-                }
-                result
-            }
-        )
-        if (future != null) {
-            pendingFuture.set(future)
-        } else {
+        @Suppress("UnsafeThirdPartyFunctionCall") // operates on our own fields, and Call#cancel() never throws
+        pendingCall.getAndSet(null)?.cancel()
+        val call = try {
+            @Suppress("UnsafeThirdPartyFunctionCall") // wrapped in this try-catch
+            callFactory.newCall(buildRequest(sessionId, datadogContext))
+        } catch (e: Exception) {
+            logErrorToMaintainer(e) { LOG_UNEXPECTED_ERROR.format(Locale.US, e.message) }
             lastSessionId.compareAndSet(sessionId, previousId)
+            return
         }
+        @Suppress("UnsafeThirdPartyFunctionCall") // operates on our own field, never throws
+        pendingCall.set(call)
+        // The 5s budget comes from callTimeout() on the OkHttp client, so no executor of our own
+        // is needed: OkHttp's dispatcher is already a shared, zero-idle, on-demand thread pool.
+        @Suppress("UnsafeThirdPartyFunctionCall") // callback bodies never throw
+        call.enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                // A cancelled call (new session, or reset) surfaces here; that is not an error.
+                if (call.isCanceled()) return
+                logErrorToMaintainer(e) { LOG_NETWORK_ERROR.format(Locale.US, e.message) }
+                deliver(call, sessionId, QuotaResult.API_ERROR)
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                deliver(call, sessionId, readResult(response))
+            }
+        })
     }
 
     override fun reset() {
         lastSessionId.set(null)
         lastResult = null
-        pendingFuture.getAndSet(null)?.cancel(true)
+        @Suppress("UnsafeThirdPartyFunctionCall") // operates on our own fields, and Call#cancel() never throws
+        pendingCall.getAndSet(null)?.cancel()
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private fun performCheck(sessionId: String, datadogContext: DatadogContext): QuotaResult {
+    private fun readResult(response: Response): QuotaResult {
         return try {
-            val request = buildRequest(sessionId, datadogContext)
-            callFactory.newCall(request).execute().use { response ->
-                if (response.isSuccessful) {
-                    parseQuotaResult(response.body?.string())
+            @Suppress("UnsafeThirdPartyFunctionCall") // wrapped in this try-catch
+            response.use {
+                if (it.isSuccessful) {
+                    parseQuotaResult(it.body?.string())
                 } else {
-                    handleHttpError(response.code)
+                    handleHttpError(it.code)
                 }
             }
         } catch (e: IOException) {
@@ -79,6 +88,16 @@ internal class ProfilingQuotaChecker(
         } catch (e: Exception) {
             logErrorToMaintainer(e) { LOG_UNEXPECTED_ERROR.format(Locale.US, e.message) }
             QuotaResult.API_ERROR
+        }
+    }
+
+    private fun deliver(call: Call, sessionId: String, result: QuotaResult) {
+        // compareAndSet, not set: a newer session's call must not be cleared by a late callback.
+        @Suppress("UnsafeThirdPartyFunctionCall") // operates on our own field, never throws
+        pendingCall.compareAndSet(call, null)
+        if (lastSessionId.get() == sessionId) {
+            lastResult = result
+            onResult(result)
         }
     }
 
@@ -148,8 +167,6 @@ internal class ProfilingQuotaChecker(
     }
 
     companion object {
-        private const val OPERATION_NAME_QUOTA = "profiling-quota-check"
-
         internal const val LOG_HTTP_ERROR_TELEMETRY = "Profiling quota check returned HTTP %d"
         internal const val LOG_NETWORK_ERROR = "Quota check network error: %s"
         internal const val LOG_UNEXPECTED_ERROR = "Quota check unexpected error: %s"

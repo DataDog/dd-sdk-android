@@ -135,6 +135,9 @@ internal class ProfilingFeatureTest {
     private lateinit var mockCallFactory: Call.Factory
 
     @Mock
+    private lateinit var mockCall: Call
+
+    @Mock
     private lateinit var mockSharedPreferences: SharedPreferences
 
     @Mock
@@ -209,6 +212,7 @@ internal class ProfilingFeatureTest {
         whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mockProfilingExecutor
         whenever(mockProfiler.timeProvider) doReturn mockMutableTimeProvider
         whenever(mockSdkCore.createOkHttpCallFactory(any())) doReturn mockCallFactory
+        whenever(mockCallFactory.newCall(any())) doReturn mockCall
         whenever(mockProfiler.scheduledExecutorService) doReturn mockSchedulerExecutor
         whenever(mockContext.getSystemService(ProfilingManager::class.java)) doReturn (mockService)
         whenever(mockContext.getSharedPreferences(any(), any())) doReturn mockSharedPreferences

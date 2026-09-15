@@ -9,13 +9,14 @@ package com.datadog.android.profiling.internal.quota
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
-import com.datadog.android.api.threads.FakeSameThreadExecutorService
 import com.datadog.android.profiling.forge.Configurator
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Protocol
 import okhttp3.Request
@@ -32,7 +33,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -62,8 +63,6 @@ internal class QuotaCheckerTest {
     @StringForgery
     private lateinit var fakeSessionId: String
 
-    private val executor = FakeSameThreadExecutorService()
-
     private val capturedResults = mutableListOf<QuotaResult>()
 
     private lateinit var testedChecker: QuotaChecker
@@ -74,7 +73,6 @@ internal class QuotaCheckerTest {
         whenever(mockCallFactory.newCall(any<Request>())) doReturn mockCall
         testedChecker = ProfilingQuotaChecker(
             callFactory = mockCallFactory,
-            executor = executor,
             internalLogger = mockInternalLogger,
             onResult = { capturedResults.add(it) }
         )
@@ -86,24 +84,24 @@ internal class QuotaCheckerTest {
     fun `M return ALLOWED W quota_ok decision in response`() {
         // Given
         val body = """{"data":{"attributes":{"admitted":true,"reason":"quota_ok"}}}"""
-        whenever(mockCall.execute()) doReturn makeResponse(200, body)
 
         // When
         testedChecker.checkAsync(fakeSessionId, fakeDatadogContext)
+        respondWith(makeResponse(200, body))
 
         // Then
-        assertThat(capturedResults.last().decision).isEqualTo(QuotaResult.Decision.ALLOWED)
-        assertThat(capturedResults.last().reason).isEqualTo(QuotaReason.QUOTA_OK)
+        assertThat(testedChecker.lastResult)
+            .isEqualTo(QuotaResult(QuotaResult.Decision.ALLOWED, QuotaReason.QUOTA_OK))
     }
 
     @Test
     fun `M return DENIED W quota_ko decision in response`() {
         // Given
         val body = """{"data":{"attributes":{"admitted":false,"reason":"quota_exceeded"}}}"""
-        whenever(mockCall.execute()) doReturn makeResponse(200, body)
 
         // When
         testedChecker.checkAsync(fakeSessionId, fakeDatadogContext)
+        respondWith(makeResponse(200, body))
 
         // Then
         assertThat(capturedResults.last().decision).isEqualTo(QuotaResult.Decision.DENIED)
@@ -114,10 +112,10 @@ internal class QuotaCheckerTest {
     fun `M return UNDEFINED reason W unknown reason string in response`() {
         // Given
         val body = """{"data":{"attributes":{"admitted":false,"reason":"some_future_reason"}}}"""
-        whenever(mockCall.execute()) doReturn makeResponse(200, body)
 
         // When
         testedChecker.checkAsync(fakeSessionId, fakeDatadogContext)
+        respondWith(makeResponse(200, body))
 
         // Then
         assertThat(capturedResults.last().decision).isEqualTo(QuotaResult.Decision.DENIED)
@@ -130,11 +128,9 @@ internal class QuotaCheckerTest {
 
     @Test
     fun `M return API_ERROR W non-200 response`() {
-        // Given
-        whenever(mockCall.execute()) doReturn makeResponse(500, "Internal Server Error")
-
         // When
         testedChecker.checkAsync(fakeSessionId, fakeDatadogContext)
+        respondWith(makeResponse(500, "Internal Server Error"))
 
         // Then
         assertThat(capturedResults.last()).isEqualTo(QuotaResult.API_ERROR)
@@ -142,11 +138,9 @@ internal class QuotaCheckerTest {
 
     @Test
     fun `M return DENIED W 429 response`() {
-        // Given
-        whenever(mockCall.execute()) doReturn makeResponse(ProfilingQuotaChecker.HTTP_TOO_MANY_REQUESTS, "")
-
         // When
         testedChecker.checkAsync(fakeSessionId, fakeDatadogContext)
+        respondWith(makeResponse(ProfilingQuotaChecker.HTTP_TOO_MANY_REQUESTS, ""))
 
         // Then
         assertThat(capturedResults.last().decision).isEqualTo(QuotaResult.Decision.DENIED)
@@ -155,11 +149,9 @@ internal class QuotaCheckerTest {
 
     @Test
     fun `M return API_ERROR W network IOException`() {
-        // Given
-        whenever(mockCall.execute()) doThrow IOException("connection refused")
-
         // When
         testedChecker.checkAsync(fakeSessionId, fakeDatadogContext)
+        failWith(IOException("connection refused"))
 
         // Then
         assertThat(capturedResults.last()).isEqualTo(QuotaResult.API_ERROR)
@@ -167,11 +159,9 @@ internal class QuotaCheckerTest {
 
     @Test
     fun `M return API_ERROR W malformed JSON body`() {
-        // Given
-        whenever(mockCall.execute()) doReturn makeResponse(200, "not json {{{")
-
         // When
         testedChecker.checkAsync(fakeSessionId, fakeDatadogContext)
+        respondWith(makeResponse(200, "not json {{{"))
 
         // Then
         assertThat(capturedResults.last()).isEqualTo(QuotaResult.API_ERROR)
@@ -185,10 +175,10 @@ internal class QuotaCheckerTest {
     fun `M invoke onResult callback W check completes`() {
         // Given
         val body = """{"data":{"attributes":{"admitted":true,"reason":"quota_ok"}}}"""
-        whenever(mockCall.execute()) doReturn makeResponse(200, body)
 
         // When
         testedChecker.checkAsync(fakeSessionId, fakeDatadogContext)
+        respondWith(makeResponse(200, body))
 
         // Then
         assertThat(capturedResults).hasSize(1)
@@ -202,8 +192,6 @@ internal class QuotaCheckerTest {
     @Test
     fun `M use quota subdomain and session_id param W building request`() {
         // Given
-        val body = """{"data":{"attributes":{"admitted":true,"reason":"quota_ok"}}}"""
-        whenever(mockCall.execute()) doReturn makeResponse(200, body)
         val requestCaptor = argumentCaptor<Request>()
         whenever(mockCallFactory.newCall(requestCaptor.capture())) doReturn mockCall
 
@@ -227,11 +215,9 @@ internal class QuotaCheckerTest {
 
     @Test
     fun `M return ALLOWED W decision field absent in response`() {
-        // Given
-        whenever(mockCall.execute()) doReturn makeResponse(200, """{"data":{"attributes":{"reason":"quota_ok"}}}""")
-
         // When
         testedChecker.checkAsync(fakeSessionId, fakeDatadogContext)
+        respondWith(makeResponse(200, """{"data":{"attributes":{"reason":"quota_ok"}}}"""))
 
         // Then
         assertThat(capturedResults.last().decision).isEqualTo(QuotaResult.Decision.ALLOWED)
@@ -245,10 +231,10 @@ internal class QuotaCheckerTest {
     fun `M return DENIED W backend_unavailable reason and admitted false`() {
         // Given
         val body = """{"data":{"attributes":{"admitted":false,"reason":"backend_unavailable"}}}"""
-        whenever(mockCall.execute()) doReturn makeResponse(200, body)
 
         // When
         testedChecker.checkAsync(fakeSessionId, fakeDatadogContext)
+        respondWith(makeResponse(200, body))
 
         // Then — admitted field is authoritative; reason is preserved for telemetry
         assertThat(capturedResults.last().decision).isEqualTo(QuotaResult.Decision.DENIED)
@@ -259,10 +245,10 @@ internal class QuotaCheckerTest {
     fun `M normalize to BACKEND_UNAVAILABLE W backend_client_not_initialized reason`() {
         // Given
         val body = """{"data":{"attributes":{"admitted":true,"reason":"backend_client_not_initialized"}}}"""
-        whenever(mockCall.execute()) doReturn makeResponse(200, body)
 
         // When
         testedChecker.checkAsync(fakeSessionId, fakeDatadogContext)
+        respondWith(makeResponse(200, body))
 
         // Then
         assertThat(capturedResults.last().decision).isEqualTo(QuotaResult.Decision.ALLOWED)
@@ -273,10 +259,10 @@ internal class QuotaCheckerTest {
     fun `M return DENIED W backend_client_not_initialized reason and admitted false`() {
         // Given
         val body = """{"data":{"attributes":{"admitted":false,"reason":"backend_client_not_initialized"}}}"""
-        whenever(mockCall.execute()) doReturn makeResponse(200, body)
 
         // When
         testedChecker.checkAsync(fakeSessionId, fakeDatadogContext)
+        respondWith(makeResponse(200, body))
 
         // Then — admitted field is authoritative; reason is normalised to BACKEND_UNAVAILABLE for telemetry
         assertThat(capturedResults.last().decision).isEqualTo(QuotaResult.Decision.DENIED)
@@ -287,10 +273,10 @@ internal class QuotaCheckerTest {
     fun `M return DENIED W org_disabled reason and admitted false`() {
         // Given
         val body = """{"data":{"attributes":{"admitted":false,"reason":"org_disabled"}}}"""
-        whenever(mockCall.execute()) doReturn makeResponse(200, body)
 
         // When
         testedChecker.checkAsync(fakeSessionId, fakeDatadogContext)
+        respondWith(makeResponse(200, body))
 
         // Then
         assertThat(capturedResults.last().decision).isEqualTo(QuotaResult.Decision.DENIED)
@@ -299,12 +285,9 @@ internal class QuotaCheckerTest {
 
     @Test
     fun `M return UNDEFINED reason W reason field absent in response`() {
-        // Given
-        val body = """{"data":{"attributes":{"admitted":false}}}"""
-        whenever(mockCall.execute()) doReturn makeResponse(200, body)
-
         // When
         testedChecker.checkAsync(fakeSessionId, fakeDatadogContext)
+        respondWith(makeResponse(200, """{"data":{"attributes":{"admitted":false}}}"""))
 
         // Then
         assertThat(capturedResults.last().decision).isEqualTo(QuotaResult.Decision.DENIED)
@@ -318,8 +301,6 @@ internal class QuotaCheckerTest {
     @Test
     fun `M include Accept header W building request`() {
         // Given
-        val body = """{"data":{"attributes":{"admitted":true,"reason":"quota_ok"}}}"""
-        whenever(mockCall.execute()) doReturn makeResponse(200, body)
         val requestCaptor = argumentCaptor<Request>()
         whenever(mockCallFactory.newCall(requestCaptor.capture())) doReturn mockCall
 
@@ -337,10 +318,6 @@ internal class QuotaCheckerTest {
 
     @Test
     fun `M not fire second request W checkAsync called twice with same sessionId`() {
-        // Given
-        val body = """{"data":{"attributes":{"admitted":true,"reason":"quota_ok"}}}"""
-        whenever(mockCall.execute()) doReturn makeResponse(200, body)
-
         // When
         testedChecker.checkAsync(fakeSessionId, fakeDatadogContext)
 
@@ -353,8 +330,6 @@ internal class QuotaCheckerTest {
     @Test
     fun `M fire new request W checkAsync called with different sessionId`() {
         // Given
-        val body = """{"data":{"attributes":{"admitted":true,"reason":"quota_ok"}}}"""
-        whenever(mockCall.execute()) doReturn makeResponse(200, body)
         val secondSessionId = fakeSessionId + "_new"
 
         // When
@@ -368,10 +343,6 @@ internal class QuotaCheckerTest {
 
     @Test
     fun `M fire new request W reset then checkAsync with same sessionId`() {
-        // Given
-        val body = """{"data":{"attributes":{"admitted":true,"reason":"quota_ok"}}}"""
-        whenever(mockCall.execute()) doReturn makeResponse(200, body)
-
         // When
         testedChecker.checkAsync(fakeSessionId, fakeDatadogContext)
 
@@ -380,6 +351,79 @@ internal class QuotaCheckerTest {
 
         // Then
         verify(mockCallFactory, times(2)).newCall(any())
+    }
+
+    // endregion
+
+    // region enqueue semantics
+
+    @Test
+    fun `M enqueue call W checkAsync()`() {
+        // When
+        testedChecker.checkAsync(fakeSessionId, fakeDatadogContext)
+
+        // Then
+        verify(mockCall).enqueue(any())
+        verify(mockCall, never()).execute()
+    }
+
+    @Test
+    fun `M cancel in flight call W checkAsync() {new session}`(
+        @StringForgery fakeOtherSessionId: String
+    ) {
+        // Given
+        testedChecker.checkAsync(fakeSessionId, fakeDatadogContext)
+
+        // When
+        testedChecker.checkAsync(fakeOtherSessionId, fakeDatadogContext)
+
+        // Then
+        verify(mockCall).cancel()
+    }
+
+    @Test
+    fun `M cancel in flight call W reset()`() {
+        // Given
+        testedChecker.checkAsync(fakeSessionId, fakeDatadogContext)
+
+        // When
+        testedChecker.reset()
+
+        // Then
+        verify(mockCall).cancel()
+        assertThat(testedChecker.lastResult).isNull()
+    }
+
+    // endregion
+
+    // region onFailure
+
+    @Test
+    fun `M not report result W onFailure() {call was cancelled}`() {
+        // Given a cancelled call reports failure through onFailure; that is not a real error
+        testedChecker.checkAsync(fakeSessionId, fakeDatadogContext)
+        whenever(mockCall.isCanceled()) doReturn true
+
+        // When
+        failWith(IOException("Canceled"))
+
+        // Then
+        assertThat(testedChecker.lastResult).isNull()
+        assertThat(capturedResults).isEmpty()
+    }
+
+    @Test
+    fun `M report API_ERROR W onFailure() {network error}`(forge: Forge) {
+        // Given
+        testedChecker.checkAsync(fakeSessionId, fakeDatadogContext)
+        whenever(mockCall.isCanceled()) doReturn false
+
+        // When
+        failWith(IOException(forge.anAlphabeticalString()))
+
+        // Then
+        assertThat(testedChecker.lastResult).isEqualTo(QuotaResult.API_ERROR)
+        assertThat(capturedResults).containsExactly(QuotaResult.API_ERROR)
     }
 
     // endregion
@@ -395,10 +439,10 @@ internal class QuotaCheckerTest {
     fun `M expose last result W checkAsync completes`() {
         // Given
         val body = """{"data":{"attributes":{"admitted":false,"reason":"quota_exceeded"}}}"""
-        whenever(mockCall.execute()) doReturn makeResponse(200, body)
 
         // When
         testedChecker.checkAsync(fakeSessionId, fakeDatadogContext)
+        respondWith(makeResponse(200, body))
 
         // Then
         assertThat(testedChecker.lastResult).isEqualTo(QuotaResult.QUOTA_EXCEEDED)
@@ -408,8 +452,8 @@ internal class QuotaCheckerTest {
     fun `M clear last result W reset called`() {
         // Given
         val body = """{"data":{"attributes":{"admitted":false,"reason":"quota_exceeded"}}}"""
-        whenever(mockCall.execute()) doReturn makeResponse(200, body)
         testedChecker.checkAsync(fakeSessionId, fakeDatadogContext)
+        respondWith(makeResponse(200, body))
 
         assertThat(testedChecker.lastResult).isNotNull()
 
@@ -423,6 +467,20 @@ internal class QuotaCheckerTest {
     // endregion
 
     // region helpers
+
+    /** Runs the callback that `checkAsync` enqueued, as OkHttp would on a successful response. */
+    private fun respondWith(response: Response) {
+        val captor = argumentCaptor<Callback>()
+        verify(mockCall).enqueue(captor.capture())
+        captor.firstValue.onResponse(mockCall, response)
+    }
+
+    /** Runs the callback that `checkAsync` enqueued, as OkHttp would on a transport failure. */
+    private fun failWith(exception: IOException) {
+        val captor = argumentCaptor<Callback>()
+        verify(mockCall).enqueue(captor.capture())
+        captor.firstValue.onFailure(mockCall, exception)
+    }
 
     private fun makeResponse(code: Int, body: String): Response =
         Response.Builder()
