@@ -196,7 +196,7 @@ aapt2 dump badging app-with-datadog.apk | grep -E "^package:"
 app versions and the SDK is not the only variable.
 
 `coldstart_bench.sh` runs this check for you before it touches the device, and refuses the run
-on a mismatch (`ALLOW_VERSION_MISMATCH=1` overrides it if you know why they differ). The same
+on a mismatch (`ALLOW_VERSION_MISMATCH=1` acknowledges it if you know why they differ). The same
 preflight asserts both APKs declare the application id you put in `PKG`: every block runs
 `adb uninstall $PKG`, and a wrong `PKG` would wipe an unrelated app's data sixteen times over.
 `verify_sdk_active.sh` and `capture_trace.sh` apply the same single-APK package check before
@@ -205,7 +205,9 @@ their own uninstalls.
 Both checks need `aapt2`, and a missing one **aborts the run** rather than degrading to a
 warning: the whole point is to stand between a typo and an irreversible `adb uninstall`, so
 skipping it when a tool is absent would defeat it. Install build-tools, set `AAPT2=`, or (having
-verified the package by hand with the commands above) set `ALLOW_UNVERIFIED_PKG=1`.
+verified the package by hand with the commands above) set `ALLOW_UNVERIFIED_PKG=1`. That override
+does not waive the independent version comparison. If `aapt2` cannot expose either fact, the run
+also requires `ALLOW_VERSION_MISMATCH=1` after you confirm the APK versions by hand.
 
 ### Checklist
 
@@ -1371,7 +1373,7 @@ output contain no such data and are safe to share as-is.
 | `verify_sdk_active.sh` exits 2 before liveness | the preflight could not establish its setup: invalid `SETTLE`, failed installed-APK digest, failed force-stop, a nonzero launcher command, or an exit-zero launcher response without `Status: ok`, `LaunchState: COLD` and a numeric `TotalTime` (some vendors return zero alongside `Error type 3`). None is the exit `1` verdict that Datadog is absent |
 | cleanup reports device restoration incomplete | one or more restore commands failed, often because the device disconnected during an abort. The benchmark result keeps its original exit status, but manually verify every named setting, radio, performance/dexopt control or permission before another run |
 | the harness refuses to start, naming a package mismatch | `PKG` is not the application id the APKs declare. Fix `PKG`; do not work around it, because every block runs `adb uninstall $PKG` |
-| the harness refuses to start on differing `versionCode`/`versionName` | the arms are different app versions, so the SDK is not the only variable. Rebuild both from one commit, or set `ALLOW_VERSION_MISMATCH=1` if you know why they differ |
+| the harness refuses to start on differing or unreadable `versionCode`/`versionName` | the SDK is not the only known variable until the two app versions are proved equal. Rebuild both from one commit, make `aapt2` available, or set `ALLOW_VERSION_MISMATCH=1` only after checking the versions by hand |
 | `displayed` or `ttfd` is `NA` on every row | the app doesn't call `reportFullyDrawn()` (for `ttfd`), or a vendor logcat format; `total_ms` is still valid |
 | `verify_trace.py` exits 3 | the trace cannot answer the question either way. Four causes reach this code and the printed verdict names which: no `bindApplication` slice; no locatable force-stop boundary; no package process after that boundary; or a launch too close to it to be told apart from the conditioning generation. For the first, `force-stop` the app before tracing and start it inside the trace; for the others, re-capture without inserting work between the force-stop and the launch |
 | trace shows no SDK activity | no `force-stop` before tracing, or a bare `process_stats` data source |

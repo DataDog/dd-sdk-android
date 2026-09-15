@@ -87,8 +87,14 @@ case "$PKG" in *[!a-zA-Z0-9._]*|""|.*|*.) die "invalid application id: '$PKG'" ;
 case "$PKG" in *.*) ;; *) die "application id must be dotted, e.g. com.example.app (got '$PKG')" ;; esac
 # RUNS/BLOCKS/WARMUP reach arithmetic loops unchecked otherwise, so a typo
 # surfaces as a bash arithmetic error a hundred lines later instead of here.
+# Bash also interprets a leading zero as octal: accept one canonical decimal
+# spelling so a value cannot mean one thing in the header and another in a loop.
 for _v in RUNS BLOCKS WARMUP; do
-  case "${!_v}" in ''|*[!0-9]*) die "$_v must be a non-negative integer (got '${!_v}')" ;; esac
+  case "${!_v}" in
+    ''|*[!0-9]*) die "$_v must be a non-negative integer (got '${!_v}')" ;;
+    0|[1-9]|[1-9][0-9]*) ;;
+    *) die "$_v must use canonical decimal form without leading zeroes (got '${!_v}')" ;;
+  esac
 done
 [ $((BLOCKS % 2)) -eq 0 ] || die "BLOCKS must be even for ABBA counterbalancing (got $BLOCKS)"
 [ "$BLOCKS" -ge 2 ] || die "BLOCKS must be >= 2 (got $BLOCKS)"
@@ -167,8 +173,8 @@ fi
 #     versionCode/versionName a hard requirement -- it is what makes "the builds
 #     differ only by the SDK" checkable rather than asserted -- and until now
 #     nothing enforced it.
-# aapt2 is REQUIRED for this: a missing one is a hard failure, overridable only
-# with an explicit ALLOW_UNVERIFIED_PKG=1.
+# aapt2 is REQUIRED for both checks. When it is unavailable, each independent
+# invariant needs its own explicit acknowledgement.
 _apk_badging() {
   # `|| true` is load-bearing: under `set -o pipefail` an aapt2 that cannot parse
   # the file makes the pipeline non-zero, and `set -e` would then kill the run
@@ -177,45 +183,51 @@ _apk_badging() {
   "$AAPT2" dump badging "$1" 2>/dev/null | awk -F"'" '/^package: name=/{print $2"\t"$4"\t"$6; exit}' || true
 }
 check_apk_pair() {
-  # MANDATORY, not advisory. This is the only thing standing between a typo in
-  # PKG and `adb uninstall` irreversibly wiping an unrelated app's data 16 times
-  # over. Skipping it because a tool is missing trades a fixable setup problem
-  # for an unrecoverable one, so a missing/unusable aapt2 is a hard failure.
-  local a b a_pkg b_pkg
+  local a="" b="" a_pkg b_pkg a_version b_version metadata_error=""
   if [ -z "${AAPT2:-}" ]; then
-    die "aapt2 not found, so the APK's package name cannot be verified against
-       PKG='$PKG' -- and every block runs 'adb uninstall \$PKG'. Refusing to run.
-       Fix: install Android SDK build-tools, or set AAPT2=/path/to/aapt2.
-       Override only if you have checked by hand that the APKs declare '$PKG':
-         aapt2 dump badging <apk> | grep '^package:'
-       then re-run with ALLOW_UNVERIFIED_PKG=1."
+    metadata_error="aapt2 was not found"
+  else
+    a=$(_apk_badging "$APK_A"); b=$(_apk_badging "$APK_B")
+    if [ -z "$a" ] || [ -z "$b" ]; then
+      metadata_error="aapt2 could not read one or both APK manifests"
+    fi
   fi
-  a=$(_apk_badging "$APK_A"); b=$(_apk_badging "$APK_B")
-  if [ -z "$a" ] || [ -z "$b" ]; then
-    die "aapt2 could not read the package name out of one of the APKs, so it
-       cannot be checked against PKG='$PKG' before 'adb uninstall'. Refusing to
-       run. Check both files are real APKs; override with ALLOW_UNVERIFIED_PKG=1."
+
+  if [ -n "$metadata_error" ]; then
+    [ "${ALLOW_UNVERIFIED_PKG:-0}" = "1" ] || die "$metadata_error, so the APK package
+       names cannot be verified against PKG='$PKG' before 'adb uninstall'. Refusing
+       to run. Install Android SDK build-tools or set AAPT2=/path/to/aapt2. After
+       checking both packages by hand, set ALLOW_UNVERIFIED_PKG=1."
+    [ "${ALLOW_VERSION_MISMATCH:-0}" = "1" ] || die "$metadata_error, so the APK
+       versionCode/versionName cannot be verified. Then the SDK may not be the only
+       variable between the arms. Refusing to run; provide readable APK metadata or
+       set ALLOW_VERSION_MISMATCH=1 after checking the versions by hand."
+    log "WARNING: ALLOW_UNVERIFIED_PKG=1 -- APK package names are not verified."
+    log "         'adb uninstall $PKG' will run against whatever app owns that id."
+    log "WARNING: ALLOW_VERSION_MISMATCH=1 -- APK version equality is not verified."
+    return
   fi
+
   a_pkg=${a%%$'\t'*}; b_pkg=${b%%$'\t'*}
+  a_version=${a#*$'\t'}; b_version=${b#*$'\t'}
   log "baseline  APK: $(printf '%s' "$a" | tr '\t' ' ')"
   log "treatment APK: $(printf '%s' "$b" | tr '\t' ' ')"
-  [ "$a_pkg" = "$PKG" ] && [ "$b_pkg" = "$PKG" ] || die \
-    "PKG='$PKG' does not match the APKs (baseline='$a_pkg' treatment='$b_pkg').
+  if [ "$a_pkg" != "$PKG" ] || [ "$b_pkg" != "$PKG" ]; then
+    [ "${ALLOW_UNVERIFIED_PKG:-0}" = "1" ] || die \
+      "PKG='$PKG' does not match the APKs (baseline='$a_pkg' treatment='$b_pkg').
        Every block runs 'adb uninstall \$PKG'. Refusing to run rather than wipe
        the wrong app's data. Set PKG to the application id the APKs declare."
-  if [ "$a" != "$b" ] && [ "${ALLOW_VERSION_MISMATCH:-0}" != "1" ]; then
+    log "WARNING: ALLOW_UNVERIFIED_PKG=1 -- ignoring APK/package mismatch
+         (baseline='$a_pkg' treatment='$b_pkg' target='$PKG')."
+  fi
+  if [ "$a_version" != "$b_version" ] && [ "${ALLOW_VERSION_MISMATCH:-0}" != "1" ]; then
     die "the two APKs declare different versionCode/versionName.
        Then the SDK is not the only variable between the arms and the delta is
        not attributable to it. Rebuild both from the same commit, or set
        ALLOW_VERSION_MISMATCH=1 if you know why they differ."
   fi
 }
-if [ "${ALLOW_UNVERIFIED_PKG:-0}" = "1" ]; then
-  log "WARNING: ALLOW_UNVERIFIED_PKG=1 -- the APK/package preflight is DISABLED."
-  log "         'adb uninstall $PKG' will run against whatever app owns that id."
-else
-  check_apk_pair
-fi
+check_apk_pair
 
 # Build identity of each arm, stamped into the CSV header below.
 #
