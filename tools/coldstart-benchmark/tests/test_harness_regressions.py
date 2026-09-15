@@ -66,6 +66,185 @@ class HarnessRegressionTests(unittest.TestCase):
         self.assertTrue(shells, "no bash found on this host")
         return shells
 
+    def run_apk_pair_preflight(
+        self,
+        *,
+        aapt2: str,
+        baseline: Path,
+        treatment: Path,
+        allow_unverified_pkg: str,
+        allow_version_mismatch: str,
+    ) -> subprocess.CompletedProcess[str]:
+        source = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
+        start = source.index("_apk_badging() {")
+        end = source.index("\n# Build identity of each arm", start)
+        preflight = source[start:end]
+        env = {
+            **os.environ,
+            "PKG": "com.example.app",
+            "APK_A": str(baseline),
+            "APK_B": str(treatment),
+            "AAPT2": aapt2,
+            "ALLOW_UNVERIFIED_PKG": allow_unverified_pkg,
+            "ALLOW_VERSION_MISMATCH": allow_version_mismatch,
+        }
+        return subprocess.run(
+            ["bash", "-c", textwrap.dedent(
+                """
+                set -euo pipefail
+                log() { printf 'LOG: %s\\n' "$*" >&2; }
+                die() { printf 'FATAL: %s\\n' "$*" >&2; exit 1; }
+                """
+            ) + preflight + textwrap.dedent(
+                """
+                printf 'PREFLIGHT_PASSED\\n'
+                """
+            )],
+            check=False,
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+
+    def test_benchmark_rejects_leading_zero_counts_before_file_access(self) -> None:
+        script = HARNESS / "coldstart_bench.sh"
+        cases = (
+            ("RUNS", ["010", "2"], "0"),
+            ("BLOCKS", ["1", "010"], "0"),
+            ("BLOCKS", ["1", "08"], "0"),
+            ("WARMUP", ["1", "2"], "010"),
+        )
+        for name, counts, warmup in cases:
+            with self.subTest(name=name, value=counts if name != "WARMUP" else warmup):
+                result = subprocess.run(
+                    ["bash", str(script), "/missing-baseline.apk",
+                     "/missing-treatment.apk", *counts],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    env={**os.environ, "PKG": "com.example.app", "WARMUP": warmup},
+                )
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertIn(
+                    f"{name} must use canonical decimal form without leading zeroes",
+                    result.stderr,
+                )
+                self.assertNotIn("APK not found", result.stderr)
+
+        accepted = subprocess.run(
+            ["bash", str(script), "/missing-baseline.apk", "/missing-treatment.apk", "1", "2"],
+            check=False,
+            capture_output=True,
+            text=True,
+            env={**os.environ, "PKG": "com.example.app", "WARMUP": "0"},
+        )
+        self.assertIn("baseline APK not found", accepted.stderr)
+
+    def test_package_override_does_not_waive_apk_version_comparability(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            baseline = root / "baseline.apk"
+            treatment = root / "treatment.apk"
+            baseline.write_text("baseline", encoding="utf-8")
+            treatment.write_text("treatment", encoding="utf-8")
+            aapt2 = root / "aapt2"
+            aapt2.write_text(
+                textwrap.dedent(
+                    """#!/usr/bin/env bash
+                    case "$3" in
+                      *baseline.apk)
+                        printf "package: name='com.example.app' versionCode='1' versionName='1.0'\\n" ;;
+                      *treatment.apk)
+                        printf "package: name='com.example.app' versionCode='2' versionName='2.0'\\n" ;;
+                    esac
+                    """
+                ),
+                encoding="utf-8",
+            )
+            aapt2.chmod(aapt2.stat().st_mode | stat.S_IXUSR)
+
+            rejected = self.run_apk_pair_preflight(
+                aapt2=str(aapt2),
+                baseline=baseline,
+                treatment=treatment,
+                allow_unverified_pkg="1",
+                allow_version_mismatch="0",
+            )
+            self.assertEqual(rejected.returncode, 1, rejected.stderr)
+            self.assertIn("different versionCode/versionName", rejected.stderr)
+            self.assertNotIn("PREFLIGHT_PASSED", rejected.stdout)
+
+            accepted = self.run_apk_pair_preflight(
+                aapt2=str(aapt2),
+                baseline=baseline,
+                treatment=treatment,
+                allow_unverified_pkg="1",
+                allow_version_mismatch="1",
+            )
+            self.assertEqual(accepted.returncode, 0, accepted.stderr)
+            self.assertIn("PREFLIGHT_PASSED", accepted.stdout)
+
+            aapt2.write_text(
+                textwrap.dedent(
+                    """#!/usr/bin/env bash
+                    case "$3" in
+                      *baseline.apk)
+                        printf "package: name='com.other.app' versionCode='1' versionName='1.0'\\n" ;;
+                      *treatment.apk)
+                        printf "package: name='com.example.app' versionCode='1' versionName='1.0'\\n" ;;
+                    esac
+                    """
+                ),
+                encoding="utf-8",
+            )
+            package_only = self.run_apk_pair_preflight(
+                aapt2=str(aapt2),
+                baseline=baseline,
+                treatment=treatment,
+                allow_unverified_pkg="1",
+                allow_version_mismatch="0",
+            )
+            self.assertEqual(package_only.returncode, 0, package_only.stderr)
+            self.assertIn("ignoring APK/package mismatch", package_only.stderr)
+
+            version_only = self.run_apk_pair_preflight(
+                aapt2=str(aapt2),
+                baseline=baseline,
+                treatment=treatment,
+                allow_unverified_pkg="0",
+                allow_version_mismatch="1",
+            )
+            self.assertEqual(version_only.returncode, 1, version_only.stderr)
+            self.assertIn("does not match the APKs", version_only.stderr)
+
+    def test_unreadable_apk_metadata_needs_both_preflight_acknowledgements(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            baseline = root / "baseline.apk"
+            treatment = root / "treatment.apk"
+            baseline.write_text("baseline", encoding="utf-8")
+            treatment.write_text("treatment", encoding="utf-8")
+
+            rejected = self.run_apk_pair_preflight(
+                aapt2="",
+                baseline=baseline,
+                treatment=treatment,
+                allow_unverified_pkg="1",
+                allow_version_mismatch="0",
+            )
+            self.assertEqual(rejected.returncode, 1, rejected.stderr)
+            self.assertIn("versionCode/versionName cannot be verified", rejected.stderr)
+
+            accepted = self.run_apk_pair_preflight(
+                aapt2="",
+                baseline=baseline,
+                treatment=treatment,
+                allow_unverified_pkg="1",
+                allow_version_mismatch="1",
+            )
+            self.assertEqual(accepted.returncode, 0, accepted.stderr)
+            self.assertIn("PREFLIGHT_PASSED", accepted.stdout)
+
     def test_aapt2_discovery_skips_a_stale_android_home(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
