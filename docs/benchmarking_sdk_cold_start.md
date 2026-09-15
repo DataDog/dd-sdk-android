@@ -207,7 +207,9 @@ warning: the whole point is to stand between a typo and an irreversible `adb uni
 skipping it when a tool is absent would defeat it. Install build-tools, set `AAPT2=`, or (having
 verified the package by hand with the commands above) set `ALLOW_UNVERIFIED_PKG=1`. That override
 does not waive the independent version comparison. If `aapt2` cannot expose either fact, the run
-also requires `ALLOW_VERSION_MISMATCH=1` after you confirm the APK versions by hand.
+also requires `ALLOW_VERSION_MISMATCH=1` after you confirm the APK versions by hand. The reverse
+holds too: when `aapt2` reads the package names but the manifests declare no `versionCode`, only
+the version acknowledgement is asked for, and the package check still stands.
 
 ### Checklist
 
@@ -1372,8 +1374,8 @@ output contain no such data and are safe to share as-is.
 | the harness refuses to start, naming a header value | a value that decides whether two runs are comparable (`fp`, `abi`, `compile_filter`, `launcher`, `compile_status`) is empty or contains whitespace. The results header is whitespace-tokenized, so it would be recorded truncated, leaving that value unable to tell this run apart from another sharing its first word |
 | `verify_sdk_active.sh` exits 2 before liveness | the preflight could not establish its setup: invalid `SETTLE`, failed installed-APK digest, failed force-stop, a nonzero launcher command, or an exit-zero launcher response without `Status: ok`, `LaunchState: COLD` and a numeric `TotalTime` (some vendors return zero alongside `Error type 3`). None is the exit `1` verdict that Datadog is absent |
 | cleanup reports device restoration incomplete | one or more restore commands failed, often because the device disconnected during an abort. The benchmark result keeps its original exit status, but manually verify every named setting, radio, performance/dexopt control or permission before another run |
-| the harness refuses to start, naming a package mismatch | `PKG` is not the application id the APKs declare. Fix `PKG`; do not work around it, because every block runs `adb uninstall $PKG` |
-| the harness refuses to start on differing or unreadable `versionCode`/`versionName` | the SDK is not the only known variable until the two app versions are proved equal. Rebuild both from one commit, make `aapt2` available, or set `ALLOW_VERSION_MISMATCH=1` only after checking the versions by hand |
+| the harness refuses to start, naming a package mismatch | `PKG` is not the application id the APKs declare. Fix `PKG`. `ALLOW_UNVERIFIED_PKG=1` downgrades even a proved mismatch to a logged warning, so reserve it for a mismatch you intend, because every block runs `adb uninstall $PKG` against whatever app owns that id |
+| the harness refuses to start on differing or unreadable `versionCode`/`versionName` | the SDK is not the only known variable until the two app versions are proved equal, and a manifest declaring no `versionCode` proves nothing: two of those compare equal on an empty string. Rebuild both from one commit, make `aapt2` available, supply APKs that declare a `versionCode`, or set `ALLOW_VERSION_MISMATCH=1` only after checking the versions by hand |
 | `displayed` or `ttfd` is `NA` on every row | the app doesn't call `reportFullyDrawn()` (for `ttfd`), or a vendor logcat format; `total_ms` is still valid |
 | `verify_trace.py` exits 3 | the trace cannot answer the question either way. Four causes reach this code and the printed verdict names which: no `bindApplication` slice; no locatable force-stop boundary; no package process after that boundary; or a launch too close to it to be told apart from the conditioning generation. For the first, `force-stop` the app before tracing and start it inside the trace; for the others, re-capture without inserting work between the force-stop and the launch |
 | trace shows no SDK activity | no `force-stop` before tracing, or a bare `process_stats` data source |

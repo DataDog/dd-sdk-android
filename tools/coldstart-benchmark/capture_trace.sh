@@ -216,9 +216,20 @@ case "$EXPECTED_PERF_MODE" in
   "") die "set EXPECTED_PERF_MODE to the benchmark CSV header's perf_mode" ;;
   *) die "EXPECTED_PERF_MODE must be fixed or dynamic (got '$EXPECTED_PERF_MODE')" ;;
 esac
+# SETTLE_LAUNCHES below is bash arithmetic, where a leading zero means octal:
+# EXPECTED_WARMUP=010 would settle NINE launches while this value, every log line
+# naming it and the CSV header it was copied from all said ten, and 08 is not a
+# number there at all -- it aborts with a raw arithmetic error instead. Of the
+# eleven bound identities this is the one with no trace-time observable, so a
+# wrong ramp position is exactly what nothing downstream can catch. One canonical
+# decimal spelling, then, as the benchmark requires of the value it records.
 case "$EXPECTED_WARMUP" in
   "") die "set EXPECTED_WARMUP to the benchmark CSV header's warmup value" ;;
   *[!0-9]*) die "EXPECTED_WARMUP must be a non-negative integer (got '$EXPECTED_WARMUP')" ;;
+  0|[1-9]|[1-9][0-9]*) ;;
+  *) die "EXPECTED_WARMUP must use canonical decimal form without leading zeroes
+       (got '$EXPECTED_WARMUP'). Bash would read it as octal and settle a
+       different number of launches than the header records." ;;
 esac
 case "$EXPECTED_ANIMATIONS" in
   0|1) ;;

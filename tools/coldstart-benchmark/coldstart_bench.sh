@@ -180,24 +180,63 @@ _apk_badging() {
   # the file makes the pipeline non-zero, and `set -e` would then kill the run
   # silently at the assignment below -- turning an optional preflight into a
   # fatal one with no message at all. Empty output is the failure signal instead.
-  "$AAPT2" dump badging "$1" 2>/dev/null | awk -F"'" '/^package: name=/{print $2"\t"$4"\t"$6; exit}' || true
+  # Read the three attributes BY NAME, not by position. `versionCode` is optional
+  # in a manifest, and with it absent a positional scrape silently slides
+  # versionName into its column: the log then labels a name as a code, and a gate
+  # that says "no versionCode" would never fire on the one shape that has none.
+  # Splitting on the quote makes every odd field the "<key>=" run before a value
+  # and every even field the value itself, so the pairing is exact for any
+  # attribute order or count.
+  "$AAPT2" dump badging "$1" 2>/dev/null | awk -F"'" '
+    /^package: name=/ {
+      name = ""; code = ""; vname = ""
+      for (i = 1; i < NF; i += 2) {
+        key = $i
+        sub(/=$/, "", key)
+        sub(/^.*[[:space:]]/, "", key)
+        if (key == "name") name = $(i + 1)
+        else if (key == "versionCode") code = $(i + 1)
+        else if (key == "versionName") vname = $(i + 1)
+      }
+      print name "\t" code "\t" vname
+      exit
+    }' || true
 }
 check_apk_pair() {
-  local a="" b="" a_pkg b_pkg a_version b_version metadata_error=""
+  local a="" b="" a_pkg b_pkg a_version="" b_version=""
+  local metadata_error="" version_error=""
   if [ -z "${AAPT2:-}" ]; then
     metadata_error="aapt2 was not found"
   else
     a=$(_apk_badging "$APK_A"); b=$(_apk_badging "$APK_B")
     if [ -z "$a" ] || [ -z "$b" ]; then
       metadata_error="aapt2 could not read one or both APK manifests"
+    else
+      # The awk above emits its three columns unconditionally, so a badging line
+      # that declares no version still yields two EMPTY ones -- and comparing
+      # those reports "the two arms are one version" having read no version at
+      # all. That is the unreadable case handled below, not a pass. Only
+      # versionCode is required: it is what the equality rests on, and an app
+      # declaring a code but no name is still comparable on the code. "no
+      # versionCode" is all this can claim -- an absent attribute and an empty
+      # one reach here identically.
+      a_version=${a#*$'\t'}; b_version=${b#*$'\t'}
+      if [ -z "${a_version%%$'\t'*}" ] || [ -z "${b_version%%$'\t'*}" ]; then
+        version_error="aapt2 reported no versionCode for one or both APKs"
+      fi
     fi
   fi
 
   if [ -n "$metadata_error" ]; then
+    # One failed read costs both facts, so both invariants need their own
+    # acknowledgement -- named together, because the operator who learns about
+    # the second one only on the next run has already paid for the first.
     [ "${ALLOW_UNVERIFIED_PKG:-0}" = "1" ] || die "$metadata_error, so the APK package
        names cannot be verified against PKG='$PKG' before 'adb uninstall'. Refusing
        to run. Install Android SDK build-tools or set AAPT2=/path/to/aapt2. After
-       checking both packages by hand, set ALLOW_UNVERIFIED_PKG=1."
+       checking both packages by hand, set ALLOW_UNVERIFIED_PKG=1 -- and, since the
+       same read is what proves the arms are one app version, ALLOW_VERSION_MISMATCH=1
+       after checking the versions too."
     [ "${ALLOW_VERSION_MISMATCH:-0}" = "1" ] || die "$metadata_error, so the APK
        versionCode/versionName cannot be verified. Then the SDK may not be the only
        variable between the arms. Refusing to run; provide readable APK metadata or
@@ -209,7 +248,6 @@ check_apk_pair() {
   fi
 
   a_pkg=${a%%$'\t'*}; b_pkg=${b%%$'\t'*}
-  a_version=${a#*$'\t'}; b_version=${b#*$'\t'}
   log "baseline  APK: $(printf '%s' "$a" | tr '\t' ' ')"
   log "treatment APK: $(printf '%s' "$b" | tr '\t' ' ')"
   if [ "$a_pkg" != "$PKG" ] || [ "$b_pkg" != "$PKG" ]; then
@@ -220,11 +258,26 @@ check_apk_pair() {
     log "WARNING: ALLOW_UNVERIFIED_PKG=1 -- ignoring APK/package mismatch
          (baseline='$a_pkg' treatment='$b_pkg' target='$PKG')."
   fi
-  if [ "$a_version" != "$b_version" ] && [ "${ALLOW_VERSION_MISMATCH:-0}" != "1" ]; then
-    die "the two APKs declare different versionCode/versionName.
+  # Both branches are the version invariant alone: the package names read fine
+  # here, so ALLOW_UNVERIFIED_PKG has no bearing on either, and an override that
+  # was actually exercised is named in the log like every other one -- otherwise
+  # the only record that this run waived a gate is the gate's own silence.
+  if [ -n "$version_error" ]; then
+    [ "${ALLOW_VERSION_MISMATCH:-0}" = "1" ] || die "$version_error, so the arms cannot
+       be proved to be one app version and the SDK may not be the only variable
+       between them. Refusing to run. Build both APKs from the same commit with a
+       versionCode, or set ALLOW_VERSION_MISMATCH=1 after checking the versions by
+       hand."
+    log "WARNING: ALLOW_VERSION_MISMATCH=1 -- $version_error, so version equality
+         is not verified."
+  elif [ "$a_version" != "$b_version" ]; then
+    [ "${ALLOW_VERSION_MISMATCH:-0}" = "1" ] || die \
+      "the two APKs declare different versionCode/versionName.
        Then the SDK is not the only variable between the arms and the delta is
        not attributable to it. Rebuild both from the same commit, or set
        ALLOW_VERSION_MISMATCH=1 if you know why they differ."
+    log "WARNING: ALLOW_VERSION_MISMATCH=1 -- the arms declare different
+         versionCode/versionName; see the two APK lines above."
   fi
 }
 check_apk_pair

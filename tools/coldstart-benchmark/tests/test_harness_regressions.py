@@ -74,6 +74,7 @@ class HarnessRegressionTests(unittest.TestCase):
         treatment: Path,
         allow_unverified_pkg: str,
         allow_version_mismatch: str,
+        bash: str = "bash",
     ) -> subprocess.CompletedProcess[str]:
         source = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
         start = source.index("_apk_badging() {")
@@ -89,7 +90,7 @@ class HarnessRegressionTests(unittest.TestCase):
             "ALLOW_VERSION_MISMATCH": allow_version_mismatch,
         }
         return subprocess.run(
-            ["bash", "-c", textwrap.dedent(
+            [bash, "-c", textwrap.dedent(
                 """
                 set -euo pipefail
                 log() { printf 'LOG: %s\\n' "$*" >&2; }
@@ -183,6 +184,12 @@ class HarnessRegressionTests(unittest.TestCase):
             )
             self.assertEqual(accepted.returncode, 0, accepted.stderr)
             self.assertIn("PREFLIGHT_PASSED", accepted.stdout)
+            # A waived invariant that leaves no trace in the run log is
+            # indistinguishable from one that held.
+            self.assertIn(
+                "WARNING: ALLOW_VERSION_MISMATCH=1 -- the arms declare different",
+                accepted.stderr,
+            )
 
             aapt2.write_text(
                 textwrap.dedent(
@@ -216,6 +223,102 @@ class HarnessRegressionTests(unittest.TestCase):
             )
             self.assertEqual(version_only.returncode, 1, version_only.stderr)
             self.assertIn("does not match the APKs", version_only.stderr)
+
+    def test_unreadable_apk_version_needs_its_own_acknowledgement(self) -> None:
+        """A badging line with no versionCode must not read as equal versions.
+
+        `aapt2 dump badging` is scraped positionally, and the scrape emits its
+        three columns whether or not the manifest filled them. Two APKs that
+        declare no versionCode therefore compare EQUAL on an empty string, which
+        is the one way the version gate can pass while proving nothing. The
+        package name is readable on this path, so ALLOW_UNVERIFIED_PKG is not
+        the acknowledgement being asked for and must not be demanded or waived.
+        """
+        def badging(version: str) -> str:
+            return textwrap.dedent(
+                f"""#!/usr/bin/env bash
+                printf "package: name='com.example.app'{version}\\n"
+                """
+            )
+
+        # Absent attributes and empty ones reach the gate identically.
+        for label, version in (
+            ("no version attributes", ""),
+            ("empty version attributes", " versionCode='' versionName=''"),
+            ("versionName only", " versionName='1.0'"),
+        ):
+            for bash in self.available_bashes():
+                with self.subTest(manifest=label, bash=bash):
+                    with tempfile.TemporaryDirectory() as tmp:
+                        root = Path(tmp)
+                        baseline = root / "baseline.apk"
+                        treatment = root / "treatment.apk"
+                        baseline.write_text("baseline", encoding="utf-8")
+                        treatment.write_text("treatment", encoding="utf-8")
+                        aapt2 = root / "aapt2"
+                        aapt2.write_text(badging(version), encoding="utf-8")
+                        aapt2.chmod(aapt2.stat().st_mode | stat.S_IXUSR)
+
+                        rejected = self.run_apk_pair_preflight(
+                            aapt2=str(aapt2),
+                            baseline=baseline,
+                            treatment=treatment,
+                            allow_unverified_pkg="0",
+                            allow_version_mismatch="0",
+                            bash=bash,
+                        )
+                        self.assertEqual(rejected.returncode, 1, rejected.stderr)
+                        self.assertIn("no versionCode", rejected.stderr)
+                        self.assertNotIn("PREFLIGHT_PASSED", rejected.stdout)
+                        # The package check read its answer here, so it is not
+                        # part of the bargain.
+                        self.assertNotIn("ALLOW_UNVERIFIED_PKG", rejected.stderr)
+
+                        accepted = self.run_apk_pair_preflight(
+                            aapt2=str(aapt2),
+                            baseline=baseline,
+                            treatment=treatment,
+                            allow_unverified_pkg="0",
+                            allow_version_mismatch="1",
+                            bash=bash,
+                        )
+                        self.assertEqual(accepted.returncode, 0, accepted.stderr)
+                        self.assertIn("PREFLIGHT_PASSED", accepted.stdout)
+                        self.assertIn(
+                            "WARNING: ALLOW_VERSION_MISMATCH=1", accepted.stderr
+                        )
+
+    def test_version_acknowledgement_does_not_waive_the_package_check(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            baseline = root / "baseline.apk"
+            treatment = root / "treatment.apk"
+            baseline.write_text("baseline", encoding="utf-8")
+            treatment.write_text("treatment", encoding="utf-8")
+            aapt2 = root / "aapt2"
+            # Unreadable versions AND a package that is not PKG: the acknowledged
+            # invariant is the version one, and every block still runs
+            # `adb uninstall $PKG` against whatever app owns that id.
+            aapt2.write_text(
+                textwrap.dedent(
+                    """#!/usr/bin/env bash
+                    printf "package: name='com.other.app'\\n"
+                    """
+                ),
+                encoding="utf-8",
+            )
+            aapt2.chmod(aapt2.stat().st_mode | stat.S_IXUSR)
+
+            rejected = self.run_apk_pair_preflight(
+                aapt2=str(aapt2),
+                baseline=baseline,
+                treatment=treatment,
+                allow_unverified_pkg="0",
+                allow_version_mismatch="1",
+            )
+            self.assertEqual(rejected.returncode, 1, rejected.stderr)
+            self.assertIn("does not match the APKs", rejected.stderr)
+            self.assertNotIn("PREFLIGHT_PASSED", rejected.stdout)
 
     def test_unreadable_apk_metadata_needs_both_preflight_acknowledgements(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -814,6 +917,29 @@ class HarnessRegressionTests(unittest.TestCase):
         )
         self.assertNotEqual(malformed_warmup.returncode, 0)
         self.assertIn("EXPECTED_WARMUP must be a non-negative integer", malformed_warmup.stderr)
+
+        # The settle count is bash arithmetic, so a zero-padded value is octal
+        # there and decimal in the header it was copied from. This identity has no
+        # trace-time observable, so the refusal has to happen here or not at all.
+        for padded in ("010", "08"):
+            base_env["EXPECTED_WARMUP"] = padded
+            padded_warmup = subprocess.run(
+                ["bash", str(capture_path), "/missing.apk", "trace", "1"],
+                check=False,
+                capture_output=True,
+                text=True,
+                env=base_env,
+            )
+            with self.subTest(expected_warmup=padded):
+                self.assertNotEqual(padded_warmup.returncode, 0)
+                self.assertIn(
+                    "EXPECTED_WARMUP must use canonical decimal form without leading zeroes",
+                    padded_warmup.stderr,
+                )
+                # Neither outcome the arithmetic would have produced: a settle
+                # count of 9 for a declared 10, or bash's own parse error.
+                self.assertNotIn("value too great for base", padded_warmup.stderr)
+                self.assertNotIn("APK not found", padded_warmup.stderr)
 
         base_env["EXPECTED_WARMUP"] = "0"
         inherited_warmup = subprocess.run(
