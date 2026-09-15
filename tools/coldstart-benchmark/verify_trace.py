@@ -35,6 +35,8 @@ Exit codes
 0  Datadog demonstrably active -- or correctly absent, under --expect-absent.
 1  Datadog NOT active, or the package is not in the trace. Do not analyze.
    Sound as a negative only because the trace contains the cold start.
+2  Verification could not run: invalid input, TraceProcessor startup/query failure,
+   or teardown failure. This is an operational error, not an SDK verdict.
 3  Trace unusable, for any of five reasons the printed verdict names: no
    `bindApplication`, so there is no launch in it at all; the conditioning
    generation's force-stop boundary cannot be located by either method; no
@@ -59,7 +61,6 @@ Usage: verify_trace.py <trace.pftrace> --package <your.app.id>
 import argparse
 import re
 import sys
-from perfetto.trace_processor import TraceProcessor
 
 
 def main():
@@ -71,13 +72,29 @@ def main():
     """
     args = parse_args()
     if not re.match(r'^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)+$', args.package):
-        print(f"FAIL: implausible application id {args.package!r}")
-        return 1
-    tp = TraceProcessor(trace=args.trace)
+        print(f"ERROR: implausible application id {args.package!r}", file=sys.stderr)
+        return 2
+    tp = None
+    verdict = 2
     try:
-        return analyze(tp, args)
+        # Import here so a missing dependency uses the verifier's operational
+        # exit contract instead of Python's generic uncaught-exception status 1.
+        from perfetto.trace_processor import TraceProcessor
+        tp = TraceProcessor(trace=args.trace)
+        verdict = analyze(tp, args)
+    except Exception as exc:
+        print("ERROR: trace verification could not run: "
+              f"{type(exc).__name__}: {exc}", file=sys.stderr)
+        verdict = 2
     finally:
-        tp.close()
+        if tp is not None:
+            try:
+                tp.close()
+            except Exception as exc:
+                print("ERROR: trace verifier teardown failed: "
+                      f"{type(exc).__name__}: {exc}", file=sys.stderr)
+                verdict = 2
+    return verdict
 
 
 def parse_args():

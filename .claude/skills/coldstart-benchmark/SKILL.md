@@ -242,8 +242,9 @@ arm's `expect_a` / `expect_b` stamp. Pass it, and a contradicting value aborts. 
 All unbound expected inputs shown above are mandatory. `EXPECTED_APK_MD5` must equal the selected arm's
 `baseline_md5` or `treatment_md5` before device mutation. `EXPECTED_PERMISSION_STATE_ID` must equal
 that arm's `permission_a` or `permission_b` after permission setup. `EXPECTED_COMPILE_STATUS` must
-equal the benchmark header's achieved `compile_status`, not merely use the same requested
-`COMPILE_FILTER`. `EXPECTED_PERF_MODE` must equal its achieved `fixed` or `dynamic` performance
+equal the benchmark header's achieved path/ABI/status `compile_status`, not merely use the same
+requested `COMPILE_FILTER` or contain the same unordered status words. `EXPECTED_PERF_MODE` must
+equal its achieved `fixed` or `dynamic` performance
 mode; `ALLOW_DYNAMIC_PERFORMANCE=1` is not an override for a mismatch. `EXPECTED_WARMUP` must equal
 the header's `warmup` and is the only source of the settle count. `EXPECTED_ANIMATIONS` and
 `EXPECTED_AIRPLANE` supply `ANIMATIONS` and `AIRPLANE` when those are unset and abort on an
@@ -417,8 +418,9 @@ other way is neither.
 - **Concatenating CSVs that omit or disagree on mandatory device/protocol metadata is refused**
   (`--allow-mixed` to override). Two missing values are not evidence that the runs match.
   Namespacing block ids stops blocks merging; it does not make
-  two experiments comparable. The achieved `compile_status` and `perf_mode` must be present and
-  agree; the requested `compile_filter` alone does not prove the same AOT/JIT state. A differing `warmup`
+  two experiments comparable. The achieved path/ABI/status `compile_status` and `perf_mode` must be
+  present and agree; the requested `compile_filter` or unordered status set alone does not prove
+  the same AOT/JIT state. A differing `warmup`
   counts as a differing protocol: every cell
   is a fresh install, so the warm-up count sets where in the post-install JIT/profile ramp the
   measured launches sit. `blocks` and `runs` may differ between valid files, since they only
@@ -521,13 +523,14 @@ attached.
 
 ## `capture_trace.sh` / `verify_trace.py` gotchas
 
-`verify_trace.py` returns four outcomes, and the distinction matters:
+`verify_trace.py` returns five outcomes, and the distinction matters:
 
 | exit | meaning |
 |---|---|
 | 0 | SDK active, or correctly absent with `--expect-absent` |
 | 1 | SDK **not** active, or the process/package is not in the trace. Sound as a negative *only* because the trace contains the cold start |
-| 3 | trace unusable — no `bindApplication`, no force-stop boundary by either method, no final process generation, or a launch too close to the boundary to be told apart from the conditioning generation. The printed verdict names which |
+| 2 | verification could not run: invalid input, missing dependency, or TraceProcessor startup/query/teardown failure. This is operational, not an SDK verdict |
+| 3 | trace unusable — no `bindApplication`, no force-stop boundary by either method, no final process generation, no unique target launch marker for the scheduler fallback, or a launch too close to the boundary to be told apart from the conditioning generation. The printed verdict names which |
 | 4 | with `--require-foreground`: the app lost the foreground *during* the capture, **or** ownership could not be established from the trace at all. Ownership spans every process of the app (`<pkg>` and `<pkg>:<private>`) and is tracked as the set of resumed activities, so a splash handing over to the next activity is held, while an activity that pauses and returns as itself is lost. Global ActivityManager `launching:` slices catch a foreign permission/system activity followed by a different target activity, which lifecycle gaps alone cannot distinguish from a valid handoff; the check also fails closed if that global launch evidence is unavailable — `ALLOW_MISSING_LAUNCH_MARKER=1` degrades to the lifecycle-only check on a device that never emits the slice, and reports `held-lifecycle-only` so the capture is never called clean. Rejection spans the whole capture, including the tail after the measured endpoint — conservative rather than exact, since the endpoint's timestamp is host-observed and absent from the trace. The detail lines are timestamped relative to the app's first resume: read them before re-capturing. Applies to both the treatment arm and the `--expect-absent` baseline arm. The SDK may be active; the trace is just not demonstrably the scenario the benchmark measured |
 
 Why: the thread oracle's *absence* only proves something when init ran inside the trace
