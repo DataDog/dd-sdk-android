@@ -338,6 +338,42 @@ dd_apply_animation_scales() {
   done
 }
 
+# Keep the display available for the complete benchmark/trace, and verify the
+# delayed control rather than relying on the device being unlocked at preflight.
+# A settings provider can accept a write while retaining the old value; that
+# would let a long run sleep and relock after its one-time unlocked check.
+dd_apply_keep_awake() {
+  local setting namespace expected actual
+  for setting in screen_off_timeout stay_on_while_plugged_in; do
+    case "$setting" in
+      screen_off_timeout) namespace=system; expected=1800000 ;;
+      stay_on_while_plugged_in) namespace=global; expected=3 ;;
+    esac
+    if ! "$ADB" shell settings put "$namespace" "$setting" "$expected" \
+        >/dev/null 2>&1; then
+      echo "FATAL: device rejected keep-awake setting '$setting=$expected'." >&2
+      return 1
+    fi
+  done
+  for setting in screen_off_timeout stay_on_while_plugged_in; do
+    case "$setting" in
+      screen_off_timeout) namespace=system; expected=1800000 ;;
+      stay_on_while_plugged_in) namespace=global; expected=3 ;;
+    esac
+    actual=$("$ADB" shell settings get "$namespace" "$setting" 2>/dev/null \
+      | tr -d '\r') || actual=""
+    if ! awk -v actual="$actual" -v expected="$expected" 'BEGIN {
+      numeric = (actual ~ /^([0-9]+([.][0-9]*)?|[.][0-9]+)$/)
+      exit !(numeric && actual + 0 == expected + 0)
+    }'; then
+      echo "FATAL: keep-awake setting '$setting' read back as '${actual:-missing}'," >&2
+      echo "       expected numeric value $expected. The device may sleep during" >&2
+      echo "       collection, so this scenario is not safe to measure." >&2
+      return 1
+    fi
+  done
+}
+
 # Fixed-performance mode is part of the benchmark/trace scheduling scenario. A
 # rejected request cannot be reported as though CPU behavior was pinned: it changes
 # both variance and the work placement an explanatory trace observes.
@@ -401,12 +437,10 @@ dd_disable_background_dexopt() {
 # leaves a fresh install at verify because no profile exists yet.
 #
 # EVERY status in the package's section, not just the first. A package carries one
-# per code path per ABI, and they differ in practice: base.apk can sit at
-# speed-profile while a split, or the secondary ABI, is still at verify. Reporting
-# only the first made the caller's abort ("arms/cells no longer share one AOT/JIT
-# scenario") claim more than the comparison actually covered. Sorted and
-# de-duplicated, so the value is a canonical set and two identical states always
-# compare equal regardless of the order dumpsys happens to list them in.
+# per code path per ABI, and those assignments matter: base.apk at speed-profile
+# with a split at verify is not the same launch scenario with the values reversed.
+# Keep path basename, ABI, status and multiplicity, while sorting complete entries
+# so dumpsys ordering and randomized installation parent directories do not matter.
 dd_package_compile_status() {
   local pkg="$1" dump statuses status
   if ! dump=$("$ADB" shell dumpsys package dexopt 2>/dev/null); then
@@ -420,16 +454,32 @@ dd_package_compile_status() {
   statuses=$(awk -v pkg="[$pkg]" '
     index($0, pkg) { found=1; next }
     found && /^[[:space:]]*\[[^]]+\][[:space:]]*$/ { exit }
+    found && /^[[:space:]]*path:[[:space:]]*/ {
+      path=$0
+      sub(/^[[:space:]]*path:[[:space:]]*/, "", path)
+      sub(/^.*\//, "", path)
+      next
+    }
     found && /status=/ {
       value=$0
       sub(/^.*status=/, "", value)
       sub(/[^[:alnum:]_-].*$/, "", value)
-      if (value != "") { print value }
+      abi=$0
+      sub(/^[[:space:]]*/, "", abi)
+      if (abi ~ /^[[:alnum:]_.-]+:[[:space:]]*\[/) {
+        sub(/:.*/, "", abi)
+      } else {
+        abi=""
+      }
+      if (value != "") {
+        if (path != "" && abi != "") print path "@" abi ":" value
+        else print value
+      }
     }
-  ' <<< "$dump" | sort -u) || statuses=""
+  ' <<< "$dump" | LC_ALL=C sort) || statuses=""
   status=$(printf '%s' "$statuses" | tr '\n' '+')
   case "$status" in
-    ''|*[![:alnum:]_+-]*)
+    ''|*[![:alnum:]_.@:+-]*)
       echo "ERROR: cannot read achieved compilation state for $pkg: no usable" >&2
       echo "       status followed the package section in dumpsys package dexopt." >&2
       return 1 ;;

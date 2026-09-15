@@ -389,8 +389,7 @@ pin_device() {
   "$ADB" shell wm dismiss-keyguard >/dev/null 2>&1 || true
   # Keep the screen awake for the duration. NOTE: this suppresses the lock screen,
   # which is why restore_device() puts it back on exit.
-  "$ADB" shell settings put system screen_off_timeout 1800000 >/dev/null 2>&1 || true
-  "$ADB" shell settings put global stay_on_while_plugged_in 3 >/dev/null 2>&1 || true
+  dd_apply_keep_awake || exit 2
   # Reduce competing work. Android exposes no getter for either of these, so they
   # cannot be snapshotted the way the `settings` values are. Record whether OUR
   # call succeeded instead, and undo only that -- otherwise a device that arrived

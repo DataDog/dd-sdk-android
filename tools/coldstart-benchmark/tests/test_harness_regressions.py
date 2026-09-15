@@ -423,6 +423,66 @@ class HarnessRegressionTests(unittest.TestCase):
         self.assertIn("transition_animation_scale", result.stderr)
         self.assertIn("read back as '1.0'", result.stderr)
 
+    def test_keep_awake_helper_accepts_numeric_equivalent_readback(self) -> None:
+        result = self.run_with_fake_adb(
+            """
+            set -euo pipefail
+            . "$LIB"
+            dd_apply_keep_awake
+            """,
+            """
+            #!/usr/bin/env bash
+            case "$*" in
+              "shell settings put system screen_off_timeout 1800000") exit 0 ;;
+              "shell settings put global stay_on_while_plugged_in 3") exit 0 ;;
+              "shell settings get system screen_off_timeout") printf '1800000.0\n' ;;
+              "shell settings get global stay_on_while_plugged_in") printf '03.0\n' ;;
+              *) exit 1 ;;
+            esac
+            """,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_keep_awake_helper_rejects_an_ignored_write(self) -> None:
+        result = self.run_with_fake_adb(
+            """
+            set -euo pipefail
+            . "$LIB"
+            dd_apply_keep_awake
+            """,
+            """
+            #!/usr/bin/env bash
+            case "$*" in
+              "shell settings put "*) exit 0 ;;
+              "shell settings get system screen_off_timeout") printf '120000\n' ;;
+              "shell settings get global stay_on_while_plugged_in") printf '3\n' ;;
+              *) exit 1 ;;
+            esac
+            """,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("screen_off_timeout", result.stderr)
+        self.assertIn("read back as '120000'", result.stderr)
+
+    def test_keep_awake_helper_rejects_a_failed_write(self) -> None:
+        result = self.run_with_fake_adb(
+            """
+            set -euo pipefail
+            . "$LIB"
+            dd_apply_keep_awake
+            """,
+            """
+            #!/usr/bin/env bash
+            case "$*" in
+              "shell settings put system screen_off_timeout 1800000") exit 23 ;;
+              *) exit 0 ;;
+            esac
+            """,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("device rejected keep-awake setting", result.stderr)
+        self.assertIn("screen_off_timeout=1800000", result.stderr)
+
     def test_background_dexopt_is_a_shared_fail_closed_precollection_gate(self) -> None:
         success = self.run_with_fake_adb(
             '. "$LIB"; dd_disable_background_dexopt; echo disabled',
@@ -619,9 +679,34 @@ class HarnessRegressionTests(unittest.TestCase):
             """,
         )
         self.assertEqual(real_format.returncode, 0, real_format.stderr)
-        # Sorted, de-duplicated, and stopping at the next package section: the
-        # trailing com.zzz.app `speed` must not leak in.
-        self.assertEqual(real_format.stdout.strip(), "speed-profile+verify")
+        # Canonicalized by complete path/ABI/status entry and stopping at the next
+        # package section: the trailing com.zzz.app `speed` must not leak in.
+        self.assertEqual(
+            real_format.stdout.strip(),
+            "base.apk@arm64:speed-profile+base.apk@arm:verify+"
+            "split_config.en.apk@arm64:verify",
+        )
+
+        # The status *set* is unchanged, but the primary and secondary ABI have
+        # exchanged states. That can change which code the launch executes from,
+        # so it must be a different scenario identity.
+        reversed_assignment = self.run_with_fake_adb(
+            '. "$LIB"; dd_package_compile_status com.example.app',
+            """
+            #!/usr/bin/env bash
+            cat <<'EOF'
+            Current DexOpt state:
+              [com.example.app]
+                path: /data/app/~~different==/com.example.app-token==/base.apk
+                  arm64: [status=verify] [reason=install] [primary-abi]
+                  arm: [status=speed-profile] [reason=install]
+                path: /data/app/~~different==/com.example.app-token==/split_config.en.apk
+                  arm64: [status=verify] [reason=install]
+            EOF
+            """,
+        )
+        self.assertEqual(reversed_assignment.returncode, 0, reversed_assignment.stderr)
+        self.assertNotEqual(real_format.stdout, reversed_assignment.stdout)
 
         failed = self.run_with_fake_adb(
             '. "$LIB"; dd_package_compile_status com.example.app',
@@ -668,7 +753,10 @@ class HarnessRegressionTests(unittest.TestCase):
             EXPECTED_SDK_LIVENESS="1",
             EXPECTED_APK_MD5="a" * 32,
             EXPECTED_PERMISSION_STATE_ID="b" * 32,
-            EXPECTED_COMPILE_STATUS="verify+speed-profile",
+            EXPECTED_COMPILE_STATUS=(
+                "base.apk@arm64:speed-profile+base.apk@arm:verify+"
+                "split_config.en.apk@arm64:verify"
+            ),
             EXPECTED_PERF_MODE="fixed",
             EXPECTED_WARMUP="3",
         )
@@ -1833,10 +1921,11 @@ class HarnessRegressionTests(unittest.TestCase):
         self.assertEqual(indeterminate.returncode, 0, indeterminate.stderr)
         self.assertIn("WITHOUT proof a radio was enabled", indeterminate.stderr)
 
-    def test_benchmark_and_trace_share_animation_readback_gate(self) -> None:
+    def test_benchmark_and_trace_share_device_control_readback_gates(self) -> None:
         for name in ("coldstart_bench.sh", "capture_trace.sh"):
             source = (HARNESS / name).read_text(encoding="utf-8")
             self.assertIn('dd_apply_animation_scales "$ANIMATIONS" || exit 2', source, name)
+            self.assertIn("dd_apply_keep_awake || exit 2", source, name)
 
     def test_numeric_setting_snapshot_accepts_a_restorable_value(self) -> None:
         result = self.run_with_fake_adb(
@@ -3911,6 +4000,138 @@ esac
         self.assertNotIn("--expect-ndk", active)
         self.assertNotIn("--expect-absent", active)
         self.assertIn("--expect-absent", absent)
+
+    def test_trace_processor_failure_is_operational_not_sdk_inactive(self) -> None:
+        """A broken query cannot borrow exit 1, which is a liveness verdict."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            package = root / "perfetto"
+            package.mkdir()
+            (package / "__init__.py").write_text("", encoding="utf-8")
+            (package / "trace_processor.py").write_text(
+                textwrap.dedent(
+                    """
+                    class TraceProcessor:
+                        def __init__(self, trace):
+                            self.trace = trace
+
+                        def query(self, sql):
+                            raise RuntimeError("synthetic truncated trace")
+
+                        def close(self):
+                            print("STUB_CLOSED")
+                    """
+                ),
+                encoding="utf-8",
+            )
+            trace = root / "broken.pftrace"
+            trace.write_bytes(b"not a trace")
+            result = subprocess.run(
+                [
+                    os.environ.get("PYTHON", "python3"),
+                    str(HARNESS / "verify_trace.py"),
+                    str(trace),
+                    "--package",
+                    "com.example.app",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                env={**os.environ, "PYTHONPATH": str(root)},
+            )
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("trace verification could not run", result.stderr)
+        self.assertIn("synthetic truncated trace", result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+        self.assertIn("STUB_CLOSED", result.stdout)
+
+        missing_dependency = subprocess.run(
+            [
+                os.environ.get("PYTHON", "python3"),
+                "-S",
+                str(HARNESS / "verify_trace.py"),
+                str(trace),
+                "--package",
+                "com.example.app",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            env={**os.environ, "PYTHONPATH": ""},
+        )
+        self.assertEqual(missing_dependency.returncode, 2, missing_dependency.stderr)
+        self.assertIn("No module named 'perfetto'", missing_dependency.stderr)
+        self.assertNotIn("Traceback", missing_dependency.stderr)
+
+    def test_capture_classifies_only_exit_one_as_sdk_inactive(self) -> None:
+        source = (HARNESS / "capture_trace.sh").read_text(encoding="utf-8")
+        start = source.index("case $_vrc in")
+        end = source.index("\nesac", start) + len("\nesac")
+        classification = source[start:end]
+
+        def classify(code: int) -> subprocess.CompletedProcess[str]:
+            return subprocess.run(
+                [
+                    "bash",
+                    "-c",
+                    textwrap.dedent(
+                        f"""
+                        _vrc={code}
+                        EXPECT_DD=1
+                        TRACE_FILE=/tmp/example.pftrace
+                        die() {{ printf '%s\n' "$*" >&2; exit 97; }}
+                        {classification}
+                        printf 'accepted\n'
+                        """
+                    ),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+
+        inactive = classify(1)
+        operational = classify(2)
+        unexpected = classify(17)
+        self.assertEqual(inactive.returncode, 97)
+        self.assertIn("SDK liveness", inactive.stderr)
+        self.assertEqual(operational.returncode, 97)
+        self.assertIn("could not complete", operational.stderr)
+        self.assertNotIn("SDK liveness", operational.stderr)
+        self.assertEqual(unexpected.returncode, 97)
+        self.assertIn("unexpected exit 17", unexpected.stderr)
+        self.assertNotIn("SDK liveness", unexpected.stderr)
+
+    def test_standalone_verifier_reports_failed_permission_revoke(self) -> None:
+        source = (HARNESS / "verify_sdk_active.sh").read_text(encoding="utf-8")
+        start = source.index("restore_permissions() {")
+        end = source.index("\n}\ntrap restore_permissions EXIT", start) + len("\n}")
+        cleanup = source[start:end]
+        result = self.run_with_fake_adb(
+            f"""
+            set -u
+            PKG=com.example.app
+            DD_ANDROID_USER=10
+            _GRANTED='android.permission.CAMERA android.permission.LOCATION'
+            {cleanup}
+            false
+            restore_permissions
+            printf 'cleanup_rc=%s\n' "$?"
+            """,
+            """
+            #!/usr/bin/env bash
+            case "$*" in
+              *android.permission.CAMERA) exit 17 ;;
+              *android.permission.LOCATION) exit 0 ;;
+              *) exit 19 ;;
+            esac
+            """,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("cleanup_rc=1", result.stdout)
+        self.assertIn("verifier permission restoration INCOMPLETE", result.stderr)
+        self.assertIn("android.permission.CAMERA", result.stderr)
+        self.assertNotIn("android.permission.LOCATION", result.stderr)
 
     def test_install_generation_drops_previous_permission_cleanup_ownership(self) -> None:
         """A newly installed APK must not inherit the prior generation's grant list."""

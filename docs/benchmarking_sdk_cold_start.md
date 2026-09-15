@@ -631,12 +631,15 @@ adb shell dumpsys package dexopt | grep -A3 "\[<your.app.id>\]"
 #       arm64: [status=speed] [reason=cmdline]       <- fully AOT compiled
 ```
 
-The harness requires a readable achieved status after every compile, aborts if it changes between
+The harness requires a readable achieved state after every compile, aborts if it changes between
 arms or cells, and stamps it as `compile_status` separately from the requested `compile_filter`.
-The stamp covers every code path and ABI in the package, sorted, so a build whose `base.apk`
-reached `speed-profile` while a split stayed at `verify` records `speed-profile+verify` rather
-than the first value it happened to find. `ab_stats.py` refuses to pool runs whose achieved
-statuses differ, and rejects a file that omits this or any other current-format identity stamp.
+The stamp preserves every code-path basename, ABI and status assignment, including duplicates,
+then sorts complete entries. A build whose `base.apk` arm64 code reached `speed-profile` while a
+split stayed at `verify` therefore records entries such as
+`base.apk@arm64:speed-profile+split_config.en.apk@arm64:verify`. Reversing those assignments is a
+different state even though the set of status words is unchanged. `ab_stats.py` refuses to pool
+runs whose achieved identities differ, and rejects a file that omits this or any other
+current-format identity stamp.
 This benchmark was not released with a legacy CSV contract to preserve.
 A `verify` run is a legitimate condition (it is what a sideloaded or freshly updated install looks
 like) but it is **not**
@@ -700,6 +703,7 @@ adb shell settings put global window_animation_scale 0
 adb shell settings put global transition_animation_scale 0
 adb shell settings put global animator_duration_scale 0
 adb shell settings put global stay_on_while_plugged_in 3
+adb shell settings put system screen_off_timeout 1800000
 ```
 
 The harness snapshots these first and restores them on exit, including on Ctrl-C. See
@@ -1117,8 +1121,9 @@ changed; the later host-to-device check separately proves those bytes were insta
 `permission_a` or `permission_b` outcome, including when role or exemption state affects a
 hard-restricted permission.
 `EXPECTED_COMPILE_STATUS` is required because the requested `COMPILE_FILTER` does not prove the
-state the device reached. Each arm's trace must match the A/B header's achieved `compile_status`;
-a `verify` trace cannot explain a `speed-profile` benchmark, or vice versa.
+state the device reached. Each arm's trace must match the A/B header's achieved path/ABI/status
+identity; a trace with different assignments cannot explain the benchmark even when both contain
+the same status words.
 `EXPECTED_PERF_MODE` similarly requires the trace's fixed-performance request to reach the same
 `fixed` or `dynamic` outcome as the benchmark. `ALLOW_DYNAMIC_PERFORMANCE=1` permits a rejected
 request to continue, but it does not permit that outcome to differ from the benchmark.
@@ -1164,12 +1169,14 @@ check when the header's `warmup` is zero. Its readiness therefore adds no second
 delay before the traced launch's force-stop, five-second wait and log boundary.
 
 `verify_trace.py` exits `0` if the SDK is demonstrably active (or correctly absent), `1` if it
-is not detected, and `3` if the trace is unusable. Four cases reach that code, and the printed
-verdict names which one: no `bindApplication` slice, so the trace holds no cold start; a
-conditioning generation whose force-stop cannot be located by either method; a located
-force-stop with no package process starting after it, so the traced launch is not in the
-capture; or a scheduler boundary the traced launch starts too soon after to be told apart from
-the conditioning generation. In none of them can the question be answered either way.
+is demonstrably inactive, and `2` if verification itself failed. Exit `3` means the trace is
+unusable. Five cases reach that code, and the printed verdict names which one: no
+`bindApplication` slice, so the trace holds no cold start; a conditioning generation whose
+force-stop cannot be located by either method; a located force-stop with no package process
+starting after it; no unique target launch marker for the scheduler fallback; or a scheduler
+boundary the traced launch starts too soon after to be told apart from the conditioning
+generation. Exit `4` is the separate foreground-ownership refusal. In none of exits `2` through
+`4` is SDK inactivity established.
 
 **The force-stop boundary comes from scheduler activity, not from process exit records.**
 `capture_trace.sh` records `sched/sched_process_free`, the event that is supposed to populate
@@ -1328,9 +1335,9 @@ also uninstalls and reinstalls the app, so it destroys app data too.
 |---|---|
 | **uninstalls and reinstalls your app** before every arm of every block (and once in `verify_sdk_active.sh`, and once in `capture_trace.sh`) | guarantees a known install state and lets the md5 attestation prove which APK is being measured. Before the global `adb uninstall`, every Android user is checked; if another profile owns the package, the harness refuses and asks for a dedicated test device instead of deleting that profile's data. The selected user's package path is checked before and after uninstall; a protected/device-admin package that remains installed aborts rather than becoming an in-place `install -r` with preserved data, caches and profile state. **This deletes all app data for the selected single-user scenario.** With the default 8 blocks that is 16 uninstall/install cycles |
 | snapshots one Android user and scopes package, permission and activity operations to it | prevents personal/work-profile permission state or an implicit-user change from creating a mixed scenario. The selected user is stamped in the CSV and must match before files are pooled |
-| pre-grants every runtime permission your app declares in the verifier, benchmark and trace | removes the accumulating-dialog contamination and makes the liveness preflight test the same permission state as the measured launch. Only the selected Android user's state is parsed; custom permission names are included, and a rejected grant aborts instead of silently producing a partially granted scenario. Cleanup revokes only permissions changed from denied to granted; permissions already granted at install are preserved, and it never runs device-wide `pm reset-permissions` |
+| pre-grants every runtime permission your app declares in the verifier, benchmark and trace | removes the accumulating-dialog contamination and makes the liveness preflight test the same permission state as the measured launch. Only the selected Android user's state is parsed; custom permission names are included, and a rejected grant aborts instead of silently producing a partially granted scenario. Cleanup revokes only permissions changed from denied to granted; permissions already granted at install are preserved, and it never runs device-wide `pm reset-permissions`. A failed revoke preserves the original command result and names the permission to restore manually |
 | `window_animation_scale`, `transition_animation_scale`, `animator_duration_scale` → 0 | animation time is not startup time. All three are written, read back, and required to match before measurement; they are snapshotted and restored individually |
-| `stay_on_while_plugged_in`, `screen_off_timeout` | the screen must stay on for the whole run |
+| `stay_on_while_plugged_in`, `screen_off_timeout` | the screen must stay on for the whole run. Both writes are read back and a rejected or ignored value aborts before collection |
 | Wi-Fi enabled by default, or Wi-Fi **and** mobile data settings off when `AIRPLANE=1` | both arms must use the same controlled radio state. The settings are snapshotted, restored and read back: under `AIRPLANE=1` both must be exactly `0`; under `AIRPLANE=0` at least one must be `1`. Contradictory state aborts, while `ALLOW_UNVERIFIED_RADIOS=1` can accept unreadable settings. This proves only those settings. It does not prove association, validated internet, DNS, captive-portal state or reachability of the app's and Datadog's endpoints; keep that external lab condition stable yourself. Ethernet and USB tethering are not represented |
 | `cmd package compile -m <filter> -f` | a stable AOT profile |
 
@@ -1377,7 +1384,8 @@ output contain no such data and are safe to share as-is.
 | the harness refuses to start, naming a package mismatch | `PKG` is not the application id the APKs declare. Fix `PKG`. `ALLOW_UNVERIFIED_PKG=1` downgrades even a proved mismatch to a logged warning, so reserve it for a mismatch you intend, because every block runs `adb uninstall $PKG` against whatever app owns that id |
 | the harness refuses to start on differing or unreadable `versionCode`/`versionName` | the SDK is not the only known variable until the two app versions are proved equal, and a manifest declaring no `versionCode` proves nothing: two of those compare equal on an empty string. Rebuild both from one commit, make `aapt2` available, supply APKs that declare a `versionCode`, or set `ALLOW_VERSION_MISMATCH=1` only after checking the versions by hand |
 | `displayed` or `ttfd` is `NA` on every row | the app doesn't call `reportFullyDrawn()` (for `ttfd`), or a vendor logcat format; `total_ms` is still valid |
-| `verify_trace.py` exits 3 | the trace cannot answer the question either way. Four causes reach this code and the printed verdict names which: no `bindApplication` slice; no locatable force-stop boundary; no package process after that boundary; or a launch too close to it to be told apart from the conditioning generation. For the first, `force-stop` the app before tracing and start it inside the trace; for the others, re-capture without inserting work between the force-stop and the launch |
+| `verify_trace.py` exits 3 | the trace cannot answer the question either way. Five causes reach this code and the printed verdict names which: no `bindApplication` slice; no locatable force-stop boundary; no package process after that boundary; no unique target launch marker for the scheduler fallback; or a launch too close to the boundary to be told apart from the conditioning generation. For the first, `force-stop` the app before tracing and start it inside the trace; for the others, re-capture without inserting work between the force-stop and the launch |
+| `verify_trace.py` exits 2 | verification could not run because its input, dependency, TraceProcessor query or teardown failed. This is not evidence that the SDK is inactive; fix the reported operational error and verify the saved trace again |
 | trace shows no SDK activity | no `force-stop` before tracing, or a bare `process_stats` data source |
 | `ModuleNotFoundError: perfetto` | running `./verify_trace.py` with the system interpreter; use `./.venv/bin/python verify_trace.py` |
 | numbers don't match your field metrics | different measurement window (`TotalTime` vs your RUM metric), debug vs release build, page-cache-warm vs genuine first launch, or device mix |

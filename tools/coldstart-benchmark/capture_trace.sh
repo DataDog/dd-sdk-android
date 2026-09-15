@@ -209,7 +209,7 @@ require_expected_md5 EXPECTED_APK_MD5 "baseline_md5 or treatment_md5"
 require_expected_md5 EXPECTED_PERMISSION_STATE_ID "permission_a or permission_b"
 case "$EXPECTED_COMPILE_STATUS" in
   "") die "set EXPECTED_COMPILE_STATUS to the benchmark CSV header's compile_status" ;;
-  *[!a-zA-Z0-9_.+-]*) die "invalid EXPECTED_COMPILE_STATUS: '$EXPECTED_COMPILE_STATUS'" ;;
+  *[!a-zA-Z0-9_.@:+-]*) die "invalid EXPECTED_COMPILE_STATUS: '$EXPECTED_COMPILE_STATUS'" ;;
 esac
 case "$EXPECTED_PERF_MODE" in
   fixed|dynamic) ;;
@@ -531,8 +531,7 @@ _WE_SET_DEXOPT=1
 # Keep the screen on for the whole capture. $SETTLE_LAUNCHES settle launches plus a 20s trace
 # outlast a default screen timeout, and a screen that sleeps mid-capture relocks the
 # device -- which produces a trace with no rendering in it.
-"$ADB" shell settings put global stay_on_while_plugged_in 3 >/dev/null 2>&1 || true
-"$ADB" shell settings put system screen_off_timeout 1800000 >/dev/null 2>&1 || true
+dd_apply_keep_awake || exit 2
 
 # A locked device resumes the activity but never draws, so the trace would contain
 # no rendering and `am start -W` no TotalTime. Same gate the benchmark applies.
@@ -988,6 +987,10 @@ _vrc=$?
 set -e
 case $_vrc in
   0) ;;
+  1) die "trace failed SDK liveness verification (arm expect=$EXPECT_DD, verifier exit 1)" ;;
+  2) die "trace verification could not complete because its input, TraceProcessor,
+       query or teardown failed. This is not an SDK-liveness verdict. Kept at
+       $TRACE_FILE for inspection." ;;
   3) die "the trace cannot answer the question either way. Five causes reach this exit
        and the verdict printed above names which: no cold start in the capture, a
        force-stop boundary neither method could locate, no package process after that
@@ -997,5 +1000,6 @@ case $_vrc in
   4) die "the app did not own the foreground for the whole capture (see above).
        Part of the window was paused or stopped, so this is not the scenario the
        benchmark measures. Kept at $TRACE_FILE for inspection. Re-capture." ;;
-  *) die "trace failed SDK liveness verification (arm expect=$EXPECT_DD, verifier exit $_vrc)" ;;
+  *) die "trace verifier returned unexpected exit $_vrc. This is not an SDK-liveness
+       verdict. Kept at $TRACE_FILE for inspection." ;;
 esac

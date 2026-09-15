@@ -116,10 +116,15 @@ log "$("$ADB" shell dumpsys package "$PKG" | grep -m1 versionName | tr -d '\r' |
 _GRANTED=""
 # shellcheck disable=SC2329  # invoked indirectly by the EXIT trap below
 restore_permissions() {
-  local rc=$? p
+  local rc=$? p failures=""
   for p in ${_GRANTED:-}; do
-    "$ADB" shell pm revoke --user "$DD_ANDROID_USER" "$PKG" "$p" >/dev/null 2>&1 || true
+    "$ADB" shell pm revoke --user "$DD_ANDROID_USER" "$PKG" "$p" >/dev/null 2>&1 \
+      || failures="${failures}${failures:+ }$p"
   done
+  if [ -n "$failures" ]; then
+    echo "WARNING: verifier permission restoration INCOMPLETE." >&2
+    echo "         Manually revoke for Android user $DD_ANDROID_USER: $failures" >&2
+  fi
   return "$rc"
 }
 trap restore_permissions EXIT
