@@ -30,6 +30,7 @@ import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvi
 import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
 import com.datadog.android.core.internal.thread.BackPressuredBlockingQueue
 import com.datadog.android.core.internal.thread.BroadcastReceiverThread
+import com.datadog.android.core.internal.thread.IDLE_THREAD_KEEP_ALIVE_MS
 import com.datadog.android.core.internal.time.AppStartTimeProvider
 import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.user.DatadogUserInfoProvider
@@ -1724,6 +1725,76 @@ internal class CoreFeatureTest {
         assertThat(callFactory1).isNotNull()
         assertThat(callFactory2).isNotNull()
         assertThat(callFactory1).isNotSameAs(callFactory2)
+    }
+
+    // endregion
+
+    // region idle thread timeout
+
+    private fun coreFeatureWithRealExecutorFactories() = CoreFeature(
+        mockInternalLogger,
+        mockAppStartTimeProvider,
+        executorServiceFactory = CoreFeature.DEFAULT_FLUSHABLE_EXECUTOR_SERVICE_FACTORY,
+        scheduledExecutorServiceFactory = CoreFeature.DEFAULT_SCHEDULED_EXECUTOR_SERVICE_FACTORY,
+        buildSdkVersionProvider = mockBuildSdkVersionProvider
+    ).apply {
+        initialize(CoreFeatureTest.appContext.mockInstance, fakeSdkInstanceId, fakeConfig, fakeConsent)
+    }
+
+    @Test
+    fun `M enable idle thread timeout W createExecutorService()`(
+        @StringForgery fakeExecutorContext: String
+    ) {
+        // Given
+        val coreFeature = coreFeatureWithRealExecutorFactories()
+
+        // When
+        val executor = coreFeature.createExecutorService(fakeExecutorContext)
+
+        // Then
+        check(executor is ThreadPoolExecutor)
+        assertThat(executor.allowsCoreThreadTimeOut()).isTrue()
+        assertThat(executor.getKeepAliveTime(TimeUnit.MILLISECONDS))
+            .isEqualTo(IDLE_THREAD_KEEP_ALIVE_MS)
+        executor.shutdownNow()
+        coreFeature.stop()
+    }
+
+    @Test
+    fun `M enable idle thread timeout W createScheduledExecutorService()`(
+        @StringForgery fakeExecutorContext: String
+    ) {
+        // Given
+        val coreFeature = coreFeatureWithRealExecutorFactories()
+
+        // When
+        val executor = coreFeature.createScheduledExecutorService(fakeExecutorContext)
+
+        // Then
+        check(executor is ThreadPoolExecutor)
+        assertThat(executor.allowsCoreThreadTimeOut()).isTrue()
+        assertThat(executor.getKeepAliveTime(TimeUnit.MILLISECONDS))
+            .isEqualTo(IDLE_THREAD_KEEP_ALIVE_MS)
+        executor.shutdownNow()
+        coreFeature.stop()
+    }
+
+    @Test
+    fun `M not enable idle thread timeout W initialize() {core owned executors}`() {
+        // Given core-owned hot paths must keep permanent, stably-named threads
+        val coreFeature = coreFeatureWithRealExecutorFactories()
+
+        // Then
+        val upload = coreFeature.uploadExecutorService
+        check(upload is ThreadPoolExecutor)
+        assertThat(upload.allowsCoreThreadTimeOut()).isFalse()
+
+        val persistence = coreFeature.persistenceExecutorService
+        check(persistence is ThreadPoolExecutor)
+        assertThat(persistence.allowsCoreThreadTimeOut()).isFalse()
+
+        assertThat(coreFeature.contextExecutorService.allowsCoreThreadTimeOut()).isFalse()
+        coreFeature.stop()
     }
 
     // endregion

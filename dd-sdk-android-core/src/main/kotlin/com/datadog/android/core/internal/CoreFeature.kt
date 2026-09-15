@@ -64,6 +64,7 @@ import com.datadog.android.core.internal.thread.BroadcastReceiverThread
 import com.datadog.android.core.internal.thread.DatadogThreadFactory
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.thread.ScheduledExecutorServiceFactory
+import com.datadog.android.core.internal.thread.enableIdleThreadTimeout
 import com.datadog.android.core.internal.time.AppStartTimeProvider
 import com.datadog.android.core.internal.time.DatadogNtpEndpoint
 import com.datadog.android.core.internal.time.KronosTimeProvider
@@ -338,10 +339,12 @@ internal class CoreFeature(
 
     fun createExecutorService(executorContext: String): ExecutorService {
         return executorServiceFactory.create(internalLogger, executorContext, backpressureStrategy, timeProvider)
+            .apply { enableIdleThreadTimeout() }
     }
 
     fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService {
         return scheduledExecutorServiceFactory.create(internalLogger, executorContext, backpressureStrategy)
+            .apply { enableIdleThreadTimeout() }
     }
 
     fun createOkHttpCallFactory(block: OkHttpClient.Builder.() -> Unit): Call.Factory {
