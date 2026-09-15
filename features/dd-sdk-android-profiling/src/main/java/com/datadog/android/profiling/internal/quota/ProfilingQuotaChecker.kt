@@ -52,8 +52,11 @@ internal class ProfilingQuotaChecker(
         @Suppress("UnsafeThirdPartyFunctionCall") // callback bodies never throw
         call.enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                // A cancelled call (new session, or reset) surfaces here; that is not an error.
-                if (call.isCanceled()) return
+                // OkHttp surfaces a call timeout by cancelling the call, so a cancelled call is
+                // only superfluous when it is no longer the in-flight call (superseded by a newer
+                // session or cleared by reset()). A pending timeout must still produce a decision,
+                // exactly as the old blocking execute() threw IOException and mapped to API_ERROR.
+                if (call.isCanceled() && pendingCall.get() !== call) return
                 logErrorToMaintainer(e) { LOG_NETWORK_ERROR.format(Locale.US, e.message) }
                 deliver(call, sessionId, QuotaResult.API_ERROR)
             }

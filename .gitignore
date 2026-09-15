@@ -33,3 +33,6 @@ config/*
 gh_token
 **/verification-metadata.xml
 !gradle/verification-metadata.xml
+
+# Local pi harness scratch (subagent sessions, missions, artifacts)
+/.pi/

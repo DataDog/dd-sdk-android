@@ -83,7 +83,6 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.UUID
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 
 @OptIn(ExperimentalProfilingApi::class)
@@ -103,9 +102,6 @@ internal class ProfilingFeatureTest {
 
     @Mock
     private lateinit var mockInternalLogger: InternalLogger
-
-    @Mock
-    private lateinit var mockProfilingExecutor: ExecutorService
 
     @Mock
     private lateinit var mockSchedulerExecutor: ScheduledExecutorService
@@ -209,7 +205,6 @@ internal class ProfilingFeatureTest {
             )
         ) doReturn mockPackageInfo
         whenever(mockSdkCore.name) doReturn fakeInstanceName
-        whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mockProfilingExecutor
         whenever(mockProfiler.timeProvider) doReturn mockMutableTimeProvider
         whenever(mockSdkCore.createOkHttpCallFactory(any())) doReturn mockCallFactory
         whenever(mockCallFactory.newCall(any())) doReturn mockCall

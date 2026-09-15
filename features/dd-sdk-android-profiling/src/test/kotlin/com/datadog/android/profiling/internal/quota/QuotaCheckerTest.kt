@@ -399,9 +399,10 @@ internal class QuotaCheckerTest {
     // region onFailure
 
     @Test
-    fun `M not report result W onFailure() {call was cancelled}`() {
-        // Given a cancelled call reports failure through onFailure; that is not a real error
+    fun `M not report result W onFailure() {call cleared by reset}`() {
+        // Given a cancelled call that is no longer in flight (cleared by reset) reports nothing
         testedChecker.checkAsync(fakeSessionId, fakeDatadogContext)
+        testedChecker.reset()
         whenever(mockCall.isCanceled()) doReturn true
 
         // When
@@ -420,6 +421,21 @@ internal class QuotaCheckerTest {
 
         // When
         failWith(IOException(forge.anAlphabeticalString()))
+
+        // Then
+        assertThat(testedChecker.lastResult).isEqualTo(QuotaResult.API_ERROR)
+        assertThat(capturedResults).containsExactly(QuotaResult.API_ERROR)
+    }
+
+    @Test
+    fun `M report API_ERROR W onFailure() {call timed out}`() {
+        // Given OkHttp surfaces the client callTimeout by cancelling the call, so a cancelled
+        // call that is still the in-flight call is a timeout, not a superseded call
+        testedChecker.checkAsync(fakeSessionId, fakeDatadogContext)
+        whenever(mockCall.isCanceled()) doReturn true
+
+        // When
+        failWith(IOException("timeout"))
 
         // Then
         assertThat(testedChecker.lastResult).isEqualTo(QuotaResult.API_ERROR)
