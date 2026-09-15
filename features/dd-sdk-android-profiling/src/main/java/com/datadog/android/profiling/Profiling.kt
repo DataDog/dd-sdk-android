@@ -26,7 +26,6 @@ import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
 import com.datadog.android.profiling.internal.time.MutableTimeProvider
 import java.lang.ref.WeakReference
 import java.util.Locale
-import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -145,7 +144,7 @@ object Profiling {
         if (!isProfilerInitialized.getAndSet(true)) {
             profiler = PerfettoProfiler(
                 timeProvider = MutableTimeProvider.create(DefaultTimeProvider()),
-                scheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
+                scheduledExecutorService = createProfilingScheduler()
             )
         }
     }
