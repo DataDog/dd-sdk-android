@@ -15,6 +15,7 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.feature.event.ThreadDump
+import com.datadog.android.internal.utils.loggableMessage
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.utils.buildLogDateFormat
@@ -59,7 +60,7 @@ internal class DatadogLogGenerator(
             LogEvent.Error(
                 kind = kind,
                 stack = it.loggableStackTrace(),
-                message = it.message,
+                message = it.loggableMessage(),
                 fingerprint = fingerprint,
                 threads = threads.map { thread ->
                     LogEvent.Thread(
