@@ -258,6 +258,20 @@ dd_ensure_uninstalled() {
 # Read one numeric Android setting before any mutation. Empty output, `null`, a
 # malformed value and command failure are all different from a restorable state:
 # guessing a default can leave a borrowed device changed after the run.
+# One definition of "this settings value is a concrete number", and of numeric
+# equivalence between what was requested and what the device reports. Android
+# spells the same value `0`, `0.0` or `1.0` depending on build, so neither
+# comparison can be textual. Three gates rest on this predicate -- the snapshot
+# that decides whether state is restorable, and both apply-and-verify controls --
+# and this file exists so they cannot drift into three slightly different answers.
+# Called with one argument it asks only whether the reading is a concrete number.
+dd_numeric_setting_matches() {
+  awk -v actual="$1" -v expected="${2-}" 'BEGIN {
+    if (actual !~ /^([0-9]+([.][0-9]*)?|[.][0-9]+)$/) exit 1
+    if (length(expected) && actual + 0 != expected + 0) exit 1
+  }'
+}
+
 dd_snapshot_numeric_setting() {
   local namespace="$1" key="$2" value
   # No pipe: with one, the exit status is `tr`'s unless the caller happens to run
@@ -269,10 +283,7 @@ dd_snapshot_numeric_setting() {
     return 1
   fi
   value=$(printf '%s' "$value" | tr -d '\r')
-  if ! awk -v value="$value" 'BEGIN {
-    numeric = (value ~ /^([0-9]+([.][0-9]*)?|[.][0-9]+)$/)
-    exit !numeric
-  }'; then
+  if ! dd_numeric_setting_matches "$value"; then
     echo "FATAL: cannot snapshot Android setting $namespace/$key:" >&2
     echo "       expected a concrete numeric value, got '${value:-empty}'." >&2
     echo "       Refusing to mutate device state without a restorable snapshot." >&2
@@ -327,10 +338,7 @@ dd_apply_animation_scales() {
   done
   for scale in window_animation_scale transition_animation_scale animator_duration_scale; do
     actual=$("$ADB" shell settings get global "$scale" 2>/dev/null | tr -d '\r') || actual=""
-    if ! awk -v actual="$actual" -v expected="$expected" 'BEGIN {
-      numeric = (actual ~ /^([0-9]+([.][0-9]*)?|[.][0-9]+)$/)
-      exit !(numeric && actual + 0 == expected + 0)
-    }'; then
+    if ! dd_numeric_setting_matches "$actual" "$expected"; then
       echo "FATAL: animation setting '$scale' read back as '${actual:-missing}'," >&2
       echo "       expected numeric value $expected. Refusing a mislabeled scenario." >&2
       return 1
@@ -362,10 +370,7 @@ dd_apply_keep_awake() {
     esac
     actual=$("$ADB" shell settings get "$namespace" "$setting" 2>/dev/null \
       | tr -d '\r') || actual=""
-    if ! awk -v actual="$actual" -v expected="$expected" 'BEGIN {
-      numeric = (actual ~ /^([0-9]+([.][0-9]*)?|[.][0-9]+)$/)
-      exit !(numeric && actual + 0 == expected + 0)
-    }'; then
+    if ! dd_numeric_setting_matches "$actual" "$expected"; then
       echo "FATAL: keep-awake setting '$setting' read back as '${actual:-missing}'," >&2
       echo "       expected numeric value $expected. The device may sleep during" >&2
       echo "       collection, so this scenario is not safe to measure." >&2
