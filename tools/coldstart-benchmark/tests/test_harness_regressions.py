@@ -1980,6 +1980,50 @@ class HarnessRegressionTests(unittest.TestCase):
             self.assertIn('dd_apply_animation_scales "$ANIMATIONS" || exit 2', source, name)
             self.assertIn("dd_apply_keep_awake || exit 2", source, name)
 
+    def test_numeric_setting_predicate_has_one_definition(self) -> None:
+        """Three gates ask "is this reading the number I asked for?"
+
+        The snapshot that decides whether state is restorable and both
+        apply-and-verify controls each had their own copy of the same awk
+        predicate. Identical today, but this is the file that exists so the
+        three device workflows cannot answer one question three ways.
+        """
+        lib = LIB.read_text(encoding="utf-8")
+        self.assertEqual(lib.count("dd_numeric_setting_matches() {"), 1)
+        self.assertEqual(lib.count('dd_numeric_setting_matches "'), 3)
+        self.assertNotIn("numeric = (actual ~", lib)
+        self.assertNotIn("numeric = (value ~", lib)
+
+    def test_numeric_setting_predicate_accepts_only_equivalent_numbers(self) -> None:
+        # Android spells the same value 0, 0.0 or 1.0 depending on build, so the
+        # comparison cannot be textual -- and must still refuse `null` (never set),
+        # an empty reading (dead shell) and a spelling the callers never write.
+        cases = (
+            ("0.0", "0", True),
+            ("0", "0", True),
+            ("1.0", "1", True),
+            ("1800000", "1800000", True),
+            ("120000", "1800000", False),
+            ("null", "1800000", False),
+            ("", "1800000", False),
+            ("1e3", "1000", False),
+            ("3", None, True),
+            ("0", None, True),
+            ("null", None, False),
+            ("", None, False),
+        )
+        for actual, expected, accepted in cases:
+            args = f'"{actual}"' if expected is None else f'"{actual}" "{expected}"'
+            result = self.run_with_fake_adb(
+                f'. "$LIB"; dd_numeric_setting_matches {args}',
+                """
+                #!/usr/bin/env bash
+                exit 0
+                """,
+            )
+            with self.subTest(actual=actual, expected=expected):
+                self.assertEqual(result.returncode == 0, accepted, result.stderr)
+
     def test_numeric_setting_snapshot_accepts_a_restorable_value(self) -> None:
         result = self.run_with_fake_adb(
             """
