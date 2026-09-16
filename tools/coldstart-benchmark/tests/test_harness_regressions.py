@@ -708,6 +708,59 @@ class HarnessRegressionTests(unittest.TestCase):
         self.assertEqual(reversed_assignment.returncode, 0, reversed_assignment.stderr)
         self.assertNotEqual(real_format.stdout, reversed_assignment.stdout)
 
+        # dumpsys prints bracketed CONTINUATION markers inside the package
+        # section, and `[location=...]` on its own line matched the anchor that
+        # detects the next package header exactly. The read stopped there, so an
+        # identity documented as covering every path and ABI covered only the
+        # entries above the first marker -- and two arms agreeing on those would
+        # have compared equal with the rest never read.
+        continuation_markers = self.run_with_fake_adb(
+            '. "$LIB"; dd_package_compile_status com.example.app',
+            """
+            #!/usr/bin/env bash
+            cat <<'EOF'
+            Current DexOpt state:
+              [com.example.app]
+                path: /data/app/~~cc==/com.example.app-dd==/base.apk
+                  arm64: [status=verify] [reason=install] [primary-abi]
+                    [location=/data/app/~~cc==/com.example.app-dd==/oat/arm64/base.odex]
+                  arm: [status=speed-profile] [reason=install]
+              [com.zzz.app]
+                path: /data/app/base.apk
+                  arm64: [status=speed] [reason=install]
+            EOF
+            """,
+        )
+        self.assertEqual(continuation_markers.returncode, 0, continuation_markers.stderr)
+        self.assertEqual(
+            continuation_markers.stdout.strip(),
+            "base.apk@arm64:verify+base.apk@arm:speed-profile",
+        )
+
+        # The same marker, carrying its own status= and not alone on its line, so
+        # it is not a terminator either. Taken as an assignment it contributed a
+        # path-less entry: a status attributed to nothing, in a value whose whole
+        # purpose is to say which path and ABI reached which state.
+        marker_with_status = self.run_with_fake_adb(
+            '. "$LIB"; dd_package_compile_status com.example.app',
+            """
+            #!/usr/bin/env bash
+            cat <<'EOF'
+            Current DexOpt state:
+              [com.example.app]
+                path: /data/app/~~cc==/com.example.app-dd==/base.apk
+                  arm64: [status=verify] [reason=install] [primary-abi]
+                    [location=/x/oat/arm64/base.odex status=verify] [dex-metadata]
+                  arm: [status=speed-profile] [reason=install]
+            EOF
+            """,
+        )
+        self.assertEqual(marker_with_status.returncode, 0, marker_with_status.stderr)
+        self.assertEqual(
+            marker_with_status.stdout.strip(),
+            "base.apk@arm64:verify+base.apk@arm:speed-profile",
+        )
+
         failed = self.run_with_fake_adb(
             '. "$LIB"; dd_package_compile_status com.example.app',
             """
