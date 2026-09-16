@@ -15,6 +15,7 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.feature.event.ThreadDump
+import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.utils.buildLogDateFormat
 import com.datadog.android.log.model.LogEvent
@@ -57,7 +58,7 @@ internal class DatadogLogGenerator(
             val kind = it.javaClass.canonicalName ?: it.javaClass.simpleName
             LogEvent.Error(
                 kind = kind,
-                stack = it.stackTraceToString(),
+                stack = it.loggableStackTrace(),
                 message = it.message,
                 fingerprint = fingerprint,
                 threads = threads.map { thread ->
