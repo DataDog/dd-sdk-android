@@ -359,6 +359,7 @@ fun Thread.safeGetThreadId(): Long
 fun Thread.State.asString(): String
 fun Array<StackTraceElement>.loggableStackTrace(): String
 fun Throwable.loggableStackTrace(): String
+fun Throwable.loggableMessage(): String?
 fun formatIsoUtc(Long): String
 class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProvider
   override fun onCreate(): Boolean
