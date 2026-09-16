@@ -453,7 +453,20 @@ dd_package_compile_status() {
   # everything collected under `pipefail`.
   statuses=$(awk -v pkg="[$pkg]" '
     index($0, pkg) { found=1; next }
-    found && /^[[:space:]]*\[[^]]+\][[:space:]]*$/ { exit }
+    found && /^[[:space:]]*\[[^]]+\][[:space:]]*$/ {
+      # A lone bracketed line ends the package section only if it can BE a
+      # package header. dumpsys also prints bracketed continuation markers
+      # inside the section, and `[location=/data/app/.../base.odex]` matched
+      # this anchor exactly: the read stopped there and the identity silently
+      # covered only the entries above it, while still claiming every path and
+      # ABI. A package name carries no `=`, `/` or space; those three are what
+      # separate a header from a marker.
+      marker=$0
+      sub(/^[[:space:]]*\[/, "", marker)
+      sub(/\].*$/, "", marker)
+      if (marker !~ /[=\/[:space:]]/) exit
+      next
+    }
     found && /^[[:space:]]*path:[[:space:]]*/ {
       path=$0
       sub(/^[[:space:]]*path:[[:space:]]*/, "", path)
@@ -461,6 +474,15 @@ dd_package_compile_status() {
       next
     }
     found && /status=/ {
+      # A per-ABI assignment leads with `<abi>: [`. A bracketed continuation
+      # line carries its own `status=` and is not an assignment of its own, so
+      # accepting one added a path-less entry to the identity -- a status
+      # attributed to nothing, reported as though it had been read per code
+      # path. The unprefixed fallback below stays for the older unbracketed
+      # dump shape, which does not lead with a bracket.
+      lead=$0
+      sub(/^[[:space:]]*/, "", lead)
+      if (lead ~ /^\[/) { next }
       value=$0
       sub(/^.*status=/, "", value)
       sub(/[^[:alnum:]_-].*$/, "", value)
