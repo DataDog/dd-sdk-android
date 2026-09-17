@@ -54,7 +54,7 @@ class RecordingTimeBankTest {
         // Given
         val firstTimestamp = forge.aLong(min = 0)
         val firstExecutionTime = forge.aLong(
-            min = TimeUnit.MILLISECONDS.toNanos(TEST_MAX_BALANCE_IN_MS),
+            min = TimeUnit.MILLISECONDS.toNanos(TEST_MAX_BALANCE_IN_MS) * 2,
             max = TimeUnit.MILLISECONDS.toNanos(TEST_MAX_BALANCE_IN_MS) * 100
         )
         val interval = forge.aLong(min = 0, max = firstExecutionTime)
@@ -77,7 +77,7 @@ class RecordingTimeBankTest {
         // Given
         val firstTimestamp = forge.aLong(min = 0)
         val firstExecutionTime = forge.aLong(
-            min = TimeUnit.MILLISECONDS.toNanos(TEST_MAX_BALANCE_IN_MS),
+            min = TimeUnit.MILLISECONDS.toNanos(TEST_MAX_BALANCE_IN_MS) * 2,
             max = TimeUnit.MILLISECONDS.toNanos(TEST_MAX_BALANCE_IN_MS) * 100
         )
         val interval = forge.aLong(min = 0, max = firstExecutionTime)
