@@ -530,28 +530,28 @@ class RumSessionEndedMetricTest {
 
         assertThat(rseObject.get(SessionEndedMetric.PROCESS_TYPE_KEY)).isInstanceOf(String::class.java)
         assertThat(rseObject.get(SessionEndedMetric.PRECONDITION_KEY)).isInstanceOf(String::class.java)
-        assertThat(rseObject.get(SessionEndedMetric.DURATION_KEY)).isInstanceOf(java.lang.Long::class.java)
-        assertThat(rseObject.get(SessionEndedMetric.WAS_STOPPED_KEY)).isInstanceOf(java.lang.Boolean::class.java)
+        assertThat(rseObject.get(SessionEndedMetric.DURATION_KEY)).isInstanceOf(Long::class.javaObjectType)
+        assertThat(rseObject.get(SessionEndedMetric.WAS_STOPPED_KEY)).isInstanceOf(Boolean::class.javaObjectType)
 
         val viewCountsObject = rseObject.get(SessionEndedMetric.VIEW_COUNTS_KEY) as JSONObject
         assertThat(
             viewCountsObject.get(SessionEndedMetric.VIEW_COUNTS_TOTAL_KEY)
-        ).isInstanceOf(java.lang.Integer::class.java)
+        ).isInstanceOf(Int::class.javaObjectType)
         assertThat(
             viewCountsObject.get(SessionEndedMetric.VIEW_COUNTS_BG_KEY)
-        ).isInstanceOf(java.lang.Integer::class.java)
+        ).isInstanceOf(Int::class.javaObjectType)
         assertThat(
             viewCountsObject.get(SessionEndedMetric.VIEW_COUNTS_APP_LAUNCH_KEY)
-        ).isInstanceOf(java.lang.Integer::class.java)
+        ).isInstanceOf(Int::class.javaObjectType)
         assertThat(
             viewCountsObject.get(SessionEndedMetric.VIEW_COUNT_WITH_HAS_REPLAY)
-        ).isInstanceOf(java.lang.Integer::class.java)
+        ).isInstanceOf(Int::class.javaObjectType)
 
         val sdkErrorsCount = rseObject.get(SessionEndedMetric.SDK_ERRORS_COUNT_KEY) as JSONObject
 
         assertThat(
             sdkErrorsCount.get(SessionEndedMetric.SDK_ERRORS_COUNT_TOTAL_KEY)
-        ).isInstanceOf(java.lang.Integer::class.java)
+        ).isInstanceOf(Int::class.javaObjectType)
         assertThat(
             sdkErrorsCount.get(SessionEndedMetric.SDK_ERRORS_COUNT_BY_KIND_KEY)
         ).isInstanceOf(JSONObject::class.java)
@@ -559,23 +559,23 @@ class RumSessionEndedMetricTest {
         val noViewCounts = rseObject.get(SessionEndedMetric.NO_VIEW_EVENTS_COUNT_KEY) as JSONObject
         assertThat(
             noViewCounts.get(SessionEndedMetric.NO_VIEW_EVENTS_COUNT_ACTIONS_KEY)
-        ).isInstanceOf(java.lang.Integer::class.java)
+        ).isInstanceOf(Int::class.javaObjectType)
         assertThat(
             noViewCounts.get(SessionEndedMetric.NO_VIEW_EVENTS_COUNT_RESOURCES_KEY)
-        ).isInstanceOf(java.lang.Integer::class.java)
+        ).isInstanceOf(Int::class.javaObjectType)
         assertThat(
             noViewCounts.get(SessionEndedMetric.NO_VIEW_EVENTS_COUNT_ERRORS_KEY)
-        ).isInstanceOf(java.lang.Integer::class.java)
+        ).isInstanceOf(Int::class.javaObjectType)
         assertThat(
             noViewCounts.get(SessionEndedMetric.NO_VIEW_EVENTS_COUNT_LONG_TASKS_KEY)
-        ).isInstanceOf(java.lang.Integer::class.java)
+        ).isInstanceOf(Int::class.javaObjectType)
 
         assertThat(rseObject.get(SessionEndedMetric.HAS_BACKGROUND_EVENTS_TRACKING_ENABLED_KEY))
-            .isInstanceOf(java.lang.Boolean::class.java)
+            .isInstanceOf(Boolean::class.javaObjectType)
 
         val nptOffset = rseObject.get(SessionEndedMetric.NTP_OFFSET_KEY) as JSONObject
-        assertThat(nptOffset.get(SessionEndedMetric.NTP_OFFSET_AT_START_KEY)).isInstanceOf(java.lang.Long::class.java)
-        assertThat(nptOffset.get(SessionEndedMetric.NTP_OFFSET_AT_END_KEY)).isInstanceOf(java.lang.Long::class.java)
+        assertThat(nptOffset.get(SessionEndedMetric.NTP_OFFSET_AT_START_KEY)).isInstanceOf(Long::class.javaObjectType)
+        assertThat(nptOffset.get(SessionEndedMetric.NTP_OFFSET_AT_END_KEY)).isInstanceOf(Long::class.javaObjectType)
     }
 
     private fun stubSessionEndedMetric(

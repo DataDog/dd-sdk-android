@@ -39,7 +39,7 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
      * @return the mutations as [MobileSegment.MobileIncrementalData.MobileMutationData]
      * describing changes from `oldArray` to `newArray` or null if no difference was found.
      */
-    @Suppress("LongMethod", "ComplexMethod", "NestedBlockDepth", "ReturnCount")
+    @Suppress("LongMethod", "ComplexMethod", "CyclomaticComplexMethod", "NestedBlockDepth", "ReturnCount")
     internal fun resolveMutations(
         oldSnapshot: List<MobileSegment.Wireframe>,
         newSnapshot: List<MobileSegment.Wireframe>

@@ -5,16 +5,17 @@
  */
 
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.java11
+import com.datadog.gradle.config.java17
 import com.datadog.gradle.utils.createJsonModelsGenerationTask
 
 plugins {
+    // Applied before the Android plugin on purpose (not under "Analysis tools"): AGP 9 applies
+    // the Kotlin plugin itself, and ktlint-gradle 14.2.0 registers its Android source-set tasks
+    // twice when it comes after the Kotlin plugin.
+    id("ktlint")
+
     // Build
     id("com.android.library")
-    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
-    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
-    id("ktlint")
-    kotlin("android")
     id("datadogBuildConfig")
 
     // Publishing
@@ -22,8 +23,6 @@ plugins {
     signing
 }
 
-// TODO RUM-18189 Support new AGP DSL
-@Suppress("DEPRECATION")
 android {
     defaultConfig {
         compileSdk = AndroidConfig.TARGET_SDK
@@ -31,7 +30,7 @@ android {
     }
     namespace = "com.datadog.tools.benchmark"
     compileOptions {
-        java11()
+        java17()
     }
 }
 

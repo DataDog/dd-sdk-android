@@ -592,7 +592,7 @@ internal class BatchFileOrchestratorTest {
                 forge.anAlphabeticalString()
             }
 
-            previousFile?.writeText(previousData[0])
+            previousFile.writeText(previousData[0])
 
             for (i in 1 until MAX_ITEM_PER_BATCH) {
                 val file = testedOrchestrator.getWritableFile(1L)
@@ -612,7 +612,7 @@ internal class BatchFileOrchestratorTest {
                 .doesNotExist()
                 .hasParent(fakeRootDir)
             assertThat(nextFile.name.toLong()).isEqualTo(newFileTimestamp)
-            assertThat(previousFile?.readText())
+            assertThat(previousFile.readText())
                 .isEqualTo(previousData.joinToString(separator = ""))
 
             argumentCaptor<BatchClosedMetadata> {

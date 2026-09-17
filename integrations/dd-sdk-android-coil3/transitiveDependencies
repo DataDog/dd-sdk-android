@@ -12,7 +12,7 @@ io.coil-kt.coil3:coil-network-core-android:3.0.4                :   58 Kb
 io.coil-kt.coil3:coil-network-okhttp-jvm:3.0.4                  :   19 Kb
 org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.21                  :  963 b 
 org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.21                  :  968 b 
-org.jetbrains.kotlin:kotlin-stdlib:2.0.21                       : 1706 Kb
+org.jetbrains.kotlin:kotlin-stdlib:2.3.20                       : 1762 Kb
 org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0          :   18 Kb
 org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.9.0         : 1429 Kb
 org.jetbrains:annotations:23.0.0                                :   28 Kb

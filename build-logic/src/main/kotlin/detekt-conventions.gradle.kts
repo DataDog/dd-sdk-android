@@ -1,5 +1,4 @@
-import com.android.build.api.variant.LibraryAndroidComponentsExtension
-import io.gitlab.arturbosch.detekt.Detekt
+import dev.detekt.gradle.Detekt
 
 /*
  * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
@@ -8,7 +7,7 @@ import io.gitlab.arturbosch.detekt.Detekt
  */
 
 plugins {
-    id("io.gitlab.arturbosch.detekt")
+    id("dev.detekt")
 }
 
 dependencies {
@@ -24,7 +23,7 @@ val detektConfigFiles = listOf(
 
 detekt {
     config.setFrom(detektConfigFiles)
-    ignoredVariants = listOf("release")
+    ignoredVariants.set(listOf("release"))
 }
 
 tasks.withType<Detekt>().configureEach {
@@ -32,36 +31,21 @@ tasks.withType<Detekt>().configureEach {
     reports {
         sarif.required = false
         html.required = false
-        xml.required = false
-        txt.required = false
-        md.required = false
+        checkstyle.required = false
+        markdown.required = false
     }
 }
 
 // Disable the default task named "detekt" since it does not run type resolution
-// Use it purely as a nicely named umbrella task
-tasks.detekt {
+// Use it purely as a nicely named umbrella task.
+// `detektMain`/`detektTest` are the per-variant aggregate tasks registered by the Detekt Android
+// integration; they carry the compile classpath, so they do run type resolution. Their nested
+// components (unit tests, android tests, test fixtures) are covered by `detektTest`.
+tasks.named<Detekt>("detekt") {
     isEnabled = false
 
     dependsOn(
         tasks.named("detektMain"),
         tasks.named("detektTest")
     )
-}
-
-// testFixtures is an Android source set and isn't picked up by the detekt/AGP on AGP 8, this should
-// be able to be deleted in AGP 9 and covered by `detektTest`
-extensions.getByType<LibraryAndroidComponentsExtension>().onVariants { variant ->
-    if (variant.name == "debug") {
-        variant.testFixtures?.let { testFixtures ->
-            val detektTestFixtures = tasks.register<Detekt>("detektTestFixtures") {
-                source(layout.projectDirectory.dir("src/testFixtures/kotlin"))
-                config.setFrom(detektConfigFiles)
-                classpath.setFrom(testFixtures.compileClasspath)
-            }
-            tasks.detekt {
-                dependsOn(detektTestFixtures)
-            }
-        }
-    }
 }

@@ -215,7 +215,7 @@ internal class DDSpanContextTest : DDCoreSpecification() {
             "789",
             tracer.propagationTagsFactory.empty(),
             TracePropagationStyle.DATADOG
-        ).withRequestContextDataAppSec("palceholder")
+        ).withRequestContextDataAppSec("placeholder")
 
         val top = tracer
             .buildSpan(instrumentationName, "top")
@@ -334,20 +334,20 @@ internal class DDSpanContextTest : DDCoreSpecification() {
 
         @JvmStatic
         fun provideMetricsForTest(): Stream<Arguments> = Stream.of(
-            Arguments.of(java.lang.Integer::class.java, 0),
-            Arguments.of(java.lang.Integer::class.java, Int.MAX_VALUE),
-            Arguments.of(java.lang.Integer::class.java, Int.MIN_VALUE),
-            Arguments.of(java.lang.Short::class.java, Short.MAX_VALUE),
-            Arguments.of(java.lang.Short::class.java, Short.MIN_VALUE),
-            Arguments.of(java.lang.Float::class.java, Float.MAX_VALUE),
-            Arguments.of(java.lang.Float::class.java, Float.MIN_VALUE),
-            Arguments.of(java.lang.Double::class.java, Double.MAX_VALUE),
-            Arguments.of(java.lang.Double::class.java, Double.MIN_VALUE),
-            Arguments.of(java.lang.Float::class.java, 1f),
-            Arguments.of(java.lang.Double::class.java, 1.0),
-            Arguments.of(java.lang.Float::class.java, 0.5f),
-            Arguments.of(java.lang.Double::class.java, 0.5),
-            Arguments.of(java.lang.Integer::class.java, 0x55)
+            Arguments.of(Int::class.javaObjectType, 0),
+            Arguments.of(Int::class.javaObjectType, Int.MAX_VALUE),
+            Arguments.of(Int::class.javaObjectType, Int.MIN_VALUE),
+            Arguments.of(Short::class.javaObjectType, Short.MAX_VALUE),
+            Arguments.of(Short::class.javaObjectType, Short.MIN_VALUE),
+            Arguments.of(Float::class.javaObjectType, Float.MAX_VALUE),
+            Arguments.of(Float::class.javaObjectType, Float.MIN_VALUE),
+            Arguments.of(Double::class.javaObjectType, Double.MAX_VALUE),
+            Arguments.of(Double::class.javaObjectType, Double.MIN_VALUE),
+            Arguments.of(Float::class.javaObjectType, 1f),
+            Arguments.of(Double::class.javaObjectType, 1.0),
+            Arguments.of(Float::class.javaObjectType, 0.5f),
+            Arguments.of(Double::class.javaObjectType, 0.5),
+            Arguments.of(Int::class.javaObjectType, 0x55)
         )
 
         @JvmStatic

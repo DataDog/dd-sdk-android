@@ -38,7 +38,7 @@ internal class DefaultAccessibilityReader(
         applicationContext.getSystemServiceAs<AccessibilityManager>(Context.ACCESSIBILITY_SERVICE),
     private val secureWrapper: SecureWrapper = SecureWrapper(),
     private val globalWrapper: GlobalWrapper = GlobalWrapper(),
-    private val handler: Handler = Handler(Looper.getMainLooper())
+    handler: Handler = Handler(Looper.getMainLooper())
 ) : InfoProvider<AccessibilityInfo>, ComponentCallbacks {
 
     private val displayInversionListener = object : ContentObserver(handler) {
@@ -86,6 +86,7 @@ internal class DefaultAccessibilityReader(
     }
 
     @Deprecated("Deprecated in Java")
+    @Suppress("OVERRIDE_DEPRECATION")
     override fun onLowMemory() {
         // do nothing - there's nothing we're holding onto that takes up any significant memory
     }

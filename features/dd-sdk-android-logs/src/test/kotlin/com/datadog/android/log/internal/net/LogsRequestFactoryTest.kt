@@ -48,16 +48,15 @@ internal class LogsRequestFactoryTest {
         )
     }
 
-    @Suppress("NAME_SHADOWING")
     @Test
     fun `M create a proper request W create()`(
         @Forgery batchData: List<RawBatchEvent>,
         @Forgery executionContext: RequestExecutionContext,
-        @StringForgery batchMetadata: String,
+        @StringForgery fakeBatchMetadata: String,
         forge: Forge
     ) {
         // Given
-        val batchMetadata = forge.aNullable { batchMetadata.toByteArray() }
+        val batchMetadata = forge.aNullable { fakeBatchMetadata.toByteArray() }
 
         // When
         val request = testedFactory.create(fakeDatadogContext, executionContext, batchData, batchMetadata)
@@ -90,12 +89,11 @@ internal class LogsRequestFactoryTest {
         )
     }
 
-    @Suppress("NAME_SHADOWING")
     @Test
     fun `M create a proper request W create() { custom endpoint }`(
         @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeEndpoint: String,
         @Forgery batchData: List<RawBatchEvent>,
-        @StringForgery batchMetadata: String,
+        @StringForgery fakeBatchMetadata: String,
         @Forgery executionContext: RequestExecutionContext,
         forge: Forge
     ) {
@@ -104,7 +102,7 @@ internal class LogsRequestFactoryTest {
             customEndpointUrl = fakeEndpoint,
             internalLogger = InternalLogger.UNBOUND
         )
-        val batchMetadata = forge.aNullable { batchMetadata.toByteArray() }
+        val batchMetadata = forge.aNullable { fakeBatchMetadata.toByteArray() }
 
         // When
         val request = testedFactory.create(fakeDatadogContext, executionContext, batchData, batchMetadata)
