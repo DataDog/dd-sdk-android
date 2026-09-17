@@ -213,6 +213,9 @@ object HttpSpec {
         /** gRPC with JSON content type. */
         const val APPLICATION_GRPC_JSON: String = "application/grpc+json"
 
+        /** Generic/opaque binary payload content type. */
+        const val APPLICATION_OCTET_STREAM: String = "application/octet-stream"
+
         /**
          * Returns a list of all content type values.
          */
@@ -222,7 +225,8 @@ object HttpSpec {
             TEXT_EVENT_STREAM,
             APPLICATION_GRPC,
             APPLICATION_GRPC_PROTO,
-            APPLICATION_GRPC_JSON
+            APPLICATION_GRPC_JSON,
+            APPLICATION_OCTET_STREAM
         )
 
         /**
@@ -234,11 +238,24 @@ object HttpSpec {
             return contentType != null && contentType in STREAM_CONTENT_TYPES
         }
 
+        /**
+         * Checks if the given content type is binary media (image/video/audio/octet-stream) —
+         * large, opaque payloads with no useful signal to justify buffering.
+         * @param contentType the content type to check
+         * @return true if the content type is binary media, false otherwise
+         */
+        fun isBinaryMedia(contentType: String?): Boolean {
+            if (contentType == null) return false
+            return contentType == APPLICATION_OCTET_STREAM || BINARY_MEDIA_PREFIXES.any { contentType.startsWith(it) }
+        }
+
         private val STREAM_CONTENT_TYPES = setOf(
             TEXT_EVENT_STREAM,
             APPLICATION_GRPC,
             APPLICATION_GRPC_PROTO,
             APPLICATION_GRPC_JSON
         )
+
+        private val BINARY_MEDIA_PREFIXES = setOf("image/", "video/", "audio/")
     }
 }

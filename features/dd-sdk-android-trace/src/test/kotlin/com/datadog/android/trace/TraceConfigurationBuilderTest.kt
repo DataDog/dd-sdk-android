@@ -34,6 +34,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
+@OptIn(ExperimentalTraceApi::class)
 internal class TraceConfigurationBuilderTest {
 
     private val testedBuilder: TraceConfiguration.Builder = TraceConfiguration.Builder()
@@ -58,6 +59,9 @@ internal class TraceConfigurationBuilderTest {
         assertThat(traceConfiguration.customEndpointUrl).isNull()
         assertThat(traceConfiguration.eventMapper)
             .isInstanceOf(NoOpSpanEventMapper::class.java)
+        assertThat(traceConfiguration.networkInfoEnabled).isTrue()
+        assertThat(traceConfiguration.statsComputationEnabled).isFalse()
+        assertThat(traceConfiguration.customStatsEndpointUrl).isNull()
     }
 
     @Test
@@ -99,5 +103,31 @@ internal class TraceConfigurationBuilderTest {
         // Then
         assertThat(traceConfiguration.customEndpointUrl).isNull()
         assertThat(traceConfiguration.eventMapper).isEqualTo(mockEventMapper)
+    }
+
+    @Test
+    fun `M build configuration with client stats W setStatsComputationEnabled() and build()`(
+        @BoolForgery clientStats: Boolean
+    ) {
+        // When
+        val config = testedBuilder
+            .setStatsComputationEnabled(clientStats)
+            .build()
+
+        // Then
+        assertThat(config.statsComputationEnabled).isEqualTo(clientStats)
+    }
+
+    @Test
+    fun `M build configuration with custom stats site W useCustomStatsEndpoint() and build()`(
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") statsEndpointUrl: String
+    ) {
+        // When
+        val config = testedBuilder
+            .useCustomStatsEndpoint(statsEndpointUrl)
+            .build()
+
+        // Then
+        assertThat(config.customStatsEndpointUrl).isEqualTo(statsEndpointUrl)
     }
 }

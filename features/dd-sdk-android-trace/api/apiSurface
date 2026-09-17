@@ -40,6 +40,8 @@ data class com.datadog.android.trace.TraceConfiguration
     fun useCustomEndpoint(String): Builder
     fun setEventMapper(com.datadog.android.trace.event.SpanEventMapper): Builder
     fun setNetworkInfoEnabled(Boolean): Builder
+    fun setStatsComputationEnabled(Boolean): Builder
+    fun useCustomStatsEndpoint(String): Builder
     fun build(): TraceConfiguration
 enum com.datadog.android.trace.TraceContextInjection
   - ALL
@@ -92,13 +94,15 @@ object com.datadog.android.trace.internal._TraceInternalProxy
   fun setSdkV2Compatible(com.datadog.android.trace.api.tracer.DatadogTracerBuilder): com.datadog.android.trace.api.tracer.DatadogTracerBuilder
   fun addThrowable(com.datadog.android.trace.api.span.DatadogSpan, Throwable, Byte)
   fun activateSpan(com.datadog.android.trace.api.tracer.DatadogTracer, com.datadog.android.trace.api.span.DatadogSpan, Boolean): com.datadog.android.trace.api.scope.DatadogScope?
+  fun isDefaultTracer(com.datadog.android.trace.api.tracer.DatadogTracer): Boolean
   fun mergeBaggage(String?, String): String
   fun createApmNetworkInstrumentation(String, com.datadog.android.trace.ApmNetworkInstrumentationConfiguration)
 fun com.datadog.android.core.sampling.Sampler<com.datadog.android.trace.api.span.DatadogSpan>.effectiveSampleRate(com.datadog.android.trace.api.span.DatadogSpan): Float?
+fun com.datadog.android.trace.api.span.DatadogSpan.finishRumAware(Boolean, Boolean, Boolean)
 fun com.datadog.android.trace.api.span.DatadogSpanContext?.isDropped(): Boolean
 fun Int?.isDroppedPriority(): Boolean
 data class com.datadog.android.trace.internal.net.RequestTracingState
-  constructor(com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder, Boolean = false, com.datadog.android.trace.api.span.DatadogSpan? = null, Float? = null)
+  constructor(com.datadog.android.api.instrumentation.network.HttpRequestInfoBuilder, Boolean = false, com.datadog.android.trace.api.span.DatadogSpan? = null, Float? = null, Boolean)
   fun createRequestInfo(): com.datadog.android.api.instrumentation.network.HttpRequestInfo
 fun RequestTracingState?.toAttributesMap(String, String, String): Map<String, Any?>
 class com.datadog.android.trace.internal.net.SessionRebasedSampler : com.datadog.android.core.sampling.Sampler<com.datadog.android.trace.api.span.DatadogSpan>, SpanAwareSampler

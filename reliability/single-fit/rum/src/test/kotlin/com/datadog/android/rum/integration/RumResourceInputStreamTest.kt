@@ -11,9 +11,13 @@ import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
+import com.datadog.android.rum._RumInternalProxy
+import com.datadog.android.rum.configuration.RumViewEventWriteConfig
 import com.datadog.android.rum.integration.tests.assertj.hasRumEvent
+import com.datadog.android.rum.integration.tests.assertj.hasRumViewUpdateEvent
 import com.datadog.android.rum.integration.tests.elmyr.RumIntegrationForgeConfigurator
 import com.datadog.android.rum.integration.tests.utils.MainLooperTestConfiguration
+import com.datadog.android.rum.model.ViewUpdateEvent
 import com.datadog.android.rum.resource.RumResourceInputStream
 import com.datadog.android.tests.assertj.StubEventsAssert.Companion.assertThat
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -57,6 +61,12 @@ class RumResourceInputStreamTest {
         stubSdkCore = StubSDKCore(forge)
         val fakeRumConfiguration = RumConfiguration.Builder(fakeApplicationId)
             .trackNonFatalAnrs(false)
+            .apply {
+                _RumInternalProxy.setRumViewEventWriteConfig(
+                    builder = this@apply,
+                    config = RumViewEventWriteConfig.FullViewOnlyAtStart
+                )
+            }
             .build()
         Rum.enable(fakeRumConfiguration, stubSdkCore)
     }
@@ -102,14 +112,26 @@ class RumResourceInputStreamTest {
                 hasViewName(viewName)
                 hasResourceUrl(resourceUrl)
             }
-            .hasRumEvent(index = 2) {
-                hasService(stubSdkCore.getDatadogContext().service)
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasSource("android")
-                hasType("view")
-                hasViewName(viewName)
-                hasResourceCount(1)
+            .hasRumViewUpdateEvent(index = 2) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    resource { hasCount(1) }
+                    hasNoAction()
+                    hasNoError()
+                    hasLoadingTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoOptionalViewFields()
+                }
+                hasNoOptionalFields()
             }
     }
 
@@ -157,15 +179,26 @@ class RumResourceInputStreamTest {
                 hasViewName(viewName)
                 hasErrorType(error.javaClass.name)
             }
-            .hasRumEvent(index = 2) {
-                hasService(stubSdkCore.getDatadogContext().service)
-                hasApplicationId(fakeApplicationId)
-                hasSessionType("user")
-                hasSource("android")
-                hasType("view")
-                hasViewName(viewName)
-                hasResourceCount(0)
-                hasErrorCount(1)
+            .hasRumViewUpdateEvent(index = 2) {
+                application { hasId(fakeApplicationId) }
+                session {
+                    hasType(ViewUpdateEvent.ViewUpdateEventSessionType.USER)
+                    hasIsActive(null)
+                }
+                view {
+                    hasUrl(viewKey)
+                    error { hasCount(1) }
+                    hasNoAction()
+                    hasNoResource()
+                    hasLoadingTime(null)
+                    hasNoCrash()
+                    hasNoLongTask()
+                    hasNoFrozenFrame()
+                    hasNoFrustration()
+                    hasNoCustomTimings()
+                    hasNoOptionalViewFields()
+                }
+                hasNoOptionalFields()
             }
     }
 

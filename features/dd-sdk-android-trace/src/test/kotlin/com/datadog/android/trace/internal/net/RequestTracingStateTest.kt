@@ -62,7 +62,7 @@ internal class RequestTracingStateTest {
     fun `M return request info W createRequestInfo()`() {
         // Given
         whenever(mockRequestBuilder.build()) doReturn mockRequestInfo
-        val state = RequestTracingState(requestInfoBuilder = mockRequestBuilder)
+        val state = RequestTracingState(requestInfoBuilder = mockRequestBuilder, isDefaultTracer = false)
 
         // When / Then
         assertThat(state.createRequestInfo()).isSameAs(mockRequestInfo)
@@ -86,7 +86,8 @@ internal class RequestTracingStateTest {
         val state = RequestTracingState(
             requestInfoBuilder = mockRequestBuilder,
             isSampled = true,
-            span = null
+            span = null,
+            isDefaultTracer = false
         )
 
         // When
@@ -102,7 +103,8 @@ internal class RequestTracingStateTest {
         val state = RequestTracingState(
             requestInfoBuilder = mockRequestBuilder,
             isSampled = false,
-            span = mockSpan
+            span = mockSpan,
+            isDefaultTracer = false
         )
 
         // When
@@ -129,7 +131,8 @@ internal class RequestTracingStateTest {
             requestInfoBuilder = mockRequestBuilder,
             isSampled = true,
             span = mockSpan,
-            sampleRate = fakeSampleRate
+            sampleRate = fakeSampleRate,
+            isDefaultTracer = false
         )
 
         // When
@@ -157,7 +160,8 @@ internal class RequestTracingStateTest {
             requestInfoBuilder = mockRequestBuilder,
             isSampled = true,
             span = mockSpan,
-            sampleRate = null
+            sampleRate = null,
+            isDefaultTracer = false
         )
 
         // When

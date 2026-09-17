@@ -725,7 +725,7 @@ internal class PerfettoProfilerTest {
 
     @ParameterizedTest(name = "startReason: {0}")
     @EnumSource(ProfilingStartReason::class)
-    internal fun `M include start_reason in telemetry W profiling finishes { startReason }`(
+    fun `M include start_reason in telemetry W profiling finishes { startReason }`(
         startReason: ProfilingStartReason,
         @LongForgery(min = 0L) fakeStartTime: Long,
         @LongForgery(min = 0L) fakeDuration: Long
@@ -1078,13 +1078,14 @@ internal class PerfettoProfilerTest {
 
     @Test
     fun `M dispatch to registered callback W triggerListener fires`(
-        @Forgery fakeEvent: ProfilingAnrDetectedEvent
+        @Forgery fakeEvent: ProfilingAnrDetectedEvent,
+        @Forgery fakeResult: PerfettoResult
     ) {
         // When
-        testedProfiler.triggerListener.onAnrDetected(fakeEvent)
+        testedProfiler.triggerListener.onAnrDetected(fakeEvent, fakeResult)
 
         // Then
-        verify(mockProfilerCallback).onAnrDetected(fakeEvent)
+        verify(mockProfilerCallback).onAnrDetected(fakeEvent, fakeResult)
     }
 
     @Test
@@ -1339,15 +1340,17 @@ internal class PerfettoProfilerTest {
         var stopTime: Long = 0L
 
         var resultCallbackTime: Long = 0L
-        private var queryIncrement: Int = 0
+        private var wallQueryIncrement: Int = 0
+        private var elapsedQueryIncrement: Int = 0
 
         fun reset() {
-            queryIncrement = 0
+            wallQueryIncrement = 0
+            elapsedQueryIncrement = 0
         }
 
         override fun getDeviceTimestampMillis(): Long {
-            val current = queryIncrement
-            queryIncrement++
+            val current = wallQueryIncrement
+            wallQueryIncrement++
             return when (current) {
                 0 -> startTime
                 1 -> stopTime
@@ -1365,7 +1368,15 @@ internal class PerfettoProfilerTest {
 
         override fun getServerOffsetMillis(): Long = 0L
 
-        override fun getDeviceElapsedRealtimeMillis(): Long = 0L
+        override fun getDeviceElapsedRealtimeMillis(): Long {
+            val current = elapsedQueryIncrement
+            elapsedQueryIncrement++
+            return when (current) {
+                0 -> startTime
+                1 -> stopTime
+                else -> resultCallbackTime
+            }
+        }
         override fun getDeviceUptimeMillis(): Long = 0L
     }
 }

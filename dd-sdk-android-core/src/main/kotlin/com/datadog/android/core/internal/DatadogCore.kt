@@ -284,7 +284,7 @@ internal class DatadogCore(
                     internalLogger,
                     callable
                 )
-                .getSafe("DatadogCore.getFeatureContext-$featureName", internalLogger)
+                ?.getSafe("DatadogCore.getFeatureContext-$featureName", internalLogger)
                 .orEmpty()
         } else {
             @Suppress("UnsafeThirdPartyFunctionCall") // not 3rd party
@@ -379,7 +379,7 @@ internal class DatadogCore(
                 Callable {
                     coreFeature.trackingConsentProvider.getConsent()
                 }
-            ).getSafe("getTrackingConsent", internalLogger) ?: TrackingConsent.NOT_GRANTED
+            )?.getSafe("getTrackingConsent", internalLogger) ?: TrackingConsent.NOT_GRANTED
         }
 
     override val rootStorageDir: File
@@ -443,7 +443,7 @@ internal class DatadogCore(
                     with(contextProvider) { if (this is NoOpContextProvider) null else getContext(withFeatureContexts) }
                 }
             )
-            .getSafe("getDatadogContext", internalLogger)
+            ?.getSafe("getDatadogContext", internalLogger)
     }
 
     override val remoteConfiguration: RemoteConfiguration?
@@ -494,16 +494,21 @@ internal class DatadogCore(
 
         applyAdditionalConfiguration(mutableConfig.additionalConfig)
 
+        setupRemoteConfiguration(mutableConfig)
+
+        mutableConfig = mutableConfig.copy(
+            crashReportsEnabled = remoteConfiguration?.rum?.crashReportsEnabled
+                ?: mutableConfig.crashReportsEnabled
+        )
+
         if (mutableConfig.crashReportsEnabled) {
             initializeCrashReportFeature()
         }
 
-        setupRemoteConfiguration(mutableConfig)
-
         setupLifecycleMonitorCallback(appContext)
 
         setupShutdownHook()
-        sendCoreConfigurationTelemetryEvent(configuration)
+        sendCoreConfigurationTelemetryEvent(mutableConfig)
     }
 
     internal fun setupRemoteConfiguration(configuration: Configuration) {
@@ -726,11 +731,13 @@ internal class DatadogCore(
         removeShutdownHook()
     }
 
-    /**
-     * Flushes all stored data (send everything right now).
-     */
     @WorkerThread
-    internal fun flushStoredData() {
+    override fun flushContextThread() {
+        coreFeature.flushContextThread()
+    }
+
+    @WorkerThread
+    override fun flushStoredData() {
         // We need to drain and shutdown the executors first to make sure we avoid duplicated
         // data due to async operations.
         coreFeature.drainAndShutdownExecutors()

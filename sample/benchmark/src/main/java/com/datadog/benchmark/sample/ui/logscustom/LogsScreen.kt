@@ -53,7 +53,7 @@ internal fun LogsScreen(
 
         ExpandedItemView(
             titleText = "Payload Size",
-            items = LogPayloadSize.values().toList(),
+            items = LogPayloadSize.entries.toList(),
             headerText = state.config.payloadSize.toString(),
             itemTextFactory = { it.toString() },
             onClick = { dispatch(LogsScreenAction.SelectPayloadSize(it)) }

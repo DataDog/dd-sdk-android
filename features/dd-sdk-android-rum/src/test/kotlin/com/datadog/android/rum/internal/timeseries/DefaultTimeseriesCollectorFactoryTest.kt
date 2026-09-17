@@ -91,7 +91,7 @@ internal class DefaultTimeseriesCollectorFactoryTest {
 
     private fun createFactory(
         totalRamBytes: Long,
-        configuration: TimeseriesConfiguration = TimeseriesConfiguration.Builder().build()
+        configuration: TimeseriesConfiguration = TimeseriesConfiguration.DEFAULT
     ) = DefaultTimeseriesCollectorFactory(
         sdkCore = mockSdkCore,
         configuration = configuration,
@@ -162,9 +162,7 @@ internal class DefaultTimeseriesCollectorFactoryTest {
     @Test
     fun `M build only cpu pipeline W create() { configuration collects only cpu }`() {
         // Given
-        val fakeConfiguration = TimeseriesConfiguration.Builder()
-            .collectOnly(TimeseriesType.CPU)
-            .build()
+        val fakeConfiguration = TimeseriesConfiguration(setOf(TimeseriesType.CPU))
         val testedFactory = createFactory(0L, fakeConfiguration)
 
         // When
@@ -184,9 +182,7 @@ internal class DefaultTimeseriesCollectorFactoryTest {
         @LongForgery(min = 1L) fakeTotalRamBytes: Long
     ) {
         // Given
-        val fakeConfiguration = TimeseriesConfiguration.Builder()
-            .collectOnly(TimeseriesType.MEMORY)
-            .build()
+        val fakeConfiguration = TimeseriesConfiguration(setOf(TimeseriesType.MEMORY))
         val testedFactory = createFactory(fakeTotalRamBytes, fakeConfiguration)
 
         // When
@@ -205,9 +201,7 @@ internal class DefaultTimeseriesCollectorFactoryTest {
         @LongForgery(min = 1L) fakeTotalRamBytes: Long
     ) {
         // Given
-        val fakeConfiguration = TimeseriesConfiguration.Builder()
-            .collectOnly(*emptyArray())
-            .build()
+        val fakeConfiguration = TimeseriesConfiguration(emptySet())
         val testedFactory = createFactory(fakeTotalRamBytes, fakeConfiguration)
 
         // When

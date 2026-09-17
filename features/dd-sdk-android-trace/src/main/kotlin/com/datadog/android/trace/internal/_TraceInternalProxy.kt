@@ -94,6 +94,13 @@ object _TraceInternalProxy {
     }
 
     /**
+     * Returns true if [tracer] is the SDK's built-in tracer, meaning it routes spans through
+     * CoreTraceWriter which honors the FORCE_DROP_SPAN tag. Custom tracer implementations
+     * do not honor that tag, so callers must call drop() instead of setTag+finish() for them.
+     */
+    fun isDefaultTracer(tracer: DatadogTracer): Boolean = tracer is DatadogTracerAdapter
+
+    /**
      * Merges two baggage headers into a single string representation. The [oldHeader] represents the
      * previously existing baggage header, and the [newHeader] represents the new baggage information
      * to be merged with the old one.

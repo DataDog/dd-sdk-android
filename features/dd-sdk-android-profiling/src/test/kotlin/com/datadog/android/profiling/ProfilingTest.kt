@@ -14,6 +14,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.remote.model.RemoteConfiguration
 import com.datadog.android.internal.data.SharedPreferencesStorage
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.Profiling.UNEXPECTED_SDK_CORE_TYPE
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.NoOpProfiler
@@ -76,6 +77,9 @@ class ProfilingTest {
     private lateinit var mockProfilingExecutor: ExecutorService
 
     @Mock
+    private lateinit var mockTimeProvider: TimeProvider
+
+    @Mock
     private lateinit var mockProfilingManager: ProfilingManager
 
     @Mock
@@ -91,6 +95,7 @@ class ProfilingTest {
     fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.name) doReturn fakeInstanceName
+        whenever(mockSdkCore.timeProvider) doReturn mockTimeProvider
         whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mockProfilingExecutor
         whenever(mockSdkCore.remoteConfiguration) doReturn null
         whenever(mockContext.getSystemService(ProfilingManager::class.java)) doReturn mockProfilingManager
@@ -198,7 +203,9 @@ class ProfilingTest {
         whenever(mockCore1.isCoreActive()) doReturn true
         whenever(mockCore1.name) doReturn fakeCore1Name
         whenever(mockCore1.internalLogger) doReturn mockInternalLogger
+        whenever(mockCore1.timeProvider) doReturn mockTimeProvider
         whenever(mockCore2.internalLogger) doReturn mockInternalLogger
+        whenever(mockCore2.timeProvider) doReturn mockTimeProvider
         Profiling.enable(fakeConfiguration, mockCore1)
 
         // When
@@ -226,7 +233,9 @@ class ProfilingTest {
         val mockCore1 = mock<InternalSdkCore>()
         val mockCore2 = mock<InternalSdkCore>()
         whenever(mockCore1.internalLogger) doReturn mockInternalLogger
+        whenever(mockCore1.timeProvider) doReturn mockTimeProvider
         whenever(mockCore2.internalLogger) doReturn mockInternalLogger
+        whenever(mockCore2.timeProvider) doReturn mockTimeProvider
         whenever(mockCore1.isCoreActive()) doReturn true
         Profiling.enable(fakeConfiguration, mockCore1)
         assertThat(Profiling.currentRegisteredCore?.get()).isEqualTo(mockCore1)

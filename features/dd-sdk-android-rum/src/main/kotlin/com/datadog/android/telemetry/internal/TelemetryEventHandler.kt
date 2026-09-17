@@ -341,6 +341,7 @@ internal class TelemetryEventHandler(
         val tracerApi = resolveTracerApi(traceContext)
         val openTelemetryApiVersion = resolveOpenTelemetryApiVersion(tracerApi, traceContext)
         val useTracing = (traceFeature != null && tracerApi != null)
+        val useClientSideStats = sdkCore.getFeature(Feature.TRACING_CLIENT_STATS_FEATURE_NAME) != null
 
         val okhttpInterceptorSampleRate = traceContext[OKHTTP_INTERCEPTOR_SAMPLE_RATE] as? Float?
         val tracingHeaderTypes =
@@ -412,6 +413,7 @@ internal class TelemetryEventHandler(
                     traceSampleRate = okhttpInterceptorSampleRate?.toLong(),
                     selectedTracingPropagators = tracingHeaderTypes?.toSelectedTracingPropagators(),
                     trackResourceHeaders = trackResourceHeaders,
+                    useClientSideStats = useClientSideStats,
                     remoteConfigurationId = datadogContext.remoteConfigurationId,
                     remoteConfiguration = rcMeta?.let {
                         TelemetryConfigurationEvent.RemoteConfiguration(
@@ -589,7 +591,7 @@ internal class TelemetryEventHandler(
     private fun Map<String, Any?>.getFloat(key: LocalAttribute.Key) = get(key.toString()) as? Float
 
     private fun MutableMap<String, Any?>.cleanUpInternalAttributes() = toMutableMap().apply {
-        LocalAttribute.Key.values().forEach { key -> remove(key.toString()) }
+        LocalAttribute.Key.entries.forEach { key -> remove(key.toString()) }
     }
 
     private fun MutableMap<String, Any?>.addDiagnosticsAttributes() = apply {

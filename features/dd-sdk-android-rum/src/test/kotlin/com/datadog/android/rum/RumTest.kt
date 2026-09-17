@@ -219,7 +219,7 @@ internal class RumTest {
         // Given
         stubFeatureInitialization(fakePackageName)
         val fakeType = forge.aValueFrom(TimeseriesType::class.java)
-        val timeseriesConfiguration = TimeseriesConfiguration.Builder().collectOnly(fakeType).build()
+        val timeseriesConfiguration = TimeseriesConfiguration(setOf(fakeType))
 
         // When
         Rum.enable(fakeRumConfiguration.withTimeseries(timeseriesConfiguration), mockSdkCore)
@@ -238,7 +238,7 @@ internal class RumTest {
     ) {
         // Given
         stubFeatureInitialization(fakePackageName)
-        val fakeTimeseriesConfiguration = TimeseriesConfiguration.Builder().collectOnly().build()
+        val fakeTimeseriesConfiguration = TimeseriesConfiguration(emptySet())
 
         // When
         Rum.enable(fakeRumConfiguration.withTimeseries(fakeTimeseriesConfiguration), mockSdkCore)

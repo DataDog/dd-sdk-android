@@ -86,7 +86,7 @@ public data class User(
 
         public companion object {
             @JvmStatic
-            public fun fromJson(jsonString: String): ContactType = values().first {
+            public fun fromJson(jsonString: String): ContactType = entries.first {
                 it.jsonValue == jsonString
             }
         }

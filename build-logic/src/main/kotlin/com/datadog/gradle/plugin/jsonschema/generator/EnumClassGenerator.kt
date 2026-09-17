@@ -131,7 +131,7 @@ class EnumClassGenerator(
             )
             .returns(definition.asKotlinTypeName(rootTypeName))
 
-        funBuilder.beginControlFlow("return values().first")
+        funBuilder.beginControlFlow("return entries.first")
         funBuilder.addStatement(
             if (definition.type == JsonType.NUMBER) "it.%L.toString() == %L" else "it.%L == %L",
             Identifier.PARAM_JSON_VALUE,

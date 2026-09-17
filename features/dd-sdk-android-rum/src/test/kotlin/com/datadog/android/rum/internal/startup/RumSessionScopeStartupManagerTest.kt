@@ -158,7 +158,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         val fakeSource = if (isValidSource) {
             forge.anElementFrom(
-                ViewEvent.ViewEventSource.values().map { it.toJson().asString }
+                ViewEvent.ViewEventSource.entries.map { it.toJson().asString }
             )
         } else {
             forge.anAlphabeticalString()

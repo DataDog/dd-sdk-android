@@ -160,6 +160,7 @@ import(test),org.junit,EPL-2.0,Copyright 2015-2019 the original author or author
 import(test),org.junit.jupiter,EPL-2.0,Copyright 2015-2019 the original author or authors
 import(test),org.junit.platform,EPL-2.0,Copyright 2015-2019 the original author or authors
 import(test),org.junit.vintage,EPL-2.0,Copyright 2015-2019 the original author or authors
+import(test),org.msgpack,Apache-2.0,Copyright © 2008-2021 the original author or authors
 import(test),org.mockito,MIT,Copyright (c) 2007 Mockito contributors
 import(test),org.mockito.kotlin,MIT,"Copyright (c) 2016 Niek Haarman, Copyright (c) 2007 Mockito contributors"
 import(test),org.objenesis,Apache-2.0,"Copyright (c) 2003-2013, Objenesis Team and all contributors"

@@ -240,9 +240,11 @@ public final class com/datadog/android/internal/network/HttpSpec$ContentType {
 	public static final field APPLICATION_GRPC_JSON Ljava/lang/String;
 	public static final field APPLICATION_GRPC_PROTO Ljava/lang/String;
 	public static final field APPLICATION_JSON Ljava/lang/String;
+	public static final field APPLICATION_OCTET_STREAM Ljava/lang/String;
 	public static final field INSTANCE Lcom/datadog/android/internal/network/HttpSpec$ContentType;
 	public static final field TEXT_EVENT_STREAM Ljava/lang/String;
 	public static final field TEXT_PLAIN Ljava/lang/String;
+	public final fun isBinaryMedia (Ljava/lang/String;)Z
 	public final fun isStream (Ljava/lang/String;)Z
 	public final fun values ()Ljava/util/List;
 }
@@ -812,6 +814,20 @@ public final class com/datadog/android/internal/utils/DDCoreSubscription$Compani
 	public final fun create ()Lcom/datadog/android/internal/utils/DDCoreSubscription;
 }
 
+public abstract interface class com/datadog/android/internal/utils/DiffBuilder {
+	public abstract fun anythingChanged ()Z
+	public abstract fun diffEquals (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public abstract fun diffList (Lkotlin/jvm/functions/Function1;)Ljava/util/List;
+	public abstract fun diffMap (Lkotlin/jvm/functions/Function1;)Ljava/util/Map;
+	public abstract fun diffMerge (Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;)Ljava/lang/Object;
+	public abstract fun diffRequired (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+}
+
+public final class com/datadog/android/internal/utils/DiffBuilderKt {
+	public static final fun computeDiffIfChanged (Ljava/lang/Object;Ljava/lang/Object;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static final fun computeDiffRequired (Ljava/lang/Object;Ljava/lang/Object;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+}
+
 public class com/datadog/android/internal/utils/FixedWindowCallback : android/view/Window$Callback {
 	public fun <init> (Landroid/view/Window$Callback;)V
 	public fun dispatchGenericMotionEvent (Landroid/view/MotionEvent;)Z
@@ -894,6 +910,7 @@ public final class com/datadog/android/internal/utils/ThreadExtKt {
 }
 
 public final class com/datadog/android/internal/utils/ThrowableExtKt {
+	public static final fun loggableMessage (Ljava/lang/Throwable;)Ljava/lang/String;
 	public static final fun loggableStackTrace (Ljava/lang/Throwable;)Ljava/lang/String;
 }
 

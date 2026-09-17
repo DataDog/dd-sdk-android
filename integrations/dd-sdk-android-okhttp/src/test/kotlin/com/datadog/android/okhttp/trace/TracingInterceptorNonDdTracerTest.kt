@@ -67,6 +67,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -1022,6 +1023,44 @@ internal open class TracingInterceptorNonDdTracerTest {
         verify(mockSpan).setTag("error.stack", throwable.loggableStackTrace())
         verify(mockSpan).setTag("span.kind", "client")
         verify(mockSpan).finish()
+    }
+
+    @Test
+    fun `M drop span W intercept() {custom global tracer, not sampled, successful request}`(
+        @IntForgery(min = 200, max = 600) statusCode: Int
+    ) {
+        // Given - backwards-compat guarantee: custom tracers do not honour FORCE_DROP_SPAN,
+        // so sampled-out spans must be dropped via drop(), not setTag+finish.
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        stubChain(mockChain, statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        verify(mockSpan).drop()
+        verify(mockSpan, never()).finish()
+    }
+
+    @Test
+    fun `M drop span W intercept() {custom global tracer, not sampled, throwing request}`(
+        @Forgery throwable: Throwable
+    ) {
+        // Given
+        whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        whenever(mockChain.request()) doReturn fakeRequest
+        whenever(mockChain.proceed(any())) doThrow throwable
+
+        // When
+        assertThrows<Throwable>(throwable.message.orEmpty()) {
+            testedInterceptor.intercept(mockChain)
+        }
+
+        // Then
+        verify(mockSpan).drop()
+        verify(mockSpan, never()).finish()
     }
 
     @Test

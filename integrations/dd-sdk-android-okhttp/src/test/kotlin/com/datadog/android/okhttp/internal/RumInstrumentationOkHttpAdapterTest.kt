@@ -111,7 +111,7 @@ internal class RumInstrumentationOkHttpAdapterTest {
         // Given
         val fakeRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder())
             .addTag(UUID::class.java, fakeUuid)
-        val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder)
+        val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder, isDefaultTracer = false)
         whenever(mockRegistry.get(mockCall)) doReturn fakeState
         val fakeResponse = forgeResponse(statusCode)
         whenever(mockChain.proceed(any())) doReturn fakeResponse
@@ -134,7 +134,7 @@ internal class RumInstrumentationOkHttpAdapterTest {
         // Given
         val fakeRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder())
             .addTag(UUID::class.java, fakeUuid)
-        val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder)
+        val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder, isDefaultTracer = false)
         whenever(mockRegistry.get(mockCall)) doReturn fakeState
         val fakeException = IOException("network error")
         whenever(mockChain.proceed(any())) doThrow fakeException
@@ -205,7 +205,7 @@ internal class RumInstrumentationOkHttpAdapterTest {
         // Given
         val fakeRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder())
             .addTag(UUID::class.java, fakeUuid)
-        val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder)
+        val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder, isDefaultTracer = false)
         whenever(mockRegistry.get(mockCall)) doReturn fakeState
         val fakeResponse = forgeResponse(statusCode)
         whenever(mockChain.proceed(any())) doReturn fakeResponse
@@ -228,7 +228,7 @@ internal class RumInstrumentationOkHttpAdapterTest {
         // Given
         val fakeRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder())
             .addTag(UUID::class.java, fakeUuid)
-        val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder)
+        val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder, isDefaultTracer = false)
         whenever(mockRegistry.get(mockCall)) doReturn fakeState
         val fakeResponse = forgeResponse(statusCode)
         whenever(mockChain.proceed(any())) doReturn fakeResponse
@@ -255,7 +255,7 @@ internal class RumInstrumentationOkHttpAdapterTest {
         // Given
         val fakeRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder())
             .addTag(UUID::class.java, fakeUuid)
-        val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder)
+        val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder, isDefaultTracer = false)
         var callCount = 0
         whenever(mockRegistry.get(mockCall)).thenAnswer {
             callCount++
@@ -293,7 +293,7 @@ internal class RumInstrumentationOkHttpAdapterTest {
 
         val fakeRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder())
             .addTag(UUID::class.java, fakeUuid)
-        val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder)
+        val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder, isDefaultTracer = false)
         whenever(mockRegistry.get(mockCall)) doReturn fakeState
         val fakeResponse = forgeResponse(statusCode)
         whenever(mockChain.proceed(any())) doReturn fakeResponse
@@ -322,7 +322,7 @@ internal class RumInstrumentationOkHttpAdapterTest {
 
         val fakeRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder())
             .addTag(UUID::class.java, fakeUuid)
-        val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder)
+        val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder, isDefaultTracer = false)
         whenever(mockRegistry.get(mockCall)) doReturn fakeState
         val fakeResponse = forgeResponse(statusCode)
         whenever(mockChain.proceed(any())) doReturn fakeResponse
@@ -349,7 +349,7 @@ internal class RumInstrumentationOkHttpAdapterTest {
 
         val fakeRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder())
             .addTag(UUID::class.java, fakeUuid)
-        val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder)
+        val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder, isDefaultTracer = false)
         whenever(mockRegistry.get(mockCall)) doReturn fakeState
         val fakeResponse = forgeResponse(statusCode)
         whenever(mockChain.proceed(any())) doReturn fakeResponse
@@ -378,7 +378,7 @@ internal class RumInstrumentationOkHttpAdapterTest {
 
         val fakeRequestBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder())
             .addTag(UUID::class.java, fakeUuid)
-        val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder)
+        val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder, isDefaultTracer = false)
         whenever(mockRegistry.get(mockCall)) doReturn fakeState
         val fakeResponse = forgeResponse(statusCode)
         whenever(mockChain.proceed(any())) doReturn fakeResponse
@@ -409,7 +409,8 @@ internal class RumInstrumentationOkHttpAdapterTest {
         )
         val fakeDistributedTracingState = RequestTracingState(
             requestInfoBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder())
-                .addTag(UUID::class.java, fakeUuid)
+                .addTag(UUID::class.java, fakeUuid),
+            isDefaultTracer = false
         )
         whenever(mockDistributedTracingInstrumentation.onRequest(any())) doReturn fakeDistributedTracingState
         whenever(mockChain.proceed(any())) doReturn forgeResponse(statusCode)
@@ -435,7 +436,8 @@ internal class RumInstrumentationOkHttpAdapterTest {
         val fakeDistributedTracingState = RequestTracingState(
             requestInfoBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder())
                 .addTag(UUID::class.java, fakeUuid)
-                .addHeader("x-datadog-trace-id", fakeTraceId)
+                .addHeader("x-datadog-trace-id", fakeTraceId),
+            isDefaultTracer = false
         )
         whenever(mockDistributedTracingInstrumentation.onRequest(any())) doReturn fakeDistributedTracingState
         whenever(mockChain.proceed(any())) doReturn forgeResponse(statusCode)
@@ -462,7 +464,8 @@ internal class RumInstrumentationOkHttpAdapterTest {
         )
         val fakeDistributedTracingState = RequestTracingState(
             requestInfoBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder())
-                .addTag(UUID::class.java, fakeUuid)
+                .addTag(UUID::class.java, fakeUuid),
+            isDefaultTracer = false
         )
         whenever(mockDistributedTracingInstrumentation.onRequest(any())) doReturn fakeDistributedTracingState
         whenever(mockChain.proceed(any())) doReturn forgeResponse(statusCode)
@@ -487,7 +490,8 @@ internal class RumInstrumentationOkHttpAdapterTest {
         )
         val fakeDistributedTracingState = RequestTracingState(
             requestInfoBuilder = OkHttpRequestInfoBuilder(fakeRequest.newBuilder())
-                .addTag(UUID::class.java, fakeUuid)
+                .addTag(UUID::class.java, fakeUuid),
+            isDefaultTracer = false
         )
         whenever(mockDistributedTracingInstrumentation.onRequest(any())) doReturn fakeDistributedTracingState
         val fakeException = IOException("network error")

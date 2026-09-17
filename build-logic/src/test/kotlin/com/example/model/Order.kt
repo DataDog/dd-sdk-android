@@ -86,7 +86,7 @@ public data class Order(
 
         public companion object {
             @JvmStatic
-            public fun fromJson(jsonString: String): Size = values().first {
+            public fun fromJson(jsonString: String): Size = entries.first {
                 it.jsonValue == jsonString
             }
         }

@@ -17,34 +17,49 @@ internal class RumViewEventFilter(
     fun filterOutRedundantViewEvents(batch: List<RawBatchEvent>): List<RawBatchEvent> {
         val maxDocVersionByViewId = mutableMapOf<String, Long>()
         val viewMetaByEvent = mutableMapOf<RawBatchEvent, RumEventMeta.View>()
+        val viewUpdateMetaByEvent = mutableMapOf<RawBatchEvent, RumEventMeta.ViewUpdate>()
 
         batch.forEach {
             val eventMeta = eventMetaDeserializer.deserialize(it.metadata)
-            if (eventMeta is RumEventMeta.View) {
-                viewMetaByEvent += it to eventMeta
-                val viewId = eventMeta.viewId
-                val documentVersion = eventMeta.documentVersion
-                val maxDocVersionSeen = maxDocVersionByViewId[viewId]
-                if (maxDocVersionSeen == null) {
-                    maxDocVersionByViewId[viewId] = documentVersion
-                } else {
-                    maxDocVersionByViewId[viewId] = max(documentVersion, maxDocVersionSeen)
+            when (eventMeta) {
+                is RumEventMeta.View -> {
+                    viewMetaByEvent += it to eventMeta
+                    val viewId = eventMeta.viewId
+                    val documentVersion = eventMeta.documentVersion
+                    val maxDocVersionSeen = maxDocVersionByViewId[viewId]
+                    if (maxDocVersionSeen == null) {
+                        maxDocVersionByViewId[viewId] = documentVersion
+                    } else {
+                        maxDocVersionByViewId[viewId] = max(documentVersion, maxDocVersionSeen)
+                    }
                 }
+                is RumEventMeta.ViewUpdate -> viewUpdateMetaByEvent += it to eventMeta
+                else -> {}
             }
         }
 
         return batch.filter {
-            if (viewMetaByEvent.containsKey(it)) {
-                @Suppress("UnsafeThirdPartyFunctionCall") // we checked the key before
-                val viewMeta = viewMetaByEvent.getValue(it)
-
-                // we need to leave only view events with accessibility OR view event with a max doc version
-                // for a give viewId in the batch, because backend will do the same during the reduce process
-                @Suppress("UnsafeThirdPartyFunctionCall") // if there is a meta, there is a max doc version
-                viewMeta.hasAccessibility == true ||
-                    viewMeta.documentVersion == maxDocVersionByViewId.getValue(viewMeta.viewId)
-            } else {
-                true
+            val viewMeta = viewMetaByEvent[it]
+            val viewUpdateMeta = viewUpdateMetaByEvent[it]
+            when {
+                viewMeta != null -> {
+                    // Keep only the View event with the highest documentVersion per viewId.
+                    // hasAccessibility check is kept for backward compat with older batches on disk
+                    // written before accessibility was always included in every ViewEvent.
+                    @Suppress(
+                        "UnsafeThirdPartyFunctionCall"
+                    ) // maxDocVersionByViewId always has viewId if viewMeta exists
+                    viewMeta.hasAccessibility == true ||
+                        viewMeta.documentVersion == maxDocVersionByViewId.getValue(viewMeta.viewId)
+                }
+                viewUpdateMeta != null -> {
+                    val maxViewDocVersion = maxDocVersionByViewId[viewUpdateMeta.viewId]
+                    // Keep a ViewUpdate only if there is no full View event in the same batch with a
+                    // higher documentVersion. A newer full View supersedes any preceding diffs since
+                    // the backend would apply the full View last during the reduce process anyway.
+                    maxViewDocVersion == null || maxViewDocVersion <= viewUpdateMeta.documentVersion
+                }
+                else -> true
             }
         }
     }

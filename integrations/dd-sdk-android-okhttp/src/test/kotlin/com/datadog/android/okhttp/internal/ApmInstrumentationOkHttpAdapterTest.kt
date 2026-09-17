@@ -107,7 +107,8 @@ internal class ApmInstrumentationOkHttpAdapterTest {
         val mockRequestBuilder = mockRequestInfoBuilder(modifiedRequestInfo)
         val fakeTracingState = RequestTracingState(
             requestInfoBuilder = mockRequestBuilder,
-            isSampled = true
+            isSampled = true,
+            isDefaultTracer = false
         )
         whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn fakeTracingState
 
@@ -139,7 +140,8 @@ internal class ApmInstrumentationOkHttpAdapterTest {
         val mockRequestBuilder = mockRequestInfoBuilder(modifiedRequestInfo)
         val fakeTracingState = RequestTracingState(
             requestInfoBuilder = mockRequestBuilder,
-            isSampled = true
+            isSampled = true,
+            isDefaultTracer = false
         )
         whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn fakeTracingState
 
@@ -199,7 +201,8 @@ internal class ApmInstrumentationOkHttpAdapterTest {
         val mockRequestBuilder = mockRequestInfoBuilder(modifiedRequestInfo)
         val fakeTracingState = RequestTracingState(
             requestInfoBuilder = mockRequestBuilder,
-            isSampled = true
+            isSampled = true,
+            isDefaultTracer = false
         )
         whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn fakeTracingState
 
@@ -222,7 +225,8 @@ internal class ApmInstrumentationOkHttpAdapterTest {
         val mockRequestBuilder = mockRequestInfoBuilder(null)
         val fakeTracingState = RequestTracingState(
             requestInfoBuilder = mockRequestBuilder,
-            isSampled = true
+            isSampled = true,
+            isDefaultTracer = false
         )
         whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn fakeTracingState
 
@@ -312,7 +316,8 @@ internal class ApmInstrumentationOkHttpAdapterTest {
         val mockRequestBuilder = mockRequestInfoBuilder(modifiedRequestInfo)
         val fakeTracingState = RequestTracingState(
             requestInfoBuilder = mockRequestBuilder,
-            isSampled = true
+            isSampled = true,
+            isDefaultTracer = false
         )
         whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn fakeTracingState
         whenever(mockChain.proceed(any())) doReturn forgeResponse(statusCode)
@@ -342,7 +347,8 @@ internal class ApmInstrumentationOkHttpAdapterTest {
         val mockRequestBuilder = mockRequestInfoBuilder(modifiedRequestInfo)
         val fakeTracingState = RequestTracingState(
             requestInfoBuilder = mockRequestBuilder,
-            isSampled = true
+            isSampled = true,
+            isDefaultTracer = false
         )
         whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn fakeTracingState
 
@@ -380,7 +386,8 @@ internal class ApmInstrumentationOkHttpAdapterTest {
         val mockRequestBuilder = mockRequestInfoBuilder(modifiedRequestInfo)
         val fakeTracingState = RequestTracingState(
             requestInfoBuilder = mockRequestBuilder,
-            isSampled = true
+            isSampled = true,
+            isDefaultTracer = false
         )
         whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn fakeTracingState
 
@@ -411,7 +418,8 @@ internal class ApmInstrumentationOkHttpAdapterTest {
         val mockRequestBuilder = mockRequestInfoBuilder(tracedRequestInfo)
         val fakeTracingState = RequestTracingState(
             requestInfoBuilder = mockRequestBuilder,
-            isSampled = true
+            isSampled = true,
+            isDefaultTracer = false
         )
         whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn fakeTracingState
 
@@ -447,7 +455,8 @@ internal class ApmInstrumentationOkHttpAdapterTest {
         val mockRequestBuilder = mockRequestInfoBuilder(modifiedRequestInfo)
         val fakeTracingState = RequestTracingState(
             requestInfoBuilder = mockRequestBuilder,
-            isSampled = true
+            isSampled = true,
+            isDefaultTracer = false
         )
         whenever(mockApmNetworkInstrumentation.onRequest(any())) doReturn fakeTracingState
 

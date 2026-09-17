@@ -121,6 +121,7 @@ object Rum {
 
     // region private
 
+    @Suppress("LongMethod")
     private fun createMonitor(
         sdkCore: InternalSdkCore,
         rumFeature: RumFeature
@@ -166,7 +167,7 @@ object Rum {
             lastInteractionIdentifier = rumFeature.lastInteractionIdentifier,
             slowFramesListener = rumFeature.slowFramesListener,
             rumSessionTypeOverride = rumFeature.configuration.rumSessionTypeOverride,
-            accessibilitySnapshotManager = rumFeature.accessibilitySnapshotManager,
+            accessibilityInfoProvider = rumFeature.accessibilityReader,
             batteryInfoProvider = rumFeature.batteryInfoProvider,
             displayInfoProvider = rumFeature.displayInfoProvider,
             rumSessionScopeStartupManagerFactory = {
@@ -177,6 +178,8 @@ object Rum {
                 )
             },
             insightsCollector = rumFeature.insightsCollector,
+            viewEventMapper = rumFeature.configuration.viewEventMapper,
+            rumViewEventWriteConfig = rumFeature.configuration.rumViewEventWriteConfig,
             heatmapIdentifierRegistry = rumFeature.heatmapIdentifierRegistry,
             timeseriesCollectorFactory = rumFeature.timeseriesCollectorFactory
         )
