@@ -702,7 +702,7 @@ double-counting; it does not try to protect operator-owned files from deliberate
 adb shell settings put global window_animation_scale 0
 adb shell settings put global transition_animation_scale 0
 adb shell settings put global animator_duration_scale 0
-adb shell settings put global stay_on_while_plugged_in 3
+adb shell settings put global stay_on_while_plugged_in 15
 adb shell settings put system screen_off_timeout 1800000
 ```
 
@@ -1337,7 +1337,7 @@ also uninstalls and reinstalls the app, so it destroys app data too.
 | snapshots one Android user and scopes package, permission and activity operations to it | prevents personal/work-profile permission state or an implicit-user change from creating a mixed scenario. The selected user is stamped in the CSV and must match before files are pooled |
 | pre-grants every runtime permission your app declares in the verifier, benchmark and trace | removes the accumulating-dialog contamination and makes the liveness preflight test the same permission state as the measured launch. Only the selected Android user's state is parsed; custom permission names are included, and a rejected grant aborts instead of silently producing a partially granted scenario. Cleanup revokes only permissions changed from denied to granted; permissions already granted at install are preserved, and it never runs device-wide `pm reset-permissions`. A failed revoke preserves the original command result and names the permission to restore manually |
 | `window_animation_scale`, `transition_animation_scale`, `animator_duration_scale` → 0 | animation time is not startup time. All three are written, read back, and required to match before measurement; they are snapshotted and restored individually |
-| `stay_on_while_plugged_in`, `screen_off_timeout` | the screen must stay on for the whole run. Both writes are read back and a rejected or ignored value aborts before collection |
+| `stay_on_while_plugged_in`, `screen_off_timeout` | the screen must stay on for the whole run. The stay-awake bitmask covers AC, USB, wireless and dock power. Both writes are read back and a rejected or ignored value aborts before collection |
 | Wi-Fi enabled by default, or Wi-Fi **and** mobile data settings off when `AIRPLANE=1` | both arms must use the same controlled radio state. The settings are snapshotted, restored and read back: under `AIRPLANE=1` both must be exactly `0`; under `AIRPLANE=0` at least one must be `1`. Contradictory state aborts, while `ALLOW_UNVERIFIED_RADIOS=1` can accept unreadable settings. This proves only those settings. It does not prove association, validated internet, DNS, captive-portal state or reachability of the app's and Datadog's endpoints; keep that external lab condition stable yourself. Ethernet and USB tethering are not represented |
 | `cmd package compile -m <filter> -f` | a stable AOT profile |
 

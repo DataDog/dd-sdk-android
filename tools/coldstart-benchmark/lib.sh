@@ -355,7 +355,10 @@ dd_apply_keep_awake() {
   for setting in screen_off_timeout stay_on_while_plugged_in; do
     case "$setting" in
       screen_off_timeout) namespace=system; expected=1800000 ;;
-      stay_on_while_plugged_in) namespace=global; expected=3 ;;
+      # AC (1), USB (2), wireless (4) and dock (8). A wireless-adb device may
+      # have no AC/USB bit set, so 3 does not keep a wirelessly powered device
+      # awake through an hour-long benchmark.
+      stay_on_while_plugged_in) namespace=global; expected=15 ;;
     esac
     if ! "$ADB" shell settings put "$namespace" "$setting" "$expected" \
         >/dev/null 2>&1; then
@@ -366,7 +369,7 @@ dd_apply_keep_awake() {
   for setting in screen_off_timeout stay_on_while_plugged_in; do
     case "$setting" in
       screen_off_timeout) namespace=system; expected=1800000 ;;
-      stay_on_while_plugged_in) namespace=global; expected=3 ;;
+      stay_on_while_plugged_in) namespace=global; expected=15 ;;
     esac
     actual=$("$ADB" shell settings get "$namespace" "$setting" 2>/dev/null \
       | tr -d '\r') || actual=""

@@ -729,7 +729,10 @@ for ((_i=1; _i<=SETTLE_LAUNCHES; _i++)); do
   "$ADB" shell am force-stop --user "$DD_ANDROID_USER" "$PKG"
   sleep "$_SETTLE_PRE_SLEEP"
   "$ADB" shell logcat -c >/dev/null 2>&1 || true
-  _SETTLE_POST_CLEAR=$("$ADB" shell logcat -d 2>/dev/null | tr -d '\r') || true
+  _SETTLE_POST_CLEAR=$("$ADB" shell logcat -d 2>/dev/null | tr -d '\r') \
+    || die "settle launch $_i/$SETTLE_LAUNCHES: could not verify the post-clear logcat boundary
+       because 'logcat -d' failed. The buffer may still contain an earlier launch's
+       markers, so no new launch was attempted."
   _SETTLE_STALE=$(printf '%s\n' "$_SETTLE_POST_CLEAR" \
     | grep -cE "ActivityTaskManager: Displayed [a-zA-Z0-9_.]+/" || true)
   # Deliberately every package, not just $PKG: proving the buffer holds no Displayed
@@ -833,9 +836,15 @@ sleep 5
 # launch satisfy this capture's endpoint gate.
 if [ -n "$_ENDPOINT_REGEX" ]; then
   if [ -n "$_ENDPOINT_UID" ]; then
-    _post_clear=$("$ADB" shell logcat -d --uid="$_ENDPOINT_UID" 2>/dev/null | tr -d '\r') || true
+    _post_clear=$("$ADB" shell logcat -d --uid="$_ENDPOINT_UID" 2>/dev/null | tr -d '\r') \
+      || die "could not verify the post-clear logcat boundary for
+       TRACE_ENDPOINT=$TRACE_ENDPOINT because package-scoped 'logcat -d' failed.
+       An earlier endpoint marker could satisfy this capture, so it was not started."
   else
-    _post_clear=$("$ADB" shell logcat -d 2>/dev/null | tr -d '\r') || true
+    _post_clear=$("$ADB" shell logcat -d 2>/dev/null | tr -d '\r') \
+      || die "could not verify the post-clear logcat boundary for
+       TRACE_ENDPOINT=$TRACE_ENDPOINT because 'logcat -d' failed. An earlier
+       endpoint marker could satisfy this capture, so it was not started."
   fi
   _stale_endpoint=$(printf '%s\n' "$_post_clear" | grep -cE -- "$_ENDPOINT_REGEX" || true)
   [ "${_stale_endpoint:-0}" -eq 0 ] || die "'logcat -c' left a previous

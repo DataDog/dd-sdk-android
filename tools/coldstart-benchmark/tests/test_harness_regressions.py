@@ -434,9 +434,9 @@ class HarnessRegressionTests(unittest.TestCase):
             #!/usr/bin/env bash
             case "$*" in
               "shell settings put system screen_off_timeout 1800000") exit 0 ;;
-              "shell settings put global stay_on_while_plugged_in 3") exit 0 ;;
+              "shell settings put global stay_on_while_plugged_in 15") exit 0 ;;
               "shell settings get system screen_off_timeout") printf '1800000.0\n' ;;
-              "shell settings get global stay_on_while_plugged_in") printf '03.0\n' ;;
+              "shell settings get global stay_on_while_plugged_in") printf '015.0\n' ;;
               *) exit 1 ;;
             esac
             """,
@@ -455,7 +455,7 @@ class HarnessRegressionTests(unittest.TestCase):
             case "$*" in
               "shell settings put "*) exit 0 ;;
               "shell settings get system screen_off_timeout") printf '120000\n' ;;
-              "shell settings get global stay_on_while_plugged_in") printf '3\n' ;;
+              "shell settings get global stay_on_while_plugged_in") printf '15\n' ;;
               *) exit 1 ;;
             esac
             """,
@@ -482,6 +482,146 @@ class HarnessRegressionTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("device rejected keep-awake setting", result.stderr)
         self.assertIn("screen_off_timeout=1800000", result.stderr)
+
+    def test_post_clear_logcat_read_failures_abort_every_collection_boundary(self) -> None:
+        """A failed verifier read is unknown, never proof of a clean boundary."""
+        benchmark = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
+        capture = (HARNESS / "capture_trace.sh").read_text(encoding="utf-8")
+
+        def fragment(
+            source: str,
+            region: str,
+            start: str,
+            end: str,
+        ) -> str:
+            region_start = source.index(region)
+            start_offset = source.index(start, region_start)
+            end_offset = source.index(end, start_offset)
+            return source[start_offset:end_offset]
+
+        boundaries = (
+            (
+                "benchmark probe",
+                fragment(
+                    benchmark,
+                    "probe_datadog() {",
+                    '"$ADB" shell logcat -c',
+                    '  pout=$("$ADB" shell am start -W',
+                ),
+                "",
+            ),
+            (
+                "benchmark launch",
+                fragment(
+                    benchmark,
+                    "measure() {",
+                    '"$ADB" shell logcat -c',
+                    "    local out total displayed",
+                ),
+                "",
+            ),
+            (
+                "trace conditioning launch",
+                fragment(
+                    capture,
+                    "for ((_i=1; _i<=SETTLE_LAUNCHES; _i++)); do",
+                    '"$ADB" shell logcat -c',
+                    '  _SETTLE_OUT=$("$ADB" shell am start -W',
+                ),
+                "",
+            ),
+            (
+                "traced launch endpoint",
+                fragment(
+                    capture,
+                    "# For log-backed endpoints, prove",
+                    'if [ -n "$_ENDPOINT_REGEX" ]; then',
+                    'if [ -n "$_ENDPOINT_REGEX" ]; then\n  _ENDPOINT_FILE=',
+                ),
+                "",
+            ),
+            (
+                "benchmark package-scoped endpoint",
+                fragment(
+                    benchmark,
+                    "measure() {",
+                    '"$ADB" shell logcat -c',
+                    "    local out total displayed",
+                ),
+                "uid",
+            ),
+        )
+
+        for name, body, failed_read in boundaries:
+            with self.subTest(boundary=name):
+                app_trace_regex = "'app marker'" if failed_read == "uid" else "''"
+                adb = f"""
+                    #!/usr/bin/env bash
+                    case "$*" in
+                      "shell logcat -c") exit 23 ;;
+                      "shell logcat -d")
+                        [ "{failed_read}" = uid ] && exit 0
+                        exit 24 ;;
+                      "shell logcat -d --uid=123") exit 25 ;;
+                      *) printf 'unexpected adb call: %s\n' "$*" >&2; exit 90 ;;
+                    esac
+                """
+                shell = f"""
+                    set -euo pipefail
+                    die() {{ printf 'FATAL: %s\\n' "$*" >&2; exit 1; }}
+                    boundary() {{
+                      local arm=A i=1
+                      PKG_RE='com[.]example'
+                      DD_MARKERS_RE='Datadog marker'
+                      APP_TRACE_REGEX={app_trace_regex}
+                      PKG_UID=123
+                      _i=1
+                      SETTLE_LAUNCHES=1
+                      _ENDPOINT_REGEX='Fully drawn com[.]example/'
+                      _ENDPOINT_UID=''
+                      TRACE_ENDPOINT=ttfd
+                    {body}
+                      printf 'BOUNDARY_PASSED\\n'
+                    }}
+                    boundary
+                """
+                result = self.run_with_fake_adb(shell, adb)
+                self.assertNotEqual(result.returncode, 0, result.stderr)
+                self.assertIn("could not verify the post-clear logcat boundary", result.stderr)
+                self.assertNotIn("BOUNDARY_PASSED", result.stdout)
+
+    def test_failed_logcat_clear_is_accepted_when_the_verifier_read_is_clean(self) -> None:
+        """The readable clean snapshot is the proof; clear status is best-effort."""
+        source = (HARNESS / "coldstart_bench.sh").read_text(encoding="utf-8")
+        measure = source.index("measure() {")
+        start = source.index('"$ADB" shell logcat -c', measure)
+        end = source.index("    local out total displayed", start)
+        boundary = source[start:end]
+        result = self.run_with_fake_adb(
+            f"""
+            set -euo pipefail
+            die() {{ printf 'FATAL: %s\\n' "$*" >&2; exit 1; }}
+            verify_boundary() {{
+              local arm=A i=1
+              PKG_RE='com[.]example'
+              DD_MARKERS_RE='Datadog marker'
+              APP_TRACE_REGEX=''
+            {boundary}
+              printf 'BOUNDARY_PASSED\\n'
+            }}
+            verify_boundary
+            """,
+            """
+            #!/usr/bin/env bash
+            case "$*" in
+              "shell logcat -c") exit 23 ;;
+              "shell logcat -d") printf 'ordinary system chatter\n' ;;
+              *) exit 90 ;;
+            esac
+            """,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("BOUNDARY_PASSED", result.stdout)
 
     def test_background_dexopt_is_a_shared_fail_closed_precollection_gate(self) -> None:
         success = self.run_with_fake_adb(

@@ -683,7 +683,10 @@ probe_datadog() {
   local pout launch_rc=0 row_phase=probe probe_fg=NA
   local probe_post_clear probe_stale probe_log probe_ours probe_intruder probe_top
   "$ADB" shell logcat -c >/dev/null 2>&1 || true
-  probe_post_clear=$("$ADB" shell logcat -d 2>/dev/null | tr -d '\r') || true
+  probe_post_clear=$("$ADB" shell logcat -d 2>/dev/null | tr -d '\r') \
+    || die "[$arm] liveness probe: could not verify the post-clear logcat boundary
+       because 'logcat -d' failed. The buffer may still contain an earlier launch's
+       markers, so no new launch was attempted."
   probe_stale=$(printf '%s\n' "$probe_post_clear" \
     | grep -cE "ActivityTaskManager: Displayed [a-zA-Z0-9_.]+/" || true)
   # Every package, not just $PKG: an empty buffer is what makes a foreign draw seen
@@ -789,7 +792,10 @@ measure() {
     # Include every fixed pattern scraped later, not just the Android endpoints:
     # stale Datadog host markers would otherwise populate dd_enabled/init durations
     # from a previous launch even though logcat clearing failed.
-    _post_clear=$("$ADB" shell logcat -d 2>/dev/null | tr -d '\r') || true
+    _post_clear=$("$ADB" shell logcat -d 2>/dev/null | tr -d '\r') \
+      || die "[$arm] launch $i: could not verify the post-clear logcat boundary
+       because 'logcat -d' failed. The buffer may still contain an earlier launch's
+       markers, so no new launch was attempted."
     _stale=$(printf '%s\n' "$_post_clear" \
              | grep -cE "Displayed $PKG_RE/|Fully drawn $PKG_RE/|$DD_MARKERS_RE" || true)
     [ "${_stale:-0}" -eq 0 ] || die "[$arm] launch $i: 'logcat -c' left $_stale previous
@@ -798,7 +804,10 @@ measure() {
        Clearing logcat is likely denied on this device; fix that before measuring."
     _stale_app=0
     if [ -n "$APP_TRACE_REGEX" ]; then
-      _post_clear_app=$("$ADB" shell logcat -d --uid="$PKG_UID" 2>/dev/null | tr -d '\r') || true
+      _post_clear_app=$("$ADB" shell logcat -d --uid="$PKG_UID" 2>/dev/null | tr -d '\r') \
+        || die "[$arm] launch $i: could not verify the post-clear logcat boundary
+       for APP_TRACE_REGEX because package-scoped 'logcat -d' failed. An earlier
+       app marker could be attributed to this launch, so no new launch was attempted."
       # Do not use grep -q here. With pipefail and a large buffer, grep exits on an
       # early match, printf gets SIGPIPE, and the pipeline returns 141 -- turning a
       # real stale match into the false "clean" branch. grep -c consumes the input.

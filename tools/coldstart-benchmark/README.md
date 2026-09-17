@@ -413,9 +413,10 @@ timings are for harness validation only, never for reporting.
 - Keep the screen awake for the whole session. `capture_trace.sh` restores the screen timeout it
   found, so back-to-back captures on a device with a short timeout and a PIN will re-lock in the
   gap and every run after the first dies on the lockscreen check. During each run the benchmark
-  and trace write and read back both `screen_off_timeout` and `stay_on_while_plugged_in`; a rejected
-  or ignored request aborts before collection. Raise them yourself before a batch if the device
-  must also remain unlocked between captures, and put them back afterwards.
+  and trace write and read back both `screen_off_timeout` and `stay_on_while_plugged_in`; the latter
+  covers AC, USB, wireless and dock power. A rejected or ignored request aborts before collection.
+  Raise them yourself before a batch if the device must also remain unlocked between captures, and
+  put them back afterwards.
 - `capture_trace.sh` records **device-wide** process, thread and window data from every
   running app. Review a trace before sharing it.
 - Never compare emulator to device, or across device models.
