@@ -11,11 +11,10 @@ import android.app.Application
 import android.os.Bundle
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManagerImpl.Companion.MAX_TTID_DURATION_NS
-import com.datadog.android.rum.startup.AppStartupActivityPredicate
 import java.lang.ref.WeakReference
 import java.util.Collections
 import java.util.WeakHashMap
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 internal class RumAppStartupDetectorImpl(
@@ -24,7 +23,7 @@ internal class RumAppStartupDetectorImpl(
     private val appStartupTime: () -> Time,
     private val currentTime: () -> Time,
     private val listener: RumAppStartupDetector.Listener,
-    private val appStartupActivityPredicate: AppStartupActivityPredicate,
+    private val appStartupActivityPredicate: RumAppStartupDetector.ActivityPredicate,
     private val rumFirstDrawTimeReporter: RumFirstDrawTimeReporter
 ) : RumAppStartupDetector, Application.ActivityLifecycleCallbacks {
 
@@ -203,5 +202,6 @@ internal class RumAppStartupDetectorImpl(
 
     companion object {
         private val START_GAP_THRESHOLD_NS = 10.seconds.inWholeNanoseconds
+        internal val MAX_TTID_DURATION_NS = 1.minutes.inWholeNanoseconds
     }
 }

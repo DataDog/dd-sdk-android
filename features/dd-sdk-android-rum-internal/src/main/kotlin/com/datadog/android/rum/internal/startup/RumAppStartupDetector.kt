@@ -6,14 +6,14 @@
 
 package com.datadog.android.rum.internal.startup
 
+import android.app.Activity
 import android.app.Application
 import androidx.annotation.UiThread
-import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.startup.AppStartupActivityPredicate
 
-internal interface RumAppStartupDetector {
+interface RumAppStartupDetector {
     interface Listener {
         /**
          * Called when a startup scenario is detected.
@@ -22,25 +22,38 @@ internal interface RumAppStartupDetector {
         fun onTTIDComputed(scenario: RumStartupScenario, durationNs: Long, wasForwarded: Boolean)
     }
 
+    fun interface ActivityPredicate {
+        fun shouldTrackStartup(activity: Activity): Boolean
+    }
+
+    fun interface WarningLogger {
+        fun logWarning(message: String, throwable: Throwable?)
+    }
+
     @UiThread
     fun destroy()
 
     companion object {
         fun create(
             application: Application,
-            sdkCore: InternalSdkCore,
+            appStartTimeNs: Long,
+            timeProvider: TimeProvider,
             listener: Listener,
-            appStartupActivityPredicate: AppStartupActivityPredicate
+            activityPredicate: ActivityPredicate,
+            warningLogger: WarningLogger
         ): RumAppStartupDetector {
-            val rumFirstDrawTimeReporter = RumFirstDrawTimeReporter.create(sdkCore = sdkCore)
+            val rumFirstDrawTimeReporter = RumFirstDrawTimeReporter.create(
+                timeProvider = timeProvider,
+                warningLogger = warningLogger
+            )
 
             return RumAppStartupDetectorImpl(
                 application = application,
                 buildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
-                appStartupTime = { Time.fromNanoTime(sdkCore.appStartTimeNs, sdkCore.timeProvider) },
-                currentTime = { Time.now(sdkCore.timeProvider) },
+                appStartupTime = { Time.fromNanoTime(appStartTimeNs, timeProvider) },
+                currentTime = { Time.now(timeProvider) },
                 listener = listener,
-                appStartupActivityPredicate = appStartupActivityPredicate,
+                appStartupActivityPredicate = activityPredicate,
                 rumFirstDrawTimeReporter = rumFirstDrawTimeReporter
             )
         }

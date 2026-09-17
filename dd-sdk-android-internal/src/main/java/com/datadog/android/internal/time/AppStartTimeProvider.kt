@@ -4,9 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.time
+package com.datadog.android.internal.time
 
-internal interface AppStartTimeProvider {
+import com.datadog.android.internal.system.BuildSdkVersionProvider
+
+interface AppStartTimeProvider {
     /**
      * Provide the time the application started in nanoseconds from device boot, or our best guess
      * if the actual start time is not available.
@@ -18,4 +20,14 @@ internal interface AppStartTimeProvider {
      * if the actual start time is not available.
      */
     val appUptimeNs: Long
+
+    companion object {
+        fun create(
+            timeProviderFactory: () -> TimeProvider,
+            buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
+        ): AppStartTimeProvider = DefaultAppStartTimeProvider(
+            timeProviderFactory = timeProviderFactory,
+            buildSdkVersionProvider = buildSdkVersionProvider
+        )
+    }
 }

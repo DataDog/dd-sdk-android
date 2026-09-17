@@ -9,7 +9,7 @@ package com.datadog.android.rum.internal.startup
 import android.app.Activity
 import android.os.Handler
 import android.os.Looper
-import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistryImpl
 
 internal interface RumFirstDrawTimeReporter {
@@ -24,12 +24,15 @@ internal interface RumFirstDrawTimeReporter {
     fun subscribeToFirstFrameDrawn(activity: Activity, callback: Callback): Handle
 
     companion object {
-        fun create(sdkCore: InternalSdkCore): RumFirstDrawTimeReporter {
+        fun create(
+            timeProvider: TimeProvider,
+            warningLogger: RumAppStartupDetector.WarningLogger
+        ): RumFirstDrawTimeReporter {
             return RumFirstDrawTimeReporterImpl(
-                internalLogger = sdkCore.internalLogger,
-                timeProviderNs = { sdkCore.timeProvider.getDeviceElapsedTimeNanos() },
+                timeProviderNs = { timeProvider.getDeviceElapsedTimeNanos() },
                 windowCallbacksRegistry = RumWindowCallbacksRegistryImpl(),
-                handler = Handler(Looper.getMainLooper())
+                handler = Handler(Looper.getMainLooper()),
+                warningLogger = warningLogger
             )
         }
     }

@@ -117,6 +117,8 @@ object Rum {
         if (rumConfiguration.featureConfiguration.isTimeseriesConfigured()) {
             sdkCore.internalLogger.logApiUsage { InternalTelemetryEvent.ApiUsage.Timeseries() }
         }
+
+        rumFeature.attachPreLaunchRumAppStartupDetector()
     }
 
     // region private
