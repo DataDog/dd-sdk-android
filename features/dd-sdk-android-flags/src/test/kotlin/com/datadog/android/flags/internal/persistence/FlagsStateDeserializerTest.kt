@@ -7,6 +7,7 @@
 package com.datadog.android.flags.internal.persistence
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.flags.AssignmentProtection
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -317,6 +318,52 @@ internal class FlagsStateDeserializerTest {
         assertThat(result.evaluationContext.attributes["valid_string"]).isEqualTo(validString)
         assertThat(result.evaluationContext.attributes["valid_number"]).isEqualTo(validNumber)
         assertThat(result.evaluationContext.attributes["valid_boolean"]).isEqualTo(validBoolean)
+    }
+
+    @Test
+    fun `M preserve verified artifact W deserialize() { complete protected state }`(forge: Forge) {
+        // Given
+        val rawResponseBody = "{\"data\":{\"id\":\"subject-1\"}}"
+        val json = JSONObject(buildStateJson(forge.anAlphabeticalString(), JSONObject()))
+            .put("rawResponseBody", rawResponseBody)
+            .put(
+                "protectedEnvelope",
+                JSONObject()
+                    .put("protection", "SIGNED_AND_AUTHORIZED")
+                    .put("requestNonce", "000102030405060708090a0b0c0d0e0f")
+                    .put("responseStatus", 200)
+                    .put("authorizationPolicyVersion", "policy-v2")
+                    .put("rulesRevision", "rules-42")
+                    .put("issuedAt", 1_789_096_800L)
+                    .put("expiresAt", 1_789_097_100L)
+                    .put("certificateId", "certificate-id")
+                    .put("certificate", "certificate")
+                    .put("signature", "signature")
+            )
+
+        // When
+        val result = testedDeserializer.deserialize(json.toString())
+
+        // Then
+        checkNotNull(result)
+        assertThat(result.rawResponseBody).isEqualTo(rawResponseBody)
+        assertThat(result.protectedEnvelope?.protection)
+            .isEqualTo(AssignmentProtection.SIGNED_AND_AUTHORIZED)
+        assertThat(result.protectedEnvelope?.authorizationPolicyVersion).isEqualTo("policy-v2")
+        assertThat(result.protectedEnvelope?.rulesRevision).isEqualTo("rules-42")
+    }
+
+    @Test
+    fun `M return null W deserialize() { protected state is incomplete }`(forge: Forge) {
+        // Given
+        val json = JSONObject(buildStateJson(forge.anAlphabeticalString(), JSONObject()))
+            .put("rawResponseBody", "{\"data\":{}}")
+
+        // When
+        val result = testedDeserializer.deserialize(json.toString())
+
+        // Then
+        assertThat(result).isNull()
     }
 
     private fun buildFlagJson(): JSONObject = JSONObject().apply {
