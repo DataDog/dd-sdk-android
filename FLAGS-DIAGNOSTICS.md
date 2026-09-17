@@ -7,8 +7,8 @@ The sample app runs network diagnostics on startup to verify the Datadog feature
 1. **Configured site** — logs which `DatadogSite` is active and the intake endpoint URL
 2. **Flags CDN host** — computes the exact CDN hostname the SDK will call
 3. **DNS resolution** — resolves both the flags CDN host and the intake host, logs IP addresses or failure
-4. **HTTP reachability (Flags CDN HEAD)** — quick TCP/TLS probe, no auth required
-5. **HTTP reachability (Exposures intake HEAD)** — quick TCP/TLS probe
+4. **HTTP reachability (Flags CDN HEAD)** — credential-free TCP/TLS probe with presented certificate chain, platform trust result, proxy/route, and negotiated TLS details
+5. **HTTP reachability (Exposures intake HEAD)** — the same TLS diagnostics for intake
 6. **POST probe (Flags CDN)** — fires a properly-shaped `precompute-assignments` request with your token, logs HTTP status code and response body
 7. **Flag snapshot** — once the SDK client reaches `Ready` state, logs all loaded flag keys, types, and variants
 
@@ -145,3 +145,100 @@ adb logcat -s FlagsDiagnostics,Datadog
 ```
 
 `Datadog.setVerbosity(Log.VERBOSE)` is set in the sample app — all SDK-internal logs appear under the `Datadog` tag, including the verbose HTTP error details added to `PrecomputedAssignmentsDownloader`.
+
+## TLS / certificate failures
+
+Startup also logs Android version/API/security patch, model/hardware, app target SDK and
+debuggable state, Network Security Configuration resource, device clock, and installed
+system/user CA counts. Installed CA counts do **not** imply that the app trusts those CAs.
+Apps targeting API 24+ normally do not trust user-installed CAs unless explicitly configured.
+
+Each HEAD probe uses a fresh connection and a recording trust manager which logs the
+**server-presented chain before validation**, including on rejected handshakes:
+
+- Subject and issuer, serial number, CA basic constraint, signature algorithm.
+- Validity dates, certificate SHA-256 fingerprint, public-key/SPKI SHA-256 fingerprint
+  (colon-separated hex, not the base64 `sha256/...` format used by OkHttp pins).
+- Subject alternative names (SANs).
+- Android's hostname-aware platform trust result and full failure stack/cause chain.
+- On trust success, the validated chain's final certificate subject and fingerprint.
+- Selected proxy and actual connection address; negotiated TLS version/cipher on success.
+
+These probes still enforce Android's hostname-specific trust policy and OkHttp's hostname
+verification. They do not install a CA, trust all certificates, disable hostname verification,
+or change the SDK/authenticated POST client. Redirects and connection retries are disabled
+for these HEAD probes; each call has a 20-second timeout. A separate client/connection is
+used, so its observed route/chain is diagnostic evidence, not a capture of the SDK's own
+connection. A successful platform trust check alone is not proof that hostname verification
+or any later pin check passed; the final HEAD result determines overall probe success.
+
+### Collecting a complete run
+
+Start log capture **before** launching the app, then retain output through the diagnostics
+END marker (both HEAD probes may take up to 20 seconds each):
+
+```bash
+adb logcat -v threadtime -s FlagsDiagnostics Datadog > flags-diagnostics.log
+# In another terminal, launch/restart the sample app.
+```
+
+Review logs before sharing: certificate subjects/SANs and proxy addresses may identify
+internal infrastructure. Existing POST/flag snapshot diagnostics can contain response data
+and flag names. The new TLS logger does not log request headers or client tokens.
+
+### Interpreting certificate evidence
+
+- **Corporate/security-product issuer + trust-anchor failure:** supports HTTPS inspection
+  using a CA the Android app does not trust. Compare with an IT-approved inspection exemption.
+- **Public CA + trust-anchor failure:** compare emulator CA store/API level, app trust config,
+  and supplied intermediates with the working device. Missing intermediates can also cause this.
+- **No presented-chain lines:** failure may precede certificate validation (DNS, TCP, proxy,
+  protocol negotiation); inspect the HEAD exception and route logs.
+- **DIRECT proxy:** does not exclude a transparent proxy, host VPN, or endpoint security agent.
+- **Different leaf fingerprints:** not sufficient proof of interception; CDNs can use multiple
+  valid certificates. Compare issuers and chains too.
+- **Root missing from presented chain:** normal; servers generally send the leaf and intermediates,
+  while the trust anchor comes from the client. The presented list is not the validated path.
+
+Compare the same APK on emulator and real device, noting their network paths. Do not fix a
+trust-anchor failure by disabling validation. If inspection is intentional, use an approved
+CA via debug-only configuration or an IT-managed inspection exemption.
+
+## Inspecting, clearing, or refreshing certificate stores
+
+Collect the failing diagnostics **before** changing the emulator, so the original chain and
+CA inventory remain available for comparison.
+
+1. **Inspect Android trust:** in the emulator's Settings, search for `Trusted credentials`
+   or `Encryption & credentials`. On recent Pixel-style images the path is typically
+   Security & privacy > More security settings > Encryption & credentials > Trusted credentials.
+   Inspect both System and User tabs; open a CA to compare its subject/fingerprint with the
+   diagnostic chain. Labels vary by system image. A leaf's issuer may be an intermediate,
+   so it need not directly match a root's subject.
+2. **Remove a user-installed certificate:** use the User tab's certificate details or
+   User credentials, depending on Android version. `Clear credentials` removes user-installed
+   credentials, not permanent system roots. It can disrupt certificate-based Wi-Fi/VPN access;
+   remove only a known test CA, or use a separate AVD instead. Clearing app storage or reinstalling
+   the APK does not reset Android's CA store.
+3. **Reset a disposable AVD:** stop it, then Android Studio > Device Manager > its menu >
+   Wipe Data. This deletes installed apps, settings, and user credentials and returns user data
+   to the defaults of the existing image. It does not download newer system roots. Cold Boot
+   alone does not clear certificates either.
+4. **Refresh the system-image baseline:** use SDK Manager to download/update the desired Android
+   system image and create a new AVD with it. Install the same APK and compare. This preserves
+   the failing AVD and avoids carrying over old snapshots or manually modified trust settings.
+   There is no universal certificate-store refresh button across Android versions/images.
+5. **Replace a corporate CA:** get the current CA and verified fingerprint from the customer's IT
+   team. Install it using Encryption & credentials > Install a certificate > CA certificate,
+   if their policy requires it. Installing a user CA alone is insufficient for apps targeting
+   API 24+ unless their trust configuration permits it. Restart the app after trust changes.
+
+The workstation OS trust store, Android Studio's JDK trust store, and emulator/app trust are
+separate. Updating the workstation or Java CA store does not automatically fix Android app
+trust. If a host security agent keeps substituting a corporate certificate, resetting the
+emulator will not stop that interception; use the approved CA policy or an inspection exemption.
+
+References:
+- [Android certificate settings](https://support.google.com/pixelphone/answer/2844832?hl=en)
+- [Android app trust configuration](https://developer.android.com/privacy-and-security/security-config)
+- [Create/manage AVDs and wipe data](https://developer.android.com/studio/run/managing-avds)

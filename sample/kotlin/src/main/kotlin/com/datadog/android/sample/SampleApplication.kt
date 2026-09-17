@@ -329,6 +329,8 @@ class SampleApplication : Application() {
             val tag = "FlagsDiagnostics"
             Log.i(tag, "========== FLAGS SDK NETWORK DIAGNOSTICS START ==========")
 
+            FlagsTlsDiagnostics.logEnvironment(this@SampleApplication)
+
             // 1. Log configured site
             val siteName = BuildConfig.DD_SITE_NAME
             val site = try {
@@ -397,13 +399,18 @@ class SampleApplication : Application() {
         val start = System.nanoTime()
         try {
             val request = Request.Builder().url(url).head().build()
-            val response = okHttpClient.newCall(request).execute()
-            val elapsed = (System.nanoTime() - start) / 1_000_000
-            Log.i(tag, "HEAD [$label] $url -> ${response.code} (${elapsed}ms)")
-            response.close()
+            val client = FlagsTlsDiagnostics.client(okHttpClient, label, url)
+            try {
+                client.newCall(request).execute().use { response ->
+                    val elapsed = (System.nanoTime() - start) / 1_000_000
+                    Log.i(tag, "HEAD [$label] $url -> ${response.code} (${elapsed}ms)")
+                }
+            } finally {
+                client.connectionPool.evictAll()
+            }
         } catch (e: Throwable) {
             val elapsed = (System.nanoTime() - start) / 1_000_000
-            Log.e(tag, "HEAD [$label] $url -> FAILED (${elapsed}ms): ${e.javaClass.simpleName}: ${e.message}")
+            Log.e(tag, "HEAD [$label] $url -> FAILED (${elapsed}ms): ${e.javaClass.simpleName}: ${e.message}", e)
         }
     }
 
@@ -496,7 +503,10 @@ class SampleApplication : Application() {
             } else {
                 Log.i(tag, "Flag snapshot: ${snapshot.size} flag(s) loaded")
                 snapshot.forEach { (key, flag) ->
-                    Log.i(tag, "  flag: $key | type=${flag.variationType} variant=${flag.variationKey} reason=${flag.reason}")
+                    Log.i(
+                        tag,
+                        "  flag: $key | type=${flag.variationType} variant=${flag.variationKey} reason=${flag.reason}"
+                    )
                 }
             }
         } catch (e: Throwable) {
