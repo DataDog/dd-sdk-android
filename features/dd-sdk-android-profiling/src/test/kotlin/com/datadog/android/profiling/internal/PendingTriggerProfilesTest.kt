@@ -11,8 +11,8 @@ import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
+import com.datadog.android.profiling.internal.trigger.PendingTriggerProfileStorage
 import com.datadog.android.profiling.internal.trigger.PendingTriggerProfiles
-import com.datadog.android.profiling.internal.trigger.PendingTriggerProfilesImpl
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -41,12 +41,12 @@ internal class PendingTriggerProfilesTest {
     private lateinit var tempDir: File
 
     @Test
-    fun `M invoke onMatch W addRumGatingEvent {profiling result then ANR signal}`() {
+    fun `M invoke onMatch W setRumGatingEvent {profiling result then ANR signal}`() {
         val matched = mutableListOf<Pair<PerfettoResult, ProfilerEvent>>()
         val buffer = testedBuffer(onMatch = { c, s -> matched.add(c to s) })
         val path = "/tmp/anr.proto"
-        buffer.addProfilingResult(perfettoResult(now, path))
-        buffer.addRumGatingEvent(anrErrorEvent(now + 500L))
+        buffer.setProfilingResult(perfettoResult(now, path))
+        buffer.setRumGatingEvent(anrErrorEvent(now + 500L))
 
         assertThat(matched).hasSize(1)
         assertThat(matched.first().first.resultFilePath).isEqualTo(path)
@@ -54,13 +54,13 @@ internal class PendingTriggerProfilesTest {
     }
 
     @Test
-    fun `M invoke onMatch W addProfilingResult {ANR signal then profiling result}`() {
+    fun `M invoke onMatch W setProfilingResult {ANR signal then profiling result}`() {
         val matched = mutableListOf<Pair<PerfettoResult, ProfilerEvent>>()
         val buffer = testedBuffer(onMatch = { c, s -> matched.add(c to s) })
-        buffer.addRumGatingEvent(anrErrorEvent(now))
+        buffer.setRumGatingEvent(anrErrorEvent(now))
 
         val path = "/tmp/anr.proto"
-        buffer.addProfilingResult(perfettoResult(now + 500L, path))
+        buffer.setProfilingResult(perfettoResult(now + 500L, path))
 
         assertThat(matched).hasSize(1)
         assertThat(matched.first().first.resultFilePath).isEqualTo(path)
@@ -68,44 +68,44 @@ internal class PendingTriggerProfilesTest {
     }
 
     @Test
-    fun `M not invoke onMatch W addRumGatingEvent {no profiling result}`() {
+    fun `M not invoke onMatch W setRumGatingEvent {no profiling result}`() {
         val matched = mutableListOf<Pair<PerfettoResult, ProfilerEvent>>()
         val buffer = testedBuffer(onMatch = { c, s -> matched.add(c to s) })
-        buffer.addRumGatingEvent(anrErrorEvent(now))
+        buffer.setRumGatingEvent(anrErrorEvent(now))
 
         assertThat(matched).isEmpty()
     }
 
     @Test
-    fun `M not invoke onMatch W addProfilingResult {no signal}`() {
+    fun `M not invoke onMatch W setProfilingResult {no signal}`() {
         val matched = mutableListOf<Pair<PerfettoResult, ProfilerEvent>>()
         val buffer = testedBuffer(onMatch = { c, s -> matched.add(c to s) })
-        buffer.addProfilingResult(perfettoResult(now, "/tmp/anr.proto"))
+        buffer.setProfilingResult(perfettoResult(now, "/tmp/anr.proto"))
 
         assertThat(matched).isEmpty()
     }
 
     @Test
-    fun `M not invoke onMatch W addRumGatingEvent {trigger type mismatch}`() {
+    fun `M not invoke onMatch W setRumGatingEvent {trigger type mismatch}`() {
         val matched = mutableListOf<Pair<PerfettoResult, ProfilerEvent>>()
         val buffer = testedBuffer(onMatch = { c, s -> matched.add(c to s) })
-        buffer.addProfilingResult(
+        buffer.setProfilingResult(
             perfettoResult(now, "/tmp/anr.proto", startReason = ProfilingStartReason.CONTINUOUS)
         )
         // ANR signal vs CONTINUOUS profiling result — trigger types disagree
-        buffer.addRumGatingEvent(anrErrorEvent(now + 500L))
+        buffer.setRumGatingEvent(anrErrorEvent(now + 500L))
 
         // nothing matches, and both sides remain pending
         assertThat(matched).isEmpty()
     }
 
     @Test
-    fun `M reject non-ANR gating event W addRumGatingEvent {RumLongTaskEvent}`() {
+    fun `M reject non-ANR gating event W setRumGatingEvent {RumLongTaskEvent}`() {
         val matched = mutableListOf<Pair<PerfettoResult, ProfilerEvent>>()
         val buffer = testedBuffer(onMatch = { c, s -> matched.add(c to s) })
-        buffer.addProfilingResult(perfettoResult(now, "/tmp/anr.proto"))
+        buffer.setProfilingResult(perfettoResult(now, "/tmp/anr.proto"))
         // RumLongTaskEvent is not a valid gating event — silently rejected
-        buffer.addRumGatingEvent(
+        buffer.setRumGatingEvent(
             ProfilerEvent.RumLongTaskEvent(
                 id = "lt-1",
                 startMs = now,
@@ -121,23 +121,23 @@ internal class PendingTriggerProfilesTest {
     fun `M return expired profiling result W sweep {past timeout}`() {
         val buffer = testedBuffer()
         val path = "/tmp/anr.proto"
-        buffer.addProfilingResult(perfettoResult(now, path))
+        buffer.setProfilingResult(perfettoResult(now, path))
         val expired = buffer.sweep(now + timeoutMs + 1L, now + timeoutMs + 1L)
 
         assertThat(expired?.resultFilePath).isEqualTo(path)
         // profiling result is gone after sweep — a later signal finds nothing to match
-        buffer.addRumGatingEvent(anrErrorEvent(now + timeoutMs + 2L))
+        buffer.setRumGatingEvent(anrErrorEvent(now + timeoutMs + 2L))
     }
 
     @Test
     fun `M drop expired signal W sweep {past timeout}`() {
         val matched = mutableListOf<Pair<PerfettoResult, ProfilerEvent>>()
         val buffer = testedBuffer(onMatch = { c, s -> matched.add(c to s) })
-        buffer.addRumGatingEvent(anrErrorEvent(now))
+        buffer.setRumGatingEvent(anrErrorEvent(now))
         buffer.sweep(now + timeoutMs + 1L, now + timeoutMs + 1L)
 
         // signal expired — a later profiling result won't match
-        buffer.addProfilingResult(perfettoResult(now + timeoutMs + 2L, "/tmp/x"))
+        buffer.setProfilingResult(perfettoResult(now + timeoutMs + 2L, "/tmp/x"))
         assertThat(matched).isEmpty()
     }
 
@@ -146,13 +146,13 @@ internal class PendingTriggerProfilesTest {
         val matched = mutableListOf<Pair<PerfettoResult, ProfilerEvent>>()
         val buffer = testedBuffer(onMatch = { c, s -> matched.add(c to s) })
         // signal timestamp is already server-time-adjusted
-        buffer.addRumGatingEvent(anrErrorEvent(5_000L))
+        buffer.setRumGatingEvent(anrErrorEvent(5_000L))
 
         // Device clock lags the server clock: comparing against device time would wrongly say
         // the signal is not expired yet. The signal must expire per server time.
         buffer.sweep(deviceNow = 9_000L, serverNow = 5_000L + timeoutMs)
 
-        buffer.addProfilingResult(perfettoResult(9_100L, "/tmp/x"))
+        buffer.setProfilingResult(perfettoResult(9_100L, "/tmp/x"))
         assertThat(matched).isEmpty()
     }
 
@@ -160,28 +160,28 @@ internal class PendingTriggerProfilesTest {
     fun `M keep gating event per server time W sweep {clock drift, device time says expired}`() {
         val matched = mutableListOf<Pair<PerfettoResult, ProfilerEvent>>()
         val buffer = testedBuffer(onMatch = { c, s -> matched.add(c to s) })
-        buffer.addRumGatingEvent(anrErrorEvent(5_000L))
+        buffer.setRumGatingEvent(anrErrorEvent(5_000L))
 
         // Device clock leads the server clock: comparing against device time would wrongly
         // expire the signal early. Server time says it is not expired yet.
         buffer.sweep(deviceNow = 5_000L + timeoutMs, serverNow = 5_000L + timeoutMs - 1L)
 
-        buffer.addProfilingResult(perfettoResult(5_000L + timeoutMs, "/tmp/x"))
+        buffer.setProfilingResult(perfettoResult(5_000L + timeoutMs, "/tmp/x"))
         assertThat(matched).hasSize(1)
     }
 
     @Test
     fun `M return held profiling result W clear`() {
         val buffer = testedBuffer()
-        buffer.addProfilingResult(perfettoResult(now, "/a"))
+        buffer.setProfilingResult(perfettoResult(now, "/a"))
         val result = buffer.clear()
         assertThat(result?.resultFilePath).isEqualTo("/a")
     }
 
     @Test
-    fun `M delete old profiling result file in place W addProfilingResult {second result}`() {
+    fun `M delete old profiling result file in place W setProfilingResult {second result}`() {
         val matched = mutableListOf<Pair<PerfettoResult, ProfilerEvent>>()
-        val buffer = PendingTriggerProfilesImpl(
+        val buffer = PendingTriggerProfileStorage(
             executor = mockExecutor,
             timeProvider = fixedTimeProvider(),
             internalLogger = mockInternalLogger,
@@ -189,12 +189,12 @@ internal class PendingTriggerProfilesTest {
         )
         val oldFile = File(tempDir, "old.proto").apply { writeText("trace") }
         val newFile = File(tempDir, "new.proto").apply { writeText("trace") }
-        buffer.addProfilingResult(perfettoResult(now, oldFile.absolutePath))
-        buffer.addProfilingResult(perfettoResult(now + 100L, newFile.absolutePath))
+        buffer.setProfilingResult(perfettoResult(now, oldFile.absolutePath))
+        buffer.setProfilingResult(perfettoResult(now + 100L, newFile.absolutePath))
 
         // the old profiling result file is deleted in place; the new one is the only one tracked
         assertThat(oldFile.exists()).isFalse
-        buffer.addRumGatingEvent(anrErrorEvent(now + 100L))
+        buffer.setRumGatingEvent(anrErrorEvent(now + 100L))
         assertThat(matched.first().first.resultFilePath).isEqualTo(newFile.absolutePath)
     }
 
@@ -234,7 +234,7 @@ internal class PendingTriggerProfilesTest {
 
     private fun testedBuffer(
         onMatch: (PerfettoResult, ProfilerEvent) -> Unit = { _, _ -> }
-    ): PendingTriggerProfilesImpl = PendingTriggerProfilesImpl(
+    ): PendingTriggerProfileStorage = PendingTriggerProfileStorage(
         executor = mockExecutor,
         timeProvider = fixedTimeProvider(),
         internalLogger = mockInternalLogger,

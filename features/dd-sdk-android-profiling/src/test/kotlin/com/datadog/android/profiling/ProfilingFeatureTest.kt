@@ -905,7 +905,7 @@ internal class ProfilingFeatureTest {
         testedFeature.onReceive(fakeRumAnrEvent)
 
         // Then
-        verify(mockPendingTriggerProfiles).addRumGatingEvent(fakeRumAnrEvent)
+        verify(mockPendingTriggerProfiles).setRumGatingEvent(fakeRumAnrEvent)
     }
 
     @Test
@@ -1421,8 +1421,8 @@ internal class ProfilingFeatureTest {
         val anrResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.ANR)
 
         // When
-        testedFeature.pendingTriggerProfiles.addRumGatingEvent(fakeRumAnrEvent)
-        testedFeature.pendingTriggerProfiles.addProfilingResult(anrResult)
+        testedFeature.pendingTriggerProfiles.setRumGatingEvent(fakeRumAnrEvent)
+        testedFeature.pendingTriggerProfiles.setProfilingResult(anrResult)
 
         // Then
         verify(mockDataWriter).writeTriggerProfile(
@@ -1445,8 +1445,8 @@ internal class ProfilingFeatureTest {
         val anrResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.ANR)
 
         // When
-        testedFeature.pendingTriggerProfiles.addRumGatingEvent(fakeRumAnrEvent)
-        testedFeature.pendingTriggerProfiles.addProfilingResult(anrResult)
+        testedFeature.pendingTriggerProfiles.setRumGatingEvent(fakeRumAnrEvent)
+        testedFeature.pendingTriggerProfiles.setProfilingResult(anrResult)
 
         // Then
         verify(mockDataWriter).writeTriggerProfile(
@@ -1470,8 +1470,8 @@ internal class ProfilingFeatureTest {
         val anrResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.ANR)
 
         // When
-        testedFeature.pendingTriggerProfiles.addRumGatingEvent(fakeRumAnrEvent)
-        testedFeature.pendingTriggerProfiles.addProfilingResult(anrResult)
+        testedFeature.pendingTriggerProfiles.setRumGatingEvent(fakeRumAnrEvent)
+        testedFeature.pendingTriggerProfiles.setProfilingResult(anrResult)
 
         // Then
         verify(mockDataWriter).discard(anrResult)

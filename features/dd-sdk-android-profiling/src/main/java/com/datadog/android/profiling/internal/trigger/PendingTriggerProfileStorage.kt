@@ -19,7 +19,7 @@ import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
 @Suppress("TooManyFunctions")
-internal class PendingTriggerProfilesImpl(
+internal class PendingTriggerProfileStorage(
     private val executor: ScheduledExecutorService,
     private val timeProvider: TimeProvider,
     private val internalLogger: InternalLogger? = null,
@@ -39,7 +39,7 @@ internal class PendingTriggerProfilesImpl(
     @Volatile
     private var gatingEventCleanupTask: ScheduledFuture<*>? = null
 
-    override fun addProfilingResult(result: PerfettoResult) {
+    override fun setProfilingResult(result: PerfettoResult) {
         var overriddenResult: PerfettoResult? = null
         val pair = synchronized(lock) {
             overriddenResult = profilingResult
@@ -55,7 +55,7 @@ internal class PendingTriggerProfilesImpl(
         }
     }
 
-    override fun addRumGatingEvent(event: ProfilerEvent) {
+    override fun setRumGatingEvent(event: ProfilerEvent) {
         if (event.triggerType() == null) return
         val pair = synchronized(lock) {
             rumGatingEvent = event

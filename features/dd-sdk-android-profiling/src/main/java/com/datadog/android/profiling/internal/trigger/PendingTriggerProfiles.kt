@@ -23,14 +23,14 @@ internal interface PendingTriggerProfiles {
      * pending, the pair is dispatched immediately via the on-match callback; otherwise the
      * result self-cleans after [EXPIRY_TIMEOUT_MS].
      */
-    fun addProfilingResult(result: PerfettoResult)
+    fun setProfilingResult(result: PerfettoResult)
 
     /**
      * Buffers a RUM gating [ProfilerEvent]. If a matching profiling result is already pending,
      * the pair is dispatched immediately via the on-match callback; otherwise the event
      * self-cleans after [EXPIRY_TIMEOUT_MS]. Non-ANR events are silently rejected.
      */
-    fun addRumGatingEvent(event: ProfilerEvent)
+    fun setRumGatingEvent(event: ProfilerEvent)
 
     /**
      * Cancels any pending cleanup tasks and deletes any still-pending profiling result's

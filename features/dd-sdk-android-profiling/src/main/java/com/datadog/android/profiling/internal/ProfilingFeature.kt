@@ -32,8 +32,8 @@ import com.datadog.android.profiling.internal.quota.ProfilingQuotaChecker
 import com.datadog.android.profiling.internal.quota.QuotaChecker
 import com.datadog.android.profiling.internal.quota.QuotaResult
 import com.datadog.android.profiling.internal.trigger.NoOpPendingTriggerProfiles
+import com.datadog.android.profiling.internal.trigger.PendingTriggerProfileStorage
 import com.datadog.android.profiling.internal.trigger.PendingTriggerProfiles
-import com.datadog.android.profiling.internal.trigger.PendingTriggerProfilesImpl
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
@@ -99,7 +99,7 @@ internal class ProfilingFeature(
     override fun onInitialize(appContext: Context) {
         this.appContext = appContext
         dataWriter = ProfilingDataWriter(sdkCore)
-        pendingTriggerProfiles = createPendingTriggerProfiles(
+        pendingTriggerProfiles = createPendingTriggerProfileStorage(
             executor = profiler.scheduledExecutorService
         )
         profiler.apply {
@@ -197,7 +197,7 @@ internal class ProfilingFeature(
                 if (isRecordingProfile()) {
                     pendingRumEvents.add(event)
                 }
-                pendingTriggerProfiles.addRumGatingEvent(event)
+                pendingTriggerProfiles.setRumGatingEvent(event)
             }
 
             else -> sdkCore.internalLogger.log(
@@ -238,7 +238,7 @@ internal class ProfilingFeature(
 
     override fun onAnrDetected(event: ProfilingAnrDetectedEvent, result: PerfettoResult) {
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.sendEvent(event)
-        pendingTriggerProfiles.addProfilingResult(result)
+        pendingTriggerProfiles.setProfilingResult(result)
     }
 
     private fun onTtidEvent() {
@@ -356,10 +356,10 @@ internal class ProfilingFeature(
         )
     }
 
-    private fun createPendingTriggerProfiles(
+    private fun createPendingTriggerProfileStorage(
         executor: ScheduledExecutorService
     ): PendingTriggerProfiles {
-        return PendingTriggerProfilesImpl(
+        return PendingTriggerProfileStorage(
             executor = executor,
             timeProvider = sdkCore.timeProvider,
             internalLogger = sdkCore.internalLogger,
