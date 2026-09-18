@@ -60,6 +60,9 @@ internal class ProfilingFeature(
     internal var pendingTriggerProfiles: PendingTriggerProfiles = NoOpPendingTriggerProfiles()
 
     @Volatile
+    internal var pendingHeapHistograms: PendingTriggerProfiles = NoOpPendingTriggerProfiles()
+
+    @Volatile
     private var isLaunchProfilingActive: Boolean = false
 
     @Volatile
@@ -117,7 +120,6 @@ internal class ProfilingFeature(
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
             context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning()
         }
-
         val quotaCallFactory = sdkCore.createOkHttpCallFactory {
             callTimeout(QUOTA_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
         }
@@ -141,6 +143,10 @@ internal class ProfilingFeature(
             start(launchProfilingActive = profiler.isRunning())
         }
         continuousProfilingScheduler = scheduler
+
+        pendingHeapHistograms = createPendingHeapHistogramStorage(
+            executor = profiler.scheduledExecutorService
+        )
 
         sdkCore.setContextUpdateReceiver(this)
 
@@ -170,6 +176,8 @@ internal class ProfilingFeature(
         quotaExecutor = null
         pendingTriggerProfiles.stop()
         pendingTriggerProfiles = NoOpPendingTriggerProfiles()
+        pendingHeapHistograms.stop()
+        pendingHeapHistograms = NoOpPendingTriggerProfiles()
         lastQuotaResult = null
         lastSeenRumSessionId = null
         pendingRumEvents.clear()
@@ -200,6 +208,15 @@ internal class ProfilingFeature(
                     pendingRumEvents.add(event)
                 }
                 pendingTriggerProfiles.setRumGatingEvent(event)
+            }
+
+            is ProfilerEvent.RumOomErrorEvent -> {
+                // TODO RUM-18334: Persist OOM signal to survive from process kill
+                pendingHeapHistograms.setRumGatingEvent(event)
+            }
+
+            is ProfilerEvent.RumAnomalyErrorEvent -> {
+                pendingHeapHistograms.setRumGatingEvent(event)
             }
 
             else -> sdkCore.internalLogger.log(
@@ -245,14 +262,16 @@ internal class ProfilingFeature(
 
     override fun onOutOfMemoryDetected(result: PerfettoResult) {
         // RUM already generates its own OOM error event, so the profiling feature
-        // does not forward a separate OOM event.
-        // TODO RUM-18154: Wire resultFilePath with ProfilingDataWriter
+        // does not forward a separate OOM event. The gating signal (RumOomErrorEvent)
+        // will arrive from RUM and complete the pair.
+        pendingHeapHistograms.setProfilingResult(result)
     }
 
     override fun onMemoryAnomalyDetected(result: PerfettoResult) {
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.sendEvent(
             ProfilingAnomalyDetectedEvent(result.start)
         )
+        pendingHeapHistograms.setProfilingResult(result)
     }
 
     private fun onTtidEvent() {
@@ -421,6 +440,40 @@ internal class ProfilingFeature(
             }
         )
     }
+
+    /**
+     * Testable seam driving one expiry sweep. Delegates to
+     * [PendingTriggerProfiles.sweepAndDiscard].
+     */
+    internal fun sweepPendingHeapHistograms() {
+        pendingHeapHistograms.sweepAndDiscard()
+    }
+
+    /**
+     * Builds a [PendingTriggerProfiles] wired to dispatch matched OOM/Anomaly pairs to
+     * [dataWriter], routing expiry through [ProfilingWriter.discard].
+     */
+    private fun createPendingHeapHistogramStorage(
+        executor: ScheduledExecutorService
+    ): PendingTriggerProfiles = PendingTriggerProfileStorage(
+        executor = executor,
+        timeProvider = sdkCore.timeProvider,
+        internalLogger = sdkCore.internalLogger,
+        onMatch = { capture: PerfettoResult, signal: ProfilerEvent ->
+            when (signal) {
+                is ProfilerEvent.RumOomErrorEvent ->
+                    dataWriter.writeTriggerProfile(capture, signal.id, signal.rumContext)
+
+                is ProfilerEvent.RumAnomalyErrorEvent ->
+                    dataWriter.writeTriggerProfile(capture, signal.id, signal.rumContext)
+
+                else -> {
+                    // Not a currently supported trigger-match type: nothing to write.
+                }
+            }
+        },
+        onExpiredOverride = { dataWriter.discard(it) }
+    )
 
     internal fun propagateQuotaResult(result: QuotaResult) {
         this.lastQuotaResult = result

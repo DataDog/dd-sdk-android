@@ -40,6 +40,8 @@ internal class PendingTriggerProfilesTest {
     @TempDir
     private lateinit var tempDir: File
 
+    // region ANR (default onExpiredOverride: deletes the result file in place)
+
     @Test
     fun `M invoke onMatch W setRumGatingEvent {profiling result then ANR signal}`() {
         val matched = mutableListOf<Pair<PerfettoResult, ProfilerEvent>>()
@@ -198,6 +200,151 @@ internal class PendingTriggerProfilesTest {
         assertThat(matched.first().first.resultFilePath).isEqualTo(newFile.absolutePath)
     }
 
+    // endregion
+
+    // region OOM/Anomaly (onExpiredOverride: routes through the data writer's discard)
+
+    @Test
+    fun `M invoke onMatch W setRumGatingEvent {profiling result then OOM signal}`() {
+        val matched = mutableListOf<Pair<PerfettoResult, ProfilerEvent>>()
+        val buffer = testedHeapHistogramBuffer(onMatch = { c, s -> matched.add(c to s) })
+        val path = "/tmp/hist.proto"
+        buffer.setProfilingResult(perfettoResult(now, path, startReason = ProfilingStartReason.OUT_OF_MEMORY))
+        buffer.setRumGatingEvent(oomErrorEvent(now + 500L))
+
+        assertThat(matched).hasSize(1)
+        assertThat(matched.first().first.resultFilePath).isEqualTo(path)
+        assertThat((matched.first().second as ProfilerEvent.RumOomErrorEvent).id).isEqualTo("err-1")
+    }
+
+    @Test
+    fun `M invoke onMatch W setProfilingResult {anomaly signal then profiling result}`() {
+        val matched = mutableListOf<Pair<PerfettoResult, ProfilerEvent>>()
+        val buffer = testedHeapHistogramBuffer(onMatch = { c, s -> matched.add(c to s) })
+        buffer.setRumGatingEvent(anomalyErrorEvent(now))
+
+        val path = "/tmp/hist.proto"
+        buffer.setProfilingResult(
+            perfettoResult(now + 500L, path, startReason = ProfilingStartReason.MEMORY_ANOMALY)
+        )
+
+        assertThat(matched).hasSize(1)
+        assertThat(matched.first().first.resultFilePath).isEqualTo(path)
+        assertThat((matched.first().second as ProfilerEvent.RumAnomalyErrorEvent).id).isEqualTo("err-1")
+    }
+
+    @Test
+    fun `M not invoke onMatch W setRumGatingEvent {no profiling result, OOM}`() {
+        val matched = mutableListOf<Pair<PerfettoResult, ProfilerEvent>>()
+        val buffer = testedHeapHistogramBuffer(onMatch = { c, s -> matched.add(c to s) })
+        buffer.setRumGatingEvent(oomErrorEvent(now))
+
+        assertThat(matched).isEmpty()
+    }
+
+    @Test
+    fun `M not invoke onMatch W setProfilingResult {no signal, OOM}`() {
+        val matched = mutableListOf<Pair<PerfettoResult, ProfilerEvent>>()
+        val buffer = testedHeapHistogramBuffer(onMatch = { c, s -> matched.add(c to s) })
+        buffer.setProfilingResult(
+            perfettoResult(now, "/tmp/hist.proto", startReason = ProfilingStartReason.OUT_OF_MEMORY)
+        )
+
+        assertThat(matched).isEmpty()
+    }
+
+    @Test
+    fun `M not invoke onMatch W setRumGatingEvent {trigger type mismatch, OOM vs anomaly}`() {
+        val matched = mutableListOf<Pair<PerfettoResult, ProfilerEvent>>()
+        val buffer = testedHeapHistogramBuffer(onMatch = { c, s -> matched.add(c to s) })
+        buffer.setProfilingResult(
+            perfettoResult(now, "/tmp/hist.proto", startReason = ProfilingStartReason.OUT_OF_MEMORY)
+        )
+        // ANOMALY signal vs OOM profiling result — trigger types disagree
+        buffer.setRumGatingEvent(anomalyErrorEvent(now + 500L))
+
+        // nothing matches, and both sides remain pending
+        assertThat(matched).isEmpty()
+    }
+
+    @Test
+    fun `M reject non-OOM non-Anomaly gating event W setRumGatingEvent {RumAnrEvent}`() {
+        val matched = mutableListOf<Pair<PerfettoResult, ProfilerEvent>>()
+        val buffer = testedHeapHistogramBuffer(onMatch = { c, s -> matched.add(c to s) })
+        buffer.setProfilingResult(
+            perfettoResult(now, "/tmp/hist.proto", startReason = ProfilingStartReason.OUT_OF_MEMORY)
+        )
+        // RumAnrEvent is not a valid gating event for the heap histogram buffer — silently rejected
+        buffer.setRumGatingEvent(anrErrorEvent(now, rumErrorId = "err-anr"))
+
+        assertThat(matched).isEmpty()
+    }
+
+    @Test
+    fun `M invoke onExpiredOverride W sweep {past timeout, OOM}`() {
+        val expiredResults = mutableListOf<PerfettoResult>()
+        val buffer = PendingTriggerProfileStorage(
+            executor = mockExecutor,
+            timeProvider = fixedTimeProvider(),
+            internalLogger = mockInternalLogger,
+            onMatch = { _, _ -> },
+            onExpiredOverride = expiredResults::add
+        )
+        val path = "/tmp/hist.proto"
+        buffer.setProfilingResult(perfettoResult(now, path, startReason = ProfilingStartReason.OUT_OF_MEMORY))
+        val expired = buffer.sweep(now + timeoutMs + 1L, now + timeoutMs + 1L)
+
+        assertThat(expired?.resultFilePath).isEqualTo(path)
+        // profiling result is gone after sweep — a later signal finds nothing to match
+        buffer.setRumGatingEvent(oomErrorEvent(now + timeoutMs + 2L))
+    }
+
+    @Test
+    fun `M drop expired signal W sweep {past timeout, OOM}`() {
+        val matched = mutableListOf<Pair<PerfettoResult, ProfilerEvent>>()
+        val buffer = testedHeapHistogramBuffer(onMatch = { c, s -> matched.add(c to s) })
+        buffer.setRumGatingEvent(oomErrorEvent(now))
+        buffer.sweep(now + timeoutMs + 1L, now + timeoutMs + 1L)
+
+        // signal expired — a later profiling result won't match
+        buffer.setProfilingResult(
+            perfettoResult(now + timeoutMs + 2L, "/tmp/x", startReason = ProfilingStartReason.OUT_OF_MEMORY)
+        )
+        assertThat(matched).isEmpty()
+    }
+
+    @Test
+    fun `M return held profiling result W clear {OOM}`() {
+        val buffer = testedHeapHistogramBuffer()
+        buffer.setProfilingResult(perfettoResult(now, "/a", startReason = ProfilingStartReason.OUT_OF_MEMORY))
+        val result = buffer.clear()
+        assertThat(result?.resultFilePath).isEqualTo("/a")
+    }
+
+    @Test
+    fun `M invoke onExpiredOverride W setProfilingResult {second result, OOM}`() {
+        val expiredResults = mutableListOf<PerfettoResult>()
+        val matched = mutableListOf<Pair<PerfettoResult, ProfilerEvent>>()
+        val buffer = PendingTriggerProfileStorage(
+            executor = mockExecutor,
+            timeProvider = fixedTimeProvider(),
+            internalLogger = mockInternalLogger,
+            onMatch = { c, s -> matched.add(c to s) },
+            onExpiredOverride = expiredResults::add
+        )
+        buffer.setProfilingResult(perfettoResult(now, "/old", startReason = ProfilingStartReason.OUT_OF_MEMORY))
+        buffer.setProfilingResult(
+            perfettoResult(now + 100L, "/new", startReason = ProfilingStartReason.OUT_OF_MEMORY)
+        )
+
+        // the old result is handed to onExpiredOverride; the new one is the only one tracked
+        assertThat(expiredResults.map { it.resultFilePath }).containsExactly("/old")
+        buffer.setRumGatingEvent(oomErrorEvent(now + 100L))
+        assertThat(matched.first().first.resultFilePath).isEqualTo("/new")
+    }
+
+    // endregion
+
     // region Tests fixtures
 
     private fun perfettoResult(
@@ -221,6 +368,24 @@ internal class PendingTriggerProfilesTest {
         rumContext = ProfilingRumContext("app", "sess", null, null)
     )
 
+    private fun oomErrorEvent(
+        timestamp: Long,
+        rumErrorId: String = "err-1"
+    ): ProfilerEvent.RumOomErrorEvent = ProfilerEvent.RumOomErrorEvent(
+        id = rumErrorId,
+        timestamp = timestamp,
+        rumContext = ProfilingRumContext("app", "sess", null, null)
+    )
+
+    private fun anomalyErrorEvent(
+        timestamp: Long,
+        rumErrorId: String = "err-1"
+    ): ProfilerEvent.RumAnomalyErrorEvent = ProfilerEvent.RumAnomalyErrorEvent(
+        id = rumErrorId,
+        timestamp = timestamp,
+        rumContext = ProfilingRumContext("app", "sess", null, null)
+    )
+
     private fun fixedTimeProvider(time: Long = now): TimeProvider = object : TimeProvider {
         override fun getDeviceTimestampMillis(): Long = time
         override fun getServerTimestampMillis(): Long = time
@@ -239,6 +404,16 @@ internal class PendingTriggerProfilesTest {
         timeProvider = fixedTimeProvider(),
         internalLogger = mockInternalLogger,
         onMatch = onMatch
+    )
+
+    private fun testedHeapHistogramBuffer(
+        onMatch: (PerfettoResult, ProfilerEvent) -> Unit = { _, _ -> }
+    ): PendingTriggerProfileStorage = PendingTriggerProfileStorage(
+        executor = mockExecutor,
+        timeProvider = fixedTimeProvider(),
+        internalLogger = mockInternalLogger,
+        onMatch = onMatch,
+        onExpiredOverride = { /* no-op for tests that don't verify expiry routing */ }
     )
 
     // endregion
