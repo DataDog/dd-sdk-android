@@ -1,3 +1,17 @@
+# 3.15.0 / 2026-09-18
+
+* [FEATURE] Profiling: Upload ANR-triggered profiles with their corresponding RUM error events. See [#3831](https://github.com/DataDog/dd-sdk-android/pull/3831)
+* [IMPROVEMENT] Profiling: Add `boot_ntp` to profile events and report clock drift instead of dropping profiles. See [#3836](https://github.com/DataDog/dd-sdk-android/pull/3836)
+* [IMPROVEMENT] Remote Configuration: Propagate `crashReportingEnabled` to the `DatadogCore` configuration. See [#3865](https://github.com/DataDog/dd-sdk-android/pull/3865)
+* [BUGFIX] OkHttp: Limit response body peeks to 512 KB and skip binary media to reduce out-of-memory risk. See [#3857](https://github.com/DataDog/dd-sdk-android/pull/3857)
+* [BUGFIX] Logs: Safely extract throwable messages and stack traces when generating logs. See [#3864](https://github.com/DataDog/dd-sdk-android/pull/3864)
+* [MAINTENANCE] Restore documentation ownership for the Android Flags `README`. See [#3834](https://github.com/DataDog/dd-sdk-android/pull/3834)
+* [MAINTENANCE] Fix the `dd-octo-sts` permission configuration used to create GitHub releases. See [#3854](https://github.com/DataDog/dd-sdk-android/pull/3854)
+* [MAINTENANCE] Configure the Git identity used by the automated release merge-back. See [#3856](https://github.com/DataDog/dd-sdk-android/pull/3856)
+* [MAINTENANCE] Stabilize `CpuDatapointReaderTest`, `LoggerTest`, `DDSketchSerializerTest`, and `BigIntegerUtilsTest`. See [#3859](https://github.com/DataDog/dd-sdk-android/pull/3859), [#3860](https://github.com/DataDog/dd-sdk-android/pull/3860), [#3861](https://github.com/DataDog/dd-sdk-android/pull/3861), and [#3862](https://github.com/DataDog/dd-sdk-android/pull/3862)
+* [MAINTENANCE] Rename the pending-trigger profile storage APIs and improve the sample app’s ANR trigger. See [#3866](https://github.com/DataDog/dd-sdk-android/pull/3866)
+* [MAINTENANCE] Run the Android FIT suite against the current SDK commit from the test-pyramid pipeline. See [#3824](https://github.com/DataDog/dd-sdk-android/pull/3824)
+
 # 3.14.0 / 2026-09-09
 
 * [FEATURE] Partial RUM View Updates:
