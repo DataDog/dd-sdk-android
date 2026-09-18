@@ -20,16 +20,11 @@ import android.app.Activity
 import android.app.Application
 import android.os.Handler
 import android.os.Looper
-import android.os.Process
 import com.datadog.android.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.time.DefaultAppStartTimeProvider
 import com.datadog.android.internal.time.DefaultTimeProvider
-import com.datadog.android.internal.time.TimeProvider
-import com.datadog.android.internal.utils.guardedProcessStartNs
-import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.internal.domain.Time
 import java.lang.ref.WeakReference
-import java.util.concurrent.TimeUnit
-import kotlin.time.Duration.Companion.seconds
 
 /**
  * Singleton that captures app launch timing before the RUM SDK is initialized.
@@ -122,7 +117,9 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
         }
 
         val timeProvider = DefaultTimeProvider()
-        val appStartTimeNs = computeProcessStartNs(timeProvider)
+        val appStartTimeNs = DefaultAppStartTimeProvider(
+            timeProviderFactory = { timeProvider }
+        ).appStartTimeNs
 
         detectorImpl = RumAppStartupDetectorImpl(
             application = application,
@@ -295,38 +292,6 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
     ) {
         dispatch(Event.TTIDComputed(scenario, durationNs, wasForwarded, forwardedActivity))
     }
-
-    // endregion
-
-    // region Internal
-
-    /**
-     * Back-projects the process start onto the [TimeProvider.getDeviceElapsedTimeNanos] timebase.
-     *
-     * Everything downstream of this object measures with that clock, so the elapsed delta has to
-     * come from the same one: [TimeProvider.getDeviceUptimeMillis] and
-     * [Process.getStartUptimeMillis] are both CLOCK_MONOTONIC and both exclude deep sleep.
-     * Pairing them with `elapsedRealtime()` instead would add any deep sleep since process start
-     * to the delta, over-projecting the start time and inflating every TTID measured from it.
-     */
-    // NewApi: Process.getStartUptimeMillis is guarded by the isAtLeastN check below.
-    @Suppress("NewApi")
-    internal fun computeProcessStartNs(timeProvider: TimeProvider): Long {
-        if (!BuildSdkVersionProvider.DEFAULT.isAtLeastN) {
-            return DdRumContentProvider.createTimeNs
-        }
-        val nowNs = timeProvider.getDeviceElapsedTimeNanos()
-        val nowUptimeMs = timeProvider.getDeviceUptimeMillis()
-        val diffMs = nowUptimeMs - Process.getStartUptimeMillis()
-        val computed = nowNs - TimeUnit.MILLISECONDS.toNanos(diffMs)
-        return guardedProcessStartNs(
-            computed = computed,
-            fallback = DdRumContentProvider.createTimeNs,
-            thresholdNs = PROCESS_START_THRESHOLD_NS
-        )
-    }
-
-    internal val PROCESS_START_THRESHOLD_NS = 10.seconds.inWholeNanoseconds
 
     // endregion
 }

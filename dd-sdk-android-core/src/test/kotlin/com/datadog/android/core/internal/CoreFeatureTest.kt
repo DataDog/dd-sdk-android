@@ -30,7 +30,6 @@ import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvi
 import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
 import com.datadog.android.core.internal.thread.BackPressuredBlockingQueue
 import com.datadog.android.core.internal.thread.BroadcastReceiverThread
-import com.datadog.android.core.internal.time.AppStartTimeProvider
 import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.user.DatadogUserInfoProvider
 import com.datadog.android.core.internal.user.NoOpMutableUserInfoProvider
@@ -38,6 +37,7 @@ import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.TelemetryContext
+import com.datadog.android.internal.time.AppStartTimeProvider
 import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.ndk.internal.DatadogNdkCrashHandler
 import com.datadog.android.ndk.internal.NoOpNdkCrashHandler

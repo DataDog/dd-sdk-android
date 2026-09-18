@@ -4,9 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.time
+package com.datadog.android.internal.time
 
-internal interface AppStartTimeProvider {
+/**
+ * Provides the time at which the application process started, and the time elapsed since.
+ */
+interface AppStartTimeProvider {
     /**
      * Provide the time the application started in nanoseconds from device boot, or our best guess
      * if the actual start time is not available.
