@@ -122,6 +122,33 @@ internal class FlagsStateSerializerTest {
     }
 
     @Test
+    fun `M preserve null attributes through persistence W serialize()`(forge: Forge) {
+        // Given
+        val context = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = mapOf("nullable" to null, "literal" to "null", "plan" to "premium")
+        )
+        val state = FlagsStateEntry(context, emptyMap(), fakeTimestamp)
+
+        // When
+        val serialized = testedSerializer.serialize(state)
+        val restored = FlagsStateDeserializer(mockInternalLogger).deserialize(serialized)
+
+        // Then
+        val attributes = JSONObject(serialized)
+            .getJSONObject("evaluationContext")
+            .getJSONObject("attributes")
+        assertThat(attributes.length()).isEqualTo(3)
+        assertThat(attributes.has("nullable")).isTrue()
+        assertThat(attributes.isNull("nullable")).isTrue()
+        assertThat(attributes.getString("literal")).isEqualTo("null")
+        assertThat(attributes.isNull("literal")).isFalse()
+        checkNotNull(restored)
+        assertThat(restored.evaluationContext).isEqualTo(context)
+        assertThat(restored.lastUpdateTimestamp).isEqualTo(fakeTimestamp)
+    }
+
+    @Test
     fun `M serialize empty flags state W serialize()`(forge: Forge) {
         // Given
         val targetingKey = forge.anAlphabeticalString()

@@ -44,10 +44,8 @@
         },
         "attributes": {
           "type": "object",
-          "description": "Additional attributes for the subject",
-          "additionalProperties": {
-            "type": "string"
-          }
+          "description": "Additional attributes for the subject. Values may be strings or null.",
+          "additionalProperties": true
         }
       },
       "required": ["id", "attributes"]

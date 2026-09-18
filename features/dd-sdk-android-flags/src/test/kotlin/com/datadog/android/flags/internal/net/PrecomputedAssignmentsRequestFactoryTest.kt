@@ -192,6 +192,34 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
     }
 
     @Test
+    fun `M preserve null attributes W create()`(
+        @StringForgery fakeTargetingKey: String
+    ) {
+        // Given
+        val context = EvaluationContext(
+            targetingKey = fakeTargetingKey,
+            attributes = mapOf("nullable" to null, "literal" to "null", "plan" to "premium")
+        )
+
+        // When
+        val request = testedFactory.create(context, fakeDatadogContext)
+
+        // Then
+        checkNotNull(request)
+        val attributes = JSONObject(extractRequestBodyAsString(request))
+            .getJSONObject("data")
+            .getJSONObject("attributes")
+            .getJSONObject("subject")
+            .getJSONObject("targeting_attributes")
+        assertThat(attributes.length()).isEqualTo(3)
+        assertThat(attributes.has("nullable")).isTrue()
+        assertThat(attributes.isNull("nullable")).isTrue()
+        assertThat(attributes.getString("literal")).isEqualTo("null")
+        assertThat(attributes.isNull("literal")).isFalse()
+        assertThat(attributes.getString("plan")).isEqualTo("premium")
+    }
+
+    @Test
     fun `M create correct JSON body W create() { empty attributes }`(
         @StringForgery fakeTargetingKey: String
     ) {

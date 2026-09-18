@@ -18,9 +18,10 @@ package com.datadog.android.flags.model
  *   bucketing for that user. Common examples include user ID (consistent treatment per user),
  *   company ID (consistent treatment for entire company), or device ID (consistent treatment
  *   per device). The targeting key may also be used in targeting rules for flag evaluation.
- * @param attributes Additional attributes used for targeting flag evaluation. All values must be
- *   strings - you are responsible for converting numbers, booleans, and other types to their
- *   string representation before passing them to the context. Examples:
+ * @param attributes Additional attributes used for targeting flag evaluation. Values may be strings
+ *   or null. Null is preserved for null-targeting rules; it is distinct from the string "null".
+ *   You are responsible for converting numbers, booleans, and other types to their string
+ *   representation before passing them to the context. Examples:
  *   `mapOf("email" to "user@example.com", "age" to "25", "premium" to "true")`.
  *   These attributes provide additional context for flag evaluation rules and can include
  *   user properties, device information, or any other relevant contextual data.
@@ -36,12 +37,13 @@ data class EvaluationContext(
     /**
      * Additional attributes used for targeting flag evaluation.
      *
-     * All values must be strings. You are responsible for converting numbers, booleans,
-     * and other types to strings before passing them to the context.
+     * Values may be strings or null. Null is preserved for null-targeting rules.
+     * You are responsible for converting numbers, booleans, and other types to strings
+     * before passing them to the context.
      *
      * Example: `mapOf("email" to "user@example.com", "age" to "25", "premium" to "true")`
      */
-    val attributes: Map<String, String> = emptyMap()
+    val attributes: Map<String, String?> = emptyMap()
 ) {
 
     companion object {

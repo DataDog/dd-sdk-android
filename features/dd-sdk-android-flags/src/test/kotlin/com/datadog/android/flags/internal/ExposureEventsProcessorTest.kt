@@ -107,6 +107,32 @@ internal class ExposureEventsProcessorTest {
     }
 
     @Test
+    fun `M preserve null attributes in exposure JSON W processEvent()`() {
+        // Given
+        val context = EvaluationContext(
+            targetingKey = fakeTargetingKey,
+            attributes = mapOf("nullable" to null, "literal" to "null", "plan" to "premium")
+        )
+
+        // When
+        testedProcessor.processEvent(fakeFlagKey, context, fakeFlag)
+
+        // Then
+        val eventCaptor = argumentCaptor<ExposureEvent>()
+        verify(mockRecordWriter).write(eventCaptor.capture())
+        val event = eventCaptor.firstValue
+        val attributes = event.toJson().asJsonObject
+            .getAsJsonObject("subject")
+            .getAsJsonObject("attributes")
+        assertThat(attributes.size()).isEqualTo(3)
+        assertThat(attributes.has("nullable")).isTrue()
+        assertThat(attributes.get("nullable").isJsonNull).isTrue()
+        assertThat(attributes.get("literal").asString).isEqualTo("null")
+        assertThat(attributes.get("plan").asString).isEqualTo("premium")
+        assertThat(ExposureEvent.fromJson(event.toJson().toString()).toJson()).isEqualTo(event.toJson())
+    }
+
+    @Test
     fun `M not process duplicate exposure W processEvent() { same flag and targeting key }`(forge: Forge) {
         // Given
         val fakeContext = EvaluationContext(

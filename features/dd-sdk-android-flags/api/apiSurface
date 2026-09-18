@@ -48,7 +48,7 @@ enum com.datadog.android.flags.model.ErrorCode
   - PARSE_ERROR
   - TYPE_MISMATCH
 data class com.datadog.android.flags.model.EvaluationContext
-  constructor(String, Map<String, String> = emptyMap())
+  constructor(String, Map<String, String?> = emptyMap())
   companion object 
     val EMPTY: EvaluationContext
 sealed class com.datadog.android.flags.model.FlagsClientState
@@ -96,7 +96,7 @@ data class com.datadog.android.flags.model.ExposureEvent
       fun fromJson(kotlin.String): Subject
       fun fromJsonObject(com.google.gson.JsonObject): Subject
   data class Attributes
-    constructor(kotlin.collections.MutableMap<kotlin.String, kotlin.String> = mutableMapOf())
+    constructor(kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Attributes

@@ -70,14 +70,13 @@ internal class FlagsStateDeserializer(private val internalLogger: InternalLogger
     }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
-    private fun deserializeAttributes(attributesJson: JSONObject): Map<String, String> {
-        val attributes = mutableMapOf<String, String>()
+    private fun deserializeAttributes(attributesJson: JSONObject): Map<String, String?> {
+        val attributes = mutableMapOf<String, String?>()
         val keys = attributesJson.keys()
 
         while (keys.hasNext()) {
             val key = keys.next()
-            val value = attributesJson.get(key).toString()
-            attributes[key] = value
+            attributes[key] = if (attributesJson.isNull(key)) null else attributesJson.get(key).toString()
         }
 
         return attributes

@@ -49,10 +49,10 @@ internal class FlagsStateSerializer(private val internalLogger: InternalLogger) 
     }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
-    private fun serializeAttributes(attributes: Map<String, Any>): JSONObject {
+    private fun serializeAttributes(attributes: Map<String, String?>): JSONObject {
         val attributesJson = JSONObject()
         attributes.forEach { (key, value) ->
-            attributesJson.put(key, value)
+            attributesJson.put(key, value ?: JSONObject.NULL)
         }
         return attributesJson
     }

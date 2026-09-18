@@ -118,7 +118,7 @@ internal class PrecomputedAssignmentsRequestFactory(
     private fun buildStringifiedAttributes(context: EvaluationContext): JSONObject {
         val contextJson = JSONObject()
         context.attributes.forEach { (key, value) ->
-            contextJson.put(key, value)
+            contextJson.put(key, value ?: JSONObject.NULL)
         }
         return contextJson
     }

@@ -127,6 +127,31 @@ internal class FlagsStateDeserializerTest {
     }
 
     @Test
+    fun `M preserve null attributes W deserialize()`() {
+        // Given
+        val json = """
+            {
+                "evaluationContext": {
+                    "targetingKey": "user",
+                    "attributes": {"nullable": null, "literal": "null", "plan": "premium"}
+                },
+                "flags": {},
+                "lastUpdateTimestamp": 42
+            }
+        """.trimIndent()
+
+        // When
+        val result = testedDeserializer.deserialize(json)
+
+        // Then
+        checkNotNull(result)
+        assertThat(result.evaluationContext.attributes)
+            .containsExactlyInAnyOrderEntriesOf(
+                mapOf("nullable" to null, "literal" to "null", "plan" to "premium")
+            )
+    }
+
+    @Test
     fun `M deserialize empty state W deserialize() { valid JSON with empty data }`(forge: Forge) {
         // Given
         val targetingKey = forge.anAlphabeticalString()
