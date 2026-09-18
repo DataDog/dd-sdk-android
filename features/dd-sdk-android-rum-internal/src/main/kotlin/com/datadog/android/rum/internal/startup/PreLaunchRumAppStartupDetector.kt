@@ -24,6 +24,7 @@ import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.DefaultAppStartTimeProvider
 import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistryImpl
 import java.lang.ref.WeakReference
 
 /**
@@ -145,7 +146,7 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
             },
             rumFirstDrawTimeReporter = RumFirstDrawTimeReporterImpl(
                 timeProviderNs = timeProvider::getDeviceElapsedTimeNanos,
-                windowCallbacksRegistry = WindowCallbacksRegistryImpl(),
+                windowCallbacksRegistry = RumWindowCallbacksRegistryImpl(),
                 handler = Handler(Looper.getMainLooper())
             )
         )

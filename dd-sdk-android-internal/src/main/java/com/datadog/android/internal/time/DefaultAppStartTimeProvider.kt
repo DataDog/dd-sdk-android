@@ -14,11 +14,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * The default [AppStartTimeProvider], back-projecting the process start time onto the
- * [TimeProvider.getDeviceElapsedTimeNanos] timebase.
- *
- * @param timeProviderFactory Supplies the [TimeProvider] used to read the device clocks.
- * @param buildSdkVersionProvider Decides whether [Process.getStartUptimeMillis] is available.
+ * The default [AppStartTimeProvider].
  */
 class DefaultAppStartTimeProvider(
     private val timeProviderFactory: () -> TimeProvider,
@@ -32,9 +28,6 @@ class DefaultAppStartTimeProvider(
                 // Uses the uptime clock (excludes device sleep time) to measure the gap between
                 // process start and now, then back-projects it onto getDeviceElapsedTimeNanos() —
                 // the same CLOCK_MONOTONIC base as System.nanoTime(), so the two agree.
-                // Pairing them with elapsedRealtime() instead would add any deep sleep since
-                // process start to the delta, over-projecting the start time and inflating every
-                // duration measured from it.
                 val diffMs = timeProvider.getDeviceUptimeMillis() - Process.getStartUptimeMillis()
                 val computed =
                     timeProvider.getDeviceElapsedTimeNanos() - TimeUnit.MILLISECONDS.toNanos(diffMs)
@@ -51,7 +44,7 @@ class DefaultAppStartTimeProvider(
     override val appUptimeNs: Long
         get() = timeProviderFactory().getDeviceElapsedTimeNanos() - appStartTimeNs
 
-    internal companion object {
-        val PROCESS_START_TO_CP_START_DIFF_THRESHOLD_NS = 10.seconds.inWholeNanoseconds
+    companion object {
+        internal val PROCESS_START_TO_CP_START_DIFF_THRESHOLD_NS = 10.seconds.inWholeNanoseconds
     }
 }

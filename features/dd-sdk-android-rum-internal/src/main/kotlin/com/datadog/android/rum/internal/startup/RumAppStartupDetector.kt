@@ -22,21 +22,10 @@ import java.lang.ref.WeakReference
 interface RumAppStartupDetector {
     interface Listener {
         /**
-         * Called when a startup scenario is detected (first qualifying Activity onCreate).
+         * Called when a startup scenario is detected.
          */
         fun onAppStartupDetected(scenario: RumStartupScenario)
 
-        /**
-         * Called when the TTID duration has been measured (first frame drawn).
-         *
-         * @param scenario the startup scenario the measurement belongs to.
-         * @param durationNs the measured time to initial display, in nanoseconds.
-         * @param wasForwarded `true` when the first frame was drawn by an Activity other than the
-         * one the scenario was opened for.
-         * @param forwardedActivity the Activity that actually drew, when it is not the one the
-         * scenario was opened for (`wasForwarded == true`); `null` otherwise. Consumers that
-         * buffer these events need it to re-apply an Activity predicate after the fact.
-         */
         fun onTTIDComputed(
             scenario: RumStartupScenario,
             durationNs: Long,

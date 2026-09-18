@@ -728,10 +728,14 @@ public abstract class com/datadog/android/internal/time/BaseTimeProvider : com/d
 }
 
 public final class com/datadog/android/internal/time/DefaultAppStartTimeProvider : com/datadog/android/internal/time/AppStartTimeProvider {
+	public static final field Companion Lcom/datadog/android/internal/time/DefaultAppStartTimeProvider$Companion;
 	public fun <init> (Lkotlin/jvm/functions/Function0;Lcom/datadog/android/internal/system/BuildSdkVersionProvider;)V
 	public synthetic fun <init> (Lkotlin/jvm/functions/Function0;Lcom/datadog/android/internal/system/BuildSdkVersionProvider;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun getAppStartTimeNs ()J
 	public fun getAppUptimeNs ()J
+}
+
+public final class com/datadog/android/internal/time/DefaultAppStartTimeProvider$Companion {
 }
 
 public final class com/datadog/android/internal/time/DefaultTimeProvider : com/datadog/android/internal/time/BaseTimeProvider {

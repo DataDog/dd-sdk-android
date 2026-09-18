@@ -35,8 +35,15 @@ interface com.datadog.android.rum.internal.startup.RumFirstDrawTimeReporter
   interface Callback
     fun onFirstFrameDrawn(Long)
   fun subscribeToFirstFrameDrawn(android.app.Activity, Callback): Handle
+class com.datadog.android.rum.internal.startup.RumFirstDrawTimeReporterHandleImpl : RumFirstDrawTimeReporter.Handle, com.datadog.android.rum.internal.utils.window.RumWindowCallbackListener, android.view.View.OnAttachStateChangeListener, android.view.ViewTreeObserver.OnDrawListener
+  constructor(RumFirstDrawTimeReporter.Callback, android.app.Activity, (String, Throwable) -> Unit, () -> Long, com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistry, android.os.Handler)
+  override fun unsubscribe()
+  override fun onContentChanged()
+  override fun onViewAttachedToWindow(android.view.View)
+  override fun onViewDetachedFromWindow(android.view.View)
+  override fun onDraw()
 class com.datadog.android.rum.internal.startup.RumFirstDrawTimeReporterImpl : RumFirstDrawTimeReporter
-  constructor(() -> Long, WindowCallbacksRegistry, android.os.Handler, String = "DD/AppLaunch", (String, Throwable) -> Unit = { message,throwable->Log.w(logTag,message,throwable) })
+  constructor(() -> Long, com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistry, android.os.Handler, String = "DD/AppLaunch", (String, Throwable) -> Unit = { message,throwable->Log.w(logTag,message,throwable) })
   override fun subscribeToFirstFrameDrawn(android.app.Activity, RumFirstDrawTimeReporter.Callback): RumFirstDrawTimeReporter.Handle
 sealed interface com.datadog.android.rum.internal.startup.RumStartupScenario
   val initialTime: com.datadog.android.rum.internal.domain.Time
@@ -48,18 +55,15 @@ sealed interface com.datadog.android.rum.internal.startup.RumStartupScenario
     constructor(Boolean, java.lang.ref.WeakReference<android.app.Activity>, Long, com.datadog.android.rum.internal.domain.Time)
   class WarmAfterActivityDestroyed : RumStartupScenario
     constructor(Boolean, java.lang.ref.WeakReference<android.app.Activity>, com.datadog.android.rum.internal.domain.Time)
-  companion object 
-    val START_GAP_THRESHOLD_NS: Long
-    fun build(Boolean, Boolean, java.lang.ref.WeakReference<android.app.Activity>, com.datadog.android.rum.internal.domain.Time, com.datadog.android.rum.internal.domain.Time): RumStartupScenario
 val name: String
 val appStartActivityOnCreateGapNs: Long?
 data class com.datadog.android.rum.internal.startup.RumTTIDInfo
   constructor(RumStartupScenario, Long, Boolean = false)
-interface com.datadog.android.rum.internal.startup.WindowCallbackListener
+interface com.datadog.android.rum.internal.utils.window.RumWindowCallbackListener
   fun onContentChanged()
-interface com.datadog.android.rum.internal.startup.WindowCallbacksRegistry
-  fun addListener(android.app.Activity, WindowCallbackListener)
-  fun removeListener(android.app.Activity, WindowCallbackListener)
-class com.datadog.android.rum.internal.startup.WindowCallbacksRegistryImpl : WindowCallbacksRegistry
-  override fun addListener(android.app.Activity, WindowCallbackListener)
-  override fun removeListener(android.app.Activity, WindowCallbackListener)
+interface com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistry
+  fun addListener(android.app.Activity, RumWindowCallbackListener)
+  fun removeListener(android.app.Activity, RumWindowCallbackListener)
+class com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistryImpl : RumWindowCallbacksRegistry
+  override fun addListener(android.app.Activity, RumWindowCallbackListener)
+  override fun removeListener(android.app.Activity, RumWindowCallbackListener)

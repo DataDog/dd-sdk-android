@@ -19,7 +19,6 @@ package com.datadog.android.rum.internal.startup
 import android.app.Activity
 import com.datadog.android.rum.internal.domain.Time
 import java.lang.ref.WeakReference
-import kotlin.time.Duration.Companion.seconds
 
 sealed interface RumStartupScenario {
     val initialTime: Time
@@ -45,43 +44,6 @@ sealed interface RumStartupScenario {
         override val activity: WeakReference<Activity>,
         override val initialTime: Time
     ) : RumStartupScenario
-
-    companion object {
-        val START_GAP_THRESHOLD_NS: Long = 10.seconds.inWholeNanoseconds
-
-        fun build(
-            isFirstActivityForProcess: Boolean,
-            hasSavedInstanceStateBundle: Boolean,
-            activity: WeakReference<Activity>,
-            processStartTime: Time,
-            activityOnCreateTime: Time
-        ): RumStartupScenario {
-            return if (isFirstActivityForProcess) {
-                val gapNs = activityOnCreateTime.nanoTime - processStartTime.nanoTime
-                if (gapNs > START_GAP_THRESHOLD_NS) {
-                    WarmFirstActivity(
-                        hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                        activity = activity,
-                        appStartActivityOnCreateGapNs = gapNs,
-                        initialTime = activityOnCreateTime
-                    )
-                } else {
-                    Cold(
-                        hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                        activity = activity,
-                        appStartActivityOnCreateGapNs = gapNs,
-                        initialTime = processStartTime
-                    )
-                }
-            } else {
-                WarmAfterActivityDestroyed(
-                    hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                    activity = activity,
-                    initialTime = activityOnCreateTime
-                )
-            }
-        }
-    }
 }
 
 val RumStartupScenario.name: String get() = when (this) {

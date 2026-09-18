@@ -93,7 +93,6 @@ import com.datadog.android.rum.internal.startup.RumAppStartupDetectorImpl
 import com.datadog.android.rum.internal.startup.RumFirstDrawTimeReporterImpl
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
-import com.datadog.android.rum.internal.startup.WindowCallbacksRegistryImpl
 import com.datadog.android.rum.internal.startup.name
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.rum.internal.timeseries.DefaultTimeseriesCollectorFactory
@@ -103,6 +102,7 @@ import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
+import com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistryImpl
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
 import com.datadog.android.rum.internal.vitals.CPUVitalReader
 import com.datadog.android.rum.internal.vitals.CpuStatReader
@@ -828,7 +828,7 @@ internal class RumFeature(
             },
             rumFirstDrawTimeReporter = RumFirstDrawTimeReporterImpl(
                 timeProviderNs = { internalSdkCore.timeProvider.getDeviceElapsedTimeNanos() },
-                windowCallbacksRegistry = WindowCallbacksRegistryImpl(),
+                windowCallbacksRegistry = RumWindowCallbacksRegistryImpl(),
                 handler = Handler(Looper.getMainLooper()),
                 warnLogger = { message, throwable ->
                     sdkCore.internalLogger.log(

@@ -25,6 +25,7 @@ import java.lang.ref.WeakReference
 import java.util.Collections
 import java.util.WeakHashMap
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 class RumAppStartupDetectorImpl(
     private val application: Application,
@@ -64,6 +65,7 @@ class RumAppStartupDetectorImpl(
     override fun onActivityDestroyed(activity: Activity) {
         numberOfActivities--
         trackedActivities.remove(activity)
+
         firstFrameHandles.remove(activity)?.unsubscribe()
 
         if (numberOfActivities == 0) {
@@ -71,16 +73,22 @@ class RumAppStartupDetectorImpl(
         }
     }
 
-    override fun onActivityPaused(activity: Activity) {}
+    override fun onActivityPaused(activity: Activity) {
+    }
 
-    override fun onActivityResumed(activity: Activity) {}
+    override fun onActivityResumed(activity: Activity) {
+    }
 
-    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
+    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
+    }
 
-    override fun onActivityStarted(activity: Activity) {}
+    override fun onActivityStarted(activity: Activity) {
+    }
 
-    override fun onActivityStopped(activity: Activity) {}
+    override fun onActivityStopped(activity: Activity) {
+    }
 
+    @Suppress("LongMethod")
     private fun onBeforeActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
         numberOfActivities++
         val now = currentTime()
@@ -91,6 +99,8 @@ class RumAppStartupDetectorImpl(
             trackedActivities.add(activity)
         }
 
+        // Clear a stale pending scenario so a re-launch in the same process
+        // is not blocked by an interstitial that never forwarded TTID.
         val stalePending = pendingScenario
         if (stalePending != null &&
             now.nanoTime - stalePending.initialTime.nanoTime > MAX_TTID_DURATION_NS
@@ -106,25 +116,59 @@ class RumAppStartupDetectorImpl(
 
         if (isFirstTrackedActivityWithNoPendingStartup) {
             val processStartTime = appStartupTime()
-            val scenario = RumStartupScenario.build(
-                isFirstActivityForProcess = isFirstActivityForProcess,
-                hasSavedInstanceStateBundle = savedInstanceState != null,
-                activity = WeakReference(activity),
-                processStartTime = processStartTime,
-                activityOnCreateTime = now
-            )
+
+            val gapNs = now.nanoTime - processStartTime.nanoTime
+            val hasSavedInstanceStateBundle = savedInstanceState != null
+            val weakActivity = WeakReference(activity)
+
+            val scenario = if (isFirstActivityForProcess) {
+                if (gapNs > START_GAP_THRESHOLD_NS) {
+                    RumStartupScenario.WarmFirstActivity(
+                        hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+                        activity = weakActivity,
+                        appStartActivityOnCreateGapNs = gapNs,
+                        initialTime = now
+                    )
+                } else {
+                    RumStartupScenario.Cold(
+                        hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+                        activity = weakActivity,
+                        appStartActivityOnCreateGapNs = gapNs,
+                        initialTime = processStartTime
+                    )
+                }
+            } else {
+                RumStartupScenario.WarmAfterActivityDestroyed(
+                    hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+                    activity = weakActivity,
+                    initialTime = now
+                )
+            }
 
             pendingScenario = scenario
+
             listener.onAppStartupDetected(scenario)
-            subscribeToFirstFrameDrawn(scenario, activity, wasForwarded = false)
+
+            subscribeToFirstFrameDrawn(
+                scenario = scenario,
+                activity = activity,
+                wasForwarded = false
+            )
+
             isFirstActivityForProcess = false
         }
 
+        // If a pending scenario exists and this is a different qualifying activity,
+        // notify the listener so it can subscribe to this activity's first frame too.
         val currentPendingScenario = pendingScenario
         if (currentPendingScenario != null && shouldTrackStartup &&
             currentPendingScenario.activity.get() !== activity
         ) {
-            subscribeToFirstFrameDrawn(currentPendingScenario, activity, wasForwarded = true)
+            subscribeToFirstFrameDrawn(
+                scenario = currentPendingScenario,
+                activity = activity,
+                wasForwarded = true
+            )
         }
     }
 
@@ -137,15 +181,18 @@ class RumAppStartupDetectorImpl(
             override fun onFirstFrameDrawn(timestampNs: Long) {
                 firstFrameHandles.remove(activity)
 
+                // Another activity may have already reported TTID
                 if (pendingScenario !== scenario) return
 
                 val durationNs = timestampNs - scenario.initialTime.nanoTime
+
                 listener.onTTIDComputed(
                     scenario = scenario,
                     durationNs = durationNs,
                     wasForwarded = wasForwarded,
                     forwardedActivity = if (wasForwarded) WeakReference(activity) else null
                 )
+
                 pendingScenario = null
             }
         }
@@ -159,11 +206,13 @@ class RumAppStartupDetectorImpl(
     override fun destroy() {
         pendingScenario = null
         application.unregisterActivityLifecycleCallbacks(this)
+
         firstFrameHandles.forEach { (_, handle) -> handle.unsubscribe() }
         firstFrameHandles.clear()
     }
 
     companion object {
+        private val START_GAP_THRESHOLD_NS = 10.seconds.inWholeNanoseconds
         private val MAX_TTID_DURATION_NS = 1.minutes.inWholeNanoseconds
     }
 }

@@ -301,6 +301,7 @@ class com.datadog.android.internal.time.DefaultAppStartTimeProvider : AppStartTi
   constructor(() -> TimeProvider, com.datadog.android.internal.system.BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT)
   override val appStartTimeNs: Long
   override val appUptimeNs: Long
+  companion object 
 class com.datadog.android.internal.time.DefaultTimeProvider : BaseTimeProvider
   override fun getServerTimestampMillis(): Long
   override fun getServerOffsetNanos(): Long

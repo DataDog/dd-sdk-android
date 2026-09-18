@@ -71,14 +71,22 @@ public abstract interface class com/datadog/android/rum/internal/startup/RumFirs
 	public abstract fun unsubscribe ()V
 }
 
+public final class com/datadog/android/rum/internal/startup/RumFirstDrawTimeReporterHandleImpl : android/view/View$OnAttachStateChangeListener, android/view/ViewTreeObserver$OnDrawListener, com/datadog/android/rum/internal/startup/RumFirstDrawTimeReporter$Handle, com/datadog/android/rum/internal/utils/window/RumWindowCallbackListener {
+	public fun <init> (Lcom/datadog/android/rum/internal/startup/RumFirstDrawTimeReporter$Callback;Landroid/app/Activity;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function0;Lcom/datadog/android/rum/internal/utils/window/RumWindowCallbacksRegistry;Landroid/os/Handler;)V
+	public fun onContentChanged ()V
+	public fun onDraw ()V
+	public fun onViewAttachedToWindow (Landroid/view/View;)V
+	public fun onViewDetachedFromWindow (Landroid/view/View;)V
+	public fun unsubscribe ()V
+}
+
 public final class com/datadog/android/rum/internal/startup/RumFirstDrawTimeReporterImpl : com/datadog/android/rum/internal/startup/RumFirstDrawTimeReporter {
-	public fun <init> (Lkotlin/jvm/functions/Function0;Lcom/datadog/android/rum/internal/startup/WindowCallbacksRegistry;Landroid/os/Handler;Ljava/lang/String;Lkotlin/jvm/functions/Function2;)V
-	public synthetic fun <init> (Lkotlin/jvm/functions/Function0;Lcom/datadog/android/rum/internal/startup/WindowCallbacksRegistry;Landroid/os/Handler;Ljava/lang/String;Lkotlin/jvm/functions/Function2;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lkotlin/jvm/functions/Function0;Lcom/datadog/android/rum/internal/utils/window/RumWindowCallbacksRegistry;Landroid/os/Handler;Ljava/lang/String;Lkotlin/jvm/functions/Function2;)V
+	public synthetic fun <init> (Lkotlin/jvm/functions/Function0;Lcom/datadog/android/rum/internal/utils/window/RumWindowCallbacksRegistry;Landroid/os/Handler;Ljava/lang/String;Lkotlin/jvm/functions/Function2;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun subscribeToFirstFrameDrawn (Landroid/app/Activity;Lcom/datadog/android/rum/internal/startup/RumFirstDrawTimeReporter$Callback;)Lcom/datadog/android/rum/internal/startup/RumFirstDrawTimeReporter$Handle;
 }
 
 public abstract interface class com/datadog/android/rum/internal/startup/RumStartupScenario {
-	public static final field Companion Lcom/datadog/android/rum/internal/startup/RumStartupScenario$Companion;
 	public abstract fun getActivity ()Ljava/lang/ref/WeakReference;
 	public abstract fun getHasSavedInstanceStateBundle ()Z
 	public abstract fun getInitialTime ()Lcom/datadog/android/rum/internal/domain/Time;
@@ -90,11 +98,6 @@ public final class com/datadog/android/rum/internal/startup/RumStartupScenario$C
 	public final fun getAppStartActivityOnCreateGapNs ()J
 	public fun getHasSavedInstanceStateBundle ()Z
 	public fun getInitialTime ()Lcom/datadog/android/rum/internal/domain/Time;
-}
-
-public final class com/datadog/android/rum/internal/startup/RumStartupScenario$Companion {
-	public final fun build (ZZLjava/lang/ref/WeakReference;Lcom/datadog/android/rum/internal/domain/Time;Lcom/datadog/android/rum/internal/domain/Time;)Lcom/datadog/android/rum/internal/startup/RumStartupScenario;
-	public final fun getSTART_GAP_THRESHOLD_NS ()J
 }
 
 public final class com/datadog/android/rum/internal/startup/RumStartupScenario$WarmAfterActivityDestroyed : com/datadog/android/rum/internal/startup/RumStartupScenario {
@@ -133,18 +136,18 @@ public final class com/datadog/android/rum/internal/startup/RumTTIDInfo {
 	public fun toString ()Ljava/lang/String;
 }
 
-public abstract interface class com/datadog/android/rum/internal/startup/WindowCallbackListener {
+public abstract interface class com/datadog/android/rum/internal/utils/window/RumWindowCallbackListener {
 	public abstract fun onContentChanged ()V
 }
 
-public abstract interface class com/datadog/android/rum/internal/startup/WindowCallbacksRegistry {
-	public abstract fun addListener (Landroid/app/Activity;Lcom/datadog/android/rum/internal/startup/WindowCallbackListener;)V
-	public abstract fun removeListener (Landroid/app/Activity;Lcom/datadog/android/rum/internal/startup/WindowCallbackListener;)V
+public abstract interface class com/datadog/android/rum/internal/utils/window/RumWindowCallbacksRegistry {
+	public abstract fun addListener (Landroid/app/Activity;Lcom/datadog/android/rum/internal/utils/window/RumWindowCallbackListener;)V
+	public abstract fun removeListener (Landroid/app/Activity;Lcom/datadog/android/rum/internal/utils/window/RumWindowCallbackListener;)V
 }
 
-public final class com/datadog/android/rum/internal/startup/WindowCallbacksRegistryImpl : com/datadog/android/rum/internal/startup/WindowCallbacksRegistry {
+public final class com/datadog/android/rum/internal/utils/window/RumWindowCallbacksRegistryImpl : com/datadog/android/rum/internal/utils/window/RumWindowCallbacksRegistry {
 	public fun <init> ()V
-	public fun addListener (Landroid/app/Activity;Lcom/datadog/android/rum/internal/startup/WindowCallbackListener;)V
-	public fun removeListener (Landroid/app/Activity;Lcom/datadog/android/rum/internal/startup/WindowCallbackListener;)V
+	public fun addListener (Landroid/app/Activity;Lcom/datadog/android/rum/internal/utils/window/RumWindowCallbackListener;)V
+	public fun removeListener (Landroid/app/Activity;Lcom/datadog/android/rum/internal/utils/window/RumWindowCallbackListener;)V
 }
 
