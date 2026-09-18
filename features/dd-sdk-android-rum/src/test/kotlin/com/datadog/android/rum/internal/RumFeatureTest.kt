@@ -21,8 +21,6 @@ import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.JvmCrash
 import com.datadog.android.core.feature.event.ThreadDump
-import com.datadog.android.event.EventMapper
-import com.datadog.android.event.MapperSerializer
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
 import com.datadog.android.internal.profiling.ProfilingAnomalyDetectedEvent
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
@@ -43,12 +41,11 @@ import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilityReader
-import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilityReader
-import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.battery.DefaultBatteryInfoProvider
 import com.datadog.android.rum.internal.domain.display.DefaultDisplayInfoProvider
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
+import com.datadog.android.rum.internal.domain.event.RumEventSerializer
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -674,20 +671,16 @@ internal class RumFeatureTest {
 
         // Then
         assertThat(testedFeature.dataWriter).isInstanceOf(RumDataWriter::class.java)
-        val serializer = (testedFeature.dataWriter as RumDataWriter).eventSerializer
-        assertThat(serializer).isInstanceOf(MapperSerializer::class.java)
-        val eventMapper = (serializer as MapperSerializer)
-            .getFieldValue<EventMapper<*>, MapperSerializer<*>>("eventMapper")
-        assertThat(eventMapper).isInstanceOf(RumEventMapper::class.java)
-        val rumEventMapper = eventMapper as RumEventMapper
+        val rumDataWriter = testedFeature.dataWriter as RumDataWriter
+        assertThat(rumDataWriter.eventSerializer).isInstanceOf(RumEventSerializer::class.java)
+        val rumEventMapper = rumDataWriter.eventMapper
+        assertThat(rumEventMapper).isInstanceOf(RumEventMapper::class.java)
         assertThat(rumEventMapper.actionEventMapper)
             .isSameAs(fakeConfiguration.actionEventMapper)
         assertThat(rumEventMapper.errorEventMapper)
             .isSameAs(fakeConfiguration.errorEventMapper)
         assertThat(rumEventMapper.resourceEventMapper)
             .isSameAs(fakeConfiguration.resourceEventMapper)
-        assertThat(rumEventMapper.viewEventMapper)
-            .isSameAs(fakeConfiguration.viewEventMapper)
         assertThat(rumEventMapper.longTaskEventMapper)
             .isSameAs(fakeConfiguration.longTaskEventMapper)
         assertThat(rumEventMapper.telemetryConfigurationMapper)
@@ -887,7 +880,7 @@ internal class RumFeatureTest {
     ) {
         // Given
         fakeConfiguration = fakeConfiguration.copy(
-            timeseriesConfiguration = TimeseriesConfiguration.Builder().build()
+            timeseriesConfiguration = TimeseriesConfiguration.DEFAULT
         )
         testedFeature = RumFeature(
             mockSdkCore,
@@ -939,7 +932,7 @@ internal class RumFeatureTest {
         fakeConfiguration = fakeConfiguration.copy(
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER,
             slowFramesConfiguration = null,
-            timeseriesConfiguration = TimeseriesConfiguration.Builder().build()
+            timeseriesConfiguration = TimeseriesConfiguration.DEFAULT
         )
         testedFeature = RumFeature(
             mockSdkCore,
@@ -1262,6 +1255,8 @@ internal class RumFeatureTest {
 
         assertThat(attributesCaptor.firstValue[RumAttributes.INTERNAL_TIMESTAMP])
             .isEqualTo(fakeEvent.detectedAtMs)
+        assertThat(attributesCaptor.firstValue[RumAttributes.INTERNAL_TRIGGERED_BY_PROFILING] as Boolean)
+            .isTrue()
 
         @Suppress("UNCHECKED_CAST")
         val attached = attributesCaptor.firstValue[RumAttributes.INTERNAL_ALL_THREADS] as List<ThreadDump>
@@ -1747,9 +1742,6 @@ internal class RumFeatureTest {
 
         // Then
         assertThat(testedFeature.accessibilityReader).isInstanceOf(NoOpAccessibilityReader::class.java)
-        assertThat(
-            testedFeature.accessibilitySnapshotManager
-        ).isInstanceOf(NoOpAccessibilitySnapshotManager::class.java)
     }
 
     @Test
@@ -1770,9 +1762,6 @@ internal class RumFeatureTest {
 
         // Then
         assertThat(testedFeature.accessibilityReader).isInstanceOf(DefaultAccessibilityReader::class.java)
-        assertThat(
-            testedFeature.accessibilitySnapshotManager
-        ).isInstanceOf(DefaultAccessibilitySnapshotManager::class.java)
     }
 
     @Test
@@ -1795,9 +1784,6 @@ internal class RumFeatureTest {
 
         // Then
         assertThat(testedFeature.accessibilityReader).isInstanceOf(NoOpAccessibilityReader::class.java)
-        assertThat(
-            testedFeature.accessibilitySnapshotManager
-        ).isInstanceOf(NoOpAccessibilitySnapshotManager::class.java)
     }
 
     @Test

@@ -10,7 +10,7 @@ import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 
 internal interface ProfilingTriggerListener {
-    fun onAnrDetected(event: ProfilingAnrDetectedEvent)
+    fun onAnrDetected(event: ProfilingAnrDetectedEvent, result: PerfettoResult)
 
     fun onOutOfMemoryDetected(result: PerfettoResult)
 

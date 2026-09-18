@@ -160,8 +160,11 @@ internal class ProfilingManagerTriggerRegistrar(
             }
             if (callbackDelayMs != null && !droppedAsStale) {
                 forwardTriggerResult(triggerType, currentListener, detectedAtMs, resultPath)
-                // We currently don't use the result profile, just delete it.
-                safeDelete(resultPath)
+                if (triggerType != ProfilingTrigger.TRIGGER_TYPE_ANR) {
+                    // OOM/Anomaly results aren't wired to the writer yet, so the profile is unused.
+                    // ANR results are owned by the listener (pending trigger profile matching).
+                    safeDelete(resultPath)
+                }
             } else {
                 // Not forwarded (stale, or could not compute staleness): delete to avoid leaking.
                 safeDelete(resultPath)
@@ -189,7 +192,15 @@ internal class ProfilingManagerTriggerRegistrar(
     ) {
         when (triggerType) {
             ProfilingTrigger.TRIGGER_TYPE_ANR ->
-                listener.onAnrDetected(threadDumper.dump(detectedAtMs))
+                listener.onAnrDetected(
+                    event = threadDumper.dump(detectedAtMs),
+                    result = PerfettoResult(
+                        start = detectedAtMs,
+                        startReason = ProfilingStartReason.ANR,
+                        end = detectedAtMs,
+                        resultFilePath = resultPath
+                    )
+                )
 
             ProfilingTrigger.TRIGGER_TYPE_OOM ->
                 listener.onOutOfMemoryDetected(

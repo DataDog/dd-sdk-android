@@ -19,10 +19,12 @@ import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.internal.rum.RumSessionConstants
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.configuration.RumViewEventWriteConfig
+import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
@@ -57,7 +59,7 @@ internal class RumSessionScope(
     networkSettledResourceIdentifier: InitialResourceIdentifier,
     lastInteractionIdentifier: LastInteractionIdentifier?,
     slowFramesListener: SlowFramesListener?,
-    accessibilitySnapshotManager: AccessibilitySnapshotManager,
+    accessibilityInfoProvider: InfoProvider<AccessibilityInfo>,
     batteryInfoProvider: InfoProvider<BatteryInfo>,
     displayInfoProvider: InfoProvider<DisplayInfo>,
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
@@ -65,6 +67,8 @@ internal class RumSessionScope(
     private val rumSessionTypeOverride: RumSessionType?,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
     insightsCollector: InsightsCollector,
+    private val viewEventMapper: ViewEventMapper,
+    private val rumViewEventWriteConfig: RumViewEventWriteConfig,
     heatmapIdentifierRegistry: HeatmapIdentifierRegistry?,
     private val timeseriesCollectorFactory: TimeseriesCollector.Factory = NoOpTimeseriesCollectorFactory()
 ) : RumScope {
@@ -102,10 +106,12 @@ internal class RumSessionScope(
         slowFramesListener = slowFramesListener,
         lastInteractionIdentifier = lastInteractionIdentifier,
         rumSessionTypeOverride = rumSessionTypeOverride,
-        accessibilitySnapshotManager = accessibilitySnapshotManager,
+        accessibilityInfoProvider = accessibilityInfoProvider,
         batteryInfoProvider = batteryInfoProvider,
         displayInfoProvider = displayInfoProvider,
         insightsCollector = insightsCollector,
+        viewEventMapper = viewEventMapper,
+        rumViewEventWriteConfig = rumViewEventWriteConfig,
         heatmapIdentifierRegistry = heatmapIdentifierRegistry
     )
 
@@ -123,7 +129,7 @@ internal class RumSessionScope(
 
         companion object {
             fun fromString(string: String?): State? {
-                return values().firstOrNull { it.asString == string }
+                return entries.firstOrNull { it.asString == string }
             }
         }
     }
@@ -140,7 +146,7 @@ internal class RumSessionScope(
 
         companion object {
             fun fromString(string: String?): StartReason? {
-                return values().firstOrNull { it.asString == string }
+                return entries.firstOrNull { it.asString == string }
             }
         }
     }

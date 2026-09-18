@@ -75,7 +75,7 @@ public data class Jacket(
 
         public companion object {
             @JvmStatic
-            public fun fromJson(jsonString: String): Size = values().first {
+            public fun fromJson(jsonString: String): Size = entries.first {
                 it.jsonValue.toString() == jsonString
             }
         }

@@ -301,7 +301,13 @@ internal constructor(
             return this
         }
 
-        internal fun setRemoteConfigurationId(remoteConfigurationId: String): Builder {
+        /**
+         * Sets the remote configuration ID used to fetch SDK settings from the Datadog CDN.
+         *
+         * @param remoteConfigurationId the opaque identifier assigned during application
+         * onboarding in the Datadog UI.
+         */
+        fun setRemoteConfigurationId(remoteConfigurationId: String): Builder {
             coreConfig = coreConfig.copy(remoteConfigurationId = remoteConfigurationId)
             return this
         }

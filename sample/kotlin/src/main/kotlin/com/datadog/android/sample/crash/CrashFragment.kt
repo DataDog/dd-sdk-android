@@ -93,7 +93,18 @@ internal class CrashFragment :
     }
 
     private fun triggerANR() {
-        mainThreadHandler.postDelayed({ Thread.sleep(100000) }, 1)
+        // Simulate an ANR by running a CPU-intensive busy loop on the main thread.
+        // Unlike Thread.sleep, this keeps the main thread schedulable but fully blocked
+        // processing work, which better exercises the system ANR detection path.
+        mainThreadHandler.postDelayed({
+            var dummy = 0.0
+            val end = System.currentTimeMillis() + 100_000L
+            while (System.currentTimeMillis() < end) {
+                // Tight math loop to saturate the CPU on the main thread.
+                dummy += Math.sqrt(Math.random() * Double.MAX_VALUE)
+                if (dummy.isInfinite()) dummy = 0.0
+            }
+        }, 1)
     }
 
     private fun triggerOOM() {

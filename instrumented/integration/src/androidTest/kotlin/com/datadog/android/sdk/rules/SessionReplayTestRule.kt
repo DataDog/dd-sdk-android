@@ -73,7 +73,7 @@ internal open class SessionReplayTestRule<T : Activity>(
         val noneAlive = AtomicBoolean(false)
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             noneAlive.set(
-                Stage.values()
+                Stage.entries
                     .filter { it != Stage.DESTROYED }
                     .all { monitor.getActivitiesInStage(it).isEmpty() }
             )

@@ -151,8 +151,38 @@ class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
                     ViewEvent.Configuration(
                         sessionSampleRate = aFloat(min = 0f, max = 100f),
                         sessionReplaySampleRate = aNullable { aLong(min = 0, max = 100) },
-                        traceSampleRate = aNullable { aFloat(min = 0f, max = 100f) }
+                        profilingSampleRate = aNullable { aFloat(min = 0f, max = 100f) },
+                        traceSampleRate = aNullable { aFloat(min = 0f, max = 100f) },
+                        startSessionReplayRecordingManually = aNullable { aBool() }
                     )
+                },
+                replayStats = forge.aNullable {
+                    ViewEvent.ReplayStats(
+                        recordsCount = aNullable { aPositiveLong() },
+                        segmentsCount = aNullable { aPositiveLong() },
+                        segmentsTotalRawSize = aNullable { aPositiveLong() }
+                    )
+                },
+                profiling = forge.aNullable {
+                    ViewEvent.Profiling(
+                        status = aNullable { aValueFrom(ViewEvent.ProfilingStatus::class.java) },
+                        errorReason = aNullable { aValueFrom(ViewEvent.ErrorReason::class.java) }
+                    )
+                },
+                pageStates = forge.aNullable {
+                    // Page states are appended in chronological order — generate ascending starts.
+                    // Use small increments to avoid Long overflow.
+                    var t = 0L
+                    aList {
+                        t += aLong(min = 1L, max = 1_000_000L)
+                        ViewEvent.PageState(
+                            start = t,
+                            state = aValueFrom(ViewEvent.State::class.java)
+                        )
+                    }
+                },
+                cls = forge.aNullable {
+                    ViewEvent.DdCls(devicePixelRatio = aNullable { aDouble(min = 0.5, max = 4.0) })
                 }
             ),
             ddtags = forge.aNullable { ddTagsString() }

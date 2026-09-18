@@ -39,6 +39,7 @@ import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
+import com.datadog.android.trace.internal._TraceInternalProxy
 import com.datadog.android.trace.internal.net.SessionRebasedSampler
 import com.datadog.android.trace.internal.net.effectiveSampleRate
 import okhttp3.Interceptor
@@ -92,7 +93,8 @@ open class DatadogInterceptor internal constructor(
     redacted404ResourceName: Boolean,
     localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer,
     globalTracerProvider: () -> DatadogTracer?,
-    internal val resourceHeadersExtractor: ResourceHeadersExtractor? = null
+    internal val resourceHeadersExtractor: ResourceHeadersExtractor? = null,
+    defaultTracerCheck: (DatadogTracer) -> Boolean = _TraceInternalProxy::isDefaultTracer
 ) : TracingInterceptor(
     sdkInstanceName,
     tracedHosts,
@@ -102,7 +104,8 @@ open class DatadogInterceptor internal constructor(
     traceContextInjection,
     redacted404ResourceName,
     localTracerFactory,
-    globalTracerProvider
+    globalTracerProvider,
+    defaultTracerCheck
 ) {
     internal val rumResourceAttributesProvider: RumResourceAttributesProvider =
         rumResourceAttributesProvider as? NoOpRumResourceAttributesProvider
@@ -301,8 +304,13 @@ open class DatadogInterceptor internal constructor(
             // if there is a Content-Length available, we can read it directly
             // however, OkHttp will drop Content-Length header if transparent compression is
             // used (since the value reported cannot be applied to decompressed body), so to be
-            // able to still read it, we force decompression by calling peekBody
-            body.contentLengthOrNull() ?: response.peekBody(MAX_BODY_PEEK).contentLengthOrNull()
+            // able to still read it, we force decompression by calling peekBody - unless this is
+            // binary media (image/video/audio/octet-stream), which is large and not worth buffering
+            body.contentLengthOrNull() ?: if (HttpSpec.ContentType.isBinaryMedia(contentType)) {
+                null
+            } else {
+                response.peekBody(MAX_BODY_PEEK).contentLengthOrNull()
+            }
         } catch (e: IOException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -463,7 +471,7 @@ open class DatadogInterceptor internal constructor(
         internal const val ORIGIN_RUM = "rum"
 
         // We need to limit this value as the body will be loaded in memory
-        private const val MAX_BODY_PEEK: Long = 32 * 1024L * 1024L
+        private const val MAX_BODY_PEEK: Long = 512L * 1024L
 
         private const val ALL_IN_SAMPLE_RATE: Float = 100f
         private const val ZERO_SAMPLE_RATE: Float = 0f

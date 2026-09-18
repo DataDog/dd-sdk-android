@@ -18,6 +18,7 @@ import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.internal.utils.formatIsoUtc
 import com.datadog.android.profiling.assertj.ProfileEventAssert.Companion.assertThat
 import com.datadog.android.profiling.assertj.RumMetadataEventsAssert.Companion.assertThat
@@ -82,6 +83,9 @@ internal class ProfilingDataWriterTest {
     @Mock
     private lateinit var mockInternalLogger: InternalLogger
 
+    @Mock
+    private lateinit var mockTimeProvider: TimeProvider
+
     @TempDir
     lateinit var tmp: File
 
@@ -90,12 +94,6 @@ internal class ProfilingDataWriterTest {
 
     @BeforeEach
     fun `set up`() {
-        // Clamp serverTimeOffsetMs within the accepted threshold so existing tests are not
-        // accidentally rejected by the clock-drift guard. Tests that exercise the reject path
-        // override this value explicitly.
-        fakeDatadogContext = fakeDatadogContext.copy(
-            time = fakeDatadogContext.time.copy(serverTimeOffsetMs = 0L)
-        )
         testedDataWriterTest = ProfilingDataWriter(mockSdkCore)
         whenever(mockEventWriteScope.invoke(any())) doAnswer {
             val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
@@ -110,6 +108,8 @@ internal class ProfilingDataWriterTest {
             .thenReturn(mockProfilingFeature)
 
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.timeProvider) doReturn mockTimeProvider
+        whenever(mockTimeProvider.getDeviceElapsedRealtimeNanos()) doReturn 0L
     }
 
     @Test
@@ -121,6 +121,8 @@ internal class ProfilingDataWriterTest {
         forge: Forge
     ) {
         // Given
+        val fakeServerTimeMs = forge.aPositiveLong()
+        whenever(mockTimeProvider.getServerTimestampMillis()) doReturn fakeServerTimeMs
         val file = tmp.resolve(fakeResult.resultFilePath)
         val fakePerfettoBytes = forge.aString().toByteArray()
         file.writeBytes(fakePerfettoBytes)
@@ -184,6 +186,7 @@ internal class ProfilingDataWriterTest {
             .hasRuntime(ProfileEvent.Family.ANDROID)
             .hasVersion(4)
             .hasTags(expectedTagList)
+            .hasBootNtp(TimeUnit.MILLISECONDS.toNanos(fakeServerTimeMs))
             .hasApplicationId(rumContext.applicationId)
             .hasSessionId(rumContext.sessionId)
             .hasViewIds(
@@ -248,6 +251,50 @@ internal class ProfilingDataWriterTest {
     }
 
     @Test
+    fun `M populate boot_ntp from server time minus boot time W write`(
+        @Forgery fakeResult: PerfettoResult,
+        @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
+        forge: Forge
+    ) {
+        // Given
+        val file = tmp.resolve(fakeResult.resultFilePath)
+        file.writeBytes(forge.aString().toByteArray())
+        val fakeServerTimeMs = forge.aPositiveLong()
+        val fakeBootTimeNs = forge.aLong(min = 1L, max = 1_000_000L)
+        val expectedBootNtpNs = TimeUnit.MILLISECONDS.toNanos(fakeServerTimeMs) - fakeBootTimeNs
+        whenever(mockTimeProvider.getServerTimestampMillis()) doReturn fakeServerTimeMs
+        whenever(mockTimeProvider.getDeviceElapsedRealtimeNanos()) doReturn fakeBootTimeNs
+        val rumContext = fakeVitals.first().rumContext
+        val alignedVitals = fakeVitals.map {
+            it.copy(
+                rumContext = it.rumContext.copy(
+                    applicationId = rumContext.applicationId,
+                    sessionId = rumContext.sessionId
+                )
+            )
+        }
+
+        // When
+        testedDataWriterTest.writeManualProfile(
+            profilingResult = fakeResult.copy(resultFilePath = file.absolutePath),
+            vitalEvents = alignedVitals,
+            anrEvents = emptyList(),
+            longTasks = emptyList()
+        )
+
+        // Then
+        val argumentCaptor = argumentCaptor<RawBatchEvent>()
+        verify(mockEventBatchWriter).write(
+            event = argumentCaptor.capture(),
+            batchMetadata = isNull(),
+            eventType = eq(EventType.DEFAULT)
+        )
+        val actualEvent = ProfileEvent.fromJson(String(argumentCaptor.firstValue.data))
+        assertThat(actualEvent).hasBootNtp(expectedBootNtpNs)
+        assertThat(file.exists()).isFalse()
+    }
+
+    @Test
     fun `M skip writing and log warn on delete W writeManualProfile() {perfetto file not found}`(
         @Forgery fakeResult: PerfettoResult,
         @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
@@ -279,7 +326,6 @@ internal class ProfilingDataWriterTest {
             ProfilingDataWriter.KEY_PROFILING_WRITE to mapOf(
                 ProfilingDataWriter.KEY_DROPPED to true,
                 ProfilingDataWriter.KEY_DROP_REASON to ProfilingDataWriter.DROP_REASON_PERFETTO_UNREADABLE,
-                ProfilingDataWriter.KEY_CLIENT_CLOCK_DRIFT to 0L,
                 ProfilingTelemetry.KEY_START_REASON to fakeResult.startReason.value,
                 ProfilingDataWriter.KEY_LONG_TASK_COUNT to fakeLongTasks.size,
                 ProfilingDataWriter.KEY_ANR_COUNT to fakeAnrs.size,
@@ -321,7 +367,6 @@ internal class ProfilingDataWriterTest {
             ProfilingDataWriter.KEY_PROFILING_WRITE to mapOf(
                 ProfilingDataWriter.KEY_DROPPED to true,
                 ProfilingDataWriter.KEY_DROP_REASON to ProfilingDataWriter.DROP_REASON_PERFETTO_UNREADABLE,
-                ProfilingDataWriter.KEY_CLIENT_CLOCK_DRIFT to 0L,
                 ProfilingTelemetry.KEY_START_REASON to fakeResult.startReason.value,
                 ProfilingDataWriter.KEY_LONG_TASK_COUNT to fakeLongTasks.size,
                 ProfilingDataWriter.KEY_ANR_COUNT to fakeAnrs.size,
@@ -361,7 +406,6 @@ internal class ProfilingDataWriterTest {
             ProfilingDataWriter.KEY_PROFILING_WRITE to mapOf(
                 ProfilingDataWriter.KEY_DROPPED to true,
                 ProfilingDataWriter.KEY_DROP_REASON to ProfilingDataWriter.DROP_REASON_NO_RUM_EVENTS,
-                ProfilingDataWriter.KEY_CLIENT_CLOCK_DRIFT to 0L,
                 ProfilingTelemetry.KEY_START_REASON to fakeResult.startReason.value,
                 ProfilingDataWriter.KEY_LONG_TASK_COUNT to 0,
                 ProfilingDataWriter.KEY_ANR_COUNT to 0,
@@ -498,16 +542,16 @@ internal class ProfilingDataWriterTest {
     }
 
     @Test
-    fun `M drop write metric on clock drift W writeManualProfile() {continuous, drift over threshold positive}`(
+    fun `M write profile and record boot_ntp W writeManualProfile() {extreme clock offset}`(
         @Forgery fakeResult: PerfettoResult,
         @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
         forge: Forge
     ) {
         // Given
-        val fakeDriftMs = forge.aLong(min = ProfilingDataWriter.MAX_CLOCK_DRIFT_MS + 1, max = Long.MAX_VALUE / 2)
-        fakeDatadogContext = fakeDatadogContext.copy(
-            time = fakeDatadogContext.time.copy(serverTimeOffsetMs = fakeDriftMs)
-        )
+        val fakeServerTimeMs = forge.aLong(min = 1_000_000_000_000L, max = 2_000_000_000_000L)
+        val fakeBootTimeNs = forge.aLong(min = 1L, max = 1_000_000L)
+        whenever(mockTimeProvider.getServerTimestampMillis()) doReturn fakeServerTimeMs
+        whenever(mockTimeProvider.getDeviceElapsedRealtimeNanos()) doReturn fakeBootTimeNs
         val file = tmp.resolve(fakeResult.resultFilePath)
         file.writeBytes(forge.aString().toByteArray())
 
@@ -523,12 +567,21 @@ internal class ProfilingDataWriterTest {
         )
 
         // Then
+        val argumentCaptor = argumentCaptor<RawBatchEvent>()
+        verify(mockEventBatchWriter).write(
+            event = argumentCaptor.capture(),
+            batchMetadata = isNull(),
+            eventType = eq(EventType.DEFAULT)
+        )
+        val actualEvent = ProfileEvent.fromJson(String(argumentCaptor.firstValue.data))
+        assertThat(actualEvent).hasBootNtp(
+            TimeUnit.MILLISECONDS.toNanos(fakeServerTimeMs) - fakeBootTimeNs
+        )
         val expectedProps = mapOf(
             ProfilingTelemetry.KEY_METRIC_TYPE to ProfilingDataWriter.METRIC_TYPE_PROFILING_WRITE,
             ProfilingDataWriter.KEY_PROFILING_WRITE to mapOf(
-                ProfilingDataWriter.KEY_DROPPED to true,
-                ProfilingDataWriter.KEY_DROP_REASON to ProfilingDataWriter.DROP_REASON_CLOCK_DRIFT,
-                ProfilingDataWriter.KEY_CLIENT_CLOCK_DRIFT to fakeDriftMs,
+                ProfilingDataWriter.KEY_DROPPED to false,
+                ProfilingDataWriter.KEY_DROP_REASON to null,
                 ProfilingTelemetry.KEY_START_REASON to ProfilingStartReason.CONTINUOUS.value,
                 ProfilingDataWriter.KEY_LONG_TASK_COUNT to 0,
                 ProfilingDataWriter.KEY_ANR_COUNT to 0,
@@ -541,151 +594,6 @@ internal class ProfilingDataWriterTest {
             eq(MethodCallSamplingRate.ALL.rate),
             isNull()
         )
-        verifyNoInteractions(mockEventBatchWriter)
-        assertThat(file.exists()).isFalse()
-    }
-
-    @Test
-    fun `M drop write metric on clock drift W writeManualProfile() {continuous, drift over threshold negative}`(
-        @Forgery fakeResult: PerfettoResult,
-        @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
-        forge: Forge
-    ) {
-        // Given — negative drift beyond -(MAX_CLOCK_DRIFT_MS)
-        val fakeDriftMs = forge.aLong(min = Long.MIN_VALUE / 2, max = -(ProfilingDataWriter.MAX_CLOCK_DRIFT_MS + 1))
-        fakeDatadogContext = fakeDatadogContext.copy(
-            time = fakeDatadogContext.time.copy(serverTimeOffsetMs = fakeDriftMs)
-        )
-        val file = tmp.resolve(fakeResult.resultFilePath)
-        file.writeBytes(forge.aString().toByteArray())
-
-        // When
-        testedDataWriterTest.writeManualProfile(
-            profilingResult = fakeResult.copy(
-                resultFilePath = file.absolutePath,
-                startReason = ProfilingStartReason.CONTINUOUS
-            ),
-            vitalEvents = fakeVitals,
-            anrEvents = emptyList(),
-            longTasks = emptyList()
-        )
-
-        // Then
-        val expectedProps = mapOf(
-            ProfilingTelemetry.KEY_METRIC_TYPE to ProfilingDataWriter.METRIC_TYPE_PROFILING_WRITE,
-            ProfilingDataWriter.KEY_PROFILING_WRITE to mapOf(
-                ProfilingDataWriter.KEY_DROPPED to true,
-                ProfilingDataWriter.KEY_DROP_REASON to ProfilingDataWriter.DROP_REASON_CLOCK_DRIFT,
-                ProfilingDataWriter.KEY_CLIENT_CLOCK_DRIFT to fakeDriftMs,
-                ProfilingTelemetry.KEY_START_REASON to ProfilingStartReason.CONTINUOUS.value,
-                ProfilingDataWriter.KEY_LONG_TASK_COUNT to 0,
-                ProfilingDataWriter.KEY_ANR_COUNT to 0,
-                ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size
-            )
-        )
-        verify(mockInternalLogger).logMetric(
-            any(),
-            eq(expectedProps),
-            eq(MethodCallSamplingRate.ALL.rate),
-            isNull()
-        )
-        verifyNoInteractions(mockEventBatchWriter)
-        assertThat(file.exists()).isFalse()
-    }
-
-    @Test
-    fun `M write profile despite clock drift W writeManualProfile() {app launch, drift over threshold positive}`(
-        @Forgery fakeResult: PerfettoResult,
-        @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
-        forge: Forge
-    ) {
-        // Given
-        val fakeDriftMs = forge.aLong(min = ProfilingDataWriter.MAX_CLOCK_DRIFT_MS + 1, max = Long.MAX_VALUE / 2)
-        fakeDatadogContext = fakeDatadogContext.copy(
-            time = fakeDatadogContext.time.copy(serverTimeOffsetMs = fakeDriftMs)
-        )
-        val file = tmp.resolve(fakeResult.resultFilePath)
-        file.writeBytes(forge.aString().toByteArray())
-
-        // When
-        testedDataWriterTest.writeManualProfile(
-            profilingResult = fakeResult.copy(
-                resultFilePath = file.absolutePath,
-                startReason = ProfilingStartReason.APPLICATION_LAUNCH
-            ),
-            vitalEvents = fakeVitals,
-            anrEvents = emptyList(),
-            longTasks = emptyList()
-        )
-
-        // Then — profile is written, metric reports dropped=false with no clock-drift drop reason
-        val expectedProps = mapOf(
-            ProfilingTelemetry.KEY_METRIC_TYPE to ProfilingDataWriter.METRIC_TYPE_PROFILING_WRITE,
-            ProfilingDataWriter.KEY_PROFILING_WRITE to mapOf(
-                ProfilingDataWriter.KEY_DROPPED to false,
-                ProfilingDataWriter.KEY_DROP_REASON to null,
-                ProfilingDataWriter.KEY_CLIENT_CLOCK_DRIFT to fakeDriftMs,
-                ProfilingTelemetry.KEY_START_REASON to ProfilingStartReason.APPLICATION_LAUNCH.value,
-                ProfilingDataWriter.KEY_LONG_TASK_COUNT to 0,
-                ProfilingDataWriter.KEY_ANR_COUNT to 0,
-                ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size
-            )
-        )
-        verify(mockInternalLogger).logMetric(
-            any(),
-            eq(expectedProps),
-            eq(MethodCallSamplingRate.ALL.rate),
-            isNull()
-        )
-        verify(mockEventBatchWriter).write(any(), isNull(), eq(EventType.DEFAULT))
-        assertThat(file.exists()).isFalse()
-    }
-
-    @Test
-    fun `M write profile despite clock drift W writeManualProfile() {app launch, drift over threshold negative}`(
-        @Forgery fakeResult: PerfettoResult,
-        @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
-        forge: Forge
-    ) {
-        // Given
-        val fakeDriftMs = forge.aLong(min = Long.MIN_VALUE / 2, max = -(ProfilingDataWriter.MAX_CLOCK_DRIFT_MS + 1))
-        fakeDatadogContext = fakeDatadogContext.copy(
-            time = fakeDatadogContext.time.copy(serverTimeOffsetMs = fakeDriftMs)
-        )
-        val file = tmp.resolve(fakeResult.resultFilePath)
-        file.writeBytes(forge.aString().toByteArray())
-
-        // When
-        testedDataWriterTest.writeManualProfile(
-            profilingResult = fakeResult.copy(
-                resultFilePath = file.absolutePath,
-                startReason = ProfilingStartReason.APPLICATION_LAUNCH
-            ),
-            vitalEvents = fakeVitals,
-            anrEvents = emptyList(),
-            longTasks = emptyList()
-        )
-
-        // Then — profile is written, metric reports dropped=false with no clock-drift drop reason
-        val expectedProps = mapOf(
-            ProfilingTelemetry.KEY_METRIC_TYPE to ProfilingDataWriter.METRIC_TYPE_PROFILING_WRITE,
-            ProfilingDataWriter.KEY_PROFILING_WRITE to mapOf(
-                ProfilingDataWriter.KEY_DROPPED to false,
-                ProfilingDataWriter.KEY_DROP_REASON to null,
-                ProfilingDataWriter.KEY_CLIENT_CLOCK_DRIFT to fakeDriftMs,
-                ProfilingTelemetry.KEY_START_REASON to ProfilingStartReason.APPLICATION_LAUNCH.value,
-                ProfilingDataWriter.KEY_LONG_TASK_COUNT to 0,
-                ProfilingDataWriter.KEY_ANR_COUNT to 0,
-                ProfilingDataWriter.KEY_VITAL_COUNT to fakeVitals.size
-            )
-        )
-        verify(mockInternalLogger).logMetric(
-            any(),
-            eq(expectedProps),
-            eq(MethodCallSamplingRate.ALL.rate),
-            isNull()
-        )
-        verify(mockEventBatchWriter).write(any(), isNull(), eq(EventType.DEFAULT))
         assertThat(file.exists()).isFalse()
     }
 
@@ -715,7 +623,6 @@ internal class ProfilingDataWriterTest {
             ProfilingDataWriter.KEY_PROFILING_WRITE to mapOf(
                 ProfilingDataWriter.KEY_DROPPED to false,
                 ProfilingDataWriter.KEY_DROP_REASON to null,
-                ProfilingDataWriter.KEY_CLIENT_CLOCK_DRIFT to 0L,
                 ProfilingTelemetry.KEY_START_REASON to fakeResult.startReason.value,
                 ProfilingDataWriter.KEY_LONG_TASK_COUNT to fakeLongTasks.size,
                 ProfilingDataWriter.KEY_ANR_COUNT to fakeAnrs.size,

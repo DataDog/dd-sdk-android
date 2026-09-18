@@ -821,6 +821,11 @@ public class DDSpan
   }
 
   @Override
+  public int getLongRunningVersion() {
+      return this.longRunningVersion;
+  }
+
+  @Override
   public TraceConfig traceConfig() {
     return context.getTrace().getTraceConfig();
   }

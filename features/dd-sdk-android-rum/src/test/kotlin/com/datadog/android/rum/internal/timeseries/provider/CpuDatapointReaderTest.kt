@@ -54,10 +54,13 @@ internal class CpuDatapointReaderTest {
         on { getDeviceElapsedTimeNanos() } doAnswer { fakeStartTimestampMs * NS_PER_MS }
     }
 
-    private fun buildReader(availableProcessors: Int = 1) = CpuDatapointReader(
+    private fun buildReader(
+        intervalMs: Long,
+        availableProcessors: Int = 1
+    ) = CpuDatapointReader(
         cpuStatReader = mockCpuStatReader,
         timeProvider = mockTimeProvider,
-        intervalMs = fakeIntervalMs,
+        intervalMs = intervalMs,
         availableProcessors = availableProcessors
     )
 
@@ -66,6 +69,9 @@ internal class CpuDatapointReaderTest {
      * clock by [elapsedMs], then returns the second sample built from [secondTicks] (or `null` to
      * simulate the stat read failing between samples). Elapsed time is stubbed as a sequence so
      * the prime read sees the start instant and the second read sees start + [elapsedMs].
+     *
+     * [fakeIntervalMs] is floored to keep [elapsedMs] within CpuDatapointReader.MAX_GAP_FACTOR
+     * intervals, otherwise readValue() would treat the gap as a background pause and return null.
      */
     private fun readSecondSample(
         elapsedMs: Long,
@@ -79,7 +85,8 @@ internal class CpuDatapointReaderTest {
         whenever(mockTimeProvider.getServerTimestampMillis()) doReturn (fakeStartTimestampMs + elapsedMs)
         whenever(mockCpuStatReader.readActiveTime())
             .doReturnConsecutively(listOf(fakeBaselineTicks.toDouble(), secondTicks))
-        return buildReader(availableProcessors).run {
+        val safeIntervalMs = fakeIntervalMs.coerceAtLeast(elapsedMs / CpuDatapointReader.MAX_GAP_FACTOR + 1)
+        return buildReader(safeIntervalMs, availableProcessors).run {
             read()
             read()
         }
@@ -91,7 +98,7 @@ internal class CpuDatapointReaderTest {
         whenever(mockCpuStatReader.readActiveTime()) doReturn fakeBaselineTicks.toDouble()
 
         // When
-        val result = buildReader().read()
+        val result = buildReader(fakeIntervalMs).read()
 
         // Then
         assertThat(result).isNull()
@@ -103,7 +110,7 @@ internal class CpuDatapointReaderTest {
         whenever(mockCpuStatReader.readActiveTime()) doReturn null
 
         // When
-        val result = buildReader().read()
+        val result = buildReader(fakeIntervalMs).read()
 
         // Then
         assertThat(result).isNull()
@@ -115,6 +122,29 @@ internal class CpuDatapointReaderTest {
     ) {
         // When
         val result = readSecondSample(elapsedMs = fakeElapsedMs, secondTicks = null)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return null W read() {elapsed time exceeds gap threshold}`(
+        @LongForgery(min = 100L, max = 60_000L) fakeIntervalMs: Long
+    ) {
+        // Given: simulate a background pause by exceeding MAX_GAP_FACTOR interval
+        val gapElapsedMs = fakeIntervalMs * CpuDatapointReader.MAX_GAP_FACTOR + 1
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).doReturn(
+            fakeStartTimestampMs * NS_PER_MS,
+            (fakeStartTimestampMs + gapElapsedMs) * NS_PER_MS
+        )
+        whenever(mockCpuStatReader.readActiveTime())
+            .doReturnConsecutively(listOf(fakeBaselineTicks.toDouble(), (fakeBaselineTicks + 1).toDouble()))
+
+        // When
+        val result = buildReader(fakeIntervalMs).run {
+            read()
+            read()
+        }
 
         // Then
         assertThat(result).isNull()

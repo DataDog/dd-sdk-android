@@ -409,6 +409,23 @@ test-pyramid:single-fit-okhttp:
     reports:
       junit: "**/build/test-results/testReleaseUnitTest/*.xml"
 
+test-pyramid:single-fit-profiling:
+  extends:
+    - .base-cache-pull-job
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test-pyramid
+  timeout: 1h
+  script:
+    - !reference [ .snippets, setup-gradle ]
+    - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
+    - DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:profiling:testReleaseUnitTest
+  artifacts:
+    when: always
+    expire_in: 1 week
+    reports:
+      junit: "**/build/test-results/testReleaseUnitTest/*.xml"
+
 # RUN INSTRUMENTED TESTS ON MIN API (23), LATEST API (34) and MEDIAN API (28)
 
 test-pyramid:legacy-integration-instrumented-min-api:

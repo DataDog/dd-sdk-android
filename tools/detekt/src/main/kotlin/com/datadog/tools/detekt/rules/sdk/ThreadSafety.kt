@@ -169,7 +169,7 @@ class ThreadSafety(
     }
 
     private fun String.toMethodGroup(): ThreadGroup? {
-        return ThreadGroup.values()
+        return ThreadGroup.entries
             .firstOrNull { it.className == this }
     }
 

@@ -13,7 +13,7 @@ internal enum class RumViewType(val asString: String) {
 
     companion object {
         fun fromString(string: String?): RumViewType? {
-            return values().firstOrNull { it.asString == string }
+            return entries.firstOrNull { it.asString == string }
         }
     }
 }

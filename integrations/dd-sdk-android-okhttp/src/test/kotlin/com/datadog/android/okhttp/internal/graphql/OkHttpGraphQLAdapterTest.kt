@@ -88,7 +88,7 @@ internal class OkHttpGraphQLAdapterTest {
         val result = builder.build()
 
         // Then
-        GraphQLHeaders.values().forEach {
+        GraphQLHeaders.entries.forEach {
             assertThat(result.header(it.headerValue)).isNull()
         }
         assertThat(result.header("User-Agent")).isEqualTo("test-agent")

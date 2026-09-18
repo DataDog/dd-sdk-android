@@ -84,8 +84,13 @@ internal class PerfettoProfiler(
     @Volatile
     private var profilingStartTime = 0L
 
+    // Monotonic (boot-relative) captures used for duration and callback-delay, which must
+    // keep advancing during deep sleep and be immune to wall-clock adjustments.
     @Volatile
-    private var profilingStopTime = 0L
+    private var profilingStartElapsedMs = 0L
+
+    @Volatile
+    private var profilingStopElapsedMs = 0L
 
     @Volatile
     private var profilingStartReason: ProfilingStartReason = ProfilingStartReason.UNKNOWN
@@ -105,8 +110,8 @@ internal class PerfettoProfiler(
         }
 
     internal val triggerListener = object : ProfilingTriggerListener {
-        override fun onAnrDetected(event: ProfilingAnrDetectedEvent) {
-            callback?.onAnrDetected(event)
+        override fun onAnrDetected(event: ProfilingAnrDetectedEvent, result: PerfettoResult) {
+            callback?.onAnrDetected(event, result)
         }
 
         override fun onOutOfMemoryDetected(result: PerfettoResult) {
@@ -127,14 +132,16 @@ internal class PerfettoProfiler(
     init {
         resultCallback = Consumer<ProfilingResult> { result ->
             val resultCallbackTime = timeProvider.getDeviceTimestampMillis()
-            // profilingStopTime is 0L when profiling ended by timeout (stop() was never called).
-            // In that case, fall back to resultCallbackTime so duration is still meaningful.
-            val effectiveStopTime =
-                if (profilingStopTime > 0L) profilingStopTime else resultCallbackTime
-            val duration = effectiveStopTime - profilingStartTime
+            val resultCallbackElapsedMs = timeProvider.getDeviceElapsedRealtimeMillis()
+            // profilingStopElapsedMs is 0L when profiling ended by timeout (stop() was never
+            // called). In that case, fall back to the callback elapsed time so duration is
+            // still meaningful.
+            val effectiveStopElapsedMs =
+                if (profilingStopElapsedMs > 0L) profilingStopElapsedMs else resultCallbackElapsedMs
+            val duration = effectiveStopElapsedMs - profilingStartElapsedMs
             val resultCallbackDelayMs =
-                if (profilingStopTime > 0L) resultCallbackTime - profilingStopTime else 0L
-            val startReason = ProfilingStartReason.values().firstOrNull { it.value == result.tag.orEmpty() }
+                if (profilingStopElapsedMs > 0L) resultCallbackElapsedMs - profilingStopElapsedMs else 0L
+            val startReason = ProfilingStartReason.entries.firstOrNull { it.value == result.tag.orEmpty() }
                 ?: ProfilingStartReason.UNKNOWN
             if (result.errorCode == ProfilingResult.ERROR_NONE) {
                 // TODO RUM-13679: need to delete the file after it is no longer needed
@@ -222,7 +229,8 @@ internal class PerfettoProfiler(
         // profiling will be launched when no session is currently running.
         if (isRunning.compareAndSet(false, true)) {
             profilingStartTime = timeProvider.getDeviceTimestampMillis()
-            profilingStopTime = 0L
+            profilingStartElapsedMs = timeProvider.getDeviceElapsedRealtimeMillis()
+            profilingStopElapsedMs = 0L
             profilingStartReason = startReason
             profilingAppStartInfo = additionalAttributes[ProfilingTelemetry.KEY_APP_START_INFO]
             requestProfiling(
@@ -257,7 +265,7 @@ internal class PerfettoProfiler(
             // overwritten by that time. Probably need to allow a single profiler instance and stop profiler before
             // starting another request.
             stopSignal?.cancel()
-            profilingStopTime = timeProvider.getDeviceTimestampMillis()
+            profilingStopElapsedMs = timeProvider.getDeviceElapsedRealtimeMillis()
         }
     }
 
@@ -316,7 +324,7 @@ internal class PerfettoProfiler(
     }
 
     private fun resolveStopReason(errorCode: Int): String {
-        return if (profilingStopTime > 0L) {
+        return if (profilingStopElapsedMs > 0L) {
             ProfilingTelemetry.STOPPED_REASON_MANUAL
         } else {
             when (errorCode) {

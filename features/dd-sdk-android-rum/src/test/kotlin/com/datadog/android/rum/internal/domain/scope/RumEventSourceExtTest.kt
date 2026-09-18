@@ -45,7 +45,7 @@ internal class RumEventSourceExtTest {
         // we are using the ViewEvent.ViewEventSource here as the source enum for all the events is
         // generated from the same _common-schema.json
         fakeInvalidSource = forge.aStringNotMatchingSet(
-            ViewEvent.ViewEventSource.values()
+            ViewEvent.ViewEventSource.entries
                 .map {
                     it.toJson().asString
                 }.toSet()
