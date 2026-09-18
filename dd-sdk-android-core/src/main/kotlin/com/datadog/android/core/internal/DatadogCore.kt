@@ -37,7 +37,6 @@ import com.datadog.android.core.internal.remote.RemoteConfigService
 import com.datadog.android.core.internal.remote.RemoteConfigServiceImpl
 import com.datadog.android.core.internal.remote.model.RemoteConfigSyncMetadata
 import com.datadog.android.core.internal.remote.model.RemoteConfiguration
-import com.datadog.android.core.internal.time.DefaultAppStartTimeProvider
 import com.datadog.android.core.internal.time.composeTimeInfo
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.getSafe
@@ -50,6 +49,7 @@ import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.time.DefaultAppStartTimeProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.privacy.TrackingConsent
 import com.google.gson.JsonObject

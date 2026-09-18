@@ -294,6 +294,14 @@ class com.datadog.android.internal.thread.NamedCallable<V> : NamedExecutionUnit,
   constructor(String, java.util.concurrent.Callable<V>)
   override val name: String
 fun isMainThread(): Boolean
+interface com.datadog.android.internal.time.AppStartTimeProvider
+  val appStartTimeNs: Long
+  val appUptimeNs: Long
+class com.datadog.android.internal.time.DefaultAppStartTimeProvider : AppStartTimeProvider
+  constructor(() -> TimeProvider, com.datadog.android.internal.system.BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT)
+  override val appStartTimeNs: Long
+  override val appUptimeNs: Long
+  companion object 
 class com.datadog.android.internal.time.DefaultTimeProvider : BaseTimeProvider
   override fun getServerTimestampMillis(): Long
   override fun getServerOffsetNanos(): Long
@@ -348,6 +356,7 @@ val NULL_MAP_VALUE: Object
 fun Int.toHexString(): String
 fun Long.toHexString(): String
 fun java.math.BigInteger.toHexString(): String
+fun guardedProcessStartNs(Long, Long, Long): Long
 fun <T> allowThreadDiskReads(() -> T): T
 fun <T> allowThreadDiskWrites(() -> T): T
 fun StringBuilder.appendIfNotEmpty(String)
