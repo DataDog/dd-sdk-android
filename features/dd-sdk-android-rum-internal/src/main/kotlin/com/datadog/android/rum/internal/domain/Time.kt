@@ -32,12 +32,19 @@ data class Time(
         }
 
         fun fromTimestampMillis(timestamp: Long, timeProvider: TimeProvider): Time {
+            // Because nanoTime only measures the nanoseconds since the beginning
+            // of the current JVM lifetime, we need to approximate the nanoTime we want.
+            // We convert the delay between the desired and current timestamp and
+            // apply it to the currently measured nanoTime.
             val now = now(timeProvider)
             val offset = timestamp - now.timestamp
             return Time(timestamp, now.nanoTime + TimeUnit.MILLISECONDS.toNanos(offset))
         }
 
         fun fromNanoTime(nanoTime: Long, timeProvider: TimeProvider): Time {
+            // Symmetric to [fromTimestampMillis]: we have a nanoTime reading and
+            // approximate the matching wall-clock timestamp by applying the delay
+            // between the desired and current nanoTime to the current timestamp.
             val now = now(timeProvider)
             val offset = nanoTime - now.nanoTime
             return Time(now.timestamp + TimeUnit.NANOSECONDS.toMillis(offset), nanoTime)
