@@ -31,10 +31,7 @@ internal class AppLaunchCollectorProvider : ContentProvider() {
 
     @Suppress("ReturnCount")
     override fun onCreate(): Boolean {
-        val application = context?.applicationContext as? Application
-        if (application == null) {
-            return false
-        }
+        val application = context?.applicationContext as? Application ?: return false
         val importance = DdRumContentProvider.processImportance
         if (importance != ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
             return false

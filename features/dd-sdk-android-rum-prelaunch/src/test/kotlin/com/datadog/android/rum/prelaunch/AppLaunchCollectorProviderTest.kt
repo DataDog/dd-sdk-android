@@ -12,7 +12,7 @@ import android.content.Context
 import android.net.Uri
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.internal.startup.PreLaunchRumAppStartupDetector
-import com.datadog.android.rum.prelaunch.utils.forge.Configurator
+import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.setFieldValue
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -35,7 +35,7 @@ import org.mockito.quality.Strictness
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(BaseConfigurator::class)
 internal class AppLaunchCollectorProviderTest {
 
     lateinit var testedProvider: AppLaunchCollectorProvider

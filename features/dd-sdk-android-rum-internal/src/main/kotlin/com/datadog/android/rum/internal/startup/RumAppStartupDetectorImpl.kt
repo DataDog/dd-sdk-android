@@ -43,8 +43,6 @@ class RumAppStartupDetectorImpl(
 
     @Suppress("UnsafeThirdPartyFunctionCall") // map is initialized empty
     private val trackedActivities = Collections.newSetFromMap(WeakHashMap<Activity, Boolean>())
-
-    @Suppress("UnsafeThirdPartyFunctionCall") // map is initialized empty
     private val firstFrameHandles = WeakHashMap<Activity, RumFirstDrawTimeReporter.Handle>()
 
     init {

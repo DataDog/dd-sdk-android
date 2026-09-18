@@ -21,9 +21,9 @@ import android.app.Application
 import android.os.Handler
 import android.os.Looper
 import android.os.Process
-import android.os.SystemClock
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.DefaultTimeProvider
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.internal.utils.guardedProcessStartNs
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.internal.domain.Time
@@ -89,11 +89,6 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
         var startedScenario: RumStartupScenario? = null
     }
 
-    // Volatile: written on the main thread from install(), but read through isInstalled on the
-    // thread that called Rum.enable(). Nothing orders those two, so without this a caller could
-    // observe null after installation and build a second detector, losing the launch this module
-    // exists to capture.
-    @Volatile
     private var detectorImpl: RumAppStartupDetector? = null
     private val registrations = mutableListOf<Registration>()
 
@@ -121,16 +116,13 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
      *
      * @param application The application to register lifecycle callbacks on.
      */
-    // PreferTimeProvider: this object runs before the SDK (and therefore any TimeProvider)
-    // exists, so the raw platform clocks are the only source of truth available here.
-    @Suppress("PreferTimeProvider")
     fun install(application: Application) {
         if (detectorImpl != null) {
             return
         }
 
-        val appStartTimeNs = computeProcessStartNs()
         val timeProvider = DefaultTimeProvider()
+        val appStartTimeNs = computeProcessStartNs(timeProvider)
 
         detectorImpl = RumAppStartupDetectorImpl(
             application = application,
@@ -155,7 +147,7 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
                 registrations.isEmpty() || registrations.any { it.activityPredicate(activity) }
             },
             rumFirstDrawTimeReporter = RumFirstDrawTimeReporterImpl(
-                timeProviderNs = { System.nanoTime() },
+                timeProviderNs = timeProvider::getDeviceElapsedTimeNanos,
                 windowCallbacksRegistry = WindowCallbacksRegistryImpl(),
                 handler = Handler(Looper.getMainLooper())
             )
@@ -309,23 +301,22 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
     // region Internal
 
     /**
-     * Back-projects the process start onto the `System.nanoTime()` timebase.
+     * Back-projects the process start onto the [TimeProvider.getDeviceElapsedTimeNanos] timebase.
      *
-     * Everything downstream of this object measures with `System.nanoTime()`, so the elapsed
-     * delta has to come from the same clock: `SystemClock.uptimeMillis()` and
+     * Everything downstream of this object measures with that clock, so the elapsed delta has to
+     * come from the same one: [TimeProvider.getDeviceUptimeMillis] and
      * [Process.getStartUptimeMillis] are both CLOCK_MONOTONIC and both exclude deep sleep.
      * Pairing them with `elapsedRealtime()` instead would add any deep sleep since process start
      * to the delta, over-projecting the start time and inflating every TTID measured from it.
      */
     // NewApi: Process.getStartUptimeMillis is guarded by the isAtLeastN check below.
-    // PreferTimeProvider: see install() — no TimeProvider exists this early in the process.
-    @Suppress("NewApi", "PreferTimeProvider")
-    internal fun computeProcessStartNs(): Long {
+    @Suppress("NewApi")
+    internal fun computeProcessStartNs(timeProvider: TimeProvider): Long {
         if (!BuildSdkVersionProvider.DEFAULT.isAtLeastN) {
             return DdRumContentProvider.createTimeNs
         }
-        val nowNs = System.nanoTime()
-        val nowUptimeMs = SystemClock.uptimeMillis()
+        val nowNs = timeProvider.getDeviceElapsedTimeNanos()
+        val nowUptimeMs = timeProvider.getDeviceUptimeMillis()
         val diffMs = nowUptimeMs - Process.getStartUptimeMillis()
         val computed = nowNs - TimeUnit.MILLISECONDS.toNanos(diffMs)
         return guardedProcessStartNs(
