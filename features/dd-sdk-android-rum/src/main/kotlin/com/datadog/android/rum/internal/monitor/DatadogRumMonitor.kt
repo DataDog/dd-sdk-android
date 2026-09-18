@@ -1098,6 +1098,7 @@ internal class DatadogRumMonitor(
             "flutter" -> RumErrorSourceType.FLUTTER
             "ndk" -> RumErrorSourceType.NDK
             "ndk+il2cpp" -> RumErrorSourceType.NDK_IL2CPP
+            "maui" -> RumErrorSourceType.MAUI
             else -> RumErrorSourceType.ANDROID
         }
     }

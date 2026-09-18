@@ -494,16 +494,21 @@ internal class DatadogCore(
 
         applyAdditionalConfiguration(mutableConfig.additionalConfig)
 
+        setupRemoteConfiguration(mutableConfig)
+
+        mutableConfig = mutableConfig.copy(
+            crashReportsEnabled = remoteConfiguration?.rum?.crashReportsEnabled
+                ?: mutableConfig.crashReportsEnabled
+        )
+
         if (mutableConfig.crashReportsEnabled) {
             initializeCrashReportFeature()
         }
 
-        setupRemoteConfiguration(mutableConfig)
-
         setupLifecycleMonitorCallback(appContext)
 
         setupShutdownHook()
-        sendCoreConfigurationTelemetryEvent(configuration)
+        sendCoreConfigurationTelemetryEvent(mutableConfig)
     }
 
     internal fun setupRemoteConfiguration(configuration: Configuration) {

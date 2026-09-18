@@ -18,6 +18,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -94,31 +96,18 @@ internal class DDSketchSerializerTest {
 
     // region sizeOfCompactDoubleArray
 
-    @Test
-    fun `M match CodedOutputStream W sizeOfCompactDoubleArray() {1 element}`(
-        @IntForgery(min = 1, max = 15) fakeField: Int
-    ) {
-        // Given
-        val refSize = packedDoubleFieldBytes(fakeField, doubleArrayOf(1.0)).size
+    @ParameterizedTest
+    @MethodSource("elementCounts")
+    fun `M match reference W sizeOfCompactDoubleArray()`(count: Int) {
+        // Given: field is fixed since it doesn't affect where the varint length boundary falls
+        val fakeField = 1
+        val refSize = packedDoubleFieldBytes(fakeField, DoubleArray(count)).size
 
         // When
-        val result = DDSketchSerializer.sizeOfCompactDoubleArray(fakeField, 1)
+        val result = DDSketchSerializer.sizeOfCompactDoubleArray(fakeField, count)
 
         // Then
         assertThat(result).isEqualTo(refSize)
-    }
-
-    @Test
-    fun `M scale with element count W sizeOfCompactDoubleArray()`(
-        @IntForgery(min = 1, max = 15) fakeField: Int,
-        @IntForgery(min = 1, max = 100) fakeCount: Int
-    ) {
-        // Given / When
-        val size1 = DDSketchSerializer.sizeOfCompactDoubleArray(fakeField, fakeCount)
-        val size2 = DDSketchSerializer.sizeOfCompactDoubleArray(fakeField, fakeCount + 1)
-
-        // Then
-        assertThat(size2 - size1).isEqualTo(8)
     }
 
     // endregion
@@ -306,4 +295,9 @@ internal class DDSketchSerializerTest {
     }
 
     // endregion
+
+    companion object {
+        @JvmStatic
+        fun elementCounts(): List<Int> = (1..40).toList()
+    }
 }

@@ -8,6 +8,7 @@ package com.datadog.android.profiling.internal.trigger
 
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
+import com.datadog.android.profiling.internal.trigger.PendingTriggerProfiles.Companion.EXPIRY_TIMEOUT_MS
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**
@@ -22,14 +23,14 @@ internal interface PendingTriggerProfiles {
      * pending, the pair is dispatched immediately via the on-match callback; otherwise the
      * result self-cleans after [EXPIRY_TIMEOUT_MS].
      */
-    fun addProfilingResult(result: PerfettoResult)
+    fun setProfilingResult(result: PerfettoResult)
 
     /**
      * Buffers a RUM gating [ProfilerEvent]. If a matching profiling result is already pending,
      * the pair is dispatched immediately via the on-match callback; otherwise the event
      * self-cleans after [EXPIRY_TIMEOUT_MS]. Non-ANR events are silently rejected.
      */
-    fun addRumGatingEvent(event: ProfilerEvent)
+    fun setRumGatingEvent(event: ProfilerEvent)
 
     /**
      * Cancels any pending cleanup tasks and deletes any still-pending profiling result's
@@ -42,6 +43,6 @@ internal interface PendingTriggerProfiles {
          * How long a profiling result or RUM gating event may wait for its counterpart
          * before it is considered stale and dropped.
          */
-        internal const val EXPIRY_TIMEOUT_MS = 5_000L
+        internal const val EXPIRY_TIMEOUT_MS = 30_000L
     }
 }
