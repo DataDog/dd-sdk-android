@@ -39,7 +39,7 @@ import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.internal.startup.testRumStartupScenarios
-import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollectorFactory
+import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollector
 import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
@@ -69,6 +69,8 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.atLeastOnce
+import org.mockito.kotlin.clearInvocations
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -203,9 +205,6 @@ internal class RumSessionScopeTest {
     private lateinit var mockRumSessionScopeStartupManager: RumSessionScopeStartupManager
 
     @Mock
-    private lateinit var mockTimeseriesCollectorFactory: TimeseriesCollector.Factory
-
-    @Mock
     private lateinit var mockTimeseriesCollector: TimeseriesCollector
 
     private lateinit var stubTimeProvider: StubTimeProvider
@@ -240,7 +239,6 @@ internal class RumSessionScopeTest {
         whenever(mockAccessibilityInfoProvider.getState()) doReturn fakeAccessibilityInfo
         whenever(mockSessionSampler.sample(any())).thenReturn(true)
         whenever(mockSessionSampler.getSampleRate()).thenReturn(100f)
-        whenever(mockTimeseriesCollectorFactory.create(any(), any())) doReturn mockTimeseriesCollector
 
         fakeParentAttributes = forge.exhaustiveAttributes()
         whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes
@@ -1955,11 +1953,9 @@ internal class RumSessionScopeTest {
     // region Timeseries
 
     @Test
-    fun `M start timeseries with session context W renewSession { keepSession = true, no active view }`(
-        forge: Forge
-    ) {
+    fun `M start timeseries W renewSession() { keepSession = true }`(forge: Forge) {
         // Given
-        initializeTestedScope(timeseriesCollectorFactory = mockTimeseriesCollectorFactory)
+        initializeTestedScope(timeseriesCollector = mockTimeseriesCollector)
 
         // When
         testedScope.handleEvent(
@@ -1970,34 +1966,12 @@ internal class RumSessionScopeTest {
         )
 
         // Then
-        val rumContextCaptor = argumentCaptor<RumContext>()
-        verify(mockTimeseriesCollectorFactory).create(any(), rumContextCaptor.capture())
-        assertThat(rumContextCaptor.firstValue).isEqualTo(testedScope.getRumContext())
-        verify(mockTimeseriesCollector).onSessionStart()
-    }
-
-    @Test
-    fun `M pass active view context to factory W renewSession { foreground view active }`(forge: Forge) {
-        // Given
-        val mockViewScope = mock<RumViewScope>()
-        val fakeViewContext = forge.getForgery<RumContext>().copy(viewType = RumViewType.FOREGROUND)
-        whenever(mockChildScope.activeView) doReturn mockViewScope
-        whenever(mockViewScope.getRumContext()) doReturn fakeViewContext
-        initializeTestedScope(timeseriesCollectorFactory = mockTimeseriesCollectorFactory)
-
-        // When
-        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
-
-        // Then — the view context, not the session scope one (which has viewType NONE)
-        val rumContextCaptor = argumentCaptor<RumContext>()
-        verify(mockTimeseriesCollectorFactory).create(any(), rumContextCaptor.capture())
-        assertThat(rumContextCaptor.firstValue).isEqualTo(fakeViewContext)
-        assertThat(rumContextCaptor.firstValue).isNotEqualTo(testedScope.getRumContext())
+        verify(mockTimeseriesCollector).onSessionStart(eq(testedScope.sessionId), any())
     }
 
     @ParameterizedTest
     @MethodSource("sessionTypeResolutions")
-    fun `M pass resolved session type to factory W renewSession`(
+    fun `M pass resolved session type W renewSession()`(
         fakeSyntheticsTestId: String?,
         fakeSyntheticsResultId: String?,
         fakeSessionTypeOverride: RumSessionType?,
@@ -2010,7 +1984,7 @@ internal class RumSessionScopeTest {
             syntheticsResultId = fakeSyntheticsResultId
         )
         initializeTestedScope(
-            timeseriesCollectorFactory = mockTimeseriesCollectorFactory,
+            timeseriesCollector = mockTimeseriesCollector,
             rumSessionTypeOverride = fakeSessionTypeOverride
         )
 
@@ -2018,14 +1992,14 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        verify(mockTimeseriesCollectorFactory).create(eq(expectedSessionType), any())
+        verify(mockTimeseriesCollector).onSessionStart(any(), eq(expectedSessionType))
     }
 
     @Test
-    fun `M not start timeseries W renewSession { keepSession = false }`(forge: Forge) {
+    fun `M not start or update timeseries W handleEvent() { keepSession = false }`(forge: Forge) {
         // Given
         whenever(mockSessionSampler.sample(any())).thenReturn(false)
-        initializeTestedScope(timeseriesCollectorFactory = mockTimeseriesCollectorFactory)
+        initializeTestedScope(timeseriesCollector = mockTimeseriesCollector)
 
         // When
         testedScope.handleEvent(
@@ -2036,33 +2010,28 @@ internal class RumSessionScopeTest {
         )
 
         // Then
-        verify(mockTimeseriesCollectorFactory, never()).create(any(), any())
-        verify(mockTimeseriesCollector, never()).onSessionStart()
+        verify(mockTimeseriesCollector, never()).onSessionStart(any(), any())
+        verify(mockTimeseriesCollector, never()).onRumContextUpdate(any())
     }
 
     @Test
-    fun `M stop previous and feed fresh timeseries W renewSession { another tracked session }`(forge: Forge) {
+    fun `M stop and restart timeseries W renewSession() { another tracked session }`(forge: Forge) {
         // Given
         val mockViewScope = mock<RumViewScope>()
         val fakeViewContext = forge.getForgery<RumContext>().copy(viewType = RumViewType.FOREGROUND)
         whenever(mockChildScope.activeView) doReturn mockViewScope
         whenever(mockViewScope.getRumContext()) doReturn fakeViewContext
-        initializeTestedScope(timeseriesCollectorFactory = mockTimeseriesCollectorFactory)
+        initializeTestedScope(timeseriesCollector = mockTimeseriesCollector)
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
-        val firstTimeseriesCollector = mockTimeseriesCollector
-        val secondTimeseriesCollector: TimeseriesCollector = mock()
-        whenever(mockTimeseriesCollectorFactory.create(any(), any())) doReturn secondTimeseriesCollector
 
-        // When — second session via inactivity expiration
+        // When
         advanceTimeByMs(TEST_INACTIVITY_MS)
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
-        // Then — one timeseries per tracked session, updates go to the live one only
-        verify(mockTimeseriesCollectorFactory, times(2)).create(any(), any())
-        verify(firstTimeseriesCollector).onSessionStop()
-        verify(firstTimeseriesCollector, times(1)).onRumContextUpdate(fakeViewContext)
-        verify(secondTimeseriesCollector).onSessionStart()
-        verify(secondTimeseriesCollector).onRumContextUpdate(fakeViewContext)
+        // Then
+        verify(mockTimeseriesCollector, times(2)).onSessionStart(any(), any())
+        verify(mockTimeseriesCollector, times(2)).onSessionStop(any())
+        verify(mockTimeseriesCollector, atLeastOnce()).onRumContextUpdate(fakeViewContext)
     }
 
     @Test
@@ -2070,7 +2039,7 @@ internal class RumSessionScopeTest {
         // Given
         initializeTestedScope(
             backgroundTrackingEnabled = false,
-            timeseriesCollectorFactory = mockTimeseriesCollectorFactory
+            timeseriesCollector = mockTimeseriesCollector
         )
         testedScope.handleEvent(
             forge.startViewEvent(),
@@ -2085,13 +2054,13 @@ internal class RumSessionScopeTest {
 
         // Then
         assertThat(testedScope.sessionState).isEqualTo(RumSessionScope.State.EXPIRED)
-        verify(mockTimeseriesCollector).onSessionStop()
+        verify(mockTimeseriesCollector, times(2)).onSessionStop(any())
     }
 
     @Test
     fun `M stop timeseries W handleEvent { StopSession }`(forge: Forge) {
         // Given
-        initializeTestedScope(timeseriesCollectorFactory = mockTimeseriesCollectorFactory)
+        initializeTestedScope(timeseriesCollector = mockTimeseriesCollector)
         testedScope.handleEvent(
             forge.startViewEvent(),
             fakeDatadogContext,
@@ -2108,13 +2077,34 @@ internal class RumSessionScopeTest {
         )
 
         // Then
-        verify(mockTimeseriesCollector).onSessionStop()
+        verify(mockTimeseriesCollector, times(2)).onSessionStop(any())
+    }
+
+    @Test
+    fun `M not update timeseries W handleEvent() { session stopped, still tracked }`(forge: Forge) {
+        // Given
+        initializeTestedScope(timeseriesCollector = mockTimeseriesCollector)
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(
+            RumRawEvent.StopSession(eventTime = currentFakeTime()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        clearInvocations(mockTimeseriesCollector)
+
+        // When
+        testedScope.handleEvent(forge.addErrorEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then — sessionState stays TRACKED after a stop, isActive alone must suppress the update
+        assertThat(testedScope.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+        verify(mockTimeseriesCollector, never()).onRumContextUpdate(any())
     }
 
     @Test
     fun `M pass session context W onRumContextUpdate() { no active view }`(forge: Forge) {
         // Given — activeView is null by default (mockChildScope.activeView not stubbed)
-        initializeTestedScope(timeseriesCollectorFactory = mockTimeseriesCollectorFactory)
+        initializeTestedScope(timeseriesCollector = mockTimeseriesCollector)
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // When
@@ -2131,7 +2121,7 @@ internal class RumSessionScopeTest {
         // Given — a real view manager child scope, so the context comes from an actual RumViewScope
         initializeTestedScope(
             withMockChildScope = false,
-            timeseriesCollectorFactory = mockTimeseriesCollectorFactory
+            timeseriesCollector = mockTimeseriesCollector
         )
         val fakeStartViewEvent = forge.startViewEvent()
 
@@ -2143,7 +2133,7 @@ internal class RumSessionScopeTest {
             mockWriter
         )
 
-        // Then
+        // Then — the freshly created view context, captured after dispatch to the child scope
         val rumContextCaptor = argumentCaptor<RumContext>()
         verify(mockTimeseriesCollector).onRumContextUpdate(rumContextCaptor.capture())
         assertThat(rumContextCaptor.firstValue.viewType).isEqualTo(RumViewType.FOREGROUND)
@@ -2153,13 +2143,10 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `M stop previous timeseries W handleEvent { ResetSession }`(forge: Forge) {
+    fun `M stop and restart timeseries W handleEvent { ResetSession }`(forge: Forge) {
         // Given
-        initializeTestedScope(timeseriesCollectorFactory = mockTimeseriesCollectorFactory)
+        initializeTestedScope(timeseriesCollector = mockTimeseriesCollector)
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
-        val firstTimeseriesCollector = mockTimeseriesCollector
-        val secondTimeseriesCollector: TimeseriesCollector = mock()
-        whenever(mockTimeseriesCollectorFactory.create(any(), any())) doReturn secondTimeseriesCollector
 
         // When
         testedScope.handleEvent(
@@ -2170,14 +2157,14 @@ internal class RumSessionScopeTest {
         )
 
         // Then
-        verify(firstTimeseriesCollector).onSessionStop()
-        verify(secondTimeseriesCollector).onSessionStart()
+        verify(mockTimeseriesCollector, times(2)).onSessionStop(any())
+        verify(mockTimeseriesCollector, times(2)).onSessionStart(any(), any())
     }
 
     @Test
-    fun `M not create timeseries W handleEvent { StopSession, no tracked session }`() {
+    fun `M stop timeseries W handleEvent() { StopSession, no tracked session }`() {
         // Given
-        initializeTestedScope(timeseriesCollectorFactory = mockTimeseriesCollectorFactory)
+        initializeTestedScope(timeseriesCollector = mockTimeseriesCollector)
 
         // When
         testedScope.handleEvent(
@@ -2188,8 +2175,9 @@ internal class RumSessionScopeTest {
         )
 
         // Then
-        verify(mockTimeseriesCollectorFactory, never()).create(any(), any())
-        verifyNoInteractions(mockTimeseriesCollector)
+        verify(mockTimeseriesCollector, never()).onSessionStart(any(), any())
+        verify(mockTimeseriesCollector, times(2)).onSessionStop(any())
+        verify(mockTimeseriesCollector, never()).onRumContextUpdate(any())
     }
 
     // endregion
@@ -2230,7 +2218,7 @@ internal class RumSessionScopeTest {
         sessionSampler: Sampler<String> = mockSessionSampler,
         withMockChildScope: Boolean = true,
         backgroundTrackingEnabled: Boolean? = null,
-        timeseriesCollectorFactory: TimeseriesCollector.Factory = NoOpTimeseriesCollectorFactory(),
+        timeseriesCollector: TimeseriesCollector = NoOpTimeseriesCollector(),
         rumSessionTypeOverride: RumSessionType? = fakeRumSessionType
     ) {
         testedScope = RumSessionScope(
@@ -2261,7 +2249,7 @@ internal class RumSessionScopeTest {
             viewEventMapper = mockViewEventMapper,
             rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
             heatmapIdentifierRegistry = null,
-            timeseriesCollectorFactory = timeseriesCollectorFactory
+            timeseriesCollector = timeseriesCollector
         )
 
         if (withMockChildScope) {
