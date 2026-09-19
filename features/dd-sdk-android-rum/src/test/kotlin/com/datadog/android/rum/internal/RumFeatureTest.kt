@@ -52,7 +52,10 @@ import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.startup.RumAppStartupDetector
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
-import com.datadog.android.rum.internal.timeseries.DefaultTimeseriesCollectorFactory
+import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollector
+import com.datadog.android.rum.internal.timeseries.PipelineFactory
+import com.datadog.android.rum.internal.timeseries.collector.DefaultTimeseriesCollector
+import com.datadog.android.rum.internal.timeseries.collector.Looper
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
@@ -899,28 +902,89 @@ internal class RumFeatureTest {
         testedFeature.onInitialize(appContext.mockInstance)
 
         // Then
-        val timeseriesFactory = testedFeature.timeseriesCollectorFactory
-        check(timeseriesFactory is DefaultTimeseriesCollectorFactory)
-        assertThat(timeseriesFactory.getFieldValue<DataWriter<*>, DefaultTimeseriesCollectorFactory>("dataWriter"))
+        val timeseriesCollector = testedFeature.timeseriesCollector
+        check(timeseriesCollector is DefaultTimeseriesCollector)
+        val looper = timeseriesCollector
+            .getFieldValue<Looper, DefaultTimeseriesCollector>("looper")
+        assertThat(
+            looper.getFieldValue<ScheduledExecutorService, Looper>("scheduledExecutorService")
+        ).isSameAs(testedFeature.vitalExecutorService)
+
+        val pipelinesFactory = timeseriesCollector
+            .getFieldValue<PipelineFactory, DefaultTimeseriesCollector>("pipelinesFactory")
+        assertThat(pipelinesFactory.getFieldValue<DataWriter<*>, PipelineFactory>("dataWriter"))
             .isSameAs(testedFeature.dataWriter)
         assertThat(
-            timeseriesFactory.getFieldValue<InsightsCollector, DefaultTimeseriesCollectorFactory>("insightsCollector")
+            pipelinesFactory.getFieldValue<InsightsCollector, PipelineFactory>("insightsCollector")
         )
             .isSameAs(testedFeature.insightsCollector)
-        assertThat(
-            timeseriesFactory
-                .getFieldValue<ScheduledExecutorService, DefaultTimeseriesCollectorFactory>("scheduledExecutorService")
-        ).isSameAs(testedFeature.vitalExecutorService)
-        assertThat(timeseriesFactory.getFieldValue<Long, DefaultTimeseriesCollectorFactory>("totalRamBytes"))
+        assertThat(pipelinesFactory.getFieldValue<Long, PipelineFactory>("totalRamBytes"))
             .isEqualTo(fakeTotalRamBytes)
         assertThat(
-            timeseriesFactory.getFieldValue<InfoProvider<*>, DefaultTimeseriesCollectorFactory>("batteryInfoProvider")
+            pipelinesFactory.getFieldValue<InfoProvider<*>, PipelineFactory>("batteryInfoProvider")
         )
             .isSameAs(testedFeature.batteryInfoProvider)
         assertThat(
-            timeseriesFactory.getFieldValue<InfoProvider<*>, DefaultTimeseriesCollectorFactory>("displayInfoProvider")
+            pipelinesFactory.getFieldValue<InfoProvider<*>, PipelineFactory>("displayInfoProvider")
         )
             .isSameAs(testedFeature.displayInfoProvider)
+    }
+
+    @Test
+    @OptIn(ExperimentalRumApi::class)
+    fun `M not wire timeseries factory and warn W initialize { timeseries enabled, non-Application context }`() {
+        // Given
+        fakeConfiguration = fakeConfiguration.copy(
+            timeseriesConfiguration = TimeseriesConfiguration.DEFAULT
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+        val stubNonApplicationContext = mock<Context>()
+        whenever(stubNonApplicationContext.contentResolver) doReturn mock<ContentResolver>()
+        val mockResources = mock<Resources>()
+        whenever(stubNonApplicationContext.resources) doReturn mockResources
+        whenever(mockResources.configuration) doReturn mock()
+        whenever(stubNonApplicationContext.applicationContext) doReturn mock<Application>()
+
+        // When
+        testedFeature.onInitialize(stubNonApplicationContext)
+
+        // Then
+        assertThat(testedFeature.timeseriesCollector).isInstanceOf(NoOpTimeseriesCollector::class.java)
+        mockSdkCore.internalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            "Rum feature should have been initialized with android.app.Application context, " +
+                "but ${stubNonApplicationContext.javaClass.name} is given"
+        )
+    }
+
+    @Test
+    @OptIn(ExperimentalRumApi::class)
+    fun `M unregister timeseries process lifecycle monitor W onStop() { timeseries enabled }`() {
+        // Given
+        fakeConfiguration = fakeConfiguration.copy(
+            timeseriesConfiguration = TimeseriesConfiguration.DEFAULT
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+        testedFeature.onInitialize(appContext.mockInstance)
+        val listener = checkNotNull(testedFeature.timeseriesProcessLifecycleMonitor)
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        verify(appContext.mockInstance).unregisterActivityLifecycleCallbacks(listener)
+        assertThat(testedFeature.timeseriesProcessLifecycleMonitor).isNull()
     }
 
     @Test
