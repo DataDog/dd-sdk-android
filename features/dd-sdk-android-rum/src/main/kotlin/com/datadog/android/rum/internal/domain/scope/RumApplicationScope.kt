@@ -63,7 +63,7 @@ internal class RumApplicationScope(
     private val viewEventMapper: ViewEventMapper,
     private val rumViewEventWriteConfig: RumViewEventWriteConfig,
     private val heatmapIdentifierRegistry: HeatmapIdentifierRegistry?,
-    private val timeseriesCollectorFactory: TimeseriesCollector.Factory
+    private val timeseriesCollector: TimeseriesCollector
 ) : RumScope, RumViewChangedListener {
 
     override val parentScope: RumScope? = null
@@ -97,7 +97,7 @@ internal class RumApplicationScope(
             viewEventMapper = viewEventMapper,
             rumViewEventWriteConfig = rumViewEventWriteConfig,
             heatmapIdentifierRegistry = heatmapIdentifierRegistry,
-            timeseriesCollectorFactory = timeseriesCollectorFactory
+            timeseriesCollector = timeseriesCollector
         )
     )
 
@@ -223,7 +223,7 @@ internal class RumApplicationScope(
             viewEventMapper = viewEventMapper,
             rumViewEventWriteConfig = rumViewEventWriteConfig,
             heatmapIdentifierRegistry = heatmapIdentifierRegistry,
-            timeseriesCollectorFactory = timeseriesCollectorFactory
+            timeseriesCollector = timeseriesCollector
         )
         childScopes.add(newSession)
         if (event !is RumRawEvent.StartView) {

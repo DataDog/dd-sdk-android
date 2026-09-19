@@ -1,0 +1,98 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+package com.datadog.android.rum.internal.timeseries
+
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.internal.domain.InfoProvider
+import com.datadog.android.rum.internal.domain.battery.BatteryInfo
+import com.datadog.android.rum.internal.domain.display.DisplayInfo
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
+import com.datadog.android.rum.internal.timeseries.factory.CpuEventFactory
+import com.datadog.android.rum.internal.timeseries.factory.MemoryEventFactory
+import com.datadog.android.rum.internal.timeseries.provider.CpuDatapointReader
+import com.datadog.android.rum.internal.timeseries.provider.VitalReaderWrapper
+import com.datadog.android.rum.internal.vitals.CpuStatReader
+import com.datadog.android.rum.internal.vitals.MemoryVitalReader
+import com.datadog.android.rum.timeseries.TimeseriesConfiguration
+import com.datadog.android.rum.timeseries.TimeseriesType
+
+internal class PipelineFactory(
+    private val totalRamBytes: Long,
+    private val sdkCore: FeatureSdkCore,
+    private val dataWriter: DataWriter<Any>,
+    private val insightsCollector: InsightsCollector,
+    private val enabledTypes: Set<TimeseriesType>,
+    private val batteryInfoProvider: InfoProvider<BatteryInfo>,
+    private val displayInfoProvider: InfoProvider<DisplayInfo>
+) {
+    private val typesFactory = mapOf(
+        TimeseriesType.CPU to ::createCpuPipeline,
+        TimeseriesType.MEMORY to ::createMemoryPipeline
+    )
+
+    fun create(sessionType: RumSessionType): List<Pipeline<*>> = enabledTypes.mapNotNull {
+        typesFactory[it]?.invoke(sessionType)
+    }
+
+    private fun createMemoryPipeline(sessionType: RumSessionType): Pipeline<Double>? {
+        if (totalRamBytes <= 0) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER),
+                { ERROR_PIPELINE_CREATION_FAILED }
+            )
+            return null
+        }
+
+        return Pipeline(
+            sdkCore = sdkCore,
+            reader = VitalReaderWrapper(
+                vitalReader = MemoryVitalReader(internalLogger = sdkCore.internalLogger),
+                timeProvider = sdkCore.timeProvider,
+                intervalMs = TimeseriesConfiguration.DEFAULT_INTERVAL_MS
+            ),
+            buffer = Buffer(TimeseriesConfiguration.DEFAULT_BUFFER_SIZE),
+            eventFactory = MemoryEventFactory(
+                sessionType = sessionType,
+                totalRamBytes = totalRamBytes,
+                timeProvider = sdkCore.timeProvider,
+                batteryInfoProvider = batteryInfoProvider,
+                displayInfoProvider = displayInfoProvider,
+                internalLogger = sdkCore.internalLogger
+            ),
+            dataWriter = dataWriter,
+            insightsCollector = insightsCollector,
+            internalLogger = sdkCore.internalLogger
+        )
+    }
+
+    private fun createCpuPipeline(sessionType: RumSessionType) = Pipeline(
+        sdkCore = sdkCore,
+        reader = CpuDatapointReader(
+            cpuStatReader = CpuStatReader(internalLogger = sdkCore.internalLogger),
+            timeProvider = sdkCore.timeProvider,
+            intervalMs = TimeseriesConfiguration.DEFAULT_INTERVAL_MS
+        ),
+        buffer = Buffer(TimeseriesConfiguration.DEFAULT_BUFFER_SIZE),
+        eventFactory = CpuEventFactory(
+            sessionType = sessionType,
+            timeProvider = sdkCore.timeProvider,
+            batteryInfoProvider = batteryInfoProvider,
+            displayInfoProvider = displayInfoProvider,
+            internalLogger = sdkCore.internalLogger
+        ),
+        dataWriter = dataWriter,
+        insightsCollector = insightsCollector,
+        internalLogger = sdkCore.internalLogger
+    )
+
+    internal companion object {
+        const val ERROR_PIPELINE_CREATION_FAILED = "Pipeline creation failed"
+    }
+}
