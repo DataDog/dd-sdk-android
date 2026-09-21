@@ -7,11 +7,14 @@
 package com.datadog.android.rum
 
 import android.app.Activity
+import android.content.Intent
+import android.os.Bundle
 import com.datadog.android.heatmaps.CrossPlatformHeatmapActionData
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType
 import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.tools.unit.forge.anException
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -26,7 +29,11 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -135,6 +142,79 @@ internal class RumInternalProxyTest {
 
         // Then
         verify(mockRumMonitor).enableJankStatsTracking(activity)
+    }
+
+    @Test
+    fun `M proxy setSyntheticsAttribute to RumMonitor W setSyntheticsAttributeFromIntent()`(
+        @StringForgery fakeTestId: String,
+        @StringForgery fakeResultId: String
+    ) {
+        // Given
+        val mockRumMonitor = mock(AdvancedRumMonitor::class.java)
+        val proxy = _RumInternalProxy(mockRumMonitor)
+        val mockIntent = mock<Intent>()
+        val fakeExtras = Bundle().apply {
+            putString("_dd.synthetics.test_id", fakeTestId)
+            putString("_dd.synthetics.result_id", fakeResultId)
+        }
+        whenever(mockIntent.extras) doReturn fakeExtras
+
+        // When
+        proxy.setSyntheticsAttributeFromIntent(mockIntent)
+
+        // Then
+        verify(mockRumMonitor).setSyntheticsAttribute(fakeTestId, fakeResultId)
+    }
+
+    @Test
+    fun `M do nothing to RumMonitor W setSyntheticsAttributeFromIntent() {no extras}`() {
+        // Given
+        val mockRumMonitor = mock(AdvancedRumMonitor::class.java)
+        val proxy = _RumInternalProxy(mockRumMonitor)
+        val mockIntent = mock<Intent>()
+        whenever(mockIntent.extras) doReturn null
+
+        // When
+        proxy.setSyntheticsAttributeFromIntent(mockIntent)
+
+        // Then
+        verify(mockRumMonitor, never()).setSyntheticsAttribute(any(), any())
+    }
+
+    @Test
+    fun `M do nothing to RumMonitor W setSyntheticsAttributeFromIntent() {extras throws}`(
+        forge: Forge
+    ) {
+        // Given
+        val mockRumMonitor = mock(AdvancedRumMonitor::class.java)
+        val proxy = _RumInternalProxy(mockRumMonitor)
+        val mockIntent = mock<Intent>()
+        whenever(mockIntent.extras) doThrow forge.anException()
+
+        // When
+        proxy.setSyntheticsAttributeFromIntent(mockIntent)
+
+        // Then
+        verify(mockRumMonitor, never()).setSyntheticsAttribute(any(), any())
+    }
+
+    @Test
+    fun `M do nothing to RumMonitor W setSyntheticsAttributeFromIntent() {getString throws}`(
+        forge: Forge
+    ) {
+        // Given
+        val mockRumMonitor = mock(AdvancedRumMonitor::class.java)
+        val proxy = _RumInternalProxy(mockRumMonitor)
+        val mockIntent = mock<Intent>()
+        val mockExtras = mock<Bundle>()
+        whenever(mockIntent.extras) doReturn mockExtras
+        whenever(mockExtras.getString(any())) doThrow forge.anException()
+
+        // When
+        proxy.setSyntheticsAttributeFromIntent(mockIntent)
+
+        // Then
+        verify(mockRumMonitor, never()).setSyntheticsAttribute(any(), any())
     }
 
     @Test
