@@ -104,6 +104,8 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
             resultId = extras?.getString("_dd.synthetics.result_id")
         } catch (_: Exception) {
             // ignore, malformed intent extras
+        } catch (_: LinkageError) {
+            // ignore, e.g. NoClassDefFoundError when unparcelling extras referencing an unavailable class
         }
         this.setSyntheticsAttribute(testId, resultId)
     }

@@ -218,6 +218,23 @@ internal class RumInternalProxyTest {
     }
 
     @Test
+    fun `M do nothing to RumMonitor W setSyntheticsAttributeFromIntent() {getString throws LinkageError}`() {
+        // Given
+        val mockRumMonitor = mock(AdvancedRumMonitor::class.java)
+        val proxy = _RumInternalProxy(mockRumMonitor)
+        val mockIntent = mock<Intent>()
+        val mockExtras = mock<Bundle>()
+        whenever(mockIntent.extras) doReturn mockExtras
+        whenever(mockExtras.getString(any())) doThrow NoClassDefFoundError()
+
+        // When
+        proxy.setSyntheticsAttributeFromIntent(mockIntent)
+
+        // Then
+        verify(mockRumMonitor, never()).setSyntheticsAttribute(any(), any())
+    }
+
+    @Test
     fun `M return RumNetworkInstrumentation W createInstrumentation()`(
         @StringForgery fakeInstrumentationName: String,
         @Forgery fakeLibraryType: LibraryType
