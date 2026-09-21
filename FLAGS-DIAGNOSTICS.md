@@ -272,3 +272,25 @@ prove the required CA is trusted by this app. `ACCEPTED` describes certificate-p
 check the final HEAD outcome for hostname/pin/HTTP results. HEAD 403/405 can still demonstrate
 successful TLS. Do not send client tokens or flag-response data in an IT ticket; review/redact
 existing POST and snapshot logs before sharing.
+
+## Local runtime validation (2026-09-21)
+
+Validated commit `cb5f8ba3e5` on an Android 16 / API 36 emulator using the rebuilt sample APK:
+
+| Scenario | Flags CDN | Exposures intake |
+| --- | --- | --- |
+| Normal public certificate chain | 3 presented certificates; GlobalSign; trust accepted; HEAD 405 | 2 presented certificates; DigiCert; trust accepted; HEAD 403 |
+| Local untrusted test certificate | Chain/fingerprint logged before rejection; non-Zscaler handoff | Chain/fingerprint logged before rejection; non-Zscaler handoff |
+| Local untrusted certificate with synthetic Zscaler name | Chain/fingerprint logged before rejection; Zscaler-name handoff | Chain/fingerprint logged before rejection; Zscaler-name handoff |
+
+The negative tests used a temporary loopback CONNECT proxy with self-signed certificates.
+The synthetic certificate organization explicitly identified itself as LOCAL TEST ONLY;
+this was a test of the name-detection branch, not a real Zscaler deployment. No CA was
+installed and certificate validation was not disabled. Automated checks verified that
+both probes logged the chain before the trust failure, emitted `validation=REJECTED`
+and `HANDOFF`, reported `Trust anchor for certification path not found`, and reached the
+END marker. The proxy recorded zero successful TLS handshakes in both negative cases.
+Emulator proxy and Private DNS settings were restored after testing.
+
+These tests cover successful TLS and the previously missed Android rejection callback.
+The customer's actual issuer/chain and inspection policy still require their own capture.
