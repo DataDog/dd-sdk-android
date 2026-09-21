@@ -242,3 +242,33 @@ References:
 - [Android certificate settings](https://support.google.com/pixelphone/answer/2844832?hl=en)
 - [Android app trust configuration](https://developer.android.com/privacy-and-security/security-config)
 - [Create/manage AVDs and wipe data](https://developer.android.com/studio/run/managing-avds)
+
+## Evidence package for the customer's Zscaler team
+
+Capture a complete run from START to END using `adb logcat -v threadtime -s FlagsDiagnostics Datadog`.
+The `EVIDENCE` and `HANDOFF` lines summarize each HEAD probe. Attach the surrounding `TLS`
+certificate lines, `Route`/`Proxy` lines, Android/app configuration, clock, and exception causes.
+The hostname-aware callback logs certificates before Android can reject the chain.
+
+Suggested ticket content:
+
+> On the attached timestamp, the Android emulator attempted HTTPS to the hostname shown in
+> the EVIDENCE line on port 443. The attached certificate subjects, issuers, and SHA-256
+> fingerprints describe the chain received by this emulator probe. Android's validation
+> result and exception are included. Please correlate the hostname and timestamp with the
+> applicable Zscaler SSL-inspection policy and confirm the signing CA and complete chain.
+> If inspection is intended, please confirm the supported CA provisioning and application
+> trust configuration for Android. Alternatively, test an approved no-decrypt exception for
+> this exact hostname and compare the certificate chain and HEAD outcome before/after.
+
+Include separately the customer's workstation/user or Zscaler device identifier using their
+normal IT process; the diagnostics deliberately do not collect these identifiers. Attach the
+workstation OpenSSL capture as a separate observation, not as the emulator's chain.
+
+`zscalerNamedInPresentedChain=true` means a certificate subject or issuer contains Zscaler;
+it is evidence consistent with inspection, not cryptographic authentication of an untrusted CA.
+`false` does not rule it out (custom enterprise CAs may have other names). CA counts do not
+prove the required CA is trusted by this app. `ACCEPTED` describes certificate-path validation;
+check the final HEAD outcome for hostname/pin/HTTP results. HEAD 403/405 can still demonstrate
+successful TLS. Do not send client tokens or flag-response data in an IT ticket; review/redact
+existing POST and snapshot logs before sharing.

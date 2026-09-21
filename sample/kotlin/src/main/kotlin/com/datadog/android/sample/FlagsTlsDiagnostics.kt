@@ -94,12 +94,31 @@ internal object FlagsTlsDiagnostics {
             }
 
             override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {
-                Log.i(TAG, "TLS [$label] presented chain: count=${chain.size} authType=$authType host=$host")
+                checkServerTrusted(chain, authType, host)
+            }
+
+            // Conscrypt and OkHttp's Android chain cleaner can invoke this overload via reflection.
+            @Suppress("unused")
+            fun checkServerTrusted(
+                chain: Array<X509Certificate>,
+                authType: String,
+                hostname: String
+            ): List<X509Certificate> {
+                Log.i(TAG, "TLS [$label] presented chain: count=${chain.size} authType=$authType host=$hostname")
                 chain.forEachIndexed { index, certificate -> logCertificate(label, index, certificate) }
+                val zscalerNamed = chain.any {
+                    it.subjectX500Principal.name.contains("Zscaler", ignoreCase = true) ||
+                        it.issuerX500Principal.name.contains("Zscaler", ignoreCase = true)
+                }
+                Log.i(
+                    TAG,
+                    "EVIDENCE [$label] host=$hostname port=443 zscalerNamedInPresentedChain=$zscalerNamed " +
+                        "(certificate names observed before validation, not authenticated identity)"
+                )
                 // Use Android's hostname-aware validation, including domain-specific trust configuration.
                 // Never swallow a validation exception or accept an untrusted certificate.
                 try {
-                    val validated = extensions.checkServerTrusted(chain, authType, host)
+                    val validated = extensions.checkServerTrusted(chain, authType, hostname)
                     Log.i(TAG, "TLS [$label] platform trust PASSED; validated chain length=${validated.size}")
                     validated.lastOrNull()?.let {
                         Log.i(
@@ -108,19 +127,30 @@ internal object FlagsTlsDiagnostics {
                                 "sha256=${fingerprint(it.encoded)}"
                         )
                     }
+                    Log.i(TAG, "EVIDENCE [$label] host=$hostname Android certificate-path validation=ACCEPTED")
+                    return validated
                 } catch (e: Exception) {
                     Log.e(TAG, "TLS [$label] platform trust FAILED", e)
+                    Log.e(TAG, "EVIDENCE [$label] host=$hostname Android certificate-path validation=REJECTED")
+                    if (zscalerNamed) {
+                        Log.e(
+                            TAG,
+                            "HANDOFF [$label] Zscaler-named chain received by emulator; Android rejected it. " +
+                                "Ask IT to correlate this timestamp/hostname with SSL inspection policy, " +
+                                "verify the signing CA fingerprints above and required Android app trust, " +
+                                "or test an approved no-decrypt rule for this hostname."
+                        )
+                    } else {
+                        Log.e(
+                            TAG,
+                            "HANDOFF [$label] No Zscaler name observed; this does not exclude interception. " +
+                                "Ask IT to identify the issuer/fingerprints above and check chain completeness " +
+                                "and Android app trust configuration."
+                        )
+                    }
                     throw e
                 }
             }
-
-            // OkHttp's Android chain cleaner uses this hostname-aware overload via reflection.
-            @Suppress("unused")
-            fun checkServerTrusted(
-                chain: Array<X509Certificate>,
-                authType: String,
-                hostname: String
-            ): List<X509Certificate> = extensions.checkServerTrusted(chain, authType, hostname)
         }
         val ssl = SSLContext.getInstance("TLS").apply { init(null, arrayOf(recording), null) }
         Log.i(TAG, "TLS [$label] provider=${ssl.provider.name} trustManager=${platform.javaClass.name}")
