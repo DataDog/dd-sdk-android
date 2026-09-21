@@ -14,6 +14,7 @@ import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -654,6 +655,76 @@ internal class PlainBatchFileReaderWriterTest {
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER),
             PlainBatchFileReaderWriter.WARNING_NOT_ALL_DATA_READ.format(Locale.US, file.path)
+        )
+    }
+
+    @Test
+    fun `M return valid events read so far and not throw W readData() { negative block size }`(
+        @StringForgery fileName: String,
+        @Forgery validEvent: RawBatchEvent,
+        @StringForgery fakeCorruptedMetadata: String,
+        @IntForgery(max = -1) fakeNegativeDataSize: Int
+    ) {
+        // Given
+        val file = File(fakeRootDirectory, fileName)
+        val corruptedMetadataBytes = metaBytesAsTlv(fakeCorruptedMetadata.toByteArray())
+        // header declares a negative data size -> ByteArray(negativeSize) throws
+        // NegativeArraySizeException uncaught, unless the reader validates the declared size first
+        val corruptedEventHeader = ByteBuffer.allocate(PlainBatchFileReaderWriter.HEADER_SIZE_BYTES)
+            .putShort(0x00)
+            .putInt(fakeNegativeDataSize)
+            .array()
+        file.writeBytes(encode(validEvent) + corruptedMetadataBytes + corruptedEventHeader)
+
+        // When
+        val result = testedReaderWriter.readData(file, fakeTelemetryContext)
+
+        // Then
+        assertThat(result).containsExactly(validEvent)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            PlainBatchFileReaderWriter.ERROR_CORRUPTED_BLOCK_SIZE,
+            additionalProperties = droppedBytesTelemetry(
+                corruptedMetadataBytes.size + corruptedEventHeader.size,
+                TelemetryContext.TELEMETRY_BATCH_OPERATION to "Block(EVENT):Data read",
+                TelemetryContext.TELEMETRY_BATCH_BYTES_ACTUAL to fakeNegativeDataSize
+            )
+        )
+    }
+
+    @Test
+    fun `M return valid events read so far and not throw W readData() { absurdly large declared block size }`(
+        @StringForgery fileName: String,
+        @Forgery validEvent: RawBatchEvent,
+        @StringForgery fakeMetadata: String
+    ) {
+        // Given
+        val file = File(fakeRootDirectory, fileName)
+        val metaBytes = metaBytesAsTlv(fakeMetadata.toByteArray())
+        // header declares a huge data size, far larger than the file itself, so a naive
+        // ByteArray(dataSize) allocation would be unbounded/OOM-prone; the reader must clamp
+        // the allocation to what's actually left in the file instead of trusting the header
+        val corruptedEventHeader = ByteBuffer.allocate(PlainBatchFileReaderWriter.HEADER_SIZE_BYTES)
+            .putShort(0x00)
+            .putInt(Int.MAX_VALUE - 1)
+            .array()
+        file.writeBytes(encode(validEvent) + metaBytes + corruptedEventHeader)
+
+        // When
+        val result = testedReaderWriter.readData(file, fakeTelemetryContext)
+
+        // Then: no data follows the header -> real EOF, handled exactly like any other
+        // declared-more-than-present case
+        assertThat(result).containsExactly(validEvent)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            PlainBatchFileReaderWriter.ERROR_UNEXPECTED_EOF,
+            additionalProperties = droppedBytesTelemetry(
+                metaBytes.size + corruptedEventHeader.size,
+                TelemetryContext.TELEMETRY_BATCH_OPERATION to "Block(EVENT):Data read"
+            )
         )
     }
 
