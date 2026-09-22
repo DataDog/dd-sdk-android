@@ -80,7 +80,7 @@ stages:
     - set +e
     - exit_code=0
     - !reference [ .snippets, start-emulator ]
-    - DD_TAGS="test.configuration.android_api:$ANDROID_API" ./gradlew :instrumented:integration:connectedDebugAndroidTest $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) || exit_code=$?
+    - DD_TAGS="test.configuration.android_api:$ANDROID_API" ./gradlew :instrumented:integration:connectedDebugAndroidTest $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) $( (( $ANDROID_API == 23 )) && echo "-Pandroid.testInstrumentationRunnerArguments.disableLeakCanary=true" ) || exit_code=$?
     - $ANDROID_HOME/platform-tools/adb emu kill
     - datadog-ci junit upload --service dd-sdk-android --tags test.configuration.android_api:$ANDROID_API --xpath-tag test.suite=/testcase/@classname instrumented/integration/build/outputs/androidTest-results/connected/debug/
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
@@ -806,4 +806,3 @@ post-release:merge-develop:
   script:
     - export GITHUB_TOKEN=$(dd-octo-sts token --scope DataDog/dd-sdk-android --policy self.gitlab.release.create-release)
     - bash ./ci/scripts/merge-release-develop.sh "$CI_COMMIT_TAG"
-
