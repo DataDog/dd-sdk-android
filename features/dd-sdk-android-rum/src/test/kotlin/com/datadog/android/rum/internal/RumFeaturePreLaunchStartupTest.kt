@@ -113,8 +113,6 @@ internal class RumFeaturePreLaunchStartupTest {
         whenever(appContext.mockInstance.resources) doReturn mockResources
         whenever(mockResources.configuration) doReturn mock()
 
-        whenever(mockAppStartupActivityPredicate.shouldTrackStartup(any())) doReturn true
-
         fakeScenario = RumStartupScenario.Cold(
             hasSavedInstanceStateBundle = false,
             activity = WeakReference(mockActivity),
@@ -161,23 +159,6 @@ internal class RumFeaturePreLaunchStartupTest {
         assertThat(testedFeature.rumAppStartupDetector).isNull()
     }
 
-    @Test
-    fun `M reuse the pre-launch detector W onInitialize() {captured activity excluded}`() {
-        // Given — the pre-launch detector accepts every Activity, but the configured predicate
-        // excludes the one it happened to capture. Reusing it is still correct: attach() applies
-        // this core's predicate to the buffer and to everything observed afterwards.
-        installPreLaunchDetector()
-        emitPreLaunchAppStartup()
-        whenever(mockAppStartupActivityPredicate.shouldTrackStartup(mockActivity)) doReturn false
-
-        // When
-        testedFeature.onInitialize(appContext.mockInstance)
-
-        // Then
-        assertThat(testedFeature.usePreLaunchDetector).isTrue()
-        assertThat(testedFeature.rumAppStartupDetector).isNull()
-    }
-
     // endregion
 
     // region attachPreLaunchRumAppStartupDetector
@@ -207,27 +188,6 @@ internal class RumFeaturePreLaunchStartupTest {
         testedFeature.attachPreLaunchRumAppStartupDetector()
 
         // Then
-        verify(mockRumMonitor, never()).sendAppStartEvent(any())
-        verify(mockRumMonitor, never()).sendTTIDEvent(any())
-    }
-
-    @Test
-    fun `M drop buffered events W attach() {scenario activity excluded}`() {
-        // Given — the launch was captured with the permissive pre-launch predicate, but the
-        // configured one excludes its Activity.
-        val excludedActivity = mock<Activity>()
-        val excludedScenario = coldScenarioFor(excludedActivity)
-        whenever(mockAppStartupActivityPredicate.shouldTrackStartup(excludedActivity)) doReturn false
-
-        installPreLaunchDetector()
-        PreLaunchRumAppStartupDetector.onAppStartupDetected(excludedScenario)
-        PreLaunchRumAppStartupDetector.onTTIDComputed(excludedScenario, TTID_DURATION_NS, false, null)
-        testedFeature.onInitialize(appContext.mockInstance)
-
-        // When
-        testedFeature.attachPreLaunchRumAppStartupDetector()
-
-        // Then — nothing from the excluded launch reaches the monitor
         verify(mockRumMonitor, never()).sendAppStartEvent(any())
         verify(mockRumMonitor, never()).sendTTIDEvent(any())
     }
@@ -275,86 +235,15 @@ internal class RumFeaturePreLaunchStartupTest {
     }
 
     @Test
-    fun `M drop the TTID W attach() {joins after the AppStart was superseded}`() {
-        // Given — a launch whose AppStart this core never saw, because it attached after the
-        // buffer had already been replaced.
-        installPreLaunchDetector()
-        emitPreLaunchAppStartup()
-        PreLaunchRumAppStartupDetector
-            .getFieldValue<MutableList<*>, PreLaunchRumAppStartupDetector>("pendingEvents")
-            .clear()
-        testedFeature.onInitialize(appContext.mockInstance)
-        testedFeature.attachPreLaunchRumAppStartupDetector()
-
-        // When
-        emitPreLaunchTTID()
-
-        // Then — a TTID with no matching AppStart would land on a negative index in the session
-        verify(mockRumMonitor, never()).sendAppStartEvent(any())
-        verify(mockRumMonitor, never()).sendTTIDEvent(any())
-    }
-
-    @Test
-    fun `M drop buffered TTID W attach() {forwarding activity excluded}`() {
-        // Given — the scenario's Activity is accepted, but the Activity that actually drew
-        // (subscribed to while the pre-launch predicate accepted everything) is not.
-        val forwardingActivity = mock<Activity>()
-        whenever(mockAppStartupActivityPredicate.shouldTrackStartup(forwardingActivity)) doReturn false
-
-        installPreLaunchDetector()
-        emitPreLaunchAppStartup()
-        PreLaunchRumAppStartupDetector.onTTIDComputed(
-            fakeScenario,
-            TTID_DURATION_NS,
-            true,
-            WeakReference(forwardingActivity)
-        )
-        testedFeature.onInitialize(appContext.mockInstance)
-
-        // When
-        testedFeature.attachPreLaunchRumAppStartupDetector()
-
-        // Then — the AppStart survives, the TTID measured on the excluded Activity does not
-        verify(mockRumMonitor, times(1)).sendAppStartEvent(fakeScenario)
-        verify(mockRumMonitor, never()).sendTTIDEvent(any())
-    }
-
-    @Test
-    fun `M still forward the TTID W predicate rejects the scenario activity after the AppStart`() {
-        // Given — a state-dependent predicate, of the kind the AppStartupActivityPredicate KDoc
-        // itself describes (a splash Activity that calls finish() on itself), which accepts the
-        // launch Activity at creation and rejects it by the time the first frame is drawn.
-        var isFinishing = false
-        whenever(mockAppStartupActivityPredicate.shouldTrackStartup(mockActivity))
-            .thenAnswer { !isFinishing }
-
-        installPreLaunchDetector()
-        testedFeature.onInitialize(appContext.mockInstance)
-        testedFeature.attachPreLaunchRumAppStartupDetector()
-        emitPreLaunchAppStartup()
-
-        // When — the Activity state flips between Activity creation and the first draw
-        isFinishing = true
-        emitPreLaunchTTID()
-
-        // Then — the predicate decision taken at Activity creation stands for the whole launch,
-        // so the consumer is not left holding an AppStart with no TTID to go with it
-        verify(mockRumMonitor, times(1)).sendAppStartEvent(fakeScenario)
-        verify(mockRumMonitor, times(1)).sendTTIDEvent(any())
-    }
-
-    @Test
     fun `M forward buffered events W attach() {scenario activity already collected}`() {
-        // Given — the launch Activity was garbage collected before Rum.enable() ran, so the
-        // predicate cannot be applied to it. The capture is still forwarded.
+        // Given — the launch Activity was garbage collected before Rum.enable() ran, leaving the
+        // scenario holding an empty reference. The capture is still forwarded.
         val collectedScenario = RumStartupScenario.Cold(
             hasSavedInstanceStateBundle = false,
             activity = WeakReference<Activity>(null),
             appStartActivityOnCreateGapNs = 0L,
             initialTime = Time(0L, 0L)
         )
-        whenever(mockAppStartupActivityPredicate.shouldTrackStartup(any())) doReturn false
-
         installPreLaunchDetector()
         PreLaunchRumAppStartupDetector.onAppStartupDetected(collectedScenario)
         PreLaunchRumAppStartupDetector.onTTIDComputed(collectedScenario, TTID_DURATION_NS, false, null)
@@ -396,10 +285,8 @@ internal class RumFeaturePreLaunchStartupTest {
     }
 
     @Test
-    fun `M forward live events per core predicate W two cores attached`() {
-        // Given — the two cores disagree about whether this Activity is a startup Activity
-        whenever(mockAppStartupActivityPredicate.shouldTrackStartup(mockActivity)) doReturn false
-        whenever(mockAppStartupActivityPredicate2.shouldTrackStartup(mockActivity)) doReturn true
+    fun `M forward live events to every core W two cores attached`() {
+        // Given
         installPreLaunchDetector()
         val secondFeature = createSecondFeature()
         testedFeature.onInitialize(appContext.mockInstance)
@@ -410,8 +297,8 @@ internal class RumFeaturePreLaunchStartupTest {
         // When
         emitPreLaunchAppStartup()
 
-        // Then — one core's narrower predicate does not decide what the other sees
-        verify(mockRumMonitor, never()).sendAppStartEvent(any())
+        // Then — a live event reaches every attached core, not just the first or last to attach
+        verify(mockRumMonitor, times(1)).sendAppStartEvent(fakeScenario)
         verify(mockRumMonitor2, times(1)).sendAppStartEvent(fakeScenario)
     }
 
@@ -542,14 +429,12 @@ internal class RumFeaturePreLaunchStartupTest {
     }
 
     /**
-     * A second SDK core enabling RUM in the same process, with its own monitor and its own startup
-     * Activity predicate.
+     * A second SDK core enabling RUM in the same process, with its own monitor.
      */
     private fun createSecondFeature(): RumFeature {
         whenever(mockSdkCore2.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore2.timeProvider) doReturn mock()
         whenever(mockSdkCore2.createScheduledExecutorService(any())) doReturn mock()
-        whenever(mockAppStartupActivityPredicate2.shouldTrackStartup(any())) doReturn true
         GlobalRumMonitor.registerIfAbsent(mockRumMonitor2, mockSdkCore2)
 
         return RumFeature(
@@ -570,7 +455,7 @@ internal class RumFeaturePreLaunchStartupTest {
     private fun resetPreLaunchDetector() {
         PreLaunchRumAppStartupDetector.setFieldValue("detectorImpl", null)
         PreLaunchRumAppStartupDetector
-            .getFieldValue<MutableList<*>, PreLaunchRumAppStartupDetector>("registrations")
+            .getFieldValue<MutableList<*>, PreLaunchRumAppStartupDetector>("listeners")
             .clear()
         PreLaunchRumAppStartupDetector
             .getFieldValue<MutableList<*>, PreLaunchRumAppStartupDetector>("pendingEvents")

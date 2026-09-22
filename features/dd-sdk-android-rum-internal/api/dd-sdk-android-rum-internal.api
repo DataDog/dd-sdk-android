@@ -20,7 +20,7 @@ public final class com/datadog/android/rum/internal/domain/Time$Companion {
 
 public final class com/datadog/android/rum/internal/startup/PreLaunchRumAppStartupDetector : com/datadog/android/rum/internal/startup/RumAppStartupDetector$Listener {
 	public static final field INSTANCE Lcom/datadog/android/rum/internal/startup/PreLaunchRumAppStartupDetector;
-	public final fun attach (Lcom/datadog/android/rum/internal/startup/RumAppStartupDetector$Listener;Lkotlin/jvm/functions/Function1;)V
+	public final fun attach (Lcom/datadog/android/rum/internal/startup/RumAppStartupDetector$Listener;)V
 	public final fun detach (Lcom/datadog/android/rum/internal/startup/RumAppStartupDetector$Listener;)V
 	public final fun getAttachedListenerCount ()I
 	public final fun install (Landroid/app/Application;)V

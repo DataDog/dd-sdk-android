@@ -791,13 +791,9 @@ internal class RumFeature(
      * creating a second detector — [attachPreLaunchRumAppStartupDetector] drains the buffer once
      * the real monitor is registered. Otherwise we create the detector here as usual.
      *
-     * Whatever the pre-launch detector captured before this SDK existed was captured with a
-     * permissive predicate, since no core's configuration is known that early.
-     * [PreLaunchRumAppStartupDetector.attach] re-applies this core's predicate to the buffered
-     * events and to everything the detector observes afterwards, so nothing this core excluded is
-     * ever reported. It does not reconcile the state the detector accumulated under the permissive
-     * predicate, which costs a launch in one narrow case documented on
-     * `PreLaunchRumAppStartupDetector.install()`.
+     * `appStartupActivityPredicate` does not apply on this path: the launch was already captured
+     * before this core existed, too late for a predicate whose job is to move the measurement on
+     * to the next Activity. See `PreLaunchRumAppStartupDetector.install()`.
      */
     private fun initRumAppStartupDetector() {
         if (!PreLaunchRumAppStartupDetector.isInstalled) {
@@ -888,9 +884,7 @@ internal class RumFeature(
 
         val listener = createRumAppStartupListener()
         preLaunchRumAppStartupListener = listener
-        PreLaunchRumAppStartupDetector.attach(listener) {
-            configuration.appStartupActivityPredicate.shouldTrackStartup(it)
-        }
+        PreLaunchRumAppStartupDetector.attach(listener)
     }
 
     /**

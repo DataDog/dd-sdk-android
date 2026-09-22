@@ -72,7 +72,7 @@ internal class AppLaunchCollectorProviderTest {
     private fun resetDetector() {
         PreLaunchRumAppStartupDetector.setFieldValue("detectorImpl", null)
         PreLaunchRumAppStartupDetector
-            .getFieldValue<MutableList<*>, PreLaunchRumAppStartupDetector>("registrations")
+            .getFieldValue<MutableList<*>, PreLaunchRumAppStartupDetector>("listeners")
             .clear()
         PreLaunchRumAppStartupDetector
             .getFieldValue<MutableList<*>, PreLaunchRumAppStartupDetector>("pendingEvents")

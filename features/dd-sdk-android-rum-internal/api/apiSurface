@@ -8,7 +8,7 @@ object com.datadog.android.rum.internal.startup.PreLaunchRumAppStartupDetector :
   val isInstalled: Boolean
   val attachedListenerCount: Int
   fun install(android.app.Application)
-  fun attach(RumAppStartupDetector.Listener, (android.app.Activity) -> Boolean)
+  fun attach(RumAppStartupDetector.Listener)
   fun detach(RumAppStartupDetector.Listener)
   override fun onAppStartupDetected(RumStartupScenario)
   override fun onTTIDComputed(RumStartupScenario, Long, Boolean, java.lang.ref.WeakReference<android.app.Activity>?)
