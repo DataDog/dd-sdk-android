@@ -1606,6 +1606,21 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
+    fun `M forward profiling result to pendingTriggerProfiles W onOutOfMemoryDetected()`(
+        @Forgery fakeResult: PerfettoResult
+    ) {
+        // Given
+        testedFeature.onInitialize(mockContext)
+        testedFeature.pendingTriggerProfiles = mockPendingTriggerProfiles
+
+        // When
+        testedFeature.onOutOfMemoryDetected(fakeResult)
+
+        // Then
+        verify(mockPendingTriggerProfiles).setProfilingResult(fakeResult)
+    }
+
+    @Test
     fun `M forward anomaly event to RUM W onMemoryAnomalyDetected()`(
         @Forgery fakeResult: PerfettoResult
     ) {

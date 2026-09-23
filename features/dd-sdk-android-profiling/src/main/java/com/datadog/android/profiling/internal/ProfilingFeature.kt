@@ -246,7 +246,7 @@ internal class ProfilingFeature(
     override fun onOutOfMemoryDetected(result: PerfettoResult) {
         // RUM already generates its own OOM error event, so the profiling feature
         // does not forward a separate OOM event.
-        // TODO RUM-18154: Wire resultFilePath with ProfilingDataWriter
+        pendingTriggerProfiles.setProfilingResult(result)
     }
 
     override fun onMemoryAnomalyDetected(result: PerfettoResult) {

@@ -28,7 +28,7 @@ internal interface PendingTriggerProfiles {
     /**
      * Buffers a RUM gating [ProfilerEvent]. If a matching profiling result is already pending,
      * the pair is dispatched immediately via the on-match callback; otherwise the event
-     * self-cleans after [EXPIRY_TIMEOUT_MS]. Non-ANR events are silently rejected.
+     * self-cleans after [EXPIRY_TIMEOUT_MS]. Rejected event types are silently ignored.
      */
     fun setRumGatingEvent(event: ProfilerEvent)
 
