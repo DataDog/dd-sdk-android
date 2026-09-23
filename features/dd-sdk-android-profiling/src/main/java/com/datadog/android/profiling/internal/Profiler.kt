@@ -34,6 +34,8 @@ internal interface Profiler {
 
     fun unregisterProfilingCallback(appContext: Context)
 
+    fun setAnrTriggerEnabled(enabled: Boolean)
+
     /**
      * Enables or disables system profiling triggers for the current RUM session.
      */

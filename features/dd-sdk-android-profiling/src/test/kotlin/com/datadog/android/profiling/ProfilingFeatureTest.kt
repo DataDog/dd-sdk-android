@@ -52,6 +52,7 @@ import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -191,7 +192,8 @@ internal class ProfilingFeatureTest {
     private val fakeAllSampledConfiguration = ProfilingConfiguration(
         customEndpointUrl = null,
         applicationLaunchSampleRate = 100f,
-        continuousSampleRate = 100f
+        continuousSampleRate = 100f,
+        anrTriggerEnabled = true
     )
 
     @BeforeEach
@@ -381,7 +383,8 @@ internal class ProfilingFeatureTest {
             ProfilingConfiguration(
                 customEndpointUrl = null,
                 applicationLaunchSampleRate = 100f,
-                continuousSampleRate = 0f
+                continuousSampleRate = 0f,
+                anrTriggerEnabled = true
             ),
             mockProfiler
         )
@@ -459,7 +462,8 @@ internal class ProfilingFeatureTest {
             ProfilingConfiguration(
                 customEndpointUrl = null,
                 applicationLaunchSampleRate = 100f,
-                continuousSampleRate = fakeContinuousRate
+                continuousSampleRate = fakeContinuousRate,
+                anrTriggerEnabled = true
             ),
             mockProfiler
         )
@@ -483,6 +487,21 @@ internal class ProfilingFeatureTest {
 
         // Then
         verify(mockSdkCore).setContextUpdateReceiver(testedFeature)
+    }
+
+    @Test
+    fun `M propagate ANR trigger enabled flag W onInitialize`(
+        @BoolForgery fakeAnrTriggerEnabled: Boolean
+    ) {
+        // Given
+        val config = fakeConfiguration.copy(anrTriggerEnabled = fakeAnrTriggerEnabled)
+        testedFeature = ProfilingFeature(mockSdkCore, config, mockProfiler)
+
+        // When
+        testedFeature.onInitialize(mockContext)
+
+        // Then
+        verify(mockProfiler).setAnrTriggerEnabled(fakeAnrTriggerEnabled)
     }
 
     @Test
@@ -991,7 +1010,8 @@ internal class ProfilingFeatureTest {
             ProfilingConfiguration(
                 customEndpointUrl = null,
                 applicationLaunchSampleRate = 100f,
-                continuousSampleRate = 0f
+                continuousSampleRate = 0f,
+                anrTriggerEnabled = true
             ),
             mockProfiler
         )
@@ -1080,7 +1100,8 @@ internal class ProfilingFeatureTest {
             ProfilingConfiguration(
                 customEndpointUrl = null,
                 applicationLaunchSampleRate = 100f,
-                continuousSampleRate = 0f
+                continuousSampleRate = 0f,
+                anrTriggerEnabled = true
             ),
             mockProfiler
         )
@@ -1104,7 +1125,8 @@ internal class ProfilingFeatureTest {
             ProfilingConfiguration(
                 customEndpointUrl = null,
                 applicationLaunchSampleRate = 100f,
-                continuousSampleRate = 0f
+                continuousSampleRate = 0f,
+                anrTriggerEnabled = true
             ),
             mockProfiler
         )
@@ -1130,7 +1152,8 @@ internal class ProfilingFeatureTest {
             ProfilingConfiguration(
                 customEndpointUrl = null,
                 applicationLaunchSampleRate = 100f,
-                continuousSampleRate = 0f
+                continuousSampleRate = 0f,
+                anrTriggerEnabled = true
             ),
             mockProfiler
         )
