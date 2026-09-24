@@ -98,7 +98,7 @@ class DdRumContentProvider : ContentProvider() {
         }
 
         /**
-         * fallback for APIs below Android N, see [DefaultAppStartTimeProvider].
+         * fallback for APIs below Android N, see [com.datadog.android.internal.time.DefaultAppStartTimeProvider].
          * Should be set from the outside only in tests.
          */
         var createTimeNs: Long = System.nanoTime()
