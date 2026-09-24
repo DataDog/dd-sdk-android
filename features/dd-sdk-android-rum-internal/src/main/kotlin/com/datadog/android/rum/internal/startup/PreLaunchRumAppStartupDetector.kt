@@ -38,11 +38,9 @@ import com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistryI
  * Being process-scoped, it serves every SDK core that enables RUM in the process: listeners
  * accumulate rather than replace each other.
  *
- * **Threading**: [install] and all [RumAppStartupDetector.Listener] callbacks run on the main
- * thread, and [attach]/[detach] are dispatched there by [Rum.enable], so the listener and event
- * state needs no synchronization. [isInstalled] is the exception: [Rum.enable] reads it from
- * whichever thread it was called on — a background thread for React Native and Flutter — before
- * any main-thread hop, so the field behind it is volatile.
+ * **Threading**: [install] and the [RumAppStartupDetector.Listener] callbacks run on the main
+ * thread. [attach] runs on whichever thread [Rum.enable] was called on, the same as the detector
+ * creation on the native path.
  */
 object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
 
@@ -123,8 +121,6 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
      * replace each other. [pendingEvents] is *replayed*, not consumed, so a listener attaching
      * after the SDK-less capture — or in the middle of a launch another core is already hearing
      * about live — still sees the whole launch.
-     *
-     * Must be called on the main thread.
      *
      * @param listener The listener to receive startup events.
      */

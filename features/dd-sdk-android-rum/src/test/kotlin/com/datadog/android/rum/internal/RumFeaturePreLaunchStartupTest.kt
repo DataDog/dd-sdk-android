@@ -386,25 +386,6 @@ internal class RumFeaturePreLaunchStartupTest {
         verify(mockRumMonitor2, never()).sendTTIDEvent(any())
     }
 
-    @Test
-    fun `M not attach W attachPreLaunchRumAppStartupDetector() {feature already stopped}`() {
-        // Given — Rum.enable() posted the attach to the main thread from a background thread, and
-        // the feature was stopped before that post got a chance to run
-        installPreLaunchDetector()
-        testedFeature.onInitialize(appContext.mockInstance)
-        testedFeature.onStop()
-
-        // When — the queued attach finally runs
-        testedFeature.attachPreLaunchRumAppStartupDetector()
-        emitPreLaunchAppStartup()
-
-        // Then — nothing is registered, so the process-scoped singleton does not retain the
-        // stopped feature or its SDK core
-        assertThat(PreLaunchRumAppStartupDetector.attachedListenerCount).isEqualTo(0)
-        assertThat(testedFeature.preLaunchRumAppStartupListener).isNull()
-        verify(mockRumMonitor, never()).sendAppStartEvent(any())
-    }
-
     // endregion
 
     // region Helpers
