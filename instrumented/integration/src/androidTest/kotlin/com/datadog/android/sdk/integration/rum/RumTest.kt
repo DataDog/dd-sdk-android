@@ -7,6 +7,7 @@
 package com.datadog.android.sdk.integration.rum
 
 import android.app.Activity
+import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.rum.GlobalRumMonitor
@@ -16,6 +17,7 @@ import com.datadog.android.sdk.rules.HandledRequest
 import com.datadog.android.sdk.rules.MockServerActivityTestRule
 import com.datadog.android.sdk.utils.isRumUrl
 import com.google.gson.JsonObject
+import leakcanary.LeakAssertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import java.lang.Long.max
@@ -137,6 +139,18 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
         callMethod.invoke(rum)
     }
 
+    protected fun assertNoLeaksUnlessDisabled() {
+        val leakDetectionDisabled = InstrumentationRegistry.getArguments()
+            .getString(DISABLE_LEAK_CANARY_ARGUMENT)
+            .toBoolean()
+
+        if (leakDetectionDisabled) {
+            Log.w(TAG, "Skipping LeakCanary assertion because $DISABLE_LEAK_CANARY_ARGUMENT is enabled")
+        } else {
+            LeakAssertions.assertNoLeaks()
+        }
+    }
+
     private val JsonObject.isEventRelatedToApplicationLaunch
         get() = get("type")?.asString == "view" &&
             has("view") &&
@@ -232,6 +246,9 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
 
     companion object {
         internal val FINAL_WAIT_MS = TimeUnit.SECONDS.toMillis(60)
+
+        private const val TAG = "RumTest"
+        private const val DISABLE_LEAK_CANARY_ARGUMENT = "disableLeakCanary"
 
         // Keep in sync with RumViewEventWriterImpl.FULL_VIEW_EVERY_N_UPDATES.
         private const val FULL_VIEW_EVERY_N_UPDATES = 4L

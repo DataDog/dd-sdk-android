@@ -8,7 +8,10 @@ package com.datadog.android.flags.openfeature.internal
 
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
+import com.datadog.android.flags.FlagsInitializationTimeoutException
+import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.tools.unit.forge.BaseConfigurator
 import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -27,6 +30,8 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -62,6 +67,28 @@ internal class FlagsClientExtTest {
         // Then - verify the correct context was passed
         verify(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
         assertThat(contextCaptor.firstValue).isEqualTo(context)
+    }
+
+    @Test
+    fun `M complete successfully W setEvaluationContextSuspend() {timeout callback races ready state}`(
+        @StringForgery targetingKey: String
+    ) = runTest {
+        // Given
+        val context = EvaluationContext(targetingKey = targetingKey)
+        val stubState = mock<StateObservable>()
+        val stubTimeoutError = mock<FlagsInitializationTimeoutException>()
+        whenever(mockFlagsClient.state).thenReturn(stubState)
+        whenever(stubState.getCurrentState()).thenReturn(FlagsClientState.Ready)
+        doAnswer { invocation ->
+            invocation.getArgument<EvaluationContextCallback>(1).onFailure(stubTimeoutError)
+            Unit
+        }.whenever(mockFlagsClient).setEvaluationContext(eq(context), any())
+
+        // When
+        mockFlagsClient.setEvaluationContextSuspend(context)
+
+        // Then
+        verify(mockFlagsClient).setEvaluationContext(eq(context), any())
     }
 
     @Test

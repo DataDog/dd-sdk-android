@@ -26,3 +26,14 @@ fun Throwable.loggableStackTrace(): String {
         stringWriter.toString().ifBlank { stackTrace.loggableStackTrace() }
     }
 }
+
+/**
+ * Reads the throwable's message, guarding against a `getMessage()` override that throws.
+ */
+fun Throwable.loggableMessage(): String? {
+    return try {
+        message
+    } catch (@Suppress("TooGenericExceptionCaught") _: Throwable) {
+        null
+    }
+}

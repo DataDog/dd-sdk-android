@@ -1041,7 +1041,6 @@ datadog:
       - "kotlin.Throwable.constructor()"
       - "kotlin.Throwable.constructor(kotlin.String?)"
       - "kotlin.Throwable.fillInStackTrace()"
-      - "kotlin.Throwable.stackTraceToString()"
       - "kotlin.UnsupportedOperationException()"
       - "kotlin.UnsupportedOperationException(kotlin.String?)"
       - "kotlin.comparisons.maxOf(kotlin.Float, kotlin.Float)"
@@ -1185,6 +1184,10 @@ datadog:
       - "dev.openfeature.kotlin.sdk.Value.Double.constructor(kotlin.Double)"
       - "dev.openfeature.kotlin.sdk.Value.Integer.constructor(kotlin.Int)"
       - "dev.openfeature.kotlin.sdk.Value.String.constructor(kotlin.String)"
+      - "dev.openfeature.kotlin.sdk.Value.asBoolean()"
+      - "dev.openfeature.kotlin.sdk.Value.asDouble()"
+      - "dev.openfeature.kotlin.sdk.Value.asInteger()"
+      - "dev.openfeature.kotlin.sdk.Value.asString()"
       # endregion
       # region Opentelemetry
       - "io.opentelemetry.api.trace.Span.getInvalid()"

@@ -1085,6 +1085,32 @@ internal class PerfettoProfilerTest {
     }
 
     @Test
+    fun `M not delegate to registrar W registerProfilingCallback {ANR trigger disabled}`() {
+        // Given
+        // Drop interactions recorded by the set-up call (which used the default enabled state).
+        reset(mockRegistrar)
+        testedProfiler.setAnrTriggerEnabled(false)
+
+        // When
+        testedProfiler.registerProfilingCallback(mockContext, mockProfilerCallback)
+
+        // Then
+        verify(mockRegistrar, never()).register(any(), any())
+    }
+
+    @Test
+    fun `M not delegate to registrar W unregisterProfilingCallback {ANR trigger disabled}`() {
+        // Given
+        testedProfiler.setAnrTriggerEnabled(false)
+
+        // When
+        testedProfiler.unregisterProfilingCallback(mockContext)
+
+        // Then
+        verify(mockRegistrar, never()).unregister(any())
+    }
+
+    @Test
     fun `M not delegate to registrar W unregisterProfilingCallback {SDK below BAKLAVA}`() {
         // Given
         whenever(mockBuildSdkVersionProvider.isAtLeastBaklava) doReturn false
@@ -1288,15 +1314,17 @@ internal class PerfettoProfilerTest {
         var stopTime: Long = 0L
 
         var resultCallbackTime: Long = 0L
-        private var queryIncrement: Int = 0
+        private var wallQueryIncrement: Int = 0
+        private var elapsedQueryIncrement: Int = 0
 
         fun reset() {
-            queryIncrement = 0
+            wallQueryIncrement = 0
+            elapsedQueryIncrement = 0
         }
 
         override fun getDeviceTimestampMillis(): Long {
-            val current = queryIncrement
-            queryIncrement++
+            val current = wallQueryIncrement
+            wallQueryIncrement++
             return when (current) {
                 0 -> startTime
                 1 -> stopTime
@@ -1312,7 +1340,15 @@ internal class PerfettoProfilerTest {
 
         override fun getServerOffsetMillis(): Long = 0L
 
-        override fun getDeviceElapsedRealtimeMillis(): Long = 0L
+        override fun getDeviceElapsedRealtimeMillis(): Long {
+            val current = elapsedQueryIncrement
+            elapsedQueryIncrement++
+            return when (current) {
+                0 -> startTime
+                1 -> stopTime
+                else -> resultCallbackTime
+            }
+        }
         override fun getDeviceElapsedRealtimeNanos(): Long = 0L
         override fun getDeviceUptimeMillis(): Long = 0L
     }
