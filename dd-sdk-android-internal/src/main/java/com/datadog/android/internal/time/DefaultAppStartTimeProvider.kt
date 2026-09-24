@@ -8,7 +8,6 @@ package com.datadog.android.internal.time
 
 import android.os.Process
 import com.datadog.android.internal.system.BuildSdkVersionProvider
-import com.datadog.android.internal.utils.guardedProcessStartNs
 import com.datadog.android.rum.DdRumContentProvider
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
@@ -29,13 +28,27 @@ class DefaultAppStartTimeProvider(
                 // process start and now, then back-projects it onto getDeviceElapsedTimeNanos() —
                 // the same CLOCK_MONOTONIC base as System.nanoTime(), so the two agree.
                 val diffMs = timeProvider.getDeviceUptimeMillis() - Process.getStartUptimeMillis()
-                val computed =
+                val computedAppStartTimeNs =
                     timeProvider.getDeviceElapsedTimeNanos() - TimeUnit.MILLISECONDS.toNanos(diffMs)
-                guardedProcessStartNs(
-                    computed = computed,
-                    fallback = DdRumContentProvider.createTimeNs,
-                    thresholdNs = PROCESS_START_TO_CP_START_DIFF_THRESHOLD_NS
-                )
+                val contentProviderCreateTimeNs = DdRumContentProvider.createTimeNs
+                val isAfterContentProviderInit = computedAppStartTimeNs > contentProviderCreateTimeNs
+                val isTooFarBeforeContentProviderInit =
+                    contentProviderCreateTimeNs - computedAppStartTimeNs >
+                        PROCESS_START_TO_CP_START_DIFF_THRESHOLD_NS
+
+                /**
+                 * Guard against unexpected values from [Process.getStartUptimeMillis].
+                 * Two directions are checked and fall back to [DdRumContentProvider] creation time:
+                 * - computedAppStartTimeNs > createTimeNs: app start appears to be after content provider init,
+                 * which is impossible.
+                 * - computedAppStartTimeNs is more than the threshold before createTimeNs: app start appears
+                 * unreasonably far in the past.
+                 */
+                if (isAfterContentProviderInit || isTooFarBeforeContentProviderInit) {
+                    contentProviderCreateTimeNs
+                } else {
+                    computedAppStartTimeNs
+                }
             }
             else -> DdRumContentProvider.createTimeNs
         }
