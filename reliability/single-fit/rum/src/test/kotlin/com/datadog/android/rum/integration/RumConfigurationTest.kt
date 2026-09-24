@@ -105,8 +105,8 @@ class RumConfigurationTest {
         val repeatCount = 1024
         val expectedSessionOffset = (repeatCount * 5) / 100
         val expectedSessionCount = ((repeatCount * samplingRate) / 100).roundToInt()
-        val expectedEventsCount = expectedSessionCount * 2 // 2 events per view, i.e. Start & Stop
-        val expectedEventsOffset = expectedSessionOffset * 2 // 2 events per view, i.e. Start & Stop
+        val expectedEventsCount = expectedSessionCount * EVENTS_PER_VIEW_LIFECYCLE
+        val expectedEventsOffset = expectedSessionOffset * EVENTS_PER_VIEW_LIFECYCLE
 
         // When
         repeat(repeatCount) {
@@ -133,7 +133,7 @@ class RumConfigurationTest {
         Rum.enable(fakeRumConfiguration, stubSdkCore)
         val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
         val repeatCount = 64
-        val expectedEventsCount = repeatCount * 2 // 2 events per view, i.e. Start & Stop
+        val expectedEventsCount = repeatCount * EVENTS_PER_VIEW_LIFECYCLE
 
         // When
         repeat(repeatCount) {
@@ -420,6 +420,12 @@ class RumConfigurationTest {
     // endregion
 
     companion object {
+
+        // Under the default RumViewEventWriteConfig.FullViewOnlyAtStart, a view that starts and is
+        // immediately stopped writes 3 events: a full ViewEvent on start, then a diff ViewUpdateEvent
+        // followed by a full ViewEvent checkpoint when the view closes (see RumViewEventWriter.kt).
+        private const val EVENTS_PER_VIEW_LIFECYCLE = 3
+
         private val mainLooper = MainLooperTestConfiguration()
 
         @TestConfigurationsProvider
