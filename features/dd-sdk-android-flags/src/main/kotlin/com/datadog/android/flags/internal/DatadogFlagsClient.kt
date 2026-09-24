@@ -8,9 +8,11 @@ package com.datadog.android.flags.internal
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.flags.ConfigurationChangeObservable
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.FlagsConfigurationChangeListener
 import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.model.PrecomputedFlag
@@ -51,9 +53,17 @@ internal class DatadogFlagsClient(
     private val exposureProcessor: EventsProcessor,
     private val evaluationsFeature: EvaluationsFeature?,
     private val flagStateManager: FlagsStateManager
-) : FlagsClient {
+) : FlagsClient, ConfigurationChangeObservable {
 
     override val state: StateObservable = flagStateManager
+
+    override fun addConfigurationChangeListener(listener: FlagsConfigurationChangeListener) {
+        flagsRepository.addConfigurationChangeListener(listener)
+    }
+
+    override fun removeConfigurationChangeListener(listener: FlagsConfigurationChangeListener) {
+        flagsRepository.removeConfigurationChangeListener(listener)
+    }
 
     // region FlagsClient
 

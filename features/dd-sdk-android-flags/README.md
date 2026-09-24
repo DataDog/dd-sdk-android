@@ -133,6 +133,38 @@ client.setEvaluationContext(context)
   - Transition to a user ID when the user authenticates.
 - All attribute values must be strings. Convert numbers, booleans, and other types to strings before passing them.
 
+### Observe persisted configuration availability
+
+The client restores persisted assignments asynchronously. Register a configuration listener to
+learn when the disk read has actually completed, without waiting for a network response:
+
+```kotlin
+import com.datadog.android.flags.FlagsConfigurationChangeListener
+import com.datadog.android.flags.addConfigurationChangeListener
+import com.datadog.android.flags.removeConfigurationChangeListener
+
+val listener = object : FlagsConfigurationChangeListener {
+    override fun onConfigurationChanged(changedKeys: Set<String>) {
+        // Dispatch UI work to the main thread as needed. Resolve flags when the app uses them.
+    }
+}
+client.addConfigurationChangeListener(listener)
+// When the observer is no longer needed:
+client.removeConfigurationChangeListener(listener)
+```
+
+Registration immediately replays completion if the read has already finished. The callback also
+runs for an empty or failed read, with empty keys. Keys are also empty if a network result arrived
+first and the disk snapshot was not installed. This event does not change client readiness, does
+not mean fresh network results are available, and is not emitted when a getter's disk wait times
+out. Notifications themselves do not evaluate flags or record usage. Getters read the latest
+assignments, which can be newer than those that triggered the notification.
+
+This is a native client notification; it is not forwarded to OpenFeature. Custom `FlagsClient`
+implementations can support it through `ConfigurationChangeObservable`; the extension methods
+are no-ops for clients without that capability. Java callers use the static methods on
+`FlagsClientExtensions`.
+
 ### Evaluate feature flags
 
 The `FlagsClient` provides two ways to resolve flag values:

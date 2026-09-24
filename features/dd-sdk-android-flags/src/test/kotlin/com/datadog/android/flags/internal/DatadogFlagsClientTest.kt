@@ -13,8 +13,11 @@ import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.EvaluationContextCallback
+import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.FlagsConfigurationChangeListener
 import com.datadog.android.flags.FlagsStateListener
+import com.datadog.android.flags.addConfigurationChangeListener
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
@@ -23,8 +26,11 @@ import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionReason
+import com.datadog.android.flags.removeConfigurationChangeListener
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
+import com.datadog.android.internal.utils.DDCoreStateHolder
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -140,6 +146,62 @@ internal class DatadogFlagsClientTest {
             evaluationsFeature = null,
             flagStateManager = mockFlagsStateManager
         )
+    }
+
+    @Test
+    fun `M expose readable restored values without changing state W disk completion`(forge: Forge) {
+        val dataStore = mock<DataStoreHandler>()
+        lateinit var callback: DataStoreReadCallback<FlagsStateEntry>
+        doAnswer {
+            callback = it.getArgument(2)
+            null
+        }.whenever(dataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
+        val repository = DefaultFlagsRepository(mockFeatureSdkCore, "test", dataStore)
+        val stateManager = FlagsStateManager(
+            DDCoreStateHolder.create(FlagsClientState.Reconciling, FlagsStateListener::onStateChanged)
+        )
+        val client = DatadogFlagsClient(
+            mockFeatureSdkCore,
+            mockEvaluationsManager,
+            repository,
+            forge.getForgery<FlagsConfiguration>().copy(trackExposures = false, rumIntegrationEnabled = false),
+            mockRumEvaluationLogger,
+            mockProcessor,
+            null,
+            stateManager
+        )
+        val flag = forge.getForgery<PrecomputedFlag>().copy(variationType = "boolean", variationValue = "true")
+        val observedStates = mutableListOf<FlagsClientState>()
+        client.state.addListener(object : FlagsStateListener {
+            override fun onStateChanged(newState: FlagsClientState) {
+                observedStates.add(newState)
+            }
+        })
+        var notified = false
+        val listener = object : FlagsConfigurationChangeListener {
+            override fun onConfigurationChanged(changedKeys: Set<String>) {
+                assertThat(client.getFlagAssignmentsSnapshot()).containsKey("flag")
+                assertThat(client.resolve("flag", false).value).isTrue()
+                assertThat(client.state.getCurrentState()).isEqualTo(FlagsClientState.Reconciling)
+                notified = true
+            }
+        }
+        (client as FlagsClient).addConfigurationChangeListener(listener)
+
+        callback.onSuccess(DataStoreContent(0, FlagsStateEntry(EvaluationContext.EMPTY, mapOf("flag" to flag), 1L)))
+
+        assertThat(notified).isTrue()
+        assertThat(observedStates).containsExactly(FlagsClientState.Reconciling)
+        (client as FlagsClient).removeConfigurationChangeListener(listener)
+    }
+
+    @Test
+    fun `M safely ignore configuration listeners W custom client without capability`() {
+        val client = mock<FlagsClient>()
+        val listener = mock<FlagsConfigurationChangeListener>()
+        client.addConfigurationChangeListener(listener)
+        client.removeConfigurationChangeListener(listener)
+        verifyNoInteractions(client, listener)
     }
 
     // region resolveBooleanValue()

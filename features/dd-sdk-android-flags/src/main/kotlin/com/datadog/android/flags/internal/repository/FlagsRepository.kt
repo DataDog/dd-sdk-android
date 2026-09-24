@@ -6,6 +6,7 @@
 
 package com.datadog.android.flags.internal.repository
 
+import com.datadog.android.flags.FlagsConfigurationChangeListener
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.tools.annotation.NoOpImplementation
@@ -13,6 +14,8 @@ import com.datadog.tools.annotation.NoOpImplementation
 @NoOpImplementation
 internal interface FlagsRepository {
     fun setRequestedContext(context: EvaluationContext)
+    fun addConfigurationChangeListener(listener: FlagsConfigurationChangeListener)
+    fun removeConfigurationChangeListener(listener: FlagsConfigurationChangeListener)
     fun getPrecomputedFlag(key: String): PrecomputedFlag?
     fun getEvaluationContext(): EvaluationContext?
     fun setFlagsAndContext(context: EvaluationContext, flags: Map<String, PrecomputedFlag>)

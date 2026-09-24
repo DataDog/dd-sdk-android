@@ -11,6 +11,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.core.persistence.datastore.DataStoreContent
+import com.datadog.android.flags.FlagsConfigurationChangeListener
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
@@ -19,7 +20,9 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.json.JSONObject
+import org.junit.jupiter.api.Assertions.assertTimeoutPreemptively
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -37,6 +40,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.time.Duration
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -122,6 +126,124 @@ internal class DefaultFlagsRepositoryTest {
                 reason = "TARGETING_MATCH"
             )
         )
+    }
+
+    @Test
+    fun `M release read wait before notifying W successful empty disk read`() {
+        lateinit var callback: DataStoreReadCallback<FlagsStateEntry>
+        doAnswer {
+            callback = it.getArgument(2)
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
+        val repository = DefaultFlagsRepository(
+            mockFeatureSdkCore,
+            "loading",
+            mockDataStore,
+            persistenceLoadTimeoutMs = TimeUnit.SECONDS.toMillis(10)
+        )
+        val notifications = mutableListOf<Set<String>>()
+        repository.addConfigurationChangeListener(object : FlagsConfigurationChangeListener {
+            override fun onConfigurationChanged(changedKeys: Set<String>) {
+                assertThat(repository.getFlagsSnapshot()).isEmpty()
+                notifications.add(changedKeys)
+            }
+        })
+
+        assertTimeoutPreemptively(Duration.ofSeconds(1)) {
+            callback.onSuccess(DataStoreContent(0, null))
+        }
+
+        assertThat(notifications).containsExactly(emptySet())
+    }
+
+    @Test
+    @Suppress("DontDowncastCollectionTypes") // Simulates a Java caller mutating the exposed Set
+    fun `M protect changed keys from listener mutation W completion and replay`() {
+        lateinit var callback: DataStoreReadCallback<FlagsStateEntry>
+        doAnswer {
+            callback = it.getArgument(2)
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
+        val repository = DefaultFlagsRepository(mockFeatureSdkCore, "loading", mockDataStore)
+        repository.addConfigurationChangeListener(object : FlagsConfigurationChangeListener {
+            override fun onConfigurationChanged(changedKeys: Set<String>) {
+                assertThatThrownBy { (changedKeys as MutableSet<String>).clear() }
+                    .isInstanceOf(UnsupportedOperationException::class.java)
+            }
+        })
+        val notifications = mutableListOf<Set<String>>()
+        val observer = object : FlagsConfigurationChangeListener {
+            override fun onConfigurationChanged(changedKeys: Set<String>) {
+                notifications.add(changedKeys)
+            }
+        }
+        repository.addConfigurationChangeListener(observer)
+        callback.onSuccess(DataStoreContent(0, FlagsStateEntry(testContext, multipleFlagsMap, 1L)))
+        repository.addConfigurationChangeListener(observer)
+        assertThat(notifications).containsExactly(multipleFlagsMap.keys, multipleFlagsMap.keys)
+    }
+
+    @Test
+    fun `M notify after hydration with readable snapshot W disk completion`() {
+        lateinit var callback: DataStoreReadCallback<FlagsStateEntry>
+        doAnswer {
+            callback = it.getArgument(2)
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
+        val repository = DefaultFlagsRepository(mockFeatureSdkCore, "loading", mockDataStore)
+        val notifications = mutableListOf<Set<String>>()
+        val listener = object : FlagsConfigurationChangeListener {
+            override fun onConfigurationChanged(changedKeys: Set<String>) {
+                assertThat(repository.getFlagsSnapshot().mapValues { it.value.variationValue })
+                    .isEqualTo(singleFlagMap.mapValues { it.value.variationValue })
+                assertThat(repository.getEvaluationContext()).isEqualTo(testContext)
+                notifications.add(changedKeys)
+            }
+        }
+        repository.addConfigurationChangeListener(listener)
+        assertThat(repository.getFlagsSnapshot()).isEmpty()
+        assertThat(notifications).isEmpty()
+
+        callback.onSuccess(DataStoreContent(0, FlagsStateEntry(testContext, singleFlagMap, 1L)))
+
+        assertThat(notifications).containsExactly(singleFlagMap.keys)
+        repository.addConfigurationChangeListener(listener)
+        assertThat(notifications).hasSize(2)
+    }
+
+    @Test
+    fun `M replay empty completion W add listener after failed hydration`() {
+        val notifications = mutableListOf<Set<String>>()
+        testedRepository.addConfigurationChangeListener(object : FlagsConfigurationChangeListener {
+            override fun onConfigurationChanged(changedKeys: Set<String>) {
+                notifications.add(changedKeys)
+            }
+        })
+        assertThat(notifications).containsExactly(emptySet())
+    }
+
+    @Test
+    fun `M preserve network snapshot and skip removed listeners W late disk completion`() {
+        lateinit var callback: DataStoreReadCallback<FlagsStateEntry>
+        doAnswer {
+            callback = it.getArgument(2)
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
+        val repository = DefaultFlagsRepository(mockFeatureSdkCore, "loading", mockDataStore)
+        val notifications = mutableListOf<Set<String>>()
+        val listener = object : FlagsConfigurationChangeListener {
+            override fun onConfigurationChanged(changedKeys: Set<String>) {
+                notifications.add(changedKeys)
+            }
+        }
+        repository.addConfigurationChangeListener(listener)
+        repository.removeConfigurationChangeListener(listener)
+        repository.setFlagsAndContext(testContext, multipleFlagsMap)
+        callback.onSuccess(DataStoreContent(0, FlagsStateEntry(testContext, singleFlagMap, 1L)))
+        assertThat(notifications).isEmpty()
+        repository.addConfigurationChangeListener(listener)
+        assertThat(notifications).containsExactly(emptySet())
+        assertThat(repository.getFlagsSnapshot()).isEqualTo(multipleFlagsMap)
     }
 
     @Test
