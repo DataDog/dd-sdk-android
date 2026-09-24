@@ -29,9 +29,12 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
@@ -261,6 +264,73 @@ internal class DefaultFlagsRepositoryTest {
 
         // Then
         assertThat(result?.variationValue).isEqualTo(flagValue)
+    }
+
+    @Test
+    fun `M mark restored assignments cached W initial disk read completes`() {
+        val callback = preparePersistenceLoad()
+
+        callback.onSuccess(DataStoreContent(0, FlagsStateEntry(testContext, multipleFlagsMap, 0L)))
+
+        val snapshot = testedRepository.getFlagsSnapshot()
+        multipleFlagsMap.forEach { (key, originalFlag) ->
+            assertThat(snapshot[key]).isEqualTo(originalFlag.copy(reason = "CACHED"))
+            assertThat(testedRepository.getPrecomputedFlag(key)).isSameAs(snapshot[key])
+            assertThat(testedRepository.getPrecomputedFlagWithContext(key))
+                .isEqualTo(snapshot[key] to testContext)
+        }
+        assertThat(testedRepository.getEvaluationContext()).isEqualTo(testContext)
+        assertThat(multipleFlagsMap.values.map { it.reason }).containsExactly("DEFAULT", "TARGETING_MATCH")
+        verify(mockDataStore, never()).setValue<FlagsStateEntry>(
+            key = any(),
+            data = any(),
+            version = any(),
+            callback = anyOrNull(),
+            serializer = any()
+        )
+    }
+
+    @Test
+    fun `M replace cached assignments with original network reasons W network response arrives`() {
+        val callback = preparePersistenceLoad()
+        callback.onSuccess(DataStoreContent(0, FlagsStateEntry(testContext, multipleFlagsMap, 0L)))
+        val cachedSnapshot = testedRepository.getFlagsSnapshot()
+
+        testedRepository.setFlagsAndContext(testContext, multipleFlagsMap)
+
+        assertThat(testedRepository.getFlagsSnapshot()).isSameAs(multipleFlagsMap)
+        assertThat(cachedSnapshot.values.map { it.reason }).containsOnly("CACHED")
+        val entry = argumentCaptor<FlagsStateEntry>()
+        verify(mockDataStore).setValue(
+            key = any(),
+            data = entry.capture(),
+            version = any(),
+            callback = anyOrNull(),
+            serializer = any()
+        )
+        assertThat(entry.firstValue.flags).isSameAs(multipleFlagsMap)
+    }
+
+    @Test
+    fun `M preserve fresh assignments W disk read finishes after network response`() {
+        val callback = preparePersistenceLoad()
+        val networkContext = EvaluationContext("new-user")
+        testedRepository.setFlagsAndContext(networkContext, singleFlagMap)
+
+        callback.onSuccess(DataStoreContent(0, FlagsStateEntry(testContext, multipleFlagsMap, 0L)))
+
+        assertThat(testedRepository.getFlagsSnapshot()).isSameAs(singleFlagMap)
+        assertThat(testedRepository.getEvaluationContext()).isEqualTo(networkContext)
+    }
+
+    private fun preparePersistenceLoad(): DataStoreReadCallback<FlagsStateEntry> {
+        lateinit var callback: DataStoreReadCallback<FlagsStateEntry>
+        doAnswer {
+            callback = it.getArgument(2)
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
+        testedRepository = DefaultFlagsRepository(mockFeatureSdkCore, "cached", mockDataStore)
+        return callback
     }
 
     // region hasFlags

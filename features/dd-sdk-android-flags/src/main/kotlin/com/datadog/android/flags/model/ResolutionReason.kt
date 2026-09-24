@@ -48,5 +48,10 @@ enum class ResolutionReason {
     /**
      * An error occurred during flag evaluation.
      */
-    ERROR
+    ERROR,
+
+    /**
+     * The value was restored from persistent storage during client initialization.
+     */
+    CACHED
 }

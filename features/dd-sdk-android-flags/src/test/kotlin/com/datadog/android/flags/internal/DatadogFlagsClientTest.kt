@@ -137,6 +137,26 @@ internal class DatadogFlagsClientTest {
     // region resolveBooleanValue()
 
     @Test
+    fun `M expose cached reason in details W resolving a restored assignment`(forge: Forge) {
+        val context = EvaluationContext("persisted-user")
+        val flag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = "boolean",
+            variationValue = "true",
+            doLog = true,
+            reason = "CACHED"
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext("flag")) doReturn (flag to context)
+
+        val details = testedClient.resolve("flag", false)
+
+        assertThat(details.value).isTrue()
+        assertThat(details.reason?.name).isEqualTo("CACHED")
+        assertThat(details.variant).isEqualTo(flag.variationKey)
+        assertThat(details.errorCode).isNull()
+        verify(mockProcessor).processEvent("flag", context, flag)
+    }
+
+    @Test
     fun `M return flag value W resolveBooleanValue() { flag exists with string boolean value }`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
