@@ -60,24 +60,10 @@ dependencies {
 }
 
 unMock {
-    keepStartingWith("org.json")
-    keepStartingWith("android.util.")
-    keepStartingWith("com.android.internal.util.")
-    keep("android.content.ComponentName")
-    keep("android.content.ContentProvider")
-    keep("android.content.ContentProviderNative")
-    keep("android.content.IContentProvider")
-    keep("android.net.Uri")
     keep("android.os.BaseBundle")
     keep("android.os.Bundle")
-    keep("android.os.Handler")
-    keep("android.os.IMessenger")
-    keep("android.os.Looper")
     keep("android.os.Message")
-    keep("android.os.MessageQueue")
-    keep("android.os.Parcel")
-    keep("android.os.SystemProperties")
-    keep("android.view.DisplayEventReceiver")
+    keepStartingWith("android.util.")
 }
 
 datadogBuild {
