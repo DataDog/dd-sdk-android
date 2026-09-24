@@ -765,4 +765,17 @@ internal class RumConfigurationBuilderTest {
         assertThat(rumConfiguration.featureConfiguration.timeseriesConfiguration)
             .isSameAs(fakeConfig)
     }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M store provided configuration W setRumViewEventWriteConfig(config)`() {
+        // When
+        val rumConfiguration = testedBuilder
+            .setRumViewEventWriteConfig(RumViewEventWriteConfig.AlwaysFullView)
+            .build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration.rumViewEventWriteConfig)
+            .isEqualTo(RumViewEventWriteConfig.AlwaysFullView)
+    }
 }

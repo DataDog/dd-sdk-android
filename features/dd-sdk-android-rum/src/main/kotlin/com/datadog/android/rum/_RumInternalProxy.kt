@@ -169,6 +169,7 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
             internalLogger: InternalLogger
         ) = extractor.toResourceAttributes(rawRequestHeaders, rawResponseHeaders, internalLogger)
 
+        @OptIn(ExperimentalRumApi::class)
         fun setRumViewEventWriteConfig(
             builder: Builder,
             config: RumViewEventWriteConfig

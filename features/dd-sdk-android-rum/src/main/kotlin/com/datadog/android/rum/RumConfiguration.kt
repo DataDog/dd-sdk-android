@@ -427,6 +427,26 @@ data class RumConfiguration internal constructor(
         }
 
         /**
+         * Sets the write strategy for RUM view events (see [RumViewEventWriteConfig]).
+         *
+         * By default the SDK uses [RumViewEventWriteConfig.FullViewOnlyAtStart]: a full
+         * `ViewEvent` is sent for the first update of a view, and subsequent updates send
+         * only the diff, reducing payload size (a.k.a. Partial View Updates).
+         *
+         * Use [RumViewEventWriteConfig.AlwaysFullView] to opt out and always send a
+         * complete `ViewEvent` on every update, for example if you rely on a proxy that
+         * inspects the full raw RUM payload for every view update.
+         *
+         * @param config the [RumViewEventWriteConfig] strategy to use.
+         * @return the [Builder] instance.
+         */
+        @ExperimentalRumApi
+        fun setRumViewEventWriteConfig(config: RumViewEventWriteConfig): Builder {
+            rumConfig = rumConfig.copy(rumViewEventWriteConfig = config)
+            return this
+        }
+
+        /**
          * Builds a [RumConfiguration] based on the current state of this Builder.
          */
         fun build(): RumConfiguration {
@@ -507,13 +527,6 @@ data class RumConfiguration internal constructor(
          */
         internal fun setInsightsCollector(insightsCollector: InsightsCollector): Builder {
             rumConfig = rumConfig.copy(insightsCollector = insightsCollector)
-            return this
-        }
-
-        internal fun setRumViewEventWriteConfig(
-            config: RumViewEventWriteConfig
-        ): Builder {
-            rumConfig = rumConfig.copy(rumViewEventWriteConfig = config)
             return this
         }
     }

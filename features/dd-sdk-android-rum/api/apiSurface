@@ -91,6 +91,7 @@ data class com.datadog.android.rum.RumConfiguration
     fun trackAnonymousUser(Boolean): Builder
     fun setAppStartupActivityPredicate(com.datadog.android.rum.startup.AppStartupActivityPredicate): Builder
     fun setTimeseriesConfiguration(com.datadog.android.rum.timeseries.TimeseriesConfiguration): Builder
+    fun setRumViewEventWriteConfig(com.datadog.android.rum.configuration.RumViewEventWriteConfig): Builder
     fun build(): RumConfiguration
 enum com.datadog.android.rum.RumErrorSource
   - NETWORK
