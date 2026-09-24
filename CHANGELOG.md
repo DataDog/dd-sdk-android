@@ -1,3 +1,7 @@
+# 3.14.1 / 2026-09-21
+
+* [IMPROVEMENT] Remote Configuration: Propagate `crashReportingEnabled` to the `DatadogCore` configuration. See [#3865](https://github.com/DataDog/dd-sdk-android/pull/3865)
+
 # 3.14.0 / 2026-09-09
 
 * [FEATURE] Partial RUM View Updates:
