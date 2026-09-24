@@ -18,7 +18,8 @@ internal class PerfettoResultForgeryFactory : ForgeryFactory<PerfettoResult> {
             startReason = forge.getForgery(),
             end = forge.aLong(),
             resultFilePath = forge.anAlphabeticalString(),
-            profileTypes = listOf(forge.anElementFrom(ProfileType.entries))
+            profileTypes = listOf(forge.anElementFrom(ProfileType.entries)),
+            bootNtpNs = forge.aLong()
         )
     }
 }

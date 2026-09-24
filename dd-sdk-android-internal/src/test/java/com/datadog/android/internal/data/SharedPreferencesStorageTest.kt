@@ -215,6 +215,23 @@ internal class SharedPreferencesStorageTest {
     }
 
     @Test
+    fun `M remove data before returning W remove {sync = true}`() {
+        // Given
+        // Consuming a marker written for crash/OOM recovery must reach disk before the call
+        // returns: `apply()` defers the write to QueuedWork, which is not flushed when the
+        // process is killed, so the marker could survive and be consumed again on next launch.
+        val key = "key"
+
+        // When
+        testedStorage.remove(key, sync = true)
+
+        // Then
+        verify(mockEditor).remove(key)
+        verify(mockEditor).commit()
+        verify(mockEditor, never()).apply()
+    }
+
+    @Test
     fun `M clear all data W clear`() {
         // When
         testedStorage.clear()

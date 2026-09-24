@@ -6,21 +6,30 @@
 
 package com.datadog.android.profiling.internal
 
+import android.content.Context
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.data.SharedPreferencesStorage
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.perfetto.ProfileType
+import com.datadog.android.profiling.internal.trigger.PendingOomGatingEvent
 import com.datadog.android.profiling.internal.trigger.PendingTriggerProfileStorage
 import com.datadog.android.profiling.internal.trigger.PendingTriggerProfiles
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
 import java.util.concurrent.ScheduledExecutorService
@@ -38,8 +47,24 @@ internal class PendingTriggerProfilesTest {
     @Mock
     private lateinit var mockInternalLogger: InternalLogger
 
+    @Mock
+    private lateinit var mockContext: Context
+
+    @Mock
+    private lateinit var mockSharedPreferencesStorage: SharedPreferencesStorage
+
     @TempDir
     private lateinit var tempDir: File
+
+    @BeforeEach
+    fun setUp() {
+        ProfilingStorage.sharedPreferencesStorage = mockSharedPreferencesStorage
+    }
+
+    @AfterEach
+    fun tearDown() {
+        ProfilingStorage.sharedPreferencesStorage = null
+    }
 
     // region ANR (deletes the result file in place on expiry)
 
@@ -185,6 +210,7 @@ internal class PendingTriggerProfilesTest {
     fun `M delete old profiling result file in place W setProfilingResult {second result}`() {
         val matched = mutableListOf<Pair<PerfettoResult, ProfilerEvent>>()
         val buffer = PendingTriggerProfileStorage(
+            appContext = mockContext,
             executor = mockExecutor,
             timeProvider = fixedTimeProvider(),
             internalLogger = mockInternalLogger,
@@ -348,6 +374,44 @@ internal class PendingTriggerProfilesTest {
     }
 
     @Test
+    fun `M consume buffered result W setProfilingResult {deferred OOM gating event, within max age}`() {
+        // Given — a previous launch persisted the RUM gating event but died before this trigger
+        // result arrived; it is only delivered on this later launch.
+        val deferredGatingEvent = PendingOomGatingEvent(
+            rumErrorId = "err-deferred",
+            timestampMs = now,
+            rumContext = ProfilingRumContext("app", "sess", null, null)
+        )
+        whenever(
+            mockSharedPreferencesStorage.getString(
+                eq(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT),
+                anyOrNull()
+            )
+        ) doReturn deferredGatingEvent.toJson()
+        var deferredReadyCount = 0
+        val buffer = PendingTriggerProfileStorage(
+            appContext = mockContext,
+            executor = mockExecutor,
+            timeProvider = fixedTimeProvider(),
+            internalLogger = mockInternalLogger,
+            onMatch = { _, _ -> },
+            onDeferredOomProfileReady = { deferredReadyCount++ }
+        )
+
+        // When
+        buffer.setProfilingResult(
+            perfettoResult(now, "/tmp/hist.proto", startReason = ProfilingStartReason.OUT_OF_MEMORY)
+        )
+
+        // Then — the deferred match was accepted…
+        assertThat(deferredReadyCount).isEqualTo(1)
+        // …and the buffered result was consumed instead of left behind: `stop()`/`clear()` must
+        // not find it and delete a trace that has already been handed off for the deferred
+        // upload, and a later in-process signal must not re-match the stale/consumed result.
+        assertThat(buffer.clear()).isNull()
+    }
+
+    @Test
     fun `M delete old profiling result file in place W setProfilingResult {second result, OOM}`() {
         // Given
         val matched = mutableListOf<Pair<PerfettoResult, ProfilerEvent>>()
@@ -388,7 +452,8 @@ internal class PendingTriggerProfilesTest {
             } else {
                 ProfileType.STACK_SAMPLING
             }
-        )
+        ),
+        bootNtpNs = 0L
     )
 
     private fun anrErrorEvent(
@@ -433,6 +498,7 @@ internal class PendingTriggerProfilesTest {
     private fun testedBuffer(
         onMatch: (PerfettoResult, ProfilerEvent) -> Unit = { _, _ -> }
     ): PendingTriggerProfileStorage = PendingTriggerProfileStorage(
+        appContext = mockContext,
         executor = mockExecutor,
         timeProvider = fixedTimeProvider(),
         internalLogger = mockInternalLogger,
@@ -442,6 +508,7 @@ internal class PendingTriggerProfilesTest {
     private fun testedHeapHistogramBuffer(
         onMatch: (PerfettoResult, ProfilerEvent) -> Unit = { _, _ -> }
     ): PendingTriggerProfileStorage = PendingTriggerProfileStorage(
+        appContext = mockContext,
         executor = mockExecutor,
         timeProvider = fixedTimeProvider(),
         internalLogger = mockInternalLogger,

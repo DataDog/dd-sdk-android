@@ -18,6 +18,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.utils.bootNtpOffsetNs
 import com.datadog.android.profiling.internal.Profiler
 import com.datadog.android.profiling.internal.ProfilerCallback
 import com.datadog.android.profiling.internal.ProfilingStartReason
@@ -102,6 +103,11 @@ internal class PerfettoProfiler(
     @Volatile
     private var profilingSamplingRateHz: Int = PROFILING_SAMPLING_RATE_APP_LAUNCH
 
+    // TODO RUM-18151: also gate on triggerRegistrar.isRegistered so this reflects whether the
+    // registration is currently active, not just whether the platform supports it.
+    override val isOomTriggerActive: Boolean
+        get() = buildSdkVersionProvider.isAtLeastCinnamonBun
+
     @Volatile
     override var internalLogger: InternalLogger? = null
         set(value) {
@@ -160,7 +166,8 @@ internal class PerfettoProfiler(
                                 startReason = startReason,
                                 end = resultCallbackTime,
                                 resultFilePath = it,
-                                profileTypes = listOf(ProfileType.STACK_SAMPLING)
+                                profileTypes = listOf(ProfileType.STACK_SAMPLING),
+                                bootNtpNs = timeProvider.bootNtpOffsetNs()
                             )
                         )
                     }
