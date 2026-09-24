@@ -6,11 +6,9 @@
 
 package com.datadog.android.rum.prelaunch
 
-import android.app.ActivityManager
 import android.app.Application
 import android.content.Context
 import android.net.Uri
-import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.internal.startup.PreLaunchRumAppStartupDetector
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.getFieldValue
@@ -48,9 +46,6 @@ internal class AppLaunchCollectorProviderTest {
 
     @BeforeEach
     fun `set up`() {
-        DdRumContentProvider.processImportance =
-            ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-
         resetDetector()
 
         testedProvider = AppLaunchCollectorProvider()
@@ -60,8 +55,6 @@ internal class AppLaunchCollectorProviderTest {
 
     @AfterEach
     fun `tear down`() {
-        DdRumContentProvider.processImportance = 0
-
         resetDetector()
     }
 
@@ -95,25 +88,7 @@ internal class AppLaunchCollectorProviderTest {
     }
 
     @Test
-    fun `M return false W onCreate() {background process}`() {
-        // Given
-        DdRumContentProvider.processImportance =
-            ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHED
-
-        // When
-        val result = testedProvider.onCreate()
-
-        // Then
-        assertThat(result).isFalse()
-        assertThat(PreLaunchRumAppStartupDetector.isInstalled).isFalse()
-    }
-
-    @Test
-    fun `M call install and return true W onCreate() {foreground process}`() {
-        // Given
-        DdRumContentProvider.processImportance =
-            ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-
+    fun `M call install and return true W onCreate()`() {
         // When
         val result = testedProvider.onCreate()
 

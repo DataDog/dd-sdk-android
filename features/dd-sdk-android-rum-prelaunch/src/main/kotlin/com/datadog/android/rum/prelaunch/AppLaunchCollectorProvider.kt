@@ -6,13 +6,11 @@
 
 package com.datadog.android.rum.prelaunch
 
-import android.app.ActivityManager
 import android.app.Application
 import android.content.ContentProvider
 import android.content.ContentValues
 import android.database.Cursor
 import android.net.Uri
-import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.internal.startup.PreLaunchRumAppStartupDetector
 
 /**
@@ -29,13 +27,8 @@ import com.datadog.android.rum.internal.startup.PreLaunchRumAppStartupDetector
 @Suppress("PackageNameVisibility")
 internal class AppLaunchCollectorProvider : ContentProvider() {
 
-    @Suppress("ReturnCount")
     override fun onCreate(): Boolean {
         val application = context?.applicationContext as? Application ?: return false
-        val importance = DdRumContentProvider.processImportance
-        if (importance != ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
-            return false
-        }
         PreLaunchRumAppStartupDetector.install(application)
         return true
     }
