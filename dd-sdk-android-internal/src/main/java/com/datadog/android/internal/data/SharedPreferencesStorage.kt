@@ -50,8 +50,16 @@ class SharedPreferencesStorage(appContext: Context) : PreferencesStorage {
         } ?: defaultValue
     }
 
-    override fun putString(key: String, value: String) {
-        prefs.edit().putString(key, value).apply()
+    override fun putString(key: String, value: String, sync: Boolean) {
+        val editor = prefs.edit().putString(key, value)
+        if (sync) {
+            // `commit()` on purpose: `apply()` hands the write to QueuedWork, which is not
+            // flushed when the process is killed, so the value would be lost.
+            @Suppress("ApplySharedPref")
+            editor.commit()
+        } else {
+            editor.apply()
+        }
     }
 
     override fun getStringSet(

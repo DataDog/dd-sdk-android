@@ -42,8 +42,15 @@ interface PreferencesStorage {
 
     /**
      * Put a string value in the storage.
+     *
+     * @param key the key to store the value under.
+     * @param value the value to store.
+     * @param sync when `true`, blocks until the value has been persisted instead of writing it
+     * asynchronously. Use this when the value must survive an imminent process death (for
+     * example when writing from a crash or out-of-memory handler), at the cost of performing the
+     * write on the calling thread.
      */
-    fun putString(key: String, value: String)
+    fun putString(key: String, value: String, sync: Boolean = false)
 
     /**
      * Get a string set value from the storage.

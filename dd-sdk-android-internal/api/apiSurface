@@ -49,7 +49,7 @@ interface com.datadog.android.internal.data.PreferencesStorage
   fun putInt(String, Int)
   fun getInt(String, Int = 0): Int
   fun getString(String, String? = null): String?
-  fun putString(String, String)
+  fun putString(String, String, Boolean = false)
   fun getStringSet(String, Set<String> = emptySet()): Set<String>
   fun putStringSet(String, Set<String>)
   fun putBoolean(String, Boolean)
@@ -63,7 +63,7 @@ class com.datadog.android.internal.data.SharedPreferencesStorage : PreferencesSt
   override fun putInt(String, Int)
   override fun getInt(String, Int): Int
   override fun getString(String, String?): String?
-  override fun putString(String, String)
+  override fun putString(String, String, Boolean)
   override fun getStringSet(String, Set<String>): Set<String>
   override fun putStringSet(String, Set<String>)
   override fun putBoolean(String, Boolean)
