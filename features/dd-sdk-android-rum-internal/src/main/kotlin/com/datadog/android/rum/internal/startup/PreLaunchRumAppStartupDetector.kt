@@ -45,7 +45,6 @@ import java.lang.ref.WeakReference
  * whichever thread it was called on — a background thread for React Native and Flutter — before
  * any main-thread hop, so the field behind it is volatile.
  */
-@Suppress("UnsafeThirdPartyFunctionCall")
 object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
 
     private sealed class Event {
