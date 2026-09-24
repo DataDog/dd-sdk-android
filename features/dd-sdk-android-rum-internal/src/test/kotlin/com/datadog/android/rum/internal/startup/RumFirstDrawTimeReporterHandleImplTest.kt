@@ -12,6 +12,7 @@ import android.os.Message
 import android.view.View
 import android.view.ViewTreeObserver
 import android.view.Window
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.rum.internal.utils.window.RumWindowCallbackListener
 import com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistry
 import org.junit.jupiter.api.BeforeEach
@@ -62,7 +63,7 @@ class RumFirstDrawTimeReporterHandleImplTest {
     private lateinit var viewTreeObserver: ViewTreeObserver
 
     @Mock
-    private lateinit var warnLogger: (String, Throwable) -> Unit
+    private lateinit var internalLogger: InternalLogger
 
     @BeforeEach
     fun `set up`() {
@@ -230,7 +231,7 @@ class RumFirstDrawTimeReporterHandleImplTest {
     // region error handling
 
     @Test
-    fun `M call warnLogger W addOnDrawListener throws IllegalStateException`() {
+    fun `M call internalLogger W addOnDrawListener throws IllegalStateException`() {
         // Given
         val illegalStateException = IllegalStateException()
         whenever(viewTreeObserver.addOnDrawListener(any())) doThrow illegalStateException
@@ -241,18 +242,25 @@ class RumFirstDrawTimeReporterHandleImplTest {
         // Then
         verifyNoInteractions(callback)
 
-        inOrder(viewTreeObserver, warnLogger) {
+        inOrder(viewTreeObserver, internalLogger) {
             verify(viewTreeObserver).isAlive
             verify(viewTreeObserver).addOnDrawListener(any())
 
-            verify(warnLogger).invoke(any(), eq(illegalStateException))
+            verify(internalLogger).log(
+                level = eq(InternalLogger.Level.WARN),
+                targets = eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY)),
+                messageBuilder = any(),
+                throwable = eq(illegalStateException),
+                onlyOnce = eq(false),
+                additionalProperties = eq(null)
+            )
 
             verifyNoMoreInteractions()
         }
     }
 
     @Test
-    fun `M call warnLogger W removeOnDrawListener throws IllegalStateException`() {
+    fun `M call internalLogger W removeOnDrawListener throws IllegalStateException`() {
         // Given
         val illegalStateException = IllegalStateException()
         whenever(viewTreeObserver.removeOnDrawListener(any())) doThrow illegalStateException
@@ -264,7 +272,7 @@ class RumFirstDrawTimeReporterHandleImplTest {
         // Then
         verifyNoInteractions(callback)
 
-        inOrder(callback, viewTreeObserver, warnLogger) {
+        inOrder(callback, viewTreeObserver, internalLogger) {
             verify(viewTreeObserver).isAlive
 
             argumentCaptor<ViewTreeObserver.OnDrawListener> {
@@ -277,7 +285,14 @@ class RumFirstDrawTimeReporterHandleImplTest {
             verify(viewTreeObserver).isAlive
             verify(viewTreeObserver).removeOnDrawListener(any())
 
-            verify(warnLogger).invoke(any(), eq(illegalStateException))
+            verify(internalLogger).log(
+                level = eq(InternalLogger.Level.WARN),
+                targets = eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY)),
+                messageBuilder = any(),
+                throwable = eq(illegalStateException),
+                onlyOnce = eq(false),
+                additionalProperties = eq(null)
+            )
 
             verifyNoMoreInteractions()
         }
@@ -376,7 +391,7 @@ class RumFirstDrawTimeReporterHandleImplTest {
         return RumFirstDrawTimeReporterHandleImpl(
             callback = callback,
             activity = activity,
-            warnLogger = warnLogger,
+            internalLogger = internalLogger,
             timeProviderNs = { currentTime.inWholeNanoseconds },
             windowCallbacksRegistry = windowCallbackRegistry,
             handler = handler

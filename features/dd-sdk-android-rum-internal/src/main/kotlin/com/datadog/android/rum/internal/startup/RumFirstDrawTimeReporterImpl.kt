@@ -18,18 +18,14 @@ package com.datadog.android.rum.internal.startup
 
 import android.app.Activity
 import android.os.Handler
-import android.util.Log
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistry
 
-@Suppress("UnsafeThirdPartyFunctionCall")
 class RumFirstDrawTimeReporterImpl(
+    private val internalLogger: InternalLogger,
     private val timeProviderNs: () -> Long,
     private val windowCallbacksRegistry: RumWindowCallbacksRegistry,
-    private val handler: Handler,
-    private val logTag: String = "DD/AppLaunch",
-    private val warnLogger: (message: String, throwable: Throwable) -> Unit = { message, throwable ->
-        Log.w(logTag, message, throwable)
-    }
+    private val handler: Handler
 ) : RumFirstDrawTimeReporter {
 
     override fun subscribeToFirstFrameDrawn(
@@ -39,7 +35,7 @@ class RumFirstDrawTimeReporterImpl(
         return RumFirstDrawTimeReporterHandleImpl(
             callback = callback,
             activity = activity,
-            warnLogger = warnLogger,
+            internalLogger = internalLogger,
             timeProviderNs = timeProviderNs,
             windowCallbacksRegistry = windowCallbacksRegistry,
             handler = handler

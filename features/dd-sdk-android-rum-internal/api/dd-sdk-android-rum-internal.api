@@ -72,7 +72,7 @@ public abstract interface class com/datadog/android/rum/internal/startup/RumFirs
 }
 
 public final class com/datadog/android/rum/internal/startup/RumFirstDrawTimeReporterHandleImpl : android/view/View$OnAttachStateChangeListener, android/view/ViewTreeObserver$OnDrawListener, com/datadog/android/rum/internal/startup/RumFirstDrawTimeReporter$Handle, com/datadog/android/rum/internal/utils/window/RumWindowCallbackListener {
-	public fun <init> (Lcom/datadog/android/rum/internal/startup/RumFirstDrawTimeReporter$Callback;Landroid/app/Activity;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function0;Lcom/datadog/android/rum/internal/utils/window/RumWindowCallbacksRegistry;Landroid/os/Handler;)V
+	public fun <init> (Lcom/datadog/android/rum/internal/startup/RumFirstDrawTimeReporter$Callback;Landroid/app/Activity;Lcom/datadog/android/api/InternalLogger;Lkotlin/jvm/functions/Function0;Lcom/datadog/android/rum/internal/utils/window/RumWindowCallbacksRegistry;Landroid/os/Handler;)V
 	public fun onContentChanged ()V
 	public fun onDraw ()V
 	public fun onViewAttachedToWindow (Landroid/view/View;)V
@@ -81,8 +81,7 @@ public final class com/datadog/android/rum/internal/startup/RumFirstDrawTimeRepo
 }
 
 public final class com/datadog/android/rum/internal/startup/RumFirstDrawTimeReporterImpl : com/datadog/android/rum/internal/startup/RumFirstDrawTimeReporter {
-	public fun <init> (Lkotlin/jvm/functions/Function0;Lcom/datadog/android/rum/internal/utils/window/RumWindowCallbacksRegistry;Landroid/os/Handler;Ljava/lang/String;Lkotlin/jvm/functions/Function2;)V
-	public synthetic fun <init> (Lkotlin/jvm/functions/Function0;Lcom/datadog/android/rum/internal/utils/window/RumWindowCallbacksRegistry;Landroid/os/Handler;Ljava/lang/String;Lkotlin/jvm/functions/Function2;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/datadog/android/api/InternalLogger;Lkotlin/jvm/functions/Function0;Lcom/datadog/android/rum/internal/utils/window/RumWindowCallbacksRegistry;Landroid/os/Handler;)V
 	public fun subscribeToFirstFrameDrawn (Landroid/app/Activity;Lcom/datadog/android/rum/internal/startup/RumFirstDrawTimeReporter$Callback;)Lcom/datadog/android/rum/internal/startup/RumFirstDrawTimeReporter$Handle;
 }
 

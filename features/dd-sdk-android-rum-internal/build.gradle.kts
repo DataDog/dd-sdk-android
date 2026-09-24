@@ -42,6 +42,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":dd-sdk-android-core"))
     implementation(project(":dd-sdk-android-internal"))
     implementation(libs.kotlin)
 

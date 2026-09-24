@@ -823,17 +823,10 @@ internal class RumFeature(
                 configuration.appStartupActivityPredicate.shouldTrackStartup(it)
             },
             rumFirstDrawTimeReporter = RumFirstDrawTimeReporterImpl(
+                internalLogger = sdkCore.internalLogger,
                 timeProviderNs = { internalSdkCore.timeProvider.getDeviceElapsedTimeNanos() },
                 windowCallbacksRegistry = RumWindowCallbacksRegistryImpl(),
-                handler = Handler(Looper.getMainLooper()),
-                warnLogger = { message, throwable ->
-                    sdkCore.internalLogger.log(
-                        InternalLogger.Level.WARN,
-                        listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                        { message },
-                        throwable
-                    )
-                }
+                handler = Handler(Looper.getMainLooper())
             )
         )
     }

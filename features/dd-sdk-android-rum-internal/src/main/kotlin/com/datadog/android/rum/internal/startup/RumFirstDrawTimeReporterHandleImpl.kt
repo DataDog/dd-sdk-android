@@ -21,13 +21,14 @@ import android.os.Handler
 import android.os.Message
 import android.view.View
 import android.view.ViewTreeObserver
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.rum.internal.utils.window.RumWindowCallbackListener
 import com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistry
 
 class RumFirstDrawTimeReporterHandleImpl(
     private val callback: RumFirstDrawTimeReporter.Callback,
     private val activity: Activity,
-    private val warnLogger: (message: String, throwable: Throwable) -> Unit,
+    private val internalLogger: InternalLogger,
     private val timeProviderNs: () -> Long,
     private val windowCallbacksRegistry: RumWindowCallbacksRegistry,
     private val handler: Handler
@@ -102,8 +103,10 @@ class RumFirstDrawTimeReporterHandleImpl(
             try {
                 decorView.viewTreeObserver.addOnDrawListener(this)
             } catch (e: IllegalStateException) {
-                warnLogger(
-                    "RumFirstDrawTimeReporterImpl unable to add onDrawListener onto viewTreeObserver",
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                    { "RumFirstDrawTimeReporterImpl unable to add onDrawListener onto viewTreeObserver" },
                     e
                 )
             }
@@ -154,8 +157,10 @@ class RumFirstDrawTimeReporterHandleImpl(
             try {
                 decorView.viewTreeObserver.removeOnDrawListener(this)
             } catch (e: IllegalStateException) {
-                warnLogger(
-                    "RumTTIDReporterImpl unable to remove onDrawListener from viewTreeObserver",
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                    { "RumTTIDReporterImpl unable to remove onDrawListener from viewTreeObserver" },
                     e
                 )
             }

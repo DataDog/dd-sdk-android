@@ -20,6 +20,7 @@ import android.app.Activity
 import android.app.Application
 import android.os.Handler
 import android.os.Looper
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.DefaultAppStartTimeProvider
 import com.datadog.android.internal.time.DefaultTimeProvider
@@ -110,6 +111,7 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
             // ContentProvider that installs this detector.
             appStartupActivityPredicate = { true },
             rumFirstDrawTimeReporter = RumFirstDrawTimeReporterImpl(
+                internalLogger = InternalLogger.UNBOUND,
                 timeProviderNs = timeProvider::getDeviceElapsedTimeNanos,
                 windowCallbacksRegistry = RumWindowCallbacksRegistryImpl(),
                 handler = Handler(Looper.getMainLooper())

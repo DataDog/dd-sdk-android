@@ -36,14 +36,14 @@ interface com.datadog.android.rum.internal.startup.RumFirstDrawTimeReporter
     fun onFirstFrameDrawn(Long)
   fun subscribeToFirstFrameDrawn(android.app.Activity, Callback): Handle
 class com.datadog.android.rum.internal.startup.RumFirstDrawTimeReporterHandleImpl : RumFirstDrawTimeReporter.Handle, com.datadog.android.rum.internal.utils.window.RumWindowCallbackListener, android.view.View.OnAttachStateChangeListener, android.view.ViewTreeObserver.OnDrawListener
-  constructor(RumFirstDrawTimeReporter.Callback, android.app.Activity, (String, Throwable) -> Unit, () -> Long, com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistry, android.os.Handler)
+  constructor(RumFirstDrawTimeReporter.Callback, android.app.Activity, com.datadog.android.api.InternalLogger, () -> Long, com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistry, android.os.Handler)
   override fun unsubscribe()
   override fun onContentChanged()
   override fun onViewAttachedToWindow(android.view.View)
   override fun onViewDetachedFromWindow(android.view.View)
   override fun onDraw()
 class com.datadog.android.rum.internal.startup.RumFirstDrawTimeReporterImpl : RumFirstDrawTimeReporter
-  constructor(() -> Long, com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistry, android.os.Handler, String = "DD/AppLaunch", (String, Throwable) -> Unit = { message,throwable->Log.w(logTag,message,throwable) })
+  constructor(com.datadog.android.api.InternalLogger, () -> Long, com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistry, android.os.Handler)
   override fun subscribeToFirstFrameDrawn(android.app.Activity, RumFirstDrawTimeReporter.Callback): RumFirstDrawTimeReporter.Handle
 sealed interface com.datadog.android.rum.internal.startup.RumStartupScenario
   val initialTime: com.datadog.android.rum.internal.domain.Time
