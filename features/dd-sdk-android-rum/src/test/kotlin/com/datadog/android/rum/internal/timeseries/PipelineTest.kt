@@ -121,6 +121,7 @@ internal class PipelineTest {
             buffer = buffer,
             eventFactory = mockEventFactory,
             dataWriter = mockDataWriter,
+            internalLogger = mockInternalLogger,
             insightsCollector = mockInsightsCollector
         )
     }

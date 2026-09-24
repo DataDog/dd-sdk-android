@@ -55,7 +55,6 @@ internal open class LifecycleCallbackTestRule<T : Activity>(
                 val callback = lifecycleCallbacks[pointer]
                 if (callbacksClasses.firstOrNull { it.isAssignableFrom(callback::class.java) } != null) {
                     application.unregisterActivityLifecycleCallbacks(callback)
-                    pointer--
                 }
                 pointer--
             }
