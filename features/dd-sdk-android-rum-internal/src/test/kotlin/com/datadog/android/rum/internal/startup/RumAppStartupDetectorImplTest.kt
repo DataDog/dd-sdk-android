@@ -12,9 +12,8 @@ import android.os.Bundle
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.startup.RumAppStartupDetectorImpl.Companion.MAX_TTID_DURATION_NS
-import com.datadog.android.rum.startup.AppStartupActivityPredicate
-import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -50,7 +49,7 @@ import kotlin.time.Duration.Companion.seconds
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(BaseConfigurator::class)
 internal class RumAppStartupDetectorImplTest {
     @Mock
     private lateinit var application: Application
@@ -481,7 +480,7 @@ internal class RumAppStartupDetectorImplTest {
 
         autoDrawFirstFrame(mainActivity)
 
-        val predicate = AppStartupActivityPredicate { activity ->
+        val predicate: (Activity) -> Boolean = { activity ->
             activity != interstitialActivity
         }
 
@@ -537,7 +536,7 @@ internal class RumAppStartupDetectorImplTest {
         @BoolForgery hasSavedInstanceStateBundle: Boolean
     ) {
         // Given - predicate that excludes all activities
-        val predicate = AppStartupActivityPredicate { false }
+        val predicate: (Activity) -> Boolean = { false }
         val detector = createDetector(appStartupActivityPredicate = predicate)
 
         currentTime += 3.seconds
@@ -568,7 +567,7 @@ internal class RumAppStartupDetectorImplTest {
 
         autoDrawFirstFrame(includedActivity)
 
-        val predicate = AppStartupActivityPredicate { activity ->
+        val predicate: (Activity) -> Boolean = { activity ->
             activity != excludedActivity1 && activity != excludedActivity2
         }
 
@@ -675,7 +674,7 @@ internal class RumAppStartupDetectorImplTest {
         autoDrawFirstFrame(activity1)
         autoDrawFirstFrame(activity2)
 
-        val mutablePredicate = AppStartupActivityPredicate { activity ->
+        val mutablePredicate: (Activity) -> Boolean = { activity ->
             if (activity == activity1) shouldTrackActivity1 else true
         }
 
@@ -784,7 +783,7 @@ internal class RumAppStartupDetectorImplTest {
     ) {
         // Given
         val secondActivity: Activity = mock()
-        val predicate = AppStartupActivityPredicate { it !== secondActivity }
+        val predicate: (Activity) -> Boolean = { it !== secondActivity }
         val detector = createDetector(appStartupActivityPredicate = predicate)
         currentTime += 3.seconds
         triggerBeforeCreated(
@@ -979,7 +978,7 @@ internal class RumAppStartupDetectorImplTest {
     }
 
     private fun createDetector(
-        appStartupActivityPredicate: AppStartupActivityPredicate = AppStartupActivityPredicate { true }
+        appStartupActivityPredicate: (Activity) -> Boolean = { true }
     ): RumAppStartupDetectorImpl {
         whenever(buildSdkVersionProvider.isAtLeastQ) doReturn fakeIsAtLeastQ
 
@@ -994,7 +993,7 @@ internal class RumAppStartupDetectorImplTest {
                 )
             },
             listener = listener,
-            appStartupActivityPredicate = { appStartupActivityPredicate.shouldTrackStartup(it) },
+            appStartupActivityPredicate = appStartupActivityPredicate,
             rumFirstDrawTimeReporter = rumFirstDrawTimeReporter
         )
 
