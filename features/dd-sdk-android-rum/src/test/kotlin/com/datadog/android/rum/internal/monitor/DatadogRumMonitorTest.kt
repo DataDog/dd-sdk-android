@@ -58,7 +58,7 @@ import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_NAME
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_NAME_CHARACTERS
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_OPERATION_KEY
-import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollectorFactory
+import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollector
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -333,7 +333,7 @@ internal class DatadogRumMonitorTest {
             rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
-            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
+            timeseriesCollector = NoOpTimeseriesCollector()
         )
         testedMonitor.rootScope = mockApplicationScope
     }
@@ -370,7 +370,7 @@ internal class DatadogRumMonitorTest {
             rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
-            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
+            timeseriesCollector = NoOpTimeseriesCollector()
         )
 
         // When
@@ -450,7 +450,7 @@ internal class DatadogRumMonitorTest {
             rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
-            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
+            timeseriesCollector = NoOpTimeseriesCollector()
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -498,7 +498,7 @@ internal class DatadogRumMonitorTest {
             rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
-            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
+            timeseriesCollector = NoOpTimeseriesCollector()
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -2319,7 +2319,7 @@ internal class DatadogRumMonitorTest {
             rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
-            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
+            timeseriesCollector = NoOpTimeseriesCollector()
         )
 
         // When
@@ -2364,7 +2364,7 @@ internal class DatadogRumMonitorTest {
             rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
-            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
+            timeseriesCollector = NoOpTimeseriesCollector()
         )
 
         // When
@@ -2410,7 +2410,7 @@ internal class DatadogRumMonitorTest {
             rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
-            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
+            timeseriesCollector = NoOpTimeseriesCollector()
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 
@@ -2638,7 +2638,7 @@ internal class DatadogRumMonitorTest {
             rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
-            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
+            timeseriesCollector = NoOpTimeseriesCollector()
         )
         testedMonitor.startView(key, name, attributes)
         // When

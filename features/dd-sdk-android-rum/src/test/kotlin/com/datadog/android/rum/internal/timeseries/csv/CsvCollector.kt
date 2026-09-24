@@ -26,7 +26,7 @@ import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 
 /**
- * A test-only [TimeseriesCollector] that mirrors the wiring done by `DefaultTimeseriesCollectorFactory`,
+ * A test-only [TimeseriesCollector] that mirrors the wiring done by `DefaultTimeseriesCollector`,
  * but pulls samples from CSV-backed readers instead of `VitalReaderWrapper` and drives the
  * pipelines synchronously (no executor) so callers can assert on every emitted JSON.
  */
@@ -46,7 +46,7 @@ internal class CsvCollector(
      * Walks each (reader, buffer, factory) triple synchronously: samples until the reader is
      * exhausted, flushing whenever the buffer is full, then emitting any final remainder.
      */
-    override fun onSessionStart() {
+    override fun onSessionStart(sessionId: String, sessionType: RumSessionType) {
         for ((reader, buffer, eventFactory) in pipelines) {
             while (reader.hasNext()) {
                 buffer.add(reader.read())
@@ -63,14 +63,14 @@ internal class CsvCollector(
         ?.let(JsonParser::parseString)
         ?.let { emitted.add(it.asJsonObject) }
 
-    override fun onSessionStop() = Unit
+    override fun onSessionStop(sessionId: String) = Unit
 
     override fun onRumContextUpdate(newRumContext: RumContext) = Unit
 
     companion object {
 
         /**
-         * Builds a [CsvCollector] with the same shape as `DefaultTimeseriesCollectorFactory`:
+         * Builds a [CsvCollector] with the same shape as `DefaultTimeseriesCollector`:
          * a memory pipeline followed by a CPU pipeline, each backed by [CSVReader] and the
          * production [MemoryEventFactory] / [CpuEventFactory].
          */
