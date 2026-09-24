@@ -105,6 +105,9 @@ internal class AndroidCapturedSnapshotProducerTest {
         viewUtilsInternal = ViewUtilsInternal()
     )
 
+    /** These trees are tiny and the deadline is generous, so every capture must complete in one slice. */
+    private fun <T> CaptureStep<T>.doneValue(): T = (this as CaptureStep.Done<T>).value
+
     private fun producer(
         windows: List<View>,
         scope: CapturedRumViewScope?,
@@ -136,7 +139,7 @@ internal class AndroidCapturedSnapshotProducerTest {
         )
 
         // When
-        val snapshot = testedProducer.capture(fakeContext)
+        val snapshot = testedProducer.capture(fakeContext).doneValue()
 
         // Then
         assertThat(snapshot).isNull()
@@ -157,7 +160,7 @@ internal class AndroidCapturedSnapshotProducerTest {
         )
 
         // When
-        val snapshot = testedProducer.capture(fakeContext)
+        val snapshot = testedProducer.capture(fakeContext).doneValue()
 
         // Then
         assertThat(snapshot).isNull()
@@ -178,7 +181,7 @@ internal class AndroidCapturedSnapshotProducerTest {
         )
 
         // When
-        val snapshot = testedProducer.capture(fakeContext)
+        val snapshot = testedProducer.capture(fakeContext).doneValue()
 
         // Then
         assertThat(snapshot?.timestamp).isEqualTo(fakeTimestamp + fakeOffset)
@@ -204,7 +207,7 @@ internal class AndroidCapturedSnapshotProducerTest {
         )
 
         // When
-        val snapshot = testedProducer.capture(fakeContext)
+        val snapshot = testedProducer.capture(fakeContext).doneValue()
 
         // Then
         val root = snapshot!!.root!!
@@ -247,7 +250,7 @@ internal class AndroidCapturedSnapshotProducerTest {
         )
 
         // When
-        val snapshot = testedProducer.capture(fakeContext)
+        val snapshot = testedProducer.capture(fakeContext).doneValue()
 
         // Then
         val validation = DefaultCapturedTreeValidator().validate(snapshot!!)

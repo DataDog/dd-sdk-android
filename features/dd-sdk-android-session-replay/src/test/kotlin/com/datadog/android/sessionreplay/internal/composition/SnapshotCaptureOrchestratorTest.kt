@@ -36,7 +36,7 @@ internal class SnapshotCaptureOrchestratorTest {
         val testedOrchestrator = SnapshotCaptureOrchestrator(
             producer = CapturedSnapshotProducer { context ->
                 capturedGenerations += context
-                null
+                CaptureStep.Done(null)
             },
             processor = FakeProcessor(),
             consumer = CompletedSnapshotConsumer { _ -> },
@@ -590,15 +590,94 @@ internal class SnapshotCaptureOrchestratorTest {
         assertThat(fixture.consumedCaptures).isEmpty()
     }
 
+    // region yielded slices
+
+    @Test
+    fun `M reschedule a continuation W producer yields before completing`(forge: Forge) {
+        // Given
+        val fakeMainThreadExecutor = FakeMainThreadExecutor(autoRun = false)
+        val fixture = Fixture(forge, mainThreadExecutor = fakeMainThreadExecutor, yieldsBeforeCompletion = 1)
+        fixture.testedOrchestrator.start()
+        fixture.testedOrchestrator.requestCapture()
+        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+
+        // When
+        fakeMainThreadExecutor.runNext()
+
+        // Then - the first slice yielded, so nothing has reached the processor yet
+        assertThat(fixture.producerCaptures).isEqualTo(1)
+        assertThat(fixture.fakeProcessor.pending).isEmpty()
+
+        // When - the continuation runs as its own, separately scheduled main-thread dispatch
+        fakeMainThreadExecutor.runNext()
+
+        // Then
+        assertThat(fixture.producerCaptures).isEqualTo(2)
+        assertThat(fixture.fakeProcessor.pending).hasSize(1)
+    }
+
+    @Test
+    fun `M abort the generation W deadline passes between yielded slices`(forge: Forge) {
+        // Given
+        val fakeMainThreadExecutor = FakeMainThreadExecutor(autoRun = false)
+        val fixture = Fixture(forge, mainThreadExecutor = fakeMainThreadExecutor, yieldsBeforeCompletion = 1)
+        fixture.testedOrchestrator.start()
+        fixture.testedOrchestrator.requestCapture()
+        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fakeMainThreadExecutor.runNext()
+
+        // When - the deadline passes while the continuation is still pending
+        fixture.fakeClock.nowNs = fixture.fakeStartNs + fixture.fakeGenerationBudgetNs
+        fakeMainThreadExecutor.runNext()
+
+        // Then - admission is checked before the resume runs, so it never even gets to run
+        assertThat(fixture.producerCaptures).isEqualTo(1)
+        assertThat(fixture.fakeProcessor.pending).isEmpty()
+        assertThat(fixture.consumedCaptures).isEmpty()
+    }
+
+    @Test
+    fun `M charge each slice separately W time bank tracks a yielded capture`(
+        @LongForgery(min = 1L, max = 1_000L) fakeSliceExecutionNs: Long,
+        @LongForgery(min = 1L, max = 1_000L) fakeWaitBetweenSlicesNs: Long,
+        forge: Forge
+    ) {
+        // Given
+        val fakeTimeBudget = FakeTimeBudget(canStart = true)
+        val fakeMainThreadExecutor = FakeMainThreadExecutor(autoRun = false)
+        val fixture = Fixture(
+            forge,
+            mainThreadExecutor = fakeMainThreadExecutor,
+            timeBudget = fakeTimeBudget,
+            yieldsBeforeCompletion = 1,
+            producerExecutionNs = fakeSliceExecutionNs
+        )
+        fixture.testedOrchestrator.start()
+        fixture.testedOrchestrator.requestCapture()
+        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fakeMainThreadExecutor.runNext()
+
+        // When - time passes waiting for the continuation's own dispatch, not spent doing work
+        fixture.fakeClock.nowNs += fakeWaitBetweenSlicesNs
+        fakeMainThreadExecutor.runNext()
+
+        // Then - two separate charges, one per slice, neither inflated by the wait in between
+        assertThat(fakeTimeBudget.consumedDurations).containsExactly(fakeSliceExecutionNs, fakeSliceExecutionNs)
+    }
+
+    // endregion
+
     private class Fixture(
         forge: Forge,
-        snapshotToProduce: CapturedFullSnapshot? = forge.aCompositionTestTree().snapshot,
+        private val snapshotToProduce: CapturedFullSnapshot? = forge.aCompositionTestTree().snapshot,
         timeBudget: CaptureTimeBudget = CaptureTimeBudget.UNLIMITED,
         mainThreadExecutor: FakeMainThreadExecutor = FakeMainThreadExecutor(),
-        producerExecutionNs: Long = 0L,
+        private val producerExecutionNs: Long = 0L,
+        yieldsBeforeCompletion: Int = 0,
         val fakeStartNs: Long = forge.aLong(min = 0L, max = 1_000_000L),
         val fakeGenerationBudgetNs: Long = forge.aGenerationBudgetNs(),
-        onProducerCapture: () -> Unit = {}
+        val fakeSliceBudgetNs: Long = CaptureGenerationContext.DEFAULT_SLICE_BUDGET_NS,
+        private val onProducerCapture: () -> Unit = {}
     ) {
         val fakeSnapshot = snapshotToProduce
         val fakeClock = FakeClock().apply { nowNs = fakeStartNs }
@@ -608,14 +687,24 @@ internal class SnapshotCaptureOrchestratorTest {
         val consumedCaptures = mutableListOf<CompletedSnapshotCapture>()
         val producerGenerations = mutableListOf<CaptureGenerationContext>()
         var producerCaptures = 0
+
+        private fun runProducerStep(
+            generation: CaptureGenerationContext,
+            remainingYields: Int
+        ): CaptureStep<CapturedFullSnapshot?> {
+            producerCaptures++
+            producerGenerations += generation
+            onProducerCapture()
+            fakeClock.nowNs += producerExecutionNs
+            return if (remainingYields > 0) {
+                CaptureStep.Yielded { runProducerStep(generation, remainingYields - 1) }
+            } else {
+                CaptureStep.Done(snapshotToProduce)
+            }
+        }
+
         val testedOrchestrator = SnapshotCaptureOrchestrator(
-            producer = CapturedSnapshotProducer { generation ->
-                producerCaptures++
-                producerGenerations += generation
-                onProducerCapture()
-                fakeClock.nowNs += producerExecutionNs
-                snapshotToProduce
-            },
+            producer = CapturedSnapshotProducer { generation -> runProducerStep(generation, yieldsBeforeCompletion) },
             processor = fakeProcessor,
             consumer = CompletedSnapshotConsumer(consumedCaptures::add),
             timeProvider = fakeClock,
@@ -624,7 +713,8 @@ internal class SnapshotCaptureOrchestratorTest {
             expiryScheduler = fakeExpiryScheduler,
             timeBudget = timeBudget,
             captureDelayNs = IMMEDIATE,
-            generationBudgetNs = fakeGenerationBudgetNs
+            generationBudgetNs = fakeGenerationBudgetNs,
+            sliceBudgetNs = fakeSliceBudgetNs
         )
 
         fun expiryTask(): ScheduledTask = fakeExpiryScheduler.tasks.single { it.delayNs == fakeGenerationBudgetNs }

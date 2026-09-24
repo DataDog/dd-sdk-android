@@ -330,7 +330,7 @@ internal class CompositionCaptureConcurrencyTest {
         val testedOrchestrator = SnapshotCaptureOrchestrator(
             producer = CapturedSnapshotProducer { generation ->
                 createdGenerations += generation
-                snapshot
+                CaptureStep.Done(snapshot)
             },
             processor = CapturedSnapshotProcessor { request, callback ->
                 val future = processorExecutor.submit {
@@ -571,7 +571,7 @@ internal class CompositionCaptureConcurrencyTest {
             producer = CapturedSnapshotProducer { generation ->
                 createdGenerations += generation
                 onCapture()
-                snapshot
+                CaptureStep.Done(snapshot)
             },
             processor = ImmediateCapturedSnapshotProcessor(),
             consumer = testedCompletionQueue,

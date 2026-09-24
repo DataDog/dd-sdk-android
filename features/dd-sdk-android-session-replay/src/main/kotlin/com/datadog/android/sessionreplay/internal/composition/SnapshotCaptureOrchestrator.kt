@@ -26,6 +26,7 @@ internal class SnapshotCaptureOrchestrator(
     private val timeBudget: CaptureTimeBudget = CaptureTimeBudget.UNLIMITED,
     private val captureDelayNs: Long = DEFAULT_CAPTURE_DELAY_NS,
     private val generationBudgetNs: Long = DEFAULT_GENERATION_BUDGET_NS,
+    private val sliceBudgetNs: Long = CaptureGenerationContext.DEFAULT_SLICE_BUDGET_NS,
     private val internalLogger: InternalLogger = InternalLogger.UNBOUND
 ) {
     private val lock = Any()
@@ -80,78 +81,82 @@ internal class SnapshotCaptureOrchestrator(
 
     @MainThread
     private fun beginCapture(scheduleId: Long) {
-        val active = createActiveGeneration(scheduleId) ?: return scheduleCaptureIfRequested()
+        val active = synchronized(lock) {
+            if (captureScheduleId != scheduleId) return@synchronized null
+            captureScheduled = false
+            if (!canScheduleCapture) return@synchronized null
+
+            val eligibilityTimestampNs = timeProvider.elapsedRealtimeNanos()
+            // A denial here must leave captureRequested set - otherwise nothing retries this
+            // request once the time bank replenishes, since no ActiveGeneration exists yet to
+            // later trigger scheduleCapture() via expire()/onProcessed() - both call it
+            // unconditionally and rely on its own canScheduleCapture guard, same as this does when
+            // returning null below.
+            if (!timeBudget.canStart(eligibilityTimestampNs)) return@synchronized null
+            captureRequested = false
+            // Nothing that belongs to capture runs before this timestamp. The producer's first
+            // action is window/root discovery, so every capture phase shares the deadline created
+            // here.
+            val startedAtNs = timeProvider.elapsedRealtimeNanos()
+            ActiveGeneration(
+                CaptureGenerationContext(
+                    id = nextGenerationId++,
+                    startedAtNs = startedAtNs,
+                    deadlineNs = saturatedAdd(startedAtNs, generationBudgetNs),
+                    timeProvider = timeProvider,
+                    mainThreadTimeBudget = timeBudget,
+                    sliceBudgetNs = sliceBudgetNs
+                )
+            ).also { activeGeneration = it }
+        } ?: return scheduleCapture()
 
         val expiration = expiryScheduler.schedule(active.generation.remainingBudgetNs()) {
             expire(active.generation)
         }
-        val shouldCancelExpiration = synchronized(lock) {
-            val current = activeGeneration
-            if (current?.generation?.id == active.generation.id) {
-                current.expiration = expiration
-                active.generation.track(expiration)
-                false
-            } else {
-                true
-            }
-        }
-        if (shouldCancelExpiration) {
-            expiration.cancel()
-            return
-        }
+        if (!active.trackOrCancel(lock, { activeGeneration }, expiration) { it.expiration = expiration }) return
 
+        active.generation.sliceClock.markStart()
+        runCaptureSlice(active) { producer.capture(active.generation) }
+    }
+
+    /**
+     * Runs one bounded main-thread slice of [step]. A [CaptureStep.Yielded] result means [step]
+     * didn't finish within this slice's budget - the continuation is rescheduled via
+     * [mainThreadExecutor] rather than run inline, so the Looper gets a chance to process a frame
+     * or input event before it resumes. The overall generation deadline still wins regardless of
+     * how many slices this takes: [CaptureGenerationContext.runMainThreadCaptureUnit] checks it
+     * before every slice, including a resume, so a generation that outlives its deadline between
+     * slices is interrupted without even running the next one, let alone acting on its result.
+     */
+    @MainThread
+    private fun runCaptureSlice(active: ActiveGeneration, step: () -> CaptureStep<CapturedFullSnapshot?>) {
         val captureResult = active.generation.runMainThreadCaptureUnit(admissionAlreadyGranted = true) {
-            safeCapture(producer, internalLogger, active.generation)
+            safeCaptureStep(internalLogger, step)
         }
-        val snapshot = when (captureResult) {
-            is MainThreadCaptureResult.Completed -> captureResult.value
-            MainThreadCaptureResult.Interrupted -> null
-        }
-        if (snapshot != null && active.generation.isActive()) {
-            val processing = processor.process(
-                SnapshotProcessingRequest(active.generation, snapshot),
-                SnapshotProcessingCallback(::onProcessed)
-            )
-            val shouldCancel = synchronized(lock) {
-                val current = activeGeneration
-                if (current?.generation?.id == active.generation.id) {
-                    current.processing = processing
-                    active.generation.track(processing)
-                    false
-                } else {
-                    true
+        when (captureResult) {
+            is MainThreadCaptureResult.Completed -> when (val stepResult = captureResult.value) {
+                is CaptureStep.Done -> finishCapture(active, stepResult.value)
+                is CaptureStep.Yielded -> {
+                    active.generation.sliceClock.markStart()
+                    val continuation = mainThreadExecutor.execute { runCaptureSlice(active, stepResult.resume) }
+                    active.generation.track(continuation)
                 }
             }
-            if (shouldCancel) processing.cancel()
-        } else {
-            expire(active.generation)
+            MainThreadCaptureResult.Interrupted -> expire(active.generation)
         }
     }
 
-    private fun createActiveGeneration(scheduleId: Long): ActiveGeneration? = synchronized(lock) {
-        if (captureScheduleId != scheduleId) return@synchronized null
-        captureScheduled = false
-        if (!canScheduleCapture) return@synchronized null
-
-        val eligibilityTimestampNs = timeProvider.elapsedRealtimeNanos()
-        // A denial here must leave captureRequested set - otherwise nothing retries this request
-        // once the time bank replenishes, since no ActiveGeneration exists yet to later trigger
-        // scheduleCaptureIfRequested() via expire()/onProcessed(). beginCapture() calls that itself
-        // when this returns null.
-        if (!timeBudget.canStart(eligibilityTimestampNs)) return@synchronized null
-        captureRequested = false
-        // Nothing that belongs to capture runs before this timestamp. The producer's first action
-        // is window/root discovery, so every capture phase shares the deadline created here.
-        val startedAtNs = timeProvider.elapsedRealtimeNanos()
-        ActiveGeneration(
-            CaptureGenerationContext(
-                id = nextGenerationId++,
-                startedAtNs = startedAtNs,
-                deadlineNs = saturatedAdd(startedAtNs, generationBudgetNs),
-                timeProvider = timeProvider,
-                mainThreadTimeBudget = timeBudget
-            )
-        ).also { activeGeneration = it }
+    @MainThread
+    private fun finishCapture(active: ActiveGeneration, snapshot: CapturedFullSnapshot?) {
+        if (snapshot == null || !active.generation.isActive()) {
+            expire(active.generation)
+            return
+        }
+        val processing = processor.process(
+            SnapshotProcessingRequest(active.generation, snapshot),
+            SnapshotProcessingCallback(::onProcessed)
+        )
+        active.trackOrCancel(lock, { activeGeneration }, processing) { it.processing = processing }
     }
 
     private fun onProcessed(result: SnapshotProcessingResult) {
@@ -185,7 +190,7 @@ internal class SnapshotCaptureOrchestrator(
         // rather than duplicated: with expire() closing the gap on its side, this decision is final.
         expired?.cancel()
         completed?.let(consumer::consume)
-        scheduleCaptureIfRequested()
+        scheduleCapture()
     }
 
     private fun expire(generation: CaptureGenerationContext) {
@@ -197,12 +202,7 @@ internal class SnapshotCaptureOrchestrator(
             active
         }
         expired.cancel()
-        scheduleCaptureIfRequested()
-    }
-
-    private fun scheduleCaptureIfRequested() {
-        val shouldSchedule = synchronized(lock) { canScheduleCapture }
-        if (shouldSchedule) scheduleCapture()
+        scheduleCapture()
     }
 
     private val canScheduleCapture: Boolean
@@ -221,29 +221,54 @@ internal class SnapshotCaptureOrchestrator(
         fun cancel() {
             generation.expire()
         }
+
+        /**
+         * Attaches [work] to this generation's cancellation lifecycle, but only while
+         * [currentGeneration] still returns this same generation - the identity check and [assign]
+         * happen together under [lock] so a concurrent generation swap can't land in between and
+         * leave [work] tracked against a generation the orchestrator has already moved on from.
+         * Cancels [work] and returns `false` when that's exactly what happened.
+         */
+        fun trackOrCancel(
+            lock: Any,
+            currentGeneration: () -> ActiveGeneration?,
+            work: CancellableCaptureWork,
+            assign: (ActiveGeneration) -> Unit
+        ): Boolean {
+            val tracked = synchronized(lock) {
+                val current = currentGeneration()
+                if (current?.generation?.id != generation.id) return@synchronized false
+                assign(current)
+                generation.track(work)
+                true
+            }
+            if (!tracked) work.cancel()
+            return tracked
+        }
     }
 
     private companion object {
         val DEFAULT_CAPTURE_DELAY_NS: Long = TimeUnit.MILLISECONDS.toNanos(64)
         val DEFAULT_GENERATION_BUDGET_NS: Long = TimeUnit.MILLISECONDS.toNanos(90)
-
-        fun saturatedAdd(value: Long, increment: Long): Long =
-            if (increment > 0 && value > Long.MAX_VALUE - increment) Long.MAX_VALUE else value + increment
     }
 }
+
+private fun saturatedAdd(value: Long, increment: Long): Long =
+    if (increment > 0 && value > Long.MAX_VALUE - increment) Long.MAX_VALUE else value + increment
 
 /**
  * Deliberately broad rather than targeted: this runs on the main thread, so an escaping throwable
  * crashes the host app. The producer walks live application and Compose state whose failure types
- * cannot be enumerated from here, and a failed traversal must only cost one snapshot.
+ * cannot be enumerated from here, and a failed traversal must only cost one snapshot. Wraps every
+ * slice - the initial call and every [CaptureStep.Yielded] resume alike - since a resume closure
+ * re-enters the same producer-owned walking code and can fail for the same reasons.
  */
 @Suppress("TooGenericExceptionCaught")
-private fun safeCapture(
-    producer: CapturedSnapshotProducer,
+private fun safeCaptureStep(
     internalLogger: InternalLogger,
-    generation: CaptureGenerationContext
-): CapturedFullSnapshot? = try {
-    producer.capture(generation)
+    step: () -> CaptureStep<CapturedFullSnapshot?>
+): CaptureStep<CapturedFullSnapshot?> = try {
+    step()
 } catch (e: Exception) {
     internalLogger.log(
         InternalLogger.Level.ERROR,
@@ -251,5 +276,5 @@ private fun safeCapture(
         { "Composition snapshot producer threw an exception" },
         e
     )
-    null
+    CaptureStep.Done(null)
 }
