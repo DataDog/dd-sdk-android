@@ -156,13 +156,24 @@ internal class BatchMetricsDispatcher(
 
     private fun resolveTrackName(featureName: String): String? {
         return when (featureName) {
-            Feature.RUM_FEATURE_NAME -> RUM_TRACK_NAME
-            Feature.LOGS_FEATURE_NAME -> LOGS_TRACK_NAME
+            Feature.RUM_FEATURE_NAME, Feature.WEB_RUM_FEATURE_NAME -> RUM_TRACK_NAME
+            Feature.LOGS_FEATURE_NAME, Feature.WEB_LOGS_FEATURE_NAME -> LOGS_TRACK_NAME
             Feature.TRACING_FEATURE_NAME -> TRACE_TRACK_NAME
-            Feature.SESSION_REPLAY_FEATURE_NAME -> SR_TRACK_NAME
-            Feature.SESSION_REPLAY_RESOURCES_FEATURE_NAME -> SR_RESOURCES_TRACK_NAME
+            Feature.SESSION_REPLAY_FEATURE_NAME, Feature.WEB_SESSION_REPLAY_FEATURE_NAME -> SESSION_REPLAY_TRACK_NAME
+            Feature.SESSION_REPLAY_RESOURCES_FEATURE_NAME -> SESSION_REPLAY_RESOURCES_TRACK_NAME
+            Feature.FLAGS_FEATURE_NAME -> FLAGS_TRACK_NAME
+            Feature.FLAGS_EVALUATIONS_FEATURE_NAME -> FLAGS_EVALUATIONS_TRACK_NAME
+            Feature.PROFILING_FEATURE_NAME -> PROFILER_TRACK_NAME
+            Feature.TRACING_CLIENT_STATS_FEATURE_NAME -> TRACING_CLIENT_STATS_TRACK_NAME
 
-            else -> null
+            else -> {
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.MAINTAINER,
+                    { "Feature $featureName is not mapped to any track in the ${javaClass.name}" }
+                )
+                null
+            }
         }
     }
 
@@ -184,8 +195,12 @@ internal class BatchMetricsDispatcher(
         internal const val RUM_TRACK_NAME = "rum"
         internal const val LOGS_TRACK_NAME = "logs"
         internal const val TRACE_TRACK_NAME = "trace"
-        internal const val SR_TRACK_NAME = "sr"
-        internal const val SR_RESOURCES_TRACK_NAME = "sr-resources"
+        internal const val SESSION_REPLAY_TRACK_NAME = "sr"
+        internal const val SESSION_REPLAY_RESOURCES_TRACK_NAME = "sr-resources"
+        internal const val PROFILER_TRACK_NAME = "profiler"
+        internal const val FLAGS_TRACK_NAME = "flags"
+        internal const val FLAGS_EVALUATIONS_TRACK_NAME = "flags-evaluations"
+        internal const val TRACING_CLIENT_STATS_TRACK_NAME = "tracing-client-stats"
 
         internal const val WRONG_FILE_NAME_MESSAGE_FORMAT =
             "Unable to parse the file name as a timestamp: %s"

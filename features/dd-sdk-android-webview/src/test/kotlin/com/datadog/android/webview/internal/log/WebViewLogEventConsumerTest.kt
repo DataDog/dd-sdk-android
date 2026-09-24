@@ -102,7 +102,7 @@ internal class WebViewLogEventConsumerTest {
         )
 
         whenever(
-            mockSdkCore.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)
+            mockSdkCore.getFeature(Feature.WEB_LOGS_FEATURE_NAME)
         ) doReturn mockWebViewLogsFeatureScope
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
 

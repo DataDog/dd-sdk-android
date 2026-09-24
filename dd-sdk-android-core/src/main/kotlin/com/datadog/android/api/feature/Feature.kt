@@ -83,5 +83,20 @@ interface Feature {
          * Profiling feature name.
          */
         const val PROFILING_FEATURE_NAME: String = "profiling"
+
+        /**
+         * Same as [Feature.RUM_FEATURE_NAME], but hosts RUM events coming from WebView.
+         */
+        const val WEB_RUM_FEATURE_NAME: String = "web-rum"
+
+        /**
+         * Same as [Feature.LOGS_FEATURE_NAME], but hosts Logs events coming from WebView.
+         */
+        const val WEB_LOGS_FEATURE_NAME: String = "web-logs"
+
+        /**
+         * Same as [Feature.SESSION_REPLAY_FEATURE_NAME], but hosts Session Replay events coming from WebView.
+         */
+        const val WEB_SESSION_REPLAY_FEATURE_NAME: String = "web-replay"
     }
 }

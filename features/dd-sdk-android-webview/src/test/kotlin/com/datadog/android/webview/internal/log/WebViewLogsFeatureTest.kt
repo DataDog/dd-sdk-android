@@ -6,6 +6,7 @@
 
 package com.datadog.android.webview.internal.log
 
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
@@ -76,7 +77,7 @@ internal class WebViewLogsFeatureTest {
     fun `M provide web view logs feature name W name()`() {
         // When+Then
         assertThat(testedFeature.name)
-            .isEqualTo(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)
+            .isEqualTo(Feature.WEB_LOGS_FEATURE_NAME)
     }
 
     @Test
