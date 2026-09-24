@@ -267,18 +267,19 @@ internal class DefaultFlagsRepositoryTest {
     }
 
     @Test
-    fun `M return cached reason without changing persisted metadata W disk hydration completes`() {
+    fun `M return original assignments without changing persisted metadata W disk hydration completes`() {
         val callback = preparePersistenceLoad()
         callback.onSuccess(DataStoreContent(0, FlagsStateEntry(testContext, multipleFlagsMap, 0L)))
 
-        val snapshot = testedRepository.getFlagsSnapshot()
+        val snapshot = checkNotNull(testedRepository.getFlagsSnapshot())
 
-        assertThat(snapshot.keys).isEqualTo(multipleFlagsMap.keys)
+        assertThat(snapshot.flags).isSameAs(multipleFlagsMap)
+        assertThat(snapshot.context).isEqualTo(testContext)
+        assertThat(snapshot.requestedContext).isNull()
+        assertThat(snapshot.restoredFromDisk).isTrue()
         multipleFlagsMap.forEach { (key, flag) ->
-            assertThat(snapshot[key]).isEqualTo(flag.copy(reason = "CACHED"))
-            assertThat(testedRepository.getPrecomputedFlag(key)).isEqualTo(snapshot[key])
-            assertThat(testedRepository.getPrecomputedFlagWithContext(key))
-                .isEqualTo(snapshot[key] to testContext)
+            assertThat(snapshot.flags[key]).isSameAs(flag)
+            assertThat(testedRepository.getPrecomputedFlag(key)).isSameAs(flag)
         }
         assertThat(multipleFlagsMap.values.map { it.reason }).doesNotContain("CACHED")
     }
@@ -291,40 +292,44 @@ internal class DefaultFlagsRepositoryTest {
 
         callback.onSuccess(DataStoreContent(0, FlagsStateEntry(testContext, multipleFlagsMap, 0L)))
 
-        assertThat(testedRepository.getFlagsSnapshot()).isEqualTo(singleFlagMap)
+        assertThat(testedRepository.getFlagsSnapshot()?.flags).isSameAs(singleFlagMap)
+        assertThat(testedRepository.getFlagsSnapshot()?.restoredFromDisk).isFalse()
         assertThat(testedRepository.getEvaluationContext()).isEqualTo(networkContext)
     }
 
     @Test
-    fun `M replace cached reasons W network response replaces persisted assignments`() {
+    fun `M replace disk provenance W network response replaces persisted assignments`() {
         val callback = preparePersistenceLoad()
         callback.onSuccess(DataStoreContent(0, FlagsStateEntry(testContext, multipleFlagsMap, 0L)))
         val initialSnapshot = testedRepository.getFlagsSnapshot()
 
         testedRepository.setFlagsAndContext(testContext, multipleFlagsMap)
 
-        assertThat(testedRepository.getFlagsSnapshot()).isEqualTo(multipleFlagsMap)
-        assertThat(initialSnapshot.values.map { it.reason }).containsOnly("CACHED")
+        assertThat(testedRepository.getFlagsSnapshot()?.flags).isSameAs(multipleFlagsMap)
+        assertThat(testedRepository.getFlagsSnapshot()?.restoredFromDisk).isFalse()
+        assertThat(initialSnapshot?.restoredFromDisk).isTrue()
     }
 
     @Test
-    fun `M derive reasons from full requested context W context changes before network resolution`() {
+    fun `M retain original assignments and capture requested context W context changes before network resolution`() {
         val callback = preparePersistenceLoad()
         callback.onSuccess(DataStoreContent(0, FlagsStateEntry(testContext, multipleFlagsMap, 0L)))
         val contexts = listOf(
-            testContext to "CACHED",
-            testContext.copy(attributes = mapOf("plan" to "premium")) to "STALE",
-            testContext.copy(targetingKey = "different-user") to "STALE",
-            testContext to "CACHED"
+            testContext,
+            testContext.copy(attributes = mapOf("plan" to "premium")),
+            testContext.copy(targetingKey = "different-user"),
+            testContext
         )
 
-        contexts.forEach { (requestedContext, reason) ->
+        contexts.forEach { requestedContext ->
             testedRepository.setRequestedContext(requestedContext)
-            val snapshot = testedRepository.getFlagsSnapshot()
-            assertThat(snapshot.values.map { it.reason }).containsOnly(reason)
+            val snapshot = checkNotNull(testedRepository.getFlagsSnapshot())
+            assertThat(snapshot.flags).isSameAs(multipleFlagsMap)
+            assertThat(snapshot.context).isEqualTo(testContext)
+            assertThat(snapshot.requestedContext).isEqualTo(requestedContext)
+            assertThat(snapshot.restoredFromDisk).isTrue()
             multipleFlagsMap.forEach { (key, flag) ->
-                assertThat(testedRepository.getPrecomputedFlagWithContext(key))
-                    .isEqualTo(flag.copy(reason = reason) to testContext)
+                assertThat(testedRepository.getPrecomputedFlag(key)).isSameAs(flag)
             }
         }
     }
@@ -336,7 +341,8 @@ internal class DefaultFlagsRepositoryTest {
 
         callback.onSuccess(DataStoreContent(0, FlagsStateEntry(testContext, multipleFlagsMap, 0L)))
 
-        assertThat(testedRepository.getFlagsSnapshot().values.map { it.reason }).containsOnly("STALE")
+        assertThat(testedRepository.getFlagsSnapshot()?.requestedContext).isEqualTo(EvaluationContext("different-user"))
+        assertThat(testedRepository.getFlagsSnapshot()?.flags).isSameAs(multipleFlagsMap)
         assertThat(testedRepository.getEvaluationContext()).isEqualTo(testContext)
     }
 
@@ -346,7 +352,7 @@ internal class DefaultFlagsRepositoryTest {
 
         testedRepository.setRequestedContext(EvaluationContext("different-user"))
 
-        assertThat(testedRepository.getFlagsSnapshot()).isEqualTo(multipleFlagsMap)
+        assertThat(testedRepository.getFlagsSnapshot()?.flags).isSameAs(multipleFlagsMap)
     }
 
     @Test
@@ -356,7 +362,7 @@ internal class DefaultFlagsRepositoryTest {
         testedRepository.setRequestedContext(EvaluationContext("different-user"))
 
         testedRepository.getFlagsSnapshot()
-        multipleFlagsMap.keys.forEach { testedRepository.getPrecomputedFlagWithContext(it) }
+        multipleFlagsMap.keys.forEach { testedRepository.getPrecomputedFlag(it) }
 
         verify(mockDataStore, never()).setValue<FlagsStateEntry>(
             key = any(),
@@ -523,7 +529,7 @@ internal class DefaultFlagsRepositoryTest {
         val result = testedRepository.getFlagsSnapshot()
 
         // Then
-        assertThat(result).isEqualTo(multipleFlagsMap)
+        assertThat(result?.flags).isSameAs(multipleFlagsMap)
     }
 
     // endregion

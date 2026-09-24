@@ -13,6 +13,7 @@ import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
+import com.datadog.android.flags.internal.model.FlagsSnapshot
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.ErrorCode
@@ -166,7 +167,7 @@ internal class DatadogFlagsClient(
         return when (resolution) {
             is InternalResolution.Success -> {
                 trackResolution(resolution)
-                createSuccessResolution(resolution.flag, resolution.value)
+                createSuccessResolution(resolution.flag, resolution.value, resolution.reason)
             }
 
             is InternalResolution.Error -> {
@@ -243,7 +244,8 @@ internal class DatadogFlagsClient(
             override val flagKey: String,
             val value: T,
             val flag: PrecomputedFlag,
-            val context: EvaluationContext
+            val context: EvaluationContext,
+            val reason: String
         ) : InternalResolution<T>()
 
         data class Error<T : Any>(
@@ -254,17 +256,13 @@ internal class DatadogFlagsClient(
         ) : InternalResolution<T>()
     }
 
-    private fun <T : Any> checkProviderReady(flagKey: String, defaultValue: T): InternalResolution.Error<T>? =
-        if (flagsRepository.getEvaluationContext() == null) {
-            InternalResolution.Error(
-                flagKey = flagKey,
-                defaultValue = defaultValue,
-                errorCode = ErrorCode.PROVIDER_NOT_READY,
-                errorMessage = "Provider not ready - call setEvaluationContext() before resolving flags"
-            )
-        } else {
-            null
-        }
+    private fun <T : Any> providerNotReady(flagKey: String, defaultValue: T): InternalResolution.Error<T> =
+        InternalResolution.Error(
+            flagKey = flagKey,
+            defaultValue = defaultValue,
+            errorCode = ErrorCode.PROVIDER_NOT_READY,
+            errorMessage = "Provider not ready - call setEvaluationContext() before resolving flags"
+        )
 
     /**
      * Fetches a flag from the repository and parses its value to the expected type.
@@ -286,9 +284,9 @@ internal class DatadogFlagsClient(
         flagKey: String,
         defaultValue: T
     ): InternalResolution<T> {
-        checkProviderReady(flagKey, defaultValue)?.let { return it }
-        val flagAndContext = flagsRepository.getPrecomputedFlagWithContext(flagKey)
-        if (flagAndContext == null) {
+        val snapshot = flagsRepository.getFlagsSnapshot() ?: return providerNotReady(flagKey, defaultValue)
+        val flag = snapshot.flags[flagKey]
+        if (flag == null) {
             return InternalResolution.Error(
                 flagKey = flagKey,
                 defaultValue = defaultValue,
@@ -296,8 +294,6 @@ internal class DatadogFlagsClient(
                 errorMessage = "Flag not found"
             )
         }
-
-        val (flag, context) = flagAndContext
 
         val conversionResult = FlagValueConverter.convert(
             variationValue = flag.variationValue,
@@ -311,7 +307,8 @@ internal class DatadogFlagsClient(
                     flagKey = flagKey,
                     value = parsedValue,
                     flag = flag,
-                    context = context
+                    context = snapshot.context,
+                    reason = cachedReason(snapshot)?.name ?: flag.reason
                 )
             },
             onFailure = { exception ->
@@ -392,11 +389,15 @@ internal class DatadogFlagsClient(
 
     // region Helper Methods
 
-    private fun <T : Any> createSuccessResolution(precomputedFlag: PrecomputedFlag, value: T): ResolutionDetails<T> =
+    private fun <T : Any> createSuccessResolution(
+        precomputedFlag: PrecomputedFlag,
+        value: T,
+        reason: String
+    ): ResolutionDetails<T> =
         ResolutionDetails(
             value = value,
             variant = precomputedFlag.variationKey.takeIf { it.isNotBlank() },
-            reason = parseReason(precomputedFlag.reason),
+            reason = parseReason(reason),
             errorCode = null,
             errorMessage = null,
             flagMetadata = buildMetadata(precomputedFlag)
@@ -448,7 +449,11 @@ internal class DatadogFlagsClient(
     }
 
     private fun <T : Any> trackResolution(resolution: InternalResolution.Success<T>) {
-        trackResolution(resolution.flagKey, resolution.flag, resolution.context)
+        trackResolution(
+            resolution.flagKey,
+            projectReason(resolution.flag, resolution.reason),
+            resolution.context
+        )
     }
 
     private fun trackResolution(
@@ -509,7 +514,26 @@ internal class DatadogFlagsClient(
      *
      * @return A map of flag key to an unparsed flag, or an empty map if no flags are available or the client is not ready.
      */
-    internal fun getFlagAssignmentsSnapshot(): Map<String, UnparsedFlag> = flagsRepository.getFlagsSnapshot()
+    internal fun getFlagAssignmentsSnapshot(): Map<String, UnparsedFlag> {
+        val snapshot = flagsRepository.getFlagsSnapshot() ?: return emptyMap()
+        val reason = cachedReason(snapshot)
+        return if (reason == null) {
+            snapshot.flags
+        } else {
+            snapshot.flags.mapValues { (_, flag) -> projectReason(flag, reason.name) }
+        }
+    }
+
+    private fun cachedReason(snapshot: FlagsSnapshot): ResolutionReason? = when {
+        !snapshot.restoredFromDisk -> null
+        snapshot.requestedContext == null || snapshot.requestedContext == snapshot.context -> ResolutionReason.CACHED
+        else -> ResolutionReason.STALE
+    }
+
+    private fun projectReason(flag: PrecomputedFlag, reason: String): UnparsedFlag =
+        if (reason == flag.reason) flag else ResolvedFlag(flag, reason)
+
+    private class ResolvedFlag(flag: UnparsedFlag, override val reason: String) : UnparsedFlag by flag
 
     /**
      * Tracks the evaluation of a flag from an exact flags state snapshot.

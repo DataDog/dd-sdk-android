@@ -234,7 +234,7 @@ internal class EvaluationsManagerTest {
     }
 
     @Test
-    fun `M retain disk reasons W context fetch fails for matching and different contexts`(forge: Forge) {
+    fun `M retain raw disk assignments W context fetch fails for matching and different contexts`(forge: Forge) {
         val context = EvaluationContext("persisted-user")
         val flag = forge.getForgery<PrecomputedFlag>().copy(reason = "TARGETING_MATCH")
         val dataStore = mock<DataStoreHandler>()
@@ -257,14 +257,16 @@ internal class EvaluationsManagerTest {
             initializationTimeoutScheduler = { _, _ -> {} }
         )
 
-        listOf(context to "CACHED", EvaluationContext("new-user") to "STALE").forEach { (requested, reason) ->
+        listOf(context, EvaluationContext("new-user")).forEach { requested ->
             repository.setRequestedContext(requested)
             val callback = mock<EvaluationContextCallback>()
 
             manager.updateEvaluationsForContext(requested, callback)
 
             verify(callback).onFailure(any())
-            assertThat(repository.getFlagsSnapshot()["flag"]?.reason).isEqualTo(reason)
+            assertThat(repository.getFlagsSnapshot()?.flags?.get("flag")).isSameAs(flag)
+            assertThat(repository.getFlagsSnapshot()?.restoredFromDisk).isTrue()
+            assertThat(repository.getFlagsSnapshot()?.requestedContext).isEqualTo(requested)
             assertThat(repository.getEvaluationContext()).isEqualTo(context)
         }
     }
