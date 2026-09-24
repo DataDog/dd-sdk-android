@@ -20,6 +20,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
+import org.junit.jupiter.api.Assertions.assertTimeoutPreemptively
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -35,8 +36,10 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.time.Duration
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -122,6 +125,96 @@ internal class DefaultFlagsRepositoryTest {
                 reason = "TARGETING_MATCH"
             )
         )
+    }
+
+    @Test
+    fun `M release wait and notify once W disk installs valid empty configuration`() {
+        lateinit var callback: DataStoreReadCallback<FlagsStateEntry>
+        doAnswer {
+            callback = it.getArgument(2)
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
+        val repository = DefaultFlagsRepository(
+            mockFeatureSdkCore,
+            "loading",
+            mockDataStore,
+            persistenceLoadTimeoutMs = TimeUnit.SECONDS.toMillis(10)
+        )
+        var notifications = 0
+        val listener: () -> Unit = {
+            assertThat(repository.getFlagsSnapshot()?.flags).isEmpty()
+            assertThat(repository.getEvaluationContext()).isEqualTo(testContext)
+            notifications++
+        }
+        repository.addConfigurationChangeListener(listener)
+        repository.addConfigurationChangeListener(listener)
+
+        assertTimeoutPreemptively(Duration.ofSeconds(1)) {
+            callback.onSuccess(DataStoreContent(0, FlagsStateEntry(testContext, emptyMap(), 1L)))
+        }
+
+        assertThat(notifications).isEqualTo(1)
+    }
+
+    @Test
+    fun `M not notify W getter wait expires before actual disk installation`() {
+        val callback = preparePersistenceLoad()
+        val listener = mock<() -> Unit>()
+        testedRepository.addConfigurationChangeListener(listener)
+
+        assertThat(testedRepository.getFlagsSnapshot()).isNull()
+        verifyNoInteractions(listener)
+        callback.onSuccess(DataStoreContent(0, FlagsStateEntry(testContext, singleFlagMap, 1L)))
+
+        verify(listener).invoke()
+    }
+
+    @Test
+    fun `M not notify W disk read has no usable snapshot`() {
+        val callback = preparePersistenceLoad()
+        val listener = mock<() -> Unit>()
+        testedRepository.addConfigurationChangeListener(listener)
+        callback.onSuccess(DataStoreContent(0, null))
+        verifyNoInteractions(listener)
+    }
+
+    @Test
+    fun `M not notify W disk read fails`() {
+        val callback = preparePersistenceLoad()
+        val listener = mock<() -> Unit>()
+        testedRepository.addConfigurationChangeListener(listener)
+        callback.onFailure()
+        verifyNoInteractions(listener)
+    }
+
+    @Test
+    fun `M not notify W network already installed assignments`() {
+        val callback = preparePersistenceLoad()
+        val listener = mock<() -> Unit>()
+        testedRepository.addConfigurationChangeListener(listener)
+        testedRepository.setFlagsAndContext(testContext, multipleFlagsMap)
+        callback.onSuccess(DataStoreContent(0, FlagsStateEntry(testContext, singleFlagMap, 1L)))
+        verifyNoInteractions(listener)
+        assertThat(testedRepository.getFlagsSnapshot()?.flags).isEqualTo(multipleFlagsMap)
+    }
+
+    @Test
+    fun `M not replay W listener added after disk installation`() {
+        val callback = preparePersistenceLoad()
+        callback.onSuccess(DataStoreContent(0, FlagsStateEntry(testContext, singleFlagMap, 1L)))
+        val listener = mock<() -> Unit>()
+        testedRepository.addConfigurationChangeListener(listener)
+        verifyNoInteractions(listener)
+    }
+
+    @Test
+    fun `M not notify W listener removed before disk installation`() {
+        val callback = preparePersistenceLoad()
+        val listener = mock<() -> Unit>()
+        testedRepository.addConfigurationChangeListener(listener)
+        testedRepository.removeConfigurationChangeListener(listener)
+        callback.onSuccess(DataStoreContent(0, FlagsStateEntry(testContext, singleFlagMap, 1L)))
+        verifyNoInteractions(listener)
     }
 
     @Test

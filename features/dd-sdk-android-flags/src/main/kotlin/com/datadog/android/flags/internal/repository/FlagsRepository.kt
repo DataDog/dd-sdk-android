@@ -14,6 +14,8 @@ import com.datadog.tools.annotation.NoOpImplementation
 @NoOpImplementation
 internal interface FlagsRepository {
     fun setRequestedContext(context: EvaluationContext)
+    fun addConfigurationChangeListener(listener: () -> Unit)
+    fun removeConfigurationChangeListener(listener: () -> Unit)
     fun getPrecomputedFlag(key: String): PrecomputedFlag?
     fun getEvaluationContext(): EvaluationContext?
     fun setFlagsAndContext(context: EvaluationContext, flags: Map<String, PrecomputedFlag>)

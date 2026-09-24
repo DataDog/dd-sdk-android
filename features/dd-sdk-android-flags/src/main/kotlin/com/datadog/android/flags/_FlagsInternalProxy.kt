@@ -24,6 +24,19 @@ import com.datadog.android.lint.InternalApi
 @InternalApi
 @Suppress("ClassName", "UndocumentedPublicFunction")
 class _FlagsInternalProxy(private val client: FlagsClient) {
+    /** Observes successful disk installation only; completion is not replayed to late listeners. */
+    fun addConfigurationChangeListener(listener: () -> Unit) {
+        if (client is DatadogFlagsClient) {
+            client.addConfigurationChangeListener(listener)
+        }
+    }
+
+    fun removeConfigurationChangeListener(listener: () -> Unit) {
+        if (client is DatadogFlagsClient) {
+            client.removeConfigurationChangeListener(listener)
+        }
+    }
+
     fun getFlagAssignmentsSnapshot(): Map<String, UnparsedFlag> = if (client is DatadogFlagsClient) {
         client.getFlagAssignmentsSnapshot()
     } else {

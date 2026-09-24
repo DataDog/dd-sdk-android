@@ -81,7 +81,9 @@ public abstract interface class com/datadog/android/flags/StateObservable {
 
 public final class com/datadog/android/flags/_FlagsInternalProxy {
 	public fun <init> (Lcom/datadog/android/flags/FlagsClient;)V
+	public final fun addConfigurationChangeListener (Lkotlin/jvm/functions/Function0;)V
 	public final fun getFlagAssignmentsSnapshot ()Ljava/util/Map;
+	public final fun removeConfigurationChangeListener (Lkotlin/jvm/functions/Function0;)V
 	public final fun trackFlagSnapshotEvaluation (Ljava/lang/String;Lcom/datadog/android/flags/model/UnparsedFlag;Lcom/datadog/android/flags/model/EvaluationContext;)V
 }
 

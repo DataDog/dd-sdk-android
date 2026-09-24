@@ -56,6 +56,14 @@ internal class DatadogFlagsClient(
 
     override val state: StateObservable = flagStateManager
 
+    internal fun addConfigurationChangeListener(listener: () -> Unit) {
+        flagsRepository.addConfigurationChangeListener(listener)
+    }
+
+    internal fun removeConfigurationChangeListener(listener: () -> Unit) {
+        flagsRepository.removeConfigurationChangeListener(listener)
+    }
+
     // region FlagsClient
 
     /**

@@ -14,6 +14,7 @@ import com.datadog.android.flags.internal.model.FlagsSnapshot
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.persistence.FlagsPersistenceManager
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.internal.utils.DDCoreSubscription
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -42,21 +43,36 @@ internal class DefaultFlagsRepository(
     @Suppress("UnsafeThirdPartyFunctionCall") // Safe: count is positive constant (1)
     private val persistenceLoadedLatch = CountDownLatch(1)
 
+    private val configurationChanges = DDCoreSubscription.create<() -> Unit>()
+
     private val persistenceManager = FlagsPersistenceManager(
         dataStore = dataStore,
         instanceName = instanceName,
         internalLogger = internalLogger
     ) { persistedState ->
+        var installed = false
         try {
             persistedState?.let {
                 val loadedState = FlagsState(it.evaluationContext, it.flags, restoredFromDisk = true)
-                updateState { state ->
+                val updatedState = updateState { state ->
                     if (state.assignments == null) state.copy(assignments = loadedState) else state
                 }
+                installed = updatedState.assignments === loadedState
             }
         } finally {
             persistenceLoadedLatch.countDown()
         }
+        if (installed) {
+            configurationChanges.notifyListeners { invoke() }
+        }
+    }
+
+    override fun addConfigurationChangeListener(listener: () -> Unit) {
+        configurationChanges.addListener(listener)
+    }
+
+    override fun removeConfigurationChangeListener(listener: () -> Unit) {
+        configurationChanges.removeListener(listener)
     }
 
     override fun setRequestedContext(context: EvaluationContext) {
@@ -137,11 +153,12 @@ internal class DefaultFlagsRepository(
 
     // AtomicReference.updateAndGet requires API 24; this SDK also supports API 23.
     @Suppress("UnsafeThirdPartyFunctionCall") // Safe: compareAndSet accepts both immutable state references.
-    private fun updateState(transform: (RepositoryState) -> RepositoryState) {
-        do {
+    private fun updateState(transform: (RepositoryState) -> RepositoryState): RepositoryState {
+        while (true) {
             val previous = atomicState.get()
             val updated = transform(previous)
-        } while (!atomicState.compareAndSet(previous, updated))
+            if (atomicState.compareAndSet(previous, updated)) return updated
+        }
     }
 
     private fun waitForPersistenceLoad() {

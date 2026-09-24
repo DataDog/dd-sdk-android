@@ -148,6 +148,17 @@ This allows you to correlate feature flag usage with application performance, er
 
 If RUM is not enabled, the OpenFeature provider will continue to work normally, but flag evaluations will not appear in RUM views.
 
+## Persisted configuration changes
+
+The existing provider event flow emits `ProviderConfigurationChanged` when a disk read installs
+persisted assignments before any network response has installed configuration. This notification
+is not replayed to late collectors. Missing, unreadable, or superseded disk snapshots do not emit
+an event; a valid persisted snapshot with no flags still counts as installed configuration.
+
+The event does not change the native `FlagsClient` state or signal that a network fetch completed.
+The pinned OpenFeature Kotlin SDK 0.6.2 maps configuration-change events to its own `Ready` status;
+applications should not interpret that status as a guarantee of fresh network assignments.
+
 ## Best practices
 
 - **Consistent targeting keys**: Use consistent targeting keys (user ID) to ensure users see consistent feature flag values across sessions.

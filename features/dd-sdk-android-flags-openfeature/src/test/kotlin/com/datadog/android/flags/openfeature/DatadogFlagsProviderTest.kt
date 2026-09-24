@@ -16,6 +16,7 @@ import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.StateObservable
+import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
@@ -45,6 +46,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.Mockito.lenient
+import org.mockito.Mockito.mockConstruction
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -446,6 +448,28 @@ internal class DatadogFlagsProviderTest {
     }
 
     // endregion
+
+    @Test
+    fun `M emit only configuration event and clean up W disk installs assignments`() = runTest {
+        mockConstruction(_FlagsInternalProxy::class.java).use { proxies ->
+            val events = mutableListOf<OpenFeatureProviderEvents>()
+            val job = launch { provider.observe().collect { events.add(it) } }
+            testScheduler.runCurrent()
+            assertThat(proxies.constructed()).hasSize(1)
+            val proxy = proxies.constructed().single()
+            val callback = argumentCaptor<() -> Unit>()
+            verify(proxy).addConfigurationChangeListener(callback.capture())
+
+            callback.firstValue.invoke()
+            testScheduler.runCurrent()
+
+            assertThat(events).containsExactly(OpenFeatureProviderEvents.ProviderConfigurationChanged)
+            job.cancel()
+            testScheduler.runCurrent()
+            verify(proxy).removeConfigurationChangeListener(callback.firstValue)
+            verify(mockStateObservable).removeListener(any())
+        }
+    }
 
     // region Provider Events
     // Note: These tests verify the provider correctly converts FlagsClient state changes

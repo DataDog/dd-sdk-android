@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsStateListener
+import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.openfeature.internal.adapters.convertToValue
 import com.datadog.android.flags.openfeature.internal.adapters.toDatadogEvaluationContext
@@ -189,12 +190,15 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
     }
 
     /**
-     * Returns a Flow that emits provider state change events.
+     * Returns a Flow that emits provider state and configuration change events.
      *
      * Per the OpenFeature spec, providers emit only certain events - others are handled
      * by the SDK automatically:
      *
      * **Provider emits** (via this Flow):
+     * - Successful installation of persisted assignments → [OpenFeatureProviderEvents.ProviderConfigurationChanged]
+     *   without changing the native client's state. The event is not replayed to late collectors.
+     *   Empty or failed reads and reads superseded by a network result emit no event.
      * - [FlagsClientState.Ready] → [OpenFeatureProviderEvents.ProviderReady]
      * - [FlagsClientState.Stale] → [OpenFeatureProviderEvents.ProviderStale]
      * - [FlagsClientState.Error] → [OpenFeatureProviderEvents.ProviderError]
@@ -235,10 +239,16 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
             }
         }
 
+        val internalProxy = _FlagsInternalProxy(flagsClient)
+        val configurationListener: () -> Unit = {
+            trySend(OpenFeatureProviderEvents.ProviderConfigurationChanged)
+        }
+        internalProxy.addConfigurationChangeListener(configurationListener)
         flagsClient.state.addListener(listener)
         // Safe: awaitClose runs cleanup then allows CancellationException to propagate naturally
         @Suppress("UnsafeThirdPartyFunctionCall")
         awaitClose {
+            internalProxy.removeConfigurationChangeListener(configurationListener)
             flagsClient.state.removeListener(listener)
         }
     }
