@@ -11,7 +11,7 @@ import android.app.Application
 import android.os.Bundle
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManagerImpl.Companion.MAX_TTID_DURATION_NS
+import com.datadog.android.rum.internal.startup.RumAppStartupDetectorImpl.Companion.MAX_TTID_DURATION_NS
 import com.datadog.android.rum.startup.AppStartupActivityPredicate
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.TestConfigurationExtension

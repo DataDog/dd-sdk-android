@@ -29,6 +29,7 @@ class com.datadog.android.rum.internal.startup.RumAppStartupDetectorImpl : RumAp
   override fun onActivityStopped(android.app.Activity)
   override fun destroy()
   companion object 
+    val MAX_TTID_DURATION_NS: Long
 interface com.datadog.android.rum.internal.startup.RumFirstDrawTimeReporter
   interface Handle
     fun unsubscribe()

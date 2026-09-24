@@ -53,6 +53,7 @@ public final class com/datadog/android/rum/internal/startup/RumAppStartupDetecto
 }
 
 public final class com/datadog/android/rum/internal/startup/RumAppStartupDetectorImpl$Companion {
+	public final fun getMAX_TTID_DURATION_NS ()J
 }
 
 public abstract interface class com/datadog/android/rum/internal/startup/RumFirstDrawTimeReporter {
