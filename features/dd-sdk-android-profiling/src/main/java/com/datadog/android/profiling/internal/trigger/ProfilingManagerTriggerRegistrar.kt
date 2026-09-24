@@ -21,6 +21,7 @@ import com.datadog.android.profiling.internal.perfetto.ProfileType
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
 import com.datadog.android.profiling.internal.utils.ThreadDumper
+import com.datadog.android.profiling.internal.utils.bootNtpOffsetNs
 import com.datadog.android.profiling.internal.utils.fileDeleteSafe
 import com.datadog.android.profiling.internal.utils.fileSizeSafe
 import com.datadog.android.profiling.internal.utils.getFileCreationTimeMs
@@ -233,7 +234,8 @@ internal class ProfilingManagerTriggerRegistrar(
                         startReason = ProfilingStartReason.ANR,
                         end = detectedAtMs,
                         resultFilePath = resultPath,
-                        profileTypes = listOf(ProfileType.SYSTEM_TRACE)
+                        profileTypes = listOf(ProfileType.SYSTEM_TRACE),
+                        bootNtpOffsetNs = timeProvider.bootNtpOffsetNs()
                     )
                 )
 
@@ -244,7 +246,8 @@ internal class ProfilingManagerTriggerRegistrar(
                         startReason = ProfilingStartReason.OUT_OF_MEMORY,
                         end = detectedAtMs,
                         resultFilePath = resultPath,
-                        profileTypes = listOf(ProfileType.HEAP_HISTOGRAM)
+                        profileTypes = listOf(ProfileType.HEAP_HISTOGRAM),
+                        bootNtpOffsetNs = timeProvider.bootNtpOffsetNs()
                     )
                 )
 
@@ -257,7 +260,8 @@ internal class ProfilingManagerTriggerRegistrar(
                         // end is same as start in point-in-time profile
                         end = detectedAtMs,
                         resultFilePath = resultPath,
-                        profileTypes = listOf(ProfileType.HEAP_HISTOGRAM)
+                        profileTypes = listOf(ProfileType.HEAP_HISTOGRAM),
+                        bootNtpOffsetNs = timeProvider.bootNtpOffsetNs()
                     )
                 )
         }

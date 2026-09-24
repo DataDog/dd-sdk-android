@@ -18,16 +18,19 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingAnomalyDetectedEvent
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
+import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.rum.RumSessionConstants
 import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.ProfilingConfiguration
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
+import com.datadog.android.profiling.internal.perfetto.ProfileType
 import com.datadog.android.profiling.internal.quota.NoOpQuotaChecker
 import com.datadog.android.profiling.internal.quota.ProfilingQuotaChecker
 import com.datadog.android.profiling.internal.quota.QuotaChecker
@@ -178,6 +181,8 @@ internal class ProfilingFeature(
                 appContext.registerActivityLifecycleCallbacks(this)
             }
         }
+
+        dispatchPendingOomProfileUpload()
     }
 
     override fun onStop() {
@@ -238,6 +243,18 @@ internal class ProfilingFeature(
                 pendingTriggerProfiles.setRumGatingEvent(event)
             }
 
+            is ProfilerEvent.RumOomErrorEvent -> {
+                // No trigger result can arrive to match this event while the OOM trigger is
+                // inactive: persisting it would leave it stranded until it expires.
+                if (profiler.isOomTriggerActive) {
+                    pendingTriggerProfiles.setRumGatingEvent(event)
+                }
+            }
+
+            is ProfilerEvent.RumAnomalyErrorEvent -> {
+                pendingTriggerProfiles.setRumGatingEvent(event)
+            }
+
             else -> sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
@@ -284,6 +301,7 @@ internal class ProfilingFeature(
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.sendEvent(
             ProfilingAnomalyDetectedEvent(result.start)
         )
+        pendingTriggerProfiles.setProfilingResult(result)
     }
 
     private fun onTtidEvent() {
@@ -460,20 +478,85 @@ internal class ProfilingFeature(
         executor: ScheduledExecutorService
     ): PendingTriggerProfiles {
         return PendingTriggerProfileStorage(
+            appContext = appContext,
             executor = executor,
             timeProvider = sdkCore.timeProvider,
             internalLogger = sdkCore.internalLogger,
-            onMatch = { perfettoResult, profilerEvent ->
-                when (profilerEvent) {
-                    is ProfilerEvent.RumAnrEvent -> onTriggerProfileMatched(
-                        TriggerProfile(perfettoResult, profilerEvent)
-                    )
+            callback = object : PendingTriggerProfileStorage.Callback {
+                override fun onMatch(result: PerfettoResult, event: ProfilerEvent) {
+                    when (event) {
+                        is ProfilerEvent.RumAnrEvent -> onTriggerProfileMatched(
+                            TriggerProfile(result, event.id, event.rumContext)
+                        )
 
-                    else -> {
-                        // Not a currently supported trigger-match type: nothing to write.
+                        is ProfilerEvent.RumAnomalyErrorEvent -> onTriggerProfileMatched(
+                            TriggerProfile(result, event.id, event.rumContext)
+                        )
+
+                        else -> {
+                            // OOM matches are persisted by PendingTriggerProfileStorage and uploaded on the next launch.
+                        }
                     }
                 }
+
+                override fun onDeferredOomProfileReady() {
+                    // Matched right away instead of waiting for yet another launch to upload it.
+                    dispatchPendingOomProfileUpload()
+                }
+
+                override fun isSessionQuotaDenied(sessionId: String): Boolean {
+                    return this@ProfilingFeature.isSessionQuotaDenied(sessionId)
+                }
             }
+        )
+    }
+
+    private fun isSessionQuotaDenied(sessionId: String): Boolean {
+        return synchronized(quotaSessionLock) {
+            sessionId == lastSeenRumSessionId && lastQuotaResult?.decision == QuotaResult.Decision.DENIED
+        }
+    }
+
+    private fun dispatchPendingOomProfileUpload() {
+        profiler.scheduledExecutorService.executeSafe(
+            OPERATION_UPLOAD_PENDING_OOM_PROFILE,
+            sdkCore.internalLogger
+        ) {
+            uploadPendingOomProfile()
+        }
+    }
+
+    /**
+     * Uploads the OOM profile left behind by a previous process, if there is one. The trace file
+     * is still where the platform profiler wrote it; only the few values needed to describe it
+     * were persisted, because the process that captured it had no memory to spare.
+     */
+    private fun uploadPendingOomProfile() {
+        val pending = ProfilingStorage.getPendingOomProfile(appContext) ?: return
+        // Clear before uploading: if the upload itself fails, this costs one profile rather than
+        // retrying the same pending profile on every subsequent launch.
+        ProfilingStorage.removePendingOomProfile(appContext)
+        val ageMs = sdkCore.timeProvider.getDeviceTimestampMillis() - pending.startMs
+        val perfettoResult = PerfettoResult(
+            start = pending.startMs,
+            startReason = ProfilingStartReason.OUT_OF_MEMORY,
+            end = pending.endMs,
+            resultFilePath = pending.resultFilePath,
+            profileTypes = listOf(ProfileType.HEAP_HISTOGRAM),
+            bootNtpOffsetNs = pending.bootNtpOffsetNs
+        )
+        if (ageMs >= PendingTriggerProfileStorage.PENDING_OOM_PROFILE_MAX_AGE_MS) {
+            logToUser(LOG_PENDING_OOM_PROFILE_EXPIRED)
+            fileDeleteSafe(perfettoResult.resultFilePath, sdkCore.internalLogger)
+            return
+        }
+        // The quota of the session that hit the OOM was checked before persisting this profile: the
+        // decision of the session running now doesn't apply to it. When that decision was not known
+        // yet, the profile is written, as when the quota check fails.
+        dataWriter.writeTriggerProfile(
+            perfettoResult = perfettoResult,
+            rumErrorId = pending.rumErrorId,
+            rumContext = pending.rumContext
         )
     }
 
@@ -504,7 +587,7 @@ internal class ProfilingFeature(
     }
 
     private fun onTriggerProfileMatched(triggerProfile: TriggerProfile) {
-        val sessionId = triggerProfile.event.rumContext.sessionId
+        val sessionId = triggerProfile.rumContext.sessionId
         // Read under the lock so the session and its quota decision belong together and a session
         // renewal can't slip in before the profile is queued: the queue only ever holds profiles of
         // the current session.
@@ -556,8 +639,8 @@ internal class ProfilingFeature(
         }
     }
 
-    private fun writeOrDropTriggerProfile(triggerProfile: TriggerProfile, quotaResult: QuotaResult) {
-        if (quotaResult.decision == QuotaResult.Decision.DENIED) {
+    private fun writeOrDropTriggerProfile(triggerProfile: TriggerProfile, quotaResult: QuotaResult?) {
+        if (quotaResult?.decision == QuotaResult.Decision.DENIED) {
             dropTriggerProfile(
                 triggerProfile,
                 LOG_TRIGGER_PROFILING_DROPPED_QUOTA_DENIED.format(Locale.US, quotaResult.reason.rawValue)
@@ -565,8 +648,8 @@ internal class ProfilingFeature(
         } else {
             dataWriter.writeTriggerProfile(
                 perfettoResult = triggerProfile.result,
-                rumErrorId = triggerProfile.event.id,
-                rumContext = triggerProfile.event.rumContext
+                rumErrorId = triggerProfile.rumErrorId,
+                rumContext = triggerProfile.rumContext
             )
         }
     }
@@ -582,7 +665,8 @@ internal class ProfilingFeature(
 
     private data class TriggerProfile(
         val result: PerfettoResult,
-        val event: ProfilerEvent.RumAnrEvent
+        val rumErrorId: String,
+        val rumContext: ProfilingRumContext
     )
 
     companion object {
@@ -605,8 +689,11 @@ internal class ProfilingFeature(
         internal const val LOG_LAUNCH_PROFILING_DROPPED_SESSION_ENDED =
             "Launch profiling dropped: RUM session ended before quota decision."
         internal const val LOG_TRIGGER_PROFILING_DROPPED_QUOTA_DENIED =
-            "ANR trigger profile dropped: quota denied (reason=%s)."
+            "Trigger profile dropped: quota denied (reason=%s)."
         internal const val LOG_TRIGGER_PROFILING_DROPPED_SESSION_ENDED =
-            "ANR trigger profile dropped: RUM session ended before quota decision."
+            "Trigger profile dropped: RUM session ended before quota decision."
+        internal const val LOG_PENDING_OOM_PROFILE_EXPIRED =
+            "Out of memory profile from a previous run dropped: too old to upload."
+        private const val OPERATION_UPLOAD_PENDING_OOM_PROFILE = "upload_pending_oom_profile"
     }
 }

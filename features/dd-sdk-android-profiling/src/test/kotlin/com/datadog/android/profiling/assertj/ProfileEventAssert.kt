@@ -87,12 +87,13 @@ internal class ProfileEventAssert(actual: ProfileEvent) :
     }
 
     fun hasTags(expected: List<String>): ProfileEventAssert {
-        assertThat(actual.tagsProfiler.split(","))
+        val expectedTags = expected.joinToString(",")
+        assertThat(actual.tagsProfiler)
             .overridingErrorMessage(
-                "Expected event data to have tags_profiler $expected " +
+                "Expected event data to have tags_profiler $expectedTags " +
                     "but was ${actual.tagsProfiler}"
             )
-            .isEqualTo(expected)
+            .isEqualTo(expectedTags)
         return this
     }
 

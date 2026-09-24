@@ -215,6 +215,17 @@ internal class SharedPreferencesStorageTest {
     }
 
     @Test
+    fun `M remove data before returning W remove {sync = true}`(@StringForgery fakeKey: String) {
+        // When
+        testedStorage.remove(fakeKey, sync = true)
+
+        // Then
+        verify(mockEditor).remove(fakeKey)
+        verify(mockEditor).commit()
+        verify(mockEditor, never()).apply()
+    }
+
+    @Test
     fun `M clear all data W clear`() {
         // When
         testedStorage.clear()

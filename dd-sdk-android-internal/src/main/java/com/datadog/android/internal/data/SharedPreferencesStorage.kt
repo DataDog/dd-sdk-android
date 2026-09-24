@@ -109,11 +109,17 @@ class SharedPreferencesStorage(appContext: Context) : PreferencesStorage {
         } ?: defaultValue
     }
 
-    override fun remove(key: String) {
+    override fun remove(key: String, sync: Boolean) {
         runSafe {
             // Called in safe
             @Suppress("UnsafeThirdPartyFunctionCall")
-            prefs.edit().remove(key).apply()
+            val editor = prefs.edit().remove(key)
+            if (sync) {
+                @Suppress("ApplySharedPref")
+                editor.commit()
+            } else {
+                editor.apply()
+            }
         }
     }
 

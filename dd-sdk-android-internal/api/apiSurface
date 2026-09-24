@@ -57,7 +57,7 @@ interface com.datadog.android.internal.data.PreferencesStorage
   fun putStringSet(String, Set<String>)
   fun putBoolean(String, Boolean)
   fun getBoolean(String, Boolean = false): Boolean
-  fun remove(String)
+  fun remove(String, Boolean = false)
   fun clear()
 class com.datadog.android.internal.data.SharedPreferencesStorage : PreferencesStorage
   constructor(android.content.Context)
@@ -71,7 +71,7 @@ class com.datadog.android.internal.data.SharedPreferencesStorage : PreferencesSt
   override fun putStringSet(String, Set<String>)
   override fun putBoolean(String, Boolean)
   override fun getBoolean(String, Boolean): Boolean
-  override fun remove(String)
+  override fun remove(String, Boolean)
   override fun clear()
 data class com.datadog.android.internal.flags.RumFlagEvaluationMessage
   constructor(String, Any)

@@ -20,8 +20,8 @@ import com.google.gson.JsonParser
  * @param resultFilePath path of the trace file produced by the platform profiler.
  * @param startMs start of the capture, in milliseconds since epoch.
  * @param endMs end of the capture, in milliseconds since epoch.
- * @param bootNtpNs offset between NTP-corrected time and boot time, in nanoseconds, as measured
- * at capture time. It is persisted rather than recomputed because a reboot between the OOM and
+ * @param bootNtpOffsetNs offset between NTP-corrected time and boot time, in nanoseconds, as
+ * measured at capture time. It is persisted rather than recomputed because a reboot between the OOM and
  * the replay would make a freshly computed offset meaningless for these trace timestamps.
  * @param rumErrorId id of the RUM error event describing the OOM.
  * @param rumContext RUM context at the time of the OOM.
@@ -30,7 +30,7 @@ internal data class PendingOomProfile(
     val resultFilePath: String,
     val startMs: Long,
     val endMs: Long,
-    val bootNtpNs: Long,
+    val bootNtpOffsetNs: Long,
     val rumErrorId: String,
     val rumContext: ProfilingRumContext
 ) {
@@ -40,7 +40,7 @@ internal data class PendingOomProfile(
         json.addProperty(KEY_PATH, resultFilePath)
         json.addProperty(KEY_START, startMs)
         json.addProperty(KEY_END, endMs)
-        json.addProperty(KEY_BOOT_NTP, bootNtpNs)
+        json.addProperty(KEY_BOOT_NTP, bootNtpOffsetNs)
         json.addProperty(KEY_ERROR_ID, rumErrorId)
         json.addProperty(KEY_APPLICATION_ID, rumContext.applicationId)
         json.addProperty(KEY_SESSION_ID, rumContext.sessionId)
@@ -63,7 +63,7 @@ internal data class PendingOomProfile(
 
         /**
          * Rebuilds a [PendingOomProfile] from [serialized], or returns `null` if it is not a
-         * marker this version can use. The marker may have been written by a different version
+         * pending profile this version can use. It may have been written by a different version
          * of the SDK, or left half-written by the process death it exists to survive, so nothing
          * about its shape is assumed.
          */
@@ -75,7 +75,7 @@ internal data class PendingOomProfile(
                     resultFilePath = json.string(KEY_PATH) ?: return null,
                     startMs = json.long(KEY_START) ?: return null,
                     endMs = json.long(KEY_END) ?: return null,
-                    bootNtpNs = json.long(KEY_BOOT_NTP) ?: return null,
+                    bootNtpOffsetNs = json.long(KEY_BOOT_NTP) ?: return null,
                     rumErrorId = json.string(KEY_ERROR_ID) ?: return null,
                     rumContext = ProfilingRumContext(
                         applicationId = json.string(KEY_APPLICATION_ID) ?: return null,

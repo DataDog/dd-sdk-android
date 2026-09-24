@@ -20,6 +20,7 @@ import com.datadog.android.profiling.internal.domain.ProfilingBatchMetadata
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.perfetto.ProfileType
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
+import com.datadog.android.profiling.internal.utils.bootNtpOffsetNs
 import com.datadog.android.profiling.internal.utils.fileDeleteSafe
 import com.datadog.android.profiling.model.ProfileEvent
 import com.datadog.android.profiling.model.RumMetadataEvent
@@ -106,7 +107,7 @@ internal class ProfilingDataWriter(
                             name = listOfNotNull(rumContext.viewName)
                         ),
                         error = ProfileEvent.Error(id = listOfNotNull(rumErrorId.ifEmpty { null })),
-                        dd = ProfileEvent.Dd(bootNtp = computeBootNtpOffset())
+                        dd = ProfileEvent.Dd(bootNtp = perfettoResult.bootNtpOffsetNs)
                     )
                     val serialized = profileEvent.toJson().toString().toByteArray(Charsets.UTF_8)
                     val rumMobileEventsJson = buildTriggerRumMobileEventsJson(rumErrorId, detectedAtMs)
@@ -279,7 +280,7 @@ internal class ProfilingDataWriter(
             event.rumContext.viewId?.let { viewIds.add(it) }
             event.rumContext.viewName?.let { viewNames.add(it) }
         }
-        val bootNtp = computeBootNtpOffset()
+        val bootNtp = sdkCore.timeProvider.bootNtpOffsetNs()
         return ProfileEvent(
             start = formatIsoUtc(profilingResult.start),
             end = formatIsoUtc(profilingResult.end),
@@ -302,17 +303,6 @@ internal class ProfilingDataWriter(
             ),
             dd = ProfileEvent.Dd(bootNtp = bootNtp)
         )
-    }
-
-    /**
-     * Computes the offset between the device boot time and the NTP-corrected (server) time,
-     * in nanoseconds (NTP time - boot time).
-     */
-    private fun computeBootNtpOffset(): Long {
-        val serverTimeNs =
-            TimeUnit.MILLISECONDS.toNanos(sdkCore.timeProvider.getServerTimestampMillis())
-        val bootTimeNs = sdkCore.timeProvider.getDeviceElapsedRealtimeNanos()
-        return serverTimeNs - bootTimeNs
     }
 
     private fun buildRumMobileEventsJson(

@@ -34,7 +34,7 @@ internal class PendingOomProfileTest {
         @StringForgery fakePath: String,
         @LongForgery fakeStartMs: Long,
         @LongForgery fakeEndMs: Long,
-        @LongForgery fakeBootNtpNs: Long,
+        @LongForgery fakeBootNtpOffsetNs: Long,
         @StringForgery fakeErrorId: String,
         @Forgery fakeRumContext: ProfilingRumContext
     ) {
@@ -43,7 +43,7 @@ internal class PendingOomProfileTest {
             resultFilePath = fakePath,
             startMs = fakeStartMs,
             endMs = fakeEndMs,
-            bootNtpNs = fakeBootNtpNs,
+            bootNtpOffsetNs = fakeBootNtpOffsetNs,
             rumErrorId = fakeErrorId,
             rumContext = fakeRumContext
         )
@@ -56,21 +56,31 @@ internal class PendingOomProfileTest {
     }
 
     @Test
-    fun `M read the documented wire format W fromJson()`() {
+    fun `M read the documented wire format W fromJson()`(
+        @StringForgery fakePath: String,
+        @LongForgery fakeStartMs: Long,
+        @LongForgery fakeEndMs: Long,
+        @LongForgery fakeBootNtpOffsetNs: Long,
+        @StringForgery fakeErrorId: String,
+        @StringForgery fakeApplicationId: String,
+        @StringForgery fakeSessionId: String,
+        @StringForgery fakeViewId: String,
+        @StringForgery fakeViewName: String
+    ) {
         // Given
-        // The marker is written by the app version that crashed and read by the one that starts
+        // The pending profile is written by the app version that crashed and read by the one that starts
         // next, so these key names are a compatibility contract across an app upgrade.
         val serialized = """
             {
-              "path": "/data/user/0/com.example/files/profiling/oom.perfetto",
-              "start": 1700000000000,
-              "end": 1700000000500,
-              "boot_ntp": 1234567890,
-              "error_id": "err-1",
-              "application_id": "app-1",
-              "session_id": "sess-1",
-              "view_id": "view-1",
-              "view_name": "MainActivity"
+              "path": "$fakePath",
+              "start": $fakeStartMs,
+              "end": $fakeEndMs,
+              "boot_ntp": $fakeBootNtpOffsetNs,
+              "error_id": "$fakeErrorId",
+              "application_id": "$fakeApplicationId",
+              "session_id": "$fakeSessionId",
+              "view_id": "$fakeViewId",
+              "view_name": "$fakeViewName"
             }
         """.trimIndent()
 
@@ -80,16 +90,16 @@ internal class PendingOomProfileTest {
         // Then
         assertThat(restored).isEqualTo(
             PendingOomProfile(
-                resultFilePath = "/data/user/0/com.example/files/profiling/oom.perfetto",
-                startMs = 1_700_000_000_000L,
-                endMs = 1_700_000_000_500L,
-                bootNtpNs = 1_234_567_890L,
-                rumErrorId = "err-1",
+                resultFilePath = fakePath,
+                startMs = fakeStartMs,
+                endMs = fakeEndMs,
+                bootNtpOffsetNs = fakeBootNtpOffsetNs,
+                rumErrorId = fakeErrorId,
                 rumContext = ProfilingRumContext(
-                    applicationId = "app-1",
-                    sessionId = "sess-1",
-                    viewId = "view-1",
-                    viewName = "MainActivity"
+                    applicationId = fakeApplicationId,
+                    sessionId = fakeSessionId,
+                    viewId = fakeViewId,
+                    viewName = fakeViewName
                 )
             )
         )
@@ -100,7 +110,7 @@ internal class PendingOomProfileTest {
         @StringForgery fakePath: String,
         @LongForgery fakeStartMs: Long,
         @LongForgery fakeEndMs: Long,
-        @LongForgery fakeBootNtpNs: Long,
+        @LongForgery fakeBootNtpOffsetNs: Long,
         @StringForgery fakeErrorId: String,
         @StringForgery fakeApplicationId: String,
         @StringForgery fakeSessionId: String
@@ -110,7 +120,7 @@ internal class PendingOomProfileTest {
             resultFilePath = fakePath,
             startMs = fakeStartMs,
             endMs = fakeEndMs,
-            bootNtpNs = fakeBootNtpNs,
+            bootNtpOffsetNs = fakeBootNtpOffsetNs,
             rumErrorId = fakeErrorId,
             rumContext = ProfilingRumContext(
                 applicationId = fakeApplicationId,
@@ -140,18 +150,25 @@ internal class PendingOomProfileTest {
     }
 
     @Test
-    fun `M return null W fromJson() {mandatory field missing}`() {
+    fun `M return null W fromJson() {mandatory field missing}`(
+        @LongForgery fakeStartMs: Long,
+        @LongForgery fakeEndMs: Long,
+        @LongForgery fakeBootNtpOffsetNs: Long,
+        @StringForgery fakeErrorId: String,
+        @StringForgery fakeApplicationId: String,
+        @StringForgery fakeSessionId: String
+    ) {
         // Given
-        // A marker written by a future or corrupted version must not resurrect as a profile with
+        // A pending profile written by a future or corrupted version must not resurrect as one with
         // an empty path, which would send a profile with no trace attached.
         val serialized = """
             {
-              "start": 1700000000000,
-              "end": 1700000000500,
-              "boot_ntp": 1234567890,
-              "error_id": "err-1",
-              "application_id": "app-1",
-              "session_id": "sess-1"
+              "start": $fakeStartMs,
+              "end": $fakeEndMs,
+              "boot_ntp": $fakeBootNtpOffsetNs,
+              "error_id": "$fakeErrorId",
+              "application_id": "$fakeApplicationId",
+              "session_id": "$fakeSessionId"
             }
         """.trimIndent()
 
@@ -163,17 +180,24 @@ internal class PendingOomProfileTest {
     }
 
     @Test
-    fun `M return null W fromJson() {timestamp is not a number}`() {
+    fun `M return null W fromJson() {timestamp is not a number}`(
+        @StringForgery fakePath: String,
+        @LongForgery fakeEndMs: Long,
+        @LongForgery fakeBootNtpOffsetNs: Long,
+        @StringForgery fakeErrorId: String,
+        @StringForgery fakeApplicationId: String,
+        @StringForgery fakeSessionId: String
+    ) {
         // Given
         val serialized = """
             {
-              "path": "/tmp/oom.perfetto",
+              "path": "$fakePath",
               "start": "not-a-number",
-              "end": 1700000000500,
-              "boot_ntp": 1234567890,
-              "error_id": "err-1",
-              "application_id": "app-1",
-              "session_id": "sess-1"
+              "end": $fakeEndMs,
+              "boot_ntp": $fakeBootNtpOffsetNs,
+              "error_id": "$fakeErrorId",
+              "application_id": "$fakeApplicationId",
+              "session_id": "$fakeSessionId"
             }
         """.trimIndent()
 
