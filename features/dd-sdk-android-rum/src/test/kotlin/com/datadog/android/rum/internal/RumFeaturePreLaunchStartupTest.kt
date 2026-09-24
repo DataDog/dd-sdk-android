@@ -199,7 +199,7 @@ internal class RumFeaturePreLaunchStartupTest {
 
         installPreLaunchDetector()
         PreLaunchRumAppStartupDetector.onAppStartupDetected(earlierScenario)
-        PreLaunchRumAppStartupDetector.onTTIDComputed(earlierScenario, TTID_DURATION_NS, false, null)
+        PreLaunchRumAppStartupDetector.onTTIDComputed(earlierScenario, TTID_DURATION_NS, false)
         emitPreLaunchAppStartup()
         emitPreLaunchTTID()
         testedFeature.onInitialize(appContext.mockInstance)
@@ -246,7 +246,7 @@ internal class RumFeaturePreLaunchStartupTest {
         )
         installPreLaunchDetector()
         PreLaunchRumAppStartupDetector.onAppStartupDetected(collectedScenario)
-        PreLaunchRumAppStartupDetector.onTTIDComputed(collectedScenario, TTID_DURATION_NS, false, null)
+        PreLaunchRumAppStartupDetector.onTTIDComputed(collectedScenario, TTID_DURATION_NS, false)
         testedFeature.onInitialize(appContext.mockInstance)
 
         // When

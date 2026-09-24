@@ -139,7 +139,6 @@ import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
-import java.lang.ref.WeakReference
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
@@ -844,8 +843,7 @@ internal class RumFeature(
             override fun onTTIDComputed(
                 scenario: RumStartupScenario,
                 durationNs: Long,
-                wasForwarded: Boolean,
-                forwardedActivity: WeakReference<Activity>?
+                wasForwarded: Boolean
             ) {
                 val rumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor
                 if (rumMonitor == null) {

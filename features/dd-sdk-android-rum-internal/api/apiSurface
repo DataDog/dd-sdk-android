@@ -11,11 +11,11 @@ object com.datadog.android.rum.internal.startup.PreLaunchRumAppStartupDetector :
   fun attach(RumAppStartupDetector.Listener)
   fun detach(RumAppStartupDetector.Listener)
   override fun onAppStartupDetected(RumStartupScenario)
-  override fun onTTIDComputed(RumStartupScenario, Long, Boolean, java.lang.ref.WeakReference<android.app.Activity>?)
+  override fun onTTIDComputed(RumStartupScenario, Long, Boolean)
 interface com.datadog.android.rum.internal.startup.RumAppStartupDetector
   interface Listener
     fun onAppStartupDetected(RumStartupScenario)
-    fun onTTIDComputed(RumStartupScenario, Long, Boolean = false, java.lang.ref.WeakReference<android.app.Activity>? = null)
+    fun onTTIDComputed(RumStartupScenario, Long, Boolean)
   fun destroy()
 class com.datadog.android.rum.internal.startup.RumAppStartupDetectorImpl : RumAppStartupDetector, android.app.Application.ActivityLifecycleCallbacks
   constructor(android.app.Application, com.datadog.android.internal.system.BuildSdkVersionProvider, () -> com.datadog.android.rum.internal.domain.Time, () -> com.datadog.android.rum.internal.domain.Time, RumAppStartupDetector.Listener, (android.app.Activity) -> Boolean, RumFirstDrawTimeReporter)

@@ -16,7 +16,6 @@
 
 package com.datadog.android.rum.internal.startup
 
-import android.app.Activity
 import android.app.Application
 import android.os.Handler
 import android.os.Looper
@@ -26,7 +25,6 @@ import com.datadog.android.internal.time.DefaultAppStartTimeProvider
 import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistryImpl
-import java.lang.ref.WeakReference
 
 /**
  * Singleton that captures app launch timing before the RUM SDK is initialized.
@@ -55,8 +53,7 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
         data class TTIDComputed(
             override val scenario: RumStartupScenario,
             val durationNs: Long,
-            val wasForwarded: Boolean,
-            val forwardedActivity: WeakReference<Activity>?
+            val wasForwarded: Boolean
         ) : Event()
     }
 
@@ -180,8 +177,7 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
             is Event.TTIDComputed -> listener.onTTIDComputed(
                 event.scenario,
                 event.durationNs,
-                event.wasForwarded,
-                event.forwardedActivity
+                event.wasForwarded
             )
         }
     }
@@ -209,10 +205,9 @@ object PreLaunchRumAppStartupDetector : RumAppStartupDetector.Listener {
     override fun onTTIDComputed(
         scenario: RumStartupScenario,
         durationNs: Long,
-        wasForwarded: Boolean,
-        forwardedActivity: WeakReference<Activity>?
+        wasForwarded: Boolean
     ) {
-        dispatch(Event.TTIDComputed(scenario, durationNs, wasForwarded, forwardedActivity))
+        dispatch(Event.TTIDComputed(scenario, durationNs, wasForwarded))
     }
 
     // endregion

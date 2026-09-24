@@ -16,9 +16,6 @@
 
 package com.datadog.android.rum.internal.startup
 
-import android.app.Activity
-import java.lang.ref.WeakReference
-
 interface RumAppStartupDetector {
     interface Listener {
         /**
@@ -26,12 +23,7 @@ interface RumAppStartupDetector {
          */
         fun onAppStartupDetected(scenario: RumStartupScenario)
 
-        fun onTTIDComputed(
-            scenario: RumStartupScenario,
-            durationNs: Long,
-            wasForwarded: Boolean = false,
-            forwardedActivity: WeakReference<Activity>? = null
-        )
+        fun onTTIDComputed(scenario: RumStartupScenario, durationNs: Long, wasForwarded: Boolean)
     }
 
     fun destroy()
