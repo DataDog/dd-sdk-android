@@ -38,7 +38,7 @@ plugins {
 }
 
 android {
-    namespace = "com.datadog.android.rumprelaunch"
+    namespace = "com.datadog.android.rum.prelaunch"
 }
 
 dependencies {
