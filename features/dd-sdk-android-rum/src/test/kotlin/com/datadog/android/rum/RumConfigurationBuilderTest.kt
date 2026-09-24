@@ -10,6 +10,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.rum.assertj.ConfigurationRumAssert
+import com.datadog.android.rum.configuration.RumViewEventWriteConfig
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.event.ViewEventMapper
@@ -740,6 +741,16 @@ internal class RumConfigurationBuilderTest {
         // Then
         assertThat(rumConfiguration.featureConfiguration.insightsCollector)
             .isInstanceOf(NoOpInsightsCollector::class.java)
+    }
+
+    @Test
+    fun `M default to FullViewOnlyAtStart W build() { default configuration }`() {
+        // When
+        val rumConfiguration = testedBuilder.build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration.rumViewEventWriteConfig)
+            .isEqualTo(RumViewEventWriteConfig.FullViewOnlyAtStart)
     }
 
     @Test

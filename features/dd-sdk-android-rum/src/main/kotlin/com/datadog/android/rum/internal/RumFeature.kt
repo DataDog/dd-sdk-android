@@ -1001,7 +1001,7 @@ internal class RumFeature(
             disableJankStats = false,
             insightsCollector = NoOpInsightsCollector(),
             appStartupActivityPredicate = DefaultAppStartupActivityPredicate,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.AlwaysFullView,
+            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
             timeseriesConfiguration = null
         )
 
