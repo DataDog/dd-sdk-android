@@ -149,6 +149,41 @@ internal class DatadogCoreInitializationTest {
     }
 
     @Test
+    fun `M not initialize crash reports W initialize() { RC disables crash reports }`(
+        @StringForgery fakeRemoteConfigurationId: String,
+        @StringForgery fakeApplicationId: String
+    ) {
+        // Given
+        whenever(mockRemoteConfigService.getCurrentConfig()) doReturn RemoteConfiguration(
+            rum = RemoteConfiguration.Rum(
+                applicationId = fakeApplicationId,
+                crashReportsEnabled = false
+            )
+        )
+
+        // When
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeInstanceId,
+            fakeInstanceName,
+            executorServiceFactory = mockExecutorServiceFactory,
+            remoteConfigServiceFactory = mockRemoteConfigServiceFactory
+        ).apply {
+            initialize(
+                fakeConfiguration.copy(
+                    crashReportsEnabled = true,
+                    coreConfig = fakeConfiguration.coreConfig.copy(
+                        remoteConfigurationId = fakeRemoteConfigurationId
+                    )
+                )
+            )
+        }
+
+        // Then
+        assertThat(testedCore.getFeature(CrashReportsFeature.CRASH_FEATURE_NAME)).isNull()
+    }
+
+    @Test
     fun `M throw an error W initialize() {envName not valid, isDebug=false}`(
         @IntForgery fakeFlags: Int,
         @StringForgery(regex = "[\\$%\\*@][a-zA-Z0-9_:./-]{0,200}") invalidEnvName: String

@@ -15,7 +15,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
-import com.datadog.android._InternalProxy
 import com.datadog.android.compose.enableComposeActionTracking
 import com.datadog.android.core.configuration.BackPressureMitigation
 import com.datadog.android.core.configuration.BackPressureStrategy
@@ -449,7 +448,7 @@ class SampleApplication : Application() {
             .setUploadFrequency(UploadFrequency.FREQUENT)
             .apply {
                 if (BuildConfig.DD_REMOTE_CONFIGURATION_ID.isNotBlank()) {
-                    _InternalProxy.setRemoteConfigurationId(this, BuildConfig.DD_REMOTE_CONFIGURATION_ID)
+                    setRemoteConfigurationId(BuildConfig.DD_REMOTE_CONFIGURATION_ID)
                 }
             }
 

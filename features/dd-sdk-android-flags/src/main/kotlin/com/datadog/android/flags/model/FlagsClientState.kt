@@ -37,8 +37,8 @@ sealed class FlagsClientState {
     object Stale : FlagsClientState()
 
     /**
-     * An unrecoverable error has occurred.
-     * The client cannot provide flag evaluations in this state.
+     * An error has occurred.
+     * The client can recover when a later operation loads valid flag assignments.
      *
      * @param error The error that caused the transition to this state, or null if unknown.
      */
