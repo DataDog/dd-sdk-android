@@ -21,6 +21,7 @@ import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.widget.ActionBarContainer
 import androidx.appcompat.widget.SwitchCompat
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.ImagePrivacy
@@ -28,7 +29,8 @@ import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.SessionReplayInternalCallback
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.composition.CapturePipelineSelector
-import com.datadog.android.sessionreplay.internal.composition.CompositionCapturePipeline
+import com.datadog.android.sessionreplay.internal.composition.CompositionPipelineFactory
+import com.datadog.android.sessionreplay.internal.composition.DefaultCompositionPipelineFactory
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.datadog.android.sessionreplay.internal.recorder.SessionReplayRecorder
@@ -72,7 +74,11 @@ internal class DefaultRecorderProvider(
     private val internalCallback: SessionReplayInternalCallback,
     private val heatmapsEnabled: Boolean,
     private val compositionTreeRecordingEnabled: Boolean,
-    private val compositionPipelineFactory: () -> Recorder = { CompositionCapturePipeline() }
+    private val compositionPipelineFactory: CompositionPipelineFactory = DefaultCompositionPipelineFactory(
+        sdkCore = sdkCore,
+        internalCallback = internalCallback,
+        dynamicOptimizationEnabled = dynamicOptimizationEnabled
+    )
 ) : RecorderProvider {
 
     override fun provideSessionReplayRecorder(
@@ -83,10 +89,19 @@ internal class DefaultRecorderProvider(
         application: Application,
         embeddedContentSlotRegistry: EmbeddedContentSlotRegistry
     ): Recorder {
+        if (heatmapsEnabled && compositionTreeRecordingEnabled) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { HEATMAPS_UNSUPPORTED_WITH_COMPOSITION_RECORDING_MESSAGE }
+            )
+        }
         val heatmapIdentifierRegistry = if (heatmapsEnabled) LazyHeatmapIdentifierRegistry(sdkCore) else null
         return CapturePipelineSelector(
             compositionEnabled = compositionTreeRecordingEnabled,
-            compositionFactory = compositionPipelineFactory,
+            compositionFactory = {
+                compositionPipelineFactory.create(recordWriter, rumContextProvider, application)
+            },
             legacyFactory = {
                 SessionReplayRecorder(
                     application,
@@ -267,5 +282,11 @@ internal class DefaultRecorderProvider(
         } else {
             null
         }
+    }
+
+    internal companion object {
+        internal const val HEATMAPS_UNSUPPORTED_WITH_COMPOSITION_RECORDING_MESSAGE = "Heatmaps are not " +
+            "supported by the composition-tree recording pipeline yet. No heatmap data will be recorded " +
+            "for this session."
     }
 }

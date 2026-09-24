@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.composition
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -151,6 +152,42 @@ internal class CapturedIdentityTest {
             throwable = isNull(),
             onlyOnce = eq(false),
             additionalProperties = isNull()
+        )
+    }
+
+    @Test
+    fun `M log warning and still create identity W create identity { owner kind mismatch }`() {
+        // Given
+        val factory = factory()
+        val nonWindowOwner = factory.layer(factory.window("window"), "layer")
+
+        // When
+        val view = factory.view(nonWindowOwner, "view")
+
+        // Then
+        assertThat(view).isNotNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            "Identity owner must be a WINDOW."
+        )
+    }
+
+    @Test
+    fun `M log warning and still create identity W create identity { wireframe used as layer owner }`() {
+        // Given
+        val factory = factory()
+        val wireframeOwner = factory.shapeWireframe(factory.window("window"))
+
+        // When
+        val layer = factory.layer(wireframeOwner, "layer")
+
+        // Then
+        assertThat(layer).isNotNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            "Identity owner must be a captured layer."
         )
     }
 
