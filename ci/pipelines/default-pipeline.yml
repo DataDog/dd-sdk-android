@@ -428,6 +428,7 @@ test-pyramid:single-fit-okhttp:
 test-pyramid:single-fit-profiling:
   extends:
     - .base-cache-pull-job
+    - .except-dogfooding-branch
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
