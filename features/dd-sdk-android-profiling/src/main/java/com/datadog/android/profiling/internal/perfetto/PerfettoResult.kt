@@ -15,10 +15,15 @@ import com.datadog.android.profiling.internal.ProfilingStartReason
  * @param startReason the start reason used to start profiler.
  * @param end the end time of the profiling in milliseconds since epoch.
  * @param resultFilePath the path to the file containing the profiling result.
+ * @param bootNtpNs the offset between NTP-corrected time and the boot clock, in nanoseconds, as
+ * measured when the profile was captured, or `null` to measure it when the profile is written.
+ * Only set when replaying a profile captured by a previous process, where a reboot in between
+ * would make a freshly measured offset wrong for these trace timestamps.
  */
 internal data class PerfettoResult(
     val start: Long,
     val startReason: ProfilingStartReason,
     val end: Long,
-    val resultFilePath: String
+    val resultFilePath: String,
+    val bootNtpNs: Long? = null
 )

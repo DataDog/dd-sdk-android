@@ -23,6 +23,7 @@ import com.datadog.android.internal.data.SharedPreferencesStorage
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingAnomalyDetectedEvent
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
+import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.rum.RumSessionConstants
 import com.datadog.android.internal.sampling.SessionSamplingIdProvider
 import com.datadog.android.internal.system.BuildSdkVersionProvider
@@ -45,6 +46,8 @@ import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
 import com.datadog.android.profiling.internal.time.MutableTimeProvider
 import com.datadog.android.profiling.internal.trigger.NoOpPendingTriggerProfiles
+import com.datadog.android.profiling.internal.trigger.PendingOomGatingEvent
+import com.datadog.android.profiling.internal.trigger.PendingOomProfile
 import com.datadog.android.profiling.internal.trigger.PendingTriggerProfiles
 import com.datadog.android.profiling.internal.trigger.ProfilingTriggerRegistrar
 import com.datadog.android.profiling.utils.config.MainLooperTestConfiguration
@@ -72,11 +75,14 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -212,6 +218,7 @@ internal class ProfilingFeatureTest {
         ) doReturn mockPackageInfo
         whenever(mockSdkCore.name) doReturn fakeInstanceName
         whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mockProfilingExecutor
+        whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn mockSchedulerExecutor
         whenever(mockProfiler.timeProvider) doReturn mockMutableTimeProvider
         whenever(mockSdkCore.createOkHttpCallFactory(any())) doReturn mockCallFactory
         whenever(mockProfiler.scheduledExecutorService) doReturn mockSchedulerExecutor
@@ -1908,6 +1915,488 @@ internal class ProfilingFeatureTest {
     // dispatchRumSession defaults the session state to TRACKED, so any UUID dispatched
     // through it is treated as a sampled-in RUM session.
     private fun sampledInSessionId(): String = UUID.randomUUID().toString()
+
+    @Test
+    fun `M write heap histogram W onMemoryAnomalyDetected then RumAnomalyErrorEvent {matched pair}`() {
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+
+        val captureMs = 1_000L
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(captureMs)
+        val path = "/tmp/anomaly.proto"
+        testedFeature.onMemoryAnomalyDetected(
+            PerfettoResult(
+                start = captureMs,
+                startReason = ProfilingStartReason.MEMORY_ANOMALY,
+                end = captureMs,
+                resultFilePath = path
+            )
+        )
+
+        // anomaly event forwarded to RUM (no gating signal pending yet)
+        verify(mockRumFeatureScope).sendEvent(ProfilingAnomalyDetectedEvent(captureMs))
+
+        // RUM writes the error and sends back the gating signal
+        val gatingMs = captureMs + 200L
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(gatingMs)
+        val gating = ProfilerEvent.RumAnomalyErrorEvent(
+            id = "err-anomaly",
+            timestamp = gatingMs,
+            rumContext = ProfilingRumContext("app", "sess", "view-1", "View-1")
+        )
+        testedFeature.onReceive(gating)
+
+        verify(mockDataWriter).writeTriggerProfile(
+            argThat<PerfettoResult> {
+                start == captureMs &&
+                    end == captureMs &&
+                    startReason == ProfilingStartReason.MEMORY_ANOMALY &&
+                    resultFilePath == path
+            },
+            eq("err-anomaly"),
+            any()
+        )
+    }
+
+    @Test
+    fun `M persist marker W RumOomErrorEvent then onOutOfMemoryDetected {matched pair}`() {
+        // Given
+        // The OOM is about to kill the process, so the match is recorded for the next launch
+        // instead of being written now: the batch write would not complete, and reading the
+        // trace into memory would allocate on a heap that has just been exhausted.
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        whenever(mockTimeProvider.getServerTimestampMillis()) doReturn 5_000L
+        whenever(mockTimeProvider.getDeviceElapsedRealtimeNanos()) doReturn 700L
+
+        val signalMs = 2_000L
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(signalMs)
+        val gating = ProfilerEvent.RumOomErrorEvent(
+            id = "err-oom",
+            timestamp = signalMs,
+            rumContext = ProfilingRumContext("app", "sess", "view-1", "View-1")
+        )
+        testedFeature.onReceive(gating) // signal first
+
+        val captureMs = signalMs + 100L
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(captureMs)
+        val path = "/tmp/oom.proto"
+
+        // When
+        testedFeature.onOutOfMemoryDetected(
+            PerfettoResult(
+                start = captureMs,
+                startReason = ProfilingStartReason.OUT_OF_MEMORY,
+                end = captureMs,
+                resultFilePath = path
+            )
+        ) // capture second
+
+        // Then
+        val markerCaptor = argumentCaptor<String>()
+        verify(mockSharedPreferencesStorage).putString(
+            eq(ProfilingStorage.KEY_PENDING_OOM_PROFILE),
+            markerCaptor.capture(),
+            eq(true)
+        )
+        assertThat(PendingOomProfile.fromJson(markerCaptor.firstValue)).isEqualTo(
+            PendingOomProfile(
+                resultFilePath = path,
+                startMs = captureMs,
+                endMs = captureMs,
+                // 5_000ms expressed in nanos (5_000_000_000), minus the 700ns boot clock reading
+                bootNtpNs = 4_999_999_300L,
+                rumErrorId = "err-oom",
+                rumContext = ProfilingRumContext("app", "sess", "view-1", "View-1")
+            )
+        )
+        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any())
+    }
+
+    @Test
+    fun `M persist gating event marker synchronously W onReceive() {RumOomErrorEvent}`() {
+        // Given
+        // Persisted immediately on arrival, before knowing whether the OS trigger result will
+        // fire in this same process or only be delivered on a later launch.
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+        val gating = ProfilerEvent.RumOomErrorEvent(
+            id = "err-oom",
+            timestamp = 1_000L,
+            rumContext = ProfilingRumContext("app", "sess", "view-1", "View-1")
+        )
+
+        // When
+        testedFeature.onReceive(gating)
+
+        // Then
+        val markerCaptor = argumentCaptor<String>()
+        verify(mockSharedPreferencesStorage).putString(
+            eq(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT),
+            markerCaptor.capture(),
+            eq(true)
+        )
+        assertThat(PendingOomGatingEvent.fromJson(markerCaptor.firstValue)).isEqualTo(
+            PendingOomGatingEvent(
+                rumErrorId = "err-oom",
+                timestampMs = 1_000L,
+                rumContext = ProfilingRumContext("app", "sess", "view-1", "View-1")
+            )
+        )
+    }
+
+    @Test
+    fun `M clear gating event marker W matched pair persisted {normal in-process match}`() {
+        // Given
+        // Once the pair is matched in-process, the standalone gating marker would otherwise
+        // linger and be mistaken for an unresolved deferred trigger on a later launch.
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        whenever(mockTimeProvider.getServerTimestampMillis()) doReturn 5_000L
+        whenever(mockTimeProvider.getDeviceElapsedRealtimeNanos()) doReturn 700L
+        val gating = ProfilerEvent.RumOomErrorEvent(
+            id = "err-oom",
+            timestamp = 2_000L,
+            rumContext = ProfilingRumContext("app", "sess", "view-1", "View-1")
+        )
+        testedFeature.onReceive(gating)
+
+        // When
+        testedFeature.onOutOfMemoryDetected(
+            PerfettoResult(
+                start = 2_100L,
+                startReason = ProfilingStartReason.OUT_OF_MEMORY,
+                end = 2_100L,
+                resultFilePath = "/tmp/oom.proto"
+            )
+        )
+
+        // Then
+        verify(mockSharedPreferencesStorage).remove(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT)
+    }
+
+    @Test
+    fun `M recover deferred gating event and upload immediately W onOutOfMemoryDetected() {within max age}`() {
+        // Given — a previous launch received the RUM gating event but died before the OS
+        // delivered the trigger result; this launch is the one where it finally arrives.
+        val pendingGatingEvent = PendingOomGatingEvent(
+            rumErrorId = "err-oom",
+            timestampMs = 1_000L,
+            rumContext = ProfilingRumContext("app", "sess", "view-1", "View-1")
+        )
+        whenever(
+            mockSharedPreferencesStorage.getString(
+                eq(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT),
+                anyOrNull()
+            )
+        ) doReturn pendingGatingEvent.toJson()
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        whenever(mockTimeProvider.getServerTimestampMillis()) doReturn
+            1_000L + ProfilingFeature.PENDING_OOM_PROFILE_MAX_AGE_MS - 1L
+        whenever(mockTimeProvider.getDeviceElapsedRealtimeNanos()) doReturn 0L
+        val captureMs = 5_000L
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn captureMs
+        val path = "/tmp/deferred-oom.proto"
+
+        // When
+        testedFeature.onOutOfMemoryDetected(
+            PerfettoResult(
+                start = captureMs,
+                startReason = ProfilingStartReason.OUT_OF_MEMORY,
+                end = captureMs,
+                resultFilePath = path
+            )
+        )
+
+        // Then — matched and persisted right away rather than waiting for yet another launch
+        verify(mockSharedPreferencesStorage).remove(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT)
+        verify(mockSharedPreferencesStorage).putString(
+            eq(ProfilingStorage.KEY_PENDING_OOM_PROFILE),
+            any(),
+            eq(true)
+        )
+
+        // And — upload is triggered immediately rather than deferred to the next launch
+        val runnableCaptor = argumentCaptor<Runnable>()
+        verify(mockSchedulerExecutor, atLeastOnce()).execute(runnableCaptor.capture())
+        whenever(
+            mockSharedPreferencesStorage.getString(
+                eq(ProfilingStorage.KEY_PENDING_OOM_PROFILE),
+                anyOrNull()
+            )
+        ) doReturn PendingOomProfile(
+            resultFilePath = path,
+            startMs = captureMs,
+            endMs = captureMs,
+            bootNtpNs = 0L,
+            rumErrorId = "err-oom",
+            rumContext = ProfilingRumContext("app", "sess", "view-1", "View-1")
+        ).toJson()
+        runnableCaptor.lastValue.run()
+
+        verify(mockDataWriter).writeTriggerProfile(
+            argThat<PerfettoResult> {
+                start == captureMs &&
+                    end == captureMs &&
+                    startReason == ProfilingStartReason.OUT_OF_MEMORY &&
+                    resultFilePath == path
+            },
+            eq("err-oom"),
+            eq(ProfilingRumContext("app", "sess", "view-1", "View-1"))
+        )
+    }
+
+    @Test
+    fun `M not recover gating event W onOutOfMemoryDetected() {older than max age}`() {
+        // Given
+        val pendingGatingEvent = PendingOomGatingEvent(
+            rumErrorId = "err-oom",
+            timestampMs = 1_000L,
+            rumContext = ProfilingRumContext("app", "sess", "view-1", "View-1")
+        )
+        whenever(
+            mockSharedPreferencesStorage.getString(
+                eq(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT),
+                anyOrNull()
+            )
+        ) doReturn pendingGatingEvent.toJson()
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        whenever(mockTimeProvider.getServerTimestampMillis()) doReturn
+            1_000L + ProfilingFeature.PENDING_OOM_PROFILE_MAX_AGE_MS
+
+        // When
+        testedFeature.onOutOfMemoryDetected(
+            PerfettoResult(
+                start = 5_000L,
+                startReason = ProfilingStartReason.OUT_OF_MEMORY,
+                end = 5_000L,
+                resultFilePath = "/tmp/deferred-oom.proto"
+            )
+        )
+
+        // Then
+        verify(mockSharedPreferencesStorage).remove(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT)
+        verify(mockSharedPreferencesStorage, never()).putString(
+            eq(ProfilingStorage.KEY_PENDING_OOM_PROFILE),
+            any(),
+            any()
+        )
+        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any())
+    }
+
+    @Test
+    fun `M upload the persisted profile W onInitialize() {marker within max age}`() {
+        // Given
+        val pendingOomProfile = PendingOomProfile(
+            resultFilePath = "/tmp/oom.proto",
+            startMs = 1_000L,
+            endMs = 1_100L,
+            bootNtpNs = 4_999_999_300L,
+            rumErrorId = "err-oom",
+            rumContext = ProfilingRumContext("app", "sess", "view-1", "View-1")
+        )
+        whenever(
+            mockSharedPreferencesStorage.getString(
+                eq(ProfilingStorage.KEY_PENDING_OOM_PROFILE),
+                anyOrNull()
+            )
+        ) doReturn pendingOomProfile.toJson()
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn
+            1_000L + ProfilingFeature.PENDING_OOM_PROFILE_MAX_AGE_MS - 1L
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+
+        // When
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        runScheduledReplay()
+
+        // Then
+        verify(mockDataWriter).writeTriggerProfile(
+            perfettoResult = PerfettoResult(
+                start = 1_000L,
+                startReason = ProfilingStartReason.OUT_OF_MEMORY,
+                end = 1_100L,
+                resultFilePath = "/tmp/oom.proto",
+                bootNtpNs = 4_999_999_300L
+            ),
+            rumErrorId = "err-oom",
+            rumContext = ProfilingRumContext("app", "sess", "view-1", "View-1")
+        )
+    }
+
+    @Test
+    fun `M clear the marker before uploading W onInitialize() {marker within max age}`() {
+        // Given
+        // Clearing first means a crash during the replay costs one profile rather than replaying
+        // the same failing marker on every subsequent launch.
+        val pendingOomProfile = PendingOomProfile(
+            resultFilePath = "/tmp/oom.proto",
+            startMs = 1_000L,
+            endMs = 1_100L,
+            bootNtpNs = 1L,
+            rumErrorId = "err-oom",
+            rumContext = ProfilingRumContext("app", "sess", null, null)
+        )
+        whenever(
+            mockSharedPreferencesStorage.getString(
+                eq(ProfilingStorage.KEY_PENDING_OOM_PROFILE),
+                anyOrNull()
+            )
+        ) doReturn pendingOomProfile.toJson()
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn 1_000L
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+
+        // When
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        runScheduledReplay()
+
+        // Then
+        val inOrder = inOrder(mockSharedPreferencesStorage, mockDataWriter)
+        inOrder.verify(mockSharedPreferencesStorage)
+            .remove(ProfilingStorage.KEY_PENDING_OOM_PROFILE)
+        inOrder.verify(mockDataWriter).writeTriggerProfile(any(), any(), any())
+    }
+
+    @Test
+    fun `M discard the persisted profile W onInitialize() {marker older than max age}`() {
+        // Given
+        val pendingOomProfile = PendingOomProfile(
+            resultFilePath = "/tmp/oom.proto",
+            startMs = 1_000L,
+            endMs = 1_100L,
+            bootNtpNs = 1L,
+            rumErrorId = "err-oom",
+            rumContext = ProfilingRumContext("app", "sess", "view-1", "View-1")
+        )
+        whenever(
+            mockSharedPreferencesStorage.getString(
+                eq(ProfilingStorage.KEY_PENDING_OOM_PROFILE),
+                anyOrNull()
+            )
+        ) doReturn pendingOomProfile.toJson()
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn
+            1_000L + ProfilingFeature.PENDING_OOM_PROFILE_MAX_AGE_MS
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+
+        // When
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        runScheduledReplay()
+
+        // Then
+        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any())
+        verify(mockSharedPreferencesStorage).remove(ProfilingStorage.KEY_PENDING_OOM_PROFILE)
+        verify(mockDataWriter).discard(
+            PerfettoResult(
+                start = 1_000L,
+                startReason = ProfilingStartReason.OUT_OF_MEMORY,
+                end = 1_100L,
+                resultFilePath = "/tmp/oom.proto",
+                bootNtpNs = 1L
+            )
+        )
+    }
+
+    @Test
+    fun `M not upload anything W onInitialize() {no marker}`() {
+        // Given
+        whenever(
+            mockSharedPreferencesStorage.getString(
+                eq(ProfilingStorage.KEY_PENDING_OOM_PROFILE),
+                anyOrNull()
+            )
+        ) doReturn null
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+
+        // When
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        runScheduledReplay()
+
+        // Then
+        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any())
+    }
+
+    /**
+     * Runs the task [ProfilingFeature.onInitialize] posts to replay a persisted OOM profile.
+     * It is captured rather than run inline so that the test can swap in [mockDataWriter] first,
+     * mirroring the real ordering where the replay lands after initialization returns.
+     */
+    private fun runScheduledReplay() {
+        val runnableCaptor = argumentCaptor<Runnable>()
+        verify(mockSchedulerExecutor).execute(runnableCaptor.capture())
+        runnableCaptor.allValues.forEach { it.run() }
+    }
+
+    @Test
+    fun `M delete histogram file in place W expiry {capture expired, no signal}`(
+        @TempDir fakeTempDir: File
+    ) {
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+
+        val traceFile = File(fakeTempDir, "oom.proto").apply { writeText("trace") }
+        val captureMs = 1_000L
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(captureMs)
+        testedFeature.onOutOfMemoryDetected(
+            PerfettoResult(
+                start = captureMs,
+                startReason = ProfilingStartReason.OUT_OF_MEMORY,
+                end = captureMs,
+                resultFilePath = traceFile.absolutePath
+            )
+        )
+
+        // advance time past the pending-histogram timeout and trigger the scheduled sweep
+        val runnableCaptor = argumentCaptor<Runnable>()
+        verify(mockSchedulerExecutor, atLeastOnce()).schedule(
+            runnableCaptor.capture(),
+            any(),
+            any()
+        )
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn
+            captureMs + PendingTriggerProfiles.EXPIRY_TIMEOUT_MS + 1L
+        runnableCaptor.lastValue.run()
+
+        assertThat(traceFile.exists()).isFalse
+        verify(mockDataWriter, never()).discard(any())
+        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any())
+    }
+
+    @Test
+    fun `M delete pending histogram file in place W onStop {capture pending}`(
+        @TempDir fakeTempDir: File
+    ) {
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+
+        val traceFile = File(fakeTempDir, "oom.proto").apply { writeText("trace") }
+        val captureMs = 1_000L
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(captureMs)
+        testedFeature.onOutOfMemoryDetected(
+            PerfettoResult(
+                start = captureMs,
+                startReason = ProfilingStartReason.OUT_OF_MEMORY,
+                end = captureMs,
+                resultFilePath = traceFile.absolutePath
+            )
+        )
+
+        testedFeature.onStop()
+
+        assertThat(traceFile.exists()).isFalse
+        verify(mockDataWriter, never()).discard(any())
+    }
 
     companion object {
         private val mainLooper = MainLooperTestConfiguration()
