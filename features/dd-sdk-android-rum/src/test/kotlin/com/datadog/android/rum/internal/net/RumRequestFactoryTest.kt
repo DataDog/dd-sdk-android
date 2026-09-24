@@ -64,15 +64,14 @@ internal class RumRequestFactoryTest {
         )
     }
 
-    @Suppress("NAME_SHADOWING")
     @Test
     fun `M create a proper request W create()`(
         @Forgery batchData: List<RawBatchEvent>,
-        @StringForgery batchMetadata: String,
+        @StringForgery fakeBatchMetadata: String,
         forge: Forge
     ) {
         // Given
-        val batchMetadata = forge.aNullable { batchMetadata.toByteArray() }
+        val batchMetadata = forge.aNullable { fakeBatchMetadata.toByteArray() }
 
         // When
         val request = testedFactory.create(fakeDatadogContext, fakeExecutionContext, batchData, batchMetadata)
@@ -108,12 +107,11 @@ internal class RumRequestFactoryTest {
         )
     }
 
-    @Suppress("NAME_SHADOWING")
     @Test
     fun `M create a proper request W create() { custom endpoint }`(
         @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeEndpoint: String,
         @Forgery batchData: List<RawBatchEvent>,
-        @StringForgery batchMetadata: String,
+        @StringForgery fakeBatchMetadata: String,
         forge: Forge
     ) {
         // Given
@@ -122,7 +120,7 @@ internal class RumRequestFactoryTest {
             viewEventFilter = mockViewEventFilter,
             internalLogger = InternalLogger.UNBOUND
         )
-        val batchMetadata = forge.aNullable { batchMetadata.toByteArray() }
+        val batchMetadata = forge.aNullable { fakeBatchMetadata.toByteArray() }
 
         // When
         val request = testedFactory.create(fakeDatadogContext, fakeExecutionContext, batchData, batchMetadata)

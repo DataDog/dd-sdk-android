@@ -6,8 +6,8 @@
 
 package com.datadog.android.sqldelight
 
+import app.cash.sqldelight.TransactionWithoutReturn
 import com.datadog.android.trace.api.span.DatadogSpan
-import com.squareup.sqldelight.TransactionWithoutReturn
 
 /**
  * An object that implements both [DatadogSpan] and [TransactionWithoutReturn].

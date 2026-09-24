@@ -6,6 +6,7 @@
 
 package com.datadog.gradle.plugin.apisurface
 
+import org.jetbrains.kotlin.K1Deprecation
 import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
 import org.jetbrains.kotlin.com.intellij.openapi.util.Disposer
@@ -486,6 +487,10 @@ class KotlinFileVisitor {
          * singleton, so it is built once and kept for the life of the JVM. It holds no
          * per-file state: every parsed file becomes garbage as soon as we are done with it.
          */
+        // Kotlin 2.2+ gates the K1 compiler front-end behind an opt-in. Parsing here is purely
+        // syntactic (PSI only, no resolution), so the K1 environment stays the right tool until
+        // the Analysis API offers a standalone parser.
+        @OptIn(K1Deprecation::class)
         private val PSI_FACTORY: KtPsiFactory by lazy {
             val environment = KotlinCoreEnvironment.createForProduction(
                 Disposer.newDisposable("KotlinFileVisitor"),

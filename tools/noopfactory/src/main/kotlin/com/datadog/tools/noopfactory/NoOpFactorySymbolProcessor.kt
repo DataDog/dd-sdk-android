@@ -20,6 +20,7 @@ import com.google.devtools.ksp.symbol.ClassKind
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSCallableReference
 import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSDeclaration
 import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
@@ -67,7 +68,6 @@ class NoOpFactorySymbolProcessor(
 ) : SymbolProcessor {
 
     private var invoked = false
-    private var requireOptInAnnotations: Set<KSType> = emptySet()
     private val generatedNames = mutableMapOf<String, KSClassDeclaration>()
 
     /** @inheritdoc */
@@ -76,7 +76,6 @@ class NoOpFactorySymbolProcessor(
             logger.info("Already invoked, ignoring")
             return emptyList()
         }
-        resolveRequireOptInAnnotations(resolver)
         val result = mutableListOf<KSAnnotated>()
         resolver.getSymbolsWithAnnotation(NoOpImplementation::class.java.canonicalName)
             .filterIsInstance<KSClassDeclaration>()
@@ -98,16 +97,17 @@ class NoOpFactorySymbolProcessor(
         return result
     }
 
-    private fun resolveRequireOptInAnnotations(resolver: Resolver) {
-        requireOptInAnnotations = resolver
-            .getSymbolsWithAnnotation("kotlin.RequiresOptIn")
-            .filterIsInstance<KSClassDeclaration>()
-            .filter { it.classKind == ClassKind.ANNOTATION_CLASS }
-            .map {
-                logger.info("Found RequiresOptIn annotation: ${it.qualifiedName?.asString()}")
-                it.asType(emptyList())
-            }
-            .toSet()
+    /**
+     * Whether this declaration is an opt-in marker, i.e. an annotation class itself annotated with
+     * [RequiresOptIn]. This is checked on the declaration directly rather than by collecting every marker
+     * in the round up front: `Resolver.getSymbolsWithAnnotation` doesn't see markers declared in
+     * dependencies, and comparing `KSType` instances resolved through different paths is unreliable.
+     */
+    private fun KSDeclaration.isRequiresOptInMarker(): Boolean {
+        if ((this as? KSClassDeclaration)?.classKind != ClassKind.ANNOTATION_CLASS) return false
+        return annotations.any {
+            it.annotationType.resolve().declaration.qualifiedName?.asString() == REQUIRES_OPT_IN_NAME
+        }
     }
 
     // region Internal Generation
@@ -437,7 +437,7 @@ class NoOpFactorySymbolProcessor(
         // check if the function has any RequiresOptIn annotations and add OptIn annotation for the override function
         functionDeclaration
             .annotations
-            .filter { it.annotationType.resolve() in requireOptInAnnotations }
+            .filter { it.annotationType.resolve().declaration.isRequiresOptInMarker() }
             .forEach {
                 funSpecBuilder.addAnnotation(
                     AnnotationSpec.builder(ClassName("kotlin", "OptIn"))
@@ -751,6 +751,7 @@ class NoOpFactorySymbolProcessor(
     companion object {
         private val ignoredFunctions = arrayOf("equals(other:kotlin.Any?)", "hashCode()", "toString()")
         private const val KOTLIN_COLLECTIONS_PACKAGE = "kotlin.collections"
+        private const val REQUIRES_OPT_IN_NAME = "kotlin.RequiresOptIn"
         private val VALID_KOTLIN_IDENTIFIER = Regex("^[A-Za-z_][A-Za-z0-9_]*$")
     }
 }

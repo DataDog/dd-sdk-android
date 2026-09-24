@@ -4,15 +4,14 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
+    // Applied before the Android plugin on purpose (not under "Analysis tools"): AGP 9 applies
+    // the Kotlin plugin itself, and ktlint-gradle 14.2.0 registers its Android source-set tasks
+    // twice when it comes after the Kotlin plugin.
+    id("ktlint")
+
     // Build
     id("com.android.library")
-    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
-    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
-    id("ktlint")
-    kotlin("android")
     id("datadogBuildConfig")
 
     // Analysis tools
@@ -23,8 +22,6 @@ plugins {
     alias(libs.plugins.apolloPlugin)
 }
 
-// TODO RUM-18189 Support new AGP DSL
-@Suppress("DEPRECATION")
 android {
     namespace = "com.datadog.android.okhttp.integration"
 }
@@ -56,7 +53,7 @@ dependencies {
     testImplementation(libs.okHttp)
     testImplementation(libs.okHttpMock)
     testImplementation(libs.gson)
-    testImplementation(libs.apolloRuntime)
+    implementation(libs.apolloRuntime)
     unmock(libs.robolectric)
 }
 
@@ -65,10 +62,6 @@ apollo {
         srcDir("src/test/resources/graphql")
         packageName.set("com.datadog.android.testgraphql")
         schemaFiles.from("src/test/resources/graphql/schema.graphqls")
-
-        outputDirConnection {
-            connectToKotlinSourceSet("test")
-        }
     }
 }
 
@@ -87,8 +80,7 @@ datadogBuild {
     applyKotlinConfig(
         // TODO RUM-18200 We access internal members of another module in this module
         // This should be addressed properly, temporarily disable treating warnings as errors
-        evaluateWarningsAsErrors = false,
-        jvmBytecodeTarget = JvmTarget.JVM_11
+        evaluateWarningsAsErrors = false
     )
     applyJunitConfig()
 }

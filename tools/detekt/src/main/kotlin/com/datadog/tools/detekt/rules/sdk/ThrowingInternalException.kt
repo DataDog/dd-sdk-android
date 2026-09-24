@@ -7,32 +7,24 @@
 package com.datadog.tools.detekt.rules.sdk
 
 import com.datadog.tools.detekt.ext.isContainingEntryPointPublic
-import io.gitlab.arturbosch.detekt.api.CodeSmell
-import io.gitlab.arturbosch.detekt.api.Debt
-import io.gitlab.arturbosch.detekt.api.Entity
-import io.gitlab.arturbosch.detekt.api.Issue
-import io.gitlab.arturbosch.detekt.api.Rule
-import io.gitlab.arturbosch.detekt.api.Severity
+import dev.detekt.api.Config
+import dev.detekt.api.Entity
+import dev.detekt.api.Finding
+import dev.detekt.api.Rule
 import org.jetbrains.kotlin.psi.KtThrowExpression
 
 /**
  * A rule to detekt thrown exceptions.
  * @active
  */
-class ThrowingInternalException : Rule() {
-
-    override val issue: Issue = Issue(
-        javaClass.simpleName,
-        Severity.Defect,
-        "This rule reports when an exception is thrown from a private or internal class.",
-        Debt.TWENTY_MINS
-    )
+class ThrowingInternalException(
+    config: Config = Config.empty
+) : Rule(config, "This rule reports when an exception is thrown from a private or internal class.") {
 
     override fun visitThrowExpression(expression: KtThrowExpression) {
         if (!expression.isContainingEntryPointPublic()) {
             report(
-                CodeSmell(
-                    issue,
+                Finding(
                     Entity.from(expression),
                     message = "An exception is thrown from an internal or private part of the code."
                 )

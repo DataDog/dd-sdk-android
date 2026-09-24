@@ -8,17 +8,13 @@ package com.datadog.tools.detekt.rules.sdk
 
 import com.datadog.tools.detekt.ext.fqTypeName
 import com.datadog.tools.detekt.rules.AbstractCallExpressionRule
-import io.gitlab.arturbosch.detekt.api.CodeSmell
-import io.gitlab.arturbosch.detekt.api.Config
-import io.gitlab.arturbosch.detekt.api.Debt
-import io.gitlab.arturbosch.detekt.api.Entity
-import io.gitlab.arturbosch.detekt.api.Issue
-import io.gitlab.arturbosch.detekt.api.Severity
-import io.gitlab.arturbosch.detekt.api.config
-import io.gitlab.arturbosch.detekt.api.internal.RequiresTypeResolution
+import dev.detekt.api.Config
+import dev.detekt.api.Entity
+import dev.detekt.api.Finding
+import dev.detekt.api.config
+import org.jetbrains.kotlin.analysis.api.analyze
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtTryExpression
-import org.jetbrains.kotlin.resolve.BindingContext
 import java.util.Stack
 
 /**
@@ -28,10 +24,14 @@ import java.util.Stack
  * Third party functions are detected based on an internal package prefix: any method which has a
  * package name with this prefix is considered first party, anything else is third party.
  */
-@RequiresTypeResolution
 class UnsafeThirdPartyFunctionCall(
-    config: Config
-) : AbstractCallExpressionRule(config, includeTypeArguments = false) {
+    config: Config = Config.empty
+) : AbstractCallExpressionRule(
+    config,
+    "This rule reports when a call to an unsafe third party method is made " +
+        "(i.e. a function throwing an uncaught exception).",
+    includeTypeArguments = false
+) {
 
     private val internalPackagePrefix: String by config(defaultValue = "")
     private val treatUnknownFunctionAsThrowing: Boolean by config(defaultValue = true)
@@ -59,19 +59,12 @@ class UnsafeThirdPartyFunctionCall(
 
     // region Rule
 
-    override val issue: Issue = Issue(
-        javaClass.simpleName,
-        Severity.Defect,
-        "This rule reports when a call to an unsafe third party method is made " +
-            "(i.e. a function throwing an uncaught exception).",
-        Debt.TWENTY_MINS
-    )
-
     override fun visitTryExpression(expression: KtTryExpression) {
         val caughtTypes = expression.catchClauses
-            .mapNotNull {
-                val typeReference = it.catchParameter?.typeReference
-                bindingContext.get(BindingContext.TYPE, typeReference)?.fqTypeName()
+            .mapNotNull { catchClause ->
+                catchClause.catchParameter?.typeReference?.let { typeReference ->
+                    analyze(typeReference) { fqTypeName(typeReference.type) }
+                }
             }
         caughtExceptions.push(caughtTypes)
         super.visitTryExpression(expression)
@@ -141,7 +134,7 @@ class UnsafeThirdPartyFunctionCall(
         expression: KtCallExpression,
         message: String
     ) {
-        report(CodeSmell(issue, Entity.from(expression), message = message))
+        report(Finding(Entity.from(expression), message = message))
     }
 
     // endregion

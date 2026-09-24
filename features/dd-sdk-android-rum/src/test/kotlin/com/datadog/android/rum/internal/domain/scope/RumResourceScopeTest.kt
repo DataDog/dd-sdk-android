@@ -99,7 +99,6 @@ internal class RumResourceScopeTest {
     @Mock
     lateinit var mockParentScope: RumScope
 
-    @Mock
     lateinit var mockEvent: RumRawEvent
 
     @Mock
@@ -3888,7 +3887,7 @@ internal class RumResourceScopeTest {
     // region Internal
 
     private fun mockEvent(): RumRawEvent {
-        val event: RumRawEvent = mock()
+        val event: RumRawEvent = mock<RumRawEvent.WebViewEvent>()
         whenever(event.eventTime) doReturn fakeEventTime
         return event
     }

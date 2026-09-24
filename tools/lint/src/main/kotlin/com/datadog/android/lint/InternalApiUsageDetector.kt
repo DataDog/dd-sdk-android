@@ -17,6 +17,7 @@ import com.android.tools.lint.detector.api.JavaContext
 import com.android.tools.lint.detector.api.Scope
 import com.android.tools.lint.detector.api.Severity
 import com.android.tools.lint.detector.api.SourceCodeScanner
+import org.jetbrains.uast.UClass
 import org.jetbrains.uast.UElement
 import org.jetbrains.uast.getContainingUFile
 
@@ -28,9 +29,8 @@ class InternalApiUsageDetector : Detector(), SourceCodeScanner {
 
     override fun isApplicableAnnotationUsage(type: AnnotationUsageType): Boolean {
         return type == AnnotationUsageType.METHOD_CALL ||
-            type == AnnotationUsageType.ASSIGNMENT_RHS ||
             type == AnnotationUsageType.CLASS_REFERENCE ||
-            super.isApplicableAnnotationUsage(type)
+            type == AnnotationUsageType.FIELD_REFERENCE
     }
 
     override fun visitAnnotationUsage(
@@ -39,6 +39,11 @@ class InternalApiUsageDetector : Detector(), SourceCodeScanner {
         annotationInfo: AnnotationInfo,
         usageInfo: AnnotationUsageInfo
     ) {
+        // For class-level annotations, only CLASS_REFERENCE represents actual usage.
+        // In lint 32.x with K2 UAST, constructor calls fire under multiple usage types
+        // (CLASS_REFERENCE, METHOD_CALL, ASSIGNMENT_RHS, etc.) causing duplicate reports.
+        if (annotationInfo.annotated is UClass && usageInfo.type != AnnotationUsageType.CLASS_REFERENCE) return
+
         val packageName = element.getContainingUFile()?.packageName
         if (!packageName.isNullOrEmpty() && !packageName.startsWith("com.datadog")) {
             context.report(
