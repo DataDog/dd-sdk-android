@@ -28,7 +28,7 @@ internal class WebViewReplayEventConsumer(
 ) : WebViewEventConsumer<JsonObject> {
 
     override fun consume(event: JsonObject) {
-        sdkCore.getFeature(WebViewReplayFeature.WEB_REPLAY_FEATURE_NAME)
+        sdkCore.getFeature(Feature.WEB_SESSION_REPLAY_FEATURE_NAME)
             ?.withWriteContext(
                 withFeatureContexts = setOf(
                     Feature.RUM_FEATURE_NAME,

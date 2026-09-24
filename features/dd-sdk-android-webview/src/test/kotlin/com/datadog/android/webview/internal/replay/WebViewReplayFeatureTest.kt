@@ -7,6 +7,7 @@
 package com.datadog.android.webview.internal.replay
 
 import android.content.Context
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.NoOpDataWriter
@@ -56,7 +57,7 @@ internal class WebViewReplayFeatureTest {
     fun `M provide feature name W name()`() {
         // Then
         assertThat(testedFeature.name)
-            .isEqualTo(WebViewReplayFeature.WEB_REPLAY_FEATURE_NAME)
+            .isEqualTo(Feature.WEB_SESSION_REPLAY_FEATURE_NAME)
     }
 
     @Test

@@ -32,7 +32,7 @@ internal class WebViewLogEventConsumer(
     override fun consume(event: Pair<JsonObject, String>) {
         if (event.second == USER_LOG_EVENT_TYPE) {
             if (sampler.sample(Unit)) {
-                sdkCore.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)
+                sdkCore.getFeature(Feature.WEB_LOGS_FEATURE_NAME)
                     ?.withWriteContext(
                         withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)
                     ) { datadogContext, writeScope ->

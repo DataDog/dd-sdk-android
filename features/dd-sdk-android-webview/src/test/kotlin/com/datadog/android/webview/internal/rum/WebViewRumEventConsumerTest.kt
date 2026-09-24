@@ -144,7 +144,7 @@ internal class WebViewRumEventConsumerTest {
         ) doReturn fakeRumContext
 
         whenever(
-            mockSdkCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
+            mockSdkCore.getFeature(Feature.WEB_RUM_FEATURE_NAME)
         ) doReturn mockWebViewRumFeatureScope
 
         whenever(mockEventWriteScope.invoke(any())) doAnswer {
