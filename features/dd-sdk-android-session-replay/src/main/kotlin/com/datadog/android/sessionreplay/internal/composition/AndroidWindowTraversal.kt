@@ -46,13 +46,19 @@ internal sealed interface WindowWalkResult {
 /**
  * Walks one window's native View hierarchy into a [CapturedLayer] tree, combining legacy
  * `TreeViewTraversal` (per-view decisions) and `SnapshotProducer` (recursion) into a single pass,
- * with clip computed inline via a threaded ancestor-bounds stack instead of a separate flatten step.
+ * with clip computed inline via a threaded ancestor-bounds list instead of a separate flatten step.
  *
  * Every visited [View] becomes exactly one [CapturedLayer] (kind [CapturedLayerKind.NATIVE_VIEW],
  * or [CapturedLayerKind.WINDOW_ROOT] for the window's own root). Its identity is always created via
  * [CapturedIdentityFactory.view] against the *window's* identity - never the view's real structural
  * parent - per the flat-namespacing rule [CapturedIdentityFactory] enforces; real nesting is carried
  * purely by [CapturedLayer.children].
+ *
+ * The walk is iterative, not recursive: an explicit [WorkItem] stack stands in for the call stack a
+ * plain recursive walk would use, specifically so it can pause between any two views - see
+ * [com.datadog.android.sessionreplay.internal.composition.CaptureGenerationContext.sliceClock] - and
+ * resume later exactly where it left off, instead of holding the main thread for a whole window (or
+ * a single expensive subtree within one) in one uninterrupted pass.
  */
 internal class AndroidWindowTraversal(
     private val mapperRegistry: CapturedViewMapperRegistry,
@@ -63,8 +69,7 @@ internal class AndroidWindowTraversal(
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver,
     private val drawableToColorMapper: DrawableToColorMapper = DrawableToColorMapper.getDefault(),
     private val viewUtilsInternal: ViewUtilsInternal = ViewUtilsInternal(),
-    private val composeHostCallback: CapturedInteropViewCallback? = null,
-    private val viewsPerCheckpoint: Int = VIEWS_PER_CHECKPOINT
+    private val composeHostCallback: CapturedInteropViewCallback? = null
 ) {
 
     private val occlusionDetector = ViewOcclusionDetector(
@@ -80,122 +85,152 @@ internal class AndroidWindowTraversal(
         windowIdentity: CapturedIdentity,
         identityFactory: CapturedIdentityFactory,
         context: CaptureGenerationContext
-    ): WindowWalkResult {
-        if (!context.shouldContinue()) return WindowWalkResult.Aborted
+    ): CaptureStep<WindowWalkResult> {
         val state = TraversalState(screenDensity = windowRoot.resources.displayMetrics.density)
-        return when (
-            val result = visitView(
+        val stack = newWorkStack<WorkItem>()
+        stack.push(
+            WorkItem.Visit(
                 view = windowRoot,
                 ownIdentity = windowIdentity,
                 ownKind = CapturedLayerKind.WINDOW_ROOT,
                 windowIdentity = windowIdentity,
                 identityFactory = identityFactory,
-                context = context,
-                state = state
+                ancestorBounds = emptyList(),
+                sink = ResultSink.Root
             )
-        ) {
-            is LayerWalkResult.Present ->
-                WindowWalkResult.Present(result.layer, state.layers, state.wireframes)
-            LayerWalkResult.Filtered -> WindowWalkResult.Filtered
-            LayerWalkResult.Aborted -> WindowWalkResult.Aborted
-        }
+        )
+        return runStack(stack, state, context)
     }
 
-    @UiThread
+    /**
+     * Drains [stack] one [WorkItem] at a time. Checked before every pop, not just periodically:
+     * [CaptureGenerationContext.shouldContinue] can still discard the whole walk on an expired
+     * deadline, while [com.datadog.android.sessionreplay.internal.composition.SliceYieldClock.shouldYield]
+     * instead pauses it - handing back a continuation that resumes this exact call with the same
+     * (mutated) [stack] and [state], picking up from precisely where it left off.
+     */
     @Suppress("ReturnCount")
-    private fun visitView(
-        view: View,
-        ownIdentity: CapturedIdentity,
-        ownKind: CapturedLayerKind,
-        windowIdentity: CapturedIdentity,
-        identityFactory: CapturedIdentityFactory,
-        context: CaptureGenerationContext,
+    @UiThread
+    private fun runStack(
+        stack: ArrayDeque<WorkItem>,
         state: TraversalState,
-        skipContent: Boolean = false
-    ): LayerWalkResult {
-        state.viewsVisited++
-        if (state.viewsVisited % viewsPerCheckpoint == 0 && !context.shouldContinue()) {
-            return LayerWalkResult.Aborted
+        context: CaptureGenerationContext
+    ): CaptureStep<WindowWalkResult> {
+        while (stack.isNotStackEmpty()) {
+            if (!context.shouldContinue()) return CaptureStep.Done(WindowWalkResult.Aborted)
+            if (context.sliceClock.shouldYield()) {
+                return CaptureStep.Yielded { runStack(stack, state, context) }
+            }
+            when (val item = stack.pop()) {
+                is WorkItem.Visit -> {
+                    val aborted = visitItem(item, stack, state, context)
+                    if (aborted) return CaptureStep.Done(WindowWalkResult.Aborted)
+                }
+                is WorkItem.VisitOccluded -> visitOccluded(item, stack)
+                is WorkItem.Finish ->
+                    completeLayer(item.ownIdentity, item.ownKind, item.bounds, item.children, item.sink, state)
+            }
         }
-        if (isFiltered(view)) return LayerWalkResult.Filtered
+        // The root Visit is the only one with a Root sink and always completes a layer, setting
+        // rootLayer, unless filtered - the only other way this loop empties without it.
+        return CaptureStep.Done(
+            state.rootLayer?.let { WindowWalkResult.Present(it, state.layers, state.wireframes) }
+                ?: WindowWalkResult.Filtered
+        )
+    }
+
+    /** `true` only when the whole window walk must be discarded - a compose host handoff outlived the deadline. */
+    @Suppress("ReturnCount")
+    @UiThread
+    private fun visitItem(
+        item: WorkItem.Visit,
+        stack: ArrayDeque<WorkItem>,
+        state: TraversalState,
+        context: CaptureGenerationContext
+    ): Boolean {
+        val view = item.view
+        if (isFiltered(view)) return false
 
         updateTouchOverrideArea(view)
 
-        if (skipContent) return visitOccludedContent(view, windowIdentity, identityFactory, context, state)
-
         val bounds = viewBoundsResolver.resolveViewGlobalBounds(view, state.screenDensity).toCaptured()
-        val mappingContext = CapturedMappingContext(identityFactory, ownIdentity, state.screenDensity)
+        val mappingContext = CapturedMappingContext(item.identityFactory, item.ownIdentity, state.screenDensity)
         val isHidden = view.getTag(R.id.datadog_hidden) == true
 
         val children = mutableListOf<CapturedChild>()
         val interopResult = composeHostCallback?.takeIf { isComposeHost(view) }?.map(view, mappingContext)
-        // A compose host's own decomposition can cost far more than one view's worth of work, yet
-        // still only counts as +1 against viewsPerCheckpoint. Re-poll the deadline immediately after
-        // it returns instead of waiting for the next checkpoint tick, so a handful of expensive hosts
-        // can't hide behind a coarse, uniform per-node count.
-        if (interopResult != null && !context.shouldContinue()) {
-            return LayerWalkResult.Aborted
-        }
+        if (interopResult != null && !context.shouldContinue()) return true
         val mapped = interopResult
             ?: (if (isHidden) hiddenViewMapper else mapperRegistry.resolve(view)).map(view, mappingContext)
-        addWireframes(mapped, state.ancestorBounds, children, state)
+        addWireframes(mapped, item.ancestorBounds, children, state)
 
-        if (!isHidden && interopResult == null && view is ViewGroup) {
-            val aborted = visitChildren(view, windowIdentity, identityFactory, context, state, bounds, children)
-            if (aborted) return LayerWalkResult.Aborted
+        val canHaveChildren = !isHidden && interopResult == null
+        if (canHaveChildren && view is ViewGroup && view.childCount > 0) {
+            stack.push(WorkItem.Finish(item.ownIdentity, item.ownKind, bounds, children, item.sink))
+            pushChildren(view, item, state.screenDensity, item.ancestorBounds + bounds, children, stack)
+        } else {
+            completeLayer(item.ownIdentity, item.ownKind, bounds, children, item.sink, state)
         }
+        return false
+    }
 
-        val layer = CapturedLayer(identity = ownIdentity, kind = ownKind, bounds = bounds, children = children)
+    private fun completeLayer(
+        identity: CapturedIdentity,
+        kind: CapturedLayerKind,
+        bounds: CapturedBounds,
+        children: MutableList<CapturedChild>,
+        sink: ResultSink,
+        state: TraversalState
+    ) {
+        val layer = CapturedLayer(identity = identity, kind = kind, bounds = bounds, children = children)
         state.layers.add(layer)
-        return LayerWalkResult.Present(layer)
+        when (sink) {
+            is ResultSink.ChildOf -> sink.list.add(CapturedChild.Layer(identity))
+            ResultSink.Root -> state.rootLayer = layer
+        }
     }
 
     /**
      * A Compose host's interior is Compose's own node tree, not further Android child Views - its
-     * content is fully described by whatever `composeHostCallback` returned in [visitView], which
-     * is why that case never reaches here.
+     * content is fully described by whatever `composeHostCallback` returned in [visitItem], which
+     * is why that case never reaches here. Pushed in reverse child order so the stack (LIFO) pops
+     * them back out in the View hierarchy's own forward order.
      */
     @UiThread
-    @Suppress("LongParameterList")
-    private fun visitChildren(
+    private fun pushChildren(
         viewGroup: ViewGroup,
-        windowIdentity: CapturedIdentity,
-        identityFactory: CapturedIdentityFactory,
-        context: CaptureGenerationContext,
-        state: TraversalState,
-        ownBounds: CapturedBounds,
-        children: MutableList<CapturedChild>
-    ): Boolean {
-        state.ancestorBounds.add(ownBounds)
-        try {
-            val occludedIndices = occlusionDetector.occludedChildIndices(viewGroup, state.screenDensity)
-            for (i in 0 until viewGroup.childCount) {
-                val child = viewGroup.getChildAt(i) ?: continue
-                val childIdentity = identityFactory.view(
-                    windowIdentity,
+        parent: WorkItem.Visit,
+        screenDensity: Float,
+        ancestorBounds: List<CapturedBounds>,
+        appendTo: MutableList<CapturedChild>,
+        stack: ArrayDeque<WorkItem>
+    ) {
+        val occludedIndices = occlusionDetector.occludedChildIndices(viewGroup, screenDensity)
+        for (i in viewGroup.childCount - 1 downTo 0) {
+            val child = viewGroup.getChildAt(i)
+            if (child == null) continue
+            if (i in occludedIndices) {
+                // No identity is minted here: an occluded child's identity is never read, since it
+                // never reaches completeLayer() - see visitOccluded().
+                stack.push(WorkItem.VisitOccluded(child, parent.windowIdentity, parent.identityFactory))
+            } else {
+                val childIdentity = parent.identityFactory.view(
+                    parent.windowIdentity,
                     viewIdentifierResolver.resolveViewId(child).toString()
                 )
-                when (
-                    val childResult = visitView(
+                stack.push(
+                    WorkItem.Visit(
                         view = child,
                         ownIdentity = childIdentity,
                         ownKind = CapturedLayerKind.NATIVE_VIEW,
-                        windowIdentity = windowIdentity,
-                        identityFactory = identityFactory,
-                        context = context,
-                        state = state,
-                        skipContent = i in occludedIndices
+                        windowIdentity = parent.windowIdentity,
+                        identityFactory = parent.identityFactory,
+                        ancestorBounds = ancestorBounds,
+                        sink = ResultSink.ChildOf(appendTo)
                     )
-                ) {
-                    is LayerWalkResult.Present -> children.add(CapturedChild.Layer(childResult.layer.identity))
-                    LayerWalkResult.Filtered -> Unit
-                    LayerWalkResult.Aborted -> return true
-                }
+                )
             }
-        } finally {
-            state.ancestorBounds.removeAt(state.ancestorBounds.lastIndex)
         }
-        return false
     }
 
     private fun isFiltered(view: View): Boolean =
@@ -204,48 +239,21 @@ internal class AndroidWindowTraversal(
             viewUtilsInternal.isOnSecondaryDisplay(view)
 
     /**
-     * A visually occluded view contributes nothing to the final image, so none of its subtree is
-     * mapped or turned into wireframes/layers. It can still receive touches, though - occlusion only
+     * A visually occluded view contributes nothing to the final image, so it's never mapped or
+     * turned into a wireframe/layer. It can still receive touches, though - occlusion only
      * guarantees nothing paints on screen, not that the content covering it actually consumes touch
      * events, since a non-interactive covering view lets touches fall through to whatever is beneath
-     * it - so [visitView] is still called for its whole subtree to collect touch-privacy tags.
+     * it - so this still visits the whole subtree to collect touch-privacy tags.
      */
     @UiThread
-    private fun visitOccludedContent(
-        view: View,
-        windowIdentity: CapturedIdentity,
-        identityFactory: CapturedIdentityFactory,
-        context: CaptureGenerationContext,
-        state: TraversalState
-    ): LayerWalkResult {
-        if (view !is ViewGroup) return LayerWalkResult.Filtered
-        val aborted = visitOccludedChildren(view, windowIdentity, identityFactory, context, state)
-        return if (aborted) LayerWalkResult.Aborted else LayerWalkResult.Filtered
-    }
-
-    @UiThread
-    @Suppress("UnsafeThirdPartyFunctionCall") // IntRange.any() just iterates the range, cannot throw
-    private fun visitOccludedChildren(
-        viewGroup: ViewGroup,
-        windowIdentity: CapturedIdentity,
-        identityFactory: CapturedIdentityFactory,
-        context: CaptureGenerationContext,
-        state: TraversalState
-    ): Boolean = (0 until viewGroup.childCount).any { i ->
-        val child = viewGroup.getChildAt(i)
-        child != null && run {
-            val childViewId = viewIdentifierResolver.resolveViewId(child).toString()
-            val childIdentity = identityFactory.view(windowIdentity, childViewId)
-            visitView(
-                view = child,
-                ownIdentity = childIdentity,
-                ownKind = CapturedLayerKind.NATIVE_VIEW,
-                windowIdentity = windowIdentity,
-                identityFactory = identityFactory,
-                context = context,
-                state = state,
-                skipContent = true
-            ) == LayerWalkResult.Aborted
+    private fun visitOccluded(item: WorkItem.VisitOccluded, stack: ArrayDeque<WorkItem>) {
+        val view = item.view
+        if (isFiltered(view)) return
+        updateTouchOverrideArea(view)
+        if (view !is ViewGroup) return
+        for (i in view.childCount - 1 downTo 0) {
+            val child = view.getChildAt(i)
+            if (child != null) stack.push(WorkItem.VisitOccluded(child, item.windowIdentity, item.identityFactory))
         }
     }
 
@@ -316,25 +324,63 @@ internal class AndroidWindowTraversal(
         }
     }
 
-    private sealed interface LayerWalkResult {
-        data class Present(val layer: CapturedLayer) : LayerWalkResult
-        object Filtered : LayerWalkResult
-        object Aborted : LayerWalkResult
+    private sealed interface WorkItem {
+        data class Visit(
+            val view: View,
+            val ownIdentity: CapturedIdentity,
+            val ownKind: CapturedLayerKind,
+            val windowIdentity: CapturedIdentity,
+            val identityFactory: CapturedIdentityFactory,
+            val ancestorBounds: List<CapturedBounds>,
+            val sink: ResultSink
+        ) : WorkItem
+
+        /**
+         * A view inside an occluded subtree - deliberately carries no identity, bounds, or sink:
+         * [visitOccluded] never maps it or builds a layer, only walks it for touch-privacy tags.
+         */
+        data class VisitOccluded(
+            val view: View,
+            val windowIdentity: CapturedIdentity,
+            val identityFactory: CapturedIdentityFactory
+        ) : WorkItem
+
+        data class Finish(
+            val ownIdentity: CapturedIdentity,
+            val ownKind: CapturedLayerKind,
+            val bounds: CapturedBounds,
+            val children: MutableList<CapturedChild>,
+            val sink: ResultSink
+        ) : WorkItem
+    }
+
+    private sealed interface ResultSink {
+        data class ChildOf(val list: MutableList<CapturedChild>) : ResultSink
+        object Root : ResultSink
     }
 
     private class TraversalState(val screenDensity: Float) {
-        var viewsVisited = 0
+        var rootLayer: CapturedLayer? = null
         val layers = mutableListOf<CapturedLayer>()
         val wireframes = mutableListOf<CapturedWireframe>()
-        val ancestorBounds = mutableListOf<CapturedBounds>()
-    }
-
-    private companion object {
-        const val VIEWS_PER_CHECKPOINT = 200
     }
 }
 
 private const val COMPOSE_VIEW_CLASS_NAME = "androidx.compose.ui.platform.ComposeView"
+
+private fun <T> newWorkStack(): ArrayDeque<T> {
+    @Suppress("UnsafeThirdPartyFunctionCall") // no-arg constructor, cannot fail
+    return ArrayDeque()
+}
+
+@Suppress("UnsafeThirdPartyFunctionCall") // an unbounded ArrayDeque's addLast never throws
+private fun <T> ArrayDeque<T>.push(item: T) = addLast(item)
+
+@Suppress("UnsafeThirdPartyFunctionCall") // only ever called guarded by a prior isNotStackEmpty() check
+private fun <T> ArrayDeque<T>.pop(): T = removeLast()
+
+@Suppress("UnsafeThirdPartyFunctionCall") // pure size check, cannot throw
+private fun <T> ArrayDeque<T>.isNotStackEmpty(): Boolean = isNotEmpty()
 
 /**
  * Detected by class name only, deliberately with no compile-time `androidx.compose` dependency from

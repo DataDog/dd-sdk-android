@@ -139,6 +139,9 @@ internal class AndroidWindowTraversalTest {
         viewUtilsInternal = ViewUtilsInternal()
     )
 
+    /** These trees are tiny and the deadline is generous, so a call is expected to complete in one slice. */
+    private fun <T> CaptureStep<T>.doneValue(): T = (this as CaptureStep.Done<T>).value
+
     /** A view whose bounds fully cover whatever it's stacked on top of, painted with opaque black. */
     private fun mockOpaqueCoveringView(bounds: GlobalBounds): View {
         val view = mockView(bounds)
@@ -167,7 +170,7 @@ internal class AndroidWindowTraversalTest {
         val result = traversal().traverseWindow(root, windowIdentity, identityFactory, fakeContext)
 
         // Then
-        val present = result as WindowWalkResult.Present
+        val present = result.doneValue() as WindowWalkResult.Present
         assertThat(present.rootLayer.children).isEmpty()
         assertThat(present.layers).hasSize(1) // only the window root itself
         verify(mockTouchPrivacyManager, never()).addTouchOverrideArea(any(), any())
@@ -190,7 +193,7 @@ internal class AndroidWindowTraversalTest {
         val result = traversal().traverseWindow(root, windowIdentity, identityFactory, fakeContext)
 
         // Then
-        val present = result as WindowWalkResult.Present
+        val present = result.doneValue() as WindowWalkResult.Present
         assertThat(present.rootLayer.children).isEmpty()
     }
 
@@ -215,7 +218,7 @@ internal class AndroidWindowTraversalTest {
         val result = traversal().traverseWindow(root, windowIdentity, identityFactory, fakeContext)
 
         // Then
-        val present = result as WindowWalkResult.Present
+        val present = result.doneValue() as WindowWalkResult.Present
         val hiddenLayer = present.layers.first { it.identity != present.rootLayer.identity }
         assertThat(hiddenLayer.children).hasSize(1)
         val placeholder = present.wireframes.single() as CapturedWireframe.PrivacyPlaceholder
@@ -237,7 +240,7 @@ internal class AndroidWindowTraversalTest {
         val result = traversal().traverseWindow(root, windowIdentity, identityFactory, fakeContext)
 
         // Then
-        val present = result as WindowWalkResult.Present
+        val present = result.doneValue() as WindowWalkResult.Present
         val childIdentities = present.rootLayer.children.map { it.identity }
         val expectedOrder = children.map { child ->
             present.layers.first { layer ->
@@ -272,7 +275,7 @@ internal class AndroidWindowTraversalTest {
         ).traverseWindow(root, windowIdentity, identityFactory, fakeContext)
 
         // Then
-        val present = result as WindowWalkResult.Present
+        val present = result.doneValue() as WindowWalkResult.Present
         val childWireframe = present.wireframes.first {
             it.bounds.x == childBounds.x &&
                 it.bounds.width == childBounds.width
@@ -300,8 +303,8 @@ internal class AndroidWindowTraversalTest {
             deadlineNs = fakeDeadlineNs,
             timeProvider = CaptureTimeProvider {
                 calls++
-                // Not expired for the upfront per-window check and the first checkpoint,
-                // expired from the second checkpoint onward.
+                // Not expired for the root's own pre-pop checks (checked every item now, not just
+                // periodically), expired from the first child's pre-pop check onward.
                 if (calls <= 2) 0L else fakeDeadlineNs * 2
             }
         )
@@ -311,15 +314,14 @@ internal class AndroidWindowTraversalTest {
             internalLogger = mock(),
             viewIdentifierResolver = mockViewIdentifierResolver,
             viewBoundsResolver = mockViewBoundsResolver,
-            viewUtilsInternal = ViewUtilsInternal(),
-            viewsPerCheckpoint = 1
+            viewUtilsInternal = ViewUtilsInternal()
         )
 
         // When
         val result = testedTraversal.traverseWindow(root, windowIdentity, identityFactory, expiringContext)
 
         // Then
-        assertThat(result).isEqualTo(WindowWalkResult.Aborted)
+        assertThat(result.doneValue()).isEqualTo(WindowWalkResult.Aborted)
     }
 
     @Test
@@ -338,9 +340,9 @@ internal class AndroidWindowTraversalTest {
             deadlineNs = fakeDeadlineNs,
             timeProvider = CaptureTimeProvider {
                 calls++
-                // Not expired for the upfront per-window check; expired by the time the
-                // compose host handoff returns, well before a 200-view checkpoint would fire.
-                if (calls <= 1) 0L else fakeDeadlineNs * 2
+                // Not expired for the root's own two pre-pop checks; expired by the time the
+                // compose host handoff's own re-poll runs, immediately after it returns.
+                if (calls <= 2) 0L else fakeDeadlineNs * 2
             }
         )
         val testedTraversal = AndroidWindowTraversal(
@@ -361,7 +363,7 @@ internal class AndroidWindowTraversalTest {
         val result = testedTraversal.traverseWindow(composeHost, windowIdentity, identityFactory, expiringContext)
 
         // Then
-        assertThat(result).isEqualTo(WindowWalkResult.Aborted)
+        assertThat(result.doneValue()).isEqualTo(WindowWalkResult.Aborted)
     }
 
     // region touch privacy tests
@@ -490,7 +492,7 @@ internal class AndroidWindowTraversalTest {
             .traverseWindow(root, windowIdentity, identityFactory, fakeContext)
 
         // Then
-        val present = result as WindowWalkResult.Present
+        val present = result.doneValue() as WindowWalkResult.Present
         // Only the window root and the covering sibling were mapped - the occluded victim
         // contributed no wireframe of its own.
         assertThat(present.wireframes).hasSize(2)
@@ -523,7 +525,7 @@ internal class AndroidWindowTraversalTest {
             .traverseWindow(root, windowIdentity, identityFactory, fakeContext)
 
         // Then
-        val present = result as WindowWalkResult.Present
+        val present = result.doneValue() as WindowWalkResult.Present
         // Root + both children - the partial cover doesn't fully contain the victim, so nothing is culled.
         assertThat(present.wireframes).hasSize(3)
     }
@@ -549,9 +551,179 @@ internal class AndroidWindowTraversalTest {
             .traverseWindow(root, windowIdentity, identityFactory, fakeContext)
 
         // Then
-        val present = result as WindowWalkResult.Present
+        val present = result.doneValue() as WindowWalkResult.Present
         // Root + both children - a translucent cover never counts as fully opaque, so nothing is culled.
         assertThat(present.wireframes).hasSize(3)
+    }
+
+    // endregion
+
+    // region yield/resume tests
+
+    /**
+     * Drives a possibly-yielding walk to completion, resetting [resetSlice] before every resume -
+     * standing in for the orchestrator's own [com.datadog.android.sessionreplay.internal.composition.SliceYieldClock.markStart]
+     * call between slices, which this test simulates by resetting the fake clock's call counter
+     * back to its initial "under budget" reading instead.
+     */
+    private fun driveToCompletion(
+        first: CaptureStep<WindowWalkResult>,
+        resetSlice: () -> Unit
+    ): WindowWalkResult {
+        var step = first
+        var resumes = 0
+        while (step is CaptureStep.Yielded) {
+            check(++resumes < 100) { "resume loop did not converge" }
+            resetSlice()
+            step = step.resume()
+        }
+        return step.doneValue()
+    }
+
+    @Test
+    fun `M yield mid walk and resume to the full result W slice budget is exceeded`(
+        @Forgery fakeRootBounds: GlobalBounds,
+        forge: Forge
+    ) {
+        // Given
+        val root = mockViewGroup(fakeRootBounds)
+        val children = List(3) { mockView(forge.getForgery<GlobalBounds>()) }
+        whenever(root.childCount).thenReturn(children.size)
+        children.forEachIndexed { index, child -> whenever(root.getChildAt(index)).thenReturn(child) }
+        val windowIdentity = identityFactory.window("window")
+        var calls = 0
+        val yieldingContext = CaptureGenerationContext(
+            id = 1L,
+            startedAtNs = 0L,
+            deadlineNs = Long.MAX_VALUE / 2,
+            timeProvider = CaptureTimeProvider {
+                calls++
+                // Under the slice budget for a view's own two pre-pop checks; over budget once a
+                // third check runs before this is reset between resumes.
+                if (calls <= 2) 0L else 2_000L
+            },
+            sliceBudgetNs = 1_000L
+        )
+
+        // When
+        val firstStep = traversal(fallback = markerMapper)
+            .traverseWindow(root, windowIdentity, identityFactory, yieldingContext)
+
+        // Then
+        assertThat(firstStep).isInstanceOf(CaptureStep.Yielded::class.java)
+
+        // When
+        val result = driveToCompletion(firstStep) { calls = 0 }
+
+        // Then
+        val present = result as WindowWalkResult.Present
+        // Root's own markerMapper wireframe, plus a Layer for each of the 3 children.
+        assertThat(present.rootLayer.children).hasSize(4)
+        assertThat(present.layers).hasSize(4) // root + 3 children
+        assertThat(present.wireframes).hasSize(4) // markerMapper wireframe for root + each child
+    }
+
+    @Test
+    fun `M still register touch override areas for a child visited after a resume`(
+        @Forgery fakeRootBounds: GlobalBounds,
+        @Forgery fakeFirstChildBounds: GlobalBounds,
+        @Forgery fakeSecondChildBounds: GlobalBounds,
+        @IntForgery(min = 0, max = 1000) fakeLocationX: Int,
+        @IntForgery(min = 0, max = 1000) fakeLocationY: Int
+    ) {
+        // Given
+        val root = mockViewGroup(fakeRootBounds)
+        val firstChild = mockView(fakeFirstChildBounds)
+        val secondChild = mockView(fakeSecondChildBounds)
+        whenever(secondChild.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.HIDE.name)
+        whenever(secondChild.getLocationOnScreen(any())).thenAnswer {
+            val location = it.getArgument<IntArray>(0)
+            location[0] = fakeLocationX
+            location[1] = fakeLocationY
+            null
+        }
+        whenever(root.childCount).thenReturn(2)
+        whenever(root.getChildAt(0)).thenReturn(firstChild)
+        whenever(root.getChildAt(1)).thenReturn(secondChild)
+        val windowIdentity = identityFactory.window("window")
+        var calls = 0
+        val yieldingContext = CaptureGenerationContext(
+            id = 1L,
+            startedAtNs = 0L,
+            deadlineNs = Long.MAX_VALUE / 2,
+            timeProvider = CaptureTimeProvider {
+                calls++
+                // Yields right after the root - before either child, including secondChild, is visited.
+                if (calls <= 2) 0L else 2_000L
+            },
+            sliceBudgetNs = 1_000L
+        )
+
+        // When
+        val firstStep = traversal().traverseWindow(root, windowIdentity, identityFactory, yieldingContext)
+        driveToCompletion(firstStep) { calls = 0 }
+
+        // Then
+        val expectedArea = Rect(
+            fakeLocationX,
+            fakeLocationY,
+            fakeLocationX + secondChild.width,
+            fakeLocationY + secondChild.height
+        )
+        verify(mockTouchPrivacyManager).addTouchOverrideArea(expectedArea, TouchPrivacy.HIDE)
+    }
+
+    @Test
+    fun `M produce the same tree W walk yields repeatedly vs not at all`(
+        @Forgery fakeRootBounds: GlobalBounds,
+        forge: Forge
+    ) {
+        // Given - the exact same tree, walked by two separate traversal instances
+        val bounds = List(4) { forge.getForgery<GlobalBounds>() }
+        val windowIdentity = identityFactory.window("window")
+
+        fun freshRootWithChildren(): ViewGroup {
+            val root = mockViewGroup(fakeRootBounds)
+            val children = bounds.map { mockView(it) }
+            whenever(root.childCount).thenReturn(children.size)
+            children.forEachIndexed { index, child -> whenever(root.getChildAt(index)).thenReturn(child) }
+            return root
+        }
+
+        val neverYieldingContext = CaptureGenerationContext(
+            id = 1L,
+            startedAtNs = 0L,
+            deadlineNs = Long.MAX_VALUE / 2,
+            timeProvider = CaptureTimeProvider { 0L },
+            sliceBudgetNs = Long.MAX_VALUE / 2
+        )
+        var yieldingCalls = 0
+        val alwaysYieldingContext = CaptureGenerationContext(
+            id = 2L,
+            startedAtNs = 0L,
+            deadlineNs = Long.MAX_VALUE / 2,
+            timeProvider = CaptureTimeProvider {
+                yieldingCalls++
+                // Under budget for exactly one item's two pre-pop checks per slice (reset before
+                // every resume below), over budget for the next item's - one item per slice.
+                if (yieldingCalls <= 2) 0L else 2_000L
+            },
+            sliceBudgetNs = 1_000L
+        )
+
+        // When
+        val baseline = traversal(fallback = markerMapper)
+            .traverseWindow(freshRootWithChildren(), windowIdentity, identityFactory, neverYieldingContext)
+            .doneValue() as WindowWalkResult.Present
+        val firstStep = traversal(fallback = markerMapper)
+            .traverseWindow(freshRootWithChildren(), windowIdentity, identityFactory, alwaysYieldingContext)
+        val yielded = driveToCompletion(firstStep) { yieldingCalls = 0 } as WindowWalkResult.Present
+
+        // Then - identities themselves differ (each freshRootWithChildren() call mints new mock
+        // views with their own sequential ids), so bounds/counts are what must line up structurally.
+        assertThat(yielded.wireframes.map { it.bounds }).isEqualTo(baseline.wireframes.map { it.bounds })
+        assertThat(yielded.rootLayer.children).hasSize(baseline.rootLayer.children.size)
+        assertThat(yielded.layers).hasSize(baseline.layers.size)
     }
 
     // endregion

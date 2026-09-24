@@ -171,7 +171,7 @@ internal class CompositionPipelineFactoryTest {
         val result = NoOpCapturedSnapshotProducer().capture(fakeGeneration)
 
         // Then
-        assertThat(result).isNull()
+        assertThat(result).isEqualTo(CaptureStep.Done(null))
     }
 
     private fun createFactory(
