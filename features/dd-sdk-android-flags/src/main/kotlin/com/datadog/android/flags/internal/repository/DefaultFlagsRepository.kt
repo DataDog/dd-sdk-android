@@ -13,6 +13,7 @@ import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.persistence.FlagsPersistenceManager
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.ResolutionReason
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -24,8 +25,29 @@ internal class DefaultFlagsRepository(
     private val internalLogger: InternalLogger = featureSdkCore.internalLogger,
     private val persistenceLoadTimeoutMs: Long = PERSISTENCE_LOAD_TIMEOUT_MS
 ) : FlagsRepository {
-    private data class FlagsState(val context: EvaluationContext, val flags: Map<String, PrecomputedFlag>)
-    private val atomicState = AtomicReference<FlagsState?>(null)
+    private data class FlagsState(
+        val context: EvaluationContext,
+        val flags: Map<String, PrecomputedFlag>,
+        val restoredFromDisk: Boolean = false
+    )
+
+    private data class RepositoryState(
+        val assignments: FlagsState? = null,
+        val requestedContext: EvaluationContext? = null
+    ) {
+        fun effectiveFlag(flag: PrecomputedFlag): PrecomputedFlag {
+            if (assignments?.restoredFromDisk != true) return flag
+            val reason = if (requestedContext == null || requestedContext == assignments.context) {
+                ResolutionReason.CACHED
+            } else {
+                ResolutionReason.STALE
+            }
+            return flag.copy(reason = reason.name)
+        }
+    }
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // Safe: AtomicReference accepts any initial value.
+    private val atomicState = AtomicReference(RepositoryState())
 
     @Suppress("UnsafeThirdPartyFunctionCall") // Safe: count is positive constant (1)
     private val persistenceLoadedLatch = CountDownLatch(1)
@@ -37,17 +59,23 @@ internal class DefaultFlagsRepository(
     ) { persistedState ->
         try {
             persistedState?.let {
-                val loadedState = FlagsState(it.evaluationContext, it.flags)
-                atomicState.compareAndSet(null, loadedState)
+                val loadedState = FlagsState(it.evaluationContext, it.flags, restoredFromDisk = true)
+                updateState { state ->
+                    if (state.assignments == null) state.copy(assignments = loadedState) else state
+                }
             }
         } finally {
             persistenceLoadedLatch.countDown()
         }
     }
 
+    override fun setRequestedContext(context: EvaluationContext) {
+        updateState { it.copy(requestedContext = context) }
+    }
+
     override fun setFlagsAndContext(context: EvaluationContext, flags: Map<String, PrecomputedFlag>) {
         val newState = FlagsState(context, flags)
-        atomicState.set(newState)
+        updateState { it.copy(assignments = newState) }
         persistenceLoadedLatch.countDown()
 
         persistenceManager.saveFlagsState(
@@ -72,8 +100,8 @@ internal class DefaultFlagsRepository(
     override fun getPrecomputedFlag(key: String): PrecomputedFlag? {
         waitForPersistenceLoad()
         val state = atomicState.get()
-        if (state != null) {
-            return state.flags[key]
+        if (state.assignments != null) {
+            return state.assignments.flags[key]?.let(state::effectiveFlag)
         }
         internalLogger.log(
             InternalLogger.Level.WARN,
@@ -86,8 +114,12 @@ internal class DefaultFlagsRepository(
     override fun getFlagsSnapshot(): Map<String, PrecomputedFlag> {
         waitForPersistenceLoad()
         val state = atomicState.get()
-        if (state != null) {
-            return state.flags
+        if (state.assignments != null) {
+            return if (state.assignments.restoredFromDisk) {
+                state.assignments.flags.mapValues { (_, flag) -> state.effectiveFlag(flag) }
+            } else {
+                state.assignments.flags
+            }
         }
         internalLogger.log(
             InternalLogger.Level.WARN,
@@ -99,25 +131,35 @@ internal class DefaultFlagsRepository(
 
     override fun getEvaluationContext(): EvaluationContext? {
         waitForPersistenceLoad()
-        return atomicState.get()?.context
+        return atomicState.get().assignments?.context
     }
 
     override fun hasFlags(): Boolean {
         waitForPersistenceLoad()
-        return atomicState.get()?.flags?.isNotEmpty() ?: false
+        return atomicState.get().assignments?.flags?.isNotEmpty() ?: false
     }
 
     override fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean {
-        val state = atomicState.get()
+        val state = atomicState.get().assignments
         return state?.context == context && state.flags.isNotEmpty()
     }
 
     @Suppress("ReturnCount")
     override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>? {
         waitForPersistenceLoad()
-        val state = atomicState.get() ?: return null
-        val flag = state.flags[key] ?: return null
-        return flag to state.context
+        val state = atomicState.get()
+        val assignments = state.assignments ?: return null
+        val flag = assignments.flags[key] ?: return null
+        return state.effectiveFlag(flag) to assignments.context
+    }
+
+    // AtomicReference.updateAndGet requires API 24; this SDK also supports API 23.
+    @Suppress("UnsafeThirdPartyFunctionCall") // Safe: compareAndSet accepts both immutable state references.
+    private fun updateState(transform: (RepositoryState) -> RepositoryState) {
+        do {
+            val previous = atomicState.get()
+            val updated = transform(previous)
+        } while (!atomicState.compareAndSet(previous, updated))
     }
 
     private fun waitForPersistenceLoad() {

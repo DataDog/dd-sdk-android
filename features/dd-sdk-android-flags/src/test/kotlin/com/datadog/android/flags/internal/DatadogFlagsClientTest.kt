@@ -9,12 +9,17 @@ package com.datadog.android.flags.internal
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.datastore.DataStoreHandler
+import com.datadog.android.api.storage.datastore.DataStoreReadCallback
+import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
+import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.model.VariationType
+import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
@@ -36,10 +41,13 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -1253,6 +1261,74 @@ internal class DatadogFlagsClientTest {
     // endregion
 
     // region setEvaluationContext()
+
+    @Test
+    fun `M resolve persisted flags with effective reasons and original telemetry context W context changes`(
+        forge: Forge
+    ) {
+        val context = EvaluationContext("persisted-user")
+        val flag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = "boolean",
+            variationValue = "true",
+            doLog = true,
+            reason = "TARGETING_MATCH"
+        )
+        val dataStore = mock<DataStoreHandler>()
+        doAnswer {
+            it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2).onSuccess(
+                DataStoreContent(0, FlagsStateEntry(context, mapOf("flag" to flag), 0L))
+            )
+            null
+        }.whenever(dataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
+        val repository = DefaultFlagsRepository(mockFeatureSdkCore, "persisted", dataStore)
+        testedClient = DatadogFlagsClient(
+            featureSdkCore = mockFeatureSdkCore,
+            evaluationsManager = mockEvaluationsManager,
+            flagsRepository = repository,
+            flagsConfiguration = forge.getForgery<FlagsConfiguration>().copy(
+                trackExposures = true,
+                rumIntegrationEnabled = true
+            ),
+            rumEvaluationLogger = mockRumEvaluationLogger,
+            exposureProcessor = mockProcessor,
+            evaluationsFeature = null,
+            flagStateManager = mockFlagsStateManager
+        )
+
+        val requests = listOf(
+            null to ResolutionReason.CACHED,
+            context to ResolutionReason.CACHED,
+            EvaluationContext("new-user") to ResolutionReason.STALE,
+            context to ResolutionReason.CACHED
+        )
+        requests.forEach { (requested, reason) ->
+            requested?.let { testedClient.setEvaluationContext(it) }
+            val snapshot = testedClient.getFlagAssignmentsSnapshot()
+            assertThat(snapshot["flag"]?.reason).isEqualTo(reason.name)
+            val details = testedClient.resolve("flag", false)
+            assertThat(details.value).isTrue()
+            assertThat(details.reason).isEqualTo(reason)
+            assertThat(details.variant).isEqualTo(flag.variationKey)
+            assertThat(details.errorCode).isNull()
+        }
+
+        val flags = argumentCaptor<com.datadog.android.flags.model.UnparsedFlag>()
+        verify(mockProcessor, times(4)).processEvent(eq("flag"), eq(context), flags.capture())
+        assertThat(flags.allValues.map { it.reason }).containsExactly("CACHED", "CACHED", "STALE", "CACHED")
+        assertThat(flag.reason).isEqualTo("TARGETING_MATCH")
+    }
+
+    @Test
+    fun `M record requested context before manager callbacks W setEvaluationContext()`() {
+        val context = EvaluationContext("new-user")
+
+        testedClient.setEvaluationContext(context)
+
+        inOrder(mockFlagsRepository, mockEvaluationsManager) {
+            verify(mockFlagsRepository).setRequestedContext(context)
+            verify(mockEvaluationsManager).updateEvaluationsForContext(context, null)
+        }
+    }
 
     @Test
     fun `M call evaluations manager W setEvaluationContext() { valid targeting key and attributes }`(forge: Forge) {

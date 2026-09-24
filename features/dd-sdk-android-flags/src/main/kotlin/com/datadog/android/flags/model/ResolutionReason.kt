@@ -48,5 +48,18 @@ enum class ResolutionReason {
     /**
      * An error occurred during flag evaluation.
      */
-    ERROR
+    ERROR,
+
+    /**
+     * The value was restored from disk and no context has been requested, or the requested
+     * context matches the persisted context. A fresh network result is not yet available.
+     */
+    CACHED,
+
+    /**
+     * The value was restored from disk for a different context than the one currently requested.
+     * A successful network result has not yet replaced the persisted assignments, including
+     * when the request for the new context failed.
+     */
+    STALE
 }

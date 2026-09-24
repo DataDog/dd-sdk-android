@@ -74,6 +74,7 @@ internal class DatadogFlagsClient(
      * Invoked on a background executor thread. See [EvaluationContextCallback] for timeout behavior.
      */
     override fun setEvaluationContext(context: EvaluationContext, callback: EvaluationContextCallback?) {
+        flagsRepository.setRequestedContext(context)
         evaluationsManager.updateEvaluationsForContext(context, callback)
     }
 

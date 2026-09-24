@@ -487,11 +487,13 @@ public final class com/datadog/android/flags/model/ResolutionDetails {
 }
 
 public final class com/datadog/android/flags/model/ResolutionReason : java/lang/Enum {
+	public static final field CACHED Lcom/datadog/android/flags/model/ResolutionReason;
 	public static final field DEFAULT Lcom/datadog/android/flags/model/ResolutionReason;
 	public static final field ERROR Lcom/datadog/android/flags/model/ResolutionReason;
 	public static final field PREREQUISITE_FAILED Lcom/datadog/android/flags/model/ResolutionReason;
 	public static final field RULE_MATCH Lcom/datadog/android/flags/model/ResolutionReason;
 	public static final field SPLIT Lcom/datadog/android/flags/model/ResolutionReason;
+	public static final field STALE Lcom/datadog/android/flags/model/ResolutionReason;
 	public static final field STATIC Lcom/datadog/android/flags/model/ResolutionReason;
 	public static final field TARGETING_MATCH Lcom/datadog/android/flags/model/ResolutionReason;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;

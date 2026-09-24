@@ -12,6 +12,7 @@ import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
 internal interface FlagsRepository {
+    fun setRequestedContext(context: EvaluationContext)
     fun getPrecomputedFlag(key: String): PrecomputedFlag?
     fun getEvaluationContext(): EvaluationContext?
     fun setFlagsAndContext(context: EvaluationContext, flags: Map<String, PrecomputedFlag>)

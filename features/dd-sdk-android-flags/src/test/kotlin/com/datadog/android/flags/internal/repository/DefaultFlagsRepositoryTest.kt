@@ -29,9 +29,12 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
@@ -261,6 +264,135 @@ internal class DefaultFlagsRepositoryTest {
 
         // Then
         assertThat(result?.variationValue).isEqualTo(flagValue)
+    }
+
+    @Test
+    fun `M return cached reason without changing persisted metadata W disk hydration completes`() {
+        val callback = preparePersistenceLoad()
+        callback.onSuccess(DataStoreContent(0, FlagsStateEntry(testContext, multipleFlagsMap, 0L)))
+
+        val snapshot = testedRepository.getFlagsSnapshot()
+
+        assertThat(snapshot.keys).isEqualTo(multipleFlagsMap.keys)
+        multipleFlagsMap.forEach { (key, flag) ->
+            assertThat(snapshot[key]).isEqualTo(flag.copy(reason = "CACHED"))
+            assertThat(testedRepository.getPrecomputedFlag(key)).isEqualTo(snapshot[key])
+            assertThat(testedRepository.getPrecomputedFlagWithContext(key))
+                .isEqualTo(snapshot[key] to testContext)
+        }
+        assertThat(multipleFlagsMap.values.map { it.reason }).doesNotContain("CACHED")
+    }
+
+    @Test
+    fun `M retain network reasons W disk read finishes after network response`() {
+        val callback = preparePersistenceLoad()
+        val networkContext = EvaluationContext("new-user")
+        testedRepository.setFlagsAndContext(networkContext, singleFlagMap)
+
+        callback.onSuccess(DataStoreContent(0, FlagsStateEntry(testContext, multipleFlagsMap, 0L)))
+
+        assertThat(testedRepository.getFlagsSnapshot()).isEqualTo(singleFlagMap)
+        assertThat(testedRepository.getEvaluationContext()).isEqualTo(networkContext)
+    }
+
+    @Test
+    fun `M replace cached reasons W network response replaces persisted assignments`() {
+        val callback = preparePersistenceLoad()
+        callback.onSuccess(DataStoreContent(0, FlagsStateEntry(testContext, multipleFlagsMap, 0L)))
+        val initialSnapshot = testedRepository.getFlagsSnapshot()
+
+        testedRepository.setFlagsAndContext(testContext, multipleFlagsMap)
+
+        assertThat(testedRepository.getFlagsSnapshot()).isEqualTo(multipleFlagsMap)
+        assertThat(initialSnapshot.values.map { it.reason }).containsOnly("CACHED")
+    }
+
+    @Test
+    fun `M derive reasons from full requested context W context changes before network resolution`() {
+        val callback = preparePersistenceLoad()
+        callback.onSuccess(DataStoreContent(0, FlagsStateEntry(testContext, multipleFlagsMap, 0L)))
+        val contexts = listOf(
+            testContext to "CACHED",
+            testContext.copy(attributes = mapOf("plan" to "premium")) to "STALE",
+            testContext.copy(targetingKey = "different-user") to "STALE",
+            testContext to "CACHED"
+        )
+
+        contexts.forEach { (requestedContext, reason) ->
+            testedRepository.setRequestedContext(requestedContext)
+            val snapshot = testedRepository.getFlagsSnapshot()
+            assertThat(snapshot.values.map { it.reason }).containsOnly(reason)
+            multipleFlagsMap.forEach { (key, flag) ->
+                assertThat(testedRepository.getPrecomputedFlagWithContext(key))
+                    .isEqualTo(flag.copy(reason = reason) to testContext)
+            }
+        }
+    }
+
+    @Test
+    fun `M preserve requested context W request starts before disk hydration`() {
+        val callback = preparePersistenceLoad()
+        testedRepository.setRequestedContext(EvaluationContext("different-user"))
+
+        callback.onSuccess(DataStoreContent(0, FlagsStateEntry(testContext, multipleFlagsMap, 0L)))
+
+        assertThat(testedRepository.getFlagsSnapshot().values.map { it.reason }).containsOnly("STALE")
+        assertThat(testedRepository.getEvaluationContext()).isEqualTo(testContext)
+    }
+
+    @Test
+    fun `M leave fresh assignments unchanged W another context is requested`() {
+        testedRepository.setFlagsAndContext(testContext, multipleFlagsMap)
+
+        testedRepository.setRequestedContext(EvaluationContext("different-user"))
+
+        assertThat(testedRepository.getFlagsSnapshot()).isEqualTo(multipleFlagsMap)
+    }
+
+    @Test
+    fun `M persist original network reasons only W cached assignments are read and replaced`() {
+        val callback = preparePersistenceLoad()
+        callback.onSuccess(DataStoreContent(0, FlagsStateEntry(testContext, multipleFlagsMap, 0L)))
+        testedRepository.setRequestedContext(EvaluationContext("different-user"))
+
+        testedRepository.getFlagsSnapshot()
+        multipleFlagsMap.keys.forEach { testedRepository.getPrecomputedFlagWithContext(it) }
+
+        verify(mockDataStore, never()).setValue<FlagsStateEntry>(
+            key = any(),
+            data = any(),
+            version = any(),
+            callback = anyOrNull(),
+            serializer = any()
+        )
+
+        testedRepository.setFlagsAndContext(testContext, multipleFlagsMap)
+
+        val entry = argumentCaptor<FlagsStateEntry>()
+        verify(mockDataStore).setValue(
+            key = any(),
+            data = entry.capture(),
+            version = any(),
+            callback = anyOrNull(),
+            serializer = any()
+        )
+        assertThat(entry.firstValue.flags).isEqualTo(multipleFlagsMap)
+        assertThat(entry.firstValue.evaluationContext).isEqualTo(testContext)
+    }
+
+    private fun preparePersistenceLoad(): DataStoreReadCallback<FlagsStateEntry> {
+        lateinit var callback: DataStoreReadCallback<FlagsStateEntry>
+        doAnswer {
+            callback = it.getArgument(2)
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(
+            key = any(),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+        testedRepository = DefaultFlagsRepository(mockFeatureSdkCore, "cached", mockDataStore)
+        return callback
     }
 
     // region hasFlags

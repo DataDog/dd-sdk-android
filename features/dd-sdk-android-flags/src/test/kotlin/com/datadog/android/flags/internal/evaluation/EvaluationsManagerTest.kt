@@ -28,6 +28,7 @@ import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import com.datadog.android.internal.utils.DDCoreStateHolder
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -230,6 +231,42 @@ internal class EvaluationsManagerTest {
             any<Boolean>(),
             anyOrNull<Map<String, Any?>>()
         )
+    }
+
+    @Test
+    fun `M retain disk reasons W context fetch fails for matching and different contexts`(forge: Forge) {
+        val context = EvaluationContext("persisted-user")
+        val flag = forge.getForgery<PrecomputedFlag>().copy(reason = "TARGETING_MATCH")
+        val dataStore = mock<DataStoreHandler>()
+        doAnswer {
+            it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2).onSuccess(
+                DataStoreContent(0, FlagsStateEntry(context, mapOf("flag" to flag), 0L))
+            )
+            null
+        }.whenever(dataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
+        val repository = DefaultFlagsRepository(mockSdkCore, "persisted", dataStore, mockInternalLogger)
+        val manager = EvaluationsManager(
+            sdkCore = mockSdkCore,
+            executorService = mockExecutorService,
+            internalLogger = mockInternalLogger,
+            flagsRepository = repository,
+            assignmentsReader = mockAssignmentsDownloader,
+            precomputeMapper = mockPrecomputeMapper,
+            flagStateManager = mockFlagsStateManager,
+            initializationTimeoutMs = null,
+            initializationTimeoutScheduler = { _, _ -> {} }
+        )
+
+        listOf(context to "CACHED", EvaluationContext("new-user") to "STALE").forEach { (requested, reason) ->
+            repository.setRequestedContext(requested)
+            val callback = mock<EvaluationContextCallback>()
+
+            manager.updateEvaluationsForContext(requested, callback)
+
+            verify(callback).onFailure(any())
+            assertThat(repository.getFlagsSnapshot()["flag"]?.reason).isEqualTo(reason)
+            assertThat(repository.getEvaluationContext()).isEqualTo(context)
+        }
     }
 
     @Test
