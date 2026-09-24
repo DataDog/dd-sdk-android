@@ -7,10 +7,17 @@
 package com.datadog.android.sessionreplay.internal.composition
 
 import android.app.Application
+import android.webkit.WebView
+import android.widget.TextView
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.SessionReplayInternalCallback
-import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMapperTypeWrapper
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedTextViewMapper
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewGroupFallbackMapper
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedWebViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.datadog.android.sessionreplay.internal.recorder.RecordingTimeBank
 import com.datadog.android.sessionreplay.internal.recorder.TimeBank
@@ -24,9 +31,23 @@ import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 internal class DefaultCompositionPipelineFactory(
     private val sdkCore: FeatureSdkCore,
     private val internalCallback: SessionReplayInternalCallback,
+    private val touchPrivacyManager: TouchPrivacyManager,
     private val dynamicOptimizationEnabled: Boolean,
-    private val snapshotProducerFactory: (ActiveWindowSource) -> CapturedSnapshotProducer = {
-        NO_OP_CAPTURED_SNAPSHOT_PRODUCER
+    private val snapshotProducerFactory: (ActiveWindowSource, RumContextProvider) -> CapturedSnapshotProducer = {
+            windowSource,
+            rumContextProvider
+        ->
+        AndroidCapturedSnapshotProducer(
+            windowSource = windowSource,
+            scopeProvider = DefaultRumViewScopeProvider(rumContextProvider),
+            timeProvider = sdkCore.timeProvider,
+            traversal = AndroidWindowTraversal(
+                mapperRegistry = builtInCapturedMappers(sdkCore.internalLogger),
+                touchPrivacyManager = touchPrivacyManager,
+                internalLogger = sdkCore.internalLogger
+            ),
+            touchPrivacyManager = touchPrivacyManager
+        )
     },
     private val recordingTimeBankFactory: () -> TimeBank = { RecordingTimeBank() }
 ) : CompositionPipelineFactory {
@@ -48,7 +69,7 @@ internal class DefaultCompositionPipelineFactory(
             internalLogger = internalLogger
         )
         val orchestrator = SnapshotCaptureOrchestrator(
-            producer = snapshotProducerFactory(windowSource),
+            producer = snapshotProducerFactory(windowSource, rumContextProvider),
             processor = ImmediateCapturedSnapshotProcessor(),
             consumer = completionQueue,
             timeProvider = CaptureTimeProvider { sdkCore.timeProvider.getDeviceElapsedTimeNanos() },
@@ -71,13 +92,7 @@ internal class DefaultCompositionPipelineFactory(
             recordWriter = recordWriter,
             timeProvider = sdkCore.timeProvider,
             rumContextProvider = rumContextProvider,
-            // Composition has no per-view touch privacy population yet: AndroidWindowTraversal,
-            // which would call addTouchOverrideArea() the way the legacy TreeViewTraversal does,
-            // doesn't exist on this branch (tracked for PANA-8613 / branch 03). Until then, fail
-            // closed with a dedicated, always-HIDE manager rather than accept the caller's
-            // configured one - falling back to its global privacy would silently ignore any
-            // per-view setSessionReplayTouchPrivacy(HIDE) override an app relies on.
-            touchPrivacyManager = TouchPrivacyManager(TouchPrivacy.HIDE),
+            touchPrivacyManager = touchPrivacyManager,
             internalLogger = internalLogger
         )
         return CompositionCapturePipeline(
@@ -102,8 +117,20 @@ internal class DefaultCompositionPipelineFactory(
     }
 
     private companion object {
-        val NO_OP_CAPTURED_SNAPSHOT_PRODUCER: CapturedSnapshotProducer = NoOpCapturedSnapshotProducer()
         const val PROCESSING_EXECUTOR_NAME = "sr-composition-processing"
         const val EXPIRY_EXECUTOR_NAME = "sr-composition-expiry"
+
+        fun builtInCapturedMappers(internalLogger: InternalLogger): CapturedViewMapperRegistry =
+            CapturedViewMapperRegistry(
+                mappers = listOf(
+                    CapturedMapperTypeWrapper(WebView::class.java, CapturedWebViewMapper()),
+                    CapturedMapperTypeWrapper(
+                        TextView::class.java,
+                        CapturedTextViewMapper(internalLogger = internalLogger)
+                    )
+                ),
+                fallbackMapper = CapturedViewGroupFallbackMapper(internalLogger = internalLogger),
+                internalLogger = internalLogger
+            )
     }
 }
