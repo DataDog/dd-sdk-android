@@ -300,4 +300,37 @@ internal class SharedPreferencesStorageTest {
             assertThat(value).isEqualTo(fakeDefaultValue)
         }
     }
+
+    @Test
+    fun `M not throw IllegalStateException W getString {backing file failed to load}`(
+        @StringForgery fakeKey: String,
+        @StringForgery fakeDefaultValue: String
+    ) {
+        // Given
+        whenever(
+            mockPrefs.getString(fakeKey, fakeDefaultValue)
+        ) doThrow IllegalStateException("Failed to load prefs")
+
+        assertDoesNotThrow {
+            // When
+            val value = testedStorage.getString(fakeKey, fakeDefaultValue)
+
+            // Then
+            assertThat(value).isEqualTo(fakeDefaultValue)
+        }
+    }
+
+    @Test
+    fun `M not throw IllegalStateException W putString {backing file failed to load}`(
+        @StringForgery fakeKey: String,
+        @StringForgery fakeValue: String
+    ) {
+        // Given
+        whenever(mockPrefs.edit()) doThrow IllegalStateException("Failed to load prefs")
+
+        assertDoesNotThrow {
+            // When
+            testedStorage.putString(fakeKey, fakeValue)
+        }
+    }
 }
