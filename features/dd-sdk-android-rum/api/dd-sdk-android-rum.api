@@ -120,6 +120,7 @@ public final class com/datadog/android/rum/RumConfiguration$Builder {
 	public final fun setTelemetrySampleRate (F)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setTimeseriesConfiguration (Lcom/datadog/android/rum/timeseries/TimeseriesConfiguration;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setViewEventMapper (Lcom/datadog/android/rum/event/ViewEventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
+	public final fun setViewEventWriteConfig (Lcom/datadog/android/rum/configuration/ViewEventWriteConfig;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setVitalEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setVitalEventMapper (Lcom/datadog/android/event/EventMapper;Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public static synthetic fun setVitalEventMapper$default (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/event/EventMapper;Lcom/datadog/android/event/EventMapper;ILjava/lang/Object;)Lcom/datadog/android/rum/RumConfiguration$Builder;
@@ -297,7 +298,6 @@ public final class com/datadog/android/rum/_RumInternalProxy$Companion {
 	public final fun setDisableJankStats (Lcom/datadog/android/rum/RumConfiguration$Builder;Z)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setInsightsCollector (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/internal/instrumentation/insights/InsightsCollector;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setRumSessionTypeOverride (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/RumSessionType;)Lcom/datadog/android/rum/RumConfiguration$Builder;
-	public final fun setRumViewEventWriteConfig (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/configuration/RumViewEventWriteConfig;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setTelemetryConfigurationEventMapper (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun toResourceAttributes (Lcom/datadog/android/rum/resource/ResourceHeadersExtractor;Ljava/util/Map;Ljava/util/Map;Lcom/datadog/android/api/InternalLogger;)Ljava/util/Map;
 }
@@ -308,17 +308,6 @@ public final class com/datadog/android/rum/configuration/RumNetworkInstrumentati
 	public final fun setSdkInstanceName (Ljava/lang/String;)Lcom/datadog/android/rum/configuration/RumNetworkInstrumentationConfiguration;
 	public final fun trackResourceHeaders (Lcom/datadog/android/rum/resource/ResourceHeadersExtractor;)Lcom/datadog/android/rum/configuration/RumNetworkInstrumentationConfiguration;
 	public static synthetic fun trackResourceHeaders$default (Lcom/datadog/android/rum/configuration/RumNetworkInstrumentationConfiguration;Lcom/datadog/android/rum/resource/ResourceHeadersExtractor;ILjava/lang/Object;)Lcom/datadog/android/rum/configuration/RumNetworkInstrumentationConfiguration;
-}
-
-public abstract interface class com/datadog/android/rum/configuration/RumViewEventWriteConfig {
-}
-
-public final class com/datadog/android/rum/configuration/RumViewEventWriteConfig$AlwaysFullView : com/datadog/android/rum/configuration/RumViewEventWriteConfig {
-	public static final field INSTANCE Lcom/datadog/android/rum/configuration/RumViewEventWriteConfig$AlwaysFullView;
-}
-
-public final class com/datadog/android/rum/configuration/RumViewEventWriteConfig$FullViewOnlyAtStart : com/datadog/android/rum/configuration/RumViewEventWriteConfig {
-	public static final field INSTANCE Lcom/datadog/android/rum/configuration/RumViewEventWriteConfig$FullViewOnlyAtStart;
 }
 
 public final class com/datadog/android/rum/configuration/SlowFramesConfiguration {
@@ -335,6 +324,17 @@ public final class com/datadog/android/rum/configuration/SlowFramesConfiguration
 
 public final class com/datadog/android/rum/configuration/SlowFramesConfiguration$Companion {
 	public final fun getDEFAULT ()Lcom/datadog/android/rum/configuration/SlowFramesConfiguration;
+}
+
+public abstract interface class com/datadog/android/rum/configuration/ViewEventWriteConfig {
+}
+
+public final class com/datadog/android/rum/configuration/ViewEventWriteConfig$AlwaysFullView : com/datadog/android/rum/configuration/ViewEventWriteConfig {
+	public static final field INSTANCE Lcom/datadog/android/rum/configuration/ViewEventWriteConfig$AlwaysFullView;
+}
+
+public final class com/datadog/android/rum/configuration/ViewEventWriteConfig$FullViewOnlyAtStart : com/datadog/android/rum/configuration/ViewEventWriteConfig {
+	public static final field INSTANCE Lcom/datadog/android/rum/configuration/ViewEventWriteConfig$FullViewOnlyAtStart;
 }
 
 public final class com/datadog/android/rum/configuration/VitalsUpdateFrequency : java/lang/Enum {

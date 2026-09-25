@@ -11,6 +11,7 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.rum.assertj.ConfigurationRumAssert
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
+import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.NoOpRumSessionListener
@@ -743,6 +744,16 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
+    fun `M default to FullViewOnlyAtStart W build() { default configuration }`() {
+        // When
+        val rumConfiguration = testedBuilder.build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration.viewEventWriteConfig)
+            .isEqualTo(ViewEventWriteConfig.FullViewOnlyAtStart)
+    }
+
+    @Test
     fun `M store provided configuration W setTimeseriesConfiguration(config)`(forge: Forge) {
         // Given
         val fakeConfig = TimeseriesConfiguration(setOf(forge.aValueFrom(TimeseriesType::class.java)))
@@ -753,5 +764,18 @@ internal class RumConfigurationBuilderTest {
         // Then
         assertThat(rumConfiguration.featureConfiguration.timeseriesConfiguration)
             .isSameAs(fakeConfig)
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M store provided configuration W setViewEventWriteConfig(config)`() {
+        // When
+        val rumConfiguration = testedBuilder
+            .setViewEventWriteConfig(ViewEventWriteConfig.AlwaysFullView)
+            .build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration.viewEventWriteConfig)
+            .isEqualTo(ViewEventWriteConfig.AlwaysFullView)
     }
 }

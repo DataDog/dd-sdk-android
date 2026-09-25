@@ -8,6 +8,7 @@ package com.datadog.android.rum.integration
 
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.stub.StubSDKCore
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumActionType
@@ -16,8 +17,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
-import com.datadog.android.rum._RumInternalProxy
-import com.datadog.android.rum.configuration.RumViewEventWriteConfig
+import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.integration.tests.assertj.hasRumEvent
 import com.datadog.android.rum.integration.tests.assertj.hasRumViewUpdateEvent
 import com.datadog.android.rum.integration.tests.elmyr.RumIntegrationForgeConfigurator
@@ -2072,14 +2072,10 @@ class ViewLoadingTimeMetricsTests {
         monitor.stopView(viewKey)
     }
 
+    @OptIn(ExperimentalRumApi::class)
     private fun configurationBuilder() = RumConfiguration.Builder(fakeApplicationId)
         .trackNonFatalAnrs(false)
-        .apply {
-            _RumInternalProxy.setRumViewEventWriteConfig(
-                builder = this@apply,
-                config = RumViewEventWriteConfig.FullViewOnlyAtStart
-            )
-        }
+        .setViewEventWriteConfig(ViewEventWriteConfig.FullViewOnlyAtStart)
 
     // endregion
 

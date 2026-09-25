@@ -6,25 +6,25 @@
 
 package com.datadog.android.rum.configuration
 
-import com.datadog.android.lint.InternalApi
-
 /**
  * Controls the write strategy for RUM view events, determining whether full view events
- * or partial diff updates are written for each view update.
+ * or partial diff updates (Partial View Updates) are written for each view update.
+ *
+ * @see com.datadog.android.rum.RumConfiguration.Builder.setViewEventWriteConfig
  */
-@InternalApi
-sealed interface RumViewEventWriteConfig {
+sealed interface ViewEventWriteConfig {
 
     /**
      * Every view update writes a complete [com.datadog.android.rum.model.ViewEvent].
-     * This is the default behaviour; no partial updates are used.
+     * Use this to opt out of Partial View Updates, for example if you rely on a proxy
+     * that inspects the full raw RUM payload for every view update.
      */
-    object AlwaysFullView : RumViewEventWriteConfig
+    object AlwaysFullView : ViewEventWriteConfig
 
     /**
      * Writes a complete [com.datadog.android.rum.model.ViewEvent] only for the first update
      * of a view. Subsequent updates write only the diff as a `ViewUpdateEvent`, reducing
-     * payload size for views with many updates.
+     * payload size for views with many updates. This is the default behaviour.
      */
-    object FullViewOnlyAtStart : RumViewEventWriteConfig
+    object FullViewOnlyAtStart : ViewEventWriteConfig
 }
