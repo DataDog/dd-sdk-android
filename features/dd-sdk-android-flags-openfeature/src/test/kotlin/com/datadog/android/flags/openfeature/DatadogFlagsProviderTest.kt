@@ -127,6 +127,18 @@ internal class DatadogFlagsProviderTest {
     // region Primitive Type Evaluations
 
     @Test
+    fun `M forward stale structured result W getObjectEvaluation`() {
+        val value: Map<String, Any?> = mapOf("key" to "value")
+        whenever(mockFlagsClient.resolve(eq("flag"), any<Map<String, Any?>>())).thenReturn(
+            ResolutionDetails(value = value, reason = ResolutionReason.STALE)
+        )
+        val result = provider.getObjectEvaluation("flag", Value.Structure(emptyMap()), null)
+        assertThat(result.value.asStructure()?.get("key")).isEqualTo(Value.String("value"))
+        assertThat(result.reason).isEqualTo("STALE")
+        assertThat(result.errorCode).isNull()
+    }
+
+    @Test
     fun `M delegate to FlagsClient and convert result W getBooleanEvaluation()`(
         forge: Forge,
         @StringForgery flagKey: String,
