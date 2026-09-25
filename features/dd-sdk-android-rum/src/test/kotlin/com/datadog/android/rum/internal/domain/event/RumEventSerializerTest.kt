@@ -979,6 +979,18 @@ internal class RumEventSerializerTest {
                             configuration.sessionReplaySampleRate!!
                         )
                     }
+                    if (configuration.profilingSampleRate != null) {
+                        hasField("profiling_sample_rate", configuration.profilingSampleRate!!)
+                    }
+                    if (configuration.profilingApplicationLaunchSampleRate != null) {
+                        hasField(
+                            "profiling_application_launch_sample_rate",
+                            configuration.profilingApplicationLaunchSampleRate!!
+                        )
+                    }
+                    if (configuration.profilingAnrEnabled != null) {
+                        hasField("profiling_anr_enabled", configuration.profilingAnrEnabled!!)
+                    }
                     if (configuration.useProxy != null) {
                         hasField("use_proxy", configuration.useProxy!!)
                     }

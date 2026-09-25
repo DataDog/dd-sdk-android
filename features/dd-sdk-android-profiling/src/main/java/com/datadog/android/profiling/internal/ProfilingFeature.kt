@@ -116,6 +116,10 @@ internal class ProfilingFeature(
         sdkCore.setEventReceiver(name, this)
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
             context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning()
+            context[FeatureContextKeys.PROFILING_SAMPLE_RATE] = configuration.continuousSampleRate
+            context[FeatureContextKeys.PROFILING_APPLICATION_LAUNCH_SAMPLE_RATE] =
+                configuration.applicationLaunchSampleRate
+            context[FeatureContextKeys.PROFILING_ANR_ENABLED] = configuration.anrTriggerEnabled
         }
 
         val quotaCallFactory = sdkCore.createOkHttpCallFactory {
