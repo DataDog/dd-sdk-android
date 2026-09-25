@@ -18,6 +18,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.remote.model.RemoteConfigSyncMetadata
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.attributes.LocalAttribute
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
@@ -52,6 +53,7 @@ import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -214,7 +216,14 @@ internal class TelemetryEventHandlerTest {
 
         whenever(
             mockRumFeatureScope.withWriteContext(
-                eq(setOf(Feature.SESSION_REPLAY_FEATURE_NAME, Feature.TRACING_FEATURE_NAME, Feature.RUM_FEATURE_NAME)),
+                eq(
+                    setOf(
+                        Feature.SESSION_REPLAY_FEATURE_NAME,
+                        Feature.TRACING_FEATURE_NAME,
+                        Feature.PROFILING_FEATURE_NAME,
+                        Feature.RUM_FEATURE_NAME
+                    )
+                ),
                 any()
             )
         ) doAnswer {
@@ -611,6 +620,38 @@ internal class TelemetryEventHandlerTest {
                 )
                 .hasTnsTimeBasedThreshold(fakeRumConfiguration.initialResourceIdentifier.resolveThreshold())
                 .hasInvTimeBasedThreshold(fakeRumConfiguration.lastInteractionIdentifier!!.resolveThreshold())
+        }
+    }
+
+    @Test
+    fun `M include profiling config W handleEvent() { configuration, with Profiling }`(
+        @Forgery fakeConfiguration: InternalTelemetryEvent.Configuration,
+        @FloatForgery(min = 0f, max = 100f) fakeProfilingSampleRate: Float,
+        @FloatForgery(min = 0f, max = 100f) fakeProfilingAppLaunchSampleRate: Float,
+        @BoolForgery fakeProfilingAnrEnabled: Boolean
+    ) {
+        // Given
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                this[Feature.PROFILING_FEATURE_NAME] = mapOf(
+                    FeatureContextKeys.PROFILING_SAMPLE_RATE to fakeProfilingSampleRate,
+                    FeatureContextKeys.PROFILING_APPLICATION_LAUNCH_SAMPLE_RATE to fakeProfilingAppLaunchSampleRate,
+                    FeatureContextKeys.PROFILING_ANR_ENABLED to fakeProfilingAnrEnabled
+                )
+            }
+        )
+        val configRawEvent = RumRawEvent.TelemetryEventWrapper(fakeConfiguration, eventTime = fakeEventTime)
+
+        // When
+        testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
+
+        // Then
+        argumentCaptor<TelemetryConfigurationEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            assertThat(firstValue)
+                .hasProfilingSampleRate(fakeProfilingSampleRate)
+                .hasProfilingApplicationLaunchSampleRate(fakeProfilingAppLaunchSampleRate)
+                .hasProfilingAnrEnabled(fakeProfilingAnrEnabled)
         }
     }
 

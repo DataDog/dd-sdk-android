@@ -375,6 +375,40 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
+    fun `M expose continuous profiling sample rate W initialize()`() {
+        // Given
+        val context = mutableMapOf<String, Any?>()
+        whenever(mockSdkCore.updateFeatureContext(eq(Feature.PROFILING_FEATURE_NAME), any(), any())) doAnswer {
+            it.getArgument<(MutableMap<String, Any?>) -> Unit>(2).invoke(context)
+        }
+
+        // When
+        testedFeature.onInitialize(mockContext)
+
+        // Then
+        assertThat(context[FeatureContextKeys.PROFILING_SAMPLE_RATE])
+            .isEqualTo(fakeConfiguration.continuousSampleRate)
+    }
+
+    @Test
+    fun `M expose application launch sample rate & ANR flag W initialize()`() {
+        // Given
+        val context = mutableMapOf<String, Any?>()
+        whenever(mockSdkCore.updateFeatureContext(eq(Feature.PROFILING_FEATURE_NAME), any(), any())) doAnswer {
+            it.getArgument<(MutableMap<String, Any?>) -> Unit>(2).invoke(context)
+        }
+
+        // When
+        testedFeature.onInitialize(mockContext)
+
+        // Then
+        assertThat(context[FeatureContextKeys.PROFILING_APPLICATION_LAUNCH_SAMPLE_RATE])
+            .isEqualTo(fakeConfiguration.applicationLaunchSampleRate)
+        assertThat(context[FeatureContextKeys.PROFILING_ANR_ENABLED])
+            .isEqualTo(fakeConfiguration.anrTriggerEnabled)
+    }
+
+    @Test
     fun `M stop Profiling W receive TTID event {continuous disabled}`() {
         // Given — continuous disabled, profiler not running (no active launch session)
         testedFeature = ProfilingFeature(

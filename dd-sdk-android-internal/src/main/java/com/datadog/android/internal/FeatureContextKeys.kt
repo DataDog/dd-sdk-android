@@ -17,6 +17,24 @@ object FeatureContextKeys {
     const val PROFILER_IS_RUNNING: String = "profiler_is_running"
 
     /**
+     * Sample rate (0..100) configured for continuous profiling. Written by the profiling
+     * feature and read by RUM when building the SDK configuration telemetry event.
+     */
+    const val PROFILING_SAMPLE_RATE: String = "profiling_sample_rate"
+
+    /**
+     * Sample rate (0..100) configured for application launch profiling. Written by the
+     * profiling feature and read by RUM when building the SDK configuration telemetry event.
+     */
+    const val PROFILING_APPLICATION_LAUNCH_SAMPLE_RATE: String = "profiling_application_launch_sample_rate"
+
+    /**
+     * Whether ANR-triggered profiling is enabled. Written by the profiling feature and read
+     * by RUM when building the SDK configuration telemetry event.
+     */
+    const val PROFILING_ANR_ENABLED: String = "profiling_anr_enabled"
+
+    /**
      * Current RUM session identifier. Written by the RUM feature into its own feature
      * context on every session renewal; read by other features (e.g. profiling) that
      * subscribe via [com.datadog.android.api.feature.FeatureContextUpdateReceiver].
