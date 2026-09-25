@@ -53,5 +53,11 @@ enum class ResolutionReason {
     /**
      * The value was restored from persistent storage during client initialization.
      */
-    CACHED
+    CACHED,
+
+    /**
+     * The assignment was evaluated for a different context than the latest requested context.
+     * Applies to both disk-restored and network-loaded assignments.
+     */
+    STALE
 }
