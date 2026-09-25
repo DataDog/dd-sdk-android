@@ -17,7 +17,7 @@ import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.configuration.RumViewEventWriteConfig
+import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.InfoProvider
@@ -192,7 +192,7 @@ internal class RumSessionScopeAttributePropagationTest {
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
             viewEventMapper = mock<ViewEventMapper>(),
-            rumViewEventWriteConfig = RumViewEventWriteConfig.AlwaysFullView,
+            viewEventWriteConfig = ViewEventWriteConfig.AlwaysFullView,
             heatmapIdentifierRegistry = null
         )
     }

@@ -52,8 +52,8 @@ import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.configuration.RumViewEventWriteConfig
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
+import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
@@ -945,7 +945,7 @@ internal class RumFeature(
         val disableJankStats: Boolean,
         val insightsCollector: InsightsCollector,
         val appStartupActivityPredicate: AppStartupActivityPredicate,
-        val rumViewEventWriteConfig: RumViewEventWriteConfig,
+        val viewEventWriteConfig: ViewEventWriteConfig,
         val timeseriesConfiguration: TimeseriesConfiguration?
     )
 
@@ -1001,7 +1001,7 @@ internal class RumFeature(
             disableJankStats = false,
             insightsCollector = NoOpInsightsCollector(),
             appStartupActivityPredicate = DefaultAppStartupActivityPredicate,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
+            viewEventWriteConfig = ViewEventWriteConfig.FullViewOnlyAtStart,
             timeseriesConfiguration = null
         )
 

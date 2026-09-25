@@ -21,7 +21,7 @@ import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.configuration.RumViewEventWriteConfig
+import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.Time
@@ -209,7 +209,7 @@ internal class RumApplicationScopeTest {
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
             viewEventMapper = mock<ViewEventMapper>(),
-            rumViewEventWriteConfig = RumViewEventWriteConfig.AlwaysFullView,
+            viewEventWriteConfig = ViewEventWriteConfig.AlwaysFullView,
             heatmapIdentifierRegistry = null,
             timeseriesCollector = mockTimeseriesCollector
         )

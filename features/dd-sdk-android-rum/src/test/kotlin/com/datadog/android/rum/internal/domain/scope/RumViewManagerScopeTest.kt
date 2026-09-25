@@ -19,7 +19,7 @@ import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.configuration.RumViewEventWriteConfig
+import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
@@ -210,7 +210,7 @@ internal class RumViewManagerScopeTest {
             displayInfoProvider = mockDisplayInfoProvider,
             insightsCollector = mockInsightsCollector,
             viewEventMapper = mockViewEventMapper,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
+            viewEventWriteConfig = ViewEventWriteConfig.FullViewOnlyAtStart,
             heatmapIdentifierRegistry = null
         )
     }
@@ -606,7 +606,7 @@ internal class RumViewManagerScopeTest {
             displayInfoProvider = mockDisplayInfoProvider,
             insightsCollector = mockInsightsCollector,
             viewEventMapper = mockViewEventMapper,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
+            viewEventWriteConfig = ViewEventWriteConfig.FullViewOnlyAtStart,
             heatmapIdentifierRegistry = null
         )
         testedScope.applicationDisplayed = true
@@ -646,7 +646,7 @@ internal class RumViewManagerScopeTest {
             displayInfoProvider = mockDisplayInfoProvider,
             insightsCollector = mockInsightsCollector,
             viewEventMapper = mockViewEventMapper,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
+            viewEventWriteConfig = ViewEventWriteConfig.FullViewOnlyAtStart,
             heatmapIdentifierRegistry = null
         )
         testedScope.childrenScopes.add(mockChildScope)
@@ -689,7 +689,7 @@ internal class RumViewManagerScopeTest {
             displayInfoProvider = mockDisplayInfoProvider,
             insightsCollector = mockInsightsCollector,
             viewEventMapper = mockViewEventMapper,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
+            viewEventWriteConfig = ViewEventWriteConfig.FullViewOnlyAtStart,
             heatmapIdentifierRegistry = null
         )
         testedScope.applicationDisplayed = true
@@ -765,7 +765,7 @@ internal class RumViewManagerScopeTest {
             displayInfoProvider = mockDisplayInfoProvider,
             insightsCollector = mockInsightsCollector,
             viewEventMapper = mockViewEventMapper,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
+            viewEventWriteConfig = ViewEventWriteConfig.FullViewOnlyAtStart,
             heatmapIdentifierRegistry = null
         )
         testedScope.childrenScopes.add(mockChildScope)
@@ -809,7 +809,7 @@ internal class RumViewManagerScopeTest {
             displayInfoProvider = mockDisplayInfoProvider,
             insightsCollector = mockInsightsCollector,
             viewEventMapper = mockViewEventMapper,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
+            viewEventWriteConfig = ViewEventWriteConfig.FullViewOnlyAtStart,
             heatmapIdentifierRegistry = null
         )
         testedScope.stopped = true

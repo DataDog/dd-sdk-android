@@ -91,7 +91,7 @@ data class com.datadog.android.rum.RumConfiguration
     fun trackAnonymousUser(Boolean): Builder
     fun setAppStartupActivityPredicate(com.datadog.android.rum.startup.AppStartupActivityPredicate): Builder
     fun setTimeseriesConfiguration(com.datadog.android.rum.timeseries.TimeseriesConfiguration): Builder
-    fun setRumViewEventWriteConfig(com.datadog.android.rum.configuration.RumViewEventWriteConfig): Builder
+    fun setViewEventWriteConfig(com.datadog.android.rum.configuration.ViewEventWriteConfig): Builder
     fun build(): RumConfiguration
 enum com.datadog.android.rum.RumErrorSource
   - NETWORK
@@ -196,13 +196,13 @@ class com.datadog.android.rum.configuration.RumNetworkInstrumentationConfigurati
   fun setSdkInstanceName(String)
   fun setRumResourceAttributesProvider(com.datadog.android.rum.RumResourceAttributesProvider)
   fun trackResourceHeaders(com.datadog.android.rum.resource.ResourceHeadersExtractor = ResourceHeadersExtractor.Builder().build())
-sealed interface com.datadog.android.rum.configuration.RumViewEventWriteConfig
-  object AlwaysFullView : RumViewEventWriteConfig
-  object FullViewOnlyAtStart : RumViewEventWriteConfig
 data class com.datadog.android.rum.configuration.SlowFramesConfiguration
   constructor(Int = DEFAULT_SLOW_FRAME_RECORDS_MAX_AMOUNT, Long = DEFAULT_FROZEN_FRAME_THRESHOLD_NS, Long = DEFAULT_CONTINUOUS_SLOW_FRAME_THRESHOLD_NS, Long = DEFAULT_FREEZE_DURATION_NS, Long = DEFAULT_VIEW_LIFETIME_THRESHOLD_NS)
   companion object 
     val DEFAULT: SlowFramesConfiguration
+sealed interface com.datadog.android.rum.configuration.ViewEventWriteConfig
+  object AlwaysFullView : ViewEventWriteConfig
+  object FullViewOnlyAtStart : ViewEventWriteConfig
 enum com.datadog.android.rum.configuration.VitalsUpdateFrequency
   constructor(Long)
   - FREQUENT

@@ -17,7 +17,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
-import com.datadog.android.rum.configuration.RumViewEventWriteConfig
+import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.integration.tests.assertj.hasRumEvent
 import com.datadog.android.rum.integration.tests.elmyr.RumIntegrationForgeConfigurator
 import com.datadog.android.rum.integration.tests.utils.MainLooperTestConfiguration
@@ -1409,7 +1409,7 @@ class ViewLoadingTimeMetricsAlwaysFullViewTests {
     @OptIn(ExperimentalRumApi::class)
     private fun configurationBuilder() = RumConfiguration.Builder(fakeApplicationId)
         .trackNonFatalAnrs(false)
-        .setRumViewEventWriteConfig(RumViewEventWriteConfig.AlwaysFullView)
+        .setViewEventWriteConfig(ViewEventWriteConfig.AlwaysFullView)
 
     // endregion
 

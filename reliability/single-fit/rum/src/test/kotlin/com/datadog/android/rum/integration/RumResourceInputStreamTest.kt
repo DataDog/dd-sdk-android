@@ -12,7 +12,7 @@ import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
-import com.datadog.android.rum.configuration.RumViewEventWriteConfig
+import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.integration.tests.assertj.hasRumEvent
 import com.datadog.android.rum.integration.tests.assertj.hasRumViewUpdateEvent
 import com.datadog.android.rum.integration.tests.elmyr.RumIntegrationForgeConfigurator
@@ -62,7 +62,7 @@ class RumResourceInputStreamTest {
         stubSdkCore = StubSDKCore(forge)
         val fakeRumConfiguration = RumConfiguration.Builder(fakeApplicationId)
             .trackNonFatalAnrs(false)
-            .setRumViewEventWriteConfig(RumViewEventWriteConfig.FullViewOnlyAtStart)
+            .setViewEventWriteConfig(ViewEventWriteConfig.FullViewOnlyAtStart)
             .build()
         Rum.enable(fakeRumConfiguration, stubSdkCore)
     }

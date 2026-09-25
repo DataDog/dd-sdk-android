@@ -28,7 +28,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.configuration.RumViewEventWriteConfig
+import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
@@ -1894,7 +1894,7 @@ internal open class RumViewScope(
             displayInfoProvider: InfoProvider<DisplayInfo>,
             insightsCollector: InsightsCollector,
             viewEventMapper: ViewEventMapper,
-            rumViewEventWriteConfig: RumViewEventWriteConfig,
+            viewEventWriteConfig: ViewEventWriteConfig,
             heatmapIdentifierRegistry: HeatmapIdentifierRegistry?
         ): RumViewScope {
             val networkSettledMetricResolver = NetworkSettledMetricResolver(
@@ -1935,7 +1935,7 @@ internal open class RumViewScope(
                 insightsCollector = insightsCollector,
                 rumViewEventWriterFactory = {
                     RumViewEventWriter.create(
-                        config = rumViewEventWriteConfig,
+                        config = viewEventWriteConfig,
                         viewEventMapper = viewEventMapper,
                         sdkCore = sdkCore
                     )

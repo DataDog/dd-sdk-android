@@ -421,7 +421,7 @@ class RumConfigurationTest {
 
     companion object {
 
-        // Under the default RumViewEventWriteConfig.FullViewOnlyAtStart, a view that starts and is
+        // Under the default ViewEventWriteConfig.FullViewOnlyAtStart, a view that starts and is
         // immediately stopped writes 3 events: a full ViewEvent on start, then a diff ViewUpdateEvent
         // followed by a full ViewEvent checkpoint when the view closes (see RumViewEventWriter.kt).
         private const val EVENTS_PER_VIEW_LIFECYCLE = 3

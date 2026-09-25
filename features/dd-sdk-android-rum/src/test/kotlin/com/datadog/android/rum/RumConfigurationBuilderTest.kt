@@ -10,8 +10,8 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.rum.assertj.ConfigurationRumAssert
-import com.datadog.android.rum.configuration.RumViewEventWriteConfig
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
+import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.NoOpRumSessionListener
@@ -749,8 +749,8 @@ internal class RumConfigurationBuilderTest {
         val rumConfiguration = testedBuilder.build()
 
         // Then
-        assertThat(rumConfiguration.featureConfiguration.rumViewEventWriteConfig)
-            .isEqualTo(RumViewEventWriteConfig.FullViewOnlyAtStart)
+        assertThat(rumConfiguration.featureConfiguration.viewEventWriteConfig)
+            .isEqualTo(ViewEventWriteConfig.FullViewOnlyAtStart)
     }
 
     @Test
@@ -768,14 +768,14 @@ internal class RumConfigurationBuilderTest {
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M store provided configuration W setRumViewEventWriteConfig(config)`() {
+    fun `M store provided configuration W setViewEventWriteConfig(config)`() {
         // When
         val rumConfiguration = testedBuilder
-            .setRumViewEventWriteConfig(RumViewEventWriteConfig.AlwaysFullView)
+            .setViewEventWriteConfig(ViewEventWriteConfig.AlwaysFullView)
             .build()
 
         // Then
-        assertThat(rumConfiguration.featureConfiguration.rumViewEventWriteConfig)
-            .isEqualTo(RumViewEventWriteConfig.AlwaysFullView)
+        assertThat(rumConfiguration.featureConfiguration.viewEventWriteConfig)
+            .isEqualTo(ViewEventWriteConfig.AlwaysFullView)
     }
 }

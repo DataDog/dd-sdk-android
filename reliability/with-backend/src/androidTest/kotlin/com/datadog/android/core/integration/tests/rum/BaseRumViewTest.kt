@@ -20,7 +20,7 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
-import com.datadog.android.rum.configuration.RumViewEventWriteConfig
+import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.model.ViewEvent
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
@@ -97,7 +97,7 @@ abstract class BaseRumViewTest {
             .trackBackgroundEvents(true)
             .trackAnonymousUser(true)
             .collectAccessibility(true)
-            .setRumViewEventWriteConfig(RumViewEventWriteConfig.FullViewOnlyAtStart)
+            .setViewEventWriteConfig(ViewEventWriteConfig.FullViewOnlyAtStart)
             .build()
 
         Rum.enable(rumConfig, sdkCore)
