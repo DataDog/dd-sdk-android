@@ -25,7 +25,15 @@ internal class DefaultFlagsRepository(
     private val internalLogger: InternalLogger = featureSdkCore.internalLogger,
     private val persistenceLoadTimeoutMs: Long = PERSISTENCE_LOAD_TIMEOUT_MS
 ) : FlagsRepository {
-    private data class FlagsState(val context: EvaluationContext, val flags: Map<String, PrecomputedFlag>)
+    private data class FlagsState(
+        val context: EvaluationContext,
+        val flags: Map<String, PrecomputedFlag>,
+        val isStale: Boolean
+    )
+
+    // Serialize request admission and both installation paths; readers capture one atomic state.
+    private val stateLock = Any()
+    private var requestedContext: EvaluationContext? = null
     private val atomicState = AtomicReference<FlagsState?>(null)
 
     @Suppress("UnsafeThirdPartyFunctionCall") // Safe: count is positive constant (1)
@@ -39,17 +47,30 @@ internal class DefaultFlagsRepository(
         try {
             persistedState?.let {
                 val cachedFlags = it.flags.mapValues { (_, flag) -> flag.copy(reason = ResolutionReason.CACHED.name) }
-                val loadedState = FlagsState(it.evaluationContext, cachedFlags)
-                atomicState.compareAndSet(null, loadedState)
+                synchronized(stateLock) {
+                    if (atomicState.get() == null) {
+                        atomicState.set(FlagsState(it.evaluationContext, cachedFlags, isStaleFor(it.evaluationContext)))
+                    }
+                }
             }
         } finally {
             persistenceLoadedLatch.countDown()
         }
     }
 
+    override fun setRequestedContext(context: EvaluationContext) {
+        synchronized(stateLock) {
+            requestedContext = context
+            atomicState.get()?.let { state ->
+                atomicState.set(state.copy(isStale = isStaleFor(state.context)))
+            }
+        }
+    }
+
     override fun setFlagsAndContext(context: EvaluationContext, flags: Map<String, PrecomputedFlag>) {
-        val newState = FlagsState(context, flags)
-        atomicState.set(newState)
+        synchronized(stateLock) {
+            atomicState.set(FlagsState(context, flags, isStaleFor(context)))
+        }
         persistenceLoadedLatch.countDown()
 
         persistenceManager.saveFlagsState(
@@ -89,7 +110,11 @@ internal class DefaultFlagsRepository(
         waitForPersistenceLoad()
         val state = atomicState.get()
         if (state != null) {
-            return state.flags
+            return if (state.isStale) {
+                state.flags.mapValues { (_, flag) -> flag.copy(reason = ResolutionReason.STALE.name) }
+            } else {
+                state.flags
+            }
         }
         internalLogger.log(
             InternalLogger.Level.WARN,
@@ -115,12 +140,15 @@ internal class DefaultFlagsRepository(
     }
 
     @Suppress("ReturnCount")
-    override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>? {
+    override fun getPrecomputedFlagWithContext(key: String): FlagWithContext? {
         waitForPersistenceLoad()
         val state = atomicState.get() ?: return null
         val flag = state.flags[key] ?: return null
-        return flag to state.context
+        return FlagWithContext(flag, state.context, state.isStale)
     }
+
+    // Called only while holding stateLock. No request is distinct from EvaluationContext.EMPTY.
+    private fun isStaleFor(context: EvaluationContext): Boolean = requestedContext?.let { it != context } ?: false
 
     private fun waitForPersistenceLoad() {
         try {

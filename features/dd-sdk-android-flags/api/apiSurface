@@ -69,6 +69,7 @@ enum com.datadog.android.flags.model.ResolutionReason
   - PREREQUISITE_FAILED
   - ERROR
   - CACHED
+  - STALE
 interface com.datadog.android.flags.model.UnparsedFlag
   val variationType: String
   val variationValue: String

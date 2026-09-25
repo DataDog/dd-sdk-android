@@ -98,7 +98,7 @@ internal class EvaluationsManager(
      *
      * This method asynchronously fetches precomputed flag evaluations for the given context
      * and atomically updates both the context and flag data in the repository. Network failures
-     * result in an empty flag set being stored with the context, allowing graceful degradation.
+     * retain the previously installed assignments and their original context.
      *
      * The operation is performed on the configured executor service and will not block the
      * calling thread. Errors are logged but do not propagate to the caller.
@@ -108,6 +108,13 @@ internal class EvaluationsManager(
      * @param callback Optional callback invoked when the context is set and the flags have been fetched successfully or not.
      */
     fun updateEvaluationsForContext(context: EvaluationContext, callback: EvaluationContextCallback? = null) {
+        // Own the attributes before asynchronous work or reentrant lifecycle callbacks can run.
+        val requestedContext = context.copy(attributes = context.attributes.toMap())
+        flagsRepository.setRequestedContext(requestedContext)
+        fetchEvaluationsForContext(requestedContext, callback)
+    }
+
+    private fun fetchEvaluationsForContext(context: EvaluationContext, callback: EvaluationContextCallback?) {
         val matchingCachedAssignments = AtomicBoolean(false)
         val initializationCompletion = startInitializationTimeout(context, callback, matchingCachedAssignments) {
             flagStateManager.updateState(FlagsClientState.Reconciling)
