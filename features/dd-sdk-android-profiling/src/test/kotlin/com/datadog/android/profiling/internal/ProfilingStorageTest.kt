@@ -8,7 +8,13 @@ package com.datadog.android.profiling.internal
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.datadog.android.internal.profiling.ProfilingRumContext
+import com.datadog.android.profiling.forge.Configurator
+import com.datadog.android.profiling.internal.trigger.PendingOomGatingEvent
+import com.datadog.android.profiling.internal.trigger.PendingOomProfile
 import fr.xgouchet.elmyr.annotation.FloatForgery
+import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -32,6 +38,7 @@ import java.util.concurrent.TimeUnit
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(Configurator::class)
 internal class ProfilingStorageTest {
 
     @Mock
@@ -46,6 +53,13 @@ internal class ProfilingStorageTest {
     @FloatForgery(min = 0f, max = 100f)
     var fakeSampleRate: Float = 0f
 
+    @Forgery
+    lateinit var fakeRumContext: ProfilingRumContext
+
+    private lateinit var fakePendingOomProfile: PendingOomProfile
+
+    private lateinit var fakePendingOomGatingEvent: PendingOomGatingEvent
+
     @BeforeEach
     fun `set up`() {
         // Reset the singleton
@@ -59,6 +73,20 @@ internal class ProfilingStorageTest {
         whenever(mockEditor.putFloat(any(), any())) doReturn mockEditor
         whenever(mockEditor.putInt(any(), any())) doReturn mockEditor
         whenever(mockEditor.putString(any(), any())) doReturn mockEditor
+        whenever(mockEditor.commit()) doReturn true
+        fakePendingOomProfile = PendingOomProfile(
+            resultFilePath = "/tmp/oom.perfetto",
+            startMs = 1_700_000_000_000L,
+            endMs = 1_700_000_000_500L,
+            bootNtpNs = 1_234_567_890L,
+            rumErrorId = "err-1",
+            rumContext = fakeRumContext
+        )
+        fakePendingOomGatingEvent = PendingOomGatingEvent(
+            rumErrorId = "err-1",
+            timestampMs = 1_700_000_000_000L,
+            rumContext = fakeRumContext
+        )
     }
 
     @Test
@@ -160,6 +188,134 @@ internal class ProfilingStorageTest {
 
         // Then
         assertThat(actualSampleRate).isEqualTo(fakeSampleRate)
+    }
+
+    @Test
+    fun `M persist marker before returning W setPendingOomProfile()`() {
+        // Given
+        // Written while the process is dying, so it must not be deferred to QueuedWork.
+
+        // When
+        ProfilingStorage.setPendingOomProfile(mockContext, fakePendingOomProfile)
+
+        // Then
+        verify(mockEditor).putString(
+            "dd_profiling_pending_oom",
+            fakePendingOomProfile.toJson()
+        )
+        verify(mockEditor).commit()
+    }
+
+    @Test
+    fun `M get marker W getPendingOomProfile() {marker is set}`() {
+        // Given
+        whenever(mockPrefs.getString("dd_profiling_pending_oom", null))
+            .doReturn(fakePendingOomProfile.toJson())
+
+        // When
+        val actual = ProfilingStorage.getPendingOomProfile(mockContext)
+
+        // Then
+        assertThat(actual).isEqualTo(fakePendingOomProfile)
+    }
+
+    @Test
+    fun `M get null W getPendingOomProfile() {marker is not set}`() {
+        // Given
+        whenever(mockPrefs.getString("dd_profiling_pending_oom", null)) doReturn null
+
+        // When
+        val actual = ProfilingStorage.getPendingOomProfile(mockContext)
+
+        // Then
+        assertThat(actual).isNull()
+    }
+
+    @Test
+    fun `M get null W getPendingOomProfile() {marker is corrupted}`() {
+        // Given
+        // Half-written by the process death the marker exists to survive.
+        whenever(mockPrefs.getString("dd_profiling_pending_oom", null)) doReturn "{\"path\":"
+
+        // When
+        val actual = ProfilingStorage.getPendingOomProfile(mockContext)
+
+        // Then
+        assertThat(actual).isNull()
+    }
+
+    @Test
+    fun `M remove marker W removePendingOomProfile()`() {
+        // When
+        ProfilingStorage.removePendingOomProfile(mockContext)
+
+        // Then
+        verify(mockEditor).remove("dd_profiling_pending_oom")
+        verify(mockEditor).apply()
+    }
+
+    @Test
+    fun `M persist marker before returning W setPendingOomGatingEvent()`() {
+        // Given
+        // Written while racing an imminent OOM kill, so it must not be deferred to QueuedWork.
+
+        // When
+        ProfilingStorage.setPendingOomGatingEvent(mockContext, fakePendingOomGatingEvent)
+
+        // Then
+        verify(mockEditor).putString(
+            "dd_profiling_pending_oom_gating_event",
+            fakePendingOomGatingEvent.toJson()
+        )
+        verify(mockEditor).commit()
+    }
+
+    @Test
+    fun `M get marker W getPendingOomGatingEvent() {marker is set}`() {
+        // Given
+        whenever(mockPrefs.getString("dd_profiling_pending_oom_gating_event", null))
+            .doReturn(fakePendingOomGatingEvent.toJson())
+
+        // When
+        val actual = ProfilingStorage.getPendingOomGatingEvent(mockContext)
+
+        // Then
+        assertThat(actual).isEqualTo(fakePendingOomGatingEvent)
+    }
+
+    @Test
+    fun `M get null W getPendingOomGatingEvent() {marker is not set}`() {
+        // Given
+        whenever(mockPrefs.getString("dd_profiling_pending_oom_gating_event", null)) doReturn null
+
+        // When
+        val actual = ProfilingStorage.getPendingOomGatingEvent(mockContext)
+
+        // Then
+        assertThat(actual).isNull()
+    }
+
+    @Test
+    fun `M get null W getPendingOomGatingEvent() {marker is corrupted}`() {
+        // Given
+        whenever(mockPrefs.getString("dd_profiling_pending_oom_gating_event", null))
+            .doReturn("{\"error_id\":")
+
+        // When
+        val actual = ProfilingStorage.getPendingOomGatingEvent(mockContext)
+
+        // Then
+        assertThat(actual).isNull()
+    }
+
+    @Test
+    fun `M remove marker W removePendingOomGatingEvent()`() {
+        // When
+        ProfilingStorage.removePendingOomGatingEvent(mockContext)
+
+        // Then
+        verify(mockEditor).remove("dd_profiling_pending_oom_gating_event")
+        verify(mockEditor).apply()
     }
 
     @Test

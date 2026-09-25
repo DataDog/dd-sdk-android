@@ -25,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -107,6 +108,25 @@ internal class SharedPreferencesStorageTest {
         // Then
         verify(mockEditor).putString(fakeKey, fakeValue)
         verify(mockEditor).apply()
+    }
+
+    @Test
+    fun `M persist data before returning W putString {sync = true}`(
+        @StringForgery fakeKey: String,
+        @StringForgery fakeValue: String
+    ) {
+        // Given
+        // A value written from a dying process (e.g. while handling an OutOfMemoryError) must
+        // reach disk before the call returns: `apply()` defers the write to QueuedWork, which is
+        // not flushed when the process is killed.
+
+        // When
+        testedStorage.putString(fakeKey, fakeValue, sync = true)
+
+        // Then
+        verify(mockEditor).putString(fakeKey, fakeValue)
+        verify(mockEditor).commit()
+        verify(mockEditor, never()).apply()
     }
 
     @Test
@@ -278,6 +298,39 @@ internal class SharedPreferencesStorageTest {
 
             // Then
             assertThat(value).isEqualTo(fakeDefaultValue)
+        }
+    }
+
+    @Test
+    fun `M not throw IllegalStateException W getString {backing file failed to load}`(
+        @StringForgery fakeKey: String,
+        @StringForgery fakeDefaultValue: String
+    ) {
+        // Given
+        whenever(
+            mockPrefs.getString(fakeKey, fakeDefaultValue)
+        ) doThrow IllegalStateException("Failed to load prefs")
+
+        assertDoesNotThrow {
+            // When
+            val value = testedStorage.getString(fakeKey, fakeDefaultValue)
+
+            // Then
+            assertThat(value).isEqualTo(fakeDefaultValue)
+        }
+    }
+
+    @Test
+    fun `M not throw IllegalStateException W putString {backing file failed to load}`(
+        @StringForgery fakeKey: String,
+        @StringForgery fakeValue: String
+    ) {
+        // Given
+        whenever(mockPrefs.edit()) doThrow IllegalStateException("Failed to load prefs")
+
+        assertDoesNotThrow {
+            // When
+            testedStorage.putString(fakeKey, fakeValue)
         }
     }
 }

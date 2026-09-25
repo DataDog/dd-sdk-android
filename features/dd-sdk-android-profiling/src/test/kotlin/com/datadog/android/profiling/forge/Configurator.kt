@@ -38,5 +38,7 @@ class Configurator : BaseConfigurator() {
         forge.addFactory(ProfilingAnomalyDetectedEventForgeryFactory())
         forge.addFactory(StackTraceElementForgeryFactory())
         forge.addFactory(ProfilingThreadDumpForgeryFactory())
+        forge.addFactory(PendingOomProfileForgeryFactory())
+        forge.addFactory(PendingOomGatingEventForgeryFactory())
     }
 }

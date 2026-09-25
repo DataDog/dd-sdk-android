@@ -19,7 +19,11 @@ class SharedPreferencesStorage(appContext: Context) : PreferencesStorage {
         appContext.getSharedPreferences(DATADOG_PREFERENCES_FILE_NAME, Context.MODE_PRIVATE)
 
     override fun putFloat(key: String, value: Float) {
-        prefs.edit().putFloat(key, value).apply()
+        runSafe {
+            // Called in safe
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            prefs.edit().putFloat(key, value).apply()
+        }
     }
 
     override fun getFloat(key: String, defaultValue: Float): Float {
@@ -31,7 +35,11 @@ class SharedPreferencesStorage(appContext: Context) : PreferencesStorage {
     }
 
     override fun putInt(key: String, value: Int) {
-        prefs.edit().putInt(key, value).apply()
+        runSafe {
+            // Called in safe
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            prefs.edit().putInt(key, value).apply()
+        }
     }
 
     override fun getInt(key: String, defaultValue: Int): Int {
@@ -50,8 +58,20 @@ class SharedPreferencesStorage(appContext: Context) : PreferencesStorage {
         } ?: defaultValue
     }
 
-    override fun putString(key: String, value: String) {
-        prefs.edit().putString(key, value).apply()
+    override fun putString(key: String, value: String, sync: Boolean) {
+        runSafe {
+            // Called in safe
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            val editor = prefs.edit().putString(key, value)
+            if (sync) {
+                // `commit()` on purpose: `apply()` hands the write to QueuedWork, which is not
+                // flushed when the process is killed, so the value would be lost.
+                @Suppress("ApplySharedPref")
+                editor.commit()
+            } else {
+                editor.apply()
+            }
+        }
     }
 
     override fun getStringSet(
@@ -66,11 +86,19 @@ class SharedPreferencesStorage(appContext: Context) : PreferencesStorage {
     }
 
     override fun putStringSet(key: String, value: Set<String>) {
-        prefs.edit().putStringSet(key, value).apply()
+        runSafe {
+            // Called in safe
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            prefs.edit().putStringSet(key, value).apply()
+        }
     }
 
     override fun putBoolean(key: String, value: Boolean) {
-        prefs.edit().putBoolean(key, value).apply()
+        runSafe {
+            // Called in safe
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            prefs.edit().putBoolean(key, value).apply()
+        }
     }
 
     override fun getBoolean(key: String, defaultValue: Boolean): Boolean {
@@ -82,11 +110,19 @@ class SharedPreferencesStorage(appContext: Context) : PreferencesStorage {
     }
 
     override fun remove(key: String) {
-        prefs.edit().remove(key).apply()
+        runSafe {
+            // Called in safe
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            prefs.edit().remove(key).apply()
+        }
     }
 
     override fun clear() {
-        prefs.edit().clear().apply()
+        runSafe {
+            // Called in safe
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            prefs.edit().clear().apply()
+        }
     }
 
     @Suppress("SwallowedException")
@@ -95,6 +131,11 @@ class SharedPreferencesStorage(appContext: Context) : PreferencesStorage {
             runnable.invoke()
         } catch (e: ClassCastException) {
             // It happens when SDK updates the data type, we can ignore it by returning null.
+            null
+        } catch (e: IllegalStateException) {
+            // SharedPreferencesImpl#awaitLoadedLocked (called by edit() and the getXXX methods)
+            // throws this when the backing preferences file failed to load, e.g. it is corrupted
+            // on disk. Treat it as a failed read/write, same as the ClassCastException case.
             null
         }
     }
