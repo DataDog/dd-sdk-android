@@ -21,7 +21,8 @@ data class FlagsConfiguration internal constructor(
     internal val evaluationFlushIntervalMs: Long,
     internal val rumIntegrationEnabled: Boolean,
     internal val gracefulModeEnabled: Boolean,
-    internal val initializationTimeoutMs: Long?
+    internal val initializationTimeoutMs: Long?,
+    internal val clientReadyPolicy: ClientReadyPolicy = ClientReadyPolicy.NETWORK
 ) {
     /**
      * Copies this configuration and preserves the initialization timeout.
@@ -46,12 +47,14 @@ data class FlagsConfiguration internal constructor(
         evaluationFlushIntervalMs = evaluationFlushIntervalMs,
         rumIntegrationEnabled = rumIntegrationEnabled,
         gracefulModeEnabled = gracefulModeEnabled,
-        initializationTimeoutMs = initializationTimeoutMs
+        initializationTimeoutMs = initializationTimeoutMs,
+        clientReadyPolicy = clientReadyPolicy
     )
 
     /**
      * A Builder class for a [FlagsConfiguration].
      */
+    @Suppress("TooManyFunctions") // One setter per independent configuration option.
     class Builder {
         private var trackExposures: Boolean = true
         private var trackEvaluations: Boolean = true
@@ -62,6 +65,7 @@ data class FlagsConfiguration internal constructor(
         private var rumIntegrationEnabled: Boolean = true
         private var gracefulModeEnabled: Boolean = true
         private var initializationTimeoutMs: Long? = DEFAULT_INITIALIZATION_TIMEOUT_MS
+        private var clientReadyPolicy: ClientReadyPolicy = ClientReadyPolicy.NETWORK
 
         /**
          * Sets whether exposures should be logged to the dedicated exposures intake endpoint.
@@ -171,6 +175,21 @@ data class FlagsConfiguration internal constructor(
         }
 
         /**
+         * Selects when initial flag loading becomes ready. Defaults to [ClientReadyPolicy.NETWORK].
+         *
+         * Cache readiness requires a valid installed configuration, including a zero-flag configuration.
+         * A missing cache or disk-read timeout does not satisfy readiness. The network refresh continues
+         * after early cache readiness. Subsequent context changes still wait for their network operation.
+         * A failed initial fetch succeeds from available assignments; without them initialization fails.
+         *
+         * @param policy the initial readiness policy.
+         * @return this [Builder] instance.
+         */
+        fun clientReadyPolicy(policy: ClientReadyPolicy): Builder = apply {
+            clientReadyPolicy = policy
+        }
+
+        /**
          * Sets whether RUM evaluation logging is enabled.
          * This adds the result of evaluating a feature flag to the view.
          * Enabled by default.
@@ -215,7 +234,8 @@ data class FlagsConfiguration internal constructor(
             evaluationFlushIntervalMs = evaluationFlushIntervalMs,
             rumIntegrationEnabled = rumIntegrationEnabled,
             gracefulModeEnabled = gracefulModeEnabled,
-            initializationTimeoutMs = initializationTimeoutMs
+            initializationTimeoutMs = initializationTimeoutMs,
+            clientReadyPolicy = clientReadyPolicy
         )
 
         internal companion object {

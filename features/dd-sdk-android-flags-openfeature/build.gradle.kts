@@ -64,6 +64,8 @@ dependencies {
             )
         }
     }
+    testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testImplementation(libs.okHttp)
     testImplementation(libs.coroutinesTest)
     unmock(libs.robolectric)
 }

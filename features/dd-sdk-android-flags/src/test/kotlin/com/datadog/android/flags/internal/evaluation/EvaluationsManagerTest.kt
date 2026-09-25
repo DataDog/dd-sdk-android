@@ -1049,7 +1049,7 @@ internal class EvaluationsManagerTest {
     // region Cold-start integration
 
     @Test
-    fun `M notify STALE W updateEvaluationsForContext() { cold start network failure, cached flags match context }`() {
+    fun `M notify READY W updateEvaluationsForContext() { cold start network failure, cached flags match context }`() {
         // Given
         val context = EvaluationContext(fakeTargetingKey, emptyMap())
         val flag = PrecomputedFlag(
@@ -1112,7 +1112,7 @@ internal class EvaluationsManagerTest {
         // Then
         inOrder(mockFlagsStateManager) {
             verify(mockFlagsStateManager).updateState(FlagsClientState.Reconciling)
-            verify(mockFlagsStateManager).updateState(FlagsClientState.Stale)
+            verify(mockFlagsStateManager).updateState(FlagsClientState.Ready)
         }
     }
 

@@ -1,3 +1,11 @@
+public final class com/datadog/android/flags/ClientReadyPolicy : java/lang/Enum {
+	public static final field CACHE_OR_NETWORK Lcom/datadog/android/flags/ClientReadyPolicy;
+	public static final field NETWORK Lcom/datadog/android/flags/ClientReadyPolicy;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/flags/ClientReadyPolicy;
+	public static fun values ()[Lcom/datadog/android/flags/ClientReadyPolicy;
+}
+
 public abstract interface class com/datadog/android/flags/EvaluationContextCallback {
 	public abstract fun onFailure (Ljava/lang/Throwable;)V
 	public abstract fun onSuccess ()V
@@ -31,6 +39,7 @@ public final class com/datadog/android/flags/FlagsClient$Builder {
 	public fun <init> (Ljava/lang/String;Lcom/datadog/android/api/SdkCore;)V
 	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/api/SdkCore;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun build ()Lcom/datadog/android/flags/FlagsClient;
+	public final fun clientReadyPolicy (Lcom/datadog/android/flags/ClientReadyPolicy;)Lcom/datadog/android/flags/FlagsClient$Builder;
 }
 
 public final class com/datadog/android/flags/FlagsClient$Companion {
@@ -55,6 +64,7 @@ public final class com/datadog/android/flags/FlagsConfiguration {
 public final class com/datadog/android/flags/FlagsConfiguration$Builder {
 	public fun <init> ()V
 	public final fun build ()Lcom/datadog/android/flags/FlagsConfiguration;
+	public final fun clientReadyPolicy (Lcom/datadog/android/flags/ClientReadyPolicy;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun evaluationFlushInterval (J)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun gracefulModeEnabled (Z)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun initializationTimeout (J)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
@@ -81,7 +91,9 @@ public abstract interface class com/datadog/android/flags/StateObservable {
 
 public final class com/datadog/android/flags/_FlagsInternalProxy {
 	public fun <init> (Lcom/datadog/android/flags/FlagsClient;)V
+	public final fun addConfigurationChangeListener (Lkotlin/jvm/functions/Function0;)V
 	public final fun getFlagAssignmentsSnapshot ()Ljava/util/Map;
+	public final fun removeConfigurationChangeListener (Lkotlin/jvm/functions/Function0;)V
 	public final fun trackFlagSnapshotEvaluation (Ljava/lang/String;Lcom/datadog/android/flags/model/UnparsedFlag;Lcom/datadog/android/flags/model/EvaluationContext;)V
 }
 

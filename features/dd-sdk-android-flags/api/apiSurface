@@ -1,3 +1,6 @@
+enum com.datadog.android.flags.ClientReadyPolicy
+  - NETWORK
+  - CACHE_OR_NETWORK
 interface com.datadog.android.flags.EvaluationContextCallback
   fun onSuccess()
   fun onFailure(Throwable)
@@ -15,6 +18,7 @@ interface com.datadog.android.flags.FlagsClient
   val state: StateObservable
   class Builder
     constructor(String = DEFAULT_CLIENT_NAME, com.datadog.android.api.SdkCore = Datadog.getInstance())
+    fun clientReadyPolicy(ClientReadyPolicy): Builder
     fun build(): FlagsClient
   companion object 
     fun get(String = DEFAULT_CLIENT_NAME, com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsClient
@@ -28,6 +32,7 @@ data class com.datadog.android.flags.FlagsConfiguration
     fun evaluationFlushInterval(Long): Builder
     fun useCustomFlagEndpoint(String): Builder
     fun initializationTimeout(Long): Builder
+    fun clientReadyPolicy(ClientReadyPolicy): Builder
     fun rumIntegrationEnabled(Boolean): Builder
     fun gracefulModeEnabled(Boolean): Builder
     fun build(): FlagsConfiguration
@@ -40,6 +45,8 @@ interface com.datadog.android.flags.StateObservable
   fun removeListener(FlagsStateListener)
 class com.datadog.android.flags._FlagsInternalProxy
   constructor(FlagsClient)
+  fun addConfigurationChangeListener(() -> Unit)
+  fun removeConfigurationChangeListener(() -> Unit)
   fun getFlagAssignmentsSnapshot(): Map<String, com.datadog.android.flags.model.UnparsedFlag>
   fun trackFlagSnapshotEvaluation(String, com.datadog.android.flags.model.UnparsedFlag, com.datadog.android.flags.model.EvaluationContext)
 enum com.datadog.android.flags.model.ErrorCode

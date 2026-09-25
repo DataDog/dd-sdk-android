@@ -16,6 +16,18 @@ import org.junit.jupiter.api.extension.ExtendWith
 @ExtendWith(ForgeExtension::class)
 internal class FlagsConfigurationTest {
 
+    @Test
+    fun `M default to network readiness W build`() {
+        assertThat(FlagsConfiguration.Builder().build().clientReadyPolicy).isEqualTo(ClientReadyPolicy.NETWORK)
+    }
+
+    @Test
+    fun `M preserve readiness policy W copy`() {
+        val configuration = FlagsConfiguration.Builder().clientReadyPolicy(ClientReadyPolicy.CACHE_OR_NETWORK).build()
+        assertThat(configuration.copy(trackExposures = false).clientReadyPolicy)
+            .isEqualTo(ClientReadyPolicy.CACHE_OR_NETWORK)
+    }
+
     // region Builder Tests
 
     @Test

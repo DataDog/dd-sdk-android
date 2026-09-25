@@ -132,9 +132,10 @@ internal class FlagsFeature(
     override fun onStop() {
         dataWriter = NoOpRecordWriter()
         isInitialized = false // Allow re-initialization if feature is restarted
-        synchronized(registeredClients) {
-            registeredClients.clear()
+        val clients = synchronized(registeredClients) {
+            registeredClients.values.toList().also { registeredClients.clear() }
         }
+        clients.filterIsInstance<DatadogFlagsClient>().forEach { it.stop() }
     }
 
     private fun createDataWriter(): RecordWriter = ExposureEventRecordWriter(sdkCore)

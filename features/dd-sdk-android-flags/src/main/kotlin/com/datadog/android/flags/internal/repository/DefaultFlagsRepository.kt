@@ -14,6 +14,7 @@ import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.persistence.FlagsPersistenceManager
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionReason
+import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -28,6 +29,10 @@ internal class DefaultFlagsRepository(
     private data class FlagsState(val context: EvaluationContext, val flags: Map<String, PrecomputedFlag>)
     private val atomicState = AtomicReference<FlagsState?>(null)
 
+    @Volatile
+    private var closed = false
+    private val configurationListeners = CopyOnWriteArraySet<() -> Unit>()
+
     @Suppress("UnsafeThirdPartyFunctionCall") // Safe: count is positive constant (1)
     private val persistenceLoadedLatch = CountDownLatch(1)
 
@@ -36,15 +41,39 @@ internal class DefaultFlagsRepository(
         instanceName = instanceName,
         internalLogger = internalLogger
     ) { persistedState ->
+        var installed = false
         try {
             persistedState?.let {
                 val cachedFlags = it.flags.mapValues { (_, flag) -> flag.copy(reason = ResolutionReason.CACHED.name) }
                 val loadedState = FlagsState(it.evaluationContext, cachedFlags)
-                atomicState.compareAndSet(null, loadedState)
+                installed = atomicState.compareAndSet(null, loadedState)
             }
         } finally {
             persistenceLoadedLatch.countDown()
         }
+        if (installed) notifyConfigurationChanged()
+    }
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // Clearing this internal set cannot invoke user code.
+    override fun close() {
+        closed = true
+        configurationListeners.clear()
+    }
+
+    override fun hasLoadedConfiguration(): Boolean = atomicState.get() != null
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // Non-null function references have safe equality.
+    override fun addConfigurationChangeListener(listener: () -> Unit) {
+        configurationListeners.add(listener)
+    }
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // Non-null function references have safe equality.
+    override fun removeConfigurationChangeListener(listener: () -> Unit) {
+        configurationListeners.remove(listener)
+    }
+
+    private fun notifyConfigurationChanged() {
+        configurationListeners.forEach { if (!closed) it() }
     }
 
     override fun setFlagsAndContext(context: EvaluationContext, flags: Map<String, PrecomputedFlag>) {
@@ -52,6 +81,7 @@ internal class DefaultFlagsRepository(
         atomicState.set(newState)
         persistenceLoadedLatch.countDown()
 
+        notifyConfigurationChanged()
         persistenceManager.saveFlagsState(
             context = context,
             flags = flags,

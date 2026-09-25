@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsStateListener
+import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.openfeature.internal.adapters.convertToValue
 import com.datadog.android.flags.openfeature.internal.adapters.toDatadogEvaluationContext
@@ -96,7 +97,8 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
      * If an initial context is provided, it will be set on the [FlagsClient] before waiting, otherwise
      * an empty context will be used in order to initialize the underlying [FlagsClient].
      *
-     * The method suspends while the [FlagsClient] in turn, takes the context and fetches the flags from the server.
+     * The method suspends until the client's initial readiness policy is satisfied or initialization fails.
+     * Cache readiness can complete this method before the background network refresh finishes.
      *
      * @param initialContext The initial evaluation context to set (optional)
      * @throws OpenFeatureError if initialization fails or reaches the configured Flags initialization timeout
@@ -198,6 +200,10 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
      * - [FlagsClientState.Ready] → [OpenFeatureProviderEvents.ProviderReady]
      * - [FlagsClientState.Stale] → [OpenFeatureProviderEvents.ProviderStale]
      * - [FlagsClientState.Error] → [OpenFeatureProviderEvents.ProviderError]
+     * - Installed assignments → [OpenFeatureProviderEvents.ProviderConfigurationChanged]
+     *
+     * Configuration notifications do not establish readiness. Cache readiness explicitly emits ProviderReady.
+     * Requires an OpenFeature SDK that preserves status on ProviderConfigurationChanged; 0.6.2 does not.
      *
      * **SDK emits** (not from provider):
      * - [PROVIDER_RECONCILING]: SDK emits while [onContextSet] is executing
@@ -235,11 +241,18 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
             }
         }
 
+        val proxy = _FlagsInternalProxy(flagsClient)
+        val configurationListener: () -> Unit = {
+            trySend(OpenFeatureProviderEvents.ProviderConfigurationChanged)
+            Unit
+        }
+        proxy.addConfigurationChangeListener(configurationListener)
         flagsClient.state.addListener(listener)
         // Safe: awaitClose runs cleanup then allows CancellationException to propagate naturally
         @Suppress("UnsafeThirdPartyFunctionCall")
         awaitClose {
             flagsClient.state.removeListener(listener)
+            proxy.removeConfigurationChangeListener(configurationListener)
         }
     }
 
