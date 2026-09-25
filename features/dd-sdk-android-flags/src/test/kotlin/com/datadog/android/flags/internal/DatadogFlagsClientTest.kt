@@ -9,12 +9,17 @@ package com.datadog.android.flags.internal
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.datastore.DataStoreHandler
+import com.datadog.android.api.storage.datastore.DataStoreReadCallback
+import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
+import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.model.VariationType
+import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
@@ -36,6 +41,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -138,22 +144,46 @@ internal class DatadogFlagsClientTest {
 
     @Test
     fun `M expose cached reason in details W resolving a restored assignment`(forge: Forge) {
+        // Given
         val context = EvaluationContext("persisted-user")
         val flag = forge.getForgery<PrecomputedFlag>().copy(
             variationType = "boolean",
             variationValue = "true",
             doLog = true,
-            reason = "CACHED"
+            reason = "TARGETING_MATCH"
         )
-        whenever(mockFlagsRepository.getPrecomputedFlagWithContext("flag")) doReturn (flag to context)
+        val dataStore = mock<DataStoreHandler>()
+        doAnswer {
+            it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2).onSuccess(
+                DataStoreContent(0, FlagsStateEntry(context, mapOf("flag" to flag), 0L))
+            )
+            null
+        }.whenever(dataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
+        val repository = DefaultFlagsRepository(mockFeatureSdkCore, "persisted", dataStore)
+        testedClient = DatadogFlagsClient(
+            featureSdkCore = mockFeatureSdkCore,
+            evaluationsManager = mockEvaluationsManager,
+            flagsRepository = repository,
+            flagsConfiguration = forge.getForgery<FlagsConfiguration>().copy(
+                trackExposures = true,
+                rumIntegrationEnabled = true
+            ),
+            rumEvaluationLogger = mockRumEvaluationLogger,
+            exposureProcessor = mockProcessor,
+            evaluationsFeature = null,
+            flagStateManager = mockFlagsStateManager
+        )
 
+        // When
         val details = testedClient.resolve("flag", false)
 
+        // Then
         assertThat(details.value).isTrue()
-        assertThat(details.reason?.name).isEqualTo("CACHED")
+        assertThat(details.reason).isEqualTo(ResolutionReason.CACHED)
         assertThat(details.variant).isEqualTo(flag.variationKey)
         assertThat(details.errorCode).isNull()
-        verify(mockProcessor).processEvent("flag", context, flag)
+        assertThat(flag.reason).isEqualTo("TARGETING_MATCH")
+        verify(mockProcessor).processEvent("flag", context, flag.copy(reason = "CACHED"))
     }
 
     @Test
