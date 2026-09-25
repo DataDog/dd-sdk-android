@@ -916,6 +916,7 @@ public final class com/datadog/android/internal/utils/ThrowableExtKt {
 }
 
 public final class com/datadog/android/internal/utils/TimeExtKt {
+	public static final fun bootNtpOffsetNs (Lcom/datadog/android/internal/time/TimeProvider;)J
 	public static final fun formatIsoUtc (J)Ljava/lang/String;
 }
 

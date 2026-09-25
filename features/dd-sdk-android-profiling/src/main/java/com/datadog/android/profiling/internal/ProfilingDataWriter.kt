@@ -16,6 +16,7 @@ import com.datadog.android.core.internal.persistence.file.readBytesSafe
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
+import com.datadog.android.internal.utils.bootNtpOffsetNs
 import com.datadog.android.internal.utils.formatIsoUtc
 import com.datadog.android.profiling.internal.domain.ProfilingBatchMetadata
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
@@ -109,7 +110,7 @@ internal class ProfilingDataWriter(
                             name = listOfNotNull(rumContext.viewName)
                         ),
                         error = ProfileEvent.Error(id = listOfNotNull(rumErrorId.ifEmpty { null })),
-                        dd = ProfileEvent.Dd(bootNtp = computeBootNtpOffset())
+                        dd = ProfileEvent.Dd(bootNtp = perfettoResult.bootNtpNs ?: computeBootNtpOffset())
                     )
                     val serialized = profileEvent.toJson().toString().toByteArray(Charsets.UTF_8)
                     val rumMobileEventsJson = buildTriggerRumMobileEventsJson(rumErrorId, detectedAtMs)
@@ -307,16 +308,7 @@ internal class ProfilingDataWriter(
         )
     }
 
-    /**
-     * Computes the offset between the device boot time and the NTP-corrected (server) time,
-     * in nanoseconds (NTP time - boot time).
-     */
-    private fun computeBootNtpOffset(): Long {
-        val serverTimeNs =
-            TimeUnit.MILLISECONDS.toNanos(sdkCore.timeProvider.getServerTimestampMillis())
-        val bootTimeNs = sdkCore.timeProvider.getDeviceElapsedRealtimeNanos()
-        return serverTimeNs - bootTimeNs
-    }
+    private fun computeBootNtpOffset(): Long = sdkCore.timeProvider.bootNtpOffsetNs()
 
     private fun buildRumMobileEventsJson(
         longTasks: List<ProfilerEvent.RumLongTaskEvent>,
