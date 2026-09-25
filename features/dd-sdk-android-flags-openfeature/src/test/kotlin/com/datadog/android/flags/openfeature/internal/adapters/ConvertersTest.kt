@@ -32,6 +32,14 @@ internal class ConvertersTest {
     // region toProviderEvaluation
 
     @Test
+    fun `M forward stale reason W toProviderEvaluation`() {
+        val result = ResolutionDetails(value = true, reason = ResolutionReason.STALE).toProviderEvaluation()
+        assertThat(result.value).isTrue()
+        assertThat(result.reason).isEqualTo("STALE")
+        assertThat(result.errorCode).isNull()
+    }
+
+    @Test
     fun `M convert resolution W toProviderEvaluation() {successful boolean resolution}`(
         @BoolForgery fakeValue: Boolean,
         @StringForgery fakeVariant: String

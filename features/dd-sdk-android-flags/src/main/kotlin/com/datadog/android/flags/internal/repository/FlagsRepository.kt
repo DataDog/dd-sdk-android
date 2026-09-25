@@ -12,6 +12,7 @@ import com.datadog.android.flags.model.EvaluationContext
 internal interface FlagsRepository {
     fun getPrecomputedFlag(key: String): PrecomputedFlag?
     fun getEvaluationContext(): EvaluationContext?
+    fun setRequestedContext(context: EvaluationContext)
 
     /**
      * Runs [onInstalled] after attempting storage submission, including when submission fails.
@@ -22,7 +23,7 @@ internal interface FlagsRepository {
         flags: Map<String, PrecomputedFlag>,
         onInstalled: () -> Unit = {}
     )
-    fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>?
+    fun getPrecomputedFlagWithContext(key: String): FlagWithContext?
     fun waitForFlags(): FirstFlagsLatch
     fun hasFlags(): Boolean
     fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean
