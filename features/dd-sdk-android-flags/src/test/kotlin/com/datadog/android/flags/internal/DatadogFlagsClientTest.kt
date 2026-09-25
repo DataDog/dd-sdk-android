@@ -145,21 +145,27 @@ internal class DatadogFlagsClientTest {
     @Test
     fun `M expose cached reason in details W resolving a restored assignment`(forge: Forge) {
         // Given
-        val context = EvaluationContext("persisted-user")
+        val context = forge.getForgery<EvaluationContext>()
+        val flagKey = forge.anAlphabeticalString()
+        val flagValue = forge.aBool()
+        val originalReason = forge.aValueFrom(ResolutionReason::class.java, exclude = listOf(ResolutionReason.CACHED))
         val flag = forge.getForgery<PrecomputedFlag>().copy(
-            variationType = "boolean",
-            variationValue = "true",
+            variationType = VariationType.BOOLEAN.value,
+            variationValue = flagValue.toString(),
             doLog = true,
-            reason = "TARGETING_MATCH"
+            reason = originalReason.name
         )
         val dataStore = mock<DataStoreHandler>()
         doAnswer {
             it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2).onSuccess(
-                DataStoreContent(0, FlagsStateEntry(context, mapOf("flag" to flag), 0L))
+                DataStoreContent(
+                    forge.anInt(),
+                    FlagsStateEntry(context, mapOf(flagKey to flag), forge.aLong())
+                )
             )
             null
         }.whenever(dataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
-        val repository = DefaultFlagsRepository(mockFeatureSdkCore, "persisted", dataStore)
+        val repository = DefaultFlagsRepository(mockFeatureSdkCore, forge.anAlphabeticalString(), dataStore)
         testedClient = DatadogFlagsClient(
             featureSdkCore = mockFeatureSdkCore,
             evaluationsManager = mockEvaluationsManager,
@@ -175,15 +181,15 @@ internal class DatadogFlagsClientTest {
         )
 
         // When
-        val details = testedClient.resolve("flag", false)
+        val details = testedClient.resolve(flagKey, !flagValue)
 
         // Then
-        assertThat(details.value).isTrue()
+        assertThat(details.value).isEqualTo(flagValue)
         assertThat(details.reason).isEqualTo(ResolutionReason.CACHED)
         assertThat(details.variant).isEqualTo(flag.variationKey)
         assertThat(details.errorCode).isNull()
-        assertThat(flag.reason).isEqualTo("TARGETING_MATCH")
-        verify(mockProcessor).processEvent("flag", context, flag.copy(reason = "CACHED"))
+        assertThat(flag.reason).isEqualTo(originalReason.name)
+        verify(mockProcessor).processEvent(flagKey, context, flag.copy(reason = ResolutionReason.CACHED.name))
     }
 
     @Test
