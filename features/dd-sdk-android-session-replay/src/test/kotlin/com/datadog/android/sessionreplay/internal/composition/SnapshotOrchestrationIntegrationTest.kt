@@ -59,7 +59,7 @@ internal class SnapshotOrchestrationIntegrationTest {
             internalLogger = mock<InternalLogger>()
         )
         val orchestrator = SnapshotCaptureOrchestrator(
-            producer = CapturedSnapshotProducer { _ -> tree.snapshot },
+            producer = CapturedSnapshotProducer { _ -> CaptureStep.Done(tree.snapshot) },
             processor = ImmediateCapturedSnapshotProcessor(),
             consumer = completionQueue,
             timeProvider = clock,
