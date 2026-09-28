@@ -19,9 +19,9 @@ import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
 import com.datadog.android.profiling.internal.utils.ThreadDumper
+import com.datadog.android.profiling.internal.utils.fileDeleteSafe
 import com.datadog.android.profiling.internal.utils.fileSizeSafe
 import com.datadog.android.profiling.internal.utils.getFileCreationTimeMs
-import java.io.File
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.function.Consumer
@@ -131,7 +131,7 @@ internal class ProfilingManagerTriggerRegistrar(
                 forwardTriggerResult(currentListener, detectedAtMs, resultPath)
             } else {
                 // Not forwarded (stale, or could not compute staleness): delete to avoid leaking.
-                safeDelete(resultPath)
+                fileDeleteSafe(resultPath, internalLogger)
             }
         }
         profilingTelemetry.report(
@@ -163,31 +163,9 @@ internal class ProfilingManagerTriggerRegistrar(
         )
     }
 
-    private fun safeDelete(path: String) {
-        try {
-            @Suppress("UnsafeThirdPartyFunctionCall")
-            val deleted = File(path).delete()
-            if (!deleted) {
-                internalLogger?.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.MAINTAINER,
-                    { LOG_FILE_DELETE_FAILED }
-                )
-            }
-        } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
-            internalLogger?.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                { LOG_FILE_DELETE_FAILED },
-                t
-            )
-        }
-    }
-
     private companion object {
         const val MAX_CALLBACK_DELAY_MS = 1_000L
         const val LOG_NO_MANAGER =
             "Cannot register ANR profiling trigger: ProfilingManager system service is unavailable."
-        const val LOG_FILE_DELETE_FAILED = "Failed to delete ANR trigger trace file."
     }
 }

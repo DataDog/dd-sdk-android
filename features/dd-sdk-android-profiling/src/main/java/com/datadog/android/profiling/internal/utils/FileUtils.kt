@@ -7,6 +7,7 @@
 package com.datadog.android.profiling.internal.utils
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.persistence.file.deleteSafe
 import com.datadog.android.core.internal.persistence.file.lengthSafe
 import java.io.File
 
@@ -22,4 +23,9 @@ internal fun fileSizeSafe(filePath: String?, internalLogger: InternalLogger?): L
             0L
         }
     }
+}
+
+internal fun fileDeleteSafe(filePath: String, internalLogger: InternalLogger?) {
+    if (filePath.isEmpty()) return
+    File(filePath).deleteSafe(internalLogger ?: InternalLogger.UNBOUND)
 }

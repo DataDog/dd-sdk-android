@@ -6,7 +6,6 @@
 
 package com.datadog.android.profiling.internal
 
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -20,6 +19,7 @@ import com.datadog.android.internal.utils.formatIsoUtc
 import com.datadog.android.profiling.internal.domain.ProfilingBatchMetadata
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
+import com.datadog.android.profiling.internal.utils.fileDeleteSafe
 import com.datadog.android.profiling.model.ProfileEvent
 import com.datadog.android.profiling.model.RumMetadataEvent
 import com.google.gson.JsonArray
@@ -38,7 +38,7 @@ internal class ProfilingDataWriter(
     ) {
         val feature = sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)
         if (feature == null) {
-            safeDelete(profilingResult.resultFilePath)
+            fileDeleteSafe(profilingResult.resultFilePath, sdkCore.internalLogger)
             return
         }
         feature.withWriteContext { context, writeScope ->
@@ -57,14 +57,10 @@ internal class ProfilingDataWriter(
                             eventType = EventType.DEFAULT
                         )
                     }
-                    safeDelete(profilingResult.resultFilePath)
+                    fileDeleteSafe(profilingResult.resultFilePath, sdkCore.internalLogger)
                 }
             }
         }
-    }
-
-    override fun discard(profilingResult: PerfettoResult) {
-        safeDelete(profilingResult.resultFilePath)
     }
 
     override fun writeTriggerProfile(
@@ -77,7 +73,7 @@ internal class ProfilingDataWriter(
         val detectedAtMs = perfettoResult.start
         val feature = sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)
         if (feature == null) {
-            safeDelete(resultFilePath)
+            fileDeleteSafe(resultFilePath, sdkCore.internalLogger)
             return
         }
         feature.withWriteContext { context, writeScope ->
@@ -91,7 +87,7 @@ internal class ProfilingDataWriter(
                             startReason = operation,
                             hasRumErrorId = rumErrorId.isNotEmpty()
                         )
-                        safeDelete(resultFilePath)
+                        fileDeleteSafe(resultFilePath, sdkCore.internalLogger)
                         return@synchronized
                     }
                     val profileEvent = ProfileEvent(
@@ -125,7 +121,7 @@ internal class ProfilingDataWriter(
                         batchMetadata = null,
                         eventType = EventType.DEFAULT
                     )
-                    safeDelete(resultFilePath)
+                    fileDeleteSafe(resultFilePath, sdkCore.internalLogger)
                 }
             }
         }
@@ -400,29 +396,7 @@ internal class ProfilingDataWriter(
         return File(profilingPath).readBytesSafe(internalLogger = sdkCore.internalLogger)
     }
 
-    private fun safeDelete(path: String) {
-        try {
-            @Suppress("UnsafeThirdPartyFunctionCall")
-            val deleted = File(path).delete()
-            if (!deleted) {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.MAINTAINER,
-                    { LOG_FILE_DELETE_FAILED.format(path) }
-                )
-            }
-        } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                { LOG_FILE_DELETE_FAILED.format(path) },
-                t
-            )
-        }
-    }
-
     companion object {
-        private const val LOG_FILE_DELETE_FAILED = "Failed to delete Perfetto trace file: %s"
 
         internal const val METRIC_TYPE_PROFILING_WRITE = "profiling write"
         internal const val KEY_PROFILING_WRITE = "profiling_write"
