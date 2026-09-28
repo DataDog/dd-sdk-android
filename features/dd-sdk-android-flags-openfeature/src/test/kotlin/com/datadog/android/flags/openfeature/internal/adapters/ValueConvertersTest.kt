@@ -149,69 +149,10 @@ internal class ValueConvertersTest {
         assertThat((result as Value.Integer).asInteger()).isEqualTo(intValue)
     }
 
-    @Test
-    fun `M convert Long to Integer W convertToValue() {long within Int range}`(forge: Forge) {
-        // Given
-        val longValue = forge.anInt().toLong()
-
-        // When
-        val result = convertToValue(longValue, mockInternalLogger)
-
-        // Then
-        assertThat(result).isInstanceOf(Value.Integer::class.java)
-        assertThat((result as Value.Integer).asInteger()).isEqualTo(longValue.toInt())
-    }
-
-    @Test
-    fun `M convert Long to Double W convertToValue() {long exceeds Int MAX_VALUE}`(forge: Forge) {
-        // Given
-        val longValue = forge.aLong(min = Int.MAX_VALUE.toLong() + 1)
-
-        // When
-        val result = convertToValue(longValue, mockInternalLogger)
-
-        // Then
-        assertThat(result).isInstanceOf(Value.Double::class.java)
-        assertThat((result as Value.Double).asDouble()).isEqualTo(longValue.toDouble())
-    }
-
-    @Test
-    fun `M convert Long to Double W convertToValue() {long below Int MIN_VALUE}`(forge: Forge) {
-        // Given
-        val longValue = forge.aLong(max = Int.MIN_VALUE.toLong())
-
-        // When
-        val result = convertToValue(longValue, mockInternalLogger)
-
-        // Then
-        assertThat(result).isInstanceOf(Value.Double::class.java)
-        assertThat((result as Value.Double).asDouble()).isEqualTo(longValue.toDouble())
-    }
-
-    @Test
-    fun `M convert Long to Integer W convertToValue() {long at Int MIN_VALUE}`() {
-        // Given
-        val longValue = Int.MIN_VALUE.toLong()
-
-        // When
-        val result = convertToValue(longValue, mockInternalLogger)
-
-        // Then
-        assertThat(result).isInstanceOf(Value.Integer::class.java)
-        assertThat((result as Value.Integer).asInteger()).isEqualTo(Int.MIN_VALUE)
-    }
-
-    @Test
-    fun `M convert Long to Integer W convertToValue() {long at Int MAX_VALUE}`() {
-        // Given
-        val longValue = Int.MAX_VALUE.toLong()
-
-        // When
-        val result = convertToValue(longValue, mockInternalLogger)
-
-        // Then
-        assertThat(result).isInstanceOf(Value.Integer::class.java)
-        assertThat((result as Value.Integer).asInteger()).isEqualTo(Int.MAX_VALUE)
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(longs = [Long.MIN_VALUE, Long.MAX_VALUE, 0, 9007199254740993])
+    fun `M preserve Long precision W convertToValue`(value: Long) {
+        assertThat(convertToValue(value, mockInternalLogger)).isEqualTo(Value.Long(value))
     }
 
     @Test

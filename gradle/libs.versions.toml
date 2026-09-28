@@ -104,7 +104,7 @@ newPipeExtractor = "v0.24.6"
 navigation3 = "1.0.0-alpha01"
 kotlinxSerializationCore = "1.8.1"
 lifecycleViewmodelNav3 = "1.0.0-alpha01"
-openFeature = "0.8.0"
+openFeature = "0.9.0-20260925.210300-13"
 
 # Local Server
 ktor = "2.3.13"
@@ -258,7 +258,7 @@ rxJava3 = { module = "io.reactivex.rxjava3:rxjava", version.ref = "rxJava3" }
 rxJava3Android = { module = "io.reactivex.rxjava3:rxandroid", version.ref = "rxJava3" }
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 
-openFeatureKotlinSdk = { module = "dev.openfeature:kotlin-sdk", version.ref = "openFeature" }
+openFeatureKotlinSdk = { module = "dev.openfeature:kotlin-sdk-android", version.ref = "openFeature" }
 
 coroutinesCore = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 coroutinesTest = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }

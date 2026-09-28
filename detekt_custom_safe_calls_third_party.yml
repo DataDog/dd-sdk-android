@@ -1174,6 +1174,7 @@ datadog:
       - "dev.openfeature.kotlin.sdk.Builder.putBoolean(kotlin.String, kotlin.Boolean)"
       - "dev.openfeature.kotlin.sdk.Builder.putDouble(kotlin.String, kotlin.Double)"
       - "dev.openfeature.kotlin.sdk.Builder.putInt(kotlin.String, kotlin.Int)"
+      - "dev.openfeature.kotlin.sdk.Builder.putLong(kotlin.String, kotlin.Long)"
       - "dev.openfeature.kotlin.sdk.Builder.putString(kotlin.String, kotlin.String)"
       - "dev.openfeature.kotlin.sdk.EvaluationContext.asMap()"
       - "dev.openfeature.kotlin.sdk.EvaluationContext.getTargetingKey()"
@@ -1187,10 +1188,12 @@ datadog:
       - "dev.openfeature.kotlin.sdk.Value.Boolean.constructor(kotlin.Boolean)"
       - "dev.openfeature.kotlin.sdk.Value.Double.constructor(kotlin.Double)"
       - "dev.openfeature.kotlin.sdk.Value.Integer.constructor(kotlin.Int)"
+      - "dev.openfeature.kotlin.sdk.Value.Long.constructor(kotlin.Long)"
       - "dev.openfeature.kotlin.sdk.Value.String.constructor(kotlin.String)"
       - "dev.openfeature.kotlin.sdk.Value.asBoolean()"
       - "dev.openfeature.kotlin.sdk.Value.asDouble()"
       - "dev.openfeature.kotlin.sdk.Value.asInteger()"
+      - "dev.openfeature.kotlin.sdk.Value.asLong()"
       - "dev.openfeature.kotlin.sdk.Value.asString()"
       # endregion
       # region Opentelemetry

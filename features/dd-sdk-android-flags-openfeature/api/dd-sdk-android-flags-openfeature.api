@@ -5,6 +5,7 @@ public final class com/datadog/android/flags/openfeature/DatadogFlagsProvider : 
 	public fun getDoubleEvaluation (Ljava/lang/String;DLdev/openfeature/kotlin/sdk/EvaluationContext;)Ldev/openfeature/kotlin/sdk/ProviderEvaluation;
 	public fun getHooks ()Ljava/util/List;
 	public fun getIntegerEvaluation (Ljava/lang/String;ILdev/openfeature/kotlin/sdk/EvaluationContext;)Ldev/openfeature/kotlin/sdk/ProviderEvaluation;
+	public fun getLongEvaluation (Ljava/lang/String;JLdev/openfeature/kotlin/sdk/EvaluationContext;)Ldev/openfeature/kotlin/sdk/ProviderEvaluation;
 	public fun getMetadata ()Ldev/openfeature/kotlin/sdk/ProviderMetadata;
 	public fun getObjectEvaluation (Ljava/lang/String;Ldev/openfeature/kotlin/sdk/Value;Ldev/openfeature/kotlin/sdk/EvaluationContext;)Ldev/openfeature/kotlin/sdk/ProviderEvaluation;
 	public fun getStringEvaluation (Ljava/lang/String;Ljava/lang/String;Ldev/openfeature/kotlin/sdk/EvaluationContext;)Ldev/openfeature/kotlin/sdk/ProviderEvaluation;

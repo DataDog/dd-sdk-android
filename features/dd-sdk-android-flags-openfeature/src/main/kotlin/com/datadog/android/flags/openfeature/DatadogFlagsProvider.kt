@@ -147,6 +147,12 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         @Suppress("UNUSED_PARAMETER") context: OpenFeatureEvaluationContext?
     ): ProviderEvaluation<Int> = flagsClient.resolve(key, defaultValue).toProviderEvaluation()
 
+    override fun getLongEvaluation(
+        key: String,
+        defaultValue: Long,
+        @Suppress("UNUSED_PARAMETER") context: OpenFeatureEvaluationContext?
+    ): ProviderEvaluation<Long> = flagsClient.resolve(key, defaultValue).toProviderEvaluation()
+
     override fun getDoubleEvaluation(
         key: String,
         defaultValue: Double,

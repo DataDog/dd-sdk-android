@@ -6,6 +6,7 @@ class com.datadog.android.flags.openfeature.DatadogFlagsProvider : dev.openfeatu
   override fun getBooleanEvaluation(String, Boolean, dev.openfeature.kotlin.sdk.EvaluationContext?): dev.openfeature.kotlin.sdk.ProviderEvaluation<Boolean>
   override fun getStringEvaluation(String, String, dev.openfeature.kotlin.sdk.EvaluationContext?): dev.openfeature.kotlin.sdk.ProviderEvaluation<String>
   override fun getIntegerEvaluation(String, Int, dev.openfeature.kotlin.sdk.EvaluationContext?): dev.openfeature.kotlin.sdk.ProviderEvaluation<Int>
+  override fun getLongEvaluation(String, Long, dev.openfeature.kotlin.sdk.EvaluationContext?): dev.openfeature.kotlin.sdk.ProviderEvaluation<Long>
   override fun getDoubleEvaluation(String, Double, dev.openfeature.kotlin.sdk.EvaluationContext?): dev.openfeature.kotlin.sdk.ProviderEvaluation<Double>
   override fun getObjectEvaluation(String, dev.openfeature.kotlin.sdk.Value, dev.openfeature.kotlin.sdk.EvaluationContext?): dev.openfeature.kotlin.sdk.ProviderEvaluation<dev.openfeature.kotlin.sdk.Value>
   override fun shutdown()

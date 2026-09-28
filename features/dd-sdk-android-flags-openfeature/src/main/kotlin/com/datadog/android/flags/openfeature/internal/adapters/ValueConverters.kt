@@ -18,8 +18,7 @@ import dev.openfeature.kotlin.sdk.Value
  * - [List<*>] → [Value.List]
  * - null → [Value.Null]
  *
- * Long values are intelligently converted: within Int range they become [Value.Integer],
- * outside that range they become [Value.Double] to prevent truncation.
+ * Long values preserve their full precision as [Value.Long].
  *
  * Unexpected types are converted to strings via [toString()] with a warning logged.
  *
@@ -34,14 +33,7 @@ internal fun convertToValue(value: Any?, internalLogger: InternalLogger): Value 
     is String -> Value.String(value)
     is Boolean -> Value.Boolean(value)
     is Int -> Value.Integer(value)
-    is Long -> when {
-        value in Int.MIN_VALUE..Int.MAX_VALUE -> {
-            // Safe: toInt() only called after explicit range check ensures value fits in Int range
-            @Suppress("UnsafeThirdPartyFunctionCall")
-            Value.Integer(value.toInt())
-        }
-        else -> Value.Double(value.toDouble())
-    }
+    is Long -> Value.Long(value)
     is Short -> Value.Integer(value.toInt())
     is Byte -> Value.Integer(value.toInt())
     is Float -> Value.Double(value.toDouble())

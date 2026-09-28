@@ -180,23 +180,22 @@ internal class ConvertersTest {
         assertThat(result.metadata.getString("allocationKey")).isEqualTo(fakeAllocationKey)
     }
 
-    @Test
-    fun `M serialize Long to string W toProviderEvaluation() {flagMetadata contains Long value}`(
-        @BoolForgery fakeValue: Boolean
-    ) {
-        // Given — Builder has no putLong (only putInt/putDouble/putString/putBoolean);
-        // Long values fall through to the else branch and are stored as their toString() representation.
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(longs = [Long.MIN_VALUE, Long.MAX_VALUE, 9007199254740993L])
+    fun `M preserve Long W metadata and context conversion`(value: Long) {
         val resolution = ResolutionDetails(
-            value = fakeValue,
+            value = value,
+            variant = "large-integer",
             reason = ResolutionReason.TARGETING_MATCH,
-            flagMetadata = mapOf("count" to 42L)
+            flagMetadata = mapOf("count" to value)
         )
-
-        // When
         val result = resolution.toProviderEvaluation()
-
-        // Then — Long stored as string via putString fallback
-        assertThat(result.metadata.getString("count")).isEqualTo("42")
+        assertThat(result.value).isEqualTo(value)
+        assertThat(result.variant).isEqualTo("large-integer")
+        assertThat(result.reason).isEqualTo("TARGETING_MATCH")
+        assertThat(result.metadata.getLong("count")).isEqualTo(value)
+        val context = ImmutableContext("user", mapOf("count" to Value.Long(value)))
+        assertThat(context.toDatadogEvaluationContext().attributes["count"]).isEqualTo(value.toString())
     }
 
     // endregion
