@@ -173,24 +173,32 @@ internal class EvaluationsManager(
         // Own the attributes before asynchronous work or reentrant lifecycle callbacks can run.
         val context = requestedContext.copy(attributes = requestedContext.attributes.toMap())
         val matchingCachedAssignments = AtomicBoolean(false)
-        val (generation, initializationCompletion) = synchronized(initializationTerminalLock) {
-            if (stopped) {
-                callback?.onFailure(IllegalStateException(CLIENT_STOPPED_MESSAGE))
-                return
-            }
+        val admission = synchronized(initializationTerminalLock) {
+            if (stopped) return@synchronized null
             val generation = ++contextGeneration
             flagsRepository.setRequestedContext(context)
-            val completion = startInitializationTimeout(context, callback, matchingCachedAssignments, generation) {
-                if (clientReadyPolicy != ClientReadyPolicy.CACHE_OR_NETWORK ||
-                    !flagsRepository.hasLoadedConfiguration()
-                ) {
-                    flagStateManager.updateState(FlagsClientState.Reconciling)
-                }
+            val completion = if (didStartInitialization.compareAndSet(false, true)) {
+                InitializationCompletion(callback).also { initialCompletion = it }
+            } else {
+                null
             }
-            if (completion == null) flagStateManager.updateState(FlagsClientState.Reconciling)
+            if (completion == null || clientReadyPolicy != ClientReadyPolicy.CACHE_OR_NETWORK ||
+                !flagsRepository.hasLoadedConfiguration()
+            ) {
+                flagStateManager.updateState(FlagsClientState.Reconciling)
+            }
             generation to completion
         }
+        if (admission == null) {
+            callback?.onFailure(IllegalStateException(CLIENT_STOPPED_MESSAGE))
+            return
+        }
+        val (generation, initializationCompletion) = admission
+        // Settle an available cache before arming the deadline, outside the admission lock.
         onCacheLoadCompleted()
+        if (initializationCompletion != null) {
+            scheduleInitializationTimeout(context, matchingCachedAssignments, generation, initializationCompletion)
+        }
         fetchEvaluationsForContext(context, callback, matchingCachedAssignments, generation, initializationCompletion)
     }
 
@@ -307,46 +315,36 @@ internal class EvaluationsManager(
         }
     }
 
-    @Suppress("ReturnCount") // First initialization and disabled timeout are separate early exits.
-    private fun startInitializationTimeout(
+    private fun scheduleInitializationTimeout(
         context: EvaluationContext,
-        callback: EvaluationContextCallback?,
         matchingCachedAssignments: AtomicBoolean,
         generation: Long,
-        beforeScheduling: () -> Unit
-    ): InitializationCompletion? {
-        val timeoutMs = initializationTimeoutMs
-        if (!didStartInitialization.compareAndSet(false, true)) return null
-        val completion = InitializationCompletion(callback)
-        synchronized(initializationTerminalLock) { initialCompletion = completion }
-        beforeScheduling()
-        onCacheLoadCompleted()
-        if (timeoutMs == null) return completion
-        return completion.also {
-            val cancelTimeout = initializationTimeoutScheduler.schedule(timeoutMs) {
-                val error = FlagsInitializationTimeoutException(timeoutMs)
-                val result = synchronized(initializationTerminalLock) {
-                    val claimedResult = completion.take(shouldCancelTimeout = false)
-                        ?: return@synchronized null
-                    val currentState = flagStateManager.getCurrentState()
-                    if (generation == contextGeneration &&
-                        currentState != FlagsClientState.Ready && currentState != FlagsClientState.Stale
-                    ) {
-                        val hasMatchingCachedAssignments = matchingCachedAssignments.get() ||
-                            flagsRepository.hasLoadedFlagsForContext(context)
-                        val timeoutState = if (hasMatchingCachedAssignments) {
-                            FlagsClientState.Stale
-                        } else {
-                            FlagsClientState.Error(error)
-                        }
-                        flagStateManager.updateState(timeoutState)
+        completion: InitializationCompletion
+    ) {
+        val timeoutMs = initializationTimeoutMs ?: return
+        val cancelTimeout = initializationTimeoutScheduler.schedule(timeoutMs) {
+            val error = FlagsInitializationTimeoutException(timeoutMs)
+            val result = synchronized(initializationTerminalLock) {
+                val claimedResult = completion.take(shouldCancelTimeout = false)
+                    ?: return@synchronized null
+                val currentState = flagStateManager.getCurrentState()
+                if (generation == contextGeneration &&
+                    currentState != FlagsClientState.Ready && currentState != FlagsClientState.Stale
+                ) {
+                    val hasMatchingCachedAssignments = matchingCachedAssignments.get() ||
+                        flagsRepository.hasLoadedFlagsForContext(context)
+                    val timeoutState = if (hasMatchingCachedAssignments) {
+                        FlagsClientState.Stale
+                    } else {
+                        FlagsClientState.Error(error)
                     }
-                    claimedResult
+                    flagStateManager.updateState(timeoutState)
                 }
-                result?.callback?.onFailure(error)
+                claimedResult
             }
-            completion.armTimeoutCancellation(cancelTimeout)
+            result?.callback?.onFailure(error)
         }
+        completion.armTimeoutCancellation(cancelTimeout)
     }
 
     companion object {

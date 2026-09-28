@@ -34,6 +34,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.FutureTask
 import java.util.concurrent.TimeUnit
@@ -157,5 +158,42 @@ internal class EvaluationsExecutorStopTest {
             executor.shutdownNow()
             executor.awaitTermination(5, TimeUnit.SECONDS)
         }
+    }
+
+    @Test
+    fun `M release lifecycle monitor before failure callback W context requested after stop`(forge: Forge) {
+        val mockSdk = mock<FeatureSdkCore>()
+        val mockExecutor = mock<ExecutorService>()
+        val mockRepository = mock<FlagsRepository>()
+        val mockReader = mock<PrecomputedAssignmentsReader>()
+        val mockCallback = mock<EvaluationContextCallback>()
+        val acquiredMonitor = CountDownLatch(1)
+        val callbackSawUnlockedMonitor = AtomicBoolean(false)
+        val stateManager = FlagsStateManager(
+            DDCoreStateHolder.create(FlagsClientState.NotReady, FlagsStateListener::onStateChanged)
+        )
+        whenever(mockSdk.internalLogger).thenReturn(mock())
+        val testedManager = EvaluationsManager(
+            mockSdk, mockExecutor, mockSdk.internalLogger, mockRepository, mockReader,
+            mock(), stateManager, null, { _, _ -> {} }
+        )
+        whenever(mockCallback.onFailure(any())).doAnswer {
+            thread(isDaemon = true) {
+                stateManager.getCurrentState()
+                acquiredMonitor.countDown()
+            }
+            callbackSawUnlockedMonitor.set(acquiredMonitor.await(1, TimeUnit.SECONDS))
+            null
+        }
+        testedManager.stop()
+
+        testedManager.updateEvaluationsForContext(forge.getForgery(), mockCallback)
+
+        assertThat(acquiredMonitor.await(5, TimeUnit.SECONDS)).isTrue()
+        assertThat(callbackSawUnlockedMonitor).isTrue()
+        verify(mockCallback).onFailure(any())
+        verifyNoMoreInteractions(mockCallback)
+        verify(mockReader, never()).readPrecomputedFlags(any(), any())
+        verify(mockExecutor, never()).execute(any())
     }
 }

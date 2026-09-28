@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
@@ -141,6 +142,38 @@ internal class ClientReadyPolicyTest {
 
         assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Stale)
         verify(mockCallback).onSuccess()
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M release lifecycle lock W restored cache completes initialization`(immediateTimeout: Boolean) {
+        loadDisk()
+        testedManager = EvaluationsManager(
+            mockSdkCore, mockExecutor, mockSdkCore.internalLogger, testedRepository, mockReader,
+            mockMapper, stateManager, if (immediateTimeout) 0 else null,
+            { _, action -> action(); {} }, ClientReadyPolicy.CACHE_OR_NETWORK
+        )
+        val stateReadCompleted = CountDownLatch(1)
+        val observedState = AtomicReference<FlagsClientState>()
+        var stateReader: Thread? = null
+        whenever(mockCallback.onSuccess()).doAnswer {
+            stateReader = thread(isDaemon = true) {
+                observedState.set(stateManager.getCurrentState())
+                stateReadCompleted.countDown()
+            }
+            assertThat(stateReadCompleted.await(5, TimeUnit.SECONDS)).isTrue()
+            null
+        }
+
+        try {
+            testedManager.updateEvaluationsForContext(fakeContext, mockCallback)
+        } finally {
+            stateReader?.join(5000)
+        }
+
+        assertThat(observedState.get()).isEqualTo(FlagsClientState.Stale)
+        verify(mockCallback).onSuccess()
+        verify(mockCallback, never()).onFailure(any())
     }
 
     @Test
