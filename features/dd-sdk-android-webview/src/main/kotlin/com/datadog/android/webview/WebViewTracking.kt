@@ -102,7 +102,7 @@ object WebViewTracking {
             System.identityHashCode(webView).toString()
         )
         val webViewRumFeature = featureSdkCore
-            .getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
+            .getFeature(Feature.WEB_RUM_FEATURE_NAME)
             ?.unwrap<StorageBackedFeature>() as? WebViewRumFeature
         webView.addJavascriptInterface(
             DatadogEventBridge(
@@ -198,7 +198,7 @@ object WebViewTracking {
 
     private fun resolveRumFeature(sdkCore: FeatureSdkCore): WebViewRumFeature? {
         (
-            sdkCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
+            sdkCore.getFeature(Feature.WEB_RUM_FEATURE_NAME)
                 ?.unwrap<StorageBackedFeature>() as? WebViewRumFeature
             )?.let {
             return it
@@ -220,7 +220,7 @@ object WebViewTracking {
 
     private fun resolveReplayFeature(sdkCore: FeatureSdkCore): WebViewReplayFeature? {
         (
-            sdkCore.getFeature(WebViewReplayFeature.WEB_REPLAY_FEATURE_NAME)
+            sdkCore.getFeature(Feature.WEB_SESSION_REPLAY_FEATURE_NAME)
                 ?.unwrap<StorageBackedFeature>() as? WebViewReplayFeature
             )?.let {
             return it
@@ -242,7 +242,7 @@ object WebViewTracking {
 
     private fun resolveLogsFeature(sdkCore: FeatureSdkCore): WebViewLogsFeature? {
         (
-            sdkCore.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)
+            sdkCore.getFeature(Feature.WEB_LOGS_FEATURE_NAME)
                 ?.unwrap<StorageBackedFeature>() as? WebViewLogsFeature
             )?.let {
             return it

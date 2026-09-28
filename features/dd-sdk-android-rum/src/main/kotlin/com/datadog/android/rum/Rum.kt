@@ -105,6 +105,12 @@ object Rum {
             sdkCore
         )
 
+        // When the pre-launch module supplied the startup detector, hand it this feature's listener
+        // and replay whatever it buffered before the SDK existed. This has to come after
+        // registerIfAbsent(): the replayed events go through GlobalRumMonitor, which is still the
+        // no-op monitor during RumFeature.onInitialize().
+        rumFeature.attachPreLaunchRumAppStartupDetector()
+
         // TODO RUM-3794 there is a small chance of application crashing between RUM monitor
         //  registration and the moment SDK init is processed, in this case we will miss this crash
         //  (it won't activate new session). Ideally we should start session when monitor is created
@@ -179,9 +185,9 @@ object Rum {
             },
             insightsCollector = rumFeature.insightsCollector,
             viewEventMapper = rumFeature.configuration.viewEventMapper,
-            rumViewEventWriteConfig = rumFeature.configuration.rumViewEventWriteConfig,
+            viewEventWriteConfig = rumFeature.configuration.viewEventWriteConfig,
             heatmapIdentifierRegistry = rumFeature.heatmapIdentifierRegistry,
-            timeseriesCollectorFactory = rumFeature.timeseriesCollectorFactory
+            timeseriesCollector = rumFeature.timeseriesCollector
         )
     }
 

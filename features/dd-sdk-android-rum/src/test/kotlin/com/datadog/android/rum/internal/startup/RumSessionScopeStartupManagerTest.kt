@@ -1014,7 +1014,7 @@ internal class RumSessionScopeStartupManagerTest {
         val info = RumTTIDInfo(
             scenario = scenario,
             durationNs = forge.aLong(
-                min = RumSessionScopeStartupManagerImpl.MAX_TTID_DURATION_NS + 1
+                min = RumAppStartupDetectorImpl.MAX_TTID_DURATION_NS + 1
             )
         )
 

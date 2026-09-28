@@ -322,6 +322,36 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         return this
     }
 
+    fun hasProfilingSampleRate(expected: Number?): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.profilingSampleRate)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.configuration.profilingSampleRate" +
+                    " $expected but was ${actual.telemetry.configuration.profilingSampleRate}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasProfilingApplicationLaunchSampleRate(expected: Number?): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.profilingApplicationLaunchSampleRate)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.configuration.profilingApplicationLaunchSampleRate" +
+                    " $expected but was ${actual.telemetry.configuration.profilingApplicationLaunchSampleRate}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasProfilingAnrEnabled(expected: Boolean?): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.profilingAnrEnabled)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.configuration.profilingAnrEnabled" +
+                    " $expected but was ${actual.telemetry.configuration.profilingAnrEnabled}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasSelectedTracingPropagators(
         expected: List<TelemetryConfigurationEvent.SelectedTracingPropagator>?
     ): TelemetryConfigurationEventAssert {

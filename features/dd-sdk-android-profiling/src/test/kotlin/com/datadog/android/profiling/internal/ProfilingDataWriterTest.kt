@@ -295,7 +295,7 @@ internal class ProfilingDataWriterTest {
     }
 
     @Test
-    fun `M skip writing and log warn on delete W writeManualProfile() {perfetto file not found}`(
+    fun `M skip writing W writeManualProfile() {perfetto file not found}`(
         @Forgery fakeResult: PerfettoResult,
         @Forgery fakeVitals: List<ProfilerEvent.RumVitalEvent>,
         @Forgery fakeLongTasks: List<ProfilerEvent.RumLongTaskEvent>,
@@ -313,14 +313,6 @@ internal class ProfilingDataWriterTest {
         )
 
         // Then
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.WARN),
-            eq(InternalLogger.Target.MAINTAINER),
-            any<() -> String>(),
-            isNull(),
-            eq(false),
-            isNull()
-        )
         val expectedProps = mapOf(
             ProfilingTelemetry.KEY_METRIC_TYPE to ProfilingDataWriter.METRIC_TYPE_PROFILING_WRITE,
             ProfilingDataWriter.KEY_PROFILING_WRITE to mapOf(
@@ -635,45 +627,6 @@ internal class ProfilingDataWriterTest {
             eq(MethodCallSamplingRate.ALL.rate),
             isNull()
         )
-    }
-
-    @Test
-    fun `M delete result file W discard`(
-        @Forgery fakeResult: PerfettoResult,
-        forge: Forge
-    ) {
-        // Given
-        val file = File(tmp, "fake_profile.perfetto-stack-sample")
-        file.writeBytes(forge.aString().toByteArray())
-
-        // When
-        testedDataWriterTest.discard(fakeResult.copy(resultFilePath = file.absolutePath))
-
-        // Then
-        assertThat(file.exists()).isFalse()
-        verifyNoInteractions(mockEventBatchWriter)
-    }
-
-    @Test
-    fun `M log warn on delete failure W discard {file not found}`(
-        @Forgery fakeResult: PerfettoResult
-    ) {
-        // Given — file path exists in TempDir but file is never created
-        val nonExistentFile = File(tmp, "nonexistent.perfetto-stack-sample")
-
-        // When
-        testedDataWriterTest.discard(fakeResult.copy(resultFilePath = nonExistentFile.absolutePath))
-
-        // Then
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.WARN),
-            eq(InternalLogger.Target.MAINTAINER),
-            any<() -> String>(),
-            isNull(),
-            eq(false),
-            isNull()
-        )
-        verifyNoInteractions(mockEventBatchWriter)
     }
 
     @Test

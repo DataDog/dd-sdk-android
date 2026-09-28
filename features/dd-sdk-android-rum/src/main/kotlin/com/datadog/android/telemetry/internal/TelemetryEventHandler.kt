@@ -15,6 +15,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.attributes.LocalAttribute
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
@@ -78,6 +79,7 @@ internal class TelemetryEventHandler(
             withFeatureContexts = setOf(
                 Feature.SESSION_REPLAY_FEATURE_NAME,
                 Feature.TRACING_FEATURE_NAME,
+                Feature.PROFILING_FEATURE_NAME,
                 Feature.RUM_FEATURE_NAME
             )
         ) { datadogContext, writeScope ->
@@ -328,6 +330,12 @@ internal class TelemetryEventHandler(
             sessionReplayFeatureContext[SESSION_REPLAY_TOUCH_PRIVACY_KEY] as? String
         val sessionReplayTextAndInputPrivacy =
             sessionReplayFeatureContext[SESSION_REPLAY_TEXT_AND_INPUT_PRIVACY_KEY] as? String
+        val profilingContext = datadogContext.featuresContext[Feature.PROFILING_FEATURE_NAME].orEmpty()
+        val profilingSampleRate = profilingContext[FeatureContextKeys.PROFILING_SAMPLE_RATE] as? Number
+        val profilingAppLaunchSampleRate =
+            profilingContext[FeatureContextKeys.PROFILING_APPLICATION_LAUNCH_SAMPLE_RATE] as? Number
+        val profilingAnrEnabled =
+            profilingContext[FeatureContextKeys.PROFILING_ANR_ENABLED] as? Boolean
         val viewTrackingStrategy = when (rumConfig?.viewTrackingStrategy) {
             is ActivityViewTrackingStrategy -> VTS.ACTIVITYVIEWTRACKINGSTRATEGY
             is FragmentViewTrackingStrategy -> VTS.FRAGMENTVIEWTRACKINGSTRATEGY
@@ -415,6 +423,9 @@ internal class TelemetryEventHandler(
                     trackResourceHeaders = trackResourceHeaders,
                     useClientSideStats = useClientSideStats,
                     remoteConfigurationId = datadogContext.remoteConfigurationId,
+                    profilingSampleRate = profilingSampleRate,
+                    profilingApplicationLaunchSampleRate = profilingAppLaunchSampleRate,
+                    profilingAnrEnabled = profilingAnrEnabled,
                     remoteConfiguration = rcMeta?.let {
                         TelemetryConfigurationEvent.RemoteConfiguration(
                             configId = it.configId,

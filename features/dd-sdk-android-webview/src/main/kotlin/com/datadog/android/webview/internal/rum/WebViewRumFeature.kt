@@ -41,7 +41,7 @@ internal class WebViewRumFeature(
 
     // region Feature
 
-    override val name: String = WEB_RUM_FEATURE_NAME
+    override val name: String = Feature.WEB_RUM_FEATURE_NAME
 
     override fun onInitialize(appContext: Context) {
         sdkCore.setContextUpdateReceiver(this)
@@ -77,9 +77,5 @@ internal class WebViewRumFeature(
             serializer = WebViewEventSerializer(),
             internalLogger = internalLogger
         )
-    }
-
-    companion object {
-        internal const val WEB_RUM_FEATURE_NAME = "web-rum"
     }
 }

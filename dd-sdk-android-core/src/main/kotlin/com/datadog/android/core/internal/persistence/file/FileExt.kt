@@ -73,7 +73,11 @@ fun File.canReadSafe(internalLogger: InternalLogger): Boolean {
     }
 }
 
-internal fun File.deleteSafe(internalLogger: InternalLogger): Boolean {
+/**
+ * Non-throwing version of [File.delete]. If exception happens, false is returned.
+ */
+@InternalApi
+fun File.deleteSafe(internalLogger: InternalLogger): Boolean {
     return safeCall(default = false, internalLogger) {
         @Suppress("UnsafeThirdPartyFunctionCall")
         delete()

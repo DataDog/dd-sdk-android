@@ -190,7 +190,6 @@ internal class ProfilingManagerTriggerRegistrarTest {
                 errorMessage = null,
                 fileSize = 0L,
                 callbackDelayMs = null,
-                clientClockDriftMs = 0L,
                 droppedAsStale = false
             )
         )
@@ -224,7 +223,6 @@ internal class ProfilingManagerTriggerRegistrarTest {
                 errorMessage = fakeErrorMessage,
                 fileSize = 0L,
                 callbackDelayMs = null,
-                clientClockDriftMs = 0L,
                 droppedAsStale = false
             )
         )
@@ -454,7 +452,6 @@ internal class ProfilingManagerTriggerRegistrarTest {
                 errorMessage = null,
                 fileSize = expectedFileSize,
                 callbackDelayMs = fakeDelayMs,
-                clientClockDriftMs = 0L,
                 droppedAsStale = false
             )
         )
@@ -496,7 +493,6 @@ internal class ProfilingManagerTriggerRegistrarTest {
                 errorMessage = null,
                 fileSize = expectedFileSize,
                 callbackDelayMs = fakeDelayMs,
-                clientClockDriftMs = 0L,
                 droppedAsStale = true
             )
         )
@@ -565,7 +561,6 @@ internal class ProfilingManagerTriggerRegistrarTest {
                 errorMessage = null,
                 fileSize = expectedFileSize,
                 callbackDelayMs = fakeDelayMs,
-                clientClockDriftMs = 0L,
                 droppedAsStale = false
             )
         )
@@ -614,7 +609,6 @@ internal class ProfilingManagerTriggerRegistrarTest {
                 errorMessage = null,
                 fileSize = expectedFileSize,
                 callbackDelayMs = fakeDelayMs,
-                clientClockDriftMs = 0L,
                 droppedAsStale = false
             )
         )
@@ -662,7 +656,6 @@ internal class ProfilingManagerTriggerRegistrarTest {
                 errorMessage = null,
                 fileSize = expectedFileSize,
                 callbackDelayMs = fakeDelayMs,
-                clientClockDriftMs = 0L,
                 droppedAsStale = false
             )
         )
@@ -711,7 +704,6 @@ internal class ProfilingManagerTriggerRegistrarTest {
                 errorMessage = null,
                 fileSize = expectedFileSize,
                 callbackDelayMs = fakeDelayMs,
-                clientClockDriftMs = 0L,
                 droppedAsStale = false
             )
         )
@@ -747,7 +739,6 @@ internal class ProfilingManagerTriggerRegistrarTest {
                 errorMessage = fakeErrorMessage,
                 fileSize = 0L,
                 callbackDelayMs = null,
-                clientClockDriftMs = 0L,
                 droppedAsStale = false
             )
         )

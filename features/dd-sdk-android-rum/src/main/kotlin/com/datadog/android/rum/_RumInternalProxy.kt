@@ -15,7 +15,6 @@ import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.Ne
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.rum.RumConfiguration.Builder
 import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
-import com.datadog.android.rum.configuration.RumViewEventWriteConfig
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.resource.ResourceHeadersExtractor
@@ -95,10 +94,18 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
     }
 
     fun setSyntheticsAttributeFromIntent(intent: Intent) {
+        var testId: String? = null
+        var resultId: String? = null
         @Suppress("TooGenericExceptionCaught")
-        val extras = try { intent.extras } catch (_: Exception) { null }
-        val testId = extras?.getString("_dd.synthetics.test_id")
-        val resultId = extras?.getString("_dd.synthetics.result_id")
+        try {
+            val extras = intent.extras
+            testId = extras?.getString("_dd.synthetics.test_id")
+            resultId = extras?.getString("_dd.synthetics.result_id")
+        } catch (_: Exception) {
+            // ignore, malformed intent extras
+        } catch (_: LinkageError) {
+            // ignore, e.g. NoClassDefFoundError when unparcelling extras referencing an unavailable class
+        }
         this.setSyntheticsAttribute(testId, resultId)
     }
 
@@ -160,12 +167,5 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
             rawResponseHeaders: Map<String, List<String>>,
             internalLogger: InternalLogger
         ) = extractor.toResourceAttributes(rawRequestHeaders, rawResponseHeaders, internalLogger)
-
-        fun setRumViewEventWriteConfig(
-            builder: Builder,
-            config: RumViewEventWriteConfig
-        ): Builder {
-            return builder.setRumViewEventWriteConfig(config = config)
-        }
     }
 }

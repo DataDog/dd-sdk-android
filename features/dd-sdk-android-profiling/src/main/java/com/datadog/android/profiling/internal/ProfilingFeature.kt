@@ -35,6 +35,7 @@ import com.datadog.android.profiling.internal.quota.QuotaResult
 import com.datadog.android.profiling.internal.trigger.NoOpPendingTriggerProfiles
 import com.datadog.android.profiling.internal.trigger.PendingTriggerProfileStorage
 import com.datadog.android.profiling.internal.trigger.PendingTriggerProfiles
+import com.datadog.android.profiling.internal.utils.fileDeleteSafe
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
@@ -117,6 +118,10 @@ internal class ProfilingFeature(
         sdkCore.setEventReceiver(name, this)
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
             context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning()
+            context[FeatureContextKeys.PROFILING_SAMPLE_RATE] = configuration.continuousSampleRate
+            context[FeatureContextKeys.PROFILING_APPLICATION_LAUNCH_SAMPLE_RATE] =
+                configuration.applicationLaunchSampleRate
+            context[FeatureContextKeys.PROFILING_ANR_ENABLED] = configuration.anrTriggerEnabled
         }
 
         val quotaCallFactory = sdkCore.createOkHttpCallFactory {
@@ -330,7 +335,7 @@ internal class ProfilingFeature(
                                 quotaResult.reason.rawValue
                             )
                         )
-                        dataWriter.discard(result)
+                        fileDeleteSafe(result.resultFilePath, sdkCore.internalLogger)
                         pendingRumEvents.clear()
                     } else {
                         val (longTasks, anrEvents, vitalEvents) = pendingRumEvents.drain()
@@ -405,7 +410,7 @@ internal class ProfilingFeature(
                                     quotaResult.reason.rawValue
                                 )
                             )
-                            dataWriter.discard(perfettoResult)
+                            fileDeleteSafe(perfettoResult.resultFilePath, sdkCore.internalLogger)
                         } else {
                             dataWriter.writeTriggerProfile(
                                 perfettoResult = perfettoResult,
