@@ -39,6 +39,7 @@ internal class DividerView @JvmOverloads constructor(
     var lineOffset: Float = DEFAULT_LINE_OFFSET_DP.px
         set(value) {
             field = value
+            requestLayout()
             invalidate()
         }
 
@@ -46,6 +47,7 @@ internal class DividerView @JvmOverloads constructor(
     var textOffset: Float = DEFAULT_TEXT_OFFSET_DP.px
         set(value) {
             field = value
+            requestLayout()
             invalidate()
         }
 
@@ -90,7 +92,7 @@ internal class DividerView @JvmOverloads constructor(
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         textPaint.getTextBounds(text, 0, text.length, bounds)
-        val textHeight = bounds.height().toFloat()
+        val textHeight = textPaint.descent() - textPaint.ascent()
         val textWidth = bounds.width()
         val desiredWidth = (paddingLeft + paddingRight + textWidth + 2 * lineOffset + 2 * textOffset)
             .toInt()
@@ -111,7 +113,8 @@ internal class DividerView @JvmOverloads constructor(
         val contentStart = paddingStart.toFloat()
         val contentEnd = (width - paddingEnd).toFloat()
         val textWidth = if (text.isNotEmpty()) textPaint.measureText(text) else 0f
-        val textStart = (width / 2 - textWidth / 2).coerceIn(contentStart, contentEnd - paddingEnd)
+        val maxTextStart = (contentEnd - textWidth).coerceAtLeast(contentStart)
+        val textStart = (width / 2 - textWidth / 2).coerceIn(contentStart, maxTextStart)
 
         val lineEnd = if (text.isNotEmpty()) textStart - textOffset else contentEnd - lineOffset
         canvas.drawLine(contentStart + lineOffset, cy, lineEnd, cy, dividerPaint)
