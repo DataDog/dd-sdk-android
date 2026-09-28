@@ -19,6 +19,7 @@ import dev.openfeature.kotlin.sdk.ImmutableContext
 import dev.openfeature.kotlin.sdk.OpenFeatureAPI
 import dev.openfeature.kotlin.sdk.OpenFeatureStatus
 import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents
+import dev.openfeature.kotlin.sdk.isolated.ExperimentalIsolatedApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -43,7 +44,7 @@ import org.mockito.kotlin.whenever
  * FlagsClient boundary is controlled, so state notifications and operation completion can be
  * scheduled independently, as they are by the native client's executor and timeout scheduler.
  */
-@OptIn(ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class, ExperimentalIsolatedApi::class)
 internal class OpenFeatureLifecycleTest {
 
     @Test
