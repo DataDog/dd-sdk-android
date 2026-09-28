@@ -342,6 +342,7 @@ interface com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 interface com.datadog.android.core.internal.persistence.Deserializer<P: Any, R: Any>
   fun deserialize(P): R?
 fun java.io.File.canReadSafe(com.datadog.android.api.InternalLogger): Boolean
+fun java.io.File.deleteSafe(com.datadog.android.api.InternalLogger): Boolean
 fun java.io.File.existsSafe(com.datadog.android.api.InternalLogger): Boolean
 fun java.io.File.listFilesSafe(com.datadog.android.api.InternalLogger, java.io.FilenameFilter): Array<java.io.File>?
 fun java.io.File.lengthSafe(com.datadog.android.api.InternalLogger): Long

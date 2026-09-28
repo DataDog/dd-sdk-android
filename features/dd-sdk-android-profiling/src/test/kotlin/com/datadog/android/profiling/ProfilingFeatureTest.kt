@@ -1245,8 +1245,9 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
-    fun `M discard result and not write W app-launch profiling result received {quota denied}`(
-        @Forgery fakePerfettoResult: PerfettoResult
+    fun `M delete result file and not write W app-launch profiling result received {quota denied}`(
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @TempDir fakeTempDir: File
     ) {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
@@ -1261,13 +1262,17 @@ internal class ProfilingFeatureTest {
         testedFeature.onReceive(fakeRumLongTaskEvent)
         testedFeature.onReceive(fakeTTID)
         testedFeature.propagateQuotaResult(QuotaResult.QUOTA_EXCEEDED)
-        val launchResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)
+        val traceFile = File(fakeTempDir, "launch_trace.perfetto-stack-sample").apply { writeText("trace") }
+        val launchResult = fakePerfettoResult.copy(
+            resultFilePath = traceFile.absolutePath,
+            startReason = ProfilingStartReason.APPLICATION_LAUNCH
+        )
 
         // When
         callbackCaptor.firstValue.onSuccess(launchResult)
 
         // Then
-        verify(mockDataWriter).discard(launchResult)
+        assertThat(traceFile.exists()).isFalse
         verify(mockDataWriter, never()).writeManualProfile(any(), any(), any(), any())
     }
 
@@ -1446,7 +1451,6 @@ internal class ProfilingFeatureTest {
 
         // Then
         verify(mockRumFeatureScope).sendEvent(fakeEvent)
-        verify(mockDataWriter, never()).discard(any())
 
         // When
         val runnableCaptor = argumentCaptor<Runnable>()
@@ -1461,7 +1465,6 @@ internal class ProfilingFeatureTest {
 
         // Then
         assertThat(traceFile.exists()).isFalse
-        verify(mockDataWriter, never()).discard(any())
     }
 
     @Test
@@ -1486,7 +1489,6 @@ internal class ProfilingFeatureTest {
             rumErrorId = fakeRumAnrEvent.id,
             rumContext = fakeRumAnrEvent.rumContext
         )
-        verify(mockDataWriter, never()).discard(any())
     }
 
     @Test
@@ -1510,12 +1512,12 @@ internal class ProfilingFeatureTest {
             rumErrorId = fakeRumAnrEvent.id,
             rumContext = fakeRumAnrEvent.rumContext
         )
-        verify(mockDataWriter, never()).discard(any())
     }
 
     @Test
-    fun `M discard trigger profile W onMatch {ANR, quota denied}`(
-        @Forgery fakePerfettoResult: PerfettoResult
+    fun `M delete trigger profile file W onMatch {ANR, quota denied}`(
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @TempDir fakeTempDir: File
     ) {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
@@ -1523,14 +1525,18 @@ internal class ProfilingFeatureTest {
         testedFeature.onInitialize(mockContext)
         testedFeature.dataWriter = mockDataWriter
         testedFeature.propagateQuotaResult(QuotaResult.QUOTA_EXCEEDED)
-        val anrResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.ANR)
+        val traceFile = File(fakeTempDir, "anr_trace.perfetto-stack-sample").apply { writeText("trace") }
+        val anrResult = fakePerfettoResult.copy(
+            resultFilePath = traceFile.absolutePath,
+            startReason = ProfilingStartReason.ANR
+        )
 
         // When
         testedFeature.pendingTriggerProfiles.setRumGatingEvent(fakeRumAnrEvent)
         testedFeature.pendingTriggerProfiles.setProfilingResult(anrResult)
 
         // Then
-        verify(mockDataWriter).discard(anrResult)
+        assertThat(traceFile.exists()).isFalse
         verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any())
     }
 
