@@ -30,7 +30,10 @@ internal class PrecomputedFlagForgeryFactory : ForgeryFactory<PrecomputedFlag> {
             ).toString()
         }
 
-        val reasonEnum = forge.aValueFrom(ResolutionReason::class.java, exclude = listOf(ResolutionReason.CACHED))
+        val reasonEnum = forge.aValueFrom(
+            ResolutionReason::class.java,
+            exclude = listOf(ResolutionReason.CACHED, ResolutionReason.STALE)
+        )
         val reason = reasonEnum.name
 
         return PrecomputedFlag(
