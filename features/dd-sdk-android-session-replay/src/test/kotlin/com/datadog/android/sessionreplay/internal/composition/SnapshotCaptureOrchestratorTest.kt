@@ -10,6 +10,7 @@ import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.RecordingTimeBank
 import com.datadog.android.sessionreplay.internal.recorder.TimeBank
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -437,23 +438,103 @@ internal class SnapshotCaptureOrchestratorTest {
     }
 
     @Test
-    fun `M notify skipped frame W recording time bank denies admission`(
-        @LongForgery(min = 0L, max = 1_000_000L) fakeTimestampNs: Long
+    fun `M forward admission check to time bank W canStart()`(
+        @LongForgery(min = 0L, max = 1_000_000L) fakeTimestampNs: Long,
+        @BoolForgery fakeAdmitted: Boolean
     ) {
         // Given
-        var skippedFrames = 0
-        val stubDeniedTimeBank = object : TimeBank {
+        val stubTimeBank = object : TimeBank {
             override fun consume(executionTime: Long) = Unit
-            override fun updateAndCheck(timestamp: Long): Boolean = false
+            override fun updateAndCheck(timestamp: Long): Boolean = fakeAdmitted
         }
-        val testedTimeBudget = TimeBankCaptureTimeBudget(stubDeniedTimeBank) { skippedFrames++ }
+        val testedTimeBudget = TimeBankCaptureTimeBudget(stubTimeBank)
 
         // When
         val admitted = testedTimeBudget.canStart(fakeTimestampNs)
 
         // Then
-        assertThat(admitted).isFalse()
+        assertThat(admitted).isEqualTo(fakeAdmitted)
+    }
+
+    @Test
+    fun `M notify skipped frame W time budget denies admission`(forge: Forge) {
+        // Given
+        val fakeTimeBudget = FakeTimeBudget(canStart = false)
+        var skippedFrames = 0
+        val fixture = Fixture(forge, timeBudget = fakeTimeBudget, onFrameSkipped = { skippedFrames++ })
+        fixture.testedOrchestrator.start()
+
+        // When
+        fixture.testedOrchestrator.requestCapture()
+        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+
+        // Then
         assertThat(skippedFrames).isEqualTo(1)
+    }
+
+    @Test
+    fun `M notify skipped frame only once W same denied request retries without a new draw signal`(forge: Forge) {
+        // Given
+        val fakeTimeBudget = FakeTimeBudget(canStart = false)
+        var skippedFrames = 0
+        val fixture = Fixture(forge, timeBudget = fakeTimeBudget, onFrameSkipped = { skippedFrames++ })
+        fixture.testedOrchestrator.start()
+        fixture.testedOrchestrator.requestCapture()
+        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+
+        // When - no further requestCapture() call: only the same denial retrying on its own
+        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+
+        // Then
+        assertThat(skippedFrames).isEqualTo(1)
+    }
+
+    @Test
+    fun `M notify skipped frame for each new draw signal W further draws arrive while a denial is retrying`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeTimeBudget = FakeTimeBudget(canStart = false)
+        var skippedFrames = 0
+        val fixture = Fixture(forge, timeBudget = fakeTimeBudget, onFrameSkipped = { skippedFrames++ })
+        fixture.testedOrchestrator.start()
+        fixture.testedOrchestrator.requestCapture()
+        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        assertThat(skippedFrames).isEqualTo(1)
+
+        // When - a further real draw signal arrives before the automatic retry is admitted, and
+        // that retry still denies
+        fixture.testedOrchestrator.requestCapture()
+        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+
+        // Then - counted separately from the first denial, since it's a distinct missed draw
+        assertThat(skippedFrames).isEqualTo(2)
+    }
+
+    @Test
+    fun `M notify skipped frame again W a fresh request follows a resolved denial`(forge: Forge) {
+        // Given
+        val fakeTimeBudget = FakeTimeBudget(canStart = false)
+        var skippedFrames = 0
+        val fixture = Fixture(forge, timeBudget = fakeTimeBudget, onFrameSkipped = { skippedFrames++ })
+        fixture.testedOrchestrator.start()
+        fixture.testedOrchestrator.requestCapture()
+        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        assertThat(skippedFrames).isEqualTo(1)
+
+        // When - the pending request is admitted and fully processed, clearing the episode
+        fakeTimeBudget.canStart = true
+        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fixture.fakeProcessor.pending.single().complete()
+
+        // And then a genuinely new request arrives and is denied again
+        fakeTimeBudget.canStart = false
+        fixture.testedOrchestrator.requestCapture()
+        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+
+        // Then
+        assertThat(skippedFrames).isEqualTo(2)
     }
 
     @Test
@@ -598,7 +679,8 @@ internal class SnapshotCaptureOrchestratorTest {
         producerExecutionNs: Long = 0L,
         val fakeStartNs: Long = forge.aLong(min = 0L, max = 1_000_000L),
         val fakeGenerationBudgetNs: Long = forge.aGenerationBudgetNs(),
-        onProducerCapture: () -> Unit = {}
+        onProducerCapture: () -> Unit = {},
+        onFrameSkipped: () -> Unit = {}
     ) {
         val fakeSnapshot = snapshotToProduce
         val fakeClock = FakeClock().apply { nowNs = fakeStartNs }
@@ -624,7 +706,8 @@ internal class SnapshotCaptureOrchestratorTest {
             expiryScheduler = fakeExpiryScheduler,
             timeBudget = timeBudget,
             captureDelayNs = IMMEDIATE,
-            generationBudgetNs = fakeGenerationBudgetNs
+            generationBudgetNs = fakeGenerationBudgetNs,
+            onFrameSkipped = onFrameSkipped
         )
 
         fun expiryTask(): ScheduledTask = fakeExpiryScheduler.tasks.single { it.delayNs == fakeGenerationBudgetNs }

@@ -14,6 +14,10 @@ internal class AutoIncrementingCapturedReplayIdGenerator(
     @Synchronized
     override fun next(): Long {
         val replayId = currentId
+        // Wraps at Int.MAX_VALUE, not Long.MAX_VALUE, on purpose: currentId is Long only for the
+        // arithmetic LAYER_ID_OFFSET + currentId needs, not because the wrap bound itself should be
+        // wider. See LAYER_ID_OFFSET's KDoc - a raw id past 31 bits would spill into the namespace
+        // bits a wireframe id shifts into above it.
         currentId = if (currentId < Int.MAX_VALUE) currentId + 1 else 0
         return replayId
     }

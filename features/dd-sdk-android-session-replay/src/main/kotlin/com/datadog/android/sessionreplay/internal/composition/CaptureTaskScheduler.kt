@@ -6,6 +6,13 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+/**
+ * Deliberately not [java.util.concurrent.ScheduledExecutorService]: its `schedule` returns a
+ * `ScheduledFuture`, carrying the same `get()`-deadlock risk described on [CaptureMainThreadExecutor]
+ * - every task this schedules can only run on the main thread. It also runs its own thread pool,
+ * which this type avoids entirely by posting delayed work onto the existing main Looper instead of
+ * spinning up new threads.
+ */
 internal fun interface CaptureTaskScheduler {
     fun schedule(delayNs: Long, task: () -> Unit): CancellableCaptureWork
 

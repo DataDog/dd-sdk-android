@@ -26,6 +26,7 @@ internal class SnapshotCaptureOrchestrator(
     private val timeBudget: CaptureTimeBudget = CaptureTimeBudget.UNLIMITED,
     private val captureDelayNs: Long = DEFAULT_CAPTURE_DELAY_NS,
     private val generationBudgetNs: Long = DEFAULT_GENERATION_BUDGET_NS,
+    private val onFrameSkipped: () -> Unit = {},
     private val internalLogger: InternalLogger = InternalLogger.UNBOUND
 ) {
     private val lock = Any()
@@ -35,6 +36,13 @@ internal class SnapshotCaptureOrchestrator(
     private var captureScheduleId = 0L
     private var nextGenerationId = 1L
     private var activeGeneration: ActiveGeneration? = null
+
+    // Set on every requestCapture() - a genuinely new draw signal, not the automatic retry this
+    // class schedules on its own - and consumed the next time createActiveGeneration() sees it,
+    // whether that attempt is denied (reported once via onFrameSkipped) or admitted. A denial with
+    // this already false means a pure timer-driven retry with nothing new since the last attempt,
+    // and stays silent - see createActiveGeneration().
+    private var hasUnreportedDrawSignal = false
 
     fun start() {
         synchronized(lock) { isRunning = true }
@@ -60,6 +68,7 @@ internal class SnapshotCaptureOrchestrator(
     fun requestCapture() {
         val shouldSchedule = synchronized(lock) {
             if (!isRunning) return
+            hasUnreportedDrawSignal = true
             captureRequested = true
             activeGeneration == null && !captureScheduled
         }
@@ -138,7 +147,19 @@ internal class SnapshotCaptureOrchestrator(
         // once the time bank replenishes, since no ActiveGeneration exists yet to later trigger
         // scheduleCaptureIfRequested() via expire()/onProcessed(). beginCapture() calls that itself
         // when this returns null.
-        if (!timeBudget.canStart(eligibilityTimestampNs)) return@synchronized null
+        if (!timeBudget.canStart(eligibilityTimestampNs)) {
+            // Notify once per genuinely new draw signal that ends up denied, not once per
+            // captureDelayNs retry this class schedules on its own - a pure timer-driven retry with
+            // no new signal since the last attempt sees this already false and stays silent. A
+            // burst of further draw signals arriving mid-retry each still get counted, since every
+            // requestCapture() sets hasUnreportedDrawSignal fresh regardless of captureRequested's
+            // own state.
+            if (hasUnreportedDrawSignal) {
+                hasUnreportedDrawSignal = false
+                onFrameSkipped()
+            }
+            return@synchronized null
+        }
         captureRequested = false
         // Nothing that belongs to capture runs before this timestamp. The producer's first action
         // is window/root discovery, so every capture phase shares the deadline created here.

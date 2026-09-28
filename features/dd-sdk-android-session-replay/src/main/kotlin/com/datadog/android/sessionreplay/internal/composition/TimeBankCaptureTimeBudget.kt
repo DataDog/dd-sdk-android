@@ -9,12 +9,9 @@ package com.datadog.android.sessionreplay.internal.composition
 import com.datadog.android.sessionreplay.internal.recorder.TimeBank
 
 internal class TimeBankCaptureTimeBudget(
-    private val timeBank: TimeBank,
-    private val onAdmissionDenied: () -> Unit = {}
+    private val timeBank: TimeBank
 ) : CaptureTimeBudget {
-    override fun canStart(timestampNs: Long): Boolean = timeBank.updateAndCheck(timestampNs).also { admitted ->
-        if (!admitted) onAdmissionDenied()
-    }
+    override fun canStart(timestampNs: Long): Boolean = timeBank.updateAndCheck(timestampNs)
 
     override fun consume(durationNs: Long) = timeBank.consume(durationNs)
 }

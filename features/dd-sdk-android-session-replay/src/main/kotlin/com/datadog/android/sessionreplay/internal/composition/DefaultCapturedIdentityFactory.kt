@@ -64,17 +64,25 @@ internal class DefaultCapturedIdentityFactory(
         return createLayerIdentity(CapturedIdentityKind.LAYER, owner.path(), layerId)
     }
 
-    override fun shapeWireframe(owner: CapturedIdentity): CapturedIdentity =
-        createNamespacedWireframeIdentity(owner, CapturedWireframeKind.SHAPE)
+    override fun shapeWireframe(owner: CapturedIdentity): CapturedIdentity {
+        validateLayerOwner(owner)
+        return createNamespacedWireframeIdentity(owner, CapturedWireframeKind.SHAPE)
+    }
 
-    override fun textWireframe(owner: CapturedIdentity): CapturedIdentity =
-        createNamespacedWireframeIdentity(owner, CapturedWireframeKind.TEXT)
+    override fun textWireframe(owner: CapturedIdentity): CapturedIdentity {
+        validateLayerOwner(owner)
+        return createNamespacedWireframeIdentity(owner, CapturedWireframeKind.TEXT)
+    }
 
-    override fun imageWireframe(owner: CapturedIdentity): CapturedIdentity =
-        createNamespacedWireframeIdentity(owner, CapturedWireframeKind.IMAGE)
+    override fun imageWireframe(owner: CapturedIdentity): CapturedIdentity {
+        validateLayerOwner(owner)
+        return createNamespacedWireframeIdentity(owner, CapturedWireframeKind.IMAGE)
+    }
 
-    override fun placeholderWireframe(owner: CapturedIdentity): CapturedIdentity =
-        createNamespacedWireframeIdentity(owner, CapturedWireframeKind.PLACEHOLDER)
+    override fun placeholderWireframe(owner: CapturedIdentity): CapturedIdentity {
+        validateLayerOwner(owner)
+        return createNamespacedWireframeIdentity(owner, CapturedWireframeKind.PLACEHOLDER)
+    }
 
     override fun webViewWireframe(owner: CapturedIdentity, slotId: Long): CapturedIdentity {
         validateLayerOwner(owner)
@@ -93,25 +101,22 @@ internal class DefaultCapturedIdentityFactory(
         localId: String
     ): CapturedIdentity {
         val key = IdentityKey(kind, null, namespace.toList(), localId)
-        return synchronized(lock) {
-            // Offset, not namespace-shifted - see LAYER_ID_OFFSET's KDoc for why.
-            identities[key] ?: createIdentityLocked(key, LAYER_ID_OFFSET + replayIdGenerator.next())
-        }
+        // Offset, not namespace-shifted - see LAYER_ID_OFFSET's KDoc for why.
+        return getOrCreateIdentity(key) { LAYER_ID_OFFSET + replayIdGenerator.next() }
     }
 
+    // Callers validate owner themselves before delegating here - see e.g. shapeWireframe() -
+    // matching the convention every other identity-builder in this class follows.
     private fun createNamespacedWireframeIdentity(
         owner: CapturedIdentity,
         wireframeKind: CapturedWireframeKind
-    ): CapturedIdentity {
-        validateLayerOwner(owner)
-        return createIdentity(
-            kind = CapturedIdentityKind.WIREFRAME,
-            wireframeKind = wireframeKind,
-            namespace = owner.path(),
-            localId = wireframeKind.name,
-            wireId = (wireframeKind.wireIdNamespace shl NAMESPACE_SHIFT) or owner.wireId
-        )
-    }
+    ): CapturedIdentity = createIdentity(
+        kind = CapturedIdentityKind.WIREFRAME,
+        wireframeKind = wireframeKind,
+        namespace = owner.path(),
+        localId = wireframeKind.name,
+        wireId = (wireframeKind.wireIdNamespace shl NAMESPACE_SHIFT) or owner.wireId
+    )
 
     private fun createIdentity(
         kind: CapturedIdentityKind,
@@ -119,25 +124,27 @@ internal class DefaultCapturedIdentityFactory(
         namespace: List<String>,
         localId: String,
         wireId: Long
-    ): CapturedIdentity = createIdentity(
-        IdentityKey(kind, wireframeKind, namespace.toList(), localId),
-        wireId
-    )
+    ): CapturedIdentity = getOrCreateIdentity(
+        IdentityKey(kind, wireframeKind, namespace.toList(), localId)
+    ) { wireId }
 
-    private fun createIdentity(key: IdentityKey, wireId: Long): CapturedIdentity =
-        synchronized(lock) { createIdentityLocked(key, wireId) }
-
-    private fun createIdentityLocked(key: IdentityKey, wireId: Long): CapturedIdentity {
-        identities[key]?.let { return it }
-        return CapturedIdentity(
-            scope = scope,
-            kind = key.kind,
-            wireframeKind = key.wireframeKind,
-            namespace = key.namespace,
-            localId = key.localId,
-            wireId = wireId
-        ).also { identities[key] = it }
-    }
+    // wireId is a closure, not a plain Long, so a side-effecting generator call (see
+    // createLayerIdentity) is only ever invoked on an actual cache miss, matching what the old
+    // manual identities[key] ?: ... check gave us for free.
+    private fun getOrCreateIdentity(key: IdentityKey, wireId: () -> Long): CapturedIdentity =
+        synchronized(lock) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // plain MutableMap.getOrPut, non-null key/value, cannot throw
+            identities.getOrPut(key) {
+                CapturedIdentity(
+                    scope = scope,
+                    kind = key.kind,
+                    wireframeKind = key.wireframeKind,
+                    namespace = key.namespace,
+                    localId = key.localId,
+                    wireId = wireId()
+                )
+            }
+        }
 
     // These checks guard against programmer-only misuse of the internal identity factory. They
     // must never throw: a bug tripping them would otherwise crash the host application, so any

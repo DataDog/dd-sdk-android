@@ -38,6 +38,7 @@ internal class DefaultCompositionPipelineFactory(
     ): Recorder {
         val internalLogger = sdkCore.internalLogger
         val windowSource = ActiveWindowSource()
+        val skippedFrameNotifier = CaptureSkippedFrameNotifier(sdkCore)
         val completionQueue = SnapshotCompletionQueue(
             executorService = sdkCore.createSingleThreadExecutorService(PROCESSING_EXECUTOR_NAME),
             processor = DefaultSnapshotCompletionProcessor(
@@ -59,6 +60,7 @@ internal class DefaultCompositionPipelineFactory(
                 internalLogger = internalLogger
             ),
             timeBudget = createTimeBudget(),
+            onFrameSkipped = skippedFrameNotifier::notifySkippedFrame,
             internalLogger = internalLogger
         )
         val interceptor = CompositionViewOnDrawInterceptor(
@@ -95,8 +97,7 @@ internal class DefaultCompositionPipelineFactory(
     }
 
     private fun createTimeBudget(): CaptureTimeBudget = if (dynamicOptimizationEnabled) {
-        val skippedFrameNotifier = CaptureSkippedFrameNotifier(sdkCore)
-        TimeBankCaptureTimeBudget(recordingTimeBankFactory(), skippedFrameNotifier::notifySkippedFrame)
+        TimeBankCaptureTimeBudget(recordingTimeBankFactory())
     } else {
         CaptureTimeBudget.UNLIMITED
     }

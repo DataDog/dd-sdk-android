@@ -39,7 +39,16 @@ internal class CaptureGenerationContext(
         return state.get() == State.ACTIVE
     }
 
-    /** Cheap cooperative checkpoint for View/Compose walkers between bounded operations. */
+    /**
+     * Cheap cooperative checkpoint for View/Compose walkers between bounded operations.
+     *
+     * Reads [mainThreadWorkAllowed] and [isActive] separately rather than as one atomic snapshot -
+     * safe because both are one-way latches that only ever move toward "stop" ([state] never
+     * returns to [State.ACTIVE] once left; [mainThreadWorkAllowed] never returns to `true`). The
+     * gap between the two reads can therefore only make this stale in the safe direction (briefly
+     * still `true` after something else already flipped to `false`), never the dangerous one, and
+     * the next call - checked before every node - catches it immediately.
+     */
     fun shouldContinue(): Boolean = mainThreadWorkAllowed.get() && isActive()
 
     /**
@@ -75,6 +84,11 @@ internal class CaptureGenerationContext(
     fun createWorkToken(): CaptureWorkToken? {
         if (!isActive()) return null
         val token = workRegistry.createToken(this)
+        // Same race as track() below: a concurrent expire()/tryAccept() can run its own
+        // invalidateAll() sweep between the isActive() check above and the token actually landing
+        // in the registry, missing it entirely - it was inserted too late to be caught. Re-checking
+        // here and cleaning up explicitly means a caller only ever receives null instead of a
+        // token that looks valid for a generation that's already gone.
         return token.takeIf { isActive() } ?: run {
             token.invalidate()
             workRegistry.release(token)
