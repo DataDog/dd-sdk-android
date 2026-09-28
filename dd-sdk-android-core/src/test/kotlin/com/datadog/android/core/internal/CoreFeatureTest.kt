@@ -65,7 +65,12 @@ import okhttp3.ConnectionSpec
 import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.TlsVersion
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
+import okhttp3.tls.HandshakeCertificates
+import okhttp3.tls.HeldCertificate
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -1645,6 +1650,153 @@ internal class CoreFeatureTest {
     // endregion
 
     // region createOkHttpCallFactory
+
+    @Test
+    fun `M reject HTTP W createOkHttpCallFactory() {cleartext disabled}`() {
+        initializeWithCleartextPolicy(false)
+
+        MockWebServer().use { server ->
+            server.enqueue(MockResponse().setBody("unexpected"))
+            val factory = testedFeature.createOkHttpCallFactory {
+                callTimeout(5, TimeUnit.SECONDS)
+            }
+
+            assertThatThrownBy { factory.newCall(Request.Builder().url(server.url("/")).build()).execute() }
+                .isInstanceOf(IOException::class.java)
+                .hasMessageContaining("CLEARTEXT communication not enabled for client")
+            assertThat(server.requestCount).isZero()
+        }
+    }
+
+    @Test
+    fun `M execute HTTP W createOkHttpCallFactory() {cleartext enabled}`() {
+        initializeWithCleartextPolicy(true)
+
+        MockWebServer().use { server ->
+            server.enqueue(MockResponse().setBody("assignments"))
+            val factory = testedFeature.createOkHttpCallFactory {
+                callTimeout(5, TimeUnit.SECONDS)
+            }
+
+            factory.newCall(Request.Builder().url(server.url("/flags")).build()).execute().use { response ->
+                assertThat(response.code).isEqualTo(200)
+                assertThat(response.body?.string()).isEqualTo("assignments")
+            }
+            assertThat(server.takeRequest(5, TimeUnit.SECONDS)?.path).isEqualTo("/flags")
+        }
+    }
+
+    @Test
+    fun `M execute HTTPS W createOkHttpCallFactory() {cleartext disabled}`() {
+        initializeWithCleartextPolicy(false)
+        assertHttpsRequestSucceeds()
+    }
+
+    @Test
+    fun `M execute HTTPS W createOkHttpCallFactory() {cleartext enabled}`() {
+        initializeWithCleartextPolicy(true)
+        assertHttpsRequestSucceeds()
+    }
+
+    @Test
+    fun `M preserve restricted TLS W createOkHttpCallFactory() {cleartext enabled}`() {
+        initializeWithCleartextPolicy(false)
+        val strictSpecs = captureFactoryConnectionSpecs(testedFeature)
+        testedFeature.stop()
+        initializeWithCleartextPolicy(true)
+
+        assertThat(captureFactoryConnectionSpecs(testedFeature))
+            .containsExactlyElementsOf(strictSpecs + ConnectionSpec.CLEARTEXT)
+        assertThat(strictSpecs).hasSize(1)
+        assertThat(strictSpecs.single().isTls).isTrue()
+    }
+
+    @Test
+    fun `M isolate cleartext policy W createOkHttpCallFactory() {multiple cores}`() {
+        initializeWithCleartextPolicy(true)
+        val otherCore = CoreFeature(
+            mockInternalLogger,
+            mockAppStartTimeProvider,
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService },
+            scheduledExecutorServiceFactory = { _, _, _ -> mockScheduledExecutorService },
+            buildSdkVersionProvider = mockBuildSdkVersionProvider
+        )
+
+        otherCore.initialize(
+            appContext.mockInstance,
+            "$fakeSdkInstanceId-other",
+            fakeConfig.copy(coreConfig = fakeConfig.coreConfig.copy(needsClearTextHttp = false)),
+            fakeConsent
+        )
+        try {
+            assertThat(captureFactoryConnectionSpecs(testedFeature)).contains(ConnectionSpec.CLEARTEXT)
+            assertThat(captureFactoryConnectionSpecs(otherCore)).doesNotContain(ConnectionSpec.CLEARTEXT)
+        } finally {
+            otherCore.stop()
+        }
+    }
+
+    @Test
+    fun `M reset cleartext policy W stop() and initialize()`() {
+        initializeWithCleartextPolicy(true)
+        testedFeature.stop()
+
+        assertThat(captureFactoryConnectionSpecs(testedFeature)).doesNotContain(ConnectionSpec.CLEARTEXT)
+        initializeWithCleartextPolicy(false)
+        assertThat(captureFactoryConnectionSpecs(testedFeature)).doesNotContain(ConnectionSpec.CLEARTEXT)
+    }
+
+    @Test
+    fun `M apply caller connection specs last W createOkHttpCallFactory() {cleartext enabled}`() {
+        initializeWithCleartextPolicy(true)
+        val callFactory = testedFeature.createOkHttpCallFactory {
+            connectionSpecs(listOf(ConnectionSpec.RESTRICTED_TLS))
+            callTimeout(5, TimeUnit.SECONDS)
+        }
+
+        MockWebServer().use { server ->
+            assertThatThrownBy { callFactory.newCall(Request.Builder().url(server.url("/")).build()).execute() }
+                .isInstanceOf(IOException::class.java)
+                .hasMessageContaining("CLEARTEXT communication not enabled for client")
+            assertThat(server.requestCount).isZero()
+        }
+    }
+
+    private fun initializeWithCleartextPolicy(enabled: Boolean) {
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig.copy(coreConfig = fakeConfig.coreConfig.copy(needsClearTextHttp = enabled)),
+            fakeConsent
+        )
+    }
+
+    private fun captureFactoryConnectionSpecs(core: CoreFeature): List<ConnectionSpec> {
+        lateinit var specs: List<ConnectionSpec>
+        core.createOkHttpCallFactory { specs = build().connectionSpecs }
+        return specs
+    }
+
+    private fun assertHttpsRequestSucceeds() {
+        val certificate = HeldCertificate.Builder().addSubjectAlternativeName("localhost").build()
+        val serverCertificates = HandshakeCertificates.Builder().heldCertificate(certificate).build()
+        val clientCertificates = HandshakeCertificates.Builder().addTrustedCertificate(certificate.certificate).build()
+        MockWebServer().use { server ->
+            server.useHttps(serverCertificates.sslSocketFactory(), false)
+            server.enqueue(MockResponse().setBody("secure response"))
+            val callFactory = testedFeature.createOkHttpCallFactory {
+                sslSocketFactory(clientCertificates.sslSocketFactory(), clientCertificates.trustManager)
+                callTimeout(5, TimeUnit.SECONDS)
+            }
+
+            callFactory.newCall(Request.Builder().url(server.url("/secure")).build()).execute().use { response ->
+                assertThat(response.code).isEqualTo(200)
+                assertThat(response.body?.string()).isEqualTo("secure response")
+                assertThat(response.handshake).isNotNull()
+            }
+            assertThat(server.takeRequest(5, TimeUnit.SECONDS)?.path).isEqualTo("/secure")
+        }
+    }
 
     @Test
     fun `M create call factory W createOkHttpCallFactory()`() {
