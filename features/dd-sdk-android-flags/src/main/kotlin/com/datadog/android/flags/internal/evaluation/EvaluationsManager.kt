@@ -162,8 +162,8 @@ internal class EvaluationsManager(
                         )
 
                         val throwable = NetworkRequestFailedException(NETWORK_REQUEST_FAILED_MESSAGE)
-                        // Only use cached flags if they match the requested context to avoid
-                        // serving flags from a different user/context.
+                        // Matching cached assignments determine lifecycle Stale versus Error.
+                        // This does not clear assignments or control whether native getters serve them.
                         val completionCallback = synchronized(initializationTerminalLock) {
                             val result = initializationCompletion?.take()?.callback
                                 ?: if (initializationCompletion == null) callback else null
