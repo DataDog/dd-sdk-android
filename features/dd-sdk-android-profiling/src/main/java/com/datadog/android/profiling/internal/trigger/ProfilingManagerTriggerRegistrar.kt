@@ -140,7 +140,6 @@ internal class ProfilingManagerTriggerRegistrar(
                 errorMessage = result.errorMessage,
                 fileSize = fileSize,
                 callbackDelayMs = callbackDelayMs,
-                clientClockDriftMs = timeProvider.getServerOffsetMillis(),
                 droppedAsStale = droppedAsStale
             )
         )

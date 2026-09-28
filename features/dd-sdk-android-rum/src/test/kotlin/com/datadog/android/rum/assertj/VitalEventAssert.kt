@@ -369,15 +369,6 @@ internal class VitalEventAssert(
             .isEqualTo(profilingStatus)
     }
 
-    fun hasProfilingClockDrift(expected: Number?) = apply {
-        assertThat(actual.dd.profiling?.clockDrift)
-            .overridingErrorMessage(
-                "Expected RUM event to have profiling clock_drift: $expected" +
-                    " but instead was: ${actual.dd.profiling?.clockDrift}"
-            )
-            .isEqualTo(expected)
-    }
-
     fun hasNoProfiling() = apply {
         assertThat(actual.dd.profiling)
             .overridingErrorMessage(

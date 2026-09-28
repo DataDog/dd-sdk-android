@@ -323,7 +323,6 @@ internal class ProfilingFeatureTest {
                 fileSize = 0L,
                 durationMs = 0L,
                 resultCallbackDelayMs = 0L,
-                clientClockDriftMs = 0L,
                 stopReason = ProfilingTelemetry.STOPPED_REASON_ERROR,
                 bufferSizeKb = 0,
                 samplingFrequencyHz = 0

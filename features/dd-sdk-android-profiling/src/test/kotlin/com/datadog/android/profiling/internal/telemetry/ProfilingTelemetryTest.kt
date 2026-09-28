@@ -57,7 +57,6 @@ internal class ProfilingTelemetryTest {
     fun `M dispatch SessionEnd through logMetric W report() {logger set}`(
         @StringForgery fakeErrorMessage: String,
         @LongForgery(min = 0L) fakeDuration: Long,
-        @LongForgery fakeClientClockDriftMs: Long,
         @IntForgery(min = 1, max = 8) fakeErrorCode: Int
     ) {
         // Given
@@ -70,7 +69,6 @@ internal class ProfilingTelemetryTest {
             fileSize = 0L,
             durationMs = fakeDuration,
             resultCallbackDelayMs = 0L,
-            clientClockDriftMs = fakeClientClockDriftMs,
             stopReason = ProfilingTelemetry.STOPPED_REASON_ERROR,
             bufferSizeKb = 5120,
             samplingFrequencyHz = 201
@@ -88,7 +86,6 @@ internal class ProfilingTelemetryTest {
                 ProfilingTelemetry.KEY_START_REASON to ProfilingStartReason.APPLICATION_LAUNCH.value,
                 ProfilingTelemetry.KEY_DURATION to fakeDuration,
                 ProfilingTelemetry.KEY_CALLBACK_DELAY to 0L,
-                ProfilingTelemetry.KEY_CLIENT_CLOCK_DRIFT to fakeClientClockDriftMs,
                 ProfilingTelemetry.KEY_ERROR_MESSAGE to fakeErrorMessage,
                 ProfilingTelemetry.KEY_FILE_SIZE to 0L,
                 ProfilingTelemetry.KEY_STOPPED_REASON to ProfilingTelemetry.STOPPED_REASON_ERROR,
@@ -115,7 +112,6 @@ internal class ProfilingTelemetryTest {
     @Test
     fun `M dispatch AnrTriggerResult through logMetric W report() {logger set}`(
         @StringForgery fakeErrorMessage: String,
-        @LongForgery fakeClientClockDriftMs: Long,
         @IntForgery(min = 0, max = 8) fakeErrorCode: Int
     ) {
         // Given
@@ -125,7 +121,6 @@ internal class ProfilingTelemetryTest {
             errorMessage = fakeErrorMessage,
             fileSize = 0L,
             callbackDelayMs = null,
-            clientClockDriftMs = fakeClientClockDriftMs,
             droppedAsStale = false
         )
 
@@ -142,7 +137,6 @@ internal class ProfilingTelemetryTest {
                 ProfilingTelemetry.KEY_ERROR_MESSAGE to fakeErrorMessage,
                 ProfilingTelemetry.KEY_FILE_SIZE to 0L,
                 ProfilingTelemetry.KEY_CALLBACK_DELAY to null,
-                ProfilingTelemetry.KEY_CLIENT_CLOCK_DRIFT to fakeClientClockDriftMs,
                 ProfilingTelemetry.KEY_DROPPED_AS_STALE to false
             ),
             ProfilingTelemetry.KEY_PROFILING_CONFIG to mapOf(
@@ -167,7 +161,6 @@ internal class ProfilingTelemetryTest {
             errorMessage = null,
             fileSize = 0L,
             callbackDelayMs = null,
-            clientClockDriftMs = 0L,
             droppedAsStale = false
         )
 
@@ -186,7 +179,6 @@ internal class ProfilingTelemetryTest {
             errorMessage = null,
             fileSize = 0L,
             callbackDelayMs = null,
-            clientClockDriftMs = 0L,
             droppedAsStale = false
         )
         val secondEvent = ProfilingTelemetryEvent.AnrTriggerResult(
@@ -194,7 +186,6 @@ internal class ProfilingTelemetryTest {
             errorMessage = "in_progress",
             fileSize = 0L,
             callbackDelayMs = null,
-            clientClockDriftMs = 0L,
             droppedAsStale = false
         )
         testedTelemetry.report(firstEvent)
@@ -220,7 +211,6 @@ internal class ProfilingTelemetryTest {
             errorMessage = null,
             fileSize = 0L,
             callbackDelayMs = null,
-            clientClockDriftMs = 0L,
             droppedAsStale = false
         )
         testedTelemetry.report(event)
@@ -248,7 +238,6 @@ internal class ProfilingTelemetryTest {
             errorMessage = null,
             fileSize = 0L,
             callbackDelayMs = null,
-            clientClockDriftMs = 0L,
             droppedAsStale = false
         )
 
